@@ -551,21 +551,95 @@ class Meshcat {
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
 
-  // TODO(#16486): add low-pass filter to smooth the Realtime plot
-  /** Sets the realtime rate that is displayed in the meshcat visualizer stats
-   strip chart. This rate is the ratio between sim time and real
-   world time. 1 indicates the simulator is the same speed as real time. 2
-   indicates running twice as fast as real time, 0.5 is half speed, etc.
-  @see drake::systems::Simulator::set_target_realtime_rate()
-  @param rate the realtime rate value to be displayed, will be converted to a
+  /** @group Realtime Rate Reporting
+
+   %Meshcat can be used to visualize the realtime rate of a simulation's
+   computation in the meshcat visualizer webpage. Meshcat broadcasts a realtime
+   rate message that is received and displayed by the browser in a
+   <a href="https://github.com/mrdoob/stats.js">stats strip chart</a>
+
+   Advancing the simulation's time requires a certain amount of real world
+   compute time. The realtime rate, a non-negative real value, is the ratio of
+   the sim time to real world time. A value of one indicates that the simulation
+   is advancing at the same rate as the real world clock. Higher values indicate
+   faster simulations. Lower values indicate slower simulations.
+
+   The realtime rate value can be broadcast to the visualizer in one of two
+   ways:
+
+     - Immediate - a %Meshcat user can compute realtime rate themselves and
+       simply ask %Meshcat to dispatch a message with that computed value.
+       See SetRealtimeRate(). The user is responsible for controlling the
+       frequency with which this is done.
+     - Throttled - Meshcat can be configured to broadcast realtime rate data
+       in a "smoothed" manner, meaning the visualization doesn't fluctuate at
+       arbitrarily high rates, frequently making the value difficult to read.
+       See NoteTimeAdvancement().
+   */
+  //@{
+
+  /** Consumes information about the advance of simulation time and broadcasts
+   throttled realtime rate messages according to the configured value in
+   MeshcatParams::realtime_rate_period value.
+
+   This function *can* be called redundantly with the same time or even out of
+   order with a later invocation reporting an earlier time than an earlier
+   invocation. Only the latest times directly affect the broadcast message;
+   values that are not strictly greater than the previous call are ignored.
+
+   Invoking this method _may_ dispatch a message to clients. The following rules
+   apply to invocations and messages:
+
+     - The first invocation is necessary to "prime the pump"; it defines the
+       the starting point from which wall clock time can be measured. As no
+       interval can be measured from a single invocation, no rate can be
+       computed. Therefore, the first invocation will *never* broadcast the
+       message.
+     - The second invocation (after construction or reset) _always_ sends a
+       message. This is intended to support use cases where a simulator is
+       initialized, a single step is taken, and then the simulation stops. The
+       effective realtime rate of that step will be broadcast.
+     - For the third invocation and beyond, a message is sent if the wall clock
+       time since the last message was dispatched meets or exceeds this
+       instance's MeshcatParams::realtime_rate_period value.
+
+   When the realtime rate is broadcast, that value will be reported by
+   GetRealtimeRate().
+
+   To reset the sequence, call ResetTimeAdvancementRecord().
+
+   @see drake::systems::Simulator::set_target_realtime_rate() */
+  void NoteTimeAdvancement(double sim_time);
+
+  /** Resets the time tracking used by NoteTimeAdvancement(). This is
+   particularly important if simulation time is moved backwards (e.g., by
+   resetting simulation time).
+
+   The behavior documented in NoteTimeAdvancement() with respect to the number
+   of invocations resets. The next invocation of NoteTimeAdvancement() will be
+   the _first_ again.
+
+   This can also be used, in some sense, to pause the calculation of the
+   realtime rate such as when the simulation gets paused to do out-of-sim
+   computation. It is not a perfect pausing action as any simulation time that
+   had accumulated between the last message broadcast and this method's
+   invocation will be lost from the calculation.
+
+   This has no effect on the result returned by GetRealtimeRate(). That value is
+   still, as documented, the last value *broadcast* in a message. */
+  void ResetTimeAdvancementRecord();
+
+  /** Immediately broadcasts the given realtime rate to all connected clients.
+  @param rate the realtime rate value to broadcast, will be converted to a
   percentage (multiplied by 100) */
   void SetRealtimeRate(double rate);
 
-  /** Gets the realtime rate that is displayed in the meshcat visualizer stats
-   strip chart. See SetRealtimeRate(). Note that this value might be a smoothing
-   function across multiple calls to SetRealtimeRate() rather than the most
-   recent argument value, in case this class ever adds smoothing capability. */
+  /** Gets the realtime rate that was last broadcast by this instance
+   (typically, the value displayed in the meshcat visualizer stats strip chart).
+   See SetRealtimeRate(). */
   double GetRealtimeRate() const;
+
+  //@}
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim

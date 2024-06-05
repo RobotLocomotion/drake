@@ -28,6 +28,7 @@
     // it is the last element in the stats.dom.children list
     stats.showPanel(stats.dom.children.length - 1)
     var latestRealtimeRate = 0;
+    var publishRealtimeRate = true;
     var viewer = new MeshCat.Viewer(document.getElementById("meshcat-pane"));
     viewer.animate = function() {
       viewer.animator.update();
@@ -84,7 +85,10 @@
     function animate() {
       stats.begin();
       // convert realtime rate to percentage so it is easier to read
-      realtimeRatePanel.update(latestRealtimeRate*100, 100);
+      if (publishRealtimeRate) {
+        realtimeRatePanel.update(latestRealtimeRate*100, 100);
+        publishRealtimeRate = false;
+      }
       viewer.animate()
       stats.end();
       if (gamepads_supported) {
@@ -98,6 +102,7 @@
     function handle_message(ws_message) {
       let decoded = viewer.decode(ws_message);
       if (decoded.type == "realtime_rate") {
+        publishRealtimeRate = true;
         latestRealtimeRate = decoded.rate;
       } else if (decoded.type == "show_realtime_rate") {
         stats.dom.style.display = decoded.show ? "block" : "none";
