@@ -35,6 +35,7 @@
 #include "drake/geometry/meshcat_recording_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
+#include "drake/systems/analysis/realtime_rate_calculator.h"
 
 #ifdef BOOST_VERSION
 #error Drake should be using the non-boost flavor of msgpack.
@@ -685,7 +686,8 @@ class Meshcat::Impl {
   explicit Impl(const MeshcatParams& params)
       : prefix_("/drake"),
         main_thread_id_(std::this_thread::get_id()),
-        params_(params) {
+        params_(params),
+        rate_calculator_(params_.realtime_rate_period) {
     DRAKE_THROW_UNLESS(!params.port.has_value() || *params.port == 0 ||
                        *params.port >= 1024);
     if (!drake::internal::IsNetworkingAllowed("meshcat")) {
@@ -782,6 +784,33 @@ class Meshcat::Impl {
   int port() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     return port_;
+  }
+
+  // This function is public via the PIMPL.
+  void SetSimulationTime(double sim_time) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    sim_time_ = sim_time;
+    const auto report = rate_calculator_.UpdateAndRecalculate(sim_time);
+    if (report.initialized) {
+      // We won't broadcast it, but we do return to the initialized state.
+      realtime_rate_ = 0.0;
+      return;
+    }
+    // This last invocation may have spanned zero or more report periods;
+    // dispatch one realtime rate message for each period.
+    for (int i = 0; i < report.period_count; ++i) {
+      // Note: report.rate may be infinity. The javascript chart will draw a
+      // saturated column for that rate value (which will eventually be pushed
+      // off the screen -- but the record of the (smallest, largest) values in
+      // the chart will persist in showing infinity, even when the column is no
+      // longer visible.
+      SetRealtimeRate(report.rate);
+    }
+  }
+
+  double GetSimulationTime() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    return sim_time_;
   }
 
   // This function is public via the PIMPL.
@@ -2281,6 +2310,7 @@ class Meshcat::Impl {
   const MeshcatParams params_;
   int port_{};
   internal::UuidGenerator uuid_generator_{};
+  systems::internal::RealtimeRateCalculator rate_calculator_;
   double realtime_rate_{0.0};
   bool is_orthographic_{false};
 
@@ -2380,6 +2410,8 @@ class Meshcat::Impl {
   // places on the websocket thread.
   std::atomic<bool> inject_open_fault_{false};
   std::atomic<bool> inject_message_fault_{false};
+
+  double sim_time_{};
 };
 
 Meshcat::Meshcat(std::optional<int> port)
@@ -2566,6 +2598,14 @@ void Meshcat::SetTransform(std::string_view path,
 
 void Meshcat::Delete(std::string_view path) {
   impl().Delete(path);
+}
+
+void Meshcat::SetSimulationTime(double sim_time) {
+  impl().SetSimulationTime(sim_time);
+}
+
+double Meshcat::GetSimulationTime() const {
+  return impl().GetSimulationTime();
 }
 
 void Meshcat::SetRealtimeRate(double rate) {
