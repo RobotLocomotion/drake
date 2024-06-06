@@ -51,8 +51,8 @@ struct HydroelasticFallbackCacheData {
 
 // Structure used in the calculation of hydroelastic contact forces.
 template <typename T>
-struct HydroelasticContactInfoAndBodySpatialForces {
-  explicit HydroelasticContactInfoAndBodySpatialForces(int num_bodies) {
+struct HydroelasticContactForcesContinuous {
+  explicit HydroelasticContactForcesContinuous(int num_bodies) {
     F_BBo_W_array.resize(num_bodies);
   }
 
@@ -3135,12 +3135,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     switch (contact_model_) {
       case ContactModel::kPoint:
-        return this->get_cache_entry(cache_indexes_.point_pairs)
+        return this->get_cache_entry(cache_indices_.point_pairs)
             .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
                 context);
       case ContactModel::kHydroelasticWithFallback: {
         const auto& data =
-            this->get_cache_entry(cache_indexes_.hydro_fallback)
+            this->get_cache_entry(cache_indices_.hydro_fallback)
                 .template Eval<internal::HydroelasticFallbackCacheData<T>>(
                     context);
         return data.point_pairs;
@@ -4986,16 +4986,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
-  struct CacheIndexes {
-    systems::CacheIndex contact_info_and_body_spatial_forces;
-    systems::CacheIndex contact_results;
+  struct CacheIndices {
     systems::CacheIndex contact_surfaces;
-    systems::CacheIndex generalized_contact_forces_continuous;
     systems::CacheIndex hydro_fallback;
     systems::CacheIndex point_pairs;
-    systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
+
+    // This is only valid for a continuous-time, hydroelastic-contact plant.
+    systems::CacheIndex hydroelastic_contact_forces_continuous;
+
+    // These are only valid for a continuous-time plant.
+    systems::CacheIndex contact_results_continuous;
+    systems::CacheIndex spatial_contact_forces_continuous;
+    systems::CacheIndex generalized_contact_forces_continuous;
   };
 
   // This struct stores in one single place all indices related to
@@ -5157,8 +5161,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   //  - Externally applied spatial forces.
   //  - Joint limits.
   // @pre The plant is continuous.
-  void CalcNonContactForces(const drake::systems::Context<T>& context,
-                            MultibodyForces<T>* forces) const;
+  void CalcNonContactForcesContinuous(const drake::systems::Context<T>& context,
+                                      MultibodyForces<T>* forces) const;
 
   // Collects up forces from input ports (actuator, generalized, and spatial
   // forces) and contact forces (from compliant contact models). Does not
@@ -5200,7 +5204,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Eval version of the method CalcJointLockingCache().
   const internal::JointLockingCacheData<T>& EvalJointLockingCache(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.joint_locking_data)
+    return this->get_cache_entry(cache_indices_.joint_locking_data)
         .template Eval<internal::JointLockingCacheData<T>>(context);
   }
 
@@ -5218,13 +5222,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     switch (contact_model_) {
       case ContactModel::kHydroelasticWithFallback: {
         const auto& data =
-            this->get_cache_entry(cache_indexes_.hydro_fallback)
+            this->get_cache_entry(cache_indices_.hydro_fallback)
                 .template Eval<internal::HydroelasticFallbackCacheData<T>>(
                     context);
         return data.contact_surfaces;
       }
       case ContactModel::kHydroelastic:
-        return this->get_cache_entry(cache_indexes_.contact_surfaces)
+        return this->get_cache_entry(cache_indices_.contact_surfaces)
             .template Eval<std::vector<geometry::ContactSurface<T>>>(context);
       default:
         throw std::logic_error(
@@ -5249,27 +5253,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // for the point pair model, given the current context. Called by
   // CalcContactResultsContinuous.
   // @param[in,out] contact_results is appended to
-  void AppendContactResultsContinuousPointPair(
+  void AppendContactResultsPointPairContinuous(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
   // Helper method to fill in `contact_results` with hydroelastic forces as a
   // function of the state stored in `context`.
   // @param[in,out] contact_results is appended to
-  void AppendContactResultsContinuousHydroelastic(
+  void AppendContactResultsHydroelasticContinuous(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
   // Evaluate contact results.
   const ContactResults<T>& EvalContactResults(
-      const systems::Context<T>& context) const {
-    if (this->is_discrete()) {
-      return discrete_update_manager_->EvalContactResults(context);
-    } else {
-      return this->get_cache_entry(cache_indexes_.contact_results)
-          .template Eval<ContactResults<T>>(context);
-    }
-  }
+      const systems::Context<T>& context) const;
 
   // Calc method for the reaction forces output port.
   // A joint constraints the motion between a frame Jp on a "parent" P and a
@@ -5369,6 +5366,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
+  // Eval version of CalcSpatialContactForcesContinuous().
+  const std::vector<SpatialForce<T>>& EvalSpatialContactForcesContinuous(
+      const systems::Context<T>& context) const;
+
   // Method to compute spatial contact forces for continuous plants.
   // @note This version does *not* zero out the forces in @p F_BBo_W_array.
   // @see CalcSpatialContactForcesContinuous() for the version of this method
@@ -5377,25 +5378,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
-  // Eval() version of the method CalcSpatialContactForcesContinuous().
-  const std::vector<SpatialForce<T>>& EvalSpatialContactForcesContinuous(
-      const systems::Context<T>& context) const {
-    return this
-        ->get_cache_entry(cache_indexes_.spatial_contact_forces_continuous)
-        .template Eval<std::vector<SpatialForce<T>>>(context);
-  }
-
   // Method to compute generalized contact forces for continuous plants.
   void CalcGeneralizedContactForcesContinuous(
       const drake::systems::Context<T>& context, VectorX<T>* tau_contact) const;
 
-  // Eval() version of the method CalcGeneralizedContactForcesContinuous().
+  // Eval version of CalcGeneralizedContactForcesContinuous().
   const VectorX<T>& EvalGeneralizedContactForcesContinuous(
-      const systems::Context<T>& context) const {
-    return this
-        ->get_cache_entry(cache_indexes_.generalized_contact_forces_continuous)
-        .template Eval<VectorX<T>>(context);
-  }
+      const systems::Context<T>& context) const;
 
   // Calc method to output per model instance vector of generalized contact
   // forces.
@@ -5426,23 +5415,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
-  // Helper method to compute contact forces using the hydroelastic model.
-  // F_BBo_W_array is indexed by MobodIndex and it gets overwritten on
-  // output. F_BBo_W_array must be of size num_bodies() or an exception is
-  // thrown.
-  void CalcHydroelasticContactForces(
+  // Helper method to compute continuous-time contact forces using the
+  // hydroelastic model for continuous plants.
+  void CalcHydroelasticContactForcesContinuous(
       const systems::Context<T>& context,
-      internal::HydroelasticContactInfoAndBodySpatialForces<T>* F_BBo_W_array)
-      const;
+      internal::HydroelasticContactForcesContinuous<T>* output) const;
 
   // Eval version of CalcHydroelasticContactForces().
-  const internal::HydroelasticContactInfoAndBodySpatialForces<T>&
-  EvalHydroelasticContactForces(const systems::Context<T>& context) const {
-    return this
-        ->get_cache_entry(cache_indexes_.contact_info_and_body_spatial_forces)
-        .template Eval<
-            internal::HydroelasticContactInfoAndBodySpatialForces<T>>(context);
-  }
+  const internal::HydroelasticContactForcesContinuous<T>&
+  EvalHydroelasticContactForcesContinuous(
+      const systems::Context<T>& context) const;
 
   // Helper method to apply penalty forces that enforce joint limits.
   // At each joint with joint limits this penalty method applies a force law of
@@ -5712,8 +5694,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::map<MultibodyConstraintId, internal::WeldConstraintSpec>
       weld_constraints_specs_;
 
-  // All MultibodyPlant cache indexes are stored in cache_indexes_.
-  CacheIndexes cache_indexes_;
+  // All MultibodyPlant cache indexes are stored in cache_indices_.
+  CacheIndices cache_indices_;
 
   // All MultibodyPlant parameter indices are stored in parameter_indices_.
   ParameterIndices parameter_indices_;
@@ -5868,13 +5850,14 @@ std::pair<T, T> CombinePointContactParameters(const T& k1, const T& k2,
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
 // See the .cc file for an explanation why we specialize these methods.
 template <>
-void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
-    const systems::Context<symbolic::Expression>&,
-    internal::HydroelasticContactInfoAndBodySpatialForces<
-        symbolic::Expression>*) const;
+void MultibodyPlant<symbolic::Expression>::
+    CalcHydroelasticContactForcesContinuous(
+        const systems::Context<symbolic::Expression>&,
+        internal::HydroelasticContactForcesContinuous<symbolic::Expression>*)
+        const;
 template <>
 void MultibodyPlant<symbolic::Expression>::
-    AppendContactResultsContinuousHydroelastic(
+    AppendContactResultsHydroelasticContinuous(
         const systems::Context<symbolic::Expression>&,
         ContactResults<symbolic::Expression>*) const;
 template <>
