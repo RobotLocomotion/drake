@@ -9,7 +9,6 @@ namespace solvers {
  * equivalent program in standard primal conic form:
  * min        〈 c, x 〉
  * subject to  Ax + b ∈ K
- *             x ∈ K
  * Where K is the product of cones.
  * @param prog
  * @return
