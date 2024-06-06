@@ -400,13 +400,13 @@ void GraphOfConvexSets::ClearAllPhiConstraints() {
   }
 }
 
-// TODO(russt): We could get fancy and dim the color of the nodes/edges
-// according to phi, using e.g. https://graphviz.org/docs/attr-types/color/ .
 std::string GraphOfConvexSets::GetGraphvizString(
     const std::optional<solvers::MathematicalProgramResult>& result,
     bool show_slacks, int precision, bool scientific) const {
-  // TODO(bernhardpg): Make only_flows an argument
-  const bool only_flows = true;
+  // TODO(bernhardpg): Make show_flows an argument
+  const bool show_flows = true;
+  const bool show_vars = false;
+  const bool show_costs = true;
 
   auto floatToHex = [](float value) -> std::string {
     if (value < 0.0f || value > 1.0f) return "Out of range";
@@ -425,13 +425,16 @@ std::string GraphOfConvexSets::GetGraphvizString(
   graphviz << "labelloc=t;\n";
   for (const auto& [v_id, v] : vertices_) {
     graphviz << "v" << v_id << " [label=\"" << v->name();
-    if (result && !only_flows) {
-      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose() << "]";
+    if (result) {
+      if (show_vars) {
+        graphviz << "\n x = [" << result->GetSolution(v->x()).transpose()
+                 << "]";
+      }
+      if (show_costs) {
+        graphviz << "\ncost = " << v->GetSolutionCost(*result);
+        graphviz << "\"]\n";
+      }
     }
-    // TODO(bernhardpg): This next line must be moved/cleaned up for
-    // a Drake PR
-    graphviz << "\ncost = " << v->GetSolutionCost(*result);
-    graphviz << "\"]\n";
   }
   for (const auto& [e_id, e] : edges_) {
     unused(e_id);
@@ -439,14 +442,16 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << " [label=\"" << e->name();
     if (result) {
       graphviz << "\n";
-      if (e->ell_.size() > 0) {
-        // SolveConvexRestriction does not yet return the rewritten costs.
-        if (result->get_decision_variable_index()->contains(
-                e->ell_[0].get_id())) {
-          graphviz << "cost = " << e->GetSolutionCost(*result);
+      if (show_costs) {
+        if (e->ell_.size() > 0) {
+          // SolveConvexRestriction does not yet return the rewritten costs.
+          if (result->get_decision_variable_index()->contains(
+                  e->ell_[0].get_id())) {
+            graphviz << "cost = " << e->GetSolutionCost(*result);
+          }
+        } else {
+          graphviz << "cost = 0";
         }
-      } else {
-        graphviz << "cost = 0";
       }
       if (show_slacks) {
         graphviz << ",\n";
@@ -459,13 +464,16 @@ std::string GraphOfConvexSets::GetGraphvizString(
                    << "]";
         }
       }
+      if (show_flows) {
+        graphviz << ",\n";
+        graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
+        graphviz << "\"";
+        // Set edge alpha according to flow values
+        graphviz << ", color=" << "\"#000000"
+                 << floatToHex(result->GetSolution(e->phi()));
+      }
     }
-    graphviz << ",\n";
-    graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
-    graphviz << "\"";
-    graphviz << ", color=" << "\"#000000"
-             << floatToHex(result->GetSolution(e->phi())) << "\"";
-    graphviz << "];\n";
+    graphviz << "\"];\n";
   }
   graphviz << "}\n";
   return graphviz.str();
