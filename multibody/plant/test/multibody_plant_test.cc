@@ -1733,31 +1733,41 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
 // @returns `true` iff only if a closed subset of the ports is direct
 // feedthrough.
 bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
-  // Create a set of the indices of all ports that can be feedthrough.
-  std::set<int> ok_to_feedthrough;
-  ok_to_feedthrough.insert(plant.get_net_actuation_output_port().get_index());
-  ok_to_feedthrough.insert(plant.get_reaction_forces_output_port().get_index());
-  ok_to_feedthrough.insert(
-      plant.get_generalized_acceleration_output_port().get_index());
-  for (ModelInstanceIndex i(0); i < plant.num_model_instances(); ++i) {
-    ok_to_feedthrough.insert(
-        plant.get_generalized_acceleration_output_port(i).get_index());
-    ok_to_feedthrough.insert(
-        plant.get_net_actuation_output_port(i).get_index());
-  }
-  ok_to_feedthrough.insert(
-      plant.get_body_spatial_accelerations_output_port().get_index());
+  // Create a set of the indices of all output ports that can be feedthrough.
+  // The ports in "okay" are allowed to depend on any input. The ports in
+  // "okay_for_geometry_only" are only allowed to depend on geometry input.
+  std::set<int> okay;
+  std::set<int> okay_for_geometry_only;
+  okay.insert(plant.get_net_actuation_output_port().get_index());
+  okay.insert(plant.get_reaction_forces_output_port().get_index());
+  okay.insert(plant.get_generalized_acceleration_output_port().get_index());
+  okay.insert(plant.get_body_spatial_accelerations_output_port().get_index());
   if (plant.is_discrete()) {
-    ok_to_feedthrough.insert(
-        plant.get_contact_results_output_port().get_index());
+    okay.insert(plant.get_contact_results_output_port().get_index());
   }
-
+  for (ModelInstanceIndex i(0); i < plant.num_model_instances(); ++i) {
+    okay.insert(plant.get_generalized_acceleration_output_port(i).get_index());
+    okay.insert(plant.get_net_actuation_output_port(i).get_index());
+    if (!plant.is_discrete()) {
+      okay_for_geometry_only.insert(
+          plant.get_generalized_contact_forces_output_port(i).get_index());
+    }
+  }
   // Now find all the feedthrough ports and make sure they are on the
   // list of expected feedthrough ports.
-  const std::multimap<int, int> feedthroughs = plant.GetDirectFeedthroughs();
-  for (const auto& inout_pair : feedthroughs) {
-    if (!ok_to_feedthrough.contains(inout_pair.second))
-      return false;  // Found a spurious feedthrough port.
+  for (const auto& [in_index, out_index] : plant.GetDirectFeedthroughs()) {
+    if (okay.contains(out_index)) {
+      continue;
+    }
+    if (in_index == plant.get_geometry_query_input_port().get_index() &&
+        okay_for_geometry_only.contains(out_index)) {
+      continue;
+    }
+    // Found a spurious feedthrough port.
+    ADD_FAILURE() << fmt::format("Output port {} depends on input port {}",
+                                 plant.get_output_port(out_index).get_name(),
+                                 plant.get_input_port(in_index).get_name());
+    return false;
   }
   return true;
 }
