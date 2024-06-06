@@ -475,8 +475,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
       if (show_vars) {
-        graphviz << "\n x = [" << result->GetSolution(v->x()).transpose()
-                 << "]";
+        graphviz << "\nx = [" << result->GetSolution(v->x()).transpose() << "]";
       }
       if (show_costs) {
         graphviz << "\ncost = " << v->GetSolutionCost(*result);
@@ -489,8 +488,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << "v" << e->u().id() << " -> v" << e->v().id();
     graphviz << " [label=\"" << e->name();
     if (result) {
-      graphviz << "\n";
       if (show_costs) {
+        graphviz << "\n";
         if (e->ell_.size() > 0) {
           // SolveConvexRestriction does not yet return the rewritten costs.
           if (result->get_decision_variable_index()->contains(
@@ -502,8 +501,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
         }
       }
       if (show_slacks) {
-        graphviz << ",\n";
-        graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
+        graphviz << "\n";
         if (result->get_decision_variable_index()->contains(
                 e->y_[0].get_id())) {
           graphviz << "ϕ xᵤ = [" << e->GetSolutionPhiXu(*result).transpose()
@@ -513,9 +511,11 @@ std::string GraphOfConvexSets::GetGraphvizString(
         }
       }
       if (show_flows) {
-        graphviz << ",\n";
-        graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
+        graphviz << "\n";
+        graphviz << "ϕ = " << result->GetSolution(e->phi());
         graphviz << "\"";
+        // Note: This must be last, because it also sets the color parameter of
+        // the edge (and hence must close the name within quote-marks)
         graphviz << ", color=" << "\"#000000"
                  << floatToHex(result->GetSolution(e->phi()));
       }
