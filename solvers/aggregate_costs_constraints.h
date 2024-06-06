@@ -101,9 +101,34 @@ void AggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
                                  Eigen::SparseMatrix<double>* A_new,
                                  VectorX<symbolic::Variable>* vars_new);
 
+/**
+ * Aggregate all convex (conic) constraints into conic standard form i.e. a
+ * single constraint Ax + b ∈ K where K is the product of cones.
+ */
+void AggregateConvexConstraints(const MathematicalProgram& prog,
+                                Eigen::SparseMatrix<double>* A,
+                                Eigen::VectorXd* b,
+                                Eigen::SparseMatrix<double>* Aeq,
+                                Eigen::SparseMatrix<double>* beq);
+
 namespace internal {
-// Returns the first non-convex quadratic cost among @p quadratic_costs. If all
-// quadratic costs are convex, then return a nullptr.
+
+void DoAggregateConvexConstraints(
+    const MathematicalProgram& prog, Eigen::SparseMatrix<double>* A,
+    Eigen::VectorXd* b, Eigen::SparseMatrix<double>* Aeq, Eigen::VectorXd* beq,
+    //    std::vector<std::vector<std::pair<int, int>>>*
+    //        bounding_box_constraint_dual_indices,
+    int* num_linear_constraint_rows,
+    std::vector<std::vector<std::pair<int, int>>>*
+        linear_constraint_dual_indices,
+    std::vector<int>* second_order_cone_length,
+    std::vector<int>* lorentz_cone_dual_variable_start_indices,
+    std::vector<int>* rotated_lorentz_cone_dual_variable_start_indices,
+    std::vector<int>* psd_cone_length,
+    std::vector<int>* linear_eq_dual_variable_start_indices);
+
+// Returns the first non-convex quadratic cost among @p quadratic_costs. If
+// all quadratic costs are convex, then return a nullptr.
 [[nodiscard]] const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
     const std::vector<Binding<QuadraticCost>>& quadratic_costs);
 // Returns the first non-convex quadratic constraint among @p
@@ -184,7 +209,7 @@ void ParseLinearEqualityConstraints(
 // the lower or upper bound is infinity.
 // @param[out] num_linear_constraint_rows The number of new rows appended to
 // A*x+s = b in all
-// prog.linear_equality_constraints()
+// prog.linear_constraints()
 void ParseLinearConstraints(const solvers::MathematicalProgram& prog,
                             std::vector<Eigen::Triplet<double>>* A_triplets,
                             std::vector<double>* b, int* A_row_count,
