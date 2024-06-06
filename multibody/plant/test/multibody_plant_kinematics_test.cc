@@ -37,7 +37,7 @@ using Eigen::Vector3d;
 // PinJoint1 connects point Wo (world frame W's origin) to link A.
 // PinJoint2 connects point Fo (frame F's origin) and Mo (frame M's origin)
 // where frame F is fixed/welded to link A and frame M is fixed to link B.
-// In the baseline configuration, the origin points Wo Ao Fo Mo Bo are
+// In the baseline configuration, the origin points Wo, Ao, Fo, Mo, Bo, are
 // sequential along the links (they form a line parallel to Wx = Ax = Bx).
 // Note: The applied forces (such as gravity) on this system are irrelevant as
 // the plan for this text fixture is limited to testing kinematics for an
@@ -47,23 +47,19 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
  public:
   // Setup the MBP.
   void SetUp() override {
-    // Set a spatial inertia for each link.  For now, these are unimportant
-    // because this fixture is only used for kinematics tests.
-    const double mass_link = 5.0;  // kg
-    const double Izz = mass_link * link_length_ * link_length_ / 12.0;
-    const RotationalInertia<double> I_BBcm(0, Izz, Izz);
-    const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-    const SpatialInertia<double> M_Bcm =
-        SpatialInertia<double>::MakeFromCentralInertia(mass_link, p_BoBcm_B,
-                                                       I_BBcm);
+    // Set a spatial inertia for each link.
+    const double link_mass = 5.0;  // kg
+    const SpatialInertia<double> link_central_inertia =
+        SpatialInertia<double>::ThinRodWithMass(link_mass, link_length_,
+            Vector3<double>::UnitX());
 
     // Add the two links to the MultibodyPlant.
-    bodyA_ = &plant_.AddRigidBody("BodyA", M_Bcm);
-    bodyB_ = &plant_.AddRigidBody("BodyB", M_Bcm);
+    bodyA_ = &plant_.AddRigidBody("BodyA", link_central_inertia);
+    bodyB_ = &plant_.AddRigidBody("BodyB", link_central_inertia);
 
     // Create a revolute joint that connects point Wo of the world frame to a
     // unnamed point of link A.  The revolute joint is a distance link_length/2
-    // from link A's centroid (point Ao).
+    // from link A's centroid (point Ao which is also A's center of mass Acm).
     const Vector3<double> p_AoWo_A(-0.5 * link_length_, 0.0, 0.0);
     joint1_ = &plant_.AddJoint<RevoluteJoint>(
         "PinJoint1", plant_.world_body(), std::nullopt, *bodyA_,
@@ -90,6 +86,24 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     joint2_->set_angle(context_.get(), qB);
     joint1_->set_angular_rate(context_.get(), wAz_);
     joint2_->set_angular_rate(context_.get(), wBz_);
+  }
+
+  // Helper function to implement by-hand calculation of spatial acceleration of
+  // point Ao (Acm) of link A in world W, expressed in link frame A.
+  SpatialAcceleration<double> CalcAoSpatialAccelerationInWExpressedInA(
+      const double wAzdot) {
+    // DtW(w_WA_A) = DtA(w_WA_A) + w_WA_A x w_WA_A
+    //             = Dt(wAz) Az
+    //             = wAxdot Az = alphaA Az
+    // DtW(v_WA_A) = DtA(v_WA_A) + w_WA_A x v_WA_A
+    //             = 0.5 L alphaA Ay + wAz Az x 0.5 L wAz Ay.
+    //             = 0.5 L alphaA Ay - 0.5 L wAz² Ax
+    const double alphaA = wAzdot;
+    const double wA_squared = wAz_ * wAz_;
+    const Vector3<double> alpha_WA_A(0, 0, alphaA);
+    const Vector3<double> a_WA_A(-0.5 * link_length_ * wA_squared,
+                                  0.5 * link_length_ * alphaA, 0);
+    return SpatialAcceleration<double>(alpha_WA_A, a_WA_A);
   }
 
  protected:
@@ -265,30 +279,51 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
           plant_, *context_, vdot, frame_A, p_AoAo_A, frame_W, frame_A);
 
   // Verify previous results with the following by-hand analytical results.
-  // DtW(w_WA_A) = DtA(w_WA_A) + w_WA_A x w_WA_A
-  //             = Dt(wAz) Az
-  //             = alphaA Az
-  // DtW(v_WA_A) = DtA(v_WA_A) + w_WA_A x v_WA_A
-  //             = 0.5 L alphaA Ay + wAz Az x 0.5 L wAz Ay.
-  //             = 0.5 L alphaA Ay - 0.5 L wAz² Ax
-  const double alphaA = wAzdot;
-  const double wA_squared = wAz_ * wAz_;
-  const Vector3<double> alpha_WA_A_expected(0, 0, alphaA);
-  const Vector3<double> a_WA_A_expected(-0.5 * link_length_ * wA_squared,
-                                        0.5 * link_length_ * alphaA, 0);
-  EXPECT_TRUE(
-      CompareMatrices(A_WAo_A.rotational(), alpha_WA_A_expected, kTolerance));
-  EXPECT_TRUE(
-      CompareMatrices(A_WAo_A.translational(), a_WA_A_expected, kTolerance));
+  const SpatialAcceleration<double> A_WAo_A_expected =
+      CalcAoSpatialAccelerationInWExpressedInA(wAzdot);
+  EXPECT_TRUE(CompareMatrices(A_WAo_A.get_coeffs(),
+      A_WAo_A_expected.get_coeffs(), kTolerance));
 
-  // TODO(Mitiguy) Also show that the previous utility function is useful for
-  //  testing the coming-soon method MultibodyPlant::CalcSpatialAcceleration().
+  //  TODO(Mitiguy) Also show that the previous utility function is useful for
+  //   testing the coming-soon method MultibodyPlant::CalcSpatialAcceleration().
   //  Use code something like the following:
   //  const SpatialAcceleration<double> A_WAo_A_alternate =
   //   plant_.CalcSpatialAcceleration(*context_, frame_A, p_AoAp_A,
   //       frame_W, frame_A);
   //  EXPECT_TRUE(CompareMatrices(A_WAo_A_alternate.get_coeffs(),
   //                             A_WAo_A.get_coeffs(), kTolerance));
+
+  // Another way to check the results is setting vdot for all the joints, doing
+  // inverse dynamics, and calculating the spatial acceleration of all bodies.
+  // Herein, A_WallBo_W is an array of the spatial acceleration of all bodies
+  // measured in the world frame W, and expressed in W.
+  std::vector<SpatialAcceleration<double>> A_WallBo_W(plant_.num_bodies());
+  plant_.CalcSpatialAccelerationsFromVdot(*context_, vdot, &A_WallBo_W);
+
+  // The 0th, 1st, and 2nd elements of A_WallBo_W correspond to the world body,
+  // bodyA_, and bodyB_, respectively.
+  const SpatialAcceleration<double> A_WAo_W = A_WallBo_W.at(1);
+  const SpatialAcceleration<double> A_WBo_W = A_WallBo_W.at(2);
+  const math::RotationMatrix<double> R_WA =
+      frame_A.CalcRotationMatrixInWorld(*context_);
+
+  // Compare R_WA * A_WAo_A with result from CalcSpatialAccelerationsFromVdot().
+  EXPECT_TRUE(CompareMatrices(A_WAo_W.get_coeffs(),
+      (R_WA*A_WAo_A).get_coeffs(), kTolerance));
+
+#if 0
+  const SpatialAcceleration<double> A_WAo_W_alternate =
+      frame_A.CalcSpatialAccelerationInWorld(*context_);
+  EXPECT_TRUE(CompareMatrices(A_WAo_W_alternate.get_coeffs(),
+      A_WAo_W.get_coeffs(), kTolerance));
+#endif
+
+#if 0
+  const SpatialAcceleration<double> A_WAo_A_alternate =
+      frame_A.CalcSpatialAcceleration(*context_, frame_W, frame_A);
+  EXPECT_TRUE(CompareMatrices(A_WAo_A_alternate.get_coeffs(),
+      A_WAo_A.get_coeffs(), kTolerance));
+#endif
 
   // Ensure frame B's spatial acceleration in frame B is zero.
   const Vector3<double> p_BoBo_B = Vector3<double>::Zero();
@@ -312,7 +347,9 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   // A_WBo_W =  L [alphaA Ay - wAz² Ax + 0.5 alphaAB By - 0.5 (wAz + wBz)² Bx]
   //         = -L [wAz² + 0.5 (wAz + wBz)²] Ax + L (alphaA + 0.5 alphaAB) Ay
   // Reminder: Ax = Bx, Ay = By, Az = Bz when qB = 0°.
+  const double alphaA = wAzdot;
   const double alphaAB = wAzdot + wBzdot;
+  const double wA_squared = wAz_ * wAz_;
   const double wAB_squared = (wAz_ + wBz_) * (wAz_ + wBz_);
   const Vector3<double> alpha_WB_A_expected(0, 0, alphaAB);
   const Vector3<double> a_WBo_A_expected(
@@ -322,6 +359,10 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
       CompareMatrices(A_WBo_A.rotational(), alpha_WB_A_expected, kTolerance));
   EXPECT_TRUE(
       CompareMatrices(A_WBo_A.translational(), a_WBo_A_expected, kTolerance));
+
+  // Compare R_WA * A_WBo_A with result from CalcSpatialAccelerationsFromVdot().
+  EXPECT_TRUE(CompareMatrices(A_WBo_W.get_coeffs(),
+      (R_WA*A_WBo_A).get_coeffs(), kTolerance));
 
   // Designate frame_Ap as the frame fixed to A that is joint2's parent frame.
   // Calculate frame_Ap's spatial acceleration in frame W, expressed in A.
@@ -338,10 +379,10 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   //              = L alphaA Ay - L wAz² Ax
   const Vector3<double> a_WAp_A_expected(-link_length_ * wA_squared,
                                          link_length_ * alphaA, 0);
-  EXPECT_TRUE(
-      CompareMatrices(A_WAp_A.rotational(), alpha_WA_A_expected, kTolerance));
-  EXPECT_TRUE(
-      CompareMatrices(A_WAp_A.translational(), a_WAp_A_expected, kTolerance));
+  EXPECT_TRUE(CompareMatrices(A_WAp_A.rotational(),
+      A_WAo_A_expected.rotational(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(A_WAp_A.translational(),
+      a_WAp_A_expected, kTolerance));
 
   // Calculate frame_Bp's spatial acceleration in frame W, expressed in A.
   // Note: frame_Bp is the frame fixed to bodyB_'s distal end.
