@@ -571,6 +571,14 @@ class GraphOfConvexSets {
   values.
   @param show_slacks determines whether the values of the intermediate
   (slack) variables are also displayed in the graph.
+  @param show_vars determines whether the solution values for decision variables
+  in each set are shown.
+  @param show_flows determines whether the flow value results are shown. The
+  flow values are shown both with a numeric value and through the transparency
+  value on the edge, where a flow of 0.0 will correspond to an invisible edge,
+  and a flow of 1.0 will display as a fully black edge.
+  @param show_costs determines whether the cost value results are shown. This
+  will show both edge and vertex costs
   @param precision sets the floating point precision (how many digits are
   generated) of the annotations.
   @param scientific sets the floating point formatting to scientific (if true)
@@ -581,6 +589,7 @@ class GraphOfConvexSets {
       const std::optional<solvers::MathematicalProgramResult>& result =
           std::nullopt,
       bool show_slacks = true, int precision = 3, bool scientific = false,
+      bool show_vars = true, bool show_costs = true, bool show_flows = true,
       const std::optional<std::vector<const Edge*>>& active_path =
           std::nullopt) const;
 

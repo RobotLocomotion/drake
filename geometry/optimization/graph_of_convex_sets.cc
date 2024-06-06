@@ -402,13 +402,9 @@ void GraphOfConvexSets::ClearAllPhiConstraints() {
 
 std::string GraphOfConvexSets::GetGraphvizString(
     const std::optional<solvers::MathematicalProgramResult>& result,
-    bool show_slacks, int precision, bool scientific,
+    bool show_slacks, int precision, bool scientific, bool show_vars,
+    bool show_costs, bool show_flows,
     const std::optional<std::vector<const Edge*>>& active_path) const {
-  // TODO(bernhardpg): Make show_flows an argument
-  const bool show_flows = true;
-  const bool show_vars = false;
-  const bool show_costs = true;
-
   // This function converts a 0.0 to 00 and 1.0 to FF
   auto floatToHex = [](float value) -> std::string {
     if (value < 0.0f || value > 1.0f) return "Out of range";
