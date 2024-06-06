@@ -1,5 +1,6 @@
 #include "drake/solvers/clarabel_solver.h"
 
+#include <iostream>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -7,6 +8,7 @@
 #include <Clarabel>
 #include <Eigen/Eigen>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/name_value.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -17,98 +19,6 @@
 namespace drake {
 namespace solvers {
 namespace {
-// Parse all the bounding box constraints in `prog` to Clarabel form A*x+s=b, s
-// in zero cone or positive cone.
-// @param[in/out] A_triplets Append non-zero (row, col, val) triplet in matrix
-// A.
-// @param[in/out] b append entries to b.
-// @param[in/out] A_row_count The number of rows in A before/after calling this
-// function.
-// @param[in/out] cones The type of cones on s before/after calling this
-// function.
-// @param[out] bbcon_dual_indices bbcon_dual_indices[i][j] are the indices of
-// the dual variable for the j'th row of prog.bounding_box_constraints()[i]. We
-// use -1 to indicate that it is impossible for this constraint to be active
-// (for example, another BoundingBoxConstraint imposes a tighter bound on the
-// same variable).
-//
-// Unlike SCS, Clarabel allows specifying the cone type of each individual s
-// variable (in SCS, the s variables for the same type of cone have to be
-// grouped together as a continuous fragment). Hence in Clarabel we can check
-// the type of each individual bounding box constraint, and differentiate them
-// based on whether it is an equality (s in zero-cone) or an inequality (s in
-// positive orthant cone) constraint.
-void ParseBoundingBoxConstraints(
-    const MathematicalProgram& prog,
-    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
-    int* A_row_count, std::vector<clarabel::SupportedConeT<double>>* cones,
-    std::vector<std::vector<std::pair<int, int>>>* bbcon_dual_indices) {
-  const std::unordered_map<symbolic::Variable, Bound> variable_bounds =
-      AggregateBoundingBoxConstraints(prog.bounding_box_constraints());
-
-  // For each variable with lb <= x <= ub, we check the following
-  // 1. If lb == ub (and both are finite), then we add the constraint x + s = ub
-  // with s in the zero cone.
-  // 2. Otherwise, if ub is finite, then we add the constraint x + s = ub with s
-  // in the positive orthant cone. If lb is finite, then we add the constraint
-  // -x + s = -lb with s in the positive orthant cone.
-
-  // Set the dual variable indices.
-  bbcon_dual_indices->reserve(ssize(prog.bounding_box_constraints()));
-  for (int i = 0; i < ssize(prog.bounding_box_constraints()); ++i) {
-    bbcon_dual_indices->emplace_back(
-        prog.bounding_box_constraints()[i].variables().rows(),
-        std::pair<int, int>(-1, -1));
-    for (int j = 0; j < prog.bounding_box_constraints()[i].variables().rows();
-         ++j) {
-      const int var_index = prog.FindDecisionVariableIndex(
-          prog.bounding_box_constraints()[i].variables()(j));
-      const Bound& var_bound =
-          variable_bounds.at(prog.bounding_box_constraints()[i].variables()(j));
-      // We use the lower bound of this constraint in the optimization
-      // program.
-      const bool use_lb =
-          var_bound.lower ==
-              prog.bounding_box_constraints()[i].evaluator()->lower_bound()(
-                  j) &&
-          std::isfinite(var_bound.lower);
-      const bool use_ub =
-          var_bound.upper ==
-              prog.bounding_box_constraints()[i].evaluator()->upper_bound()(
-                  j) &&
-          std::isfinite(var_bound.upper);
-      if (use_lb && use_ub && var_bound.lower == var_bound.upper) {
-        // This is an equality constraint x = ub.
-        // Add the constraint x + s = ub and s in the zero cone.
-        A_triplets->emplace_back(*A_row_count, var_index, 1);
-        b->push_back(var_bound.upper);
-        (*bbcon_dual_indices)[i][j].first = *A_row_count;
-        (*bbcon_dual_indices)[i][j].second = *A_row_count;
-        cones->push_back(clarabel::ZeroConeT<double>(1));
-        ++(*A_row_count);
-      } else {
-        if (use_ub) {
-          // Add the constraint x + s = ub and s in the nonnegative orthant
-          // cone.
-          A_triplets->emplace_back(*A_row_count, var_index, 1);
-          b->push_back(var_bound.upper);
-          (*bbcon_dual_indices)[i][j].second = *A_row_count;
-          cones->push_back(clarabel::NonnegativeConeT<double>(1));
-          ++(*A_row_count);
-        }
-        if (use_lb) {
-          // Add the constraint -x + s = -lb and s in the nonnegative orthant
-          // cone.
-          A_triplets->emplace_back(*A_row_count, var_index, -1);
-          b->push_back(-var_bound.lower);
-          (*bbcon_dual_indices)[i][j].first = *A_row_count;
-          cones->push_back(clarabel::NonnegativeConeT<double>(1));
-          ++(*A_row_count);
-        }
-      }
-    }
-  }
-}
 
 // The solver status is defined in
 // https://oxfordcontrol.github.io/ClarabelDocs/stable/api_jl/#Clarabel.SolverStatus
@@ -240,7 +150,8 @@ class SettingsConverter {
       clarabel::DefaultSettingsBuilder<double>::default_settings().build();
 };
 
-// See ParseBoundingBoxConstraints for the meaning of bbcon_dual_indices.
+// See internal::ParseBoundingBoxConstraints for the meaning of
+// bbcon_dual_indices.
 void SetBoundingBoxDualSolution(
     const MathematicalProgram& prog,
     const Eigen::Ref<const Eigen::VectorXd>& dual,
@@ -334,18 +245,11 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   // to convert the constraint/cost to the Clarabel form.
   int num_x = prog.num_vars();
 
-  // Clarabel takes an Eigen::Sparse matrix as A. We will build this sparse
-  // matrix from the triplets recording its non-zero entries.
-  std::vector<Eigen::Triplet<double>> A_triplets;
   // Since we add an array of quadratic cost, each cost has its own
   // associated variables. We use Eigen sparse matrix to aggregate the quadratic
   // cost Hessian matrices. Clarabel only takes the upper triangular entries of
   // the symmetric Hessian.
   std::vector<Eigen::Triplet<double>> P_upper_triplets;
-
-  // A_row_count will increment, when we add each constraint.
-  int A_row_count = 0;
-  std::vector<double> b;
 
   std::vector<clarabel::SupportedConeT<double>> cones;
 
@@ -360,92 +264,54 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
 
   internal::ParseQuadraticCosts(prog, &P_upper_triplets, &q, &cost_constant);
 
+  internal::ConvexConstraintAggregationInfo info;
+  int expected_A_row_count = 0;
+
   std::vector<int> l2norm_costs_second_order_cone_length;
   std::vector<int> l2norm_costs_lorentz_cone_y_start_indices;
   std::vector<int> l2norm_costs_t_slack_indices;
-  internal::ParseL2NormCosts(prog, &num_x, &A_triplets, &b, &A_row_count,
+  internal::ParseL2NormCosts(prog, &num_x, &(info.A_triplets), &(info.b_std),
+                             &(info.A_row_count),
                              &l2norm_costs_second_order_cone_length,
                              &l2norm_costs_lorentz_cone_y_start_indices, &q,
                              &l2norm_costs_t_slack_indices);
   for (const int soc_length : l2norm_costs_second_order_cone_length) {
+    expected_A_row_count += soc_length;
     cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
-  }
-
-  // Parse linear equality constraint
-  // linear_eq_y_start_indices[i] is the starting index of the dual
-  // variable for the constraint prog.linear_equality_constraints()[i]. Namely
-  // y[linear_eq_y_start_indices[i]:
-  // linear_eq_y_start_indices[i] +
-  // prog.linear_equality_constraints()[i].evaluator()->num_constraints()] are
-  // the dual variables for the linear equality constraint
-  // prog.linear_equality_constraint()(i), where y is the vector containing all
-  // dual variables.
-  std::vector<int> linear_eq_y_start_indices;
-  int num_linear_equality_constraints_rows;
-  internal::ParseLinearEqualityConstraints(
-      prog, &A_triplets, &b, &A_row_count, &linear_eq_y_start_indices,
-      &num_linear_equality_constraints_rows);
-  cones.push_back(
-      clarabel::ZeroConeT<double>(num_linear_equality_constraints_rows));
-
-  // Parse bounding box constraints.
-  // bbcon_dual_indices[i][j][0] (resp. bbcon_dual_indices[i][j][1]) is the dual
-  // variable for the lower (resp. upper) bound of the j'th row in the bounding
-  // box constraint prog.bounding_box_constraint()[i]
-  // Since the dual variables are constrained to be positive, we use -1 to
-  // indicate that this bound can never be active (for example, another
-  // BoundingBoxConstraint imposes a tighter bound on the same variable).
-  std::vector<std::vector<std::pair<int, int>>> bbcon_dual_indices;
-  ParseBoundingBoxConstraints(prog, &A_triplets, &b, &A_row_count, &cones,
-                              &bbcon_dual_indices);
-
-  // Parse linear constraint
-  // linear_constraint_dual_indices[i][j][0]/linear_constraint_dual_indices[i][j][1]
-  // is the dual variable for the lower/upper bound of the j'th row in the
-  // linear constraint prog.linear_constraint()[i], we use -1 to indicate that
-  // the lower or upper bound is infinity.
-  std::vector<std::vector<std::pair<int, int>>> linear_constraint_dual_indices;
-  int num_linear_constraint_rows = 0;
-  internal::ParseLinearConstraints(prog, &A_triplets, &b, &A_row_count,
-                                   &linear_constraint_dual_indices,
-                                   &num_linear_constraint_rows);
-  cones.push_back(
-      clarabel::NonnegativeConeT<double>(num_linear_constraint_rows));
-
-  // Parse Lorentz cone and rotated Lorentz cone constraint
-  std::vector<int> second_order_cone_length;
-  // y[lorentz_cone_y_start_indices[i]:
-  //   lorentz_cone_y_start_indices[i] + second_order_cone_length[i]]
-  // are the dual variables for prog.lorentz_cone_constraints()[i].
-  std::vector<int> lorentz_cone_y_start_indices;
-  std::vector<int> rotated_lorentz_cone_y_start_indices;
-  internal::ParseSecondOrderConeConstraints(
-      prog, &A_triplets, &b, &A_row_count, &second_order_cone_length,
-      &lorentz_cone_y_start_indices, &rotated_lorentz_cone_y_start_indices);
-  for (const int soc_length : second_order_cone_length) {
-    cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
-  }
-
-  std::vector<int> psd_cone_length;
-  internal::ParsePositiveSemidefiniteConstraints(
-      prog, /* upper triangular = */ true, &A_triplets, &b, &A_row_count,
-      &psd_cone_length);
-  for (const int length : psd_cone_length) {
-    cones.push_back(clarabel::PSDTriangleConeT<double>(length));
-  }
-
-  internal::ParseExponentialConeConstraints(prog, &A_triplets, &b,
-                                            &A_row_count);
-  for (int i = 0; i < ssize(prog.exponential_cone_constraints()); ++i) {
-    cones.push_back(clarabel::ExponentialConeT<double>());
   }
 
   Eigen::SparseMatrix<double> P(num_x, num_x);
   P.setFromTriplets(P_upper_triplets.begin(), P_upper_triplets.end());
   Eigen::Map<Eigen::VectorXd> q_vec{q.data(), ssize(q)};
-  Eigen::SparseMatrix<double> A(A_row_count, num_x);
-  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
-  const Eigen::Map<Eigen::VectorXd> b_vec{b.data(), ssize(b)};
+
+  // Now parse the constraints.
+  internal::DoAggregateConvexConstraints(prog, &info);
+
+  Eigen::SparseMatrix<double> A(info.A_row_count, num_x);
+  A.setFromTriplets(info.A_triplets.begin(), info.A_triplets.end());
+  const Eigen::Map<Eigen::VectorXd> b_vec{info.b_std.data(), ssize(info.b_std)};
+
+  cones.push_back(
+      clarabel::ZeroConeT<double>(info.num_linear_equality_constraint_rows));
+  cones.push_back(clarabel::NonnegativeConeT<double>(
+      info.num_linear_constraint_rows +
+      info.num_bounding_box_inequality_constraint_rows));
+  expected_A_row_count += info.num_linear_equality_constraint_rows;
+  expected_A_row_count += info.num_linear_constraint_rows;
+  expected_A_row_count += info.num_bounding_box_inequality_constraint_rows;
+  for (const int soc_length : info.second_order_cone_lengths) {
+    expected_A_row_count += soc_length;
+    cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
+  }
+  for (const int length : info.psd_cone_lengths) {
+    expected_A_row_count += (length * (length + 1)) / 2;
+    cones.push_back(clarabel::PSDTriangleConeT<double>(length));
+  }
+  for (int i = 0; i < ssize(prog.exponential_cone_constraints()); ++i) {
+    expected_A_row_count += 3;
+    cones.push_back(clarabel::ExponentialConeT<double>());
+  }
+  DRAKE_DEMAND(expected_A_row_count == A.rows());
 
   const SettingsConverter settings_converter(merged_options);
   clarabel::DefaultSettings<double> settings = settings_converter.settings();
@@ -465,11 +331,13 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   result->set_x_val(
       Eigen::Map<Eigen::VectorXd>(solution.x.data(), prog.num_vars()));
 
-  SetBoundingBoxDualSolution(prog, solution.z, bbcon_dual_indices, result);
-  internal::SetDualSolution(prog, solution.z, linear_constraint_dual_indices,
-                            linear_eq_y_start_indices,
-                            lorentz_cone_y_start_indices,
-                            rotated_lorentz_cone_y_start_indices, result);
+  SetBoundingBoxDualSolution(prog, solution.z,
+                             info.bounding_box_constraint_dual_indices, result);
+  internal::SetDualSolution(
+      prog, solution.z, info.linear_constraint_dual_indices,
+      info.linear_eq_dual_variable_start_indices,
+      info.lorentz_cone_dual_variable_start_indices,
+      info.rotated_lorentz_cone_dual_variable_start_indices, result);
   if (solution.status == clarabel::SolverStatus::Solved ||
       solution.status == clarabel::SolverStatus::AlmostSolved) {
     solution_result = SolutionResult::kSolutionFound;
