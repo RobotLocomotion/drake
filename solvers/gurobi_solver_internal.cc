@@ -9,6 +9,8 @@ namespace solvers {
 namespace internal {
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
+
+const double kGurobiZeroTol = 1E-13;
 }  // namespace
 
 int AddLinearConstraintNoDuplication(
@@ -16,7 +18,21 @@ int AddLinearConstraintNoDuplication(
     const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& lb,
     const Eigen::VectorXd& ub, const VectorXDecisionVariable& vars,
     bool is_equality, int* num_gurobi_linear_constraints) {
-  Eigen::SparseMatrix<double, Eigen::RowMajor> A_row_major = A;
+  // Gurobi add the linear constraint row by row, so we will need a row-major
+  // sparse matrix. Besides, Gurobi will throw a warning if the coeffient is
+  // less than 1E-13, so we filter out these small entries.
+  std::vector<Eigen::Triplet<double>> A_row_major_triplets;
+  A_row_major_triplets.reserve(A.nonZeros());
+  for (int i = 0; i < A.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+      if (std::abs(it.value()) > kGurobiZeroTol) {
+        A_row_major_triplets.emplace_back(it.row(), it.col(), it.value());
+      }
+    }
+  }
+  Eigen::SparseMatrix<double, Eigen::RowMajor> A_row_major(A.rows(), A.cols());
+  A_row_major.setFromTriplets(A_row_major_triplets.begin(),
+                              A_row_major_triplets.end());
 
   const std::vector<int> var_index = prog.FindDecisionVariableIndices(vars);
 
@@ -145,7 +161,9 @@ void ConvertSecondOrderConeLinearConstraint(
   M_triplets->reserve(A.nonZeros() + A.rows());
   for (int i = 0; i < A.outerSize(); ++i) {
     for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
-      M_triplets->emplace_back(it.row(), xz_indices[it.col()], -it.value());
+      if (std::abs(it.value()) > kGurobiZeroTol) {
+        M_triplets->emplace_back(it.row(), xz_indices[it.col()], -it.value());
+      }
     }
   }
   for (int i = 0; i < A.rows(); ++i) {
