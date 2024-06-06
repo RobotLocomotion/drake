@@ -88,6 +88,7 @@ load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repo
 load("//tools/workspace/styleguide:repository.bzl", "styleguide_repository")
 load("//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
 load("//tools/workspace/sympy_py_internal:repository.bzl", "sympy_py_internal_repository")  # noqa
+load("//tools/workspace/tinygltf_internal:repository.bzl", "tinygltf_internal_repository")  # noqa
 load("//tools/workspace/tinyobjloader_internal:repository.bzl", "tinyobjloader_internal_repository")  # noqa
 load("//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
 load("//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
@@ -292,6 +293,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         suitesparse_internal_repository(name = "suitesparse_internal", mirrors = mirrors)  # noqa
     if "sympy_py_internal" not in excludes:
         sympy_py_internal_repository(name = "sympy_py_internal", mirrors = mirrors)  # noqa
+    if "tinygltf_internal" not in excludes:
+        tinygltf_internal_repository(name = "tinygltf_internal", mirrors = mirrors)  # noqa
     if "tinyobjloader_internal" not in excludes:
         tinyobjloader_internal_repository(name = "tinyobjloader_internal", mirrors = mirrors)  # noqa
     if "tinyxml2_internal" not in excludes:
