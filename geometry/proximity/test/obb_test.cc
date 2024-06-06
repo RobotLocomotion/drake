@@ -778,6 +778,9 @@ TEST_F(ObbTester, TestPadBoundary) {
 // subtleties of the test. This just confirms that the Aabb is accounted for
 // and reports contact. So, we'll pick a couple of arbitrary poses to trigger
 // true and false results.
+//
+// This implicitly confirms that HasOverlap(Obb, Obb) also works. The details
+// of that test have already been tested in boxes_overlap_test.cc.
 GTEST_TEST(ObbTest, AabbOverlap) {
   /* Methodology:
     - Define two boxes that are definitely overlapping.

@@ -1,9 +1,26 @@
+#include "drake/geometry/proximity/boxes_overlap.h"
+
+#include <gtest/gtest.h>
+
+namespace drake {
+namespace geometry {
+namespace internal {
+namespace {
+
+using Eigen::AngleAxisd;
+using Eigen::Vector3d;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using math::RotationMatrixd;
 
 // We want to compute X_AB such that B is posed relative to A as documented in
-// TestObbOverlap. We can do so by generating the rotation component, R_AB, such
-// that Bq has a minimum value along the chosen axis, and we can solve for
+// BoxesOverlapTest. We can do so by generating the rotation component, R_AB,
+// such that Bq has a minimum value along the chosen axis, and we can solve for
 // the translation component, p_AoBo_A = p_AoAf_A + p_AfBq_A + p_BqBo_A.
-RigidTransformd CalcCornerTransform(const Obb& a, const Obb& b, const int axis,
+// The boxes are represented by triples of their half sizes (measured in each
+// box's canonical frame).
+RigidTransformd CalcCornerTransform(const Vector3d& a_half,
+                                    const Vector3d& b_half, const int axis,
                                     const bool expect_overlap) {
   const int axis1 = (axis + 1) % 3;
   const int axis2 = (axis + 2) % 3;
@@ -14,7 +31,7 @@ RigidTransformd CalcCornerTransform(const Obb& a, const Obb& b, const int axis,
       RotationMatrixd(AngleAxisd(-M_PI / 5, Vector3d::Unit(axis2)));
 
   // We define p_BqBo in Frame A from box b's minimum corner Q to its center.
-  const Vector3d p_BqBo_A = R_AB * b.half_width();
+  const Vector3d p_BqBo_A = R_AB * b_half;
   // Reality check that the minimum corner and the center are strictly
   // increasing along the given axis because we chose the rotation R_AB to
   // support this property.
@@ -41,7 +58,7 @@ RigidTransformd CalcCornerTransform(const Obb& a, const Obb& b, const int axis,
   //   |               |
   //   -----------------
   //
-  Vector3d p_AoAf_A = a.half_width();
+  Vector3d p_AoAf_A = a_half;
   p_AoAf_A[axis1] /= 2;
   p_AoAf_A[axis2] /= 2;
 
@@ -49,11 +66,12 @@ RigidTransformd CalcCornerTransform(const Obb& a, const Obb& b, const int axis,
   return RigidTransformd(R_AB, p_AoBo_A);
 }
 
-// We want to compute X_AB such that B is posed relative to A as documented
-// in TestObbOverlap. We can do so by generating the rotation component, R_AB,
+// We want to compute X_AB such that B is posed relative to A as documented in
+// BoxesOverlapTest. We can do so by generating the rotation component, R_AB,
 // such that Bq lies on the minimum edge along the chosen axis, and we can solve
 // for the translation component, p_AoBo_A = p_AoAf_A + p_AfBq_A + p_BqBo_A.
-RigidTransformd CalcEdgeTransform(const Obb& a, const Obb& b, const int a_axis,
+RigidTransformd CalcEdgeTransform(const Vector3d& a_half,
+                                  const Vector3d& b_half, const int a_axis,
                                   const int b_axis, const bool expect_overlap) {
   const int a_axis1 = (a_axis + 1) % 3;
   const int a_axis2 = (a_axis + 2) % 3;
@@ -82,8 +100,8 @@ RigidTransformd CalcEdgeTransform(const Obb& a, const Obb& b, const int a_axis,
   // We define p_BqBo in Frame B taking a point on the minimum edge aligned
   // with the given axis, offset it to be without symmetry, then convert it
   // to Frame A by applying the rotation.
-  Vector3d p_BqBo_B = b.half_width();
-  p_BqBo_B[b_axis] -= b.half_width()[b_axis] / 2;
+  Vector3d p_BqBo_B = b_half;
+  p_BqBo_B[b_axis] -= b_half[b_axis] / 2;
   const Vector3d p_BqBo_A = R_AB * p_BqBo_B;
   // Reality check that the point Bq and the center Bo are strictly
   // increasing along the remaining 2 axes because we chose the rotation R_AB
@@ -100,49 +118,46 @@ RigidTransformd CalcEdgeTransform(const Obb& a, const Obb& b, const int a_axis,
 
   // We construct Af by taking the maximum corner and offsetting it along the
   // given edge to thoroughly exercise all bits.
-  Vector3d p_AoAf_A = a.half_width();
-  p_AoAf_A[a_axis] -= a.half_width()[a_axis] / 2;
+  Vector3d p_AoAf_A = a_half;
+  p_AoAf_A[a_axis] -= a_half[a_axis] / 2;
 
   Vector3d p_AoBo_A = p_AoAf_A + p_AfBq_A + p_BqBo_A;
   // Finally we combine the components to form the transform X_AB.
   return RigidTransformd(R_AB, p_AoBo_A);
 }
 
-// Tests whether OBBs overlap. We use *this* test to completely test the
-// BoxesOverlap function. Therefore, there are 15 cases to test, each covering
-// a separating axis between the two bounding boxes. The first 3 cases use the
+// Tests to see if the two oriented bounding boxes overlap. The boxes are
+// represented with vectors containing their half sizes as measured in their
+// own frames. This tests A against B and B against A. If the two queries return
+// different results, that is an error condition. Otherwise, reports the result
+// of BoxesOverlap().
+bool InvokeBoxesOverlap(const Vector3d& a_half, const Vector3d& b_half,
+                        const RigidTransformd& X_AB) {
+  const bool a_to_b = BoxesOverlap(a_half, b_half, X_AB);
+  const bool b_to_a = BoxesOverlap(b_half, a_half, X_AB.inverse());
+  DRAKE_DEMAND(a_to_b == b_to_a);
+  return a_to_b;
+}
+
+// Tests whether OBBs overlap. There are 15 unique possibilities for
+// non-overlap. Therefore, there are 15 cases to test, each covering a different
+// separating axis between the two bounding boxes. The first 3 cases use the
 // axes of Frame A, the next 3 cases use the axes of Frame B, and the remaining
 // 9 cases use the axes defined by the cross product of axes from Frame A and
 // Frame B. We also test that it is robust for the case of parallel boxes.
-GTEST_TEST(ObbTest, TestObbOverlap) {
-  // Frame strategy. For the canonical frame A of box `a` and the
-  // canonical frame B of box `b`, we want to control the pose X_AB between
-  // the two boxes. However, we need to give HasOverlap() the pose X_GH
-  // between the hierarchy frames G and H to which box `a` and box `b`
-  // belong. Our strategy is to control the tests through X_AB and then compose
-  // X_GH as:
-  //                 X_GH = X_GA * X_AB * X_BH.
+GTEST_TEST(BoxesOverlapTest, AllCases) {
+  // Each box simply gets posed in a common frame, G.
 
-  // Frame A of box `a` is arbitrarily posed in the hierarchy frame G.
-  const RigidTransformd X_GA{
-      RotationMatrixd(RollPitchYawd(2. * M_PI / 3., M_PI_4, -M_PI / 3.)),
-      Vector3d(1, 2, 3)};
-  // Frame B of box `b` is arbitrarily posed in the hierarchy frame H.
-  const RigidTransformd X_HB{
-      RotationMatrixd(RollPitchYawd(M_PI_4, M_PI / 5., M_PI / 6.)),
-      Vector3d(2, 0.5, 4)};
-  const RigidTransformd X_BH = X_HB.inverse();
+  // One box is fully contained in the other and they are parallel.
+  // (This transform will get repeatedly overwritten below.)
+  RigidTransformd X_AB(Vector3d(0.2, 0.4, 0.2));
+  Vector3d a(1, 2, 1);
+  Vector3d b(0.5, 1, 0.5);
+  EXPECT_TRUE(InvokeBoxesOverlap(a, b, X_AB));
 
-  // One box is fully contained in the other and they are parallel. We make
-  // them parallel by setting X_AB to identity.
-  RigidTransformd X_AB = RigidTransformd::Identity();
-  Obb a(X_GA, Vector3d(1, 2, 1));
-  Obb b(X_HB, Vector3d(0.5, 1, 0.5));
-  EXPECT_TRUE(Obb::HasOverlap(a, b, X_GA * X_AB * X_BH /* X_GH */));
-
-  // To cover the cases of the axes of Frame A, we need to pose box B along
-  // each axis. For example, in the case of the Ax-axis, in a 2D view they would
-  // look like:
+  // The first cases are where the separating plane is perpendicular to an axis
+  // of frame A. So, we pose box B along each axis. For example, in the case of
+  // axis Ax, in a 2D view they could look like:
   //           Ay
   //           ^
   //   --------|--------      ⋰ ⋱       ↗By
@@ -155,14 +170,6 @@ GTEST_TEST(ObbTest, TestObbOverlap) {
   //   |               |
   //   -----------------
   //
-  //                                Hy
-  //                                ⇑
-  // Gy             Gx              ⇑
-  //   ⇖           ⇗                ⇑
-  //     ⇖       ⇗                  ⇑
-  //       ⇖   ⇗                    ⇑
-  //         Go                     Ho ⇒ ⇒ ⇒ ⇒ ⇒ Hx
-  //
   //
   // For this test, we define Point Bq as the minimum corner of the box B (i.e.,
   // center - half width). We want to pose box B so Bq is the uniquely closest
@@ -170,13 +177,13 @@ GTEST_TEST(ObbTest, TestObbOverlap) {
   // the box B extends farther along the +Ax axis (as suggested in the above
   // illustration). Point Bq will be a small epsilon away from the nearby face
   // either outside (if expect_overlap is false) or inside (if true).
-  a = Obb(X_GA, Vector3d(2, 4, 3));
-  b = Obb(X_HB, Vector3d(3.5, 2, 1.5));
+  a = Vector3d(2, 4, 3);
+  b = Vector3d(3.5, 2, 1.5);
   for (int axis = 0; axis < 3; ++axis) {
     X_AB = CalcCornerTransform(a, b, axis, false /* expect_overlap */);
-    EXPECT_FALSE(Obb::HasOverlap(a, b, X_GA * X_AB * X_BH /* X_GH */));
+    EXPECT_FALSE(InvokeBoxesOverlap(a, b, X_AB));
     X_AB = CalcCornerTransform(a, b, axis, true /* expect_overlap */);
-    EXPECT_TRUE(Obb::HasOverlap(a, b, X_GA * X_AB * X_BH /* X_GH */));
+    EXPECT_TRUE(InvokeBoxesOverlap(a, b, X_AB));
   }
 
   // To cover the local axes out of B, we can use the same method by swapping
@@ -184,9 +191,9 @@ GTEST_TEST(ObbTest, TestObbOverlap) {
   for (int axis = 0; axis < 3; ++axis) {
     X_AB =
         CalcCornerTransform(b, a, axis, false /* expect_overlap */).inverse();
-    EXPECT_FALSE(Obb::HasOverlap(a, b, X_GA * X_AB * X_BH /* X_GH */));
+    EXPECT_FALSE(InvokeBoxesOverlap(a, b, X_AB));
     X_AB = CalcCornerTransform(b, a, axis, true /* expect_overlap */).inverse();
-    EXPECT_TRUE(Obb::HasOverlap(a, b, X_GA * X_AB * X_BH /* X_GH */));
+    EXPECT_TRUE(InvokeBoxesOverlap(a, b, X_AB));
   }
 
   // To cover the remaining 9 cases, we need to pose an edge from box B along
@@ -218,10 +225,15 @@ GTEST_TEST(ObbTest, TestObbOverlap) {
       X_AB =
           CalcEdgeTransform(a, b, a_axis, b_axis, false /* expect_overlap */);
       // Separate along a's y-axis and b's x-axis.
-      EXPECT_FALSE(Obb::HasOverlap(a, b, X_GA * X_AB * X_BH /* X_GH */));
+      EXPECT_FALSE(InvokeBoxesOverlap(a, b, X_AB));
       X_AB = CalcEdgeTransform(a, b, a_axis, b_axis, true /* expect_overlap */);
       // Separate along a's y-axis and b's x-axis.
-      EXPECT_TRUE(Obb::HasOverlap(a, b, X_GA * X_AB * X_BH /* X_GH */));
+      EXPECT_TRUE(InvokeBoxesOverlap(a, b, X_AB));
     }
   }
 }
+
+}  // namespace
+}  // namespace internal
+}  // namespace geometry
+}  // namespace drake

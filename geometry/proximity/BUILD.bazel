@@ -17,6 +17,7 @@ drake_cc_package_library(
     name = "proximity",
     visibility = ["//visibility:public"],
     deps = [
+        ":boxes_overlap",
         ":bv",
         ":bvh",
         ":bvh_updater",
@@ -67,18 +68,27 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "boxes_overlap",
+    srcs = ["boxes_overlap.cc"],
+    hdrs = ["boxes_overlap.h"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
     name = "bv",
     srcs = [
         "aabb.cc",
-        "boxes_overlap.cc",
         "obb.cc",
     ],
     hdrs = [
         "aabb.h",
-        "boxes_overlap.h",
         "obb.h",
     ],
     deps = [
+        ":boxes_overlap",
         ":posed_half_space",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -955,6 +965,13 @@ drake_cc_googletest(
     deps = [
         ":bv",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "boxes_overlap_test",
+    deps = [
+        ":boxes_overlap",
     ],
 )
 
