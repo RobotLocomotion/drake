@@ -113,19 +113,66 @@ void AggregateConvexConstraints(const MathematicalProgram& prog,
 
 namespace internal {
 
-void DoAggregateConvexConstraints(
-    const MathematicalProgram& prog, Eigen::SparseMatrix<double>* A,
-    Eigen::VectorXd* b, Eigen::SparseMatrix<double>* Aeq, Eigen::VectorXd* beq,
-    //    std::vector<std::vector<std::pair<int, int>>>*
-    //        bounding_box_constraint_dual_indices,
-    int* num_linear_constraint_rows,
-    std::vector<std::vector<std::pair<int, int>>>*
-        linear_constraint_dual_indices,
-    std::vector<int>* second_order_cone_length,
-    std::vector<int>* lorentz_cone_dual_variable_start_indices,
-    std::vector<int>* rotated_lorentz_cone_dual_variable_start_indices,
-    std::vector<int>* psd_cone_length,
-    std::vector<int>* linear_eq_dual_variable_start_indices);
+// void DoAggregateConvexConstraints(
+//    const MathematicalProgram& prog,
+//    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>*
+//    b_std, int* A_row_count,
+//    //    std::vector<std::vector<std::pair<int, int>>>*
+//    //        bounding_box_constraint_dual_indices,
+//    int* num_linear_equality_constraints_rows,
+//    std::vector<int>* linear_eq_dual_variable_start_indices,
+//    int* num_linear_constraint_rows,
+//    std::vector<std::vector<std::pair<int, int>>>*
+//        linear_constraint_dual_indices,
+//    std::vector<int>* second_order_cone_lengths,
+//    std::vector<int>* lorentz_cone_dual_variable_start_indices,
+//    std::vector<int>* rotated_lorentz_cone_dual_variable_start_indices,
+//    std::vector<int>* psd_cone_lengths);
+
+struct ConvexConstraintAggregationInfo {
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  std::vector<double> b_std;
+  int A_row_count{0};
+  int num_bounding_box_inequality_constraint_rows{0};
+  std::vector<std::vector<std::pair<int, int>>>
+      bounding_box_constraint_dual_indices;
+  int num_linear_equality_constraint_rows{0};
+  std::vector<int> linear_eq_dual_variable_start_indices;
+  int num_linear_constraint_rows{0};
+  std::vector<std::vector<std::pair<int, int>>> linear_constraint_dual_indices;
+  std::vector<int> second_order_cone_lengths;
+  std::vector<int> lorentz_cone_dual_variable_start_indices;
+  std::vector<int> rotated_lorentz_cone_dual_variable_start_indices;
+  std::vector<int> psd_cone_lengths;
+};
+
+void DoAggregateConvexConstraints(const MathematicalProgram& prog,
+                                  ConvexConstraintAggregationInfo* info);
+
+// Parse all the bounding box constraints in `prog` to Clarabel form
+// A_eq*x+s=b_eq, s in zero cone and A_ineq*x+s=b_ineq, s in positive cone.
+// @param[in/out] A_eq_triplets Append non-zero (row, col, val) triplets of the
+// equality bounding box constraints to A_eq_triplets.
+// @param[in/out] b_eq append entries to b_eq.
+// @param[in/out] A_eq_row_count The number of rows in A_eq before/after calling
+// this function.
+// @param[in/out] A_ineq_triplets Append non-zero (row, col, val) triplets of
+// the equality bounding box constraints to A_ineq_triplets.
+// @param[in/out] b_ineq append entries to b_ineq.
+// @param[in/out] A_ineq_row_count The number of rows in A_ineq before/after
+// calling this function.
+// @param[out] bbcon_dual_indices bbcon_dual_indices[i][j] are the indices of
+// the dual variable for the j'th row of prog.bounding_box_constraints()[i]. We
+// use -1 to indicate that it is impossible for this constraint to be active
+// (for example, another BoundingBoxConstraint imposes a tighter bound on the
+// same variable).
+void ParseBoundingBoxConstraints(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<double>>* A_eq_triplets,
+    std::vector<double>* b_eq, int* A_eq_row_count,
+    std::vector<Eigen::Triplet<double>>* A_ineq_triplets,
+    std::vector<double>* b_ineq, int* A_ineq_row_count,
+    std::vector<std::vector<std::pair<int, int>>>* bbcon_dual_indices);
 
 // Returns the first non-convex quadratic cost among @p quadratic_costs. If
 // all quadratic costs are convex, then return a nullptr.
