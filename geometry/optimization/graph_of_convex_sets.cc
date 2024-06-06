@@ -402,12 +402,14 @@ void GraphOfConvexSets::ClearAllPhiConstraints() {
 
 std::string GraphOfConvexSets::GetGraphvizString(
     const std::optional<solvers::MathematicalProgramResult>& result,
-    bool show_slacks, int precision, bool scientific) const {
+    bool show_slacks, int precision, bool scientific,
+    const std::optional<std::vector<const Edge*>>& active_path) const {
   // TODO(bernhardpg): Make show_flows an argument
   const bool show_flows = true;
   const bool show_vars = false;
   const bool show_costs = true;
 
+  // This function converts a 0.0 to 00 and 1.0 to FF
   auto floatToHex = [](float value) -> std::string {
     if (value < 0.0f || value > 1.0f) return "Out of range";
     std::ostringstream ss;
@@ -468,12 +470,21 @@ std::string GraphOfConvexSets::GetGraphvizString(
         graphviz << ",\n";
         graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
         graphviz << "\"";
-        // Set edge alpha according to flow values
         graphviz << ", color=" << "\"#000000"
                  << floatToHex(result->GetSolution(e->phi()));
       }
     }
     graphviz << "\"];\n";
+  }
+
+  if (active_path) {
+    for (const auto& e : *active_path) {
+      graphviz << "v" << e->u().id() << " -> v" << e->v().id();
+      graphviz << " [label=\"" << e->name() << " = active\"";
+      graphviz << ", color=" << "\"#ff0000\"";
+      graphviz << ", style=\"dashed\"";
+      graphviz << "];\n";
+    }
   }
   graphviz << "}\n";
   return graphviz.str();

@@ -575,12 +575,14 @@ class GraphOfConvexSets {
   generated) of the annotations.
   @param scientific sets the floating point formatting to scientific (if true)
   or fixed (if false).
+  @param active_path highlights a path in the graph with red edges.
   */
   std::string GetGraphvizString(
       const std::optional<solvers::MathematicalProgramResult>& result =
           std::nullopt,
-      bool show_slacks = true, int precision = 3,
-      bool scientific = false) const;
+      bool show_slacks = true, int precision = 3, bool scientific = false,
+      const std::optional<std::vector<const Edge*>>& active_path =
+          std::nullopt) const;
 
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the graph, as discussed in detail in

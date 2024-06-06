@@ -878,6 +878,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
             py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
             py::arg("precision") = 3, py::arg("scientific") = false,
+            py::arg("active_path") = std::nullopt,
             cls_doc.GetGraphvizString.doc)
         .def("SolveShortestPath",
             overload_cast_explicit<solvers::MathematicalProgramResult,
