@@ -2282,7 +2282,6 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   return sum_mi_vi / total_mass;
 }
 
-// PAUL START ------------------------------------------------------------
 template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     const systems::Context<T>& context) const {
@@ -2378,7 +2377,6 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
 
   return sum_mi_ai / total_mass;
 }
-// PAUL END ------------------------------------------------------------
 
 template <typename T>
 SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
