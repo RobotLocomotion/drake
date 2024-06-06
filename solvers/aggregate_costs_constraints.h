@@ -113,22 +113,6 @@ void AggregateConvexConstraints(const MathematicalProgram& prog,
 
 namespace internal {
 
-// void DoAggregateConvexConstraints(
-//    const MathematicalProgram& prog,
-//    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>*
-//    b_std, int* A_row_count,
-//    //    std::vector<std::vector<std::pair<int, int>>>*
-//    //        bounding_box_constraint_dual_indices,
-//    int* num_linear_equality_constraints_rows,
-//    std::vector<int>* linear_eq_dual_variable_start_indices,
-//    int* num_linear_constraint_rows,
-//    std::vector<std::vector<std::pair<int, int>>>*
-//        linear_constraint_dual_indices,
-//    std::vector<int>* second_order_cone_lengths,
-//    std::vector<int>* lorentz_cone_dual_variable_start_indices,
-//    std::vector<int>* rotated_lorentz_cone_dual_variable_start_indices,
-//    std::vector<int>* psd_cone_lengths);
-
 // Information required to aggregate the convex constraints of a program into
 // the form.
 //   A x + s = b
@@ -188,7 +172,7 @@ struct ConvexConstraintAggregationInfo {
 //   A x + s = b
 //     s in K
 // where K is a Cartesian product of some primitive cones.
-// The support cones include
+// The supported cones are
 // Zero cone {x | x = 0 }
 // Positive orthant {x | x ≥ 0 }
 // Box cones orthant {x | ub ≥ x ≥ lb }

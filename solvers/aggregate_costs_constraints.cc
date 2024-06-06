@@ -1,7 +1,6 @@
 #include "drake/solvers/aggregate_costs_constraints.h"
 
 #include <algorithm>
-#include <iostream>
 #include <limits>
 #include <map>
 
