@@ -432,9 +432,9 @@ std::string GraphOfConvexSets::GetGraphvizString(
       }
       if (show_costs) {
         graphviz << "\ncost = " << v->GetSolutionCost(*result);
-        graphviz << "\"]\n";
       }
     }
+    graphviz << "\"]\n";
   }
   for (const auto& [e_id, e] : edges_) {
     unused(e_id);
