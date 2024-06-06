@@ -38,7 +38,7 @@ class MultibodyPlantTester {
   static const std::vector<SpatialForce<double>>& EvalHydroelasticContactForces(
       const MultibodyPlant<double>& plant,
       const systems::Context<double>& context) {
-    return plant.EvalHydroelasticContactForces(context).F_BBo_W_array;
+    return plant.EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
   }
 
   static const std::vector<SpatialForce<double>>&
@@ -217,6 +217,7 @@ class HydroelasticModelTests : public ::testing::Test {
     // Run simulation for long enough to reach the steady state.
     simulator.AdvanceTo(0.5);
 
+    // XXX What the fucking christ, this is a continuous-time only function.
     const auto& F_BBo_W_array =
         MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
                                                             plant_context);
