@@ -78,18 +78,11 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
   geometry::Box* drake_box = dynamic_cast<geometry::Box*>(shape.get());
   EXPECT_EQ(drake_box->size(), correct_dimension);
 
-  auto inertia = CreateSpatialInertiaForBox(box.GetPrim(),
-    meters_per_unit_, diagnostic_policy_);
-  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
-    ".*Failed to read the mass of the Prim at .* Using the default value.*"));
-  EXPECT_TRUE(inertia.has_value());
-  EXPECT_EQ(1.0, inertia.value().get_mass());
-
   float mass = 2.71;
   auto mass_api = pxr::UsdPhysicsMassAPI::Apply(box.GetPrim());
   auto mass_attribute = mass_api.CreateMassAttr();
   EXPECT_TRUE(mass_attribute.Set(mass));
-  inertia = CreateSpatialInertiaForBox(box.GetPrim(), meters_per_unit_,
+  auto inertia = CreateSpatialInertiaForBox(box.GetPrim(), meters_per_unit_,
     diagnostic_policy_);
   EXPECT_TRUE(inertia.has_value());
   EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
@@ -346,6 +339,28 @@ TEST_F(UsdGeometryTest, GetRigidTransformTest) {
     actual_translation, intended_translation, 1e-10));
   EXPECT_TRUE(is_approx_equal_abstol(
     actual_rotation_xyz, intended_rotation_xyz, 1e-10));
+}
+
+TEST_F(UsdGeometryTest, InvalidMassTest) {
+  std::string file = R"""(#usda 1.0
+    def Cube "Box" (
+      prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
+        "PhysicsMassAPI"]
+    )
+    {
+      float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+      double physics:mass = 1
+      double size = 1
+    })""";
+
+  EXPECT_TRUE(stage_->GetRootLayer()->ImportFromString(file));
+  double mass = GetPrimMass(stage_->GetPrimAtPath(pxr::SdfPath("/Box")),
+    diagnostic_policy_);
+  EXPECT_EQ(1.0, mass);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Double precision float is not supported by UsdPhysicsMassAPI.*"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+    ".*Failed to read the mass of the Prim at.*"));
 }
 
 }  // namespace

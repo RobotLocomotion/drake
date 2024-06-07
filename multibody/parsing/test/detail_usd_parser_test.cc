@@ -84,16 +84,6 @@ TEST_F(UsdParserTest, MissingMetadataTest) {
     ".*Failed to read upAxis in stage metadata.*"));
 }
 
-TEST_F(UsdParserTest, InvalidMassTest) {
-  std::string filename =
-    FindUsdTestResourceOrThrow("invalid/invalid_mass.usda");
-  ParseFile(filename);
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Double precision float is not supported by UsdPhysicsMassAPI.*"));
-  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
-    ".*Failed to read the mass of the Prim at.*"));
-}
-
 TEST_F(UsdParserTest, UnsupportedPrimTypesTest) {
   std::string filename =
     FindUsdTestResourceOrThrow("invalid/unsupported_prim_types.usda");
