@@ -75,7 +75,8 @@ class ModelVisualizer:
                  browser_new=False,
                  pyplot=False,
                  meshcat=None,
-                 environment_map: Path = Path()):
+                 environment_map: Path = Path(),
+                 compliance_type: str = "undefined"):
         """
         Initializes a ModelVisualizer.
 
@@ -90,6 +91,10 @@ class ModelVisualizer:
              up a local preview window of the rgb image. At the moment, the
              image display uses a native window so will not work in a remote or
              cloud runtime environment.
+          environment_map: Meshcat environment map filename.
+          compliance_type: Show collisions using this hydroelastic mode (either
+             "rigid" or "compliant" for hydroelastic contact, or "undefined" to
+             use point contact).
 
           browser_new: a flag that will open the MeshCat display in a new
             browser window during Run().
@@ -109,6 +114,7 @@ class ModelVisualizer:
         self._pyplot = pyplot
         self._meshcat = meshcat
         self._environment_map = environment_map
+        self._compliance_type = compliance_type
 
         # This is the list of loaded models, to enable the Reload button.
         # If set to None, it means that we won't support reloading because
@@ -123,6 +129,13 @@ class ModelVisualizer:
         # it will be temporarily resurrected.
         self._builder = RobotDiagramBuilder()
         self._builder.parser().SetAutoRenaming(True)
+
+        # Adjust the SceneGraph's compliance_type.
+        old_config = self._builder.scene_graph().get_config()
+        new_config = copy.deepcopy(old_config)
+        new_config.default_proximity_properties.compliance_type = (
+            self._compliance_type)
+        self._builder.scene_graph().set_config(new_config)
 
         # The following fields are set non-None during Finalize().
         self._original_package_map = None
@@ -175,7 +188,8 @@ class ModelVisualizer:
                 "show_rgbd_sensor",
                 "browser_new",
                 "pyplot",
-                "environment_map"]:
+                "environment_map",
+                "compliance_type"]:
             value = getattr(prototype, f"_{name}")
             assert value is not None
             result[name] = value

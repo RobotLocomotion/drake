@@ -99,6 +99,12 @@ def _main():
              "It must be an image type normally used by your browser (e.g., "
              ".jpg, .png, etc.). HDR images are not supported yet."
     )
+    args_parser.add_argument(
+        "--compliance_type", default=defaults["compliance_type"],
+        help="Show collisions using this hydroelastic mode (either 'rigid' "
+             "or 'compliant' for hydroelastic contact, or 'undefined' to use "
+             "point contact)."
+    )
 
     args_parser.add_argument(
         "--triad_length",
@@ -145,7 +151,8 @@ def _main():
                                   triad_opacity=args.triad_opacity,
                                   browser_new=args.browser_new,
                                   pyplot=args.pyplot,
-                                  environment_map=args.environment_map)
+                                  environment_map=args.environment_map,
+                                  compliance_type=args.compliance_type)
     package_map = visualizer.package_map()
     package_map.PopulateFromRosPackagePath()
     for item in args.filename:
