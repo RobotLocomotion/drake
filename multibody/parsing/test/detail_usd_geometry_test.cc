@@ -344,8 +344,7 @@ TEST_F(UsdGeometryTest, GetRigidTransformTest) {
 TEST_F(UsdGeometryTest, InvalidMassTest) {
   std::string file = R"""(#usda 1.0
     def Cube "Box" (
-      prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
-        "PhysicsMassAPI"]
+      prepend apiSchemas = ["PhysicsMassAPI"]
     )
     {
       float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
