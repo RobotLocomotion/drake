@@ -88,15 +88,22 @@ double GetPrimMass(const pxr::UsdPrim& prim,
   return default_mass;
 }
 
-Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim) {
+Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim,
+  const DiagnosticPolicy& diagnostic) {
+  auto default_color = Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
   pxr::UsdGeomGprim gprim = pxr::UsdGeomGprim(prim);
+  if (!gprim) {
+    diagnostic.Warning(fmt::format(
+      "Failed to cast the Prim at {} into an UsdGeomGprim. Returning default "
+      "color.", prim.GetPath().GetString()));
+    return default_color;
+  }
   pxr::VtArray<pxr::GfVec3f> colors;
   if (gprim.GetDisplayColorAttr().Get(&colors)) {
     pxr::GfVec3f color = colors[0];
     return Eigen::Vector4d(color[0], color[1], color[2], 1.0);
   } else {
     // Prim does not contain color attribute, use default color instead.
-    auto default_color = Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
     return default_color;
   }
 }

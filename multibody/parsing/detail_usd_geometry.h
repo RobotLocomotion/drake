@@ -118,7 +118,8 @@ double GetPrimMass(const pxr::UsdPrim& prim,
 
 // Returns the color of a UsdGeom prim as `Vector4d(r,g,b,a)` if it specifies
 // its `primvars:displayColor` attribute. If not, it returns the default color.
-Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim);
+Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim,
+  const DiagnosticPolicy& diagnostic);
 
 // Returns the RigidTransform of a prim relative to the world frame, or nullopt
 // if an error occurs.

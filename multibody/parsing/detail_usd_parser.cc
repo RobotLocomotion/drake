@@ -242,7 +242,7 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
     transform_relative_to_rigid_body,
     *visual_geometry,
     fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-    GetGeomPrimColor(prim));
+    GetGeomPrimColor(prim, w_.diagnostic));
 }
 
 void UsdParser::ProcessPrim(const pxr::UsdPrim& prim) {
