@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <set>
+#include <utility>
 
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_collision_filter_groups_impl.h"
@@ -75,9 +76,8 @@ CollisionFilterGroups Parser::GetCollisionFilterGroups() const {
   auto convert = [this](const internal::InstancedName& input) -> std::string {
     std::string result;
     if (input.index.has_value()) {
-      auto scoped = ScopedName::Join(
-          plant_->GetModelInstanceName(*input.index),
-          input.name);
+      auto scoped = ScopedName::Join(plant_->GetModelInstanceName(*input.index),
+                                     input.name);
       result = scoped.get_full();
     } else {
       result = input.name;
@@ -87,12 +87,10 @@ CollisionFilterGroups Parser::GetCollisionFilterGroups() const {
 
   // Merge the internal data into an empty object of the user-visible type, and
   // return it.
-  CollisionFilterGroups result;
+  internal::CollisionFilterGroupsImpl<std::string> result;
   internal::MergeCollisionFilterGroups<std::string, internal::InstancedName>(
-      result.impl_.get_mutable(),
-      data_->collision_filter_groups_storage_,
-      convert);
-  return result;
+      &result, data_->collision_filter_groups_storage_, convert);
+  return CollisionFilterGroups(std::move(result));
 }
 
 std::vector<ModelInstanceIndex> Parser::AddModels(

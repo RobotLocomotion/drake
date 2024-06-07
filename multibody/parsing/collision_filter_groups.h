@@ -66,8 +66,13 @@ class CollisionFilterGroups {
   /** @returns a multi-line human-readable representation of this' contents. */
   std::string to_string() const;
 
+#ifndef DRAKE_DOXYGEN_CXX
+  /* (Internal use only) Private move-constructor for efficiency. */
+  explicit CollisionFilterGroups(
+      internal::CollisionFilterGroupsImpl<std::string>&&);
+#endif
+
  private:
-  friend class Parser;
   friend std::ostream& operator<<(std::ostream& os,
                                   const CollisionFilterGroups& g);
   copyable_unique_ptr<internal::CollisionFilterGroupsImpl<std::string>> impl_;

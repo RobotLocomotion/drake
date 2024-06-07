@@ -10,7 +10,7 @@ namespace multibody {
 using internal::CollisionFilterGroupsImpl;
 
 CollisionFilterGroups::CollisionFilterGroups()
-    : impl_(new CollisionFilterGroupsImpl<std::string>) {}
+    : impl_(std::make_unique<CollisionFilterGroupsImpl<std::string>>()) {}
 CollisionFilterGroups::~CollisionFilterGroups() = default;
 
 CollisionFilterGroups::CollisionFilterGroups(const CollisionFilterGroups&) =
@@ -28,6 +28,12 @@ CollisionFilterGroups& CollisionFilterGroups::operator=(
   std::swap(impl_, other.impl_);
   return *this;
 }
+
+// The "internal use only" move constructor.
+CollisionFilterGroups::CollisionFilterGroups(
+    internal::CollisionFilterGroupsImpl<std::string>&& impl)
+    : impl_(std::make_unique<CollisionFilterGroupsImpl<std::string>>(
+          std::move(impl))) {}
 
 bool CollisionFilterGroups::operator==(
     const CollisionFilterGroups& that) const {
