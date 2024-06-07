@@ -143,37 +143,6 @@ std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
     UsdVec3dToEigen(translation));
 }
 
-bool ValidatePrimExtent(const pxr::UsdPrim& prim,
-  const DiagnosticPolicy& diagnostic, bool check_if_isotropic) {
-  pxr::VtVec3fArray extent;
-  if (!prim.GetAttribute(pxr::TfToken("extent")).Get(&extent)) {
-    RaiseFailedToReadAttributeError("extent", prim, diagnostic);
-    return false;
-  }
-  const pxr::GfVec3f& lower_bound = extent[0];
-  const pxr::GfVec3f& upper_bound = extent[1];
-  if (-lower_bound[0] != upper_bound[0] ||
-      -lower_bound[1] != upper_bound[1] ||
-      -lower_bound[2] != upper_bound[2]) {
-    diagnostic.Error(fmt::format(
-      "The extent of the Prim at {} is not symmetric.",
-      prim.GetPath().GetString()));
-    return false;
-  }
-  if (check_if_isotropic) {
-    if (lower_bound[0] != lower_bound[1] ||
-        lower_bound[1] != lower_bound[2] ||
-        upper_bound[0] != upper_bound[1] ||
-        upper_bound[1] != upper_bound[2]) {
-      diagnostic.Error(fmt::format(
-        "The extent of the Prim at {} should be of the same magnitude across"
-        "all three dimensions.", prim.GetPath().GetString()));
-      return false;
-    }
-  }
-  return true;
-}
-
 bool WriteMeshToObjFile(
   const std::string filename,
   const pxr::VtArray<pxr::GfVec3f>& vertices,
@@ -216,10 +185,6 @@ std::optional<Eigen::Vector3d> GetBoxDimension(
     return std::nullopt;
   }
 
-  if (!ValidatePrimExtent(prim, diagnostic, true)) {
-    return std::nullopt;
-  }
-
   double cube_size = 0;
   if (!cube.GetSizeAttr().Get(&cube_size)) {
     RaiseFailedToReadAttributeError("size", prim, diagnostic);
@@ -245,10 +210,6 @@ std::optional<Eigen::Vector3d> GetEllipsoidDimension(
     return std::nullopt;
   }
 
-  if (!ValidatePrimExtent(prim, diagnostic, true)) {
-    return std::nullopt;
-  }
-
   double sphere_radius = 0;
   if (!sphere.GetRadiusAttr().Get(&sphere_radius)) {
     RaiseFailedToReadAttributeError("radius", prim, diagnostic);
@@ -270,10 +231,6 @@ std::optional<Eigen::Vector2d> GetCylinderDimension(
     diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomCylinder.",
       prim.GetPath().GetString()));
-    return std::nullopt;
-  }
-
-  if (!ValidatePrimExtent(prim, diagnostic)) {
     return std::nullopt;
   }
 
@@ -331,10 +288,6 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
     diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomCapsule.",
       prim.GetPath().GetString()));
-    return std::nullopt;
-  }
-
-  if (!ValidatePrimExtent(prim, diagnostic)) {
     return std::nullopt;
   }
 

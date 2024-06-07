@@ -19,7 +19,6 @@ def Xform "World"
         prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
     )
     {
-        float3[] extent = [(-12.5, -12.5, -12.5), (12.5, 12.5, 12.5)]
         vector3f physics:angularVelocity = (270, 0, 0)
         float physics:mass = 1
         vector3f physics:velocity = (2, 1, 2)
@@ -35,7 +34,6 @@ def Xform "World"
         prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
     )
     {
-        float3[] extent = [(-50, -50, -50), (50, 50, 50)]
         double radius = 50
         float physics:mass = 2
         color3f[] primvars:displayColor = [(0.7, 0.7, 0.4)]
@@ -52,7 +50,6 @@ def Xform "World"
     )
     {
         uniform token axis = "Z"
-        float3[] extent = [(-50, -50, -50), (50, 50, 50)]
         double height = 100
         double radius = 50
         float physics:mass = 3
@@ -70,7 +67,6 @@ def Xform "World"
     )
     {
         uniform token axis = "Z"
-        float3[] extent = [(-25, -25, -50), (25, 25, 50)]
         double height = 50
         double radius = 25
         float physics:mass = 4
@@ -87,7 +83,6 @@ def Xform "World"
         prepend apiSchemas = ["PhysicsCollisionAPI"]
     )
     {
-        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
         color3f[] primvars:displayColor = [(0.5, 0.75, 1.0)]
         double size = 1
         quatf xformOp:orient = (1, 0, 0, 0)
@@ -100,7 +95,6 @@ def Xform "World"
         prepend apiSchemas = ["PhysicsCollisionAPI"]
     )
     {
-        float3[] extent = [(-50, -50, -50), (50, 50, 50)]
         double radius = 50
         color3f[] primvars:displayColor = [(0.8, 0.5, 0.5)]
         custom bool refinementEnableOverride = 1
@@ -123,7 +117,6 @@ def Xform "World"
         )
         {
             uniform token axis = "Z"
-            float3[] extent = [(-25, -25, -30), (25, 25, 30)]
             double height = 60
             double radius = 25
             color3f[] primvars:displayColor = [(0.5, 0.8, 0.5)]
@@ -155,7 +148,6 @@ def Xform "World"
             )
             {
                 uniform token axis = "Z"
-                float3[] extent = [(-50, -50, -50), (50, 50, 50)]
                 double height = 100
                 double radius = 50
                 color3f[] primvars:displayColor = [(0.5, 0.5, 0.9)]
@@ -173,7 +165,6 @@ def Xform "World"
         prepend apiSchemas = ["PhysicsCollisionAPI"]
     )
     {
-        float3[] extent = [(-50, -50, -50), (50, 50, 50)]
         double radius = 50
         color3f[] primvars:displayColor = [(0.5, 0.9, 0.9)]
         custom bool refinementEnableOverride = 1
@@ -188,7 +179,6 @@ def Xform "World"
         prepend apiSchemas = ["PhysicsCollisionAPI"]
     )
     {
-        float3[] extent = [(-50, -50, -50), (50, 50, 50)]
         double size = 100
         color3f[] primvars:displayColor = [(0.3, 0.5, 1.0)]
         double3 xformOp:rotateXYZ = (45, 45, 45)
@@ -208,11 +198,11 @@ def Xform "World"
             prepend apiSchemas = ["PhysicsCollisionAPI"]
         )
         {
-            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
             int[] faceVertexCounts = [3, 3, 3, 3, 3, 3, 3, 3]
             int[] faceVertexIndices = [1, 0, 4, 2, 1, 4, 3, 2, 4, 0, 3, 4, 0, 1, 5, 1, 2, 5, 2, 3, 5, 3, 0, 5]
             point3f[] points = [(1, 0, 0), (0, -1, 0), (-1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, -1)]
             uniform token subdivisionScheme = "none"
+            color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
         }
     }
 }

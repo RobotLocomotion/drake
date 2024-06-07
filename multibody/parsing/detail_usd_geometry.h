@@ -127,12 +127,6 @@ std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
 
-// Throws an error and returns false if the extent of a UsdGeom is invalid
-// (e.g., the upper bound and lower bound have different magnitudes).
-// Otherwise, it returns true.
-bool ValidatePrimExtent(const pxr::UsdPrim& prim,
-  const DiagnosticPolicy& diagnostic, bool check_if_isotropic = false);
-
 // Formats the vertices and indices of a mesh and write to a new obj file.
 // Returns true if the file is sucessfully written, false otherwise.
 bool WriteMeshToObjFile(const std::string filename,

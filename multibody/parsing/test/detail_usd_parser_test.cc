@@ -104,11 +104,6 @@ TEST_F(UsdParserTest, InvalidGeometryAttributesTest) {
   std::string filename =
     FindUsdTestResourceOrThrow("invalid/invalid_geometry_attributes.usda");
   ParseFile(filename);
-  // Errors from the `/World/Cube` Prim.
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*The extent of the Prim at .* is not symmetric."));
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to create collision geometry.*"));
   // Errors from the `/World/Capsule` Prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Only upright capsules are supported at the moment.*"));

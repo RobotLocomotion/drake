@@ -47,10 +47,6 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
   double size = 49.0;
   EXPECT_TRUE(box.CreateSizeAttr().Set(size));
 
-  pxr::VtVec3fArray extent;
-  EXPECT_TRUE(pxr::UsdGeomCube::ComputeExtent(size, &extent));
-  EXPECT_TRUE(box.CreateExtentAttr().Set(extent));
-
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.4, 0.5, 0.6);
   auto scale_op = box.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
   EXPECT_TRUE(scale_op.Set(scale_factor));
@@ -95,10 +91,6 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
 
   double radius = 17.0;
   EXPECT_TRUE(ellipsoid.CreateRadiusAttr().Set(radius));
-
-  pxr::VtVec3fArray extent;
-  EXPECT_TRUE(pxr::UsdGeomSphere::ComputeExtent(radius, &extent));
-  EXPECT_TRUE(ellipsoid.CreateExtentAttr().Set(extent));
 
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.6, 1.1, 2.9);
   auto scale_op = ellipsoid.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
@@ -152,11 +144,6 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
   EXPECT_TRUE(cylinder.CreateHeightAttr().Set(height));
   EXPECT_TRUE(cylinder.CreateAxisAttr().Set(axis));
 
-  pxr::VtVec3fArray extent;
-  EXPECT_TRUE(pxr::UsdGeomCylinder::ComputeExtent(
-    height, radius, axis, &extent));
-  EXPECT_TRUE(cylinder.CreateExtentAttr().Set(extent));
-
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.7, 0.7, 0.9);
   auto scale_op = cylinder.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
   EXPECT_TRUE(scale_op.Set(scale_factor));
@@ -209,11 +196,6 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
   EXPECT_TRUE(capsule.CreateRadiusAttr().Set(radius));
   EXPECT_TRUE(capsule.CreateHeightAttr().Set(height));
   EXPECT_TRUE(capsule.CreateAxisAttr().Set(axis));
-
-  pxr::VtVec3fArray extent;
-  EXPECT_TRUE(pxr::UsdGeomCapsule::ComputeExtent(
-    height, radius, axis, &extent));
-  EXPECT_TRUE(capsule.CreateExtentAttr().Set(extent));
 
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.7, 0.7, 0.9);
   auto scale_op = capsule.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
@@ -387,7 +369,6 @@ TEST_F(UsdGeometryTest, InvalidMassTest) {
       prepend apiSchemas = ["PhysicsMassAPI"]
     )
     {
-      float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
       double physics:mass = 1
       double size = 1
     })""";
