@@ -171,6 +171,14 @@ drake_jupyter_py_binary(
     ],
 )
 
+drake_jupyter_py_binary(
+    name = "custom_gradients",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 _NOTEBOOKS = glob(
     ["*.ipynb"],
     allow_empty = False,
