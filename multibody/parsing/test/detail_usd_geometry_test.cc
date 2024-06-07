@@ -40,16 +40,7 @@ class UsdGeometryTest : public test::DiagnosticPolicyTestBase {
 };
 
 TEST_F(UsdGeometryTest, BoxParsingTest) {
-  // Testing with invalid input
-  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
-    pxr::TfToken(""));
-  auto invalid_dimension = GetBoxDimension(empty_prim.GetPrim(),
-    meters_per_unit_, diagnostic_policy_);
-  EXPECT_FALSE(invalid_dimension.has_value());
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to cast the Prim at .* into an UsdGeomCube.*"));
-
-  // Testing with valid input
+  // Case: all inputs are valid.
   pxr::UsdGeomCube box = pxr::UsdGeomCube::Define(
     stage_, pxr::SdfPath("/Box"));
 
@@ -86,19 +77,19 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
     diagnostic_policy_);
   EXPECT_TRUE(inertia.has_value());
   EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
-}
 
-TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
-  // Testing with invalid input
+  // Case: the input Prim is not an UsdGeomCube.
   auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  auto invalid_dimension = GetEllipsoidDimension(empty_prim.GetPrim(),
+  auto invalid_dimension = GetBoxDimension(empty_prim.GetPrim(),
     meters_per_unit_, diagnostic_policy_);
   EXPECT_FALSE(invalid_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to cast the Prim at .* into an UsdGeomSphere.*"));
+    ".*Failed to cast the Prim at .* into an UsdGeomCube.*"));
+}
 
-  // Testing with valid input
+TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
+  // Case: all inputs are valid.
   pxr::UsdGeomSphere ellipsoid = pxr::UsdGeomSphere::Define(
     stage_, pxr::SdfPath("/Ellipsoid"));
 
@@ -138,19 +129,19 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
     meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(inertia.has_value());
   EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
+
+  // Case: the input Prim is not an UsdGeomSphere.
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto invalid_dimension = GetEllipsoidDimension(empty_prim.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_FALSE(invalid_dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomSphere.*"));
 }
 
 TEST_F(UsdGeometryTest, CylinderParsingTest) {
-  // Testing with invalid input
-  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
-    pxr::TfToken(""));
-  auto invalid_dimension = GetCylinderDimension(empty_prim.GetPrim(),
-    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
-  EXPECT_FALSE(invalid_dimension.has_value());
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to cast the Prim at .* into an UsdGeomCylinder.*"));
-
-  // Testing with valid input
+  // Case: all inputs are valid.
   pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder::Define(
     stage_, pxr::SdfPath("/Cylinder"));
 
@@ -196,19 +187,19 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
     meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_TRUE(inertia.has_value());
   EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
-}
 
-TEST_F(UsdGeometryTest, CapsuleParsingTest) {
-  // Testing with invalid input
+  // Case: the input Prim is not an UsdGeomCylinder.
   auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  auto invalid_dimension = GetCapsuleDimension(empty_prim.GetPrim(),
+  auto invalid_dimension = GetCylinderDimension(empty_prim.GetPrim(),
     meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(invalid_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to cast the Prim at .* into an UsdGeomCapsule.*"));
+    ".*Failed to cast the Prim at .* into an UsdGeomCylinder.*"));
+}
 
-  // Testing with valid input
+TEST_F(UsdGeometryTest, CapsuleParsingTest) {
+  // Case: all inputs are valid.
   pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule::Define(
     stage_, pxr::SdfPath("/Capsule"));
 
@@ -254,9 +245,19 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
     meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_TRUE(inertia.has_value());
   EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
+
+  // Case: the input Prim is not an UsdGeomCapsule.
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto invalid_dimension = GetCapsuleDimension(empty_prim.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(invalid_dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomCapsule.*"));
 }
 
 TEST_F(UsdGeometryTest, MeshParsingTest) {
+  // Case: all inputs are valid.
   pxr::UsdGeomMesh mesh = pxr::UsdGeomMesh::Define(
     stage_, pxr::SdfPath("/Mesh"));
 
@@ -275,18 +276,9 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   EXPECT_TRUE(mesh.CreateFaceVertexIndicesAttr().Set(face_vertex_indices));
   auto scale_op = mesh.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
 
-  // Testing with invalid (non-isotropic) scaling
-  EXPECT_TRUE(scale_op.Set(pxr::GfVec3d(1.0, 2.0, 1.0)));
-  auto shape = CreateGeometryMesh("invalid_scaling.obj", mesh.GetPrim(),
-    meters_per_unit_, diagnostic_policy_);
-  EXPECT_TRUE(shape == nullptr);
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*The scaling of the mesh at .* is not isotropic.*"));
-
-  // Testing with valid scaling
   EXPECT_TRUE(scale_op.Set(
     pxr::GfVec3d(scale_factor, scale_factor, scale_factor)));
-  shape = CreateGeometryMesh("octahedron.obj", mesh.GetPrim(),
+  auto shape = CreateGeometryMesh("octahedron.obj", mesh.GetPrim(),
     meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape != nullptr);
   geometry::Mesh* drake_mesh = dynamic_cast<geometry::Mesh*>(shape.get());
@@ -296,24 +288,18 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   // convex hull of the octahedron mesh.
   auto convex_hull = drake_mesh->GetConvexHull();
   EXPECT_EQ(convex_hull.num_faces(), 8);
+
+  // Case: the UsdGeomMesh Prim has invalid (non-isotropic) scaling.
+  EXPECT_TRUE(scale_op.Set(pxr::GfVec3d(1.0, 2.0, 1.0)));
+  shape = CreateGeometryMesh("invalid_scaling.obj", mesh.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_TRUE(shape == nullptr);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The scaling of the mesh at .* is not isotropic.*"));
 }
 
 TEST_F(UsdGeometryTest, GetRigidTransformTest) {
-  // Testing with invalid input
-  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
-    pxr::TfToken(""));
-  auto empty_prim_transform = GetPrimRigidTransform(empty_prim.GetPrim(),
-    meters_per_unit_, diagnostic_policy_);
-  EXPECT_FALSE(empty_prim_transform.has_value());
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to cast the Prim at .* into an UsdGeomXformable.*"));
-  auto empty_prim_scale = GetPrimScale(empty_prim.GetPrim(),
-    diagnostic_policy_);
-  EXPECT_FALSE(empty_prim_transform.has_value());
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to cast the Prim at .* into an UsdGeomXformable.*"));
-
-  // Testing with valid input
+  // Case: all inputs are valid.
   pxr::UsdGeomXform xform = pxr::UsdGeomXform::Define(
     stage_, pxr::SdfPath("/Xform"));
 
@@ -339,9 +325,63 @@ TEST_F(UsdGeometryTest, GetRigidTransformTest) {
     actual_translation, intended_translation, 1e-10));
   EXPECT_TRUE(is_approx_equal_abstol(
     actual_rotation_xyz, intended_rotation_xyz, 1e-10));
+
+  // Case: the input Prim is not an UsdGeomXformable type
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto empty_prim_transform = GetPrimRigidTransform(empty_prim.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_FALSE(empty_prim_transform.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomXformable.*"));
+}
+
+TEST_F(UsdGeometryTest, InvalidPrimScaleTest) {
+  // Case: input Prim is not an UsdGeomXformable type.
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto scale = GetPrimScale(empty_prim.GetPrim(),
+    diagnostic_policy_);
+  EXPECT_FALSE(scale.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomXformable.*"));
+}
+
+TEST_F(UsdGeometryTest, GetPrimColorTest) {
+  // Case: invalid Prim type.
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto color = GetGeomPrimColor(empty_prim, diagnostic_policy_);
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomGprim.*"));
+
+  // Case: Prim does not contain color attribute.
+  pxr::UsdGeomCube box = pxr::UsdGeomCube::Define(stage_,
+    pxr::SdfPath("/Box"));
+  color = GetGeomPrimColor(box.GetPrim(), diagnostic_policy_);
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+    ".*Failed to read the DisplayColor of the Prim at.*"));
+
+  // Case: all inputs are valid.
+  pxr::UsdGeomGprim box_gprim = pxr::UsdGeomGprim(box);
+  pxr::VtArray<pxr::GfVec3f> input_color = { pxr::GfVec3f(0.1, 0.2, 0.0) };
+  EXPECT_TRUE(box_gprim.CreateDisplayColorAttr().Set(input_color));
+  color = GetGeomPrimColor(box.GetPrim(), diagnostic_policy_);
+  auto output_color = pxr::GfVec3f(color[0], color[1], color[2]);
+  EXPECT_EQ(input_color[0], output_color);
+}
+
+TEST_F(UsdGeometryTest, GetPrimFrictionTest) {
+  // TODO(hong-nvidia): Implement this test case when GetPrimFriction()
+  // is implemented.
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto friction = GetPrimFriction(empty_prim);
 }
 
 TEST_F(UsdGeometryTest, InvalidMassTest) {
+  // Case: Prim contains mass attribute of the wrong type (double instead of
+  // float).
   std::string file = R"""(#usda 1.0
     def Cube "Box" (
       prepend apiSchemas = ["PhysicsMassAPI"]

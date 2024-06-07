@@ -103,7 +103,9 @@ Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim,
     pxr::GfVec3f color = colors[0];
     return Eigen::Vector4d(color[0], color[1], color[2], 1.0);
   } else {
-    // Prim does not contain color attribute, use default color instead.
+    diagnostic.Warning(fmt::format(
+      "Failed to read the DisplayColor of the Prim at {}. Returning default "
+      "color.", prim.GetPath().GetString()));
     return default_color;
   }
 }
