@@ -10,6 +10,8 @@
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/sphere.h"
 #include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdPhysics/massAPI.h"
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
@@ -65,6 +67,22 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
   EXPECT_TRUE(shape != nullptr);
   geometry::Box* drake_box = dynamic_cast<geometry::Box*>(shape.get());
   EXPECT_EQ(drake_box->size(), correct_dimension);
+
+  auto inertia = CreateSpatialInertiaForBox(box.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+    ".*Failed to read the mass of the Prim at .* Using the default value.*"));
+  EXPECT_TRUE(inertia.has_value());
+  EXPECT_EQ(1.0, inertia.value().get_mass());
+
+  float mass = 2.71;
+  auto mass_api = pxr::UsdPhysicsMassAPI::Apply(box.GetPrim());
+  auto mass_attribute = mass_api.CreateMassAttr();
+  EXPECT_TRUE(mass_attribute.Set(mass));
+  inertia = CreateSpatialInertiaForBox(box.GetPrim(), meters_per_unit_,
+    diagnostic_policy_);
+  EXPECT_TRUE(inertia.has_value());
+  EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
 }
 
 TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
@@ -98,6 +116,15 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
   auto actual_dimension = Eigen::Vector3d(
     drake_ellipsoid->a(), drake_ellipsoid->b(), drake_ellipsoid->c());
   EXPECT_EQ(actual_dimension, correct_dimension);
+
+  float mass = 77.241;
+  auto mass_api = pxr::UsdPhysicsMassAPI::Apply(ellipsoid.GetPrim());
+  auto mass_attribute = mass_api.CreateMassAttr();
+  EXPECT_TRUE(mass_attribute.Set(mass));
+  auto inertia = CreateSpatialInertiaForEllipsoid(ellipsoid.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_TRUE(inertia.has_value());
+  EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
 }
 
 TEST_F(UsdGeometryTest, CylinderParsingTest) {
@@ -137,6 +164,15 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
   auto actual_dimension = Eigen::Vector2d(
     drake_cylinder->radius(), drake_cylinder->length());
   EXPECT_EQ(actual_dimension, correct_dimension);
+
+  float mass = 152.0;
+  auto mass_api = pxr::UsdPhysicsMassAPI::Apply(cylinder.GetPrim());
+  auto mass_attribute = mass_api.CreateMassAttr();
+  EXPECT_TRUE(mass_attribute.Set(mass));
+  auto inertia = CreateSpatialInertiaForCylinder(cylinder.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  EXPECT_TRUE(inertia.has_value());
+  EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
 }
 
 TEST_F(UsdGeometryTest, CapsuleParsingTest) {
@@ -176,6 +212,15 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
   auto actual_dimension = Eigen::Vector2d(
     drake_capsule->radius(), drake_capsule->length());
   EXPECT_EQ(actual_dimension, correct_dimension);
+
+  float mass = 152.0;
+  auto mass_api = pxr::UsdPhysicsMassAPI::Apply(capsule.GetPrim());
+  auto mass_attribute = mass_api.CreateMassAttr();
+  EXPECT_TRUE(mass_attribute.Set(mass));
+  auto inertia = CreateSpatialInertiaForCapsule(capsule.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  EXPECT_TRUE(inertia.has_value());
+  EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
 }
 
 TEST_F(UsdGeometryTest, MeshParsingTest) {
