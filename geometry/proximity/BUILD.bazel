@@ -972,6 +972,9 @@ drake_cc_googletest(
     name = "boxes_overlap_test",
     deps = [
         ":boxes_overlap",
+        "//geometry:meshcat",
+        "//geometry:rgba",
+        "//geometry:shape_specification",
     ],
 )
 
