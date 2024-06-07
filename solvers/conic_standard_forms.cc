@@ -25,18 +25,20 @@ bool CheckSupported(const MathematicalProgram& prog) {
           ProgramAttribute::kRotatedLorentzConeConstraint,
           ProgramAttribute::kPositiveSemidefiniteConstraint,
           // Supported Costs.
-          ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
-          ProgramAttribute::kL2NormCost});
+          ProgramAttribute::kLinearCost,
+          //          ProgramAttribute::kQuadraticCost,
+          //          ProgramAttribute::kL2NormCost
+      });
   return internal::CheckConvexSolverAttributes(
       prog, solver_capabilities.access(), "ConicStandardForm", nullptr);
 }
 
 // Given a mathematical program with convex cost, convert all costs to epigraph
-// form. For example, if the program has the cost convex quadratic cost min xᵀQx
+// form. For example, if the program has the convex quadratic cost min xᵀQx
 // we recast is as
 // min         t
 // subject to xᵀQx ≤ t
-void CastAllNonLinearCostsToEpigraph(MathematicalProgram* prog) {
+void ConvertAllNonLinearCostsToEpigraph(MathematicalProgram* prog) {
   const std::vector<Binding<Cost>> original_costs{prog->GetAllCosts()};
   // Contains all the epigraph variables
   std::vector<Variable> epigraph_variables;
@@ -46,67 +48,56 @@ void CastAllNonLinearCostsToEpigraph(MathematicalProgram* prog) {
   epigraph_variables.reserve(original_costs.size());
   cost_vect.reserve(original_costs.size());
 
-  for (const auto& binding : original_costs) {
-    Cost* cost = binding.evaluator().get();
-    // If the cost is not linear, remove it and add the epigraph form.
-    if (!dynamic_cast<LinearCost*>(cost)) {
-      prog->RemoveCost(binding);
-      epigraph_variables.emplace_back(
-          Variable("t" + std::to_string(epigraph_variables.size())));
+  auto remove_cost = [&epigraph_variables,
+                      &prog](const Binding<Cost>& binding) {
+    prog->RemoveCost(binding);
+    epigraph_variables.emplace_back(
+        Variable("t" + std::to_string(epigraph_variables.size())));
+  } for (const auto& binding : prog->quadratic_costs()) {
+    remove_cost(binding);
+    const auto& quadratic_cost = binding.evaluator().get();
+    const int n = quadratic_cost->Q().rows() + 1;
+    Eigen::MatrixXd Q_new = Eigen::MatrixXd::Zero(n, n);
+    Q_new.topLeftCorner(n - 1, n - 1) = quadratic_cost->Q();
+    Eigen::VectorXd b_new{n};
+    b_new.head(n - 1) = quadratic_cost->b();
+    b_new(n - 1) = -1;
+    VectorX<Variable> vars(n);
+    vars.head(n - 1) = binding.variables();
+    vars(n - 1) = *epigraph_variables.crbegin();
+    prog->AddQuadraticAsRotatedLorentzConeConstraint(Q_new, b_new,
+                                                     quadratic_cost->c(), vars);
+    cost_vect.emplace_back(1);
+  }
+  for (const auto& binding : prog->l2norm_costs()) {
+    remove_cost(binding);
+    const auto& l2_norm_cost = binding.evaluator().get();
 
-      if (dynamic_cast<QuadraticCost*>(cost)) {
-        // Use static cast as we have already checked safety with the dynamic
-        // cast.
-        QuadraticCost* quadratic_cost = static_cast<QuadraticCost*>(cost);
-        //  0.5 xᵀQx + bᵀx + c ≤ t is equivalent to
-        //  0.5 [x,t]ᵀ[[Q, 0],[0,0]][x,t] + [b, -1]ᵀ[x,t] + c ≤ 0
-        const int n = quadratic_cost->Q().rows() + 1;
-        Eigen::MatrixXd Q_new = Eigen::MatrixXd::Zero(n, n);
-        Q_new.topLeftCorner(n - 1, n - 1) = quadratic_cost->Q();
-        Eigen::VectorXd b_new{n};
-        b_new.head(n - 1) = quadratic_cost->b();
-        b_new(n - 1) = -1;
-        VectorX<Variable> vars(n);
-        vars.head(n - 1) = binding.variables();
-        vars(n - 1) = *epigraph_variables.crbegin();
-        prog->AddQuadraticAsRotatedLorentzConeConstraint(
-            Q_new, b_new, quadratic_cost->c(), vars);
-        cost_vect.emplace_back(1);
-      }
-      if (dynamic_cast<L2NormCost*>(cost)) {
-        // Use static cast as we have already checked safety with the dynamic
-        // cast.
-        L2NormCost* l2_norm_cost = static_cast<L2NormCost*>(cost);
-
-        //  ||Ax+b||₂ ≤ t is equivalent to
-        //  0.5 [x,-t]ᵀ[[2AᵀA, 0],[0,2]][x,-t] + [2b, 0][x, -t] + bᵀb ≤ 0
-        const int n = l2_norm_cost->get_sparse_A().rows() + 1;
-        Eigen::MatrixXd Q_new = Eigen::MatrixXd::Zero(n, n);
-        Q_new.topLeftCorner(n - 1, n - 1) =
-            2 * l2_norm_cost->get_sparse_A().transpose() *
-            l2_norm_cost->get_sparse_A();
-        Q_new(n - 1, n - 1) = 2;
-        Eigen::VectorXd b_new{n};
-        b_new.head(n - 1) = 2 * l2_norm_cost->b();
-        b_new(n - 1) = 0;
-        const double c = (l2_norm_cost->b() * l2_norm_cost->b())(0);
-        VectorX<Variable> vars(n);
-        vars.head(n - 1) = binding.variables();
-        vars(n - 1) = *epigraph_variables.crbegin();
-        prog->AddQuadraticAsRotatedLorentzConeConstraint(Q_new, b_new, c, vars);
-        //  Notice that we need to use -t to make the hessian PSD. Therefore, we
-        //  need to maximize -t.
-        cost_vect.emplace_back(-1);
-      }
-    }
+    //  ||Ax+b||₂ ≤ t is equivalent to
+    //  0.5 [x,-t]ᵀ[[2AᵀA, 0],[0,2]][x,-t] + [2b, 0][x, -t] + bᵀb ≤ 0
+    const int n = l2_norm_cost->get_sparse_A().rows() + 1;
+    Eigen::MatrixXd Q_new = Eigen::MatrixXd::Zero(n, n);
+    Q_new.topLeftCorner(n - 1, n - 1) =
+        2 * l2_norm_cost->get_sparse_A().transpose() *
+        l2_norm_cost->get_sparse_A();
+    Q_new(n - 1, n - 1) = 2;
+    Eigen::VectorXd b_new{n};
+    b_new.head(n - 1) = 2 * l2_norm_cost->b();
+    b_new(n - 1) = 0;
+    const double c = (l2_norm_cost->b() * l2_norm_cost->b())(0);
+    VectorX<Variable> vars(n);
+    vars.head(n - 1) = binding.variables();
+    vars(n - 1) = *epigraph_variables.crbegin();
+    prog->AddQuadraticAsRotatedLorentzConeConstraint(Q_new, b_new, c, vars);
+    //  Notice that we need to use -t to make the hessian PSD. Therefore,
+    //  we need to maximize -t.
+    cost_vect.emplace_back(-1);
   }
   const Eigen::Map<VectorX<Variable>> epigraph_variables_eigen{
       epigraph_variables.data(), ssize(epigraph_variables)};
   const Eigen::Map<Eigen::VectorXd> cost{cost_vect.data(), ssize(cost_vect)};
   prog->AddDecisionVariables(epigraph_variables_eigen);
   prog->AddLinearCost(cost, epigraph_variables_eigen);
-}
-
 }  // namespace
 
 std::unordered_map<Binding<L2NormCost>, symbolic::Variable>
@@ -255,6 +246,12 @@ std::unique_ptr<MathematicalProgram> ParseToConicStandardForm(
     const MathematicalProgram& original_prog) {
   std::unique_ptr<MathematicalProgram> prog = original_prog.Clone();
   CheckSupported(*prog);
+  Eigen::SparseMatrix<double> A;
+  Eigen::VectorXd b;
+  Eigen::SparseMatrix<double> Aeq;
+  Eigen::VectorXd beq;
+  AggregateConvexConstraints(prog, &A, &b, &Aeq, &beq);
+
   CastAllNonLinearCostsToEpigraph(prog.get());
 
   //  int num_x = original_prog.num_vars();

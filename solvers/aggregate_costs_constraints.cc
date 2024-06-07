@@ -260,101 +260,40 @@ const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
   return internal::FindNonconvexQuadraticCost(quadratic_costs);
 }
 
-// void AggregateConvexConstraints(const MathematicalProgram& prog,
-//                                Eigen::SparseMatrix<double>* A,
-//                                Eigen::VectorXd* b) {
-//  std::vector<std::vector<std::pair<int, int>>>
-//      bounding_box_constraint_dual_indices;
-//  std::vector<std::vector<std::pair<int, int>>>
-//  linear_constraint_dual_indices; std::vector<int> second_order_cone_length;
-//  std::vector<int> lorentz_cone_y_start_indices;
-//  std::vector<int> rotated_lorentz_cone_y_start_indices;
-//  std::vector<int> psd_cone_length;
-//  internal::DoAggregateConvexConstraints(
-//      prog, A, b, &bounding_box_constraint_dual_indices,
-//      &linear_constraint_dual_indices, &second_order_cone_length,
-//      &lorentz_cone_y_start_indices, &rotated_lorentz_cone_y_start_indices,
-//      &psd_cone_length);
-//}
+void AggregateConvexConstraints(const MathematicalProgram& prog,
+                                Eigen::SparseMatrix<double>* A,
+                                Eigen::VectorXd* b,
+                                Eigen::SparseMatrix<double>* Aeq,
+                                Eigen::VectorXd* beq) {
+  internal::ConvexConstraintAggregationInfo info;
+  internal::DoAggregateConvexConstraints(prog, &info);
+
+  auto A_triplets_end_of_equalities_iterator = info.A_triplets.begin();
+  std::advance(A_triplets_end_of_equalities_iterator,
+               info.num_linear_equality_constraint_rows);
+
+  // The first info.num_linear_equality_constraint_rows correspond to equality
+  // constraints.
+  Aeq->resize(info.num_linear_equality_constraint_rows, prog.num_vars());
+  Aeq->setFromTriplets(info.A_triplets.begin(),
+                       A_triplets_end_of_equalities_iterator);
+  beq->resize(info.num_linear_equality_constraint_rows);
+  (*beq) = Eigen::Map<Eigen::VectorXd>(
+      info.b_std.data(), info.num_linear_equality_constraint_rows);
+
+  // The rest correspond to conic constraints.
+  int num_conic = info.A_row_count - info.num_linear_equality_constraint_rows;
+  A->resize(num_conic, prog.num_vars());
+  A->setFromTriplets(A_triplets_end_of_equalities_iterator,
+                     info.A_triplets.end());
+  b->resize(num_conic);
+  (*b) = Eigen::Map<Eigen::VectorXd>(
+      info.b_std.data() + info.num_linear_equality_constraint_rows, num_conic);
+}
 
 namespace internal {
-// void DoAggregateConvexConstraints(
-//    const MathematicalProgram& prog, Eigen::SparseMatrix<double>* A,
-//    Eigen::VectorXd* b,
-//    //    std::vector<std::vector<std::pair<int, int>>>*
-//    //        bounding_box_constraint_dual_indices,
-//    int* num_linear_equality_constraints_rows,
-//    std::vector<int>* linear_eq_dual_variable_start_indices,
-//    int* num_linear_constraint_rows,
-//    std::vector<std::vector<std::pair<int, int>>>*
-//        linear_constraints_dual_indices,
-//    std::vector<int>* second_order_cone_lengths,
-//    std::vector<int>* lorentz_cone_dual_variable_start_indices,
-//    std::vector<int>* rotated_lorentz_cone_dual_variable_start_indices,
-//    std::vector<int>* psd_cone_lengths)
 void DoAggregateConvexConstraints(const MathematicalProgram& prog,
                                   ConvexConstraintAggregationInfo* info) {
-  //  // Stores all the bounding box constraints of prog which are linear
-  //  // constraints (i.e. where lb < ub).
-  //  MathematicalProgram bb_linear_constraint_prog;
-  //  bb_linear_constraint_prog.AddDecisionVariables(prog.decision_variables());
-  //  // Stores all the bounding box constraints of prog which are linear
-  //  // constraints (i.e. where lb == ub).
-  //  MathematicalProgram bb_linear_equality_constraint_prog;
-  //  bb_linear_constraint_prog.AddDecisionVariables(prog.decision_variables());
-  //  // For each variable with lb <= x <= ub, we check the following
-  //  // 1. If lb == ub (and both are finite), then we add the constraint x + s
-  //  = ub
-  //  // with s in the zero cone.
-  //  // 2. Otherwise, if ub is finite, then we add the constraint x + s = ub
-  //  with s
-  //  // in the positive orthant cone. If lb is finite, then we add the
-  //  constraint
-  //  // -x + s = -lb with s in the positive orthant cone.
-  //
-  //  // Set the dual variable indices.
-  //  bounding_box_constraint_dual_indices->reserve(
-  //      ssize(prog.bounding_box_constraints()));
-  //  for (const auto& bb_constraint : prog.bounding_box_constraints()) {
-  //    const Eigen::VectorXd diff_bound =
-  //        bb_constraint.evaluator()->upper_bound() -
-  //        bb_constraint.evaluator()->lower_bound();
-  //    VariableVector equality_vars;
-  //    std::vector<double> equality_bounds;
-  //    VariableVector inequality_vars;
-  //    std::vector<double> lb;
-  //    std::vector<double> ub;
-  //    for (int i = 0; i < diff_bound.size(); ++i) {
-  //      if (std::isfinite(bb_constraint.evaluator()->upper_bound()(i)) &&
-  //          std::isfinite(bb_constraint.evaluator()->lower_bound()(i)) &&
-  //          diff_bound(i) == 0.0) {
-  //        equality_vars.GetOrAdd(bb_constraint.variables()[i]);
-  //        equality_bounds.emplace_back(
-  //            bb_constraint.evaluator()->lower_bound()(i));
-  //      } else {
-  //        inequality_vars.GetOrAdd(bb_constraint.variables()[i]);
-  //        lb.emplace_back(bb_constraint.evaluator()->lower_bound()(i));
-  //        ub.emplace_back(bb_constraint.evaluator()->upper_bound()(i));
-  //      }
-  //    }
-  //    if (equality_vars.size() > 0) {
-  //      bb_linear_equality_constraint_prog.AddLinearEqualityConstraint(
-  //          Eigen::MatrixXd::Identity(equality_vars.size(),
-  //          equality_vars.size()),
-  //          Eigen::Map<Eigen::VectorXd>(equality_bounds.data(),
-  //                                      equality_bounds.size()),
-  //          equality_vars.CopyToEigen());
-  //    }
-  //    if (inequality_vars.size() > 0) {
-  //      bb_linear_constraint_prog.AddLinearConstraint(
-  //          Eigen::MatrixXd::Identity(inequality_vars.size(),
-  //                                    inequality_vars.size()),
-  //          Eigen::Map<Eigen::VectorXd>(lb.data(), lb.size()),
-  //          Eigen::Map<Eigen::VectorXd>(ub.data(), ub.size()),
-  //          inequality_vars.CopyToEigen());
-  //    }
-  //  }
-
   // Parse Linear Equality Constraints.
   info->num_linear_equality_constraint_rows = 0;
   internal::ParseLinearEqualityConstraints(
