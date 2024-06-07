@@ -240,12 +240,20 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   EXPECT_TRUE(mesh.CreatePointsAttr().Set(vertices));
   EXPECT_TRUE(mesh.CreateFaceVertexCountsAttr().Set(face_vertex_counts));
   EXPECT_TRUE(mesh.CreateFaceVertexIndicesAttr().Set(face_vertex_indices));
-
   auto scale_op = mesh.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
+
+  // Testing with invalid (non-isotropic) scaling
+  EXPECT_TRUE(scale_op.Set(pxr::GfVec3d(1.0, 2.0, 1.0)));
+  auto shape = CreateGeometryMesh("invalid_scaling.obj", mesh.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_TRUE(shape == nullptr);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The scaling of the mesh at .* is not isotropic.*"));
+
+  // Testing with valid scaling
   EXPECT_TRUE(scale_op.Set(
     pxr::GfVec3d(scale_factor, scale_factor, scale_factor)));
-
-  auto shape = CreateGeometryMesh("octahedron.obj", mesh.GetPrim(),
+  shape = CreateGeometryMesh("octahedron.obj", mesh.GetPrim(),
     meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape != nullptr);
   geometry::Mesh* drake_mesh = dynamic_cast<geometry::Mesh*>(shape.get());
