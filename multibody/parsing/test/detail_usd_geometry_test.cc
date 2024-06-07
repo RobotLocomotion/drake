@@ -40,6 +40,16 @@ class UsdGeometryTest : public test::DiagnosticPolicyTestBase {
 };
 
 TEST_F(UsdGeometryTest, BoxParsingTest) {
+  // Testing with invalid input
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto invalid_dimension = GetBoxDimension(empty_prim.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_FALSE(invalid_dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomCube.*"));
+
+  // Testing with valid input
   pxr::UsdGeomCube box = pxr::UsdGeomCube::Define(
     stage_, pxr::SdfPath("/Box"));
 
@@ -86,6 +96,16 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
 }
 
 TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
+  // Testing with invalid input
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto invalid_dimension = GetEllipsoidDimension(empty_prim.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_FALSE(invalid_dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomSphere.*"));
+
+  // Testing with valid input
   pxr::UsdGeomSphere ellipsoid = pxr::UsdGeomSphere::Define(
     stage_, pxr::SdfPath("/Ellipsoid"));
 
@@ -128,6 +148,16 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
 }
 
 TEST_F(UsdGeometryTest, CylinderParsingTest) {
+  // Testing with invalid input
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto invalid_dimension = GetCylinderDimension(empty_prim.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(invalid_dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomCylinder.*"));
+
+  // Testing with valid input
   pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder::Define(
     stage_, pxr::SdfPath("/Cylinder"));
 
@@ -176,6 +206,16 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
 }
 
 TEST_F(UsdGeometryTest, CapsuleParsingTest) {
+  // Testing with invalid input
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto invalid_dimension = GetCapsuleDimension(empty_prim.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(invalid_dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomCapsule.*"));
+
+  // Testing with valid input
   pxr::UsdGeomCapsule capsule = pxr::UsdGeomCapsule::Define(
     stage_, pxr::SdfPath("/Capsule"));
 
@@ -266,6 +306,21 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
 }
 
 TEST_F(UsdGeometryTest, GetRigidTransformTest) {
+  // Testing with invalid input
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  auto empty_prim_transform = GetPrimRigidTransform(empty_prim.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_FALSE(empty_prim_transform.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomXformable.*"));
+  auto empty_prim_scale = GetPrimScale(empty_prim.GetPrim(),
+    diagnostic_policy_);
+  EXPECT_FALSE(empty_prim_transform.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomXformable.*"));
+
+  // Testing with valid input
   pxr::UsdGeomXform xform = pxr::UsdGeomXform::Define(
     stage_, pxr::SdfPath("/Xform"));
 
