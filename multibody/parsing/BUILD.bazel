@@ -378,12 +378,10 @@ drake_cc_library(
     ],
     hdrs = [
         "detail_composite_parse.h",
-        "detail_parser_internal_data.h",
         "parser.h",
     ],
     install_hdrs_exclude = [
         "detail_composite_parse.h",
-        "detail_parser_internal_data.h",
     ],
     visibility = ["//visibility:public"],
     interface_deps = [

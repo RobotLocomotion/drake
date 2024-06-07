@@ -17,6 +17,7 @@ namespace drake {
 namespace multibody {
 
 namespace internal {
+class CollisionFilterGroupResolver;
 class CompositeParse;
 struct ParserInternalData;
 }  // namespace internal
@@ -243,6 +244,10 @@ class Parser final {
 
  private:
   friend class internal::CompositeParse;
+
+  // This is called back from CompositeParse::Finish().
+  void ResolveCollisionFilterGroupsFromCompositeParse(
+      internal::CollisionFilterGroupResolver* resolver);
 
   bool is_strict_{false};
   bool enable_auto_rename_{false};
