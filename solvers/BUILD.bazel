@@ -42,6 +42,7 @@ drake_cc_package_library(
         ":create_cost",
         ":csdp_solver",
         ":decision_variable",
+        ":dual_convex_program",
         ":equality_constrained_qp_solver",
         ":evaluator_base",
         ":function",
@@ -1088,6 +1089,19 @@ drake_cc_library(
 #    deps = [],
 #)
 
+drake_cc_library(
+    name = "dual_convex_program",
+    srcs = ["dual_convex_program.cc"],
+    hdrs = ["dual_convex_program.h"],
+    interface_deps = [
+        ":mathematical_program",
+    ],
+    deps = [
+        ":aggregate_costs_constraints",
+        "//math:matrix_util",
+    ],
+)
+
 drake_cc_optional_library(
     name = "csdp_solver_error_handling",
     opt_out_condition = "//tools:no_csdp",
@@ -2014,6 +2028,22 @@ drake_cc_googletest(
     deps = [
         ":sparse_and_dense_matrix",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dual_convex_program_test",
+    deps = [
+        ":dual_convex_program",
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":second_order_cone_program_examples",
+        ":semidefinite_program_examples",
+        ":solve",
+        ":sos_examples",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
