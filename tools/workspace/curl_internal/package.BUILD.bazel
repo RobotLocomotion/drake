@@ -182,6 +182,7 @@ check_lists_consistency(
         "lib/curl_sspi.c",
         "lib/curl_threads.c",
         "lib/dict.c",
+        "lib/dllmain.c",
         "lib/file.c",
         "lib/fileinfo.c",
         "lib/ftp.c",
