@@ -16,7 +16,8 @@ def Xform "World"
     }
 
     def Cube "RigidBodyBox" (
-        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
+            "PhysicsMassAPI"]
     )
     {
         vector3f physics:angularVelocity = (270, 0, 0)
@@ -27,11 +28,13 @@ def Xform "World"
         quatf xformOp:orient = (1, 0, 0, 0)
         float3 xformOp:scale = (2, 2, 2)
         double3 xformOp:translate = (0, 0, 220)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient",
+            "xformOp:scale"]
     }
 
     def Sphere "RigidBodyEllipsoid" (
-        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
+            "PhysicsMassAPI"]
     )
     {
         double radius = 50
@@ -42,11 +45,13 @@ def Xform "World"
         double3 xformOp:rotateXYZ = (-20, 0, 0)
         double3 xformOp:scale = (0.5, 1, 0.5)
         double3 xformOp:translate = (-180, -180, 200)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
     }
 
     def Cylinder "RigidBodyCylinder" (
-        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
+            "PhysicsMassAPI"]
     )
     {
         uniform token axis = "Z"
@@ -59,11 +64,13 @@ def Xform "World"
         double3 xformOp:rotateXYZ = (0, 0, 0)
         double3 xformOp:scale = (0.5, 0.5, 1)
         double3 xformOp:translate = (180, 180, 250)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
     }
 
     def Capsule "RigidBodyCapsule" (
-        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
+            "PhysicsMassAPI"]
     )
     {
         uniform token axis = "Z"
@@ -76,7 +83,8 @@ def Xform "World"
         double3 xformOp:rotateXYZ = (0, 0, 0)
         double3 xformOp:scale = (1, 1, 1)
         double3 xformOp:translate = (0, 160, 300)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
     }
 
     def Cube "Floor" (
@@ -88,7 +96,8 @@ def Xform "World"
         quatf xformOp:orient = (1, 0, 0, 0)
         float3 xformOp:scale = (720, 720, 10)
         double3 xformOp:translate = (0, 0, -80)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient",
+            "xformOp:scale"]
     }
 
     def Sphere "StaticEllipsoid" (
@@ -102,7 +111,8 @@ def Xform "World"
         double3 xformOp:rotateXYZ = (-20, 0, 0)
         double3 xformOp:scale = (1, 2, 1)
         double3 xformOp:translate = (0, 0, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
     }
 
     def Xform "StaticCapsuleXform"
@@ -110,7 +120,8 @@ def Xform "World"
         double3 xformOp:rotateXYZ = (-90, 0, 45)
         double3 xformOp:scale = (1, 1, 1)
         double3 xformOp:translate = (200, 200, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
 
         def Capsule "StaticCapsule" (
             prepend apiSchemas = ["PhysicsCollisionAPI"]
@@ -125,7 +136,8 @@ def Xform "World"
             double3 xformOp:rotateXYZ = (0, 0, 0)
             double3 xformOp:scale = (1, 1, 1)
             double3 xformOp:translate = (0, 0, 0)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+            uniform token[] xformOpOrder = ["xformOp:translate",
+                "xformOp:rotateXYZ", "xformOp:scale"]
         }
     }
 
@@ -134,14 +146,16 @@ def Xform "World"
         double3 xformOp:rotateXYZ = (0, 0, 0)
         double3 xformOp:scale = (1, 1, 1)
         double3 xformOp:translate = (-200, 200, 1.9326762412674725e-12)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
 
         def Xform "StaticCylinderXform2"
         {
             double3 xformOp:rotateXYZ = (0, 45, 0)
             double3 xformOp:scale = (1, 1, 2)
             double3 xformOp:translate = (0, 0, 0)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+            uniform token[] xformOpOrder = ["xformOp:translate",
+                "xformOp:rotateXYZ", "xformOp:scale"]
 
             def Cylinder "StaticCylinder" (
                 prepend apiSchemas = ["PhysicsCollisionAPI"]
@@ -156,7 +170,8 @@ def Xform "World"
                 double3 xformOp:rotateXYZ = (0, 0, 0)
                 double3 xformOp:scale = (1, 1, 0.5)
                 double3 xformOp:translate = (0, 0, 0)
-                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                uniform token[] xformOpOrder = ["xformOp:translate",
+                    "xformOp:rotateXYZ", "xformOp:scale"]
             }
         }
     }
@@ -172,7 +187,8 @@ def Xform "World"
         double3 xformOp:rotateXYZ = (0, 0, 0)
         double3 xformOp:scale = (1, 1, 1)
         double3 xformOp:translate = (200, -200, 6.59383658785373e-12)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
     }
 
     def Cube "StaticCube" (
@@ -184,7 +200,8 @@ def Xform "World"
         double3 xformOp:rotateXYZ = (45, 45, 45)
         double3 xformOp:scale = (1, 1, 1)
         double3 xformOp:translate = (-200, -200, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
     }
 
     def Xform "StaticOctahedronXform"
@@ -192,15 +209,18 @@ def Xform "World"
         quatf xformOp:orient = (0.9238795, 0, 0, 0.38268343)
         float3 xformOp:scale = (100, 100, 100)
         double3 xformOp:translate = (0, 200, 150)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient",
+            "xformOp:scale"]
 
         def Mesh "StaticOctahedron" (
             prepend apiSchemas = ["PhysicsCollisionAPI"]
         )
         {
             int[] faceVertexCounts = [3, 3, 3, 3, 3, 3, 3, 3]
-            int[] faceVertexIndices = [1, 0, 4, 2, 1, 4, 3, 2, 4, 0, 3, 4, 0, 1, 5, 1, 2, 5, 2, 3, 5, 3, 0, 5]
-            point3f[] points = [(1, 0, 0), (0, -1, 0), (-1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, -1)]
+            int[] faceVertexIndices = [1, 0, 4, 2, 1, 4, 3, 2, 4, 0, 3, 4, 0,
+                1, 5, 1, 2, 5, 2, 3, 5, 3, 0, 5]
+            point3f[] points = [(1, 0, 0), (0, -1, 0), (-1, 0, 0), (0, 1, 0),
+                (0, 0, 1), (0, 0, -1)]
             uniform token subdivisionScheme = "none"
             color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
         }

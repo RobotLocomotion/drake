@@ -20,8 +20,7 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
  public:
   UsdParserTest() { plant_.RegisterAsSourceForSceneGraph(&scene_graph_); }
 
-  std::vector<ModelInstanceIndex> ParseFile(const std::string& filename) {
-    const DataSource source{DataSource::kFilename, &filename};
+  std::vector<ModelInstanceIndex> ParseFile(const DataSource& source) {
     const std::optional<std::string> parent_model_name;
     internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
@@ -55,29 +54,42 @@ std::string FindUsdTestResourceOrThrow(const std::string& filename) {
 
 TEST_F(UsdParserTest, BasicImportTest) {
   std::string filename = FindUsdTestResourceOrThrow("simple_geometries.usda");
-  ParseFile(filename);
+  const DataSource source{DataSource::kFilename, &filename};
+  ParseFile(source);
   EXPECT_EQ(plant_.num_bodies(), 5);
   EXPECT_EQ(plant_.num_collision_geometries(), 11);
   EXPECT_EQ(plant_.num_visual_geometries(), 11);
 }
 
 TEST_F(UsdParserTest, NoSuchFile) {
-  ParseFile("/no/such/file");
+  std::string filename = "/no/such/file";
+  const DataSource source{DataSource::kFilename, &filename};
+  ParseFile(source);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*File does not exist.*"));
 }
 
 TEST_F(UsdParserTest, InvalidFileTest) {
   std::string filename =
     FindUsdTestResourceOrThrow("invalid/invalid_file.usd");
-  ParseFile(filename);
+  const DataSource source{DataSource::kFilename, &filename};
+  ParseFile(source);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to open USD stage.*"));
+    ".*Failed to open USD stage:.*"));
 }
 
-TEST_F(UsdParserTest, MissingMetadataTest) {
-  std::string filename =
-    FindUsdTestResourceOrThrow("invalid/missing_metadata.usda");
-  ParseFile(filename);
+TEST_F(UsdParserTest, InvalidInMemoryStageTest) {
+  std::string file_content = R"""(Invalid USD File})""";
+  const DataSource source{DataSource::kContents, &file_content};
+  ParseFile(source);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to load in-memory USD stage."));
+}
+
+TEST_F(UsdParserTest, MissingStageMetadataTest) {
+  std::string file_content = R"""(#usda 1.0
+    def "SomePrim" { })""";
+  const DataSource source{DataSource::kContents, &file_content};
+  ParseFile(source);
   EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
     ".*Failed to read metersPerUnit in stage metadata.*"));
   EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
@@ -85,12 +97,21 @@ TEST_F(UsdParserTest, MissingMetadataTest) {
 }
 
 TEST_F(UsdParserTest, UnsupportedPrimTypesTest) {
-  std::string filename =
-    FindUsdTestResourceOrThrow("invalid/unsupported_prim_types.usda");
-  ParseFile(filename);
+  std::string file_content = R"""(#usda 1.0
+    (
+      metersPerUnit = 1
+      upAxis = "Z"
+    )
+    def Xform "World"
+    {
+      def "Box" (prepend apiSchemas = ["PhysicsCollisionAPI"]) { }
+      def Cone "Cone" (prepend apiSchemas = ["PhysicsCollisionAPI"]) { }
+    })""";
+  const DataSource source{DataSource::kContents, &file_content};
+  ParseFile(source);
   // Errors from the `/World/Box` prim.
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*The type of the Prim at .* is not specified.*"));
+    ".*The type of the Prim at /World/Box is not specified.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to create collision geometry.*"));
   // Errors from the `/World/Cone` Prim.

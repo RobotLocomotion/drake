@@ -50,6 +50,7 @@ class UsdParser {
   std::unique_ptr<geometry::Shape> CreateVisualGeometry(
     const pxr::UsdPrim& prim);
   const RigidBody<double>* CreateRigidBody(const pxr::UsdPrim& prim);
+  void RaiseUnsupportedPrimTypeError(const pxr::UsdPrim& prim);
 
   inline static std::vector<std::string> mesh_filenames_;
   const ParsingWorkspace& w_;
@@ -133,15 +134,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
     return CreateGeometryMesh(
       obj_filename, prim, metadata_.meters_per_unit, w_.diagnostic);
   } else {
-    pxr::TfToken prim_type = prim.GetTypeName();
-    if (prim_type == "") {
-      w_.diagnostic.Error(fmt::format("The type of the Prim at {} is "
-        "not specified. Please assign a type to it.",
-        prim.GetPath().GetString()));
-    } else {
-      w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
-        prim_type, prim.GetPath().GetString()));
-    }
+    RaiseUnsupportedPrimTypeError(prim);
     return nullptr;
   }
 }
@@ -172,15 +165,7 @@ const RigidBody<double>* UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
     inertia = std::optional<SpatialInertia<double>>{
       SpatialInertia<double>::MakeUnitary()};
   } else {
-    pxr::TfToken prim_type = prim.GetTypeName();
-    if (prim_type == "") {
-      w_.diagnostic.Error(fmt::format("The type of the Prim at {} is "
-        "not specified. Please assign a type to it.",
-        prim.GetPath().GetString()));
-    } else {
-      w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
-        prim_type, prim.GetPath().GetString()));
-    }
+    RaiseUnsupportedPrimTypeError(prim);
   }
   if (inertia.has_value()) {
     return &w_.plant->AddRigidBody(
@@ -289,23 +274,26 @@ UsdStageMetadata UsdParser::GetStageMetadata(const pxr::UsdStageRefPtr stage) {
 std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
   const DataSource& data_source,
   const std::optional<std::string>& parent_model_name) {
-  if (data_source.IsContents()) {
-    throw std::runtime_error(
-      "Ingesting raw USD content from DataSource is not implemented.");
-  }
-
-  std::string file_absolute_path = data_source.GetAbsolutePath();
-  if (!std::filesystem::exists(file_absolute_path)) {
-    w_.diagnostic.Error(
-      fmt::format("File does not exist: {}.", file_absolute_path));
-    return std::vector<ModelInstanceIndex>();
-  }
-
-  pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(file_absolute_path);
-  if (!stage) {
-    w_.diagnostic.Error(fmt::format("Failed to open USD stage: {}.",
-      data_source.filename()));
-    return std::vector<ModelInstanceIndex>();
+  pxr::UsdStageRefPtr stage;
+  if (data_source.IsFilename()) {
+    std::string file_absolute_path = data_source.GetAbsolutePath();
+    if (!std::filesystem::exists(file_absolute_path)) {
+      w_.diagnostic.Error(
+        fmt::format("File does not exist: {}.", file_absolute_path));
+      return std::vector<ModelInstanceIndex>();
+    }
+    stage = pxr::UsdStage::Open(file_absolute_path);
+    if (!stage) {
+      w_.diagnostic.Error(fmt::format("Failed to open USD stage: {}.",
+        data_source.filename()));
+      return std::vector<ModelInstanceIndex>();
+    }
+  } else {
+    stage = pxr::UsdStage::CreateInMemory();
+    if (!stage->GetRootLayer()->ImportFromString(data_source.contents())) {
+      w_.diagnostic.Error(fmt::format("Failed to load in-memory USD stage."));
+      return std::vector<ModelInstanceIndex>();
+    }
   }
 
   metadata_ = GetStageMetadata(stage);
@@ -319,6 +307,18 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
   }
 
   return std::vector<ModelInstanceIndex>{ model_instance_ };
+}
+
+void UsdParser::RaiseUnsupportedPrimTypeError(const pxr::UsdPrim& prim) {
+  pxr::TfToken prim_type = prim.GetTypeName();
+  if (prim_type == "") {
+    w_.diagnostic.Error(fmt::format("The type of the Prim at {} is "
+      "not specified. Please assign a type to it.",
+      prim.GetPath().GetString()));
+  } else {
+    w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
+      prim_type, prim.GetPath().GetString()));
+  }
 }
 
 }  // namespace internal
