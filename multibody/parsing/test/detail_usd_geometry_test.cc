@@ -45,7 +45,8 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
     stage_, pxr::SdfPath("/Box"));
 
   double size = 49.0;
-  EXPECT_TRUE(box.CreateSizeAttr().Set(size));
+  pxr::UsdAttribute size_attribute = box.CreateSizeAttr();
+  EXPECT_TRUE(size_attribute.Set(size));
 
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.4, 0.5, 0.6);
   auto scale_op = box.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
@@ -77,11 +78,19 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
   // Case: the input Prim is not an UsdGeomCube.
   auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  auto invalid_dimension = GetBoxDimension(empty_prim.GetPrim(),
-    meters_per_unit_, diagnostic_policy_);
-  EXPECT_FALSE(invalid_dimension.has_value());
+  dimension = GetBoxDimension(empty_prim.GetPrim(), meters_per_unit_,
+    diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomCube.*"));
+
+  // Case: the input Prim is missing the size attribute
+  EXPECT_TRUE(box.GetPrim().RemoveProperty(size_attribute.GetName()));
+  dimension = GetBoxDimension(box.GetPrim(), meters_per_unit_,
+    diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to read the 'size' attribute of the Prim at .*"));
 }
 
 TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
@@ -90,7 +99,8 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
     stage_, pxr::SdfPath("/Ellipsoid"));
 
   double radius = 17.0;
-  EXPECT_TRUE(ellipsoid.CreateRadiusAttr().Set(radius));
+  pxr::UsdAttribute radius_attribute = ellipsoid.CreateRadiusAttr();
+  EXPECT_TRUE(radius_attribute.Set(radius));
 
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.6, 1.1, 2.9);
   auto scale_op = ellipsoid.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
@@ -130,6 +140,14 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
   EXPECT_FALSE(invalid_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomSphere.*"));
+
+  // Case: the input Prim is missing the radius attribute
+  EXPECT_TRUE(ellipsoid.GetPrim().RemoveProperty(radius_attribute.GetName()));
+  dimension = GetEllipsoidDimension(ellipsoid.GetPrim(), meters_per_unit_,
+    diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to read the 'radius' attribute of the Prim at .*"));
 }
 
 TEST_F(UsdGeometryTest, CylinderParsingTest) {
@@ -140,9 +158,12 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
   double radius = 62.0;
   double height = 199.0;
   pxr::TfToken axis = pxr::TfToken("Z");
-  EXPECT_TRUE(cylinder.CreateRadiusAttr().Set(radius));
-  EXPECT_TRUE(cylinder.CreateHeightAttr().Set(height));
-  EXPECT_TRUE(cylinder.CreateAxisAttr().Set(axis));
+  pxr::UsdAttribute radius_attribute = cylinder.CreateRadiusAttr();
+  pxr::UsdAttribute height_attribute = cylinder.CreateHeightAttr();
+  pxr::UsdAttribute axis_attribute = cylinder.CreateAxisAttr();
+  EXPECT_TRUE(radius_attribute.Set(radius));
+  EXPECT_TRUE(height_attribute.Set(height));
+  EXPECT_TRUE(axis_attribute.Set(axis));
 
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.7, 0.7, 0.9);
   auto scale_op = cylinder.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
@@ -183,6 +204,38 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
   EXPECT_FALSE(invalid_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomCylinder.*"));
+
+  // Case: the input Prim is missing the height attribute
+  EXPECT_TRUE(cylinder.GetPrim().RemoveProperty(height_attribute.GetName()));
+  dimension = GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to read the 'height' attribute of the Prim at .*"));
+
+  // Case: the input Prim is missing the radius attribute
+  EXPECT_TRUE(cylinder.GetPrim().RemoveProperty(radius_attribute.GetName()));
+  dimension = GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to read the 'radius' attribute of the Prim at .*"));
+
+  // Case: the cylinder has different scaling in X and Y axis
+  scale_op.Set(pxr::GfVec3d(0.8, 0.7, 0.9));
+  dimension = GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The cylinder at .* has different scaling in X and Y axis.*"));
+
+  // Case: the axis of the cylinder is not the same as the up-axis of the stage
+  axis_attribute.Set(pxr::TfToken("Y"));
+  dimension = GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The cylinder at .* is not upright.*"));
 }
 
 TEST_F(UsdGeometryTest, CapsuleParsingTest) {
@@ -193,9 +246,12 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
   double radius = 101;
   double height = 45;
   pxr::TfToken axis = pxr::TfToken("Z");
-  EXPECT_TRUE(capsule.CreateRadiusAttr().Set(radius));
-  EXPECT_TRUE(capsule.CreateHeightAttr().Set(height));
-  EXPECT_TRUE(capsule.CreateAxisAttr().Set(axis));
+  pxr::UsdAttribute radius_attribute = capsule.CreateRadiusAttr();
+  pxr::UsdAttribute height_attribute = capsule.CreateHeightAttr();
+  pxr::UsdAttribute axis_attribute = capsule.CreateAxisAttr();
+  EXPECT_TRUE(radius_attribute.Set(radius));
+  EXPECT_TRUE(height_attribute.Set(height));
+  EXPECT_TRUE(axis_attribute.Set(axis));
 
   pxr::GfVec3d scale_factor = pxr::GfVec3d(0.7, 0.7, 0.9);
   auto scale_op = capsule.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
@@ -236,6 +292,38 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
   EXPECT_FALSE(invalid_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomCapsule.*"));
+
+  // Case: the input Prim is missing the height attribute
+  EXPECT_TRUE(capsule.GetPrim().RemoveProperty(height_attribute.GetName()));
+  dimension = GetCapsuleDimension(capsule.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to read the 'height' attribute of the Prim at .*"));
+
+  // Case: the input Prim is missing the radius attribute
+  EXPECT_TRUE(capsule.GetPrim().RemoveProperty(radius_attribute.GetName()));
+  dimension = GetCapsuleDimension(capsule.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to read the 'radius' attribute of the Prim at .*"));
+
+  // Case: the capsule has different scaling in X and Y axis
+  scale_op.Set(pxr::GfVec3d(0.8, 0.7, 0.9));
+  dimension = GetCapsuleDimension(capsule.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The capsule at .* has different scaling in X and Y axis.*"));
+
+  // Case: the axis of the capsule is not the same as the up-axis of the stage
+  axis_attribute.Set(pxr::TfToken("Y"));
+  dimension = GetCapsuleDimension(capsule.GetPrim(), meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(dimension.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The capsule at .* is not upright.*"));
 }
 
 TEST_F(UsdGeometryTest, MeshParsingTest) {
