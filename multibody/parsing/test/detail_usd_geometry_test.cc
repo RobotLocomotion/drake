@@ -78,7 +78,7 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
   // Case: the input Prim is not an UsdGeomCube.
   auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  dimension = GetBoxDimension(empty_prim.GetPrim(), meters_per_unit_,
+  dimension = GetBoxDimension(empty_prim, meters_per_unit_,
     diagnostic_policy_);
   EXPECT_FALSE(dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -90,7 +90,7 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
     diagnostic_policy_);
   EXPECT_FALSE(dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to read the 'size' attribute of the Prim at .*"));
+    ".*Failed to read the 'size' attribute of the Prim at.*"));
 }
 
 TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
@@ -135,8 +135,8 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
   // Case: the input Prim is not an UsdGeomSphere.
   auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  auto invalid_dimension = GetEllipsoidDimension(empty_prim.GetPrim(),
-    meters_per_unit_, diagnostic_policy_);
+  auto invalid_dimension = GetEllipsoidDimension(empty_prim, meters_per_unit_,
+    diagnostic_policy_);
   EXPECT_FALSE(invalid_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomSphere.*"));
@@ -147,7 +147,7 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
     diagnostic_policy_);
   EXPECT_FALSE(dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to read the 'radius' attribute of the Prim at .*"));
+    ".*Failed to read the 'radius' attribute of the Prim at.*"));
 }
 
 TEST_F(UsdGeometryTest, CylinderParsingTest) {
@@ -199,8 +199,8 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
   // Case: the input Prim is not an UsdGeomCylinder.
   auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  auto invalid_dimension = GetCylinderDimension(empty_prim.GetPrim(),
-    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  auto invalid_dimension = GetCylinderDimension(empty_prim, meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(invalid_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomCylinder.*"));
@@ -211,7 +211,7 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
     stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to read the 'height' attribute of the Prim at .*"));
+    ".*Failed to read the 'height' attribute of the Prim at.*"));
 
   // Case: the input Prim is missing the radius attribute.
   EXPECT_TRUE(cylinder.GetPrim().RemoveProperty(radius_attribute.GetName()));
@@ -219,7 +219,7 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
     stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to read the 'radius' attribute of the Prim at .*"));
+    ".*Failed to read the 'radius' attribute of the Prim at.*"));
 
   // Case: the cylinder has different scaling in X and Y axis.
   scale_op.Set(pxr::GfVec3d(0.8, 0.7, 0.9));
@@ -229,14 +229,23 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*The cylinder at .* has different scaling in X and Y axis.*"));
 
-  // Case: the axis of the cylinder is not the same as the up-axis of the
-  // stage.
-  axis_attribute.Set(pxr::TfToken("Y"));
+  // Case: the axis attribute of the cylinder is invalid.
+  axis_attribute.Set(pxr::TfToken("A"));
+  inertia = CreateSpatialInertiaForCylinder(cylinder.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  EXPECT_FALSE(inertia.has_value());
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The cylinder at .* is not upright.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The axis of cylinder at .* is invalid.*"));
+
+  // Case: the axis attribute of the cylinder does not exist.
+  EXPECT_TRUE(cylinder.GetPrim().RemoveProperty(axis_attribute.GetName()));
   dimension = GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
     stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*The cylinder at .* is not upright.*"));
+    ".*Failed to read the 'axis' attribute of the Prim at.*"));
 }
 
 TEST_F(UsdGeometryTest, CapsuleParsingTest) {
@@ -288,8 +297,8 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
   // Case: the input Prim is not an UsdGeomCapsule.
   auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  auto invalid_dimension = GetCapsuleDimension(empty_prim.GetPrim(),
-    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  auto invalid_dimension = GetCapsuleDimension(empty_prim, meters_per_unit_,
+    stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(invalid_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomCapsule.*"));
@@ -300,7 +309,7 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
     stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to read the 'height' attribute of the Prim at .*"));
+    ".*Failed to read the 'height' attribute of the Prim at.*"));
 
   // Case: the input Prim is missing the radius attribute.
   EXPECT_TRUE(capsule.GetPrim().RemoveProperty(radius_attribute.GetName()));
@@ -308,7 +317,7 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
     stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to read the 'radius' attribute of the Prim at .*"));
+    ".*Failed to read the 'radius' attribute of the Prim at.*"));
 
   // Case: the capsule has different scaling in X and Y axis.
   scale_op.Set(pxr::GfVec3d(0.8, 0.7, 0.9));
@@ -342,9 +351,12 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
     1, 0, 4, 2, 1, 4, 3, 2, 4, 0, 3, 4, 0, 1, 5, 1, 2, 5, 2, 3, 5, 3, 0, 5};
   double scale_factor = 129.2;
 
-  EXPECT_TRUE(mesh.CreatePointsAttr().Set(vertices));
-  EXPECT_TRUE(mesh.CreateFaceVertexCountsAttr().Set(face_vertex_counts));
-  EXPECT_TRUE(mesh.CreateFaceVertexIndicesAttr().Set(face_vertex_indices));
+  pxr::UsdAttribute points_attribute = mesh.CreatePointsAttr();
+  pxr::UsdAttribute face_counts_attribute = mesh.CreateFaceVertexCountsAttr();
+  pxr::UsdAttribute indices_attribute = mesh.CreateFaceVertexIndicesAttr();
+  EXPECT_TRUE(points_attribute.Set(vertices));
+  EXPECT_TRUE(face_counts_attribute.Set(face_vertex_counts));
+  EXPECT_TRUE(indices_attribute.Set(face_vertex_indices));
   auto scale_op = mesh.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
 
   EXPECT_TRUE(scale_op.Set(
@@ -359,6 +371,48 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   // convex hull of the octahedron mesh.
   auto convex_hull = drake_mesh->GetConvexHull();
   EXPECT_EQ(convex_hull.num_faces(), 8);
+
+  // Case: the input Prim is not an UsdGeomMesh.
+  auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
+    pxr::TfToken(""));
+  shape = CreateGeometryMesh("invalid_prim.obj", empty_prim, meters_per_unit_,
+    diagnostic_policy_);
+  EXPECT_TRUE(shape == nullptr);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to cast the Prim at .* into an UsdGeomMesh.*"));
+
+  // Case: the UsdGeomMesh Prim does not have indices attribute.
+  EXPECT_TRUE(mesh.GetPrim().RemoveProperty(indices_attribute.GetName()));
+  shape = CreateGeometryMesh("no_indices.obj", mesh.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_TRUE(shape == nullptr);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to read the 'faceVertexIndices' attribute of the Prim at.*"));
+
+  // Case: the UsdGeomMesh Prim does not have points attribute.
+  EXPECT_TRUE(mesh.GetPrim().RemoveProperty(points_attribute.GetName()));
+  shape = CreateGeometryMesh("no_points.obj", mesh.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_TRUE(shape == nullptr);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to read the 'points' attribute of the Prim at.*"));
+
+  // Case: the face count attribute of the Prim contains elements other than 3.
+  face_vertex_counts[0] = 4;
+  EXPECT_TRUE(face_counts_attribute.Set(face_vertex_counts));
+  shape = CreateGeometryMesh("quad_mesh.obj", mesh.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_TRUE(shape == nullptr);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The mesh at .* is not a triangle mesh..*"));
+
+  // Case: the UsdGeomMesh Prim does not have face counts attribute.
+  EXPECT_TRUE(mesh.GetPrim().RemoveProperty(face_counts_attribute.GetName()));
+  shape = CreateGeometryMesh("no_face_counts.obj", mesh.GetPrim(),
+    meters_per_unit_, diagnostic_policy_);
+  EXPECT_TRUE(shape == nullptr);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to read the 'faceVertexCounts' attribute of the Prim at.*"));
 
   // Case: the UsdGeomMesh Prim has invalid (non-isotropic) scaling.
   EXPECT_TRUE(scale_op.Set(pxr::GfVec3d(1.0, 2.0, 1.0)));
@@ -397,10 +451,10 @@ TEST_F(UsdGeometryTest, GetRigidTransformTest) {
   EXPECT_TRUE(is_approx_equal_abstol(
     actual_rotation_xyz, intended_rotation_xyz, 1e-10));
 
-  // Case: the input Prim is not an UsdGeomXformable type
+  // Case: the input Prim is not an UsdGeomXformable type.
   auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  auto empty_prim_transform = GetPrimRigidTransform(empty_prim.GetPrim(),
+  auto empty_prim_transform = GetPrimRigidTransform(empty_prim,
     meters_per_unit_, diagnostic_policy_);
   EXPECT_FALSE(empty_prim_transform.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -411,8 +465,7 @@ TEST_F(UsdGeometryTest, InvalidPrimScaleTest) {
   // Case: input Prim is not an UsdGeomXformable type.
   auto empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  auto scale = GetPrimScale(empty_prim.GetPrim(),
-    diagnostic_policy_);
+  auto scale = GetPrimScale(empty_prim, diagnostic_policy_);
   EXPECT_FALSE(scale.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomXformable.*"));

@@ -100,27 +100,6 @@ TEST_F(UsdParserTest, UnsupportedPrimTypesTest) {
     ".*Failed to create collision geometry.*"));
 }
 
-TEST_F(UsdParserTest, InvalidGeometryAttributesTest) {
-  std::string filename =
-    FindUsdTestResourceOrThrow("invalid/invalid_geometry_attributes.usda");
-  ParseFile(filename);
-  // Errors from the `/World/Capsule` Prim.
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Only upright capsules are supported at the moment.*"));
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to create collision geometry.*"));
-  // Errors from the `/World/Cylinder` Prim.
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Only upright cylinders are supported at the moment.*"));
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to create collision geometry.*"));
-  // Errors from the `/World/Octahedron` Prim.
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Non-isotropic scaling of a mesh is not supported.*"));
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to create collision geometry.*"));
-}
-
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
