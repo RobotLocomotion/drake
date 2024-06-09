@@ -113,7 +113,7 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
   vertices_ = X_EG * vertices;
 }
 
-VPolytope::VPolytope(const HPolyhedron& hpoly, const double tol)
+VPolytope::VPolytope(const HPolyhedron& hpoly, double tol)
     : ConvexSet(hpoly.ambient_dimension(), true) {
   // First, assert that the HPolyhedron is bounded (since a VPolytope cannot
   // be used to represent an unbounded set).
