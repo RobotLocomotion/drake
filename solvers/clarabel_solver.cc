@@ -339,10 +339,6 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   result->set_x_val(
       Eigen::Map<Eigen::VectorXd>(solution.x.data(), prog.num_vars()));
 
-  //  std::cout << fmt::format("Clarabel x =\n{}",
-  //  fmt_eigen(solution.x.transpose())) << std::endl; std::cout <<
-  //  fmt::format("Clarabel z =\n{}", fmt_eigen(solution.z.transpose())) <<
-  //  std::endl;
   SetBoundingBoxDualSolution(prog, solution.z,
                              info.bounding_box_constraint_dual_indices, result);
   internal::SetDualSolution(
@@ -373,6 +369,5 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   }
   result->set_solution_result(solution_result);
 }
-
 }  // namespace solvers
 }  // namespace drake
