@@ -106,6 +106,7 @@ drake_cc_library(
     name = "gcs_trajectory_optimization",
     srcs = ["gcs_trajectory_optimization.cc"],
     hdrs = ["gcs_trajectory_optimization.h"],
+    tags = ["no_kcov"],
     deps = [
         "//common",
         "//common/trajectories:bezier_curve",
