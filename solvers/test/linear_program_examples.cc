@@ -230,7 +230,7 @@ LinearProgram2::LinearProgram2(CostForm cost_form,
       A << 2, 1, 3, 1,
           0, 2, 0, 3,
           1, 2, 0, 1,
-          1, 0, 0, 2;
+          1, 0, 2, 0;
       // clang-format on
 
       prog()->AddLinearConstraint(A, b_lb, b_ub, x_);

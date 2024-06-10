@@ -54,7 +54,7 @@ class TestEllipsoidsSeparation
       const std::optional<SolverOptions>& solver_options = std::nullopt,
       double tol = 1E-8);
 
- private:
+ protected:
   Eigen::VectorXd x1_;
   Eigen::VectorXd x2_;
   Eigen::MatrixXd R1_;
@@ -93,7 +93,7 @@ class TestQPasSOCP : public ::testing::TestWithParam<QPasSOCPProblem> {
 
   void SolveAndCheckSolution(const SolverInterface& solver, double tol = 1E-6);
 
- private:
+ protected:
   Eigen::MatrixXd Q_;
   Eigen::VectorXd c_;
   Eigen::MatrixXd A_;
@@ -145,7 +145,7 @@ class TestFindSpringEquilibrium
       const std::optional<SolverOptions>& solver_options = std::nullopt,
       double tol = 2E-3);
 
- private:
+ protected:
   Eigen::VectorXd weight_;
   double spring_rest_length_;
   double spring_stiffness_;
@@ -178,7 +178,7 @@ class MaximizeGeometricMeanTrivialProblem1 {
 
   void CheckSolution(const MathematicalProgramResult& result, double tol);
 
- private:
+ protected:
   std::unique_ptr<MathematicalProgram> prog_;
   symbolic::Variable x_;
   std::unique_ptr<Binding<LinearCost>> cost_;

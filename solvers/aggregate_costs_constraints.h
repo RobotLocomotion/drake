@@ -113,6 +113,11 @@ void AggregateConvexConstraints(const MathematicalProgram& prog,
 
 namespace internal {
 
+struct ConvexConstraintAggregationOptions {
+  bool cast_rotated_lorentz_to_lorentz{true};
+  bool preserve_psd_inner_product_vectorization{true};
+};
+
 // Information required to aggregate the convex constraints of a program into
 // the form.
 //   A x + s = b
@@ -152,7 +157,7 @@ struct ConvexConstraintAggregationInfo {
   // lorentz_cone_y_start_indices y[lorentz_cone_y_start_indices[i]:
   // lorentz_cone_y_start_indices[i] + second_order_cone_length[i]] are the dual
   // variables for prog.lorentz_cone_constraints()[i]. See
-  //  // ParseSecondOrderConeConstraints for more details.
+  // ParseSecondOrderConeConstraints for more details.
   std::vector<int> lorentz_cone_dual_variable_start_indices;
   // y[rotated_lorentz_cone_y_start_indices[i]:
   // rotated_lorentz_cone_y_start_indices[i] +
@@ -182,8 +187,10 @@ struct ConvexConstraintAggregationInfo {
 // Power cone {(x, y, z): pow(x, α)*pow(y, 1-α) >= |z|, x>=0, y>=0} with α in
 // (0, 1)
 // This convention is compatible with both the SCS and Clarabel solvers.
-void DoAggregateConvexConstraints(const MathematicalProgram& prog,
-                                  ConvexConstraintAggregationInfo* info);
+void DoAggregateConvexConstraints(
+    const MathematicalProgram& prog,
+    const ConvexConstraintAggregationOptions& options,
+    ConvexConstraintAggregationInfo* info);
 
 // Parse all the bounding box constraints in `prog` to the form
 // A_eq*x+s=b_eq, s in zero cone and A_ineq*x+s=b_ineq, s in positive cone.
@@ -368,7 +375,7 @@ void ParseL2NormCosts(const MathematicalProgram& prog,
 // transformation on the y variable to get the dual variable in the dual cone
 // of rotated Lorentz cone.
 void ParseSecondOrderConeConstraints(
-    const MathematicalProgram& prog,
+    const MathematicalProgram& prog, const bool cast_rotated_lorentz_to_lorentz,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* second_order_cone_length,
     std::vector<int>* lorentz_cone_y_start_indices,
@@ -397,6 +404,7 @@ void ParseRotatedLorentzConeConstraint(
     const std::vector<Eigen::Triplet<double>>& A_cone_triplets,
     const Eigen::Ref<const Eigen::VectorXd>& b_cone,
     const std::vector<int>& x_indices,
+    const bool cast_rotated_lorentz_to_lorentz,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* second_order_cone_length,
     std::optional<std::vector<int>*> rotated_lorentz_cone_y_start_indices);
@@ -449,6 +457,7 @@ void ParseExponentialConeConstraints(
 // prog.linear_matrix_inequality_constraints().
 void ParsePositiveSemidefiniteConstraints(
     const MathematicalProgram& prog, bool upper_triangular,
+    bool preserve_psd_inner_product_vectorization,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* psd_cone_length);
 }  // namespace internal

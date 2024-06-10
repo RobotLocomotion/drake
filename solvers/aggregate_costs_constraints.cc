@@ -260,40 +260,43 @@ const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
   return internal::FindNonconvexQuadraticCost(quadratic_costs);
 }
 
-void AggregateConvexConstraints(const MathematicalProgram& prog,
-                                Eigen::SparseMatrix<double>* A,
-                                Eigen::VectorXd* b,
-                                Eigen::SparseMatrix<double>* Aeq,
-                                Eigen::VectorXd* beq) {
-  internal::ConvexConstraintAggregationInfo info;
-  internal::DoAggregateConvexConstraints(prog, &info);
-
-  auto A_triplets_end_of_equalities_iterator = info.A_triplets.begin();
-  std::advance(A_triplets_end_of_equalities_iterator,
-               info.num_linear_equality_constraint_rows);
-
-  // The first info.num_linear_equality_constraint_rows correspond to equality
-  // constraints.
-  Aeq->resize(info.num_linear_equality_constraint_rows, prog.num_vars());
-  Aeq->setFromTriplets(info.A_triplets.begin(),
-                       A_triplets_end_of_equalities_iterator);
-  beq->resize(info.num_linear_equality_constraint_rows);
-  (*beq) = Eigen::Map<Eigen::VectorXd>(
-      info.b_std.data(), info.num_linear_equality_constraint_rows);
-
-  // The rest correspond to conic constraints.
-  int num_conic = info.A_row_count - info.num_linear_equality_constraint_rows;
-  A->resize(num_conic, prog.num_vars());
-  A->setFromTriplets(A_triplets_end_of_equalities_iterator,
-                     info.A_triplets.end());
-  b->resize(num_conic);
-  (*b) = Eigen::Map<Eigen::VectorXd>(
-      info.b_std.data() + info.num_linear_equality_constraint_rows, num_conic);
-}
+// void AggregateConvexConstraints(const MathematicalProgram& prog,
+//                                Eigen::SparseMatrix<double>* A,
+//                                Eigen::VectorXd* b,
+//                                Eigen::SparseMatrix<double>* Aeq,
+//                                Eigen::VectorXd* beq) {
+//  internal::ConvexConstraintAggregationInfo info;
+//  internal::DoAggregateConvexConstraints(prog, &info);
+//
+//  auto A_triplets_end_of_equalities_iterator = info.A_triplets.begin();
+//  std::advance(A_triplets_end_of_equalities_iterator,
+//               info.num_linear_equality_constraint_rows);
+//
+//  // The first info.num_linear_equality_constraint_rows correspond to equality
+//  // constraints.
+//  Aeq->resize(info.num_linear_equality_constraint_rows, prog.num_vars());
+//  Aeq->setFromTriplets(info.A_triplets.begin(),
+//                       A_triplets_end_of_equalities_iterator);
+//  beq->resize(info.num_linear_equality_constraint_rows);
+//  (*beq) = Eigen::Map<Eigen::VectorXd>(
+//      info.b_std.data(), info.num_linear_equality_constraint_rows);
+//
+//  // The rest correspond to conic constraints.
+//  int num_conic = info.A_row_count - info.num_linear_equality_constraint_rows;
+//  A->resize(num_conic, prog.num_vars());
+//  A->setFromTriplets(A_triplets_end_of_equalities_iterator,
+//                     info.A_triplets.end());
+//  b->resize(num_conic);
+//  (*b) = Eigen::Map<Eigen::VectorXd>(
+//      info.b_std.data() + info.num_linear_equality_constraint_rows,
+//      num_conic);
+//}
 
 namespace internal {
-void DoAggregateConvexConstraints(const MathematicalProgram& prog,
-                                  ConvexConstraintAggregationInfo* info) {
+void DoAggregateConvexConstraints(
+    const MathematicalProgram& prog,
+    const ConvexConstraintAggregationOptions& options,
+    ConvexConstraintAggregationInfo* info) {
   // Parse Linear Equality Constraints.
   info->num_linear_equality_constraint_rows = 0;
   internal::ParseLinearEqualityConstraints(
@@ -361,15 +364,16 @@ void DoAggregateConvexConstraints(const MathematicalProgram& prog,
 
   // Parse Second-Order cone constraints
   internal::ParseSecondOrderConeConstraints(
-      prog, &(info->A_triplets), &(info->b_std), &(info->A_row_count),
-      &(info->second_order_cone_lengths),
+      prog, options.cast_rotated_lorentz_to_lorentz, &(info->A_triplets),
+      &(info->b_std), &(info->A_row_count), &(info->second_order_cone_lengths),
       &(info->lorentz_cone_dual_variable_start_indices),
       &(info->rotated_lorentz_cone_dual_variable_start_indices));
 
   // Parse PSD cone constraints
   internal::ParsePositiveSemidefiniteConstraints(
-      prog, /* upper triangular = */ true, &(info->A_triplets), &(info->b_std),
-      &(info->A_row_count), &(info->psd_cone_lengths));
+      prog, /* upper triangular = */ true,
+      options.preserve_psd_inner_product_vectorization, &(info->A_triplets),
+      &(info->b_std), &(info->A_row_count), &(info->psd_cone_lengths));
 
   // Parse Exponential Cone Constraints
   internal::ParseExponentialConeConstraints(
@@ -726,7 +730,7 @@ void ParseL2NormCosts(const MathematicalProgram& prog,
 }
 
 void ParseSecondOrderConeConstraints(
-    const MathematicalProgram& prog,
+    const MathematicalProgram& prog, const bool cast_rotated_lorentz_to_lorentz,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* second_order_cone_length,
     std::vector<int>* lorentz_cone_y_start_indices,
@@ -770,9 +774,10 @@ void ParseSecondOrderConeConstraints(
     const Eigen::VectorXd& bi = rotated_lorentz_cone.evaluator()->b();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
-    ParseRotatedLorentzConeConstraint(Ai_triplets, bi, x_indices, A_triplets, b,
-                                      A_row_count, second_order_cone_length,
-                                      rotated_lorentz_cone_y_start_indices);
+    ParseRotatedLorentzConeConstraint(
+        Ai_triplets, bi, x_indices, cast_rotated_lorentz_to_lorentz, A_triplets,
+        b, A_row_count, second_order_cone_length,
+        rotated_lorentz_cone_y_start_indices);
   }
 }
 
@@ -780,6 +785,7 @@ void ParseRotatedLorentzConeConstraint(
     const std::vector<Eigen::Triplet<double>>& A_cone_triplets,
     const Eigen::Ref<const Eigen::VectorXd>& b_cone,
     const std::vector<int>& x_indices,
+    const bool cast_rotated_lorentz_to_lorentz,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* second_order_cone_length,
     std::optional<std::vector<int>*> rotated_lorentz_cone_y_start_indices) {
@@ -803,16 +809,27 @@ void ParseRotatedLorentzConeConstraint(
   //           [         -aₙ₋₁ᵀ ]       [          bₙ₋₁]
   for (const auto& Ai_triplet : A_cone_triplets) {
     const int x_index = x_indices[Ai_triplet.col()];
+
     if (Ai_triplet.row() == 0) {
-      A_triplets->emplace_back(*A_row_count, x_index,
-                               -0.5 * Ai_triplet.value());
-      A_triplets->emplace_back(*A_row_count + 1, x_index,
-                               -0.5 * Ai_triplet.value());
+      if (cast_rotated_lorentz_to_lorentz) {
+        A_triplets->emplace_back(*A_row_count, x_index,
+                                 -0.5 * Ai_triplet.value());
+        A_triplets->emplace_back(*A_row_count + 1, x_index,
+                                 -0.5 * Ai_triplet.value());
+      } else {
+        A_triplets->emplace_back(*A_row_count, x_index,
+                                 -1 * Ai_triplet.value());
+      }
     } else if (Ai_triplet.row() == 1) {
-      A_triplets->emplace_back(*A_row_count, x_index,
-                               -0.5 * Ai_triplet.value());
-      A_triplets->emplace_back(*A_row_count + 1, x_index,
-                               0.5 * Ai_triplet.value());
+      if (cast_rotated_lorentz_to_lorentz) {
+        A_triplets->emplace_back(*A_row_count, x_index,
+                                 -0.5 * Ai_triplet.value());
+        A_triplets->emplace_back(*A_row_count + 1, x_index,
+                                 0.5 * Ai_triplet.value());
+      } else {
+        A_triplets->emplace_back(*A_row_count + 1, x_index,
+                                 -1 * Ai_triplet.value());
+      }
     } else {
       A_triplets->emplace_back(*A_row_count + Ai_triplet.row(), x_index,
                                -Ai_triplet.value());
@@ -870,6 +887,7 @@ void ParseExponentialConeConstraints(
 
 void ParsePositiveSemidefiniteConstraints(
     const MathematicalProgram& prog, bool upper_triangular,
+    bool preserve_psd_inner_product_vectorization,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* psd_cone_length) {
   DRAKE_ASSERT(ssize(*b) == *A_row_count);
@@ -913,7 +931,17 @@ void ParsePositiveSemidefiniteConstraints(
       const int i_start = upper_triangular ? 0 : j;
       const int i_end = upper_triangular ? j + 1 : X_rows;
       for (int i = i_start; i < i_end; ++i) {
-        const double scale_factor = i == j ? 1 : sqrt2;
+//        const double scale_factor =
+//            i == j  ? 1 : sqrt2;
+//        const double scale_factor =
+//            i != j && preserve_psd_inner_product_vectorization ? sqrt2 : 1;
+        double scale_factor{1};
+        if(i!=j && preserve_psd_inner_product_vectorization) {
+          scale_factor = sqrt(2);
+        }
+        else if(i!=j) {
+          scale_factor = 2;
+        }
         A_triplets->emplace_back(
             *A_row_count + x_index_count,
             prog.FindDecisionVariableIndex(flat_X(j * X_rows + i)),

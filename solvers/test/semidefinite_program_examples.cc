@@ -209,13 +209,13 @@ void SolveSDPwithSecondOrderConeExample1(const SolverInterface& solver,
         1, 2, 1,
         0, 1, 2;
   // clang-format on
-  prog.AddLinearCost((C0 * X.cast<symbolic::Expression>()).trace() + x(0));
+  prog.AddLinearCost((C0 * X.cast<Expression>()).trace() + x(0));
   prog.AddLinearConstraint(
       (Matrix3d::Identity() * X.cast<Expression>()).trace() + x(0) == 1);
   prog.AddLinearConstraint(
       (Matrix3d::Ones() * X.cast<Expression>()).trace() + x(1) + x(2) == 0.5);
   prog.AddPositiveSemidefiniteConstraint(X);
-  prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  prog.AddLorentzConeConstraint(x.cast<Expression>());
 
   MathematicalProgramResult result;
   solver.Solve(prog, {}, {}, &result);
