@@ -309,7 +309,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
 
-  const internal::JointLockingCacheData<T>& EvalJointLockingCache(
+  const internal::JointLockingCacheData<T>& EvalJointLocking(
       const systems::Context<T>& context) const;
 
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;

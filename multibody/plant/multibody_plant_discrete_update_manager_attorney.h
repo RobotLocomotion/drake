@@ -110,9 +110,9 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.geometry_id_to_body_index_;
   }
 
-  static const internal::JointLockingCacheData<T>& EvalJointLockingCache(
+  static const internal::JointLockingCacheData<T>& EvalJointLocking(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.EvalJointLockingCache(context);
+    return plant.EvalJointLocking(context);
   }
 
   static const std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&
