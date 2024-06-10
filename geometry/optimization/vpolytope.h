@@ -54,7 +54,7 @@ class VPolytope final : public ConvexSet, private ShapeReifier {
   @throws std::runtime_error if H is unbounded or if Qhull terminates with an
   error.
   @pydrake_mkdoc_identifier{hpolyhedron} */
-  explicit VPolytope(const HPolyhedron& H, const double tol = 1e-9);
+  explicit VPolytope(const HPolyhedron& H, double tol = 1e-9);
 
   /** Constructs the polytope from a SceneGraph geometry.
   @pydrake_mkdoc_identifier{scenegraph} */

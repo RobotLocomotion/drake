@@ -39,6 +39,7 @@ rust_static_library(
     srcs = glob(["rust_wrapper/src/**/*.rs"], allow_empty = False),
     crate_features = ["sdp"],
     deps = all_crate_deps(),
+    proc_macro_deps = all_crate_deps(proc_macro = True),
 )
 
 cc_wrap_static_archive_hidden(

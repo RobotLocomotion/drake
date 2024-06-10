@@ -100,6 +100,6 @@ rust_library(
     }),
     version = "0.2.2",
     deps = [
-        "@crate__num-traits-0.2.18//:num_traits",
+        "@crate__num-traits-0.2.19//:num_traits",
     ],
 )
