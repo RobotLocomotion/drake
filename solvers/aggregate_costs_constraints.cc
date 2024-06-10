@@ -260,38 +260,6 @@ const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
   return internal::FindNonconvexQuadraticCost(quadratic_costs);
 }
 
-// void AggregateConvexConstraints(const MathematicalProgram& prog,
-//                                Eigen::SparseMatrix<double>* A,
-//                                Eigen::VectorXd* b,
-//                                Eigen::SparseMatrix<double>* Aeq,
-//                                Eigen::VectorXd* beq) {
-//  internal::ConvexConstraintAggregationInfo info;
-//  internal::DoAggregateConvexConstraints(prog, &info);
-//
-//  auto A_triplets_end_of_equalities_iterator = info.A_triplets.begin();
-//  std::advance(A_triplets_end_of_equalities_iterator,
-//               info.num_linear_equality_constraint_rows);
-//
-//  // The first info.num_linear_equality_constraint_rows correspond to equality
-//  // constraints.
-//  Aeq->resize(info.num_linear_equality_constraint_rows, prog.num_vars());
-//  Aeq->setFromTriplets(info.A_triplets.begin(),
-//                       A_triplets_end_of_equalities_iterator);
-//  beq->resize(info.num_linear_equality_constraint_rows);
-//  (*beq) = Eigen::Map<Eigen::VectorXd>(
-//      info.b_std.data(), info.num_linear_equality_constraint_rows);
-//
-//  // The rest correspond to conic constraints.
-//  int num_conic = info.A_row_count - info.num_linear_equality_constraint_rows;
-//  A->resize(num_conic, prog.num_vars());
-//  A->setFromTriplets(A_triplets_end_of_equalities_iterator,
-//                     info.A_triplets.end());
-//  b->resize(num_conic);
-//  (*b) = Eigen::Map<Eigen::VectorXd>(
-//      info.b_std.data() + info.num_linear_equality_constraint_rows,
-//      num_conic);
-//}
-
 namespace internal {
 void DoAggregateConvexConstraints(
     const MathematicalProgram& prog,

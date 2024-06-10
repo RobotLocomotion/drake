@@ -1077,18 +1077,6 @@ drake_cc_library(
     deps = [],
 )
 
-#drake_cc_library(
-#    name="conic_standard_forms",
-#    srcs =["conic_standard_forms.cc"],
-#    hdrs =["conic_standard_forms.h"],
-#    interface_deps = [
-#        ":mathematical_program",
-#        "//math:matrix_util",
-#        ":aggregate_costs_constraints"
-#    ],
-#    deps = [],
-#)
-
 drake_cc_library(
     name = "dual_convex_program",
     srcs = ["dual_convex_program.cc"],
