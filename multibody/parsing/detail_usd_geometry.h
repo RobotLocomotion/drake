@@ -101,7 +101,7 @@ std::optional<pxr::TfToken> GetUsdGeomAxis(
 
 // Returns the axis (the orientation of the geometry) of a UsdGeomCylinder or
 // a UsdGeomCapsule as a Vector3d, which could be one of `Vector3d(1,0,0)`,
-// `Vector3d(0,1,0)`, or `Vector3d(0,0,1)`. Rerturns nullopt if an error
+// `Vector3d(0,1,0)`, or `Vector3d(0,0,1)`. Returns nullopt if an error
 // occurs.
 std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
   const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic);
