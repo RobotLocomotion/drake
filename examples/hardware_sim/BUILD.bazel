@@ -20,6 +20,7 @@ filegroup(
         "//examples/pendulum:models",
         "@drake_models//:iiwa_description",
         "@drake_models//:manipulation_station",
+        "@drake_models//:veggies",
         "@drake_models//:wsg_50_description",
     ],
     visibility = ["//:__pkg__"],

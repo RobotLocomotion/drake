@@ -48,6 +48,13 @@ Demo:
   - add_weld:
       parent: wsg_on_iiwa
       child: wsg::body
+  - add_model:
+      name: bell_pepper
+      file: package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf
+      default_free_body_pose:
+        flush_bottom_center__z_up:
+          base_frame: amazon_table::amazon_table
+          translation: [0, 0, 0.20]
   lcm_buses:
     driver_traffic:
       # Use a non-default LCM url to communicate with the robot.
