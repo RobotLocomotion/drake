@@ -97,7 +97,23 @@ def _main():
         "--environment_map", default=Path(), type=Path,
         help="Filesystem path to an image to be used as an environment map. "
              "It must be an image type normally used by your browser (e.g., "
-             ".jpg, .png, etc.). HDR images are not supported yet."
+             ".jpg, .png, etc.). HDR images are not supported yet. This image "
+             "will only be used in the browser window, not the renderer ir "
+             "--show_rgbd_sensor has been specified. Use --camera_config to "
+             "add an environment to the camera."
+    )
+    args_parser.add_argument(
+        "--camera_config", default=None, type=Path,
+        help="Filesystem path to a yaml file containing the RenderEngineVtk "
+             "parameters. If a single camera is defined, it is used. If "
+             "multiple, an arbitrary camera is used. Only used if "
+             "--show_rgbd_sensor is true. Note: not all values in the config "
+             "file will be applied: (1) X_PB is always ignored, because the "
+             "camera is affixed to the Meshcat browser camera. For various "
+             "reasons, if cast_shadows is set to True, the displayed render "
+             "window will always be square (with a size equal to the larger "
+             "dimension) and with the camera's focus pushed down and to the "
+             "left."
     )
 
     args_parser.add_argument(
@@ -145,7 +161,8 @@ def _main():
                                   triad_opacity=args.triad_opacity,
                                   browser_new=args.browser_new,
                                   pyplot=args.pyplot,
-                                  environment_map=args.environment_map)
+                                  environment_map=args.environment_map,
+                                  camera_config=args.camera_config)
     package_map = visualizer.package_map()
     package_map.PopulateFromRosPackagePath()
     for item in args.filename:
