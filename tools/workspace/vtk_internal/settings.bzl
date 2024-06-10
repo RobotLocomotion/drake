@@ -479,6 +479,7 @@ MODULE_SETTINGS = {
             "**/vtkEGL*",
             "**/vtkOSOpenGL*",
             "**/vtkSDL2OpenGL*",
+            "**/vtkWebAssembly*",
             "**/vtkWin32OpenGL*",
             "**/vtkXOpenGL*",
         ],
@@ -632,6 +633,29 @@ MODULE_SETTINGS = {
                 "-lGLX",
             ],
         }),
+    },
+    "VTK::pegtl": {
+        # TODO(jwnimmer-tri) Used primarily by vtkCellAttribute (there's an
+        # additional use in IO/MotionFx but we can ignore that).The only user of pugixml is vtkDataAssembly.
+        # Possibly there is some way to disable XML I/O support on that
+        # class, so that we can drop this dependency.
+        "cmake_undefines": [
+            "VTK_MODULE_USE_EXTERNAL_vtkpegtl",
+        ],
+        "hdrs_glob_exclude": [
+            # We use `hdrs_content` instead of a full-blown configure file.
+            "**/pegtl.hpp.in",
+        ],
+        "hdrs_content": {
+            "ThirdParty/pegtl/vtk_pegtl.h": """
+                #pragma once
+                #include <vtkpegtl/include/tao/pegtl.hpp>
+                #define VTK_PEGTL(x) <vtkpegtl/include/tao/x>
+            """,
+        },
+        "srcs_glob_extra": [
+            "ThirdParty/pegtl/**/*.hpp",
+        ],
     },
     "VTK::pugixml": {
         # TODO(jwnimmer-tri) The only user of pugixml is vtkDataAssembly.
