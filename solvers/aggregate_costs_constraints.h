@@ -116,6 +116,7 @@ namespace internal {
 struct ConvexConstraintAggregationOptions {
   bool cast_rotated_lorentz_to_lorentz{true};
   bool preserve_psd_inner_product_vectorization{true};
+  bool parse_psd_using_upper_triangular{true};
 };
 
 // Information required to aggregate the convex constraints of a program into

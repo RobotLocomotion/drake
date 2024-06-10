@@ -339,7 +339,7 @@ void DoAggregateConvexConstraints(
 
   // Parse PSD cone constraints
   internal::ParsePositiveSemidefiniteConstraints(
-      prog, /* upper triangular = */ true,
+      prog, options.parse_psd_using_upper_triangular,
       options.preserve_psd_inner_product_vectorization, &(info->A_triplets),
       &(info->b_std), &(info->A_row_count), &(info->psd_cone_lengths));
 
@@ -786,7 +786,7 @@ void ParseRotatedLorentzConeConstraint(
                                  -0.5 * Ai_triplet.value());
       } else {
         A_triplets->emplace_back(*A_row_count, x_index,
-                                 -1 * Ai_triplet.value());
+                                 -0.5 * Ai_triplet.value());
       }
     } else if (Ai_triplet.row() == 1) {
       if (cast_rotated_lorentz_to_lorentz) {
@@ -796,15 +796,20 @@ void ParseRotatedLorentzConeConstraint(
                                  0.5 * Ai_triplet.value());
       } else {
         A_triplets->emplace_back(*A_row_count + 1, x_index,
-                                 -1 * Ai_triplet.value());
+                                 -0.5 * Ai_triplet.value());
       }
     } else {
       A_triplets->emplace_back(*A_row_count + Ai_triplet.row(), x_index,
                                -Ai_triplet.value());
     }
   }
-  b->push_back(0.5 * (b_cone(0) + b_cone(1)));
-  b->push_back(0.5 * (b_cone(0) - b_cone(1)));
+  if (cast_rotated_lorentz_to_lorentz) {
+    b->push_back(0.5 * (b_cone(0) + b_cone(1)));
+    b->push_back(0.5 * (b_cone(0) - b_cone(1)));
+  } else {
+    b->push_back(0.5 * b_cone(0));
+    b->push_back(0.5 * b_cone(1));
+  }
   for (int i = 2; i < b_cone.rows(); ++i) {
     b->push_back(b_cone(i));
   }
@@ -899,15 +904,10 @@ void ParsePositiveSemidefiniteConstraints(
       const int i_start = upper_triangular ? 0 : j;
       const int i_end = upper_triangular ? j + 1 : X_rows;
       for (int i = i_start; i < i_end; ++i) {
-//        const double scale_factor =
-//            i == j  ? 1 : sqrt2;
-//        const double scale_factor =
-//            i != j && preserve_psd_inner_product_vectorization ? sqrt2 : 1;
         double scale_factor{1};
-        if(i!=j && preserve_psd_inner_product_vectorization) {
-          scale_factor = sqrt(2);
-        }
-        else if(i!=j) {
+        if (i != j && preserve_psd_inner_product_vectorization) {
+          scale_factor = sqrt2;
+        } else if (i != j) {
           scale_factor = 2;
         }
         A_triplets->emplace_back(
@@ -970,7 +970,12 @@ void ParsePositiveSemidefiniteConstraints(
       const int i_start = upper_triangular ? 0 : j;
       const int i_end = upper_triangular ? j + 1 : F_rows;
       for (int i = i_start; i < i_end; ++i) {
-        const double scale_factor = i == j ? 1 : sqrt2;
+        double scale_factor{1};
+        if (i != j && preserve_psd_inner_product_vectorization) {
+          scale_factor = sqrt2;
+        } else if (i != j) {
+          scale_factor = 2;
+        }
         for (int k = 1; k < static_cast<int>(F.size()); ++k) {
           A_triplets->emplace_back(*A_row_count + A_cone_row_count,
                                    x_indices[k - 1],

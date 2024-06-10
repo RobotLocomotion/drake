@@ -49,9 +49,9 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
 
   internal::ConvexConstraintAggregationInfo info;
   internal::ConvexConstraintAggregationOptions options;
-  // TODO(Alexandre.Amice) change to false.
-  options.cast_rotated_lorentz_to_lorentz = true;
+  options.cast_rotated_lorentz_to_lorentz = false;
   options.preserve_psd_inner_product_vectorization = false;
+  options.parse_psd_using_upper_triangular = false;
   internal::DoAggregateConvexConstraints(prog, options, &info);
   Eigen::SparseMatrix<double> Aeq;
   Eigen::VectorXd beq;
@@ -221,33 +221,18 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
     DRAKE_THROW_UNLESS(
         current_dual_vars_start_index ==
         info.rotated_lorentz_cone_dual_variable_start_indices[i]);
-    Eigen::MatrixXd T = Eigen::MatrixXd::Identity(soc_length, soc_length);
-    Eigen::MatrixXd T_inv = Eigen::MatrixXd::Identity(soc_length, soc_length);
-    //        const double inv_root_2 = 1 / sqrt(2.0);
-    //    const double inv_root_2 = 1 / 2.0;
-    //    const double inv_root_2 = 1;
-    T(0, 0) = 1;
-    T(0, 1) = 1;
-    T(1, 0) = 1;
-    T(1, 1) = -1;
-    T_inv(0, 0) = 0.5;
-    T_inv(0, 1) = 0.5;
-    T_inv(1, 0) = 0.5;
-    T_inv(1, 1) = -0.5;
-    const VectorX<symbolic::Expression> tmp =
-        T_inv *
-        dual_vars
-            .segment(info.rotated_lorentz_cone_dual_variable_start_indices[i],
-                     soc_length)
-            .cast<symbolic::Expression>();
     constraint_to_dual_variable_map->emplace(
-        prog.rotated_lorentz_cone_constraints()[i], tmp);
+        prog.rotated_lorentz_cone_constraints()[i],
+        dual_vars.segment(
+            info.rotated_lorentz_cone_dual_variable_start_indices[i],
+            soc_length));
     // The output of DoAggregateConvexConstraints casts rotated lorentz cones to
     // normal lorentz cones. Here we undo the transformation so that the dual
     // variables can be rotated lorentz cones.
 
     dual_prog->AddRotatedLorentzConeConstraint(
-        T, Eigen::VectorXd::Zero(soc_length),
+        Eigen::MatrixXd::Identity(soc_length, soc_length),
+        Eigen::VectorXd::Zero(soc_length),
         dual_vars.segment(
             info.rotated_lorentz_cone_dual_variable_start_indices[i],
             soc_length));
@@ -259,10 +244,9 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
     const int psd_row_size = info.psd_cone_lengths[i];
     const int lambda_rows_size = (psd_row_size * (psd_row_size + 1)) / 2;
     // Make Lam and add psd constraint
-    const MatrixX<symbolic::Variable> Lam =
+    MatrixX<symbolic::Expression> Lam =
         math::ToSymmetricMatrixFromLowerTriangularColumns(
             dual_vars.segment(current_dual_vars_start_index, lambda_rows_size));
-    // TODO(Alexandre.Amice) need to scale Lam appropriately.
     dual_prog->AddPositiveSemidefiniteConstraint(Lam);
     constraint_to_dual_variable_map->emplace(
         prog.positive_semidefinite_constraints()[i], Lam);
@@ -279,7 +263,7 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
             lam.segment(current_dual_vars_start_index, lambda_rows_size));
     dual_prog->AddPositiveSemidefiniteConstraint(Lam);
     constraint_to_dual_variable_map->emplace(
-        prog.positive_semidefinite_constraints()[i], Lam);
+        prog.linear_matrix_inequality_constraints()[i], Lam);
     current_dual_vars_start_index += lambda_rows_size;
   }
   DRAKE_DEMAND(current_dual_vars_start_index == dual_vars.size());
