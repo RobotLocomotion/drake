@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
 namespace drake {
@@ -47,7 +48,11 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
   auto dual_prog = std::make_unique<MathematicalProgram>();
 
   internal::ConvexConstraintAggregationInfo info;
-  internal::DoAggregateConvexConstraints(prog, &info);
+  internal::ConvexConstraintAggregationOptions options;
+  // TODO(Alexandre.Amice) change to false.
+  options.cast_rotated_lorentz_to_lorentz = true;
+  options.preserve_psd_inner_product_vectorization = false;
+  internal::DoAggregateConvexConstraints(prog, options, &info);
   Eigen::SparseMatrix<double> Aeq;
   Eigen::VectorXd beq;
   auto A_triplets_end_of_equalities_iterator = info.A_triplets.begin();
@@ -111,7 +116,6 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
                               A_transpose_triplets.end());
   dual_prog->AddLinearEqualityConstraint(A_transpose, -c,
                                          dual_prog->decision_variables());
-  int current_cone_start_index = 0;
   int num_linear_constraints =
       info.num_bounding_box_inequality_constraint_rows +
       info.num_linear_constraint_rows;
@@ -119,8 +123,9 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
       Eigen::MatrixXd::Identity(num_linear_constraints, num_linear_constraints),
       Eigen::VectorXd::Zero(num_linear_constraints),
       Eigen::VectorXd::Constant(num_linear_constraints, kInf),
-      lam.segment(current_cone_start_index, num_linear_constraints));
+      lam.head(num_linear_constraints));
 
+  int current_dual_vars_start_index{0};
   // Now we populate the constraint_to_dual_variable_map
   // Linear Equality Constraints.
   for (int i = 0; i < ssize(prog.linear_equality_constraints()); i++) {
@@ -134,28 +139,33 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
                          .size())
             .cast<symbolic::Expression>());
   }
+  current_dual_vars_start_index += info.num_linear_equality_constraint_rows;
   // Bounding Box Constraints.
   for (int i = 0; i < ssize(prog.bounding_box_constraints()); i++) {
     const int constraint_size =
         prog.bounding_box_constraints()[i].evaluator()->lower_bound().size();
     VectorX<symbolic::Expression> local_dual_var(constraint_size);
     for (int j = 0; j < constraint_size; j++) {
-      if (info.bounding_box_constraint_dual_indices[i][j].first == -1 &&
+      if (info.bounding_box_constraint_dual_indices[i][j].first != -1 &&
           info.bounding_box_constraint_dual_indices[i][j].second != -1) {
         local_dual_var(j) = symbolic::Expression(0);
       }
-      if (info.bounding_box_constraint_dual_indices[i][j].first != -1) {
-        local_dual_var(j) =
-            dual_vars(info.bounding_box_constraint_dual_indices[i][j].first);
-      }
       if (info.bounding_box_constraint_dual_indices[i][j].second != -1) {
-        local_dual_var(j) -=
-            dual_vars(info.bounding_box_constraint_dual_indices[i][j].second);
+        local_dual_var(j) =
+            -dual_vars(info.bounding_box_constraint_dual_indices[i][j].second);
+      }
+      if (info.bounding_box_constraint_dual_indices[i][j].first != -1 &&
+          info.bounding_box_constraint_dual_indices[i][j].first !=
+              info.bounding_box_constraint_dual_indices[i][j].second) {
+        local_dual_var(j) +=
+            dual_vars(info.bounding_box_constraint_dual_indices[i][j].first);
       }
     }
     constraint_to_dual_variable_map->emplace(prog.bounding_box_constraints()[i],
                                              local_dual_var);
   }
+  current_dual_vars_start_index +=
+      info.num_bounding_box_inequality_constraint_rows;
 
   // Linear Constraints.
   for (int i = 0; i < ssize(info.linear_constraint_dual_indices); i++) {
@@ -176,29 +186,28 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
     constraint_to_dual_variable_map->emplace(prog.linear_constraints()[i],
                                              local_dual_vars);
   }
+  current_dual_vars_start_index += info.num_linear_constraint_rows;
 
-  current_cone_start_index += num_linear_constraints;
   int second_order_cone_length_index = 0;
-
   // Lorentz Cone Constraints.
   for (int i = 0; i < ssize(info.lorentz_cone_dual_variable_start_indices);
        i++) {
     const int soc_length =
         info.second_order_cone_lengths[second_order_cone_length_index++];
-    DRAKE_DEMAND(
-        soc_length ==
-        prog.lorentz_cone_constraints()[i].evaluator()->lower_bound().size());
+    DRAKE_DEMAND(soc_length ==
+                 prog.lorentz_cone_constraints()[i].evaluator()->A().rows());
+    DRAKE_THROW_UNLESS(current_dual_vars_start_index ==
+                       info.lorentz_cone_dual_variable_start_indices[i]);
     constraint_to_dual_variable_map->emplace(
         prog.lorentz_cone_constraints()[i],
         dual_vars.segment(info.lorentz_cone_dual_variable_start_indices[i],
                           soc_length));
     dual_prog->AddLorentzConeConstraint(
-        Eigen::MatrixXd::Identity(
-            info.second_order_cone_lengths[second_order_cone_length_index],
-            soc_length),
+        Eigen::MatrixXd::Identity(soc_length, soc_length),
         Eigen::VectorXd::Zero(soc_length),
-        dual_vars.segment(current_cone_start_index, soc_length));
-    current_cone_start_index += soc_length;
+        dual_vars.segment(info.lorentz_cone_dual_variable_start_indices[i],
+                          soc_length));
+    current_dual_vars_start_index += soc_length;
   }
 
   // Rotated Lorentz Cone Constraints.
@@ -206,50 +215,58 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
        i < ssize(info.rotated_lorentz_cone_dual_variable_start_indices); i++) {
     const int soc_length =
         info.second_order_cone_lengths[second_order_cone_length_index++];
-    DRAKE_DEMAND(soc_length == prog.rotated_lorentz_cone_constraints()[i]
-                                   .evaluator()
-                                   ->lower_bound()
-                                   .size());
+    DRAKE_DEMAND(
+        soc_length ==
+        prog.rotated_lorentz_cone_constraints()[i].evaluator()->A().rows());
+    DRAKE_THROW_UNLESS(
+        current_dual_vars_start_index ==
+        info.rotated_lorentz_cone_dual_variable_start_indices[i]);
+    Eigen::MatrixXd T = Eigen::MatrixXd::Identity(soc_length, soc_length);
+    Eigen::MatrixXd T_inv = Eigen::MatrixXd::Identity(soc_length, soc_length);
+    //        const double inv_root_2 = 1 / sqrt(2.0);
+    //    const double inv_root_2 = 1 / 2.0;
+    //    const double inv_root_2 = 1;
+    T(0, 0) = 1;
+    T(0, 1) = 1;
+    T(1, 0) = 1;
+    T(1, 1) = -1;
+    T_inv(0, 0) = 0.5;
+    T_inv(0, 1) = 0.5;
+    T_inv(1, 0) = 0.5;
+    T_inv(1, 1) = -0.5;
+    const VectorX<symbolic::Expression> tmp =
+        T_inv *
+        dual_vars
+            .segment(info.rotated_lorentz_cone_dual_variable_start_indices[i],
+                     soc_length)
+            .cast<symbolic::Expression>();
     constraint_to_dual_variable_map->emplace(
-        prog.rotated_lorentz_cone_constraints()[i],
+        prog.rotated_lorentz_cone_constraints()[i], tmp);
+    // The output of DoAggregateConvexConstraints casts rotated lorentz cones to
+    // normal lorentz cones. Here we undo the transformation so that the dual
+    // variables can be rotated lorentz cones.
+
+    dual_prog->AddRotatedLorentzConeConstraint(
+        T, Eigen::VectorXd::Zero(soc_length),
         dual_vars.segment(
             info.rotated_lorentz_cone_dual_variable_start_indices[i],
             soc_length));
-    // If x is in the rotated lorentz cone, then Tx is in the lorentz cone.
-    //    Eigen::MatrixXd T = Eigen::MatrixXd::Identity(soc_length, soc_length);
-    //    const double inv_root_2 = 1.0 / sqrt(2.0);
-    //    T(0, 0) = inv_root_2;
-    //    T(0, 1) = inv_root_2;
-    //    T(1, 0) = inv_root_2;
-    //    T(1, 1) = -inv_root_2;
-    dual_prog->AddRotatedLorentzConeConstraint(
-        Eigen::MatrixXd::Identity(soc_length, soc_length),
-        Eigen::VectorXd::Zero(soc_length),
-        dual_vars.segment(current_cone_start_index, soc_length));
-    current_cone_start_index += soc_length;
+    current_dual_vars_start_index += soc_length;
   }
-
-  //  for (const int soc_length : info.second_order_cone_lengths) {
-  //    // Cast to expression.
-  //    dual_prog->AddLorentzConeConstraint(
-  //        Eigen::MatrixXd::Identity(soc_length, soc_length),
-  //        Eigen::VectorXd::Zero(soc_length),
-  //        lam.segment(current_cone_start_index, soc_length));
-  //    current_cone_start_index += soc_length;
-  //  }
 
   //  Positive semidefinite constraints.
   for (int i = 0; i < ssize(prog.positive_semidefinite_constraints()); ++i) {
     const int psd_row_size = info.psd_cone_lengths[i];
     const int lambda_rows_size = (psd_row_size * (psd_row_size + 1)) / 2;
     // Make Lam and add psd constraint
-    const MatrixX<symbolic::Expression> Lam =
+    const MatrixX<symbolic::Variable> Lam =
         math::ToSymmetricMatrixFromLowerTriangularColumns(
-            lam.segment(current_cone_start_index, lambda_rows_size));
+            dual_vars.segment(current_dual_vars_start_index, lambda_rows_size));
+    // TODO(Alexandre.Amice) need to scale Lam appropriately.
     dual_prog->AddPositiveSemidefiniteConstraint(Lam);
     constraint_to_dual_variable_map->emplace(
         prog.positive_semidefinite_constraints()[i], Lam);
-    current_cone_start_index += lambda_rows_size;
+    current_dual_vars_start_index += lambda_rows_size;
   }
   for (int i = 0; i < ssize(prog.linear_matrix_inequality_constraints()); ++i) {
     const int psd_row_size =
@@ -259,13 +276,13 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
     // Make Lam and add psd constraint
     const MatrixX<symbolic::Expression> Lam =
         math::ToSymmetricMatrixFromLowerTriangularColumns(
-            lam.segment(current_cone_start_index, lambda_rows_size));
+            lam.segment(current_dual_vars_start_index, lambda_rows_size));
     dual_prog->AddPositiveSemidefiniteConstraint(Lam);
     constraint_to_dual_variable_map->emplace(
         prog.positive_semidefinite_constraints()[i], Lam);
-    current_cone_start_index += lambda_rows_size;
+    current_dual_vars_start_index += lambda_rows_size;
   }
-  DRAKE_DEMAND(current_cone_start_index == lam.size());
+  DRAKE_DEMAND(current_dual_vars_start_index == dual_vars.size());
 
   return dual_prog;
 }
