@@ -11,7 +11,6 @@
 
 #include <Eigen/Geometry>
 #include <common_robotics_utilities/parallelism.hpp>
-#include <common_robotics_utilities/print.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
 #include <fmt/format.h>
 #include <voxelized_geometry_tools/collision_map.hpp>
@@ -22,20 +21,6 @@
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
-namespace geometry {
-
-// Helper to print signed distance queries.
-inline std::ostream& operator<<(std::ostream& strm,
-                                const SignedDistanceToPoint<double>& distance) {
-  strm << fmt::format(
-      "SignedDistanceToPoint - distance {}, gradient {}, geometry id {}",
-      distance.distance, drake::fmt_eigen(distance.grad_W.transpose()),
-      distance.id_G);
-  return strm;
-}
-
-}  // namespace geometry
-
 namespace planning {
 namespace internal {
 /// The return value from a SignedDistanceToPoint collision query.
@@ -114,9 +99,6 @@ void FillVoxelGrid(
     const DistanceQueryResult distances =
         query_object.ComputeSignedDistanceToPoint(p_WCo.head<3>(),
                                                   query_radius);
-    drake::log()->trace("Checking ({}) (x,y,z) {} Distances:\n{}", grid_index,
-                        common_robotics_utilities::print::Print(p_WCo),
-                        common_robotics_utilities::print::Print(distances));
 
     // Filter out distances that aren't inside the voxel.
     DistanceQueryResult colliding_distances;
