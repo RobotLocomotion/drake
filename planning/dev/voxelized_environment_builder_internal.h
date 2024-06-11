@@ -21,10 +21,12 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
+namespace drake {
+namespace geometry {
+
 // Helper to print signed distance queries.
-inline std::ostream& operator<<(
-    std::ostream& strm,
-    const drake::geometry::SignedDistanceToPoint<double>& distance) {
+inline std::ostream& operator<<(std::ostream& strm,
+                                const SignedDistanceToPoint<double>& distance) {
   strm << fmt::format(
       "SignedDistanceToPoint - distance {}, gradient {}, geometry id {}",
       distance.distance, drake::fmt_eigen(distance.grad_W.transpose()),
@@ -32,7 +34,8 @@ inline std::ostream& operator<<(
   return strm;
 }
 
-namespace drake {
+}  // namespace geometry
+
 namespace planning {
 namespace internal {
 /// The return value from a SignedDistanceToPoint collision query.

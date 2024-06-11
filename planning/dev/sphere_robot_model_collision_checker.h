@@ -257,13 +257,12 @@ class PointSignedDistanceAndGradientResult {
   size_t NumberOfGradients() const { return distances_and_gradients_.size(); }
 
   std::string Print() const {
-    std::string rep = "Min distance: " + std::to_string(MinimumDistance()) +
-                      " Distances & Gradients:";
+    std::string rep = fmt::format("Min distance: {} Distances & Gradients:",
+                                  MinimumDistance());
     for (size_t idx = 0; idx < NumberOfGradients(); idx++) {
       const DistanceAndGradient& distance_and_gradient =
           GetDistanceAndGradient(idx);
-      rep += ("\n" + std::to_string(idx + 1) + " - " +
-              distance_and_gradient.Print());
+      rep += fmt::format("\n{} - {}", idx + 1, distance_and_gradient.Print());
     }
     return rep;
   }
