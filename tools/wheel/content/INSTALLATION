@@ -4,7 +4,7 @@ For Ubuntu 22.04, install these additional libraries:
     sudo apt-get install --no-install-recommends \
       libx11-6 libsm6 libglib2.0-0
 
-For Ubuntu 24.04, install these additional libraries (XXX):
+For Ubuntu 24.04, install these additional libraries:
 
     sudo apt-get install --no-install-recommends \
       libx11-6 libsm6 libglib2.0-0t64
