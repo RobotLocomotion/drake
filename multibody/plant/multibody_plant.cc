@@ -445,6 +445,27 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 }
 
 template <typename T>
+std::vector<MultibodyConstraintId> MultibodyPlant<T>::GetConstraintIds() const {
+  std::vector<MultibodyConstraintId> ids;
+  // This list must be kept up to date with the types of user-addable
+  // constraints. See #21415 for a potentially more robust / sustainable
+  // solution.
+  for (const auto& [id, _] : coupler_constraints_specs_) {
+    ids.push_back(id);
+  }
+  for (const auto& [id, _] : distance_constraints_specs_) {
+    ids.push_back(id);
+  }
+  for (const auto& [id, _] : ball_constraints_specs_) {
+    ids.push_back(id);
+  }
+  for (const auto& [id, _] : weld_constraints_specs_) {
+    ids.push_back(id);
+  }
+  return ids;
+}
+
+template <typename T>
 bool MultibodyPlant<T>::GetConstraintActiveStatus(
     const systems::Context<T>& context, MultibodyConstraintId id) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();

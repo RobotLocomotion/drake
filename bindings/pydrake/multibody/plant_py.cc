@@ -267,6 +267,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("force_element"), py_rvp::reference_internal,
             cls_doc.AddForceElement.doc)
+        .def("GetConstraintIds", &Class::GetConstraintIds,
+            cls_doc.GetConstraintIds.doc)
         .def("SetConstraintActiveStatus", &Class::SetConstraintActiveStatus,
             py::arg("context"), py::arg("id"), py::arg("status"),
             cls_doc.SetConstraintActiveStatus.doc)
