@@ -768,7 +768,8 @@ void ParseRotatedLorentzConeConstraint(
   // [           a₂ᵀx +           b₂ ]
   //             ...
   // [         aₙ₋₁ᵀx +         bₙ₋₁ ]
-  // is in the Lorentz cone. We convert this to the SCS form, that
+  // is in the Lorentz cone. When cast_rotated_lorentz_to_lorentz is true, we
+  // convert this to the SCS form, that
   //  Cx + s = d
   //  s in Lorentz cone,
   // where C = [ -0.5(a₀ + a₁)ᵀ ]   d = [ 0.5(b₀ + b₁) ]
@@ -785,8 +786,7 @@ void ParseRotatedLorentzConeConstraint(
         A_triplets->emplace_back(*A_row_count + 1, x_index,
                                  -0.5 * Ai_triplet.value());
       } else {
-        A_triplets->emplace_back(*A_row_count, x_index,
-                                 -0.5 * Ai_triplet.value());
+        A_triplets->emplace_back(*A_row_count, x_index, -Ai_triplet.value());
       }
     } else if (Ai_triplet.row() == 1) {
       if (cast_rotated_lorentz_to_lorentz) {
@@ -796,7 +796,7 @@ void ParseRotatedLorentzConeConstraint(
                                  0.5 * Ai_triplet.value());
       } else {
         A_triplets->emplace_back(*A_row_count + 1, x_index,
-                                 -0.5 * Ai_triplet.value());
+                                 -Ai_triplet.value());
       }
     } else {
       A_triplets->emplace_back(*A_row_count + Ai_triplet.row(), x_index,
@@ -807,8 +807,8 @@ void ParseRotatedLorentzConeConstraint(
     b->push_back(0.5 * (b_cone(0) + b_cone(1)));
     b->push_back(0.5 * (b_cone(0) - b_cone(1)));
   } else {
-    b->push_back(0.5 * b_cone(0));
-    b->push_back(0.5 * b_cone(1));
+    b->push_back(b_cone(0));
+    b->push_back(b_cone(1));
   }
   for (int i = 2; i < b_cone.rows(); ++i) {
     b->push_back(b_cone(i));

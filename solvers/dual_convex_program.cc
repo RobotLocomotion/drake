@@ -1,15 +1,14 @@
 #include "drake/solvers/dual_convex_program.h"
 
 #include <initializer_list>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "drake/common/fmt_eigen.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
+
 namespace drake {
 namespace solvers {
 
@@ -84,14 +83,17 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
 
   // Our program is now collected into the form
   // min c^T x + d
-  // s.t. -A x + b in K
-  //      -Aeq x = beq
+  // s.t. -Aeq x = beq
+  //      -A x + b in K
+  //
   // The dual of this program is
   // max -beqᵀy + d - bᵀλ
   // s.t. c+Aeqᵀy + Aᵀλ = 0
   // λ in K*
-  // Since all the supported cones K are symmetric, then λ can be constrained in
-  // the same cones as the primal variables.
+  //
+  // Since almost all the supported cones K are symmetric, then λ can be
+  // constrained in the same cones as the primal variables. The exception is the
+  // rotated lorentz cone.
 
   const auto y = dual_prog->NewContinuousVariables(
       info.num_linear_equality_constraint_rows, "y");
@@ -221,18 +223,23 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
     DRAKE_THROW_UNLESS(
         current_dual_vars_start_index ==
         info.rotated_lorentz_cone_dual_variable_start_indices[i]);
+
     constraint_to_dual_variable_map->emplace(
         prog.rotated_lorentz_cone_constraints()[i],
-        dual_vars.segment(
-            info.rotated_lorentz_cone_dual_variable_start_indices[i],
-            soc_length));
-    // The output of DoAggregateConvexConstraints casts rotated lorentz cones to
-    // normal lorentz cones. Here we undo the transformation so that the dual
-    // variables can be rotated lorentz cones.
+        dual_vars
+            .segment(info.rotated_lorentz_cone_dual_variable_start_indices[i],
+                     soc_length)
+            .cast<symbolic::Expression>());
 
+    // Drake represents rotated lorentz cone constraints as z₀z₁ ≥ ||z[2:]||².
+    // This representation is not self-dual. The dual cone of this
+    // representation is needs to scale the first two entries of the dual
+    // variable by 2.s
+    Eigen::MatrixXd T = Eigen::MatrixXd::Identity(soc_length, soc_length);
+    T(0, 0) = 2;
+    T(1, 1) = 2;
     dual_prog->AddRotatedLorentzConeConstraint(
-        Eigen::MatrixXd::Identity(soc_length, soc_length),
-        Eigen::VectorXd::Zero(soc_length),
+        T, Eigen::VectorXd::Zero(soc_length),
         dual_vars.segment(
             info.rotated_lorentz_cone_dual_variable_start_indices[i],
             soc_length));

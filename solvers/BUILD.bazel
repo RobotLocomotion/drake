@@ -2066,6 +2066,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "dual_convex_program_test",
     deps = [
+        ":aggregate_costs_constraints",
+        ":choose_best_solver",
         ":dual_convex_program",
         ":linear_program_examples",
         ":mathematical_program",
@@ -2076,7 +2078,6 @@ drake_cc_googletest(
         ":sos_examples",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        ":aggregate_costs_constraints"
     ],
 )
 
