@@ -106,6 +106,7 @@ drake_cc_library(
         "//planning:collision_checker",
         "@gtest//:without_main",
     ],
+    alwayslink = True,
 )
 
 drake_cc_googletest(
