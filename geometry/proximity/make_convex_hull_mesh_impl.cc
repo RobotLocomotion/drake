@@ -117,7 +117,8 @@ struct VertexCloud {
 void ReadObjVertices(const fs::path filename, double scale,
                      std::vector<Vector3d>* vertices) {
   const auto [tinyobj_vertices, _1, _2] = geometry::internal::ReadObjFile(
-      std::string(filename), scale, /* triangulate = */ false);
+      std::string(filename), scale, /* triangulate = */ false,
+      /* only_vertices = */ true);
   *vertices = std::move(*tinyobj_vertices);
 }
 
