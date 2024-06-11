@@ -299,8 +299,7 @@ void ParseLinearEqualityConstraints(
 // linear constraint prog.linear_constraint()[i], we use -1 to indicate that
 // the lower or upper bound is infinity.
 // @param[out] num_linear_constraint_rows The number of new rows appended to
-// A*x+s = b in all
-// prog.linear_constraints()
+// A*x+s = b in all prog.linear_constraints()
 void ParseLinearConstraints(const solvers::MathematicalProgram& prog,
                             std::vector<Eigen::Triplet<double>>* A_triplets,
                             std::vector<double>* b, int* A_row_count,
@@ -352,8 +351,11 @@ void ParseL2NormCosts(const MathematicalProgram& prog,
                       std::vector<int>* t_slack_indices);
 
 // Parse all second order cone constraints (including both Lorentz cone and
-// rotated Lorentz cone constraint) to the form A*x+s=b, s in K where K is the
-// Cartesian product of Lorentz cone {s | sqrt(s₁²+...+sₙ₋₁²) ≤ s₀}
+// rotated Lorentz cone constraint) to the form A*x+s=b, s in K. If
+// cast_rotated_lorentz_to_lorentz is true, then K is the Cartesian product of
+// Lorentz cone {s | sqrt(s₁²+...+sₙ₋₁²) ≤ s₀}. If
+// cast_rotated_lorentz_to_lorentz is false, then K is the Cartesian product of
+// Lorentz cones and rotated Lorentz cone constraints.
 // @param[in/out] A_triplets We append the second order cone constraints to
 // A_triplets.
 // @param[in/out] b We append the second order cone constraints to b.
@@ -368,11 +370,11 @@ void ParseL2NormCosts(const MathematicalProgram& prog,
 // y[rotated_lorentz_cone_y_start_indices[i]:
 // rotated_lorentz_cone_y_start_indices[i] +
 // prog.rotate_lorentz_cone()[i].evaluator().A().rows] are the y variables for
-// prog.rotated_lorentz_cone_constraints()[i]. Note that we assume the Cartesian
-// product K doesn't contain a
-// rotated Lorentz cone constraint, instead we convert the rotated Lorentz
-// cone constraint to the Lorentz cone constraint through a linear
-// transformation. Hence we need to apply the transpose of that linear
+// prog.rotated_lorentz_cone_constraints()[i]. Note that when
+// cast_rotated_lorentz_to_lorentz is true, we assume the Cartesian product K
+// doesn't contain a rotated Lorentz cone constraint, instead we convert the
+// rotated Lorentz cone constraint to the Lorentz cone constraint through a
+// linear transformation. Hence we need to apply the transpose of that linear
 // transformation on the y variable to get the dual variable in the dual cone
 // of rotated Lorentz cone.
 void ParseSecondOrderConeConstraints(
@@ -386,16 +388,17 @@ void ParseSecondOrderConeConstraints(
 // rotated Lorentz cone.
 //
 // We add these rotated Lorentz cones in the form A*x+s=b and s in K, where K is
-// the Cartesian product of Lorentz cones.
+// the Cartesian product of Lorentz cones when cast_rotated_lorentz_to_lorentz
+// is true and K is the Cartesian product of rotated Lorentz cones otherwise.
 // @param A_cone_triplets The triplets of non-zero entries in A_cone.
 // @param b_cone A_cone * x + b_cone is in the rotated Lorentz cone.
 // @param x_indices The index of the variables.
 // @param A_triplets[in/out] The non-zero entry triplet in A before and after
-// adding the Lorentz cone.
+// adding the rotated Lorentz cones.
 // @param b[in/out] The right-hand side vector b before and after adding the
-// Lorentz cone.
+// rotated Lorentz cones.
 // @param A_row_count[in/out] The number of rows in A before and after adding
-// the Lorentz cone.
+// the rotated Loretnz cones.
 // @param second_order_cone_length[in/out] The length of each Lorentz cone
 // before and after adding the Lorentz cone constraint.
 // @param rotated_lorentz_cone_y_start_indices[in/out] The starting index of y
@@ -434,17 +437,22 @@ void ParseExponentialConeConstraints(
     int* A_row_count);
 
 // This function parses prog.positive_semidefinite_constraints() and
-// prog.linear_matrix_inequality_constraints() into SCS/Clarabel format.
+// prog.linear_matrix_inequality_constraints() into the format.
 // A * x + s = b
 // s in K
-// Note that the SCS/Clarabel solver defines its psd cone with a √2 scaling on
-// the off-diagonal terms in the positive semidefinite matrix. Refer to
+// Where s is a vector containing the lower or upper triangular part of the
+// matrix. When preserve_psd_inner_product_vectorization is true, then the
+// off-diagonal terms in the positive semidefinite matrices are scaled by √2.
+// This is compatible with the convention of the SCS/Clarabel solvers. Refer to
 // https://www.cvxgrp.org/scs/api/cones.html#semidefinite-cones and
 // https://oxfordcontrol.github.io/ClarabelDocs/stable/examples/example_sdp/ for
-// an explanation.
+// an explanation. If preserve_psd_inner_product_vectorization is false, then s
+// is exactly given by the lower/upper triangular part of the matrix.
 // @param[in] upper_triangular Whether we use the upper triangular or lower
 // triangular part of the symmetric matrix. SCS uses the lower triangular part,
 // and Clarabel uses the upper triangular part.
+// @param[in] upper_triangular Whether to scale the off-diagonal entries of the
+// psd matrices by √2.
 // @param[in/out] A_triplets The triplets on the non-zero entries in A.
 // prog.positive_semidefinite_constraints() and
 // prog.linear_matrix_inequality_constraints() will be appended to A_triplets.

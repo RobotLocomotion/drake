@@ -474,8 +474,7 @@ bool CheckConvexSolverAttributes(const MathematicalProgram& prog,
     if (explanation) {
       *explanation = fmt::format(
           "{} is unable to solve because (at least) the quadratic constraint "
-          "{} is non-convex. Either change this constraint to a convex one, "
-          "or "
+          "{} is non-convex. Either change this constraint to a convex one, or "
           "switch to a different solver like SNOPT/IPOPT/NLOPT.",
           solver_name, nonconvex_quadratic_constraint->to_string());
     }
@@ -630,13 +629,13 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
     for (int j = 0; j < cost.evaluator()->Q().cols(); ++j) {
       for (int i = 0; i <= j; ++i) {
         if (cost.evaluator()->Q()(i, j) != 0) {
-          // Since we allow duplicated variables in a quadratic cost, we need
-          // to handle this more carefully. If i != j but var_indices[i] ==
+          // Since we allow duplicated variables in a quadratic cost, we need to
+          // handle this more carefully. If i != j but var_indices[i] ==
           // var_indices[j], then it means that the cost is a diagonal term
           // (Q(i, j) + Q(j, i)) * x[var_indices[i]]² = 2 * Q(i, j)*
           // x[var_indices[i]]², not a cross term (Q(i, j) + Q(j, i)) *
-          // x[var_indices[i]] * x[var_indices[j]]. Hence we need a factor of
-          // 2 for this special case.
+          // x[var_indices[i]] * x[var_indices[j]]. Hence we need a factor of 2
+          // for this special case.
           const double factor =
               (i != j && var_indices[i] == var_indices[j]) ? 2 : 1;
           // Since we only add the upper diagonal entries, we need to branch
@@ -762,9 +761,11 @@ void ParseRotatedLorentzConeConstraint(
   //  (a₀ᵀx + b₀) (a₁ᵀx + b₁) ≥ (a₂ᵀx + b₂)² + ... + (aₙ₋₁ᵀx + bₙ₋₁)²
   //  (a₀ᵀx + b₀) ≥ 0
   //  (a₁ᵀx + b₁) ≥ 0
-  // , where aᵢᵀ is the i'th row of A, bᵢ is the i'th row of b. Equivalently
-  // the vector [ 0.5(a₀ + a₁)ᵀx + 0.5(b₀ + b₁) ] [ 0.5(a₀ - a₁)ᵀx + 0.5(b₀ -
-  // b₁) ] [           a₂ᵀx +           b₂ ]
+  // , where aᵢᵀ is the i'th row of A, bᵢ is the i'th row of b. Equivalently the
+  // vector
+  // [ 0.5(a₀ + a₁)ᵀx + 0.5(b₀ + b₁) ]
+  // [ 0.5(a₀ - a₁)ᵀx + 0.5(b₀ - b₁) ]
+  // [           a₂ᵀx +           b₂ ]
   //             ...
   // [         aₙ₋₁ᵀx +         bₙ₋₁ ]
   // is in the Lorentz cone. We convert this to the SCS form, that
@@ -777,7 +778,6 @@ void ParseRotatedLorentzConeConstraint(
   //           [         -aₙ₋₁ᵀ ]       [          bₙ₋₁]
   for (const auto& Ai_triplet : A_cone_triplets) {
     const int x_index = x_indices[Ai_triplet.col()];
-
     if (Ai_triplet.row() == 0) {
       if (cast_rotated_lorentz_to_lorentz) {
         A_triplets->emplace_back(*A_row_count, x_index,
@@ -867,8 +867,7 @@ void ParsePositiveSemidefiniteConstraints(
   DRAKE_ASSERT(psd_cone_length != nullptr);
   // Make sure that each triplet in A_triplets has row no larger than
   // *A_row_count.
-  // Use kDrakeAssertIsArmed to bypass the entire for loop in the release
-  // mode.
+  // Use kDrakeAssertIsArmed to bypass the entire for loop in the release mode.
   if (kDrakeAssertIsArmed) {
     for (const auto& A_triplet : *A_triplets) {
       DRAKE_DEMAND(A_triplet.row() <= *A_row_count);
@@ -881,22 +880,24 @@ void ParsePositiveSemidefiniteConstraints(
     // We convert it to SCS/Clarabel form
     // A * x + s = 0
     // s in positive semidefinite cone.
-    // where A is a diagonal matrix, with its diagonal entries being the
-    // stacked column vector of the lower/upper triangular part of matrix ⎡ -1
-    // -√2 -√2 ... -√2⎤ ⎢-√2  -1 -√2 ... -√2⎥ ⎢-√2 -√2  -1 ... -√2⎥ ⎢    ... ⎥
+    // where A is a diagonal matrix, with its diagonal entries being the stacked
+    // column vector of the lower/upper triangular part of matrix
+    // ⎡ -1 -√2 -√2 ... -√2⎤
+    // ⎢-√2  -1 -√2 ... -√2⎥
+    // ⎢-√2 -√2  -1 ... -√2⎥
+    // ⎢    ...            ⎥
     // ⎣-√2 -√2 -√2 ...  -1⎦
-    // The √2 scaling factor in the off-diagonal entries are required by SCS
-    // and Clarabel, as it uses only the lower triangular part (for SCS), or
-    // upper triangular part (for Clarabel) of the symmetric matrix, as
-    // explained in
+    // The √2 scaling factor in the off-diagonal entries are required by SCS and
+    // Clarabel, as it uses only the lower triangular part (for SCS), or upper
+    // triangular part (for Clarabel) of the symmetric matrix, as explained in
     // https://www.cvxgrp.org/scs/api/cones.html#semidefinite-cones and
     // https://oxfordcontrol.github.io/ClarabelDocs/stable/examples/example_sdp.
     // x is the stacked column vector of the lower triangular part of the
     // symmetric matrix X.
     const int X_rows = psd_constraint.evaluator()->matrix_rows();
     int x_index_count = 0;
-    // The variables in the psd constraint are the stacked columns of the
-    // matrix X (in column major order).
+    // The variables in the psd constraint are the stacked columns of the matrix
+    // X (in column major order).
     const VectorXDecisionVariable& flat_X = psd_constraint.variables();
     DRAKE_DEMAND(flat_X.rows() == X_rows * X_rows);
     b->reserve(b->size() + X_rows * (X_rows + 1) / 2);
@@ -928,8 +929,7 @@ void ParsePositiveSemidefiniteConstraints(
     // We convert this to SCS/Clarabel form as
     // A_cone * x + s = b_cone
     // s in SCS/Clarabel positive semidefinite cone.
-    // For SCS, it uses the lower triangular of the symmetric psd matrix,
-    // hence
+    // For SCS, it uses the lower triangular of the symmetric psd matrix, hence
     //              ⎡  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)⎤
     //              ⎢√2F₁(1, 0) √2F₂(1, 0) ... √2Fₙ(1, 0)⎥
     //   A_cone = - ⎢√2F₁(2, 0) √2F₂(2, 0) ... √2Fₙ(2, 0)⎥,
@@ -956,8 +956,8 @@ void ParsePositiveSemidefiniteConstraints(
     //              ⎣  F₀(m, m)⎦
     // For both SCS and Clarabel, we have
     //   x = [x₁; x₂; ... ; xₙ].
-    // As explained above, the off-diagonal rows are scaled by √2. Please
-    // refer to https://github.com/cvxgrp/scs about the scaling factor √2.
+    // As explained above, the off-diagonal rows are scaled by √2. Please refer
+    // to https://github.com/cvxgrp/scs about the scaling factor √2.
     // Note that since all F matrices are symmetric, we don't need to
     // differentiate between lower triangular or upper triangular version.
     const std::vector<Eigen::MatrixXd>& F = lmi_constraint.evaluator()->F();
