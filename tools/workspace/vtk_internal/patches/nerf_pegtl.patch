@@ -1,0 +1,74 @@
+vtkCellAttribute picked up the ability to encode/decode dimensionality of
+data from unicode strings. That functionality depends on a previously unused
+VTK dependency (pegtl). We don't need the functionality, so we'll simply
+remove the feature.
+
+At the time this patch was introduced, no other VTK API exercised the new
+methods. It's possible that modules we care about may eventually care about
+these excised APIs. At that point, we can revisit this strategy to: a) restore
+the API but with an "always throws" implementation where we don't exercise the
+code paths in question, or b) restore all of the code and bring in pegtl as a
+supported VTK dependency.
+
+This situation is unique to Drake, so we won't to upstream this patch.
+
+--- Common/DataModel/vtk.module
++++ Common/DataModel/vtk.module
+@@ -26,7 +26,6 @@ DEPENDS
+ PRIVATE_DEPENDS
+   VTK::CommonMisc
+   VTK::CommonSystem
+-  VTK::pegtl
+   VTK::pugixml
+   VTK::vtksys
+ TEST_DEPENDS
+diff --git a/Common/DataModel/vtkCellAttribute.cxx b/Common/DataModel/vtkCellAttribute.cxx
+index fd0e36862d..bb794515d8 100644
+--- Common/DataModel/vtkCellAttribute.cxx
++++ Common/DataModel/vtkCellAttribute.cxx
+@@ -5,8 +5,6 @@
+ #include "vtkAbstractArray.h"
+ #include "vtkObjectFactory.h"
+ 
+-#include <vtk_pegtl.h>
+-
+ #include <sstream>
+ 
+ VTK_ABI_NAMESPACE_BEGIN
+@@ -258,6 +256,7 @@ void vtkCellAttribute::DeepCopy(
+   }
+ }
+ 
++#if 0  // DRAKE OMITTING THIS API
+ namespace
+ {
+ using namespace tao::pegtl;
+@@ -638,5 +637,5 @@ std::string vtkCellAttribute::EncodeSpace(const std::string& base, unsigned int
+   }
+   return result.str();
+ }
+-
++#endif  // DRAKE OMITTING THIS API
+ VTK_ABI_NAMESPACE_END
+diff --git a/Common/DataModel/vtkCellAttribute.h b/Common/DataModel/vtkCellAttribute.h
+index 52b90e26dd..0680e2dcef 100644
+--- Common/DataModel/vtkCellAttribute.h
++++ Common/DataModel/vtkCellAttribute.h
+@@ -192,7 +192,7 @@ public:
+   virtual void ShallowCopy(vtkCellAttribute* other, bool copyArrays = true);
+   virtual void DeepCopy(vtkCellAttribute* other,
+     const std::map<vtkAbstractArray*, vtkAbstractArray*>& arrayRewrites = {});
+-
++#if 0  // DRAKE OMITTING THIS API
+   /// Given a space string (e.g., ℝ³⁻ or ℚ¹), decode the base (e.g., ℝ resp. ℚ),
+   /// exponent (e.g., 3 resp. 1), and halfspace indicator (-1 resp. 0).
+   ///
+@@ -208,7 +208,7 @@ public:
+ 
+   /// Return a space string given a description of it via \a base, \a exp, and \a halfspace.
+   static std::string EncodeSpace(const std::string& base, unsigned int, int halfspace = 0);
+-
++#endif  // DRAKE OMITTING THIS API
+ protected:
+   vtkCellAttribute() = default;
+   ~vtkCellAttribute() override = default;
