@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 
 #include <algorithm>
+#include <fstream>
 #include <map>
 #include <string>
 #include <utility>
@@ -112,12 +113,13 @@ struct VertexCloud {
   Vector3d interior_point;
 };
 
-/* Returns the scaled vertices from the named obj file.
- @pre `filename` references an obj file. */
-void ReadObjVertices(const fs::path filename, double scale,
-                     std::vector<Vector3d>* vertices) {
-  const auto [tinyobj_vertices, _1, _2] = geometry::internal::ReadObjFile(
-      std::string(filename), scale, /* triangulate = */ false,
+/* Returns the scaled vertices from the stream containing obj file data.
+ @pre `data_stream` contains obj geometry data. */
+void ReadObjVertices(std::istream* data_stream, double scale,
+                     std::vector<Vector3d>* vertices,
+                     std::string_view description) {
+  const auto [tinyobj_vertices, _1, _2] = geometry::internal::ReadObjStream(
+      data_stream, scale, /* triangulate = */ false, description,
       /* only_vertices = */ true);
   *vertices = std::move(*tinyobj_vertices);
 }
@@ -188,7 +190,7 @@ void ReadGltfVertices(const fs::path filename, double scale,
  @throws if the vertices span a severely degenerate space in R3 (e.g.,
          co-linear or coincident). */
 Vector3d FindNormal(const std::vector<Vector3d>& vertices,
-                    const fs::path filename) {
+                    const std::string_view description) {
   // Note: this isn't an exhaustive search. We assign i = 0 and then
   // sequentially search for j and k. This may fail but possibly succeed for
   // a different value of i. That risk seems small. Any mesh that depends on
@@ -206,9 +208,8 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
   if (v == ssize(vertices)) {
     throw std::runtime_error(
         fmt::format("MakeConvexHull failed because all vertices in the mesh "
-                    "were within a "
-                    "sphere with radius 1e-12 for file: {}.",
-                    filename.string()));
+                    "were within a sphere with radius 1e-12 for geometry: {}.",
+                    description));
   }
   a.normalize();
 
@@ -226,11 +227,61 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
     throw std::runtime_error(fmt::format(
         "MakeConvexHull failed because all vertices in the mesh appear to be "
         "co-linear for file: {}.",
-        filename.string()));
+        description));
   }
   return n_candidate.normalized();
 }
 
+VertexCloud ReadVertices(std::istream* data_stream, std::string_view extension,
+                         double scale, std::string_view description) {
+  VertexCloud cloud;
+  if (extension == ".obj") {
+    ReadObjVertices(data_stream, scale, &cloud.vertices, description);
+  } else if (extension == ".vtk") {
+    throw std::runtime_error(".vtk can't be used with stream.");
+    // ReadVtkVertices(data_stream, scale, &cloud.vertices, description);
+  } else if (extension == ".gltf") {
+    throw std::runtime_error(".gltf can't be used with stream.");
+    // ReadGltfVertices(data_stream, scale, &cloud.vertices, description);
+  } else {
+    throw std::runtime_error(
+        fmt::format("MakeConvexHull only applies to .obj, .vtk, and .gltf "
+                    "meshes; unsupported extension '{}' for geometry data: {}.",
+                    extension, description));
+  }
+
+  if (cloud.vertices.size() < 3) {
+    throw std::runtime_error(fmt::format(
+        "MakeConvexHull() cannot be used on a mesh with fewer "
+        "than three vertices; found {} vertices in geometry data: {}.",
+        cloud.vertices.size(), description));
+  }
+
+  /* Characterizes planarity. */
+  cloud.n = FindNormal(cloud.vertices, description);
+  double d = cloud.n.dot(cloud.vertices[0]);
+  cloud.interior_point = cloud.vertices[0];
+  /* Assume planarity and look for evidence to the contrary. */
+  cloud.is_planar = true;
+  for (int vi = 1; vi < ssize(cloud.vertices); ++vi) {
+    const Vector3d& v = cloud.vertices[vi];
+    cloud.interior_point += v;
+    const double dist = std::abs(cloud.n.dot(v) - d);
+    if (dist > 1e-12) {
+      cloud.is_planar = false;
+    }
+  }
+
+  /* We define the interior point as simply the mean point. */
+  cloud.interior_point /= ssize(cloud.vertices);
+
+  return cloud;
+}
+
+// TODO(SeanCurtis-TRI): Once we have support for reading all mesh types from
+// a stream, remove this function and replace its single invocation with opening
+// the file into a std::ifstream which gets passed to the *other*
+// ReadVertices().
 /* Simply reads the vertices from an OBJ, VTK or glTF file referred to by name.
  */
 VertexCloud ReadVertices(const fs::path filename, double scale) {
@@ -242,7 +293,14 @@ VertexCloud ReadVertices(const fs::path filename, double scale) {
 
   VertexCloud cloud;
   if (extension == ".obj") {
-    ReadObjVertices(filename, scale, &cloud.vertices);
+    std::ifstream f(filename);
+    if (!f.good()) {
+      throw std::runtime_error(fmt::format(
+          "MakeConvexHull can't create convex hull from geometry file; file "
+          "isn't accessible. '{}'.",
+          filename.string()));
+    }
+    ReadObjVertices(&f, scale, &cloud.vertices, filename.string());
   } else if (extension == ".vtk") {
     ReadVtkVertices(filename, scale, &cloud.vertices);
   } else if (extension == ".gltf") {
@@ -262,7 +320,7 @@ VertexCloud ReadVertices(const fs::path filename, double scale) {
   }
 
   /* Characterizes planarity. */
-  cloud.n = FindNormal(cloud.vertices, filename);
+  cloud.n = FindNormal(cloud.vertices, filename.string());
   double d = cloud.n.dot(cloud.vertices[0]);
   cloud.interior_point = cloud.vertices[0];
   /* Assume planarity and look for evidence to the contrary. */
@@ -497,8 +555,32 @@ class ConvexHull {
 
 }  // namespace
 
+PolygonSurfaceMesh<double> MakeConvexHullFromStream(
+    std::istream* mesh_stream, std::string_view extension,
+    std::string_view stream_label, double scale, double margin) {
+  DRAKE_THROW_UNLESS(scale > 0);
+  DRAKE_THROW_UNLESS(margin >= 0);
+  VertexCloud cloud = ReadVertices(mesh_stream, extension, scale, stream_label);
+
+  // Hull of the input cloud of vertices.
+  const ConvexHull hull(std::move(cloud));
+
+  // We do not apply margin to planar clouds.
+  if (cloud.is_planar || margin == 0) {
+    return hull.MakePolygonSurfaceMesh();
+  }
+
+  // Construct the hull of the half spaces moved by a "margin" amount.
+  const ConvexHull inflated_hull = hull.MakeInflatedConvexHull(margin);
+
+  return inflated_hull.MakePolygonSurfaceMesh();
+}
+
 PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
                                           double scale, double margin) {
+  // TODO(SeanCurtis-TRI): When ReadVertices(istream, ...) works for all
+  // supported mesh file types, change this to simply opening an ifstream and
+  // delegating to MakeConvexHullFromStream().
   DRAKE_THROW_UNLESS(scale > 0);
   DRAKE_THROW_UNLESS(margin >= 0);
   VertexCloud cloud = ReadVertices(mesh_file, scale);
