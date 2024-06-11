@@ -816,7 +816,7 @@ void SapDriver<T>::CalcContactProblemCache(
   // Make a reduced version of the original contact problem using joint locking
   // data.
   const internal::JointLockingCacheData<T>& joint_locking_data =
-      manager().EvalJointLockingCache(context);
+      manager().EvalJointLocking(context);
   const std::vector<int>& locked_indices =
       joint_locking_data.locked_velocity_indices;
   const std::vector<std::vector<int>>& locked_indices_per_tree =
@@ -933,7 +933,7 @@ void SapDriver<T>::CalcSapSolverResults(
   // Eliminate known DoFs.
   if (has_locked_dofs) {
     const auto& unlocked_indices =
-        manager().EvalJointLockingCache(context).unlocked_velocity_indices;
+        manager().EvalJointLocking(context).unlocked_velocity_indices;
     v0 = SelectRows(v0, unlocked_indices);
   }
 

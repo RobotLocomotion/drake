@@ -300,9 +300,9 @@ void DiscreteUpdateManager<T>::CalcForceElementsContribution(
 
 template <typename T>
 const internal::JointLockingCacheData<T>&
-DiscreteUpdateManager<T>::EvalJointLockingCache(
+DiscreteUpdateManager<T>::EvalJointLocking(
     const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalJointLockingCache(
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalJointLocking(
       plant(), context);
 }
 
@@ -660,7 +660,7 @@ void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
 
   const MultibodyTreeTopology& topology = internal_tree().get_topology();
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      EvalJointLockingCache(context).unlocked_velocity_indices_per_tree;
+      EvalJointLocking(context).unlocked_velocity_indices_per_tree;
 
   // Update contact info to include the correct contact forces.
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
@@ -808,7 +808,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
           .template Eval<geometry::QueryObject<T>>(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      EvalJointLockingCache(context).unlocked_velocity_indices_per_tree;
+      EvalJointLocking(context).unlocked_velocity_indices_per_tree;
   const MultibodyTreeTopology& topology = internal_tree().get_topology();
   const Eigen::VectorBlock<const VectorX<T>> v = plant().GetVelocities(context);
   const Frame<T>& frame_W = plant().world_frame();
@@ -979,7 +979,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
           .template Eval<geometry::QueryObject<T>>(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      EvalJointLockingCache(context).unlocked_velocity_indices_per_tree;
+      EvalJointLocking(context).unlocked_velocity_indices_per_tree;
   const MultibodyTreeTopology& topology = internal_tree().get_topology();
   const Eigen::VectorBlock<const VectorX<T>> v = plant().GetVelocities(context);
   const Frame<T>& frame_W = plant().world_frame();
