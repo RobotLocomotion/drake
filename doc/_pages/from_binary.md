@@ -55,8 +55,7 @@ example.
 ### Use as a Python library
 
 In most cases we suggest [installation via pip](/pip.html) because that
-will be more convenient than manually downloading.  However, if you are running
-on macOS arm64 or if you need both
+will be more convenient than manually downloading.  However, if you need both
 C++ and Python API support, then pip will not work.  This section shows
 how to incorporate a manual download into a
 [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
