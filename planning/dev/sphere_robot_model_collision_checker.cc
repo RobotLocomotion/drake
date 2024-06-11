@@ -1,4 +1,4 @@
-#include "planning/sphere_robot_model_collision_checker.h"
+#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
@@ -16,24 +16,32 @@
 
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/rigid_body.h"
-#include "drake/systems/framework/diagram_builder.h"
 
-using drake::geometry::GeometryId;
-using drake::multibody::BodyIndex;
-using drake::multibody::Frame;
-using drake::multibody::JacobianWrtVariable;
-using drake::planning::CollisionChecker;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using std::optional;
-
-namespace anzu {
+namespace drake {
 namespace planning {
+
+using geometry::Box;
+using geometry::Capsule;
+using geometry::CollisionFilterDeclaration;
+using geometry::Convex;
+using geometry::Cylinder;
+using geometry::Ellipsoid;
+using geometry::GeometryId;
+using geometry::GeometrySet;
+using geometry::HalfSpace;
+using geometry::Mesh;
+using geometry::QueryObject;
+using geometry::Shape;
+using geometry::ShapeReifier;
+using geometry::Sphere;
+using math::RigidTransform;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::Frame;
+using multibody::JacobianWrtVariable;
+using systems::Context;
+
 namespace {
 std::vector<Eigen::Isometry3d> InvertPoses(
     const std::vector<Eigen::Isometry3d>& poses) {
@@ -44,47 +52,39 @@ std::vector<Eigen::Isometry3d> InvertPoses(
   return inverted;
 }
 
-class SphereModelShapeReifier : public drake::geometry::ShapeReifier {
+class SphereModelShapeReifier : public geometry::ShapeReifier {
  public:
-  using drake::geometry::ShapeReifier::ImplementGeometry;
+  using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(
-      const drake::geometry::Sphere& sphere, void* radius_ptr) override {
+  void ImplementGeometry(const Sphere& sphere, void* radius_ptr) override {
     *(static_cast<double*>(radius_ptr)) = sphere.radius();
   }
 
-  void ImplementGeometry(
-      const drake::geometry::Cylinder&, void* radius_ptr) override {
+  void ImplementGeometry(const Cylinder&, void* radius_ptr) override {
     *(static_cast<double*>(radius_ptr)) = -1.0;
   }
 
-  void ImplementGeometry(
-      const drake::geometry::HalfSpace&, void* radius_ptr) override {
+  void ImplementGeometry(const HalfSpace&, void* radius_ptr) override {
     *(static_cast<double*>(radius_ptr)) = -1.0;
   }
 
-  void ImplementGeometry(
-      const drake::geometry::Box&, void* radius_ptr) override {
+  void ImplementGeometry(const Box&, void* radius_ptr) override {
     *(static_cast<double*>(radius_ptr)) = -1.0;
   }
 
-  void ImplementGeometry(
-      const drake::geometry::Mesh&, void* radius_ptr) override {
+  void ImplementGeometry(const Mesh&, void* radius_ptr) override {
     *(static_cast<double*>(radius_ptr)) = -1.0;
   }
 
-  void ImplementGeometry(
-      const drake::geometry::Convex&, void* radius_ptr) override {
+  void ImplementGeometry(const Convex&, void* radius_ptr) override {
     *(static_cast<double*>(radius_ptr)) = -1.0;
   }
 
-  void ImplementGeometry(
-      const drake::geometry::Capsule&, void* radius_ptr) override {
+  void ImplementGeometry(const Capsule&, void* radius_ptr) override {
     *(static_cast<double*>(radius_ptr)) = -1.0;
   }
 
-  void ImplementGeometry(
-      const drake::geometry::Ellipsoid&, void* radius_ptr) override {
+  void ImplementGeometry(const Ellipsoid&, void* radius_ptr) override {
     *(static_cast<double*>(radius_ptr)) = -1.0;
   }
 };
@@ -127,7 +127,7 @@ SphereSpecification BodySpheres::ComputeApproximateBoundingSphere(
   sphere_points.reserve(spheres.size() * (6 + 8));
 
   for (const auto& [sphere_id, sphere] : spheres) {
-    drake::unused(sphere_id);
+    unused(sphere_id);
     const Eigen::Vector4d& p_So = sphere.Origin();
     const double radius = sphere.Radius();
 
@@ -141,31 +141,31 @@ SphereSpecification BodySpheres::ComputeApproximateBoundingSphere(
 
     // Add the 8 points on an inscribed cube of (+/- radius/sqrt(3)).
     const double offset = radius / std::sqrt(3.0);
-    sphere_points.push_back(
-        p_So + Eigen::Vector4d(-offset, -offset, -offset, 0.0));
-    sphere_points.push_back(
-        p_So + Eigen::Vector4d(-offset, -offset, offset, 0.0));
-    sphere_points.push_back(
-        p_So + Eigen::Vector4d(-offset, offset, -offset, 0.0));
-    sphere_points.push_back(
-        p_So + Eigen::Vector4d(-offset, offset, offset, 0.0));
-    sphere_points.push_back(
-        p_So + Eigen::Vector4d(offset, -offset, -offset, 0.0));
-    sphere_points.push_back(
-        p_So + Eigen::Vector4d(offset, -offset, offset, 0.0));
-    sphere_points.push_back(
-        p_So + Eigen::Vector4d(offset, offset, -offset, 0.0));
-    sphere_points.push_back(
-        p_So + Eigen::Vector4d(offset, offset, offset, 0.0));
+    sphere_points.push_back(p_So +
+                            Eigen::Vector4d(-offset, -offset, -offset, 0.0));
+    sphere_points.push_back(p_So +
+                            Eigen::Vector4d(-offset, -offset, offset, 0.0));
+    sphere_points.push_back(p_So +
+                            Eigen::Vector4d(-offset, offset, -offset, 0.0));
+    sphere_points.push_back(p_So +
+                            Eigen::Vector4d(-offset, offset, offset, 0.0));
+    sphere_points.push_back(p_So +
+                            Eigen::Vector4d(offset, -offset, -offset, 0.0));
+    sphere_points.push_back(p_So +
+                            Eigen::Vector4d(offset, -offset, offset, 0.0));
+    sphere_points.push_back(p_So +
+                            Eigen::Vector4d(offset, offset, -offset, 0.0));
+    sphere_points.push_back(p_So +
+                            Eigen::Vector4d(offset, offset, offset, 0.0));
   }
 
   // 2. Initialize the approximate bounding sphere at the midpoint of a pair of
   // distant points.
 
   // Helper to get the farthest point.
-  const auto get_farthest_point = [](
-      const std::vector<Eigen::Vector4d>& points,
-      const Eigen::Vector4d& start) -> const Eigen::Vector4d& {
+  const auto get_farthest_point =
+      [](const std::vector<Eigen::Vector4d>& points,
+         const Eigen::Vector4d& start) -> const Eigen::Vector4d& {
     double farthest_squared_distance = 0.0;
     int farthest_index = -1;
 
@@ -194,7 +194,7 @@ SphereSpecification BodySpheres::ComputeApproximateBoundingSphere(
     Eigen::Vector4d farthest_point = bounding_origin;
 
     for (const auto& [sphere_id, sphere] : spheres) {
-      drake::unused(sphere_id);
+      unused(sphere_id);
       const Eigen::Vector4d& p_So = sphere.Origin();
       const double radius = sphere.Radius();
 
@@ -235,7 +235,7 @@ SphereSpecification BodySpheres::ComputeApproximateBoundingSphere(
 }
 
 SphereRobotModelCollisionChecker::SphereRobotModelCollisionChecker(
-    drake::planning::CollisionCheckerParams params)
+    CollisionCheckerParams params)
     : CollisionChecker(std::move(params), true /* supports parallel */) {
   InitializeRobotModel();
 }
@@ -247,8 +247,8 @@ void SphereRobotModelCollisionChecker::UpdateBodyCollisionModel(
     const BodyIndex body_index, const std::vector<SphereSpecification>& spheres,
     const bool append) {
   DRAKE_THROW_UNLESS(body_index > 0);
-  DRAKE_THROW_UNLESS(
-      body_index < static_cast<int32_t>(robot_sphere_model_.size()));
+  DRAKE_THROW_UNLESS(body_index <
+                     static_cast<int32_t>(robot_sphere_model_.size()));
 
   BodySpheres& link_collision_model = robot_sphere_model_.at(body_index);
 
@@ -267,18 +267,15 @@ void SphereRobotModelCollisionChecker::UpdateBodyCollisionModel(
 
 bool SphereRobotModelCollisionChecker::DoCheckContextConfigCollisionFree(
     const CollisionCheckerContext& model_context) const {
-  const drake::systems::Context<double>& plant_context =
-      model_context.plant_context();
-  const drake::geometry::QueryObject<double>& query_object =
-      model_context.GetQueryObject();
+  const Context<double>& plant_context = model_context.plant_context();
+  const QueryObject<double>& query_object = model_context.GetQueryObject();
   const std::vector<Eigen::Isometry3d> X_WB_set = GetBodyPoses(plant_context);
   const std::vector<Eigen::Isometry3d> X_WB_inverse_set = InvertPoses(X_WB_set);
   const std::vector<BodySpheres> spheres_in_world_frame =
       ComputeSphereLocationsInWorldFrame(X_WB_set);
 
-  if (CheckEnvironmentCollisionFree(
-          plant_context, query_object, X_WB_set, X_WB_inverse_set,
-          spheres_in_world_frame)) {
+  if (CheckEnvironmentCollisionFree(plant_context, query_object, X_WB_set,
+                                    X_WB_inverse_set, spheres_in_world_frame)) {
     if (CheckSelfCollisionFree(spheres_in_world_frame)) {
       drake::log()->trace(
           "[Thread {}] Configuration collision-free",
@@ -298,8 +295,7 @@ bool SphereRobotModelCollisionChecker::DoCheckContextConfigCollisionFree(
 }
 
 bool SphereRobotModelCollisionChecker::CheckEnvironmentCollisionFree(
-    const drake::systems::Context<double>& context,
-    const drake::geometry::QueryObject<double>& query_object,
+    const Context<double>& context, const QueryObject<double>& query_object,
     const std::vector<Eigen::Isometry3d>& X_WB_set,
     const std::vector<Eigen::Isometry3d>& X_WB_inverse_set,
     const std::vector<BodySpheres>& spheres_in_world_frame) const {
@@ -331,7 +327,7 @@ bool SphereRobotModelCollisionChecker::CheckEnvironmentCollisionFree(
 
     // Complete check with all body spheres.
     for (const auto& [sphere_id, sphere] : spheres) {
-      drake::unused(sphere_id);
+      unused(sphere_id);
       const double radius = sphere.Radius();
       const double check_distance = radius + GetLargestPadding();
       // Check point distance.
@@ -339,8 +335,8 @@ bool SphereRobotModelCollisionChecker::CheckEnvironmentCollisionFree(
           ComputePointToEnvironmentSignedDistance(
               context, query_object, sphere.Origin(), check_distance, X_WB_set,
               X_WB_inverse_set);
-      for (size_t idx = 0;
-            idx < environment_distance_check.NumberOfGradients(); idx++) {
+      for (size_t idx = 0; idx < environment_distance_check.NumberOfGradients();
+           idx++) {
         const auto& distance_and_gradient =
             environment_distance_check.GetDistanceAndGradient(idx);
         const auto& colliding_body_index =
@@ -430,14 +426,12 @@ bool SphereRobotModelCollisionChecker::CheckSelfCollisionFree(
           other_body_world_spheres.bounding_sphere();
 
       const double bounding_squared_distance =
-          (body_bounding_sphere.Origin()
-              - other_body_bounding_sphere.Origin()).squaredNorm();
-      const double bounding_check_squared_distance =
-          std::pow(
-              body_bounding_sphere.Radius()
-                  + other_body_bounding_sphere.Radius()
-                  + check_self_collision_padding,
-              2.0);
+          (body_bounding_sphere.Origin() - other_body_bounding_sphere.Origin())
+              .squaredNorm();
+      const double bounding_check_squared_distance = std::pow(
+          body_bounding_sphere.Radius() + other_body_bounding_sphere.Radius() +
+              check_self_collision_padding,
+          2.0);
       if (bounding_squared_distance > bounding_check_squared_distance) {
         // If the bounding query is far enough away, skip checking the rest of
         // the spheres on the body.
@@ -446,15 +440,16 @@ bool SphereRobotModelCollisionChecker::CheckSelfCollisionFree(
 
       // Complete check with all body spheres.
       for (const auto& [sphere_id, sphere] : body_world_spheres) {
-        drake::unused(sphere_id);
+        unused(sphere_id);
         for (const auto& [other_sphere_id, other_sphere] :
-                  other_body_world_spheres) {
-          drake::unused(other_sphere_id);
+             other_body_world_spheres) {
+          unused(other_sphere_id);
           const double sphere_squared_distance =
               (sphere.Origin() - other_sphere.Origin()).squaredNorm();
           const double squared_combined_radius =
-              std::pow(sphere.Radius() + other_sphere.Radius()
-                        + check_self_collision_padding, 2.0);
+              std::pow(sphere.Radius() + other_sphere.Radius() +
+                           check_self_collision_padding,
+                       2.0);
           // If the distance between the sphere centers is less than the sum
           // of their radii, the spheres are in collision.
           if (sphere_squared_distance < squared_combined_radius) {
@@ -471,11 +466,10 @@ bool SphereRobotModelCollisionChecker::CheckSelfCollisionFree(
   return true;
 }
 
-optional<GeometryId>
+std::optional<GeometryId>
 SphereRobotModelCollisionChecker::DoAddCollisionShapeToBody(
-    const std::string& group_name, const drake::multibody::Body<double>& bodyA,
-    const drake::geometry::Shape& shape,
-    const drake::math::RigidTransform<double>& X_AG) {
+    const std::string& group_name, const Body<double>& bodyA,
+    const Shape& shape, const RigidTransform<double>& X_AG) {
   if (IsPartOfRobot(bodyA)) {
     // Adding to robot.
     SphereModelShapeReifier reifier;
@@ -484,8 +478,9 @@ SphereRobotModelCollisionChecker::DoAddCollisionShapeToBody(
     if (radius > 0.0) {
       const BodyIndex body_index = bodyA.index();
       const GeometryId new_sphere_id = GeometryId::get_new_id();
-      robot_sphere_model_.at(body_index).Emplace(
-          new_sphere_id, SphereSpecification(X_AG.translation(), radius));
+      robot_sphere_model_.at(body_index)
+          .Emplace(new_sphere_id,
+                   SphereSpecification(X_AG.translation(), radius));
       robot_sphere_model_.at(body_index).MaybeUpdateBoundingSphere();
       return new_sphere_id;
     } else {
@@ -552,9 +547,8 @@ SphereRobotModelCollisionChecker::ComputeSelfCollisionSignedDistanceAndGradient(
       potential_self_colliding_bodies, influence_distance);
 }
 
-PointSignedDistanceAndGradientResult
-SphereRobotModelCollisionChecker
-    ::ComputeSelfCollisionSignedDistanceAndGradientInternal(
+PointSignedDistanceAndGradientResult SphereRobotModelCollisionChecker ::
+    ComputeSelfCollisionSignedDistanceAndGradientInternal(
         const std::vector<BodySpheres>& sphere_locations_in_world_frame,
         const BodyIndex query_body_index, const GeometryId query_sphere_id,
         const std::vector<BodyIndex>& potential_self_colliding_bodies,
@@ -578,7 +572,7 @@ SphereRobotModelCollisionChecker
         GetPaddingBetween(query_body_index, body_index);
 
     for (const auto& [sphere_id, sphere] : body_world_spheres) {
-      drake::unused(sphere_id);
+      unused(sphere_id);
       const Eigen::Vector4d other_sphere_to_query_sphere =
           query_sphere.Origin() - sphere.Origin();
       const double sphere_centers_distance =
@@ -590,9 +584,8 @@ SphereRobotModelCollisionChecker
       if (collision_distance <= influence_distance) {
         const Eigen::Vector4d gradient =
             other_sphere_to_query_sphere.stableNormalized();
-        result.AddDistanceAndGradient(
-            collision_distance, gradient,
-            drake::multibody::BodyIndex(body_index));
+        result.AddDistanceAndGradient(collision_distance, gradient,
+                                      BodyIndex(body_index));
       }
     }
   }
@@ -607,8 +600,8 @@ void AppendInto(Eigen::MatrixXd* to_grow, const Eigen::MatrixXd& to_append) {
     to_grow->conservativeResize(to_append.rows(), to_append.cols());
     *to_grow << to_append;
   } else if (original_cols == to_append.cols()) {
-    to_grow->conservativeResize(
-        original_rows + to_append.rows(), Eigen::NoChange);
+    to_grow->conservativeResize(original_rows + to_append.rows(),
+                                Eigen::NoChange);
     to_grow->block(original_rows, 0, to_append.rows(), to_append.cols()) =
         to_append;
   } else {
@@ -634,10 +627,8 @@ void AppendInto(Eigen::VectorXd* to_grow, double to_append) {
 RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
     const CollisionCheckerContext& model_context,
     const double influence_distance) const {
-  const drake::systems::Context<double>& plant_context =
-      model_context.plant_context();
-  const drake::geometry::QueryObject<double>& query_object =
-      model_context.GetQueryObject();
+  const Context<double>& plant_context = model_context.plant_context();
+  const QueryObject<double>& query_object = model_context.GetQueryObject();
   const std::vector<Eigen::Isometry3d> X_WB_set = GetBodyPoses(plant_context);
   const std::vector<Eigen::Isometry3d> X_WB_inverse_set = InvertPoses(X_WB_set);
   const Frame<double>& frame_W = plant().world_frame();
@@ -703,18 +694,16 @@ RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
                 GetPaddingBetween(potential_body_index, body_index);
 
             const double self_bounding_squared_distance =
-                (potential_body_bounding_sphere.Origin()
-                    - world_spheres.bounding_sphere().Origin()).squaredNorm();
-            const double self_bounding_check_squared_distance =
-                std::pow(
-                    potential_body_bounding_sphere.Radius()
-                        + bounding_radius
-                        + potential_body_padding
-                        + influence_distance,
-                    2.0);
+                (potential_body_bounding_sphere.Origin() -
+                 world_spheres.bounding_sphere().Origin())
+                    .squaredNorm();
+            const double self_bounding_check_squared_distance = std::pow(
+                potential_body_bounding_sphere.Radius() + bounding_radius +
+                    potential_body_padding + influence_distance,
+                2.0);
 
-            if (self_bounding_squared_distance
-                    <= self_bounding_check_squared_distance) {
+            if (self_bounding_squared_distance <=
+                self_bounding_check_squared_distance) {
               potential_self_colliding_bodies.push_back(potential_body_index);
             }
           }
@@ -744,7 +733,7 @@ RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
 
         // Combine multiple gradients for environment avoidance.
         for (size_t idx = 0;
-              idx < environment_distance_check.NumberOfGradients(); idx++) {
+             idx < environment_distance_check.NumberOfGradients(); idx++) {
           const auto& distance_and_gradient =
               environment_distance_check.GetDistanceAndGradient(idx);
           const BodyIndex colliding_body_index(
@@ -761,8 +750,7 @@ RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
           const Eigen::Vector3d unit_gradient =
               distance_and_gradient.Gradient().stableNormalized().head<3>();
           const double estimated_distance_from_collision =
-              distance_and_gradient.Distance()
-              - (radius + collision_padding);
+              distance_and_gradient.Distance() - (radius + collision_padding);
           if (estimated_distance_from_collision <
               minimum_distance_from_environment_collision) {
             minimum_distance_from_environment_collision =
@@ -789,8 +777,8 @@ RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
       Eigen::Vector3d sphere_self_gradient = Eigen::Vector3d::Zero();
 
       // Combine multiple gradients for self-collision avoidance.
-      for (size_t idx = 0;
-           idx < self_distance_check.NumberOfGradients(); idx++) {
+      for (size_t idx = 0; idx < self_distance_check.NumberOfGradients();
+           idx++) {
         const auto& distance_and_gradient =
             self_distance_check.GetDistanceAndGradient(idx);
         // The magnitude of the gradient should always be 1 or 0. Just in case,
@@ -828,7 +816,7 @@ RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
           minimum_distance_from_self_collision < influence_distance;
 
       // Only compute the Jacobian if row(s) will be returned.
-      drake::Matrix3X<double> sphere_jacobian(3, GetZeroConfiguration().size());
+      Matrix3X<double> sphere_jacobian(3, GetZeroConfiguration().size());
 
       if (has_environment_row || has_self_row) {
         // Get the translation-only Jacobian for the current point.
@@ -848,11 +836,10 @@ RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
       }
       // Only add the self Jacobian and gradient if necessary.
       if (has_self_row) {
-        result.Append(
-            body_index, minimum_self_body_index,
-            RobotCollisionType::kSelfCollision,
-            minimum_distance_from_self_collision,
-            sphere_self_gradient.transpose() * sphere_jacobian);
+        result.Append(body_index, minimum_self_body_index,
+                      RobotCollisionType::kSelfCollision,
+                      minimum_distance_from_self_collision,
+                      sphere_self_gradient.transpose() * sphere_jacobian);
       }
     }
   }
@@ -868,13 +855,12 @@ SphereRobotModelCollisionChecker::ComputeBodyPoses(
   return GetBodyPoses(plant_context);
 }
 
-std::vector<Eigen::Isometry3d>
-SphereRobotModelCollisionChecker::GetBodyPoses(
-    const drake::systems::Context<double>& plant_context) const {
+std::vector<Eigen::Isometry3d> SphereRobotModelCollisionChecker::GetBodyPoses(
+    const Context<double>& plant_context) const {
   std::vector<Eigen::Isometry3d> X_WB_set(plant().num_bodies(),
                                           Eigen::Isometry3d::Identity());
-  for (drake::multibody::BodyIndex body_index(0);
-       body_index < plant().num_bodies(); body_index++) {
+  for (BodyIndex body_index(0); body_index < plant().num_bodies();
+       ++body_index) {
     X_WB_set.at(static_cast<int32_t>(body_index)) =
         plant()
             .EvalBodyPoseInWorld(plant_context, get_body(body_index))
@@ -886,10 +872,8 @@ SphereRobotModelCollisionChecker::GetBodyPoses(
 std::vector<RobotCollisionType>
 SphereRobotModelCollisionChecker::DoClassifyContextBodyCollisions(
     const CollisionCheckerContext& model_context) const {
-  const drake::systems::Context<double>& plant_context =
-      model_context.plant_context();
-  const drake::geometry::QueryObject<double>& query_object =
-      model_context.GetQueryObject();
+  const Context<double>& plant_context = model_context.plant_context();
+  const QueryObject<double>& query_object = model_context.GetQueryObject();
 
   // Go through the robot collision model.
   const std::vector<Eigen::Isometry3d> X_WB_set = GetBodyPoses(plant_context);
@@ -916,21 +900,20 @@ SphereRobotModelCollisionChecker::DoClassifyContextBodyCollisions(
       const double check_distance = radius + GetLargestPadding();
       // Check point distance.
       const auto environment_distance_check =
-          ComputePointToEnvironmentSignedDistance(
-              plant_context, query_object, p_WSo, check_distance, X_WB_set,
-              X_WB_inverse_set);
-      for (size_t idx = 0;
-          idx < environment_distance_check.NumberOfGradients(); idx++) {
+          ComputePointToEnvironmentSignedDistance(plant_context, query_object,
+                                                  p_WSo, check_distance,
+                                                  X_WB_set, X_WB_inverse_set);
+      for (size_t idx = 0; idx < environment_distance_check.NumberOfGradients();
+           idx++) {
         const auto& distance_and_gradient =
             environment_distance_check.GetDistanceAndGradient(idx);
         const BodyIndex colliding_body_index(
             distance_and_gradient.CollidingBodyIndex());
         // Ignore distances from bodies with allowed collisions.
         if (!IsCollisionFilteredBetween(body_index, colliding_body_index)) {
-          const double collision_padding = GetPaddingBetween(
-              body_index, colliding_body_index);
-          if (distance_and_gradient.Distance() <
-              (radius + collision_padding)) {
+          const double collision_padding =
+              GetPaddingBetween(body_index, colliding_body_index);
+          if (distance_and_gradient.Distance() < (radius + collision_padding)) {
             in_environment_collision = true;
             drake::log()->trace(
                 "Body {}, [{}] in collision with environment body {}, [{}] "
@@ -981,18 +964,17 @@ void SphereRobotModelCollisionChecker::InitializeRobotModel() {
   std::vector<BodySpheres> robot_sphere_model(static_cast<size_t>(num_bodies));
   // Note that the world (body 0) has no collision geometry.
   // Go through all bodies in the model, skipping the world body
-  std::unordered_set<drake::geometry::GeometryId> robot_geometries;
+  std::unordered_set<GeometryId> robot_geometries;
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
     const size_t raw_body_index = static_cast<size_t>(body_index);
-    const drake::multibody::Body<double>& body = get_body(body_index);
+    const Body<double>& body = get_body(body_index);
     // Does the body belong to the robot model instance(s)?
     if (IsPartOfRobot(body)) {
-      const std::vector<drake::geometry::GeometryId>& geometries =
+      const std::vector<GeometryId>& geometries =
           plant().GetCollisionGeometriesForBody(body);
       // Build the collision model
-      drake::log()->debug(
-          "Body {} has {} collision geometries to check",
-          body.scoped_name(), geometries.size());
+      drake::log()->debug("Body {} has {} collision geometries to check",
+                          body.scoped_name(), geometries.size());
       for (const auto& geometry_id : geometries) {
         robot_geometries.insert(geometry_id);
         double radius = -1.0;
@@ -1006,14 +988,14 @@ void SphereRobotModelCollisionChecker::InitializeRobotModel() {
         // X_FG = X_BG. There is also no apparent way to retrieve the MbP frame
         // that a geometry was registered with, only the SG frame.
         const auto& X_FG =
-            model().scene_graph().model_inspector().GetPoseInFrame(
-                geometry_id);
+            model().scene_graph().model_inspector().GetPoseInFrame(geometry_id);
         // Non-sphere shapes get negative radius
         if (radius > 0.0) {
           // Add sphere
           const Eigen::Vector3d p_BSo = X_FG.translation();
-          robot_sphere_model.at(raw_body_index).Emplace(
-              GeometryId::get_new_id(), SphereSpecification(p_BSo, radius));
+          robot_sphere_model.at(raw_body_index)
+              .Emplace(GeometryId::get_new_id(),
+                       SphereSpecification(p_BSo, radius));
         } else {
           drake::log()->warn(
               "Ignored non-sphere collision geometry {} on body {}",
@@ -1030,11 +1012,10 @@ void SphereRobotModelCollisionChecker::InitializeRobotModel() {
   // Save the geometries that belong to the robot.
   robot_geometries_ = robot_geometries;
   // Disable SG collisions with the robot geometry
-  drake::geometry::GeometrySet robot_geometry_set;
+  GeometrySet robot_geometry_set;
   robot_geometry_set.Add(robot_geometries_);
   GetMutableSetupModel().mutable_scene_graph().collision_filter_manager().Apply(
-      drake::geometry::CollisionFilterDeclaration().ExcludeWithin(
-          robot_geometry_set));
+      CollisionFilterDeclaration().ExcludeWithin(robot_geometry_set));
   // Removing geometries is a rather crude, but effective, means of filtering
   // them from any further collision checks.
   // TODO(calderpg) Remove this once better filtering for point-signed-distance
@@ -1059,8 +1040,8 @@ int SphereRobotModelCollisionChecker::DoMaxContextNumDistances(
   return 2 * total_robot_spheres;
 }
 
-std::string SphereRobotModelCollisionChecker
-::GetURDFCollisionGeometriesForRobotCollisionModel() const {
+std::string SphereRobotModelCollisionChecker ::
+    GetURDFCollisionGeometriesForRobotCollisionModel() const {
   std::string urdf_collision_elements;
   const auto& robot_collision_model = RobotCollisionModel();
   for (BodyIndex body_index(1); body_index < robot_collision_model.size();
@@ -1075,15 +1056,15 @@ std::string SphereRobotModelCollisionChecker
     }
     urdf_collision_elements += body_name + ":\n";
     for (const auto& [body_sphere_id, body_sphere] : body_spheres) {
-      drake::unused(body_sphere_id);
+      unused(body_sphere_id);
       const Eigen::Vector4d& p_BSo = body_sphere.Origin();
       urdf_collision_elements += "\n<collision>";
-      urdf_collision_elements += "\n  <origin rpy=\"0 0 0\" xyz=\""
-          + std::to_string(p_BSo(0)) + " " + std::to_string(p_BSo(1)) + " "
-          + std::to_string(p_BSo(2)) + "\"/>";
+      urdf_collision_elements +=
+          fmt::format("\n  <origin rpy=\"0 0 0\" xyz=\"{} {} {}\"/>", p_BSo(0),
+                      p_BSo(1), p_BSo(2));
       urdf_collision_elements += "\n  <geometry>";
-      urdf_collision_elements += "\n    <sphere radius=\""
-          + std::to_string(body_sphere.Radius()) + "\"/>";
+      urdf_collision_elements +=
+          fmt::format("\n    <sphere radius=\"{}\"/>", body_sphere.Radius());
       urdf_collision_elements += "\n  </geometry>";
       urdf_collision_elements += "\n</collision>";
     }
@@ -1091,4 +1072,4 @@ std::string SphereRobotModelCollisionChecker
   return urdf_collision_elements;
 }
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

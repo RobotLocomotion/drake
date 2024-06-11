@@ -1,4 +1,4 @@
-#include "planning/voxelized_environment_builder.h"
+#include "drake/planning/dev/voxelized_environment_builder.h"
 
 #include <map>
 #include <memory>
@@ -13,10 +13,11 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
-#include "planning/test/planning_test_helpers.h"
+#include "drake/planning/test/planning_test_helpers.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
+namespace test {
 namespace {
 
 using voxelized_geometry_tools::SignedDistanceFieldGenerationParameters;
@@ -25,19 +26,19 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   // Assemble model directives.
   drake::multibody::parsing::ModelDirective add_model_1;
   add_model_1.add_model = drake::multibody::parsing::AddModel{
-      "package://anzu/models/test/voxel_test1.sdf", "voxel_test1"};
+      "package://drake/planning/dev/test/voxel_test1.sdf", "voxel_test1"};
   drake::multibody::parsing::ModelDirective add_weld_1;
-  add_weld_1.add_weld = drake::multibody::parsing::AddWeld{
-      "world", "voxel_test1::voxel_test1"};
+  add_weld_1.add_weld =
+      drake::multibody::parsing::AddWeld{"world", "voxel_test1::voxel_test1"};
   drake::multibody::parsing::ModelDirective add_model_2;
   add_model_2.add_model = drake::multibody::parsing::AddModel{
-      "package://anzu/models/test/voxel_test2.sdf", "voxel_test2"};
+      "package://drake/planning/dev/test/voxel_test2.sdf", "voxel_test2"};
   drake::multibody::parsing::ModelDirective add_weld_2;
-  add_weld_2.add_weld = drake::multibody::parsing::AddWeld{
-      "world", "voxel_test2::voxel_test2"};
+  add_weld_2.add_weld =
+      drake::multibody::parsing::AddWeld{"world", "voxel_test2::voxel_test2"};
 
-  const drake::multibody::parsing::ModelDirectives directives{.directives = {
-      add_model_1, add_weld_1, add_model_2, add_weld_2}};
+  const drake::multibody::parsing::ModelDirectives directives{
+      .directives = {add_model_1, add_weld_1, add_model_2, add_weld_2}};
 
   auto model = MakePlanningTestModel(directives);
   auto context = model->CreateDefaultContext();
@@ -54,10 +55,9 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   const std::string world_frame_name = "world";
   // Build both types of grids
   const voxelized_geometry_tools::CollisionMap cmap =
-      BuildCollisionMap(
-          model->plant(), plant_context,
-          std::unordered_set<drake::geometry::GeometryId>(),
-          world_frame_name, X_WG, grid_size, grid_resolution);
+      BuildCollisionMap(model->plant(), plant_context,
+                        std::unordered_set<drake::geometry::GeometryId>(),
+                        world_frame_name, X_WG, grid_size, grid_resolution);
   ASSERT_TRUE(cmap.IsInitialized());
   ASSERT_EQ(cmap.GetNumXCells(), 8);
   ASSERT_EQ(cmap.GetNumYCells(), 8);
@@ -65,8 +65,8 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   const voxelized_geometry_tools::TaggedObjectCollisionMap tocmap =
       BuildTaggedObjectCollisionMap(
           model->plant(), plant_context,
-          std::unordered_set<drake::geometry::GeometryId>(),
-          world_frame_name, X_WG, grid_size, grid_resolution);
+          std::unordered_set<drake::geometry::GeometryId>(), world_frame_name,
+          X_WG, grid_size, grid_resolution);
   ASSERT_TRUE(tocmap.IsInitialized());
   ASSERT_EQ(tocmap.GetNumXCells(), 8);
   ASSERT_EQ(tocmap.GetNumYCells(), 8);
@@ -96,8 +96,8 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
         ASSERT_EQ(cmap_occupancy, tocmap_occupancy);
         const uint32_t tocmap_object_id = tocmap_query.Value().ObjectId();
         drake::log()->info(
-            "Checking ({},{},{}) (x,y,z) with occupancy {} object_id {}",
-            xidx, yidx, zidx, tocmap_occupancy, tocmap_object_id);
+            "Checking ({},{},{}) (x,y,z) with occupancy {} object_id {}", xidx,
+            yidx, zidx, tocmap_occupancy, tocmap_object_id);
         // The environment is split evenly into 8 blocks
         if ((xidx < 4) && (yidx < 4)) {
           if (zidx < 4) {
@@ -143,6 +143,8 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
     }
   }
 }
+
 }  // namespace
+}  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

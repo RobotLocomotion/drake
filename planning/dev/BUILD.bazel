@@ -1,0 +1,180 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "sphere_robot_model_collision_checker",
+    srcs = ["sphere_robot_model_collision_checker.cc"],
+    hdrs = ["sphere_robot_model_collision_checker.h"],
+    interface_deps = [
+        "//common:essential",
+        "//planning:collision_checker",
+    ],
+    deps = [
+        "@common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "mbp_environment_collision_checker",
+    srcs = ["mbp_environment_collision_checker.cc"],
+    hdrs = ["mbp_environment_collision_checker.h"],
+    interface_deps = [
+        ":sphere_robot_model_collision_checker",
+        "//common:essential",
+        "//planning:collision_checker",
+    ],
+    deps = [
+        "@common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "voxel_signed_distance_field",
+    srcs = ["voxel_signed_distance_field.cc"],
+    hdrs = ["voxel_signed_distance_field.h"],
+    interface_deps = [
+        "//common:essential",
+        "@common_robotics_utilities",
+        "@voxelized_geometry_tools",
+    ],
+)
+
+drake_cc_library(
+    name = "voxelized_environment_collision_checker",
+    srcs = ["voxelized_environment_collision_checker.cc"],
+    hdrs = ["voxelized_environment_collision_checker.h"],
+    interface_deps = [
+        ":sphere_robot_model_collision_checker",
+        ":voxel_signed_distance_field",
+        "//common:essential",
+        "//planning:collision_checker",
+        "@common_robotics_utilities",
+        "@voxelized_geometry_tools",
+    ],
+)
+
+drake_cc_library(
+    name = "voxelized_environment_builder",
+    srcs = [
+        "voxelized_environment_builder.cc",
+        "voxelized_environment_builder_internal.h",
+    ],
+    hdrs = ["voxelized_environment_builder.h"],
+    interface_deps = [
+        "//common:essential",
+        "//common:parallelism",
+        "//geometry",
+        "//multibody/plant",
+        "@common_robotics_utilities",
+        "@voxelized_geometry_tools",
+    ],
+)
+
+drake_cc_library(
+    name = "voxel_self_filter",
+    srcs = [
+        "voxel_self_filter.cc",
+        "voxel_self_filter_internal.h",
+    ],
+    hdrs = ["voxel_self_filter.h"],
+    interface_deps = [
+        ":sphere_robot_model_collision_checker",
+        "//common:essential",
+        "//planning:collision_checker",
+        "@common_robotics_utilities",
+        "@voxelized_geometry_tools",
+    ],
+)
+
+drake_cc_library(
+    name = "sphere_robot_model_collision_checker_abstract_test_suite",
+    testonly = True,
+    srcs = [
+        "test/sphere_robot_model_collision_checker_abstract_test_suite.cc",
+    ],
+    hdrs = [
+        "test/sphere_robot_model_collision_checker_abstract_test_suite.h",
+    ],
+    deps = [
+        ":sphere_robot_model_collision_checker",
+        "//planning:collision_checker",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mbp_environment_collision_checker_test",
+    timeout = "moderate",
+    # Be sure to exercise OpenMP-related features.
+    num_threads = 2,
+    deps = [
+        ":mbp_environment_collision_checker",
+        ":sphere_robot_model_collision_checker_abstract_test_suite",
+        "//planning:planning_test_helpers",
+        "//planning/test_utilities:collision_checker_abstract_test_suite",
+    ],
+)
+
+drake_cc_googletest(
+    name = "voxelized_environment_collision_checker_test",
+    timeout = "moderate",
+    # Be sure to exercise OpenMP-related features.
+    num_threads = 2,
+    deps = [
+        ":sphere_robot_model_collision_checker_abstract_test_suite",
+        ":voxelized_environment_builder",
+        ":voxelized_environment_collision_checker",
+        "//planning:planning_test_helpers",
+        "//planning/test_utilities:collision_checker_abstract_test_suite",
+    ],
+)
+
+drake_cc_googletest(
+    name = "voxelized_environment_builder_test",
+    data = [
+        "test/voxel_test1.sdf",
+        "test/voxel_test2.sdf",
+    ],
+    # Be sure to exercise OpenMP-related features.
+    num_threads = 2,
+    deps = [
+        ":voxelized_environment_builder",
+        "//planning:planning_test_helpers",
+        "@common_robotics_utilities",
+        "@drake//common:essential",
+        "@drake//geometry",
+        "@drake//multibody/plant",
+        "@drake//systems/framework:diagram",
+        "@voxelized_geometry_tools",
+    ],
+)
+
+drake_cc_googletest(
+    name = "voxel_self_filter_test",
+    timeout = "moderate",
+    data = [
+        "@drake_models//:iiwa_description",
+    ],
+    # Be sure to exercise OpenMP-related features.
+    num_threads = 2,
+    deps = [
+        ":voxel_self_filter",
+        ":voxelized_environment_collision_checker",
+        "//planning:planning_test_helpers",
+        "@common_robotics_utilities",
+        "@drake//common:essential",
+        "@drake//geometry",
+        "@drake//multibody/plant",
+        "@drake//planning:collision_checker",
+        "@drake//systems/framework:diagram",
+        "@voxelized_geometry_tools",
+    ],
+)
+
+add_lint_tests()
