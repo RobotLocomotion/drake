@@ -1526,7 +1526,7 @@ TEST_F(ThreeBoxes, LinearConstraint) {
   e_off_->AddConstraint(e_off_->xv() >= b);
   source_->AddConstraint(CreateBinding(
       std::make_shared<LinearConstraint>(A, Vector2d::Constant(-kInf), -b),
-      source_->x()));  // -∞ ≤ source->() ≤ -b.
+      source_->x()));  // -∞ ≤ source->x() ≤ -b.
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(
@@ -1600,6 +1600,32 @@ TEST_F(ThreeBoxes, LinearConstraint3) {
   EXPECT_TRUE((target_->GetSolution(result).array() >= b.array() - 1e-6).all());
   EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
   CheckConvexRestriction(result);
+}
+
+// Test linear constraints with an upper bound of -inf.
+TEST_F(ThreeBoxes, InvalidLinearConstraintUpper) {
+  const Matrix2d A = Matrix2d::Identity();
+  const Vector2d b{.5, .3};
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b, Vector2d::Constant(-kInf)),
+      e_on_->xv()));
+  // b ≤ e_on_->xv() ≤ -∞. We can't take the perspective of such a constraint,
+  // so solving should throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+}
+
+// Test linear constraints with a lower bound of +inf.
+TEST_F(ThreeBoxes, InvalidLinearConstraintLower) {
+  const Matrix2d A = Matrix2d::Identity();
+  const Vector2d b{.5, .3};
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, Vector2d::Constant(kInf), b),
+      e_on_->xv()));
+  // ∞ ≤ e_on_->xv() ≤ b. We can't take the perspective of such a constraint, so
+  // solving should throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
 }
 
 TEST_F(ThreeBoxes, LorentzConeConstraint) {
