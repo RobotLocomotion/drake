@@ -41,10 +41,14 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
             "package://drake/manipulation/util/test/"
             + "simple_world_with_two_models.sdf",
         ]
-        for model_url in model_urls:
-            print(model_url)
-            filename = self.model_file(model_url=model_url)
-            subprocess.check_call([self.dut, filename, "--loop_once"])
+        for i, model_url in enumerate(model_urls):
+            with self.subTest(model_url=model_url):
+                filename = self.model_file(model_url=model_url)
+                args = [self.dut, filename, "--loop_once"]
+                # Smoke test coverage of optional command line options.
+                if i % 2 == 1:
+                    args.append(f"--compliance_type=compliant")
+                subprocess.check_call(args)
 
     def test_package_url(self):
         """Test that a package URL works."""
@@ -194,6 +198,21 @@ class TestModelVisualizer(unittest.TestCase):
         positions = [1, 0, 0, 0, 0, 0, 0] * 2  # Model is just doubled.
         dut.Finalize(position=positions)
         dut.Run(position=positions, loop_once=True)
+
+    def test_hydroelastic_contact(self):
+        """
+        When hydroelastic contact is configured, the right kind of contacts
+        appear in Meshcat.
+        """
+        meshcat = Meshcat()
+        dut = mut.ModelVisualizer(compliance_type="compliant", meshcat=meshcat)
+        for model in ["planning/test_utilities/collision_ground_plane.sdf",
+                      "manipulation/util/test/simple_nested_model.sdf"]:
+            dut.AddModels(url=f"package://drake/{model}")
+        dut.Run(loop_once=True)
+        self.assertTrue(meshcat._GetPackedProperty(
+            path="contact_forces/hydroelastic/ground_plane_box+link/force_C_W",
+            property="visible"))
 
     def test_precondition_messages(self):
         dut = mut.ModelVisualizer()

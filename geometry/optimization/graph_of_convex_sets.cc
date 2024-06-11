@@ -772,8 +772,9 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
                             Ac, VectorXd::Constant(Ac.rows(), -inf),
                             VectorXd::Zero(Ac.rows())),
                         vars));
-    } else if (lc->upper_bound().array().isInf().all()) {
-      // Then do nothing.
+    } else if (lc->upper_bound().array().isInf().all() &&
+               (lc->upper_bound().array() > 0).all()) {
+      // If every upper bound is +inf, do nothing.
     } else {
       // Need to go constraint by constraint.
       // TODO(Alexandre.Amice) make this only access the sparse matrix.
@@ -784,6 +785,12 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
           a[0] = -lc->upper_bound()[i];
           a.tail(A.cols()) = A.row(i);
           prog->AddLinearConstraint(a, -inf, 0, vars);
+        } else if (lc->lower_bound()[i] > 0) {
+          // If the upper bound is -inf, we cannot take the perspective of such
+          // a constraint, so we throw an error.
+          throw std::runtime_error(
+              "Cannot take the perspective of a trivially-infeasible linear "
+              "constraint of the form x <= -inf.");
         }
       }
     }
@@ -797,8 +804,9 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
                                             Ac, VectorXd::Zero(Ac.rows()),
                                             VectorXd::Constant(Ac.rows(), inf)),
                                         vars));
-    } else if (lc->lower_bound().array().isInf().all()) {
-      // Then do nothing.
+    } else if (lc->lower_bound().array().isInf().all() &&
+               (lc->lower_bound().array() < 0).all()) {
+      // If every lower bound is -inf, do nothing.
     } else {
       // Need to go constraint by constraint.
       const Eigen::MatrixXd& A = lc->GetDenseA();
@@ -808,6 +816,12 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
           a[0] = -lc->lower_bound()[i];
           a.tail(A.cols()) = A.row(i);
           prog->AddLinearConstraint(a, 0, inf, vars);
+        } else if (lc->lower_bound()[i] > 0) {
+          // If the lower bound is +inf, we cannot take the perspective of such
+          // a constraint, so we throw an error.
+          throw std::runtime_error(
+              "Cannot take the perspective of a trivially-infeasible linear "
+              "constraint of the form x >= +inf.");
         }
       }
     }

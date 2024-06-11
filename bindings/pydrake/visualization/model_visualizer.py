@@ -38,6 +38,7 @@ import argparse
 import logging
 import os
 from pathlib import Path
+import textwrap
 
 from pydrake.visualization._model_visualizer import \
     ModelVisualizer as _ModelVisualizer
@@ -99,6 +100,17 @@ def _main():
              "It must be an image type normally used by your browser (e.g., "
              ".jpg, .png, etc.). HDR images are not supported yet."
     )
+    args_parser.add_argument(
+        "--compliance_type", default=defaults["compliance_type"],
+        help=textwrap.dedent("""Overrides the DefaultProximityProperties
+        setting with same name. Can be set to either 'rigid' or 'compliant' for
+        hydroelastic contact, or 'undefined' to use point contact.  When a
+        model file doesn't say something more specific for the hydroelastic
+        compliance mode, this default will take effect.  In the common case of
+        model files that have not been customized for Drake, this is a
+        convenient way to visualize what collisions would look like under the
+        given hydroelastic mode."""),
+    )
 
     args_parser.add_argument(
         "--triad_length",
@@ -145,7 +157,8 @@ def _main():
                                   triad_opacity=args.triad_opacity,
                                   browser_new=args.browser_new,
                                   pyplot=args.pyplot,
-                                  environment_map=args.environment_map)
+                                  environment_map=args.environment_map,
+                                  compliance_type=args.compliance_type)
     package_map = visualizer.package_map()
     package_map.PopulateFromRosPackagePath()
     for item in args.filename:

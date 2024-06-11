@@ -1555,6 +1555,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
            num_ball_constraints() + num_weld_constraints();
   }
 
+  /// Returns a list of all constraint identifiers. The returned vector becomes
+  /// invalid after any calls to Add*Constraint() or RemoveConstraint().
+  std::vector<MultibodyConstraintId> GetConstraintIds() const;
+
   /// Returns the total number of coupler constraints specified by the user.
   int num_coupler_constraints() const {
     return ssize(coupler_constraints_specs_);
@@ -2136,8 +2140,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// %MultibodyPlant. See geometry::HydroelasticContactRepresentation for
   /// available options. See GetDefaultContactSurfaceRepresentation() for
   /// explanation of default values.
+  /// @throws std::exception if called post-finalize.
   void set_contact_surface_representation(
       geometry::HydroelasticContactRepresentation representation) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
     contact_surface_representation_ = representation;
   }
 

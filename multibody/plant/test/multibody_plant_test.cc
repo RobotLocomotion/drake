@@ -4139,6 +4139,44 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
                               MatrixCompareType::relative));
 }
 
+GTEST_TEST(MultibodyPlantTests, GetConstraintIds) {
+  // Set up a plant with 3 constraints with arbitrary parameters.
+  MultibodyPlant<double> plant(0.01);
+
+  EXPECT_EQ(plant.GetConstraintIds().size(), 0);
+
+  // N.B. This feature is only supported by the SAP solver. Therefore we
+  // arbitrarily choose one model approximation that uses the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  const RigidBody<double>& body_A =
+      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
+  const RigidBody<double>& body_B =
+      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
+  const RevoluteJoint<double>& world_A =
+      plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
+                                    body_A, std::nullopt, Vector3d::UnitZ());
+  const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
+      "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
+  MultibodyConstraintId coupler_id =
+      plant.AddCouplerConstraint(world_A, A_B, 2.3);
+  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
+      body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
+  MultibodyConstraintId ball_id = plant.AddBallConstraint(
+      body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
+  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
+      body_A, RigidTransformd(), body_B, RigidTransformd());
+
+  std::vector<MultibodyConstraintId> ids = plant.GetConstraintIds();
+  // The order of the constraints is not guaranteed.
+  EXPECT_THAT(ids, testing::UnorderedElementsAre(coupler_id, distance_id,
+                                                 ball_id, weld_id));
+
+  plant.RemoveConstraint(coupler_id);
+  plant.RemoveConstraint(ball_id);
+  ids = plant.GetConstraintIds();
+  EXPECT_THAT(ids, testing::UnorderedElementsAre(distance_id, weld_id));
+}
+
 GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   // Set up a plant with 3 constraints with arbitrary parameters.
   MultibodyPlant<double> plant(0.01);

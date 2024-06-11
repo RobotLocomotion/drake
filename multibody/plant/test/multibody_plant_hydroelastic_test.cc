@@ -545,6 +545,12 @@ class ContactModelTest : public ::testing::Test {
     plant_->set_contact_model(model);
     ASSERT_EQ(plant_->get_contact_model(), model);
 
+    // Optionally tweak the contact surface representation.
+    if (forced_hydroelastic_contact_representation_.has_value()) {
+      plant_->set_contact_surface_representation(
+          *forced_hydroelastic_contact_representation_);
+    }
+
     plant_->Finalize();
 
     diagram_ = builder.Build();
@@ -677,6 +683,11 @@ class ContactModelTest : public ::testing::Test {
   const double kDissipation{0.0};          // [s/m]
   const double kMass{1.2};                 // [kg]
 
+  // When non-null, the plant will be forced to use this representation instead
+  // of its natural time_step-based default.
+  std::optional<geometry::HydroelasticContactRepresentation>
+      forced_hydroelastic_contact_representation_;
+
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
   const RigidBody<double>* first_ball_{nullptr};
@@ -741,6 +752,14 @@ TEST_F(ContactModelTest, HydroelasticWithFallback) {
   }
 }
 
+TEST_F(ContactModelTest, RejectPostFinalizeChange) {
+  this->Configure(ContactModel::kHydroelastic);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->set_contact_surface_representation(
+          geometry::HydroelasticContactRepresentation::kPolygon),
+      ".*set_contact_surface_representation.*before Finalize.*");
+}
+
 // TODO(DamrongGuoy): Create an independent test fixture instead of using
 //  inheritance and consider using parameter-value tests.
 
@@ -787,10 +806,11 @@ TEST_F(CalcContactSurfacesTest, ContinuousSystem_Triangles) {
 }
 
 TEST_F(CalcContactSurfacesTest, ContinuousSystem_Polygons) {
+  forced_hydroelastic_contact_representation_ =
+      geometry::HydroelasticContactRepresentation::kPolygon;
+
   const double time_step = 0.0;  // Zero to select continuous system.
   this->Configure(time_step);
-  plant_->set_contact_surface_representation(
-      geometry::HydroelasticContactRepresentation::kPolygon);
 
   SCOPED_TRACE("continuous system hydro: polygon rep");
   this->RunTest(geometry::HydroelasticContactRepresentation::kPolygon);
@@ -805,10 +825,11 @@ TEST_F(CalcContactSurfacesTest, DiscreteSystem_Polygons) {
 }
 
 TEST_F(CalcContactSurfacesTest, DiscreteSystem_Triangles) {
+  forced_hydroelastic_contact_representation_ =
+      geometry::HydroelasticContactRepresentation::kTriangle;
+
   const double time_step = 5.0e-3;  // Non-zero to select discrete system.
   this->Configure(time_step);
-  plant_->set_contact_surface_representation(
-      geometry::HydroelasticContactRepresentation::kTriangle);
 
   SCOPED_TRACE("discrete system hydro: triangle rep");
   this->RunTest(geometry::HydroelasticContactRepresentation::kTriangle);
@@ -870,10 +891,11 @@ TEST_F(CalcHydroelasticWithFallbackTest, ContinuousSystem_Triangles) {
 }
 
 TEST_F(CalcHydroelasticWithFallbackTest, ContinuousSystem_Polygons) {
+  forced_hydroelastic_contact_representation_ =
+      geometry::HydroelasticContactRepresentation::kPolygon;
+
   const double time_step = 0.0;  // Zero to select continuous system.
   this->Configure(time_step);
-  plant_->set_contact_surface_representation(
-      geometry::HydroelasticContactRepresentation::kPolygon);
 
   SCOPED_TRACE("continuous system hydro with fallback: polygon rep");
   this->RunTest(geometry::HydroelasticContactRepresentation::kPolygon);
@@ -888,10 +910,11 @@ TEST_F(CalcHydroelasticWithFallbackTest, DiscreteSystem_Polygons) {
 }
 
 TEST_F(CalcHydroelasticWithFallbackTest, DiscreteSystem_Triangles) {
+  forced_hydroelastic_contact_representation_ =
+      geometry::HydroelasticContactRepresentation::kTriangle;
+
   const double time_step = 5.0e-3;  // Non-zero to select discrete system.
   this->Configure(time_step);
-  plant_->set_contact_surface_representation(
-      geometry::HydroelasticContactRepresentation::kTriangle);
 
   SCOPED_TRACE("discrete system hydro with fallback: triangle rep");
   this->RunTest(geometry::HydroelasticContactRepresentation::kTriangle);
