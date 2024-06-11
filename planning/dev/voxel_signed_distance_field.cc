@@ -18,8 +18,8 @@ VoxelSignedDistanceField::VoxelSignedDistanceField() {
 VoxelSignedDistanceField::VoxelSignedDistanceField(
     const voxelized_geometry_tools::CollisionMap& collision_map,
     const GenerationParameters& generation_params) {
-  auto internal_sdf = std::make_shared<SignedDistanceField<float>>(std::move(
-      collision_map.ExtractSignedDistanceFieldFloat(generation_params)));
+  auto internal_sdf = std::make_shared<SignedDistanceField<float>>(
+      collision_map.ExtractSignedDistanceFieldFloat(generation_params));
   internal_representation_ =
       std::shared_ptr<void>(internal_sdf, internal_sdf.get());
 }
@@ -29,8 +29,8 @@ VoxelSignedDistanceField::VoxelSignedDistanceField(
     const std::vector<uint32_t>& objects_to_include,
     const GenerationParameters& generation_params) {
   auto internal_sdf = std::make_shared<SignedDistanceField<float>>(
-      std::move(collision_map.ExtractSignedDistanceFieldFloat(
-          objects_to_include, generation_params)));
+      collision_map.ExtractSignedDistanceFieldFloat(objects_to_include,
+                                                    generation_params));
   internal_representation_ =
       std::shared_ptr<void>(internal_sdf, internal_sdf.get());
 }

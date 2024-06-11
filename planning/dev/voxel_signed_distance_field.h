@@ -16,7 +16,7 @@ namespace planning {
 /// Container for voxelized signed distance fields. To enable efficient sharing
 /// signed distance fields (which may be quite large) between multiple uses, a
 /// VoxelSignedDistanceField operates equivalently to shared_ptr<const T> for
-/// the underlying voxelized signed distand field.
+/// the underlying voxelized signed distance field.
 class VoxelSignedDistanceField {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VoxelSignedDistanceField)
