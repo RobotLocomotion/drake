@@ -1,6 +1,8 @@
 #pragma once
 
 #include <filesystem>
+#include <istream>
+#include <string>
 
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 
@@ -8,14 +10,25 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/* Creates a polygonal mesh representing the convex hull of the vertices
- contained in the named `mesh_file` (scaled with the given `scale` value). The
- mesh is also "inflated" a given margin amount δ. If margin is zero, no
- inflation is applied and the convex hull of the original set of vertices is
+/* @group Convex Hull for Meshes
+
+ These functions create a convex hull (represented by a PolygonSurfaceMesh) for
+ mesh data. The functions differ in where the mesh data comes from. Otherwise,
+ their parameters and semantics (documented here) are the same.
+
+ The convex hull is built upon *all* of the vertex values in the mesh data
+ (regardless of how the mesh is organized or even if it includes vertices that
+ are not otherwise incorporated in faces).
+
+ The vertex positions can be scaled uniformly around the origin of the mesh
+ data's canonical frame.
+
+ The mesh can also be "inflated" by a given margin amount δ. If margin is zero,
+ no inflation is applied and the convex hull of the original set of vertices is
  computed.
 
  With "inflation", we mean the process of moving each of the faces in the convex
- hull an amount δ along the (outwards) normal. This effectively increases or
+ hull an amount δ along its (outwards) normal. This effectively grows or
  "inflates" the convex hull, producing an additional layer of thickness δ all
  around the convex hull of the original set of vertices.
 
@@ -25,21 +38,32 @@ namespace internal {
  objects, inflation of planar (zero thickness) meshes is not implemented. Margin
  is ignored for planar meshes.
 
- @param mesh_file   A path to a valid mesh file to bound.
- @param scale       All vertices will be multiplied by this value prior to
-                    computation.
- @param margin      The margin amount δ.
+ These functions throw an exception if:
+   - the mesh data comes from an unsupported format,
+   - the mesh data is ill formed,
+   - the referenced mesh data is degenerate (insufficient number of vertices,
+     co-linear or coincident vertices, etc.) All of the vertices lying on a
+     plane is *not* degenerate,
+   - there is an unforeseen error in computing the convex hull,
+   - `scale` is not strictly positive, or
+   - `margin` is negative.
+ */
+//@{
 
- @throws if `mesh_file` references anything but an .obj, .vtk volume mesh, or
-         .gltf.
- @throws if the referenced mesh data is degenerate (insufficient number of
-            vertices, co-linear or coincident vertices, etc.) All of the
-            vertices lying on a plane is *not* degenerate.
- @throws if there is an unforeseen error in computing the convex hull.
- @throws if `scale` is negative or zero.
- @throws if `margin` is negative. */
+// TODO(SeanCurtis-TRI): Before merging this for real, either support all mesh
+// file types, or document that it's .obj only.
+/* The mesh data is specified by an input stream interpreted according to the
+ provided `extension` with an associated label that will be used in the event of
+ errors/warnings. */
+PolygonSurfaceMesh<double> MakeConvexHullFromStream(
+    std::istream* mesh_stream, std::string_view extension,
+    std::string_view stream_label, double scale, double margin = 0);
+
+/* The mesh data is specified by a path to an on-disk file of supported type. */
 PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
                                           double scale, double margin = 0);
+
+//@}
 
 }  // namespace internal
 }  // namespace geometry
