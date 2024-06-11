@@ -15,8 +15,8 @@ def bazelisk_repository(
             bazel-drake/external/bazelisk/LICENSE \\
             bazel-drake/external/bazelisk/bazelisk.py
         """,
-        commit = "v1.19.0",
-        sha256 = "4c291875707cdd98da87ad34e287c06384436f60cb76e2ac03c32d51f48c96ce",  # noqa
+        commit = "v1.20.0",
+        sha256 = "3c2303d45562cf7a9bc64ad41b670f38c2634bf8ba5b3acffa2997577955b3e0",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/pull494.patch",
