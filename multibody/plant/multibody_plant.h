@@ -2136,8 +2136,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// %MultibodyPlant. See geometry::HydroelasticContactRepresentation for
   /// available options. See GetDefaultContactSurfaceRepresentation() for
   /// explanation of default values.
+  /// @throws std::exception if called post-finalize.
   void set_contact_surface_representation(
       geometry::HydroelasticContactRepresentation representation) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
     contact_surface_representation_ = representation;
   }
 
