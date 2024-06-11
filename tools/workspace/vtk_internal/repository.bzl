@@ -184,6 +184,7 @@ def vtk_internal_repository(
             ":patches/gltf_quiet_image_errors.patch",
             ":patches/io_image_formats.patch",
             ":patches/mr11117.patch",
+            ":patches/nerf_pegtl.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/vtkdoubleconversion_hidden.patch",
             ":patches/vtkfast_float_hidden.patch",
