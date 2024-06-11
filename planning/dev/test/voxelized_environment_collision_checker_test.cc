@@ -1,24 +1,19 @@
-#include "planning/voxelized_environment_collision_checker.h"
+#include "drake/planning/dev/voxelized_environment_collision_checker.h"
 
 #include <common_robotics_utilities/voxel_grid.hpp>
 #include <gtest/gtest.h>
 #include <voxelized_geometry_tools/collision_map.hpp>
 
+#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
+#include "drake/planning/dev/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
+#include "drake/planning/dev/voxelized_environment_builder.h"
+#include "drake/planning/test/planning_test_helpers.h"
 #include "drake/planning/test_utilities/collision_checker_abstract_test_suite.h"
-#include "planning/sphere_robot_model_collision_checker.h"
-#include "planning/test/planning_test_helpers.h"
-#include "planning/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
-#include "planning/voxelized_environment_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace test {
 namespace {
-
-using drake::planning::test::CollisionCheckerAbstractTestSuite;
-using drake::planning::test::CollisionCheckerConstructionParams;
-using drake::planning::test::CollisionCheckerTestParams;
-using drake::planning::test::MakeCollisionCheckerTestScene;
 
 CollisionCheckerTestParams MakeVoxelizedEnvironmentCollisionCheckerParams() {
   CollisionCheckerTestParams result;
@@ -28,14 +23,14 @@ CollisionCheckerTestParams MakeVoxelizedEnvironmentCollisionCheckerParams() {
 
   // Make Voxel-based collision checker, keeping a derived-type pointer for
   // further configuration steps.
-  auto voxel_checker = new VoxelizedEnvironmentCollisionChecker({
-      .model = std::move(model),
-      .robot_model_instances = {robot_instance},
-      .configuration_distance_function =
-          MakeWeightedIiwaConfigurationDistanceFunction(),
-      .edge_step_size = p.edge_step_size,
-      .env_collision_padding = p.env_padding,
-      .self_collision_padding = p.self_padding});
+  auto voxel_checker = new VoxelizedEnvironmentCollisionChecker(
+      {.model = std::move(model),
+       .robot_model_instances = {robot_instance},
+       .configuration_distance_function =
+           MakeWeightedIiwaConfigurationDistanceFunction(),
+       .edge_step_size = p.edge_step_size,
+       .env_collision_padding = p.env_padding,
+       .self_collision_padding = p.self_padding});
   result.checker.reset(voxel_checker);
 
   // Make a voxelized copy of the environment.
@@ -59,7 +54,8 @@ CollisionCheckerTestParams MakeVoxelizedEnvironmentCollisionCheckerParams() {
       for (int64_t zidx = 0; zidx < voxelized_environment.GetNumZCells();
            zidx++) {
         const auto occupancy =
-            voxelized_environment.GetIndexImmutable(xidx, yidx, zidx).Value()
+            voxelized_environment.GetIndexImmutable(xidx, yidx, zidx)
+                .Value()
                 .Occupancy();
         if (zidx >= 8) {
           DRAKE_ASSERT(occupancy == 0.0);
@@ -78,8 +74,7 @@ CollisionCheckerTestParams MakeVoxelizedEnvironmentCollisionCheckerParams() {
 }  // namespace
 
 INSTANTIATE_TEST_SUITE_P(
-    VoxelizedEnvironmentCollisionCheckerTest,
-    CollisionCheckerAbstractTestSuite,
+    VoxelizedEnvironmentCollisionCheckerTest, CollisionCheckerAbstractTestSuite,
     testing::Values(MakeVoxelizedEnvironmentCollisionCheckerParams()));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -89,4 +84,4 @@ INSTANTIATE_TEST_SUITE_P(
 
 }  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

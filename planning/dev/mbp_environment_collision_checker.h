@@ -17,10 +17,10 @@
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/collision_checker_params.h"
-#include "planning/robot_diagram.h"
-#include "planning/sphere_robot_model_collision_checker.h"
+#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
+#include "drake/planning/robot_diagram.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /// Sphere-model robot collision checker using MbP/SG to model environment
@@ -35,8 +35,7 @@ class MbpEnvironmentCollisionChecker final
   /** @} */
 
   /// Construct a collision checker using MbP/SG to model environment geometry.
-  explicit MbpEnvironmentCollisionChecker(
-      drake::planning::CollisionCheckerParams params);
+  explicit MbpEnvironmentCollisionChecker(CollisionCheckerParams params);
 
   /// Query the (distance, gradient) of the provided point from obstacles.
   /// @param context Context of the MbP model.
@@ -53,8 +52,8 @@ class MbpEnvironmentCollisionChecker final
   /// gradient is ∂d/∂p.
   PointSignedDistanceAndGradientResult
   ComputePointToEnvironmentSignedDistanceAndGradient(
-      const drake::systems::Context<double>& context,
-      const drake::geometry::QueryObject<double>& query_object,
+      const systems::Context<double>& context,
+      const geometry::QueryObject<double>& query_object,
       const Eigen::Vector4d& p_WQ, double query_radius,
       const std::vector<Eigen::Isometry3d>& X_WB_set,
       const std::vector<Eigen::Isometry3d>& X_WB_inverse_set) const override;
@@ -65,29 +64,27 @@ class MbpEnvironmentCollisionChecker final
       const MbpEnvironmentCollisionChecker&);
 
  private:
-  std::unique_ptr<drake::planning::CollisionChecker> DoClone() const override;
+  std::unique_ptr<CollisionChecker> DoClone() const override;
 
-  std::optional<drake::geometry::GeometryId>
-  AddEnvironmentCollisionShapeToBody(
-      const std::string& group_name,
-      const drake::multibody::Body<double>& bodyA,
-      const drake::geometry::Shape& shape,
-      const drake::math::RigidTransform<double>& X_AG) override;
+  std::optional<geometry::GeometryId> AddEnvironmentCollisionShapeToBody(
+      const std::string& group_name, const multibody::Body<double>& bodyA,
+      const geometry::Shape& shape,
+      const math::RigidTransform<double>& X_AG) override;
 
   void RemoveAllAddedEnvironment(
-      const std::vector<drake::planning::CollisionChecker::AddedShape>& shapes)
-      override;
+      const std::vector<CollisionChecker::AddedShape>& shapes) override;
 
   std::optional<double> EstimateConservativePointToEnvironmentSignedDistance(
-      const drake::systems::Context<double>& context,
-      const drake::geometry::QueryObject<double>& query_object,
+      const systems::Context<double>& context,
+      const geometry::QueryObject<double>& query_object,
       const Eigen::Vector4d& p_WQ, double query_radius,
       const std::vector<Eigen::Isometry3d>& X_WB_set,
       const std::vector<Eigen::Isometry3d>& X_WB_inverse_set) const override {
     return ComputePointToEnvironmentSignedDistanceAndGradient(
-        context, query_object, p_WQ, query_radius, X_WB_set, X_WB_inverse_set)
-            .MinimumDistance();
+               context, query_object, p_WQ, query_radius, X_WB_set,
+               X_WB_inverse_set)
+        .MinimumDistance();
   }
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

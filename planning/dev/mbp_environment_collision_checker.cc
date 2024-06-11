@@ -1,4 +1,4 @@
-#include "planning/mbp_environment_collision_checker.h"
+#include "drake/planning/dev/mbp_environment_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
@@ -12,32 +12,34 @@
 #include <common_robotics_utilities/math.hpp>
 #include <common_robotics_utilities/print.hpp>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/rigid_body.h"
-#include "drake/systems/framework/diagram_builder.h"
 
-using drake::geometry::FrameId;
-using drake::geometry::GeometryId;
-using drake::geometry::GeometryInstance;
-using drake::geometry::GeometrySet;
-using drake::geometry::SceneGraph;
-using drake::math::RigidTransform;
-using drake::multibody::Body;
-using drake::multibody::MultibodyPlant;
-using drake::planning::CollisionChecker;
-using drake::planning::CollisionCheckerContext;
-using std::optional;
-
-namespace anzu {
+namespace drake {
 namespace planning {
 
+using geometry::CollisionFilterDeclaration;
+using geometry::FrameId;
+using geometry::GeometryId;
+using geometry::GeometryInstance;
+using geometry::GeometrySet;
+using geometry::QueryObject;
+using geometry::SceneGraph;
+using geometry::SceneGraphInspector;
+using geometry::Shape;
+using geometry::SignedDistanceToPoint;
+using math::RigidTransform;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::MultibodyPlant;
+
+using systems::Context;
+
 MbpEnvironmentCollisionChecker::MbpEnvironmentCollisionChecker(
-    drake::planning::CollisionCheckerParams params)
+    CollisionCheckerParams params)
     : SphereRobotModelCollisionChecker(std::move(params)) {
   AllocateContexts();
 }
@@ -45,25 +47,22 @@ MbpEnvironmentCollisionChecker::MbpEnvironmentCollisionChecker(
 MbpEnvironmentCollisionChecker::MbpEnvironmentCollisionChecker(
     const MbpEnvironmentCollisionChecker&) = default;
 
-std::unique_ptr<CollisionChecker>
-MbpEnvironmentCollisionChecker::DoClone() const {
+std::unique_ptr<CollisionChecker> MbpEnvironmentCollisionChecker::DoClone()
+    const {
   // N.B. We cannot use make_unique due to protected-only access.
   return std::unique_ptr<MbpEnvironmentCollisionChecker>(
       new MbpEnvironmentCollisionChecker(*this));
 }
 
-PointSignedDistanceAndGradientResult
-MbpEnvironmentCollisionChecker::
+PointSignedDistanceAndGradientResult MbpEnvironmentCollisionChecker::
     ComputePointToEnvironmentSignedDistanceAndGradient(
-        const drake::systems::Context<double>& context,
-        const drake::geometry::QueryObject<double>& query_object,
+        const Context<double>&, const QueryObject<double>& query_object,
         const Eigen::Vector4d& p_WQ, const double query_radius,
         const std::vector<Eigen::Isometry3d>&,
         const std::vector<Eigen::Isometry3d>&) const {
-  const drake::geometry::SceneGraphInspector<double>& inspector =
-      query_object.inspector();
+  const SceneGraphInspector<double>& inspector = query_object.inspector();
   // Query signed distances.
-  const std::vector<drake::geometry::SignedDistanceToPoint<double>> distances =
+  const std::vector<SignedDistanceToPoint<double>> distances =
       query_object.ComputeSignedDistanceToPoint(p_WQ.head<3>(), query_radius);
   // Compile distances and gradients.
   PointSignedDistanceAndGradientResult result;
@@ -71,25 +70,24 @@ MbpEnvironmentCollisionChecker::
   for (const auto& distance_query : distances) {
     // TODO(calderpg) Remove once better filtering for query is available.
     if (RobotGeometries().count(distance_query.id_G) == 0) {
-      const drake::multibody::BodyIndex colliding_body_index =
-          plant().GetBodyFromFrameId(
-              inspector.GetFrameId(distance_query.id_G))->index();
+      const BodyIndex colliding_body_index =
+          plant()
+              .GetBodyFromFrameId(inspector.GetFrameId(distance_query.id_G))
+              ->index();
       const double distance = distance_query.distance;
       const Eigen::Vector4d gradient(distance_query.grad_W.x(),
                                      distance_query.grad_W.y(),
-                                     distance_query.grad_W.z(),
-                                     0.0);
+                                     distance_query.grad_W.z(), 0.0);
       result.AddDistanceAndGradient(distance, gradient, colliding_body_index);
     }
   }
   return result;
 }
 
-optional<GeometryId>
+std::optional<GeometryId>
 MbpEnvironmentCollisionChecker::AddEnvironmentCollisionShapeToBody(
-    const std::string& group_name, const drake::multibody::Body<double>& bodyA,
-    const drake::geometry::Shape& shape,
-    const drake::math::RigidTransform<double>& X_AG) {
+    const std::string& group_name, const Body<double>& bodyA,
+    const Shape& shape, const RigidTransform<double>& X_AG) {
   const std::optional<FrameId> body_frame_id =
       plant().GetBodyFrameIdIfExists(bodyA.index());
   if (!body_frame_id.has_value()) {
@@ -103,9 +101,9 @@ MbpEnvironmentCollisionChecker::AddEnvironmentCollisionShapeToBody(
   const GeometrySet bodyA_geometries =
       plant().CollectRegisteredGeometries(plant().GetBodiesWeldedTo(bodyA));
   drake::log()->debug(
-      "Adding shape (group: [{}]) to {} (FrameID {}) at X_AG =\n{}",
-      group_name, bodyA.scoped_name(), body_frame_id.value(),
-      X_AG.GetAsMatrix4());
+      "Adding shape (group: [{}]) to {} (FrameID {}) at X_AG =\n{}", group_name,
+      bodyA.scoped_name(), body_frame_id.value(),
+      fmt_eigen(X_AG.GetAsMatrix4()));
 
   // The geometry instance template which will be copied into each per-thread
   // SceneGraph Context; the GeometryId will match across each thread this way.
@@ -115,8 +113,8 @@ MbpEnvironmentCollisionChecker::AddEnvironmentCollisionShapeToBody(
                                          geometry_template.id()));
   geometry_template.set_proximity_properties({});
 
-  using Operation = std::function<void(
-      const RobotDiagram<double>&, CollisionCheckerContext*)>;
+  using Operation = std::function<void(const RobotDiagram<double>&,
+                                       CollisionCheckerContext*)>;
   const Operation operation = [&](const RobotDiagram<double>& model,
                                   CollisionCheckerContext* model_context) {
     auto& sg_context = model_context->mutable_scene_graph_context();
@@ -126,7 +124,7 @@ MbpEnvironmentCollisionChecker::AddEnvironmentCollisionShapeToBody(
         std::make_unique<GeometryInstance>(geometry_template));
     model.scene_graph()
         .collision_filter_manager(&sg_context)
-        .Apply(drake::geometry::CollisionFilterDeclaration().ExcludeBetween(
+        .Apply(CollisionFilterDeclaration().ExcludeBetween(
             bodyA_geometries, GeometrySet{added_geometry_id}));
   };
   PerformOperationAgainstAllModelContexts(operation);
@@ -152,4 +150,4 @@ void MbpEnvironmentCollisionChecker::RemoveAllAddedEnvironment(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
