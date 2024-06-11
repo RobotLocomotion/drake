@@ -447,7 +447,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 template <typename T>
 std::vector<MultibodyConstraintId> MultibodyPlant<T>::GetConstraintIds() const {
   std::vector<MultibodyConstraintId> ids;
-  // This list must be kept up to date with the types of user - addable
+  // This list must be kept up to date with the types of user-addable
   // constraints. See #21415 for a potentially more robust / sustainable
   // solution.
   for (const auto& [id, _] : coupler_constraints_specs_) {
