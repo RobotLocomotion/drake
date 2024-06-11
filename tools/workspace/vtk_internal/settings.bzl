@@ -479,6 +479,7 @@ MODULE_SETTINGS = {
             "**/vtkEGL*",
             "**/vtkOSOpenGL*",
             "**/vtkSDL2OpenGL*",
+            "**/vtkWebAssembly*",
             "**/vtkWin32OpenGL*",
             "**/vtkXOpenGL*",
         ],
