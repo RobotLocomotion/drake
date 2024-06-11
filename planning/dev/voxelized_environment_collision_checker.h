@@ -15,22 +15,12 @@
 
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/collision_checker_params.h"
-#include "planning/robot_diagram.h"
-#include "planning/sphere_robot_model_collision_checker.h"
+#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
+#include "drake/planning/dev/voxel_signed_distance_field.h"
+#include "drake/planning/robot_diagram.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
-using EnvironmentSDF = voxelized_geometry_tools::SignedDistanceField<float>;
-
-// Typedef for SDF pointer that can be shared between multiple collision
-// checkers.
-using EnvironmentSDFConstSharedPtr = std::shared_ptr<const EnvironmentSDF>;
-
-inline EnvironmentSDFConstSharedPtr MakeConstSharedPtrCopy(
-    const EnvironmentSDF& sdf) {
-  return EnvironmentSDFConstSharedPtr(
-      reinterpret_cast<const EnvironmentSDF*>(sdf.Clone().release()));
-}
 
 /// Collision checker using a voxelized environment model.
 class VoxelizedEnvironmentCollisionChecker final
@@ -57,8 +47,7 @@ class VoxelizedEnvironmentCollisionChecker final
   /// @param self_collision_padding Additional padding to apply to all
   /// robot-robot self collision queries. If distance between robot and
   /// itself is less than padding, the checker reports a collision.
-  explicit VoxelizedEnvironmentCollisionChecker(
-      drake::planning::CollisionCheckerParams params);
+  explicit VoxelizedEnvironmentCollisionChecker(CollisionCheckerParams params);
 
   /// Update the voxelized environment.
   /// @param environment_name Name of the environment model to update. If the
@@ -72,7 +61,7 @@ class VoxelizedEnvironmentCollisionChecker final
   void UpdateEnvironment(
       const std::string& environment_name,
       const voxelized_geometry_tools::CollisionMap& environment,
-      const std::optional<drake::multibody::BodyIndex>&
+      const std::optional<multibody::BodyIndex>&
           override_environment_body_index = {});
 
   /// Update the voxelized environment.
@@ -88,47 +77,35 @@ class VoxelizedEnvironmentCollisionChecker final
   void UpdateEnvironment(
       const std::string& environment_name,
       const voxelized_geometry_tools::TaggedObjectCollisionMap& environment,
-      const std::optional<drake::multibody::BodyIndex>&
+      const std::optional<multibody::BodyIndex>&
           override_environment_body_index = {});
 
   /// Update the voxelized environment.
   /// @param environment_name Name of the environment model to update. If the
   /// name is already in use, the new model replaces the old. To remove a model,
-  /// provide a default-constructed SignedDistanceField that is not initialized.
+  /// provide a default-constructed VoxelSignedDistanceField.
   /// @param environment_sdf signed distance field of voxelized environment.
   /// @param override_environment_body_index Optionally provide a body index to
   /// override the environment frame name -> body lookup. Use this if the frame
   /// name is not unique, or if the frame name does not match an existing MbP
   /// body.
-  void UpdateEnvironment(
-      const std::string& environment_name,
-      const EnvironmentSDF& environment_sdf,
-      const std::optional<drake::multibody::BodyIndex>&
-          override_environment_body_index = {});
-
-  /// Update the voxelized environment.
-  /// @param environment_name Name of the environment model to update. If the
-  /// name is already in use, the new model replaces the old. To remove a model,
-  /// provide a default-constructed SignedDistanceField that is not initialized.
-  /// @param environment_sdf signed distance field of voxelized environment.
-  /// @param override_environment_body_index Optionally provide a body index to
-  /// override the environment frame name -> body lookup. Use this if the frame
-  /// name is not unique, or if the frame name does not match an existing MbP
-  /// body.
-  void UpdateEnvironment(
-      const std::string& environment_name,
-      const EnvironmentSDFConstSharedPtr& environment_sdf,
-      const std::optional<drake::multibody::BodyIndex>&
-          override_environment_body_index = {});
+  void UpdateEnvironment(const std::string& environment_name,
+                         const VoxelSignedDistanceField& environment_sdf,
+                         const std::optional<multibody::BodyIndex>&
+                             override_environment_body_index = {});
 
   /// Remove the voxelized model corresponding to `environment_name`.
   bool RemoveEnvironment(const std::string& environment_name);
 
-  const std::map<std::string, EnvironmentSDFConstSharedPtr>&
-  EnvironmentSDFs() const { return environment_sdfs_; }
+  const std::map<std::string, VoxelSignedDistanceField>& EnvironmentSDFs()
+      const {
+    return environment_sdfs_;
+  }
 
-  const std::map<std::string, drake::multibody::BodyIndex>&
-  EnvironmentSDFBodies() const { return environment_sdf_bodies_; }
+  const std::map<std::string, multibody::BodyIndex>& EnvironmentSDFBodies()
+      const {
+    return environment_sdf_bodies_;
+  }
 
   /// Query the (distance, gradient) of the provided point from obstacles.
   /// @param context Context of the MbP model. Unused.
@@ -146,8 +123,8 @@ class VoxelizedEnvironmentCollisionChecker final
   /// gradient is ∂d/∂p.
   PointSignedDistanceAndGradientResult
   ComputePointToEnvironmentSignedDistanceAndGradient(
-      const drake::systems::Context<double>& plant_context,
-      const drake::geometry::QueryObject<double>& query_object,
+      const systems::Context<double>& plant_context,
+      const geometry::QueryObject<double>& query_object,
       const Eigen::Vector4d& p_WQ, double query_radius,
       const std::vector<Eigen::Isometry3d>& X_WB_set,
       const std::vector<Eigen::Isometry3d>& X_WB_inverse_set) const override;
@@ -166,8 +143,8 @@ class VoxelizedEnvironmentCollisionChecker final
   /// @return signed distances where signed distance is positive
   /// if @param p_WQ is outside of objects, and negative if it is inside.
   PointSignedDistanceAndGradientResult ComputePointToEnvironmentSignedDistance(
-      const drake::systems::Context<double>& plant_context,
-      const drake::geometry::QueryObject<double>& query_object,
+      const systems::Context<double>& plant_context,
+      const geometry::QueryObject<double>& query_object,
       const Eigen::Vector4d& p_WQ, double query_radius,
       const std::vector<Eigen::Isometry3d>& X_WB_set,
       const std::vector<Eigen::Isometry3d>& X_WB_inverse_set) const override;
@@ -178,31 +155,29 @@ class VoxelizedEnvironmentCollisionChecker final
       const VoxelizedEnvironmentCollisionChecker&);
 
  private:
-  std::unique_ptr<drake::planning::CollisionChecker> DoClone() const override;
+  std::unique_ptr<CollisionChecker> DoClone() const override;
 
-  std::optional<drake::geometry::GeometryId>
-  AddEnvironmentCollisionShapeToBody(
-      const std::string& group_name,
-      const drake::multibody::Body<double>& bodyA,
-      const drake::geometry::Shape& shape,
-      const drake::math::RigidTransform<double>& X_AG) override;
+  std::optional<geometry::GeometryId> AddEnvironmentCollisionShapeToBody(
+      const std::string& group_name, const multibody::Body<double>& bodyA,
+      const geometry::Shape& shape,
+      const math::RigidTransform<double>& X_AG) override;
 
   void RemoveAllAddedEnvironment(
-      const std::vector<drake::planning::CollisionChecker::AddedShape>& shapes)
-      override;
+      const std::vector<CollisionChecker::AddedShape>& shapes) override;
 
   std::optional<double> EstimateConservativePointToEnvironmentSignedDistance(
-      const drake::systems::Context<double>& context,
-      const drake::geometry::QueryObject<double>& query_object,
+      const systems::Context<double>& context,
+      const geometry::QueryObject<double>& query_object,
       const Eigen::Vector4d& p_WQ, double query_radius,
       const std::vector<Eigen::Isometry3d>& X_WB_set,
       const std::vector<Eigen::Isometry3d>& X_WB_inverse_set) const override;
 
   /// Signed Distance Field models of the environment around the robot.
-  std::map<std::string, EnvironmentSDFConstSharedPtr> environment_sdfs_;
+  std::map<std::string, VoxelSignedDistanceField> environment_sdfs_;
 
   /// What body does each Signed Distance Field belong to?
-  std::map<std::string, drake::multibody::BodyIndex> environment_sdf_bodies_;
+  std::map<std::string, multibody::BodyIndex> environment_sdf_bodies_;
 };
+
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
