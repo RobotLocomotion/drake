@@ -1785,11 +1785,11 @@ TEST_F(RenderEngineGlTest, ConvexGeometryReuse) {
   const RenderEngineGlTester::Prop& prop1 = tester.GetVisual(id1);
   const RenderEngineGlTester::Prop& prop2 = tester.GetVisual(id2);
 
-  EXPECT_EQ(prop1.parts.size(), 1);
-  EXPECT_EQ(prop1.parts.size(), prop2.parts.size());
+  EXPECT_EQ(prop1.instances.size(), 1);
+  EXPECT_EQ(prop1.instances.size(), prop2.instances.size());
   // Different instances nevertheless share the same geometry.
-  EXPECT_NE(&prop1.parts[0].instance, &prop2.parts[0].instance);
-  EXPECT_EQ(prop1.parts[0].instance.geometry, prop2.parts[0].instance.geometry);
+  EXPECT_NE(&prop1.instances[0], &prop2.instances[0]);
+  EXPECT_EQ(prop1.instances[0].geometry, prop2.instances[0].geometry);
 }
 
 // Confirms that when requesting the same mesh multiple times, only a single
@@ -1816,11 +1816,11 @@ TEST_F(RenderEngineGlTest, MeshGeometryReuse) {
   const RenderEngineGlTester::Prop& prop1 = tester.GetVisual(id1);
   const RenderEngineGlTester::Prop& prop2 = tester.GetVisual(id2);
 
-  EXPECT_EQ(prop1.parts.size(), 1);
-  EXPECT_EQ(prop1.parts.size(), prop2.parts.size());
+  EXPECT_EQ(prop1.instances.size(), 1);
+  EXPECT_EQ(prop1.instances.size(), prop2.instances.size());
   // Different instances nevertheless share the same geometry.
-  EXPECT_NE(&prop1.parts[0].instance, &prop2.parts[0].instance);
-  EXPECT_EQ(prop1.parts[0].instance.geometry, prop2.parts[0].instance.geometry);
+  EXPECT_NE(&prop1.instances[0], &prop2.instances[0]);
+  EXPECT_EQ(prop1.instances[0].geometry, prop2.instances[0].geometry);
 }
 
 // Confirm the properties of the fallback camera using the following
