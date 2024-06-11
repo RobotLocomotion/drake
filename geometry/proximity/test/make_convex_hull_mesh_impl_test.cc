@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -455,6 +456,65 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeConvexHull(colinear_obj, 1.0),
       ".*all vertices in the mesh appear to be co-linear.*colinear.obj.");
+}
+
+/* Confirm that passing a URL will produce a convex hull. */
+GTEST_TEST(MakeConvexHullMeshTest, MakeFromUrl) {
+  const double scale = 2.0;
+  const PolyMesh expected = MakeCube(scale);
+  const std::string box_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
+
+  // file:// URL.
+  {
+    const PolyMesh dut = MakeConvexHullFromUrl("file://" + box_path, scale);
+    MeshesAreEquivalent(dut, expected, 1e-14);
+  }
+
+  // Valid data:// URL.
+  {
+    std::ifstream f(box_path);
+    DRAKE_DEMAND(f.good());
+    std::stringstream content;
+    content << f.rdbuf();
+    const std::string box_contents = std::move(content).str();
+    const PolyMesh dut =
+        MakeConvexHullFromUrl("data:model/obj," + box_contents, scale);
+    MeshesAreEquivalent(dut, expected, 1e-14);
+  }
+
+  // Invalid data:// URL -- currently unimplemented model/* types.
+  {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        MakeConvexHullFromUrl("data:model/vtk,ignored", scale),
+        "Unimplemented.*volume .vtk.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        MakeConvexHullFromUrl("data:model/gltf+json,ignored", scale),
+        "Unimplemented.*glTF.*");
+  }
+
+  // Invalid data:// URL -- unsupported model/* type.
+  {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        MakeConvexHullFromUrl("data:model/stl, ignored", scale),
+        ".*unrecognized model mime type.*");
+  }
+
+  // Invalid data:// URL -- badly formatted.
+  {
+    DRAKE_EXPECT_THROWS_MESSAGE(MakeConvexHullFromUrl("data:model/obj", scale),
+                                ".*badly formatted data URL.*");
+  }
+
+  // Unsupported URLs.
+  {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        MakeConvexHullFromUrl("data:image/png,ignored", scale),
+        ".*unsupported url.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        MakeConvexHullFromUrl("http://doesnt_work.com/file.obj", scale),
+        ".*unsupported url.*");
+  }
 }
 
 }  // namespace
