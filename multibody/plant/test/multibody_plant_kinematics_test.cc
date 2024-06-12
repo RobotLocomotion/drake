@@ -90,19 +90,16 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   // Helper function to implement by-hand calculation of spatial acceleration of
   // a point Ap of link A in world W, expressed in link frame A.
   // param[in] wAzdot Az measure of A's angular acceleration in world W.
-  // param[in] LA Ax measure of point Ap's position from Wo (fixed in world W).
+  // param[in] p_WoAp_A point Ap's position from Wo (fixed in world W).
   SpatialAcceleration<double> CalcApSpatialAccelerationInWExpressedInA(
-      const double wAzdot, const double LA) {
-    // DtW(w_WA_A) = DtA(w_WA_A) + w_WA_A x w_WA_A
-    //             = Dt(wAz) Az
-    //             = wAxdot Az = alphaA Az
-    // DtW(v_WAp_A) = DtA(v_WAp_A) + w_WA_A x v_WAp_A
-    //              = LA alphaA Ay + wAz Az x LA wAz Ay
-    //              = LA alphaA Ay - LA wAz² Ax
-    const double alphaA = wAzdot;
-    const double wA_squared = wAz_ * wAz_;
-    const Vector3<double> alpha_WA_A(0, 0, alphaA);
-    const Vector3<double> a_WAp_A(-LA * wA_squared, LA * alphaA, 0);
+      const double wAzdot, const Vector3<double>& p_WoAp_A) {
+    //     w_WA_A = wAz Az
+    // alpha_WA_A = DtW(w_WA_A) = wAzdot Az
+    //    a_WAp_A = alpha_WA_A x p_WoAp_A + w_WA_A x (w_WA_A x p_WoAp_A)
+    const Vector3<double> w_WA_A(0, 0, wAz_);
+    const Vector3<double> alpha_WA_A(0, 0, wAzdot);
+    const Vector3<double> a_WAp_A =
+        alpha_WA_A.cross(p_WoAp_A) + w_WA_A.cross(w_WA_A.cross(p_WoAp_A));
     return SpatialAcceleration<double>(alpha_WA_A, a_WAp_A);
   }
 
@@ -112,26 +109,26 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   // a point Bp of link B in world W, expressed in link frame A.
   // param[in] wAzdot Az measure of A's angular acceleration in world W.
   // param[in] wBzdot Bz measure of B's angular acceleration in link A.
-  // param[in] LB Bx measure of point Bp's position from point Mo.
+  // param[in] p_MoBp_B point Bp's position from point Mo (fixed in link A).
   SpatialAcceleration<double> CalcBpSpatialAccelerationInWExpressedInA(
-      const double wAzdot, const double wBzdot, const double LB) {
-    // DtW(w_WB_A) = Dt(wAz + wBz) Az
-    //             = (wAzdot + wBzdot) Az
-    //             = alphaAB Az
-    // A_WBp_W = L [alphaA Ay - wAz² Ax] + LB [alphaAB By - (wAz + wBz)² Bx]
-    //         = -[L wAz² + LB (wAz + wBz)²] Ax + (L alphaA + LB alphaAB) Ay
-    // Reminder: Ax = Bx, Ay = By, Az = Bz when qB = 0°. Here, L = link_length_.
-    const double L = link_length_;  // Ax measure of Mo's position from Wo.
-    const double alphaA = wAzdot;
-    const double alphaAB = wAzdot + wBzdot;
-    const double wA_squared = wAz_ * wAz_;
-    const double wAB_squared = (wAz_ + wBz_) * (wAz_ + wBz_);
-    const Vector3<double> alpha_WB_A(0, 0, alphaAB);
-    const Vector3<double> a_WMo_A(-L * wA_squared, L * alphaA, 0);
-    const Vector3<double> a_term_B(-LB * wAB_squared, LB * alphaAB, 0);
+      const VectorX<double>& vdot, const Vector3<double>& p_MoBp_B) {
+    // a_WBp_A = a_WMo_A + alpha_WB_A x p_WoAp_A + w_WB_A x (w_WB_A x p_WoAp_A)
+    const Vector3<double> p_WoMo_A(link_length_, 0, 0);
+    const SpatialAcceleration<double> A_WMo_A =
+        CalcApSpatialAccelerationInWExpressedInA(vdot[0], p_WoMo_A);
+    const Vector3<double>& a_WMo_A = A_WMo_A.translational();
+
+    //     w_WB_A = (wAz_ + wBz_) Az
+    // alpha_WB_A = DtW(w_WB_A) = (ẇAz + ẇBz) Az
+    const Vector3<double> w_WB_A(0, 0, wAz_ + wBz_);
+    const Vector3<double> alpha_WB_A(0, 0, vdot[0] + vdot[1]);  // (ẇAz + ẇBz)Az
+
+    // Express position vector argument p_MoBp_B in terms of link A's frame.
     const math::RotationMatrix<double> R_AB =
         math::RotationMatrix<double>::MakeZRotation(qB_);
-    const Vector3<double> a_WBp_A = a_WMo_A + R_AB * a_term_B;
+    const Vector3<double> p_MoBp_A = R_AB * p_MoBp_B;
+    const Vector3<double> a_WBp_A = a_WMo_A + alpha_WB_A.cross(p_MoBp_A) +
+                                    w_WB_A.cross(w_WB_A.cross(p_MoBp_A));
     return SpatialAcceleration<double>(alpha_WB_A, a_WBp_A);
   }
 
@@ -142,7 +139,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const double kTolerance = 128 * std::numeric_limits<double>::epsilon();
   const double link_length_ = 4.0;  // meters
   const double qA_ = M_PI / 6.0;    // Link A's angle in world W, about Az = Nz.
-  const double qB_ = 0;             // Link B's angle in link A,  about Bz = Az.
+  const double qB_ = 0.0 / 12.0;    // Link B's angle in link A,  about Bz = Az.
   const double wAz_ = 3.0;          // rad/sec
   const double wBz_ = 2.0;          // rad/sec
   MultibodyPlant<double> plant_{0.0};
@@ -167,32 +164,38 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   const Frame<double>& frame_A = bodyA_->body_frame();
   const Frame<double>& frame_W = plant_.world_frame();
   const Vector3<double> p_AoAp_A(0.5 * link_length_, 0.0, 0.0);
-  const SpatialAcceleration<double> aBias_WAp_A =
+  const SpatialAcceleration<double> ABias_WAp_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_A, p_AoAp_A, frame_W, frame_A);
 
   // Verify via simple by-hand analysis: aBias_WAp_A = -L wAz_² Ax.
+  const Vector3<double> p_WoAp_A(link_length_, 0.0, 0.0);
+  const SpatialAcceleration<double> ABias_WAp_A_expected =
+      CalcApSpatialAccelerationInWExpressedInA(0.0, p_WoAp_A);
+  EXPECT_TRUE(CompareMatrices(ABias_WAp_A_expected.get_coeffs(),
+                              ABias_WAp_A.get_coeffs(), kTolerance));
+
   const double wA_squared = wAz_ * wAz_;
   const Vector3<double> aBias_WAp_A_expected =
       -link_length_ * wA_squared * Vector3d::UnitX();
-  EXPECT_TRUE(CompareMatrices(aBias_WAp_A.translational(), aBias_WAp_A_expected,
+  EXPECT_TRUE(CompareMatrices(ABias_WAp_A.translational(), aBias_WAp_A_expected,
                               kTolerance));
   EXPECT_TRUE(
-      CompareMatrices(aBias_WAp_A.rotational(), Vector3d::Zero(), kTolerance));
+      CompareMatrices(ABias_WAp_A.rotational(), Vector3d::Zero(), kTolerance));
 
   // Also show that the previous utility function is useful for testing the
   // method MultibodyPlant::CalcBiasSpatialAcceleration().
-  const SpatialAcceleration<double> aBias_WAp_A_alternate =
+  const SpatialAcceleration<double> ABias_WAp_A_alternate =
       plant_.CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
                                          frame_A, p_AoAp_A, frame_W, frame_A);
-  EXPECT_TRUE(CompareMatrices(aBias_WAp_A_alternate.get_coeffs(),
-                              aBias_WAp_A.get_coeffs(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(ABias_WAp_A_alternate.get_coeffs(),
+                              ABias_WAp_A.get_coeffs(), kTolerance));
 
   // Point Bp is the point of B located at the most distal end of link B.
   // Calculate Bp's bias spatial acceleration in world W, expressed in A.
   const Frame<double>& frame_B = bodyB_->body_frame();
   const Vector3<double> p_BoBp_B(0.5 * link_length_, 0.0, 0.0);
-  const SpatialAcceleration<double> aBias_WBp_A =
+  const SpatialAcceleration<double> ABias_WBp_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_B, p_BoBp_B, frame_W, frame_A);
 
@@ -201,57 +204,57 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   const Vector3<double> aBias_WBp_A_expected =
       (-link_length_ * wA_squared + -link_length_ * wAB_squared) *
       Vector3d::UnitX();
-  EXPECT_TRUE(CompareMatrices(aBias_WBp_A.translational(), aBias_WBp_A_expected,
+  EXPECT_TRUE(CompareMatrices(ABias_WBp_A.translational(), aBias_WBp_A_expected,
                               kTolerance));
   EXPECT_TRUE(
-      CompareMatrices(aBias_WBp_A.rotational(), Vector3d::Zero(), kTolerance));
+      CompareMatrices(ABias_WBp_A.rotational(), Vector3d::Zero(), kTolerance));
 
   // Also show that the previous utility function is useful for testing the
   // method MultibodyPlant::CalcBiasSpatialAcceleration().
-  const SpatialAcceleration<double> aBias_WBp_A_alternate =
+  const SpatialAcceleration<double> ABias_WBp_A_alternate =
       plant_.CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
                                          frame_B, p_BoBp_B, frame_W, frame_A);
-  EXPECT_TRUE(CompareMatrices(aBias_WBp_A_alternate.get_coeffs(),
-                              aBias_WBp_A.get_coeffs(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(ABias_WBp_A_alternate.get_coeffs(),
+                              ABias_WBp_A.get_coeffs(), kTolerance));
 
   // For point Ap of A, calculate Ap's bias spatial acceleration in frame A.
-  const SpatialAcceleration<double> aBias_AAp_W =
+  const SpatialAcceleration<double> ABias_AAp_W =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_A, p_AoAp_A, frame_A, frame_W);
 
   // Verify via simple by-hand analysis: aBias_AAp_W = Vector3d::Zero().
-  EXPECT_TRUE(CompareMatrices(aBias_AAp_W.translational(), Vector3d::Zero(),
+  EXPECT_TRUE(CompareMatrices(ABias_AAp_W.translational(), Vector3d::Zero(),
                               kTolerance));
   EXPECT_TRUE(
-      CompareMatrices(aBias_AAp_W.rotational(), Vector3d::Zero(), kTolerance));
+      CompareMatrices(ABias_AAp_W.rotational(), Vector3d::Zero(), kTolerance));
 
   // Also show that the previous utility function is useful for testing the
   // method MultibodyPlant::CalcBiasSpatialAcceleration().
-  const SpatialAcceleration<double> aBias_AAp_W_alternate =
+  const SpatialAcceleration<double> ABias_AAp_W_alternate =
       plant_.CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
                                          frame_A, p_AoAp_A, frame_A, frame_W);
-  EXPECT_TRUE(CompareMatrices(aBias_AAp_W_alternate.get_coeffs(),
-                              aBias_AAp_W.get_coeffs(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(ABias_AAp_W_alternate.get_coeffs(),
+                              ABias_AAp_W.get_coeffs(), kTolerance));
 
   // For point Bp of B, calculate Bp's bias spatial acceleration in frame A.
-  const SpatialAcceleration<double> aBias_ABp_A =
+  const SpatialAcceleration<double> ABias_ABp_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_B, p_BoBp_B, frame_A, frame_A);
 
   // Verify via by-hand analysis: aBias_ABp_A = -L wBz_² Ax.
   const Vector3<double> aBias_ABp_A_expected =
       -link_length_ * wBz_ * wBz_ * Vector3d::UnitX();
-  EXPECT_TRUE(CompareMatrices(aBias_ABp_A.translational(), aBias_ABp_A_expected,
+  EXPECT_TRUE(CompareMatrices(ABias_ABp_A.translational(), aBias_ABp_A_expected,
                               kTolerance));
   EXPECT_TRUE(
-      CompareMatrices(aBias_ABp_A.rotational(), Vector3d::Zero(), kTolerance));
+      CompareMatrices(ABias_ABp_A.rotational(), Vector3d::Zero(), kTolerance));
   // Also show that the previous utility function is useful for testing the
   // method MultibodyPlant::CalcBiasSpatialAcceleration().
-  const SpatialAcceleration<double> aBias_ABp_A_alternate =
+  const SpatialAcceleration<double> ABias_ABp_A_alternate =
       plant_.CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
                                          frame_B, p_BoBp_B, frame_A, frame_A);
-  EXPECT_TRUE(CompareMatrices(aBias_ABp_A_alternate.get_coeffs(),
-                              aBias_ABp_A.get_coeffs(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(ABias_ABp_A_alternate.get_coeffs(),
+                              ABias_ABp_A.get_coeffs(), kTolerance));
 
   // Point Bq is fixed to link B and located from Bo as below.
   const double x = 0.1, y = -0.2, z = 0.3;
@@ -259,7 +262,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
 
   // Compute Bq's bias translational acceleration with respect to generalized
   // velocities v measured in frame A, expressed in frame B.
-  const SpatialAcceleration<double> aBias_ABq_B =
+  const SpatialAcceleration<double> ABias_ABq_B =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_B, p_BoBq_B, frame_A, frame_B);
 
@@ -267,16 +270,16 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   const double wB_squared = wBz_ * wBz_;
   const Vector3<double> aBias_ABq_B_expected(
       -0.5 * (link_length_ + 2 * x) * wB_squared, -y * wB_squared, 0);
-  EXPECT_TRUE(CompareMatrices(aBias_ABq_B.translational(), aBias_ABq_B_expected,
+  EXPECT_TRUE(CompareMatrices(ABias_ABq_B.translational(), aBias_ABq_B_expected,
                               kTolerance));
 
   // Also show that the previous utility function is useful for testing the
   // method MultibodyPlant::CalcBiasSpatialAcceleration().
-  const SpatialAcceleration<double> aBias_ABq_B_alternate =
+  const SpatialAcceleration<double> ABias_ABq_B_alternate =
       plant_.CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
                                          frame_B, p_BoBq_B, frame_A, frame_B);
-  EXPECT_TRUE(CompareMatrices(aBias_ABq_B_alternate.get_coeffs(),
-                              aBias_ABq_B.get_coeffs(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(ABias_ABq_B_alternate.get_coeffs(),
+                              ABias_ABq_B.get_coeffs(), kTolerance));
 }
 
 // The point of this test is to
@@ -299,9 +302,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   const SpatialAcceleration<double> A_AAo_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_A, p_AoAo_A, frame_A, frame_A);
-  EXPECT_TRUE(CompareMatrices(A_AAo_A.rotational(), Vector3<double>::Zero(),
-                              kTolerance));
-  EXPECT_TRUE(CompareMatrices(A_AAo_A.translational(), Vector3<double>::Zero(),
+  EXPECT_TRUE(CompareMatrices(A_AAo_A.get_coeffs(), Vector6<double>::Zero(),
                               kTolerance));
 
   // Calculate frame A's spatial acceleration in frame W, expressed in A.
@@ -310,8 +311,9 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
           plant_, *context_, vdot, frame_A, p_AoAo_A, frame_W, frame_A);
 
   // Verify previous results with by-hand analytical results.
+  const Vector3<double> p_WoAo_W(0.5 * link_length_, 0, 0);
   const SpatialAcceleration<double> A_WAo_A_expected =
-      CalcApSpatialAccelerationInWExpressedInA(wAzdot, 0.5 * link_length_);
+      CalcApSpatialAccelerationInWExpressedInA(wAzdot, p_WoAo_W);
   EXPECT_TRUE(CompareMatrices(A_WAo_A.get_coeffs(),
                               A_WAo_A_expected.get_coeffs(), kTolerance));
 
@@ -335,14 +337,15 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   // bodyA_, and bodyB_, respectively.
   const SpatialAcceleration<double> A_WAo_W = A_WallBo_W.at(1);
   const SpatialAcceleration<double> A_WBo_W = A_WallBo_W.at(2);
-  const math::RotationMatrix<double> R_WA =
-      frame_A.CalcRotationMatrixInWorld(*context_);
 
   // Compare R_WA * A_WAo_A with result from CalcSpatialAccelerationsFromVdot().
+  const math::RotationMatrix<double> R_WA =
+      frame_A.CalcRotationMatrixInWorld(*context_);
   EXPECT_TRUE(CompareMatrices(A_WAo_W.get_coeffs(),
                               (R_WA * A_WAo_A).get_coeffs(), kTolerance));
 
 #if 0
+  // Compare A_WAo_W with result from frame_A.CalcSpatialAccelerationInWorld().
   const SpatialAcceleration<double> A_WAo_W_alternate =
       frame_A.CalcSpatialAccelerationInWorld(*context_);
   EXPECT_TRUE(CompareMatrices(A_WAo_W_alternate.get_coeffs(),
@@ -370,17 +373,16 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   const SpatialAcceleration<double> A_WBo_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_B, p_BoBo_B, frame_W, frame_A);
-
-  // Verify previous results with by-hand analytical results.
-  const SpatialAcceleration<double> A_WBo_A_expected =
-      CalcBpSpatialAccelerationInWExpressedInA(wAzdot, wBzdot,
-                                               0.5 * link_length_);
-  EXPECT_TRUE(CompareMatrices(A_WBo_A.get_coeffs(),
-                              A_WBo_A_expected.get_coeffs(), kTolerance));
-
   // Compare R_WA * A_WBo_A with result from CalcSpatialAccelerationsFromVdot().
   EXPECT_TRUE(CompareMatrices(A_WBo_W.get_coeffs(),
                               (R_WA * A_WBo_A).get_coeffs(), kTolerance));
+
+  // Verify previous results with by-hand analytical results.
+  Vector3<double> p_MoBp_B(0.5 * link_length_, 0, 0);
+  const SpatialAcceleration<double> A_WBo_A_expected =
+      CalcBpSpatialAccelerationInWExpressedInA(vdot, p_MoBp_B);
+  EXPECT_TRUE(CompareMatrices(A_WBo_A.get_coeffs(),
+                              A_WBo_A_expected.get_coeffs(), kTolerance));
 
   // Designate frame_Ap as the frame fixed to A that is joint2's parent frame.
   // Calculate frame_Ap's spatial acceleration in frame W, expressed in A.
@@ -391,21 +393,23 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
           plant_, *context_, vdot, frame_Ap, p_ApAp_Ap, frame_W, frame_A);
 
   // Verify the previous results with by-hand analytical results.
+  const Vector3<double> p_WoAp_W(link_length_, 0, 0);
   const SpatialAcceleration<double> A_WAp_A_expected =
-      CalcApSpatialAccelerationInWExpressedInA(wAzdot, link_length_);
+      CalcApSpatialAccelerationInWExpressedInA(wAzdot, p_WoAp_W);
   EXPECT_TRUE(CompareMatrices(A_WAp_A.get_coeffs(),
                               A_WAp_A_expected.get_coeffs(), kTolerance));
 
   // Calculate frame_Bp's spatial acceleration in frame W, expressed in A.
   // Note: frame_Bp is the frame fixed to bodyB_'s distal end.
-  const Vector3<double> p_BoBp_B(0.5 * link_length_, 0, 0);
+  Vector3<double> p_BoBp_B(0.5 * link_length_, 0, 0);
   const SpatialAcceleration<double> A_WBp_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_B, p_BoBp_B, frame_W, frame_A);
 
   // Verify the previous results with by-hand analytical results.
+  p_MoBp_B = Vector3<double>(link_length_, 0, 0);
   const SpatialAcceleration<double> A_WBp_A_expected =
-      CalcBpSpatialAccelerationInWExpressedInA(wAzdot, wBzdot, link_length_);
+      CalcBpSpatialAccelerationInWExpressedInA(vdot, p_MoBp_B);
   EXPECT_TRUE(CompareMatrices(A_WBp_A.get_coeffs(),
                               A_WBp_A_expected.get_coeffs(), kTolerance));
 
