@@ -26,8 +26,7 @@ namespace {
 class UsdGeometryTest : public test::DiagnosticPolicyTestBase {
  public:
   UsdGeometryTest() {
-    // Construct a parser object so that it initializes the USD library.
-    UsdParserWrapper parser;
+    UsdParserWrapper::InitializeOpenUsdLibrary();
 
     stage_ = pxr::UsdStage::CreateInMemory();
     meters_per_unit_ = 0.01;

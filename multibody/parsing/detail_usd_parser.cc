@@ -58,8 +58,11 @@ class UsdParser {
   ModelInstanceIndex model_instance_;
 };
 
-namespace {
-void InitializeOpenUsdLibrary() {
+UsdParserWrapper::UsdParserWrapper() = default;
+
+UsdParserWrapper::~UsdParserWrapper() = default;
+
+void UsdParserWrapper::InitializeOpenUsdLibrary() {
   // Register all relevant plugins.
   auto& registry = pxr::PlugRegistry::PlugRegistry::GetInstance();
   std::vector<std::string> json_paths{{
@@ -80,17 +83,6 @@ void InitializeOpenUsdLibrary() {
     registry.RegisterPlugins(info_dir.string());
   }
 }
-}  // namespace
-
-UsdParserWrapper::UsdParserWrapper() {
-  static const int ignored = []() {
-    InitializeOpenUsdLibrary();
-    return 0;
-  }();
-  unused(ignored);
-}
-
-UsdParserWrapper::~UsdParserWrapper() = default;
 
 std::optional<ModelInstanceIndex> UsdParserWrapper::AddModel(
     const DataSource& data_source, const std::string& model_name,
@@ -104,6 +96,11 @@ std::vector<ModelInstanceIndex> UsdParserWrapper::AddAllModels(
     const DataSource& data_source,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
+  static const int ignored = []() {
+    InitializeOpenUsdLibrary();
+    return 0;
+  }();
+  unused(ignored);
   UsdParser parser(workspace);
   return parser.AddAllModels(data_source, parent_model_name);
 }

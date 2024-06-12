@@ -29,6 +29,8 @@ class UsdParserWrapper final : public ParserInterface {
       const DataSource& data_source,
       const std::optional<std::string>& parent_model_name,
       const ParsingWorkspace& workspace) final;
+
+  static void InitializeOpenUsdLibrary();
 };
 
 }  // namespace internal
