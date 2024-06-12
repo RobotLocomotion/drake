@@ -692,15 +692,12 @@ const geometry::SceneGraphInspector<T>& inspector =
     scene_graph.model_inspector();
 @endcode
 After context creation, an inspector can be retrieved from the state
-stored in the context by the plant's geometry query input port:
+stored in the context:
 @code
-// For a MultibodyPlant<T> instance called mbp and a
-// Context<T> called context.
-const geometry::QueryObject<T>& query_object =
-    mbp.get_geometry_query_input_port()
-        .template Eval<geometry::QueryObject<T>>(context);
+// For a MultibodyPlant<T> instance called mbp and a Context<T> called
+// context.
 const geometry::SceneGraphInspector<T>& inspector =
-    query_object.inspector();
+    mbp.EvalSceneGraphInspector(context);
 @endcode
 Once an inspector is available, proximity properties can be retrieved as:
 @code
@@ -2044,6 +2041,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     }
     return it->second;
   }
+
+  /// Returns the inspector from the `context` for the SceneGraph associated
+  /// with this plant, via this plant's "geometry_query" input port. (In the
+  /// future, the inspector might come from a different context source that
+  /// is more efficient than the "geometry_query" input port.)
+  const geometry::SceneGraphInspector<T>& EvalSceneGraphInspector(
+      const systems::Context<T>& context) const;
   /// @} <!-- Geometry -->
 
   /// @anchor mbp_contact_modeling

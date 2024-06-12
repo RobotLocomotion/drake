@@ -286,13 +286,11 @@ class MultibodyPlantHydroelasticTractionTests
   void UpdateCalculatorData() {
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
-    const auto& query_object =
-        plant_->get_geometry_query_input_port()
-            .template Eval<geometry::QueryObject<double>>(*plant_context_);
+    const auto& inspector = plant_->EvalSceneGraphInspector(*plant_context_);
     const geometry::FrameId frameM_id =
-        query_object.inspector().GetFrameId(contact_surface_->id_M());
+        inspector.GetFrameId(contact_surface_->id_M());
     const geometry::FrameId frameN_id =
-        query_object.inspector().GetFrameId(contact_surface_->id_N());
+        inspector.GetFrameId(contact_surface_->id_N());
     const RigidBody<double>& bodyA = *plant_->GetBodyFromFrameId(frameM_id);
     const RigidBody<double>& bodyB = *plant_->GetBodyFromFrameId(frameN_id);
 
