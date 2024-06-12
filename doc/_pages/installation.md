@@ -64,7 +64,7 @@ compiler as our releases:
 | Operating System                   | C/C++ Compiler           | Std   |
 |------------------------------------|--------------------------|-------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                   | C++20 |
-| Ubuntu 24.04 LTS (Jammy Jellyfish) | GCC 13                   | C++20 |
+| Ubuntu 24.04 LTS (Noble Numbat)    | GCC 13                   | C++20 |
 | macOS Ventura (13)                 | Apple LLVM 14 (Xcode 14) | C++20 |
 | macOS Sonoma (14)                  | Apple LLVM 14 (Xcode 15) | C++20 |
 
