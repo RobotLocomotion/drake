@@ -31,12 +31,18 @@ void CheckPrimalDualSolution(
   // Choose a solver which outputs conic dual variables. Gurobi does not for
   // Socp so it is excluded from this list.
   std::vector<SolverId> conic_solvers;
-  conic_solvers.push_back(solvers::MosekSolver::id());
+  if (MosekSolver::is_enabled() && MosekSolver::is_available()) {
+    conic_solvers.push_back(MosekSolver::id());
+  }
   if (ssize(primal_prog.positive_semidefinite_constraints()) == 0 &&
       ssize(primal_prog.linear_matrix_inequality_constraints()) == 0) {
-    conic_solvers.push_back(solvers::ClarabelSolver::id());
+    conic_solvers.push_back(ClarabelSolver::id());
   }
-  auto solver = solvers::MakeFirstAvailableSolver(conic_solvers);
+  // If no solvers are available to run this test, skip the test.
+  if (ssize(conic_solvers) == 0) {
+    return;
+  }
+  auto solver = MakeFirstAvailableSolver(conic_solvers);
 
   // We need relatively loose tolerance for these tests as both the primal and
   // the dual will typically solve only to a precision of 1e-8.
