@@ -32,9 +32,9 @@ class MultibodyPlantTester {
  public:
   MultibodyPlantTester() = delete;
 
-  static const internal::JointLockingCacheData<double>& EvalJointLockingCache(
+  static const internal::JointLockingCacheData<double>& EvalJointLocking(
       const MultibodyPlant<double>& plant, const Context<double>& context) {
-    return plant.EvalJointLockingCache(context);
+    return plant.EvalJointLocking(context);
   }
 
   template <typename T>
@@ -131,7 +131,7 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
   // No joints/bodies are locked, all joint/body velocity indices should exist.
   {
     const internal::JointLockingCacheData<double>& cache =
-        MultibodyPlantTester::EvalJointLockingCache(*plant_, *context_);
+        MultibodyPlantTester::EvalJointLocking(*plant_, *context_);
     const std::vector<int>& unlocked_velocity_indices =
         cache.unlocked_velocity_indices;
     const std::vector<int>& locked_velocity_indices =
@@ -187,7 +187,7 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
   {
     body3_body4.Lock(context_.get());
     const internal::JointLockingCacheData<double>& cache =
-        MultibodyPlantTester::EvalJointLockingCache(*plant_, *context_);
+        MultibodyPlantTester::EvalJointLocking(*plant_, *context_);
     const std::vector<int>& unlocked_velocity_indices =
         cache.unlocked_velocity_indices;
     const std::vector<int>& locked_velocity_indices =
@@ -243,7 +243,7 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
     body1.Lock(context_.get());
 
     const internal::JointLockingCacheData<double>& cache =
-        MultibodyPlantTester::EvalJointLockingCache(*plant_, *context_);
+        MultibodyPlantTester::EvalJointLocking(*plant_, *context_);
     const std::vector<int>& unlocked_velocity_indices =
         cache.unlocked_velocity_indices;
     const std::vector<int>& locked_velocity_indices =
