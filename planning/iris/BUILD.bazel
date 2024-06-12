@@ -13,8 +13,8 @@ drake_cc_package_library(
     name = "iris",
     visibility = ["//visibility:public"],
     deps = [
+        ":fast_iris",
         ":iris_from_clique_cover",
-        ":fast_iris"
     ],
 )
 
@@ -43,10 +43,10 @@ drake_cc_library(
     srcs = ["fast_iris.cc"],
     hdrs = ["fast_iris.h"],
     deps = [
-        "//planning:collision_checker",
         "//common:parallelism",
         "//geometry:meshcat",
         "//geometry/optimization:convex_set",
+        "//planning:collision_checker",
         "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
         "//solvers:mathematical_program",
@@ -101,13 +101,13 @@ drake_cc_googletest(
     ],
     deps = [
         ":fast_iris",
-        "//planning:robot_diagram_builder",
-        "//planning:scene_graph_collision_checker",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry:meshcat",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/inverse_kinematics",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
     ],
 )
 

@@ -44,6 +44,7 @@ struct FastIrisOptions {
     a->Visit(DRAKE_NVP(termination_threshold));
     a->Visit(DRAKE_NVP(relative_termination_threshold));
     a->Visit(DRAKE_NVP(random_seed));
+    a->Visit(DRAKE_NVP(mixing_steps));
   }
 
   FastIrisOptions() = default;
@@ -125,6 +126,9 @@ struct FastIrisOptions {
   counter-examples for the additional constraints using in
   IrisInConfigurationSpace. Use this option to set the initial seed. */
   int random_seed{1234};
+
+  // number of mixing steps used for hit and run sampling
+  int mixing_steps{50};
 
   /** Passing a meshcat instance may enable debugging visualizations; this
   currently and when the

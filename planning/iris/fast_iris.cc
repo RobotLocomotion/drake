@@ -219,10 +219,12 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
       int N_k = unadaptive_test_samples(
           options.admissible_proportion_in_collision, delta_k, options.tau);
 
-      particles.at(0) = P.UniformSample(&generator, current_ellipsoid_center);
+      particles.at(0) = P.UniformSample(&generator, current_ellipsoid_center,
+                                        options.mixing_steps);
       // populate particles by uniform sampling
       for (int i = 1; i < N_k; ++i) {
-        particles.at(i) = P.UniformSample(&generator, particles.at(i - 1));
+        particles.at(i) = P.UniformSample(&generator, particles.at(i - 1),
+                                          options.mixing_steps);
       }
 
       //   //copy top slice of particles, TODO(wernerpe): improve this
@@ -442,9 +444,10 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
                         max_relaxation));
       }
       // resampling particles in current polyhedron for next iteration
-      particles[0] = P.UniformSample(&generator);
+      particles[0] = P.UniformSample(&generator, options.mixing_steps);
       for (int j = 1; j < options.num_particles; ++j) {
-        particles[j] = P.UniformSample(&generator, particles[j - 1]);
+        particles[j] =
+            P.UniformSample(&generator, particles[j - 1], options.mixing_steps);
       }
       ++num_iterations_separating_planes;
       if (num_iterations_separating_planes -

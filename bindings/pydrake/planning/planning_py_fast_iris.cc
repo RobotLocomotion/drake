@@ -54,6 +54,8 @@ void DefinePlanningFastIris(py::module m) {
           cls_doc.relative_termination_threshold.doc)
       .def_readwrite(
           "random_seed", &FastIrisOptions::random_seed, cls_doc.random_seed.doc)
+      .def_readwrite("mixing_steps", &FastIrisOptions::mixing_steps,
+          cls_doc.mixing_steps.doc)
       .def("__repr__", [](const FastIrisOptions& self) {
         return py::str(
             "FastIrisOptions("
@@ -73,7 +75,8 @@ void DefinePlanningFastIris(py::module m) {
             "configuration_space_margin={}, "
             "termination_threshold={}, "
             "relative_termination_threshold={}, "
-            "random_seed={} "
+            "random_seed={}, "
+            "mixing_steps={}, "
             ")")
             .format(self.num_particles, self.tau, self.delta,
                 self.admissible_proportion_in_collision,
@@ -83,7 +86,8 @@ void DefinePlanningFastIris(py::module m) {
                 self.parallelize, self.verbose,
                 self.require_sample_point_is_contained,
                 self.configuration_space_margin, self.termination_threshold,
-                self.relative_termination_threshold, self.random_seed);
+                self.relative_termination_threshold, self.random_seed,
+                self.mixing_steps);
       });
 
   m.def("FastIris", &FastIris, py::arg("checker"),
