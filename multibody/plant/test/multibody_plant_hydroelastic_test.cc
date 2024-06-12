@@ -38,10 +38,11 @@ class MultibodyPlantTester {
  public:
   MultibodyPlantTester() = delete;
 
-  static const std::vector<SpatialForce<double>>& EvalHydroelasticContactForces(
+  static const std::vector<SpatialForce<double>>&
+  EvalHydroelasticContactForcesContinuous(
       const MultibodyPlant<double>& plant,
       const systems::Context<double>& context) {
-    return plant.EvalHydroelasticContactForces(context).F_BBo_W_array;
+    return plant.EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
   }
 
   static BodyIndex FindBodyByGeometryId(const MultibodyPlant<double>& plant,
@@ -291,8 +292,8 @@ TEST_F(HydroelasticModelTests, ContactForce) {
   auto calc_force = [this](double penetration) -> double {
     SetPose(penetration);
     const auto& F_BBo_W_array =
-        MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
-                                                            *plant_context_);
+        MultibodyPlantTester::EvalHydroelasticContactForcesContinuous(
+            *plant_, *plant_context_);
     const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->mobod_index()];
     return F_BBo_W.translational()[2];  // Normal force.
   };
@@ -337,8 +338,8 @@ TEST_F(HydroelasticModelTests, ContactDynamics) {
   const double penetration = 0.02;
   SetPose(penetration);
   const auto& F_BBo_W_array =
-      MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
-                                                          *plant_context_);
+      MultibodyPlantTester::EvalHydroelasticContactForcesContinuous(
+          *plant_, *plant_context_);
   const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->mobod_index()];
   // Contact force by hydroelastics.
   const Vector3<double> fhydro_BBo_W = F_BBo_W.translational();
