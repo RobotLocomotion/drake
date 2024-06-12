@@ -2744,7 +2744,7 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   GraphOfConvexSets g;
   auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
   auto target = g.AddVertex(Point(Vector1d{1e-5}), "target");
-  g.AddEdge(source, target, "source_to_target")->AddCost(1.23);
+  auto edge = g.AddEdge(source, target, "source_to_target")->AddCost(1.23);
   auto other = g.AddVertex(Point(Vector1d{4.0}), "other");
   g.AddEdge(source, other, "source_to_other")->AddCost(3.45);
   g.AddEdge(other, target, "other_to_target");  // No cost from other to target.
@@ -2773,14 +2773,40 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
 
   // No slack variables.
   EXPECT_THAT(
-      g.GetGraphvizString(result, false),
+      g.GetGraphvizString(result, show_slacks = false),
       AllOf(HasSubstr("x ="), HasSubstr("cost ="), Not(HasSubstr("ϕ =")),
             Not(HasSubstr("ϕ xᵤ =")), Not(HasSubstr("ϕ xᵥ ="))));
+
   // Precision and scientific.
-  EXPECT_THAT(g.GetGraphvizString(result, false, 2, false),
+  EXPECT_THAT(g.GetGraphvizString(result, show_slacks = false, precision = 2,
+                                  scientific = false),
               AllOf(HasSubstr("x = [1.00 2.00]"), HasSubstr("x = [0.00]")));
-  EXPECT_THAT(g.GetGraphvizString(result, false, 2, true),
+  EXPECT_THAT(g.GetGraphvizString(result, show_slacks = false, precision = 2,
+                                  scientific = true),
               AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-05]")));
+
+  // No vertex vars
+  EXPECT_THAT(g.GetGraphvizString(result, show_slacks = false, precision = 2,
+                                  scientific = false, show_vars = false),
+              AllOf(Not(HasSubstr("x ="))));
+
+  // No cost
+  EXPECT_THAT(g.GetGraphvizString(result, show_slacks = false, precision = 2,
+                                  scientific = false, show_vars = false,
+                                  show_costs = false),
+              AllOf(Not(HasSubstr("cost ="))));
+
+  // No flows
+  EXPECT_THAT(g.GetGraphvizString(result, show_slacks = false, precision = 2,
+                                  scientific = false, show_vars = false,
+                                  show_costs = false),
+              Not(AllOf(HasSubstr("ϕ ="))));
+
+  // Show active path
+  EXPECT_THAT(g.GetGraphvizString(
+      result, show_slacks = false, precision = 2, scientific = false,
+      show_vars = false, show_costs = false, active_path = std::vector{edge},
+      AllOf(HasSubstr("color="))));
 }
 
 }  // namespace optimization
