@@ -53,6 +53,7 @@ using geometry::GeometrySet;
 using geometry::PenetrationAsPointPair;
 using geometry::ProximityProperties;
 using geometry::SceneGraph;
+using geometry::SceneGraphInspector;
 using geometry::SourceId;
 using geometry::render::RenderLabel;
 using systems::InputPort;
@@ -1022,6 +1023,16 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
 }
 
 template <typename T>
+const SceneGraphInspector<T>& MultibodyPlant<T>::EvalSceneGraphInspector(
+    const systems::Context<T>& context) const {
+  // TODO(jwnimmer-tri) The "geometry_query" input port is invalidated anytime
+  // the configuration_ticket changes, but really we only need to invalidate the
+  // inspector when the scene graph topology or properties change. If we find
+  // this is a performance bottleneck, this is something we could clean up.
+  return EvalGeometryQueryInput(context, __func__).inspector();
+}
+
+template <typename T>
 std::vector<const RigidBody<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
     const RigidBody<T>& body) const {
   const std::set<BodyIndex> island =
@@ -1436,8 +1447,7 @@ bool MultibodyPlant<T>::IsValidGeometryInput(
 
 template <typename T>
 std::pair<T, T> MultibodyPlant<T>::GetPointContactParameters(
-    geometry::GeometryId id,
-    const geometry::SceneGraphInspector<T>& inspector) const {
+    geometry::GeometryId id, const SceneGraphInspector<T>& inspector) const {
   const geometry::ProximityProperties* prop =
       inspector.GetProximityProperties(id);
   DRAKE_DEMAND(prop != nullptr);
@@ -1453,8 +1463,7 @@ std::pair<T, T> MultibodyPlant<T>::GetPointContactParameters(
 
 template <typename T>
 const CoulombFriction<double>& MultibodyPlant<T>::GetCoulombFriction(
-    geometry::GeometryId id,
-    const geometry::SceneGraphInspector<T>& inspector) const {
+    geometry::GeometryId id, const SceneGraphInspector<T>& inspector) const {
   const geometry::ProximityProperties* prop =
       inspector.GetProximityProperties(id);
   DRAKE_DEMAND(prop != nullptr);
@@ -2038,9 +2047,7 @@ void MultibodyPlant<T>::AppendContactResultsPointPairContinuous(
   const internal::VelocityKinematicsCache<T>& vc =
       EvalVelocityKinematics(context);
 
-  const geometry::QueryObject<T>& query_object =
-      EvalGeometryQueryInput(context, __func__);
-  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
+  const SceneGraphInspector<T>& inspector = EvalSceneGraphInspector(context);
 
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
     const auto& pair = point_pairs[icontact];
@@ -2233,8 +2240,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
 
-  const auto& query_object = EvalGeometryQueryInput(context, __func__);
-  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
+  const SceneGraphInspector<T>& inspector = EvalSceneGraphInspector(context);
 
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
