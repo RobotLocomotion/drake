@@ -292,4 +292,12 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "dual_convex_program_test",
+    deps = [
+        ":solvers",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
 add_lint_tests_pydrake()

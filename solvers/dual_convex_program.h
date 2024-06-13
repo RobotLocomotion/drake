@@ -10,7 +10,7 @@ namespace solvers {
 
 /** Compute a dual of the convex program. In particular, given the convex
  * program
- * min c^T x + d s.t.
+ * min cᵀ x + d s.t.
  * A x + b ∈ K
  * Aeq x = beq
  * where K is the product of the supported cones.
@@ -27,11 +27,11 @@ namespace solvers {
  * 1) The positive orthant which is self-dual
  * 2) The lorentz cone which is self-dual
  * 3) The rotated lorentz cone. Drake's rotated lorentz cone is not self-dual,
- * so λ ∈ (2, 2, I) K where K is the rotated lorentz cone.
+ * so we have that diag(2, 2, I)λ ∈ K where K is the rotated lorentz cone.
  * 4) The positive semidefinite cone which is self-dual. Note  that for λ ∈ the
  * positive semidefinite cone, we take the convention that λ corresponds to the
- * lower triangular elements of the symmetric matrix Λ. To obtain the matrix Λ
- * from the corresponding matrix λ, use the function
+ * lower triangular elements of the symmetric matrix Λ in column major order. To
+ * obtain the matrix Λ from the corresponding matrix λ, use the function
  * math::ToSymmetricMatrixFromLowerTriangularColumns.
  *
  * [out] constraint_to_dual_variable_map Maps from the constraints of the primal
@@ -43,16 +43,16 @@ namespace solvers {
  * will return the value of the dual variable associated to the primal
  * constraint in binding.
  *
- * If the primal program is solved with conic solver (e.g. Mosek, Clarabel, SCS,
- * but not Gurobi) and the result is primal_result, then generally
+ * If the primal program is solved with a conic solver (e.g. Mosek, Clarabel,
+ * SCS, but not Gurobi) and the result is primal_result, then generally
  * dual_result.GetSolution(constraint_to_dual_variable_map.at(binding)) will be
  * equal (up to numerical precision) to primal_result.GetDualSolution(binding).
- * The only except is if binding is a linear equality constraint in which case
- * primal_result.GetDualSolution(binding) =
+ * The only exception is if binding is a linear equality constraint in which
+ * case primal_result.GetDualSolution(binding) =
  * -dual_result.GetSolution(constraint_to_dual_variable_map.at(binding)).
  * This is because Drake's GetDualSolution adopts the shadow price
  * interpretation for linear equality constraints, which is the negative of the
- * dual formulation provided by this method.s
+ * dual formulation provided by this method.
  */
 std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
     const MathematicalProgram& prog,

@@ -101,21 +101,21 @@ void AggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
                                  Eigen::SparseMatrix<double>* A_new,
                                  VectorX<symbolic::Variable>* vars_new);
 
-/**
- * Aggregate all convex (conic) constraints into conic standard form i.e. a
- * single constraint Ax + b ∈ K where K is the product of cones.
- */
-void AggregateConvexConstraints(const MathematicalProgram& prog,
-                                Eigen::SparseMatrix<double>* A,
-                                Eigen::VectorXd* b,
-                                Eigen::SparseMatrix<double>* Aeq,
-                                Eigen::SparseMatrix<double>* beq);
-
 namespace internal {
 
-struct ConvexConstraintAggregationOptions {
+// Options for aggregating the conic constraints of a program.
+struct ConicConstraintAggregationOptions {
+  // Whether rotated Lorentz cones are rewritten as Lorentz while aggregating
+  // the cones.
   bool cast_rotated_lorentz_to_lorentz{true};
+  // When vectorizing PSD matrix X to x, we only keep either the lower or upper
+  // triangular part. If we wish tr(XY) = xᵀy, then we need to scale the off
+  // diagonal entries of X by sqrt(2). If this option is true, then we perform
+  // this scaling. See ParsePositiveSemidefiniteConstraints for more details.s
   bool preserve_psd_inner_product_vectorization{true};
+  // Whether to vectorize PSD matrices X in a row major fashion using the upper
+  // triangular part, or in column major fashion using the lower triangular
+  // part.
   bool parse_psd_using_upper_triangular{true};
 };
 
@@ -126,7 +126,7 @@ struct ConvexConstraintAggregationOptions {
 // where K is a Cartesian product of some primitive cones. This information is
 // needed by SCS and Clarabel to transcribe the problem to the solvers and
 // extract dual solutions.
-struct ConvexConstraintAggregationInfo {
+struct ConicConstraintAggregationInfo {
   // A vector of triplets to construct the matrix A.
   std::vector<Eigen::Triplet<double>> A_triplets;
   // A vector of values to construct the vector b.
@@ -170,7 +170,7 @@ struct ConvexConstraintAggregationInfo {
   // prog.positive_semidefinite_constraints() and
   // prog.linear_matrix_inequality_constraints(). See
   // ParsePositiveSemidefiniteConstraints for more details.
-  std::vector<int> psd_cone_lengths;
+  std::vector<int> psd_row_size;
 };
 
 // Iterate over the convex (conic) constraints of prog and aggregate the
@@ -188,10 +188,10 @@ struct ConvexConstraintAggregationInfo {
 // Power cone {(x, y, z): pow(x, α)*pow(y, 1-α) >= |z|, x>=0, y>=0} with α in
 // (0, 1)
 // This convention is compatible with both the SCS and Clarabel solvers.
-void DoAggregateConvexConstraints(
+void DoAggregateConicConstraints(
     const MathematicalProgram& prog,
-    const ConvexConstraintAggregationOptions& options,
-    ConvexConstraintAggregationInfo* info);
+    const ConicConstraintAggregationOptions& options,
+    ConicConstraintAggregationInfo* info);
 
 // Parse all the bounding box constraints in `prog` to the form
 // A_eq*x+s=b_eq, s in zero cone and A_ineq*x+s=b_ineq, s in positive cone.

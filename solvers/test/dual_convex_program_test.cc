@@ -22,12 +22,7 @@ namespace test {
 
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
-void CheckPrimalDualSolution(
-    const MathematicalProgram& primal_prog,
-    const MathematicalProgram& dual_prog,
-    const std::unordered_map<Binding<Constraint>,
-                             MatrixX<symbolic::Expression>>&
-        constraint_to_dual_variable_map) {
+void CheckPrimalDualSolution(const MathematicalProgram& primal_prog) {
   // Choose a solver which outputs conic dual variables. Gurobi does not for
   // Socp so it is excluded from this list.
   std::vector<SolverId> conic_solvers;
@@ -44,13 +39,17 @@ void CheckPrimalDualSolution(
   }
   auto solver = MakeFirstAvailableSolver(conic_solvers);
 
+  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
+      constraint_to_dual_variable_map;
+  auto dual_prog =
+      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
+
   // We need relatively loose tolerance for these tests as both the primal and
   // the dual will typically solve only to a precision of 1e-8.
   const double kTol = 1e-6;
   MathematicalProgramResult primal_result;
-  MathematicalProgramResult dual_result;
   solver->Solve(primal_prog, std::nullopt, std::nullopt, &primal_result);
-  solver->Solve(dual_prog, std::nullopt, std::nullopt, &dual_result);
+  auto dual_result = solver.Solve(dual_prog, std::nullopt, std::nullopt);
 
   if (primal_result.get_solution_result() == SolutionResult::kSolutionFound) {
     EXPECT_EQ(dual_result.get_solution_result(),
@@ -61,13 +60,12 @@ void CheckPrimalDualSolution(
                 -dual_result.get_optimal_cost(), kTol);
 
     // We need the aggregated matrices A and b to check the complementarity gap.
-    internal::ConvexConstraintAggregationInfo info;
-    internal::ConvexConstraintAggregationOptions aggregation_options;
+    internal::ConicConstraintAggregationOptions aggregation_options;
     aggregation_options.cast_rotated_lorentz_to_lorentz = false;
     aggregation_options.preserve_psd_inner_product_vectorization = false;
     aggregation_options.parse_psd_using_upper_triangular = false;
-    internal::DoAggregateConvexConstraints(primal_prog, aggregation_options,
-                                           &info);
+    internal::ConicConstraintAggregationInfo info =
+        internal::DoAggregateConicConstraints(primal_prog, aggregation_options);
     Eigen::SparseMatrix<double> A(info.A_row_count,
                                   primal_prog.decision_variables().size());
     A.setFromTriplets(info.A_triplets.begin(), info.A_triplets.end());
@@ -144,13 +142,7 @@ void CheckPrimalDualSolution(
 }  // namespace
 
 TEST_P(LinearProgramTest, TestLP) {
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  const MathematicalProgram& primal_prog = *prob()->prog();
-  auto dual_prog =
-      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(primal_prog, *dual_prog,
-                          constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(*prob()->prog());
 }
 
 // We exclude kLinearFeasibilityProgram and kLinearProgram2 due to their duals
@@ -165,34 +157,15 @@ INSTANTIATE_TEST_SUITE_P(
                            LinearProblems::kLinearProgram3})));
 
 TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  const MathematicalProgram& primal_prog = *prog_;
-  auto dual_prog =
-      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(primal_prog, *dual_prog,
-                          constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(*prog_);
 }
 
 TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  const MathematicalProgram& primal_prog = *prog_;
-  auto dual_prog =
-      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(primal_prog, *dual_prog,
-                          constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(*prog_);
 }
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  const MathematicalProgram& primal_prog = prog_;
-  auto dual_prog =
-      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
-
-  CheckPrimalDualSolution(primal_prog, *dual_prog,
-                          constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(prog_);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -200,26 +173,14 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 
 TEST_P(TestQPasSOCP, TestSOCP) {
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  const MathematicalProgram& primal_prog = prog_socp_;
-  auto dual_prog =
-      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(primal_prog, *dual_prog,
-                          constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(prog_socp_);
 }
 
 INSTANTIATE_TEST_SUITE_P(DualConvexProgramTest, TestQPasSOCP,
                          ::testing::ValuesIn(GetQPasSOCPProblems()));
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  const MathematicalProgram& primal_prog = prog_;
-  auto dual_prog =
-      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(primal_prog, *dual_prog,
-                          constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(prog_);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -228,24 +189,12 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_TEST(TestSos, SimpleSos1) {
   SimpleSos1 dut;
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  const MathematicalProgram& primal_prog = dut.prog();
-  auto dual_prog =
-      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(primal_prog, *dual_prog,
-                          constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(dut.prog());
 }
 
 GTEST_TEST(TestSos, UnivariateNonnegative1) {
   UnivariateNonnegative1 dut;
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  const MathematicalProgram& primal_prog = dut.prog();
-  auto dual_prog =
-      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(primal_prog, *dual_prog,
-                          constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(dut.prog());
 }
 
 GTEST_TEST(TestSdp, TestTrivialSDP) {
@@ -262,12 +211,7 @@ GTEST_TEST(TestSdp, TestTrivialSDP) {
 
   // Min S.trace()
   primal_prog.AddLinearCost(S.cast<symbolic::Expression>().trace());
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  auto dual_prog =
-      CreateDualConvexProgram(primal_prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(primal_prog, *dual_prog,
-                          constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(primal_prog);
 }
 
 // This tests LMI constraints. Uncomment this once we can retrieve LMI dual
@@ -327,11 +271,7 @@ GTEST_TEST(TestSdp, SolveSDPwithSecondOrderConeExample1) {
   prog.AddPositiveSemidefiniteConstraint(X);
   prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
 
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  auto dual_prog =
-      CreateDualConvexProgram(prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(prog, *dual_prog, constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(prog);
 }
 
 GTEST_TEST(TestSdp, SolveSDPwithSecondOrderConeExample2) {
@@ -348,11 +288,7 @@ GTEST_TEST(TestSdp, SolveSDPwithSecondOrderConeExample2) {
   prog.AddLinearConstraint(X(1, 0) + X(2, 1) == 1);
   prog.AddPositiveSemidefiniteConstraint(X);
 
-  std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
-      constraint_to_dual_variable_map;
-  auto dual_prog =
-      CreateDualConvexProgram(prog, &constraint_to_dual_variable_map);
-  CheckPrimalDualSolution(prog, *dual_prog, constraint_to_dual_variable_map);
+  CheckPrimalDualSolution(prog);
 }
 
 }  // namespace test

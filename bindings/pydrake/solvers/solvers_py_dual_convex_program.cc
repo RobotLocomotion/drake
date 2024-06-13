@@ -19,8 +19,9 @@ void DefineSolversDualConvexProgram(py::module m) {
       [](const MathematicalProgram& prog) {
         std::unordered_map<Binding<Constraint>, MatrixX<symbolic::Expression>>
             constraint_to_dual_variable_map;
-        CreateDualConvexProgram(prog, &constraint_to_dual_variable_map);
-        return constraint_to_dual_variable_map;
+        auto dual =
+            CreateDualConvexProgram(prog, &constraint_to_dual_variable_map);
+        return std::make_pair(std::move(dual), constraint_to_dual_variable_map);
       },
       py::arg("prog"), doc.CreateDualConvexProgram.doc);
 }

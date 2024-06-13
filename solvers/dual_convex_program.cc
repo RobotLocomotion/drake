@@ -46,12 +46,12 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
   CheckSupported(prog);
   auto dual_prog = std::make_unique<MathematicalProgram>();
 
-  internal::ConvexConstraintAggregationInfo info;
-  internal::ConvexConstraintAggregationOptions options;
+  internal::ConicConstraintAggregationInfo info;
+  internal::ConicConstraintAggregationOptions options;
   options.cast_rotated_lorentz_to_lorentz = false;
   options.preserve_psd_inner_product_vectorization = false;
   options.parse_psd_using_upper_triangular = false;
-  internal::DoAggregateConvexConstraints(prog, options, &info);
+  internal::DoAggregateConicConstraints(prog, options, &info);
   Eigen::SparseMatrix<double> Aeq;
   Eigen::VectorXd beq;
   auto A_triplets_end_of_equalities_iterator = info.A_triplets.begin();
@@ -102,7 +102,7 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
   dual_prog->AddLinearCost(beq.transpose(), -d, y);
   dual_prog->AddLinearCost(b.transpose(), 0, lam);
 
-  // The triplets returned by DoAggregateConvexConstraints represent the matrix
+  // The triplets returned by DoAggregateConicConstraints represent the matrix
   // [beq - Aeq*x] = 0
   // [ b - A*x   ] in K
   // Therefore the dual subspace constraint can be written as
@@ -248,7 +248,7 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
 
   //  Positive semidefinite constraints.
   for (int i = 0; i < ssize(prog.positive_semidefinite_constraints()); ++i) {
-    const int psd_row_size = info.psd_cone_lengths[i];
+    const int psd_row_size = info.psd_row_size[i];
     const int lambda_rows_size = (psd_row_size * (psd_row_size + 1)) / 2;
     // Make Lam and add psd constraint
     MatrixX<symbolic::Expression> Lam =
@@ -261,8 +261,7 @@ std::unique_ptr<MathematicalProgram> CreateDualConvexProgram(
   }
   for (int i = 0; i < ssize(prog.linear_matrix_inequality_constraints()); ++i) {
     const int psd_row_size =
-        info.psd_cone_lengths[i +
-                              ssize(prog.positive_semidefinite_constraints())];
+        info.psd_row_size[i + ssize(prog.positive_semidefinite_constraints())];
     const int lambda_rows_size = (psd_row_size * (psd_row_size + 1)) / 2;
     // Make Lam and add psd constraint
     const MatrixX<symbolic::Expression> Lam =

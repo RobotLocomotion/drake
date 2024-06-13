@@ -268,8 +268,8 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
 
   internal::ParseQuadraticCosts(prog, &P_upper_triplets, &q, &cost_constant);
 
-  internal::ConvexConstraintAggregationInfo info;
-  internal::ConvexConstraintAggregationOptions aggregation_options;
+  internal::ConicConstraintAggregationInfo info;
+  internal::ConicConstraintAggregationOptions aggregation_options;
   int expected_A_row_count = 0;
 
   // TODO(Alexandre.Amice) Handle this special case more cleanly.
@@ -291,7 +291,7 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   Eigen::Map<Eigen::VectorXd> q_vec{q.data(), ssize(q)};
 
   // Now parse the constraints.
-  internal::DoAggregateConvexConstraints(prog, aggregation_options, &info);
+  internal::DoAggregateConicConstraints(prog, aggregation_options, &info);
 
   Eigen::SparseMatrix<double> A(info.A_row_count, num_x);
   A.setFromTriplets(info.A_triplets.begin(), info.A_triplets.end());
@@ -309,7 +309,7 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
     expected_A_row_count += soc_length;
     cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
   }
-  for (const int length : info.psd_cone_lengths) {
+  for (const int length : info.psd_row_size) {
     expected_A_row_count += (length * (length + 1)) / 2;
     cones.push_back(clarabel::PSDTriangleConeT<double>(length));
   }
