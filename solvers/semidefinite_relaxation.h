@@ -11,25 +11,34 @@ namespace solvers {
 // TODO(russt): Add an option for using diagonal dominance and/or
 // scaled-diagonal dominance instead of the PSD constraint.
 
-/** Configuration options for the MakeSemidefiniteRelaxation.
+/** Configuration options for the MakeSemidefiniteRelaxation. Throughout these
+ * options, we refer to the variables of the original optimization program as y,
+ * and the semidefinite variable of the associate relaxation as X.
+ *
+ * X has the structure
+ * X = [Y,    y]
+ *     [yᵀ, one]
+ *
  *  @ingroup semidefinite_relaxation
  * */
 struct SemidefiniteRelaxationOptions {
   /** Given a program with the linear constraints Ay ≤ b, sets whether to add
-   * the implied linear constraints [A,-b]X[A,-b]ᵀ ≤ 0  to the semidefinite
+   * the implied linear constraints [A,-b]X[A,-b]ᵀ ≤ 0 to the semidefinite
    * relaxation.*/
   bool add_implied_linear_equality_constraints = true;
 
   /** Given a program with the linear equality constraints Ay = b, sets whether
-   * to add the implied linear constraints [A, -b]X = 0  to the semidefinite
+   * to add the implied linear constraints [A, -b]X = 0 to the semidefinite
    * relaxation.*/
   bool add_implied_linear_constraints = true;
 
   // TODO(Alexandre.Amice): change this to true by default.
 
-  /** Given a program with the convex quadratic constraints, sets whether
+  /** Given a program with convex quadratic constraints, sets whether
    * equivalent rotated second order cone constraints are enforced on the last
-   * column of X in the semidefinite relaxation.*/
+   * column of X in the semidefinite relaxation. This ensures that the last
+   * column of X, which are a relaxation of the original program's variables
+   * satisfy the original progam's quadratic constraints.*/
   bool preserve_convex_quadratic_constraints = false;
 
   /** Configure the semidefinite relaxation options to provide the strongest
@@ -43,10 +52,11 @@ struct SemidefiniteRelaxationOptions {
   }
 
   /** Configure the semidefinite relaxation options to provide the weakest
-  semidefinite relaxation that we currently support. This in general will
-  create the loosest convex relaxation we support, but the shortest solve times.
-  This is equivalent to the standard Shor Relaxation (see Quadratic Optimization
-  Problems by NZ Shor or Semidefinite Programming by Vandenberghe and Boyd). */
+   * semidefinite relaxation that we currently support. This in general will
+   * create the loosest convex relaxation we support, but the shortest solve
+   * times. This is equivalent to the standard Shor Relaxation (see Quadratic
+   * Optimization Problems by NZ Shor or Semidefinite Programming by
+   * Vandenberghe and Boyd). */
   void set_to_weakest() {
     add_implied_linear_equality_constraints = false;
     add_implied_linear_constraints = false;

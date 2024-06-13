@@ -21,7 +21,7 @@ bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog);
 // Adds the initialization of the semidefinite relaxation of prog to relaxation.
 // Let z represent the variables of prog. First we sort z into a vector y and
 // the resorted indices are stored in variables_to_sorted_indices. The matrix X
-// is set to be equal to X = [[Y, y], [y, one]]. The variable Y is a symmetric
+// is set to be equal to X = [[Y, y], [yᵀ, one]]. The variable Y is a symmetric
 // matrix variable and both y and Y are added as decision variables to the
 // relaxation. The matrix X is constrained to be PSD. The optional group_number
 // is used to name the variables in the matrix Y. We assume that the variable
@@ -35,13 +35,14 @@ void InitializeSemidefiniteRelaxationForProg(
 // Iterate over the quadratic costs and constraints in prog, remove them if
 // present in the relaxation, and add an equivalent linear cost or constraint on
 // the semidefinite variable X. If the cost or constraint is convex, and
-// preserve_convex is true, then the cost/constraint is not removed. The map
-// variables_to_sorted_indices maps the decision variables in prog to their
-// index in the last column of X.
+// preserve_convex_quadratic_constraints is true, then the cost/constraint is
+// not removed. The map variables_to_sorted_indices maps the decision variables
+// in prog to their index in the last column of X.
 void DoLinearizeQuadraticCostsAndConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
-    MathematicalProgram* relaxation, bool preserve_convex = false);
+    MathematicalProgram* relaxation,
+    bool preserve_convex_quadratic_constraints = false);
 
 // For every equality constraint Ay = b in prog, add the implied linear equality
 // constraint [A, -b]X = 0 on the semidefinite relaxation variable X to the

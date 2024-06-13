@@ -115,7 +115,8 @@ void InitializeSemidefiniteRelaxationForProg(
 void DoLinearizeQuadraticCostsAndConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<Variable, int>& variables_to_sorted_indices,
-    MathematicalProgram* relaxation, bool preserve_convex) {
+    MathematicalProgram* relaxation,
+    bool preserve_convex_quadratic_constraints) {
   // Returns the {a, vars} in relaxation, such that a' vars = 0.5*tr(QY). This
   // assumes Q=Q', which is ensured by QuadraticCost and QuadraticConstraint.
   auto half_trace_QY = [&X, &variables_to_sorted_indices](
@@ -162,9 +163,10 @@ void DoLinearizeQuadraticCostsAndConstraints(
   // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
   for (const auto& binding : prog.quadratic_constraints()) {
     relaxation->RemoveConstraint(binding);
-    // If the preserve_convex flag is true, we replace convex quadratics with
-    // their conic form.
-    if (preserve_convex && binding.evaluator()->is_convex()) {
+    // If the preserve_convex_quadratic_constraints flag is true, we replace
+    // convex quadratics with their conic form.
+    if (preserve_convex_quadratic_constraints &&
+        binding.evaluator()->is_convex()) {
       switch (binding.evaluator()->hessian_type()) {
         case QuadraticConstraint::HessianType::kPositiveSemidefinite: {
           relaxation->AddQuadraticAsRotatedLorentzConeConstraint(
