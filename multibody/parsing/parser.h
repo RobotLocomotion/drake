@@ -198,9 +198,13 @@ class Parser final {
     return collision_filter_groups_;
   }
 
-  DRAKE_DEPRECATED("2024-10-01", "Use GetCollisionFilterGroups() instead.")
-  CollisionFilterGroups collision_filter_groups() const {
-    return GetCollisionFilterGroups();
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "Use GetCollisionFilterGroups() instead. Note that the return type is"
+      " changed to by-value in the new method; callers may need to store the"
+      " return value in a variable with an appropriate lifetime.")
+  const CollisionFilterGroups& collision_filter_groups() const {
+    return collision_filter_groups_;
   }
 
   /// Parses the input file named in @p file_name and adds all of its model(s)
