@@ -48,8 +48,9 @@ void CheckPrimalDualSolution(const MathematicalProgram& primal_prog) {
   // the dual will typically solve only to a precision of 1e-8.
   const double kTol = 1e-6;
   MathematicalProgramResult primal_result;
+  MathematicalProgramResult dual_result;
   solver->Solve(primal_prog, std::nullopt, std::nullopt, &primal_result);
-  auto dual_result = solver.Solve(dual_prog, std::nullopt, std::nullopt);
+  solver->Solve(*dual_prog, std::nullopt, std::nullopt, &dual_result);
 
   if (primal_result.get_solution_result() == SolutionResult::kSolutionFound) {
     EXPECT_EQ(dual_result.get_solution_result(),
@@ -64,8 +65,9 @@ void CheckPrimalDualSolution(const MathematicalProgram& primal_prog) {
     aggregation_options.cast_rotated_lorentz_to_lorentz = false;
     aggregation_options.preserve_psd_inner_product_vectorization = false;
     aggregation_options.parse_psd_using_upper_triangular = false;
-    internal::ConicConstraintAggregationInfo info =
-        internal::DoAggregateConicConstraints(primal_prog, aggregation_options);
+    internal::ConicConstraintAggregationInfo info;
+    internal::DoAggregateConicConstraints(primal_prog, aggregation_options,
+                                          &info);
     Eigen::SparseMatrix<double> A(info.A_row_count,
                                   primal_prog.decision_variables().size());
     A.setFromTriplets(info.A_triplets.begin(), info.A_triplets.end());
