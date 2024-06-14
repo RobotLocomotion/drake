@@ -959,7 +959,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_collision_geometries", &Class::num_collision_geometries,
             cls_doc.num_collision_geometries.doc)
         .def("CollectRegisteredGeometries", &Class::CollectRegisteredGeometries,
-            py::arg("bodies"), cls_doc.CollectRegisteredGeometries.doc);
+            py::arg("bodies"), cls_doc.CollectRegisteredGeometries.doc)
+        .def("EvalSceneGraphInspector", &Class::EvalSceneGraphInspector,
+            py::arg("context"), py_rvp::reference,
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), cls_doc.EvalSceneGraphInspector.doc);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",

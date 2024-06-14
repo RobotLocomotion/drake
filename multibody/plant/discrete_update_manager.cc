@@ -802,11 +802,8 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
   if (num_point_contacts == 0) return;
 
   contact_pairs->Reserve(num_point_contacts, 0, 0);
-  const geometry::QueryObject<T>& query_object =
-      plant()
-          .get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
-  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
+  const geometry::SceneGraphInspector<T>& inspector =
+      plant().EvalSceneGraphInspector(context);
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
       EvalJointLocking(context).unlocked_velocity_indices_per_tree;
   const MultibodyTreeTopology& topology = internal_tree().get_topology();
@@ -973,11 +970,8 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
   if (num_hydro_contacts == 0) return;
 
   contact_pairs->Reserve(0, num_hydro_contacts, 0);
-  const geometry::QueryObject<T>& query_object =
-      plant()
-          .get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
-  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
+  const geometry::SceneGraphInspector<T>& inspector =
+      plant().EvalSceneGraphInspector(context);
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
       EvalJointLocking(context).unlocked_velocity_indices_per_tree;
   const MultibodyTreeTopology& topology = internal_tree().get_topology();
