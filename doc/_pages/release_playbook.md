@@ -111,7 +111,8 @@ the main body of the document:
       ignore)
    3. Open the latest builds from the following builds:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-cmake-nightly-packaging/>
-      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-ventura-unprovisioned-clang-cmake-nightly-packaging/>
+      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-noble-unprovisioned-gcc-cmake-nightly-packaging/>
+      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-ventura-unprovisioned-clang-cmake-nightly-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-0.0.20``), and find the date.  It will be ``YYYYMMDD``
@@ -129,6 +130,7 @@ the main body of the document:
       - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-wheel-staging-release/)
       - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-wheel-staging-release/)
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-cmake-staging-packaging/)
+      - [Noble Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
       - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-cmake-staging-packaging/)
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
@@ -171,10 +173,10 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **24** release files from
+      them." and then choose for upload the **30** release files from
       ``/tmp/drake-release/v1.N.0/...``:
-      - 6: 2 `.tar.gz` + 4 checksums
-      - 3: 1 `.deb` + 2 checksums
+      - 9: 3 `.tar.gz` + 6 checksums
+      - 6: 2 `.deb` + 4 checksums
       - 9: 3 linux `.whl` + 6 checksums
       - 6: 2 macOS arm `.whl` + 4 checksums
       * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
