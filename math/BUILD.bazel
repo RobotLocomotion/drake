@@ -320,10 +320,14 @@ drake_cc_library(
     copts = select({
         ":build_avx2_fma": ["-march=broadwell"],
         "//conditions:default": [],
-    }),
+    }) + [
+        "-Wno-old-style-cast",
+    ],
     internal = True,
     visibility = ["//visibility:private"],
-    deps = [],
+    deps = [
+        "@highway_internal//:hwy",
+    ],
 )
 
 drake_cc_library(
