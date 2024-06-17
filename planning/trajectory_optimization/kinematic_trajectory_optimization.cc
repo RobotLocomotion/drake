@@ -525,13 +525,13 @@ KinematicTrajectoryOptimization::AddPathEnergyCost(double weight) {
       -2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
   A.block(num_positions_, 0, num_positions_, num_positions_) =
       -2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
-  const VectorXd b = VectorXd::Zero(num_positions_);
+  const VectorXd b = VectorXd::Zero(2 * num_positions_);
   VectorXDecisionVariable vars(2 * num_positions_);
   std::vector<Binding<Cost>> binding;
   for (int i = 1; i < num_control_points(); ++i) {
     vars.head(num_positions_) = control_points_.col(i);
     vars.tail(num_positions_) = control_points_.col(i - 1);
-    binding.emplace_back(prog_.AddQuadraticCost(A, b, vars, false));
+    binding.emplace_back(prog_.AddQuadraticCost(A, b, vars, true));
     binding[i - 1].evaluator()->set_description(
         fmt::format("path energy cost {}", i));
   }

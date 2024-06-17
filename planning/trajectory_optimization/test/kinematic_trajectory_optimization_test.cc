@@ -434,6 +434,8 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathEnergyCost) {
   solvers::SolverOptions options;
   options.SetOption(solvers::CommonSolverOption::kPrintToConsole, true);
   auto result = Solve(trajopt_.prog(), std::nullopt, options);
+  // solvers::OsqpSolver solver;
+  // auto result = solver.Solve(trajopt_.prog(), std::nullopt, options);
   std::cout << result.get_solution_result() << std::endl;
   std::cout << result.get_solver_id() << std::endl;
   auto infeasible = result.GetInfeasibleConstraintNames(trajopt_.prog());
