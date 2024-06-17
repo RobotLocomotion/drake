@@ -461,10 +461,41 @@ class Mesh final : public Shape {
                                 considering revisiting the model itself. */
   explicit Mesh(const std::string& filename, double scale = 1.0);
 
+  /** Constructs a mesh shape specification from the mesh data provided
+   (interpreted as specified by `data_format`). Optionally uniformly scaled by
+   the given `scale` factor.
+
+   The data must be the file contents of a ".obj" (Wavefront OBJ) file. The
+   other @ref geometry_file_formats "generally-supported file formats" cannot
+   be used this way, yet. The `data_format` string must be the
+   dot-prefixed extension normally associated with the data format (e.g.,
+   ".obj" for Wavefront Obj and, when finally supported, ".gltf" for glTF files,
+   etc.).
+
+   @note If `data` references external files, those files will be ignored. If
+   those files are necessary to successfully use the data, an exception will
+   be thrown.
+   <!-- TODO(SeanCurtis-TRI): Allow specification of a directory for resolving
+    those paths? -->
+
+   @param data_format  A declaration of the format of the data (encoded as the
+                       extension normally used for the file format). Format must
+                       be exact: prefixed "." and all lower case.
+   @param data         The ASCII contents of the mesh file format.
+   @param scale        An optional scale to the mesh geometry. */
+  Mesh(std::string_view data_format, std::string data, double scale = 1.0);
+
   ~Mesh() final;
 
-  const std::string& filename() const { return filename_; }
-  /** Returns the extension of the mesh filename -- all lower case and including
+  /* If constructed with the file path constructor, returns the filename;
+   otherwise returns an empty string. */
+  const std::string& filename() const;
+
+  /* If constructed with the geometry data constructor, returns the data;
+   otherwise returns an empty string. */
+  const std::string& data() const;
+
+  /** Returns the extension of the mesh data -- all lower case and including
    the dot. In other words /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both
    report the ".obj" extension. The "extension" portion of the filename is
    defined as in std::filesystem::path::extension(). */
@@ -490,9 +521,10 @@ class Mesh final : public Shape {
   VariantShapeConstPtr get_variant_this() const final;
 
   // NOTE: Cannot be const to support default copy/move semantics.
-  std::string filename_;
+  std::string data_;
   std::string extension_;
   double scale_{};
+  bool is_file_{};
   // Allows the deferred computation of the hull on an otherwise const Mesh.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
 };
