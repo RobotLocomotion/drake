@@ -1,5 +1,6 @@
 #include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
+#include <iostream>
 #include <optional>
 
 #include <gmock/gmock.h>
@@ -409,6 +410,60 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathLengthCostConic) {
   auto result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
   EXPECT_NEAR(result.get_optimal_cost(), 2.0 * std::sqrt(3.0), 1e-6);
+}
+
+TEST_F(KinematicTrajectoryOptimizationTest, AddPathEnergyCost) {
+  trajopt_.AddPathPositionConstraint(Vector3d::Zero(), Vector3d::Zero(), 0);
+  trajopt_.AddPathPositionConstraint(Vector3d::Ones(), Vector3d::Ones(), 1);
+  EXPECT_EQ(trajopt_.prog().quadratic_costs().size(), 0);
+  auto binding = trajopt_.AddPathEnergyCost(2.0);
+  EXPECT_THAT(binding[0].to_string(), HasSubstr("path energy cost"));
+  EXPECT_EQ(trajopt_.prog().quadratic_costs().size(),
+            trajopt_.num_control_points() - 1);
+
+  MatrixXd guess(3, trajopt_.num_control_points());
+  guess.row(0) =
+      Eigen::RowVectorXd::LinSpaced(trajopt_.num_control_points(), 0, 1);
+  guess.row(1) = guess.row(0);
+  guess.row(2) = guess.row(0);
+
+  trajopt_.AddDurationConstraint(0, 1);
+
+  // trajopt_.SetInitialGuess(BsplineTrajectory(
+  //     trajopt_.basis(), math::EigenToStdVector<double>(guess)));
+  solvers::SolverOptions options;
+  options.SetOption(solvers::CommonSolverOption::kPrintToConsole, true);
+  auto result = Solve(trajopt_.prog(), std::nullopt, options);
+  // std::cout << result.get_solution_result() << std::endl;
+  // std::cout << result.get_solver_id() << std::endl;
+  // auto infeasible = result.GetInfeasibleConstraintNames(trajopt_.prog());
+  // for (const auto& elt : infeasible) {
+  //   std::cout << elt << std::endl;
+  // }
+  EXPECT_TRUE(result.is_success());
+
+  // std::cout << "Variables\t" << trajopt_.prog().num_vars() << std::endl;
+  // for(int i = 0; i < trajopt_.prog().num_vars(); ++i) {
+  //   std::cout << trajopt_.prog().decision_variable(i).get_name() << std::endl;
+  // }
+
+  // std::cout << "Constraints\t" << ssize(trajopt_.prog().GetAllConstraints()) << std::endl;
+  // for(int i = 0; i < ssize(trajopt_.prog().GetAllConstraints()); ++i) {
+  //   std::cout << trajopt_.prog().GetAllConstraints()[i].evaluator()->get_description() << std::endl;
+  // }
+
+  // std::cout << "Costs\t" << ssize(trajopt_.prog().GetAllCosts()) << std::endl;
+  // for(int i = 0; i < ssize(trajopt_.prog().GetAllCosts()); ++i) {
+  //   std::cout << trajopt_.prog().GetAllCosts()[i].evaluator()->get_description() << std::endl;
+  // }
+
+  // For n control points (i.e. n-1 segments), evenely spaced between (0,0,0)
+  // and (1,1,1), the optimal cost should be (n-1) * (3 / n²). Because we used a
+  // weight of 2.0, the optimal cost should be twice that.
+  double expected_cost =
+      2.0 * (trajopt_.num_control_points() - 1) *
+      (3.0 / (trajopt_.num_control_points() * trajopt_.num_control_points()));
+  EXPECT_NEAR(result.get_optimal_cost(), expected_cost, 1e-6);
 }
 
 TEST_F(KinematicTrajectoryOptimizationTest, SolveWithAlmostEverything) {
