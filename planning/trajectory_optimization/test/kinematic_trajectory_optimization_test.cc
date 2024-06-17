@@ -429,33 +429,33 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathEnergyCost) {
 
   trajopt_.AddDurationConstraint(0, 1);
 
-  // trajopt_.SetInitialGuess(BsplineTrajectory(
-  //     trajopt_.basis(), math::EigenToStdVector<double>(guess)));
+  trajopt_.SetInitialGuess(BsplineTrajectory(
+      trajopt_.basis(), math::EigenToStdVector<double>(guess)));
   solvers::SolverOptions options;
   options.SetOption(solvers::CommonSolverOption::kPrintToConsole, true);
   auto result = Solve(trajopt_.prog(), std::nullopt, options);
-  // std::cout << result.get_solution_result() << std::endl;
-  // std::cout << result.get_solver_id() << std::endl;
-  // auto infeasible = result.GetInfeasibleConstraintNames(trajopt_.prog());
-  // for (const auto& elt : infeasible) {
-  //   std::cout << elt << std::endl;
-  // }
+  std::cout << result.get_solution_result() << std::endl;
+  std::cout << result.get_solver_id() << std::endl;
+  auto infeasible = result.GetInfeasibleConstraintNames(trajopt_.prog());
+  for (const auto& elt : infeasible) {
+    std::cout << elt << std::endl;
+  }
   EXPECT_TRUE(result.is_success());
 
-  // std::cout << "Variables\t" << trajopt_.prog().num_vars() << std::endl;
-  // for(int i = 0; i < trajopt_.prog().num_vars(); ++i) {
-  //   std::cout << trajopt_.prog().decision_variable(i).get_name() << std::endl;
-  // }
+  std::cout << "Variables\t" << trajopt_.prog().num_vars() << std::endl;
+  for(int i = 0; i < trajopt_.prog().num_vars(); ++i) {
+    std::cout << trajopt_.prog().decision_variable(i).get_name() << std::endl;
+  }
 
-  // std::cout << "Constraints\t" << ssize(trajopt_.prog().GetAllConstraints()) << std::endl;
-  // for(int i = 0; i < ssize(trajopt_.prog().GetAllConstraints()); ++i) {
-  //   std::cout << trajopt_.prog().GetAllConstraints()[i].evaluator()->get_description() << std::endl;
-  // }
+  std::cout << "Constraints\t" << ssize(trajopt_.prog().GetAllConstraints()) << std::endl;
+  for(int i = 0; i < ssize(trajopt_.prog().GetAllConstraints()); ++i) {
+    std::cout << trajopt_.prog().GetAllConstraints()[i].evaluator()->get_description() << std::endl;
+  }
 
-  // std::cout << "Costs\t" << ssize(trajopt_.prog().GetAllCosts()) << std::endl;
-  // for(int i = 0; i < ssize(trajopt_.prog().GetAllCosts()); ++i) {
-  //   std::cout << trajopt_.prog().GetAllCosts()[i].evaluator()->get_description() << std::endl;
-  // }
+  std::cout << "Costs\t" << ssize(trajopt_.prog().GetAllCosts()) << std::endl;
+  for(int i = 0; i < ssize(trajopt_.prog().GetAllCosts()); ++i) {
+    std::cout << trajopt_.prog().GetAllCosts()[i].evaluator()->get_description() << std::endl;
+  }
 
   // For n control points (i.e. n-1 segments), evenely spaced between (0,0,0)
   // and (1,1,1), the optimal cost should be (n-1) * (3 / n²). Because we used a

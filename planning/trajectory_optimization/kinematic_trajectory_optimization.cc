@@ -531,7 +531,7 @@ KinematicTrajectoryOptimization::AddPathEnergyCost(double weight) {
   for (int i = 1; i < num_control_points(); ++i) {
     vars.head(num_positions_) = control_points_.col(i);
     vars.tail(num_positions_) = control_points_.col(i - 1);
-    binding.emplace_back(prog_.AddQuadraticCost(A, b, vars, true));
+    binding.emplace_back(prog_.AddQuadraticCost(A, b, vars, false));
     binding[i - 1].evaluator()->set_description(
         fmt::format("path energy cost {}", i));
   }
