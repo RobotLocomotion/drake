@@ -43,13 +43,55 @@ std::string CollisionFilterGroupsImpl<T>::to_string() const {
   return ss.str();
 }
 
+template <typename T>
+void CollisionFilterGroupsImpl<T>::Merge(
+    const CollisionFilterGroupsImpl& source) {
+  for (const auto& [group_name, members] : source.groups()) {
+    this->AddGroup(group_name, members);
+  }
+  for (const auto& exclusion_pair : source.exclusion_pairs()) {
+    this->AddExclusionPair(exclusion_pair);
+  }
+}
+
+template <typename T>
+template <typename U>
+auto CollisionFilterGroupsImpl<T>::Convert(
+    std::function<U(const T&)> name_converter) const
+    -> CollisionFilterGroupsImpl<U> {
+  CollisionFilterGroupsImpl<U> result;
+  for (const auto& [group_name, members] : groups()) {
+    std::set<U> result_members;
+    for (const auto& member : members) {
+      result_members.insert(name_converter(member));
+    }
+    result.AddGroup(name_converter(group_name), result_members);
+  }
+  for (const auto& [a, b] : exclusion_pairs()) {
+    result.AddExclusionPair({name_converter(a), name_converter(b)});
+  }
+  return result;
+}
+
 // Instantiations used by the parser.
 template class CollisionFilterGroupsImpl<std::string>;
 template class CollisionFilterGroupsImpl<InstancedName>;
+template auto CollisionFilterGroupsImpl<std::string>::Convert(
+    std::function<InstancedName(const std::string&)> name_converter) const
+    -> CollisionFilterGroupsImpl<InstancedName>;
+template auto CollisionFilterGroupsImpl<InstancedName>::Convert(
+    std::function<std::string(const InstancedName&)> name_converter) const
+    -> CollisionFilterGroupsImpl<std::string>;
 
 // Instantiations used by our unit test.
 template class CollisionFilterGroupsImpl<double>;
 template class CollisionFilterGroupsImpl<int>;
+template auto CollisionFilterGroupsImpl<int>::Convert(
+    std::function<double(const int&)> name_converter) const
+    -> CollisionFilterGroupsImpl<double>;
+template auto CollisionFilterGroupsImpl<double>::Convert(
+    std::function<int(const double&)> name_converter) const
+    -> CollisionFilterGroupsImpl<int>;
 
 }  // namespace internal
 }  // namespace multibody

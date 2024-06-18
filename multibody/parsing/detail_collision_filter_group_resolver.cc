@@ -128,7 +128,7 @@ void CollisionFilterGroupResolver::AddPair(
   pairs_.insert({name_a, name_b});
 }
 
-CollisionFilterGroupsImpl<std::string> CollisionFilterGroupResolver::Resolve(
+CollisionFilterGroupsImpl<InstancedName> CollisionFilterGroupResolver::Resolve(
     const DiagnosticPolicy& diagnostic) {
   DRAKE_DEMAND(!is_resolved_);
   is_resolved_ = true;
@@ -204,14 +204,7 @@ CollisionFilterGroupsImpl<std::string> CollisionFilterGroupResolver::Resolve(
     }
   }
 
-  // Save the groups to report at API level.
-  CollisionFilterGroupsImpl<std::string> result;
-  for (const auto& [name, members] : groups_) {
-    result.AddGroup(name, members.body_names);
-  }
-
-  // Now that the groups are complete, evaluate the pairs into plant rules, and
-  // save them for later reporting.
+  // Now that the groups are complete, evaluate the pairs into plant rules.
   for (const auto& pair : pairs_) {
     const auto& [name_a, name_b] = pair;
     const GroupData* set_a = FindGroup(diagnostic, name_a);
@@ -221,10 +214,27 @@ CollisionFilterGroupsImpl<std::string> CollisionFilterGroupResolver::Resolve(
     }
     plant_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
         {name_a, set_a->geometries}, {name_b, set_b->geometries});
-    result.AddExclusionPair(pair);
   }
 
-  return result;
+  // Return the info, so the Parser can report back to users.
+  CollisionFilterGroupsImpl<std::string> result;
+  for (const auto& [name, members] : groups_) {
+    result.AddGroup(name, members.body_names);
+  }
+  for (const auto& pair : pairs_) {
+    result.AddExclusionPair(pair);
+  }
+  return result.template Convert<InstancedName>(
+      [this](const std::string& input) {
+        InstancedName instanced_name;
+        auto scoped = ScopedName::Parse(input);
+        if (plant_->HasModelInstanceNamed(scoped.get_namespace())) {
+          instanced_name.index =
+              plant_->GetModelInstanceByName(scoped.get_namespace());
+        }
+        instanced_name.name = scoped.get_element();
+        return instanced_name;
+      });
 }
 
 std::string CollisionFilterGroupResolver::FullyQualify(

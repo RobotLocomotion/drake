@@ -118,7 +118,7 @@ class CollisionFilterGroupResolver {
   // Resolves group pairs to rules. Emits diagnostics for undefined groups.
   // @pre cannot have be previously invoked on this instance.
   // @returns the collision filter groups found after resolution.
-  CollisionFilterGroupsImpl<std::string> Resolve(
+  CollisionFilterGroupsImpl<InstancedName> Resolve(
       const drake::internal::DiagnosticPolicy& diagnostic);
 
  private:

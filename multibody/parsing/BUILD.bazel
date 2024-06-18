@@ -130,6 +130,7 @@ drake_cc_library(
         "//common:essential",
         "//common:sorted_pair",
         "//multibody/tree:multibody_tree_indexes",
+        "//multibody/tree:scoped_name",
     ],
 )
 

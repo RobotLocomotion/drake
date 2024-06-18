@@ -174,7 +174,8 @@ TEST_F(CollisionFilterGroupResolverTest, GroupGlobalBodies) {
   resolver_.AddGroup(diagnostic_policy_, "b", {"r2::body2"}, {}, {});
   resolver_.AddPair(diagnostic_policy_, "a", "b", {});
   const CollisionFilterGroupsImpl<std::string> actual_groups =
-      resolver_.Resolve(diagnostic_policy_);
+      ConvertInstancedNamesToStrings(resolver_.Resolve(diagnostic_policy_),
+                                     plant_);
 
   CollisionFilterGroupsImpl<std::string> expected_groups;
   expected_groups.AddGroup("a", {"r1::body1"});
@@ -199,7 +200,8 @@ TEST_F(CollisionFilterGroupResolverTest, GroupGlobalMemberGroups) {
   resolver_.AddGroup(diagnostic_policy_, "b", {}, {"r2::rb"}, {});
   resolver_.AddPair(diagnostic_policy_, "a", "b", {});
   const CollisionFilterGroupsImpl<std::string> actual_groups =
-      resolver_.Resolve(diagnostic_policy_);
+      ConvertInstancedNamesToStrings(resolver_.Resolve(diagnostic_policy_),
+                                     plant_);
 
   CollisionFilterGroupsImpl<std::string> expected_groups;
   expected_groups.AddGroup("a", {"r1::body1"});
@@ -221,7 +223,8 @@ TEST_F(CollisionFilterGroupResolverTest, LinkScoped) {
   resolver_.AddGroup(diagnostic_policy_, "a", {"abody", "sub::abody"}, {}, r1);
   resolver_.AddPair(diagnostic_policy_, "a", "a", r1);
   const CollisionFilterGroupsImpl<std::string> actual_groups =
-      resolver_.Resolve(diagnostic_policy_);
+      ConvertInstancedNamesToStrings(resolver_.Resolve(diagnostic_policy_),
+                                     plant_);
 
   CollisionFilterGroupsImpl<std::string> expected_groups;
   expected_groups.AddGroup("r1::a", {"r1::abody", "r1::sub::abody"});
@@ -252,7 +255,8 @@ TEST_F(CollisionFilterGroupResolverTest, MemberGroupCycle) {
   std::string test_pair_name = body_of(length - 1);
   resolver_.AddPair(diagnostic_policy_, test_pair_name, test_pair_name, r1);
   const CollisionFilterGroupsImpl<std::string> actual_groups =
-      resolver_.Resolve(diagnostic_policy_);
+      ConvertInstancedNamesToStrings(resolver_.Resolve(diagnostic_policy_),
+                                     plant_);
 
   // Do an exhaustive check of the group output.
   CollisionFilterGroupsImpl<std::string> expected_groups;
@@ -293,7 +297,8 @@ TEST_F(CollisionFilterGroupResolverTest, MemberGroupDeepNest) {
   // "top", and will contain all of the bodies and geometries.
   resolver_.AddPair(diagnostic_policy_, body_of(0), body_of(0), r1);
   const CollisionFilterGroupsImpl<std::string> actual_groups =
-      resolver_.Resolve(diagnostic_policy_);
+      ConvertInstancedNamesToStrings(resolver_.Resolve(diagnostic_policy_),
+                                     plant_);
 
   // Do an exhaustive check of the group output.
   CollisionFilterGroupsImpl<std::string> expected_groups;

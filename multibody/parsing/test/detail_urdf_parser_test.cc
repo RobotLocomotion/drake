@@ -62,7 +62,8 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
         {DataSource::kFilename, &file_name}, model_name, {}, w);
-    last_parsed_groups_ = resolver.Resolve(diagnostic_policy_);
+    last_parsed_groups_ = ConvertInstancedNamesToStrings(
+        resolver.Resolve(diagnostic_policy_), plant_);
     return result;
   }
 
@@ -74,7 +75,8 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
         {DataSource::kContents, &file_contents}, model_name, {}, w);
-    last_parsed_groups_ = resolver.Resolve(diagnostic_policy_);
+    last_parsed_groups_ = ConvertInstancedNamesToStrings(
+        resolver.Resolve(diagnostic_policy_), plant_);
     return result;
   }
 
