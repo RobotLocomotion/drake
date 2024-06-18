@@ -3,10 +3,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
+#include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/test/dummy_model.h"
+#include "drake/multibody/test_utilities/robot_model.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -16,6 +19,8 @@
 namespace drake {
 
 using multibody::RevoluteSpring;
+using multibody::test::RobotModel;
+using multibody::test::RobotModelConfig;
 using symbolic::Expression;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -201,10 +206,11 @@ class DoubleOnlyDiscreteUpdateManager final
 GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   MultibodyPlant<double> plant(0.1);
   std::unique_ptr<PhysicalModel<double>> dummy_physical_model =
-      std::make_unique<internal::test::DummyModel<double>>();
+      std::make_unique<internal::DummyPhysicalModel<double>>(&plant);
+  // The dummy model supports all scalar types.
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_double());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_autodiff());
-  EXPECT_FALSE(dummy_physical_model->is_cloneable_to_symbolic());
+  EXPECT_TRUE(dummy_physical_model->is_cloneable_to_symbolic());
   plant.AddPhysicalModel(std::move(dummy_physical_model));
   plant.Finalize();
 
@@ -215,13 +221,11 @@ GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   EXPECT_NO_THROW(plant_autodiff->ToScalarType<double>());
   // double -> Expression
   std::unique_ptr<MultibodyPlant<Expression>> plant_double_to_symbolic;
-  EXPECT_THROW(plant_double_to_symbolic = System<double>::ToSymbolic(plant),
-               std::exception);
+  EXPECT_NO_THROW(plant_double_to_symbolic = System<double>::ToSymbolic(plant));
   // double -> Expression
   std::unique_ptr<MultibodyPlant<Expression>> plant_autodiff_to_symbolic;
-  EXPECT_THROW(plant_autodiff_to_symbolic =
-                   System<AutoDiffXd>::ToSymbolic(*plant_autodiff),
-               std::exception);
+  EXPECT_NO_THROW(plant_autodiff_to_symbolic =
+                      System<AutoDiffXd>::ToSymbolic(*plant_autodiff));
 
   // Verify that adding a component that doesn't allow scalar conversion to
   // autodiff does not prevent scalar conversion to double.
@@ -276,6 +280,121 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpec) {
       System<AutoDiffXd>::ToScalarType<double>(*plant_double_to_autodiff);
   EXPECT_EQ(plant_autodiff_to_double->num_constraints(),
             plant_double.num_constraints());
+}
+
+template <typename T>
+class DiscretePlantTest
+    : public ::testing::TestWithParam<
+          std::tuple<DiscreteContactApproximation, ContactModel,
+                     RobotModelConfig::ContactConfig>> {
+ public:
+  void SetUp() override {
+    const auto [contact_approximation, contact_model, contact_configuration] =
+        GetParam();
+    const RobotModelConfig robot_config{contact_configuration,
+                                        contact_approximation, contact_model};
+    auto model_double = std::make_unique<RobotModel<double>>(robot_config);
+    if constexpr (std::is_same_v<T, double>) {
+      model_ = std::move(model_double);
+    } else {
+      model_ = model_double->ToScalarType<T>();
+    }
+  }
+
+ protected:
+  std::unique_ptr<RobotModel<T>> model_;
+};
+
+template <typename T>
+std::string ParamInfoToString(
+    const testing::TestParamInfo<typename DiscretePlantTest<T>::ParamType>&
+        param_info) {
+  const auto [contact_approximation, contact_model, contact_configuration] =
+      param_info.param;
+  const RobotModelConfig robot_config{contact_configuration,
+                                      contact_approximation, contact_model};
+  std::stringstream s;
+  s << robot_config;
+  return s.str();
+}
+
+// Helper to make all parameter permutations for DiscretePlantTest.
+auto MakeAllPermutations() {
+  return ::testing::Combine(
+      ::testing::Values(DiscreteContactApproximation::kSimilar,
+                        DiscreteContactApproximation::kTamsi),
+      ::testing::Values(ContactModel::kPoint,
+                        ContactModel::kHydroelasticWithFallback),
+      ::testing::Values(RobotModelConfig::ContactConfig::kNoGeometry,
+                        RobotModelConfig::ContactConfig::kNoContactState,
+                        RobotModelConfig::ContactConfig::kInContactState));
+}
+
+using DiscretePlantTestDouble = DiscretePlantTest<double>;
+using DiscretePlantTestAutoDiff = DiscretePlantTest<AutoDiffXd>;
+using DiscretePlantTestExpression = DiscretePlantTest<symbolic::Expression>;
+
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestDouble,
+                         MakeAllPermutations(), ParamInfoToString<double>);
+
+TEST_P(DiscretePlantTestDouble, ForcedUpdate) {
+  const auto& diagram = model_->diagram();
+  auto updates = diagram.AllocateDiscreteVariables();
+  EXPECT_NO_THROW(diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
+                                                           updates.get()));
+}
+
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestAutoDiff,
+                         MakeAllPermutations(), ParamInfoToString<AutoDiffXd>);
+
+TEST_P(DiscretePlantTestAutoDiff, ForcedUpdate) {
+  const auto& diagram = model_->diagram();
+  auto updates = diagram.AllocateDiscreteVariables();
+  EXPECT_NO_THROW(diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
+                                                           updates.get()));
+}
+
+INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestExpression,
+                         MakeAllPermutations(),
+                         ParamInfoToString<symbolic::Expression>);
+
+TEST_P(DiscretePlantTestExpression, ForcedUpdate) {
+  const auto& diagram = model_->diagram();
+  auto updates = diagram.AllocateDiscreteVariables();
+  const auto [contact_approximation, contact_model, contact_configuration] =
+      GetParam();
+
+  // In summary, even though the exceptions below are caused at different
+  // levels, we do not support discrete updates when T = symbolic::Expression.
+  std::string failure_cause_message;
+  if (model_->plant().get_discrete_contact_solver() ==
+      DiscreteContactSolver::kSap) {
+    failure_cause_message =
+        "Discrete updates with the SAP solver are not supported for T = "
+        ".*Expression";
+  } else {
+    if (model_->plant().get_contact_model() ==
+        ContactModel::kHydroelasticWithFallback) {
+      failure_cause_message =
+          ".*CalcHydroelasticWithFallback.*: This method doesn't support T = "
+          ".*Expression.";
+    } else if (model_->plant().get_contact_model() == ContactModel::kPoint) {
+      if (contact_configuration ==
+          RobotModelConfig::ContactConfig::kInContactState) {
+        failure_cause_message =
+            "Penetration queries between shapes .* are not supported for "
+            "scalar type .*Expression. .*";
+      } else {
+        failure_cause_message = "This method doesn't support T = .*Expression.";
+      }
+    } else {
+      throw std::runtime_error("Update unit test to verify this case.");
+    }
+  }
+
+  DRAKE_EXPECT_THROWS_MESSAGE(diagram.CalcForcedDiscreteVariableUpdate(
+                                  model_->context(), updates.get()),
+                              failure_cause_message);
 }
 
 }  // namespace

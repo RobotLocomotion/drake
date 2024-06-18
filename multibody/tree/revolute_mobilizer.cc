@@ -36,7 +36,7 @@ const T& RevoluteMobilizer<T>::get_angle(
 }
 
 template <typename T>
-const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angle(
+const RevoluteMobilizer<T>& RevoluteMobilizer<T>::SetAngle(
     systems::Context<T>* context, const T& angle) const {
   auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
@@ -53,7 +53,7 @@ const T& RevoluteMobilizer<T>::get_angular_rate(
 }
 
 template <typename T>
-const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_rate(
+const RevoluteMobilizer<T>& RevoluteMobilizer<T>::SetAngularRate(
     systems::Context<T>* context, const T& theta_dot) const {
   auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);

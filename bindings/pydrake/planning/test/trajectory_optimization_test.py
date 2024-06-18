@@ -585,6 +585,43 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                   precision=3,
                                   scientific=False), str)
 
+        # In the follwoing, we test adding the bindings for nonlinear
+        # constraints.
+        max_acceleration = np.ones((2, 1))
+        max_jerk = 7.5 * np.ones((2, 1))
+
+        # Add global acceleration bounds.
+        gcs.AddNonlinearDerivativeBounds(
+            lb=-max_acceleration, ub=max_acceleration, derivative_order=2)
+
+        # Add the jerk bounds to each subgraph.
+        main1.AddNonlinearDerivativeBounds(
+            lb=-max_jerk, ub=max_jerk, derivative_order=3)
+        main2.AddNonlinearDerivativeBounds(
+            lb=-max_jerk, ub=max_jerk, derivative_order=3)
+
+        # Add half of the maximum acceleration and jerk bounds at the subspace
+        # point and region.
+        main1_to_main2_pt.AddVelocityBounds(
+            lb=-max_acceleration / 2, ub=max_acceleration / 2)
+        main1_to_main2_region.AddVelocityBounds(
+            lb=-max_acceleration / 2, ub=max_acceleration / 2)
+
+        main1_to_main2_pt.AddVelocityBounds(lb=-max_jerk / 2, ub=max_jerk / 2)
+        main1_to_main2_region.AddVelocityBounds(
+            lb=-max_jerk / 2, ub=max_jerk / 2)
+
+        # Add global velocity continuity.
+        gcs.AddContinuityConstraints(continuity_order=1)
+
+        # Add acceleration continuity to each subgraph.
+        main1.AddContinuityConstraints(continuity_order=2)
+        main2.AddContinuityConstraints(continuity_order=2)
+
+        # Add acceleration continuity at the subspace point and region.
+        main1_to_main2_pt.AddContinuityConstraints(continuity_order=2)
+        main1_to_main2_region.AddContinuityConstraints(continuity_order=2)
+
     def test_gcs_trajectory_optimization_wraparound(self):
         gcs_wraparound = GcsTrajectoryOptimization(
             num_positions=1, continuous_revolute_joints=[0])

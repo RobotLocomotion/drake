@@ -292,8 +292,9 @@ void SetOsqpSolverSettings(const SolverOptions& solver_options,
   SetOsqpSolverSetting(options_int, "warm_start", &(settings->warm_start));
   SetOsqpSolverSetting(options_int, "scaling", &(settings->scaling));
   SetOsqpSolverSetting(options_int, "adaptive_rho", &(settings->adaptive_rho));
-  SetOsqpSolverSetting(options_double, "adaptive_rho_interval",
-                       &(settings->adaptive_rho_interval));
+  SetOsqpSolverSettingWithDefaultValue(options_int, "adaptive_rho_interval",
+                                       &(settings->adaptive_rho_interval),
+                                       ADAPTIVE_RHO_FIXED);
   SetOsqpSolverSetting(options_double, "adaptive_rho_tolerance",
                        &(settings->adaptive_rho_tolerance));
   SetOsqpSolverSetting(options_double, "adaptive_rho_fraction",
@@ -417,6 +418,7 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
     solver_details.solve_time = work->info->solve_time;
     solver_details.polish_time = work->info->polish_time;
     solver_details.run_time = work->info->run_time;
+    solver_details.rho_updates = work->info->rho_updates;
 
     switch (work->info->status_val) {
       case OSQP_SOLVED:

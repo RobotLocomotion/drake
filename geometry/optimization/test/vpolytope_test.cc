@@ -428,6 +428,33 @@ GTEST_TEST(VPolytopeTest, FromUnboundedHPolytopeTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(VPolytope{H}, ".*hpoly.IsBounded().*");
 }
 
+GTEST_TEST(VPolytopeTest, FromDegenerateHPolytope) {
+  // The L1 ball in three dimensions always has 4 hyperplanes actives at every
+  // vertex, but no hyperplane is degenerate in our implementation. This leads
+  // to QHull constructing an overdetermined linear system when solving for the
+  // vertices.
+  HPolyhedron H = HPolyhedron::MakeL1Ball(3);
+  VPolytope V(H);
+  Eigen::MatrixXd vertices_expected(3, 6);
+  // clang-format off
+  vertices_expected << 1, -1,  0,  0,  0,  0,
+                       0,  0,  1, -1,  0,  0,
+                       0,  0,  0,  0,  1, -1;
+  // clang-format on
+  EXPECT_EQ(vertices_expected.cols(), V.vertices().cols());
+  for (int i = 0; i < vertices_expected.cols(); ++i) {
+    bool found_match = false;
+    for (int j = 0; j < vertices_expected.cols(); ++j) {
+      if (CompareMatrices(vertices_expected.col(i), V.vertices().col(j),
+                          1e-11)) {
+        found_match = true;
+        break;
+      }
+    }
+    EXPECT_TRUE(found_match);
+  }
+}
+
 GTEST_TEST(VPolytopeTest, ConstructorFromHPolyhedronQHullProblems) {
   // Test cases of HPolyhedra that QHull cannot handle on its own.
   // Code logic in the constructor should handle these cases without any

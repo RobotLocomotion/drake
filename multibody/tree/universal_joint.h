@@ -99,12 +99,6 @@ class UniversalJoint final : public Joint<T> {
     return this->default_damping_vector()[0];
   }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use `default_damping()` instead.")
-  double damping() const {
-    // N.B. Both damping coefficients are set to the same value for this joint.
-    return this->default_damping_vector()[0];
-  }
-
   /// @name Context-dependent value access
   /// @{
 
@@ -127,7 +121,7 @@ class UniversalJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const UniversalJoint<T>& set_angles(Context<T>* context,
                                       const Vector2<T>& angles) const {
-    get_mobilizer()->set_angles(context, angles);
+    get_mobilizer()->SetAngles(context, angles);
     return *this;
   }
 
@@ -149,7 +143,7 @@ class UniversalJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const UniversalJoint<T>& set_angular_rates(
       systems::Context<T>* context, const Vector2<T>& theta_dot) const {
-    get_mobilizer()->set_angular_rates(context, theta_dot);
+    get_mobilizer()->SetAngularRates(context, theta_dot);
     return *this;
   }
 

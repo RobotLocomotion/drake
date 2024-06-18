@@ -8,9 +8,6 @@ using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using math::RigidTransformd;
 
-// TODO(SeanCurtis-TRI) This code is tested in obb_test.cc for historical
-//  reasons. If that causes confusion/difficulty, move it into its own unit test
-//  and rework the Obb tests.
 bool BoxesOverlap(const Vector3d& half_size_a, const Vector3d& half_size_b,
                   const RigidTransformd& X_AB) {
   // We need to split the transform into the position and rotation components,

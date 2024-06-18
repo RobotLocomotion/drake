@@ -62,11 +62,21 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
     const DataSource& data_source,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
-  // Create a stage. This is just a simple placeholder at the moment.
-  pxr::UsdStageRefPtr stage = pxr::UsdStage::CreateInMemory();
+  // TODO(hong-nvidia) Improve error reporting for non-file sources.
+  DRAKE_THROW_UNLESS(data_source.IsFilename());
+  const std::string filename = data_source.GetAbsolutePath();
 
-  unused(data_source, parent_model_name, workspace);
-  throw std::runtime_error("UsdParser::AddAllModels is not implemented");
+  // Load the file.
+  pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(filename);
+  if (!stage) {
+    workspace.diagnostic.Error("Failed to open USD stage");
+    return {};
+  }
+
+  // TODO(hong-nvidia) Implement the actual loading.
+  unused(parent_model_name);
+
+  return {};
 }
 
 }  // namespace internal

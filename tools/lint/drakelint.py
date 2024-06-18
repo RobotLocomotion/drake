@@ -2,7 +2,7 @@ import os
 import re
 import sys
 
-from drake.tools.lint.formatter import IncludeFormatter
+from tools.lint.formatter import IncludeFormatter
 
 
 def _check_unguarded_openmp_uses(filename):

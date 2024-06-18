@@ -4,11 +4,13 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace multibody {
 namespace constraint {
+namespace internal {
 
 /// Structure for holding constraint data for computing forces due to
 /// constraints and the resulting multibody accelerations.
@@ -509,6 +511,18 @@ struct ConstraintVelProblemData {
   /// system.
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
 };
+
+}  // namespace internal
+
+template <class T>
+using ConstraintAccelProblemData
+    DRAKE_DEPRECATED("2024-09-01", "This class is being removed from Drake.")
+    = internal::ConstraintAccelProblemData<T>;
+
+template <class T>
+using ConstraintVelProblemData
+    DRAKE_DEPRECATED("2024-09-01", "This class is being removed from Drake.")
+    = internal::ConstraintVelProblemData<T>;
 
 }  // namespace constraint
 }  // namespace multibody

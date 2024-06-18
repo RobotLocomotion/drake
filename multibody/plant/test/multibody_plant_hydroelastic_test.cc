@@ -9,8 +9,11 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -35,10 +38,16 @@ class MultibodyPlantTester {
  public:
   MultibodyPlantTester() = delete;
 
-  static const std::vector<SpatialForce<double>>& EvalHydroelasticContactForces(
+  static const std::vector<SpatialForce<double>>&
+  EvalHydroelasticContactForcesContinuous(
       const MultibodyPlant<double>& plant,
       const systems::Context<double>& context) {
-    return plant.EvalHydroelasticContactForces(context).F_BBo_W_array;
+    return plant.EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
+  }
+
+  static BodyIndex FindBodyByGeometryId(const MultibodyPlant<double>& plant,
+                                        GeometryId id) {
+    return plant.FindBodyByGeometryId(id);
   }
 
   static const std::vector<SpatialForce<double>>&
@@ -202,26 +211,52 @@ class HydroelasticModelTests : public ::testing::Test {
                               Vector3<double>* p_WB_W) {
     DRAKE_DEMAND(F_BBo_W != nullptr);
     DRAKE_DEMAND(p_WB_W != nullptr);
-    *p_WB_W = Vector3<double>::Zero();
-    *F_BBo_W = SpatialForce<double>();
 
     Simulator<double> simulator(*diagram_);
     auto& diagram_context = simulator.get_mutable_context();
     auto& plant_context = plant_->GetMyMutableContextFromRoot(&diagram_context);
 
     // Set initial condition.
-    const RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius));
-    plant_->SetFreeBodyPose(&plant_context, *body_, X_WB);
+    plant_->SetFreeBodyPose(&plant_context, *body_,
+                            RigidTransformd(Vector3d(0.0, 0.0, kSphereRadius)));
     diagram_->ForcedPublish(diagram_context);
 
     // Run simulation for long enough to reach the steady state.
     simulator.AdvanceTo(0.5);
 
-    const auto& F_BBo_W_array =
-        MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
-                                                            plant_context);
-    *F_BBo_W = F_BBo_W_array[body_->mobod_index()];
-    *p_WB_W = plant_->GetFreeBodyPose(plant_context, *body_).translation();
+    // Compute the position of the sphere in world.
+    const RigidTransformd& X_WB =
+        plant_->GetFreeBodyPose(plant_context, *body_);
+    *p_WB_W = X_WB.translation();
+
+    // Loop over each contact surface involving `body_` and sum the contact
+    // forces acting on `body_`.
+    F_BBo_W->SetZero();
+    const ContactResults<double>& results =
+        plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
+            plant_context);
+
+    ASSERT_EQ(results.num_point_pair_contacts(), 0);
+
+    for (int i = 0; i < results.num_hydroelastic_contacts(); ++i) {
+      const HydroelasticContactInfo<double>& info =
+          results.hydroelastic_contact_info(i);
+      const geometry::ContactSurface<double>& surface = info.contact_surface();
+      const GeometryId geometryM_id = surface.id_M();
+      const GeometryId geometryN_id = surface.id_N();
+
+      const BodyIndex bodyA_index =
+          MultibodyPlantTester::FindBodyByGeometryId(*plant_, geometryM_id);
+      const BodyIndex bodyB_index =
+          MultibodyPlantTester::FindBodyByGeometryId(*plant_, geometryN_id);
+
+      const Vector3<double> p_CBo_W = *p_WB_W - surface.centroid();
+      if (bodyA_index == body_->index()) {
+        *F_BBo_W += info.F_Ac_W().Shift(p_CBo_W);
+      } else if (bodyB_index == body_->index()) {
+        *F_BBo_W -= info.F_Ac_W().Shift(p_CBo_W);
+      }
+    }
   }
 
   const double kFrictionCoefficient{0.5};  // [-]
@@ -257,8 +292,8 @@ TEST_F(HydroelasticModelTests, ContactForce) {
   auto calc_force = [this](double penetration) -> double {
     SetPose(penetration);
     const auto& F_BBo_W_array =
-        MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
-                                                            *plant_context_);
+        MultibodyPlantTester::EvalHydroelasticContactForcesContinuous(
+            *plant_, *plant_context_);
     const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->mobod_index()];
     return F_BBo_W.translational()[2];  // Normal force.
   };
@@ -303,8 +338,8 @@ TEST_F(HydroelasticModelTests, ContactDynamics) {
   const double penetration = 0.02;
   SetPose(penetration);
   const auto& F_BBo_W_array =
-      MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
-                                                          *plant_context_);
+      MultibodyPlantTester::EvalHydroelasticContactForcesContinuous(
+          *plant_, *plant_context_);
   const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->mobod_index()];
   // Contact force by hydroelastics.
   const Vector3<double> fhydro_BBo_W = F_BBo_W.translational();
@@ -511,6 +546,12 @@ class ContactModelTest : public ::testing::Test {
     plant_->set_contact_model(model);
     ASSERT_EQ(plant_->get_contact_model(), model);
 
+    // Optionally tweak the contact surface representation.
+    if (forced_hydroelastic_contact_representation_.has_value()) {
+      plant_->set_contact_surface_representation(
+          *forced_hydroelastic_contact_representation_);
+    }
+
     plant_->Finalize();
 
     diagram_ = builder.Build();
@@ -643,6 +684,11 @@ class ContactModelTest : public ::testing::Test {
   const double kDissipation{0.0};          // [s/m]
   const double kMass{1.2};                 // [kg]
 
+  // When non-null, the plant will be forced to use this representation instead
+  // of its natural time_step-based default.
+  std::optional<geometry::HydroelasticContactRepresentation>
+      forced_hydroelastic_contact_representation_;
+
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
   const RigidBody<double>* first_ball_{nullptr};
@@ -707,6 +753,14 @@ TEST_F(ContactModelTest, HydroelasticWithFallback) {
   }
 }
 
+TEST_F(ContactModelTest, RejectPostFinalizeChange) {
+  this->Configure(ContactModel::kHydroelastic);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->set_contact_surface_representation(
+          geometry::HydroelasticContactRepresentation::kPolygon),
+      ".*set_contact_surface_representation.*before Finalize.*");
+}
+
 // TODO(DamrongGuoy): Create an independent test fixture instead of using
 //  inheritance and consider using parameter-value tests.
 
@@ -753,10 +807,11 @@ TEST_F(CalcContactSurfacesTest, ContinuousSystem_Triangles) {
 }
 
 TEST_F(CalcContactSurfacesTest, ContinuousSystem_Polygons) {
+  forced_hydroelastic_contact_representation_ =
+      geometry::HydroelasticContactRepresentation::kPolygon;
+
   const double time_step = 0.0;  // Zero to select continuous system.
   this->Configure(time_step);
-  plant_->set_contact_surface_representation(
-      geometry::HydroelasticContactRepresentation::kPolygon);
 
   SCOPED_TRACE("continuous system hydro: polygon rep");
   this->RunTest(geometry::HydroelasticContactRepresentation::kPolygon);
@@ -771,10 +826,11 @@ TEST_F(CalcContactSurfacesTest, DiscreteSystem_Polygons) {
 }
 
 TEST_F(CalcContactSurfacesTest, DiscreteSystem_Triangles) {
+  forced_hydroelastic_contact_representation_ =
+      geometry::HydroelasticContactRepresentation::kTriangle;
+
   const double time_step = 5.0e-3;  // Non-zero to select discrete system.
   this->Configure(time_step);
-  plant_->set_contact_surface_representation(
-      geometry::HydroelasticContactRepresentation::kTriangle);
 
   SCOPED_TRACE("discrete system hydro: triangle rep");
   this->RunTest(geometry::HydroelasticContactRepresentation::kTriangle);
@@ -836,10 +892,11 @@ TEST_F(CalcHydroelasticWithFallbackTest, ContinuousSystem_Triangles) {
 }
 
 TEST_F(CalcHydroelasticWithFallbackTest, ContinuousSystem_Polygons) {
+  forced_hydroelastic_contact_representation_ =
+      geometry::HydroelasticContactRepresentation::kPolygon;
+
   const double time_step = 0.0;  // Zero to select continuous system.
   this->Configure(time_step);
-  plant_->set_contact_surface_representation(
-      geometry::HydroelasticContactRepresentation::kPolygon);
 
   SCOPED_TRACE("continuous system hydro with fallback: polygon rep");
   this->RunTest(geometry::HydroelasticContactRepresentation::kPolygon);
@@ -854,10 +911,11 @@ TEST_F(CalcHydroelasticWithFallbackTest, DiscreteSystem_Polygons) {
 }
 
 TEST_F(CalcHydroelasticWithFallbackTest, DiscreteSystem_Triangles) {
+  forced_hydroelastic_contact_representation_ =
+      geometry::HydroelasticContactRepresentation::kTriangle;
+
   const double time_step = 5.0e-3;  // Non-zero to select discrete system.
   this->Configure(time_step);
-  plant_->set_contact_surface_representation(
-      geometry::HydroelasticContactRepresentation::kTriangle);
 
   SCOPED_TRACE("discrete system hydro with fallback: triangle rep");
   this->RunTest(geometry::HydroelasticContactRepresentation::kTriangle);

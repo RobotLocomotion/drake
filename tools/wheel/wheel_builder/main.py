@@ -4,14 +4,14 @@
 
 import sys
 
-from drake.tools.wheel.wheel_builder.common import do_main as main
+from tools.wheel.wheel_builder.common import do_main as main
 
 
 if __name__ == '__main__':
     if sys.platform == 'linux':
-        from drake.tools.wheel.wheel_builder import linux as platform
+        from tools.wheel.wheel_builder import linux as platform
     elif sys.platform == 'darwin':
-        from drake.tools.wheel.wheel_builder import macos as platform
+        from tools.wheel.wheel_builder import macos as platform
     else:
         platform = None
 

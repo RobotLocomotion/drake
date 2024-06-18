@@ -75,9 +75,9 @@ class ModelVisualizer:
                  browser_new=False,
                  pyplot=False,
                  meshcat=None,
-                 environment_map: Path = Path()):
-        """
-        Initializes a ModelVisualizer.
+                 environment_map: Path = Path(),
+                 compliance_type: str = "undefined"):
+        """Initializes a ModelVisualizer.
 
         Args:
           visualize_frames: a flag that visualizes frames as triads for all
@@ -90,7 +90,15 @@ class ModelVisualizer:
              up a local preview window of the rgb image. At the moment, the
              image display uses a native window so will not work in a remote or
              cloud runtime environment.
-
+          environment_map: Meshcat environment map filename.
+          compliance_type: Overrides the DefaultProximityProperties setting
+             with same name. Can be set to either "rigid" or "compliant" for
+             hydroelastic contact, or "undefined" to use point contact.
+             When a model file doesn't say something more specific for the
+             hydroelastic compliance mode, this default will take effect.
+             In the common case of model files that have not been customized
+             for Drake, this is a convenient way to visualize what collisions
+             would look like under the given hydroelastic mode.
           browser_new: a flag that will open the MeshCat display in a new
             browser window during Run().
           pyplot: a flag that will open a pyplot figure for rendering using
@@ -98,6 +106,7 @@ class ModelVisualizer:
 
           meshcat: an existing Meshcat instance to re-use instead of creating
             a new instance. Useful in, e.g., Python notebooks.
+
         """
         self._visualize_frames = visualize_frames
         self._triad_length = triad_length
@@ -109,6 +118,7 @@ class ModelVisualizer:
         self._pyplot = pyplot
         self._meshcat = meshcat
         self._environment_map = environment_map
+        self._compliance_type = compliance_type
 
         # This is the list of loaded models, to enable the Reload button.
         # If set to None, it means that we won't support reloading because
@@ -123,6 +133,13 @@ class ModelVisualizer:
         # it will be temporarily resurrected.
         self._builder = RobotDiagramBuilder()
         self._builder.parser().SetAutoRenaming(True)
+
+        # Adjust the SceneGraph's compliance_type.
+        old_config = self._builder.scene_graph().get_config()
+        new_config = copy.deepcopy(old_config)
+        new_config.default_proximity_properties.compliance_type = (
+            self._compliance_type)
+        self._builder.scene_graph().set_config(new_config)
 
         # The following fields are set non-None during Finalize().
         self._original_package_map = None
@@ -175,7 +192,8 @@ class ModelVisualizer:
                 "show_rgbd_sensor",
                 "browser_new",
                 "pyplot",
-                "environment_map"]:
+                "environment_map",
+                "compliance_type"]:
             value = getattr(prototype, f"_{name}")
             assert value is not None
             result[name] = value

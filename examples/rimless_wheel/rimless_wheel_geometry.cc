@@ -4,7 +4,7 @@
 
 #include <fmt/format.h>
 
-#include "drake/examples/rimless_wheel/gen/rimless_wheel_params.h"
+#include "drake/examples/rimless_wheel/rimless_wheel_params.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"

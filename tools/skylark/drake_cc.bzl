@@ -76,13 +76,13 @@ GCC_CC_TEST_FLAGS = [
 ]
 
 GCC_VERSION_SPECIFIC_FLAGS = {
-    # TODO(#21337) Investigate and resolve what to do about these warnings
-    # long-term. Some of them seem like true positives (i.e., bugs in Drake).
     13: [
+        "-Werror=pessimizing-move",
+        # TODO(#21337) Investigate and resolve what to do about these warnings
+        # long-term. Some seem like true positives (i.e., bugs in Drake).
         "-Wno-array-bounds",
         "-Wno-dangling-reference",
         "-Wno-maybe-uninitialized",
-        "-Wno-pessimizing-move",
         "-Wno-stringop-overflow",
         "-Wno-stringop-overread",
         "-Wno-uninitialized",
@@ -954,9 +954,12 @@ def drake_cc_googletest_linux_only(
         deps = [],
         linkopts = [],
         tags = [],
-        visibility = ["//visibility:private"]):
+        timeout = None,
+        visibility = ["//visibility:private"],
+        enable_condition = "@drake//tools/skylark:linux"):
     """Declares a platform-specific drake_cc_googletest. When not building on
-    Linux, the deps and linkopts are nulled out.
+    Linux, the deps and linkopts are nulled out. When only a subset of linuxen
+    are supported, the enable_condition can be used to narrow even further.
 
     Because this test is not cross-platform, the visibility defaults to
     private.
@@ -971,13 +974,13 @@ def drake_cc_googletest_linux_only(
         testonly = True,
         tags = ["manual"],
         deps = select({
-            "@drake//tools/skylark:linux": deps + [
+            enable_condition: deps + [
                 "@gtest//:without_main",
             ],
             "//conditions:default": [],
         }),
         linkopts = select({
-            "@drake//tools/skylark:linux": linkopts,
+            enable_condition: linkopts,
             "//conditions:default": [],
         }),
         alwayslink = True,
@@ -988,17 +991,18 @@ def drake_cc_googletest_linux_only(
     # We need to use a dummy header file to disable the default 'srcs = ...'
     # inference from drake_cc_googletest.
     generate_file(
-        name = "_{}_empty.h".format(name),
+        name = "_{}_empty.cc".format(name),
         content = "",
         visibility = ["//visibility:private"],
     )
     drake_cc_googletest(
         name = name,
-        srcs = ["_{}_empty.h".format(name)],
+        srcs = ["_{}_empty.cc".format(name)],
         tags = tags + ["nolint"],
+        timeout = timeout,
         data = data,
         deps = select({
-            "@drake//tools/skylark:linux": [":_{}_compile".format(name)],
+            enable_condition: [":_{}_compile".format(name)],
             "//conditions:default": [],
         }),
         visibility = visibility,

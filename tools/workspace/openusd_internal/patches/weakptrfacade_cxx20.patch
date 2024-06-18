@@ -1,0 +1,61 @@
+[openusd_internal] Fix operator== overloading for C++20
+
+C++20 adds new feature named "rewritten comparison operators" where it
+automatically considers both argument orders for operator==. This
+leads to two problems for OpenUSD:
+
+(1) The operator== on TfWeakPtrFacade base class was written to accept
+the CRTP derived type as its argument, so its signature was
+ (TfWeakPtrFacade<PtrTemplate, Type> const& lhs, PtrTemplate<Other> const& rhs)
+and so C++20 rewritten comparison operator signature was
+ (PtrTemplate<Other> const& rhs, TfWeakPtrFacade<PtrTemplate, Type> const& lhs)
+and ISO C++ considers those as two different overloads and therefore
+ambiguous, even though they are the "same" function in a sense. We can
+fix this by weakening type of `p` to match `this` base type, instead of
+the CRTP derived type. (The more derived type of `p` as originally
+written does not seem to serve any purpose.)
+
+(2) There were two different implementations of TfRefPtr vs TfWeakPtr
+comparisons (with flipped arguments). One implementation tried to
+delegate to the other one, but in C++20 ends up as a self-call and
+infinite recursion. We need to nix one of overloads in when compiling
+in C++20 mode.
+
+We should probably upstream something like this, or at least file an
+issue around C++ 20 support generally.
+
+--- pxr/base/tf/weakPtrFacade.h
++++ pxr/base/tf/weakPtrFacade.h
+@@ -111,14 +111,10 @@ public:
+     typedef Type element_type;
+     
+-    template <class Other>
+-    bool operator == (PtrTemplate<Other> const &p) const {
+-        if (false)
+-            return _FetchPointer() == TfWeakPtrFacadeAccess::FetchPointer(p);
++    bool operator==(TfWeakPtrFacade const &p) const {
+         return GetUniqueIdentifier() == p.GetUniqueIdentifier();
+     }
+ 
+-    template <class Other>
+-    bool operator != (PtrTemplate<Other> const &p) const {
++    bool operator!=(TfWeakPtrFacade const &p) const {
+         return !(*this == p);
+     }
+ 
+@@ -135,6 +133,7 @@ public:
+         return !(*this == p);
+     }
+ 
++#if __cplusplus < 202002L
+     template <class T>
+     friend bool operator == (const TfRefPtr<T>& p1, Derived const &p2) {
+         return p2 == p1;
+@@ -144,6 +143,7 @@ public:
+     friend bool operator != (const TfRefPtr<T>& p1, Derived const &p2) {
+         return !(p1 == p2);
+     }
++#endif
+ 
+     template <class Other>
+     bool operator < (PtrTemplate<Other> const &p) const {

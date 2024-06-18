@@ -24,7 +24,7 @@ namespace internal {
  translations along the x and y axes of frame F and rotaition about the z-axis
  of frame F.
  Zero (x, y, θ) define the "zero configuration" which corresponds to frame F and
- M being coincident and aligned, see set_zero_state(). The translations (x, y)
+ M being coincident and aligned, see SetZeroState(). The translations (x, y)
  are defined to be positive in the direction of their respective axes and the
  rotation θ is defined to be positive according to the right-hand-rule with the
  thumb aligned in the direction of frame F's z-axis.
@@ -88,8 +88,8 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
    @param[in] context The context of the model this mobilizer belongs to.
    @param[in] angle The desired angle in radians.
    @returns a constant reference to `this` mobilizer. */
-  const PlanarMobilizer<T>& set_angle(systems::Context<T>* context,
-                                      const T& angle) const;
+  const PlanarMobilizer<T>& SetAngle(systems::Context<T>* context,
+                                     const T& angle) const;
 
   /* Retrieves from `context` the rate of change, in meters per second, of
    `this` mobilizer's translations (see get_translations()).
@@ -104,7 +104,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
    @param[in] v_FM_F The desired rate of change of `this` mobilizer's
                      translations, packed as the vector [ẋ, ẏ].
    @returns A constant reference to `this` mobilizer. */
-  const PlanarMobilizer<T>& set_translation_rates(
+  const PlanarMobilizer<T>& SetTranslationRates(
       systems::Context<T>* context,
       const Eigen::Ref<const Vector2<T>>& v_FM_F) const;
 
@@ -120,8 +120,8 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
    @param[in] theta_dot The desired rate of change of `this` mobilizer's angle
                         in radians per second.
    @returns A constant reference to `this` mobilizer. */
-  const PlanarMobilizer<T>& set_angular_rate(systems::Context<T>* context,
-                                             const T& theta_dot) const;
+  const PlanarMobilizer<T>& SetAngularRate(systems::Context<T>* context,
+                                            const T& theta_dot) const;
 
   /* Computes the across-mobilizer transform `X_FM(q)` between the inboard
    frame F and the outboard frame M as a function of the configuration q stored

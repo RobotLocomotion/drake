@@ -380,11 +380,8 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
    Finally Jv_v_AcBc_C = R_WC.transpose() * Jv_v_AcBc_W.
    The set of dofs for body A and body B are mutually exclusive. */
 
-  const geometry::QueryObject<T>& query_object =
-      manager_->plant()
-          .get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
-  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
+  const geometry::SceneGraphInspector<T>& inspector =
+      manager_->plant().EvalSceneGraphInspector(context);
   const DeformableContact<T>& deformable_contact =
       EvalDeformableContact(context);
   const std::vector<DeformableContactSurface<T>>& contact_surfaces =
@@ -549,7 +546,8 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
   const MultibodyTreeTopology& tree_topology =
       manager_->internal_tree().get_topology();
   const auto& configurations =
-      deformable_model_->vertex_positions_port()
+      manager_->plant()
+          .get_deformable_body_configuration_output_port()
           .template Eval<geometry::GeometryConfigurationVector<T>>(context);
   for (DeformableBodyIndex index(0); index < deformable_model_->num_bodies();
        ++index) {

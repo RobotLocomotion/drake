@@ -9,7 +9,6 @@
 #include <variant>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
@@ -437,12 +436,6 @@ class SceneGraphInspector {
                           role.  */
   bool CollisionFiltered(GeometryId geometry_id1,
                          GeometryId geometry_id2) const;
-
-  DRAKE_DEPRECATED(
-      "2024-06-01",
-      "This shortcut function is being removed. "
-      "Instead, call inspector.GetShape(geometry_id).Reify(reifier)")
-  void Reify(GeometryId geometry_id, ShapeReifier* reifier) const;
 
   /** Obtains a new GeometryInstance that copies the geometry indicated by the
    given `geometry_id`.

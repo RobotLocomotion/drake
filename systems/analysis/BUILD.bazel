@@ -26,11 +26,11 @@ drake_cc_package_library(
         ":implicit_euler_integrator",
         ":implicit_integrator",
         ":initial_value_problem",
-        ":instantaneous_realtime_rate_calculator",
         ":integrator_base",
         ":lyapunov",
         ":monte_carlo",
         ":radau_integrator",
+        ":realtime_rate_calculator",
         ":region_of_attraction",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
@@ -301,10 +301,10 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "instantaneous_realtime_rate_calculator",
-    srcs = ["instantaneous_realtime_rate_calculator.cc"],
+    name = "realtime_rate_calculator",
+    srcs = ["realtime_rate_calculator.cc"],
     hdrs = [
-        "instantaneous_realtime_rate_calculator.h",
+        "realtime_rate_calculator.h",
     ],
     deps = [
         "//common:timer",
@@ -636,9 +636,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "instantaneous_realtime_rate_calculator_test",
+    name = "realtime_rate_calculator_test",
     deps = [
-        ":instantaneous_realtime_rate_calculator",
+        ":realtime_rate_calculator",
     ],
 )
 

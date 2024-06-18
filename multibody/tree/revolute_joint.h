@@ -118,9 +118,6 @@ class RevoluteJoint final : public Joint<T> {
   /// Returns `this` joint's default damping constant in N⋅m⋅s.
   double default_damping() const { return this->default_damping_vector()[0]; }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
-  double damping() const { return this->default_damping_vector()[0]; }
-
   /// Sets the default value of viscous damping for this joint, in N⋅m⋅s.
   /// @throws std::exception if damping is negative.
   /// @pre the MultibodyPlant must not be finalized.
@@ -180,7 +177,7 @@ class RevoluteJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angle(
       Context<T>* context, const T& angle) const {
-    get_mobilizer()->set_angle(context, angle);
+    get_mobilizer()->SetAngle(context, angle);
     return *this;
   }
 
@@ -210,7 +207,7 @@ class RevoluteJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angular_rate(
       Context<T>* context, const T& angle) const {
-    get_mobilizer()->set_angular_rate(context, angle);
+    get_mobilizer()->SetAngularRate(context, angle);
     return *this;
   }
 

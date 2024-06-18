@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from drake.tools.lint.util import find_all_sources
+from tools.lint.util import find_all_sources
 
 
 class UtilTest(unittest.TestCase):

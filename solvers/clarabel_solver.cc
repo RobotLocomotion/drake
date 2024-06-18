@@ -214,6 +214,12 @@ class SettingsConverter {
     // TODO(jwnimmer-tri) Add support for this option.
     // For now it is unsupported and will throw (as an unknown name, below).
   }
+  void Visit(const NameValue<clarabel::ClarabelCliqueMergeMethods>& x) {
+    DRAKE_THROW_UNLESS(x.name() ==
+                       std::string{"chordal_decomposition_merge_method"});
+    // TODO(jwnimmer-tri) Add support for this option.
+    // For now it is unsupported and will throw (as an unknown name, below).
+  }
 
  private:
   void SetFromDoubleMap(const char* name, double* clarabel_value) {

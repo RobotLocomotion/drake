@@ -1059,9 +1059,15 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_add_l2norm_cost(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 'x')
-        prog.AddL2NormCost(
-            A=np.array([[1, 2.], [3., 4]]), b=np.array([1., 2.]), vars=x)
+        A = np.array([[1, 2.], [3., 4]])
+        b = np.array([1., 2.])
+        prog.AddL2NormCost(A=A, b=b, vars=x)
         self.assertEqual(len(prog.l2norm_costs()), 1)
+        prog.AddL2NormCost(
+            e=np.linalg.norm(A@x+b), psd_tol=1e-8, coefficient_tol=1e-8)
+        self.assertEqual(len(prog.l2norm_costs()), 2)
+        prog.AddCost(e=np.linalg.norm(A@x+b))
+        self.assertEqual(len(prog.l2norm_costs()), 3)
 
     def test_add_l2norm_cost_using_conic_constraint(self):
         prog = mp.MathematicalProgram()

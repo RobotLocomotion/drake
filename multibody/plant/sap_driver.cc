@@ -251,16 +251,8 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
             MakeContactConfiguration(pair), std::move(J),
             make_sap_parameters()));
       } else {
-        ContactConfiguration<T> contact_configuration =
-            MakeContactConfiguration(pair);
-        DRAKE_DEMAND(
-            !std::isnan(ExtractDoubleOrThrow(contact_configuration.vn)));
-        DRAKE_DEMAND(
-            !std::isnan(ExtractDoubleOrThrow(contact_configuration.fe)));
-        DRAKE_DEMAND(
-            !std::isnan(ExtractDoubleOrThrow(contact_configuration.phi)));
         problem->AddConstraint(std::make_unique<SapHuntCrossleyConstraint<T>>(
-            std::move(contact_configuration), std::move(J),
+            MakeContactConfiguration(pair), std::move(J),
             make_hunt_crossley_parameters()));
       }
     } else {
@@ -317,8 +309,7 @@ void SapDriver<T>::AddLimitConstraints(const systems::Context<T>& context,
   const double stiffness = 1.0e12;
   const double dissipation_time_scale = dt;
 
-  for (JointIndex joint_index(0); joint_index < plant().num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
     // We only support limits for 1 DOF joints for which we know that q̇ = v.
     if (joint.num_positions() == 1 && joint.num_velocities() == 1) {
@@ -825,7 +816,7 @@ void SapDriver<T>::CalcContactProblemCache(
   // Make a reduced version of the original contact problem using joint locking
   // data.
   const internal::JointLockingCacheData<T>& joint_locking_data =
-      manager().EvalJointLockingCache(context);
+      manager().EvalJointLocking(context);
   const std::vector<int>& locked_indices =
       joint_locking_data.locked_velocity_indices;
   const std::vector<std::vector<int>>& locked_indices_per_tree =
@@ -942,7 +933,7 @@ void SapDriver<T>::CalcSapSolverResults(
   // Eliminate known DoFs.
   if (has_locked_dofs) {
     const auto& unlocked_indices =
-        manager().EvalJointLockingCache(context).unlocked_velocity_indices;
+        manager().EvalJointLocking(context).unlocked_velocity_indices;
     v0 = SelectRows(v0, unlocked_indices);
   }
 
@@ -988,12 +979,12 @@ void SapDriver<T>::CalcSapSolverResults(
         "  3. Numerical ill conditioning of the model caused by, for instance, "
         "     extremely large mass ratios. Revise your model and consider "
         "     whether very small objects can be removed or welded to larger "
-        "     objects in the model."
+        "     objects in the model.\n"
         "  4. Ill-conditioning could be alleviated via SAP's near rigid "
         "     parameter. Refer to "
-        "     MultibodyPlant::set_sap_near_rigid_threshold() for details."
+        "     MultibodyPlant::set_sap_near_rigid_threshold() for details.\n"
         "  5. Some other cause. You may want to use Stack Overflow (#drake "
-        "     tag) to request some assistance.",
+        "     tag) to request some assistance.\n",
         context.get_time());
     throw std::runtime_error(msg);
   }

@@ -7,6 +7,7 @@
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
+#include <tiny_gltf.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkImageData.h>  // vtkCommonDataModel
@@ -202,6 +203,29 @@ bool IsColorNear(const RgbaColor& expected, const RgbaColor& tested,
   return ::testing::AssertionFailure()
          << "At pixel " << p << "\n  Expected: " << expected
          << "\n  Found: " << tested << "\n  with tolerance: " << tolerance;
+}
+
+// Because we haven't bothered with tinygltf's stb_image dependency we're
+// obliged to provide our own load image callback. In this case, we provide a
+// no-op callback just to show that things work.
+bool LocalGltfLoadImage(tinygltf::Image*, const int, std::string*, std::string*,
+                        int, int, const unsigned char*, int, void*) {
+  return true;
+}
+
+// Simply confirm that we can use tinygltf to load a gltf file.
+GTEST_TEST(TinyGltf, SmokeTest) {
+  tinygltf::Model model;
+  tinygltf::TinyGLTF loader;
+  loader.SetImageLoader(LocalGltfLoadImage, nullptr);
+
+  const std::string path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  const bool ret = loader.LoadASCIIFromFile(&model, nullptr /* err */,
+                                            nullptr /* warn */, path);
+
+  ASSERT_TRUE(ret);
+  ASSERT_EQ(model.nodes.size(), 1);
 }
 
 class RenderEngineGlTest : public ::testing::Test {
@@ -1141,6 +1165,11 @@ TEST_F(RenderEngineGlTest, MeshTest) {
 //
 // If all of that is processed correctly, we should get a cube with a different
 // color on each face. We'll test for those colors.
+//
+// This test renders against an original engine and its clone (to confirm that
+// the render artifacts survive cloning). This has a secondary benefit of
+// detecting if anything happens to corrupt the relationship between original
+// and cloned context (see, e.g., #21326).
 TEST_F(RenderEngineGlTest, MultiMaterialObj) {
   struct Face {
     // The expected *illuminated* material color. The simple illumination model
@@ -1756,11 +1785,11 @@ TEST_F(RenderEngineGlTest, ConvexGeometryReuse) {
   const RenderEngineGlTester::Prop& prop1 = tester.GetVisual(id1);
   const RenderEngineGlTester::Prop& prop2 = tester.GetVisual(id2);
 
-  EXPECT_EQ(prop1.parts.size(), 1);
-  EXPECT_EQ(prop1.parts.size(), prop2.parts.size());
+  EXPECT_EQ(prop1.instances.size(), 1);
+  EXPECT_EQ(prop1.instances.size(), prop2.instances.size());
   // Different instances nevertheless share the same geometry.
-  EXPECT_NE(&prop1.parts[0].instance, &prop2.parts[0].instance);
-  EXPECT_EQ(prop1.parts[0].instance.geometry, prop2.parts[0].instance.geometry);
+  EXPECT_NE(&prop1.instances[0], &prop2.instances[0]);
+  EXPECT_EQ(prop1.instances[0].geometry, prop2.instances[0].geometry);
 }
 
 // Confirms that when requesting the same mesh multiple times, only a single
@@ -1787,11 +1816,11 @@ TEST_F(RenderEngineGlTest, MeshGeometryReuse) {
   const RenderEngineGlTester::Prop& prop1 = tester.GetVisual(id1);
   const RenderEngineGlTester::Prop& prop2 = tester.GetVisual(id2);
 
-  EXPECT_EQ(prop1.parts.size(), 1);
-  EXPECT_EQ(prop1.parts.size(), prop2.parts.size());
+  EXPECT_EQ(prop1.instances.size(), 1);
+  EXPECT_EQ(prop1.instances.size(), prop2.instances.size());
   // Different instances nevertheless share the same geometry.
-  EXPECT_NE(&prop1.parts[0].instance, &prop2.parts[0].instance);
-  EXPECT_EQ(prop1.parts[0].instance.geometry, prop2.parts[0].instance.geometry);
+  EXPECT_NE(&prop1.instances[0], &prop2.instances[0]);
+  EXPECT_EQ(prop1.instances[0].geometry, prop2.instances[0].geometry);
 }
 
 // Confirm the properties of the fallback camera using the following

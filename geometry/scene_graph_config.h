@@ -8,13 +8,10 @@
 namespace drake {
 namespace geometry {
 
-
-// TODO(rpoyner-tri): adjust doc when implementation is ready.
-// TODO(rpoyner-tri): ref hydro user quick start doc when available.
-/** (FUTURE) These properties will be used as defaults when the geometry as
+/** These properties will be used as defaults when the geometry as
 added via API calls or parsed from model files doesn't say anything more
-specific.  @see @ref hug_title, @ref hug_properties,
-@ref stribeck_approximation. */
+specific.  @see @ref compliant_contact, @ref hydroelastic_user_guide,
+@ref friction_model and subsections therein. */
 struct DefaultProximityProperties {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
@@ -54,12 +51,19 @@ struct DefaultProximityProperties {
   std::optional<double> hydroelastic_modulus{1e7};
 
   /** Controls how finely primitive geometries are tessellated, units of
-  meters. */
-  std::optional<double> resolution_hint{0.5};
+  meters.
+
+  While no single value is universally appropriate, this value was selected
+  based on the following idea. We're attempting to make introducing novel
+  manipulands as easy as possible. Considering a simple soup can as a
+  representative manipuland, we've picked a value that would result in a
+  tessellated cylinder with enough faces to be appropriate for contact with
+  a compliant gripper. */
+  std::optional<double> resolution_hint{0.02};
 
   /** For a halfspace, the thickness of compliant material to model, in units
   of meters. */
-  std::optional<double> slab_thickness{10.0};
+  std::optional<double> slab_thickness;
   /// @}
 
   /** @name General Contact Properties
@@ -87,8 +91,10 @@ struct DefaultProximityProperties {
 
   /** @name Point Contact Properties
 
-  These properties point contact only. For complete descriptions of
-  the numeric parameters, @see geometry::AddContactMaterial. */
+  These properties affect point contact only. For complete descriptions of
+  the numeric parameters, See
+  @ref point_forces_modeling "Compliant Point Contact Forces",
+  geometry::AddContactMaterial. */
   /// @{
   /** A measure of material stiffness, in units of Newtons per meter. */
   std::optional<double> point_stiffness;
@@ -98,8 +104,7 @@ struct DefaultProximityProperties {
   void ValidateOrThrow() const;
 };
 
-// TODO(rpoyner-tri): document SceneGraph integration when ready.
-/** (FUTURE) The set of configurable properties on a SceneGraph. */
+/** The set of configurable properties on a SceneGraph. */
 struct SceneGraphConfig {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
@@ -108,7 +113,6 @@ struct SceneGraphConfig {
     a->Visit(DRAKE_NVP(default_proximity_properties));
   }
 
-  // TODO(rpoyner-tri): ref hydro user quick start doc when available.
   /** Provides SceneGraph-wide contact material values to use when none have
   been otherwise specified. */
   DefaultProximityProperties default_proximity_properties;

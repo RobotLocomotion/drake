@@ -10,6 +10,7 @@ libjchart2d-java
 liblapack3
 libmumps-seq-5.6
 libopengl0
+libquadmath0
 libpython3.12
 libspdlog-dev
 libx11-6

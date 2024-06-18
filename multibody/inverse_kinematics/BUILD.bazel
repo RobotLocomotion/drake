@@ -173,6 +173,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//manipulation/kuka_iiwa:iiwa_constants",
         "//multibody/parsing",
+        "//solvers:osqp_solver",
     ],
 )
 

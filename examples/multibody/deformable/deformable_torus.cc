@@ -248,8 +248,6 @@ int do_main() {
     owned_deformable_model->AddExternalForce(std::move(suction_force));
   }
 
-  const DeformableModel<double>* deformable_model =
-      owned_deformable_model.get();
   plant.AddPhysicalModel(std::move(owned_deformable_model));
 
   /* All rigid and deformable models have been added. Finalize the plant. */
@@ -259,7 +257,7 @@ int do_main() {
    the source configuration port in SceneGraph when deformable bodies are
    present in the plant. */
   builder.Connect(
-      deformable_model->vertex_positions_port(),
+      plant.get_deformable_body_configuration_output_port(),
       scene_graph.get_source_configuration_port(plant.get_source_id().value()));
 
   /* Add a visualizer that emits LCM messages for visualization. */

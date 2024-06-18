@@ -7,6 +7,4 @@ build:clang --action_env=CXX=clang++-15
 build:clang --host_action_env=CC=clang-15
 build:clang --host_action_env=CXX=clang++-15
 
-# In CI (but only in CI), we want to test the opt-in USD build support.
-# TODO(jwnimmer-tri) We should try to enable USD by default on all platforms.
-build:everything --define=WITH_USD=ON
+build --define=UBUNTU_VERSION=24.04

@@ -101,6 +101,8 @@ class MatrixBlock {
    testing. */
   MatrixX<T> MakeDenseMatrix() const;
 
+  bool operator==(const MatrixBlock<T>&) const = default;
+
  private:
   friend MatrixBlock<T> StackMatrixBlocks<T>(
       const std::vector<MatrixBlock<T>>& blocks);

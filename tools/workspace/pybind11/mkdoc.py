@@ -49,9 +49,8 @@ import sys
 from clang import cindex
 from clang.cindex import AccessSpecifier, CursorKind, TypeKind
 
-from drake.tools.workspace.pybind11.mkdoc_comment import process_comment
-
-from drake.tools.workspace.pybind11.libclang_setup import add_library_paths
+from tools.workspace.pybind11.libclang_setup import add_library_paths
+from tools.workspace.pybind11.mkdoc_comment import process_comment
 
 
 CLASS_KINDS = [

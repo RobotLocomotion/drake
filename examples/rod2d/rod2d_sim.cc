@@ -44,11 +44,11 @@ int main(int argc, char* argv[]) {
   // Create the rod and add it to the diagram.
   Rod2D* rod;
   if (FLAGS_system_type == "discretized") {
-    rod = builder.template AddSystem<Rod2D>(
-        Rod2D::SystemType::kDiscretized, FLAGS_dt);
+    rod = builder.template AddSystem<Rod2D>(Rod2D::SystemType::kDiscretized,
+                                            FLAGS_dt);
   } else if (FLAGS_system_type == "continuous") {
-    rod = builder.template AddSystem<Rod2D>(Rod2D::SystemType::kContinuous,
-                                            0.0);
+    rod =
+        builder.template AddSystem<Rod2D>(Rod2D::SystemType::kContinuous, 0.0);
   } else {
     std::cerr << "Invalid simulation type '" << FLAGS_system_type
               << "'; note that types are case sensitive." << std::endl;

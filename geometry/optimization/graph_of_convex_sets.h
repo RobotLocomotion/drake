@@ -131,6 +131,7 @@ constraints.  The users should be able to write constraints against
 "placeholder" decision variables on the vertices and edges, but these get
 translated in non-trivial ways to the underlying program.
 
+@anchor nonconvex_graph_of_convex_sets
 <b>Advanced Usage: Guiding Non-convex Optimization with the
 %GraphOfConvexSets</b>
 

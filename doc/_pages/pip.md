@@ -52,7 +52,7 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Wheel packages for Ubuntu 22.04 (Jammy) and macOS are
+Wheel packages for Ubuntu 22.04 (Jammy), Ubuntu 24.04 (Noble), and macOS are
 published nightly at a [PEP 503](https://peps.python.org/pep-0503/) index url
 [https://drake-packages.csail.mit.edu/whl/nightly/](https://drake-packages.csail.mit.edu/whl/nightly/).
 

@@ -2,11 +2,11 @@
 
 #include <memory>
 
+#include "drake/examples/acrobot/acrobot_input.h"
+#include "drake/examples/acrobot/acrobot_params.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/gen/acrobot_input.h"
-#include "drake/examples/acrobot/gen/acrobot_params.h"
-#include "drake/examples/acrobot/gen/acrobot_state.h"
-#include "drake/examples/acrobot/gen/spong_controller_params.h"
+#include "drake/examples/acrobot/acrobot_state.h"
+#include "drake/examples/acrobot/spong_controller_params.h"
 #include "drake/math/wrap_to.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/leaf_system.h"

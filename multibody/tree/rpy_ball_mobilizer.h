@@ -35,7 +35,7 @@ namespace internal {
 // where Rx(θ), Ry(θ) and Rz(θ) correspond to the elemental rotations in amount
 // of θ about the Fx, Fy and Fz axes respectively. Zero θ₀, θ₁, θ₂ angles define
 // the "zero configuration" which corresponds to frames F and M being
-// coincident, see set_zero_state(). Angles θ₀, θ₁, θ₂ are defined to be
+// coincident, see SetZeroState(). Angles θ₀, θ₁, θ₂ are defined to be
 // positive according to the right-hand-rule with the thumb aligned in the
 // direction of their respective axes.
 //
@@ -105,7 +105,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   //   θ₂, described in this class's documentation, at entries angles(0),
   //   angles(1) and angles(2), respectively.
   // @returns a constant reference to this mobilizer.
-  const RpyBallMobilizer<T>& set_angles(
+  const RpyBallMobilizer<T>& SetAngles(
       systems::Context<T>* context,
       const Vector3<T>& angles) const;
 
@@ -141,7 +141,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   //   A vector in ℝ³ with the desired angular velocity of the outboard frame M
   //   in the inboard frame F, expressed in F.
   // @returns a constant reference to this mobilizer.
-  const RpyBallMobilizer<T>& set_angular_velocity(
+  const RpyBallMobilizer<T>& SetAngularVelocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const;
 
   // Stores in state the angular velocity w_FM of the outboard frame
@@ -156,7 +156,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   //   A vector in ℝ³ with the desired angular velocity of the outboard frame M
   //   in the inboard frame F, expressed in F.
   // @returns a constant reference to this mobilizer.
-  const RpyBallMobilizer<T>& set_angular_velocity(
+  const RpyBallMobilizer<T>& SetAngularVelocity(
       const systems::Context<T>& context, const Vector3<T>& w_FM,
       systems::State<T>* state) const;
 

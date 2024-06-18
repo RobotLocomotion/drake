@@ -259,6 +259,21 @@ class DifferentialInverseKinematicsParameters {
    */
   void ClearLinearVelocityConstraints();
 
+  /**
+   * Provides const access to read the solver options.
+   */
+  const solvers::SolverOptions& get_solver_options() const {
+    return solver_options_;
+  }
+
+  /**
+   * Provides mutable access to change the solver options, e.g., to tune for
+   * speed vs accuracy.
+   */
+  solvers::SolverOptions& get_mutable_solver_options() {
+    return solver_options_;
+  }
+
  private:
   int num_positions_{0};
   int num_velocities_{0};
@@ -276,6 +291,7 @@ class DifferentialInverseKinematicsParameters {
       translational_velocity_bounds_{};
   std::vector<std::shared_ptr<solvers::LinearConstraint>>
       linear_velocity_constraints_;
+  solvers::SolverOptions solver_options_;
 };
 
 /**

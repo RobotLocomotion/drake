@@ -32,7 +32,7 @@ namespace internal {
 // amount of θ about the Fx, Fy and Fz axes respectively. Refer to
 // math::RollPitchYaw for further details on this representation. Zero θ₀, θ₁,
 // θ₂ angles and zero position p_FM define the "zero configuration" which
-// corresponds to frames F and M being coincident, see set_zero_state(). Angles
+// corresponds to frames F and M being coincident, see SetZeroState(). Angles
 // θ₀, θ₁, θ₂ are defined to be positive according to the right-hand-rule with
 // the thumb aligned in the direction of their respective axes.
 //
@@ -152,7 +152,7 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   //   θ₀, θ₁, θ₂, described in this class's documentation, at entries
   //   angles(0), angles(1) and angles(2), respectively.
   // @returns a constant reference to this mobilizer.
-  const RpyFloatingMobilizer<T>& set_angles(
+  const RpyFloatingMobilizer<T>& SetAngles(
       systems::Context<T>* context, const Vector3<T>& angles) const;
 
   // Stores in context the position p_FM of M in F.
@@ -162,7 +162,7 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // @param[in] p_FM
   //   Position of F in M.
   // @returns a constant reference to this mobilizer.
-  const RpyFloatingMobilizer<T>& set_translation(
+  const RpyFloatingMobilizer<T>& SetTranslation(
       systems::Context<T>* context, const Vector3<T>& p_FM) const;
 
   // Sets the distribution governing the random samples of the rpy angles
@@ -183,7 +183,7 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   //   A vector in ℝ³ with the desired angular velocity of the outboard frame M
   //   in the inboard frame F, expressed in F.
   // @returns a constant reference to this mobilizer.
-  const RpyFloatingMobilizer<T>& set_angular_velocity(
+  const RpyFloatingMobilizer<T>& SetAngularVelocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const;
 
   // Stores in context the translational velocity v_FM of M in F.
@@ -193,7 +193,7 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // @param[in] v_FM
   //   Translational velocity of F in M.
   // @returns a constant reference to this mobilizer.
-  const RpyFloatingMobilizer<T>& set_translational_velocity(
+  const RpyFloatingMobilizer<T>& SetTranslationalVelocity(
       systems::Context<T>* context, const Vector3<T>& v_FM) const;
 
   // Sets context so this mobilizer's generalized coordinates (roll-pitch-yaw

@@ -117,13 +117,6 @@ TEST_F(UniversalJointTest, GetJointLimits) {
 TEST_F(UniversalJointTest, Damping) {
   EXPECT_EQ(joint_->default_damping(), kDamping);
   EXPECT_EQ(joint_->default_damping_vector(), Vector2d::Constant(kDamping));
-
-  // Ensure the deprecated versions are correct until removal.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(joint_->damping(), kDamping);
-  EXPECT_EQ(joint_->damping_vector(), Vector2d::Constant(kDamping));
-#pragma GCC diagnostic pop
 }
 
 // Context-dependent value access.

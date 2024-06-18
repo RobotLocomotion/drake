@@ -115,6 +115,9 @@ drake_jupyter_py_binary(
         "@drake_models//:dishes",
         "@drake_models//:veggies",
     ],
+    # TODO(#21380) Revisit timeout value when deferred reification is
+    # implemented.
+    test_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
@@ -162,6 +165,14 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "multibody_plant_autodiff_mass",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "custom_gradients",
     add_test_rule = 1,
     deps = [
         "//bindings/pydrake",

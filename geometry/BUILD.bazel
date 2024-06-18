@@ -50,7 +50,6 @@ drake_cc_package_library(
         ":scene_graph_config",
         ":scene_graph_inspector",
         ":shape_specification",
-        ":shape_to_string",
         ":utilities",
     ],
 )
@@ -328,6 +327,7 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_state",
+        ":scene_graph_config",
         ":scene_graph_inspector",
         "//common:essential",
         "//common:nice_type_name",
@@ -403,16 +403,6 @@ drake_cc_library(
         "//geometry/proximity:make_convex_hull_mesh_impl",
         "//geometry/proximity:meshing_utilities",
         "//geometry/proximity:obj_to_surface_mesh",
-    ],
-)
-
-drake_cc_library(
-    name = "shape_to_string",
-    srcs = ["shape_to_string.cc"],
-    hdrs = ["shape_to_string.h"],
-    deps = [
-        ":shape_specification",
-        "@fmt",
     ],
 )
 
@@ -710,7 +700,7 @@ drake_cc_library(
         "//common:essential",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//math:geometric_transform",
-        "//systems/analysis:instantaneous_realtime_rate_calculator",
+        "//systems/analysis:realtime_rate_calculator",
         "//systems/framework:context",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
@@ -984,6 +974,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scene_graph_test",
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
     deps = [
         ":scene_graph",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1040,14 +1034,6 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common:overloaded",
         "//common/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "shape_to_string_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":shape_to_string",
     ],
 )
 

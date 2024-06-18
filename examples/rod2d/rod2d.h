@@ -4,9 +4,9 @@
 #include <utility>
 #include <vector>
 
-#include "drake/examples/rod2d/gen/rod2d_state_vector.h"
-#include "drake/multibody/constraint/constraint_problem_data.h"
-#include "drake/multibody/constraint/constraint_solver.h"
+#include "drake/examples/rod2d/constraint_problem_data.h"
+#include "drake/examples/rod2d/constraint_solver.h"
+#include "drake/examples/rod2d/rod2d_state_vector.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -202,8 +202,7 @@ class Rod2D : public systems::LeafSystem<T> {
         context.get_continuous_state_vector());
   }
 
-  static Rod2dStateVector<T>& get_mutable_state(
-      systems::Context<T>* context) {
+  static Rod2dStateVector<T>& get_mutable_state(systems::Context<T>* context) {
     return dynamic_cast<Rod2dStateVector<T>&>(
         context->get_mutable_continuous_state_vector());
   }
@@ -219,7 +218,7 @@ class Rod2D : public systems::LeafSystem<T> {
     // the characteristic deformation: the system will behave like a harmonic
     // oscillator oscillating about x = `characteristic_deformation` meters.
     return dissipation_ * 1.5 * stiffness_ * characteristic_deformation *
-        half_length_;
+           half_length_;
   }
 
   /// Transforms damping (b) to dissipation (α) , given a characteristic
@@ -228,24 +227,23 @@ class Rod2D : public systems::LeafSystem<T> {
       double characteristic_deformation, double b) const {
     // See documentation for TransformDissipationToDampingAboutDeformation()
     // for explanation of this formula.
-    return b / (1.5 * stiffness_ * characteristic_deformation *
-        half_length_);
+    return b / (1.5 * stiffness_ * characteristic_deformation * half_length_);
   }
 
   /// Gets the constraint force mixing parameter (CFM, used for discretized
   /// systems only), which should lie in the interval [0, infinity].
   double get_cfm() const {
     return 1.0 /
-        (stiffness_ * dt_ + TransformDissipationToDampingAboutDeformation(
-        kCharacteristicDeformation));
+           (stiffness_ * dt_ + TransformDissipationToDampingAboutDeformation(
+                                   kCharacteristicDeformation));
   }
 
   /// Gets the error reduction parameter (ERP, used for discretized
   /// systems only), which should lie in the interval [0, 1].
   double get_erp() const {
-    return dt_ * stiffness_ / (stiffness_ * dt_ +
-        TransformDissipationToDampingAboutDeformation(
-        kCharacteristicDeformation));
+    return dt_ * stiffness_ /
+           (stiffness_ * dt_ + TransformDissipationToDampingAboutDeformation(
+                                   kCharacteristicDeformation));
   }
 
   /// Gets the generalized position of the rod, given a Context. The first two
@@ -253,8 +251,10 @@ class Rod2D : public systems::LeafSystem<T> {
   /// in the global frame. The third component represents the orientation of
   /// the rod, measured counter-clockwise with respect to the x-axis.
   Vector3<T> GetRodConfig(const systems::Context<T>& context) const {
-    return context.get_state().
-        get_continuous_state().get_generalized_position().CopyToVector();
+    return context.get_state()
+        .get_continuous_state()
+        .get_generalized_position()
+        .CopyToVector();
   }
 
   /// Gets the generalized velocity of the rod, given a Context. The first
@@ -262,8 +262,10 @@ class Rod2D : public systems::LeafSystem<T> {
   /// center-of-mass. The third component represents the angular velocity of
   /// the rod.
   Vector3<T> GetRodVelocity(const systems::Context<T>& context) const {
-    return context.get_state().
-        get_continuous_state().get_generalized_velocity().CopyToVector();
+    return context.get_state()
+        .get_continuous_state()
+        .get_generalized_velocity()
+        .CopyToVector();
   }
 
   /// Gets the acceleration (with respect to the positive y-axis) due to
@@ -326,8 +328,7 @@ class Rod2D : public systems::LeafSystem<T> {
     const double k = erp / (cfm * dt_);
     const double b = (1 - erp) / cfm;
     set_stiffness(k);
-    set_dissipation(
-        TransformDampingToDissipationAboutDeformation(
+    set_dissipation(TransformDampingToDissipationAboutDeformation(
         kCharacteristicDeformation, b));
   }
 
@@ -342,7 +343,7 @@ class Rod2D : public systems::LeafSystem<T> {
   }
 
   /// Get the stiction speed tolerance (m/s).
-  double get_stiction_speed_tolerance() const {return v_stick_tol_;}
+  double get_stiction_speed_tolerance() const { return v_stick_tol_; }
 
   /// Set the stiction speed tolerance (m/s). This is the maximum slip
   /// speed that we are willing to consider as sticking. For a given normal
@@ -462,9 +463,9 @@ class Rod2D : public systems::LeafSystem<T> {
   ///         This function aborts if @p vels is null. @p vels will be resized
   ///         appropriately (to the same number of elements as @p points) on
   ///         return.
-  void GetContactPointsTangentVelocities(
-      const systems::Context<T>& context,
-      const std::vector<Vector2<T>>& points, std::vector<T>* vels) const;
+  void GetContactPointsTangentVelocities(const systems::Context<T>& context,
+                                         const std::vector<Vector2<T>>& points,
+                                         std::vector<T>* vels) const;
 
   /// Initializes the contact data for the rod, given a set of contact points.
   /// Aborts if data is null or if `points.size() != tangent_vels.size()`.
@@ -473,26 +474,24 @@ class Rod2D : public systems::LeafSystem<T> {
   ///        measured along the positive x-axis.
   /// @param[out] data the rigid contact problem data.
   void CalcConstraintProblemData(const systems::Context<T>& context,
-                                   const std::vector<Vector2<T>>& points,
-                                   const std::vector<T>& tangent_vels,
-    multibody::constraint::ConstraintAccelProblemData<T>* data) const;
+                                 const std::vector<Vector2<T>>& points,
+                                 const std::vector<T>& tangent_vels,
+                                 ConstraintAccelProblemData<T>* data) const;
 
   /// Initializes the impacting contact data for the rod, given a set of contact
   /// points. Aborts if data is null.
   /// @param points a vector of contact points, expressed in the world frame.
   /// @param[out] data the rigid impact problem data.
-  void CalcImpactProblemData(
-      const systems::Context<T>& context,
-      const std::vector<Vector2<T>>& points,
-      multibody::constraint::ConstraintVelProblemData<T>* data) const;
+  void CalcImpactProblemData(const systems::Context<T>& context,
+                             const std::vector<Vector2<T>>& points,
+                             ConstraintVelProblemData<T>* data) const;
 
  private:
   friend class Rod2DDAETest;
   friend class Rod2DDAETest_RigidContactProblemDataBallistic_Test;
 
   Vector3<T> GetJacobianRow(const systems::Context<T>& context,
-                            const Vector2<T>& p,
-                            const Vector2<T>& dir) const;
+                            const Vector2<T>& p, const Vector2<T>& dir) const;
   Vector3<T> GetJacobianDotRow(const systems::Context<T>& context,
                                const Vector2<T>& p,
                                const Vector2<T>& dir) const;
@@ -501,33 +500,31 @@ class Rod2D : public systems::LeafSystem<T> {
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
   int get_k(const systems::Context<T>& context) const;
-  void DoCalcTimeDerivatives(const systems::Context<T>& context,
-                             systems::ContinuousState<T>* derivatives)
-                               const override;
-  void CalcDiscreteUpdate(
+  void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
-      systems::DiscreteValues<T>* discrete_state) const;
+      systems::ContinuousState<T>* derivatives) const override;
+  void CalcDiscreteUpdate(const systems::Context<T>& context,
+                          systems::DiscreteValues<T>* discrete_state) const;
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
   Vector3<T> ComputeExternalForces(const systems::Context<T>& context) const;
   Matrix3<T> GetInverseInertiaMatrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
-                                    Vector2<T>* fN, Vector2<T>* fF) const;
+                                     Vector2<T>* fN, Vector2<T>* fF) const;
   void CalcTwoContactSlidingForces(const systems::Context<T>& context,
-                                    Vector2<T>* fN, Vector2<T>* fF) const;
-  Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
-    const;
+                                   Vector2<T>* fN, Vector2<T>* fF) const;
+  Vector2<T> CalcStickingImpactImpulse(
+      const systems::Context<T>& context) const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
   void CalcAccelerationsCompliantContactAndBallistic(
-                                  const systems::Context<T>& context,
-                                  systems::ContinuousState<T>* derivatives)
-                                    const;
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const;
 
   // 2D cross product returns a scalar. This is the z component of the 3D
   // cross product [ax ay 0] × [bx by 0]; the x,y components are zero.
   static T cross2(const Vector2<T>& a, const Vector2<T>& b) {
-    return a[0]*b[1] - b[0]*a[1];
+    return a[0] * b[1] - b[0] * a[1];
   }
 
   // Calculates the cross product [0 0 ω] × [rx ry 0] and returns the first
@@ -543,7 +540,7 @@ class Rod2D : public systems::LeafSystem<T> {
   static T CalcMuStribeck(const T& us, const T& ud, const T& v);
 
   // The constraint solver.
-  multibody::constraint::ConstraintSolver<T> solver_;
+  ConstraintSolver<T> solver_;
 
   // Solves linear complementarity problems for the discretized system.
   solvers::MobyLCPSolver<T> lcp_;

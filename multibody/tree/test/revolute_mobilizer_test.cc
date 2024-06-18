@@ -58,16 +58,16 @@ TEST_F(RevoluteMobilizerTest, StateAccess) {
   const double some_value1 = 1.5;
   const double some_value2 = std::sqrt(2);
   // Verify we can set a revolute mobilizer position given the model's context.
-  mobilizer_->set_angle(context_.get(), some_value1);
+  mobilizer_->SetAngle(context_.get(), some_value1);
   EXPECT_EQ(mobilizer_->get_angle(*context_), some_value1);
-  mobilizer_->set_angle(context_.get(), some_value2);
+  mobilizer_->SetAngle(context_.get(), some_value2);
   EXPECT_EQ(mobilizer_->get_angle(*context_), some_value2);
 
   // Verify we can set a revolute mobilizer position rate given the model's
   // context.
-  mobilizer_->set_angular_rate(context_.get(), some_value1);
+  mobilizer_->SetAngularRate(context_.get(), some_value1);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), some_value1);
-  mobilizer_->set_angular_rate(context_.get(), some_value2);
+  mobilizer_->SetAngularRate(context_.get(), some_value2);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), some_value2);
 }
 
@@ -75,14 +75,14 @@ TEST_F(RevoluteMobilizerTest, ZeroState) {
   const double some_value1 = 1.5;
   const double some_value2 = std::sqrt(2);
   // Set the state to some arbitrary non-zero value.
-  mobilizer_->set_angle(context_.get(), some_value1);
+  mobilizer_->SetAngle(context_.get(), some_value1);
   EXPECT_EQ(mobilizer_->get_angle(*context_), some_value1);
-  mobilizer_->set_angular_rate(context_.get(), some_value2);
+  mobilizer_->SetAngularRate(context_.get(), some_value2);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), some_value2);
 
   // Set the "zero state" for this mobilizer, which does happen to be that of
   // zero position and velocity.
-  mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
+  mobilizer_->SetZeroState(*context_, &context_->get_mutable_state());
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
 }
@@ -139,7 +139,7 @@ TEST_F(RevoluteMobilizerTest, RandomState) {
 
 TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
   const double angle = 1.5;
-  mobilizer_->set_angle(context_.get(), angle);
+  mobilizer_->SetAngle(context_.get(), angle);
   const RigidTransformd X_FM(
       mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
@@ -228,7 +228,7 @@ TEST_F(RevoluteMobilizerTest, KinematicMapping) {
 
 TEST_F(RevoluteMobilizerTest, MapUsesN) {
   // Set an arbitrary "non-zero" state.
-  mobilizer_->set_angle(context_.get(), 1.5);
+  mobilizer_->SetAngle(context_.get(), 1.5);
 
   // Set arbitrary v and MapVelocityToQDot
   Vector1d v(2.5);
@@ -245,7 +245,7 @@ TEST_F(RevoluteMobilizerTest, MapUsesN) {
 
 TEST_F(RevoluteMobilizerTest, MapUsesNplus) {
   // Set an arbitrary "non-zero" state.
-  mobilizer_->set_angle(context_.get(), 1.5);
+  mobilizer_->SetAngle(context_.get(), 1.5);
 
   // Set arbitrary qdot and MapQDotToVelocity
   Vector1d qdot(2.5);

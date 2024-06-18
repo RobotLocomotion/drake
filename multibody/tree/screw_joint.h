@@ -128,9 +128,6 @@ class ScrewJoint final : public Joint<T> {
   /// child body B expressed in frame F as t_B_F = τ⋅Fâ_F.
   double default_damping() const { return this->default_damping_vector()[0]; }
 
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
-  double damping() const { return this->default_damping_vector()[0]; }
-
   /// @name Context-dependent value access
   /// @{
 
@@ -151,7 +148,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_translation(Context<T>* context,
                                        const T& z) const {
-    get_mobilizer()->set_translation(context, z);
+    get_mobilizer()->SetTranslation(context, z);
     return *this;
   }
 
@@ -172,7 +169,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_rotation(systems::Context<T>* context,
                                      const T& theta) const {
-    get_mobilizer()->set_angle(context, theta);
+    get_mobilizer()->SetAngle(context, theta);
     return *this;
   }
 
@@ -194,7 +191,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const T& vz) const {
-    get_mobilizer()->set_translation_rate(context, vz);
+    get_mobilizer()->SetTranslationRate(context, vz);
     return *this;
   }
 
@@ -219,7 +216,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_angular_velocity(systems::Context<T>* context,
                                              const T& theta_dot) const {
-    get_mobilizer()->set_angular_rate(context, theta_dot);
+    get_mobilizer()->SetAngularRate(context, theta_dot);
     return *this;
   }
 

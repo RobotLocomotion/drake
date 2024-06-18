@@ -93,7 +93,7 @@ Vector3<T> RpyFloatingMobilizer<T>::get_translational_velocity(
 }
 
 template <typename T>
-const RpyFloatingMobilizer<T>& RpyFloatingMobilizer<T>::set_angles(
+const RpyFloatingMobilizer<T>& RpyFloatingMobilizer<T>::SetAngles(
     systems::Context<T>* context, const Vector3<T>& angles) const {
   auto q = this->GetMutablePositions(context).template head<3>();
   q = angles;
@@ -102,8 +102,8 @@ const RpyFloatingMobilizer<T>& RpyFloatingMobilizer<T>::set_angles(
 
 template <typename T>
 const RpyFloatingMobilizer<T>&
-RpyFloatingMobilizer<T>::set_translation(systems::Context<T>* context,
-                                         const Vector3<T>& p_FM) const {
+RpyFloatingMobilizer<T>::SetTranslation(systems::Context<T>* context,
+                                        const Vector3<T>& p_FM) const {
   auto q = this->GetMutablePositions(context).template tail<3>();
   q = p_FM;
   return *this;
@@ -111,7 +111,7 @@ RpyFloatingMobilizer<T>::set_translation(systems::Context<T>* context,
 
 template <typename T>
 const RpyFloatingMobilizer<T>&
-RpyFloatingMobilizer<T>::set_angular_velocity(
+RpyFloatingMobilizer<T>::SetAngularVelocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
   auto v = this->GetMutableVelocities(context).template head<3>();
   v = w_FM;
@@ -120,7 +120,7 @@ RpyFloatingMobilizer<T>::set_angular_velocity(
 
 template <typename T>
 const RpyFloatingMobilizer<T>&
-RpyFloatingMobilizer<T>::set_translational_velocity(
+RpyFloatingMobilizer<T>::SetTranslationalVelocity(
     systems::Context<T>* context, const Vector3<T>& v_FM) const {
   auto v = this->GetMutableVelocities(context).template tail<3>();
   v = v_FM;
@@ -131,8 +131,8 @@ template <typename T>
 const RpyFloatingMobilizer<T>&
 RpyFloatingMobilizer<T>::SetFromRigidTransform(
     systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
-  set_angles(context, math::RollPitchYaw<T>(X_FM.rotation()).vector());
-  set_translation(context, X_FM.translation());
+  SetAngles(context, math::RollPitchYaw<T>(X_FM.rotation()).vector());
+  SetTranslation(context, X_FM.translation());
   return *this;
 }
 

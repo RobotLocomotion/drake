@@ -1,8 +1,6 @@
 load("//tools/workspace:pkg_config.bzl", "pkg_config_repository")
 
 def openblas_repository(name):
-    # Note that @openblas is typically only available on macOS.
-    # See drake/tools/workspace/blas for the OS-specific selection policy.
     pkg_config_repository(
         name = name,
         licenses = ["notice"],  # BSD-3-Clause
@@ -13,4 +11,5 @@ def openblas_repository(name):
             "/opt/homebrew/opt/openblas/lib/pkgconfig",
             "/usr/local/opt/openblas/lib/pkgconfig",
         ],
+        extra_deprecation = "The @openblas external is deprecated in Drake's WORKSPACE and will be removed on or after 2024-09-01.",  # noqa
     )

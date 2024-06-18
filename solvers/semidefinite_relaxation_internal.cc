@@ -527,7 +527,7 @@ void DoAddMatrixIsLorentzByLorentzSeparableConstraint(
 }  // namespace
 
 void AddMatrixIsLorentzByLorentzSeparableConstraint(
-    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X,
+    const Eigen::Ref<const MatrixX<Variable>>& X,
     MathematicalProgram* prog) {
   if (std::min(X.rows(), X.cols()) <= 2) {
     DoAddMatrixIsLorentzByLorentzSeparableConstraintSimplicialCase(X, prog);

@@ -133,6 +133,7 @@ struct WeldConstraintSpec {
 // @pre each entry in `vertices` refers to a valid vertex index in deformable
 // body A.
 struct DeformableRigidFixedConstraintSpec {
+  bool operator==(const DeformableRigidFixedConstraintSpec&) const = default;
   DeformableBodyId body_A;    // Index of the deformable body A.
   BodyIndex body_B;           // Index of the rigid body B.
   std::vector<int> vertices;  // Indices of the Pᵢ in the deformable body A.

@@ -16,14 +16,21 @@ namespace math {
  * @param zero_tol We will need to check if some value (for example, the
  * absolute value of Y's eigenvalues) is smaller than zero_tol. If it is, then
  * we deem that value as 0.
+ * @param return_empty_if_not_psd If true, then return an empty matrix of size
+ * 0-by-Y.cols() if Y is not PSD (either the decomposition fails or the
+ * resulting eigenvalues are less that @p zero_tol). If false (the default),
+ * then throw an exception if Y is not PSD.  This option is particularly useful
+ * because it is brittle/expensive to test the exact success criteria before
+ * calling this function.
  * @retval X. The matrix X satisfies XᵀX = Y and X.rows() = rank(Y).
- * @pre 1. Y is positive semidefinite.
+ * @pre 1. Y is positive semidefinite or return_empty_if_not_psd = true.
  *      2. zero_tol is non-negative.
  * @throws std::exception when the pre-conditions are not satisfied.
  * @note We only use the lower triangular part of Y.
  */
 Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
-    const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol);
+    const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol,
+    bool return_empty_if_not_psd = false);
 
 /**
  * Rewrite a quadratic form xᵀQx + bᵀx + c to

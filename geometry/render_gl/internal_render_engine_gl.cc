@@ -21,6 +21,7 @@ namespace geometry {
 namespace render_gl {
 namespace internal {
 
+using Eigen::Matrix4f;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::internal::LoadRenderMeshesFromObj;
@@ -263,25 +264,8 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
 
   void DoSetModelViewMatrix(const Eigen::Matrix4f& X_CW,
                             const Eigen::Matrix4f& T_WM,
-                            const Eigen::Matrix4f& X_WG,
-                            const Vector3d& scale) const override {
-    // For lighting, we need the normal and position of a fragment in the world
-    // frame. The pose of the fragment (from its corresponding vertices) comes
-    // simply from T_WM. But the normals require a different transform:
-    //
-    //   1. No translation.
-    //   2. Same rotation as vertex positions.
-    //   3. *Inverse* scale as vertex positions.
-    //
-    // If the scale isn't identity, the normal may not be unit length. We rely
-    // on the shader to normalize the scaled normals.
-    // This is the quantity historically referred to as gl_NormalMatrix
-    // (available to glsl in the "compatibility profile"). See
-    // https://www.cs.upc.edu/~robert/teaching/idi/GLSLangSpec.4.50.pdf.
-    const Eigen::DiagonalMatrix<float, 3, 3> S_GM_normal(
-        Vector3<float>(1.0 / scale(0), 1.0 / scale(1), 1.0 / scale(2)));
-    const Eigen::Matrix3f X_WM_Normal = X_WG.block<3, 3>(0, 0) * S_GM_normal;
-    glUniformMatrix3fv(T_WM_normals_loc_, 1, GL_FALSE, X_WM_Normal.data());
+                            const Eigen::Matrix3f& N_WM) const override {
+    glUniformMatrix3fv(T_WM_normals_loc_, 1, GL_FALSE, N_WM.data());
     glUniformMatrix4fv(T_WM_loc_, 1, GL_FALSE, T_WM.data());
 
     Eigen::Matrix4f X_WC = Eigen::Matrix4f::Identity();
@@ -902,12 +886,10 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
 
 void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
                                         const RigidTransformd& X_WG) {
-  for (auto& part : visuals_.at(id).parts) {
-    if (part.T_GN.has_value()) {
-      part.instance.X_WG = X_WG * part.T_GN.value();
-    } else {
-      part.instance.X_WG = X_WG;
-    }
+  const auto X_WG_f = X_WG.cast<float>();
+  for (auto& instance : visuals_.at(id).instances) {
+    instance.T_WN = X_WG_f.GetAsMatrix4() * instance.T_GN;
+    instance.N_WN = X_WG_f.rotation().matrix() * instance.N_GN;
   }
 }
 
@@ -947,7 +929,7 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
   // Now remove the instances associated with the id (stored in visuals_).
   auto iter = visuals_.find(id);
   if (iter != visuals_.end()) {
-    // Multiple parts may have the same shader. We don't want to attempt
+    // Multiple instances may have the same shader. We don't want to attempt
     // removing the geometry id from the corresponding family redundantly.
     std::unordered_set<ShaderId> visited_families;
     // Remove from the shader families to which it belongs!
@@ -963,8 +945,7 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
           auto num_removed = geometries.erase(g_id);
           DRAKE_DEMAND(num_removed == 1);
         };
-    for (const auto& part : iter->second.parts) {
-      const OpenGlInstance& instance = part.instance;
+    for (const auto& instance : iter->second.instances) {
       maybe_remove_from_family(id, instance.shader_data, RenderType::kColor);
       maybe_remove_from_family(id, instance.shader_data, RenderType::kDepth);
       maybe_remove_from_family(id, instance.shader_data, RenderType::kLabel);
@@ -984,6 +965,15 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
     OpenGlContext::ClearCurrent();
   });
   clone->opengl_context_->MakeCurrent();
+
+  // Note: changes in graphics drivers have led to artifacts where frame buffers
+  // are not necessarily shared across contexts. So, to be safe, we'll clear
+  // the clone's frame buffers (it will recreate them as needed). This should
+  // also benefit parallel rendering as two clones will no longer attempt to
+  // render to the same render targets.
+  for (auto& buffer : clone->frame_buffers_) {
+    buffer.clear();
+  }
 
   clone->InitGlState();
 
@@ -1017,8 +1007,7 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
 
   for (const GeometryId& g_id :
        shader_families_.at(render_type).at(shader_program.shader_id())) {
-    for (const auto& part : visuals_.at(g_id).parts) {
-      const OpenGlInstance& instance = part.instance;
+    for (const auto& instance : visuals_.at(g_id).instances) {
       if (instance.shader_data.at(render_type).shader_id() !=
           shader_program.shader_id()) {
         continue;
@@ -1027,15 +1016,9 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
       glBindVertexArray(geometry.vertex_array);
 
       shader_program.SetInstanceParameters(instance.shader_data[render_type]);
-      // TODO(SeanCurtis-TRI): Consider storing the float-valued pose in the
-      //  OpenGl instance to avoid the conversion every time it is rendered.
-      //  Generally, this wouldn't expect much savings; an instance is only
-      //  rendered once per image type. So, for three image types, I'd cast
-      //  three times. Stored, I'd cast once.
-      shader_program.SetModelViewMatrix(X_CW, instance.X_WG, instance.scale);
+      shader_program.SetModelViewMatrix(X_CW, instance.T_WN, instance.N_WN);
 
-      glDrawElements(GL_TRIANGLES, geometry.index_buffer_size, GL_UNSIGNED_INT,
-                     0);
+      glDrawElements(geometry.mode, geometry.index_count, geometry.type, 0);
     }
   }
   // Unbind the vertex array back to the default of 0.
@@ -1173,10 +1156,13 @@ void RenderEngineGl::AddGeometryInstance(int geometry_index, void* user_data,
   DRAKE_DEMAND(color_data.has_value() && depth_data.has_value() &&
                label_data.has_value());
 
-  visuals_[data.id].parts.push_back(
-      {.instance = OpenGlInstance(geometry_index, data.X_WG, scale, *color_data,
-                                  *depth_data, *label_data),
-       .T_GN = std::nullopt});
+  visuals_[data.id].instances.push_back(
+      {geometry_index, scale.cast<float>(), geometries_.at(geometry_index),
+       *color_data, *depth_data, *label_data});
+
+  // For anchored geometry, we need to make sure the instance's values for
+  // T_WN and N_WN are initialized based on the initial pose, X_WG.
+  DoUpdateVisualPose(data.id, data.X_WG);
 
   shader_families_[RenderType::kColor][color_data->shader_id()].insert(data.id);
   shader_families_[RenderType::kDepth][depth_data->shader_id()].insert(data.id);
@@ -1274,6 +1260,40 @@ void RenderEngineGl::CacheConvexHullMesh(const Convex& convex,
   }
 }
 
+namespace {
+
+/* Creates and configures the vertex array object for the given vertex data
+ specification, assigning the resulting object to the given `geometry`.
+
+ Note: if geometry->spec->uvs.components_per_element == 0, then the texture
+ shader should never be assigned to the resulting OpenGlGeometry.
+
+ @pre There is a valid OpenGL context bound.
+ @pre geometry->vertex_buffer and geometry->index_buffer are names of valid
+ buffers.
+ @pre geometry->spec is properly configured. */
+void CreateVertexArray(OpenGlGeometry* geometry) {
+  glCreateVertexArrays(1, &geometry->vertex_array);
+
+  auto init_array = [&g = *geometry](const VertexAttrib& props) {
+    glVertexArrayVertexBuffer(g.vertex_array, props.attribute_index,
+                              g.vertex_buffer, props.byte_offset, props.stride);
+    glVertexArrayAttribFormat(g.vertex_array, props.attribute_index,
+                              props.components_per_element, props.numeric_type,
+                              GL_FALSE, 0);
+    glEnableVertexArrayAttrib(g.vertex_array, props.attribute_index);
+  };
+  init_array(geometry->spec.positions);
+  init_array(geometry->spec.normals);
+  if (geometry->spec.uvs.components_per_element > 0) {
+    init_array(geometry->spec.uvs);
+  }
+
+  // Bind index buffer object (IBO) with the vertex array object (VAO).
+  glVertexArrayElementBuffer(geometry->vertex_array, geometry->index_buffer);
+}
+
+}  // namespace
 void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
                                           RegistrationData* data) {
   if (Mesh(filename).extension() != ".obj") {
@@ -1428,7 +1448,9 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
   // Confirm that the context is allocated.
   DRAKE_ASSERT(opengl_context_->IsCurrent());
 
-  OpenGlGeometry geometry;
+  const int v_count = render_mesh.positions.rows();
+  OpenGlGeometry geometry{
+      .v_count = v_count, .type = GL_UNSIGNED_INT, .mode = GL_TRIANGLES};
 
   // Create the vertex buffer object (VBO).
   glCreateBuffers(1, &geometry.vertex_buffer);
@@ -1438,7 +1460,6 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
   // equal number of vertices, normals, and texture coordinates.
   DRAKE_DEMAND(render_mesh.positions.rows() == render_mesh.normals.rows());
   DRAKE_DEMAND(render_mesh.positions.rows() == render_mesh.uvs.rows());
-  const int v_count = render_mesh.positions.rows();
   vector<GLfloat> vertex_data;
   // 3 floats each for position and normal, 2 for texture coordinates.
   const int kFloatsPerPosition = 3;
@@ -1471,9 +1492,32 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
                        render_mesh.indices.size() * sizeof(GLuint),
                        render_mesh.indices.data(), 0);
 
-  geometry.index_buffer_size = render_mesh.indices.size();
+  geometry.index_count = render_mesh.indices.size();
 
   geometry.v_count = v_count;
+  // Now configure the vertex array object with vertex attributes.
+  const int p_offset = 0;
+  const int n_offset = v_count * kFloatsPerPosition * sizeof(GLfloat);
+  const int uv_offset =
+      v_count * (kFloatsPerPosition + kFloatsPerNormal) * sizeof(GLfloat);
+  // clang-format off
+  geometry.spec = VertexSpec{
+      .positions = {.attribute_index = 0,
+                    .components_per_element = kFloatsPerPosition,
+                    .byte_offset = p_offset,
+                    .stride = kFloatsPerPosition * sizeof(GLfloat),
+                    .numeric_type = GL_FLOAT},
+      .normals =   {.attribute_index = 1,
+                    .components_per_element = kFloatsPerNormal,
+                    .byte_offset = n_offset,
+                    .stride = kFloatsPerNormal * sizeof(GLfloat),
+                    .numeric_type = GL_FLOAT},
+      .uvs =       {.attribute_index = 2,
+                    .components_per_element = kFloatsPerUv,
+                    .byte_offset = uv_offset,
+                    .stride = kFloatsPerUv * sizeof(GLfloat),
+                    .numeric_type = GL_FLOAT}};
+  // clang-format on
   CreateVertexArray(&geometry);
 
   // Note: We won't need to call the corresponding glDeleteVertexArrays or
@@ -1486,62 +1530,13 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
   return index;
 }
 
-void RenderEngineGl::CreateVertexArray(OpenGlGeometry* geometry) const {
-  // Confirm that the context is allocated.
-  DRAKE_ASSERT(opengl_context_->IsCurrent());
-
-  glCreateVertexArrays(1, &geometry->vertex_array);
-
-  // 3 floats each for position and normal, 2 for texture coordinates.
-  const int kFloatsPerPosition = 3;
-  const int kFloatsPerNormal = 3;
-  const int kFloatsPerUv = 2;
-
-  std::size_t vbo_offset = 0;
-
-  const int position_attrib = 0;
-  glVertexArrayVertexBuffer(geometry->vertex_array, position_attrib,
-                            geometry->vertex_buffer, vbo_offset,
-                            kFloatsPerPosition * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry->vertex_array, position_attrib,
-                            kFloatsPerPosition, GL_FLOAT, GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry->vertex_array, position_attrib);
-  vbo_offset += geometry->v_count * kFloatsPerPosition * sizeof(GLfloat);
-
-  const int normal_attrib = 1;
-  glVertexArrayVertexBuffer(geometry->vertex_array, normal_attrib,
-                            geometry->vertex_buffer, vbo_offset,
-                            kFloatsPerNormal * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry->vertex_array, normal_attrib,
-                            kFloatsPerNormal, GL_FLOAT, GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry->vertex_array, normal_attrib);
-  vbo_offset += geometry->v_count * kFloatsPerNormal * sizeof(GLfloat);
-
-  const int uv_attrib = 2;
-  glVertexArrayVertexBuffer(geometry->vertex_array, uv_attrib,
-                            geometry->vertex_buffer, vbo_offset,
-                            kFloatsPerUv * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry->vertex_array, uv_attrib, kFloatsPerUv,
-                            GL_FLOAT, GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry->vertex_array, uv_attrib);
-  vbo_offset += geometry->v_count * kFloatsPerUv * sizeof(GLfloat);
-
-  const float float_count =
-      geometry->v_count *
-      (kFloatsPerPosition + kFloatsPerNormal + kFloatsPerUv);
-  DRAKE_DEMAND(vbo_offset == float_count * sizeof(GLfloat));
-
-  // Bind index buffer object (IBO) with the vertex array object (VAO).
-  glVertexArrayElementBuffer(geometry->vertex_array, geometry->index_buffer);
-}
-
 void RenderEngineGl::UpdateVertexArrays() {
   DRAKE_ASSERT(opengl_context_->IsCurrent());
   // Creating the vertex arrays requires the context to be bound.
   for (auto& geometry : geometries_) {
     // The only geometries in geometries_ should be fully defined.
     DRAKE_ASSERT(geometry.is_defined());
-    this->CreateVertexArray(&geometry);
+    CreateVertexArray(&geometry);
   }
 }
 

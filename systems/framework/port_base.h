@@ -127,8 +127,8 @@ class PortBase {
   template <typename ValueType>
   const ValueType& PortEvalCast(const AbstractValue& abstract) const;
 
-  /** Downcast a basic vector to a more specific subclass (e.g., as generated
-  by //tools/vector_gen) or issue a nice message if the type is not correct. */
+  /** Downcast a basic vector to a more specific subclass, or else issue a nice
+  message if the type is not correct. */
   template <typename ValueType, typename T>
   const ValueType& PortEvalCast(const BasicVector<T>& basic) const;
 

@@ -154,6 +154,8 @@ class SapLimitConstraint final : public SapConstraint<T> {
     const T& dissipation_time_scale() const { return dissipation_time_scale_; }
     double beta() const { return beta_; }
 
+    bool operator==(const Parameters&) const = default;
+
    private:
     T lower_limit_;
     T upper_limit_;
@@ -190,6 +192,22 @@ class SapLimitConstraint final : public SapConstraint<T> {
   /* Returns the position provided at construction. */
   const T& position() const { return q0_; }
 
+  /* Returns the value of the constraint function computed at construction. At
+   construction, Parameters can specify limits that are infinite (-∞ for lower
+   and ∞ for upper), indicating there is no limit. Therefore, this constraint
+   will implement a constraint function that can have size two (both limits
+   finite), size one (one of the limits is infinite) or even zero (both limits
+   are infinite). Therefore the returned vector stores the value of the
+   constraint function as:
+     1. the first entry contains the value of the lower limit constraint
+        function iff the lower limit is finite.
+     2. The next entry contains the value of the upper limit constraint
+        function iff the upper limit is finite.
+   There is no information in the returned value on which limits were included.
+   That information however is known to the client code that provided the
+   initial constraint parameters. */
+  const VectorX<T>& constraint_function() const { return g_; }
+
  private:
   /* Private copy construction is enabled to use in the implementation of
     DoClone(). */
@@ -222,6 +240,7 @@ class SapLimitConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapLimitConstraint<T>>(
         new SapLimitConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
   void DoAccumulateGeneralizedImpulses(
       int c, const Eigen::Ref<const VectorX<T>>& gamma,
       EigenPtr<VectorX<T>> tau) const final;
