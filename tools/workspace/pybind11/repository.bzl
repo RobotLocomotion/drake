@@ -8,9 +8,9 @@ _REPOSITORY = "RobotLocomotion/pybind11"
 #  https://github.com/RobotLocomotion/pybind11/blob/drake/include/pybind11/detail/common.h
 # and if it has changed, then update the version number in the two
 # pybind11-*.cmake files in the current directory to match.
-_COMMIT = "1f8e0c3c4365ed01f2551d61c8ea3e558f690809"
+_COMMIT = "ef4e178018ca20c1042940c77f0f1c08e42b2191"
 
-_SHA256 = "9de2e78026ddbfbdfd3b28c60d53f8f6021a5512638478692c3677c9f6890fb6"
+_SHA256 = "454988e381f1fc86b03452ddc9de7acbc6e6e22a96f684dd6accd3975088c3df"
 
 def pybind11_repository(
         name,
