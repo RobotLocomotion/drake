@@ -44,6 +44,8 @@ void DiscreteUpdateManager<T>::CalcDiscreteValues(
 
 template <typename T>
 void DiscreteUpdateManager<T>::DeclareCacheEntries() {
+  const auto& query_object_input_ticket =
+      plant().get_geometry_query_input_port().ticket();
   // The Correct Solution:
   // The Implicit Stribeck solver solution S is a function of state x,
   // actuation input u (and externally applied forces) and even time if
@@ -82,7 +84,8 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
           this, &DiscreteUpdateManager<T>::CalcContactSolverResults),
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket(),
-       discrete_input_port_forces_cache_entry.ticket()});
+       discrete_input_port_forces_cache_entry.ticket(),
+       query_object_input_ticket});
   cache_indexes_.contact_solver_results =
       contact_solver_results_cache_entry.cache_index();
 

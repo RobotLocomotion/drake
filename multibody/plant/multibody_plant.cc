@@ -3085,10 +3085,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               "spatial_accelerations",
               std::vector<SpatialAcceleration<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
-              // Accelerations depend on both state and inputs.
-              // All sources include: time, accuracy, state, input ports, and
-              // parameters.
-              {this->all_sources_ticket()})
+              {this->acceleration_kinematics_cache_entry().ticket()})
           .get_index();
 
   // Declare one output port for the entire generalized acceleration vector
@@ -3166,6 +3163,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
         this->CopyGeneralizedContactForcesOut(solver_results,
                                               model_instance_index, result);
       };
+      // TODO(xuchenhan-tri): check this
       instance_generalized_contact_forces_output_ports_[model_instance_index] =
           this->DeclareVectorOutputPort(
                   GetModelInstanceName(model_instance_index) +
@@ -3202,7 +3200,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   }
 
   // Joint reaction forces are a function of accelerations, which in turn depend
-  // on both state and inputs.
+  // on state, parameters, and inputs.
   reaction_forces_port_ =
       this->DeclareAbstractOutputPort(
               "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
@@ -3212,7 +3210,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 
   // Contact results output port.
   std::set<systems::DependencyTicket> contact_results_prerequisites = {
-      state_ticket};
+      state_ticket, get_geometry_query_input_port().ticket()};
   if (is_discrete()) {
     contact_results_prerequisites.insert(this->all_input_ports_ticket());
     contact_results_prerequisites.insert(this->all_parameters_ticket());
@@ -3244,21 +3242,31 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   auto& hydroelastic_with_fallback_cache_entry = this->DeclareCacheEntry(
       std::string("Hydroelastic contact with point-pair fallback"),
       &MultibodyPlant::CalcHydroelasticWithFallback,
-      {this->configuration_ticket()});
+      // We can't just depend on configuration ticket here because the results
+      // from query objects also depend on other things in GeometryState such
+      // as collision filters.
+      {get_geometry_query_input_port().ticket()});
   cache_indices_.hydroelastic_with_fallback =
       hydroelastic_with_fallback_cache_entry.cache_index();
 
   // Cache entry for point contact queries.
-  auto& point_pairs_cache_entry =
-      this->DeclareCacheEntry(std::string("Point pair penetrations."),
-                              &MultibodyPlant<T>::CalcPointPairPenetrations,
-                              {this->configuration_ticket()});
+  auto& point_pairs_cache_entry = this->DeclareCacheEntry(
+      std::string("Point pair penetrations."),
+      &MultibodyPlant<T>::CalcPointPairPenetrations,
+      // We can't just depend on configuration ticket here because the results
+      // from query objects also depend on other things in GeometryState such
+      // as collision filters.
+      {get_geometry_query_input_port().ticket()});
   cache_indices_.point_pairs = point_pairs_cache_entry.cache_index();
 
   // Cache entry for hydroelastic contact surfaces.
   auto& contact_surfaces_cache_entry = this->DeclareCacheEntry(
       std::string("Hydroelastic contact surfaces."),
-      &MultibodyPlant<T>::CalcContactSurfaces, {this->configuration_ticket()});
+      &MultibodyPlant<T>::CalcContactSurfaces,
+      // We can't just depend on configuration ticket here because the results
+      // from query objects also depend on other things in GeometryState such
+      // as collision filters.
+      {get_geometry_query_input_port().ticket()});
   cache_indices_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
 
   // Cache entry for HydroelasticContactForcesContinuous.
@@ -3274,27 +3282,19 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             &MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous,
             // Compliant contact forces due to hydroelastics with Hunt &
             // Crosseley are function of the kinematic variables q & v only.
-            {this->kinematics_ticket(), this->all_parameters_ticket()});
+            {this->kinematics_ticket(), this->all_parameters_ticket(),
+             get_geometry_query_input_port().ticket()});
     cache_indices_.hydroelastic_contact_forces_continuous =
         hydroelastic_contact_forces_continuous_cache_entry.cache_index();
   }
 
   // Cache entry for ContactResultsContinuous.
   if (!is_discrete()) {
-    std::set<systems::DependencyTicket> dependency_ticket =
-        [this, use_hydroelastic]() {
-          std::set<systems::DependencyTicket> tickets;
-          tickets.insert(this->kinematics_ticket());
-          if (use_hydroelastic) {
-            tickets.insert(this->cache_entry_ticket(
-                cache_indices_.hydroelastic_contact_forces_continuous));
-          }
-          tickets.insert(this->all_parameters_ticket());
-          return tickets;
-        }();
     auto& contact_results_continuous_cache_entry = this->DeclareCacheEntry(
         std::string("ContactResultsContinuous"),
-        &MultibodyPlant<T>::CalcContactResultsContinuous, dependency_ticket);
+        &MultibodyPlant<T>::CalcContactResultsContinuous,
+        {this->kinematics_ticket(), this->all_parameters_ticket(),
+         get_geometry_query_input_port().ticket()});
     cache_indices_.contact_results_continuous =
         contact_results_continuous_cache_entry.cache_index();
   }
@@ -3306,7 +3306,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             "SpatialContactForcesContinuous",
             std::vector<SpatialForce<T>>(num_bodies()),
             &MultibodyPlant::CalcSpatialContactForcesContinuous,
-            {this->kinematics_ticket(), this->all_parameters_ticket()});
+            {this->kinematics_ticket(), this->all_parameters_ticket(),
+             get_geometry_query_input_port().ticket()});
     cache_indices_.spatial_contact_forces_continuous =
         spatial_contact_forces_continuous_cache_entry.cache_index();
   }
