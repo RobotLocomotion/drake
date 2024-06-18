@@ -151,6 +151,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  ClpSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 GTEST_TEST(QPtest, TestInfeasible) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();

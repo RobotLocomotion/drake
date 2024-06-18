@@ -123,6 +123,13 @@ GTEST_TEST(QPtest, TestInfeasible) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  OsqpSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 GTEST_TEST(OsqpSolverTest, DuplicatedVariable) {
   OsqpSolver solver;
   if (solver.available()) {
