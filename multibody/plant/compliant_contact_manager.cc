@@ -101,8 +101,13 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
               this, non_constraint_forces_accelerations,
               &CompliantContactManager<
                   T>::CalcAccelerationsDueToNonConstraintForcesCache),
+          // This includes contribution from force elements, which could
+          // involve user-injected dependencies. So we need to include all
+          // possible tickets that users can choose to depend on.
           {systems::System<T>::xd_ticket(),
            systems::System<T>::all_parameters_ticket(),
+           systems::System<T>::time_ticket(),
+           systems::System<T>::accuracy_ticket(),
            discrete_input_port_forces_cache_entry.ticket()});
   cache_indexes_.non_constraint_forces_accelerations =
       non_constraint_forces_accelerations_cache_entry.cache_index();

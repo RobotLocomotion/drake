@@ -5212,6 +5212,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Collects up forces from input ports (actuator, generalized, and spatial
   // forces) and contact forces (from compliant contact models). Does not
   // include ForceElement forces which are accounted for elsewhere.
+  // @pre The plant is continuous.
   void AddInForcesContinuous(const systems::Context<T>& context,
                              MultibodyForces<T>* forces) const override;
 

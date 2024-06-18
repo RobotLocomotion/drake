@@ -413,8 +413,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     systems::CacheIndex actuation;
   };
 
-  /* Exposes indices for the cache entries declared by this class for derived
-   classes to depend on. */
+  /* Exposes indices for the cache entries declared by this class for other
+   cache entries to depend on. */
   CacheIndexes cache_indexes() const { return cache_indexes_; }
 
  private:
