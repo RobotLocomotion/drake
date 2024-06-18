@@ -128,7 +128,8 @@ void CollisionFilterGroupResolver::AddPair(
   pairs_.insert({name_a, name_b});
 }
 
-void CollisionFilterGroupResolver::Resolve(const DiagnosticPolicy& diagnostic) {
+CollisionFilterGroupsImpl<std::string> CollisionFilterGroupResolver::Resolve(
+    const DiagnosticPolicy& diagnostic) {
   DRAKE_DEMAND(!is_resolved_);
   is_resolved_ = true;
 
@@ -204,8 +205,9 @@ void CollisionFilterGroupResolver::Resolve(const DiagnosticPolicy& diagnostic) {
   }
 
   // Save the groups to report at API level.
+  CollisionFilterGroupsImpl<std::string> result;
   for (const auto& [name, members] : groups_) {
-    group_output_.AddGroup(name, members.body_names);
+    result.AddGroup(name, members.body_names);
   }
 
   // Now that the groups are complete, evaluate the pairs into plant rules, and
@@ -219,8 +221,10 @@ void CollisionFilterGroupResolver::Resolve(const DiagnosticPolicy& diagnostic) {
     }
     plant_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
         {name_a, set_a->geometries}, {name_b, set_b->geometries});
-    group_output_.AddExclusionPair(pair);
+    result.AddExclusionPair(pair);
   }
+
+  return result;
 }
 
 std::string CollisionFilterGroupResolver::FullyQualify(

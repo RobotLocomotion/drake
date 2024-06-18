@@ -129,7 +129,8 @@ void Parser::ResolveCollisionFilterGroupsFromCompositeParse(
     internal::CollisionFilterGroupResolver* resolver) {
   DRAKE_DEMAND(resolver != nullptr);
 
-  resolver->Resolve(diagnostic_policy_);
+  const CollisionFilterGroupsImpl<std::string> groups =
+      resolver->Resolve(diagnostic_policy_);
 
   // Convert scoped names into InstancedNames for storage in between parses.
   auto convert = [this](const std::string& input)
@@ -146,9 +147,7 @@ void Parser::ResolveCollisionFilterGroupsFromCompositeParse(
   // Merge the groups found during a composite parse into the accumulated groups
   // held by this parser.
   MergeCollisionFilterGroups<internal::InstancedName, std::string>(
-      &data_->collision_filter_groups_storage_,
-      resolver->GetCollisionFilterGroups(),
-      convert);
+      &data_->collision_filter_groups_storage_, groups, convert);
 }
 
 }  // namespace multibody
