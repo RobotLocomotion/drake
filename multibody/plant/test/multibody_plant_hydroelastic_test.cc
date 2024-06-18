@@ -98,7 +98,7 @@ class HydroelasticModelTests : public ::testing::Test {
     // Create a context for this system:
     diagram_context_ = diagram_->CreateDefaultContext();
     // TODO(#20014): Enable caching here when input port dependencies are fixed.
-    diagram_context_->DisableCaching();
+    // diagram_context_->DisableCaching();
     plant_context_ =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
     scene_graph_context_ = &diagram_->GetMutableSubsystemContext(

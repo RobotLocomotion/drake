@@ -67,7 +67,9 @@ void DeformableDriver<T>::DeclareCacheEntries(
   const auto& deformable_contact_cache_entry = manager->DeclareCacheEntry(
       "deformable contact data",
       systems::ValueProducer(this, &DeformableDriver<T>::CalcDeformableContact),
-      {systems::System<T>::configuration_ticket()});
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket(),
+       manager_->plant().get_geometry_query_input_port().ticket()});
   cache_indexes_.deformable_contact =
       deformable_contact_cache_entry.cache_index();
 
@@ -92,20 +94,6 @@ void DeformableDriver<T>::DeclareCacheEntries(
                 }}),
         {systems::System<T>::xd_ticket()});
     cache_indexes_.fem_states.emplace_back(fem_state_cache_entry.cache_index());
-
-    /* Cache entry for FEM state at next time step. */
-    const auto& next_fem_state_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("FEM state for body with index {} at next time step", i),
-        systems::ValueProducer(
-            *model_state,
-            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>{
-                [this, i](const systems::Context<T>& context,
-                          fem::FemState<T>* next_fem_state) {
-                  this->CalcNextFemState(context, i, next_fem_state);
-                }}),
-        {systems::SystemBase::all_sources_ticket()});
-    cache_indexes_.next_fem_states.emplace_back(
-        next_fem_state_cache_entry.cache_index());
 
     /* Constraint participation information for each body. */
     ContactParticipation empty_contact_participation(fem_model.num_nodes());
@@ -168,10 +156,41 @@ void DeformableDriver<T>::DeclareCacheEntries(
                           FemSolver<T>* fem_solver) {
                   this->CalcFreeMotionFemSolver(context, i, fem_solver);
                 }}),
+        // Free motion velocities can depend on user defined external forces
+        // which in turn depends on input ports.
         {fem_state_cache_entry.ticket(),
-         vertex_permutation_cache_entry.ticket()});
+         vertex_permutation_cache_entry.ticket(),
+         systems::System<T>::all_input_ports_ticket()});
     cache_indexes_.fem_solvers.emplace_back(
         fem_solver_cache_entry.cache_index());
+
+    /* Cache entry for FEM state at next time step. */
+    const systems::DependencyTicket constraint_participation_ticket =
+        manager_->plant()
+            .get_cache_entry(cache_indexes_.constraint_participations.at(i))
+            .ticket();
+    const systems::DependencyTicket free_motion_ticket =
+        manager_->plant()
+            .get_cache_entry(cache_indexes_.fem_solvers.at(i))
+            .ticket();
+    const systems::DependencyTicket contact_solver_results_ticket =
+        manager_->plant()
+            .get_cache_entry(manager_->cache_indexes().contact_solver_results)
+            .ticket();
+    const auto& next_fem_state_cache_entry = manager->DeclareCacheEntry(
+        fmt::format("FEM state for body with index {} at next time step", i),
+        systems::ValueProducer(
+            *model_state,
+            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>{
+                [this, i](const systems::Context<T>& context,
+                          fem::FemState<T>* next_fem_state) {
+                  this->CalcNextFemState(context, i, next_fem_state);
+                }}),
+        {systems::System<T>::xd_ticket(), constraint_participation_ticket,
+         free_motion_ticket, contact_solver_results_ticket,
+         systems::System<T>::all_input_ports_ticket()});
+    cache_indexes_.next_fem_states.emplace_back(
+        next_fem_state_cache_entry.cache_index());
   }
 
   const auto& participating_velocity_mux_cache_entry =
@@ -195,6 +214,12 @@ void DeformableDriver<T>::DeclareCacheEntries(
   cache_indexes_.participating_velocities =
       participating_velocities_cache_entry.cache_index();
 
+  /* Input ports are needed for the calculation of the free motion velocities
+   (via user defined external forces). */
+  auto participarting_free_motion_velocities_tickets =
+      constraint_participation_and_xd_tickets;
+  participarting_free_motion_velocities_tickets.insert(
+      systems::System<T>::all_input_ports_ticket());
   const auto& participating_free_motion_velocities_cache_entry =
       manager->DeclareCacheEntry(
           fmt::format("participating free motion velocities for all bodies"),

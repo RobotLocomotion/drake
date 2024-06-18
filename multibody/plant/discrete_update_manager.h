@@ -236,6 +236,33 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     return deformable_driver_.get();
   }
 
+  /* Struct used to conglomerate the indexes of cache entries declared by the
+   manager. */
+  struct CacheIndexes {
+    /* Manually managed cache entry that mimics a discrete sampling of forces
+     added to the owning MbP via input ports (see issue #12786). This cache
+     entry is manually marked out-of-date, updated, and immediately marked
+     up-to-date at the beginning of each discrete update. So when caching is
+     enabled, it is always up-to-date as long as any discrete update has
+     happened. The only time this cache entry may be updated automatically via
+     the caching mechanism is when a downstream cache entry that depends on
+     this cache entry requests its value before any discrete update has
+     happened. Evaluating this cache entry when caching is disabled throws an
+     exception. */
+    systems::CacheIndex discrete_contact_pairs;
+    systems::CacheIndex discrete_input_port_forces;
+    systems::CacheIndex contact_solver_results;
+    systems::CacheIndex non_contact_forces_evaluation_in_progress;
+    systems::CacheIndex contact_results;
+    systems::CacheIndex discrete_update_multibody_forces;
+    systems::CacheIndex hydroelastic_contact_info;
+    systems::CacheIndex actuation;
+  };
+
+  /* Exposes indices for the cache entries declared by this class for other
+   cache entries to depend on. */
+  CacheIndexes cache_indexes() const { return cache_indexes_; }
+
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
@@ -386,33 +413,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    list of models forward declared in physical_model.h, we must provide a
    function that extracts the particular variant of the physical model. */
   void ExtractConcreteModel(std::monostate) {}
-
-  /* Struct used to conglomerate the indexes of cache entries declared by the
-   manager. */
-  struct CacheIndexes {
-    /* Manually managed cache entry that mimics a discrete sampling of forces
-     added to the owning MbP via input ports (see issue #12786). This cache
-     entry is manually marked out-of-date, updated, and immediately marked
-     up-to-date at the beginning of each discrete update. So when caching is
-     enabled, it is always up-to-date as long as any discrete update has
-     happened. The only time this cache entry may be updated automatically via
-     the caching mechanism is when a downstream cache entry that depends on
-     this cache entry requests its value before any discrete update has
-     happened. Evaluating this cache entry when caching is disabled throws an
-     exception. */
-    systems::CacheIndex discrete_contact_pairs;
-    systems::CacheIndex discrete_input_port_forces;
-    systems::CacheIndex contact_solver_results;
-    systems::CacheIndex non_contact_forces_evaluation_in_progress;
-    systems::CacheIndex contact_results;
-    systems::CacheIndex discrete_update_multibody_forces;
-    systems::CacheIndex hydroelastic_contact_info;
-    systems::CacheIndex actuation;
-  };
-
-  /* Exposes indices for the cache entries declared by this class for derived
-   classes to depend on. */
-  CacheIndexes cache_indexes() const { return cache_indexes_; }
 
  private:
   /* Due to issue #12786, we cannot mark the calculation of non-contact forces

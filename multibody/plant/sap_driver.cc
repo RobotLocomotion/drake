@@ -87,21 +87,30 @@ void SapDriver<T>::DeclareCacheEntries(
       plant().all_input_ports_ticket();
   const systems::DependencyTicket parameters_ticket =
       plant().all_parameters_ticket();
-  const std::set<systems::DependencyTicket> state_input_and_parameters = {
-      xd_ticket, inputs_ticket, parameters_ticket};
 
   const auto& contact_problem_cache_entry = mutable_manager->DeclareCacheEntry(
       "contact problem",
       systems::ValueProducer(this, ContactProblemCache<T>(plant().time_step()),
                              &SapDriver<T>::CalcContactProblemCache),
-      state_input_and_parameters);
+      // The ContactProblemCache includes free motion velocities which include
+      // contribution from force elements, which could involve user-injected
+      // dependencies. So we need to include all possible tickets that users can
+      // choose to depend on.
+      {xd_ticket, inputs_ticket, parameters_ticket,
+       systems::System<T>::time_ticket(),
+       systems::System<T>::accuracy_ticket()});
   contact_problem_ = contact_problem_cache_entry.cache_index();
 
   const auto& sap_solver_results_cache_entry =
       mutable_manager->DeclareCacheEntry(
           "SAP solver results",
           systems::ValueProducer(this, &SapDriver<T>::CalcSapSolverResults),
-          state_input_and_parameters);
+          // The SapSolverResults includes contribution from force elements,
+          // which could involve user-injected dependencies. So we need to
+          // include all possible tickets that users can choose to depend on.
+          {xd_ticket, inputs_ticket, parameters_ticket,
+           systems::System<T>::time_ticket(),
+           systems::System<T>::accuracy_ticket()});
   sap_results_ = sap_solver_results_cache_entry.cache_index();
 }
 

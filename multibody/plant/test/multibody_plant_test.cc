@@ -1750,15 +1750,16 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
         plant.get_generalized_acceleration_output_port(i).get_index());
     ok_to_feedthrough.insert(
         plant.get_net_actuation_output_port(i).get_index());
+    ok_to_feedthrough.insert(
+        plant.get_generalized_contact_forces_output_port(i).get_index());
   }
   ok_to_feedthrough.insert(
       plant.get_body_spatial_accelerations_output_port().get_index());
   ok_to_feedthrough.insert(  // Deprecated 2024-10-01.
       plant.GetOutputPort("spatial_accelerations").get_index());
-  if (plant.is_discrete()) {
-    ok_to_feedthrough.insert(
-        plant.get_contact_results_output_port().get_index());
-  }
+  //   if (plant.is_discrete()) {
+  ok_to_feedthrough.insert(plant.get_contact_results_output_port().get_index());
+  //   }
 
   // Now find all the feedthrough ports and make sure they are on the
   // list of expected feedthrough ports.
