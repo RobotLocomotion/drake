@@ -308,7 +308,7 @@ std::unique_ptr<PhysicalModel<symbolic::Expression>>
 DeformableModel<T>::CloneToSymbolic(
     MultibodyPlant<symbolic::Expression>* plant) const {
   /* We can't throw here even if the model isn't empty because the owning plant
-   transmogrifies to symbolic to check for algebraic loops. */
+   scalar converts to symbolic to check for algebraic loops. */
   return std::make_unique<DeformableModel<symbolic::Expression>>(plant);
 }
 
@@ -449,8 +449,8 @@ void DeformableModel<T>::DoDeclareSystemResources() {
 template <typename T>
 void DeformableModel<T>::DoDeclareSceneGraphPorts() {
   /* Declare the deformable body configuration output port. This port copies
-   the discrete states of all deformable body configurations and put it into a
-   format that's easier for downstream parsing. */
+   the discrete states of all deformable body configurations and puts them into
+   a format that's easier for downstream parsing. */
   configuration_output_port_index_ =
       this->DeclareAbstractOutputPort(
               "deformable_body_configuration",

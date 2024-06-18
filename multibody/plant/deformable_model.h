@@ -235,7 +235,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
 
   /** Returns the output port index of the vertex positions port for all
    registered deformable bodies.
-   @throws std::exception if called before called `DeclareSceneGraphPorts()`. */
+   @throws std::exception if called before `DeclareSceneGraphPorts()` is called.
+  */
   systems::OutputPortIndex configuration_output_port_index() const {
     DRAKE_THROW_UNLESS(configuration_output_port_index_.is_valid());
     return configuration_output_port_index_;

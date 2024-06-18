@@ -126,8 +126,6 @@ int do_main() {
       "schunk_wsg_50_deformable_bubble.sdf")[0];
 
   /* Add in the bubbles. */
-  DeformableModel<double>* deformable_model = plant.mutable_deformable_model();
-
   DeformableBodyConfig<double> bubble_config;
   bubble_config.set_youngs_modulus(1e4);                  // [Pa]
   bubble_config.set_poissons_ratio(0.45);                 // unitless
@@ -162,6 +160,7 @@ int do_main() {
   /* Since the deformable geometry is specified through Shape::Mesh, the
    resolution hint is unused. */
   const double unused_resolution_hint = 1.0;
+  DeformableModel<double>* deformable_model = plant.mutable_deformable_model();
   const DeformableBodyId left_bubble_id =
       deformable_model->RegisterDeformableBody(std::move(left_bubble_instance),
                                                bubble_config,

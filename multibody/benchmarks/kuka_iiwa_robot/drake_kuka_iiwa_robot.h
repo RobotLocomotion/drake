@@ -87,6 +87,7 @@ class DrakeKukaIIwaRobot {
             MakeKukaIiwaModel<T>(
                 false /* finalized model */,
                 gravity /* acceleration of gravity */));
+
     linkN_ = &tree().world_body();
 
     // Get this robot's seven links.

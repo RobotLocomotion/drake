@@ -134,8 +134,8 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   /** (Internal only) Declares zero or more output ports in the owning
    MultibodyPlant to communicate with a SceneGraph.
    @throws std::exception if called after call to DeclareSystemResources().
-   @throws std::exception if called more than when at least one output port is
-   created. */
+   @throws std::exception if called more than once when at least one output port
+   is created. */
   void DeclareSceneGraphPorts() {
     DRAKE_THROW_UNLESS(owning_plant_ != nullptr);
     DoDeclareSceneGraphPorts();

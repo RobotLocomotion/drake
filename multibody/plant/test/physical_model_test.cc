@@ -63,10 +63,10 @@ TEST_F(PhysicalModelTest, DeclareSceneGraphPorts) {
                               ".*SceneGraph.*port.*not.*declared.*");
   dummy_model_->DeclareSceneGraphPorts();
   plant_.Finalize();
-  const systems::OutputPort<double>& scene_graph_port =
-      dummy_model_->GetSceneGraphPortOrThrow();
+  const systems::OutputPort<double>* scene_graph_port{nullptr};
+  EXPECT_NO_THROW(scene_graph_port = &dummy_model_->GetSceneGraphPortOrThrow());
   auto context = plant_.CreateDefaultContext();
-  const VectorXd& output_vector = scene_graph_port.Eval(*context);
+  const VectorXd& output_vector = scene_graph_port->Eval(*context);
   EXPECT_EQ(output_vector, VectorXd::Constant(1, 42.0));
 }
 

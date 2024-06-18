@@ -2203,11 +2203,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   internal::DummyPhysicalModel<T>& AddDummyModel(
       std::unique_ptr<internal::DummyPhysicalModel<T>> model);
 
-  // (Internal only) Removes `this` MultibodyPlant's ability to convert to the
-  // scalar types unsupported by the given `component`.
-  void RemoveUnsupportedScalars(
-      const internal::ScalarConvertibleComponent<T>& component);
-
   // (Internal only) Returns a vector of pointers to all physical models
   // registered with `this` MultibodyPlant.
   std::vector<const PhysicalModel<T>*> physical_models() const;
@@ -5484,6 +5479,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         .map;
   }
 
+  // Removes `this` MultibodyPlant's ability to convert to the scalar types
+  // unsupported by the given `component`.
+  void RemoveUnsupportedScalars(
+      const internal::ScalarConvertibleComponent<T>& component);
+
   // Adds a DeformableModel to this plant. The added DeformableModel is owned
   // by `this` MultibodyPlant and calls its `DeclareSystemResources()` method
   // when `this` MultibodyPlant is finalized to declare the system resources it
@@ -5709,7 +5709,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // (Experimental) The collection of all physical models owned by
   // this MultibodyPlant.
   std::unique_ptr<internal::PhysicalModelCollection<T>> physical_models_{
-      std::make_unique<internal::PhysicalModelCollection<T>>(this)};
+      std::make_unique<internal::PhysicalModelCollection<T>>()};
 
   // Map of coupler constraints specifications.
   std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>

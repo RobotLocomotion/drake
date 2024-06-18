@@ -199,8 +199,6 @@ int do_main() {
                   : AddParallelGripper(&plant, rigid_proximity_props);
 
   /* Set up a deformable torus. */
-  DeformableModel<double>* deformable_model = plant.mutable_deformable_model();
-
   DeformableBodyConfig<double> deformable_config;
   deformable_config.set_youngs_modulus(FLAGS_E);
   deformable_config.set_poissons_ratio(FLAGS_nu);
@@ -235,6 +233,7 @@ int do_main() {
   // TODO(xuchenhan-tri): Though unused, we still asserts the resolution hint is
   // positive. Remove the requirement of a resolution hint for meshed shapes.
   const double unused_resolution_hint = 1.0;
+  DeformableModel<double>* deformable_model = plant.mutable_deformable_model();
   deformable_model->RegisterDeformableBody(
       std::move(torus_instance), deformable_config, unused_resolution_hint);
 
