@@ -14,6 +14,8 @@
 #include "drake/common/fmt_eigen.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/program_attribute.h"
+#include "drake/solvers/semidefinite_relaxation_internal.h"
+
 namespace drake {
 namespace solvers {
 
@@ -27,265 +29,8 @@ using symbolic::Variables;
 
 namespace {
 
-const double kInf = std::numeric_limits<double>::infinity();
 // TODO(AlexandreAmice) Move all these methods to
 // semidefinite_relaxation_internal.
-
-// Validate that we can compute the semidefinite relaxation of prog.
-void ValidateProgramIsSupported(const MathematicalProgram& prog) {
-  std::string unsupported_message{};
-  const ProgramAttributes supported_attributes(
-      std::initializer_list<ProgramAttribute>{
-          ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
-          ProgramAttribute::kLinearConstraint,
-          ProgramAttribute::kLinearEqualityConstraint,
-          ProgramAttribute::kQuadraticConstraint});
-  if (!AreRequiredAttributesSupported(prog.required_capabilities(),
-                                      supported_attributes,
-                                      &unsupported_message)) {
-    throw std::runtime_error(fmt::format(
-        "MakeSemidefiniteRelaxation() does not (yet) support this program: {}.",
-        unsupported_message));
-  }
-}
-
-// Check whether the program prog has any non-convex quadratic costs or
-// constraints.
-bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog) {
-  return std::any_of(prog.quadratic_costs().begin(),
-                     prog.quadratic_costs().end(),
-                     [](const auto& cost) {
-                       return !cost.evaluator()->is_convex();
-                     }) ||
-         std::any_of(prog.quadratic_constraints().begin(),
-                     prog.quadratic_constraints().end(),
-                     [](const auto& constraint) {
-                       return !constraint.evaluator()->is_convex();
-                     });
-}
-
-// Given a mapping from decision variables in a program to indices, return all
-// the indices corresponding to the variable vars. This method is useful as in
-// DoMakeSemidefiniteRelaxation, we sort the decision variables in the
-// semidefinite variables (and hence the implied constraints).
-std::vector<int> FindDecisionVariableIndices(
-    const std::map<Variable, int>& variables_to_sorted_indices,
-    const VectorXDecisionVariable& vars) {
-  std::vector<int> indices;
-  indices.reserve(vars.rows());
-  for (const auto& v : vars) {
-    indices.emplace_back(variables_to_sorted_indices.at(v));
-  }
-  return indices;
-}
-
-// Iterate over the quadratic costs and constraints in prog, remove them if
-// present in the relaxation, and add an equivalent linear cost or constraint on
-// the semidefinite variable X. The map variables_to_sorted_indices maps the
-// decision variables in prog to their index in the last column of X.
-void DoLinearizeQuadraticCostsAndConstraints(
-    const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<Variable, int>& variables_to_sorted_indices,
-    MathematicalProgram* relaxation) {
-  // Returns the {a, vars} in relaxation, such that a' vars = 0.5*tr(QY). This
-  // assumes Q=Q', which is ensured by QuadraticCost and QuadraticConstraint.
-  auto half_trace_QY = [&X, &variables_to_sorted_indices](
-                           const Eigen::MatrixXd& Q,
-                           const VectorXDecisionVariable& binding_vars)
-      -> std::pair<VectorXd, VectorX<Variable>> {
-    const int N = binding_vars.size();
-    const int num_vars = N * (N + 1) / 2;
-    const std::vector<int> indices =
-        FindDecisionVariableIndices(variables_to_sorted_indices, binding_vars);
-
-    VectorXd a = VectorXd::Zero(num_vars);
-    VectorX<Variable> y(num_vars);
-    int count = 0;
-    for (int i = 0; i < N; ++i) {
-      for (int j = 0; j <= i; ++j) {
-        // tr(QY) = ∑ᵢ ∑ⱼ Qᵢⱼ Yⱼᵢ.
-        a[count] = ((i == j) ? 0.5 : 1.0) * Q(i, j);
-        y[count] = X(indices[i], indices[j]);
-        ++count;
-      }
-    }
-    return {a, y};
-  };
-
-  // Remove the quadratic cost in relaxation and replace it with a linear cost
-  // on the semidefinite variables i.e.
-  // 0.5 y'Qy + b'y + c => 0.5 tr(QY) + b'y + c
-  for (const auto& binding : prog.quadratic_costs()) {
-    relaxation->RemoveCost(binding);
-    const int N = binding.variables().size();
-    const int num_vars = N + (N * (N + 1) / 2);
-    std::pair<VectorXd, VectorX<Variable>> quadratic_terms =
-        half_trace_QY(binding.evaluator()->Q(), binding.variables());
-    VectorXd a(num_vars);
-    VectorX<Variable> vars(num_vars);
-    a << quadratic_terms.first, binding.evaluator()->b();
-    vars << quadratic_terms.second, binding.variables();
-    relaxation->AddLinearCost(a, binding.evaluator()->c(), vars);
-  }
-
-  // Remove the quadratic constraints and replace them with a linear  constraint
-  // on the semidefinite varaibles i.e.
-  // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
-  for (const auto& binding : prog.quadratic_constraints()) {
-    relaxation->RemoveConstraint(binding);
-    const int N = binding.variables().size();
-    const int num_vars = N + (N * (N + 1) / 2);
-    std::pair<VectorXd, VectorX<Variable>> quadratic_terms =
-        half_trace_QY(binding.evaluator()->Q(), binding.variables());
-    VectorXd a(num_vars);
-    VectorX<Variable> vars(num_vars);
-    a << quadratic_terms.first, binding.evaluator()->b();
-    vars << quadratic_terms.second, binding.variables();
-    relaxation->AddLinearConstraint(a.transpose(),
-                                    binding.evaluator()->lower_bound(),
-                                    binding.evaluator()->upper_bound(), vars);
-  }
-}
-
-// Aggregate all the finite linear constraints in the program into a single
-// expression Ay ≤ b, which can be expressed as [A, -b][y; 1] ≤ 0.
-// We add the implied linear constraint [A,-b]X[A,-b]ᵀ ≤ 0 on the variable X to
-// the relaxation. The map variables_to_sorted_indices maps the
-// decision variables in prog to their index in the last column of X.
-void DoAddImpliedLinearConstraints(
-    const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<Variable, int>& variables_to_sorted_indices,
-    MathematicalProgram* relaxation) {
-  // Assemble one big Ay <= b matrix from all bounding box constraints
-  // and linear constraints
-  // TODO(bernhardpg): Consider special-casing linear equality constraints
-  // that are added as bounding box or linear constraints with lb == ub
-  int num_constraints = 0;
-  int nnz = 0;
-  for (const auto& binding : prog.bounding_box_constraints()) {
-    for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
-      if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
-        ++num_constraints;
-      }
-      if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
-        ++num_constraints;
-      }
-    }
-    nnz += binding.evaluator()->get_sparse_A().nonZeros();
-  }
-  for (const auto& binding : prog.linear_constraints()) {
-    for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
-      if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
-        ++num_constraints;
-      }
-      if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
-        ++num_constraints;
-      }
-    }
-    nnz += binding.evaluator()->get_sparse_A().nonZeros();
-  }
-
-  std::vector<Triplet<double>> A_triplets;
-  A_triplets.reserve(nnz);
-  SparseMatrix<double> A(num_constraints, prog.num_vars());
-  VectorXd b(num_constraints);
-
-  int constraint_idx = 0;
-  for (const auto& binding : prog.bounding_box_constraints()) {
-    const std::vector<int> indices = FindDecisionVariableIndices(
-        variables_to_sorted_indices, binding.variables());
-    for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
-      if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
-        A_triplets.push_back(Triplet<double>(constraint_idx, indices[i], -1.0));
-        b(constraint_idx++) = -binding.evaluator()->lower_bound()[i];
-      }
-      if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
-        A_triplets.push_back(Triplet<double>(constraint_idx, indices[i], 1.0));
-        b(constraint_idx++) = binding.evaluator()->upper_bound()[i];
-      }
-    }
-  }
-
-  for (const auto& binding : prog.linear_constraints()) {
-    const std::vector<int> indices = FindDecisionVariableIndices(
-        variables_to_sorted_indices, binding.variables());
-    // TODO(hongkai-dai): Consider using the SparseMatrix iterators.
-    for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
-      if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
-        for (int j = 0; j < binding.evaluator()->num_vars(); ++j) {
-          if (binding.evaluator()->get_sparse_A().coeff(i, j) != 0) {
-            A_triplets.push_back(Triplet<double>(
-                constraint_idx, indices[j],
-                -binding.evaluator()->get_sparse_A().coeff(i, j)));
-          }
-        }
-        b(constraint_idx++) = -binding.evaluator()->lower_bound()[i];
-      }
-      if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
-        for (int j = 0; j < binding.evaluator()->num_vars(); ++j) {
-          if (binding.evaluator()->get_sparse_A().coeff(i, j) != 0) {
-            A_triplets.push_back(Triplet<double>(
-                constraint_idx, indices[j],
-                binding.evaluator()->get_sparse_A().coeff(i, j)));
-          }
-        }
-        b(constraint_idx++) = binding.evaluator()->upper_bound()[i];
-      }
-    }
-  }
-  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
-
-  // 0 ≤ (Ay-b)(Ay-b)ᵀ, implemented with
-  // -bbᵀ ≤ AYAᵀ - b(Ay)ᵀ - (Ay)bᵀ.
-  // TODO(russt): Avoid the symbolic computation here.
-  // TODO(russt): Avoid the dense matrix.
-  const MatrixX<Expression> AYAT =
-      A * X.topLeftCorner(prog.num_vars(), prog.num_vars()) * A.transpose();
-  const VectorX<Variable> y = X.col(prog.num_vars()).head(prog.num_vars());
-
-  const VectorX<Expression> rhs_flat_tril =
-      math::ToLowerTriangularColumnsFromMatrix(AYAT - b * (A * y).transpose() -
-                                               A * y * b.transpose());
-  const VectorXd bbT_flat_tril =
-      math::ToLowerTriangularColumnsFromMatrix(-b * b.transpose());
-
-  relaxation->AddLinearConstraint(
-      rhs_flat_tril, bbT_flat_tril,
-      VectorXd::Constant(bbT_flat_tril.size(), kInf));
-}
-
-// For every equality constraint Ay = b in prog, add the implied linear equality
-// constraint [A, -b]X = 0 on the semidefinite relaxation variable X to the
-// relaxation. The map variables_to_sorted_indices maps the decision variables
-// in prog to their index in the last column of X.
-void DoAddImpliedLinearEqualityConstraints(
-    const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<Variable, int>& variables_to_sorted_indices,
-    MathematicalProgram* relaxation) {
-  // Linear equality constraints.
-  // Ay = b => (Ay-b)yᵀ = Ayyᵀ - byᵀ = 0.
-  for (const auto& binding : prog.linear_equality_constraints()) {
-    const int N = binding.variables().size();
-    const std::vector<int> indices = FindDecisionVariableIndices(
-        variables_to_sorted_indices, binding.variables());
-    VectorX<Variable> vars(N + 1);
-    // Add the constraints one column at a time:
-    // Ayx_j - bx_j = 0.
-    MatrixX<double> Ab(binding.evaluator()->num_constraints(), N + 1);
-    // TODO(Alexandre.Amice) make this only access the sparse matrix.
-    Ab.leftCols(N) = binding.evaluator()->GetDenseA();
-    Ab.col(N) = -binding.evaluator()->lower_bound();
-    // We don't need to do the last column of X.
-    for (int j = 0; j < static_cast<int>(X.cols()) - 1; ++j) {
-      for (int i = 0; i < N; ++i) {
-        vars[i] = X(indices[i], j);
-      }
-      vars[N] = X(prog.num_vars(), j);
-      relaxation->AddLinearEqualityConstraint(
-          Ab, VectorXd::Zero(binding.evaluator()->num_constraints()), vars);
-    }
-  }
-}
 
 // Constructs the semidefinite relaxation of the program prog and adds it to
 // relaxation. We assume that the program attributes of prog are already
@@ -330,19 +75,19 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
   // X ≽ 0.
   relaxation->AddPositiveSemidefiniteConstraint(X);
 
-  DoLinearizeQuadraticCostsAndConstraints(prog, X, variables_to_sorted_indices,
+  internal::DoLinearizeQuadraticCostsAndConstraints(
+      prog, X, variables_to_sorted_indices, relaxation);
+  internal::DoAddImpliedLinearConstraints(prog, X, variables_to_sorted_indices,
                                           relaxation);
-  DoAddImpliedLinearConstraints(prog, X, variables_to_sorted_indices,
-                                relaxation);
-  DoAddImpliedLinearEqualityConstraints(prog, X, variables_to_sorted_indices,
-                                        relaxation);
+  internal::DoAddImpliedLinearEqualityConstraints(
+      prog, X, variables_to_sorted_indices, relaxation);
   return X;
 }
 }  // namespace
 
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog) {
-  ValidateProgramIsSupported(prog);
+  internal::ValidateProgramIsSupported(prog);
   auto relaxation = prog.Clone();
   const Variable one("one");
   relaxation->AddDecisionVariables(Vector1<Variable>(one));
@@ -440,7 +185,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     }
   }
 
-  if (CheckProgramHasNonConvexQuadratics(*relaxation)) {
+  if (internal::CheckProgramHasNonConvexQuadratics(*relaxation)) {
     throw std::runtime_error(
         "There is a non-convex cost or constraint in the program whose "
         "variables do not overlap with any variable groups. Therefore, these "
