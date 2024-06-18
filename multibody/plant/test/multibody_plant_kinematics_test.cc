@@ -232,8 +232,8 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   const SpatialAcceleration<double> ABias_AAp_W =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_A, p_AoAp_A, frame_A, frame_W);
-  EXPECT_TRUE(CompareMatrices(ABias_AAp_W.get_coeffs(),
-                              Vector6d::Zero(), kTolerance));
+  EXPECT_TRUE(
+      CompareMatrices(ABias_AAp_W.get_coeffs(), Vector6d::Zero(), kTolerance));
 
   // Verify MultibodyPlant::CalcBiasSpatialAcceleration() results match those
   // of test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation().
@@ -307,8 +307,8 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   const SpatialAcceleration<double> A_AAo_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_A, p_AoAo_A, frame_A, frame_A);
-  EXPECT_TRUE(CompareMatrices(A_AAo_A.get_coeffs(),
-                              Vector6<double>::Zero(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(A_AAo_A.get_coeffs(), Vector6<double>::Zero(),
+                              kTolerance));
 
   // Point Ao is the point of A located at its centroid (so Ao is Acm).
   // Calculate Ao's spatial acceleration in world W, expressed in link frame A.
