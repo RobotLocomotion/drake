@@ -23,6 +23,7 @@ using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::internal::DiscreteContactPair;
 using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
+using drake::systems::DependencyTicket;
 
 template <typename T>
 DiscreteUpdateManager<T>::~DiscreteUpdateManager() = default;
@@ -47,6 +48,8 @@ void DiscreteUpdateManager<T>::CalcDiscreteValues(
 
 template <typename T>
 void DiscreteUpdateManager<T>::DeclareCacheEntries() {
+  const auto& query_object_input_ticket =
+      plant().get_geometry_query_input_port().ticket();
   // The Correct Solution:
   // The Implicit Stribeck solver solution S is a function of state x,
   // actuation input u (and externally applied forces) and even time if
@@ -83,9 +86,16 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       "Contact solver results",
       systems::ValueProducer(
           this, &DiscreteUpdateManager<T>::CalcContactSolverResults),
+      // TODO(#20545): this should include all_input_ports_ticket, but we can't
+      //  include it yet due to the cache entry hack introduced in #19225.
+      // ContactSolverResults include contribution from force elements, which
+      // could involve user-injected dependencies. So we need to include all
+      // possible tickets that users can choose to depend on.
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket(),
-       discrete_input_port_forces_cache_entry.ticket()});
+       systems::System<T>::time_ticket(), systems::System<T>::accuracy_ticket(),
+       discrete_input_port_forces_cache_entry.ticket(),
+       query_object_input_ticket});
   cache_indexes_.contact_solver_results =
       contact_solver_results_cache_entry.cache_index();
 
@@ -105,6 +115,8 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       systems::ValueProducer(
           this, model_forces,
           &DiscreteUpdateManager<T>::CalcDiscreteUpdateMultibodyForces),
+      // TODO(#20545): this should include all_input_ports_ticket, but we can't
+      //  include it yet due to the cache entry hack introduced in #19225.
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.discrete_update_multibody_forces =
@@ -114,6 +126,8 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       "Discrete update actuation",
       systems::ValueProducer(this, VectorX<T>(plant().num_actuated_dofs()),
                              &DiscreteUpdateManager<T>::CalcActuation),
+      // TODO(#20545): this should include all_input_ports_ticket, but we can't
+      //  include it yet due to the cache entry hack introduced in #19225.
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.actuation = actuation_cache_entry.cache_index();
@@ -122,8 +136,15 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       "Contact results (discrete)",
       systems::ValueProducer(this,
                              &DiscreteUpdateManager<T>::CalcContactResults),
+      // TODO(#20545): this should include all_input_ports_ticket, but we can't
+      //  include it yet due to the cache entry hack introduced in #19225.
+      // MultibodyForces include contribution from force elements, which could
+      // involve user-injected dependencies. So we need to include all possible
+      // tickets that users can choose to depend on.
       {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
+       systems::System<T>::all_parameters_ticket(),
+       systems::System<T>::time_ticket(),
+       systems::System<T>::accuracy_ticket()});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 
   // Cache discrete contact pairs.
@@ -132,7 +153,7 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       systems::ValueProducer(
           this, &DiscreteUpdateManager<T>::CalcDiscreteContactPairs),
       {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
+       systems::System<T>::all_parameters_ticket(), query_object_input_ticket});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
 
@@ -142,10 +163,12 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
         "Hydroelastic contact info.",
         systems::ValueProducer(
             this, &DiscreteUpdateManager<T>::CalcHydroelasticContactInfo),
-        // Compliant contact forces due to hydroelastics with Hunt &
-        // Crosseley are function of the kinematic variables q & v only.
+        // TODO(#20545): this should include all_input_ports_ticket, but we
+        //  can't include it yet due to the cache entry hack introduced in
+        //  #19225.
         {systems::System<T>::xd_ticket(),
-         systems::System<T>::all_parameters_ticket()});
+         systems::System<T>::all_parameters_ticket(),
+         contact_solver_results_cache_entry.ticket()});
     cache_indexes_.hydroelastic_contact_info =
         hydroelastic_contact_info_cache_entry.cache_index();
   }
@@ -163,7 +186,7 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
 template <typename T>
 systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
     std::string description, systems::ValueProducer value_producer,
-    std::set<systems::DependencyTicket> prerequisites_of_calc) {
+    std::set<DependencyTicket> prerequisites_of_calc) {
   DRAKE_DEMAND(mutable_plant_ != nullptr);
   DRAKE_DEMAND(mutable_plant_ == plant_);
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::DeclareCacheEntry(
@@ -571,9 +594,8 @@ void DiscreteUpdateManager<T>::AppendContactResultsForHydroelasticContact(
 template <typename T>
 void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
     const systems::Context<T>& context,
-    std::vector<HydroelasticContactInfo<T>>* contact_info) const
-  requires scalar_predicate<T>::is_bool
-{  // NOLINT(whitespace/braces)
+    std::vector<HydroelasticContactInfo<T>>* contact_info) const requires
+    scalar_predicate<T>::is_bool {  // NOLINT(whitespace/braces)
   DRAKE_DEMAND(contact_info != nullptr);
   const std::vector<ContactSurface<T>>& all_surfaces =
       EvalGeometryContactData(context).surfaces;

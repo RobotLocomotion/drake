@@ -59,6 +59,7 @@ using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
 using geometry::SourceId;
 using geometry::render::RenderLabel;
+using systems::DependencyTicket;
 using systems::InputPort;
 using systems::OutputPort;
 using systems::State;
@@ -2999,9 +3000,10 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   DeclareCacheEntries();
   DeclareParameters();
 
-  // State ticket.
-  const systems::DependencyTicket state_ticket =
+  const DependencyTicket state_ticket =
       is_discrete() ? this->xd_ticket() : this->kinematics_ticket();
+  const DependencyTicket position_ticket =
+      is_discrete() ? this->xd_ticket() : this->q_ticket();
 
   // Declare per model instance actuation ports.
   input_port_indices_.instance_actuation.resize(num_model_instances());
@@ -3079,7 +3081,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   output_port_indices_.state =
       this->DeclareVectorOutputPort("state", num_multibody_states(),
                                     &MultibodyPlant::CalcStateOutput,
-                                    {this->all_state_ticket()})
+                                    {state_ticket})
           .get_index();
 
   // Output "body_poses".
@@ -3087,7 +3089,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       this->DeclareAbstractOutputPort(
               "body_poses", std::vector<math::RigidTransform<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodyPosesOutput,
-              {this->configuration_ticket()})
+              {position_ticket, this->all_parameters_ticket()})
           .get_index();
 
   // Output "body_spatial_velocities".
@@ -3096,7 +3098,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               "body_spatial_velocities",
               std::vector<SpatialVelocity<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput,
-              {this->kinematics_ticket()})
+              {state_ticket, this->all_parameters_ticket()})
           .get_index();
 
   // Output "spatial_velocities" (deprecated).
@@ -3105,7 +3107,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
         this->DeclareAbstractOutputPort(
             "spatial_velocities", std::vector<SpatialVelocity<T>>(num_bodies()),
             &MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput,
-            {this->kinematics_ticket()}),
+            {state_ticket, this->all_parameters_ticket()}),
         "Use 'body_spatial_velocities' not 'spatial_velocities'. "
         "The deprecated spelling will be removed on 2024-10-01.");
   }
@@ -3116,10 +3118,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               "body_spatial_accelerations",
               std::vector<SpatialAcceleration<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
-              // Accelerations depend on both state and inputs.
-              // All sources include: time, accuracy, state, input ports, and
-              // parameters.
-              {this->all_sources_ticket()})
+              {this->acceleration_kinematics_cache_entry().ticket()})
           .get_index();
 
   // Output "spatial_accelerations" (deprecated).
@@ -3129,7 +3128,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
             "spatial_accelerations",
             std::vector<SpatialAcceleration<T>>(num_bodies()),
             &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
-            {this->all_sources_ticket()}),
+            {this->acceleration_kinematics_cache_entry().ticket()}),
         "Use 'body_spatial_accelerations' not 'spatial_accelerations'. "
         "The deprecated spelling will be removed on 2024-10-01.");
   }
@@ -3153,7 +3152,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 [this, i](const Context<T>& context, BasicVector<T>* output) {
                   this->CalcInstanceStateOutput(i, context, output);
                 },
-                {this->all_state_ticket()})
+                {state_ticket})
             .get_index();
   }
 
@@ -3177,19 +3176,19 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // Output "{model_instance_name}_generalized_contact_forces".
   output_port_indices_.instance_generalized_contact_forces.resize(
       num_model_instances());
+  std::set<DependencyTicket> prerequisites_of_generalized_contact_forces;
+  if (is_discrete()) {
+    prerequisites_of_generalized_contact_forces.insert(this->xd_ticket());
+    prerequisites_of_generalized_contact_forces.insert(
+        this->all_parameters_ticket());
+  } else {
+    prerequisites_of_generalized_contact_forces.insert(
+        this->get_cache_entry(
+                cache_indices_.generalized_contact_forces_continuous)
+            .ticket());
+  }
   for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
     const std::string& model_instance_name = GetModelInstanceName(i);
-    std::set<systems::DependencyTicket> prerequisites_of_calc;
-    if (is_discrete()) {
-      prerequisites_of_calc = {systems::System<T>::xd_ticket(),
-                               systems::System<T>::all_parameters_ticket()};
-    } else {
-      const auto& generalized_contact_forces_continuous_cache_entry =
-          this->get_cache_entry(
-              cache_indices_.generalized_contact_forces_continuous);
-      prerequisites_of_calc = {
-          generalized_contact_forces_continuous_cache_entry.ticket()};
-    }
     output_port_indices_.instance_generalized_contact_forces[i] =
         this->DeclareVectorOutputPort(
                 fmt::format("{}_generalized_contact_forces",
@@ -3200,12 +3199,12 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                   this->CalcInstanceGeneralizedContactForcesOutput(i, context,
                                                                    output);
                 },
-                prerequisites_of_calc)
+                prerequisites_of_generalized_contact_forces)
             .get_index();
   }
 
   // Joint reaction forces are a function of accelerations, which in turn depend
-  // on both state and inputs.
+  // on state, parameters, inputs, time, and accuracy.
   output_port_indices_.reaction_forces =
       this->DeclareAbstractOutputPort(
               "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
@@ -3214,17 +3213,11 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
           .get_index();
 
   // Output port "contact_results".
-  std::set<systems::DependencyTicket> contact_results_prerequisites = {
-      state_ticket};
-  if (is_discrete()) {
-    contact_results_prerequisites.insert(this->all_input_ports_ticket());
-    contact_results_prerequisites.insert(this->all_parameters_ticket());
-  }
   output_port_indices_.contact_results =
       this->DeclareAbstractOutputPort(
               "contact_results", ContactResults<T>(),
               &MultibodyPlant<T>::CalcContactResultsOutput,
-              contact_results_prerequisites)
+              {this->acceleration_kinematics_cache_entry().ticket()})
           .get_index();
 
   // Let external model managers declare their state, cache and ports in
@@ -3239,13 +3232,22 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // TODO(joemasterjohn): Create more granular parameter tickets for finer
   // control over cache dependencies on parameters. For example,
   // all_rigid_body_parameters, etc.
+  const DependencyTicket state_ticket =
+      is_discrete() ? this->xd_ticket() : this->kinematics_ticket();
+  const DependencyTicket position_ticket =
+      is_discrete() ? this->xd_ticket() : this->q_ticket();
 
   // TODO(SeanCurtis-TRI): When SG caches the results of these queries itself,
   //  (https://github.com/RobotLocomotion/drake/issues/12767), remove this
   //  cache entry.
   auto& geometry_contact_data_cache_entry = this->DeclareCacheEntry(
       std::string("GeometryContactData"),
-      &MultibodyPlant::CalcGeometryContactData, {this->configuration_ticket()});
+      // We can't just depend on configuration ticket here because the results
+      // from query objects also depend on other things in GeometryState such
+      // as collision filters.
+      &MultibodyPlant::CalcGeometryContactData,
+      {position_ticket, this->all_parameters_ticket(),
+       get_geometry_query_input_port().ticket()});
   cache_indices_.geometry_contact_data =
       geometry_contact_data_cache_entry.cache_index();
 
@@ -3261,28 +3263,20 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
                 this->num_bodies()),
             &MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous,
             // Compliant contact forces due to hydroelastics with Hunt &
-            // Crosseley are function of the kinematic variables q & v only.
-            {this->kinematics_ticket(), this->all_parameters_ticket()});
+            // Crossley are function of the kinematic variables q & v only.
+            {state_ticket, this->all_parameters_ticket(),
+             get_geometry_query_input_port().ticket()});
     cache_indices_.hydroelastic_contact_forces_continuous =
         hydroelastic_contact_forces_continuous_cache_entry.cache_index();
   }
 
   // Cache entry for ContactResultsContinuous.
   if (!is_discrete()) {
-    std::set<systems::DependencyTicket> dependency_ticket =
-        [this, use_hydroelastic]() {
-          std::set<systems::DependencyTicket> tickets;
-          tickets.insert(this->kinematics_ticket());
-          if (use_hydroelastic) {
-            tickets.insert(this->cache_entry_ticket(
-                cache_indices_.hydroelastic_contact_forces_continuous));
-          }
-          tickets.insert(this->all_parameters_ticket());
-          return tickets;
-        }();
     auto& contact_results_continuous_cache_entry = this->DeclareCacheEntry(
         std::string("ContactResultsContinuous"),
-        &MultibodyPlant<T>::CalcContactResultsContinuous, dependency_ticket);
+        &MultibodyPlant<T>::CalcContactResultsContinuous,
+        {state_ticket, this->all_parameters_ticket(),
+         get_geometry_query_input_port().ticket()});
     cache_indices_.contact_results_continuous =
         contact_results_continuous_cache_entry.cache_index();
   }
@@ -3294,7 +3288,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             "SpatialContactForcesContinuous",
             std::vector<SpatialForce<T>>(num_bodies()),
             &MultibodyPlant::CalcSpatialContactForcesContinuous,
-            {this->kinematics_ticket(), this->all_parameters_ticket()});
+            {state_ticket, this->all_parameters_ticket(),
+             get_geometry_query_input_port().ticket()});
     cache_indices_.spatial_contact_forces_continuous =
         spatial_contact_forces_continuous_cache_entry.cache_index();
   }
