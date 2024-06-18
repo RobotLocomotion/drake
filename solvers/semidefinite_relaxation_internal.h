@@ -11,11 +11,11 @@ namespace internal {
 
 void ValidateProgramIsSupported(const MathematicalProgram& prog);
 
-// Check whether the program prog has any non-convex quadratic costs or
+// Checks whether the program prog has any non-convex quadratic costs or
 // constraints.
 bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog);
 
-// Iterate over the quadratic costs and constraints in prog, remove them if
+// Iterates over the quadratic costs and constraints in prog, remove them if
 // present in the relaxation, and add an equivalent linear cost or constraint on
 // the semidefinite variable X. The map variables_to_sorted_indices maps the
 // decision variables in prog to their index in the last column of X.
@@ -24,7 +24,7 @@ void DoLinearizeQuadraticCostsAndConstraints(
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation);
 
-// Aggregate all the finite linear constraints in the program into a single
+// Aggregates all the finite linear constraints in the program into a single
 // expression Ay ≤ b, which can be expressed as [A, -b][y; 1] ≤ 0.
 // We add the implied linear constraint [A,-b]X[A,-b]ᵀ ≤ 0 on the variable X to
 // the relaxation. The map variables_to_sorted_indices maps the
@@ -34,25 +34,25 @@ void DoAddImpliedLinearConstraints(
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation);
 
-// For every equality constraint Ay = b in prog, add the implied linear equality
-// constraint [A, -b]X = 0 on the semidefinite relaxation variable X to the
-// relaxation. The map variables_to_sorted_indices maps the decision variables
-// in prog to their index in the last column of X.
+// For every equality constraint Ay = b in prog, adds the implied linear
+// equality constraint [A, -b]X = 0 on the semidefinite relaxation variable X
+// to the relaxation. The map variables_to_sorted_indices maps the decision
+// variables in prog to their index in the last column of X.
 void DoAddImpliedLinearEqualityConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation);
 
-// Take the sparse Kronecker product of A and B.
+// Takes the sparse Kronecker product of A and B.
 Eigen::SparseMatrix<double> SparseKroneckerProduct(
     const Eigen::SparseMatrix<double>& A, const Eigen::SparseMatrix<double>& B);
 
-// Get the matrix representation for the map Y -> [tr(Y), y00 - ∑ᵢ₌₁ʳ⁻¹yᵢᵢ,
+// Gets the matrix representation for the map Y -> [tr(Y), y00 - ∑ᵢ₌₁ʳ⁻¹yᵢᵢ,
 // 2y_{0i-1}] when applied to the lower triangular part of Y as a column. This
 // map goes from symmetric matrices with r - 1 rows to a vector with r rows.
 Eigen::SparseMatrix<double> GetWAdjForTril(const int r);
 
-// Given a vector expressing an element of Sⁿ ⊗ Sᵐ, return the corresponding
+// Given a vector expressing an element of Sⁿ ⊗ Sᵐ, returns the corresponding
 // symmetric matrix of size Sⁿᵐ. Note that Sⁿ ⊗ Sᵐ is a
 // subspace of Sⁿᵐ of dimension (n+1) choose 2 * (m+1) choose 2. Therefore, this
 // method requires that tensor_vector.rows() be of size (n+1) choose 2 * (m+1)
