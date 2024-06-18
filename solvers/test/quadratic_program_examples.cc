@@ -795,7 +795,7 @@ void TestQuadraticCostVariableOrder(const SolverInterface& solver, double tol) {
   // clang-format on
   const Eigen::Vector3d b(1, 2, 0);
   const auto cost1 = prog.AddQuadraticCost(
-      Q, b, Vector3<symbolic::Variable>(x(2), x(1), x(0)));
+      Q, b, Vector3<symbolic::Variable>(x(2), x(0), x(1)));
   prog.AddLinearEqualityConstraint(x(0) + 2 * x(1) + 3 * x(2) == 6);
   MathematicalProgramResult result;
   solver.Solve(prog, std::nullopt, std::nullopt, &result);

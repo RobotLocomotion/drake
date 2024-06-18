@@ -1,5 +1,6 @@
 #include "drake/solvers/osqp_solver.h"
 
+#include <algorithm>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -37,8 +38,10 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
         if (value == 0.0) {
           continue;
         }
-        const int x_row = std::min(x_indices[row],x_indices[col]);
+        const int x_row = std::min(x_indices[row], x_indices[col]);
         const int x_col = std::max(x_indices[row], x_indices[col]);
+//        const int x_row = x_indices[row];
+//        const int x_col = x_indices[col];
 
         P_triplets.emplace_back(x_row, x_col, static_cast<c_float>(value));
       }
@@ -391,8 +394,7 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   if (!solution_result && initial_guess.array().isFinite().all()) {
-    const c_int osqp_warm_err = osqp_warm_start_x(
-        work, initial_guess.data());
+    const c_int osqp_warm_err = osqp_warm_start_x(work, initial_guess.data());
     if (osqp_warm_err != 0) {
       solution_result = SolutionResult::kInvalidInput;
     }
