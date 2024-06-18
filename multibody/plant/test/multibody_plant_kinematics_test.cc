@@ -28,7 +28,7 @@ namespace {
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 
-// Fixture for a two degree-of-freedom pendulum having two links (rods) A and B.
+// Fixture for a two degree-of-freedom pendulum having two thin links A and B.
 // Link A is connected to world (frame W) with a z-axis pin joint (PinJoint1).
 // Link B is connected to link A with another z-axis pin joint (PinJoint2).
 // Hence links A and B only move in the world's x-y plane (perpendicular to Wz).
@@ -36,15 +36,15 @@ using Eigen::Vector3d;
 // the long axis of link B is parallel to B's unit vector Bx.
 // PinJoint1 connects point Wo (world W's origin) to link A at point Am of A.
 // PinJoint2 connects point Bm of link B to point Af of link A.
-// In the baseline configuration, the origin points Wo, Am, Ao, Af, Bm, Bo, are
-// sequential along the links (they form a line parallel to Wx = Ax = Bx).
+// In the baseline configuration, points Wo, Am, Ao, Af, Bm, Bo, are sequential
+// along the links (they form a line parallel to Wx = Ax = Bx).
 // Note: The applied forces (such as gravity) on this system are irrelevant as
-// the plan for this text fixture is limited to testing kinematics for an
+// this text fixture is currently only used to test kinematics for an
 // instantaneous given state.  The mass/inertia properties of this plant are
 // irrelevant and there are no actuators, sensors, controller, or ports.
 class TwoDOFPlanarPendulumTest : public ::testing::Test {
  public:
-  // Setup the MBP.
+  // Setup the multibody plant.
   void SetUp() override {
     // Set a spatial inertia for each link.
     const double link_mass = 5.0;  // kg
@@ -119,9 +119,9 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   // param[in] p_BoBp_B point Bp's position from point Bo (link B's centroid).
   SpatialAcceleration<double> CalcBpSpatialAccelerationInWExpressedInA(
       const VectorX<double>& vdot, const Vector3<double>& p_BoBp_B) {
-    const SpatialAcceleration<double> A_WMo_A =
+    const SpatialAcceleration<double> A_WAf_A =
         CalcApSpatialAccelerationInWExpressedInA(vdot[0], p_AoAf_A_);
-    const Vector3<double>& a_WMo_A = A_WMo_A.translational();
+    const Vector3<double>& a_WAf_A = A_WAf_A.translational();
 
     // w_WB_A = (wAz + wBz) Az   Reminder: Bz = Az = Wz (planar mechanism).
     const Vector3<double> w_WB_A(0, 0, wAz_ + wBz_);
@@ -135,8 +135,8 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
         math::RotationMatrix<double>::MakeZRotation(qB_);
     const Vector3<double> p_BmBp_A = R_AB * p_BmBp_B;
 
-    // a_WBp_A = a_WMo_A + alpha_WB_A x p_BmBp_A + w_WB_A x (w_WB_A x p_BmBp_A).
-    const Vector3<double> a_WBp_A = a_WMo_A + alpha_WB_A.cross(p_BmBp_A) +
+    // a_WBp_A = a_WAf_A + alpha_WB_A x p_BmBp_A + w_WB_A x (w_WB_A x p_BmBp_A).
+    const Vector3<double> a_WBp_A = a_WAf_A + alpha_WB_A.cross(p_BmBp_A) +
                                     w_WB_A.cross(w_WB_A.cross(p_BmBp_A));
     return SpatialAcceleration<double>(alpha_WB_A, a_WBp_A);
   }
@@ -166,7 +166,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   // link A located at the revolute joint that connects link A to link B).
   const Vector3<double> p_AoAf_A_{0.5 * link_length_, 0.0, 0.0};
 
-  // Store the position vector from Bo (link B's centroid) to Mo (the point of
+  // Store the position vector from Bo (link B's centroid) to Bm (the point of
   // link B located at the revolute joint that connects link B to link A).
   const Vector3<double> p_BoBm_B_{-0.5 * link_length_, 0.0, 0.0};
 };
@@ -180,12 +180,11 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   // To calculate bias spatial accelerations, set vdot = [ẇAz, ẇBz] = [0, 0].
   const Eigen::VectorXd vdot = Eigen::Vector2d(0.0, 0.0);
 
-  // Point Ap is an arbitrary point of A.
-  // Calculate Ap's bias spatial acceleration in world W.
+  // Point Ap is an arbitrary point of link A.
+  // Calculate Ap's bias spatial acceleration in world W, expressed in frame A.
   const Frame<double>& frame_A = bodyA_->body_frame();
   const Frame<double>& frame_W = plant_.world_frame();
-  const double x_offset = 0.6, y_offset = -0.7, z_offset = 0.9;
-  const Vector3<double> p_AoAp_A(x_offset, y_offset, z_offset);
+  const Vector3<double> p_AoAp_A(0.1, -0.2, 0.3);
   const SpatialAcceleration<double> ABias_WAp_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_A, p_AoAp_A, frame_W, frame_A);
@@ -205,10 +204,10 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   EXPECT_TRUE(CompareMatrices(ABias_WAp_A_alternate.get_coeffs(),
                               ABias_WAp_A.get_coeffs(), kTolerance));
 
-  // Point Bp is an arbitrary point of B.
-  // Calculate Bp's bias spatial acceleration in link A.
+  // Point Bp is an arbitrary point of link B.
+  // Calculate Bp's bias spatial acceleration in world W, expressed in frame A.
   const Frame<double>& frame_B = bodyB_->body_frame();
-  const Vector3<double> p_BoBp_B(x_offset, y_offset, z_offset);
+  const Vector3<double> p_BoBp_B(0.4, -0.5, 0.6);
   const SpatialAcceleration<double> ABias_WBp_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_B, p_BoBp_B, frame_W, frame_A);
@@ -228,14 +227,11 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   EXPECT_TRUE(CompareMatrices(ABias_WBp_A_alternate.get_coeffs(),
                               ABias_WBp_A.get_coeffs(), kTolerance));
 
-  // Point Ap is an arbitrary point of A.
-  // Calculate Ap's bias spatial acceleration in frame A and esnure it is zero.
+  // Point Ap is an arbitrary point of link A.
+  // Calculate Ap's bias spatial acceleration in frame A and ensure it is zero.
   const SpatialAcceleration<double> ABias_AAp_W =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_A, p_AoAp_A, frame_A, frame_W);
-
-  // Verify test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation()
-  // results match simple by-hand result: ABias_AAp_W = Vector6d::Zero().
   EXPECT_TRUE(CompareMatrices(ABias_AAp_W.get_coeffs(),
                               Vector6d::Zero(), kTolerance));
 
@@ -247,7 +243,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   EXPECT_TRUE(CompareMatrices(ABias_AAp_W_alternate.get_coeffs(),
                               Vector6d::Zero(), kTolerance));
 
-  // Point Bp is an arbitrary point of B.
+  // Point Bp is an arbitrary point of link B.
   // Calculate Bp's bias spatial acceleration in link A, expressed in frame A.
   const SpatialAcceleration<double> ABias_ABp_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
@@ -311,8 +307,8 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   const SpatialAcceleration<double> A_AAo_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_A, p_AoAo_A, frame_A, frame_A);
-  EXPECT_TRUE(CompareMatrices(A_AAo_A.get_coeffs(), Vector6<double>::Zero(),
-                              kTolerance));
+  EXPECT_TRUE(CompareMatrices(A_AAo_A.get_coeffs(),
+                              Vector6<double>::Zero(), kTolerance));
 
   // Point Ao is the point of A located at its centroid (so Ao is Acm).
   // Calculate Ao's spatial acceleration in world W, expressed in link frame A.
@@ -338,15 +334,15 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
 
   // Another way to check the results is setting vdot for all the joints, doing
   // inverse dynamics, and calculating the spatial acceleration of all bodies.
-  // Herein, A_WallBo_W is an array of the spatial acceleration of all bodies
+  // Herein, A_WallBody_W is an array of the spatial acceleration of all bodies
   // measured in the world frame W, and expressed in W.
-  std::vector<SpatialAcceleration<double>> A_WallBo_W(plant_.num_bodies());
-  plant_.CalcSpatialAccelerationsFromVdot(*context_, vdot, &A_WallBo_W);
+  std::vector<SpatialAcceleration<double>> A_WallBody_W(plant_.num_bodies());
+  plant_.CalcSpatialAccelerationsFromVdot(*context_, vdot, &A_WallBody_W);
 
-  // The 0th, 1st, and 2nd elements of A_WallBo_W correspond to the world body,
-  // bodyA_, and bodyB_, respectively.
-  const SpatialAcceleration<double> A_WAo_W = A_WallBo_W.at(1);
-  const SpatialAcceleration<double> A_WBo_W = A_WallBo_W.at(2);
+  // The 0th, 1st, and 2nd elements of A_WallBody_W correspond to the
+  // world body, bodyA_, and bodyB_, respectively.
+  const SpatialAcceleration<double> A_WAo_W = A_WallBody_W.at(1);
+  const SpatialAcceleration<double> A_WBo_W = A_WallBody_W.at(2);
 
   // Verify MultibodyPlant::CalcSpatialAccelerationsFromVdot() results match
   // with test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation().
@@ -376,8 +372,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
 
   // Point Ap is a generic point of link A.
   // Calculate frame_Ap's spatial acceleration in frame W, expressed in A.
-  const double x_offset = 0.6, y_offset = -0.7, z_offset = 0.9;
-  const Vector3<double> p_AoAp_A(x_offset, y_offset, z_offset);
+  const Vector3<double> p_AoAp_A(0.7, -0.8, 0.9);
   const Frame<double>& frame_Af = joint2_->frame_on_parent();
   const Vector3<double> p_AfAp_A = -p_AoAf_A_ + p_AoAp_A;
   const SpatialAcceleration<double> A_WAp_A =
@@ -391,9 +386,9 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   EXPECT_TRUE(CompareMatrices(A_WAp_A.get_coeffs(),
                               A_WAp_A_expected.get_coeffs(), kTolerance));
 
-  // Point Bp is an arbitrary point of B.
+  // Point Bp is an arbitrary point of link B.
   // Calculate Bp's spatial acceleration in world W, expressed in frame A.
-  const Vector3<double> p_BoBp_B(x_offset, y_offset, z_offset);
+  const Vector3<double> p_BoBp_B(0.9, -0.8, 0.7);
   const SpatialAcceleration<double> A_WBp_A =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_B, p_BoBp_B, frame_W, frame_A);
