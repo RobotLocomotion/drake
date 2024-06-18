@@ -118,8 +118,8 @@ void DoLinearizeQuadraticCostsAndConstraints(
     relaxation->AddLinearCost(a, binding.evaluator()->c(), vars);
   }
 
-  // Remove the quadratic constraints and replace them with a linear  constraint
-  // on the semidefinite varaibles i.e.
+  // Remove the quadratic constraints and replace them with a linear constraint
+  // on the semidefinite variables i.e.
   // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
   for (const auto& binding : prog.quadratic_constraints()) {
     relaxation->RemoveConstraint(binding);
