@@ -9,6 +9,7 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -18,41 +19,8 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
                          Eigen::SparseMatrix<c_float>* P,
                          std::vector<c_float>* q, double* constant_cost_term) {
   DRAKE_ASSERT(static_cast<int>(q->size()) == prog.num_vars());
-
-  // Loop through each quadratic costs in prog, and compute the Hessian matrix
-  // P, the linear cost q, and the constant cost term.
   std::vector<Eigen::Triplet<c_float>> P_triplets;
-  for (const auto& quadratic_cost : prog.quadratic_costs()) {
-    const VectorXDecisionVariable& x = quadratic_cost.variables();
-    // x_indices are the indices of the variables x (the variables bound with
-    // this quadratic cost) in the program decision variables.
-    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
-
-    // Add quadratic_cost.Q to the Hessian P.
-    // Since OSQP 0.6.0 the P matrix is required to be upper triangular, so
-    // we only add upper triangular entries to P_triplets.
-    const Eigen::MatrixXd& Q = quadratic_cost.evaluator()->Q();
-    for (int col = 0; col < Q.cols(); ++col) {
-      for (int row = 0; (row <= col) && (row < Q.rows()); ++row) {
-        const double value = Q(row, col);
-        if (value == 0.0) {
-          continue;
-        }
-        const int x_row = std::min(x_indices[row], x_indices[col]);
-        const int x_col = std::max(x_indices[row], x_indices[col]);
-        P_triplets.emplace_back(x_row, x_col, static_cast<c_float>(value));
-      }
-    }
-
-    // Add quadratic_cost.b to the linear cost term q.
-    for (int i = 0; i < x.rows(); ++i) {
-      q->at(x_indices[i]) += quadratic_cost.evaluator()->b()(i);
-    }
-
-    // Add quadratic_cost.c to constant term
-    *constant_cost_term += quadratic_cost.evaluator()->c();
-  }
-
+  internal::ParseQuadraticCosts(prog, &P_triplets, q, constant_cost_term);
   // Scale the matrix P in the cost.
   // Note that the linear term is scaled in ParseLinearCosts().
   const auto& scale_map = prog.GetVariableScaling();
@@ -72,7 +40,6 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
       }
     }
   }
-
   P->resize(prog.num_vars(), prog.num_vars());
   P->setFromTriplets(P_triplets.begin(), P_triplets.end());
 }
@@ -81,20 +48,7 @@ void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
                       double* constant_cost_term) {
   // Add the linear costs to the osqp cost.
   DRAKE_ASSERT(static_cast<int>(q->size()) == prog.num_vars());
-
-  // Loop over the linear costs stored inside prog.
-  for (const auto& linear_cost : prog.linear_costs()) {
-    for (int i = 0; i < static_cast<int>(linear_cost.GetNumElements()); ++i) {
-      // Append the linear cost term to q.
-      if (linear_cost.evaluator()->a()(i) != 0) {
-        const int x_index =
-            prog.FindDecisionVariableIndex(linear_cost.variables()(i));
-        q->at(x_index) += linear_cost.evaluator()->a()(i);
-      }
-    }
-    // Add the constant cost term to constant_cost_term.
-    *constant_cost_term += linear_cost.evaluator()->b();
-  }
+  internal::ParseLinearCosts(prog, q, constant_cost_term);
 
   // Scale the vector q in the cost.
   const auto& scale_map = prog.GetVariableScaling();
