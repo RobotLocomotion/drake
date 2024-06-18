@@ -117,11 +117,19 @@ drake_cc_library(
 
 drake_cc_library(
     name = "detail_collision_filter_groups_impl",
-    hdrs = ["detail_collision_filter_groups_impl.h"],
+    srcs = [
+        "detail_collision_filter_groups_impl.cc",
+        "detail_instanced_name.cc",
+    ],
+    hdrs = [
+        "detail_collision_filter_groups_impl.h",
+        "detail_instanced_name.h",
+    ],
     tags = ["exclude_from_package"],
     deps = [
         "//common:essential",
         "//common:sorted_pair",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -133,7 +141,6 @@ drake_cc_library(
         "detail_collision_filter_group_resolver.cc",
         "detail_common.cc",
         "detail_ignition.cc",
-        "detail_instanced_name.cc",
         "detail_tinyxml.cc",
         "detail_tinyxml2_diagnostic.cc",
     ],
@@ -141,7 +148,6 @@ drake_cc_library(
         "detail_collision_filter_group_resolver.h",
         "detail_common.h",
         "detail_ignition.h",
-        "detail_instanced_name.h",
         "detail_strongly_connected_components.h",
         "detail_tinyxml.h",
         "detail_tinyxml2_diagnostic.h",
@@ -756,7 +762,7 @@ drake_cc_googletest(
         ":test_models",
     ],
     deps = [
-        ":detail_misc",
+        ":detail_collision_filter_groups_impl",
         "//common/test_utilities",
     ],
 )

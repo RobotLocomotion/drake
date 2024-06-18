@@ -9,31 +9,35 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/multibody/parsing/detail_instanced_name.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
 
 /* Implementation of multibody::CollisionFilterGroups. See that class for full
-   documentation.
+documentation.
 
-@tparam T the type used for naming groups and members.
-*/
+@tparam T the type used for naming groups and members, which must be either
+`std::string` or `InstancedName`. (For the purposes of our own unit test, we
+also allow `int` and `double` but those are not actually used by the Parser.)
+
+Internal to the parser, we use CollisionFilterGroupsImpl<InstanceName> so that
+we can defend against model instance renames. When the user asks for the groups,
+we copy it to a CollisionFilterGroupsImpl<std::string> for their convenience. */
 template <typename T>
 class CollisionFilterGroupsImpl {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterGroupsImpl)
 
-  CollisionFilterGroupsImpl() = default;
+  CollisionFilterGroupsImpl();
+  ~CollisionFilterGroupsImpl();
 
-  bool operator==(const CollisionFilterGroupsImpl&) const = default;
+  bool operator==(const CollisionFilterGroupsImpl&) const;  // = default;
 
-  void AddGroup(const T& name, const std::set<T>& members) {
-    DRAKE_DEMAND(!groups_.contains(name));
-    groups_.insert({name, members});
-  }
+  void AddGroup(const T& name, const std::set<T>& members);
 
-  void AddExclusionPair(const SortedPair<T>& pair) { pairs_.insert(pair); }
+  void AddExclusionPair(const SortedPair<T>& pair);
 
   bool empty() const { return groups_.empty() && pairs_.empty(); }
 
@@ -41,21 +45,7 @@ class CollisionFilterGroupsImpl {
 
   const std::set<SortedPair<T>>& exclusion_pairs() const { return pairs_; }
 
-  std::string to_string() const {
-    std::stringstream ss;
-    ss << "\nCollision filter groups:\n";
-    for (const auto& [name, members] : groups()) {
-      ss << fmt::format("    {}\n", name);
-      for (const auto& member : members) {
-        ss << fmt::format("        {}\n", member);
-      }
-    }
-    ss << "Collision filter exclusion pairs:\n";
-    for (const auto& pair : exclusion_pairs()) {
-      ss << fmt::format("    {}, {}\n", pair.first(), pair.second());
-    }
-    return ss.str();
-  }
+  std::string to_string() const;
 
  private:
   std::map<T, std::set<T>> groups_;
