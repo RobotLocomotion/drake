@@ -106,14 +106,27 @@ Collision filter exclusion pairs:
   EXPECT_EQ(fmt::format("{}", stuff), expected_dump);
 }
 
-// Tests the MergeCollisionFilterGroups function.
-GTEST_TEST(CollisionFilterGroups, Merge) {
-  using internal::MergeCollisionFilterGroups;
-
+GTEST_TEST(CollisionFilterGroups, Convert) {
   // Use some arbitrary reversible conversions.
   auto double_to_int = [](const double& x) { return x * 32; };
   auto int_to_double = [](const int& x) { return x / 32.0; };
 
+  CollisionFilterGroupsImpl<int> int_groups1;
+  int_groups1.AddGroup(1, {2});
+  int_groups1.AddGroup(3, {4});
+  int_groups1.AddExclusionPair({1, 3});
+
+  CollisionFilterGroupsImpl<double> double_groups =
+      int_groups1.template Convert<double>(int_to_double);
+
+  CollisionFilterGroupsImpl<int> int_groups2 =
+      double_groups.template Convert<int>(double_to_int);
+
+  EXPECT_EQ(int_groups2, int_groups1);
+}
+
+// Tests the Merge function.
+GTEST_TEST(CollisionFilterGroups, Merge) {
   CollisionFilterGroupsImpl<int> int_groups1;
   int_groups1.AddGroup(1, {2});
   int_groups1.AddGroup(3, {4});
@@ -124,16 +137,13 @@ GTEST_TEST(CollisionFilterGroups, Merge) {
   int_groups2.AddGroup(7, {8});
   int_groups2.AddExclusionPair({5, 7});
 
-  // Cram the two test objects into an object of different type.
-  CollisionFilterGroupsImpl<double> double_groups;
-  MergeCollisionFilterGroups<double, int>(
-      &double_groups, int_groups1, int_to_double);
-  MergeCollisionFilterGroups<double, int>(
-      &double_groups, int_groups2, int_to_double);
-  // Recover the data into a new empty group of the original type.
-  CollisionFilterGroupsImpl<int> int_groups3;
-  MergeCollisionFilterGroups<int, double>(
-      &int_groups3, double_groups, double_to_int);
+  // Cram the two test objects into an empty object.
+  CollisionFilterGroupsImpl<int> temp_groups;
+  temp_groups.Merge(int_groups1);
+  temp_groups.Merge(int_groups2);
+  // Recover the data into a new empty group.
+  CollisionFilterGroupsImpl<int> final_groups;
+  final_groups.Merge(temp_groups);
 
   // Compare the recovered data with what was expected.
   CollisionFilterGroupsImpl<int> expected;
@@ -143,7 +153,7 @@ GTEST_TEST(CollisionFilterGroups, Merge) {
   expected.AddGroup(7, {8});
   expected.AddExclusionPair({1, 3});
   expected.AddExclusionPair({5, 7});
-  EXPECT_EQ(int_groups3, expected);
+  EXPECT_EQ(final_groups, expected);
 }
 
 }  // namespace

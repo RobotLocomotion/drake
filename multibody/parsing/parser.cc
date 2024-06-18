@@ -70,25 +70,8 @@ Parser::Parser(MultibodyPlant<double>* plant,
 Parser::~Parser() {}
 
 CollisionFilterGroups Parser::GetCollisionFilterGroups() const {
-  // Convert the data from the internal type back to the user-visible type.
-  auto convert = [this](const internal::InstancedName& input) -> std::string {
-    std::string result;
-    if (input.index.has_value()) {
-      auto scoped = ScopedName::Join(plant_->GetModelInstanceName(*input.index),
-                                     input.name);
-      result = scoped.get_full();
-    } else {
-      result = input.name;
-    }
-    return result;
-  };
-
-  // Merge the internal data into an empty object of the user-visible type, and
-  // return it.
-  internal::CollisionFilterGroupsImpl<std::string> result;
-  internal::MergeCollisionFilterGroups<std::string, internal::InstancedName>(
-      &result, data_->collision_filter_groups_storage_, convert);
-  return CollisionFilterGroups(std::move(result));
+  return CollisionFilterGroups(ConvertInstancedNamesToStrings(
+      data_->collision_filter_groups_storage_, *plant_));
 }
 
 std::vector<ModelInstanceIndex> Parser::AddModels(
@@ -129,26 +112,12 @@ void Parser::ResolveCollisionFilterGroupsFromCompositeParse(
     internal::CollisionFilterGroupResolver* resolver) {
   DRAKE_DEMAND(resolver != nullptr);
 
-  resolver->Resolve(diagnostic_policy_);
-
-  // Convert scoped names into InstancedNames for storage in between parses.
-  auto convert = [this](const std::string& input)
-                 -> internal::InstancedName {
-    internal::InstancedName result;
-    auto scoped = ScopedName::Parse(input);
-    if (plant_->HasModelInstanceNamed(scoped.get_namespace())) {
-      result.index = plant_->GetModelInstanceByName(scoped.get_namespace());
-    }
-    result.name = scoped.get_element();
-    return result;
-  };
+  const CollisionFilterGroupsImpl<internal::InstancedName> groups =
+      resolver->Resolve(diagnostic_policy_);
 
   // Merge the groups found during a composite parse into the accumulated groups
   // held by this parser.
-  MergeCollisionFilterGroups<internal::InstancedName, std::string>(
-      &data_->collision_filter_groups_storage_,
-      resolver->GetCollisionFilterGroups(),
-      convert);
+  data_->collision_filter_groups_storage_.Merge(groups);
 }
 
 }  // namespace multibody

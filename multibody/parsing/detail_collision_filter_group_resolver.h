@@ -116,16 +116,10 @@ class CollisionFilterGroupResolver {
       std::optional<ModelInstanceIndex> model_instance);
 
   // Resolves group pairs to rules. Emits diagnostics for undefined groups.
-  //
   // @pre cannot have be previously invoked on this instance.
-  void Resolve(const drake::internal::DiagnosticPolicy& diagnostic);
-
   // @returns the collision filter groups found after resolution.
-  // @pre Resolve() must have already been invoked.
-  CollisionFilterGroupsImpl<std::string> GetCollisionFilterGroups() const {
-    DRAKE_DEMAND(is_resolved_);
-    return group_output_;
-  }
+  CollisionFilterGroupsImpl<InstancedName> Resolve(
+      const drake::internal::DiagnosticPolicy& diagnostic);
 
  private:
   struct GroupData {
@@ -145,7 +139,6 @@ class CollisionFilterGroupResolver {
                                     ModelInstanceIndex model_instance) const;
 
   MultibodyPlant<double>* const plant_;
-  CollisionFilterGroupsImpl<std::string> group_output_;
 
   std::map<std::string, GroupData> groups_;
   std::set<SortedPair<std::string>> pairs_;
