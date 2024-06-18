@@ -40,9 +40,6 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
         }
         const int x_row = std::min(x_indices[row], x_indices[col]);
         const int x_col = std::max(x_indices[row], x_indices[col]);
-//        const int x_row = x_indices[row];
-//        const int x_col = x_indices[col];
-
         P_triplets.emplace_back(x_row, x_col, static_cast<c_float>(value));
       }
     }
