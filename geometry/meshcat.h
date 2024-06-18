@@ -551,6 +551,12 @@ class Meshcat {
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
 
+  // TODO: Update this in several ways:
+  //   1. Rename NoteTimeAdvancement to SetSimulationTime
+  //   2. Change SetSimulationTime(0) to reset the calculator.
+  //   3. Update documentation to explain what to expect to see in the chart.
+  //      (One column = one simulation period).
+
   /** @group Realtime Rate Reporting
 
    %Meshcat can be used to visualize the realtime rate of a simulation's

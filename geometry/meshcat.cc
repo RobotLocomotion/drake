@@ -30,12 +30,12 @@
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/timer.h"
 #include "drake/geometry/meshcat_file_storage_internal.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_recording_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
+#include "drake/systems/analysis/realtime_rate_calculator.h"
 
 #ifdef BOOST_VERSION
 #error Drake should be using the non-boost flavor of msgpack.
@@ -659,70 +659,6 @@ RigidTransformd MakeDrakePoseFromMeshcatPoseForCamera(
   return RigidTransformd(R_WCd, p_WC);
 }
 
-// Calculates real time rate on a periodic basis. Various measurements can be
-// taken in sequence (measuring sim time and the corresponding wall clock time)
-// and, periodically, this calculator can be asked for the average real time
-// rate over the period since the last request.
-class PeriodicRealtimeRateCalculator {
- public:
-  // Sets the current simulation time and reports the _wall clock_ duration of
-  // the recorded simulation interval.
-  double SetCurrentTime(double sim_time) {
-    wall_duration_ = timer_.Tick();
-    sim_end_ = sim_time;
-    if (!sim_start_.has_value()) {
-      sim_start_ = sim_end_;
-      wall_duration_ = 0;
-      timer_.Start();
-    }
-    return wall_duration_;
-  }
-
-  // Returns the duration of wall clock time that spans the known sim interval.
-  double duration() const { return wall_duration_; }
-
-  // Computes the periodic rate, resetting the calculations.
-  //
-  // If rate() is called twice in a row, the second time will *always* return
-  // zero.
-  //
-  // @returns The real time rate. It will return zero if SetCurrentTime() has
-  // been called less than twice since the last reset() event.
-  double rate() const {
-    DRAKE_DEMAND(sim_start_.has_value());
-
-    double rate = 0;
-
-    if (sim_start_.has_value() && wall_duration_ > 0) {
-      rate = (sim_end_ - *sim_start_) / wall_duration_;
-
-      if (rate != 0.0) {
-        // We only reset sim and wall start times if the reported simulation
-        // times span an interval. By selectively resetting, we can avoid
-        // mindlessly return zeros (when simulation steps take more time than
-        // the caller's period). We'll keep accumulating time so when we finally
-        // have a simulation interval defined, we can compute the rate of
-        // *that* interval.
-        timer_.Start();
-        sim_start_ = sim_end_;
-      }
-    }
-
-    return rate;
-  }
-
-  // Reset the timer.
-  void reset() {
-    sim_start_ = std::nullopt;
-  }
-
- private:
-  mutable std::optional<double> sim_start_;
-  double sim_end_{};
-  double wall_duration_{};
-  mutable SteadyTimer timer_;
-};
-
 }  // namespace
 
 class Meshcat::Impl {
@@ -750,7 +686,8 @@ class Meshcat::Impl {
   explicit Impl(const MeshcatParams& params)
       : prefix_("/drake"),
         main_thread_id_(std::this_thread::get_id()),
-        params_(params) {
+        params_(params),
+        rate_calculator_(params_.realtime_rate_period, /* sim time */ true) {
     DRAKE_THROW_UNLESS(!params.port.has_value() || *params.port == 0 ||
                        *params.port >= 1024);
     if (!drake::internal::IsNetworkingAllowed("meshcat")) {
@@ -851,15 +788,16 @@ class Meshcat::Impl {
 
   // This function is public via the PIMPL.
   void NoteTimeAdvancement(double sim_time) {
-    const double duration = rate_calculator_.SetCurrentTime(sim_time);
-    if (duration >= params_.realtime_rate_period) {
-      SetRealtimeRate(rate_calculator_.rate());
+    auto report = rate_calculator_.UpdateAndRecalculate(sim_time);
+    while (report.period_count > 0) {
+      SetRealtimeRate(report.rate);
+      report = rate_calculator_.UpdateAndRecalculate(sim_time);
     }
   }
 
   // This function is public via the PIMPL.
   void ResetTimeAdvancementRecord() {
-    rate_calculator_.reset();
+    rate_calculator_.Reset();
   }
 
   // This function is public via the PIMPL.
@@ -2360,7 +2298,7 @@ class Meshcat::Impl {
   const MeshcatParams params_;
   int port_{};
   internal::UuidGenerator uuid_generator_{};
-  PeriodicRealtimeRateCalculator rate_calculator_;
+  systems::internal::PeriodicRealtimeRateCalculator rate_calculator_;
   double realtime_rate_{0.0};
   bool is_orthographic_{false};
 
