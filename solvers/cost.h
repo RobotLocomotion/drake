@@ -132,8 +132,8 @@ class QuadraticCost : public Cost {
                 const Eigen::MatrixBase<Derivedb>& b, double c = 0.,
                 std::optional<bool> is_hessian_psd = std::nullopt)
       : Cost(Q.rows()), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
-    DRAKE_ASSERT(Q_.rows() == Q_.cols());
-    DRAKE_ASSERT(Q_.cols() == b_.rows());
+    DRAKE_THROW_UNLESS(Q_.rows() == Q_.cols());
+    DRAKE_THROW_UNLESS(Q_.cols() == b_.rows());
     if (is_hessian_psd.has_value()) {
       is_convex_ = is_hessian_psd.value();
     } else {
