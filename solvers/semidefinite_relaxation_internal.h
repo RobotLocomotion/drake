@@ -43,10 +43,10 @@ void DoLinearizeQuadraticCostsAndConstraints(
     MathematicalProgram* relaxation,
     bool preserve_convex_quadratic_constraints = false);
 
-// For every equality constraint Ay = b in prog, adds the implied linear equality
-// constraint [A, -b]X = 0 on the semidefinite relaxation variable X to the
-// relaxation. The map variables_to_sorted_indices maps the decision variables
-// in prog to their index in the last column of X.
+// For every equality constraint Ay = b in prog, adds the implied linear
+// equality constraint [A, -b]X = 0 on the semidefinite relaxation variable X to
+// the relaxation. The map variables_to_sorted_indices maps the decision
+// variables in prog to their index in the last column of X.
 void DoAddImpliedLinearEqualityConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
