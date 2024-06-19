@@ -15,16 +15,16 @@ namespace drake {
 namespace solvers {
 namespace {
 void ParseQuadraticCosts(const MathematicalProgram& prog,
-                         Eigen::SparseMatrix<c_float>* P,
+                         Eigen::SparseMatrix<c_float>* P_upper,
                          std::vector<c_float>* q, double* constant_cost_term) {
   DRAKE_ASSERT(static_cast<int>(q->size()) == prog.num_vars());
-  std::vector<Eigen::Triplet<c_float>> P_triplets;
-  internal::ParseQuadraticCosts(prog, &P_triplets, q, constant_cost_term);
+  std::vector<Eigen::Triplet<c_float>> P_upper_triplets;
+  internal::ParseQuadraticCosts(prog, &P_upper_triplets, q, constant_cost_term);
   // Scale the matrix P in the cost.
   // Note that the linear term is scaled in ParseLinearCosts().
   const auto& scale_map = prog.GetVariableScaling();
   if (!scale_map.empty()) {
-    for (auto& triplet : P_triplets) {
+    for (auto& triplet : P_upper_triplets) {
       // Column
       const auto column = scale_map.find(triplet.col());
       if (column != scale_map.end()) {
@@ -39,8 +39,9 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
       }
     }
   }
-  P->resize(prog.num_vars(), prog.num_vars());
-  P->setFromTriplets(P_triplets.begin(), P_triplets.end());
+
+  P_upper->resize(prog.num_vars(), prog.num_vars());
+  P_upper->setFromTriplets(P_upper_triplets.begin(), P_upper_triplets.end());
 }
 
 void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
@@ -293,11 +294,12 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
   // OSQP is written in C, so this function will be in C style.
 
   // Get the cost for the QP.
-  Eigen::SparseMatrix<c_float> P_sparse;
+  // Since OSQP 0.6.0 the P matrix is required to be upper triangular.
+  Eigen::SparseMatrix<c_float> P_upper_sparse;
   std::vector<c_float> q(prog.num_vars(), 0);
   double constant_cost_term{0};
 
-  ParseQuadraticCosts(prog, &P_sparse, &q, &constant_cost_term);
+  ParseQuadraticCosts(prog, &P_upper_sparse, &q, &constant_cost_term);
   ParseLinearCosts(prog, &q, &constant_cost_term);
 
   // linear_constraint_start_row[binding] stores the starting row index in A
@@ -317,7 +319,7 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
 
   data->n = prog.num_vars();
   data->m = A_sparse.rows();
-  data->P = EigenSparseToCSC(P_sparse);
+  data->P = EigenSparseToCSC(P_upper_sparse);
   data->q = q.data();
   data->A = EigenSparseToCSC(A_sparse);
   data->l = l.data();
