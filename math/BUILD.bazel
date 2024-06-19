@@ -32,6 +32,7 @@ drake_cc_package_library(
         ":matrix_util",
         ":quadratic_form",
         ":soft_min_max",
+        ":sparse_and_dense_matrix",
         ":vector3_util",
         ":wrap_to",
     ],
@@ -285,6 +286,16 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
     ],
+)
+
+drake_cc_library(
+    name = "sparse_and_dense_matrix",
+    srcs = ["sparse_and_dense_matrix.cc"],
+    hdrs = ["sparse_and_dense_matrix.h"],
+    interface_deps = [
+        "//common:essential",
+    ],
+    deps = [],
 )
 
 drake_cc_library(
@@ -583,6 +594,15 @@ drake_cc_googletest(
         ":soft_min_max",
         "//common/test_utilities:eigen_matrix_compare",
         "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sparse_and_dense_matrix_test",
+    tags = ["cpu:4"],
+    deps = [
+        ":sparse_and_dense_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -62,6 +62,7 @@ drake_cc_library(
     hdrs = ["affine_system.h"],
     interface_deps = [
         "//common/symbolic:expression",
+        "//math:sparse_and_dense_matrix",
         "//systems/framework",
     ],
     deps = [

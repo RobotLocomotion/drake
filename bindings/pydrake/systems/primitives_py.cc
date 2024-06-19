@@ -79,10 +79,23 @@ PYBIND11_MODULE(primitives, m) {
                  const Eigen::Ref<const MatrixXd>&,
                  const Eigen::Ref<const MatrixXd>&,
                  const Eigen::Ref<const VectorXd>&, double>(),
-            py::arg("A") = Eigen::MatrixXd(), py::arg("B") = Eigen::MatrixXd(),
+            py::arg("A"), py::arg("B") = Eigen::MatrixXd(),
             py::arg("f0") = Eigen::VectorXd(), py::arg("C") = Eigen::MatrixXd(),
             py::arg("D") = Eigen::MatrixXd(), py::arg("y0") = Eigen::VectorXd(),
-            py::arg("time_period") = 0.0, doc.AffineSystem.ctor.doc_7args)
+            py::arg("time_period") = 0.0, doc.AffineSystem.ctor.doc_dense)
+        .def(py::init<const Eigen::SparseMatrix<double>&,
+                 const Eigen::SparseMatrix<double>&,
+                 const Eigen::Ref<const VectorXd>&,
+                 const Eigen::SparseMatrix<double>&,
+                 const Eigen::SparseMatrix<double>&,
+                 const Eigen::Ref<const VectorXd>&, double>(),
+            py::arg("A") = Eigen::SparseMatrix<double>(),
+            py::arg("B") = Eigen::SparseMatrix<double>(),
+            py::arg("f0") = Eigen::VectorXd(),
+            py::arg("C") = Eigen::SparseMatrix<double>(),
+            py::arg("D") = Eigen::SparseMatrix<double>(),
+            py::arg("y0") = Eigen::VectorXd(), py::arg("time_period") = 0.0,
+            doc.AffineSystem.ctor.doc_sparse)
         // TODO(eric.cousineau): Fix these to return references instead of
         // copies.
         .def("A", overload_cast_explicit<const MatrixXd&>(&AffineSystem<T>::A),
@@ -99,11 +112,42 @@ PYBIND11_MODULE(primitives, m) {
         .def("y0",
             overload_cast_explicit<const VectorXd&>(&AffineSystem<T>::y0),
             doc.AffineSystem.y0.doc)
-        .def("UpdateCoefficients", &AffineSystem<T>::UpdateCoefficients,
-            py::arg("A") = Eigen::MatrixXd(), py::arg("B") = Eigen::MatrixXd(),
+        .def("get_sparse_A", &AffineSystem<T>::get_sparse_A,
+            doc.AffineSystem.get_sparse_A.doc)
+        .def("get_sparse_B", &AffineSystem<T>::get_sparse_B,
+            doc.AffineSystem.get_sparse_B.doc)
+        .def("get_sparse_C", &AffineSystem<T>::get_sparse_C,
+            doc.AffineSystem.get_sparse_C.doc)
+        .def("get_sparse_D", &AffineSystem<T>::get_sparse_D,
+            doc.AffineSystem.get_sparse_D.doc)
+        .def("UpdateCoefficients",
+            overload_cast_explicit<void,
+                const Eigen::Ref<const Eigen::MatrixXd>&,
+                const Eigen::Ref<const Eigen::MatrixXd>&,
+                const Eigen::Ref<const Eigen::VectorXd>&,
+                const Eigen::Ref<const Eigen::MatrixXd>&,
+                const Eigen::Ref<const Eigen::MatrixXd>&,
+                const Eigen::Ref<const Eigen::VectorXd>&>(
+                &AffineSystem<T>::UpdateCoefficients),
+            py::arg("A"), py::arg("B") = Eigen::MatrixXd(),
             py::arg("f0") = Eigen::VectorXd(), py::arg("C") = Eigen::MatrixXd(),
             py::arg("D") = Eigen::MatrixXd(), py::arg("y0") = Eigen::VectorXd(),
-            doc.AffineSystem.UpdateCoefficients.doc)
+            doc.AffineSystem.UpdateCoefficients.doc_dense)
+        .def("UpdateCoefficients",
+            overload_cast_explicit<void, const Eigen::SparseMatrix<double>&,
+                const Eigen::SparseMatrix<double>&,
+                const Eigen::Ref<const Eigen::VectorXd>&,
+                const Eigen::SparseMatrix<double>&,
+                const Eigen::SparseMatrix<double>&,
+                const Eigen::Ref<const Eigen::VectorXd>&>(
+                &AffineSystem<T>::UpdateCoefficients),
+            py::arg("A") = Eigen::SparseMatrix<double>(),
+            py::arg("B") = Eigen::SparseMatrix<double>(),
+            py::arg("f0") = Eigen::VectorXd(),
+            py::arg("C") = Eigen::SparseMatrix<double>(),
+            py::arg("D") = Eigen::SparseMatrix<double>(),
+            py::arg("y0") = Eigen::VectorXd(),
+            doc.AffineSystem.UpdateCoefficients.doc_sparse)
         // Wrap a few methods from the TimeVaryingAffineSystem parent class.
         // TODO(russt): Move to TimeVaryingAffineSystem if/when that class is
         // wrapped.

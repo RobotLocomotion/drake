@@ -11,9 +11,9 @@
 #include <Eigen/SparseCore>
 
 #include "drake/common/drake_deprecated.h"
+#include "drake/math/sparse_and_dense_matrix.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
-#include "drake/solvers/sparse_and_dense_matrix.h"
 
 namespace drake {
 namespace solvers {
@@ -363,7 +363,7 @@ class L2NormCost : public Cost {
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
  private:
-  internal::SparseAndDenseMatrix A_;
+  math::internal::SparseAndDenseMatrix A_;
   Eigen::VectorXd b_;
 };
 

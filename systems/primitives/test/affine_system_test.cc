@@ -13,14 +13,22 @@ namespace drake {
 namespace systems {
 namespace {
 
-class AffineSystemTest : public AffineLinearSystemTest {
+class AffineSystemTest : public AffineLinearSystemTest,
+                         public testing::WithParamInterface<bool> {
  public:
   // Setup an arbitrary AffineSystem.
   AffineSystemTest() : AffineLinearSystemTest(-4.5, 6.5, 3.5, -7.6) {}
 
   void Initialize() override {
     // Construct the system I/O objects.
-    dut_ = make_unique<AffineSystem<double>>(A_, B_, f0_, C_, D_, y0_);
+    const bool use_sparse_constructor = GetParam();
+    if (use_sparse_constructor) {
+      dut_ = make_unique<AffineSystem<double>>(A_.sparseView(), B_.sparseView(),
+                                               f0_, C_.sparseView(),
+                                               D_.sparseView(), y0_);
+    } else {
+      dut_ = make_unique<AffineSystem<double>>(A_, B_, f0_, C_, D_, y0_);
+    }
     dut_->configure_default_state(x0_);
     dut_->configure_random_state(Sigma_x0_);
     dut_->set_name("test_affine_system");
@@ -39,7 +47,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
 };
 
 // Tests that the affine system is correctly setup.
-TEST_F(AffineSystemTest, Construction) {
+TEST_P(AffineSystemTest, Construction) {
   EXPECT_EQ(1, context_->num_input_ports());
   EXPECT_EQ("test_affine_system", dut_->get_name());
   EXPECT_EQ(dut_->A(), A_);
@@ -48,6 +56,10 @@ TEST_F(AffineSystemTest, Construction) {
   EXPECT_EQ(dut_->D(), D_);
   EXPECT_EQ(dut_->f0(), f0_);
   EXPECT_EQ(dut_->y0(), y0_);
+  EXPECT_EQ(dut_->get_sparse_A().toDense(), A_);
+  EXPECT_EQ(dut_->get_sparse_B().toDense(), B_);
+  EXPECT_EQ(dut_->get_sparse_C().toDense(), C_);
+  EXPECT_EQ(dut_->get_sparse_D().toDense(), D_);
   EXPECT_EQ(dut_->num_output_ports(), 1);
   EXPECT_EQ(dut_->num_input_ports(), 1);
 
@@ -62,7 +74,7 @@ TEST_F(AffineSystemTest, Construction) {
 }
 
 // Tests that the derivatives are correctly computed.
-TEST_F(AffineSystemTest, Derivatives) {
+TEST_P(AffineSystemTest, Derivatives) {
   Eigen::Vector2d u(1, 4);
   SetInput(u);
 
@@ -80,14 +92,14 @@ TEST_F(AffineSystemTest, Derivatives) {
 }
 
 // Tests that the updates are correctly (not) computed.
-TEST_F(AffineSystemTest, Updates) {
+TEST_P(AffineSystemTest, Updates) {
   EXPECT_TRUE(context_->has_only_continuous_state());
   EXPECT_NE(updates_, nullptr);
   EXPECT_EQ(updates_->num_groups(), 0);
 }
 
 // Tests that the outputs are correctly computed.
-TEST_F(AffineSystemTest, Output) {
+TEST_P(AffineSystemTest, Output) {
   // Sets the context's input port.
   Eigen::Vector2d u(5.6, -10.1);
   SetInput(u);
@@ -104,7 +116,7 @@ TEST_F(AffineSystemTest, Output) {
 }
 
 // Tests that the coefficients are correctly updated.
-TEST_F(AffineSystemTest, UpdateCoefficients) {
+TEST_P(AffineSystemTest, UpdateCoefficients) {
   const Eigen::Matrix2d new_A = make_2x2_matrix(1, 2, 3, 4);
   const Eigen::Matrix2d new_B = make_2x2_matrix(5, 6, 7, 8);
   const Eigen::Vector2d new_f0 = make_2x1_vector(-1, -2);
@@ -115,7 +127,24 @@ TEST_F(AffineSystemTest, UpdateCoefficients) {
   const Eigen::Matrix2d C_zero = make_2x2_matrix(0, 0, 0, 0);
   const Eigen::Matrix2d D_zero = make_2x2_matrix(0, 0, 0, 0);
 
-  dut_->UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0);
+  dut_->UpdateCoefficients(2 * new_A, 3 * new_B, 4 * new_f0, 5 * new_C,
+                           6 * new_D, 7 * new_y0);
+
+  EXPECT_TRUE(CompareMatrices(dut_->A(), 2 * new_A));
+  EXPECT_TRUE(CompareMatrices(dut_->B(), 3 * new_B));
+  EXPECT_TRUE(CompareMatrices(dut_->f0(), 4 * new_f0));
+  EXPECT_TRUE(CompareMatrices(dut_->C(), 5 * new_C));
+  EXPECT_TRUE(CompareMatrices(dut_->D(), 6 * new_D));
+  EXPECT_TRUE(CompareMatrices(dut_->y0(), 7 * new_y0));
+
+  EXPECT_TRUE(CompareMatrices(dut_->get_sparse_A().toDense(), 2 * new_A));
+  EXPECT_TRUE(CompareMatrices(dut_->get_sparse_B().toDense(), 3 * new_B));
+  EXPECT_TRUE(CompareMatrices(dut_->get_sparse_C().toDense(), 5 * new_C));
+  EXPECT_TRUE(CompareMatrices(dut_->get_sparse_D().toDense(), 6 * new_D));
+
+  // Now the sparse matrix variant.
+  dut_->UpdateCoefficients(new_A.sparseView(), new_B.sparseView(), new_f0,
+                           new_C.sparseView(), new_D.sparseView(), new_y0);
 
   EXPECT_TRUE(CompareMatrices(dut_->A(), new_A));
   EXPECT_TRUE(CompareMatrices(dut_->B(), new_B));
@@ -123,6 +152,10 @@ TEST_F(AffineSystemTest, UpdateCoefficients) {
   EXPECT_TRUE(CompareMatrices(dut_->C(), new_C));
   EXPECT_TRUE(CompareMatrices(dut_->D(), new_D));
   EXPECT_TRUE(CompareMatrices(dut_->y0(), new_y0));
+  EXPECT_TRUE(CompareMatrices(dut_->get_sparse_A().toDense(), new_A));
+  EXPECT_TRUE(CompareMatrices(dut_->get_sparse_B().toDense(), new_B));
+  EXPECT_TRUE(CompareMatrices(dut_->get_sparse_C().toDense(), new_C));
+  EXPECT_TRUE(CompareMatrices(dut_->get_sparse_D().toDense(), new_D));
 
   // Tests output dependency consistency.
   auto dut_zero_C = AffineSystem<double>(A_, B_, f0_, C_zero, D_, y0_);
@@ -138,7 +171,7 @@ TEST_F(AffineSystemTest, UpdateCoefficients) {
       error_msg_regex);
 }
 
-TEST_F(AffineSystemTest, UpdateCoefficientsButWrongSize) {
+TEST_P(AffineSystemTest, UpdateCoefficientsButWrongSize) {
   const Eigen::Matrix<double, 2, 3> new_A;
   const Eigen::Matrix<double, 3, 2> new_B;
   const Eigen::Vector3d new_f0;
@@ -163,7 +196,7 @@ TEST_F(AffineSystemTest, UpdateCoefficientsButWrongSize) {
       dut_->UpdateCoefficients(A_, B_, f0_, C_, D_, new_y0), error_msg_regrex);
 }
 
-TEST_F(AffineSystemTest, DefaultAndRandomState) {
+TEST_P(AffineSystemTest, DefaultAndRandomState) {
   EXPECT_TRUE(CompareMatrices(dut_->get_default_state(), x0_, 0.0));
   EXPECT_TRUE(CompareMatrices(
       context_->get_continuous_state_vector().CopyToVector(), x0_, 0.0));
@@ -194,7 +227,7 @@ TEST_F(AffineSystemTest, DefaultAndRandomState) {
 }
 
 // Tests converting to different scalar types.
-TEST_F(AffineSystemTest, ConvertScalarType) {
+TEST_P(AffineSystemTest, ConvertScalarType) {
   EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
     EXPECT_EQ(converted.A(), A_);
     EXPECT_EQ(converted.B(), B_);
@@ -220,6 +253,9 @@ TEST_F(AffineSystemTest, ConvertScalarType) {
                                 Sigma_x0_, 1e-16));
   }));
 }
+
+INSTANTIATE_TEST_SUITE_P(SparseAndDenseTests, AffineSystemTest,
+                         testing::Values(true, false));
 
 class FeedthroughAffineSystemTest : public ::testing::Test {
  public:

@@ -231,7 +231,7 @@ void TimeVaryingAffineSystem<T>::SetRandomState(
   }
 }
 
-// Our public constructor declares that our most specific subclass is
+// Our public constructors declare that our most specific subclass is
 // AffineSystem, and then delegates to our protected constructor.
 template <typename T>
 AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -244,14 +244,25 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
     : AffineSystem<T>(SystemTypeTag<AffineSystem>{}, A, B, f0, C, D, y0,
                       time_period) {}
 
+template <typename T>
+AffineSystem<T>::AffineSystem(const Eigen::SparseMatrix<double>& A,
+                              const Eigen::SparseMatrix<double>& B,
+                              const Eigen::Ref<const Eigen::VectorXd>& f0,
+                              const Eigen::SparseMatrix<double>& C,
+                              const Eigen::SparseMatrix<double>& D,
+                              const Eigen::Ref<const Eigen::VectorXd>& y0,
+                              double time_period)
+    : AffineSystem<T>(SystemTypeTag<AffineSystem>{}, A, B, f0, C, D, y0,
+                      time_period) {}
+
 namespace {
 
 // Returns the number of states, where any empty matrix is assumed to have the
 // correct size.
-int CalcNumStates(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                  const Eigen::Ref<const Eigen::MatrixXd>& B,
+template <typename Derived>
+int CalcNumStates(const Derived& A, const Derived& B,
                   const Eigen::Ref<const Eigen::VectorXd>& f0,
-                  const Eigen::Ref<const Eigen::MatrixXd>& C) {
+                  const Derived& C) {
   int num_states = 0;
   if (A.size() > 0) {
     num_states = A.rows();
@@ -284,8 +295,8 @@ int CalcNumStates(const Eigen::Ref<const Eigen::MatrixXd>& A,
 
 // Returns the number of inputs, where any empty matrix is assumed to have the
 // correct size.
-int CalcNumInputs(const Eigen::Ref<const Eigen::MatrixXd>& B,
-                  const Eigen::Ref<const Eigen::MatrixXd>& D) {
+template <typename Derived>
+int CalcNumInputs(const Derived& B, const Derived& D) {
   int num_inputs = 0;
   if (B.size() > 0) {
     num_inputs = B.cols();
@@ -302,8 +313,8 @@ int CalcNumInputs(const Eigen::Ref<const Eigen::MatrixXd>& B,
 
 // Returns the number of outputs, where any empty matrix is assumed to have the
 // correct size.
-int CalcNumOutputs(const Eigen::Ref<const Eigen::MatrixXd>& C,
-                   const Eigen::Ref<const Eigen::MatrixXd>& D,
+template <typename Derived>
+int CalcNumOutputs(const Derived& C, const Derived& D,
                    const Eigen::Ref<const Eigen::VectorXd>& y0) {
   int num_outputs = 0;
   if (C.size() > 0) {
@@ -331,8 +342,13 @@ bool IsMeaningful(const Eigen::Ref<const Eigen::MatrixXd>& m) {
   return m.size() > 0 && (m.array() != 0).any();
 }
 
-void CompareMatrixSize(const Eigen::Ref<const Eigen::MatrixXd>& M1,
-                       const Eigen::Ref<const Eigen::MatrixXd>& M2,
+// Returns whether a matrix is "meaningful" when pre-multiplying a vector.
+bool IsMeaningful(const Eigen::SparseMatrix<double>& m) {
+  return m.nonZeros() > 0;
+}
+
+template <typename DerivedA, typename DerivedB>
+void CompareMatrixSize(const DerivedA& M1, const DerivedB& M2,
                        const std::string& matrix_name) {
   if (M1.rows() != M2.rows() || M1.cols() != M2.cols()) {
     throw std::runtime_error(
@@ -385,27 +401,45 @@ AffineSystem<T>::AffineSystem(SystemScalarConverter converter,
       y0_(y0.size() ? y0 : Eigen::VectorXd::Zero(this->num_outputs())),
       has_meaningful_C_(IsMeaningful(C)),
       has_meaningful_D_(IsMeaningful(D)) {
-  // Specify our output port's dependencies more precisely than our base class
-  // is able to.  We know that output never depends on time nor parameters,
-  // only on state (iff C if non-zero) and input (iff D is non-zero).
-  if (this->num_outputs() > 0) {
-    const OutputPort<T>& output_port = this->get_output_port();
-    const auto& leaf_port = dynamic_cast<const LeafOutputPort<T>&>(output_port);
-    const CacheIndex cache_index = leaf_port.cache_entry().cache_index();
-    CacheEntry& cache_entry = this->get_mutable_cache_entry(cache_index);
-    std::set<DependencyTicket>& prereqs = cache_entry.mutable_prerequisites();
-    prereqs.clear();
-    if (has_meaningful_C_) {
-      prereqs.insert(this->all_state_ticket());
-    }
-    if (has_meaningful_D_) {
-      prereqs.insert(this->all_input_ports_ticket());
-    }
-  }
+  SpecifyOutputPortDependencies();
 }
 
-// Our copy constructor delegates to the public constructor; this used only by
-// SystemScalarConverter as known to our public constructor, not by subclasses.
+// Our protected sparse matrix constructor stores the sparse matrices, but
+// otherwise delegates to the main constructor.
+template <typename T>
+AffineSystem<T>::AffineSystem(SystemScalarConverter converter,
+                              const Eigen::SparseMatrix<double>& A,
+                              const Eigen::SparseMatrix<double>& B,
+                              const Eigen::Ref<const Eigen::VectorXd>& f0,
+                              const Eigen::SparseMatrix<double>& C,
+                              const Eigen::SparseMatrix<double>& D,
+                              const Eigen::Ref<const Eigen::VectorXd>& y0,
+                              double time_period)
+    : TimeVaryingAffineSystem<T>(
+          std::move(converter), CalcNumStates(A, B, f0, C), CalcNumInputs(B, D),
+          CalcNumOutputs(C, D, y0), time_period),
+      A_(A.size() ? A
+                  : Eigen::SparseMatrix<double>(this->num_states(),
+                                                this->num_states())),
+      B_(B.size() ? B
+                  : Eigen::SparseMatrix<double>(this->num_states(),
+                                                this->num_inputs())),
+      f0_(f0.size() ? f0 : Eigen::VectorXd::Zero(this->num_states())),
+      C_(C.size() ? C
+                  : Eigen::SparseMatrix<double>(this->num_outputs(),
+                                                this->num_states())),
+      D_(D.size() ? D
+                  : Eigen::SparseMatrix<double>(this->num_outputs(),
+                                                this->num_inputs())),
+      y0_(y0.size() ? y0 : Eigen::VectorXd::Zero(this->num_outputs())),
+      has_meaningful_C_(IsMeaningful(C)),
+      has_meaningful_D_(IsMeaningful(D)) {
+  SpecifyOutputPortDependencies();
+}
+
+// Our copy constructor delegates to the public constructor; this used only
+// by SystemScalarConverter as known to our public constructor, not by
+// subclasses.
 template <typename T>
 template <typename U>
 AffineSystem<T>::AffineSystem(const AffineSystem<U>& other)
@@ -462,12 +496,12 @@ void AffineSystem<T>::CalcOutputY(const Context<T>& context,
                   context.get_continuous_state_vector())
                   .get_value()
             : context.get_discrete_state().get_vector().get_value();
-    y += C_ * x;
+    y += C_.get_as_sparse() * x;
   }
 
   if (has_meaningful_D_) {
     const auto& u = this->get_input_port().Eval(context);
-    y += D_ * u;
+    y += D_.get_as_sparse() * u;
   }
 }
 
@@ -480,12 +514,12 @@ void AffineSystem<T>::DoCalcTimeDerivatives(
       dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
           .get_value();
 
-  VectorX<T> xdot = A_ * x + f0_;
+  VectorX<T> xdot = A_.get_as_sparse() * x + f0_;
 
   if (this->num_inputs() > 0) {
     const auto& u = this->get_input_port().Eval(context);
 
-    xdot += B_ * u;
+    xdot += B_.get_as_sparse() * u;
   }
   derivatives->SetFromVector(xdot);
 }
@@ -499,12 +533,12 @@ EventStatus AffineSystem<T>::CalcDiscreteUpdate(
 
   const auto& x = context.get_discrete_state(0).get_value();
 
-  VectorX<T> xnext = A_ * x + f0_;
+  VectorX<T> xnext = A_.get_as_sparse() * x + f0_;
 
   if (this->num_inputs() > 0) {
     const auto& u = this->get_input_port().Eval(context);
 
-    xnext += B_ * u;
+    xnext += B_.get_as_sparse() * u;
   }
   updates->set_value(xnext);
   return EventStatus::Succeeded();
@@ -518,11 +552,11 @@ void AffineSystem<T>::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_C,
     const Eigen::Ref<const Eigen::MatrixXd>& new_D,
     const Eigen::Ref<const Eigen::VectorXd>& new_y0) {
-  CompareMatrixSize(new_A, A_, "A");
-  CompareMatrixSize(new_B, B_, "B");
+  CompareMatrixSize(new_A, A_.get_as_sparse(), "A");
+  CompareMatrixSize(new_B, B_.get_as_sparse(), "B");
   CompareMatrixSize(new_f0, f0_, "f0");
-  CompareMatrixSize(new_C, C_, "C");
-  CompareMatrixSize(new_D, D_, "D");
+  CompareMatrixSize(new_C, C_.get_as_sparse(), "C");
+  CompareMatrixSize(new_D, D_.get_as_sparse(), "D");
   CompareMatrixSize(new_y0, y0_, "y0");
 
   const bool is_new_C_meaningful = IsMeaningful(new_C);
@@ -540,6 +574,59 @@ void AffineSystem<T>::UpdateCoefficients(
   y0_ = new_y0;
   has_meaningful_C_ = is_new_C_meaningful;
   has_meaningful_D_ = is_new_D_meaningful;
+}
+
+template <typename T>
+void AffineSystem<T>::UpdateCoefficients(
+    const Eigen::SparseMatrix<double>& new_A,
+    const Eigen::SparseMatrix<double>& new_B,
+    const Eigen::Ref<const Eigen::VectorXd>& new_f0,
+    const Eigen::SparseMatrix<double>& new_C,
+    const Eigen::SparseMatrix<double>& new_D,
+    const Eigen::Ref<const Eigen::VectorXd>& new_y0) {
+  CompareMatrixSize(new_A, A_.get_as_sparse(), "A");
+  CompareMatrixSize(new_B, B_.get_as_sparse(), "B");
+  CompareMatrixSize(new_f0, f0_, "f0");
+  CompareMatrixSize(new_C, C_.get_as_sparse(), "C");
+  CompareMatrixSize(new_D, D_.get_as_sparse(), "D");
+  CompareMatrixSize(new_y0, y0_, "y0");
+
+  const bool is_new_C_meaningful = IsMeaningful(new_C);
+  const bool is_new_D_meaningful = IsMeaningful(new_D);
+  CheckOutputConsistency(has_meaningful_C_, is_new_C_meaningful, "new_C",
+                         "state");
+  CheckOutputConsistency(has_meaningful_D_, is_new_D_meaningful, "new_D",
+                         "input");
+
+  A_ = new_A;
+  B_ = new_B;
+  f0_ = new_f0;
+  C_ = new_C;
+  D_ = new_D;
+  y0_ = new_y0;
+  has_meaningful_C_ = is_new_C_meaningful;
+  has_meaningful_D_ = is_new_D_meaningful;
+}
+
+template <typename T>
+void AffineSystem<T>::SpecifyOutputPortDependencies() {
+  // Specify our output port's dependencies more precisely than our base class
+  // is able to.  We know that output never depends on time nor parameters,
+  // only on state (iff C if non-zero) and input (iff D is non-zero).
+  if (this->num_outputs() > 0) {
+    const OutputPort<T>& output_port = this->get_output_port();
+    const auto& leaf_port = dynamic_cast<const LeafOutputPort<T>&>(output_port);
+    const CacheIndex cache_index = leaf_port.cache_entry().cache_index();
+    CacheEntry& cache_entry = this->get_mutable_cache_entry(cache_index);
+    std::set<DependencyTicket>& prereqs = cache_entry.mutable_prerequisites();
+    prereqs.clear();
+    if (has_meaningful_C_) {
+      prereqs.insert(this->all_state_ticket());
+    }
+    if (has_meaningful_D_) {
+      prereqs.insert(this->all_input_ports_ticket());
+    }
+  }
 }
 
 // clang-format off

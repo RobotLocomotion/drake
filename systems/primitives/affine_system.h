@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
+#include "drake/math/sparse_and_dense_matrix.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -209,12 +210,24 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /// time_period=0.0 to denote a continuous time system.  @default 0.0
   ///
   /// Subclasses must use the protected constructor, not this one.
+  /// @pydrake_mkdoc_identifier{dense}
   explicit AffineSystem(
-      const Eigen::Ref<const Eigen::MatrixXd>& A = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::MatrixXd>& B = Eigen::MatrixXd(),
       const Eigen::Ref<const Eigen::VectorXd>& f0 = Eigen::VectorXd(),
       const Eigen::Ref<const Eigen::MatrixXd>& C = Eigen::MatrixXd(),
       const Eigen::Ref<const Eigen::MatrixXd>& D = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::VectorXd>& y0 = Eigen::VectorXd(),
+      double time_period = 0.0);
+
+  /// SparseMatrix version of the constructor.
+  /// @pydrake_mkdoc_identifier{sparse}
+  explicit AffineSystem(
+      const Eigen::SparseMatrix<double>& A = Eigen::SparseMatrix<double>(),
+      const Eigen::SparseMatrix<double>& B = Eigen::SparseMatrix<double>(),
+      const Eigen::Ref<const Eigen::VectorXd>& f0 = Eigen::VectorXd(),
+      const Eigen::SparseMatrix<double>& C = Eigen::SparseMatrix<double>(),
+      const Eigen::SparseMatrix<double>& D = Eigen::SparseMatrix<double>(),
       const Eigen::Ref<const Eigen::VectorXd>& y0 = Eigen::VectorXd(),
       double time_period = 0.0);
 
@@ -236,33 +249,59 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
 
   /// @name Helper getter methods.
   /// @{
-  const Eigen::MatrixXd& A() const { return A_; }
-  const Eigen::MatrixXd& B() const { return B_; }
+  const Eigen::MatrixXd& A() const { return A_.GetAsDense(); }
+  const Eigen::MatrixXd& B() const { return B_.GetAsDense(); }
   const Eigen::VectorXd& f0() const { return f0_; }
-  const Eigen::MatrixXd& C() const { return C_; }
-  const Eigen::MatrixXd& D() const { return D_; }
+  const Eigen::MatrixXd& C() const { return C_.GetAsDense(); }
+  const Eigen::MatrixXd& D() const { return D_.GetAsDense(); }
   const Eigen::VectorXd& y0() const { return y0_; }
+
+  const Eigen::SparseMatrix<double>& get_sparse_A() const {
+    return A_.get_as_sparse();
+  }
+  const Eigen::SparseMatrix<double>& get_sparse_B() const {
+    return B_.get_as_sparse();
+  }
+  const Eigen::SparseMatrix<double>& get_sparse_C() const {
+    return C_.get_as_sparse();
+  }
+  const Eigen::SparseMatrix<double>& get_sparse_D() const {
+    return D_.get_as_sparse();
+  }
   /// @}
 
   /// @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
   /// methods.
   /// @{
-  MatrixX<T> A(const T&) const final { return MatrixX<T>(A_); }
-  MatrixX<T> B(const T&) const final { return MatrixX<T>(B_); }
+  MatrixX<T> A(const T&) const final { return MatrixX<T>(A_.GetAsDense()); }
+  MatrixX<T> B(const T&) const final { return MatrixX<T>(B_.GetAsDense()); }
   VectorX<T> f0(const T&) const final { return VectorX<T>(f0_); }
-  MatrixX<T> C(const T&) const final { return MatrixX<T>(C_); }
-  MatrixX<T> D(const T&) const final { return MatrixX<T>(D_); }
+  MatrixX<T> C(const T&) const final { return MatrixX<T>(C_.GetAsDense()); }
+  MatrixX<T> D(const T&) const final { return MatrixX<T>(D_.GetAsDense()); }
   VectorX<T> y0(const T&) const final { return VectorX<T>(y0_); }
   /// @}
 
   /// Updates the coefficients of the affine system. The new coefficients must
   /// have the same size as existing coefficients.
-  void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                          const Eigen::Ref<const Eigen::MatrixXd>& B,
-                          const Eigen::Ref<const Eigen::VectorXd>& f0,
-                          const Eigen::Ref<const Eigen::MatrixXd>& C,
-                          const Eigen::Ref<const Eigen::MatrixXd>& D,
-                          const Eigen::Ref<const Eigen::VectorXd>& y0);
+  /// @pydrake_mkdoc_identifier{dense}
+  void UpdateCoefficients(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::MatrixXd>& B = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::VectorXd>& f0 = Eigen::VectorXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& C = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& D = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::VectorXd>& y0 = Eigen::VectorXd());
+
+  /// Updates the SparseMatrix coefficients of the affine system. The new
+  /// coefficients must have the same size as existing coefficients.
+  /// @pydrake_mkdoc_identifier{sparse}
+  void UpdateCoefficients(
+      const Eigen::SparseMatrix<double>& A = Eigen::SparseMatrix<double>(),
+      const Eigen::SparseMatrix<double>& B = Eigen::SparseMatrix<double>(),
+      const Eigen::Ref<const Eigen::VectorXd>& f0 = Eigen::VectorXd(),
+      const Eigen::SparseMatrix<double>& C = Eigen::SparseMatrix<double>(),
+      const Eigen::SparseMatrix<double>& D = Eigen::SparseMatrix<double>(),
+      const Eigen::Ref<const Eigen::VectorXd>& y0 = Eigen::VectorXd());
 
  protected:
   /// Constructor that specifies scalar-type conversion support.
@@ -278,6 +317,14 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
                const Eigen::Ref<const Eigen::MatrixXd>& D,
                const Eigen::Ref<const Eigen::VectorXd>& y0, double time_period);
 
+  AffineSystem(SystemScalarConverter converter,
+               const Eigen::SparseMatrix<double>& A,
+               const Eigen::SparseMatrix<double>& B,
+               const Eigen::Ref<const Eigen::VectorXd>& f0,
+               const Eigen::SparseMatrix<double>& C,
+               const Eigen::SparseMatrix<double>& D,
+               const Eigen::Ref<const Eigen::VectorXd>& y0, double time_period);
+
  private:
   void CalcOutputY(const Context<T>& context,
                    BasicVector<T>* output_vector) const final;
@@ -289,12 +336,15 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   EventStatus CalcDiscreteUpdate(const Context<T>& context,
                                  DiscreteValues<T>* updates) const final;
 
-  Eigen::MatrixXd A_;
-  Eigen::MatrixXd B_;
+  void SpecifyOutputPortDependencies();
+
+  math::internal::SparseAndDenseMatrix A_;
+  math::internal::SparseAndDenseMatrix B_;
   Eigen::VectorXd f0_;
-  Eigen::MatrixXd C_;
-  Eigen::MatrixXd D_;
+  math::internal::SparseAndDenseMatrix C_;
+  math::internal::SparseAndDenseMatrix D_;
   Eigen::VectorXd y0_;
+
   bool has_meaningful_C_{};
   bool has_meaningful_D_{};
 };
