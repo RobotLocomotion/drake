@@ -356,6 +356,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 geometry::optimization::GraphOfConvexSets::Vertex*>&>(
                 &Class::Subgraph::Vertices),
             py_rvp::reference_internal, subgraph_doc.Vertices.doc)
+        .def("Edges",
+            overload_cast_explicit<const std::vector<
+                geometry::optimization::GraphOfConvexSets::Edge*>&>(
+                &Class::Subgraph::Edges),
+            py_rvp::reference_internal, subgraph_doc.Edges.doc)
         .def(
             "regions",
             [](Class::Subgraph* self) {
@@ -418,7 +423,12 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddContinuityConstraints",
             &Class::EdgesBetweenSubgraphs::AddContinuityConstraints,
             py::arg("continuity_order"),
-            subgraph_edges_doc.AddContinuityConstraints.doc);
+            subgraph_edges_doc.AddContinuityConstraints.doc)
+        .def("Edges",
+            overload_cast_explicit<const std::vector<
+                geometry::optimization::GraphOfConvexSets::Edge*>&>(
+                &Class::EdgesBetweenSubgraphs::Edges),
+            py_rvp::reference_internal, subgraph_edges_doc.Edges.doc);
 
     gcs_traj_opt  // BR
         .def(py::init<int, const std::vector<int>&>(), py::arg("num_positions"),

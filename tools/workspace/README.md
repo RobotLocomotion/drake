@@ -236,6 +236,7 @@ it into Drake are roughly:
   `foo_repository()` macro or rule.  The details are given below.
 - Edit `tools/workspace/default.bzl` to load and conditionally call the new
   `foo_repository()` macro or rule.
+- Add a courtesy mention of the software in `doc/_pages/credits.md`.
 
 When indicating licenses in the source, use the identifier from the
 [SPDX License List](https://spdx.org/licenses/).

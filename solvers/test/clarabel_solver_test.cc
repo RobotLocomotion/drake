@@ -241,6 +241,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 GTEST_TEST(TestDuplicatedVariableQuadraticProgram, Test) {
   ClarabelSolver solver;
   if (solver.available()) {

@@ -93,6 +93,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  SnoptSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 GTEST_TEST(SnoptTest, NameTest) {
   EXPECT_EQ(SnoptSolver::id().name(), "SNOPT");
 }
