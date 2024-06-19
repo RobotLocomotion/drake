@@ -795,7 +795,8 @@ void TestQuadraticCostVariableOrder(const SolverInterface& solver, double tol) {
        0.3, -1, -0.5, 7;
   // clang-format on
   const Eigen::Vector4d b(1, 0, 2, 3);
-  // This cost as variable both out of order and repeated.
+  // This cost has variables both out of order and repeated. This is necessary
+  // to test to desired behavior.
   const auto cost1 = prog.AddQuadraticCost(
       Q, b, Vector4<symbolic::Variable>(x(2), x(0), x(1), x(0)));
   prog.AddLinearEqualityConstraint(x(0) + 2 * x(1) + 3 * x(2) == 6);
