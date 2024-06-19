@@ -420,12 +420,16 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathEnergyCost) {
   EXPECT_EQ(trajopt_.prog().quadratic_costs().size(),
             trajopt_.num_control_points() - 1);
 
+  // Fix a duration not equal to 1.0, to demonstrate that the trajectory
+  // duration does not affect the optimal cost.
+  trajopt_.AddDurationConstraint(4.0, 4.0);
+
   // No initial guess is necessary, because the underlying optimization problem
   // is a (convex) QP.
   auto result = Solve(trajopt_.prog());
   ASSERT_TRUE(result.is_success());
 
-  // For n control points (i.e. n-1 segments), evenely spaced between (0,0,0)
+  // For n control points (i.e. n-1 segments), evenly spaced between (0,0,0)
   // and (1,1,1), the optimal cost should be (n-1) * (3 / (n-1)²), which
   // simplifies to 3/(n-1). Because we used a weight of 2.0, the optimal cost
   // should be twice that.

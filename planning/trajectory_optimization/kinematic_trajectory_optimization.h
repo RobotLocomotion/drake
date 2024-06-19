@@ -197,8 +197,8 @@ class KinematicTrajectoryOptimization {
   solvers::Binding<solvers::LinearCost> AddDurationCost(double weight = 1.0);
 
   /** Adds a cost on an upper bound of the length of the path, ∫₀ᵀ |q̇(t)|₂ dt,
-  by summing the distance between the path control points. If
-  `use_conic_constraint = false`, then costs are added via
+  or equivalently ∫₀¹ |ṙ(s)|₂ ds, by summing the distance between the path
+  control points. If `use_conic_constraint = false`, then costs are added via
   MathematicalProgram::AddL2NormCost; otherwise they are added via
   MathematicalProgram::AddL2NormCostUsingConicConstraint.
 
@@ -207,12 +207,13 @@ class KinematicTrajectoryOptimization {
   std::vector<solvers::Binding<solvers::Cost>> AddPathLengthCost(
       double weight = 1.0, bool use_conic_constraint = false);
 
-  /** Adds a cost on an upper bound on the energy of the path, ∫₀ᵀ |q̇(t)|₂² dt,
+  /** Adds a cost on an upper bound on the energy of the path, ∫₀¹ |ṙ(s)|₂² ds,
   by summing the squared distance between the path control points. In the limit
-  of infinitely many control points, these two integrals are equivalent, but may
-  have different values if additional costs are imposed. This cost yields
-  simpler gradients than AddPathLengthCost, and biases the control points
-  towards being evenly spaced.
+  of infinitely many control points, minimizers for AddPathLengthCost and
+  AddPathEnergyCost will follow the same path, but potentially with different
+  timing. They may have different values if additional costs and constraints are
+  imposed. This cost yields simpler gradients than AddPathLengthCost, and biases
+  the control points towards being evenly spaced.
 
   @returns A vector of bindings with the ith element adding a cost to the
   ith control point of the velocity trajectory. */
