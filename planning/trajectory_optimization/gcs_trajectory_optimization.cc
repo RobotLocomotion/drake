@@ -315,6 +315,24 @@ void Subgraph::ThrowsForInvalidConvexityRadius() const {
   }
 }
 
+std::vector<const GraphOfConvexSets::Vertex*> Subgraph::Vertices() const {
+  std::vector<const GraphOfConvexSets::Vertex*> vertices;
+  vertices.reserve(vertices_.size());
+  for (const auto& v : vertices_) {
+    vertices.push_back(v);
+  }
+  return vertices;
+}
+
+std::vector<const GraphOfConvexSets::Edge*> Subgraph::Edges() const {
+  std::vector<const GraphOfConvexSets::Edge*> edges;
+  edges.reserve(edges_.size());
+  for (const auto& e : edges_) {
+    edges.push_back(e);
+  }
+  return edges;
+}
+
 void Subgraph::AddTimeCost(double weight) {
   // The time cost is the sum of duration variables ∑ hᵢ
   auto time_cost =
@@ -1259,6 +1277,16 @@ void EdgesBetweenSubgraphs::AddContinuityConstraints(int continuity_order) {
                           {Transcription::kMIP, Transcription::kRestriction});
     }
   }
+}
+
+std::vector<const GraphOfConvexSets::Edge*> EdgesBetweenSubgraphs::Edges()
+    const {
+  std::vector<const GraphOfConvexSets::Edge*> edges;
+  edges.reserve(edges_.size());
+  for (const auto& e : edges_) {
+    edges.push_back(e);
+  }
+  return edges;
 }
 
 Eigen::Map<const MatrixX<symbolic::Variable>>
