@@ -50,7 +50,7 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
     const MathematicalProgram& sub_prog, const Variable& one,
     const SemidefiniteRelaxationOptions& options,
     MathematicalProgram* relaxation,
-    const std::optional<int>& group_number = std::nullopt) {
+    std::optional<int> group_number = std::nullopt) {
   MatrixX<Variable> X;
   std::map<Variable, int> variables_to_sorted_indices;
   internal::InitializeSemidefiniteRelaxationForProg(

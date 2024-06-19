@@ -25,11 +25,19 @@ bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog);
 // relaxation. The matrix X is constrained to be PSD. The optional group_number
 // is used to name the variables in the matrix Y. We assume that the variable
 // ones is already a decision variable of relaxation.
+// [in/out] relaxation A pointer to a mathematical program to which the
+// initialization semidefinite relaxation of prog will be added. This pointer
+// cannot be null.
+// [out] X The matrix X of the semidefinite relaxation of prog.
+// This pointer cannot be null.
+// [out] variables_to_sorted_indices A map from the decision variables z of prog
+// to their index in y. The original values in variables_to_sorted_indices are
+// cleared. This pointer cannot be null.
 void InitializeSemidefiniteRelaxationForProg(
     const MathematicalProgram& prog, const symbolic::Variable& one,
     MathematicalProgram* relaxation, MatrixX<symbolic::Variable>* X,
     std::map<symbolic::Variable, int>* variables_to_sorted_indices,
-    const std::optional<int>& group_number = std::nullopt);
+    std::optional<int> group_number = std::nullopt);
 
 // Iterates over the quadratic costs and constraints in prog, remove them if
 // present in the relaxation, and add an equivalent linear cost or constraint on
@@ -37,6 +45,8 @@ void InitializeSemidefiniteRelaxationForProg(
 // preserve_convex_quadratic_constraints is true, then the cost/constraint is
 // not removed. The map variables_to_sorted_indices maps the decision variables
 // in prog to their index in the last column of X.
+// [in/out] relaxation A pointer to a mathematical program to which the
+// linearized costs and constraints are added. It cannot be null.
 void DoLinearizeQuadraticCostsAndConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
@@ -47,6 +57,8 @@ void DoLinearizeQuadraticCostsAndConstraints(
 // equality constraint [A, -b]X = 0 on the semidefinite relaxation variable X to
 // the relaxation. The map variables_to_sorted_indices maps the decision
 // variables in prog to their index in the last column of X.
+// [in/out] relaxation A pointer to a mathematical program to which the implied
+// linear equality constraints are added. It cannot be null.
 void DoAddImpliedLinearEqualityConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
@@ -57,16 +69,9 @@ void DoAddImpliedLinearEqualityConstraints(
 // We add the implied linear constraint [A,-b]X[A,-b]ᵀ ≤ 0 on the variable X to
 // the relaxation. The map variables_to_sorted_indices maps the
 // decision variables in prog to their index in the last column of X.
+// [in/out] relaxation A pointer to a mathematical program to which the implied
+// linear constraints are added. It cannot be null.
 void DoAddImpliedLinearConstraints(
-    const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
-    MathematicalProgram* relaxation);
-
-// For every equality constraint Ay = b in prog, adds the implied linear
-// equality constraint [A, -b]X = 0 on the semidefinite relaxation variable X
-// to the relaxation. The map variables_to_sorted_indices maps the decision
-// variables in prog to their index in the last column of X.
-void DoAddImpliedLinearEqualityConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation);

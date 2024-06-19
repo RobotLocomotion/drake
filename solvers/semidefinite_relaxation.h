@@ -18,9 +18,7 @@ namespace solvers {
  * X has the structure
  * X = [Y,    y]
  *     [yᵀ, one]
- *
- *  @ingroup semidefinite_relaxation
- * */
+ */
 struct SemidefiniteRelaxationOptions {
   /** Given a program with the linear constraints Ay ≤ b, sets whether to add
    * the implied linear constraints [A,-b]X[A,-b]ᵀ ≤ 0 to the semidefinite

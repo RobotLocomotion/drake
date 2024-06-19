@@ -82,16 +82,15 @@ void InitializeSemidefiniteRelaxationForProg(
     const MathematicalProgram& prog, const Variable& one,
     MathematicalProgram* relaxation, MatrixX<Variable>* X,
     std::map<Variable, int>* variables_to_sorted_indices,
-    const std::optional<int>& group_number) {
+    std::optional<int> group_number) {
+  DRAKE_ASSERT(relaxation != nullptr);
+  DRAKE_ASSERT(X != nullptr);
+  DRAKE_ASSERT(variables_to_sorted_indices != nullptr);
   // Build a symmetric matrix X of decision variables using the original
   // program variables (so that GetSolution, etc, works using the original
   // variables).
   std::string name =
       group_number.has_value() ? fmt::format("Y{}", group_number.value()) : "Y";
-  // X = xxᵀ; x = [prog.decision_vars(); 1].
-  X->resize(prog.num_vars() + 1, prog.num_vars() + 1);
-  X->topLeftCorner(prog.num_vars(), prog.num_vars()) =
-      relaxation->NewSymmetricContinuousVariables(prog.num_vars(), name);
   // We sort the variables so that the matrix X is ordered in a predictable way.
   // This makes it easier when using the sparsity groups to make the
   // semidefinite matrices agree.
@@ -99,10 +98,15 @@ void InitializeSemidefiniteRelaxationForProg(
   std::sort(sorted_variables.data(),
             sorted_variables.data() + sorted_variables.size(),
             std::less<Variable>{});
-  X->topRightCorner(prog.num_vars(), 1) = sorted_variables;
+  // X = xxᵀ; x = [prog.decision_vars(); 1].
+  X->resize(prog.num_vars() + 1, prog.num_vars() + 1);
+  X->topLeftCorner(prog.num_vars(), prog.num_vars()) =
+      relaxation->NewSymmetricContinuousVariables(prog.num_vars(), name);
   X->bottomLeftCorner(1, prog.num_vars()) = sorted_variables.transpose();
+  X->topRightCorner(prog.num_vars(), 1) = sorted_variables;
 
   int i = 0;
+  variables_to_sorted_indices->clear();
   for (const auto& v : sorted_variables) {
     (*variables_to_sorted_indices)[v] = i++;
   }
@@ -117,6 +121,7 @@ void DoLinearizeQuadraticCostsAndConstraints(
     const std::map<Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation,
     bool preserve_convex_quadratic_constraints) {
+  DRAKE_ASSERT(relaxation != nullptr);
   // Returns the {a, vars} in relaxation, such that a' vars = 0.5*tr(QY). This
   // assumes Q=Q', which is ensured by QuadraticCost and QuadraticConstraint.
   auto half_trace_QY = [&X, &variables_to_sorted_indices](
@@ -159,7 +164,7 @@ void DoLinearizeQuadraticCostsAndConstraints(
   }
 
   // Remove the quadratic constraints and replace them with a linear  constraint
-  // on the semidefinite varaibles i.e.
+  // on the semidefinite variables i.e.
   // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
   for (const auto& binding : prog.quadratic_constraints()) {
     relaxation->RemoveConstraint(binding);
@@ -211,6 +216,7 @@ void DoAddImpliedLinearConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation) {
+  DRAKE_ASSERT(relaxation != nullptr);
   // Assemble one big Ay <= b matrix from all bounding box constraints
   // and linear constraints
   // TODO(bernhardpg): Consider special-casing linear equality constraints
@@ -313,6 +319,7 @@ void DoAddImpliedLinearEqualityConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation) {
+  DRAKE_ASSERT(relaxation != nullptr);
   // Linear equality constraints.
   // Ay = b => (Ay-b)yᵀ = Ayyᵀ - byᵀ = 0.
   for (const auto& binding : prog.linear_equality_constraints()) {
@@ -527,8 +534,7 @@ void DoAddMatrixIsLorentzByLorentzSeparableConstraint(
 }  // namespace
 
 void AddMatrixIsLorentzByLorentzSeparableConstraint(
-    const Eigen::Ref<const MatrixX<Variable>>& X,
-    MathematicalProgram* prog) {
+    const Eigen::Ref<const MatrixX<Variable>>& X, MathematicalProgram* prog) {
   if (std::min(X.rows(), X.cols()) <= 2) {
     DoAddMatrixIsLorentzByLorentzSeparableConstraintSimplicialCase(X, prog);
   } else {
