@@ -1,6 +1,5 @@
 #include "drake/solvers/osqp_solver.h"
 
-#include <algorithm>
 #include <optional>
 #include <unordered_map>
 #include <vector>
