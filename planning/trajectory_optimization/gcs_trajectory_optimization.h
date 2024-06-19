@@ -655,6 +655,8 @@ class GcsTrajectoryOptimization final {
   @param derivative_order is the order of the derivative to be constrained.
 
   @throws std::exception if lb or ub are not of size num_positions().
+  @throws std::exception if the derivative order <= 1, since the linear
+    velocity bounds are preferred.
   */
   void AddNonlinearDerivativeBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                                     const Eigen::Ref<const Eigen::VectorXd>& ub,
