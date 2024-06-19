@@ -100,6 +100,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  IpoptSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 class NoisyQuadraticCost {
  public:
   explicit NoisyQuadraticCost(const double max_noise) : max_noise_(max_noise) {}

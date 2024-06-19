@@ -7,9 +7,12 @@ from setuptools import setup, find_packages, glob
 DRAKE_VERSION = os.environ.get('DRAKE_VERSION', '0.0.0')
 
 # Required python packages that will be pip installed along with pydrake
+# TODO(#21577) We are not yet compatible with NumPy 2.0, so we need to upper-
+# bound its version number here. Once we support NumPy 2.0 correctly, we should
+# remove this limit.
 python_required = [
     'matplotlib',
-    'numpy',
+    'numpy < 2',
     'pydot',
     'PyYAML',
 ]

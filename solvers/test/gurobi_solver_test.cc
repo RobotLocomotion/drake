@@ -106,6 +106,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  GurobiSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 GTEST_TEST(GurobiTest, TestInitialGuess) {
   GurobiSolver solver;
   if (solver.available()) {
