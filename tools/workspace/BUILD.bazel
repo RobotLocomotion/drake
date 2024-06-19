@@ -120,6 +120,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "abseil_cpp_internal",
     "conex_internal",
     "gflags",
+    "highway_internal",
     "libjpeg_turbo_internal",
 ]] + select({
     "//conditions:default": ["@csdp_internal//:install"],
