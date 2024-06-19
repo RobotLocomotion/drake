@@ -208,6 +208,15 @@ void TestDuplicatedVariableQuadraticProgram(const SolverInterface& solver,
  */
 void TestEqualityConstrainedQP1(const SolverInterface& solver,
                                 double tol = 1E-7);
+
+/**
+ This program is to expose the github issue
+ https://github.com/RobotLocomotion/drake/issues/21580, namely when we add a
+ quadratic cost, the variables are not in the order stored inside the program.
+ For example, the variables are {x(1), x(0)} instead of {x(0), x(1)}.
+ */
+void TestQuadraticCostVariableOrder(const SolverInterface& solver,
+                                    double tol = 1E-7);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

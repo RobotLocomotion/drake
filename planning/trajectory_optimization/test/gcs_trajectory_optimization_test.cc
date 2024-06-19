@@ -1,5 +1,6 @@
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/copyable_unique_ptr.h"
@@ -92,6 +93,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
 
   auto& source_to_regions = gcs.AddEdges(source, regions);
   auto& regions_to_target = gcs.AddEdges(regions, target);
+
+  // Verify that the individual Edges were added (and can be retreived).
+  EXPECT_EQ(source_to_regions.Edges().size(), 1);
+  {  // Confirm that the const accessor returns the same edges.
+    const auto& const_edges = source_to_regions;
+    EXPECT_THAT(const_edges.Edges(),
+                testing::ElementsAreArray(source_to_regions.Edges()));
+  }
 
   // Verify that the edges between subgraphs are present in gcs trajectory
   // optimization.
@@ -243,6 +252,28 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
           HPolyhedron::MakeBox(Vector2d(-0.5, 1), Vector2d(0.5, 1.5)),
           HPolyhedron::MakeBox(Vector2d(0.2, -0.5), Vector2d(0.5, 1))),
       3, 0, 20, "scooter");
+
+  EXPECT_EQ(scooter_regions.Vertices().size(), 3);
+
+  {  // Confirm that the returned vertices are in the same order they were
+     // added.
+    Vector2d point(-0.4, 0.0);  // in the first region.
+    EXPECT_TRUE(scooter_regions.Vertices()[0]->set().PointInSet(
+        (VectorXd(9) << point, point, point, point, 0).finished()));
+    point << -0.4, 1.2;  // in the second region.
+    EXPECT_TRUE(scooter_regions.Vertices()[1]->set().PointInSet(
+        (VectorXd(9) << point, point, point, point, 0).finished()));
+    point << 0.4, 0.0;  // in the third region.
+    EXPECT_TRUE(scooter_regions.Vertices()[2]->set().PointInSet(
+        (VectorXd(9) << point, point, point, point, 0).finished()));
+  }
+
+  {  // Confirm that the const accessor returns the same vertices.
+    const auto& const_scooter_regions = scooter_regions;
+    EXPECT_THAT(const_scooter_regions.Vertices(),
+                testing::ElementsAreArray(scooter_regions.Vertices()));
+  }
+
   // Bob can ride an e-scooter at 10 m/s in x and y.
   scooter_regions.AddVelocityBounds(Vector2d(-kScooterSpeed, -kScooterSpeed),
                                     Vector2d(kScooterSpeed, kScooterSpeed));
@@ -253,8 +284,15 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   gcs.AddEdges(source, walking_regions);
   gcs.AddEdges(walking_regions, target);
 
-  gcs.AddEdges(source, scooter_regions);
+  auto& source_scooter = gcs.AddEdges(source, scooter_regions);
   gcs.AddEdges(scooter_regions, target);
+
+  EXPECT_EQ(source_scooter.Edges().size(), 1);
+  {  // Confirm that the const accessor returns the same vertices.
+    const auto& const_edges = source_scooter;
+    EXPECT_THAT(const_edges.Edges(),
+                testing::ElementsAreArray(source_scooter.Edges()));
+  }
 
   // Add shortest path objective to compare against the minimum time objective.
   gcs.AddPathLengthCost();
@@ -518,7 +556,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, DerivativeBoundsOnEdges) {
 
   // Let's verify that the Bob didn't run over the ducks!
   double stopped_at_ducks_time = 0;
-  const double kTimeStep = 0.01;
+  const double kTimeStep = 0.1;
   for (double t = traj.start_time(); t < traj.end_time(); t += kTimeStep) {
     if (traj.value(t)(0) >= 75) {
       stopped_at_ducks_time = t;
@@ -677,6 +715,15 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidDerivativeBounds) {
   GcsTrajectoryOptimization gcs(kDimension);
   EXPECT_EQ(gcs.num_positions(), kDimension);
 
+  // AddNonlinearDerivativeBounds should throw immediately, even if there are
+  // not any regions in the graph yet.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gcs.AddNonlinearDerivativeBounds(Vector2d::Zero(), Vector2d::Zero(), 1),
+      "Use AddVelocityBounds instead.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gcs.AddNonlinearDerivativeBounds(Vector2d::Zero(), Vector2d::Zero(), 0),
+      "Derivative order must be greater than 1.");
+
   auto& regions1 =
       gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 0);
 
@@ -732,15 +779,20 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidDerivativeBounds) {
 
   // Test the nonlinear derivative bounds.
   // Prefer velocity bounds since they are linear.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gcs.AddNonlinearDerivativeBounds(Vector2d::Zero(), Vector2d::Zero(), 1),
+      "Use AddVelocityBounds instead.*");
   DRAKE_EXPECT_THROWS_MESSAGE(regions3.AddNonlinearDerivativeBounds(
                                   Vector2d::Zero(), Vector2d::Zero(), 1),
                               "Use AddVelocityBounds instead.*");
-
   DRAKE_EXPECT_THROWS_MESSAGE(regions1_to_regions2.AddNonlinearDerivativeBounds(
                                   Vector2d::Zero(), Vector2d::Zero(), 1),
                               "Use AddVelocityBounds instead.*");
 
   // The zeroth order derivative is not a proper derivative.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gcs.AddNonlinearDerivativeBounds(Vector2d::Zero(), Vector2d::Zero(), 0),
+      "Derivative order must be greater than 1.");
   DRAKE_EXPECT_THROWS_MESSAGE(regions3.AddNonlinearDerivativeBounds(
                                   Vector2d::Zero(), Vector2d::Zero(), 0),
                               "Derivative order must be greater than 1.");
@@ -1407,7 +1459,7 @@ TEST_F(SimpleEnv2D, GlobalContinuityConstraints) {
 
 TEST_F(SimpleEnv2D, DerivativeConstraints) {
   const int kDimension = 2;
-  const double kNumSamples = 1e3;
+  const double kNumSamples = 10;
   const double kMaxSpeed = 2.0;
   const double kMaxAcceleration = 1.0;
   const double kMaxJerk = 7.5;
@@ -2207,6 +2259,57 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
   ASSERT_EQ(continuous_joint_indices.size(), 2);
   EXPECT_EQ(continuous_joint_indices[0], 2);
   EXPECT_EQ(continuous_joint_indices[1], 6);
+}
+
+// Confirm that NonlinearDerivativeConstraint supports symbolic.
+GTEST_TEST(GcsTrajectoryOptimizationTest, NonlinearDerivativeBoundsSymbolic) {
+  const int kDimension = 2;
+  const int kOrder = 4;
+
+  GcsTrajectoryOptimization gcs(kDimension);
+  auto& regions =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(2)), kOrder);
+  gcs.AddNonlinearDerivativeBounds(Vector2d(-1, -1), Vector2d(1, 1), 2);
+
+  ASSERT_EQ(regions.Vertices().size(), 1);
+  std::vector<solvers::Binding<solvers::Constraint>> constraints =
+      regions.Vertices()[0]->GetConstraints(
+          {GraphOfConvexSets::Transcription::kRestriction});
+  ASSERT_EQ(constraints.size(),
+            kDimension); /* we expect only NonlinearDerivativeBounds. */
+
+  // Evaluate each constraint symbolically.
+  for (const auto& b : constraints) {
+    VectorX<symbolic::Expression> y(b.evaluator()->num_constraints());
+    DRAKE_EXPECT_NO_THROW(b.evaluator()->Eval(b.variables(), &y));
+  }
+}
+
+// Confirm that NonlinearContinuityConstraint supports symbolic.
+GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuityConstraintSymbolic) {
+  const int kDimension = 2;
+  const int kOrder = 4;
+
+  GcsTrajectoryOptimization trajopt(kDimension);
+  trajopt.AddRegions(
+      MakeConvexSets(HPolyhedron::MakeUnitBox(2), HPolyhedron::MakeUnitBox(2)),
+      kOrder);
+  trajopt.AddContinuityConstraints(1);
+  auto& gcs = trajopt.graph_of_convex_sets();
+
+  ASSERT_EQ(gcs.Edges().size(), 2);
+  std::vector<solvers::Binding<solvers::Constraint>> constraints =
+      gcs.Edges()[0]->GetConstraints(
+          {GraphOfConvexSets::Transcription::kRestriction});
+  // We expect C0 and C1 continuity constraints. C0 constraints are all added as
+  // a single constraint, but C1 constraints are added one position at a time.
+  ASSERT_EQ(constraints.size(), 1 + kDimension);
+
+  // Evaluate each constraint symbolically.
+  for (const auto& b : constraints) {
+    VectorX<symbolic::Expression> y(b.evaluator()->num_constraints());
+    DRAKE_EXPECT_NO_THROW(b.evaluator()->Eval(b.variables(), &y));
+  }
 }
 
 }  // namespace

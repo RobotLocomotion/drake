@@ -517,13 +517,13 @@ KinematicTrajectoryOptimization::AddPathEnergyCost(double weight) {
   // resulting quadratic constraint is convex. We actually double the values in
   // the matrix, since AddQuadraticCost multiplies by a factor of 0.5.
   MatrixXd A(2 * num_positions_, 2 * num_positions_);
-  A.block(0, 0, num_positions_, num_positions_) =
+  A.topLeftCorner(num_positions_, num_positions_) =
       2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
-  A.block(num_positions_, num_positions_, num_positions_, num_positions_) =
+  A.bottomRightCorner(num_positions_, num_positions_) =
       2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
-  A.block(0, num_positions_, num_positions_, num_positions_) =
+  A.topRightCorner(num_positions_, num_positions_) =
       -2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
-  A.block(num_positions_, 0, num_positions_, num_positions_) =
+  A.bottomLeftCorner(num_positions_, num_positions_) =
       -2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
   const VectorXd b = VectorXd::Zero(2 * num_positions_);
   VectorXDecisionVariable vars(2 * num_positions_);

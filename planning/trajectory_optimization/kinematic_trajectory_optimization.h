@@ -207,13 +207,14 @@ class KinematicTrajectoryOptimization {
   std::vector<solvers::Binding<solvers::Cost>> AddPathLengthCost(
       double weight = 1.0, bool use_conic_constraint = false);
 
-  /** Adds a cost on an upper bound on the energy of the path, ∫₀¹ |ṙ(s)|₂² ds,
-  by summing the squared distance between the path control points. In the limit
-  of infinitely many control points, minimizers for AddPathLengthCost and
-  AddPathEnergyCost will follow the same path, but potentially with different
-  timing. They may have different values if additional costs and constraints are
-  imposed. This cost yields simpler gradients than AddPathLengthCost, and biases
-  the control points towards being evenly spaced.
+  /** Adds a convex quadratic cost on an upper bound on the energy of the path,
+  ∫₀¹ |ṙ(s)|₂² ds, by summing the squared distance between the path control
+  points. In the limit of infinitely many control points, minimizers for
+  AddPathLengthCost and AddPathEnergyCost will follow the same path, but
+  potentially with different timing. They may have different values if
+  additional costs and constraints are imposed. This cost yields simpler
+  gradients than AddPathLengthCost, and biases the control points towards being
+  evenly spaced.
 
   @returns A vector of bindings with the ith element adding a cost to the
   ith control point of the velocity trajectory. */
@@ -221,8 +222,6 @@ class KinematicTrajectoryOptimization {
       double weight = 1.0);
 
   /* TODO(russt):
-  - Support a cost on an upper bound on "energy" of the path, ∫₀ᵀ |q̇(t)|₂² dt.
-      void AddEnergyCost(double weight = 1.0);
   - Support additional (non-convex) costs/constraints on q(t) directly.
   */
 
