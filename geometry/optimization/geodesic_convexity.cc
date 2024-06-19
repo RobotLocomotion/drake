@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/solvers/solve.h"
 
@@ -13,6 +14,7 @@ namespace geometry {
 namespace optimization {
 
 using drake::geometry::optimization::HPolyhedron;
+using drake::geometry::optimization::Hyperrectangle;
 using drake::geometry::optimization::Intersection;
 using drake::solvers::Binding;
 using drake::solvers::Constraint;
@@ -237,9 +239,20 @@ ConvexSets PartitionConvexSet(
   return sets;
 }
 
+namespace {
+/* Check if two hyperrectangles intersect, when a given offset is applied to
+the first one. */
+bool HyperrectangleOffsetIntersection(const Hyperrectangle& h1,
+                                      const Hyperrectangle& h2,
+                                      const VectorXd& offset) {
+  Hyperrectangle h1_offset(h1.lb() + offset, h1.ub() + offset);
+  return h1_offset.MaybeGetIntersection(h2).has_value();
+}
+}  // namespace
+
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
-    const std::vector<int>& continuous_revolute_joints) {
+    const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
   DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
   const int dimension = convex_sets_A[0]->ambient_dimension();
@@ -248,29 +261,71 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 
   std::vector<std::tuple<int, int, Eigen::VectorXd>> edges;
 
-  // Region bounding boxes along dimensions corresponding to continuous revolute
-  // joints. If convex_sets_B == convex_sets_A, then we do not populate
-  // region_minimum_and_maximum_values_B, and instead point to the corresponding
-  // value in region_minimum_and_maximum_values_A.
-  std::vector<std::vector<std::pair<double, double>>>
-      region_minimum_and_maximum_values_A;
-  std::vector<std::vector<std::pair<double, double>>>
-      region_minimum_and_maximum_values_B;
+  // Bounding boxes along all dimensions (including joints which are not
+  // continuous revolute). If preprocess_bbox is true, all lower and upper
+  // limites will be computed and stored. Otherwise, only the entries
+  // corresponding to continuous revolute joints will be populated, and all
+  // lower and upper bounds will be set to zero (and left unused). If
+  // convex_sets_B == convex_sets_A, then we do not populate bboxes_B, and
+  // instead point to the corresponding element in bboxes_A.
+  std::vector<Hyperrectangle> bboxes_A, bboxes_B;
 
   // Compute bounding boxes for convex_sets_A.
+  std::vector<int> all_indices(dimension);
+  std::iota(all_indices.begin(), all_indices.end(), 0);
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
-    region_minimum_and_maximum_values_A.emplace_back(
-        internal::GetMinimumAndMaximumValueAlongDimension(
-            *convex_sets_A[i], continuous_revolute_joints));
+    VectorXd lb = VectorXd::Zero(dimension);
+    VectorXd ub = VectorXd::Zero(dimension);
+    if (preprocess_bbox) {
+      // Compute minimum and maximum value along all dimensions to store for the
+      // bounding box, and separate out those entries corresponding to
+      // continuous revolute joints.
+      std::vector<std::pair<double, double>> bbox_values =
+          internal::GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i],
+                                                            all_indices);
+      for (int j = 0; j < ssize(bbox_values); ++j) {
+        lb[j] = bbox_values[j].first;
+        ub[j] = bbox_values[j].second;
+      }
+    } else {
+      std::vector<std::pair<double, double>> bbox_values =
+          internal::GetMinimumAndMaximumValueAlongDimension(
+              *convex_sets_A[i], continuous_revolute_joints);
+      for (int j = 0; j < ssize(bbox_values); ++j) {
+        lb[continuous_revolute_joints[j]] = bbox_values[j].first;
+        ub[continuous_revolute_joints[j]] = bbox_values[j].second;
+      }
+    }
+    bboxes_A.emplace_back(Hyperrectangle(lb, ub));
   }
 
   // Compute bounding boxes for convex_sets_B if distinct from convex_sets_A.
   bool convex_sets_A_and_B_are_identical = convex_sets_A == convex_sets_B;
   if (!convex_sets_A_and_B_are_identical) {
     for (int i = 0; i < ssize(convex_sets_B); ++i) {
-      region_minimum_and_maximum_values_B.emplace_back(
-          internal::GetMinimumAndMaximumValueAlongDimension(
-              *convex_sets_B[i], continuous_revolute_joints));
+      VectorXd lb = VectorXd::Zero(dimension);
+      VectorXd ub = VectorXd::Zero(dimension);
+      if (preprocess_bbox) {
+        // Compute minimum and maximum value along all dimensions to store for
+        // the bounding box, and separate out those entries corresponding to
+        // continuous revolute joints.
+        std::vector<std::pair<double, double>> bbox_values =
+            internal::GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i],
+                                                              all_indices);
+        for (int j = 0; j < ssize(bbox_values); ++j) {
+          lb[j] = bbox_values[j].first;
+          ub[j] = bbox_values[j].second;
+        }
+      } else {
+        std::vector<std::pair<double, double>> bbox_values =
+            internal::GetMinimumAndMaximumValueAlongDimension(
+                *convex_sets_B[i], continuous_revolute_joints);
+        for (int j = 0; j < ssize(bbox_values); ++j) {
+          lb[continuous_revolute_joints[j]] = bbox_values[j].first;
+          ub[continuous_revolute_joints[j]] = bbox_values[j].second;
+        }
+      }
+      bboxes_B.emplace_back(Hyperrectangle(lb, ub));
     }
   }
 
@@ -301,13 +356,12 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
         // were flipped, and that set has already been added.
         continue;
       }
-      const auto& bbox_A = region_minimum_and_maximum_values_A.at(i);
+      const auto& bbox_A = bboxes_A.at(i);
       // If convex_sets_A == convex_sets_B, then
       // region_minimum_and_maximum_values_B is empty, so we instead get the
       // bbox value from region_minimum_and_maximum_values_A.
-      const auto& bbox_B = convex_sets_A_and_B_are_identical
-                               ? region_minimum_and_maximum_values_A.at(j)
-                               : region_minimum_and_maximum_values_B.at(j);
+      const auto& bbox_B =
+          convex_sets_A_and_B_are_identical ? bboxes_A.at(j) : bboxes_B.at(j);
 
       offset.setZero();
 
@@ -315,7 +369,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
       // convex_sets_A[i] to potentially make it overlap with convex_sets_B[j].
       for (int k = 0; k < ssize(continuous_revolute_joints); ++k) {
         const int joint_index = continuous_revolute_joints.at(k);
-        if (bbox_A.at(k).first < bbox_B.at(k).first) {
+        if (bbox_A.lb()[joint_index] < bbox_B.lb()[joint_index]) {
           // In this case, the minimum value of convex_sets_A[i] along dimension
           // k is smaller than the minimum value of convex_sets_B[j] along
           // dimension k, so we must translate by a positive amount. By the
@@ -327,7 +381,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
           // by taking that difference, dividing by 2π, and truncating.
           offset(joint_index) =
               2 * M_PI *
-              std::floor((bbox_B.at(k).second - bbox_A.at(k).first) /
+              std::floor((bbox_B.ub()[joint_index] - bbox_A.lb()[joint_index]) /
                          (2 * M_PI));
         } else {
           // In this case, the minimum value of convex_sets_B[j] along dimension
@@ -337,16 +391,23 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
           // translation.
           offset(joint_index) =
               -2 * M_PI *
-              std::floor((bbox_A.at(k).second - bbox_B.at(k).first) /
+              std::floor((bbox_A.ub()[joint_index] - bbox_B.lb()[joint_index]) /
                          (2 * M_PI));
         }
       }
 
       // Now that we know the offset that is for each dimension, we actually
-      // check if the sets intersect. First, we update the offset equality
+      // check if the sets intersect. First, if preprocess_bbox is true, we
+      // perform the cheap axis-aligned bounding box intersection check,
+      // possibly confirming the sets are disjoint and skipping the rest of the
+      // steps for this iteration. Otherwise, we update the offset equality
       // constraint to use the new offset. Then, we remove any old point-in-set
       // constraints (and associated slack variables) from the previous regions.
       // Finally, we add the point-in-set constraints for the new convex sets.
+      if (!HyperrectangleOffsetIntersection(bbox_A, bbox_B, offset)) {
+        continue;
+      }
+
       offset_equality_constraint.evaluator()->UpdateCoefficients(Aeq, offset);
 
       for (const auto& constraint : point_in_set_constraints) {
@@ -391,9 +452,9 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
-    const std::vector<int>& continuous_revolute_joints) {
+    const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
   return CalcPairwiseIntersections(convex_sets, convex_sets,
-                                   continuous_revolute_joints);
+                                   continuous_revolute_joints, preprocess_bbox);
 }
 
 }  // namespace optimization
