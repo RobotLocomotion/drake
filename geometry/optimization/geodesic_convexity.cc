@@ -14,9 +14,14 @@ namespace optimization {
 
 using drake::geometry::optimization::HPolyhedron;
 using drake::geometry::optimization::Intersection;
+using drake::solvers::Binding;
+using drake::solvers::Constraint;
+using drake::solvers::LinearEqualityConstraint;
 using drake::solvers::MathematicalProgram;
 using drake::solvers::Solve;
 using drake::solvers::VectorXDecisionVariable;
+using drake::symbolic::Variable;
+using Eigen::VectorX;
 using Eigen::VectorXd;
 
 std::pair<double, double> internal::GetMinimumAndMaximumValueAlongDimension(
@@ -273,7 +278,28 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     }
   }
 
+  // Mathematical program used to check if sets intersect when taking the offset
+  // into account.
+  MathematicalProgram prog;
+  VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
+  VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
+  Eigen::SparseMatrix<double> Aeq(dimension, 2 * dimension);
+  Aeq.reserve(2 * dimension);
+  // Add x + offset == y by [-I, I][x; y] == [offset]
+  for (int i = 0; i < dimension; ++i) {
+    Aeq.insert(i, i) = -1.0;
+    Aeq.insert(i, i + dimension) = 1.0;
+  }
+
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
+  Binding<LinearEqualityConstraint> offset_equality_constraint =
+      prog.AddLinearEqualityConstraint(Aeq, offset, {x, y});
+
+  std::vector<Variable> point_in_set_slack_variables;
+  std::vector<Binding<Constraint>> point_in_set_constraints;
+  VectorX<Variable> new_variables;
+  std::vector<Binding<Constraint>> new_constraints;
+
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     for (int j = 0; j < ssize(convex_sets_B); ++j) {
       if (convex_sets_A_and_B_are_identical && j <= i) {
@@ -324,21 +350,38 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
       }
 
       // Now that we know the offset that is for each dimension, we actually
-      // check if the sets intersect.
-      MathematicalProgram prog;
-      // TODO(cohnt) Once #20842 lands, reuse the Mathematical program
-      // (modifying or deleting and re-adding constraints as needed).
-      VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
-      VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
-      Eigen::MatrixXd Aeq(dimension, 2 * dimension);
-      // Add x + offset == y by [-I, I][x; y] == [offset]
-      Aeq.leftCols(dimension) =
-          -Eigen::MatrixXd::Identity(dimension, dimension);
-      Aeq.rightCols(dimension) =
-          Eigen::MatrixXd::Identity(dimension, dimension);
-      prog.AddLinearEqualityConstraint(Aeq, offset, {x, y});
-      convex_sets_A.at(i)->AddPointInSetConstraints(&prog, x);
-      convex_sets_B.at(j)->AddPointInSetConstraints(&prog, y);
+      // check if the sets intersect. First, we update the offset equality
+      // constraint to use the new offset. Then, we remove any old point-in-set
+      // constraints (and associated slack variables) from the previous regions.
+      // Finally, we add the point-in-set constraints for the new convex sets.
+      offset_equality_constraint.evaluator()->UpdateCoefficients(Aeq, offset);
+
+      for (const auto& constraint : point_in_set_constraints) {
+        prog.RemoveConstraint(constraint);
+      }
+      for (const auto& variable : point_in_set_slack_variables) {
+        prog.RemoveDecisionVariable(variable);
+      }
+
+      DRAKE_ASSERT(prog.num_vars() == 2 * dimension);
+
+      point_in_set_constraints.clear();
+      point_in_set_slack_variables.clear();
+
+      std::tie(new_variables, new_constraints) =
+          convex_sets_A.at(i)->AddPointInSetConstraints(&prog, x);
+      std::move(new_variables.begin(), new_variables.end(),
+                std::back_inserter(point_in_set_slack_variables));
+      std::move(new_constraints.begin(), new_constraints.end(),
+                std::back_inserter(point_in_set_constraints));
+
+      std::tie(new_variables, new_constraints) =
+          convex_sets_B.at(j)->AddPointInSetConstraints(&prog, y);
+      std::move(new_variables.begin(), new_variables.end(),
+                std::back_inserter(point_in_set_slack_variables));
+      std::move(new_constraints.begin(), new_constraints.end(),
+                std::back_inserter(point_in_set_constraints));
+
       const auto result = Solve(prog);
       if (result.is_success()) {
         // Regions are overlapping, add edge (i, j). If we're adding edges

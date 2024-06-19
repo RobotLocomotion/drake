@@ -7,6 +7,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
+#include "drake/geometry/optimization/minkowski_sum.h"
+#include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 
 namespace drake {
@@ -15,6 +17,8 @@ namespace optimization {
 
 using geometry::optimization::Hyperrectangle;
 using geometry::optimization::Intersection;
+using geometry::optimization::MinkowskiSum;
+using geometry::optimization::Point;
 using geometry::optimization::VPolytope;
 using geometry::optimization::internal::ComputeOffsetContinuousRevoluteJoints;
 using geometry::optimization::internal::GetMinimumAndMaximumValueAlongDimension;
@@ -375,6 +379,28 @@ GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections2) {
     DRAKE_DEMAND(h_first != nullptr);
     EXPECT_TRUE(sets[index_2]->PointInSet(h_first->Center() + offset, 1e-6));
   }
+}
+
+GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections3) {
+  // Test the method on sets whose PointInSet constraints add auxiliary
+  // variables.
+  Point p1(Eigen::Vector2d(0.0, 0.0));
+  Point p2(Eigen::Vector2d(-2.0 * M_PI, 0.0));
+  Hyperrectangle h1(Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(1.0, 0.0));
+  MinkowskiSum m1(p1, h1);
+  MinkowskiSum m2(p2, h1);
+  Hyperrectangle h3(Eigen::Vector2d(2 * M_PI, 0.0),
+                    Eigen::Vector2d(2 * M_PI + 1.0, 0.0));
+  EXPECT_NO_THROW(CalcPairwiseIntersections(
+      MakeConvexSets(m1, m2), MakeConvexSets(h3), std::vector<int>{}));
+  EXPECT_NO_THROW(CalcPairwiseIntersections(
+      MakeConvexSets(m1, m2), MakeConvexSets(h3), std::vector<int>{0}));
+  auto intersections_none = CalcPairwiseIntersections(
+      MakeConvexSets(m1, m2), MakeConvexSets(h3), std::vector<int>{});
+  auto intersections_all = CalcPairwiseIntersections(
+      MakeConvexSets(m1, m2), MakeConvexSets(h3), std::vector<int>{0});
+  EXPECT_EQ(intersections_none.size(), 0);
+  EXPECT_EQ(intersections_all.size(), 2);
 }
 
 }  // namespace optimization
