@@ -133,9 +133,10 @@ void internal::ThrowsForInvalidContinuousJointsList(
 bool CheckIfSatisfiesConvexityRadius(
     const ConvexSet& convex_set,
     const std::vector<int>& continuous_revolute_joints) {
-  for (const int& j : continuous_revolute_joints) {
-    auto [min_value, max_value] =
-        internal::GetMinimumAndMaximumValueAlongDimension(convex_set, j);
+  std::vector<std::pair<double, double>> bbox =
+      internal::GetMinimumAndMaximumValueAlongDimension(
+          convex_set, continuous_revolute_joints);
+  for (const auto& [min_value, max_value] : bbox) {
     if (max_value - min_value >= M_PI) {
       return false;
     }
@@ -162,8 +163,11 @@ ConvexSets PartitionConvexSet(
 
   // We only populate the entries corresponding to continuous revolute joints,
   // since the lower and upper limits of other joints aren't needed.
-  for (const int& i : continuous_revolute_joints) {
-    bbox[i] = internal::GetMinimumAndMaximumValueAlongDimension(convex_set, i);
+  std::vector<std::pair<double, double>> bbox_values =
+      internal::GetMinimumAndMaximumValueAlongDimension(
+          convex_set, continuous_revolute_joints);
+  for (int i = 0; i < ssize(bbox_values); ++i) {
+    bbox[continuous_revolute_joints[i]] = bbox_values[i];
   }
   // The overall structure is to partition the set along each dimension
   // corresponding to a continuous revolute joint. The partitioning is done by
@@ -251,12 +255,8 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
   // Compute bounding boxes for convex_sets_A.
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     region_minimum_and_maximum_values_A.emplace_back(
-        std::vector<std::pair<double, double>>());
-    for (const int k : continuous_revolute_joints) {
-      region_minimum_and_maximum_values_A.at(i).emplace_back(
-          internal::GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i],
-                                                            k));
-    }
+        internal::GetMinimumAndMaximumValueAlongDimension(
+            *convex_sets_A[i], continuous_revolute_joints));
   }
 
   // Compute bounding boxes for convex_sets_B if distinct from convex_sets_A.
@@ -264,12 +264,8 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
   if (!convex_sets_A_and_B_are_identical) {
     for (int i = 0; i < ssize(convex_sets_B); ++i) {
       region_minimum_and_maximum_values_B.emplace_back(
-          std::vector<std::pair<double, double>>());
-      for (const int k : continuous_revolute_joints) {
-        region_minimum_and_maximum_values_B.at(i).emplace_back(
-            internal::GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i],
-                                                              k));
-      }
+          internal::GetMinimumAndMaximumValueAlongDimension(
+              *convex_sets_B[i], continuous_revolute_joints));
     }
   }
 
