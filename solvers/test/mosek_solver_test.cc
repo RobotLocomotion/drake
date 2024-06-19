@@ -90,6 +90,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {

@@ -784,6 +784,28 @@ void TestEqualityConstrainedQP1(const SolverInterface& solver, double tol) {
   EXPECT_NEAR(x_sol(0, 5), 0, tol);
 }
 
+void TestQuadraticCostVariableOrder(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  Eigen::Matrix4d Q;
+  // clang-format off
+  Q << 3, 2, 0.5, 0.3,
+       2, 5, 1, -1,
+       0.5, 1, 4, -0.5,
+       0.3, -1, -0.5, 7;
+  // clang-format on
+  const Eigen::Vector4d b(1, 0, 2, 3);
+  // This cost has variables both out of order and repeated. This is necessary
+  // to test to desired behavior.
+  const auto cost1 = prog.AddQuadraticCost(
+      Q, b, Vector4<symbolic::Variable>(x(2), x(0), x(1), x(0)));
+  prog.AddLinearEqualityConstraint(x(0) + 2 * x(1) + 3 * x(2) == 6);
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), result.EvalBinding(cost1)(0), tol);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
