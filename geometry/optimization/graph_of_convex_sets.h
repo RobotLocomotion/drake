@@ -625,6 +625,46 @@ class GraphOfConvexSets {
       const solvers::MathematicalProgramResult& result,
       double tolerance = 1e-3) const;
 
+  /** Samples a collection of unique paths from `source` to `target`, where the
+   flow values (the relaxed binary variables associated with each `Edge`)
+   `flows` are interpreted as the probabilities of transitioning an edge. This
+   function implements the first part of the rounding scheme put forth in
+   Section 4.2 of "Motion Planning around Obstacles with Convex Optimization":
+   https://arxiv.org/abs/2205.04422
+
+   @param options include all settings for sampling the paths. Specifically,
+   the behavior of this function is determined through options.rounding_seed,
+   options.max_rounded_paths, options.max_rounding_trials, and
+   options.flow_tolerance, as described in `GraphOfConvexSetsOptions`.
+   Note that this function will throw unless options.max_rounded_paths > 0,
+   and that the number of returned paths can be 0 if no paths are found.
+   @pydrake_mkdoc_identifier{flows}
+   */
+  std::vector<std::vector<const Edge*>> SamplePaths(
+      const Vertex& source, const Vertex& target,
+      const std::map<EdgeId, double>& flows,
+      const GraphOfConvexSetsOptions& options) const;
+
+  /** Samples a collection of unique paths from `source` to `target`, where the
+   flow values (the relaxed binary variables associated with each `Edge`) in
+   `result` are interpreted as the probabilities of transitioning an edge. This
+   function implements the first part of the rounding scheme put forth in
+   Section 4.2 of "Motion Planning around Obstacles with Convex Optimization":
+   https://arxiv.org/abs/2205.04422
+
+   @param options include all settings for sampling the paths. Specifically,
+   the behavior of this function is determined through options.rounding_seed,
+   options.max_rounded_paths, options.max_rounding_trials, and
+   options.flow_tolerance, as described in `GraphOfConvexSetsOptions`.
+   Note that this function will throw unless options.max_rounded_paths > 0,
+   and that the number of returned paths can be 0 if no paths are found.
+   @pydrake_mkdoc_identifier{result}
+   */
+  std::vector<std::vector<const Edge*>> SamplePaths(
+      const Vertex& source, const Vertex& target,
+      const solvers::MathematicalProgramResult& result,
+      const GraphOfConvexSetsOptions& options) const;
+
   /** The non-convexity in a GCS problem comes from the binary variables (phi)
   associated with the edges being active or inactive in the solution. If those
   binary variables are fixed, then the problem is convex -- this is a so-called

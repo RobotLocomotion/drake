@@ -892,6 +892,28 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("source"), py::arg("target"), py::arg("result"),
             py::arg("tolerance") = 1e-3, py_rvp::reference_internal,
             cls_doc.GetSolutionPath.doc)
+        .def("SamplePaths",
+            overload_cast_explicit<
+                std::vector<std::vector<const GraphOfConvexSets::Edge*>>,
+                const GraphOfConvexSets::Vertex&,
+                const GraphOfConvexSets::Vertex&,
+                const std::map<GraphOfConvexSets::EdgeId, double>&,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SamplePaths),
+            py::arg("source"), py::arg("target"), py::arg("flows"),
+            py::arg("options"), py::return_value_policy::reference_internal,
+            cls_doc.SamplePaths.doc_flows)
+        .def("SamplePaths",
+            overload_cast_explicit<
+                std::vector<std::vector<const GraphOfConvexSets::Edge*>>,
+                const GraphOfConvexSets::Vertex&,
+                const GraphOfConvexSets::Vertex&,
+                const solvers::MathematicalProgramResult&,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SamplePaths),
+            py::arg("source"), py::arg("target"), py::arg("result"),
+            py::arg("options"), py::return_value_policy::reference_internal,
+            cls_doc.SamplePaths.doc_result)
         .def("SolveConvexRestriction",
             &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),
             py::arg("options") = GraphOfConvexSetsOptions(),

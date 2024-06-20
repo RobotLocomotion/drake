@@ -2267,6 +2267,102 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
   }
 }
 
+/*
+┌──────┐     ┌────┐     ┌────┐
+|source├────►│ p1 │◄───►│ p3 │─────────┐
+└───┬──┘     └─▲──┘     └─▲──┘         |
+    │          |          |            |
+    │        ┌─▼──┐     ┌─▼──┐     ┌───▼────┐
+    └───────►│ p2 │◄───►│ p4 │────►│ target │
+             └────┘     └────┘     └────────┘
+
+*/
+GTEST_TEST(ShortestPathTest, SamplePaths) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* target = spp.AddVertex(Point(Vector2d(1.5, 1.5)));
+  Vertex* p1 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(2, -1)));
+  Vertex* p2 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(-1, 2)));
+  Vertex* p3 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(1, -2), Vector2d(2, 2)));
+  Vertex* p4 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, 1), Vector2d(2, 2)));
+
+  // Edges pointing towards target
+  spp.AddEdge(source, p1);
+  spp.AddEdge(source, p2);
+  spp.AddEdge(p1, p3);
+  spp.AddEdge(p2, p4);
+  spp.AddEdge(p3, target);
+  spp.AddEdge(p4, target);
+
+  // Edges between parallel vertices
+  spp.AddEdge(p1, p2);
+  spp.AddEdge(p2, p1);
+  spp.AddEdge(p3, p4);
+  spp.AddEdge(p4, p3);
+
+  // Edges pointing towards source
+  spp.AddEdge(p3, p1);
+  spp.AddEdge(p4, p2);
+
+  const int kNumPaths = 4;
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 0;
+  // We won't care about this result, but we solve to obtain a result we can
+  // later modify.
+  auto relaxed_result = spp.SolveShortestPath(*source, *target, options);
+  ASSERT_TRUE(relaxed_result.is_success());
+
+  // Set a high number of rounding trials so we find at least kNumPaths paths.
+  options.max_rounded_paths = kNumPaths;
+  options.max_rounding_trials = 100;
+
+  // Set all the flow variables to 0.5 so we will sample multiple random paths.
+  for (const auto& e : spp.Edges()) {
+    relaxed_result.SetSolution(e->phi(), 0.5);
+  }
+
+  auto paths = spp.SamplePaths(*source, *target, relaxed_result, options);
+  ASSERT_EQ(paths.size(), kNumPaths);
+
+  // Check that all the paths start at the source and end at the target
+  for (const auto& p : paths) {
+    ASSERT_GE(p.size(), 0);
+    ASSERT_EQ(p.front()->u().id(), source->id());
+    ASSERT_EQ(p.back()->v().id(), target->id());
+  }
+
+  // Make sure no paths are equal
+  for (std::size_t i = 0; i < paths.size(); ++i) {
+    const auto& curr_path = paths[i];
+
+    for (std::size_t other_idx = 0; other_idx < paths.size(); ++other_idx) {
+      if (other_idx == i) continue;
+
+      std::vector<EdgeId> curr_path_ids;
+      for (const auto& edge : curr_path) curr_path_ids.push_back(edge->id());
+
+      std::vector<EdgeId> other_path_ids;
+      for (const auto& edge : paths[other_idx])
+        other_path_ids.push_back(edge->id());
+
+      // Sort the IDs
+      std::sort(curr_path_ids.begin(), curr_path_ids.end());
+      std::sort(other_path_ids.begin(), other_path_ids.end());
+      bool paths_equal = curr_path_ids == other_path_ids;
+
+      ASSERT_FALSE(paths_equal);
+    }
+  }
+}
+
 // In some cases, the depth first search performed in rounding will lead to a
 // dead end. This test confirms that the search can backtrack to explore a new
 // branch. Note that this test is only effective when Mosek or Gurobi is
