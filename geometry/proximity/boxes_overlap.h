@@ -21,6 +21,8 @@ bool BoxesOverlap(const Vector3<double>& half_size_a,
                   const Vector3<double>& half_size_b,
                   const math::RigidTransformd& X_AB);
 
+void ReportStatistics();
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

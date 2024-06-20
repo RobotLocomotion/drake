@@ -284,6 +284,7 @@ TEST_F(BoxesOverlapTest, AllCases) {
           fmt::format("A{}-B{} colliding", axes[a_axis], axes[b_axis])));
     }
   }
+  ReportStatistics();
 }
 
 }  // namespace
