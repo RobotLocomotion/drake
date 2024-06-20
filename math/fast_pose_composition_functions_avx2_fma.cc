@@ -78,19 +78,17 @@ bool CheckCpuForAvxSupport() {
 ================================================================================
 
 In comments, we'll use "<....>" to indicate a 256-bit AVX register containing 4
-lanes of doubles, so e.g. <abcd> denotes the array of doubles [a, b, c, d]. We
+lanes of doubles, so e.g. <dcba> denotes the array of doubles [d, c, b, a]. We
 use both lowercase and uppercase letters for naming lanes. In variable names,
-we leave out the <> marker so the variable name would be just "abcd".
+we leave out the <> marker so the variable name would be just "dcba".
 
-The lower order lanes are spelled on the left, so for example if YMM0 = <abcd>
-then we have XMM0 = <ab>. Note that even though we spell lanes from lowest to
-highest, bitwise constants end up being written highest to lowest (as is typical
-for numbers) so we have blend(<abcd>, <ABCD>, 0b0101) as <AbCd>.
+The lower order lanes are spelled on the right, so for example if YMM0 = <dcba>
+then we have XMM0 = <ba>.
 
 Sometimes we don't need to give a name to a lane (because we don't care what its
 value is). In that case we use the canonical "_" to indicate "don't care", e.g.,
-<abc_> indicates the array of doubles [a, b, c, _] where we only care about the
-first three lanes. This leads to variables named e.g. "abc_" which look like C++
+<_cba> indicates the array of doubles [_, c, b, a] where we only care about the
+first three lanes. This leads to variables named e.g. "dcb_" which look like C++
 member fields, but are not.
 
 For details about the various SIMD instructions, see:
@@ -103,6 +101,14 @@ For inspecting the machine code, see Godbolt and in particular the LLVM-MCA tool
 (available under the "Add Tool" menu).
 
  https://godbolt.org/
+
+For a Highway funciton reference, see:
+
+ https://google.github.io/highway/en/master/quick_reference.html#operations
+
+Be very careful when reading Highway docs to distinguish "lane" vs "block".
+A lane holds one scalar (e.g., a `double`); a block is 16-bytes worth of lanes,
+e.g., two doubles.
 
 ============================================================================= */
 
@@ -138,17 +144,17 @@ Writing that out longhand, we have:
 
 Strategy: compute jkl in parallel, then mno, then pqr.
 
-  <jkl_> =   <abc_> * <AAA_>
-           + <def_> * <BBB_>
-           + <ghi_> * <CCC_>
+  <_lkj> =   <_cba> * <AAAA>
+           + <_fed> * <BBBB>
+           + <_ihg> * <CCCC>
 
-  <mno_> =   <abc_> * <DDD_>
-           + <def_> * <EEE_>
-           + <ghi_> * <FFF_>
+  <_onm> =   <_cba> * <DDDD>
+           + <_fed> * <EEEE>
+           + <_ihg> * <FFFF>
 
-  <pqr_> =   <abc_> * <GGG_>
-           + <def_> * <HHH_>
-           + <ghi_> * <III_>
+  <_rqp> =   <_cba> * <GGGG>
+           + <_fed> * <HHHH>
+           + <_ihg> * <IIII>
 
 We load columns from left matrix and broadcast elements from right, performing
 4 operations in parallel but ignoring the 4th result. We must be careful not to
@@ -162,56 +168,56 @@ It is OK if the result R_AC overlaps one or both of the inputs. */
 void ComposeRRAvx(const double* R_AB, const double* R_BC, double* R_AC) {
   const hn::FixedTag<double, 4> tag;
 
-  const auto abc_ = hn::LoadU(tag, R_AB);      // (d is loaded but unused)
-  const auto def_ = hn::LoadU(tag, R_AB + 3);  // (g is loaded but unused)
-  const auto ghi_ = hn::LoadN(tag, R_AB + 6, 3);
+  const auto _cba = hn::LoadU(tag, R_AB);      // (d is loaded but unused)
+  const auto _fed = hn::LoadU(tag, R_AB + 3);  // (g is loaded but unused)
+  const auto _ihg = hn::LoadN(tag, R_AB + 6, 3);
 
-  const auto AAA_ = hn::Set(tag, R_BC[0]);
-  const auto BBB_ = hn::Set(tag, R_BC[1]);
-  const auto CCC_ = hn::Set(tag, R_BC[2]);
-  const auto DDD_ = hn::Set(tag, R_BC[3]);
-  const auto EEE_ = hn::Set(tag, R_BC[4]);
-  const auto FFF_ = hn::Set(tag, R_BC[5]);
-  const auto GGG_ = hn::Set(tag, R_BC[6]);
-  const auto HHH_ = hn::Set(tag, R_BC[7]);
-  const auto III_ = hn::Set(tag, R_BC[8]);
+  const auto AAAA = hn::Set(tag, R_BC[0]);
+  const auto BBBB = hn::Set(tag, R_BC[1]);
+  const auto CCCC = hn::Set(tag, R_BC[2]);
+  const auto DDDD = hn::Set(tag, R_BC[3]);
+  const auto EEEE = hn::Set(tag, R_BC[4]);
+  const auto FFFF = hn::Set(tag, R_BC[5]);
+  const auto GGGG = hn::Set(tag, R_BC[6]);
+  const auto HHHH = hn::Set(tag, R_BC[7]);
+  const auto IIII = hn::Set(tag, R_BC[8]);
 
-  // Column jkl:                            j   k   l   _  =
-  auto jkl_ = hn::Mul(abc_, AAA_);      //  aA  bA  cA  _
-  jkl_ = hn::MulAdd(def_, BBB_, jkl_);  // +dB +eB +fB  _
-  jkl_ = hn::MulAdd(ghi_, CCC_, jkl_);  // +gC +hC +iC  _
+  // Column jkl:                           _   l   k   j
+  auto _lkj = hn::Mul(_cba, AAAA);      // _  cA  bA  aA
+  _lkj = hn::MulAdd(_fed, BBBB, _lkj);  // _ +fB +eB +dB
+  _lkj = hn::MulAdd(_ihg, CCCC, _lkj);  // _ +iC +hC +gC
 
-  // Column mno:                            m   n   o   _  =
-  auto mno_ = hn::Mul(abc_, DDD_);      //  aD  bD  cD  _
-  mno_ = hn::MulAdd(def_, EEE_, mno_);  // +dE +eE +fE  _
-  mno_ = hn::MulAdd(ghi_, FFF_, mno_);  // +gF +hF +iF  _
+  // Column mno:                           _   m   n   o
+  auto _onm = hn::Mul(_cba, DDDD);      // _  cD  bD  aD
+  _onm = hn::MulAdd(_fed, EEEE, _onm);  // _ +fE +eE +dE
+  _onm = hn::MulAdd(_ihg, FFFF, _onm);  // _ +iF +hF +gF
 
-  // Column pqr:                            p   q   r   _  =
-  auto pqr_ = hn::Mul(abc_, GGG_);      //  aG  bG  cG  _
-  pqr_ = hn::MulAdd(def_, HHH_, pqr_);  // +dH +eH +fH  _
-  pqr_ = hn::MulAdd(ghi_, III_, pqr_);  // +gI +hI +iI  _
+  // Column pqr:                           _  r   q   p
+  auto _rqp = hn::Mul(_cba, GGGG);      // _  cG  bG  aG
+  _rqp = hn::MulAdd(_fed, HHHH, _rqp);  // _ +fH +eH +dH
+  _rqp = hn::MulAdd(_ihg, IIII, _rqp);  // _ +iI +hI +gI
 
   // Store the output.
-  hn::StoreU(jkl_, tag, R_AC);         // 4-wide write temporarily overwrites m
-  hn::StoreU(mno_, tag, R_AC + 3);     // 4-wide write temporarily overwrites p
-  hn::StoreN(pqr_, tag, R_AC + 6, 3);  // 3-wide write to stay in bounds
+  hn::StoreU(_lkj, tag, R_AC);         // 4-wide write temporarily overwrites m
+  hn::StoreU(_onm, tag, R_AC + 3);     // 4-wide write temporarily overwrites p
+  hn::StoreN(_rqp, tag, R_AC + 6, 3);  // 3-wide write to stay in bounds
 }
 
 /* Loads R_BA, transposed. Imagine R_BA as a array of doubles 'abcdefghi'. Upon
-return, the output arguments adg_, beh_, and cfi_ are filled with the like-named
+return, the output arguments _gda, beh_, and cfi_ are filled with the like-named
 elements of R_BA. (As usual, underscore means undefined / don't care.) */
 template <typename Vec4>
-void LoadMatrix3Inv(const double* R_BA, Vec4* adg_, Vec4* beh_, Vec4* cfi_) {
+void LoadMatrix3Inv(const double* R_BA, Vec4* _gda, Vec4* _heb, Vec4* _ifc) {
   const hn::FixedTag<double, 4> tag;
-  const auto abcd = hn::LoadU(tag, R_BA);
-  const auto efgh = hn::LoadU(tag, R_BA + 4);
-  const auto abgh = hn::ConcatUpperLower(tag, efgh, abcd);
-  const auto defg = hn::LoadU(tag, R_BA + 3);
-  *adg_ = hn::InterleaveLower(tag, abgh, defg);
-  *beh_ = hn::InterleaveUpper(tag, abgh, defg);
+  const auto dcba = hn::LoadU(tag, R_BA);
+  const auto gfed = hn::LoadU(tag, R_BA + 3);
+  const auto hgfe = hn::LoadU(tag, R_BA + 4);
   const auto iiii = hn::Set(tag, R_BA[8]);
-  const auto __cf = hn::InterleaveLower(abcd, defg);
-  *cfi_ = hn::ConcatUpperUpper(tag, iiii, __cf);
+  const auto hgba = hn::ConcatUpperLower(tag, hgfe, dcba);  // hg..|..ba => hgba
+  *_gda = hn::InterleaveLower(tag, hgba, gfed);             // .g.a|.f.d => fgda
+  *_heb = hn::InterleaveUpper(tag, hgba, gfed);             // h.b.|g.e. => gheb
+  const auto fc__ = hn::InterleaveLower(dcba, gfed);        // .c.a|.f.d => fcda
+  *_ifc = hn::ConcatUpperUpper(tag, iiii, fc__);            // ii..|fc.. => iifc
 }
 
 /* Composition of rotation matrices R_AC = R_BA⁻¹ * R_BC.
@@ -246,15 +252,15 @@ Writing that out longhand, we have:
 
 Strategy: compute jkl in parallel, then mno, then pqr.
 
-  <jkl_> =   <adg_> * <AAA_>
+  <_lkj> =   <adg_> * <AAA_>
            + <beh_> * <BBB_>
            + <cfi_> * <CCC_>
 
-  <mno_> =   <adg_> * <DDD_>
+  <_onm> =   <adg_> * <DDD_>
            + <beh_> * <EEE_>
            + <cfi_> * <FFF_>
 
-  <pqr_> =   <adg_> * <GGG_>
+  <_rqp> =   <adg_> * <GGG_>
            + <beh_> * <HHH_>
            + <cfi_> * <III_>
 
@@ -272,41 +278,41 @@ void ComposeRinvRAvx(const double* R_BA, const double* R_BC, double* R_AC) {
   const hn::FixedTag<double, 4> tag;
 
   // Load the columns of R_AB (rows of the given R_BA).
-  auto adg_ = hn::Undefined(tag);
-  auto beh_ = hn::Undefined(tag);
-  auto cfi_ = hn::Undefined(tag);
-  LoadMatrix3Inv(R_BA, &adg_, &beh_, &cfi_);
+  auto _gda = hn::Undefined(tag);
+  auto _heb = hn::Undefined(tag);
+  auto _ifc = hn::Undefined(tag);
+  LoadMatrix3Inv(R_BA, &_gda, &_heb, &_ifc);
 
   // Load R_BC.
-  const auto AAA_ = hn::Set(tag, R_BC[0]);
-  const auto BBB_ = hn::Set(tag, R_BC[1]);
-  const auto CCC_ = hn::Set(tag, R_BC[2]);
-  const auto DDD_ = hn::Set(tag, R_BC[3]);
-  const auto EEE_ = hn::Set(tag, R_BC[4]);
-  const auto FFF_ = hn::Set(tag, R_BC[5]);
-  const auto GGG_ = hn::Set(tag, R_BC[6]);
-  const auto HHH_ = hn::Set(tag, R_BC[7]);
-  const auto III_ = hn::Set(tag, R_BC[8]);
+  const auto AAAA = hn::Set(tag, R_BC[0]);
+  const auto BBBB = hn::Set(tag, R_BC[1]);
+  const auto CCCC = hn::Set(tag, R_BC[2]);
+  const auto DDDD = hn::Set(tag, R_BC[3]);
+  const auto EEEE = hn::Set(tag, R_BC[4]);
+  const auto FFFF = hn::Set(tag, R_BC[5]);
+  const auto GGGG = hn::Set(tag, R_BC[6]);
+  const auto HHHH = hn::Set(tag, R_BC[7]);
+  const auto IIII = hn::Set(tag, R_BC[8]);
 
-  // Column jkl:                            j   k   l   _  =
-  auto jkl_ = hn::Mul(adg_, AAA_);      //  aA  dA  gA  _
-  jkl_ = hn::MulAdd(beh_, BBB_, jkl_);  // +bB +eB +hB  _
-  jkl_ = hn::MulAdd(cfi_, CCC_, jkl_);  // +cC +fC +iC  _
+  // Column jkl:                           _  l   k   j   =
+  auto _lkj = hn::Mul(_gda, AAAA);      // _  gA  dA  aA
+  _lkj = hn::MulAdd(_heb, BBBB, _lkj);  // _ +hB +eB +bB
+  _lkj = hn::MulAdd(_ifc, CCCC, _lkj);  // _ +iC +fC +cC
 
-  // Column mno:                            m   n   o   _  =
-  auto mno_ = hn::Mul(adg_, DDD_);      //  aD  dD  gD  _
-  mno_ = hn::MulAdd(beh_, EEE_, mno_);  // +bE +eE +hE  _
-  mno_ = hn::MulAdd(cfi_, FFF_, mno_);  // +cF +fF +iF  _
+  // Column mno:                           _  o   n   m   =
+  auto _onm = hn::Mul(_gda, DDDD);      // _  gD  dD  aD
+  _onm = hn::MulAdd(_heb, EEEE, _onm);  // _ +hE +eE +bE
+  _onm = hn::MulAdd(_ifc, FFFF, _onm);  // _ +iF +fF +cF
 
-  // Column pqr:                            p   q   r   _  =
-  auto pqr_ = hn::Mul(adg_, GGG_);      //  aG  dG  gG  _
-  pqr_ = hn::MulAdd(beh_, HHH_, pqr_);  // +bH +eH +hH  _
-  pqr_ = hn::MulAdd(cfi_, III_, pqr_);  // +cI +fI +iI  _
+  // Column pqr:                           _  r   q   p   =
+  auto _rqp = hn::Mul(_gda, GGGG);      // _  gG  dG  aG
+  _rqp = hn::MulAdd(_heb, HHHH, _rqp);  // _ +hH +eH +bH
+  _rqp = hn::MulAdd(_ifc, IIII, _rqp);  // _ +iI +fI +cI
 
   // Store the output.
-  hn::StoreU(jkl_, tag, R_AC);         // 4-wide write temporarily overwrites m
-  hn::StoreU(mno_, tag, R_AC + 3);     // 4-wide write temporarily overwrites p
-  hn::StoreN(pqr_, tag, R_AC + 6, 3);  // 3-wide write to stay in bounds
+  hn::StoreU(_lkj, tag, R_AC);         // 4-wide write temporarily overwrites m
+  hn::StoreU(_onm, tag, R_AC + 3);     // 4-wide write temporarily overwrites p
+  hn::StoreN(_rqp, tag, R_AC + 6, 3);  // 3-wide write to stay in bounds
 }
 
 /* Composition of transforms X_AC = X_AB * X_BC.
