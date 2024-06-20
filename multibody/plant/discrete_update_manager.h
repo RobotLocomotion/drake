@@ -5,6 +5,8 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/scope_exit.h"
@@ -38,6 +40,43 @@ class AccelerationKinematicsCache;
 
 template <typename T>
 struct JointLockingCacheData;
+
+/* When MbP is operating in "sampled" mode (vs "minimal state") mode, this class
+will be stored as State in the Context, as an output of the discrete step. */
+struct DiscreteStepMemory {
+  template <typename T>
+  struct Data {
+    internal::AccelerationKinematicsCache<T> acceleration_kinematics_cache;
+    // XXX we will also need
+    // - ContactSolverResults
+    // - ContactSummary
+    // - possibly the position / velocity kinematics cache? TBD
+  };
+
+  template <typename T>
+  Data<T>& Emplace() {
+    auto new_data = std::make_shared<Data<T>>();
+    Data<T>* result = new_data.get();
+    data = std::move(new_data);
+    return *result;
+  }
+
+  template <typename T>
+  const Data<T>* get() const {
+    if (auto* maybe_data = std::get_if<std::shared_ptr<const Data<T>>>(&data)) {
+      return maybe_data->get();
+    }
+    return nullptr;
+  }
+
+  // We use variant because abstract state in the context cannot template on T.
+  // We use shared_ptr-to-const so that we're cheap to copy and move.
+  std::variant<std::monostate,  // BR
+               std::shared_ptr<const Data<double>>,
+               std::shared_ptr<const Data<AutoDiffXd>>,
+               std::shared_ptr<const Data<symbolic::Expression>>>
+      data;
+};
 
 /* Struct to store MultibodyPlant input forces. */
 template <typename T>
@@ -161,9 +200,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   }
 
   /* MultibodyPlant invokes this method to perform the discrete variables
-   update. */
+   update. The optional `memory` output is sometimes requested, to preserve
+   a snapshot of the second-order inputs and/or outputs. */
   void CalcDiscreteValues(const systems::Context<T>& context,
-                          systems::DiscreteValues<T>* updates) const;
+                          systems::DiscreteValues<T>* updates,
+                          DiscreteStepMemory::Data<T>* memory = nullptr) const;
 
   /* Evaluates the contact results used in CalcDiscreteValues() to advance the
    discrete update from the state stored in `context`. */
