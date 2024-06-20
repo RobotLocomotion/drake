@@ -98,4 +98,21 @@ drake_py_experiment_binary(
     googlebench_binary = ":proximity_defaults_benchmark",
 )
 
+drake_cc_googlebench_binary(
+    name = "boxes_overlap_benchmark",
+    srcs = ["boxes_overlap_benchmark.cc"],
+    add_test_rule = True,
+    deps = [
+        "//geometry/proximity:boxes_overlap",
+        "//geometry/test_utilities:boxes_overlap_transforms",
+        "//tools/performance:gflags_main",
+        "@fmt",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "boxes_overlap_experiment",
+    googlebench_binary = ":boxes_overlap_benchmark",
+)
+
 add_lint_tests()
