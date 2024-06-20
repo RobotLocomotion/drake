@@ -497,3 +497,6 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(cone.b(), 5.6)
         assert_pickle(self, cone, lambda shape: [
                       shape.height(), shape.a(), shape.b()])
+
+    def test_hackery(self):
+        mut.ReportBoxOverlapStatistics()
