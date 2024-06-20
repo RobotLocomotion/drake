@@ -19,6 +19,13 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "boxes_overlap_transforms",
+    testonly = 1,
+    srcs = ["boxes_overlap_transforms.cc"],
+    hdrs = ["boxes_overlap_transforms.h"],
+    deps = ["//math:geometric_transform"],
+)
+drake_cc_library(
     name = "geometry_set_tester",
     testonly = 1,
     srcs = [],

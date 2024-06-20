@@ -976,6 +976,7 @@ drake_cc_googletest(
         "//geometry:meshcat",
         "//geometry:rgba",
         "//geometry:shape_specification",
+        "//geometry/test_utilities:boxes_overlap_transforms",
     ],
 )
 
