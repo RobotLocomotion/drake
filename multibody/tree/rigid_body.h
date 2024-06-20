@@ -506,6 +506,13 @@ class RigidBody : public MultibodyElement<T> {
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context) const;
 
+  /// Calculates Bcm's translational acceleration in the world frame W.
+  /// @param[in] context The context contains the state of the model.
+  /// @retval a_WBcm_W The translational acceleration of Bcm (this rigid body's
+  /// center of mass) in the world frame W, expressed in W.
+  Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
+      const systems::Context<T>& context) const;
+
   /// Gets this body's spatial inertia about its origin from the given context.
   /// @param[in] context contains the state of the multibody system.
   /// @returns M_BBo_B spatial inertia of this rigid body B about Bo (B's
