@@ -67,8 +67,8 @@ ConvexHull::ConvexHull(const ConvexSets& sets)
 
 ConvexHull::~ConvexHull() = default;
 
-const ConvexHull::ConvexSet& element(int index) const {
-  DRAKE_THROW_UNLESS(0 <= index && index < ssize(sets_));
+const ConvexSet& ConvexHull::element(int index) const {
+  DRAKE_THROW_UNLESS(0 <= index && index < std::ssize(sets_));
   return *sets_[index];
 }
 
