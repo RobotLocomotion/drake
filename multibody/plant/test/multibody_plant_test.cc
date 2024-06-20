@@ -1747,6 +1747,9 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
   }
   ok_to_feedthrough.insert(
       plant.get_body_spatial_accelerations_output_port().get_index());
+  ok_to_feedthrough.insert(
+      plant.get_body_spatial_accelerations_feedthrough_output_port()
+          .get_index());
   if (plant.is_discrete()) {
     ok_to_feedthrough.insert(
         plant.get_contact_results_output_port().get_index());
