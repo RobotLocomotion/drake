@@ -83,9 +83,9 @@ void InitializeSemidefiniteRelaxationForProg(
     MathematicalProgram* relaxation, MatrixX<Variable>* X,
     std::map<Variable, int>* variables_to_sorted_indices,
     std::optional<int> group_number) {
-  DRAKE_ASSERT(relaxation != nullptr);
-  DRAKE_ASSERT(X != nullptr);
-  DRAKE_ASSERT(variables_to_sorted_indices != nullptr);
+  DRAKE_DEMAND(relaxation != nullptr);
+  DRAKE_DEMAND(X != nullptr);
+  DRAKE_DEMAND(variables_to_sorted_indices != nullptr);
   // Build a symmetric matrix X of decision variables using the original
   // program variables (so that GetSolution, etc, works using the original
   // variables).
@@ -121,7 +121,7 @@ void DoLinearizeQuadraticCostsAndConstraints(
     const std::map<Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation,
     bool preserve_convex_quadratic_constraints) {
-  DRAKE_ASSERT(relaxation != nullptr);
+  DRAKE_DEMAND(relaxation != nullptr);
   // Returns the {a, vars} in relaxation, such that a' vars = 0.5*tr(QY). This
   // assumes Q=Q', which is ensured by QuadraticCost and QuadraticConstraint.
   auto half_trace_QY = [&X, &variables_to_sorted_indices](
@@ -216,7 +216,7 @@ void DoAddImpliedLinearConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation) {
-  DRAKE_ASSERT(relaxation != nullptr);
+  DRAKE_DEMAND(relaxation != nullptr);
   // Assemble one big Ay <= b matrix from all bounding box constraints
   // and linear constraints
   // TODO(bernhardpg): Consider special-casing linear equality constraints
@@ -319,7 +319,7 @@ void DoAddImpliedLinearEqualityConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation) {
-  DRAKE_ASSERT(relaxation != nullptr);
+  DRAKE_DEMAND(relaxation != nullptr);
   // Linear equality constraints.
   // Ay = b => (Ay-b)yᵀ = Ayyᵀ - byᵀ = 0.
   for (const auto& binding : prog.linear_equality_constraints()) {
