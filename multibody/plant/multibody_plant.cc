@@ -439,7 +439,8 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 
   // Note: The discrete update manager needs to be copied *after* the plant is
   // finalized.
-  if (other.discrete_update_manager_ != nullptr) {
+  if (is_discrete()) {
+    DRAKE_DEMAND(other.discrete_update_manager_ != nullptr);
     SetDiscreteUpdateManager(
         other.discrete_update_manager_->template CloneToScalar<T>());
   }
@@ -2924,38 +2925,7 @@ systems::EventStatus MultibodyPlant<T>::CalcDiscreteStep(
     const systems::Context<T>& context0,
     systems::DiscreteValues<T>* updates) const {
   this->ValidateContext(context0);
-
-  // TODO(amcastro-tri): remove the entirety of the code we are bypassing here.
-  // This requires one of our custom managers to become the default
-  // MultibodyPlant manager.
-  if (discrete_update_manager_) {
-    discrete_update_manager_->CalcDiscreteValues(context0, updates);
-    return systems::EventStatus::Succeeded();
-  }
-
-  // Get the system state as raw Eigen vectors
-  // (solution at the previous time step).
-  auto x0 = context0.get_discrete_state(0).get_value();
-  VectorX<T> q0 = x0.topRows(this->num_positions());
-  VectorX<T> v0 = x0.bottomRows(this->num_velocities());
-
-  // For a discrete model this evaluates vdot = (v_next - v0)/time_step() and
-  // includes contact forces.
-  const VectorX<T>& vdot = this->EvalForwardDynamics(context0).get_vdot();
-
-  // TODO(amcastro-tri): Consider replacing this by:
-  //   const VectorX<T>& v_next = solver_results.v_next;
-  // to avoid additional vector operations.
-  const VectorX<T>& v_next = v0 + time_step() * vdot;
-
-  VectorX<T> qdot_next(this->num_positions());
-  MapVelocityToQDot(context0, v_next, &qdot_next);
-  VectorX<T> q_next = q0 + time_step() * qdot_next;
-
-  VectorX<T> x_next(this->num_multibody_states());
-  x_next << q_next, v_next;
-  updates->set_value(0, x_next);
-
+  discrete_update_manager_->CalcDiscreteValues(context0, updates);
   return systems::EventStatus::Succeeded();
 }
 
