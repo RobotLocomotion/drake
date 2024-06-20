@@ -17,6 +17,7 @@
 #include "drake/geometry/geometry_properties.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_version.h"
+#include "drake/geometry/proximity/boxes_overlap.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -535,6 +536,11 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("properties"), py::arg("dissipation") = std::nullopt,
       py::arg("point_stiffness") = std::nullopt,
       py::arg("friction") = std::nullopt, doc.AddContactMaterial.doc);
+
+  // XXX HACK
+  m.def(
+      "ReportBoxOverlapStatistics",
+      []() { geometry::internal::ReportStatistics(); }, "XXX HACK");
 }
 
 // Test-only code.
