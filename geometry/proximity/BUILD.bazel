@@ -69,16 +69,13 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "boxes_overlap",
-    srcs = [
-        "boxes_overlap.cc",
-    ],
+    srcs = ["boxes_overlap.cc"],
+    hdrs = ["boxes_overlap.h"],
     copts = ["-march=broadwell"],
-    hdrs = [
-        "boxes_overlap.h",
-    ],
     deps = [
         "//math:geometric_transform",
         "@eigen",
+        "@highway_internal//:hwy",
     ],
 )
 

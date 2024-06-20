@@ -29,8 +29,7 @@ bool Aabb::HasOverlap(const Aabb& a_G, const Aabb& b_H,
             = X_GH * b_H.center() - a_G.center()  */
   const RigidTransformd X_AB(X_GH.rotation(),
                              X_GH * b_H.center() - a_G.center());
-  return BoxesOverlap(a_G.half_width(), b_H.half_width(), X_AB.translation(),
-                      X_AB.rotation().matrix());
+  return BoxesOverlap(a_G.half_width(), b_H.half_width(), X_AB);
 }
 
 bool Aabb::HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
@@ -48,8 +47,7 @@ bool Aabb::HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
   const RigidTransformd X_AO(
       X_GH.rotation() * obb_H.pose().rotation(),
       X_GH * obb_H.pose().translation() - aabb_G.center());
-  return BoxesOverlap(aabb_G.half_width(), obb_H.half_width(),
-                      X_AO.translation(), X_AO.rotation().matrix());
+  return BoxesOverlap(aabb_G.half_width(), obb_H.half_width(), X_AO);
 }
 
 template <typename MeshType>

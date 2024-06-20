@@ -33,8 +33,7 @@ bool Obb::HasOverlap(const Obb& a, const Obb& b, const RigidTransformd& X_GH) {
   const RigidTransformd& X_GA = a.pose();
   const RigidTransformd& X_HB = b.pose();
   const RigidTransformd X_AB = X_GA.InvertAndCompose(X_GH * X_HB);
-  return BoxesOverlap(a.half_width(), b.half_width(), X_AB.translation(),
-                      X_AB.rotation().matrix());
+  return BoxesOverlap(a.half_width(), b.half_width(), X_AB);
 }
 
 bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
@@ -52,8 +51,7 @@ bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
   const RigidTransformd X_HG = X_GH.inverse();
   const RotationMatrixd R_AO = X_HG.rotation() * obb_G.pose().rotation();
   const RigidTransformd X_AO(R_AO, X_HG * obb_G.center() - aabb_H.center());
-  return BoxesOverlap(aabb_H.half_width(), obb_G.half_width(),
-                      X_AO.translation(), X_AO.rotation().matrix());
+  return BoxesOverlap(aabb_H.half_width(), obb_G.half_width(), X_AO);
 }
 
 bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,
