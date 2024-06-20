@@ -5679,8 +5679,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
 
-  // When not the nullptr, this manager class is used to advance discrete
-  // states.
+  // This manager class is used to advance discrete states.
+  // Post-finalize, it is never null (for a discrete-time plant).
   // TODO(amcastro-tri): migrate the entirety of computations related to contact
   // resolution into a default contact manager.
   std::unique_ptr<internal::DiscreteUpdateManager<T>> discrete_update_manager_;
