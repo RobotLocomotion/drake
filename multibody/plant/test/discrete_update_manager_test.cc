@@ -20,10 +20,14 @@ class MultibodyPlantTester {
  public:
   MultibodyPlantTester() = delete;
 
+  // Returns the manager for the given plant.
+  // @pre The plant must be discrete time and already finalized.
   template <typename T>
-  static internal::DiscreteUpdateManager<T>* discrete_update_manager(
+  static internal::DiscreteUpdateManager<T>& discrete_update_manager(
       const MultibodyPlant<T>& plant) {
-    return plant.discrete_update_manager_.get();
+    auto* manager = plant.discrete_update_manager_.get();
+    DRAKE_DEMAND(manager != nullptr);
+    return *manager;
   }
 };
 
@@ -507,7 +511,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
       plant_->get_actuation_input_port();
   u_input.FixValue(plant_context_, Vector2d(1.0, 3.0));
 
-  DiscreteUpdateManager<double>* manager =
+  DiscreteUpdateManager<double>& manager =
       MultibodyPlantTester::discrete_update_manager(*plant_);
 
   // CalcNonContactForces includes:
@@ -522,7 +526,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
   // contributes to the accumulated forces. This tests that the indexing in
   // CalcJointActuationForces() correctly uses JointActuaton::input_start().
   MultibodyForces<double> forces(*plant_);
-  manager->CalcNonContactForces(
+  manager.CalcNonContactForces(
       *plant_context_, false /* no joint limit penalty forces */,
       false /* no pd controlled actuator forces */, &forces);
 
