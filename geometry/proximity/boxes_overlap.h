@@ -1,7 +1,8 @@
 #pragma once
 
-#include "drake/math/rigid_transform.h"
 #include <Eigen/Core>
+
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
