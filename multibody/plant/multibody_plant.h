@@ -268,6 +268,7 @@ output_ports:
 - body_poses
 - body_spatial_velocities
 - body_spatial_accelerations
+- <em style="color:purple">body_spatial_accelerations_feedthrough</em>
 - generalized_acceleration
 - net_actuation
 - reaction_forces
@@ -290,9 +291,13 @@ indicated type the port will still be present but its value will be a
 zero-length vector. (Model instances `world_model_instance()` and
 `default_model_instance()` always exist.)
 
-The ports shown in <span style="color:green">
-green</span> are for communication with Drake's
-@ref geometry::SceneGraph "SceneGraph" system for dealing with geometry.
+The ports shown in <span style="color:purple">purple</span> are intended
+for expert users only.  See @ref output_port_sampling "Output port sampling"
+for details.
+
+The ports shown in <span style="color:green">green</span> are for communication
+with Drake's @ref geometry::SceneGraph "SceneGraph" system for dealing with
+geometry.
 
 %MultibodyPlant provides a user-facing API for:
 
@@ -522,6 +527,53 @@ actuation port reports the total actuation applied by a given actuator.
 
 @note PD controllers are ignored when a joint is locked (see Joint::Lock()), and
 thus they have no effect on the actuation output.
+
+@anchor output_port_sampling
+  ### Output port sampling
+
+The semantics of certain %MultibodyPlant output ports depends on whether the
+plant is configured to advance using continuous time integration or discrete
+time steps (see is_discrete()). This section explains the details.
+
+Output ports that only depend on the [q, v] kinematic state (such as
+get_body_poses_output_port() or get_body_spatial_velocities_output_port())
+do <b>not</b> change semantics for continuous vs discrete time. In all cases,
+the output value is a function of the kinematic state in the context.
+
+Output ports that incorporate dynamics (i.e., forces) <b>do</b> change semantics
+based on the plant mode. Imagine that the get_applied_spatial_force_input_port()
+provides a continuously time-varying input force. Should the
+get_body_spatial_accelerations_output_port() output provide a snapshot of the
+accelerations as of the most recent time step, or should it immediately reflect
+any changes to the input force, even if the plant has not taken another step
+yet? In other words, is the output value sampled (discrete) or not (continuous)?
+
+For a continuous time plant, there is no distinction -- the output port always
+immediately reflects the instantaneous input value. It is a "direct feedthrough"
+output port (see SystemBase::GetDirectFeedthroughs()).
+
+For a discrete time plant, the user can choose whether the output should be
+sampled or not: either "minimal state" mode or "sampling" mode. When using
+"minimal state" mode, the output is not sampled.  The only state in the context
+is the kinematic [q, v], so dynamics output ports will always reflect the
+instantaneous answer (i.e., direct feedthrough).  When using "sampling" mode,
+the plant state incorporates a snapshot of the most recent step's kinematics and
+dynamics, and the output ports will reflect that sampled state (i.e., not direct
+feedthrough).
+
+XXX Document however we choose to set use_minimal_state_ here.
+
+Even if a plant is operating in "sampled" mode, sometimes it's still useful to
+obtain the instantaneous dynamics. For that reason, the plant offers ports shown
+in <span style="color:purple">purple</span> in the class overview, which are
+always the instantaneous dynamics (i.e., are direct feedthrough), not the
+sampled dynamics. For a continuous plant, these ports still exist but are not
+very useful because they are identical to their non-purple twin.
+
+When computational performance is a concern, note that the sampled outputs are
+generally <em>much</em> faster to calculate than the feedthrough outputs.  For
+that reason, Drake's visualization tools will use display sampled output data
+if it is available.
 
 @anchor sdf_loading
                  ### Loading models from SDFormat files
@@ -902,6 +954,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_body_spatial_accelerations_output_port()
       const;
+
+  /// (Advanced) Exactly like get_body_spatial_accelerations_output_port(),
+  /// except that for a discrete time plant this port will immediately reflect
+  /// changes to the input imports. As such, is generally very expensive.
+  const systems::OutputPort<T>&
+  get_body_spatial_accelerations_feedthrough_output_port() const;
 
   /// Returns a constant reference to the input port for external actuation for
   /// all actuated dofs. This input port is a vector valued port and can be set
@@ -5202,9 +5260,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // shown to be exactly conserved and to be within O(dt) of the real energy of
   // the mechanical system.)
   // TODO(amcastro-tri): Update this docs when contact is added.
-  systems::EventStatus CalcDiscreteStep(
+  systems::EventStatus CalcStepDiscrete(
       const systems::Context<T>& context0,
-      systems::DiscreteValues<T>* updates) const;
+      systems::DiscreteValues<T>* next_discrete_state) const;
+  systems::EventStatus CalcStepUnrestricted(
+      const systems::Context<T>& context0, systems::State<T>* next_state) const;
 
   // Data will be resized on output according to the documentation for
   // JointLockingCacheData.
@@ -5362,9 +5422,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // For each body B in the model, evaluates A_WB, B's spatial acceleration
   // in the world frame W, expressed in W (for point Bo, the body's origin) and
-  // copies it into A_WB_all, indexed by BodyIndex.
-  void CalcBodySpatialAccelerationsOutput(
+  // copies it into A_WB_all, indexed by BodyIndex. We have two flavors of this
+  // port, which both delegate to a common underlying implementation.
+  void CalcBodySpatialAccelerationsOutputSampled(
       const systems::Context<T>& context,
+      std::vector<SpatialAcceleration<T>>* A_WB_all) const;
+  void CalcBodySpatialAccelerationsOutputFeedthrough(
+      const systems::Context<T>& context,
+      std::vector<SpatialAcceleration<T>>* A_WB_all) const;
+  void CalcBodySpatialAccelerationsOutputImpl(
+      const internal::AccelerationKinematicsCache<T>& ac,
       std::vector<SpatialAcceleration<T>>* A_WB_all) const;
 
   // Method to compute spatial contact forces for continuous plants.
@@ -5645,6 +5712,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   systems::OutputPortIndex body_poses_port_;
   systems::OutputPortIndex body_spatial_velocities_port_;
   systems::OutputPortIndex body_spatial_accelerations_port_;
+  systems::OutputPortIndex body_spatial_accelerations_feedthrough_port_;
 
   // A port presenting state x=[q v] for the whole system, and a vector of
   // ports presenting state subsets xᵢ=[qᵢ vᵢ] ⊆ x for each model instance i,
@@ -5713,6 +5781,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Whether to apply collsion filters to adjacent bodies at Finalize().
   bool adjacent_bodies_collision_filters_{
       MultibodyPlantConfig{}.adjacent_bodies_collision_filters};
+
+  // XXX Somehow we need to put this under user control / config.
+  bool use_minimal_state_{true};
 };
 
 /// @cond

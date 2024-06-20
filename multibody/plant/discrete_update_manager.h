@@ -39,6 +39,22 @@ class AccelerationKinematicsCache;
 template <typename T>
 struct JointLockingCacheData;
 
+/* When MbP is operating in "sampled" mode (vs "minimal state") mode, this class
+will be stored as State in the Context, as an output of the discrete step. */
+template <typename T>
+struct DiscreteStepMemory {
+  internal::AccelerationKinematicsCache<T> acceleration_kinematics_cache;
+
+  // XXX we will also need
+  // - ContactSolverResults
+  // - ContactSummary
+  // - possibly the position / velocity kinematics cache? TBD
+
+  // XXX the complicated data here should be COW via `shared_ptr<const Foo>`;
+  // that could be one shared for the whole structure, or individual ptrs for
+  // each field.
+};
+
 /* Struct to store MultibodyPlant input forces. */
 template <typename T>
 struct InputPortForces {
@@ -161,9 +177,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   }
 
   /* MultibodyPlant invokes this method to perform the discrete variables
-   update. */
+   update. The optional `memory` output is sometimes requested, to preserve
+   a snapshot of the second-order inputs and/or outputs. */
   void CalcDiscreteValues(const systems::Context<T>& context,
-                          systems::DiscreteValues<T>* updates) const;
+                          systems::DiscreteValues<T>* updates,
+                          DiscreteStepMemory<T>* memory = nullptr) const;
 
   /* Evaluates the contact results used in CalcDiscreteValues() to advance the
    discrete update from the state stored in `context`. */

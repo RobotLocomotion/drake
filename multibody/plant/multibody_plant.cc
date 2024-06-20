@@ -68,10 +68,12 @@ using drake::multibody::SpatialForce;
 using drake::multibody::internal::AccelerationKinematicsCache;
 using drake::multibody::internal::ArticulatedBodyForceCache;
 using drake::multibody::internal::ArticulatedBodyInertiaCache;
+using drake::multibody::internal::DiscreteStepMemory;
 using drake::multibody::internal::PositionKinematicsCache;
 using drake::multibody::internal::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
+using systems::DependencyTicket;
 using systems::InputPort;
 using systems::InputPortIndex;
 using systems::OutputPortIndex;
@@ -2921,11 +2923,24 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
 }
 
 template <typename T>
-systems::EventStatus MultibodyPlant<T>::CalcDiscreteStep(
+systems::EventStatus MultibodyPlant<T>::CalcStepDiscrete(
     const systems::Context<T>& context0,
-    systems::DiscreteValues<T>* updates) const {
+    systems::DiscreteValues<T>* next_discrete_state) const {
   this->ValidateContext(context0);
-  discrete_update_manager_->CalcDiscreteValues(context0, updates);
+  discrete_update_manager_->CalcDiscreteValues(context0, next_discrete_state);
+  return systems::EventStatus::Succeeded();
+}
+
+template <typename T>
+systems::EventStatus MultibodyPlant<T>::CalcStepUnrestricted(
+    const systems::Context<T>& context0, systems::State<T>* next_state) const {
+  this->ValidateContext(context0);
+  systems::DiscreteValues<T>& next_discrete_state =
+      next_state->get_mutable_discrete_state();
+  DiscreteStepMemory<T>& next_memory =
+      next_state->template get_mutable_abstract_state<DiscreteStepMemory<T>>(0);
+  discrete_update_manager_->CalcDiscreteValues(context0, &next_discrete_state,
+                                               &next_memory);
   return systems::EventStatus::Succeeded();
 }
 
@@ -2935,20 +2950,35 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   DRAKE_DEMAND(this->is_finalized());
 
   if (is_discrete()) {
-    this->DeclarePeriodicDiscreteUpdateEvent(
-        time_step_, 0.0, &MultibodyPlant<T>::CalcDiscreteStep);
-
-    // Also permit triggering a step via a Forced update.
-    this->DeclareForcedDiscreteUpdateEvent(
-        &MultibodyPlant<T>::CalcDiscreteStep);
+    if (use_minimal_state_) {
+      this->DeclarePeriodicDiscreteUpdateEvent(
+          time_step_, 0.0, &MultibodyPlant<T>::CalcStepDiscrete);
+      // Also permit triggering a step via a Forced update.
+      this->DeclareForcedDiscreteUpdateEvent(
+          &MultibodyPlant<T>::CalcStepDiscrete);
+    } else {
+      this->DeclareAbstractState(Value<DiscreteStepMemory<T>>{});
+      this->DeclarePeriodicUnrestrictedUpdateEvent(
+          time_step_, 0.0, &MultibodyPlant<T>::CalcStepUnrestricted);
+      // Also permit triggering a step via a Forced update.
+      this->DeclareForcedUnrestrictedUpdateEvent(
+          &MultibodyPlant<T>::CalcStepUnrestricted);
+    }
   }
 
   DeclareCacheEntries();
   DeclareParameters();
 
-  // State ticket.
-  const systems::DependencyTicket state_ticket =
+  // State tickets.
+  const DependencyTicket state_ticket =
       is_discrete() ? this->xd_ticket() : this->kinematics_ticket();
+
+  // When a discrete plant is operating in "sampled" mode (vs "minimal state"),
+  // sampled data from the prior step is stored as abstract state.
+  const DependencyTicket memory_ticket =
+      use_minimal_state_
+          ? DependencyTicket{}
+          : this->abstract_state_ticket(systems::AbstractStateIndex{0});
 
   // Declare per model instance actuation ports.
   instance_actuation_ports_.resize(num_model_instances());
@@ -3049,17 +3079,36 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
           .get_index();
 
   // Declare the output port for the spatial accelerations of all bodies in the
-  // world.
-  body_spatial_accelerations_port_ =
-      this->DeclareAbstractOutputPort(
-              "spatial_accelerations",
-              std::vector<SpatialAcceleration<T>>(num_bodies()),
-              &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
-              // Accelerations depend on both state and inputs.
-              // All sources include: time, accuracy, state, input ports, and
-              // parameters.
-              {this->all_sources_ticket()})
-          .get_index();
+  // world. For a discrete-time plant not in "minimal state" mode, the default
+  // port will be the sampled flavor and then we'll also provide a feedthrough
+  // flavor as an alternative.
+  {
+    const auto calc_sampled =
+        &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutputSampled;
+    const auto calc_feedthrough =
+        &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutputFeedthrough;
+    const std::set<DependencyTicket> calc_sampled_prerequisites{memory_ticket};
+    const std::set<DependencyTicket> calc_feedthrough_prerequisites{
+        // Accelerations depend on both state and inputs. All sources include:
+        // time, accuracy, state, input ports, and parameters.
+        this->all_sources_ticket()};
+    const std::vector<SpatialAcceleration<T>> model_value(num_bodies());
+    const bool default_calc_is_sampled = is_discrete() && !use_minimal_state_;
+    body_spatial_accelerations_port_ =
+        this->DeclareAbstractOutputPort(
+                // TODO(jwnimmer-tri) This string name doesn't match the docs.
+                "spatial_accelerations", model_value,
+                default_calc_is_sampled ? calc_sampled  // BR
+                                        : calc_feedthrough,
+                default_calc_is_sampled ? calc_sampled_prerequisites
+                                        : calc_feedthrough_prerequisites)
+            .get_index();
+    body_spatial_accelerations_feedthrough_port_ =
+        this->DeclareAbstractOutputPort(
+                "body_spatial_accelerations_feedthrough", model_value,
+                calc_feedthrough, calc_feedthrough_prerequisites)
+            .get_index();
+  }
 
   // Declare one output port for the entire generalized acceleration vector
   // vdot (length is nv).
@@ -3181,8 +3230,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
           .get_index();
 
   // Contact results output port.
-  std::set<systems::DependencyTicket> contact_results_prerequisites = {
-      state_ticket};
+  std::set<DependencyTicket> contact_results_prerequisites = {state_ticket};
   if (is_discrete()) {
     contact_results_prerequisites.insert(this->all_input_ports_ticket());
     contact_results_prerequisites.insert(this->all_parameters_ticket());
@@ -3251,17 +3299,16 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
 
   // Cache entry for ContactResultsContinuous.
   if (!is_discrete()) {
-    std::set<systems::DependencyTicket> dependency_ticket =
-        [this, use_hydroelastic]() {
-          std::set<systems::DependencyTicket> tickets;
-          tickets.insert(this->kinematics_ticket());
-          if (use_hydroelastic) {
-            tickets.insert(this->cache_entry_ticket(
-                cache_indices_.hydroelastic_contact_forces_continuous));
-          }
-          tickets.insert(this->all_parameters_ticket());
-          return tickets;
-        }();
+    std::set<DependencyTicket> dependency_ticket = [this, use_hydroelastic]() {
+      std::set<DependencyTicket> tickets;
+      tickets.insert(this->kinematics_ticket());
+      if (use_hydroelastic) {
+        tickets.insert(this->cache_entry_ticket(
+            cache_indices_.hydroelastic_contact_forces_continuous));
+      }
+      tickets.insert(this->all_parameters_ticket());
+      return tickets;
+    }();
     auto& contact_results_continuous_cache_entry = this->DeclareCacheEntry(
         std::string("ContactResultsContinuous"),
         &MultibodyPlant<T>::CalcContactResultsContinuous, dependency_ticket);
@@ -3522,13 +3569,36 @@ void MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
+void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutputSampled(
+    const Context<T>& context,
+    std::vector<SpatialAcceleration<T>>* A_WB_all) const {
+  DRAKE_DEMAND(is_discrete());
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
+
+  const DiscreteStepMemory<T>& prior_step_memory =
+      context.template get_abstract_state<DiscreteStepMemory<T>>(0);
+  const AccelerationKinematicsCache<T>& ac =
+      prior_step_memory.acceleration_kinematics_cache;
+  CalcBodySpatialAccelerationsOutputImpl(ac, A_WB_all);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutputFeedthrough(
     const Context<T>& context,
     std::vector<SpatialAcceleration<T>>* A_WB_all) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-  A_WB_all->resize(num_bodies());
+
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
+  CalcBodySpatialAccelerationsOutputImpl(ac, A_WB_all);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutputImpl(
+    const AccelerationKinematicsCache<T>& ac,
+    std::vector<SpatialAcceleration<T>>* A_WB_all) const {
+  A_WB_all->resize(num_bodies());
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     A_WB_all->at(body_index) = ac.get_A_WB(body.mobod_index());
@@ -3704,6 +3774,14 @@ const OutputPort<T>&
 MultibodyPlant<T>::get_body_spatial_accelerations_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return systems::System<T>::get_output_port(body_spatial_accelerations_port_);
+}
+
+template <typename T>
+const OutputPort<T>& MultibodyPlant<
+    T>::get_body_spatial_accelerations_feedthrough_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_output_port(
+      body_spatial_accelerations_feedthrough_port_);
 }
 
 template <typename T>

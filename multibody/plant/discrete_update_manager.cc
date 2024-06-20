@@ -26,8 +26,11 @@ using drake::systems::Context;
 
 template <typename T>
 void DiscreteUpdateManager<T>::CalcDiscreteValues(
-    const systems::Context<T>& context,
-    systems::DiscreteValues<T>* updates) const {
+    const systems::Context<T>& context, systems::DiscreteValues<T>* updates,
+    DiscreteStepMemory<T>* memory) const {
+  // Memory is not yet implemented.
+  DRAKE_DEMAND(memory == nullptr);
+
   // The discrete sampling of input ports needs to be the first step of a
   // discrete update.
   SampleDiscreteInputPortForces(context);
