@@ -102,7 +102,7 @@ For inspecting the machine code, see Godbolt and in particular the LLVM-MCA tool
 
  https://godbolt.org/
 
-For a Highway funciton reference, see:
+For a Highway function reference, see:
 
  https://google.github.io/highway/en/master/quick_reference.html#operations
 
