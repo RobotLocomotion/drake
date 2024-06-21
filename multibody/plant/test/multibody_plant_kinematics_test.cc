@@ -47,9 +47,8 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   // Setup the multibody plant.
   void SetUp() override {
     // Set a spatial inertia for each link.
-    const double link_mass = 5.0;  // kg
     const SpatialInertia<double> link_central_inertia =
-        SpatialInertia<double>::ThinRodWithMass(link_mass, link_length_,
+        SpatialInertia<double>::ThinRodWithMass(link_mass_, link_length_,
                                                 Vector3<double>::UnitX());
 
     // Add the two links to the MultibodyPlant.
