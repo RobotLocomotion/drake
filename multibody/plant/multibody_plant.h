@@ -2217,13 +2217,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return *model;
   }
 
-  /// Returns a mutable pointer to the DeformableModel owned by this plant or
-  /// nullptr if this plant doesn't own a %DeformableModel.
+  /// Returns a mutable reference to the DeformableModel owned by this plant.
   /// @throws std::exception if the plant is finalized.
   /// @experimental
-  DeformableModel<T>* mutable_deformable_model() {
+  DeformableModel<T>& mutable_deformable_model() {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    return physical_models_->mutable_deformable_model();
+    DeformableModel<T>* model = physical_models_->mutable_deformable_model();
+    // A DeformableModel is always added to the plant at construction time.
+    DRAKE_DEMAND(model != nullptr);
+    return *model;
   }
 
   // TODO(amcastro-tri): per work in #13064, we should reconsider whether to

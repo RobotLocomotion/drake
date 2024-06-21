@@ -63,10 +63,10 @@ class DeformableIntegrationTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
 
-    DeformableModel<double>* deformable_model =
+    DeformableModel<double>& deformable_model =
         plant_->mutable_deformable_model();
-    body_id_ = RegisterDeformableOctahedron(deformable_model, "deformable");
-    model_ = deformable_model;
+    body_id_ = RegisterDeformableOctahedron(&deformable_model, "deformable");
+    model_ = &deformable_model;
     // N.B. Deformables are only supported with the SAP solver.
     // Thus for testing we choose one arbitrary contact approximation that uses
     // the SAP solver.

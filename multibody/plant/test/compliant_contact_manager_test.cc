@@ -91,10 +91,10 @@ GTEST_TEST(CompliantContactManagerTest, ExtractModelInfo) {
   plant_config.discrete_contact_approximation = "sap";
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 
-  DeformableModel<double>* deformable_model = plant.mutable_deformable_model();
+  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
   auto geometry_instance = std::make_unique<geometry::GeometryInstance>(
       math::RigidTransformd::Identity(), geometry::Sphere(1.0), "sphere");
-  deformable_model->RegisterDeformableBody(
+  deformable_model.RegisterDeformableBody(
       std::move(geometry_instance), fem::DeformableBodyConfig<double>{}, 10.0);
   plant.Finalize();
   auto contact_manager = std::make_unique<CompliantContactManager<double>>();

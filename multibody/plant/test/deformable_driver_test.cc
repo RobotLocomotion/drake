@@ -31,11 +31,11 @@ class DeformableDriverTest : public ::testing::Test {
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
-    DeformableModel<double>* deformable_model =
+    DeformableModel<double>& deformable_model =
         plant_->mutable_deformable_model();
     constexpr double kRezHint = 0.5;
-    body_id_ = RegisterSphere(deformable_model, kRezHint);
-    model_ = deformable_model;
+    body_id_ = RegisterSphere(&deformable_model, kRezHint);
+    model_ = &deformable_model;
     const RigidBody<double>& body = plant_->AddRigidBody(
         "rigid_body", SpatialInertia<double>::SolidSphereWithMass(1.0, 1.0));
     // N.B. Deformables are only supported with the SAP solver.

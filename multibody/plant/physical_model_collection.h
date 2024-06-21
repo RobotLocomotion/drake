@@ -94,6 +94,7 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
    @param[in] new_plant pointer to the MultibodyPlant that will own the cloned
    PhysicalModelCollection. Note that we take a mutable pointer to
    MultibodyPlant here as required by cloning each individual PhysicalModel.
+   @pre is_cloneable_to_<ScalarType>() returns true.
    @throw std::exception if plant is nullptr.
    @throw std::exception if DeclareSystemResources() has not been called on
    `this` PhysicalModelCollection

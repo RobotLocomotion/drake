@@ -299,7 +299,6 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
 template <typename T>
 std::unique_ptr<PhysicalModel<AutoDiffXd>>
 DeformableModel<T>::CloneToAutoDiffXd(MultibodyPlant<AutoDiffXd>* plant) const {
-  DRAKE_THROW_UNLESS(is_empty());
   return std::make_unique<DeformableModel<AutoDiffXd>>(plant);
 }
 
@@ -307,8 +306,6 @@ template <typename T>
 std::unique_ptr<PhysicalModel<symbolic::Expression>>
 DeformableModel<T>::CloneToSymbolic(
     MultibodyPlant<symbolic::Expression>* plant) const {
-  /* We can't throw here even if the model isn't empty because the owning plant
-   scalar converts to symbolic to check for algebraic loops. */
   return std::make_unique<DeformableModel<symbolic::Expression>>(plant);
 }
 

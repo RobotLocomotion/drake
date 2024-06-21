@@ -32,12 +32,12 @@ class DeformableCollisionFilterTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, 0.01);
-    DeformableModel<double>* deformable_model =
+    DeformableModel<double>& deformable_model =
         plant_->mutable_deformable_model();
     DeformableBodyId deformable_body_id =
-        RegisterDeformableOctahedron(deformable_model, "deformable");
+        RegisterDeformableOctahedron(&deformable_model, "deformable");
     deformable_geometry_id_ =
-        deformable_model->GetGeometryId(deformable_body_id);
+        deformable_model.GetGeometryId(deformable_body_id);
     // N.B. Deformables are only supported with the SAP solver.
     // Thus for testing we choose one arbitrary contact approximation that uses
     // the SAP solver.

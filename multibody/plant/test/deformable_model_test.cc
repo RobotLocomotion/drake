@@ -29,7 +29,7 @@ class DeformableModelTest : public ::testing::Test {
     plant_config.time_step = 0.01;
     plant_config.discrete_contact_approximation = "sap";
     std::tie(plant_, scene_graph_) = AddMultibodyPlant(plant_config, &builder_);
-    deformable_model_ptr_ = plant_->mutable_deformable_model();
+    deformable_model_ptr_ = &plant_->mutable_deformable_model();
   }
 
   systems::DiagramBuilder<double> builder_;
@@ -232,6 +232,12 @@ TEST_F(DeformableModelTest, GetBodyIdFromGeometryId) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       deformable_model_ptr_->GetBodyId(fake_geometry_id),
       ".*GeometryId.*not.*registered.*");
+}
+
+TEST_F(DeformableModelTest, ToPhysicalModelPointerVariant) {
+  PhysicalModelPointerVariant<double> variant =
+      deformable_model_ptr_->ToPhysicalModelPointerVariant();
+  EXPECT_TRUE(std::holds_alternative<const DeformableModel<double>*>(variant));
 }
 
 TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
@@ -489,20 +495,6 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
   /* double -> double */
   EXPECT_NO_THROW(double_clone = deformable_model_ptr_->CloneToScalar<double>(
                       &double_plant));
-  /* double -> autodiff */
-  EXPECT_THROW(
-      deformable_model_ptr_->CloneToScalar<AutoDiffXd>(&autodiff_plant),
-      std::exception);
-  /* double -> symbolic: we can't throw here because scalar conversion to
-   symbolic happens when the diagram checks for algebraic loops. Instead, we
-   silently clone to an empty model. */
-  std::unique_ptr<PhysicalModel<symbolic::Expression>> symbolic_model =
-      deformable_model_ptr_->CloneToScalar<symbolic::Expression>(
-          &symbolic_plant);
-  EXPECT_EQ(
-      static_cast<DeformableModel<symbolic::Expression>*>(symbolic_model.get())
-          ->num_bodies(),
-      0);
 
   /* Now verify the double clone is indeed a copy of the original. */
   const DeformableModel<double>* double_clone_ptr =
