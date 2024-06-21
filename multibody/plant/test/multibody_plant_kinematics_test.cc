@@ -150,14 +150,12 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     const double z2 = Izz + 0.25 * mLsq * (1 + 2 * std::cos(qB_));
     const double z3 = mLsq * sin(qB_);
     const double z4 = Izz + 0.25 * mLsq;
+    const double z5 = wBz_ * (wBz_ + 2 * wAz_);
     const double z2sq = z2 * z2;
     const double wAzsq = wAz_ * wAz_;
-    const double wADt = 0.5 * z3 *
-                        (z2 * wAzsq + z4 * wBz_ * (wBz_ + 2 * wAz_)) /
-                        (z4 * z1 - z2sq);
-    const double wBDt = -0.5 * z3 *
-                        (z1 * wAzsq + z2 * wBz_ * (wBz_ + 2 * wAz_)) /
-                        (z4 * z1 - z2sq);
+    const double denom = z4 * z1 - z2sq;
+    const double wADt = 0.5 * z3 * (z2 * wAzsq + z4 * z5) / denom;
+    const double wBDt = -0.5 * z3 * (z1 * wAzsq + z2 * z5) / denom;
     return Vector2<double>(wADt, wBDt);  // Returns [ẇAz, ẇBz]
   }
 
