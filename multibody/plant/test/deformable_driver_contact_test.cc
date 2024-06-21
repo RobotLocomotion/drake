@@ -51,18 +51,18 @@ class DeformableDriverContactTest : public ::testing::Test {
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
-    DeformableModel<double>* deformable_model =
+    DeformableModel<double>& deformable_model =
         plant_->mutable_deformable_model();
     /* Move the first deformable up so that the bottom half of it intersects the
      rigid box. */
     const RigidTransformd X_WD0(Vector3d(0, 0, 1.25));
     body_id0_ =
-        RegisterDeformableOctahedron(X_WD0, deformable_model, "deformable0");
+        RegisterDeformableOctahedron(X_WD0, &deformable_model, "deformable0");
     /* Move the second deformable down so that the top half of it intersects the
      rigid box. */
     const RigidTransformd X_WD1(Vector3d(0, 0, -1.25));
     body_id1_ =
-        RegisterDeformableOctahedron(X_WD1, deformable_model, "deformable1");
+        RegisterDeformableOctahedron(X_WD1, &deformable_model, "deformable1");
     model_ = &plant_->deformable_model();
     // N.B. Deformables are only supported with the SAP solver.
     // Thus for testing we choose one arbitrary contact approximation that uses

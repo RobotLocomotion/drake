@@ -40,7 +40,9 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   // DeformableModel has a chance to declare the system resources it needs.
   // Consider making the constructor private and only allow construction via
   // plant.AddDeformableModel().
-  /** Constructs a DeformableModel to be owned by the given MultibodyPlant.
+  /** (Internal only) Constructs a DeformableModel to be owned by the given
+   MultibodyPlant. This constructor is only intended to be called internally by
+   %MultibodyPlant.
    @pre plant != nullptr.
    @pre Finalize() has not been called on `plant`. */
   explicit DeformableModel(MultibodyPlant<T>* plant);
@@ -238,7 +240,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @throws std::exception if called before `DeclareSceneGraphPorts()` is called.
   */
   systems::OutputPortIndex configuration_output_port_index() const {
-    DRAKE_THROW_UNLESS(configuration_output_port_index_.is_valid());
+    DRAKE_DEMAND(configuration_output_port_index_.is_valid());
     return configuration_output_port_index_;
   }
 

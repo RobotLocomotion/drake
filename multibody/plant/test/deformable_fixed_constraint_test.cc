@@ -76,13 +76,13 @@ class DeformableFixedConstraintTest : public ::testing::Test {
     plant_config.discrete_contact_approximation = "sap";
     std::tie(plant_, scene_graph_) = AddMultibodyPlant(plant_config, &builder);
 
-    DeformableModel<double>* deformable_model =
+    DeformableModel<double>& deformable_model =
         plant_->mutable_deformable_model();
     /* Initialize the deformable body close to its equilibrium pose. */
     const RigidTransformd X_WD = RigidTransformd(Vector3d(0, 0, -0.2));
-    deformable_body_id_ =
-        RegisterDeformableOctahedron(deformable_model, X_WD, 0.1, "deformable");
-    model_ = deformable_model;
+    deformable_body_id_ = RegisterDeformableOctahedron(&deformable_model, X_WD,
+                                                       0.1, "deformable");
+    model_ = &deformable_model;
 
     rigid_body_index_ =
         plant_
@@ -100,8 +100,8 @@ class DeformableFixedConstraintTest : public ::testing::Test {
     /* Pose the deformable body in the rigid body's frame so that all vertices
      except the top vertex are under fixed constraint. */
     const RigidTransformd X_RD(Vector3d(0, 0, 0.09));
-    deformable_model->AddFixedConstraint(deformable_body_id_, box_body, X_RD,
-                                         box, RigidTransformd::Identity());
+    deformable_model.AddFixedConstraint(deformable_body_id_, box_body, X_RD,
+                                        box, RigidTransformd::Identity());
 
     /* Initialize the static box to the top of the deformable octahedron so that
      the top (with largest z coordinate in the world frame) vertex is fixed to
@@ -112,9 +112,9 @@ class DeformableFixedConstraintTest : public ::testing::Test {
     /* Pose the deformable body in the static rigid body's frame so that the
      bottom top is under fixed constraint. */
     const RigidTransformd X_SD(Vector3d(0, 0, -0.19));
-    deformable_model->AddFixedConstraint(deformable_body_id_,
-                                         plant_->world_body(), X_SD, box,
-                                         RigidTransformd::Identity());
+    deformable_model.AddFixedConstraint(deformable_body_id_,
+                                        plant_->world_body(), X_SD, box,
+                                        RigidTransformd::Identity());
     plant_->Finalize();
 
     /* Connect visualizer. Useful for when this test is used for debugging. */

@@ -165,21 +165,24 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
    as the scalar type. It should copy all members except for those overwritten
-   in `DeclareSystemResources()`. */
+   in `DeclareSystemResources()`.
+   @pre is_cloneable_to_double() == true. */
   virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble(
       MultibodyPlant<double>* plant) const;
 
   /* Derived classes that support making a clone that uses AutoDiffXd as a
    scalar type must implement this so that it creates a copy of the object with
    AutoDiffXd as the scalar type. It should copy all members except for those
-   overwritten in `DeclareSystemResources()`. */
+   overwritten in `DeclareSystemResources()`.
+   @pre is_cloneable_to_autodiff() == true. */
   virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd(
       MultibodyPlant<AutoDiffXd>* plant) const;
 
   /* Derived classes that support making a clone that uses symbolic::Expression
    as a scalar type must implement this so that it creates a copy of the object
    with symbolic::Expression as the scalar type. It should copy all members
-   except for those overwritten in `DeclareSystemResources()`. */
+   except for those overwritten in `DeclareSystemResources()`.
+   @pre is_cloneable_to_symbolic() == true. */
   virtual std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic(
       MultibodyPlant<symbolic::Expression>* plant) const;
 
