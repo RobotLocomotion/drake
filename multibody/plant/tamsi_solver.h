@@ -518,6 +518,8 @@ class TamsiSolver {
   /// @throws std::exception if nv is non-positive.
   explicit TamsiSolver(int nv);
 
+  ~TamsiSolver();
+
   /// Change the working size of the solver to use `nv` generalized
   /// velocities. This can be used to either shrink or grow the workspaces.
   /// @throws std::exception if nv is non-positive.

@@ -228,6 +228,8 @@ class Mobilizer : public MultibodyElement<T> {
     }
   }
 
+  ~Mobilizer() override;
+
   /// Returns this element's unique index.
   MobilizerIndex index() const {
     return this->template index_impl<MobilizerIndex>();

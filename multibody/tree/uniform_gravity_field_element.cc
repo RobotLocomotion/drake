@@ -20,6 +20,9 @@ UniformGravityFieldElement<T>::UniformGravityFieldElement(Vector3<double> g_W)
       g_W_(g_W) {}
 
 template <typename T>
+UniformGravityFieldElement<T>::~UniformGravityFieldElement() = default;
+
+template <typename T>
 void UniformGravityFieldElement<T>::set_enabled(
     ModelInstanceIndex model_instance, bool is_enabled) {
   if (this->get_parent_tree().topology_is_valid()) {

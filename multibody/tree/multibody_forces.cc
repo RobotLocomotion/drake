@@ -23,6 +23,9 @@ MultibodyForces<T>::MultibodyForces(int nb, int nv) {
 }
 
 template <typename T>
+MultibodyForces<T>::~MultibodyForces() = default;
+
+template <typename T>
 MultibodyForces<T>& MultibodyForces<T>::SetZero() {
   std::fill(F_B_W_.begin(), F_B_W_.end(), SpatialForce<T>::Zero());
   tau_.setZero();

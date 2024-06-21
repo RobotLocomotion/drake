@@ -38,7 +38,7 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
     DRAKE_DEMAND(plant != nullptr);
   }
 
-  ~PhysicalModelCollection() = default;
+  ~PhysicalModelCollection() override;
 
   /* Returns the back pointer to the MultibodyPlant owning `this` PhysicalModel
    before DeclareSystemResources() are called and nullptr after. */

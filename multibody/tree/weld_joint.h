@@ -43,6 +43,8 @@ class WeldJoint final : public Joint<T> {
                  VectorX<double>() /* no acc upper limits */),
         X_FM_(X_FM) {}
 
+  ~WeldJoint() override;
+
   const std::string& type_name() const override;
 
   /// Returns the pose X_FM of frame M in F.

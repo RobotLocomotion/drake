@@ -98,6 +98,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
     this->set_default_quaternion(Quaternion<double>::Identity());
   }
 
+  ~QuaternionFloatingJoint() override;
+
   /// Returns the name of this joint type: "quaternion_floating"
   const std::string& type_name() const override {
     static const never_destroyed<std::string> name{kTypeName};

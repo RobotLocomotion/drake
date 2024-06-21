@@ -5,6 +5,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+PhysicalModelCollection<T>::~PhysicalModelCollection() = default;
+
+template <typename T>
 DeformableModel<T>& PhysicalModelCollection<T>::AddDeformableModel(
     std::unique_ptr<DeformableModel<T>> model) {
   DRAKE_THROW_UNLESS(deformable_model_ == nullptr);

@@ -15,6 +15,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+RpyBallMobilizer<T>::~RpyBallMobilizer() = default;
+
+template <typename T>
 std::string RpyBallMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {

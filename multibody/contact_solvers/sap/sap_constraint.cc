@@ -20,6 +20,9 @@ SapConstraint<T>::SapConstraint(SapConstraintJacobian<T> J,
 }
 
 template <typename T>
+SapConstraint<T>::~SapConstraint() = default;
+
+template <typename T>
 std::unique_ptr<AbstractValue> SapConstraint<T>::MakeData(
     const T& time_step,
     const Eigen::Ref<const VectorX<T>>& delassus_estimation) const {

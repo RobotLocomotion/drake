@@ -54,6 +54,8 @@ class Frame : public FrameBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame)
 
+  ~Frame() override;
+
   /// Returns a const reference to the body associated to this %Frame.
   const RigidBody<T>& body() const {
     return body_;

@@ -25,6 +25,9 @@ using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
 
 template <typename T>
+DiscreteUpdateManager<T>::~DiscreteUpdateManager() = default;
+
+template <typename T>
 void DiscreteUpdateManager<T>::CalcDiscreteValues(
     const systems::Context<T>& context,
     systems::DiscreteValues<T>* updates) const {

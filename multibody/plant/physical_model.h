@@ -71,7 +71,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
     DRAKE_DEMAND(owning_plant != nullptr);
   }
 
-  ~PhysicalModel() override = default;
+  ~PhysicalModel() override;
 
   /** (Internal only) Creates a clone of `this` concrete PhysicalModel object
    with the scalar type `ScalarType` to be owned by the given `plant`. The clone

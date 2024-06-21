@@ -78,7 +78,7 @@ class SapConstraint {
    @throws if J.rows() equals zero. */
   SapConstraint(SapConstraintJacobian<T> J, std::vector<int> objects);
 
-  virtual ~SapConstraint() = default;
+  virtual ~SapConstraint();
 
   /* Number of constraint equations. */
   int num_constraint_equations() const { return J_.rows(); }

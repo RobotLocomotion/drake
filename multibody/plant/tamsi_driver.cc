@@ -27,6 +27,9 @@ TamsiDriver<T>::TamsiDriver(const CompliantContactManager<T>* manager)
 }
 
 template <typename T>
+TamsiDriver<T>::~TamsiDriver() = default;
+
+template <typename T>
 internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
     const systems::Context<T>& context) const {
   const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =

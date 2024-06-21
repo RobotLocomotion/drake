@@ -83,7 +83,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   DiscreteUpdateManager() = default;
 
-  ~DiscreteUpdateManager() override = default;
+  ~DiscreteUpdateManager() override;
 
   /* (Internal) Creates a clone of the concrete DiscreteUpdateManager object
    with the scalar type `ScalarType`. This method is meant to be called only by

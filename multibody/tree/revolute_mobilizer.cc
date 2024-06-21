@@ -10,6 +10,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+RevoluteMobilizer<T>::~RevoluteMobilizer() = default;
+
+template <typename T>
 std::string RevoluteMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   if (position_index_in_mobilizer == 0) {

@@ -104,6 +104,8 @@ class BodyNode : public MultibodyElement<T> {
     DRAKE_DEMAND(!(mobilizer == nullptr && body->index() != world_index()));
   }
 
+  ~BodyNode() override;
+
   // Method to update the list of child body nodes maintained by this node,
   // outboard to this node. Recall a %BodyNode is a tree node within the tree
   // structure of MultibodyTree. Therefore each %BodyNode has a unique parent

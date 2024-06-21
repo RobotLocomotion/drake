@@ -99,6 +99,8 @@ class Wing final : public systems::LeafSystem<T> {
       : Wing<T>(other.body_index_, other.surface_area_, other.X_BodyWing_,
                 other.default_fluid_density_) {}
 
+  ~Wing() final;
+
   /** Returns a reference to the body_poses input port.  It is anticipated
   that this port will be connected the body_poses output port of a
   MultibodyPlant. */

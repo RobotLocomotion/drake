@@ -74,6 +74,8 @@ class PlanarJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
   }
 
+  ~PlanarJoint() final;
+
   const std::string& type_name() const final;
 
   /// Returns `this` joint's default damping constant in N⋅s/m for the

@@ -35,6 +35,8 @@ class RevoluteSpring final : public ForceElement<T> {
   RevoluteSpring(const RevoluteJoint<T>& joint, double nominal_angle,
                  double stiffness);
 
+  ~RevoluteSpring() override;
+
   const RevoluteJoint<T>& joint() const;
 
   double nominal_angle() const { return nominal_angle_; }

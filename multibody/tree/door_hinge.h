@@ -145,6 +145,8 @@ class DoorHinge final : public ForceElement<T> {
   /// invalid.
   DoorHinge(const RevoluteJoint<T>& joint, const DoorHingeConfig& config);
 
+  ~DoorHinge() override;
+
   const RevoluteJoint<T>& joint() const;
 
   const DoorHingeConfig& config() const { return config_; }
