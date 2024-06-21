@@ -538,6 +538,7 @@ TEST_F(TwoPoints, VerifyTranscriptionAssignmentkRelaxation) {
   options.max_rounded_paths = 1;
   EXPECT_FALSE(g_.SolveShortestPath(*u_, *v_, options).is_success());
 }
+
 TEST_F(TwoPoints, VerifyTranscriptionAssignmentkRestriction) {
   // We will be adding a few feasible constraints to all transcriptions, even
   // though there are redundant with the set constraint.
@@ -571,6 +572,33 @@ TEST_F(TwoPoints, VerifyTranscriptionAssignmentkRestriction) {
   options.convex_relaxation = true;
   options.max_rounded_paths = 0;
   EXPECT_FALSE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+}
+
+GTEST_TEST(GraphOfConvexSetsTest, InitialGuess) {
+  GraphOfConvexSets gcs;
+
+  // A source (with 1 free variable) and a target (a fixed point), with an edge
+  // between them.
+  Vertex* s = gcs.AddVertex(HPolyhedron::MakeUnitBox(1));
+  Vertex* t = gcs.AddVertex(Point(Vector1d(1.0)));
+  Edge* e = gcs.AddEdge(s, t);
+
+  using std::pow;
+  const double kMinima = 0.8;
+  // A quartic cost function w/ minima at 0 and kMinima.
+  s->AddCost(pow(s->x()[0], 2) * pow(s->x()[0] - kMinima, 2));
+
+  // Solving with no initial guess is like using an initial guess of zero.
+  auto result = gcs.SolveConvexRestriction({e});
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(s->x())[0], 0.0, 1e-6);
+
+  GraphOfConvexSetsOptions options;
+  MathematicalProgramResult initial_guess = result;
+  initial_guess.SetSolution(s->x()[0], kMinima);
+  result = gcs.SolveConvexRestriction({e}, options, &initial_guess);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(s->x())[0], kMinima, 1e-6);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, TwoNullPointsConstraint) {
