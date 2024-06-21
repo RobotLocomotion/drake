@@ -8,6 +8,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 0
 std::string DeprecateWhenEmptyName(std::string name, std::string_view type) {
   if (name.empty()) {
     throw std::runtime_error(fmt::format(
@@ -15,6 +16,7 @@ std::string DeprecateWhenEmptyName(std::string name, std::string_view type) {
   }
   return name;
 }
+#endif
 
 }  // namespace internal
 
@@ -192,7 +194,7 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &drake::multibody::Frame<T>::CalcSpatialVelocity,
     &drake::multibody::Frame<T>::CalcSpatialAccelerationInWorld,
     &drake::multibody::Frame<T>::CalcSpatialAcceleration
-))
+));
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::Frame);

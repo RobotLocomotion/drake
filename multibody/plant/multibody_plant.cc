@@ -2007,6 +2007,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   }
 }
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 0
 template <>
 void MultibodyPlant<symbolic::Expression>::
     AppendContactResultsHydroelasticContinuous(
@@ -2015,6 +2016,7 @@ void MultibodyPlant<symbolic::Expression>::
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
+#endif
 
 template <typename T>
 void MultibodyPlant<T>::AppendContactResultsHydroelasticContinuous(
@@ -2207,6 +2209,7 @@ void MultibodyPlant<T>::CalcAndAddPointContactForcesContinuous(
   }
 }
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 0
 template <>
 void MultibodyPlant<symbolic::Expression>::
     CalcHydroelasticContactForcesContinuous(
@@ -2216,6 +2219,7 @@ void MultibodyPlant<symbolic::Expression>::
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
+#endif
 
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
@@ -2639,6 +2643,7 @@ void MultibodyPlant<T>::CalcContactSurfaces(
       query_object.ComputeContactSurfaces(get_contact_surface_representation());
 }
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 0
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
     const Context<symbolic::Expression>&,
@@ -2646,6 +2651,7 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
+#endif
 
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticWithFallback(
@@ -2665,6 +2671,7 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
   }
 }
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 0
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
     const drake::systems::Context<symbolic::Expression>&,
@@ -2675,6 +2682,7 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
       "MultibodyPlant<T>::CalcHydroelasticWithFallback(): This method doesn't "
       "support T = drake::symbolic::Expression.");
 }
+#endif
 
 template <typename T>
 void MultibodyPlant<T>::CalcJointLocking(
