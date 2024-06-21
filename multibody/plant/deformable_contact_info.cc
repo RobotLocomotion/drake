@@ -17,6 +17,9 @@ DeformableContactInfo<T>::DeformableContactInfo(
       F_Ac_W_(std::move(F_Ac_W)),
       contact_point_data_(std::move(contact_point_data)) {}
 
+template <typename T>
+DeformableContactInfo<T>::~DeformableContactInfo() = default;
+
 }  // namespace multibody
 }  // namespace drake
 

@@ -16,6 +16,9 @@ using std::cos;
 using std::sin;
 
 template <typename T>
+UniversalMobilizer<T>::~UniversalMobilizer() = default;
+
+template <typename T>
 std::string UniversalMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {

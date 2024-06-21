@@ -107,7 +107,7 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   DeformableDriver(const DeformableModel<T>* deformable_model,
                    const DiscreteUpdateManager<T>* manager);
 
-  ~DeformableDriver();
+  ~DeformableDriver() override;
 
   int num_deformable_bodies() const { return deformable_model_->num_bodies(); }
 

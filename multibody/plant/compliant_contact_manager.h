@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -180,7 +181,11 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   // Specific contact solver drivers are created at ExtractModelInfo() time,
   // when the manager retrieves modeling information from MultibodyPlant.
   // Only one of these drivers will be non-nullptr.
-  std::unique_ptr<SapDriver<T>> sap_driver_;
+  // When T=Expression, the sap_driver_ is always nullptr, because the driver
+  // doesn't even compile for T=Expression.
+  std::conditional_t<std::is_same_v<T, symbolic::Expression>, void*,
+                     std::unique_ptr<SapDriver<T>>>
+      sap_driver_{};
   std::unique_ptr<TamsiDriver<T>> tamsi_driver_;
 };
 

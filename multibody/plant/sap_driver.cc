@@ -69,6 +69,9 @@ SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager,
 }
 
 template <typename T>
+SapDriver<T>::~SapDriver() = default;
+
+template <typename T>
 void SapDriver<T>::set_sap_solver_parameters(
     const contact_solvers::internal::SapSolverParameters& parameters) {
   sap_parameters_ = parameters;

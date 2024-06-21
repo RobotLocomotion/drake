@@ -67,6 +67,8 @@ class FixedOffsetFrame final : public Frame<T> {
       const std::string& name, const RigidBody<T>& bodyB,
       const math::RigidTransform<double>& X_BF);
 
+  ~FixedOffsetFrame() override;
+
   math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const override {
     // X_BF = X_BP * X_PF

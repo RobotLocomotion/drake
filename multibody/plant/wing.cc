@@ -36,6 +36,9 @@ Wing<T>::Wing(BodyIndex body_index, double surface_area,
 }
 
 template <typename T>
+Wing<T>::~Wing() = default;
+
+template <typename T>
 Wing<T>* Wing<T>::AddToBuilder(systems::DiagramBuilder<T>* builder,
                                const multibody::MultibodyPlant<T>* plant,
                                const BodyIndex& body_index, double surface_area,

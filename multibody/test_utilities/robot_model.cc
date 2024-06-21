@@ -170,16 +170,17 @@ std::unique_ptr<RobotModel<U>> RobotModel<T>::ToScalarType() const {
                plant_->get_name()));
 
   // Make and add a manager so that we have access to it and its driver.
-  if (plant_->get_discrete_contact_solver() == DiscreteContactSolver::kSap &&
-      !std::is_same_v<U, symbolic::Expression>) {
-    auto owned_contact_manager_ad =
-        std::make_unique<multibody::internal::CompliantContactManager<U>>();
-    converted_model->manager_ = owned_contact_manager_ad.get();
-    converted_model->plant_->SetDiscreteUpdateManager(
-        std::move(owned_contact_manager_ad));
-    converted_model->driver_ =
-        &multibody::internal::CompliantContactManagerTester::sap_driver(
-            *converted_model->manager_);
+  if constexpr (!std::is_same_v<U, symbolic::Expression>) {
+    if (plant_->get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
+      auto owned_contact_manager_ad =
+          std::make_unique<multibody::internal::CompliantContactManager<U>>();
+      converted_model->manager_ = owned_contact_manager_ad.get();
+      converted_model->plant_->SetDiscreteUpdateManager(
+          std::move(owned_contact_manager_ad));
+      converted_model->driver_ =
+          &multibody::internal::CompliantContactManagerTester::sap_driver(
+              *converted_model->manager_);
+    }
   }
 
   // Create context.

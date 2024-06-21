@@ -447,6 +447,9 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 }
 
 template <typename T>
+MultibodyPlant<T>::~MultibodyPlant() = default;
+
+template <typename T>
 std::vector<MultibodyConstraintId> MultibodyPlant<T>::GetConstraintIds() const {
   std::vector<MultibodyConstraintId> ids;
   // This list must be kept up to date with the types of user-addable

@@ -49,6 +49,8 @@ class MobilizerImpl : public Mobilizer<T> {
                 const Frame<T>& outboard_frame) :
       Mobilizer<T>(inboard_frame, outboard_frame) {}
 
+  ~MobilizerImpl() override;
+
   // Returns the number of generalized coordinates granted by this mobilizer.
   int num_positions() const final { return kNq;}
 

@@ -53,6 +53,9 @@ ContactResults<T>& ContactResults<T>::operator=(
 }
 
 template <typename T>
+ContactResults<T>::~ContactResults() = default;
+
+template <typename T>
 const MultibodyPlant<T>* ContactResults<T>::plant() const {
   return plant_;
 }

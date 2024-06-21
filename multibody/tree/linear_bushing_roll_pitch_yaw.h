@@ -355,6 +355,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
                             const Vector3<double>& force_stiffness_constants,
                             const Vector3<double>& force_damping_constants);
 
+  ~LinearBushingRollPitchYaw() override;
+
   /// Returns link (body) L0 (frame A is welded to link L0).
   const RigidBody<T>& link0() const { return frameA().body(); }
 

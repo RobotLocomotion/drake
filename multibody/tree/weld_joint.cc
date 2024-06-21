@@ -8,6 +8,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+WeldJoint<T>::~WeldJoint() = default;
+
+template <typename T>
 const std::string& WeldJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();

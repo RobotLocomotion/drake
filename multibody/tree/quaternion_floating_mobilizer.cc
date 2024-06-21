@@ -13,6 +13,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+QuaternionFloatingMobilizer<T>::~QuaternionFloatingMobilizer() = default;
+
+template <typename T>
 std::string QuaternionFloatingMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   // Note: The order of variables here is documented in get_quaternion().

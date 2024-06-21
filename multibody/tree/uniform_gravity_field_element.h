@@ -43,6 +43,8 @@ class UniformGravityFieldElement : public ForceElement<T> {
       Vector3<double> g_W,
       std::set<ModelInstanceIndex> disabled_model_instances);
 
+  ~UniformGravityFieldElement() override;
+
   /// Returns the acceleration of the gravity vector in m/s², expressed in the
   /// world frame W.
   const Vector3<double>& gravity_vector() const { return g_W_; }

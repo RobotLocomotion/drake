@@ -107,6 +107,8 @@ class ScrewJoint final : public Joint<T> {
              const Frame<T>& frame_on_child, const Vector3<double>& axis,
              double screw_pitch, double damping);
 
+  ~ScrewJoint() final;
+
   const std::string& type_name() const final;
 
   /// Returns the normalized axis of motion of `this` joint as a unit vector.

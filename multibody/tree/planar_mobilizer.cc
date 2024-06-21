@@ -12,6 +12,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+PlanarMobilizer<T>::~PlanarMobilizer() = default;
+
+template <typename T>
 std::string PlanarMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {

@@ -59,6 +59,8 @@ class RigidBodyFrame final : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyFrame)
 
+  ~RigidBodyFrame() override;
+
   math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>&) const override {
     return math::RigidTransform<T>::Identity();
@@ -215,6 +217,8 @@ class RigidBody : public MultibodyElement<T> {
   RigidBody(
       const std::string& body_name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B = SpatialInertia<double>::Zero());
+
+  ~RigidBody() override;
 
   /// Returns this element's unique index.
   BodyIndex index() const { return this->template index_impl<BodyIndex>(); }

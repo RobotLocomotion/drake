@@ -122,6 +122,8 @@ class HydroelasticContactInfo {
 
   //@}
 
+  ~HydroelasticContactInfo();
+
   /// Returns a reference to the ContactSurface data structure. Note that
   /// the mesh and gradient vector fields are expressed in the world frame.
   const geometry::ContactSurface<T>& contact_surface() const {

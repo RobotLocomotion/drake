@@ -48,6 +48,9 @@ DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant)
 }
 
 template <typename T>
+DeformableModel<T>::~DeformableModel() = default;
+
+template <typename T>
 DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     std::unique_ptr<geometry::GeometryInstance> geometry_instance,
     const fem::DeformableBodyConfig<T>& config, double resolution_hint) {

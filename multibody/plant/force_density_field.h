@@ -34,11 +34,11 @@ enum class ForceDensityType {
  input a position in the world frame and returns the force density from the
  force density field at the given location, with unit [N/m³]. The force density
  function can depend on other Context-dependent parameters.
- @tparam_nonsymbolic_scalar */
+ @tparam_default_scalar */
 template <typename T>
 class ForceDensityField {
  public:
-  virtual ~ForceDensityField() = default;
+  virtual ~ForceDensityField();
 
   /** Evaluates the force density [N/m³] with the given `context` of the
    owning MultibodyPlant and a position in world, `p_WQ`. */
@@ -159,7 +159,8 @@ class ForceDensityField {
 
 /** A uniform gravitational force density field for a uniform density object.
  The force density f [N/m³] is given by the product of mass density
- ρ [kg/m³] and gravity vector g [m/s²]. */
+ ρ [kg/m³] and gravity vector g [m/s²].
+ @tparam_default_scalar */
 template <typename T>
 class GravityForceField : public ForceDensityField<T> {
  public:
@@ -173,6 +174,8 @@ class GravityForceField : public ForceDensityField<T> {
   GravityForceField(const Vector3<T>& gravity_vector, const T& mass_density)
       : ForceDensityField<T>(ForceDensityType::kPerReferenceVolume),
         force_density_(mass_density * gravity_vector) {}
+
+  ~GravityForceField() override;
 
  private:
   Vector3<T> DoEvaluateAt(const systems::Context<T>&,
@@ -191,5 +194,8 @@ class GravityForceField : public ForceDensityField<T> {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::ForceDensityField)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::ForceDensityField);
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::GravityForceField);

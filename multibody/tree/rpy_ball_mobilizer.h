@@ -71,7 +71,9 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                    const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
-  bool has_quaternion_dofs() const override { return false; }
+  ~RpyBallMobilizer() final;
+
+  bool has_quaternion_dofs() const final { return false; }
 
   // Overloads to define the suffix names for the position and velocity
   // elements.

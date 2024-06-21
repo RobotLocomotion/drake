@@ -93,6 +93,8 @@ class RpyFloatingJoint final : public Joint<T> {
     // for this joint.
   }
 
+  ~RpyFloatingJoint() final;
+
   /** Returns the name of this joint type: "rpy_floating" */
   const std::string& type_name() const final;
 
