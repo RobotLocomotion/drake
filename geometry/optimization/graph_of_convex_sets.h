@@ -26,19 +26,24 @@ struct GraphOfConvexSetsOptions {
   /** Flag to solve the relaxed version of the problem.  As discussed in the
   paper, we know that this relaxation cannot solve the original NP-hard problem
   for all instances, but there are also many instances for which the convex
-  relaxation is tight. */
+  relaxation is tight. If convex_relaxation=nullopt, then each GCS method is
+  free to choose an appropriate default. */
   std::optional<bool> convex_relaxation{std::nullopt};
 
   /** Maximum number of distinct paths to compare during random rounding; only
   the lowest cost path is returned. If convex_relaxation is false or this is
-  less than or equal to zero, rounding is not performed. */
+  less than or equal to zero, rounding is not performed. If
+  max_rounded_paths=nullopt, then each GCS method is free to choose an
+  appropriate default.*/
   std::optional<int> max_rounded_paths{std::nullopt};
 
   /** Performs a preprocessing step to remove edges that cannot lie on the
   path from source to target. In most cases, preprocessing causes a net
   reduction in computation by reducing the size of the optimization solved.
   Note that this preprocessing is not exact. There may be edges that cannot
-  lie on the path from source to target that this does not detect. */
+  lie on the path from source to target that this does not detect. If
+  preprocessing=nullopt, then each GCS method is free to choose an appropriate
+  default. */
   std::optional<bool> preprocessing{std::nullopt};
 
   /** Maximum number of trials to find a novel path during random rounding. If
