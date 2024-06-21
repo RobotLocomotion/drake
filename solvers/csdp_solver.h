@@ -70,7 +70,7 @@ struct CsdpSolverDetails {
  */
 class CsdpSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CsdpSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CsdpSolver);
 
   /** Default constructor */
   CsdpSolver();

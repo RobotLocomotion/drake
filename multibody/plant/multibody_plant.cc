@@ -3868,12 +3868,12 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<AddMultibodyPlantSceneGraphResult<T> (*)(
         systems::DiagramBuilder<T>*, std::unique_ptr<MultibodyPlant<T>>,
         std::unique_ptr<geometry::SceneGraph<T>>)>(
-        &AddMultibodyPlantSceneGraph)))
+        &AddMultibodyPlantSceneGraph)));
 
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::MultibodyPlant)
+    class drake::multibody::MultibodyPlant);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct drake::multibody::AddMultibodyPlantSceneGraphResult)
+    struct drake::multibody::AddMultibodyPlantSceneGraphResult);

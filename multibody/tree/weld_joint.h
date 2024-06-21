@@ -21,7 +21,7 @@ namespace multibody {
 template <typename T>
 class WeldJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldJoint);
 
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -147,4 +147,4 @@ template <typename T> const char WeldJoint<T>::kTypeName[] = "weld";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::WeldJoint)
+    class ::drake::multibody::WeldJoint);

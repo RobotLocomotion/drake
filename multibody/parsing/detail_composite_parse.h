@@ -16,7 +16,7 @@ namespace internal {
 // construction, its lifetime must be shorter than that of the parser.
 class CompositeParse {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeParse)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeParse);
 
   // Build and return a new composite parse object.
   static std::unique_ptr<CompositeParse> MakeCompositeParse(Parser* parser);

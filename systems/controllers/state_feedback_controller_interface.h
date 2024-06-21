@@ -16,7 +16,7 @@ namespace controllers {
 template <typename T>
 class StateFeedbackControllerInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateFeedbackControllerInterface)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateFeedbackControllerInterface);
 
   /**
    * Returns the input port for the estimated state.

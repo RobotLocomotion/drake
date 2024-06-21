@@ -51,7 +51,7 @@ Drake uses OSQP's default values for all options except following:
   override either option you should probably override both at once. */
 class OsqpSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OsqpSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OsqpSolver);
 
   /// Type of details stored in MathematicalProgramResult.
   using Details = OsqpSolverDetails;

@@ -60,4 +60,4 @@ void MultibodyForces<T>::AddInForces(const MultibodyForces<T>& addend) {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MultibodyForces)
+    class ::drake::multibody::MultibodyForces);

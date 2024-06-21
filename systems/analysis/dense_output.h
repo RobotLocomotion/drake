@@ -44,7 +44,7 @@ namespace systems {
 template <typename T>
 class DenseOutput {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseOutput)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseOutput);
 
   virtual ~DenseOutput() = default;
 
@@ -181,4 +181,4 @@ class DenseOutput {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::systems::DenseOutput)
+    class drake::systems::DenseOutput);

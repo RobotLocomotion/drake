@@ -16,7 +16,7 @@ the constructor and destructor. This is useful for subclasses that only wish to
 implement a subset of the %DrakeLcmInterface features. */
 class DrakeLcmBase : public DrakeLcmInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcmBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcmBase);
   ~DrakeLcmBase() override;
   std::string get_lcm_url() const override;
   void Publish(const std::string& channel, const void* data, int data_size,

@@ -144,4 +144,4 @@ class Propeller final : public systems::LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::Propeller)
+    class drake::multibody::Propeller);

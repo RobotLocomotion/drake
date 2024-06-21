@@ -42,7 +42,7 @@ typedef PointCloud::D D;
  */
 class PointCloud::Storage {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Storage)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Storage);
 
   Storage(int new_size, pc_flags::Fields fields)
       : fields_(fields) {

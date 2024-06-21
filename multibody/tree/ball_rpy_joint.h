@@ -26,7 +26,7 @@ namespace multibody {
 template <typename T>
 class BallRpyJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BallRpyJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BallRpyJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -291,4 +291,4 @@ const char BallRpyJoint<T>::kTypeName[] = "ball_rpy";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::BallRpyJoint)
+    class ::drake::multibody::BallRpyJoint);

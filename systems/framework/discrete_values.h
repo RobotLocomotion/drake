@@ -38,7 +38,7 @@ template <typename T>
 class DiscreteValues {
  public:
   // DiscreteValues is not copyable or moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteValues)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteValues);
 
   /// Constructs an empty %DiscreteValues object containing no groups.
   DiscreteValues() {}
@@ -290,7 +290,7 @@ class DiscreteValues {
 };
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::DiscreteValues)
+    class ::drake::systems::DiscreteValues);
 
 }  // namespace systems
 }  // namespace drake

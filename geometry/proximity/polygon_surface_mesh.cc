@@ -225,7 +225,7 @@ void PolygonSurfaceMesh<T>::SetAllPositions(
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class PolygonSurfaceMesh)
+    class PolygonSurfaceMesh);
 
 }  // namespace geometry
 }  // namespace drake

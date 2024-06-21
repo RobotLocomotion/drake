@@ -2193,7 +2193,7 @@ template GeometryState<Expression>::GeometryState(const GeometryState<AutoDiffXd
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::GeometryState)
+    class ::drake::geometry::GeometryState);
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     (&drake::geometry::internal::DrivenMeshData::
-         template SetControlMeshPositions<T>))
+         template SetControlMeshPositions<T>));

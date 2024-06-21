@@ -269,7 +269,7 @@ const GeometryState<T>& QueryObject<T>::geometry_state() const {
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&QueryObject<T>::template ComputeContactSurfaces<T>,
-     &QueryObject<T>::template ComputeContactSurfacesWithFallback<T>))
+     &QueryObject<T>::template ComputeContactSurfacesWithFallback<T>));
 
 template void QueryObject<double>::ComputeDeformableContact<double>(
     internal::DeformableContact<double>*) const;
@@ -278,4 +278,4 @@ template void QueryObject<double>::ComputeDeformableContact<double>(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::QueryObject)
+    class ::drake::geometry::QueryObject);

@@ -82,7 +82,7 @@ namespace mass_spring_cloth {
 template <typename T>
 class ClothSpringModel final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClothSpringModel)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClothSpringModel);
 
   /** Creates a rectangular cloth with a grid of nx by ny particles.
 

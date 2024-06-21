@@ -23,7 +23,7 @@ This includes the zero-dimensional case.
 @ingroup geometry_optimization */
 class MinkowskiSum final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinkowskiSum)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinkowskiSum);
 
   /** Constructs a default (zero-dimensional, nonempty) set. */
   MinkowskiSum();

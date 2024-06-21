@@ -41,7 +41,7 @@ namespace symbolic {
  */
 class PolynomialBasisElement {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolynomialBasisElement)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolynomialBasisElement);
 
   /**
    * Constructs a polynomial basis with empty var_to_degree map. This element

@@ -220,7 +220,7 @@ class ShaderProgram {
 
   /* The copy and move semantics are only made available for sub-classes so
    they can easily implement DoClone.  */
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShaderProgram)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShaderProgram);
 
   /* Derived classes should clone themselves.  */
   virtual std::unique_ptr<ShaderProgram> DoClone() const = 0;

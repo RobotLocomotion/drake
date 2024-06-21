@@ -24,7 +24,7 @@ the condition and a human-friendly message from that subsystem that hopefully
 explains what happened. */
 class SimulatorStatus {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SimulatorStatus)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SimulatorStatus);
 
   enum ReturnReason {
     /** This is the normal return: no termination or error condition was

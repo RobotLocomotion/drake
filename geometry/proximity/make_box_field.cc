@@ -55,7 +55,7 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(const Box& box,
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeBoxPressureField<T>))
+    (&MakeBoxPressureField<T>));
 
 }  // namespace internal
 }  // namespace geometry

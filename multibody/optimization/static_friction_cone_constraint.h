@@ -28,7 +28,7 @@ namespace multibody {
  */
 class StaticFrictionConeConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticFrictionConeConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticFrictionConeConstraint);
 
   /**
    * @param contact_wrench_evaluator. The evaluator takes in the generalized

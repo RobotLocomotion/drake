@@ -135,7 +135,7 @@ DEFINE_bool(polygons, true,
  */
 class MovingCompliantGeometry final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingCompliantGeometry)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingCompliantGeometry);
 
   // Ball radius 2.5cm.
   static constexpr double kRadius = 0.025;
@@ -236,7 +236,7 @@ class MovingCompliantGeometry final : public LeafSystem<double> {
  */
 class ContactResultMaker final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultMaker)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultMaker);
 
   ContactResultMaker() {
     geometry_query_input_port_ =

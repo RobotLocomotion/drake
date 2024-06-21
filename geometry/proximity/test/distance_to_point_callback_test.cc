@@ -51,7 +51,7 @@ using std::make_shared;
 template <typename Shape>
 class PointShapeAutoDiffSignedDistanceTester {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointShapeAutoDiffSignedDistanceTester)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointShapeAutoDiffSignedDistanceTester);
 
   // Constructs a tester for a given shape G, pose in world X_WG, and tolerance.
   // The shape must be non-null and must persist beyond the life of the tester

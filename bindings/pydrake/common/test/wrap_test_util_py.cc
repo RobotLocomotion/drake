@@ -55,7 +55,7 @@ bool CheckTypeConversionExample(const TypeConversionExample& obj) {
 
 class NotCopyable {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotCopyable)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotCopyable);
   NotCopyable() {}
 };
 

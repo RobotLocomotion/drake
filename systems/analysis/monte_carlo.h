@@ -101,7 +101,7 @@ double RandomSimulation(const SimulatorFactory& make_simulator,
  * reproducing the simulation.
  */
 struct RandomSimulationResult {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomSimulationResult)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomSimulationResult);
 
   explicit RandomSimulationResult(const RandomGenerator& generator,
                                   double value = 0.0)

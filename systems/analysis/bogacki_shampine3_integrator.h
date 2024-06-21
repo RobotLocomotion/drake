@@ -36,7 +36,7 @@ namespace systems {
 template <class T>
 class BogackiShampine3Integrator final : public IntegratorBase<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BogackiShampine3Integrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BogackiShampine3Integrator);
 
   ~BogackiShampine3Integrator() override = default;
 
@@ -77,4 +77,4 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::systems::BogackiShampine3Integrator)
+    class ::drake::systems::BogackiShampine3Integrator);

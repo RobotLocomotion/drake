@@ -21,7 +21,7 @@ modeled individually or can be combined into LinkComposites comprising groups
 of Links that were connected by weld joints. */
 class LinkJointGraph::Link {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link);
 
   /** Returns this %Link's unique index in the graph. */
   BodyIndex index() const { return index_; }

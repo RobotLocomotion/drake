@@ -72,7 +72,7 @@ namespace {
 // @endsystem
 class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternalGeneralizedForcesComputer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternalGeneralizedForcesComputer);
 
   ExternalGeneralizedForcesComputer(
       const multibody::MultibodyPlant<double>* plant, int iiwa_num_dofs)

@@ -13,7 +13,7 @@ OutputPort. An OutputPort belongs to a System and represents the properties of
 one of that System's output ports. */
 class OutputPortBase : public PortBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPortBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPortBase);
 
   ~OutputPortBase() override;
 

@@ -38,7 +38,7 @@ template <typename T,
     int compile_time_num_positions, int compile_time_num_velocities>
 class MobilizerImpl : public Mobilizer<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl);
 
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is

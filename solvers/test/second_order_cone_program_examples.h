@@ -170,7 +170,7 @@ class TestFindSpringEquilibrium
  */
 class MaximizeGeometricMeanTrivialProblem1 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem1);
 
   MaximizeGeometricMeanTrivialProblem1();
 
@@ -197,7 +197,7 @@ class MaximizeGeometricMeanTrivialProblem1 {
  */
 class MaximizeGeometricMeanTrivialProblem2 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem2)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem2);
 
   MaximizeGeometricMeanTrivialProblem2();
 

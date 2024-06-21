@@ -91,6 +91,6 @@ T SoftUnderMin(const std::vector<T>& x, const double alpha) {
 
 // Explicit instantiation
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&SoftOverMax<T>, &SoftUnderMax<T>, &SoftOverMin<T>, &SoftUnderMin<T>))
+    (&SoftOverMax<T>, &SoftUnderMax<T>, &SoftOverMin<T>, &SoftUnderMin<T>));
 }  // namespace math
 }  // namespace drake

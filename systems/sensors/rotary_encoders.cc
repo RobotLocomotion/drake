@@ -115,4 +115,4 @@ const VectorX<T>& RotaryEncoders<T>::get_calibration_offsets(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::sensors::RotaryEncoders)
+    class ::drake::systems::sensors::RotaryEncoders);

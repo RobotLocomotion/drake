@@ -225,4 +225,4 @@ std::unique_ptr<Trajectory<T>> PiecewiseQuaternionSlerp<T>::DoMakeDerivative(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::PiecewiseQuaternionSlerp)
+    class drake::trajectories::PiecewiseQuaternionSlerp);

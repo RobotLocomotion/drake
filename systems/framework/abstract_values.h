@@ -16,7 +16,7 @@ namespace systems {
 class AbstractValues {
  public:
   // AbstractState is not copyable or moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractValues)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractValues);
 
   /// Constructs an empty AbstractValues.
   AbstractValues();

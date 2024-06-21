@@ -40,7 +40,7 @@ namespace acrobot {
 template <typename T>
 class AcrobotPlant : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotPlant);
 
   /// Constructs the plant.  The parameters of the system are stored as
   /// Parameters in the Context (see acrobot_params.h).

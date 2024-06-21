@@ -166,4 +166,4 @@ class HydroelasticContactInfo {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::HydroelasticContactInfo)
+    class ::drake::multibody::HydroelasticContactInfo);

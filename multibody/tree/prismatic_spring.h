@@ -28,7 +28,7 @@ namespace multibody {
 template <typename T>
 class PrismaticSpring final : public ForceElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticSpring)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticSpring);
 
   /// Constructor for a linear spring attached to the given prismatic joint.
   /// @param[in] nominal_position
@@ -103,4 +103,4 @@ class PrismaticSpring final : public ForceElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::PrismaticSpring)
+    class ::drake::multibody::PrismaticSpring);

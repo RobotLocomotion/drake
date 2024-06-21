@@ -837,7 +837,7 @@ on deformable bodies.
 template <typename T>
 class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant);
 
   /// @anchor mbp_input_and_output_ports
   /// @name                 Input and output ports
@@ -5492,7 +5492,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Stribeck model of friction.
   class StribeckModel {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StribeckModel)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StribeckModel);
 
     /// Creates an uninitialized Stribeck model with an invalid value (negative)
     /// of the stiction tolerance.
@@ -5918,6 +5918,6 @@ struct tuple_element<1,
 #endif
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::MultibodyPlant)
+    class drake::multibody::MultibodyPlant);
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct drake::multibody::AddMultibodyPlantSceneGraphResult)
+    struct drake::multibody::AddMultibodyPlantSceneGraphResult);

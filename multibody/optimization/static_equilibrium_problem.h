@@ -32,7 +32,7 @@ namespace multibody {
  */
 class StaticEquilibriumProblem {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticEquilibriumProblem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticEquilibriumProblem);
 
   /**
    * @param plant The plant for which the static equilibrium posture is

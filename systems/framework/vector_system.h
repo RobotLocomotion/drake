@@ -39,7 +39,7 @@ namespace systems {
 template <typename T>
 class VectorSystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorSystem);
 
   ~VectorSystem() override = default;
 
@@ -339,4 +339,4 @@ class VectorSystem : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::VectorSystem)
+    class ::drake::systems::VectorSystem);

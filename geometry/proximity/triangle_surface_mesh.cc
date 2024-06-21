@@ -23,7 +23,7 @@ void TriangleSurfaceMesh<T>::SetAllPositions(
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class TriangleSurfaceMesh)
+    class TriangleSurfaceMesh);
 
 }  // namespace geometry
 }  // namespace drake

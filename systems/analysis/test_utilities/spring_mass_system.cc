@@ -195,7 +195,7 @@ void SpringMassSystem<T>::DoCalcTimeDerivatives(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::SpringMassStateVector)
+    class ::drake::systems::SpringMassStateVector);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::SpringMassSystem)
+    class ::drake::systems::SpringMassSystem);

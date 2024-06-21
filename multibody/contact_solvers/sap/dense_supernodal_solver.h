@@ -15,7 +15,7 @@ namespace internal {
 // referred to as the dynamics matrix and J is the Jacobian matrix.
 class DenseSuperNodalSolver final : public SuperNodalSolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseSuperNodalSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseSuperNodalSolver);
 
   // Constructs a dense solver for dynamics matrix A and Jacobian matrix J.
   // This class holds references to matrices A and J, and therefore they must

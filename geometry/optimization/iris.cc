@@ -149,7 +149,7 @@ namespace {
 // Constructs a ConvexSet for each supported Shape and adds it to the set.
 class IrisConvexSetMaker final : public ShapeReifier {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IrisConvexSetMaker)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IrisConvexSetMaker);
 
   IrisConvexSetMaker(const QueryObject<double>& query,
                      std::optional<FrameId> reference_frame)
@@ -247,7 +247,7 @@ namespace {
 // constraint that is the negation of one index and one (lower/upper) bound.
 class CounterExampleConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CounterExampleConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CounterExampleConstraint);
 
   explicit CounterExampleConstraint(const MathematicalProgram* prog)
       : Constraint(1, prog->num_vars(),

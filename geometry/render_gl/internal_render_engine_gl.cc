@@ -59,7 +59,7 @@ namespace fs = std::filesystem;
 // images should derive from *this* class. Depth and label do not need lighting.
 class LightingShader : public ShaderProgram {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LightingShader)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LightingShader);
   LightingShader() : ShaderProgram() {}
 
   void SetAllLights(const std::vector<LightParameter>& lights) const {
@@ -320,7 +320,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
  all geometries because it provides a default diffuse color if none is given. */
 class DefaultRgbaColorShader final : public LightingShader {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultRgbaColorShader)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultRgbaColorShader);
 
   explicit DefaultRgbaColorShader(const Rgba& default_diffuse)
       : LightingShader(), default_diffuse_(default_diffuse) {
@@ -382,7 +382,7 @@ void main() {
  all geometries with a ("phong", "diffuse_map") property. */
 class DefaultTextureColorShader final : public LightingShader {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultTextureColorShader)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultTextureColorShader);
 
   /* Constructs the texture shader with the given library. The library will be
    used to access OpenGl textures.
@@ -488,7 +488,7 @@ void main() {
  supports all geometries.  */
 class DefaultDepthShader final : public ShaderProgram {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultDepthShader)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultDepthShader);
 
   DefaultDepthShader() : ShaderProgram() {
     LoadFromSources(kVertexShader, kFragmentShader);
@@ -576,7 +576,7 @@ void main() {
  perception properties.  */
 class DefaultLabelShader final : public ShaderProgram {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultLabelShader)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultLabelShader);
 
   /* Constructs the label shader with the given `label_encoder`.
 

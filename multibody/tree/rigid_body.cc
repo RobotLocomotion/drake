@@ -184,7 +184,7 @@ Vector3<T> RigidBody<T>::CalcCenterOfMassTranslationalVelocityInWorld(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::RigidBodyFrame)
+    class drake::multibody::RigidBodyFrame);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RigidBody)
+    class ::drake::multibody::RigidBody);

@@ -151,7 +151,7 @@ For an explanation of `!Uniform`, `!UniformVector`, and other available options
 /// details, especially the unusually public member fields.
 class Transform {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Transform)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Transform);
 
   /// Constructs the Identity transform.
   Transform() = default;

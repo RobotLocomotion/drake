@@ -30,7 +30,7 @@ namespace systems {
 template <typename T>
 class WrapToSystem final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WrapToSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WrapToSystem);
 
   /// Constructs a system to pass through a fixed-size input vector to the
   /// output.  Additional calls to set_interval() are required to produce any

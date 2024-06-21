@@ -26,7 +26,7 @@ namespace geometry {
  @see SceneGraph */
 class GeometryFrame {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryFrame)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryFrame);
 
   /** Constructor.
    @param frame_name        The name of the frame.

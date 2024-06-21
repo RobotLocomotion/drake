@@ -16,7 +16,7 @@ namespace systems {
 template <typename T>
 class DiagramState : public State<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramState)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramState);
 
   /// Constructs a DiagramState consisting of @p size substates.
   explicit DiagramState<T>(int size);
@@ -65,4 +65,4 @@ class DiagramState : public State<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::DiagramState)
+    class ::drake::systems::DiagramState);

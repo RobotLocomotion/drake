@@ -296,7 +296,7 @@ class ConvexSet {
   bool has_exact_volume() const { return has_exact_volume_; }
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet);
 
   /** For use by derived classes to construct a %ConvexSet.
   @param has_exact_volume Derived classes should pass `true` if they've

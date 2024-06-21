@@ -34,7 +34,7 @@ namespace trajectories {
 template <typename T>
 class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseQuaternionSlerp)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseQuaternionSlerp);
 
   /**
    * Builds an empty PiecewiseQuaternionSlerp.
@@ -169,4 +169,4 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::PiecewiseQuaternionSlerp)
+    class drake::trajectories::PiecewiseQuaternionSlerp);

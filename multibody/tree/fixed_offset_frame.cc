@@ -61,4 +61,4 @@ FixedOffsetFrame<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::FixedOffsetFrame)
+    class drake::multibody::FixedOffsetFrame);

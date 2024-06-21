@@ -239,7 +239,7 @@ class MultibodyGraph {
 
 class MultibodyGraph::RigidBody {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidBody)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidBody);
 
   /* @returns its unique index in the graph. */
   BodyIndex index() const { return index_; }
@@ -277,7 +277,7 @@ class MultibodyGraph::RigidBody {
 
 class MultibodyGraph::Joint {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Joint)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Joint);
 
   ModelInstanceIndex model_instance() const { return model_instance_; }
 

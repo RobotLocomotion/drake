@@ -30,7 +30,7 @@ class SurfacePolygon {
  public:
   // TODO(SeanCurtis-TRI): Consider making this copy-constructible, in which
   // case we can remove copy_to_unique() function, below.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SurfacePolygon)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SurfacePolygon);
 
   /** Returns the number of vertices in this face. */
   int num_vertices() const { return mesh_face_data_.at(index_); }
@@ -81,7 +81,7 @@ class SurfacePolygon {
 template <class T>
 class PolygonSurfaceMesh {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolygonSurfaceMesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolygonSurfaceMesh);
 
   /** @name Mesh type traits
 
@@ -392,7 +392,7 @@ class PolygonSurfaceMesh {
 };
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class PolygonSurfaceMesh)
+    class PolygonSurfaceMesh);
 
 }  // namespace geometry
 }  // namespace drake

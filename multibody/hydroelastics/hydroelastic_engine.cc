@@ -109,4 +109,4 @@ double HydroelasticEngine<T>::CalcCombinedDissipation(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::hydroelastics::internal::HydroelasticEngine)
+    class ::drake::multibody::hydroelastics::internal::HydroelasticEngine);

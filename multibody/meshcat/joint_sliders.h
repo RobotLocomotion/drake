@@ -45,7 +45,7 @@ calculations.
 template <typename T>
 class JointSliders final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointSliders)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointSliders);
 
   /** Creates a meshcat slider for each joint in the given plant.
 
@@ -164,4 +164,4 @@ class JointSliders final : public systems::LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::meshcat::JointSliders)
+    class ::drake::multibody::meshcat::JointSliders);

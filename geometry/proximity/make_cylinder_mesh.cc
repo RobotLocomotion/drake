@@ -424,7 +424,7 @@ VolumeMesh<T> MakeCylinderVolumeMeshWithMa(const Cylinder& cylinder,
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeCylinderVolumeMeshWithMa<T>))
+    (&MakeCylinderVolumeMeshWithMa<T>));
 
 }  // namespace internal
 }  // namespace geometry

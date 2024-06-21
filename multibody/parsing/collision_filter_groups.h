@@ -32,7 +32,7 @@ only added once.
 */
 class CollisionFilterGroups {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterGroups)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterGroups);
 
   CollisionFilterGroups();
   ~CollisionFilterGroups();

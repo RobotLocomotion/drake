@@ -35,7 +35,7 @@ namespace multibody {
 template <template <typename> class SV, typename T>
 class SpatialVector {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVector)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVector);
 
   /// The more specialized spatial vector class templated on the scalar type T.
   using SpatialQuantity = SV<T>;

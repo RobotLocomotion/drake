@@ -101,7 +101,7 @@ X_OₑOₗ→├───┘       │  S  │         X_OₘOₚ → ├──�
 template <typename T>
 class SolarSystem : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolarSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolarSystem);
 
   explicit SolarSystem(geometry::SceneGraph<T>* scene_graph);
   ~SolarSystem() override = default;

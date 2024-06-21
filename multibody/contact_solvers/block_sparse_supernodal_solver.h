@@ -17,7 +17,7 @@ namespace internal {
 /* Supernodal Cholesky solver implemented by the BlockSparseCholeskySolver. */
 class BlockSparseSuperNodalSolver final : public SuperNodalSolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BlockSparseSuperNodalSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BlockSparseSuperNodalSolver);
 
   /* Constructs a BlockSparseSuperNodalSolver.
    @param[in] num_jacobian_row_blocks

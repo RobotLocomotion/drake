@@ -524,4 +524,4 @@ struct formatter<drake::Polynomial<double>::Monomial>
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::Polynomial)
+    class drake::Polynomial);

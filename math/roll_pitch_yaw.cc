@@ -474,11 +474,11 @@ std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const RollPitchYaw<T>&)>(
         &operator<< )
-))
+));
 // clang-format on
 
 }  // namespace math
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::math::RollPitchYaw)
+    class ::drake::math::RollPitchYaw);

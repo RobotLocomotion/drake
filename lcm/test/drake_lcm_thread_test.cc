@@ -25,7 +25,7 @@ using drake::lcmt_drake_signal;
 // Stores a message, guarded by a mutex.
 class MessageMailbox {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MessageMailbox)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MessageMailbox);
 
   MessageMailbox() = default;
 

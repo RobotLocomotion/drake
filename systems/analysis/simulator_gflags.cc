@@ -109,7 +109,7 @@ std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
       &ResetIntegratorFromGflags<T>,
       &MakeSimulatorFromGflags<T>
-))
+));
 
 }  // namespace internal
 }  // namespace systems

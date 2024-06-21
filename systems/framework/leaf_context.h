@@ -87,4 +87,4 @@ class LeafContext : public Context<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::LeafContext)
+    class ::drake::systems::LeafContext);

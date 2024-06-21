@@ -28,7 +28,7 @@ namespace internal {
  InternalGeometry instances.  */
 class InternalFrame {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalFrame)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalFrame);
 
   /* Default constructor. The parent identifier and pose index will be
    invalid.  */

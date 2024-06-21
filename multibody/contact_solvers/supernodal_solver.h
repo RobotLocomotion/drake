@@ -43,7 +43,7 @@ using BlockTriplet = BlockSparseMatrix<double>::BlockTriplet;
 //  x = solver->Solve(b);
 class SuperNodalSolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SuperNodalSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SuperNodalSolver);
 
   virtual ~SuperNodalSolver() = default;
 

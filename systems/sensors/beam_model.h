@@ -69,7 +69,7 @@ namespace sensors {
 template <typename T>
 class BeamModel final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BeamModel)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BeamModel);
 
   BeamModel(int num_depth_readings, double max_range);
 

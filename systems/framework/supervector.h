@@ -20,7 +20,7 @@ template <typename T>
 class Supervector final : public VectorBase<T> {
  public:
   // Supervector objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Supervector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Supervector);
 
   /// Constructs a supervector consisting of all the vectors in
   /// subvectors, which must live at least as long as this supervector.
@@ -105,4 +105,4 @@ class Supervector final : public VectorBase<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Supervector)
+    class ::drake::systems::Supervector);

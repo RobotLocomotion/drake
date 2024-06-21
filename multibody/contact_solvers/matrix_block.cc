@@ -289,7 +289,7 @@ MatrixBlock<T> StackMatrixBlocks(const std::vector<MatrixBlock<T>>& blocks) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&StackMatrixBlocks<T>))
+    (&StackMatrixBlocks<T>));
 
 }  // namespace internal
 }  // namespace contact_solvers
@@ -297,4 +297,4 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::MatrixBlock)
+    class ::drake::multibody::contact_solvers::internal::MatrixBlock);

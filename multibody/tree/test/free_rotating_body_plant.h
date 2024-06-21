@@ -24,7 +24,7 @@ namespace test {
 template<typename T>
 class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeRotatingBodyPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeRotatingBodyPlant);
 
   /// Constructor from known rotational inertia values.
   /// Rotational inertia values have units of kg⋅m².
@@ -92,4 +92,4 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::test::FreeRotatingBodyPlant)
+    class ::drake::multibody::test::FreeRotatingBodyPlant);

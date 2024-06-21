@@ -58,7 +58,7 @@ template <typename T>
 class DiscreteTimeTrajectory final : public Trajectory<T> {
  public:
   // We are final, so this is okay.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DiscreteTimeTrajectory)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DiscreteTimeTrajectory);
 
   /** Default constructor creates the empty trajectory. */
   DiscreteTimeTrajectory() = default;
@@ -136,4 +136,4 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::DiscreteTimeTrajectory)
+    class drake::trajectories::DiscreteTimeTrajectory);

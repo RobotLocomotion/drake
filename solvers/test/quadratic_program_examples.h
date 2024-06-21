@@ -43,7 +43,7 @@ std::vector<QuadraticProblems> quadratic_problems();
 //     x1 + x2 = 1
 class QuadraticProgram0 : public OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram0)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram0);
 
   QuadraticProgram0(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -67,7 +67,7 @@ class QuadraticProgram0 : public OptimizationProgram {
 //   The optimal solution is (0, 1, 2/3)
 class QuadraticProgram1 : public OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram1);
 
   QuadraticProgram1(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -89,7 +89,7 @@ class QuadraticProgram1 : public OptimizationProgram {
 // matrix Q has off-diagonal terms.
 class QuadraticProgram2 : public OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram2)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram2);
 
   QuadraticProgram2(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -136,7 +136,7 @@ class QuadraticProgram3 : public OptimizationProgram {
 // x(0) = 4/5, x(1) = 1/5, x(2) = 3/5
 class QuadraticProgram4 : public OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram4)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram4);
 
   QuadraticProgram4(CostForm cost_form, ConstraintForm constraint_form);
 

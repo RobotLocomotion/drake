@@ -68,7 +68,7 @@ class SceneGraph;
 template <typename T>
 class SceneGraphInspector {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraphInspector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraphInspector);
 
   // NOTE: An inspector should never be released into the wild without having
   // set the state variable. Every query should start by demanding that state_

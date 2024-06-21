@@ -44,7 +44,7 @@ struct BoxSpecification {
 template <typename T>
 class FreeSpheresAndBoxes {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeSpheresAndBoxes)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeSpheresAndBoxes);
 
   FreeSpheresAndBoxes(std::vector<SphereSpecification> spheres,
                       std::vector<BoxSpecification> boxes,

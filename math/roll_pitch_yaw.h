@@ -58,7 +58,7 @@ class RotationMatrix;
 template <typename T>
 class RollPitchYaw {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RollPitchYaw)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RollPitchYaw);
 
   /// Constructs a %RollPitchYaw from a 3x1 array of angles.
   /// @param[in] rpy 3x1 array with roll, pitch, yaw angles (units of radians).
@@ -582,4 +582,4 @@ struct formatter<drake::math::RollPitchYaw<T>> : drake::ostream_formatter {};
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::math::RollPitchYaw)
+    class ::drake::math::RollPitchYaw);

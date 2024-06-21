@@ -70,4 +70,4 @@ class AccelerationNewmarkScheme final : public DiscreteTimeIntegrator<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fem::internal::AccelerationNewmarkScheme)
+    class ::drake::multibody::fem::internal::AccelerationNewmarkScheme);

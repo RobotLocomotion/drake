@@ -41,7 +41,7 @@ class BlockSparseMatrixBuilder;
 template <typename T>
 class BlockSparseMatrix {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BlockSparseMatrix)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BlockSparseMatrix);
 
   // A non-zero block entry is specified with the triplet {i, j, Bij}, where
   // (i,j) are the i-th and j-th block row and column respectively and Bij is
@@ -170,7 +170,7 @@ class BlockSparseMatrix {
 template <typename T>
 class BlockSparseMatrixBuilder {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BlockSparseMatrixBuilder)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BlockSparseMatrixBuilder);
 
   // Instantiates a builder to make a BlockSparseMatrix with a known number of
   // blocks.

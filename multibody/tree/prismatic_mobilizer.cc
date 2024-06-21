@@ -173,4 +173,4 @@ PrismaticMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::PrismaticMobilizer)
+    class ::drake::multibody::internal::PrismaticMobilizer);

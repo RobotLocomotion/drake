@@ -180,7 +180,7 @@ std::string TransformGeometryName(
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&TransformGeometryName<T>))
+    (&TransformGeometryName<T>));
 
 }  // namespace internal
 }  // namespace geometry
