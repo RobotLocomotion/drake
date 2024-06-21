@@ -171,7 +171,7 @@ namespace multibody {
 template <typename T>
 class RotationalInertia {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia);
 
   /// Constructs a rotational inertia that has all its moments/products of
   /// inertia equal to NaN (helps quickly detect uninitialized values).
@@ -1194,4 +1194,4 @@ struct formatter<drake::multibody::RotationalInertia<T>>
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::RotationalInertia)
+    class drake::multibody::RotationalInertia);

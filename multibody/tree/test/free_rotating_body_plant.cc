@@ -92,4 +92,4 @@ SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::test::FreeRotatingBodyPlant)
+    class ::drake::multibody::test::FreeRotatingBodyPlant);

@@ -3813,4 +3813,4 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::MultibodyTree)
+    class ::drake::multibody::internal::MultibodyTree);

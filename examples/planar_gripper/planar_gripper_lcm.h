@@ -51,7 +51,7 @@ constexpr double kGripperLcmStatusPeriod = 0.010;
 /// @endsystem
 class GripperCommandDecoder : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandDecoder)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandDecoder);
 
   /// Constructor.
   /// @param num_fingers The total number of fingers used on the planar-gripper.
@@ -119,7 +119,7 @@ class GripperCommandDecoder : public systems::LeafSystem<double> {
 /// @endsystem
 class GripperCommandEncoder : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandEncoder)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandEncoder);
 
   /// Constructor.
   /// @param num_joints The total number of fingers used on the planar-gripper.
@@ -166,7 +166,7 @@ class GripperCommandEncoder : public systems::LeafSystem<double> {
 /// @endsystem
 class GripperStatusDecoder : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperStatusDecoder)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperStatusDecoder);
 
   /// Constructor.
   /// @param num_fingers The total number of fingers used on the planar-gripper.
@@ -223,7 +223,7 @@ class GripperStatusDecoder : public systems::LeafSystem<double> {
 /// @endsystem
 class GripperStatusEncoder : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperStatusEncoder)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperStatusEncoder);
 
   /// Constructor.
   /// @param num_joints The total number of fingers used on the planar-gripper.

@@ -42,4 +42,4 @@ SystemDynamicsData<T>::SystemDynamicsData(const LinearOperator<T>* A,
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SystemDynamicsData)
+    class ::drake::multibody::contact_solvers::internal::SystemDynamicsData);

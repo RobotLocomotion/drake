@@ -48,7 +48,7 @@ namespace multibody {
 template <typename T>
 class UnitInertia : public RotationalInertia<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia);
 
   /// Default %UnitInertia constructor sets all entries to NaN for quick
   /// detection of uninitialized values.
@@ -460,4 +460,4 @@ class UnitInertia : public RotationalInertia<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::UnitInertia)
+    class drake::multibody::UnitInertia);

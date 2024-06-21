@@ -80,7 +80,7 @@ namespace geometry {
  */
 class GeometryInstance {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryInstance)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryInstance);
 
   /** Constructs a geometry instance specification.
    @param X_PG   The pose of this geometry (`G`) in its parent's frame (`P`).

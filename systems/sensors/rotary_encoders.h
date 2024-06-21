@@ -30,7 +30,7 @@ namespace sensors {
 template <typename T>
 class RotaryEncoders final : public VectorSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotaryEncoders)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotaryEncoders);
 
   /// Quantization-only constructor.  Specifies one ticks_per_revolution count
   /// for every element of the input port.

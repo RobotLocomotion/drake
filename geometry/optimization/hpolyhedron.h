@@ -24,7 +24,7 @@ By convention, we treat a zero-dimensional HPolyhedron as nonempty.
 @ingroup geometry_optimization */
 class HPolyhedron final : public ConvexSet, private ShapeReifier {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron);
 
   /** Constructs a default (zero-dimensional, nonempty) polyhedron. */
   HPolyhedron();

@@ -66,7 +66,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   typedef SpatialVector<::drake::multibody::SpatialMomentum, T> Base;
 
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialMomentum)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialMomentum);
 
   /// Default constructor. In Release builds, all 6 elements of a newly
   /// constructed spatial momentum are uninitialized (for speed). In Debug
@@ -195,4 +195,4 @@ inline SpatialMomentum<T> operator-(const SpatialMomentum<T>& L1_E,
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::SpatialMomentum)
+    class ::drake::multibody::SpatialMomentum);

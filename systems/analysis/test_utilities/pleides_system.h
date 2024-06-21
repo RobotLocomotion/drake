@@ -27,7 +27,7 @@ using Vector2d = Vector2<double>;
 /// Research Unit of Bari, February 2008. http://www.dm.uniba.it/~testset.
 class PleidesSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PleidesSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PleidesSystem);
   PleidesSystem() {
     const int nq = 14;  // Number of generalized positions.
     const int nv = 14;  // Number of generalized velocities.

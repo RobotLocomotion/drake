@@ -22,7 +22,7 @@ namespace systems {
 template <typename T>
 class Integrator final : public VectorSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator);
 
   /// Constructs an %Integrator system.
   /// @param size number of elements in the signal to be processed.
@@ -58,4 +58,4 @@ class Integrator final : public VectorSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Integrator)
+    class ::drake::systems::Integrator);

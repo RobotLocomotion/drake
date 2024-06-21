@@ -38,7 +38,7 @@ using CalcCallback = ValueProducer::CalcCallback;
 
 class MyClass {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyClass)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyClass);
 
   MyClass() = default;
 

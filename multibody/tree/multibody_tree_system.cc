@@ -464,7 +464,7 @@ void MultibodyTreeSystem<T>::CalcForwardDynamicsContinuous(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::internal::MultibodyTreeSystem)
+    class drake::multibody::internal::MultibodyTreeSystem);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::internal::MultibodyTreeSystemElementAttorney)
+    class drake::multibody::internal::MultibodyTreeSystemElementAttorney);

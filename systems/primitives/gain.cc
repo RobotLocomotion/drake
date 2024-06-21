@@ -48,4 +48,4 @@ void Gain<T>::DoCalcVectorOutput(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Gain)
+    class ::drake::systems::Gain);

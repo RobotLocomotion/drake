@@ -1410,7 +1410,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
 // sets it to (100,200).
 class DummyVec2 : public BasicVector<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyVec2)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyVec2);
 
   DummyVec2(double e0, double e1) : BasicVector<double>(2) {
     SetAtIndex(0, e0);

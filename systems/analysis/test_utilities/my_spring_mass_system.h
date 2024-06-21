@@ -14,7 +14,7 @@ namespace analysis_test {
 template <class T>
 class MySpringMassSystem : public SpringMassSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySpringMassSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySpringMassSystem);
 
   // Pass through to SpringMassSystem, except add events and handlers.
   MySpringMassSystem(double stiffness, double mass, double update_rate)

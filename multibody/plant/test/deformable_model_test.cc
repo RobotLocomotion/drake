@@ -346,7 +346,7 @@ TEST_F(DeformableModelTest, ExternalForces) {
   /* A user defined force density field. */
   class ConstantForceDensityField final : public ForceDensityField<double> {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstantForceDensityField)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstantForceDensityField);
 
     /* Constructs an force density field that has the functional form given by
      input `field` which is then scaled by a scalar value via input port. */

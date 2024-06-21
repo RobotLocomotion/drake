@@ -30,7 +30,7 @@ subspace is bounded if it is a point, which is when the basis has zero columns.
 @ingroup geometry_optimization */
 class AffineSubspace final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AffineSubspace)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AffineSubspace);
 
   /** Constructs a default (zero-dimensional, nonempty) affine subspace. */
   AffineSubspace();

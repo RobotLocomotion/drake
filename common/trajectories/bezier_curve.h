@@ -141,4 +141,4 @@ class BezierCurve final : public trajectories::Trajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::BezierCurve)
+    class drake::trajectories::BezierCurve);

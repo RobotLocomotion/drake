@@ -26,7 +26,7 @@ namespace perception {
 /// (too-close or too-far points from a depth sensor are omitted).
 class PointCloudToLcm final : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointCloudToLcm)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointCloudToLcm);
 
   /// Constructs a system that outputs messages using the given `frame_name`.
   explicit PointCloudToLcm(std::string frame_name = {});

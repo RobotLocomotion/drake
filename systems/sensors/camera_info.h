@@ -136,7 +136,7 @@ namespace sensors {
 */
 class CameraInfo final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CameraInfo)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CameraInfo);
 
   /**
    Constructor that directly sets the image size, principal point, and focal

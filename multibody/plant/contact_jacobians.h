@@ -52,4 +52,4 @@ struct ContactJacobians {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::ContactJacobians)
+    struct ::drake::multibody::internal::ContactJacobians);

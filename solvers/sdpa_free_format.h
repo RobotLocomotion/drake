@@ -111,7 +111,7 @@ struct DecisionVariableInSdpaX {
  */
 class SdpaFreeFormat {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdpaFreeFormat)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdpaFreeFormat);
 
   explicit SdpaFreeFormat(const MathematicalProgram& prog);
 

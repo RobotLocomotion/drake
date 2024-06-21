@@ -50,7 +50,7 @@ std::optional<ModelInstanceIndex> AddModelFromMujocoXml(
 
 class MujocoParserWrapper final : public ParserInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MujocoParserWrapper)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MujocoParserWrapper);
   MujocoParserWrapper();
   ~MujocoParserWrapper() final;
   std::optional<ModelInstanceIndex> AddModel(

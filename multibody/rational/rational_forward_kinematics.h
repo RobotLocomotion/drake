@@ -54,7 +54,7 @@ namespace multibody {
  */
 class RationalForwardKinematics {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RationalForwardKinematics)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RationalForwardKinematics);
 
   /** @param plant The plant for which we compute forward kinematics.
    `plant` should outlive this %RationalForwardKinematics object.

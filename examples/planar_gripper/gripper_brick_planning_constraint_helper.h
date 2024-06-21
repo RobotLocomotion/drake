@@ -142,7 +142,7 @@ namespace internal {
  */
 class FingerNoSlidingConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FingerNoSlidingConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FingerNoSlidingConstraint);
 
   FingerNoSlidingConstraint(const GripperBrickHelper<double>* gripper_brick,
                             Finger finger, BrickFace face,
@@ -180,7 +180,7 @@ class FingerNoSlidingConstraint : public solvers::Constraint {
  */
 class FingerNoSlidingFromFixedPostureConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FingerNoSlidingFromFixedPostureConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FingerNoSlidingFromFixedPostureConstraint);
 
   FingerNoSlidingFromFixedPostureConstraint(
       const GripperBrickHelper<double>* gripper_brick, Finger finger,

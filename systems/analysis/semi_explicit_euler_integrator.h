@@ -68,7 +68,7 @@ namespace systems {
 template <class T>
 class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SemiExplicitEulerIntegrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SemiExplicitEulerIntegrator);
 
   virtual ~SemiExplicitEulerIntegrator() {}
 
@@ -168,4 +168,4 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::SemiExplicitEulerIntegrator)
+    class drake::systems::SemiExplicitEulerIntegrator);

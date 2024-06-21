@@ -33,7 +33,7 @@ template <class T> class RigidBody;
 template <typename T>
 class FixedOffsetFrame final : public Frame<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FixedOffsetFrame)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FixedOffsetFrame);
 
   /// Creates a material Frame F whose pose is fixed with respect to its
   /// parent material Frame P. The pose is given by a spatial transform `X_PF`;
@@ -190,4 +190,4 @@ class FixedOffsetFrame final : public Frame<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::FixedOffsetFrame)
+    class drake::multibody::FixedOffsetFrame);

@@ -18,7 +18,7 @@ namespace solvers {
 /// Interface used by implementations of individual solvers.
 class SolverInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverInterface)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverInterface);
   virtual ~SolverInterface();
 
   /// Returns true iff support for this solver has been compiled into Drake.

@@ -57,7 +57,7 @@ template<typename T> class RigidBody;
 template <typename T>
 class RigidBodyFrame final : public Frame<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyFrame)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyFrame);
 
   math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>&) const override {
@@ -184,7 +184,7 @@ class RigidBodyAttorney {
 template <typename T>
 class RigidBody : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody);
 
   /// Constructs a %RigidBody named `body_name` with the given default
   /// SpatialInertia.
@@ -830,7 +830,7 @@ using Body = RigidBody<T>;
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RigidBodyFrame)
+    class ::drake::multibody::RigidBodyFrame);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RigidBody)
+    class ::drake::multibody::RigidBody);

@@ -27,7 +27,7 @@ output_ports:
 @ingroup message_passing */
 class LcmScopeSystem final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmScopeSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmScopeSystem);
 
   /** (Advanced.) Most users will use AddToBuilder instead of this constructor.
   On its own, this constructor does not publish anything.

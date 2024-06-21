@@ -33,4 +33,4 @@ systems::InputPort<T>& ForceDensityField<T>::DeclareVectorInputPort(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::ForceDensityField)
+    class ::drake::multibody::ForceDensityField);

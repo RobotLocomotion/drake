@@ -27,7 +27,7 @@ disappear at a particular frame.
 */
 class MeshcatAnimation {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatAnimation)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatAnimation);
 
   /** Constructs the animation object.
   @param frames_per_second a positive integer specifying the timing at which the

@@ -37,14 +37,14 @@ class MobilizerImpl7x6 : public MobilizerImpl<T, 7, 6> {};
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::MobilizerImpl0x0)
+    class ::drake::multibody::internal::MobilizerImpl0x0);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::MobilizerImpl1x1)
+    class ::drake::multibody::internal::MobilizerImpl1x1);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::MobilizerImpl2x2)
+    class ::drake::multibody::internal::MobilizerImpl2x2);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::MobilizerImpl3x3)
+    class ::drake::multibody::internal::MobilizerImpl3x3);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::MobilizerImpl6x6)
+    class ::drake::multibody::internal::MobilizerImpl6x6);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::MobilizerImpl7x6)
+    class ::drake::multibody::internal::MobilizerImpl7x6);

@@ -31,7 +31,7 @@ the zero-dimensional case.
 @ingroup geometry_optimization */
 class AffineBall final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AffineBall)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AffineBall);
 
   /** Constructs a default (zero-dimensional, nonempty) set. */
   AffineBall();

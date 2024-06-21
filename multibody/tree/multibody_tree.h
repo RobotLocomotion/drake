@@ -83,7 +83,7 @@ template <typename T> class QuaternionFloatingMobilizer;
 template <typename T>
 class MultibodyTree {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTree)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTree);
 
   // Creates a MultibodyTree containing only a **world** body and a
   // UniformGravityFieldElement.
@@ -3091,4 +3091,4 @@ class MultibodyTree {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::MultibodyTree)
+    class ::drake::multibody::internal::MultibodyTree);

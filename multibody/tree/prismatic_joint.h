@@ -28,7 +28,7 @@ namespace multibody {
 template <typename T>
 class PrismaticJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -365,4 +365,4 @@ template <typename T> const char PrismaticJoint<T>::kTypeName[] = "prismatic";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::PrismaticJoint)
+    class ::drake::multibody::PrismaticJoint);

@@ -41,7 +41,7 @@ output_ports:
 template <typename T>
 class PortSwitch final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PortSwitch)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PortSwitch);
 
   /** Constructs a vector-valued %PortSwitch. All input ports declared via
   DeclareInputPort() will be vector-valued ports of size `vector_size`,
@@ -136,4 +136,4 @@ const AbstractValue& PortSwitch<symbolic::Expression>::get_model_value() const;
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::PortSwitch)
+    class ::drake::systems::PortSwitch);

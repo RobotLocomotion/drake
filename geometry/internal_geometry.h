@@ -35,7 +35,7 @@ namespace internal {
  the registered geometry), its name, and its *declared* geometry.  */
 class InternalGeometry {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalGeometry)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalGeometry);
 
   // TODO(SeanCurtis-TRI): Is this strictly required? Typically, I have this to
   // be compatible with STL structures that need to default construct. Confirm

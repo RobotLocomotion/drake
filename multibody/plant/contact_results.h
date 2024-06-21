@@ -173,4 +173,4 @@ class ContactResults {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ContactResults)
+    class ::drake::multibody::ContactResults);

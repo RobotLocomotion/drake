@@ -24,7 +24,7 @@ namespace internal {
 template <typename T>
 class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldMobilizer);
 
   // Constructor for a %WeldMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M`.
@@ -122,4 +122,4 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::WeldMobilizer)
+    class ::drake::multibody::internal::WeldMobilizer);

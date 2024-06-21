@@ -37,7 +37,7 @@ enum class PlaneSide {
  */
 class CIrisCollisionGeometry {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CIrisCollisionGeometry)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CIrisCollisionGeometry);
 
   /**
    @param geometry The actual geometry object. `geometry` must outlive this

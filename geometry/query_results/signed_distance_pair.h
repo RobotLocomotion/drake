@@ -29,7 +29,7 @@ namespace geometry {
  */
 template <typename T>
 struct SignedDistancePair {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistancePair)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistancePair);
   SignedDistancePair() = default;
 
   // TODO(DamrongGuoy): When we have a full implementation of computing

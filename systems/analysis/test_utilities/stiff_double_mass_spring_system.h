@@ -35,7 +35,7 @@ namespace test {
 template <class T>
 class StiffDoubleMassSpringSystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StiffDoubleMassSpringSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StiffDoubleMassSpringSystem);
   StiffDoubleMassSpringSystem() {
     this->DeclareContinuousState(2 /* num_q */, 2 /* num_v */, 0 /* num_z */);
   }

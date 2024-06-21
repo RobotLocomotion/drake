@@ -24,7 +24,7 @@ namespace internal {
 template <typename T>
 class HydroelasticEngine  {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticEngine)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticEngine);
 
   HydroelasticEngine() = default;
 

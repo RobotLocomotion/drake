@@ -22,7 +22,7 @@ class StaticFrictionConeComplementarityNonlinearConstraint
     : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
-      StaticFrictionConeComplementarityNonlinearConstraint)
+      StaticFrictionConeComplementarityNonlinearConstraint);
 
   /*
    * See AddStaticFrictionConeComplementarityConstraint() for details.

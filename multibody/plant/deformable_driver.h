@@ -96,7 +96,7 @@ class DiscreteUpdateManager;
 template <typename T>
 class DeformableDriver : public ScalarConvertibleComponent<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableDriver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableDriver);
 
   /* Constructs a deformable driver that solves for the dynamics of the given
    `deformable_model`. The newly constructed driver is used in the given

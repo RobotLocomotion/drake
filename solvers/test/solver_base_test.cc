@@ -15,7 +15,7 @@ using ::testing::HasSubstr;
 // A stub subclass of SolverBase, so that we can instantiate and test it.
 class StubSolverBase final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StubSolverBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StubSolverBase);
   StubSolverBase()
       : SolverBase(
             id(),

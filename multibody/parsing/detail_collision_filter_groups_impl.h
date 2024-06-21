@@ -26,7 +26,7 @@ we copy it to a CollisionFilterGroupsImpl<std::string> for their convenience. */
 template <typename T>
 class CollisionFilterGroupsImpl {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterGroupsImpl)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterGroupsImpl);
 
   CollisionFilterGroupsImpl();
   ~CollisionFilterGroupsImpl();

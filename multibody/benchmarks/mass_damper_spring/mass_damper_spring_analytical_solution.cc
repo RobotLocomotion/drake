@@ -110,4 +110,4 @@ Vector3<T> MassDamperSpringAnalyticalSolution<T>::CalculateOutputImpl(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution)
+    class drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution);

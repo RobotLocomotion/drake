@@ -36,7 +36,7 @@ namespace estimators {
 template <typename T>
 class LuenbergerObserver final: public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LuenbergerObserver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LuenbergerObserver);
 
   /// Constructs the observer.
   ///
@@ -118,4 +118,4 @@ class LuenbergerObserver final: public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::systems::estimators::LuenbergerObserver)
+    class drake::systems::estimators::LuenbergerObserver);

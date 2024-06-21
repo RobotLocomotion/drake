@@ -106,7 +106,7 @@ lcmt_robot_plan EncodeKeyFrames(const std::vector<std::string>& joint_names,
 // clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &GetJointNames<T>
-))
+));
 // clang-format on
 
 }  // namespace util

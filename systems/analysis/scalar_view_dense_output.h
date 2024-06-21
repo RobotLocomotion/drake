@@ -21,7 +21,7 @@ namespace systems {
 template <typename T>
 class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScalarViewDenseOutput)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScalarViewDenseOutput);
 
   /// Constructs a view of another DenseOutput instance.
   /// @param base_output Base dense output to operate with.
@@ -78,4 +78,4 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::systems::ScalarViewDenseOutput)
+    class drake::systems::ScalarViewDenseOutput);

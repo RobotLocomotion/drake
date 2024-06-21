@@ -49,7 +49,7 @@ output_ports:
 */
 class IiwaCommandSender final : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandSender)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandSender);
 
   explicit IiwaCommandSender(
       int num_joints = kIiwaArmNumJoints,

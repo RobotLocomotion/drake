@@ -56,7 +56,7 @@ namespace multibody {
  */
 class QuaternionEulerIntegrationConstraint final : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionEulerIntegrationConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionEulerIntegrationConstraint);
 
   /**
    * @param allow_quaternion_negation. Refer to the class documentation.

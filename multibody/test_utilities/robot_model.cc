@@ -275,11 +275,11 @@ void VisualizeRobotModel() {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&RobotModel<T>::template ToScalarType<U>))
+    (&RobotModel<T>::template ToScalarType<U>));
 
 }  // namespace test
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::test::RobotModel)
+    class ::drake::multibody::test::RobotModel);

@@ -17,7 +17,7 @@ namespace internal {
 class SpanningForest::Mobod {
  public:
   /** (Internal use only) Copy/Move constructor & assignment. */
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mobod)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mobod);
 
   /** (Internal use only) This constructor is just for World, the only %Mobod
   with no mobilizer. (Or you can consider it welded to the universe at the

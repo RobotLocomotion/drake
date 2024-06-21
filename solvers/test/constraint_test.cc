@@ -812,7 +812,7 @@ GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
 
 class SimpleEvaluator : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator);
   SimpleEvaluator() : EvaluatorBase(2, 3) {
     c_.resize(2, 3);
     // clang-format off

@@ -288,7 +288,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&ComputeNarrowPhaseDistance<T>, &Callback<T>))
+    (&ComputeNarrowPhaseDistance<T>, &Callback<T>));
 
 }  // namespace shape_distance
 }  // namespace internal
@@ -296,4 +296,4 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::internal::shape_distance::DistancePairGeometry)
+    class ::drake::geometry::internal::shape_distance::DistancePairGeometry);

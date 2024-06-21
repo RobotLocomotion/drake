@@ -51,7 +51,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   typedef SpatialVector<::drake::multibody::SpatialForce, T> Base;
 
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForce)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForce);
 
   /// Default constructor. In Release builds, all 6 elements of a newly
   /// constructed spatial force are uninitialized (for speed). In Debug
@@ -241,4 +241,4 @@ inline SpatialForce<T> operator-(const SpatialForce<T>& F1_E,
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::SpatialForce)
+    class ::drake::multibody::SpatialForce);

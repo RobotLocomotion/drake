@@ -27,7 +27,7 @@ enum TrigStatus {
 // Visitor class for sin/cos substitution.
 class SinCosVisitor {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinCosVisitor)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinCosVisitor);
 
   explicit SinCosVisitor(SinCosSubstitution s) : subs_{std::move(s)} {};
 

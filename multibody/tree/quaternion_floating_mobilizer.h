@@ -33,7 +33,7 @@ namespace internal {
 template <typename T>
 class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer);
 
   // Constructor for a %QuaternionFloatingMobilizer granting six degrees of
   // freedom to an outboard frame M with respect to an inboard frame F. The
@@ -283,4 +283,4 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::QuaternionFloatingMobilizer)
+    class ::drake::multibody::internal::QuaternionFloatingMobilizer);

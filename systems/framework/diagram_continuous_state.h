@@ -30,7 +30,7 @@ namespace systems {
 template <typename T>
 class DiagramContinuousState final: public ContinuousState<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContinuousState)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContinuousState);
 
   /// Constructs a ContinuousState that is composed of other ContinuousStates,
   /// which are not owned by this object and must outlive it.
@@ -113,4 +113,4 @@ class DiagramContinuousState final: public ContinuousState<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::DiagramContinuousState)
+    class ::drake::systems::DiagramContinuousState);

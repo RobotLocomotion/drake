@@ -213,4 +213,4 @@ std::unique_ptr<ForceElement<Expression>> DoorHinge<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::DoorHinge)
+    class ::drake::multibody::DoorHinge);

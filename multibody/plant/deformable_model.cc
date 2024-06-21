@@ -501,4 +501,4 @@ void DeformableModel<T>::ThrowIfNotDouble(const char* function_name) const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::DeformableModel)
+    class drake::multibody::DeformableModel);

@@ -189,4 +189,4 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &drake::multibody::Frame<T>::CalcSpatialVelocity,
     &drake::multibody::Frame<T>::CalcSpatialAccelerationInWorld,
     &drake::multibody::Frame<T>::CalcSpatialAcceleration
-))
+));

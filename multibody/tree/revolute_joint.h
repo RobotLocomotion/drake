@@ -29,7 +29,7 @@ namespace multibody {
 template <typename T>
 class RevoluteJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -397,4 +397,4 @@ template <typename T> const char RevoluteJoint<T>::kTypeName[] = "revolute";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RevoluteJoint)
+    class ::drake::multibody::RevoluteJoint);
