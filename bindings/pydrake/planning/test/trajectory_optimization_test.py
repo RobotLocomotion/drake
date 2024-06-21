@@ -248,6 +248,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
         trajopt.AddDurationCost(weight=1)
         trajopt.AddPathLengthCost(weight=1)
+        trajopt.AddPathEnergyCost(weight=1)
 
         result = mp.Solve(trajopt.prog())
         q = trajopt.ReconstructTrajectory(result=result)
