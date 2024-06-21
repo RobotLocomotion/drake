@@ -131,6 +131,12 @@ class KinematicTrajectoryOptimization {
   practice. For instance if you want to constrain the true (trajectory)
   velocity at the final time, one would naturally want to write
   AddVelocityConstraint(constraint, s=1).
+
+  This method should be compared with AddPathVelocityConstraint, which only
+  constrains ṙ(s) because it does not reason about the time scaling, T.
+  However, AddPathVelocityConstraint adds convex constraints, whereas this
+  method adds nonconvex generic constraints.
+
   @pre constraint.num_vars() == num_positions()
   @pre 0 <= `s` <= 1. */
   solvers::Binding<solvers::Constraint> AddVelocityConstraintAtNormalizedTime(
