@@ -66,6 +66,18 @@ struct InputPortForces {
   VectorX<T> actuation_wo_pd;  // For actuated joints without PD control.
 };
 
+// This contains the geometric contact information coming out of SceneGraph.
+// Depending on the MbP contact model and the proximity properties in the scene
+// graph, one or the other vector might be guaranteed to be empty; e.g.., even
+// in kPoint only mode we still track `surfaces` but it's always empty.
+template <typename T>
+struct GeometryContactSummary {
+  std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
+  std::vector<geometry::ContactSurface<T>> surfaces;
+  // TODO(jwnimmer-tri) It seems to me like DeformableContact<T> should be
+  // computed and cached here as well.
+};
+
 /* This class is used to perform all calculations needed to advance state for a
  MultibodyPlant with discrete state.
 
@@ -300,7 +312,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* N.B. Keep the spelling and order of declarations here identical to the
    MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
-  const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
+  const GeometryContactSummary<T>& EvalGeometryContactSummary(
       const systems::Context<T>& context) const;
 
   void AddJointLimitsPenaltyForces(const systems::Context<T>& context,
@@ -458,10 +470,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcDiscreteContactPairs(
       const systems::Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* result) const;
-
-  int CalcNumberOfPointContacts(const systems::Context<T>& context) const;
-
-  int CalcNumberOfHydroContactPoints(const systems::Context<T>& context) const;
 
   /* Helper function for CalcDiscreteContactPairs() that computes all contact
    pairs from hydroelastic contact, if any. */
