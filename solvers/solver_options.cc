@@ -62,6 +62,15 @@ void SolverOptions::SetOption(CommonSolverOption key, OptionValue value) {
       common_solver_options_[key] = std::move(value);
       return;
     }
+    case CommonSolverOption::kStandaloneReproductionFileName: {
+      if (!std::holds_alternative<std::string>(value)) {
+        throw std::runtime_error(fmt::format(
+            "SolverOptions::SetOption support {} only with std::string value.",
+            key));
+      }
+      common_solver_options_[key] = std::move(value);
+      return;
+    }
   }
   DRAKE_UNREACHABLE();
 }
@@ -110,6 +119,17 @@ bool SolverOptions::get_print_to_console() const {
   if (iter != common_solver_options_.end()) {
     const int value = std::get<int>(iter->second);
     result = static_cast<bool>(value);
+  }
+  return result;
+}
+
+std::string SolverOptions::get_standalone_reproduction_file_name() const {
+  // N.B. SetOption sanity checks the value; we don't need to re-check here.
+  std::string result;
+  auto iter = common_solver_options_.find(
+      CommonSolverOption::kStandaloneReproductionFileName);
+  if (iter != common_solver_options_.end()) {
+    result = std::get<std::string>(iter->second);
   }
   return result;
 }

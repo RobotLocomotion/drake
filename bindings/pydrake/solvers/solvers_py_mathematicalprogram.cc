@@ -426,6 +426,9 @@ void BindSolverInterfaceAndFlags(py::module m) {
           doc.SolverOptions.get_print_file_name.doc)
       .def("get_print_to_console", &SolverOptions::get_print_to_console,
           doc.SolverOptions.get_print_to_console.doc)
+      .def("get_standalone_reproduction_file_name",
+          &SolverOptions::get_standalone_reproduction_file_name,
+          doc.SolverOptions.get_standalone_reproduction_file_name.doc)
       .def("__repr__", [](const SolverOptions&) -> std::string {
         // This is a minimal implementation that serves to avoid displaying
         // memory addresses in pydrake docs and help strings. In the future,
@@ -438,7 +441,10 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kPrintFileName", CommonSolverOption::kPrintFileName,
           doc.CommonSolverOption.kPrintFileName.doc)
       .value("kPrintToConsole", CommonSolverOption::kPrintToConsole,
-          doc.CommonSolverOption.kPrintToConsole.doc);
+          doc.CommonSolverOption.kPrintToConsole.doc)
+      .value("kStandaloneReproductionFileName",
+          CommonSolverOption::kStandaloneReproductionFileName,
+          doc.CommonSolverOption.kStandaloneReproductionFileName.doc);
 }
 
 void BindMathematicalProgram(py::module m) {
