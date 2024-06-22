@@ -567,7 +567,7 @@ class FilteredContactResultsTest
 // Test that contact results are properly reported. MultibodyPlant will not
 // report contact results between bodies that are either anchored or with all of
 // their dofs locked. However, geometry query data from SceneGraph (e.g
-// data from MbP::EvalPointPairPenetrations() and MbP::EvalContactSurfaces())
+// data from MbP::CalcGeometryContactSummary())
 // are not automatically filtered. Thus contact results must store a reference
 // of either the point pair or hydroelastic contact surface that corresponds to
 // that result. We verify that contact results for point contact contain correct

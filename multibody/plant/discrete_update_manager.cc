@@ -276,11 +276,11 @@ DiscreteUpdateManager<T>::EvalContactSolverResults(
 }
 
 template <typename T>
-const std::vector<geometry::ContactSurface<T>>&
-DiscreteUpdateManager<T>::EvalContactSurfaces(
+const GeometryContactSummary<T>&
+DiscreteUpdateManager<T>::EvalGeometryContactSummary(
     const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalContactSurfaces(
-      plant(), context);
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::EvalGeometryContactSummary(plant(), context);
 }
 
 template <typename T>
@@ -500,7 +500,7 @@ void DiscreteUpdateManager<T>::AppendContactResultsForPointContact(
   DRAKE_DEMAND(contact_results != nullptr);
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      plant().EvalPointPairPenetrations(context);
+      EvalGeometryContactSummary(context).point_pairs;
   const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       EvalDiscreteContactPairs(context);
   const contact_solvers::internal::ContactSolverResults<T>& solver_results =
@@ -569,11 +569,12 @@ void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
     const systems::Context<T>& context,
     std::vector<HydroelasticContactInfo<T>>* contact_info) const {
   DRAKE_DEMAND(contact_info != nullptr);
-
-  const std::vector<ContactSurface<T>>& all_surfaces =
-      EvalContactSurfaces(context);
-
   contact_info->clear();
+
+  const GeometryContactSummary<T>& geometry_contact_summary =
+      EvalGeometryContactSummary(context);
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      geometry_contact_summary.surfaces;
   // Reserve memory here to keep from repeatedly allocating heap storage in the
   // loop below.
   contact_info->reserve(all_surfaces.size());
@@ -756,50 +757,15 @@ void DiscreteUpdateManager<T>::CalcDiscreteContactPairs(
 }
 
 template <typename T>
-int DiscreteUpdateManager<T>::CalcNumberOfPointContacts(
-    const systems::Context<T>& context) const {
-  const auto contact_model = plant().get_contact_model();
-  // N.B. num_point_pairs = 0 when:
-  //   1. There are legitimately no point pairs or,
-  //   2. the point pair model is not even in use.
-  // We guard for case (2) since EvalPointPairPenetrations() cannot be called
-  // when point contact is not used and would otherwise throw an exception.
-  int num_point_pairs = 0;
-  if (contact_model == ContactModel::kPoint ||
-      contact_model == ContactModel::kHydroelasticWithFallback) {
-    num_point_pairs = plant().EvalPointPairPenetrations(context).size();
-  }
-  return num_point_pairs;
-}
-
-template <typename T>
-int DiscreteUpdateManager<T>::CalcNumberOfHydroContactPoints(
-    const systems::Context<T>& context) const {
-  const auto contact_model = plant().get_contact_model();
-  int num_hydro_pairs = 0;
-  // N.B. For discrete hydro we use a first order quadrature rule. As such,
-  // the per-face quadrature point is the face's centroid and the weight is 1.
-  // This is compatible with a mesh that is triangle or polygon. If we attempted
-  // higher order quadrature, polygons would have to be decomposed into smaller
-  // n-gons which can receive an appropriate set of quadrature points.
-  if (contact_model == ContactModel::kHydroelastic ||
-      contact_model == ContactModel::kHydroelasticWithFallback) {
-    const std::vector<geometry::ContactSurface<T>>& surfaces =
-        EvalContactSurfaces(context);
-    for (const auto& s : surfaces) {
-      // One quadrature point per face.
-      num_hydro_pairs += s.num_faces();
-    }
-  }
-  return num_hydro_pairs;
-}
-
-template <typename T>
 void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     const systems::Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const {
-  const int num_point_contacts = CalcNumberOfPointContacts(context);
-  if (num_point_contacts == 0) return;
+  const std::vector<PenetrationAsPointPair<T>>& point_pairs =
+      EvalGeometryContactSummary(context).point_pairs;
+  const int num_point_contacts = point_pairs.size();
+  if (num_point_contacts == 0) {
+    return;
+  }
 
   contact_pairs->Reserve(num_point_contacts, 0, 0);
   const geometry::SceneGraphInspector<T>& inspector =
@@ -817,8 +783,6 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
   Matrix3X<T> Jv_AcBc_W(3, nv);
 
   // Fill in the point contact pairs.
-  const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      plant().EvalPointPairPenetrations(context);
   for (int point_pair_index = 0; point_pair_index < num_point_contacts;
        ++point_pair_index) {
     const PenetrationAsPointPair<T>& pair = point_pairs[point_pair_index];
@@ -966,8 +930,21 @@ template <typename T>
 void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
     const systems::Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const {
-  const int num_hydro_contacts = CalcNumberOfHydroContactPoints(context);
-  if (num_hydro_contacts == 0) return;
+  const std::vector<geometry::ContactSurface<T>>& surfaces =
+      EvalGeometryContactSummary(context).surfaces;
+  // N.B. For discrete hydro we use a first order quadrature rule. As such,
+  // the per-face quadrature point is the face's centroid and the weight is 1.
+  // This is compatible with a mesh that is triangle or polygon. If we attempted
+  // higher order quadrature, polygons would have to be decomposed into smaller
+  // n-gons which can receive an appropriate set of quadrature points.
+  int num_hydro_contacts = 0;
+  for (const auto& s : surfaces) {
+    // One quadrature point per face.
+    num_hydro_contacts += s.num_faces();
+  }
+  if (num_hydro_contacts == 0) {
+    return;
+  }
 
   contact_pairs->Reserve(0, num_hydro_contacts, 0);
   const geometry::SceneGraphInspector<T>& inspector =
@@ -983,9 +960,6 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
   Matrix3X<T> Jv_WAc_W(3, nv);
   Matrix3X<T> Jv_WBc_W(3, nv);
   Matrix3X<T> Jv_AcBc_W(3, nv);
-
-  const std::vector<geometry::ContactSurface<T>>& surfaces =
-      EvalContactSurfaces(context);
 
   const int num_surfaces = surfaces.size();
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
