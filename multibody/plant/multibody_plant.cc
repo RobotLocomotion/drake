@@ -379,25 +379,6 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // geometry_pose_port_ is set during DeclareSceneGraphPorts() below.
     // scene_graph_ is set to nullptr in FinalizePlantOnly() below.
 
-    // The following data member are set in DeclareStateCacheAndPorts()
-    // in FinalizePlantOnly():
-    //   -instance_actuation_ports_
-    //   -actuation_port_
-    //   -instance_net_actuation_ports_
-    //   -net_actuation_port_
-    //   -applied_generalized_force_input_port_
-    //   -applied_spatial_force_input_port_
-    //   -body_poses_port_
-    //   -body_spatial_velocities_port_
-    //   -body_spatial_acclerations_port_
-    //   -state_output_port_
-    //   -instance_state_output_ports_
-    //   -generalized_acceleration_output_port_
-    //   -instance_generalized_acceleration_output_ports_
-    //   -contact_results_port_
-    //   -reaction_forces_port_
-    //   -instance_generalized_contact_forces_output_ports_
-
     time_step_ = other.time_step_;
     // discrete_update_manager_ is copied below after FinalizePlantOnly().
 
@@ -423,11 +404,14 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     ball_constraints_specs_ = other.ball_constraints_specs_;
     weld_constraints_specs_ = other.weld_constraints_specs_;
 
-    // cache_indices_ is set in DeclareCacheEntries() in
-    // DeclareStateCacheAndPorts() in FinalizePlantOnly().
-
     adjacent_bodies_collision_filters_ =
         other.adjacent_bodies_collision_filters_;
+
+    // These are set as part of FinalizePlantOnly().
+    // - input_port_indices_
+    // - output_port_indices_
+    // - cache_indices_
+    // - parameter_indices_
   }
 
   DeclareSceneGraphPorts();
@@ -2357,7 +2341,7 @@ void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
   this->ValidateContext(context);
   // If there are applied generalized forces, add them in.
   const InputPort<T>& applied_generalized_force_input =
-      this->get_input_port(applied_generalized_force_input_port_);
+      this->get_input_port(input_port_indices_.applied_generalized_force);
   if (applied_generalized_force_input.HasValue(context)) {
     const VectorX<T>& applied_generalized_force =
         applied_generalized_force_input.Eval(context);
@@ -2402,7 +2386,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
   // Evaluate the input port; if it's not connected, return now.
   const auto* applied_input = this->template EvalInputValue<
       std::vector<ExternallyAppliedSpatialForce<T>>>(
-      context, applied_spatial_force_input_port_);
+      context, input_port_indices_.applied_spatial_force);
   if (!applied_input) return;
 
   // Helper to throw a useful message if the input contains NaN.
@@ -2520,8 +2504,8 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     const int instance_num_dofs = num_actuated_dofs(model_instance_index);
     if (instance_num_dofs == 0) continue;
 
-    const auto& input_port =
-        this->get_input_port(instance_actuation_ports_[model_instance_index]);
+    const auto& input_port = this->get_input_port(
+        input_port_indices_.instance_actuation[model_instance_index]);
 
     if (input_port.HasValue(context)) {
       const auto& u_instance = input_port.Eval(context);
@@ -2537,7 +2521,8 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 
   // Contribution from the port for the full MultibodyPlant model.
   // Contributions are additive.
-  const auto& actuation_port = this->get_input_port(actuation_port_);
+  const auto& actuation_port =
+      this->get_input_port(input_port_indices_.actuation);
   if (actuation_port.HasValue(context)) {
     const auto& u = actuation_port.Eval(context);
     if (u.hasNaN()) {
@@ -2951,28 +2936,28 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       is_discrete() ? this->xd_ticket() : this->kinematics_ticket();
 
   // Declare per model instance actuation ports.
-  instance_actuation_ports_.resize(num_model_instances());
+  input_port_indices_.instance_actuation.resize(num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_dofs = num_actuated_dofs(model_instance_index);
-    instance_actuation_ports_[model_instance_index] =
+    input_port_indices_.instance_actuation[model_instance_index] =
         this->DeclareVectorInputPort(
                 GetModelInstanceName(model_instance_index) + "_actuation",
                 instance_num_dofs)
             .get_index();
   }
-  actuation_port_ =
+  input_port_indices_.actuation =
       this->DeclareVectorInputPort("actuation", num_actuated_dofs())
           .get_index();
 
   // Net actuation ports.
   // N.B. We intentionally declare a dependency on kinematics in the continuous
   // mode in anticipation for adding PD support in continuous mode.
-  instance_net_actuation_ports_.resize(num_model_instances());
+  output_port_indices_.instance_net_actuation.resize(num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_dofs = num_actuated_dofs(model_instance_index);
-    instance_net_actuation_ports_[model_instance_index] =
+    output_port_indices_.instance_net_actuation[model_instance_index] =
         this->DeclareVectorOutputPort(
                 GetModelInstanceName(model_instance_index) + "_net_actuation",
                 instance_num_dofs,
@@ -2987,15 +2972,16 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                  this->all_parameters_ticket()})
             .get_index();
   }
-  net_actuation_port_ = this->DeclareVectorOutputPort(
-                                "net_actuation", num_actuated_dofs(),
-                                &MultibodyPlant::CalcActuationOutput,
-                                {state_ticket, this->all_input_ports_ticket(),
-                                 this->all_parameters_ticket()})
-                            .get_index();
+  output_port_indices_.net_actuation =
+      this->DeclareVectorOutputPort(
+              "net_actuation", num_actuated_dofs(),
+              &MultibodyPlant::CalcActuationOutput,
+              {state_ticket, this->all_input_ports_ticket(),
+               this->all_parameters_ticket()})
+          .get_index();
 
   // Declare per model instance desired states input ports.
-  instance_desired_state_ports_.resize(num_model_instances());
+  input_port_indices_.instance_desired_state.resize(num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_u =
@@ -3003,7 +2989,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     // Actuators can only be defined on single-dof joints. Therefore the number
     // of desired states per instance is twice the number of actuators.
     const int instance_num_xd = 2 * instance_num_u;
-    instance_desired_state_ports_[model_instance_index] =
+    input_port_indices_.instance_desired_state[model_instance_index] =
         this->DeclareVectorInputPort(
                 GetModelInstanceName(model_instance_index) + "_desired_state",
                 instance_num_xd)
@@ -3011,27 +2997,27 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   }
 
   // Declare the generalized force input port.
-  applied_generalized_force_input_port_ =
+  input_port_indices_.applied_generalized_force =
       this->DeclareVectorInputPort("applied_generalized_force",
                                    num_velocities())
           .get_index();
 
   // Declare applied spatial force input force port.
-  applied_spatial_force_input_port_ =
+  input_port_indices_.applied_spatial_force =
       this->DeclareAbstractInputPort(
               "applied_spatial_force",
               Value<std::vector<ExternallyAppliedSpatialForce<T>>>())
           .get_index();
 
   // Declare one output port for the entire state vector.
-  state_output_port_ =
+  output_port_indices_.state =
       this->DeclareVectorOutputPort("state", num_multibody_states(),
                                     &MultibodyPlant::CopyMultibodyStateOut,
                                     {this->all_state_ticket()})
           .get_index();
 
   // Declare the output port for the poses of all bodies in the world.
-  body_poses_port_ =
+  output_port_indices_.body_poses =
       this->DeclareAbstractOutputPort(
               "body_poses", std::vector<math::RigidTransform<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodyPosesOutput,
@@ -3040,8 +3026,9 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 
   // Declare the output port for the spatial velocities of all bodies in the
   // world.
-  body_spatial_velocities_port_ =
+  output_port_indices_.body_spatial_velocities =
       this->DeclareAbstractOutputPort(
+              // TODO(jwnimmer-tri) This port name does not match the docs.
               "spatial_velocities",
               std::vector<SpatialVelocity<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput,
@@ -3050,8 +3037,9 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 
   // Declare the output port for the spatial accelerations of all bodies in the
   // world.
-  body_spatial_accelerations_port_ =
+  output_port_indices_.body_spatial_accelerations =
       this->DeclareAbstractOutputPort(
+              // TODO(jwnimmer-tri) This port name does not match the docs.
               "spatial_accelerations",
               std::vector<SpatialAcceleration<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
@@ -3063,7 +3051,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 
   // Declare one output port for the entire generalized acceleration vector
   // vdot (length is nv).
-  generalized_acceleration_output_port_ =
+  output_port_indices_.generalized_acceleration =
       this->DeclareVectorOutputPort(
               "generalized_acceleration", num_velocities(),
               [this](const systems::Context<T>& context,
@@ -3075,8 +3063,9 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
           .get_index();
 
   // Declare per model instance state and acceleration output ports.
-  instance_state_output_ports_.resize(num_model_instances());
-  instance_generalized_acceleration_output_ports_.resize(num_model_instances());
+  output_port_indices_.instance_state.resize(num_model_instances());
+  output_port_indices_.instance_generalized_acceleration.resize(
+      num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const std::string& instance_name =
@@ -3089,7 +3078,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                        BasicVector<T>* result) {
       this->CopyMultibodyStateOut(model_instance_index, context, result);
     };
-    instance_state_output_ports_[model_instance_index] =
+    output_port_indices_.instance_state[model_instance_index] =
         this->DeclareVectorOutputPort(
                 instance_name + "_state", instance_num_states,
                 copy_instance_state_out, {this->all_state_ticket()})
@@ -3097,7 +3086,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 
     const int instance_num_velocities =  // Might be zero.
         num_velocities(model_instance_index);
-    instance_generalized_acceleration_output_ports_[model_instance_index] =
+    output_port_indices_
+        .instance_generalized_acceleration[model_instance_index] =
         this->DeclareVectorOutputPort(
                 instance_name + "_generalized_acceleration",
                 instance_num_velocities,
@@ -3113,7 +3103,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   }
 
   // Declare per model instance output port of generalized contact forces.
-  instance_generalized_contact_forces_output_ports_.resize(
+  output_port_indices_.instance_generalized_contact_forces.resize(
       num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
@@ -3136,7 +3126,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
         this->CopyGeneralizedContactForcesOut(solver_results,
                                               model_instance_index, result);
       };
-      instance_generalized_contact_forces_output_ports_[model_instance_index] =
+      output_port_indices_
+          .instance_generalized_contact_forces[model_instance_index] =
           this->DeclareVectorOutputPort(
                   GetModelInstanceName(model_instance_index) +
                       "_generalized_contact_forces",
@@ -3161,7 +3152,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
             model_instance_index,
             EvalGeneralizedContactForcesContinuous(context)));
       };
-      instance_generalized_contact_forces_output_ports_[model_instance_index] =
+      output_port_indices_
+          .instance_generalized_contact_forces[model_instance_index] =
           this->DeclareVectorOutputPort(
                   GetModelInstanceName(model_instance_index) +
                       "_generalized_contact_forces",
@@ -3173,7 +3165,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 
   // Joint reaction forces are a function of accelerations, which in turn depend
   // on both state and inputs.
-  reaction_forces_port_ =
+  output_port_indices_.reaction_forces =
       this->DeclareAbstractOutputPort(
               "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
               &MultibodyPlant<T>::CalcReactionForces,
@@ -3187,11 +3179,12 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     contact_results_prerequisites.insert(this->all_input_ports_ticket());
     contact_results_prerequisites.insert(this->all_parameters_ticket());
   }
-  contact_results_port_ = this->DeclareAbstractOutputPort(
-                                  "contact_results", ContactResults<T>(),
-                                  &MultibodyPlant<T>::CopyContactResultsOutput,
-                                  contact_results_prerequisites)
-                              .get_index();
+  output_port_indices_.contact_results =
+      this->DeclareAbstractOutputPort(
+              "contact_results", ContactResults<T>(),
+              &MultibodyPlant<T>::CopyContactResultsOutput,
+              contact_results_prerequisites)
+          .get_index();
 
   // Let external model managers declare their state, cache and ports in
   // `this` MultibodyPlant.
@@ -3370,7 +3363,7 @@ template <typename T>
 const systems::InputPort<T>&
 MultibodyPlant<T>::get_applied_generalized_force_input_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_input_port(applied_generalized_force_input_port_);
+  return this->get_input_port(input_port_indices_.applied_generalized_force);
 }
 
 template <typename T>
@@ -3379,22 +3372,22 @@ const systems::InputPort<T>& MultibodyPlant<T>::get_actuation_input_port(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-  return systems::System<T>::get_input_port(
-      instance_actuation_ports_.at(model_instance));
+  return this->get_input_port(
+      input_port_indices_.instance_actuation.at(model_instance));
 }
 
 template <typename T>
 const systems::InputPort<T>& MultibodyPlant<T>::get_actuation_input_port()
     const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return systems::System<T>::get_input_port(actuation_port_);
+  return this->get_input_port(input_port_indices_.actuation);
 }
 
 template <typename T>
 const systems::OutputPort<T>& MultibodyPlant<T>::get_net_actuation_output_port()
     const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return systems::System<T>::get_output_port(net_actuation_port_);
+  return this->get_output_port(output_port_indices_.net_actuation);
 }
 
 template <typename T>
@@ -3403,8 +3396,8 @@ const systems::OutputPort<T>& MultibodyPlant<T>::get_net_actuation_output_port(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-  return systems::System<T>::get_output_port(
-      instance_net_actuation_ports_.at(model_instance));
+  return this->get_output_port(
+      output_port_indices_.instance_net_actuation.at(model_instance));
 }
 
 template <typename T>
@@ -3413,21 +3406,21 @@ const systems::InputPort<T>& MultibodyPlant<T>::get_desired_state_input_port(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-  return systems::System<T>::get_input_port(
-      instance_desired_state_ports_.at(model_instance));
+  return this->get_input_port(
+      input_port_indices_.instance_desired_state.at(model_instance));
 }
 
 template <typename T>
 const systems::InputPort<T>&
 MultibodyPlant<T>::get_applied_spatial_force_input_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return systems::System<T>::get_input_port(applied_spatial_force_input_port_);
+  return this->get_input_port(input_port_indices_.applied_spatial_force);
 }
 
 template <typename T>
 const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(state_output_port_);
+  return this->get_output_port(output_port_indices_.state);
 }
 
 template <typename T>
@@ -3436,14 +3429,15 @@ const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-  return this->get_output_port(instance_state_output_ports_.at(model_instance));
+  return this->get_output_port(
+      output_port_indices_.instance_state.at(model_instance));
 }
 
 template <typename T>
 const systems::OutputPort<T>&
 MultibodyPlant<T>::get_generalized_acceleration_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(generalized_acceleration_output_port_);
+  return this->get_output_port(output_port_indices_.generalized_acceleration);
 }
 
 template <typename T>
@@ -3454,7 +3448,8 @@ MultibodyPlant<T>::get_generalized_acceleration_output_port(
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
   return this->get_output_port(
-      instance_generalized_acceleration_output_ports_.at(model_instance));
+      output_port_indices_.instance_generalized_acceleration.at(
+          model_instance));
 }
 
 template <typename T>
@@ -3465,30 +3460,31 @@ MultibodyPlant<T>::get_generalized_contact_forces_output_port(
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
   return this->get_output_port(
-      instance_generalized_contact_forces_output_ports_.at(model_instance));
+      output_port_indices_.instance_generalized_contact_forces.at(
+          model_instance));
 }
 
 template <typename T>
 const systems::OutputPort<T>&
 MultibodyPlant<T>::get_contact_results_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(contact_results_port_);
+  return this->get_output_port(output_port_indices_.contact_results);
 }
 
 template <typename T>
 const systems::OutputPort<T>&
 MultibodyPlant<T>::get_reaction_forces_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(reaction_forces_port_);
+  return this->get_output_port(output_port_indices_.reaction_forces);
 }
 
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
-  geometry_query_port_ =
+  input_port_indices_.geometry_query =
       this->DeclareAbstractInputPort("geometry_query",
                                      Value<geometry::QueryObject<T>>{})
           .get_index();
-  geometry_pose_port_ =
+  output_port_indices_.geometry_pose =
       this->DeclareAbstractOutputPort("geometry_pose",
                                       &MultibodyPlant<T>::CalcFramePoseOutput,
                                       {this->configuration_ticket()})
@@ -3689,32 +3685,32 @@ void MultibodyPlant<T>::CalcReactionForces(
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_body_poses_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return systems::System<T>::get_output_port(body_poses_port_);
+  return this->get_output_port(output_port_indices_.body_poses);
 }
 
 template <typename T>
 const OutputPort<T>&
 MultibodyPlant<T>::get_body_spatial_velocities_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return systems::System<T>::get_output_port(body_spatial_velocities_port_);
+  return this->get_output_port(output_port_indices_.body_spatial_velocities);
 }
 
 template <typename T>
 const OutputPort<T>&
 MultibodyPlant<T>::get_body_spatial_accelerations_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return systems::System<T>::get_output_port(body_spatial_accelerations_port_);
+  return this->get_output_port(output_port_indices_.body_spatial_accelerations);
 }
 
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port() const {
-  return systems::System<T>::get_output_port(geometry_pose_port_);
+  return this->get_output_port(output_port_indices_.geometry_pose);
 }
 
 template <typename T>
 const systems::InputPort<T>& MultibodyPlant<T>::get_geometry_query_input_port()
     const {
-  return systems::System<T>::get_input_port(geometry_query_port_);
+  return this->get_input_port(input_port_indices_.geometry_query);
 }
 
 template <typename T>
@@ -3730,7 +3726,7 @@ MultibodyPlant<T>::get_deformable_body_configuration_output_port() const {
           std::get<const DeformableModel<T>*>(
               physical_model->ToPhysicalModelPointerVariant());
       DRAKE_DEMAND(deformable_model != nullptr);
-      return systems::System<T>::get_output_port(
+      return this->get_output_port(
           deformable_model->configuration_output_port_index());
     }
   }

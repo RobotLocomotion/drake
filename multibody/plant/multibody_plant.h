@@ -273,10 +273,8 @@ output_ports:
 - reaction_forces
 - contact_results
 - <em style="color:gray">model_instance_name[i]</em>_state
-- '<em style="color:gray">
-  model_instance_name[i]</em>_generalized_acceleration'
-- '<em style="color:gray">
-  model_instance_name[i]</em>_generalized_contact_forces'
+- <em style="color:gray">model_instance_name[i]</em>_generalized_acceleration
+- <em style="color:gray">model_instance_name[i]</em>_generalized_contact_forces
 - <em style="color:gray">model_instance_name[i]</em>_net_actuation
 - <span style="color:green">geometry_pose</span>
 - <span style="color:green">deformable_body_configuration</span>
@@ -290,9 +288,9 @@ indicated type the port will still be present but its value will be a
 zero-length vector. (Model instances `world_model_instance()` and
 `default_model_instance()` always exist.)
 
-The ports shown in <span style="color:green">
-green</span> are for communication with Drake's
-@ref geometry::SceneGraph "SceneGraph" system for dealing with geometry.
+The ports shown in <span style="color:green">green</span> are for communication
+with Drake's @ref geometry::SceneGraph "SceneGraph" system for dealing with
+geometry.
 
 %MultibodyPlant provides a user-facing API for:
 
@@ -4993,9 +4991,41 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   friend class internal::MultibodyPlantModelAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
 
-  // This struct stores in one single place all indices related to
-  // MultibodyPlant specific cache entries. These are initialized at Finalize()
-  // when the plant declares its cache entries.
+  // This struct stores in one single place the index of all of our inputs.
+  // The order of the items matches our Doxygen system overview figure.
+  // Unless otherwise noted, all ports are declared during Finalize().
+  struct InputPortIndices {
+    systems::InputPortIndex actuation;
+    systems::InputPortIndex applied_generalized_force;
+    systems::InputPortIndex applied_spatial_force;
+    std::vector<systems::InputPortIndex> instance_actuation;
+    std::vector<systems::InputPortIndex> instance_desired_state;
+    systems::InputPortIndex geometry_query;  // Declared in ctor, not Finalize.
+  };
+
+  // This struct stores in one single place the index of all of our outputs.
+  // The order of the items matches our Doxygen system overview figure.
+  // Unless otherwise noted, all ports are declared during Finalize().
+  struct OutputPortIndices {
+    systems::OutputPortIndex state;
+    systems::OutputPortIndex body_poses;
+    systems::OutputPortIndex body_spatial_velocities;
+    systems::OutputPortIndex body_spatial_accelerations;
+    systems::OutputPortIndex generalized_acceleration;
+    systems::OutputPortIndex net_actuation;
+    systems::OutputPortIndex reaction_forces;
+    systems::OutputPortIndex contact_results;
+    std::vector<systems::OutputPortIndex> instance_state;
+    std::vector<systems::OutputPortIndex> instance_generalized_acceleration;
+    std::vector<systems::OutputPortIndex> instance_generalized_contact_forces;
+    std::vector<systems::OutputPortIndex> instance_net_actuation;
+    systems::OutputPortIndex geometry_pose;  // Declared in ctor, not Finalize.
+    // N.B. The deformable_body_configuration port is owned by DeformableModel,
+    // so is not tracked here.
+  };
+
+  // This struct stores in one single place all indices related to specific
+  // MultibodyPlant cache entries. These are initialized at Finalize().
   struct CacheIndices {
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex hydroelastic_with_fallback;
@@ -5604,75 +5634,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // GetDefaultContactSurfaceRepresentation().
   geometry::HydroelasticContactRepresentation contact_surface_representation_{};
 
-  // Port handles for geometry:
-  systems::InputPortIndex geometry_query_port_;
-  systems::OutputPortIndex geometry_pose_port_;
-
   // For geometry registration with a GS, we save a pointer to the GS instance
   // on which this plants calls RegisterAsSourceForSceneGraph(). This will be
   // set to `nullptr` after finalization, to mirror constraints presented by
   // scalar conversion (where we cannot easily obtain a reference to the
   // scalar-converted scene graph).
   geometry::SceneGraph<T>* scene_graph_{nullptr};
-
-  // Input/Output port indices:
-
-  // A vector containing actuation ports for each model instance indexed by
-  // ModelInstanceIndex. Every model instance has a corresponding port even
-  // if that instance has no actuators.
-  std::vector<systems::InputPortIndex> instance_actuation_ports_;
-
-  // The actuation input port for all actuated dofs.
-  systems::InputPortIndex actuation_port_;
-
-  // Net actuation applied through actuators.
-  systems::OutputPortIndex net_actuation_port_;
-
-  // Vector of net actuation output ports per model instance. Every model
-  // instance has a corresponding port, which might be zero sized for model
-  // instances with no actuators.
-  std::vector<systems::OutputPortIndex> instance_net_actuation_ports_;
-
-  std::vector<systems::InputPortIndex> instance_desired_state_ports_;
-
-  // A port for externally applied generalized forces u.
-  systems::InputPortIndex applied_generalized_force_input_port_;
-
-  // Port for externally applied spatial forces F.
-  systems::InputPortIndex applied_spatial_force_input_port_;
-
-  // Ports for spatial kinematics.
-  systems::OutputPortIndex body_poses_port_;
-  systems::OutputPortIndex body_spatial_velocities_port_;
-  systems::OutputPortIndex body_spatial_accelerations_port_;
-
-  // A port presenting state x=[q v] for the whole system, and a vector of
-  // ports presenting state subsets xᵢ=[qᵢ vᵢ] ⊆ x for each model instance i,
-  // indexed by ModelInstanceIndex. Every model instance has a corresponding
-  // port even if it has no states.
-  systems::OutputPortIndex state_output_port_;
-  std::vector<systems::OutputPortIndex> instance_state_output_ports_;
-
-  // A port presenting generalized accelerations v̇ for the whole system, and
-  // a vector of ports presenting acceleration subsets v̇ᵢ ⊆ v̇ for each model
-  // instance i, indexed by ModelInstanceIndex. Every model instance has a
-  // corresponding port even if it has no states.
-  systems::OutputPortIndex generalized_acceleration_output_port_;
-  std::vector<systems::OutputPortIndex>
-      instance_generalized_acceleration_output_ports_;
-
-  // Index for the output port of ContactResults.
-  systems::OutputPortIndex contact_results_port_;
-
-  // Joint reactions forces port index.
-  systems::OutputPortIndex reaction_forces_port_;
-
-  // A vector containing the index for the generalized contact forces port for
-  // each model instance. This vector is indexed by ModelInstanceIndex. An
-  // invalid value indicates that the model instance has no generalized
-  // velocities and thus no generalized forces.
-  std::vector<systems::OutputPortIndex>
-      instance_generalized_contact_forces_output_ports_;
 
   // If the plant is modeled as a discrete system with periodic updates,
   // time_step_ corresponds to the period of those updates. Otherwise, if the
@@ -5704,15 +5671,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::map<MultibodyConstraintId, internal::WeldConstraintSpec>
       weld_constraints_specs_;
 
-  // All MultibodyPlant cache indices are stored in cache_indices_.
-  CacheIndices cache_indices_;
-
-  // All MultibodyPlant parameter indices are stored in parameter_indices_.
-  ParameterIndices parameter_indices_;
-
   // Whether to apply collsion filters to adjacent bodies at Finalize().
   bool adjacent_bodies_collision_filters_{
       MultibodyPlantConfig{}.adjacent_bodies_collision_filters};
+
+  InputPortIndices input_port_indices_;
+  OutputPortIndices output_port_indices_;
+  CacheIndices cache_indices_;
+  ParameterIndices parameter_indices_;
 };
 
 /// @cond
