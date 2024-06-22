@@ -27,6 +27,16 @@ enum class CommonSolverOption {
    * console.
    */
   kPrintToConsole,
+  /** Some of our solver interfaces support writing a standalone (e.g. it does
+   * not depend on Drake) minimal reproduction of the problem to a file. This is
+   * especially useful for sending bug reports upstream to the developers of the
+   * solver. To enable this, use e.g.
+   * SolverOptions::SetOption(kStandaloneReproductionFileName,
+   * "reproduction.txt"). To disable, use
+   * SolverOptions::SetOption(kStandaloneReproductionFileName, ""), where the
+   * empty string "" indicates that no file should be written.
+   */
+  kStandaloneReproductionFileName,
 };
 
 std::ostream& operator<<(std::ostream& os,
