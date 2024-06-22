@@ -1300,11 +1300,17 @@ class TestMathematicalProgram(unittest.TestCase):
         options_object.SetOption(mp.CommonSolverOption.kPrintToConsole, 1)
         options_object.SetOption(
             mp.CommonSolverOption.kPrintFileName, "foo.txt")
+        options_object.SetOption(
+            mp.CommonSolverOption.kStandaloneReproductionFileName,
+            "reproduction.py")
         options = options_object.GetOptions(solver_id)
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
         self.assertEqual(options_object.get_print_to_console(), True)
         self.assertEqual(options_object.get_print_file_name(), "foo.txt")
+        self.assertEqual(
+            options_object.get_standalone_reproduction_file_name(),
+            "reproduction.py")
 
         prog.SetSolverOptions(options_object)
         prog_options = prog.GetSolverOptions(solver_id)

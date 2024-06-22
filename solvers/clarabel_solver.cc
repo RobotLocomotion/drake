@@ -1,5 +1,7 @@
 #include "drake/solvers/clarabel_solver.h"
 
+#include <filesystem>
+#include <fstream>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -7,6 +9,7 @@
 #include <Clarabel>
 #include <Eigen/Eigen>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/name_value.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -294,6 +297,109 @@ void SetBoundingBoxDualSolution(
   }
 }
 
+void WriteClarabelReproduction(
+    std::string filename, const Eigen::SparseMatrix<double>& P,
+    const Eigen::Map<Eigen::VectorXd>& q_vec,
+    const Eigen::SparseMatrix<double>& A,
+    const Eigen::Map<Eigen::VectorXd>& b_vec,
+    const std::vector<clarabel::SupportedConeT<double>>& cones) {
+  if (std::filesystem::path(filename).extension() != ".py") {
+    filename += ".py";
+  }
+  std::ofstream out_file(filename);
+  if (!out_file.is_open()) {
+    log()->error(
+        "Failed to open kStandaloneReproductionFileName {} for writing; no "
+        "reproduction will be generated.");
+    return;
+  }
+
+  auto write_csc = [&](const Eigen::SparseMatrix<double>& mat,
+                       const std::string& name) {
+    if (mat.nonZeros() == 0) {
+      out_file << fmt::format("{} = sparse.csc_matrix(({}, {}))", name,
+                              P.rows(), P.cols())
+               << std::endl;
+      return;
+    }
+    std::vector<double> data;
+    std::vector<int> rows;
+    std::vector<int> cols;
+    for (int k = 0; k < mat.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(mat, k); it; ++it) {
+        data.push_back(it.value());
+        rows.push_back(it.row());
+        cols.push_back(it.col());
+      }
+    }
+    out_file << fmt::format(R"""(
+data = [{}]
+rows = [{}]
+cols = [{}]
+{} = sparse.csc_matrix((data, (rows, cols)))
+)""",
+                            fmt::join(data, ", "), fmt::join(rows, ", "),
+                            fmt::join(cols, ", "), name);
+  };
+
+  out_file << fmt::format(
+      R"""(
+import clarabel
+import numpy as np
+from scipy import sparse
+
+q = [{}]
+b = [{}]
+)""",
+      fmt::join(q_vec.data(), q_vec.data() + q_vec.size(), ", "),
+      fmt::join(b_vec.data(), b_vec.data() + b_vec.size(), ", "));
+  write_csc(P, "P");
+  write_csc(A, "A");
+  out_file << "cones = [" << std::endl;
+
+  for (const clarabel::SupportedConeT<double>& cone : cones) {
+    switch (cone.tag) {
+      case clarabel::SupportedConeT<double>::Tag::ZeroConeT:
+        out_file << "  clarabel.ZeroConeT(" << cone.nvars() << "),"
+                 << std::endl;
+        break;
+      case clarabel::SupportedConeT<double>::Tag::NonnegativeConeT:
+        out_file << "  clarabel.NonnegativeConeT(" << cone.nvars() << "),"
+                 << std::endl;
+        break;
+      case clarabel::SupportedConeT<double>::Tag::SecondOrderConeT:
+        out_file << "  clarabel.SecondOrderConeT(" << cone.nvars() << "),"
+                 << std::endl;
+        break;
+      case clarabel::SupportedConeT<double>::Tag::PSDTriangleConeT:
+        {
+          const clarabel::PSDTriangleConeT<double>* psd_cone =
+              static_cast<const clarabel::PSDTriangleConeT<double>*>(&cone);
+          out_file << "  clarabel.PSDTriangleConeT(" << psd_cone->dimension()
+                  << ")," << std::endl;
+        }
+        break;
+      case clarabel::SupportedConeT<double>::Tag::ExponentialConeT:
+        out_file << "  clarabel.ExponentialConeT()," << std::endl;
+        break;
+      default:
+        throw std::runtime_error("Unsupported cone type.");
+    }
+  }
+
+  // TODO(russt): write solver options.
+  out_file << R"""(]
+
+settings = clarabel.DefaultSettings()
+solver = clarabel.DefaultSolver(P, q, A, b, cones, settings)
+solver.solve()
+)""";
+
+  log()->info("Clarabel reproduction successfully written to {}.", filename);
+
+  out_file.close();
+}
+
 }  // namespace
 
 bool ClarabelSolver::is_available() {
@@ -456,6 +562,11 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   const SettingsConverter settings_converter(merged_options);
   clarabel::DefaultSettings<double> settings = settings_converter.settings();
 
+  std::string repro_file_name =
+      merged_options.get_standalone_reproduction_file_name();
+  if (!repro_file_name.empty()) {
+    WriteClarabelReproduction(repro_file_name, P, q_vec, A, b_vec, cones);
+  }
   clarabel::DefaultSolver<double> solver(P, q_vec, A, b_vec, cones, settings);
 
   solver.solve();
