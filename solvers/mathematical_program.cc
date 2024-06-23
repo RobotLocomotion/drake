@@ -974,6 +974,13 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
+    const symbolic::Formula& f, LorentzConeConstraint::EvalType eval_type,
+    double psd_tol, double coefficient_tol) {
+  return AddConstraint(internal::ParseLorentzConeConstraint(
+      f, eval_type, psd_tol, coefficient_tol));
+}
+
+Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     LorentzConeConstraint::EvalType eval_type) {
   return AddConstraint(internal::ParseLorentzConeConstraint(v, eval_type));

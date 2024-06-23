@@ -1027,6 +1027,14 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.AddQuadraticConstraint.doc_4args)
       .def("AddLorentzConeConstraint",
           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
+              const symbolic::Formula&, LorentzConeConstraint::EvalType, double,
+              double)>(&MathematicalProgram::AddLorentzConeConstraint),
+          py::arg("f"),
+          py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
+          py::arg("psd_tol") = 1e-8, py::arg("coefficient_tol") = 1e-8,
+          doc.MathematicalProgram.AddLorentzConeConstraint.doc_formula)
+      .def("AddLorentzConeConstraint",
+          static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&,
               LorentzConeConstraint::EvalType)>(
               &MathematicalProgram::AddLorentzConeConstraint),
