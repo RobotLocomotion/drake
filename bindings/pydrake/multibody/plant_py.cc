@@ -934,9 +934,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_rvp::reference_internal,
             cls_doc.get_geometry_query_input_port.doc)
-        .def("get_geometry_poses_output_port",
-            &Class::get_geometry_poses_output_port, py_rvp::reference_internal,
-            cls_doc.get_geometry_poses_output_port.doc)
+        .def("get_geometry_pose_output_port",
+            &Class::get_geometry_pose_output_port, py_rvp::reference_internal,
+            cls_doc.get_geometry_pose_output_port.doc)
         .def("get_deformable_body_configuration_output_port",
             &Class::get_deformable_body_configuration_output_port,
             py_rvp::reference_internal,
@@ -964,6 +964,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.EvalSceneGraphInspector.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("get_geometry_poses_output_port",
+            WrapDeprecated(
+                cls_doc.get_geometry_poses_output_port.doc_deprecated,
+                &Class::get_geometry_poses_output_port),
+            py_rvp::reference_internal,
+            cls_doc.get_geometry_poses_output_port.doc_deprecated);
+#pragma GCC diagnostic pop
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",

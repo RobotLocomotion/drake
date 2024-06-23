@@ -1940,16 +1940,15 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CopyContactResultsOutput(
-    const systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
+void MultibodyPlant<T>::CalcContactResultsOutput(
+    const systems::Context<T>& context, ContactResults<T>* output) const {
   this->ValidateContext(context);
+  DRAKE_DEMAND(output != nullptr);
 
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(context, get_contact_results_output_port());
 
-  DRAKE_DEMAND(contact_results != nullptr);
-  *contact_results = EvalContactResults(context);
+  *output = EvalContactResults(context);
 }
 
 template <typename T>
@@ -2534,15 +2533,26 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcActuationOutput(const systems::Context<T>& context,
-                                            BasicVector<T>* actuation) const {
-  DRAKE_DEMAND(actuation != nullptr);
-  DRAKE_DEMAND(actuation->size() == num_actuated_dofs());
+void MultibodyPlant<T>::CalcNetActuationOutput(
+    const systems::Context<T>& context, BasicVector<T>* output) const {
+  DRAKE_DEMAND(output != nullptr);
+  DRAKE_DEMAND(output->size() == num_actuated_dofs());
   if (is_discrete()) {
-    actuation->SetFromVector(discrete_update_manager_->EvalActuation(context));
+    output->SetFromVector(discrete_update_manager_->EvalActuation(context));
   } else {
-    actuation->SetFromVector(AssembleActuationInput(context));
+    output->SetFromVector(AssembleActuationInput(context));
   }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcInstanceNetActuationOutput(
+    ModelInstanceIndex model_instance, const systems::Context<T>& context,
+    systems::BasicVector<T>* output) const {
+  // The per-instance calc delegates to the full-model calc and then slices it.
+  const VectorX<T>& net_actuation =
+      get_net_actuation_output_port().Eval(context);
+  output->SetFromVector(
+      this->GetActuationFromArray(model_instance, net_actuation));
 }
 
 template <typename T>
@@ -3003,35 +3013,33 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       this->DeclareVectorInputPort("actuation", num_actuated_dofs())
           .get_index();
 
-  // Net actuation ports.
+  // Output "net_actuation".
   // N.B. We intentionally declare a dependency on kinematics in the continuous
   // mode in anticipation for adding PD support in continuous mode.
+  output_port_indices_.net_actuation =
+      this->DeclareVectorOutputPort(
+              "net_actuation", num_actuated_dofs(),
+              &MultibodyPlant::CalcNetActuationOutput,
+              {state_ticket, this->all_input_ports_ticket(),
+               this->all_parameters_ticket()})
+          .get_index();
+
+  // Output "{model_instance_name}_net_actuation".
   output_port_indices_.instance_net_actuation.resize(num_model_instances());
-  for (ModelInstanceIndex model_instance_index(0);
-       model_instance_index < num_model_instances(); ++model_instance_index) {
-    const int instance_num_dofs = num_actuated_dofs(model_instance_index);
-    output_port_indices_.instance_net_actuation[model_instance_index] =
+  for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+    const std::string& model_instance_name = GetModelInstanceName(i);
+    output_port_indices_.instance_net_actuation[i] =
         this->DeclareVectorOutputPort(
-                GetModelInstanceName(model_instance_index) + "_net_actuation",
-                instance_num_dofs,
-                [this, model_instance_index](const systems::Context<T>& context,
-                                             systems::BasicVector<T>* result) {
-                  const VectorX<T>& net_actuation =
-                      get_net_actuation_output_port().Eval(context);
-                  result->SetFromVector(this->GetActuationFromArray(
-                      model_instance_index, net_actuation));
+                fmt::format("{}_net_actuation", model_instance_name),
+                num_actuated_dofs(i),
+                [this, i](const systems::Context<T>& context,
+                          systems::BasicVector<T>* output) {
+                  this->CalcInstanceNetActuationOutput(i, context, output);
                 },
                 {state_ticket, this->all_input_ports_ticket(),
                  this->all_parameters_ticket()})
             .get_index();
   }
-  output_port_indices_.net_actuation =
-      this->DeclareVectorOutputPort(
-              "net_actuation", num_actuated_dofs(),
-              &MultibodyPlant::CalcActuationOutput,
-              {state_ticket, this->all_input_ports_ticket(),
-               this->all_parameters_ticket()})
-          .get_index();
 
   // Declare per model instance desired states input ports.
   input_port_indices_.instance_desired_state.resize(num_model_instances());
@@ -3062,14 +3070,14 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               Value<std::vector<ExternallyAppliedSpatialForce<T>>>())
           .get_index();
 
-  // Declare one output port for the entire state vector.
+  // Output "state".
   output_port_indices_.state =
       this->DeclareVectorOutputPort("state", num_multibody_states(),
-                                    &MultibodyPlant::CopyMultibodyStateOut,
+                                    &MultibodyPlant::CalcStateOutput,
                                     {this->all_state_ticket()})
           .get_index();
 
-  // Declare the output port for the poses of all bodies in the world.
+  // Output "body_poses".
   output_port_indices_.body_poses =
       this->DeclareAbstractOutputPort(
               "body_poses", std::vector<math::RigidTransform<T>>(num_bodies()),
@@ -3077,23 +3085,30 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               {this->configuration_ticket()})
           .get_index();
 
-  // Declare the output port for the spatial velocities of all bodies in the
-  // world.
+  // Output "body_spatial_velocities".
   output_port_indices_.body_spatial_velocities =
       this->DeclareAbstractOutputPort(
-              // TODO(jwnimmer-tri) This port name does not match the docs.
-              "spatial_velocities",
+              "body_spatial_velocities",
               std::vector<SpatialVelocity<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput,
               {this->kinematics_ticket()})
           .get_index();
 
-  // Declare the output port for the spatial accelerations of all bodies in the
-  // world.
+  // Output "spatial_velocities" (deprecated).
+  {
+    this->DeprecateOutputPort(
+        this->DeclareAbstractOutputPort(
+            "spatial_velocities", std::vector<SpatialVelocity<T>>(num_bodies()),
+            &MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput,
+            {this->kinematics_ticket()}),
+        "Use 'body_spatial_velocities' not 'spatial_velocities'. "
+        "The deprecated spelling will be removed on 2024-10-01.");
+  }
+
+  // Output "body_spatial_accelerations".
   output_port_indices_.body_spatial_accelerations =
       this->DeclareAbstractOutputPort(
-              // TODO(jwnimmer-tri) This port name does not match the docs.
-              "spatial_accelerations",
+              "body_spatial_accelerations",
               std::vector<SpatialAcceleration<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
               // Accelerations depend on both state and inputs.
@@ -3102,118 +3117,88 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               {this->all_sources_ticket()})
           .get_index();
 
+  // Output "spatial_accelerations" (deprecated).
+  {
+    this->DeprecateOutputPort(
+        this->DeclareAbstractOutputPort(
+            "spatial_accelerations",
+            std::vector<SpatialAcceleration<T>>(num_bodies()),
+            &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
+            {this->all_sources_ticket()}),
+        "Use 'body_spatial_accelerations' not 'spatial_accelerations'. "
+        "The deprecated spelling will be removed on 2024-10-01.");
+  }
+
+  // Output "generalized_acceleration".
   // Declare one output port for the entire generalized acceleration vector
   // vdot (length is nv).
   output_port_indices_.generalized_acceleration =
       this->DeclareVectorOutputPort(
               "generalized_acceleration", num_velocities(),
-              [this](const systems::Context<T>& context,
-                     systems::BasicVector<T>* result) {
-                result->SetFromVector(
-                    this->EvalForwardDynamics(context).get_vdot());
-              },
+              &MultibodyPlant<T>::CalcGeneralizedAccelerationOutput,
               {this->acceleration_kinematics_cache_entry().ticket()})
           .get_index();
 
-  // Declare per model instance state and acceleration output ports.
+  // Output "{model_instance_name}_state".
   output_port_indices_.instance_state.resize(num_model_instances());
+  for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+    const std::string& model_instance_name = GetModelInstanceName(i);
+    output_port_indices_.instance_state[i] =
+        this->DeclareVectorOutputPort(
+                fmt::format("{}_state", model_instance_name),
+                num_multibody_states(i),
+                [this, i](const Context<T>& context, BasicVector<T>* output) {
+                  this->CalcInstanceStateOutput(i, context, output);
+                },
+                {this->all_state_ticket()})
+            .get_index();
+  }
+
+  // Output "{model_instance_name}_generalized_acceleration".
   output_port_indices_.instance_generalized_acceleration.resize(
       num_model_instances());
-  for (ModelInstanceIndex model_instance_index(0);
-       model_instance_index < num_model_instances(); ++model_instance_index) {
-    const std::string& instance_name =
-        GetModelInstanceName(model_instance_index);
-
-    const int instance_num_states =  // Might be zero.
-        num_multibody_states(model_instance_index);
-    auto copy_instance_state_out = [this, model_instance_index](
-                                       const Context<T>& context,
-                                       BasicVector<T>* result) {
-      this->CopyMultibodyStateOut(model_instance_index, context, result);
-    };
-    output_port_indices_.instance_state[model_instance_index] =
+  for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+    const std::string& model_instance_name = GetModelInstanceName(i);
+    output_port_indices_.instance_generalized_acceleration[i] =
         this->DeclareVectorOutputPort(
-                instance_name + "_state", instance_num_states,
-                copy_instance_state_out, {this->all_state_ticket()})
-            .get_index();
-
-    const int instance_num_velocities =  // Might be zero.
-        num_velocities(model_instance_index);
-    output_port_indices_
-        .instance_generalized_acceleration[model_instance_index] =
-        this->DeclareVectorOutputPort(
-                instance_name + "_generalized_acceleration",
-                instance_num_velocities,
-                [this, model_instance_index](const systems::Context<T>& context,
-                                             systems::BasicVector<T>* result) {
-                  const auto& vdot =
-                      this->EvalForwardDynamics(context).get_vdot();
-                  result->SetFromVector(
-                      this->GetVelocitiesFromArray(model_instance_index, vdot));
+                fmt::format("{}_generalized_acceleration", model_instance_name),
+                num_velocities(i),
+                [this, i](const Context<T>& context, BasicVector<T>* output) {
+                  this->CalcInstanceGeneralizedAccelerationOutput(i, context,
+                                                                  output);
                 },
                 {this->acceleration_kinematics_cache_entry().ticket()})
             .get_index();
   }
 
-  // Declare per model instance output port of generalized contact forces.
+  // Output "{model_instance_name}_generalized_contact_forces".
   output_port_indices_.instance_generalized_contact_forces.resize(
       num_model_instances());
-  for (ModelInstanceIndex model_instance_index(0);
-       model_instance_index < num_model_instances(); ++model_instance_index) {
-    const int instance_num_velocities = num_velocities(model_instance_index);
-
+  for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+    const std::string& model_instance_name = GetModelInstanceName(i);
+    std::set<systems::DependencyTicket> prerequisites_of_calc;
     if (is_discrete()) {
-      auto calc = [this, model_instance_index](
-                      const systems::Context<T>& context,
-                      systems::BasicVector<T>* result) {
-        // Guard against failure to acquire the geometry input deep in the call
-        // graph.
-        ValidateGeometryInput(
-            context,
-            get_generalized_contact_forces_output_port(model_instance_index));
-
-        DRAKE_DEMAND(discrete_update_manager_ != nullptr);
-        const contact_solvers::internal::ContactSolverResults<T>&
-            solver_results =
-                discrete_update_manager_->EvalContactSolverResults(context);
-        this->CopyGeneralizedContactForcesOut(solver_results,
-                                              model_instance_index, result);
-      };
-      output_port_indices_
-          .instance_generalized_contact_forces[model_instance_index] =
-          this->DeclareVectorOutputPort(
-                  GetModelInstanceName(model_instance_index) +
-                      "_generalized_contact_forces",
-                  instance_num_velocities, calc,
-                  {systems::System<T>::xd_ticket(),
-                   systems::System<T>::all_parameters_ticket()})
-              .get_index();
+      prerequisites_of_calc = {systems::System<T>::xd_ticket(),
+                               systems::System<T>::all_parameters_ticket()};
     } else {
       const auto& generalized_contact_forces_continuous_cache_entry =
           this->get_cache_entry(
               cache_indices_.generalized_contact_forces_continuous);
-      auto calc = [this, model_instance_index](
-                      const systems::Context<T>& context,
-                      systems::BasicVector<T>* result) {
-        // Guard against failure to acquire the geometry input deep in the call
-        // graph.
-        ValidateGeometryInput(
-            context,
-            get_generalized_contact_forces_output_port(model_instance_index));
-
-        result->SetFromVector(GetVelocitiesFromArray(
-            model_instance_index,
-            EvalGeneralizedContactForcesContinuous(context)));
-      };
-      output_port_indices_
-          .instance_generalized_contact_forces[model_instance_index] =
-          this->DeclareVectorOutputPort(
-                  GetModelInstanceName(model_instance_index) +
-                      "_generalized_contact_forces",
-                  instance_num_velocities, calc,
-                  {generalized_contact_forces_continuous_cache_entry.ticket()})
-              .get_index();
+      prerequisites_of_calc = {
+          generalized_contact_forces_continuous_cache_entry.ticket()};
     }
+    output_port_indices_.instance_generalized_contact_forces[i] =
+        this->DeclareVectorOutputPort(
+                fmt::format("{}_generalized_contact_forces",
+                            model_instance_name),
+                num_velocities(i),
+                [this, i](const systems::Context<T>& context,
+                          systems::BasicVector<T>* output) {
+                  this->CalcInstanceGeneralizedContactForcesOutput(i, context,
+                                                                   output);
+                },
+                prerequisites_of_calc)
+            .get_index();
   }
 
   // Joint reaction forces are a function of accelerations, which in turn depend
@@ -3221,7 +3206,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   output_port_indices_.reaction_forces =
       this->DeclareAbstractOutputPort(
               "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
-              &MultibodyPlant<T>::CalcReactionForces,
+              &MultibodyPlant<T>::CalcReactionForcesOutput,
               {this->acceleration_kinematics_cache_entry().ticket()})
           .get_index();
 
@@ -3235,7 +3220,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   output_port_indices_.contact_results =
       this->DeclareAbstractOutputPort(
               "contact_results", ContactResults<T>(),
-              &MultibodyPlant<T>::CopyContactResultsOutput,
+              &MultibodyPlant<T>::CalcContactResultsOutput,
               contact_results_prerequisites)
           .get_index();
 
@@ -3362,40 +3347,39 @@ void MultibodyPlant<T>::DeclareParameters() {
 }
 
 template <typename T>
-void MultibodyPlant<T>::CopyMultibodyStateOut(
-    const Context<T>& context, BasicVector<T>* state_vector) const {
+void MultibodyPlant<T>::CalcStateOutput(const Context<T>& context,
+                                        BasicVector<T>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-  state_vector->SetFromVector(GetPositionsAndVelocities(context));
+  output->SetFromVector(GetPositionsAndVelocities(context));
 }
 
 template <typename T>
-void MultibodyPlant<T>::CopyMultibodyStateOut(
+void MultibodyPlant<T>::CalcInstanceStateOutput(
     ModelInstanceIndex model_instance, const Context<T>& context,
-    BasicVector<T>* state_vector) const {
+    BasicVector<T>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-  state_vector->SetFromVector(
-      GetPositionsAndVelocities(context, model_instance));
+  output->SetFromVector(GetPositionsAndVelocities(context, model_instance));
 }
 
 template <typename T>
-void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
-    const contact_solvers::internal::ContactSolverResults<T>& solver_results,
-    ModelInstanceIndex model_instance, BasicVector<T>* tau_vector) const {
+void MultibodyPlant<T>::CalcInstanceGeneralizedContactForcesOutput(
+    ModelInstanceIndex model_instance, const Context<T>& context,
+    BasicVector<T>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(is_discrete());
-
-  // Vector of generalized contact forces for the entire plant's multibody
-  // system.
-  const VectorX<T>& tau_contact = solver_results.tau_contact;
-
-  // Generalized velocities and generalized forces are ordered in the same way.
-  // Thus we can call get_velocities_from_array().
-  const VectorX<T> instance_tau_contact =
-      GetVelocitiesFromArray(model_instance, tau_contact);
-
-  tau_vector->set_value(instance_tau_contact);
+  this->ValidateContext(context);
+  ValidateGeometryInput(
+      context, get_generalized_contact_forces_output_port(model_instance));
+  // Vector of generalized contact forces for the entire multibody system.
+  const VectorX<T>& tau_contact =
+      is_discrete()
+          ? discrete_update_manager_->EvalContactSolverResults(context)
+                .tau_contact
+          : EvalGeneralizedContactForcesContinuous(context);
+  // Generalized velocities and generalized forces are ordered in the same
+  // way. Thus we can call get_velocities_from_array().
+  output->SetFromVector(GetVelocitiesFromArray(model_instance, tau_contact));
 }
 
 template <typename T>
@@ -3524,50 +3508,66 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
                                      Value<geometry::QueryObject<T>>{})
           .get_index();
   output_port_indices_.geometry_pose =
-      this->DeclareAbstractOutputPort("geometry_pose",
-                                      &MultibodyPlant<T>::CalcFramePoseOutput,
-                                      {this->configuration_ticket()})
+      this->DeclareAbstractOutputPort(
+              "geometry_pose", &MultibodyPlant<T>::CalcGeometryPoseOutput,
+              {this->configuration_ticket()})
           .get_index();
 }
 
 template <typename T>
 void MultibodyPlant<T>::CalcBodyPosesOutput(
     const Context<T>& context,
-    std::vector<math::RigidTransform<T>>* X_WB_all) const {
+    std::vector<math::RigidTransform<T>>* outupt) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-  X_WB_all->resize(num_bodies());
+  outupt->resize(num_bodies());
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    X_WB_all->at(body_index) = EvalBodyPoseInWorld(context, body);
+    outupt->at(body_index) = EvalBodyPoseInWorld(context, body);
   }
 }
 
 template <typename T>
 void MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput(
-    const Context<T>& context,
-    std::vector<SpatialVelocity<T>>* V_WB_all) const {
+    const Context<T>& context, std::vector<SpatialVelocity<T>>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-  V_WB_all->resize(num_bodies());
+  output->resize(num_bodies());
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    V_WB_all->at(body_index) = EvalBodySpatialVelocityInWorld(context, body);
+    output->at(body_index) = EvalBodySpatialVelocityInWorld(context, body);
   }
 }
 
 template <typename T>
 void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
     const Context<T>& context,
-    std::vector<SpatialAcceleration<T>>* A_WB_all) const {
+    std::vector<SpatialAcceleration<T>>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-  A_WB_all->resize(num_bodies());
+  output->resize(num_bodies());
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    A_WB_all->at(body_index) = ac.get_A_WB(body.mobod_index());
+    output->at(body_index) = ac.get_A_WB(body.mobod_index());
   }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcGeneralizedAccelerationOutput(
+    const Context<T>& context, BasicVector<T>* output) const {
+  output->SetFromVector(this->EvalForwardDynamics(context).get_vdot());
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcInstanceGeneralizedAccelerationOutput(
+    ModelInstanceIndex model_instance, const Context<T>& context,
+    BasicVector<T>* output) const {
+  // The per-instance calc delegates to the full-model calc and then slices it.
+  const VectorX<T>& generalized_acceleration =
+      get_generalized_acceleration_output_port().Eval(context);
+  output->SetFromVector(
+      this->GetVelocitiesFromArray(model_instance, generalized_acceleration));
 }
 
 template <typename T>
@@ -3604,8 +3604,8 @@ MultibodyPlant<T>::EvalPointPairPenetrations(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcFramePoseOutput(const Context<T>& context,
-                                            FramePoseVector<T>* poses) const {
+void MultibodyPlant<T>::CalcGeometryPoseOutput(
+    const Context<T>& context, FramePoseVector<T>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
   const internal::PositionKinematicsCache<T>& pc =
@@ -3616,7 +3616,7 @@ void MultibodyPlant<T>::CalcFramePoseOutput(const Context<T>& context,
   // frames do.
   // TODO(amcastro-tri): Make use of RigidBody::EvalPoseInWorld(context) once
   // caching lands.
-  poses->clear();
+  output->clear();
   for (const auto& it : body_index_to_frame_id_) {
     const BodyIndex body_index = it.first;
     if (body_index == world_index()) continue;
@@ -3624,18 +3624,18 @@ void MultibodyPlant<T>::CalcFramePoseOutput(const Context<T>& context,
 
     // NOTE: The GeometryFrames for each body were registered in the world
     // frame, so we report poses in the world frame.
-    poses->set_value(body_index_to_frame_id_.at(body_index),
-                     pc.get_X_WB(body.mobod_index()));
+    output->set_value(body_index_to_frame_id_.at(body_index),
+                      pc.get_X_WB(body.mobod_index()));
   }
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcReactionForces(
+void MultibodyPlant<T>::CalcReactionForcesOutput(
     const systems::Context<T>& context,
-    std::vector<SpatialForce<T>>* F_CJc_Jc_array) const {
+    std::vector<SpatialForce<T>>* output) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
-  DRAKE_DEMAND(ssize(*F_CJc_Jc_array) == num_joints());
+  DRAKE_DEMAND(output != nullptr);
+  DRAKE_DEMAND(ssize(*output) == num_joints());
 
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(context, get_reaction_forces_output_port());
@@ -3738,7 +3738,8 @@ void MultibodyPlant<T>::CalcReactionForces(
     // Re-express in the joint's child frame Jc.
     const RotationMatrix<T> R_WJc = frame_Jc.CalcRotationMatrixInWorld(context);
     const RotationMatrix<T> R_JcW = R_WJc.inverse();
-    F_CJc_Jc_array->at(joint.ordinal()) = R_JcW * F_CJc_W;
+    const SpatialForce<T> F_CJc_Jc = R_JcW * F_CJc_W;
+    output->at(joint.ordinal()) = F_CJc_Jc;
   }
 }
 
@@ -3763,7 +3764,7 @@ MultibodyPlant<T>::get_body_spatial_accelerations_output_port() const {
 }
 
 template <typename T>
-const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port() const {
+const OutputPort<T>& MultibodyPlant<T>::get_geometry_pose_output_port() const {
   return this->get_output_port(output_port_indices_.geometry_pose);
 }
 
@@ -3892,7 +3893,7 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
   auto* plant_ptr = builder->AddSystem(std::move(plant));
   auto* scene_graph_ptr = builder->AddSystem(std::move(scene_graph));
   plant_ptr->RegisterAsSourceForSceneGraph(scene_graph_ptr);
-  builder->Connect(plant_ptr->get_geometry_poses_output_port(),
+  builder->Connect(plant_ptr->get_geometry_pose_output_port(),
                    scene_graph_ptr->get_source_pose_port(
                        plant_ptr->get_source_id().value()));
   builder->Connect(scene_graph_ptr->get_query_output_port(),
