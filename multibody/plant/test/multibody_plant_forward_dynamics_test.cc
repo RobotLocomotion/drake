@@ -242,6 +242,7 @@ GTEST_TEST(WeldedBoxesTest, ForwardDynamicsViaArticulatedBodyAlgorithm) {
 std::unique_ptr<systems::LinearSystem<double>> MakeLinearizedCartPole(
     double time_step) {
   MultibodyPlant<double> plant(time_step);
+  plant.SetUseSampledOutputPorts(false);  // Not compatible with linearization.
   Parser(&plant).AddModelsFromUrl(
       "package://drake/examples/multibody/cart_pole/cart_pole.sdf");
   plant.Finalize();
