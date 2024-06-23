@@ -29,8 +29,8 @@ DiscreteUpdateManager<T>::~DiscreteUpdateManager() = default;
 
 template <typename T>
 void DiscreteUpdateManager<T>::CalcDiscreteValues(
-    const systems::Context<T>& context,
-    systems::DiscreteValues<T>* updates) const {
+    const systems::Context<T>& context, systems::DiscreteValues<T>* updates,
+    DiscreteStepMemory::Data<T>* memory) const {
   // The discrete sampling of input ports needs to be the first step of a
   // discrete update.
   SampleDiscreteInputPortForces(context);
@@ -43,6 +43,15 @@ void DiscreteUpdateManager<T>::CalcDiscreteValues(
   }
   // Perform discrete updates for rigid bodies.
   DoCalcDiscreteValues(context, updates);
+
+  // XXX This is somewhat hacky version of memory. Probably want to integrate
+  // it more directly into the underlying calculation functions.
+  if (memory != nullptr) {
+    memory->net_actuation = EvalActuation(context);
+    CalcAccelerationKinematicsCache(context,
+                                    &memory->acceleration_kinematics_cache);
+    memory->contact_solver_results = EvalContactSolverResults(context);
+  }
 }
 
 template <typename T>

@@ -655,6 +655,7 @@ class SpinningRodTest : public ::testing::Test {
  protected:
   void BuildModel(double discrete_update_period) {
     plant_ = std::make_unique<MultibodyPlant<double>>(discrete_update_period);
+    plant_->SetUseSampledOutputPorts(false);  // We're not going to step time.
 
     // We define rod B's origin Bo to be located at the rod's center of mass.
     const SpatialInertia<double> M_BBo_B =
