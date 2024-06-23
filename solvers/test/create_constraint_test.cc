@@ -95,6 +95,32 @@ TEST_F(ParseQuadraticConstraintTest, Test0) {
 }
 
 void CheckParseLorentzConeConstraint(
+    const symbolic::Formula& f, LorentzConeConstraint::EvalType eval_type) {
+  Binding<LorentzConeConstraint> binding =
+      internal::ParseLorentzConeConstraint(f, eval_type);
+  EXPECT_EQ(binding.evaluator()->eval_type(), eval_type);
+  const Eigen::MatrixXd A = binding.evaluator()->A();
+  const Eigen::VectorXd b = binding.evaluator()->b();
+  const VectorX<Expression> z = A * binding.variables() + b;
+  Expression greater, lesser;
+  if (is_greater_than_or_equal_to(f)) {
+    greater = get_lhs_expression(f);
+    lesser = get_rhs_expression(f);
+  } else {
+    ASSERT_TRUE(is_less_than_or_equal_to(f));
+    greater = get_rhs_expression(f);
+    lesser = get_lhs_expression(f);
+  }
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(z(0)), symbolic::Polynomial(greater),
+      1E-10));
+  ASSERT_TRUE(is_sqrt(lesser));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(z.tail(z.rows() - 1).squaredNorm()),
+      symbolic::Polynomial(get_argument(lesser)), 1E-10));
+}
+
+void CheckParseLorentzConeConstraint(
     const Expression& linear_expression, const Expression& quadratic_expression,
     LorentzConeConstraint::EvalType eval_type) {
   Binding<LorentzConeConstraint> binding = internal::ParseLorentzConeConstraint(
@@ -160,6 +186,38 @@ class ParseLorentzConeConstraintTest : public ::testing::Test {
   symbolic::Variable x3_;
   Vector4<symbolic::Variable> x_;
 };
+
+TEST_F(ParseLorentzConeConstraintTest, FromFormula) {
+  // Test x(0) >= sqrt(x(1)² + x(2)² + ... + x(n-1)²)
+  CheckParseLorentzConeConstraint(
+      x_(0) >= x_.tail<3>().cast<Expression>().norm(),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
+
+  // The order of the arguments should not matter.
+  CheckParseLorentzConeConstraint(
+      x_.tail<3>().cast<Expression>().norm() <= x_(0),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
+}
+
+TEST_F(ParseLorentzConeConstraintTest, FromFormulaFail) {
+  // Not >= nor <-=.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      unused(internal::ParseLorentzConeConstraint(
+          x_(0) == x_.tail<3>().cast<Expression>().norm())),
+      ".*relational formula.*");
+
+  // The greater side is not affine.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      unused(internal::ParseLorentzConeConstraint(
+          x_(0) * x_(1) >= x_.tail<2>().cast<Expression>().norm())),
+      ".*non-linear.*");
+
+  // The lesser side is not an L2 norm.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      unused(internal::ParseLorentzConeConstraint(
+          x_(0) >= x_.tail<3>().cast<Expression>().squaredNorm())),
+      ".*L2 norm.*");
+}
 
 TEST_F(ParseLorentzConeConstraintTest, Test0) {
   // Test x(0) >= sqrt(x(1)² + x(2)² + ... + x(n-1)²)
@@ -540,6 +598,21 @@ GTEST_TEST(ParseConstraintTest, Quadratic) {
   // quadratic).
   binding = internal::ParseConstraint(x0 * x0 * x1 + 2 * x1, -kInf, 3);
   EXPECT_NE(dynamic_cast<ExpressionConstraint*>(binding.evaluator().get()),
+            nullptr);
+}
+
+// Confirm that ParseConstraint also parses Lorentz cone constraints.
+GTEST_TEST(ParseConstraintTest, LorentzCone) {
+  auto x = symbolic::MakeVectorVariable<3>("x");
+
+  Binding<Constraint> binding =
+      internal::ParseConstraint(x[0] >= x.tail<2>().cast<Expression>().norm());
+  EXPECT_NE(dynamic_cast<LorentzConeConstraint*>(binding.evaluator().get()),
+            nullptr);
+
+  binding =
+      internal::ParseConstraint(x.tail<2>().cast<Expression>().norm() <= x[0]);
+  EXPECT_NE(dynamic_cast<LorentzConeConstraint*>(binding.evaluator().get()),
             nullptr);
 }
 
