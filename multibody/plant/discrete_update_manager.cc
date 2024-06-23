@@ -278,12 +278,12 @@ void DiscreteUpdateManager<T>::CalcNonContactForces(
 }
 
 template <typename T>
-const contact_solvers::internal::ContactSolverResults<T>&
+const ContactSolverResults<T>&
 DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {
   return plant()
       .get_cache_entry(cache_indexes_.contact_solver_results)
-      .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
+      .template Eval<ContactSolverResults<T>>(
           context);
 }
 
@@ -514,7 +514,7 @@ void DiscreteUpdateManager<T>::AppendContactResultsForPointContact(
       EvalGeometryContactData(context).point_pairs;
   const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       EvalDiscreteContactPairs(context);
-  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
+  const ContactSolverResults<T>& solver_results =
       EvalContactSolverResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
@@ -575,24 +575,31 @@ void DiscreteUpdateManager<T>::AppendContactResultsForHydroelasticContact(
   }
 }
 
+#if 0
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      EvalGeometryContactSummary(context).surfaces;
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
+      EvalDiscreteContactPairs(context);
+  const ContactSolverResults<T>& solver_results =
+      EvalContactSolverResults(context);
+  internal::JointLockingCacheData<T>& = EvalJointLocking();
+#endif
+
 template <typename T>
 void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
-    const systems::Context<T>& context,
+    const GeometryContactSummary<T>& geometry_contact_summary,
+    const JointLockingCacheData<T>& joint_locking,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
     std::vector<HydroelasticContactInfo<T>>* contact_info) const {
   DRAKE_DEMAND(contact_info != nullptr);
   const std::vector<ContactSurface<T>>& all_surfaces =
-      EvalGeometryContactData(context).surfaces;
+      geometry_contact_summary.surfaces;
 
   contact_info->clear();
   // Reserve memory here to keep from repeatedly allocating heap storage in the
   // loop below.
   contact_info->reserve(all_surfaces.size());
-
-  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
-      EvalDiscreteContactPairs(context);
-
-  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
-      EvalContactSolverResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -670,7 +677,7 @@ void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
 
   const MultibodyTreeTopology& topology = internal_tree().get_topology();
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      EvalJointLocking(context).unlocked_velocity_indices_per_tree;
+      joint_locking.unlocked_velocity_indices_per_tree;
 
   // Update contact info to include the correct contact forces.
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
