@@ -627,7 +627,7 @@ will include:
 3. Call to Finalize(), user is done specifying the model.
 4. Connect geometry::SceneGraph::get_query_output_port() to
    get_geometry_query_input_port().
-5. Connect get_geometry_poses_output_port() to
+5. Connect get_geometry_pose_output_port() to
    geometry::SceneGraph::get_source_pose_port()
 
 Refer to the documentation provided in each of the methods above for further
@@ -886,8 +886,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_body_spatial_velocities_output_port() const;
 
   /// Returns the output port of all body spatial accelerations in the world
-  /// frame. You can obtain the spatial acceleration `A_WB` of a body B in the
-  /// world frame W with:
+  /// frame. You can obtain the spatial acceleration `A_WB` of a body B (for
+  /// point Bo, the body's origin) in the world frame W with:
   /// @code
   ///   const auto& A_WB_all =
   ///   plant.get_body_spatial_accelerations_output_port().
@@ -1078,7 +1078,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the output port of frames' poses to communicate with a
   /// SceneGraph.
-  const systems::OutputPort<T>& get_geometry_poses_output_port() const;
+  const systems::OutputPort<T>& get_geometry_pose_output_port() const;
+
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "Use get_geometry_pose_output_port() instead (note no 's' plural). "
+      "If you were only using this port to connect it to a SceneGraph, "
+      "instead should you should use the AddMultibodyPlantSceneGraph() or "
+      "AddMultibodyPlant(MultibodyPlantConfig) to add the plant and scene "
+      "graph to a DiagramBuilder, already wired up correctly.")
+  const systems::OutputPort<T>& get_geometry_poses_output_port() const {
+    return get_geometry_pose_output_port();
+  }
 
   // TODO(xuchenhan-tri): Remove the throw condition once DeformableModel is
   //  added by default as part of #21355.
@@ -5144,16 +5155,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // MultibodyPlant::get_actuation_input_port()).
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
 
-  // Computes the net applied actuation through actuators. For continuous
-  // models (thus far) this only inludes values coming from the
-  // actuation_input_port. For discrete models, it includes actuator
-  // controllers, see @ref mbp_actuation. Similarly to AssembleActuationInput(),
-  // this function assembles actuation values into the vector `actuation`. The
-  // actuation value for a particular actuator can be found at offset
-  // JointActuator::input_start() in `actuation` (see
-  // MultibodyPlant::get_actuation_input_port()).
-  void CalcActuationOutput(const systems::Context<T>& context,
-                           systems::BasicVector<T>* actuation) const;
+  // Calc method for the "net_actuation" output port.
+  void CalcNetActuationOutput(const systems::Context<T>& context,
+                              systems::BasicVector<T>* output) const;
+
+  // Calc method for the "{model_instance_name}_net_actuation" output ports.
+  void CalcInstanceNetActuationOutput(ModelInstanceIndex model_instance,
+                                      const systems::Context<T>& context,
+                                      systems::BasicVector<T>* output) const;
 
   // For models with joint actuators with PD control, this method helps to
   // assemble desired states for the full model from the input ports for
@@ -5278,15 +5287,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const ContactResults<T>& EvalContactResults(
       const systems::Context<T>& context) const;
 
-  // Calc method for the reaction forces output port.
-  // A joint constraints the motion between a frame Jp on a "parent" P and a
-  // frame Jc on a "child" frame C. This generates reaction forces on bodies P
-  // and C in order to satisfy the kinematic constraint between Jp and Jc. This
-  // method computes the spatial force F_CJc_Jc on body C at frame Jc and
-  // expressed in frame Jc. See get_reaction_forces_output_port() for further
-  // details.
-  void CalcReactionForces(const systems::Context<T>& context,
-                          std::vector<SpatialForce<T>>* F_CJc_Jc) const;
+  // Calc method for the "reaction_forces" output port.
+  void CalcReactionForcesOutput(const systems::Context<T>& context,
+                                std::vector<SpatialForce<T>>* output) const;
 
   // Collect joint actuator forces and externally provided spatial and
   // generalized forces.
@@ -5336,36 +5339,44 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // one).
   void RegisterRigidBodyWithSceneGraph(const RigidBody<T>& body);
 
-  // Calc method for the multibody state vector output port. It only copies the
-  // multibody state [q, v], ignoring any miscellaneous state z if present.
-  void CopyMultibodyStateOut(const systems::Context<T>& context,
-                             systems::BasicVector<T>* state) const;
+  // Calc method for the "state" output port.
+  void CalcStateOutput(const systems::Context<T>& context,
+                       systems::BasicVector<T>* output) const;
 
-  // Calc method for the per-model-instance multibody state vector output port.
-  // It only copies the per-model-instance multibody state [q, v], ignoring any
-  // miscellaneous state z if present.
-  void CopyMultibodyStateOut(ModelInstanceIndex model_instance,
-                             const systems::Context<T>& context,
-                             systems::BasicVector<T>* state) const;
+  // Calc method for the "{model_instance_name}_output" output ports.
+  void CalcInstanceStateOutput(ModelInstanceIndex model_instance,
+                               const systems::Context<T>& context,
+                               systems::BasicVector<T>* output) const;
 
-  // Evaluates the pose X_WB of each body in the model and copies it into
-  // X_WB_all, indexed by BodyIndex.
-  void CalcBodyPosesOutput(
-      const systems::Context<T>& context,
-      std::vector<math::RigidTransform<T>>* X_WB_all) const;
+  // Calc method for the "{model_instance_name}_generalized_acceleration" output
+  // ports.
+  void CalcInstanceGeneralizedContactForcesOutput(
+      ModelInstanceIndex model_instance, const systems::Context<T>& context,
+      systems::BasicVector<T>* output) const;
 
-  // Evaluates the spatial velocity V_WB of each body in the model and copies it
-  // into V_WB_all, indexed by BodyIndex.
+  // Calc method for the "body_poses" output port.
+  void CalcBodyPosesOutput(const systems::Context<T>& context,
+                           std::vector<math::RigidTransform<T>>* output) const;
+
+  // Calc method for the "body_spatial_velocities" output port.
   void CalcBodySpatialVelocitiesOutput(
       const systems::Context<T>& context,
-      std::vector<SpatialVelocity<T>>* V_WB_all) const;
+      std::vector<SpatialVelocity<T>>* output) const;
 
-  // For each body B in the model, evaluates A_WB, B's spatial acceleration
-  // in the world frame W, expressed in W (for point Bo, the body's origin) and
-  // copies it into A_WB_all, indexed by BodyIndex.
+  // Calc method for the "body_spatial_accelerations" output port.
   void CalcBodySpatialAccelerationsOutput(
       const systems::Context<T>& context,
-      std::vector<SpatialAcceleration<T>>* A_WB_all) const;
+      std::vector<SpatialAcceleration<T>>* output) const;
+
+  // Calc method for the "generalized_acceleration" output port.
+  void CalcGeneralizedAccelerationOutput(const systems::Context<T>& context,
+                                         systems::BasicVector<T>* output) const;
+
+  // Calc method for the "{model_instance_name}_generalized_acceleration"
+  // output ports.
+  void CalcInstanceGeneralizedAccelerationOutput(
+      ModelInstanceIndex model_instance, const systems::Context<T>& context,
+      systems::BasicVector<T>* output) const;
 
   // Method to compute spatial contact forces for continuous plants.
   // @note This version zeros out the forces in @p F_BBo_W_array before adding
@@ -5396,21 +5407,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const VectorX<T>& EvalGeneralizedContactForcesContinuous(
       const systems::Context<T>& context) const;
 
-  // Calc method to output per model instance vector of generalized contact
-  // forces.
-  void CopyGeneralizedContactForcesOut(
-      const contact_solvers::internal::ContactSolverResults<T>&,
-      ModelInstanceIndex, systems::BasicVector<T>* tau_vector) const;
-
   // Helper method to declare output ports used by this plant to communicate
   // with a SceneGraph.
   void DeclareSceneGraphPorts();
 
-  void CalcFramePoseOutput(const systems::Context<T>& context,
-                           geometry::FramePoseVector<T>* poses) const;
+  // Calc method for the "geometry_pose" output port.
+  void CalcGeometryPoseOutput(const systems::Context<T>& context,
+                              geometry::FramePoseVector<T>* output) const;
 
-  void CopyContactResultsOutput(const systems::Context<T>& context,
-                                ContactResults<T>* contact_results) const;
+  // Calc method for the "contact_results" output port.
+  void CalcContactResultsOutput(const systems::Context<T>& context,
+                                ContactResults<T>* output) const;
 
   // Helper method to compute penetration point pairs for a given `context`.
   // Having this as a separate method allows us to control specializations for
