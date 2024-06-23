@@ -16,6 +16,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
@@ -268,6 +269,22 @@ output_ports:
 - <em style="color:gray">model_instance_name[i]</em>_generalized_acceleration
 - <em style="color:gray">model_instance_name[i]</em>_generalized_contact_forces
 - <em style="color:gray">model_instance_name[i]</em>_net_actuation
+- '<span style="color:purple">
+  body_spatial_accelerations_unsampled</span>'
+- '<span style="color:purple">
+  generalized_acceleration_unsampled</span>'
+- '<span style="color:purple">
+  net_actuation_unsampled</span>'
+- '<span style="color:purple">
+  reaction_forces_unsampled</span>'
+- '<span style="color:purple">
+  contact_results_unsampled</span>'
+- '<span style="color:purple"><em style="color:gray">
+  model_instance_name[i]</em>_generalized_acceleration_unsampled</span>'
+- '<span style="color:purple"><em style="color:gray">
+  model_instance_name[i]</em>_generalized_contact_forces_unsampled</span>'
+- '<span style="color:purple"><em style="color:gray">
+  model_instance_name[i]</em>_net_actuation_unsampled</span>'
 - <span style="color:green">geometry_pose</span>
 - <span style="color:green">deformable_body_configuration</span>
 @endsystem
@@ -279,6 +296,10 @@ model instances. If a model instance does not contain any data of the
 indicated type the port will still be present but its value will be a
 zero-length vector. (Model instances `world_model_instance()` and
 `default_model_instance()` always exist.)
+
+The ports shown in <span style="color:purple">purple</span> are intended
+for expert users only.  See @ref output_port_sampling "Output port sampling"
+for details.
 
 The ports shown in <span style="color:green">green</span> are for communication
 with Drake's @ref geometry::SceneGraph "SceneGraph" system for dealing with
@@ -512,6 +533,57 @@ actuation port reports the total actuation applied by a given actuator.
 
 @note PD controllers are ignored when a joint is locked (see Joint::Lock()), and
 thus they have no effect on the actuation output.
+
+@anchor output_port_sampling
+  ### Output port sampling
+
+The semantics of certain %MultibodyPlant output ports depends on whether the
+plant is configured to advance using continuous time integration or discrete
+time steps (see is_discrete()). This section explains the details.
+
+Output ports that only depend on the [q, v] kinematic state (such as
+get_body_poses_output_port() or get_body_spatial_velocities_output_port())
+do <b>not</b> change semantics for continuous vs discrete time. In all cases,
+the output value is a function of the kinematic state in the context.
+
+Output ports that incorporate dynamics (i.e., forces) <b>do</b> change semantics
+based on the plant mode. Imagine that the get_applied_spatial_force_input_port()
+provides a continuously time-varying input force. Should the
+get_body_spatial_accelerations_output_port() output provide a snapshot of the
+accelerations as of the most recent time step, or should it immediately reflect
+any changes to the input force, even if the plant has not taken another step
+yet? In other words, is the output value sampled (discrete) or not (continuous)?
+
+For a continuous time plant, there is no distinction -- the output port always
+immediately reflects the instantaneous input value. It is a "direct feedthrough"
+output port (see SystemBase::GetDirectFeedthroughs()).
+
+For a discrete time plant, the user can choose whether the output should be
+sampled or not: either "minimal state" mode or "sampling" mode. When using
+"minimal state" mode, the output is not sampled.  The only state in the context
+is the kinematic [q, v], so dynamics output ports will always reflect the
+instantaneous answer (i.e., direct feedthrough).  When using "sampling" mode,
+the plant state incorporates a snapshot of the most recent step's kinematics and
+dynamics, and the output ports will reflect that sampled state (i.e., not direct
+feedthrough).
+
+Use the function SetUseSampledOutputPorts() to change whether output ports are
+sampled or not, and has_sampled_output_ports() to check the current setting.
+
+Even if a plant is operating in "sampled" mode, sometimes it's still useful to
+obtain the instantaneous dynamics. For that reason, the plant offers ports shown
+in <span style="color:purple">purple</span> in the class overview, which are
+always the instantaneous, unsampled dynamics (i.e., are direct feedthrough).
+For a continuous plant, these ports still exist but are not very useful because
+they are identical to their non-purple twin.
+
+When computational performance is a concern, note that the sampled outputs are
+generally <em>much</em> faster to calculate than the feedthrough outputs.  For
+that reason, Drake's visualization tools will use sampled output data if it is
+available.
+
+Direct plant API function calls (e.g., EvalBodySpatialAccelerationInWorld())
+that depend on forces always use the instantaneous (not sampled) accelerations.
 
 @anchor sdf_loading
                  ### Loading models from SDFormat files
@@ -893,6 +965,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_body_spatial_accelerations_output_port()
       const;
 
+  /// (Advanced) Exactly like get_body_spatial_accelerations_output_port(),
+  /// except that for a discrete time plant this port will immediately reflect
+  /// any changes to inputs.
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  const systems::OutputPort<T>&
+  get_body_spatial_accelerations_unsampled_output_port() const;
+
   /// Returns a constant reference to the input port for external actuation for
   /// all actuated dofs. This input port is a vector valued port and can be set
   /// with JointActuator::set_actuation_vector(). The actuation value for a
@@ -931,6 +1010,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_net_actuation_output_port() const;
 
+  /// (Advanced) Exactly like get_net_actuation_output_port()
+  /// except that for a discrete time plant this port will immediately reflect
+  /// any changes to inputs.
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  const systems::OutputPort<T>& get_net_actuation_unsampled_output_port() const;
+
   /// Returns a constant reference to the output port that reports actuation
   /// values applied through joint actuators, for a specific model instance.
   /// Models that include PD controllers will include their contribution in this
@@ -946,6 +1031,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_net_actuation_output_port(
+      ModelInstanceIndex model_instance) const;
+
+  /// (Advanced) Exactly like get_net_actuation_output_port(ModelInstanceIndex)
+  /// except that for a discrete time plant this port will immediately reflect
+  /// any changes to inputs.
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  const systems::OutputPort<T>& get_net_actuation_unsampled_output_port(
       ModelInstanceIndex model_instance) const;
 
   /// For models with PD controlled joint actuators, returns the port to provide
@@ -1022,12 +1114,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_generalized_acceleration_output_port()
       const;
 
+  /// (Advanced) Exactly like get_generalized_acceleration_output_port()
+  /// except that for a discrete time plant this port will immediately reflect
+  /// any changes to inputs.
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  const systems::OutputPort<T>&
+  get_generalized_acceleration_unsampled_output_port() const;
+
   /// Returns a constant reference to the output port for the generalized
   /// accelerations v̇ᵢ ⊆ v̇ for model instance i.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   /// @throws std::exception if the model instance does not exist.
   const systems::OutputPort<T>& get_generalized_acceleration_output_port(
+      ModelInstanceIndex model_instance) const;
+
+  /// (Advanced) Exactly like
+  /// get_generalized_acceleration_output_port(ModelInstanceIndex)
+  /// except that for a discrete time plant this port will immediately reflect
+  /// any changes to inputs.
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  const systems::OutputPort<T>&
+  get_generalized_acceleration_unsampled_output_port(
       ModelInstanceIndex model_instance) const;
 
   /// Returns a constant reference to the output port of generalized contact
@@ -1037,6 +1145,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called before Finalize().
   /// @throws std::exception if the model instance does not exist.
   const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
+      ModelInstanceIndex model_instance) const;
+
+  /// (Advanced) Exactly like
+  /// get_generalized_contact_forces_output_port(ModelInstanceIndex)
+  /// except that for a discrete time plant this port will immediately reflect
+  /// any changes to inputs.
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  const systems::OutputPort<T>&
+  get_generalized_contact_forces_unsampled_output_port(
       ModelInstanceIndex model_instance) const;
 
   /// Returns the port for joint reaction forces.
@@ -1062,9 +1179,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_reaction_forces_output_port() const;
 
+  /// (Advanced) Exactly like get_reaction_forces_output_port()
+  /// except that for a discrete time plant this port will immediately reflect
+  /// any changes to inputs.
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  const systems::OutputPort<T>& get_reaction_forces_unsampled_output_port()
+      const;
+
   /// Returns a constant reference to the port that outputs ContactResults.
   /// @throws std::exception if called pre-finalize, see Finalize().
   const systems::OutputPort<T>& get_contact_results_output_port() const;
+
+  /// (Advanced) Exactly like get_contact_results_output_port()
+  /// except that for a discrete time plant this port will immediately reflect
+  /// any changes to inputs.
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  const systems::OutputPort<T>& get_contact_results_unsampled_output_port()
+      const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// SceneGraph.
@@ -1152,6 +1283,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   explicit MultibodyPlant(const MultibodyPlant<U>& other);
 
   ~MultibodyPlant() override;
+
+  /// (Advanced) For a discrete time plant, configures whether the output ports
+  /// are sampled (the default) or continuous (opt-in).
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  /// @throws std::exception if the plant is already finalized.
+  /// @throws std::exception if `use_sampled_output_ports` is `true` but `this`
+  /// %MultibodyPlant is not a discrete model (is_discrete() == false).
+  void SetUseSampledOutputPorts(bool use_sampled_output_ports);
 
   /// Creates a rigid body with the provided name and spatial inertia.  This
   /// method returns a constant reference to the body just added, which will
@@ -4294,6 +4433,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see Finalize().
   bool is_finalized() const { return internal_tree().topology_is_valid(); }
 
+  /// (Advanced) If `this` plant is continuous (i.e., is_discrete() is `false`),
+  /// returns false. If `this` plant is discrete, returns whether or not the
+  /// output ports are sampled (change only at a time step boundary) or
+  /// continuous (instantaneously reflect changes to the input ports).
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  bool has_sampled_output_ports() const { return use_sampled_output_ports_; }
+
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return internal_tree().world_body();
@@ -4991,6 +5137,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::InputPortIndex geometry_query;  // Declared in ctor, not Finalize.
   };
 
+  // A pair of output port indices that are related by 'primary' being the
+  // primary port (which might be a sampled output, in a discrete time plant),
+  // and 'unsampled' being its unsampled twin (purple, in our class overview).
+  struct SampledOutputPortIndices {
+    systems::OutputPortIndex primary;
+    systems::OutputPortIndex unsampled;
+  };
+
   // This struct stores in one single place the index of all of our outputs.
   // The order of the items matches our Doxygen system overview figure.
   // Unless otherwise noted, all ports are declared during Finalize().
@@ -4998,15 +5152,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::OutputPortIndex state;
     systems::OutputPortIndex body_poses;
     systems::OutputPortIndex body_spatial_velocities;
-    systems::OutputPortIndex body_spatial_accelerations;
-    systems::OutputPortIndex generalized_acceleration;
-    systems::OutputPortIndex net_actuation;
-    systems::OutputPortIndex reaction_forces;
-    systems::OutputPortIndex contact_results;
+    SampledOutputPortIndices body_spatial_accelerations;
+    SampledOutputPortIndices generalized_acceleration;
+    SampledOutputPortIndices net_actuation;
+    SampledOutputPortIndices reaction_forces;
+    SampledOutputPortIndices contact_results;
     std::vector<systems::OutputPortIndex> instance_state;
-    std::vector<systems::OutputPortIndex> instance_generalized_acceleration;
-    std::vector<systems::OutputPortIndex> instance_generalized_contact_forces;
-    std::vector<systems::OutputPortIndex> instance_net_actuation;
+    std::vector<SampledOutputPortIndices> instance_generalized_acceleration;
+    std::vector<SampledOutputPortIndices> instance_generalized_contact_forces;
+    std::vector<SampledOutputPortIndices> instance_net_actuation;
     systems::OutputPortIndex geometry_pose;  // Declared in ctor, not Finalize.
     // N.B. The deformable_body_configuration port is owned by DeformableModel,
     // so is not tracked here.
@@ -5134,14 +5288,48 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // that still guarantees stability.
   void SetUpJointLimitsParameters();
 
-  // Helper method to declare state, cache entries, and ports after Finalize().
-  void DeclareStateCacheAndPorts();
-
-  // Declares the system-level cache entries specific to MultibodyPlant.
-  void DeclareCacheEntries();
+  // Declares any input ports that haven't yet been declared.
+  // This happens during Finalize().
+  void DeclareInputPorts();
 
   // Declares the system-level parameters specific to MultibodyPlant.
+  // This happens during Finalize().
   void DeclareParameters();
+
+  // Declares any state and state-update events specific to MultibodyPlant.
+  // This happens during Finalize().
+  void DeclareStateUpdate();
+
+  // Declares the system-level cache entries specific to MultibodyPlant.
+  // This happens during Finalize().
+  void DeclareCacheEntries();
+
+  // Declares any input ports that haven't yet been declared.
+  // This happens during Finalize().
+  void DeclareOutputPorts();
+
+  // Declares an output port pair that is related by being sampled/unsampled.
+  // Note that the name "declare sampled ..." is slightly misleading -- the
+  // primary port is sampled iff use_sampled_output_ports_ is set to true.
+  //
+  // The primary port will be named `name`; the unsampled port will be named
+  // `name + "_unsampled"`.
+  //
+  // The two calc callbacks should both be member function pointers, typically
+  // to a member function templated on `<bool sampled>`. The functions should
+  // accept the signature `(const Context<T>&, ModelValue* output) const`.
+  //
+  // If the optional `ModelInstanceIndex model_instance` last argument is
+  // given, then it will be passed along as the first argument of the calc
+  // callbacks (in front of the context).
+  template <typename ModelValue, typename CalcFunction,
+            typename MaybeModelInstanceIndex = void*>
+  DRAKE_NO_EXPORT SampledOutputPortIndices DeclareSampledOutputPort(
+      const std::string& name, const ModelValue& model_value,
+      CalcFunction calc_sampled, CalcFunction calc_unsampled,
+      const std::set<systems::DependencyTicket>& prerequisites_of_sampled,
+      const std::set<systems::DependencyTicket>& prerequisites_of_unsampled,
+      MaybeModelInstanceIndex model_instance = {});
 
   // Estimates a global set of point contact parameters given a
   // `penetration_allowance`. See set_penetration_allowance()` for details.
@@ -5160,10 +5348,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
 
   // Calc method for the "net_actuation" output port.
+  template <bool sampled>
   void CalcNetActuationOutput(const systems::Context<T>& context,
                               systems::BasicVector<T>* output) const;
 
   // Calc method for the "{model_instance_name}_net_actuation" output ports.
+  template <bool sampled>
   void CalcInstanceNetActuationOutput(ModelInstanceIndex model_instance,
                                       const systems::Context<T>& context,
                                       systems::BasicVector<T>* output) const;
@@ -5215,9 +5405,38 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // shown to be exactly conserved and to be within O(dt) of the real energy of
   // the mechanical system.)
   // TODO(amcastro-tri): Update this docs when contact is added.
-  systems::EventStatus CalcDiscreteStep(
+  systems::EventStatus CalcStepDiscrete(
       const systems::Context<T>& context0,
-      systems::DiscreteValues<T>* updates) const;
+      systems::DiscreteValues<T>* next_discrete_state) const;
+  systems::EventStatus CalcStepUnrestricted(
+      const systems::Context<T>& context0, systems::State<T>* next_state) const;
+
+  // Accesses the AccelerationKinematicsCache for use by possibly-sampled
+  // output port calculations:
+  //
+  // - When `sampled` is true, the result can be null when the plant has not yet
+  //   taken a step. Otherwise, it will refer to the sampled acceleration
+  //   kinematics from the most recent step.
+  //
+  // - When `sampled` is false, the result is never null and will be an
+  //   instantaneously up-to-date function of the current context.
+  template <bool sampled>
+  const internal::AccelerationKinematicsCache<T>*
+  EvalSampledAccelerationKinematicsCache(
+      const systems::Context<T>& context) const;
+
+  // Accesses the AccelerationKinematicsCache for use by possibly-sampled
+  // output port calculations:
+  //
+  // - When `sampled` is true, the result can be null when the plant has not yet
+  //   taken a step. Otherwise, it will refer to the sampled acceleration
+  //   kinematics from the most recent step.
+  //
+  // - When `sampled` is false, the result is never null and will be an
+  //   instantaneously up-to-date function of the current context.
+  template <bool sampled>
+  const contact_solvers::internal::ContactSolverResults<T>*
+  EvalSampledContactSolverResults(const systems::Context<T>& context) const;
 
   // Data will be resized on output according to the documentation for
   // JointLockingCacheData.
@@ -5266,6 +5485,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context) const;
 
   // Calc method for the "reaction_forces" output port.
+  template <bool sampled>
   void CalcReactionForcesOutput(const systems::Context<T>& context,
                                 std::vector<SpatialForce<T>>* output) const;
 
@@ -5328,6 +5548,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Calc method for the "{model_instance_name}_generalized_acceleration" output
   // ports.
+  template <bool sampled>
   void CalcInstanceGeneralizedContactForcesOutput(
       ModelInstanceIndex model_instance, const systems::Context<T>& context,
       systems::BasicVector<T>* output) const;
@@ -5342,16 +5563,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       std::vector<SpatialVelocity<T>>* output) const;
 
   // Calc method for the "body_spatial_accelerations" output port.
+  template <bool sampled>
   void CalcBodySpatialAccelerationsOutput(
       const systems::Context<T>& context,
       std::vector<SpatialAcceleration<T>>* output) const;
 
   // Calc method for the "generalized_acceleration" output port.
+  template <bool sampled>
   void CalcGeneralizedAccelerationOutput(const systems::Context<T>& context,
                                          systems::BasicVector<T>* output) const;
 
   // Calc method for the "{model_instance_name}_generalized_acceleration"
   // output ports.
+  template <bool sampled>
   void CalcInstanceGeneralizedAccelerationOutput(
       ModelInstanceIndex model_instance, const systems::Context<T>& context,
       systems::BasicVector<T>* output) const;
@@ -5394,6 +5618,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               geometry::FramePoseVector<T>* output) const;
 
   // Calc method for the "contact_results" output port.
+  template <bool sampled>
   void CalcContactResultsOutput(const systems::Context<T>& context,
                                 ContactResults<T>* output) const;
 
@@ -5593,6 +5818,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // time_step_ corresponds to the period of those updates. Otherwise, if the
   // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
+
+  bool use_sampled_output_ports_{};
 
   // This manager class is used to advance discrete states.
   // Post-finalize, it is never null (for a discrete-time plant).

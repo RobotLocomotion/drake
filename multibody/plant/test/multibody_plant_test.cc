@@ -1755,6 +1755,8 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
       plant.get_body_spatial_accelerations_output_port().get_index());
   ok_to_feedthrough.insert(  // Deprecated 2024-10-01.
       plant.GetOutputPort("spatial_accelerations").get_index());
+  ok_to_feedthrough.insert(
+      plant.get_body_spatial_accelerations_unsampled_output_port().get_index());
   if (plant.is_discrete()) {
     ok_to_feedthrough.insert(
         plant.get_contact_results_output_port().get_index());
