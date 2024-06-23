@@ -669,7 +669,13 @@ class AcrobotPlantTests : public ::testing::Test {
 
     // Ensure that we can access the geometry ports pre-finalize.
     DRAKE_EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
+    DRAKE_EXPECT_NO_THROW(plant_->get_geometry_pose_output_port());
+
+    // Also sanity check the deprecated getter (2024-10-01).
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     DRAKE_EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
+#pragma GCC diagnostic push
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_state_output_port(),
@@ -1034,13 +1040,13 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   unique_ptr<systems::Context<double>> context = plant_->CreateDefaultContext();
 
   unique_ptr<AbstractValue> poses_value =
-      plant_->get_geometry_poses_output_port().Allocate();
+      plant_->get_geometry_pose_output_port().Allocate();
   DRAKE_EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->get_value<FramePoseVector<double>>();
 
   // Compute the poses for each geometry in the model.
-  plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  plant_->get_geometry_pose_output_port().Calc(*context, poses_value.get());
   EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   const FrameId world_frame_id =
@@ -1747,6 +1753,8 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
   }
   ok_to_feedthrough.insert(
       plant.get_body_spatial_accelerations_output_port().get_index());
+  ok_to_feedthrough.insert(  // Deprecated 2024-10-01.
+      plant.GetOutputPort("spatial_accelerations").get_index());
   if (plant.is_discrete()) {
     ok_to_feedthrough.insert(
         plant.get_contact_results_output_port().get_index());
@@ -1868,14 +1876,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
                         RigidTransformd(Vector3d(x_offset, radius, 0.0)));
 
   unique_ptr<AbstractValue> poses_value =
-      plant.get_geometry_poses_output_port().Allocate();
+      plant.get_geometry_pose_output_port().Allocate();
   DRAKE_EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& pose_data =
       poses_value->get_value<FramePoseVector<double>>();
 
   // Compute the poses for each geometry in the model.
-  plant.get_geometry_poses_output_port().Calc(*plant_context,
-                                              poses_value.get());
+  plant.get_geometry_pose_output_port().Calc(*plant_context, poses_value.get());
   EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
@@ -2438,7 +2445,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
 
   // Make sure the geometry ports were included in the autodiffed plant.
   DRAKE_EXPECT_NO_THROW(plant_autodiff->get_geometry_query_input_port());
-  DRAKE_EXPECT_NO_THROW(plant_autodiff->get_geometry_poses_output_port());
+  DRAKE_EXPECT_NO_THROW(plant_autodiff->get_geometry_pose_output_port());
 }
 
 // This test is used to verify the correctness of the methods to compute the
@@ -3839,9 +3846,9 @@ GTEST_TEST(MultibodyPlantTest, SceneGraphPorts) {
   // Test that SceneGraph ports exist and are accessible, both pre and post
   // finalize, without the presence of a connected SceneGraph.
   EXPECT_NO_THROW(plant.get_geometry_query_input_port());
-  EXPECT_NO_THROW(plant.get_geometry_poses_output_port());
+  EXPECT_NO_THROW(plant.get_geometry_pose_output_port());
   EXPECT_NO_THROW(plant_finalized.get_geometry_query_input_port());
-  EXPECT_NO_THROW(plant_finalized.get_geometry_poses_output_port());
+  EXPECT_NO_THROW(plant_finalized.get_geometry_pose_output_port());
 }
 
 GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
