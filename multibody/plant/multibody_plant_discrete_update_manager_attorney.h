@@ -43,9 +43,9 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
                                     std::move(prerequisites_of_calc));
   }
 
-  static const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
+  static const GeometryContactSummary<T>& EvalGeometryContactSummary(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.EvalContactSurfaces(context);
+    return plant.EvalGeometryContactSummary(context);
   }
 
   static void AddJointLimitsPenaltyForces(const MultibodyPlant<T>& plant,
