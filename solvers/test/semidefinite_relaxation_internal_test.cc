@@ -366,12 +366,12 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
 
 TEST_F(MakeSemidefiniteRelaxationTestFixture,
        DoAddImpliedLinearConstraintsBoundingBoxConstraint) {
-  const int N_VARS = 2;
+  const int n_vars = 2;
   const auto y = prog_.NewContinuousVariables<2>("y");
 
-  VectorXd lb(N_VARS);
+  VectorXd lb(n_vars);
   lb << -1.5, -2.0;
-  VectorXd ub(N_VARS);
+  VectorXd ub(n_vars);
   ub << kInf, 2.3;
   prog_.AddBoundingBoxConstraint(lb, ub, y);
 
@@ -392,11 +392,11 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
   EXPECT_TRUE(CompareMatrices(lb, bbox_evaluator->lower_bound()));
   EXPECT_TRUE(CompareMatrices(ub, bbox_evaluator->upper_bound()));
 
-  const int N_CONSTRAINTS = 3;
-  VectorXd b(N_CONSTRAINTS);
+  const int n_constraints = 3;
+  VectorXd b(n_constraints);
   b << -lb[0], -lb[1], ub[1];  // all the finite lower/upper bounds.
 
-  MatrixXd A(N_CONSTRAINTS, 2);
+  MatrixXd A(n_constraints, 2);
   // Rows of A:
   // 1. Lower bound y[0]
   // 2. Lower bound y[1]

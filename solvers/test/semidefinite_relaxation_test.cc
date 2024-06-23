@@ -86,17 +86,20 @@ GTEST_TEST(SemidefiniteRelaxationOptions, SetStrongestTest) {
 
 class MakeSemidefiniteRelaxationTest : public ::testing::Test {
  protected:
+  // Construct a program with at least one of every supported attribute for
+  // MakeSemidefiniteRelaxation. See ValidateProgramIsSupported for details on
+  // the supported attributes.
   void SetUp() override {
     options_.set_to_weakest();
 
     y_ = prog_.NewContinuousVariables<5>("x");
 
-    // Supported LinearCost
+    // LinearCost
     const Vector2d a_cost(0.5, 0.7);
     const double b_cost = 1.3;
     prog_.AddLinearCost(a_cost, b_cost, y_.head<2>());
 
-    // Supported non-convex QuadraticCost.
+    // Non-convex QuadraticCost.
     Matrix2d Q_non_convex;
     // clang-format off
     Q_non_convex << 1, 2,
@@ -105,18 +108,18 @@ class MakeSemidefiniteRelaxationTest : public ::testing::Test {
     const Vector2d b_non_convex(0.2, 0.4);
     prog_.AddQuadraticCost(Q_non_convex, b_non_convex, y_.segment(1, 2), false);
 
-    // Supported convex QuadraticCost.
+    // Convex QuadraticCost.
     const Vector2d yd(0.5, 0.7);
     prog_.AddQuadraticErrorCost(Matrix2d::Identity(), yd, y_.segment(1, 2));
 
-    // Supported BoundingBoxConstraint
+    // BoundingBoxConstraint
     VectorXd lb(3);
     lb << -1.5, -2.0, -kInf;
     VectorXd ub(3);
     ub << kInf, 2.3, 0;
     prog_.AddBoundingBoxConstraint(lb, ub, y_.head<3>());
 
-    // Supported LinearConstraint.
+    // LinearConstraint.
     MatrixXd A0(3, 2);
     // clang-format off
     A0 <<  1.5,  0.7,
@@ -127,7 +130,7 @@ class MakeSemidefiniteRelaxationTest : public ::testing::Test {
     const Vector3d ub0(5.6, 0.1, kInf);
     prog_.AddLinearConstraint(A0, lb0, ub0, y_.segment(2, 2));
 
-    // Supported LinearEqualityConstraint.
+    // LinearEqualityConstraint.
     MatrixXd A_eq(2, 3);
     // clang-format off
     A_eq <<  0.5,  0.7, -0.2,
@@ -136,12 +139,12 @@ class MakeSemidefiniteRelaxationTest : public ::testing::Test {
     const Vector2d b_eq(1.3, -0.24);
     prog_.AddLinearEqualityConstraint(A_eq, b_eq, y_.tail<3>());
 
-    // Supported non-convex QuadraticConstraint.
+    // Non-convex QuadraticConstraint.
     const double lb_non_convex = -0.4, ub_non_convex = 0.5;
     prog_.AddQuadraticConstraint(Q_non_convex, b_non_convex, lb_non_convex,
                                  ub_non_convex, y_.segment(2, 2));
 
-    // Supported convex QuadraticConstraint.
+    // Convex QuadraticConstraint.
     Matrix2d Q_convex;
     // Q_convex is PSD since it is diagonally dominant.
     // clang-format off

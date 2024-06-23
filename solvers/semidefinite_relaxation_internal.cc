@@ -104,6 +104,8 @@ void InitializeSemidefiniteRelaxationForProg(
       relaxation->NewSymmetricContinuousVariables(prog.num_vars(), name);
   X->bottomLeftCorner(1, prog.num_vars()) = sorted_variables.transpose();
   X->topRightCorner(prog.num_vars(), 1) = sorted_variables;
+  // X(-1,-1) = 1.
+  (*X)(prog.num_vars(), prog.num_vars()) = one;
 
   int i = 0;
   variables_to_sorted_indices->clear();
@@ -111,8 +113,6 @@ void InitializeSemidefiniteRelaxationForProg(
     (*variables_to_sorted_indices)[v] = i++;
   }
 
-  // X(-1,-1) = 1.
-  (*X)(prog.num_vars(), prog.num_vars()) = one;
   relaxation->AddPositiveSemidefiniteConstraint(*X);
 }
 
