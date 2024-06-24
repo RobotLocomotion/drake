@@ -13,7 +13,7 @@ std::unique_ptr<DiscreteUpdateManager<T>> MakeDiscreteUpdateManager(
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&MakeDiscreteUpdateManager<T>))
+    (&MakeDiscreteUpdateManager<T>));
 
 }  // namespace internal
 }  // namespace multibody

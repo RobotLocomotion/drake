@@ -38,7 +38,7 @@ enum class InterpolatorType { ZeroOrderHold, FirstOrderHold, Pchip, Cubic };
 /// @ingroup manipulation_systems
 class RobotPlanInterpolator : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotPlanInterpolator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotPlanInterpolator);
 
   RobotPlanInterpolator(const std::string& model_path,
                         const InterpolatorType = InterpolatorType::Cubic,

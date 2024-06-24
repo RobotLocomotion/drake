@@ -33,7 +33,7 @@ class TestBoxSphereCorner
     : public ::testing::TestWithParam<
           std::tuple<int, bool, int, RotationMatrixIntervalBinning>> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestBoxSphereCorner)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestBoxSphereCorner);
 
   TestBoxSphereCorner()
       : prog_(),

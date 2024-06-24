@@ -21,7 +21,7 @@ namespace lcm {
  */
 class SerializerInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SerializerInterface)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SerializerInterface);
 
   virtual ~SerializerInterface();
 
@@ -56,7 +56,7 @@ class SerializerInterface {
 template <typename LcmMessage>
 class Serializer : public SerializerInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Serializer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Serializer);
 
   Serializer() = default;
   ~Serializer() override = default;

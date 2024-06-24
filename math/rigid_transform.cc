@@ -35,11 +35,11 @@ std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const RigidTransform<T>&)>(
         &operator<< )
-))
+));
 // clang-format on
 
 }  // namespace math
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::math::RigidTransform)
+    class ::drake::math::RigidTransform);

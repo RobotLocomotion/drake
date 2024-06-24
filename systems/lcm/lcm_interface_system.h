@@ -40,7 +40,7 @@ namespace lcm {
 class LcmInterfaceSystem final : public LeafSystem<double>,
                                  public drake::lcm::DrakeLcmInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmInterfaceSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmInterfaceSystem);
 
   /**
    * Constructs using the given URL.  With no URL, uses the LCM_DEFAULT_URL

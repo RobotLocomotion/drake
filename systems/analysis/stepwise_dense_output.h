@@ -25,7 +25,7 @@ namespace systems {
 template <typename T>
 class StepwiseDenseOutput : public DenseOutput<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StepwiseDenseOutput)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StepwiseDenseOutput);
 
   ~StepwiseDenseOutput() override = default;
 
@@ -59,4 +59,4 @@ class StepwiseDenseOutput : public DenseOutput<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::systems::StepwiseDenseOutput)
+    class drake::systems::StepwiseDenseOutput);

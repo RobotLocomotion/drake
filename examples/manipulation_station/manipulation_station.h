@@ -144,7 +144,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 template <typename T>
 class ManipulationStation : public systems::Diagram<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStation)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStation);
 
   /// Construct the EMPTY station model.
   ///

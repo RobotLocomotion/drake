@@ -120,4 +120,4 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::DummyPhysicalModel)
+    class ::drake::multibody::internal::DummyPhysicalModel);

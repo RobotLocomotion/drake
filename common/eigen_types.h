@@ -361,7 +361,7 @@ class EigenPtr {
   // `std::is_copy_assignable`.
   class ReassignableRef {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ReassignableRef)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ReassignableRef);
     ReassignableRef() {}
     ~ReassignableRef() {
       reset();

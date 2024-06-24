@@ -19,7 +19,7 @@ int ForceInt(int value) {
 // The example from the documentation, fleshed out a little.
 class Foo {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo);
   Foo() : items_{1, 2, 3}, use_count_{25} {}
   const std::vector<int>& items() const { return items_; }
   int use_count() const { return use_count_; }

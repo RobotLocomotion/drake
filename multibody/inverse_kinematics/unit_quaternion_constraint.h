@@ -23,7 +23,7 @@ namespace multibody {
  */
 class UnitQuaternionConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnitQuaternionConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnitQuaternionConstraint);
 
   UnitQuaternionConstraint();
 

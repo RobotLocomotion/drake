@@ -25,7 +25,7 @@ namespace solvers {
  */
 class Cost : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Cost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Cost);
 
  protected:
   /**
@@ -44,7 +44,7 @@ class Cost : public EvaluatorBase {
  */
 class LinearCost : public Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearCost);
 
   /**
    * Construct a linear cost of the form @f[ a'x + b @f].
@@ -113,7 +113,7 @@ class LinearCost : public Cost {
  */
 class QuadraticCost : public Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticCost);
 
   /**
    * Constructs a cost of the form @f[ .5 x'Qx + b'x + c @f].
@@ -245,7 +245,7 @@ std::shared_ptr<QuadraticCost> Make2NormSquaredCost(
  */
 class L1NormCost : public Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(L1NormCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(L1NormCost);
 
   /**
    * Construct a cost of the form ‖Ax + b‖₁.
@@ -297,7 +297,7 @@ class L1NormCost : public Cost {
  */
 class L2NormCost : public Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(L2NormCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(L2NormCost);
 
   // TODO(russt): Add an option to select an implementation that smooths the
   // gradient discontinuity at the origin.
@@ -375,7 +375,7 @@ class L2NormCost : public Cost {
  */
 class LInfNormCost : public Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LInfNormCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LInfNormCost);
 
   /**
    * Construct a cost of the form ‖Ax + b‖∞.
@@ -434,7 +434,7 @@ class LInfNormCost : public Cost {
  */
 class PerspectiveQuadraticCost : public Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PerspectiveQuadraticCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PerspectiveQuadraticCost);
 
   /**
    * Construct a cost of the form (z_1^2 + z_2^2 + ... + z_{n-1}^2) / z_0 where
@@ -496,7 +496,7 @@ class PerspectiveQuadraticCost : public Cost {
 template <typename EvaluatorType = EvaluatorBase>
 class EvaluatorCost : public Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorCost);
 
   explicit EvaluatorCost(const std::shared_ptr<EvaluatorType>& evaluator)
       : Cost(evaluator->num_vars()),
@@ -565,7 +565,7 @@ class EvaluatorCost : public Cost {
  */
 class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialCost);
 
   /**
    * Constructs a polynomial cost
@@ -594,7 +594,7 @@ class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
  */
 class ExpressionCost : public Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionCost);
 
   explicit ExpressionCost(const symbolic::Expression& e);
 

@@ -22,7 +22,7 @@ value set in a Context.
 %InputPortBase is the scalar type-independent part of an InputPort. */
 class InputPortBase : public PortBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortBase);
 
   ~InputPortBase() override;
 

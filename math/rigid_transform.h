@@ -72,7 +72,7 @@ namespace math {
 template <typename T>
 class RigidTransform {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidTransform)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidTransform);
 
   /// Constructs the %RigidTransform that corresponds to aligning the two frames
   /// so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
@@ -728,4 +728,4 @@ struct formatter<drake::math::RigidTransform<T>> : drake::ostream_formatter {};
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::math::RigidTransform)
+    class ::drake::math::RigidTransform);

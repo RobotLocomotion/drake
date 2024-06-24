@@ -32,7 +32,7 @@ namespace internal {
 template <typename T>
 class PositionKinematicsCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PositionKinematicsCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PositionKinematicsCache);
 
   template <typename U>
   using RigidTransform = drake::math::RigidTransform<U>;
@@ -182,4 +182,4 @@ class PositionKinematicsCache {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::PositionKinematicsCache)
+    class ::drake::multibody::internal::PositionKinematicsCache);

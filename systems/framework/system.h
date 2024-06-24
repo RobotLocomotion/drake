@@ -43,7 +43,7 @@ template <typename T>
 class System : public SystemBase {
  public:
   // System objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System);
 
   /// The scalar type with which this %System was instantiated.
   using Scalar = T;
@@ -2045,4 +2045,4 @@ class System : public SystemBase {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::System)
+    class ::drake::systems::System);

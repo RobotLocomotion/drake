@@ -38,7 +38,7 @@ This class does not treat a single colon (":") specially. Those can appear
 in either namespace names or element names. */
 class ScopedName final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ScopedName)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ScopedName);
 
   /** Creates an empty name. */
   ScopedName() = default;

@@ -18,7 +18,7 @@ namespace optimization {
  * bounds as {x| lb ≤ x ≤ ub} */
 class Hyperrectangle final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperrectangle)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperrectangle);
 
   /** Constructs a default (zero-dimensional, nonempty) hyperrectangle. */
   Hyperrectangle();

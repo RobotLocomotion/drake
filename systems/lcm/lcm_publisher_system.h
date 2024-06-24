@@ -45,7 +45,7 @@ namespace lcm {
  */
 class LcmPublisherSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmPublisherSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmPublisherSystem);
 
   /**
    * A factory method that returns an %LcmPublisherSystem that takes

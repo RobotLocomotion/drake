@@ -162,7 +162,7 @@ approximate the original non-convex problem.
 */
 class GraphOfConvexSets {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GraphOfConvexSets)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GraphOfConvexSets);
 
   /** Specify the transcription of the optimization problem to which a
   constraint or cost should be added, or from which they should be retrieved.*/
@@ -187,7 +187,7 @@ class GraphOfConvexSets {
   name. */
   class Vertex final {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Vertex)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Vertex);
 
     ~Vertex();
 
@@ -337,7 +337,7 @@ class GraphOfConvexSets {
   variables. */
   class Edge final {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Edge)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Edge);
 
     ~Edge();
 

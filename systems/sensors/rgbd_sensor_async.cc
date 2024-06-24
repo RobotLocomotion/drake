@@ -59,7 +59,7 @@ given SceneGraph, but with a private scratch Context to allow fixed input ports
 for the frame kinematics input. */
 class QueryObjectChef final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QueryObjectChef)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QueryObjectChef);
 
   explicit QueryObjectChef(const SceneGraph<double>* scene_graph)
       : scene_graph_(scene_graph) {
@@ -120,7 +120,7 @@ class QueryObjectChef final : public LeafSystem<double> {
 renders from a static FramePoseVector instead of a live QueryObject. */
 class SnapshotSensor final : public Diagram<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnapshotSensor)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnapshotSensor);
 
   SnapshotSensor(const SceneGraph<double>* scene_graph, FrameId parent_id,
                  const RigidTransformd& X_PB, ColorRenderCamera color_camera,
@@ -167,7 +167,7 @@ encapsulates the lifetime of the async task along with the objects it must
 keep alive during rendering. */
 class Worker {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Worker)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Worker);
 
   Worker(std::shared_ptr<const SnapshotSensor> sensor, bool color, bool depth,
          bool label)

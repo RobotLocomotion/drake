@@ -205,4 +205,5 @@ std::unique_ptr<SapConstraint<double>> SapHolonomicConstraint<T>::DoToDouble()
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapHolonomicConstraint)
+    class ::drake::multibody::contact_solvers::internal::
+        SapHolonomicConstraint);

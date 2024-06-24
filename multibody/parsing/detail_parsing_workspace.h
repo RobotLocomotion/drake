@@ -129,7 +129,7 @@ struct ParsingOptions {
 // indicated plant and collision resolver objects will still be mutable; only
 // the pointer values of the plant and resolver within the struct are const.
 struct ParsingWorkspace {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParsingWorkspace)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParsingWorkspace);
 
   // All parameters are aliased; they must have a lifetime greater than that of
   // this struct.

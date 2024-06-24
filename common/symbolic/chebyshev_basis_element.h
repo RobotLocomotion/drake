@@ -18,7 +18,7 @@ namespace symbolic {
  */
 class ChebyshevBasisElement : public PolynomialBasisElement {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ChebyshevBasisElement)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ChebyshevBasisElement);
 
   /** Constructs a ChebyshevBasisElement equals to 1. */
   ChebyshevBasisElement();

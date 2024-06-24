@@ -20,7 +20,7 @@ namespace internal {
 template <typename T>
 class SparseLinearOperator final : public LinearOperator<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SparseLinearOperator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SparseLinearOperator);
 
   // Constructs an operator with given `name` implementing the LinearOperator
   // interface for matrix `A`.
@@ -73,4 +73,4 @@ class SparseLinearOperator final : public LinearOperator<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SparseLinearOperator)
+    class ::drake::multibody::contact_solvers::internal::SparseLinearOperator);

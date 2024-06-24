@@ -214,7 +214,7 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
          &ExcludeCols),
      static_cast<contact_solvers::internal::MatrixBlock<T> (*)(
          const contact_solvers::internal::MatrixBlock<T>&,
-         const std::vector<int>&)>(&ExcludeCols)))
+         const std::vector<int>&)>(&ExcludeCols)));
 
 }  // namespace internal
 }  // namespace multibody

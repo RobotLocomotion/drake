@@ -32,7 +32,7 @@ namespace {
 // useful when we want to interrogate solvers without constructing them.
 class StaticSolverInterface {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StaticSolverInterface)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StaticSolverInterface);
 
   template <typename SomeSolver>
   static constexpr StaticSolverInterface Make() {

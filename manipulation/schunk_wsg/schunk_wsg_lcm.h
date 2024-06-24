@@ -37,7 +37,7 @@ namespace schunk_wsg {
 /// @ingroup manipulation_systems
 class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandReceiver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandReceiver);
 
   /// @param initial_position the commanded position to output if no LCM
   /// message has been received yet.
@@ -87,7 +87,7 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
 /// @ingroup manipulation_systems
 class SchunkWsgCommandSender : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandSender)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandSender);
 
   explicit SchunkWsgCommandSender(double default_force_limit = 40.0);
 
@@ -130,7 +130,7 @@ class SchunkWsgCommandSender : public systems::LeafSystem<double> {
 /// @ingroup manipulation_systems
 class SchunkWsgStatusReceiver : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgStatusReceiver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgStatusReceiver);
 
   SchunkWsgStatusReceiver();
 

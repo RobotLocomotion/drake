@@ -27,7 +27,7 @@ namespace systems {
 template <typename T>
 class DiagramDiscreteValues final: public DiscreteValues<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramDiscreteValues)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramDiscreteValues);
 
   /// Constructs a DiagramDiscreteValues object that is composed of other
   /// DiscreteValues, which are not owned by this object and must outlive it.
@@ -131,4 +131,4 @@ class DiagramDiscreteValues final: public DiscreteValues<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::DiagramDiscreteValues)
+    class ::drake::systems::DiagramDiscreteValues);

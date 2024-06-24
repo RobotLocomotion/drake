@@ -66,7 +66,7 @@ class SolverOptions {
  public:
   SolverOptions() = default;
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverOptions)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverOptions);
 
   /** The values stored in SolverOptions can be double, int, or string.
    * In the future, we might re-order or add more allowed types without any

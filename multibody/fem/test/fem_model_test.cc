@@ -113,7 +113,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
   /* A force field where the magnitude of the force density depends on time. */
   class TimeScaledForceDensityField final : public ForceDensityField<double> {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TimeScaledForceDensityField)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TimeScaledForceDensityField);
 
     /* Constructs a force field that implements the test force f = time *
      unit_vector`,· where `time` is the time currently stored in the MbP's

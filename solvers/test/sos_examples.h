@@ -12,7 +12,7 @@ namespace solvers {
  */
 class UnivariateQuarticSos {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnivariateQuarticSos)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnivariateQuarticSos);
 
   UnivariateQuarticSos();
 
@@ -35,7 +35,7 @@ class UnivariateQuarticSos {
  */
 class BivariateQuarticSos {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BivariateQuarticSos)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BivariateQuarticSos);
 
   BivariateQuarticSos();
 
@@ -60,7 +60,7 @@ class BivariateQuarticSos {
  */
 class SimpleSos1 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleSos1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleSos1);
 
   SimpleSos1();
 
@@ -94,7 +94,7 @@ class SimpleSos1 {
  */
 class MotzkinPolynomial {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MotzkinPolynomial)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MotzkinPolynomial);
 
   MotzkinPolynomial();
 
@@ -130,7 +130,7 @@ class MotzkinPolynomial {
  */
 class UnivariateNonnegative1 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnivariateNonnegative1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnivariateNonnegative1);
 
   UnivariateNonnegative1();
 

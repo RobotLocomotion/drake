@@ -70,7 +70,7 @@ namespace internal {
 template <typename T>
 class BodyNode : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode);
 
   // A node encompasses a RigidBody in a MultibodyTree and the inboard Mobilizer
   // that connects this body to the rest of tree. Given a body and its inboard
@@ -1874,4 +1874,4 @@ class BodyNode : public MultibodyElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::BodyNode)
+    class ::drake::multibody::internal::BodyNode);

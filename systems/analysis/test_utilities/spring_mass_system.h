@@ -17,7 +17,7 @@ namespace systems {
 template <typename T>
 class SpringMassStateVector : public BasicVector<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassStateVector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassStateVector);
 
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
@@ -61,7 +61,7 @@ class SpringMassStateVector : public BasicVector<T> {
 template <typename T>
 class SpringMassSystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassSystem);
 
   /// Constructs a spring-mass system with a fixed spring constant and given
   /// mass. Subclasses must use the protected constructor, not this one.

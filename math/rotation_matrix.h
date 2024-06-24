@@ -57,7 +57,7 @@ struct DoNotInitializeMemberFields {};
 template <typename T>
 class RotationMatrix {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationMatrix)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationMatrix);
 
   /// Constructs a 3x3 identity %RotationMatrix -- which corresponds to
   /// aligning two frames (so that unit vectors Ax = Bx, Ay = By, Az = Bz).
@@ -1026,4 +1026,4 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::math::RotationMatrix)
+    class ::drake::math::RotationMatrix);

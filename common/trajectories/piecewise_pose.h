@@ -22,7 +22,7 @@ namespace trajectories {
 template <typename T>
 class PiecewisePose final : public PiecewiseTrajectory<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePose)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePose);
 
   /**
    *  Constructs an empty piecewise pose trajectory.
@@ -130,4 +130,4 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::PiecewisePose)
+    class drake::trajectories::PiecewisePose);

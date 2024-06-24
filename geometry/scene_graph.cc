@@ -42,7 +42,7 @@ namespace {
 template <typename T>
 class GeometryStateValue final : public Value<GeometryState<T>> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryStateValue)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryStateValue);
 
   GeometryStateValue() = default;
   explicit GeometryStateValue(const GeometryState<T>& state)
@@ -117,7 +117,7 @@ template <typename T>
 class SceneGraph<T>::Hub {
  public:
   Hub() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Hub)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Hub);
 
   const SceneGraphConfig& config() const { return config_; }
 
@@ -743,4 +743,4 @@ const SceneGraphConfig& SceneGraph<T>::get_config(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::SceneGraph)
+    class ::drake::geometry::SceneGraph);

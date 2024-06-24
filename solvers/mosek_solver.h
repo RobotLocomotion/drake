@@ -72,7 +72,7 @@ struct MosekSolverDetails {
  */
 class MosekSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekSolver);
 
   /// Type of details stored in MathematicalProgramResult.
   using Details = MosekSolverDetails;

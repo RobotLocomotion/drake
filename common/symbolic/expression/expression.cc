@@ -532,7 +532,7 @@ class PrecisionGuard {
       : os_{os}, original_precision_{os->precision()} {
     os_->precision(new_precision);
   }
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrecisionGuard)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrecisionGuard);
   ~PrecisionGuard() { os_->precision(original_precision_); }
 
  private:

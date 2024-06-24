@@ -42,7 +42,7 @@ struct IpoptSolverDetails {
 
 class IpoptSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IpoptSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IpoptSolver);
 
   /// Type of details stored in MathematicalProgramResult.
   using Details = IpoptSolverDetails;

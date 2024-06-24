@@ -27,7 +27,7 @@ namespace sensors {
 /// @endsystem
 class LcmImageArrayToImages : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmImageArrayToImages)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmImageArrayToImages);
 
   LcmImageArrayToImages();
 

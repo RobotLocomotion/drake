@@ -50,7 +50,7 @@ namespace systems {
 template <typename T>
 class SymbolicVectorSystem final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SymbolicVectorSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SymbolicVectorSystem);
 
   /// Construct the SymbolicVectorSystem.
   ///
@@ -237,7 +237,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
 /// @see SymbolicVectorSystem
 class SymbolicVectorSystemBuilder {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SymbolicVectorSystemBuilder)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SymbolicVectorSystemBuilder);
 
   SymbolicVectorSystemBuilder() {}
 

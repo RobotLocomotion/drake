@@ -70,7 +70,7 @@ namespace planning {
  */
 class ZmpPlanner {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ZmpPlanner)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ZmpPlanner);
 
   ZmpPlanner() = default;
 

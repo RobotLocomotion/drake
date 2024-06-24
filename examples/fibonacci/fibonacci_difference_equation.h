@@ -60,7 +60,7 @@ See run_fibonacci.cc for the code required to output the above sequence.
 */
 class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FibonacciDifferenceEquation)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FibonacciDifferenceEquation);
 
   FibonacciDifferenceEquation() {
     // Set default initial conditions to produce the above sequence.

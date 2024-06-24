@@ -93,7 +93,7 @@ struct MessageResults {
 template <typename T>
 class PoseSource : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSource)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSource);
   PoseSource() {
     this->DeclareAbstractOutputPort(systems::kUseDefaultName,
                                     FramePoseVector<T>(),
@@ -114,7 +114,7 @@ class PoseSource : public systems::LeafSystem<T> {
 template <typename T>
 class ConfigurationSource : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConfigurationSource)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConfigurationSource);
   ConfigurationSource() {
     this->DeclareAbstractOutputPort(
         systems::kUseDefaultName, GeometryConfigurationVector<T>(),

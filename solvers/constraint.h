@@ -46,7 +46,7 @@ namespace solvers {
  */
 class Constraint : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint);
 
   /**
    * Constructs a constraint which has `num_constraints` rows, with an input
@@ -194,7 +194,7 @@ class Constraint : public EvaluatorBase {
  */
 class QuadraticConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticConstraint);
 
   static const int kNumConstraints = 1;
 
@@ -338,7 +338,7 @@ class QuadraticConstraint : public Constraint {
  */
 class LorentzConeConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LorentzConeConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LorentzConeConstraint);
 
   /**
    * We provide three possible Eval functions to represent the Lorentz cone
@@ -434,7 +434,7 @@ class LorentzConeConstraint : public Constraint {
  */
 class RotatedLorentzConeConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotatedLorentzConeConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotatedLorentzConeConstraint);
 
   RotatedLorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                const Eigen::Ref<const Eigen::VectorXd>& b)
@@ -505,7 +505,7 @@ class RotatedLorentzConeConstraint : public Constraint {
 template <typename EvaluatorType = EvaluatorBase>
 class EvaluatorConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorConstraint);
 
   /**
    * Constructs an evaluator constraint, given the EvaluatorType instance
@@ -563,7 +563,7 @@ class EvaluatorConstraint : public Constraint {
  */
 class PolynomialConstraint : public EvaluatorConstraint<PolynomialEvaluator> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialConstraint);
 
   /**
    * Constructs a polynomial constraint
@@ -599,7 +599,7 @@ class PolynomialConstraint : public EvaluatorConstraint<PolynomialEvaluator> {
  */
 class LinearConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearConstraint);
 
   /**
    * Construct the linear constraint lb <= A*x <= ub
@@ -714,7 +714,7 @@ class LinearConstraint : public Constraint {
  */
 class LinearEqualityConstraint : public LinearConstraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearEqualityConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearEqualityConstraint);
 
   /**
    * Constructs the linear equality constraint Aeq * x = beq.
@@ -806,7 +806,7 @@ class LinearEqualityConstraint : public LinearConstraint {
  */
 class BoundingBoxConstraint : public LinearConstraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BoundingBoxConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BoundingBoxConstraint);
 
   BoundingBoxConstraint(const Eigen::Ref<const Eigen::VectorXd>& lb,
                         const Eigen::Ref<const Eigen::VectorXd>& ub);
@@ -859,7 +859,7 @@ class BoundingBoxConstraint : public LinearConstraint {
  */
 class LinearComplementarityConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearComplementarityConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearComplementarityConstraint);
 
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
@@ -915,7 +915,7 @@ class LinearComplementarityConstraint : public Constraint {
  */
 class PositiveSemidefiniteConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositiveSemidefiniteConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositiveSemidefiniteConstraint);
 
   /**
    * Impose the constraint that a symmetric matrix with size @p rows x @p rows
@@ -1024,7 +1024,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
  */
 class LinearMatrixInequalityConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearMatrixInequalityConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearMatrixInequalityConstraint);
 
   /**
    * @param F Each symmetric matrix F[i] should be of the same size.
@@ -1082,7 +1082,7 @@ class LinearMatrixInequalityConstraint : public Constraint {
  */
 class ExpressionConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionConstraint);
 
   ExpressionConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
                        const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -1151,7 +1151,7 @@ class ExpressionConstraint : public Constraint {
  */
 class ExponentialConeConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExponentialConeConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExponentialConeConstraint);
 
   /**
    * Constructor for exponential cone.

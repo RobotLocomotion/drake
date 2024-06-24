@@ -311,7 +311,7 @@ ComputeContactSurface<PolyMeshBuilder<AutoDiffXd>>(
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&ComputeContactSurfaceFromSoftVolumeRigidHalfSpace<T>,
-     &SliceTetrahedronWithPlane<T>))
+     &SliceTetrahedronWithPlane<T>));
 
 }  // namespace internal
 }  // namespace geometry

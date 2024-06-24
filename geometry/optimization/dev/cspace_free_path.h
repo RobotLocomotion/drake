@@ -89,7 +89,7 @@ class CspaceFreePath {
    along the whole trajectory.
    */
   struct SeparationCertificateResult final : SeparationCertificateResultBase {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult);
 
     SeparationCertificateResult() {}
     ~SeparationCertificateResult() override = default;
@@ -104,7 +104,7 @@ class CspaceFreePath {
    i.e. no polynomials in the path may contain decision variables.
    */
   struct SeparationCertificateProgram final : SeparationCertificateProgramBase {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgram)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgram);
     SeparationCertificateProgram(
         const std::unordered_map<symbolic::Variable, symbolic::Polynomial>
             m_path,

@@ -69,7 +69,7 @@ namespace controllers {
 template <typename T>
 class PidControlledSystem : public Diagram<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidControlledSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidControlledSystem);
 
   /// @p plant full state is used for feedback control, and all the dimensions
   /// have homogeneous gains specified by @p Kp, @p Kd and @p Ki.

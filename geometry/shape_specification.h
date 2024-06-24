@@ -150,7 +150,7 @@ class Shape {
  is given by three sizes. */
 class Box final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Box)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Box);
 
   /** Constructs a box with the given `width`, `depth`, and `height`, which
    specify the box's dimension along the canonical x-, y-, and z-axes,
@@ -201,7 +201,7 @@ class Box final : public Shape {
  length of the capsule parallel with the frame's z-axis. */
 class Capsule final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule);
 
   /** Constructs a capsule with the given `radius` and `length`.
    @throws std::exception if `radius` or `length` are not strictly positive.
@@ -244,7 +244,7 @@ class Capsule final : public Shape {
  `scale` amount. */
 class Convex final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex);
 
   /** Constructs a convex shape specification from the file located at the
    given file path. Optionally uniformly scaled by the given scale factor.
@@ -302,7 +302,7 @@ class Convex final : public Shape {
  length of the cylinder parallel with the frame's z-axis. */
 class Cylinder final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder);
 
   /** Constructs a cylinder with the given `radius` and `length`.
    @throws std::exception if `radius` or `length` are not strictly positive.
@@ -340,7 +340,7 @@ class Cylinder final : public Shape {
 */
 class Ellipsoid final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid);
 
   /** Constructs an ellipsoid with the given lengths of its principal
    semi-axes, with a, b, and c measured along the x-, y-, and z- axes of the
@@ -379,7 +379,7 @@ class Ellipsoid final : public Shape {
  normal. */
 class HalfSpace final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace);
 
   HalfSpace();
 
@@ -440,7 +440,7 @@ class HalfSpace final : public Shape {
  `scale` amount. */
 class Mesh final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh);
 
   /** Constructs a mesh shape specification from the mesh file located at the
    given file path. Optionally uniformly scaled by the given scale factor.
@@ -513,7 +513,7 @@ class Mesh final : public Shape {
 */
 class MeshcatCone final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshcatCone)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshcatCone);
 
   /** Constructs the parameterized cone.
    @throws std::exception if `height`, `a`, or `b` are not strictly positive.
@@ -547,7 +547,7 @@ class MeshcatCone final : public Shape {
  given radius. */
 class Sphere final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere);
 
   /** Constructs a sphere with the given `radius`.
    @throws std::exception if `radius` is negative. Note that a zero radius is
@@ -632,7 +632,7 @@ class ShapeReifier {
   virtual void ImplementGeometry(const Sphere& sphere, void* user_data);
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier);
   ShapeReifier() = default;
 
   /** The default implementation of ImplementGeometry(): it throws an exception

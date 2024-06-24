@@ -173,4 +173,4 @@ std::unique_ptr<Trajectory<T>> StackedTrajectory<T>::DoMakeDerivative(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::StackedTrajectory)
+    class drake::trajectories::StackedTrajectory);

@@ -11,7 +11,7 @@ namespace solvers {
 /** Finds the least-square solution to the linear system A * x = b. */
 class LinearSystemSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSolver);
 
   LinearSystemSolver();
   ~LinearSystemSolver() final;

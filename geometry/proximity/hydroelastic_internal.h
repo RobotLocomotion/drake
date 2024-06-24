@@ -112,7 +112,7 @@ class SoftGeometry {
   explicit SoftGeometry(SoftMesh&& soft_mesh)
       : geometry_(std::move(soft_mesh)) {}
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SoftGeometry)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SoftGeometry);
 
   /* @name  Distinguishing compliant representations
 
@@ -188,7 +188,7 @@ class RigidMesh {
       : mesh_(std::move(mesh)),
         bvh_(std::make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*mesh_)) {}
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidMesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidMesh);
 
   const TriangleSurfaceMesh<double>& mesh() const {
     DRAKE_DEMAND(mesh_ != nullptr);
@@ -220,7 +220,7 @@ class RigidGeometry {
   explicit RigidGeometry(RigidMesh&& rigid_mesh)
       : geometry_(RigidMesh(std::move(rigid_mesh))) {}
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry);
 
   /* Returns true if this RigidGeometry is a half space.  */
   bool is_half_space() const { return !geometry_.has_value(); }

@@ -77,7 +77,7 @@ template <typename T>
 class Diagram : public System<T>, internal::SystemParentServiceInterface {
  public:
   // Diagram objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Diagram)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Diagram);
 
   /// A designator for a "system + input port" pair, to uniquely refer to
   /// some input port on one of this diagram's subsystems.
@@ -617,4 +617,4 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Diagram)
+    class ::drake::systems::Diagram);

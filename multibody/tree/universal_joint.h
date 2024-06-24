@@ -44,7 +44,7 @@ namespace multibody {
 template <typename T>
 class UniversalJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniversalJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniversalJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -291,4 +291,4 @@ const char UniversalJoint<T>::kTypeName[] = "universal";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::UniversalJoint)
+    class ::drake::multibody::UniversalJoint);

@@ -11,7 +11,7 @@ namespace solvers {
 namespace {
 class IntegerOptimizationUtilTest : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegerOptimizationUtilTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegerOptimizationUtilTest);
 
   enum class LogicalOperand { kAnd, kOr, kXor };
 

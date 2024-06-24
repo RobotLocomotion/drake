@@ -17,7 +17,7 @@ namespace {
 
 class IiwaToppraTest : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaToppraTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaToppraTest);
 
   IiwaToppraTest() : iiwa_plant_(std::make_unique<MultibodyPlant<double>>(0)) {
     multibody::Parser(iiwa_plant_.get())

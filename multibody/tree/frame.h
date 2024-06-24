@@ -52,7 +52,7 @@ template<typename T> class RigidBody;
 template <typename T>
 class Frame : public FrameBase<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame);
 
   ~Frame() override;
 

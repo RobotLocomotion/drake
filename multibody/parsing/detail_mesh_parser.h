@@ -44,7 +44,7 @@ std::optional<ModelInstanceIndex> AddModelFromMesh(
 
 class MeshParserWrapper final : public ParserInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshParserWrapper)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshParserWrapper);
   MeshParserWrapper();
   ~MeshParserWrapper() final;
   std::optional<ModelInstanceIndex> AddModel(

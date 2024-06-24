@@ -52,4 +52,4 @@ struct ContactSolverResults {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::contact_solvers::internal::ContactSolverResults)
+    struct ::drake::multibody::contact_solvers::internal::ContactSolverResults);

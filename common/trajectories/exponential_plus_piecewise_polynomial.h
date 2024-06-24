@@ -40,7 +40,7 @@ template <typename T>
 class ExponentialPlusPiecewisePolynomial final : public PiecewiseTrajectory<T> {
  public:
   // We are final, so this is okay.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExponentialPlusPiecewisePolynomial)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExponentialPlusPiecewisePolynomial);
 
   ExponentialPlusPiecewisePolynomial() = default;
 

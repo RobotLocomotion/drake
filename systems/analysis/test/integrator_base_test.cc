@@ -12,7 +12,7 @@ namespace {
 // A class for testing protected integration functions.
 template <typename T>
 class DummyIntegrator : public IntegratorBase<T> {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyIntegrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyIntegrator);
 
  public:
   DummyIntegrator(const System<T>& system, Context<T>* context)

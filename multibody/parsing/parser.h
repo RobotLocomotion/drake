@@ -132,7 +132,7 @@ class CompositeParse;
 /// this feature.
 class Parser final {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parser)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parser);
 
   /// Creates a Parser that adds models to the given plant and (optionally)
   /// scene_graph.

@@ -27,7 +27,7 @@ namespace multibody {
  */
 class GlobalInverseKinematics {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GlobalInverseKinematics)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GlobalInverseKinematics);
 
   struct Options {
     // This constructor is needed, otherwise the compiler complains.

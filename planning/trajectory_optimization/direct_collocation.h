@@ -29,7 +29,7 @@ namespace trajectory_optimization {
 /// @ingroup planning_trajectory
 class DirectCollocation : public MultipleShooting {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocation)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocation);
 
   /// Constructs the %MathematicalProgram% and adds the collocation
   /// constraints.
@@ -110,7 +110,7 @@ class DirectCollocation : public MultipleShooting {
 /// @ingroup solver_evaluators
 class DirectCollocationConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint);
 
  public:
   /// @see DirectCollocation constructor for a description of the parameters.

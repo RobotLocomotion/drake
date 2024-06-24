@@ -76,7 +76,7 @@ class HydroelasticTractionCalculator {
     const Vector3<T> p_WC;
   };
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator);
 
   explicit HydroelasticTractionCalculator(double vslip_regularizer = 1e-6)
       : vslip_regularizer_(vslip_regularizer) {}
@@ -182,4 +182,4 @@ class HydroelasticTractionCalculator {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::internal::HydroelasticTractionCalculator)
+    class drake::multibody::internal::HydroelasticTractionCalculator);

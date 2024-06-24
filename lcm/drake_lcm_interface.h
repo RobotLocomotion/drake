@@ -42,7 +42,7 @@ void OnHandleSubscriptionsError(DrakeLcmInterface* lcm,
  */
 class DrakeLcmInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcmInterface)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcmInterface);
   virtual ~DrakeLcmInterface();
 
   /**
@@ -175,7 +175,7 @@ class DrakeLcmInterface {
  */
 class DrakeSubscriptionInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeSubscriptionInterface)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeSubscriptionInterface);
   virtual ~DrakeSubscriptionInterface();
 
   /**
@@ -289,7 +289,7 @@ template <typename Message>
 class Subscriber final {
  public:
   // Intentionally copyable so that it can be returned and stored by-value.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Subscriber)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Subscriber);
 
   /**
    * Subscribes to the (non-empty) @p channel on the given (non-null)

@@ -146,7 +146,7 @@ void StateInterpolatorWithDiscreteDerivative<T>::set_initial_state(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::DiscreteDerivative)
+    class ::drake::systems::DiscreteDerivative);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::StateInterpolatorWithDiscreteDerivative)
+    class ::drake::systems::StateInterpolatorWithDiscreteDerivative);

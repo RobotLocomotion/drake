@@ -146,7 +146,7 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
 template <typename T>
 class DrakeVisualizer final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeVisualizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeVisualizer);
 
   /** Creates an instance of %DrakeVisualizer.
 
@@ -349,4 +349,4 @@ struct Traits<geometry::DrakeVisualizer> : public NonSymbolicTraits {};
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::DrakeVisualizer)
+    class ::drake::geometry::DrakeVisualizer);

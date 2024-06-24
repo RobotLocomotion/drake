@@ -25,7 +25,7 @@ functions will throw.
 @ingroup planning_collision_checker */
 class BodyShapeDescription final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyShapeDescription)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyShapeDescription);
 
   /** Constructs a description with the given attributes. Does not check or
   enforce correctness; callers are responsible for providing consistent

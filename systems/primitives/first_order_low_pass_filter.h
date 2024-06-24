@@ -41,7 +41,7 @@ namespace systems {
 template <typename T>
 class FirstOrderLowPassFilter final : public VectorSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FirstOrderLowPassFilter)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FirstOrderLowPassFilter);
 
   /// Constructs a %FirstOrderLowPassFilter system that filters all input
   /// signals with the same time constant, i.e. τᵢ = τ, ∀ i.

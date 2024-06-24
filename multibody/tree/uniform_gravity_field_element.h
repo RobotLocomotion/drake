@@ -19,7 +19,7 @@ namespace multibody {
 template <typename T>
 class UniformGravityFieldElement : public ForceElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniformGravityFieldElement)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniformGravityFieldElement);
 
   // TODO(sherm1) Switch to the NIST standard 9.80665 value but be sure that's
   // used consistently throughout the code, SDFs, etc.
@@ -142,4 +142,4 @@ class UniformGravityFieldElement : public ForceElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::UniformGravityFieldElement)
+    class ::drake::multibody::UniformGravityFieldElement);

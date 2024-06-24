@@ -43,7 +43,7 @@ namespace systems {
 template <typename T>
 class LinearSystem : public AffineSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystem);
 
   /// Constructs a %LinearSystem with a fixed set of coefficient matrices `A`,
   /// `B`,`C`, and `D`.
@@ -120,7 +120,7 @@ class LinearSystem : public AffineSystem<T> {
 template <typename T>
 class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeVaryingLinearSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeVaryingLinearSystem);
 
  protected:
   /// Constructor.

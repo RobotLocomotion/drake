@@ -69,7 +69,7 @@ at MultibodyPlant for an example. */
 template <typename T>
 class MultibodyTreeSystem : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeSystem);
 
   /* Takes ownership of the given `tree`, finalizes it if it hasn't already
   been finalized, and then allocates the resources it needs. You cannot modify
@@ -625,7 +625,7 @@ class MultibodyTreeSystemElementAttorney {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::internal::MultibodyTreeSystem)
+    class drake::multibody::internal::MultibodyTreeSystem);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::internal::MultibodyTreeSystemElementAttorney)
+    class drake::multibody::internal::MultibodyTreeSystemElementAttorney);
