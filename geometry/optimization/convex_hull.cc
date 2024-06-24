@@ -3,8 +3,6 @@
 #include <limits>
 #include <memory>
 
-#include <fmt/format.h>
-
 #include "drake/solvers/solve.h"
 
 namespace drake {

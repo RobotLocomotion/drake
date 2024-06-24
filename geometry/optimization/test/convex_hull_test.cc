@@ -4,13 +4,10 @@
 
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
-#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/test_utilities.h"
-#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {

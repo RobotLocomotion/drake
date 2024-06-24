@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/name_value.h"
 #include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {
