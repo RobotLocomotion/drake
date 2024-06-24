@@ -128,7 +128,7 @@ std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
   const DiagnosticPolicy& diagnostic);
 
 // Formats the vertices and indices of a mesh and write to a new obj file.
-// Returns true if the file is sucessfully written, false otherwise.
+// Returns true if the file is successfully written, false otherwise.
 bool WriteMeshToObjFile(const std::string filename,
   const pxr::VtArray<pxr::GfVec3f>& vertices,
   const pxr::VtArray<int>& indices,
