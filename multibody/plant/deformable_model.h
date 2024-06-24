@@ -40,6 +40,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @pre Finalize() has not been called on `plant`. */
   explicit DeformableModel(MultibodyPlant<T>* plant);
 
+  ~DeformableModel() final;
+
   /** Returns the number of deformable bodies registered with this
    DeformableModel. */
   int num_bodies() const { return reference_positions_.size(); }

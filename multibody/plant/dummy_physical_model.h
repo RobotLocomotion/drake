@@ -29,7 +29,7 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
   explicit DummyPhysicalModel(MultibodyPlant<T>* plant)
       : PhysicalModel<T>(plant) {}
 
-  ~DummyPhysicalModel() final = default;
+  ~DummyPhysicalModel() final;
 
   /* Appends additional entries to the single group of discrete state with the
    given `model_value`. */

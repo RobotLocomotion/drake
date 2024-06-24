@@ -70,6 +70,8 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
                        const Frame<T>& outboard_frame_M)
       : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
+  ~RpyFloatingMobilizer() final;
+
   bool is_floating() const final { return true; }
 
   bool has_quaternion_dofs() const final { return false; }

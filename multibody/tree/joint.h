@@ -173,7 +173,7 @@ class Joint : public MultibodyElement<T> {
               pos_upper_limits, vel_lower_limits, vel_upper_limits,
               acc_lower_limits, acc_upper_limits) {}
 
-  virtual ~Joint() {}
+  virtual ~Joint();
 
   /// Returns this element's unique index.
   JointIndex index() const { return this->template index_impl<JointIndex>(); }

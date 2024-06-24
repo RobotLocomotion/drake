@@ -71,6 +71,8 @@ class PrismaticJoint final : public Joint<T> {
       double pos_upper_limit = std::numeric_limits<double>::infinity(),
       double damping = 0);
 
+  ~PrismaticJoint() override;
+
   const std::string& type_name() const override;
 
   /// Returns the axis of translation for `this` joint as a unit vector.

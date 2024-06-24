@@ -100,6 +100,8 @@ class Propeller final : public systems::LeafSystem<T> {
       : Propeller<T>(std::vector<PropellerInfo>(other.info_.begin(),
                                                 other.info_.end())) {}
 
+  ~Propeller() final;
+
   /** Returns the number of propellers modeled by this system. */
   int num_propellers() const { return info_.size(); }
 

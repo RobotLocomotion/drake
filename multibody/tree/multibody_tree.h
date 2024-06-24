@@ -89,6 +89,8 @@ class MultibodyTree {
   // UniformGravityFieldElement.
   MultibodyTree();
 
+  ~MultibodyTree();
+
   // @name Methods to add new MultibodyTree elements.
   //
   // To create a %MultibodyTree users will add multibody elements like bodies,

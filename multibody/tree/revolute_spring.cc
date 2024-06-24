@@ -25,6 +25,9 @@ RevoluteSpring<T>::RevoluteSpring(ModelInstanceIndex model_instance,
 }
 
 template <typename T>
+RevoluteSpring<T>::~RevoluteSpring() = default;
+
+template <typename T>
 const RevoluteJoint<T>& RevoluteSpring<T>::joint() const {
   const RevoluteJoint<T>* joint = dynamic_cast<const RevoluteJoint<T>*>(
       &this->get_parent_tree().get_joint(joint_index_));

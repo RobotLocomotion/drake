@@ -10,6 +10,9 @@ namespace multibody {
 // RigidBodyFrame function definitions.
 
 template <typename T>
+RigidBodyFrame<T>::~RigidBodyFrame() = default;
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> RigidBodyFrame<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
@@ -40,6 +43,9 @@ std::unique_ptr<Frame<symbolic::Expression>> RigidBodyFrame<T>::DoCloneToScalar(
 }
 
 // RigidBody function definitions.
+
+template <typename T>
+RigidBody<T>::~RigidBody() = default;
 
 template <typename T>
 ScopedName RigidBody<T>::scoped_name() const {

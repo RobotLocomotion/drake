@@ -45,6 +45,8 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
                   const Frame<T>& outboard_frame_M)
       : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
+  ~PlanarMobilizer() final;
+
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;

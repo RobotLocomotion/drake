@@ -67,6 +67,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
     axis_ = axis.normalized();
   }
 
+  ~ScrewMobilizer() final;
+
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;

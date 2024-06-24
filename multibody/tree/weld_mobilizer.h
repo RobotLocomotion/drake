@@ -34,6 +34,8 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
                 const math::RigidTransform<double>& X_FM) :
       MobilizerBase(inboard_frame_F, outboard_frame_M), X_FM_(X_FM) {}
 
+  ~WeldMobilizer() final;
+
   // @retval X_FM The pose of the outboard frame M in the inboard frame F.
   const math::RigidTransform<double>& get_X_FM() const { return X_FM_; }
 

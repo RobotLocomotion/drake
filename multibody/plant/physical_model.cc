@@ -8,6 +8,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+PhysicalModel<T>::~PhysicalModel() = default;
+
+template <typename T>
 std::unique_ptr<PhysicalModel<double>> PhysicalModel<T>::CloneToDouble(
     MultibodyPlant<double>*) const {
   throw std::logic_error(

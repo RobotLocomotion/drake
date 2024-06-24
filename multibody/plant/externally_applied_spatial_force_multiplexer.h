@@ -43,6 +43,8 @@ class ExternallyAppliedSpatialForceMultiplexer final
   explicit ExternallyAppliedSpatialForceMultiplexer(
       const ExternallyAppliedSpatialForceMultiplexer<U>& other);
 
+  ~ExternallyAppliedSpatialForceMultiplexer() final;
+
  private:
   using ValueType = ExternallyAppliedSpatialForce<T>;
   using ListType = std::vector<ValueType>;

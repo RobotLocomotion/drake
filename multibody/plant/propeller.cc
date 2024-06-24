@@ -26,6 +26,9 @@ Propeller<T>::Propeller(const std::vector<PropellerInfo>& propeller_info)
 }
 
 template <typename T>
+Propeller<T>::~Propeller() = default;
+
+template <typename T>
 void Propeller<T>::CalcSpatialForces(
     const systems::Context<T>& context,
     std::vector<ExternallyAppliedSpatialForce<T>>* spatial_forces) const {

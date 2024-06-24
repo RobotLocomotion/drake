@@ -4,6 +4,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+ForceDensityField<T>::~ForceDensityField() = default;
+
+template <typename T>
 systems::CacheEntry& ForceDensityField<T>::DeclareCacheEntry(
     internal::MultibodyTreeSystem<T>* plant, std::string description,
     systems::ValueProducer value_producer,
@@ -29,8 +32,14 @@ systems::InputPort<T>& ForceDensityField<T>::DeclareVectorInputPort(
       T>::DeclareVectorInputPort(plant, std::move(name), model_vector);
 }
 
+template <typename T>
+GravityForceField<T>::~GravityForceField() = default;
+
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::ForceDensityField)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::ForceDensityField);
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::GravityForceField);

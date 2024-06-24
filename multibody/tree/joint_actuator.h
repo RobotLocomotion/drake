@@ -58,6 +58,8 @@ class JointActuator final : public MultibodyElement<T> {
   JointActuator(const std::string& name, const Joint<T>& joint,
                 double effort_limit = std::numeric_limits<double>::infinity());
 
+  ~JointActuator() final;
+
   /// Returns this element's unique index.
   JointActuatorIndex index() const {
     return this->template index_impl<JointActuatorIndex>();

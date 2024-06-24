@@ -66,6 +66,8 @@ class LinearSpringDamper final : public ForceElement<T> {
       const RigidBody<T>& bodyB, const Vector3<double>& p_BQ,
       double free_length, double stiffness, double damping);
 
+  ~LinearSpringDamper() override;
+
   const RigidBody<T>& bodyA() const { return bodyA_; }
 
   const RigidBody<T>& bodyB() const { return bodyB_; }

@@ -48,6 +48,8 @@ class FrameBase : public MultibodyElement<T> {
   /// Returns this element's unique index.
   FrameIndex index() const { return this->template index_impl<FrameIndex>(); }
 
+  ~FrameBase() override;
+
   // TODO(amcastro-tri): Provide a method with the signature:
   // const math::RigidTransform<T>& get_pose_in_world_frame(
   //     const Context<T>& context) const;
