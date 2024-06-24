@@ -334,6 +334,11 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
   TestSocpDuplicatedVariable2(solver, std::nullopt, 1E-6);
 }
 
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable3) {
+  ClarabelSolver solver;
+  TestSocpDuplicatedVariable3(solver, std::nullopt, 1E-4);
+}
+
 GTEST_TEST(TestL2NormCost, ShortestDistanceToThreePoints) {
   ClarabelSolver solver;
   ShortestDistanceToThreePoints tester{};
