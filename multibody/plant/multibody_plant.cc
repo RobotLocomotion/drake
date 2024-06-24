@@ -2608,20 +2608,24 @@ void MultibodyPlant<T>::CalcGeometryContactData(
   this->ValidateContext(context);
   result->point_pairs.clear();
   result->surfaces.clear();
+
+  // Bail out early when there is not any proximity geometry.
   if (num_collision_geometries() == 0) {
     return;
   }
+
+  // Add all of the contacts to `result`.
   const auto& query_object = EvalGeometryQueryInput(context, __func__);
   switch (contact_model_) {
     case ContactModel::kPoint: {
       result->point_pairs = query_object.ComputePointPairPenetration();
-      return;
+      break;
     }
     case ContactModel::kHydroelastic: {
       if constexpr (scalar_predicate<T>::is_bool) {
         result->surfaces = query_object.ComputeContactSurfaces(
             get_contact_surface_representation());
-        return;
+        break;
       } else {
         // TODO(SeanCurtis-TRI): Special case the QueryObject scalar support
         //  such that it works as long as there are no collisions.
@@ -2635,7 +2639,7 @@ void MultibodyPlant<T>::CalcGeometryContactData(
         query_object.ComputeContactSurfacesWithFallback(
             get_contact_surface_representation(), &result->surfaces,
             &result->point_pairs);
-        return;
+        break;
       } else {
         // TODO(SeanCurtis-TRI): Special case the QueryObject scalar support
         //  such that it works as long as there are no collisions.
@@ -2645,7 +2649,50 @@ void MultibodyPlant<T>::CalcGeometryContactData(
       }
     }
   }
-  DRAKE_UNREACHABLE();
+
+  // Filter out irrelevant contacts due to joint locking, i.e., between bodies
+  // that belong to trees with 0 degrees of freedom. For a contact to remain in
+  // consideration, at least one of the trees involved has to be valid and have
+  // a non-zero number of DOFs. (Ideally, we would tell SceneGraph to omit
+  // these in the first place.)
+  const auto& geometry_id_to_body_index = geometry_id_to_body_index_;
+  const internal::MultibodyTreeTopology& topology =
+      internal_tree().get_topology();
+  const std::vector<std::vector<int>>& per_tree_unlocked_indices =
+      EvalJointLocking(context).unlocked_velocity_indices_per_tree;
+  const auto geometry_is_relevant =
+      [&geometry_id_to_body_index, &topology,
+       &per_tree_unlocked_indices](GeometryId geometry_id) {
+        const BodyIndex body_index = geometry_id_to_body_index.at(geometry_id);
+        const internal::TreeIndex tree_index =
+            topology.body_to_tree_index(body_index);
+        return topology.tree_has_dofs(tree_index) &&
+               per_tree_unlocked_indices[tree_index].size() != 0;
+      };
+  const auto vector_erase_unordered = [](auto* vector, int i) {
+    (*vector)[i] = std::move(vector->back());
+    vector->pop_back();
+  };
+  for (int i = 0; i < ssize(result->point_pairs); ++i) {
+    const PenetrationAsPointPair<T>& point_pair = result->point_pairs[i];
+    if (geometry_is_relevant(point_pair.id_A) ||
+        geometry_is_relevant(point_pair.id_B)) {
+      continue;
+    }
+    // Filter out this contact.
+    vector_erase_unordered(&result->point_pairs, i);
+    --i;
+  }
+  for (int i = 0; i < ssize(result->surfaces); ++i) {
+    const geometry::ContactSurface<T>& surface = result->surfaces[i];
+    if (geometry_is_relevant(surface.id_M()) ||
+        geometry_is_relevant(surface.id_N())) {
+      continue;
+    }
+    // Filter out this contact.
+    vector_erase_unordered(&result->surfaces, i);
+    --i;
+  }
 }
 
 template <typename T>
