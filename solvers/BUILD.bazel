@@ -1078,7 +1078,6 @@ drake_cc_library(
     hdrs = ["semidefinite_relaxation.h"],
     interface_deps = [
         ":mathematical_program",
-        "//math:matrix_util",
     ],
     deps = [
         ":semidefinite_relaxation_internal",
@@ -1287,6 +1286,7 @@ drake_cc_googletest(
         ":semidefinite_relaxation",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:matrix_util",
     ],
 )
 

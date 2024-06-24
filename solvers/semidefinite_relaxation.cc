@@ -1,19 +1,9 @@
 #include "drake/solvers/semidefinite_relaxation.h"
 
-#include <algorithm>
-#include <functional>
-#include <initializer_list>
-#include <limits>
 #include <map>
 #include <optional>
 #include <set>
-#include <string>
-#include <utility>
-#include <vector>
 
-#include "drake/common/fmt_eigen.h"
-#include "drake/math/matrix_util.h"
-#include "drake/solvers/program_attribute.h"
 #include "drake/solvers/semidefinite_relaxation_internal.h"
 
 namespace drake {
@@ -29,80 +19,75 @@ using symbolic::Variables;
 
 namespace {
 
-// TODO(AlexandreAmice) Move all these methods to
-// semidefinite_relaxation_internal.
+// Validate that we can construct the semidefinite relaxation of this program
+// and prepare a relaxation program. The relaxation program will be initialized
+// as a clone of the program prog, with the additional variable "one"
+// constrained to be equal to one. This relaxation is processed by
+// DoMakeSemidefiniteRelaxation in different ways.
+std::unique_ptr<MathematicalProgram> InitializeRelaxation(
+    const MathematicalProgram& prog, const Variable& one) {
+  internal::ValidateProgramIsSupported(prog);
+  auto relaxation = prog.Clone();
+  relaxation->AddDecisionVariables(Vector1<Variable>(one));
+  relaxation->AddLinearEqualityConstraint(one, 1);
+  return relaxation;
+}
 
-// Constructs the semidefinite relaxation of the program prog and adds it to
-// relaxation. We assume that the program attributes of prog are already
-// validated and that relaxation already contains all the variables and
-// constraints of prog. The variable one is already constrained to be equal to
-// one. This is passed so it can be re-used across semidefinite variables in the
-// sparse version of MakeSemidefiniteRelaxation. Returns the X matrix of the
-// semidefinite relaxation.
+// Constructs the semidefinite relaxation of the program sub_prog and adds it to
+// relaxation. We assume that sub_prog is a sub-program of some larger program
+// prog and relaxation was initialized by a call to InitializeRelaxation on
+// prog. By sub-program, we mean that sub_prog contains only variables and
+// constraints found in prog.
+//
+// This is equivalent to assuming that the program attributes of sub_prog are
+// already validated, that relaxation already contains all the variables and
+// constraints of sub_prog, and that the variable one is already constrained to
+// be equal to one. The variable one is passed so it can be re-used across
+// semidefinite variables in the sparse version of MakeSemidefiniteRelaxation.
+//
+// Returns the X matrix of the semidefinite relaxation.
 MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
-    const MathematicalProgram& prog, const Variable& one,
+    const MathematicalProgram& sub_prog, const Variable& one,
+    const SemidefiniteRelaxationOptions& options,
     MathematicalProgram* relaxation,
     std::optional<int> group_number = std::nullopt) {
-  // Build a symmetric matrix X of decision variables using the original
-  // program variables (so that GetSolution, etc, works using the original
-  // variables).
-  relaxation->AddDecisionVariables(prog.decision_variables());
-  MatrixX<Variable> X(prog.num_vars() + 1, prog.num_vars() + 1);
-  // X = xxᵀ; x = [prog.decision_vars(); 1].
-  std::string name =
-      group_number.has_value() ? fmt::format("Y{}", group_number.value()) : "Y";
-  X.topLeftCorner(prog.num_vars(), prog.num_vars()) =
-      relaxation->NewSymmetricContinuousVariables(prog.num_vars(), name);
-  // We sort the variables so that the matrix X is ordered in a predictable way.
-  // This makes it easier when using the sparsity groups to make the
-  // semidefinite matrices agree.
-  VectorX<Variable> sorted_variables = prog.decision_variables();
-  std::sort(sorted_variables.data(),
-            sorted_variables.data() + sorted_variables.size(),
-            std::less<Variable>{});
-  X.topRightCorner(prog.num_vars(), 1) = sorted_variables;
-  X.bottomLeftCorner(1, prog.num_vars()) = sorted_variables.transpose();
-
+  MatrixX<Variable> X;
   std::map<Variable, int> variables_to_sorted_indices;
-  int i = 0;
-  for (const auto& v : sorted_variables) {
-    variables_to_sorted_indices[v] = i++;
-  }
-
-  // X(-1,-1) = 1.
-  X(prog.num_vars(), prog.num_vars()) = one;
-
-  // X ≽ 0.
-  relaxation->AddPositiveSemidefiniteConstraint(X);
+  internal::InitializeSemidefiniteRelaxationForProg(
+      sub_prog, one, relaxation, &X, &variables_to_sorted_indices,
+      group_number);
 
   internal::DoLinearizeQuadraticCostsAndConstraints(
-      prog, X, variables_to_sorted_indices, relaxation);
-  internal::DoAddImpliedLinearConstraints(prog, X, variables_to_sorted_indices,
-                                          relaxation);
-  internal::DoAddImpliedLinearEqualityConstraints(
-      prog, X, variables_to_sorted_indices, relaxation);
+      sub_prog, X, variables_to_sorted_indices, relaxation,
+      options.preserve_convex_quadratic_constraints);
+
+  if (options.add_implied_linear_constraints) {
+    internal::DoAddImpliedLinearConstraints(
+        sub_prog, X, variables_to_sorted_indices, relaxation);
+  }
+  if (options.add_implied_linear_equality_constraints) {
+    internal::DoAddImpliedLinearEqualityConstraints(
+        sub_prog, X, variables_to_sorted_indices, relaxation);
+  }
   return X;
 }
 }  // namespace
 
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
-    const MathematicalProgram& prog) {
-  internal::ValidateProgramIsSupported(prog);
-  auto relaxation = prog.Clone();
+    const MathematicalProgram& prog,
+    const SemidefiniteRelaxationOptions& options) {
   const Variable one("one");
-  relaxation->AddDecisionVariables(Vector1<Variable>(one));
-  relaxation->AddLinearEqualityConstraint(one, 1);
-  DoMakeSemidefiniteRelaxation(prog, one, relaxation.get());
+  auto relaxation = InitializeRelaxation(prog, one);
+  DoMakeSemidefiniteRelaxation(prog, one, options, relaxation.get());
   return relaxation;
 }
 
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog,
-    const std::vector<symbolic::Variables>& variable_groups) {
-  auto relaxation = prog.Clone();
+    const std::vector<symbolic::Variables>& variable_groups,
+    const SemidefiniteRelaxationOptions& options) {
   const Variable one("one");
-  relaxation->AddDecisionVariables(Vector1<Variable>(one));
-  relaxation->AddLinearEqualityConstraint(one, 1);
+  auto relaxation = InitializeRelaxation(prog, one);
 
   // The semidefinite relaxation of each variable group will be computed
   // individually and any variables which overlap in the programs will later be
@@ -153,7 +138,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
   int group_number = 0;
   for (const auto& [group, container_program] : groups_to_container_programs) {
     groups_to_psd_variables.emplace(
-        group, DoMakeSemidefiniteRelaxation(container_program, one,
+        group, DoMakeSemidefiniteRelaxation(container_program, one, options,
                                             relaxation.get(), group_number));
     ++group_number;
   }

@@ -1,8 +1,12 @@
 #include "drake/solvers/semidefinite_relaxation_internal.h"
 
 #include <algorithm>
+#include <functional>
 #include <initializer_list>
 #include <limits>
+#include <map>
+#include <optional>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -10,10 +14,12 @@
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/program_attribute.h"
 
 namespace drake {
 namespace solvers {
 namespace internal {
+
 using Eigen::MatrixXd;
 using Eigen::SparseMatrix;
 using Eigen::Triplet;
@@ -41,7 +47,6 @@ std::vector<int> FindDecisionVariableIndices(
 }
 
 }  // namespace
-
 
 void ValidateProgramIsSupported(const MathematicalProgram& prog) {
   std::string unsupported_message{};
@@ -73,10 +78,50 @@ bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog) {
                      });
 }
 
+void InitializeSemidefiniteRelaxationForProg(
+    const MathematicalProgram& prog, const Variable& one,
+    MathematicalProgram* relaxation, MatrixX<Variable>* X,
+    std::map<Variable, int>* variables_to_sorted_indices,
+    std::optional<int> group_number) {
+  DRAKE_DEMAND(relaxation != nullptr);
+  DRAKE_DEMAND(X != nullptr);
+  DRAKE_DEMAND(variables_to_sorted_indices != nullptr);
+  // Build a symmetric matrix X of decision variables using the original
+  // program variables (so that GetSolution, etc, works using the original
+  // variables).
+  std::string name =
+      group_number.has_value() ? fmt::format("Y{}", group_number.value()) : "Y";
+  // We sort the variables so that the matrix X is ordered in a predictable way.
+  // This makes it easier when using the sparsity groups to make the
+  // semidefinite matrices agree.
+  VectorX<Variable> sorted_variables = prog.decision_variables();
+  std::sort(sorted_variables.data(),
+            sorted_variables.data() + sorted_variables.size(),
+            std::less<Variable>{});
+  // X = xxᵀ; x = [prog.decision_vars(); 1].
+  X->resize(prog.num_vars() + 1, prog.num_vars() + 1);
+  X->topLeftCorner(prog.num_vars(), prog.num_vars()) =
+      relaxation->NewSymmetricContinuousVariables(prog.num_vars(), name);
+  X->bottomLeftCorner(1, prog.num_vars()) = sorted_variables.transpose();
+  X->topRightCorner(prog.num_vars(), 1) = sorted_variables;
+  // X(-1,-1) = 1.
+  (*X)(prog.num_vars(), prog.num_vars()) = one;
+
+  int i = 0;
+  variables_to_sorted_indices->clear();
+  for (const auto& v : sorted_variables) {
+    (*variables_to_sorted_indices)[v] = i++;
+  }
+
+  relaxation->AddPositiveSemidefiniteConstraint(*X);
+}
+
 void DoLinearizeQuadraticCostsAndConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<Variable, int>& variables_to_sorted_indices,
-    MathematicalProgram* relaxation) {
+    MathematicalProgram* relaxation,
+    bool preserve_convex_quadratic_constraints) {
+  DRAKE_DEMAND(relaxation != nullptr);
   // Returns the {a, vars} in relaxation, such that a' vars = 0.5*tr(QY). This
   // assumes Q=Q', which is ensured by QuadraticCost and QuadraticConstraint.
   auto half_trace_QY = [&X, &variables_to_sorted_indices](
@@ -118,11 +163,41 @@ void DoLinearizeQuadraticCostsAndConstraints(
     relaxation->AddLinearCost(a, binding.evaluator()->c(), vars);
   }
 
-  // Remove the quadratic constraints and replace them with a linear constraint
+  // Remove the quadratic constraints and replace them with a linear  constraint
   // on the semidefinite variables i.e.
   // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
   for (const auto& binding : prog.quadratic_constraints()) {
     relaxation->RemoveConstraint(binding);
+    // If the preserve_convex_quadratic_constraints flag is true, we replace
+    // convex quadratics with their conic form.
+    if (preserve_convex_quadratic_constraints &&
+        binding.evaluator()->is_convex()) {
+      switch (binding.evaluator()->hessian_type()) {
+        case QuadraticConstraint::HessianType::kPositiveSemidefinite: {
+          relaxation->AddQuadraticAsRotatedLorentzConeConstraint(
+              binding.evaluator()->Q(), binding.evaluator()->b(),
+              -binding.evaluator()->upper_bound()[0], binding.variables(),
+              // set the PSD tolerance check to infinity since Q is already
+              // known to be PSD
+              kInf);
+          break;
+        }
+        case QuadraticConstraint::HessianType::kNegativeSemidefinite: {
+          relaxation->AddQuadraticAsRotatedLorentzConeConstraint(
+              -binding.evaluator()->Q(), -binding.evaluator()->b(),
+              binding.evaluator()->lower_bound()[0], binding.variables(),
+              // Set the PSD tolerance check to infinity since -Q is already
+              // known to be PSD
+              kInf);
+          break;
+        }
+        case QuadraticConstraint::HessianType::kIndefinite: {
+          // binding.evaluator()->is_convex() and therefore the hessian type
+          // cannot be indefinite.
+          DRAKE_UNREACHABLE();
+        }
+      }
+    }
     const int N = binding.variables().size();
     const int num_vars = N + (N * (N + 1) / 2);
     std::pair<VectorXd, VectorX<Variable>> quadratic_terms =
@@ -141,6 +216,7 @@ void DoAddImpliedLinearConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation) {
+  DRAKE_DEMAND(relaxation != nullptr);
   // Assemble one big Ay <= b matrix from all bounding box constraints
   // and linear constraints
   // TODO(bernhardpg): Consider special-casing linear equality constraints
@@ -243,6 +319,7 @@ void DoAddImpliedLinearEqualityConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<Variable, int>& variables_to_sorted_indices,
     MathematicalProgram* relaxation) {
+  DRAKE_DEMAND(relaxation != nullptr);
   // Linear equality constraints.
   // Ay = b => (Ay-b)yᵀ = Ayyᵀ - byᵀ = 0.
   for (const auto& binding : prog.linear_equality_constraints()) {
@@ -457,8 +534,7 @@ void DoAddMatrixIsLorentzByLorentzSeparableConstraint(
 }  // namespace
 
 void AddMatrixIsLorentzByLorentzSeparableConstraint(
-    const Eigen::Ref<const MatrixX<Variable>>& X,
-    MathematicalProgram* prog) {
+    const Eigen::Ref<const MatrixX<Variable>>& X, MathematicalProgram* prog) {
   if (std::min(X.rows(), X.cols()) <= 2) {
     DoAddMatrixIsLorentzByLorentzSeparableConstraintSimplicialCase(X, prog);
   } else {
