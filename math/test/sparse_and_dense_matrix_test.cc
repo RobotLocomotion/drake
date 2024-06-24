@@ -1,4 +1,4 @@
-#include "drake/solvers/sparse_and_dense_matrix.h"
+#include "drake/math/sparse_and_dense_matrix.h"
 
 #include <limits>
 #include <thread>
@@ -8,7 +8,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
-namespace solvers {
+namespace math {
 namespace internal {
 namespace {
 
@@ -108,5 +108,5 @@ GTEST_TEST(SparseAndDenseMatrix, IsFinite) {
 }
 }  // namespace
 }  // namespace internal
-}  // namespace solvers
+}  // namespace math
 }  // namespace drake

@@ -1,9 +1,9 @@
-#include "drake/solvers/sparse_and_dense_matrix.h"
+#include "drake/math/sparse_and_dense_matrix.h"
 
 #include <utility>
 
 namespace drake {
-namespace solvers {
+namespace math {
 namespace internal {
 SparseAndDenseMatrix::SparseAndDenseMatrix(
     const Eigen::SparseMatrix<double>& sparse)
@@ -54,5 +54,5 @@ bool SparseAndDenseMatrix::is_dense_constructed() const {
 }
 
 }  // namespace internal
-}  // namespace solvers
+}  // namespace math
 }  // namespace drake

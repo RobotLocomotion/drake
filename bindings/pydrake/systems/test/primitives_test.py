@@ -1,6 +1,7 @@
 import gc
 import unittest
 import numpy as np
+from scipy.sparse import csc_matrix
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
@@ -192,6 +193,24 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.D(), D)
         self.assertEqual(system.y0(), y0)
         self.assertEqual(system.time_period(), .1)
+        self.assertTrue((system.get_sparse_A() == csc_matrix(A)).all())
+        self.assertTrue((system.get_sparse_B() == csc_matrix(B)).all())
+        self.assertTrue((system.get_sparse_C() == csc_matrix(C)).all())
+        self.assertTrue((system.get_sparse_D() == csc_matrix(D)).all())
+        
+        A_sparse = csc_matrix(A)
+        B_sparse = csc_matrix(B)
+        C_sparse = csc_matrix(C)
+        D_sparse = csc_matrix(D)
+        system = AffineSystem(
+            A=A_sparse, B=B_sparse, f0=f0, C=C_sparse, D=D_sparse, y0=y0, .1)
+        self.assertTrue((system.A() == A).all())
+        self.assertTrue((system.B() == B).all())
+        self.assertTrue((system.f0() == f0).all())
+        self.assertTrue((system.C() == C).all())
+        self.assertEqual(system.D(), D)
+        self.assertEqual(system.y0(), y0)
+        self.assertEqual(system.time_period(), .1)
 
         system.get_input_port(0).FixValue(context, 0)
         linearized = Linearize(system, context)
@@ -214,6 +233,20 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_equal(new_C, system.C())
         np.testing.assert_equal(new_D, system.D())
         np.testing.assert_equal(new_y0, system.y0())
+        system.UpdateCoefficients(
+            A=A_sparse,
+            B=B_sparse,
+            f0=f0,
+            C=C_sparse,
+            D=D_sparse,
+            y0=y0
+        )
+        self.assertTrue((system.A() == A).all())
+        self.assertTrue((system.B() == B).all())
+        self.assertTrue((system.f0() == f0).all())
+        self.assertTrue((system.C() == C).all())
+        self.assertEqual(system.D(), D)
+        self.assertEqual(system.y0(), y0)
 
         system = MatrixGain(D=A)
         self.assertTrue((system.D() == A).all())

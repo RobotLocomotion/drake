@@ -79,7 +79,6 @@ drake_cc_package_library(
         ":solver_type",
         ":solver_type_converter",
         ":sos_basis_generator",
-        ":sparse_and_dense_matrix",
         ":unrevised_lemke_solver",
     ],
 )
@@ -184,10 +183,10 @@ drake_cc_library(
     interface_deps = [
         ":decision_variable",
         ":evaluator_base",
-        ":sparse_and_dense_matrix",
         "//common:essential",
         "//common:polynomial",
         "//common/symbolic:expression",
+        "//math:sparse_and_dense_matrix",
     ],
     deps = [
         "//common/symbolic:latex",
@@ -217,7 +216,7 @@ drake_cc_library(
     interface_deps = [
         ":decision_variable",
         ":evaluator_base",
-        ":sparse_and_dense_matrix",
+        "//math:sparse_and_dense_matrix",
     ],
     deps = [
         ":constraint",
@@ -508,16 +507,6 @@ drake_cc_library(
     hdrs = ["program_attribute.h"],
     interface_deps = [
         "//common:hash",
-    ],
-    deps = [],
-)
-
-drake_cc_library(
-    name = "sparse_and_dense_matrix",
-    srcs = ["sparse_and_dense_matrix.cc"],
-    hdrs = ["sparse_and_dense_matrix.h"],
-    interface_deps = [
-        "//common:essential",
     ],
     deps = [],
 )
@@ -2039,15 +2028,6 @@ drake_cc_googletest(
         ":augmented_lagrangian",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
-    name = "sparse_and_dense_matrix_test",
-    tags = ["cpu:4"],
-    deps = [
-        ":sparse_and_dense_matrix",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -8,12 +8,11 @@
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
-namespace solvers {
+namespace math {
 namespace internal {
 /*
- * This class is typically used in cost and constraint class to store a sparse
- * matrix and an optional dense matrix. It also provides setter/getter for the
- * matrix.
+ * This class is used to store a sparse matrix and an optional dense matrix. It
+ * also provides setter/getter for the matrix.
  */
 class SparseAndDenseMatrix {
  public:
@@ -52,5 +51,5 @@ class SparseAndDenseMatrix {
   mutable std::mutex mutex_;
 };
 }  // namespace internal
-}  // namespace solvers
+}  // namespace math
 }  // namespace drake

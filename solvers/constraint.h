@@ -19,10 +19,10 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic/expression.h"
+#include "drake/math/sparse_and_dense_matrix.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/function.h"
-#include "drake/solvers/sparse_and_dense_matrix.h"
 
 namespace drake {
 namespace solvers {
@@ -699,7 +699,7 @@ class LinearConstraint : public Constraint {
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
-  internal::SparseAndDenseMatrix A_;
+  math::internal::SparseAndDenseMatrix A_;
 
  private:
   template <typename DerivedX, typename ScalarY>
