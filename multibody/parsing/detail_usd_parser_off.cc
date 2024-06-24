@@ -10,11 +10,11 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-UsdParser::UsdParser() = default;
+UsdParserWrapper::UsdParserWrapper() = default;
 
-UsdParser::~UsdParser() = default;
+UsdParserWrapper::~UsdParserWrapper() = default;
 
-std::optional<ModelInstanceIndex> UsdParser::AddModel(
+std::optional<ModelInstanceIndex> UsdParserWrapper::AddModel(
     const DataSource& data_source, const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
@@ -23,7 +23,7 @@ std::optional<ModelInstanceIndex> UsdParser::AddModel(
       "UsdParser is not available because WITH_USD is not ON");
 }
 
-std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
+std::vector<ModelInstanceIndex> UsdParserWrapper::AddAllModels(
     const DataSource& data_source,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
