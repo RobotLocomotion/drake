@@ -43,6 +43,8 @@ class ForceElement : public MultibodyElement<T> {
   explicit ForceElement(ModelInstanceIndex model_instance)
       : MultibodyElement<T>(model_instance) {}
 
+  ~ForceElement() override;
+
   /// Returns this element's unique index.
   ForceElementIndex index() const {
     return this->template index_impl<ForceElementIndex>();

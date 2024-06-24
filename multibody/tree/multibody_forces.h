@@ -41,6 +41,8 @@ class MultibodyForces {
   /// before a MultibodyPlant has been constructed.
   MultibodyForces(int nb, int nv);
 
+  ~MultibodyForces();
+
   /// Sets `this` to store zero forces (no applied forces).
   MultibodyForces<T>& SetZero();
 

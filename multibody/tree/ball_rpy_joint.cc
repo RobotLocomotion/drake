@@ -9,6 +9,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+BallRpyJoint<T>::~BallRpyJoint() = default;
+
+template <typename T>
 const std::string& BallRpyJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();

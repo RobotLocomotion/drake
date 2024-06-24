@@ -269,6 +269,9 @@ TamsiSolver<T>::TamsiSolver(int nv)
 }
 
 template <typename T>
+TamsiSolver<T>::~TamsiSolver() = default;
+
+template <typename T>
 void TamsiSolver<T>::SetOneWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
     EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,

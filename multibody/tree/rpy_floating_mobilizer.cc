@@ -15,6 +15,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+RpyFloatingMobilizer<T>::~RpyFloatingMobilizer() = default;
+
+template <typename T>
 std::string RpyFloatingMobilizer<T>::position_suffix(
     int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {

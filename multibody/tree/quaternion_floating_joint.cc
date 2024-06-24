@@ -9,6 +9,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+QuaternionFloatingJoint<T>::~QuaternionFloatingJoint() = default;
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Joint<ToScalar>>
 QuaternionFloatingJoint<T>::TemplatedDoCloneToScalar(

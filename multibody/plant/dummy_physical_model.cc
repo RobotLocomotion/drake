@@ -5,6 +5,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+DummyPhysicalModel<T>::~DummyPhysicalModel() = default;
+
+template <typename T>
 void DummyPhysicalModel<T>::DoDeclareSystemResources() {
   /* Declares the single group of discrete state. */
   VectorX<T> model_state(num_dofs_);

@@ -45,6 +45,9 @@ DoorHinge<T>::DoorHinge(ModelInstanceIndex model_instance,
 }
 
 template <typename T>
+DoorHinge<T>::~DoorHinge() = default;
+
+template <typename T>
 const RevoluteJoint<T>& DoorHinge<T>::joint() const {
   const RevoluteJoint<T>* joint = dynamic_cast<const RevoluteJoint<T>*>(
       &this->get_parent_tree().get_joint(joint_index_));

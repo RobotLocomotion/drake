@@ -91,6 +91,8 @@ bool BodyNodeTopology::operator==(const BodyNodeTopology& other) const {
   return true;
 }
 
+MultibodyTreeTopology::~MultibodyTreeTopology() = default;
+
 const JointActuatorTopology& MultibodyTreeTopology::get_joint_actuator(
     JointActuatorIndex index) const {
   DRAKE_ASSERT(index < ssize(joint_actuators_));

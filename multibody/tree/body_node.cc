@@ -8,6 +8,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+BodyNode<T>::~BodyNode() = default;
+
+template <typename T>
 void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
     const MatrixUpTo6<T>& D_B,
     math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>* llt_D_B) const {

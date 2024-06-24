@@ -57,6 +57,8 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                      const Frame<T>& outboard_frame_M)
       : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
+  ~UniversalMobilizer() final;
+
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;

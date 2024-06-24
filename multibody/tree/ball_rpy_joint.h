@@ -71,6 +71,8 @@ class BallRpyJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS(damping >= 0);
   }
 
+  ~BallRpyJoint() override;
+
   const std::string& type_name() const override;
 
   /// Returns `this` joint's default damping constant in N⋅m⋅s. The damping

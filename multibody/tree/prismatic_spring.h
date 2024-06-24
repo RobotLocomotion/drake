@@ -43,6 +43,8 @@ class PrismaticSpring final : public ForceElement<T> {
       double nominal_position,
       double stiffness);
 
+  ~PrismaticSpring() override;
+
   const PrismaticJoint<T>& joint() const;
 
   double nominal_position() const { return nominal_position_; }

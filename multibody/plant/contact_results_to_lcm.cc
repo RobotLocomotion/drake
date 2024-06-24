@@ -67,6 +67,9 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     : ContactResultsToLcmSystem<T>(plant, nullptr) {}
 
 template <typename T>
+ContactResultsToLcmSystem<T>::~ContactResultsToLcmSystem() = default;
+
+template <typename T>
 const systems::InputPort<T>&
 ContactResultsToLcmSystem<T>::get_contact_result_input_port() const {
   return this->get_input_port(contact_result_input_port_index_);

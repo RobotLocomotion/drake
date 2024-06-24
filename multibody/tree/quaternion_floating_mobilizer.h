@@ -48,6 +48,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
                 const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
+  ~QuaternionFloatingMobilizer() final;
+
   bool is_floating() const final { return true; }
 
   bool has_quaternion_dofs() const final { return true; }

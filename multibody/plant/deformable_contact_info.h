@@ -49,6 +49,8 @@ class DeformableContactInfo {
       geometry::PolygonSurfaceMesh<T> contact_mesh_W, SpatialForce<T> F_Ac_W,
       std::vector<DeformableContactPointData<T>> contact_point_data);
 
+  ~DeformableContactInfo();
+
   /** The geometry id of geometry A, guaranteed to belong to a deformable body
    in contact. */
   geometry::GeometryId id_A() const { return id_A_; }

@@ -37,6 +37,9 @@ PrismaticJoint<T>::PrismaticJoint(
 }
 
 template <typename T>
+PrismaticJoint<T>::~PrismaticJoint() = default;
+
+template <typename T>
 const std::string& PrismaticJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();

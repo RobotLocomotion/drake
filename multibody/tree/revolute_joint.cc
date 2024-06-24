@@ -37,6 +37,9 @@ RevoluteJoint<T>::RevoluteJoint(const std::string& name,
 }
 
 template <typename T>
+RevoluteJoint<T>::~RevoluteJoint() = default;
+
+template <typename T>
 const std::string& RevoluteJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();

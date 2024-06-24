@@ -1148,6 +1148,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <typename U>
   explicit MultibodyPlant(const MultibodyPlant<U>& other);
 
+  ~MultibodyPlant() override;
+
   /// Creates a rigid body with the provided name and spatial inertia.  This
   /// method returns a constant reference to the body just added, which will
   /// remain valid for the lifetime of `this` %MultibodyPlant.
