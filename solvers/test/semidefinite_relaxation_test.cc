@@ -62,6 +62,10 @@ const double kInf = std::numeric_limits<double>::infinity();
 }  // namespace
 
 GTEST_TEST(SemidefiniteRelaxationOptions, DefaultOptionsTest) {
+  // A change to the default options can have a large effect on both
+  // the solve time and tightness of semidefinite relaxations. If the default
+  // options are changed, please ensure that the commit message specifically
+  // highlights this change for downstream developers.
   SemidefiniteRelaxationOptions options;
   EXPECT_TRUE(options.add_implied_linear_equality_constraints);
   EXPECT_TRUE(options.add_implied_linear_constraints);
@@ -90,8 +94,6 @@ class MakeSemidefiniteRelaxationTest : public ::testing::Test {
   // MakeSemidefiniteRelaxation. See ValidateProgramIsSupported for details on
   // the supported attributes.
   void SetUp() override {
-    options_.set_to_weakest();
-
     y_ = prog_.NewContinuousVariables<5>("x");
 
     // LinearCost
@@ -160,17 +162,14 @@ class MakeSemidefiniteRelaxationTest : public ::testing::Test {
 
   // A program with all the supported costs and constraints
   MathematicalProgram prog_;
-  // All the options for SemidefiniteRelaxationOptions are set to false by
-  // default so that we can test that changing each option has the desired
-  // effect systemically.
-  SemidefiniteRelaxationOptions options_;
   VectorIndeterminate<5> y_;
 };
 
 TEST_F(MakeSemidefiniteRelaxationTest, EnsureProgramsAreValidated) {
+  SemidefiniteRelaxationOptions options;
   prog_.AddCost(sin(y_[0]));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeSemidefiniteRelaxation(prog_, options_),
+      MakeSemidefiniteRelaxation(prog_, options),
       ".*GenericCost was declared but is not supported.");
 }
 
@@ -189,7 +188,10 @@ TEST_F(MakeSemidefiniteRelaxationTest, VerifyLinearCostsAndConstraintsCloned) {
     prog_.RemoveConstraint(constraint);
   }
 
-  auto relaxation = MakeSemidefiniteRelaxation(prog_, options_);
+  SemidefiniteRelaxationOptions options;
+  // Don't add any implied constraints.
+  options.set_to_weakest();
+  auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
   // The semidefinite program is initialized.
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
   // The linear costs and constraints are cloned.
@@ -266,8 +268,11 @@ TEST_F(MakeSemidefiniteRelaxationTest, VerifyLinearCostsAndConstraintsCloned) {
 
 TEST_F(MakeSemidefiniteRelaxationTest,
        LinearizeQuadraticCostsAndConstraintsPreserveFalse) {
-  options_.preserve_convex_quadratic_constraints = false;
-  auto relaxation = MakeSemidefiniteRelaxation(prog_, options_);
+  SemidefiniteRelaxationOptions options;
+  // Don't add any implied constraints. This also sets
+  // preserve_convex_quadratic_constraints to false.
+  options.set_to_weakest();
+  auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
 
   // The semidefinite program is initialized.
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
@@ -293,8 +298,10 @@ TEST_F(MakeSemidefiniteRelaxationTest,
 
 TEST_F(MakeSemidefiniteRelaxationTest,
        LinearizeQuadraticCostsAndConstraintsPreserveTrue) {
-  options_.preserve_convex_quadratic_constraints = true;
-  auto relaxation = MakeSemidefiniteRelaxation(prog_, options_);
+  SemidefiniteRelaxationOptions options;
+  options.set_to_weakest();
+  options.preserve_convex_quadratic_constraints = true;
+  auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
 
   // The semidefinite program is initialized.
   EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
@@ -319,8 +326,10 @@ TEST_F(MakeSemidefiniteRelaxationTest,
 }
 
 TEST_F(MakeSemidefiniteRelaxationTest, AddImpliedLinearConstraint) {
-  options_.add_implied_linear_constraints = true;
-  auto relaxation = MakeSemidefiniteRelaxation(prog_, options_);
+  SemidefiniteRelaxationOptions options;
+  options.set_to_weakest();
+  options.add_implied_linear_constraints = true;
+  auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
 
   // We have one additional linear constraint due to the inclusion of implied
   // linear constraints.
@@ -338,8 +347,10 @@ TEST_F(MakeSemidefiniteRelaxationTest, AddImpliedLinearConstraint) {
 }
 
 TEST_F(MakeSemidefiniteRelaxationTest, AddImpliedLinearEqualityConstraint) {
-  options_.add_implied_linear_equality_constraints = true;
-  auto relaxation = MakeSemidefiniteRelaxation(prog_, options_);
+  SemidefiniteRelaxationOptions options;
+  options.set_to_weakest();
+  options.add_implied_linear_equality_constraints = true;
+  auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
 
   // We have one additional linear equality constraint per variable due to the
   // inclusion of implied linear equality constraints as well as one additional
