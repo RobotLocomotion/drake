@@ -29,7 +29,7 @@ void VolumeMesh<T>::SetAllPositions(const Eigen::Ref<const VectorX<T>>& p_MVs) {
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class VolumeMesh)
+    class VolumeMesh);
 
 }  // namespace geometry
 }  // namespace drake

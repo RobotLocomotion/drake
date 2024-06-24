@@ -50,7 +50,7 @@ std::vector<std::string> GetPreferredJointOrdering();
 /// opening the hand and closing the hand for grasping.
 class AllegroHandMotionState {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AllegroHandMotionState)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AllegroHandMotionState);
 
   AllegroHandMotionState();
 

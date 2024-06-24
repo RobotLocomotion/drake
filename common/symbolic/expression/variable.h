@@ -49,7 +49,7 @@ class Variable {
                          ///< exponential distribution with λ=1.
   };
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable);
 
   /** Constructs a default variable of type CONTINUOUS with an `Id` of zero.
    * All default-constructed variables are considered the same variable by the

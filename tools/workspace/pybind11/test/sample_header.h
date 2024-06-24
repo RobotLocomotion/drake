@@ -74,7 +74,7 @@ void func(T tee);
 ///   sagittis purus sit. End third unordered list element.
 class Class {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Class)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Class);
 
   /// @name Name. Augue neque gravida in fermentum et.
   /// @{
@@ -206,7 +206,7 @@ struct Struct {
 template <typename T>
 class TemplateClass {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TemplateClass)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TemplateClass);
 
   /// Default constructor. Condimentum mattis pellentesque id nibh tortor id.
   /// Nisl rhoncus mattis rhoncus urna neque.

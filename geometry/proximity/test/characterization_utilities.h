@@ -448,6 +448,6 @@ struct formatter<drake::geometry::internal::GeometryType>
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::internal::CharacterizeResultTest)
+    class ::drake::geometry::internal::CharacterizeResultTest);
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::internal::ShapeConfigurations)
+    class ::drake::geometry::internal::ShapeConfigurations);

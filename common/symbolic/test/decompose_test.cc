@@ -20,7 +20,7 @@ constexpr double kEps = std::numeric_limits<double>::epsilon();
 class SymbolicDecomposeTest : public ::testing::Test {
  public:
   SymbolicDecomposeTest() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SymbolicDecomposeTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SymbolicDecomposeTest);
 
  protected:
   void SetUp() override {

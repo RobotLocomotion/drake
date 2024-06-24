@@ -26,7 +26,7 @@ derivative. The %DerivativeTrajectory class helps with this case -- given a
 template <typename T>
 class DerivativeTrajectory final : public Trajectory<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DerivativeTrajectory)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DerivativeTrajectory);
 
   /** Creates a DerivativeTrajectory representing the `derivative_order`
   derivatives of `nominal`. This constructor makes a Clone() of `nominal` and
@@ -65,4 +65,4 @@ class DerivativeTrajectory final : public Trajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::DerivativeTrajectory)
+    class drake::trajectories::DerivativeTrajectory);

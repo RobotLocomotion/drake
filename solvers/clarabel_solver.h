@@ -23,7 +23,7 @@ struct ClarabelSolverDetails {
 /// An interface to wrap Clarabel https://github.com/oxfordcontrol/Clarabel.cpp
 class ClarabelSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClarabelSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClarabelSolver);
 
   /// Type of details stored in MathematicalProgramResult.
   using Details = ClarabelSolverDetails;

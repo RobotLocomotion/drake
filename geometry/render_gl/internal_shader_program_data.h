@@ -20,7 +20,7 @@ using ShaderId = drake::Identifier<class ShaderTag>;
   data that that shader requires. See OpenGlInstance for more details.  */
 class ShaderProgramData {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShaderProgramData)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShaderProgramData);
 
   ShaderProgramData() = default;
 

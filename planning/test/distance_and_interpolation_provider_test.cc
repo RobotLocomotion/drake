@@ -15,7 +15,7 @@ namespace {
 class BrokenDistanceAndInterpolationProvider final
     : public DistanceAndInterpolationProvider {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BrokenDistanceAndInterpolationProvider)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BrokenDistanceAndInterpolationProvider);
 
   BrokenDistanceAndInterpolationProvider() = default;
 
@@ -45,7 +45,7 @@ class BrokenDistanceAndInterpolationProvider final
 class SimpleLinearDistanceAndInterpolationProvider final
     : public DistanceAndInterpolationProvider {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleLinearDistanceAndInterpolationProvider)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleLinearDistanceAndInterpolationProvider);
 
   SimpleLinearDistanceAndInterpolationProvider() = default;
 

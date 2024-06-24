@@ -58,7 +58,7 @@ namespace internal {
 //
 class CollisionFilterGroupResolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CollisionFilterGroupResolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CollisionFilterGroupResolver);
 
   // The plant parameter is aliased, and must outlive the resolver.
   // @pre plant is not nullptr.

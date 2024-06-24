@@ -113,7 +113,7 @@ namespace systems {
 template <class T>
 class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitEulerIntegrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitEulerIntegrator);
 
   ~ImplicitEulerIntegrator() override = default;
 
@@ -564,4 +564,4 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::ImplicitEulerIntegrator)
+    class drake::systems::ImplicitEulerIntegrator);

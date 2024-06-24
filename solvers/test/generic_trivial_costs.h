@@ -20,7 +20,7 @@ namespace test {
 // derived class of Constraint.
 class GenericTrivialCost1 : public Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1);
 
   GenericTrivialCost1() : Cost(3), private_val_(2) {}
 
@@ -58,7 +58,7 @@ class GenericTrivialCost1 : public Cost {
 // convert this class to a ConstraintImpl object.
 class GenericTrivialCost2 {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialCost2)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialCost2);
 
   GenericTrivialCost2() = default;
 

@@ -13,7 +13,7 @@ namespace test {
 // min |x-p1|₂ + |x-p2|₂ + |x-p3|₂
 class ShortestDistanceToThreePoints {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShortestDistanceToThreePoints)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShortestDistanceToThreePoints);
 
   ShortestDistanceToThreePoints();
 
@@ -37,7 +37,7 @@ class ShortestDistanceToThreePoints {
 // This tests L2NormCost with Lorentz cone and bounding box constraints.
 class ShortestDistanceFromCylinderToPoint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShortestDistanceFromCylinderToPoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShortestDistanceFromCylinderToPoint);
 
   ShortestDistanceFromCylinderToPoint();
 
@@ -58,7 +58,7 @@ class ShortestDistanceFromCylinderToPoint {
 // This tests L2NormCost with linear constraints.
 class ShortestDistanceFromPlaneToTwoPoints {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShortestDistanceFromPlaneToTwoPoints)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShortestDistanceFromPlaneToTwoPoints);
 
   ShortestDistanceFromPlaneToTwoPoints();
 

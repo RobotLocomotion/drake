@@ -69,7 +69,7 @@ namespace render {
  %RenderLabel values.  */
 class RenderLabel {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderLabel)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderLabel);
 
   // TODO(SeanCurtis-TRI): Change this to an unsigned int by defining the
   // kLabel16U pixel type (and accompanying ImageTraits). Change the @note in

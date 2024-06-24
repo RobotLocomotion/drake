@@ -27,7 +27,7 @@ namespace systems {
 template <typename T>
 class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryAffineSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryAffineSystem);
 
   /// Constructs a TrajectoryAffineSystem from trajectories of matrices.
   ///
@@ -92,4 +92,4 @@ struct Traits<TrajectoryAffineSystem> : public NonSymbolicTraits {};
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::systems::TrajectoryAffineSystem)
+    class ::drake::systems::TrajectoryAffineSystem);

@@ -585,10 +585,10 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const SpatialInertia<T>&)>(
         &operator<< )
-))
+));
 
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::SpatialInertia)
+    class drake::multibody::SpatialInertia);

@@ -118,7 +118,7 @@ constexpr bool kHaveSpdlog = false;
 // that we expect to use, as spdlog's API does change from time to time.
 class logger {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(logger)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(logger);
 
   logger();
 
@@ -152,7 +152,7 @@ class logger {
 // A stubbed-out version of `spdlog::sinks::sink`.
 class sink {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(sink)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(sink);
 
   sink();
 };

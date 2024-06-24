@@ -51,7 +51,7 @@ const T& deref(const unique_ptr<T>& x) {
 }
 
 struct GenericTrivialFunctor {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialFunctor)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialFunctor);
 
   GenericTrivialFunctor() {}
 
@@ -168,7 +168,7 @@ GTEST_TEST(EvaluatorBaseTest, FunctionEvaluatorTest) {
 
 class SimpleEvaluator : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator);
   SimpleEvaluator() : EvaluatorBase(2, 3) {
     c_.resize(2, 3);
     c_ << 1, 2, 3, 4, 5, 6;
@@ -241,7 +241,7 @@ GTEST_TEST(EvaluatorBaseTest, SetGradientSparsityPattern) {
  */
 class DynamicSizedEvaluator : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DynamicSizedEvaluator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DynamicSizedEvaluator);
 
   DynamicSizedEvaluator() : EvaluatorBase(1, Eigen::Dynamic) {}
 

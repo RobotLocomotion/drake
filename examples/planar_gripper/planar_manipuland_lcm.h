@@ -38,7 +38,7 @@ constexpr double kPlanarManipulandStatusPeriod = 0.010;
 /// @endsystem
 class PlanarManipulandStatusDecoder : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarManipulandStatusDecoder)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarManipulandStatusDecoder);
 
   PlanarManipulandStatusDecoder();
 
@@ -78,7 +78,7 @@ class PlanarManipulandStatusDecoder : public systems::LeafSystem<double> {
  */
 class PlanarManipulandStatusEncoder : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarManipulandStatusEncoder)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarManipulandStatusEncoder);
 
   PlanarManipulandStatusEncoder();
 

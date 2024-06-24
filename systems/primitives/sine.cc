@@ -160,4 +160,4 @@ void Sine<T>::CalcArg(const Context<T>& context, VectorX<T>* arg) const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Sine)
+    class ::drake::systems::Sine);

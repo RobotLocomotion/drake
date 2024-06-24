@@ -26,14 +26,14 @@ class Timer {
   virtual double Tick() = 0;
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Timer)  // protected from slicing
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Timer);  // protected from slicing
 };
 
 /// Implementation of timing utility that uses monotonic
 /// std::chrono::steady_clock.
 class SteadyTimer final : public Timer {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SteadyTimer)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SteadyTimer);
   SteadyTimer();
   void Start() final;
   double Tick() final;

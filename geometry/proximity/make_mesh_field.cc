@@ -90,7 +90,7 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeVolumeMeshPressureField<T>))
+    (&MakeVolumeMeshPressureField<T>));
 
 }  // namespace internal
 }  // namespace geometry

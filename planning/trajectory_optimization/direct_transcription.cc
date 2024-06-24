@@ -42,7 +42,7 @@ namespace {
 // and the decision variable representing the next state.
 class DirectTranscriptionConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTranscriptionConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTranscriptionConstraint);
 
   // @param system The system describing the dynamics of the constraint.
   // The reference must remain valid for the lifetime of this constraint.

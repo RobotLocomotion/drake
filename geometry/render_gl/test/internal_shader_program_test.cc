@@ -29,7 +29,7 @@ using render::RenderCameraCore;
  reports if it has been called.  */
 class TestShader final : public ShaderProgram {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestShader)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestShader);
 
   struct Data {
     int i_value{-1};

@@ -16,7 +16,7 @@ namespace internal {
 
 class LinkJointGraph::Joint {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Joint)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Joint);
 
   /** Returns this %Joint's unique index in the graph. */
   JointIndex index() const { return index_; }

@@ -76,7 +76,7 @@ namespace {
 // dimensional signal, but we will use a 2-dimensional signal for our gripper.
 class Square final : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Square)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Square);
 
   // Constructs a %Square system where different amplitudes, duty cycles,
   // periods, and phases can be applied to each square wave.

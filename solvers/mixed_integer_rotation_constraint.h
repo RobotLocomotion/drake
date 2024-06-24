@@ -51,7 +51,7 @@ namespace solvers {
 class MixedIntegerRotationConstraintGenerator {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
-      MixedIntegerRotationConstraintGenerator)
+      MixedIntegerRotationConstraintGenerator);
 
   enum class Approach {
     kBoxSphereIntersection,  ///< Relax SO(3) constraint by considering the

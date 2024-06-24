@@ -31,7 +31,7 @@ std::vector<parsing::ModelInstanceInfo> ParseModelDirectives(
 // Parses DMD (Drake Model Directive) data.
 class DmdParserWrapper final : public ParserInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DmdParserWrapper)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DmdParserWrapper);
   DmdParserWrapper();
   ~DmdParserWrapper() final;
   std::optional<ModelInstanceIndex> AddModel(

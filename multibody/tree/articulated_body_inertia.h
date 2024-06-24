@@ -93,7 +93,7 @@ namespace multibody {
 template<typename T>
 class ArticulatedBodyInertia {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertia);
 
   /// Default ArticulatedBodyInertia constructor initializes all matrix values
   /// to NaN for a quick detection of uninitialized values.
@@ -396,4 +396,4 @@ class ArticulatedBodyInertia {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::ArticulatedBodyInertia)
+    class drake::multibody::ArticulatedBodyInertia);

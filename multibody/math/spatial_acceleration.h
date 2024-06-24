@@ -60,7 +60,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   typedef SpatialVector<::drake::multibody::SpatialAcceleration, T> Base;
 
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialAcceleration)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialAcceleration);
 
   /// Default constructor. In Release builds, all 6 elements of a newly
   /// constructed spatial acceleration are uninitialized (for speed). In Debug
@@ -351,4 +351,4 @@ inline SpatialAcceleration<T> operator-(const SpatialAcceleration<T>& A1_E,
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::SpatialAcceleration)
+    class ::drake::multibody::SpatialAcceleration);

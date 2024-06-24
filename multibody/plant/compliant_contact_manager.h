@@ -35,7 +35,7 @@ class TamsiDriver;
 template <typename T>
 struct AccelerationsDueNonConstraintForcesCache {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
-      AccelerationsDueNonConstraintForcesCache)
+      AccelerationsDueNonConstraintForcesCache);
   explicit AccelerationsDueNonConstraintForcesCache(
       const MultibodyTreeTopology& topology);
   MultibodyForces<T> forces;  // The external forces causing accelerations.
@@ -83,7 +83,7 @@ struct AccelerationsDueNonConstraintForcesCache {
 template <typename T>
 class CompliantContactManager final : public DiscreteUpdateManager<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager);
 
   using DiscreteUpdateManager<T>::plant;
 

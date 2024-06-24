@@ -907,4 +907,4 @@ std::ostream& operator<<(std::ostream& os, const Context<T>& context) {
 DRAKE_FORMATTER_AS(typename T, drake::systems, Context<T>, x, x.to_string())
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Context)
+    class ::drake::systems::Context);

@@ -20,7 +20,7 @@ namespace test {
 ///           x1 >= 1
 class LinearFeasibilityProgram : public OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearFeasibilityProgram)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearFeasibilityProgram);
 
   explicit LinearFeasibilityProgram(ConstraintForm constraint_form);
 
@@ -44,7 +44,7 @@ class LinearFeasibilityProgram : public OptimizationProgram {
 /// The optimal solution is x0 = 1, x1 = 2
 class LinearProgram0 : public OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram0)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram0);
 
   LinearProgram0(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -65,7 +65,7 @@ class LinearProgram0 : public OptimizationProgram {
 // The optimal solution is (0, 4)
 class LinearProgram1 : public OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram1);
 
   LinearProgram1(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -93,7 +93,7 @@ class LinearProgram1 : public OptimizationProgram {
 // The optimal solution is at (0, 0, 15, 25/3)
 class LinearProgram2 : public OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram2)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram2);
 
   LinearProgram2(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -118,7 +118,7 @@ class LinearProgram2 : public OptimizationProgram {
 // The optimal solution is at (8, 3, 11)
 class LinearProgram3 : public OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram3)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram3);
 
   LinearProgram3(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -164,7 +164,7 @@ std::vector<LinearProblems> linear_problems();
  */
 class InfeasibleLinearProgramTest0 : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InfeasibleLinearProgramTest0)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InfeasibleLinearProgramTest0);
 
   InfeasibleLinearProgramTest0();
 
@@ -182,7 +182,7 @@ class InfeasibleLinearProgramTest0 : public ::testing::Test {
  */
 class UnboundedLinearProgramTest0 : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnboundedLinearProgramTest0)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnboundedLinearProgramTest0);
 
   UnboundedLinearProgramTest0();
 
@@ -202,7 +202,7 @@ class UnboundedLinearProgramTest0 : public ::testing::Test {
  */
 class UnboundedLinearProgramTest1 : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnboundedLinearProgramTest1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnboundedLinearProgramTest1);
 
   UnboundedLinearProgramTest1();
 
@@ -224,7 +224,7 @@ class UnboundedLinearProgramTest1 : public ::testing::Test {
  */
 class DuplicatedVariableLinearProgramTest1 : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DuplicatedVariableLinearProgramTest1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DuplicatedVariableLinearProgramTest1);
 
   DuplicatedVariableLinearProgramTest1();
 

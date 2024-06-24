@@ -99,7 +99,7 @@ class ForceDensityField {
 #endif
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceDensityField)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceDensityField);
 
   explicit ForceDensityField(
       ForceDensityType density_type = ForceDensityType::kPerCurrentVolume)
@@ -164,7 +164,7 @@ class ForceDensityField {
 template <typename T>
 class GravityForceField : public ForceDensityField<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GravityForceField)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GravityForceField);
 
   /** Constructs a uniform gravitational force density field for a uniform
   density object with the given `gravity_vector` [m/s²] and `mass_density`

@@ -796,7 +796,7 @@ T TamsiSolver<T>::RegularizedFrictionDerivative(const T& s, const T& mu) {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::TalsLimiter)
+    struct ::drake::multibody::internal::TalsLimiter);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::TamsiSolver)
+    class ::drake::multibody::TamsiSolver);

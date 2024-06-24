@@ -32,7 +32,7 @@ namespace multibody {
 template <typename T>
 class PlanarJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -369,4 +369,4 @@ class PlanarJoint final : public Joint<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::PlanarJoint)
+    class ::drake::multibody::PlanarJoint);

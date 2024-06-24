@@ -34,7 +34,7 @@ template <typename T>
 class VectorBase {
  public:
   // VectorBase objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorBase);
 
   virtual ~VectorBase() {}
 
@@ -276,4 +276,4 @@ struct formatter<drake::systems::VectorBase<T>>
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::VectorBase)
+    class ::drake::systems::VectorBase);

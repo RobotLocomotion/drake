@@ -50,7 +50,7 @@ output_ports:
 class DifferentialInverseKinematicsIntegrator
     : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DifferentialInverseKinematicsIntegrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DifferentialInverseKinematicsIntegrator);
 
   /** Constructs the system.
 

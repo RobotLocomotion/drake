@@ -394,7 +394,7 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
 
 class AutoDiffOnlyCost final : public drake::solvers::Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutoDiffOnlyCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutoDiffOnlyCost);
 
   AutoDiffOnlyCost() : drake::solvers::Cost(1) {}
 

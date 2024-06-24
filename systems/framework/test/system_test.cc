@@ -1038,7 +1038,7 @@ TEST_F(SystemIOTest, FixFromTypeDependentAbstractInput) {
 // LeafSystem.
 class ComputationTestSystem final : public TestSystemBase<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComputationTestSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComputationTestSystem);
 
   // Requesting three continuous states to match AllocateTimeDerivatives().
   ComputationTestSystem()

@@ -78,4 +78,4 @@ RpyFloatingJoint<T>::MakeImplementationBlueprint() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RpyFloatingJoint)
+    class ::drake::multibody::RpyFloatingJoint);

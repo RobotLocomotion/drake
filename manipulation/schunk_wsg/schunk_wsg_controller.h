@@ -28,7 +28,7 @@ namespace schunk_wsg {
 /// @ingroup manipulation_systems
 class SchunkWsgController : public systems::Diagram<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgController);
 
   // The gains here are somewhat arbitrary.  The goal is to make sure
   // that the maximum force is generated except when very close to the

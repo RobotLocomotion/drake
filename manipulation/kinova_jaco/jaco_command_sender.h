@@ -38,7 +38,7 @@ namespace kinova_jaco {
 /// @see `lcmt_jaco_command.lcm` for additional documentation.
 class JacoCommandSender : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JacoCommandSender)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JacoCommandSender);
 
   JacoCommandSender(int num_joints = kJacoDefaultArmNumJoints,
                     int num_fingers = kJacoDefaultArmNumFingers);

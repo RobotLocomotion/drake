@@ -8,9 +8,9 @@ namespace benchmarks {
 namespace kuka_iiwa_robot {
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    struct KukaRobotJointReactionForces)
+    struct KukaRobotJointReactionForces);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class DrakeKukaIIwaRobot)
+    class DrakeKukaIIwaRobot);
 
 }  // namespace kuka_iiwa_robot
 }  // namespace benchmarks

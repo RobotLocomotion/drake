@@ -38,7 +38,7 @@ enum class SystemConstraintType {
 /// are all zeros.
 class SystemConstraintBounds final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemConstraintBounds)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemConstraintBounds);
 
   /// Creates constraint bounds with zero size.
   SystemConstraintBounds() : SystemConstraintBounds(0) {}
@@ -144,7 +144,7 @@ using SystemConstraintCalc =
 template <typename T>
 class SystemConstraint final {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraint);
 
   /// (Advanced) Constructs a default (zero-sized) SystemConstraint.
   ///
@@ -301,7 +301,7 @@ class SystemConstraint final {
 /// that a mass parameter is non-negative).
 class ExternalSystemConstraint final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExternalSystemConstraint)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExternalSystemConstraint);
 
   /// Creates an empty constraint.
   ExternalSystemConstraint()
@@ -403,4 +403,4 @@ ExternalSystemConstraint::do_get_calc() const {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::SystemConstraint)
+    class ::drake::systems::SystemConstraint);

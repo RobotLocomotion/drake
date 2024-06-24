@@ -90,4 +90,4 @@ std::unique_ptr<Trajectory<T>> PathParameterizedTrajectory<T>::DoMakeDerivative(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::PathParameterizedTrajectory)
+    class drake::trajectories::PathParameterizedTrajectory);

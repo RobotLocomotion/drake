@@ -25,11 +25,11 @@ std::string CanonicalizeStringName(const std::string& name);
 template <typename K, typename V>
 class MapKeyRange {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MapKeyRange)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MapKeyRange);
 
   class ConstIterator {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstIterator)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstIterator);
 
     /* In order to be able to instantiate an std::vector from a MapKeyRange,
      e.g.,

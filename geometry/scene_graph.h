@@ -319,7 +319,7 @@ class QueryObject;
 template <typename T>
 class SceneGraph final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph);
 
   /** Constructs a default (empty) scene graph. */
   SceneGraph();
@@ -1171,4 +1171,4 @@ class SceneGraph final : public systems::LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::SceneGraph)
+    class ::drake::geometry::SceneGraph);

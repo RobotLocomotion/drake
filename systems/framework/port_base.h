@@ -22,7 +22,7 @@ class PortBaseAttorney;
  InputPort<T> or OutputPort<T> types, not this base class. */
 class PortBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PortBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PortBase);
 
   virtual ~PortBase();
 
@@ -202,7 +202,7 @@ namespace internal {
 // with access to certain specific PortBase members.
 class PortBaseAttorney {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PortBaseAttorney)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PortBaseAttorney);
   PortBaseAttorney() = delete;
 
  private:

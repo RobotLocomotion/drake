@@ -258,7 +258,7 @@ class LinearFunction {
 // domain of the polygon) for the EquivalentForceIntegration test below.
 class Polygon {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polygon)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polygon);
 
   Polygon(vector<Vector3d> vertices_P, const LinearFunction& func_P)
       : vertices_P_(std::move(vertices_P)), func_P_(func_P) {}

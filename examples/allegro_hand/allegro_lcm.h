@@ -39,7 +39,7 @@ const double kHardwareStatusPeriod = 0.003;
 /// position and feedforward torque, respectively.
 class AllegroCommandReceiver : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AllegroCommandReceiver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AllegroCommandReceiver);
 
   AllegroCommandReceiver(int num_joints = kAllegroNumJoints,
                          double lcm_period = kHardwareStatusPeriod);
@@ -111,7 +111,7 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
 /// This system is presently only used in simulation.
 class AllegroStatusSender : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AllegroStatusSender)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AllegroStatusSender);
 
   explicit AllegroStatusSender(int num_joints = kAllegroNumJoints);
 

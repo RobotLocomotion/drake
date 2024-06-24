@@ -33,7 +33,7 @@ empty.
 @ingroup geometry_optimization */
 class VPolytope final : public ConvexSet, private ShapeReifier {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VPolytope)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VPolytope);
 
   /** Constructs a set with no vertices in the zero-dimensional space, which is
   empty (by convention). */

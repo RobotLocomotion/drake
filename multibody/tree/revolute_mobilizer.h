@@ -36,7 +36,7 @@ namespace internal {
 template <typename T>
 class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer);
 
   // Constructor for a %RevoluteMobilizer between the inboard frame F
   // `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
@@ -203,4 +203,4 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::RevoluteMobilizer)
+    class ::drake::multibody::internal::RevoluteMobilizer);

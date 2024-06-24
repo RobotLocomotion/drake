@@ -36,7 +36,7 @@ namespace multibody {
 template <typename T>
 class QuaternionFloatingJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingJoint);
 
   /// The name for this Joint type.  It resolves to "quaternion_floating".
   static const char kTypeName[];
@@ -537,4 +537,4 @@ const char QuaternionFloatingJoint<T>::kTypeName[] = "quaternion_floating";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::QuaternionFloatingJoint)
+    class ::drake::multibody::QuaternionFloatingJoint);

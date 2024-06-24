@@ -13,7 +13,7 @@ namespace internal {
  key to access unique RenderTarget instances based on render size.  */
 class BufferDim {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BufferDim)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BufferDim);
 
   BufferDim(int width, int height) : width_(width), height_(height) {
     DRAKE_DEMAND(width > 0);

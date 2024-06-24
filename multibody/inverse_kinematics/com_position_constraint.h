@@ -19,7 +19,7 @@ namespace multibody {
  */
 class ComPositionConstraint final : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComPositionConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComPositionConstraint);
 
   /**
    * Constructor, constrain f(q) = p_EC, where f(q) evaluates the CoM position

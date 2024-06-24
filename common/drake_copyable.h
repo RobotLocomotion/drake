@@ -24,7 +24,7 @@ declaration, e.g.:
 <pre>
 class Foo {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Foo)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Foo);
 
   // ...
 };
@@ -34,7 +34,7 @@ class Foo {
   Classname(const Classname&) = delete;            \
   void operator=(const Classname&) = delete;       \
   Classname(Classname&&) = delete;                 \
-  void operator=(Classname&&) = delete;
+  void operator=(Classname&&) = delete
 
 /** DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN defaults the special member
 functions for copy-construction, copy-assignment, move-construction, and
@@ -48,7 +48,7 @@ should invoke this macro in the public section of the class declaration, e.g.:
 <pre>
 class Foo {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo);
 
   // ...
 };
@@ -87,7 +87,7 @@ that in a unit test.
       &DrakeDefaultCopyAndMoveAndAssign_DoAssign,               \
       "This assertion is never false; its only purpose is to "  \
       "generate 'use of deleted function: operator=' errors "   \
-      "when Classname is a template.");
+      "when Classname is a template.")
 
 /** DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN declares the special member functions
 for copy-construction, copy-assignment, move-construction, and move-assignment.
@@ -100,7 +100,7 @@ macro in the public section of the class declaration, e.g.:
 <pre>
 class Foo {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Foo)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Foo);
 
   // ...
 };
@@ -111,4 +111,4 @@ Then the matching definitions should be placed in the associated .cc file.
   Classname(const Classname&);                            \
   Classname& operator=(const Classname&);                 \
   Classname(Classname&&);                                 \
-  Classname& operator=(Classname&&);
+  Classname& operator=(Classname&&)

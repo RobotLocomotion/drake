@@ -102,7 +102,7 @@ VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex) {
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (static_cast<VolumeMesh<T> (*)(const Convex&)>(&MakeConvexVolumeMesh<T>),
      static_cast<VolumeMesh<T> (*)(const TriangleSurfaceMesh<double>&)>(
-         &MakeConvexVolumeMesh<T>)))
+         &MakeConvexVolumeMesh<T>)));
 
 }  // namespace internal
 }  // namespace geometry

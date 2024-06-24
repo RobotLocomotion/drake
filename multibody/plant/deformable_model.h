@@ -33,7 +33,7 @@ class MultibodyPlant;
 template <typename T>
 class DeformableModel final : public multibody::PhysicalModel<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableModel)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableModel);
 
   /** Constructs a DeformableModel to be owned by the given MultibodyPlant.
    @pre plant != nullptr.

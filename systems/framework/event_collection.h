@@ -76,7 +76,7 @@ namespace systems {
 template <typename EventType>
 class EventCollection {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventCollection)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventCollection);
 
   virtual ~EventCollection() {}
 
@@ -143,7 +143,7 @@ class EventCollection {
 template <typename EventType>
 class DiagramEventCollection final : public EventCollection<EventType> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramEventCollection)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramEventCollection);
 
   /**
    * Note that this constructor only resizes the containers; it
@@ -285,7 +285,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
    */
   static constexpr int kDefaultCapacity = 32;
 
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventCollection)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventCollection);
 
   /**
    * Constructor.
@@ -423,7 +423,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
 template <typename T>
 class CompositeEventCollection {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeEventCollection)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeEventCollection);
 
   virtual ~CompositeEventCollection() {}
 
@@ -628,7 +628,7 @@ class CompositeEventCollection {
 template <typename T>
 class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafCompositeEventCollection)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafCompositeEventCollection);
 
   LeafCompositeEventCollection()
       : CompositeEventCollection<T>(
@@ -674,7 +674,7 @@ template <typename T>
 class DiagramCompositeEventCollection final
     : public CompositeEventCollection<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramCompositeEventCollection)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramCompositeEventCollection);
 
   /**
    * Allocated CompositeEventCollection for all constituent subsystems are
@@ -757,10 +757,10 @@ class DiagramCompositeEventCollection final
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::CompositeEventCollection)
+    class ::drake::systems::CompositeEventCollection);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::LeafCompositeEventCollection)
+    class ::drake::systems::LeafCompositeEventCollection);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::DiagramCompositeEventCollection)
+    class ::drake::systems::DiagramCompositeEventCollection);

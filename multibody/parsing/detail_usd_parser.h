@@ -14,7 +14,7 @@ namespace internal {
 
 class UsdParser final : public ParserInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UsdParser)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UsdParser);
 
   UsdParser();
 

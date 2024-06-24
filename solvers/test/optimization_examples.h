@@ -42,7 +42,7 @@ void ExpectSolutionCostAccurate(const MathematicalProgram& prog,
 
 class OptimizationProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptimizationProgram)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptimizationProgram);
 
   OptimizationProgram(CostForm cost_form, ConstraintForm constraint_form);
 
@@ -76,7 +76,7 @@ class OptimizationProgram {
  */
 class LinearSystemExample1 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample1);
 
   LinearSystemExample1();
   virtual ~LinearSystemExample1() {}
@@ -112,7 +112,7 @@ class LinearSystemExample1 {
  */
 class LinearSystemExample2 : public LinearSystemExample1 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample2)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample2);
 
   LinearSystemExample2();
   ~LinearSystemExample2() override {}
@@ -135,7 +135,7 @@ class LinearSystemExample2 : public LinearSystemExample1 {
  */
 class LinearSystemExample3 : public LinearSystemExample2 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample3)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample3);
 
   LinearSystemExample3();
   ~LinearSystemExample3() override {}
@@ -150,7 +150,7 @@ class LinearSystemExample3 : public LinearSystemExample2 {
  */
 class LinearMatrixEqualityExample {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearMatrixEqualityExample)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearMatrixEqualityExample);
 
   LinearMatrixEqualityExample();
 
@@ -174,7 +174,7 @@ class NonConvexQPproblem1 {
   /// to test different solvers, and whether MathematicalProgram can parse
   /// constraints in different forms.
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1);
 
   static std::vector<CostForm> cost_forms() {
     std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic};
@@ -198,7 +198,7 @@ class NonConvexQPproblem1 {
  private:
   class TestProblem1Cost {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem1Cost)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem1Cost);
 
     TestProblem1Cost() = default;
 
@@ -234,7 +234,7 @@ class NonConvexQPproblem1 {
 /// ISBN 978-1-4757-3040-1
 class NonConvexQPproblem2 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2);
 
   static std::vector<CostForm> cost_forms() {
     std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic};
@@ -258,7 +258,7 @@ class NonConvexQPproblem2 {
  private:
   class TestProblem2Cost {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem2Cost)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem2Cost);
 
     TestProblem2Cost() = default;
 
@@ -294,7 +294,7 @@ class NonConvexQPproblem2 {
 /// ISBN 978-1-4757-3040-1
 class LowerBoundedProblem {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem);
 
   static std::vector<ConstraintForm> constraint_forms() {
     std::vector<ConstraintForm> cnstr{ConstraintForm::kNonSymbolic,
@@ -315,7 +315,7 @@ class LowerBoundedProblem {
  private:
   class LowerBoundTestCost {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LowerBoundTestCost)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LowerBoundTestCost);
 
     LowerBoundTestCost() = default;
 
@@ -335,7 +335,7 @@ class LowerBoundedProblem {
 
   class LowerBoundTestConstraint : public Constraint {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundTestConstraint)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundTestConstraint);
 
     LowerBoundTestConstraint(int i1, int i2)
         : Constraint(
@@ -397,7 +397,7 @@ class LowerBoundedProblem {
 /// correctly with multiple decision variables.
 class GloptiPolyConstrainedMinimizationProblem {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem);
 
   static std::vector<CostForm> cost_forms() {
     std::vector<CostForm> costs{CostForm::kGeneric, CostForm::kNonSymbolic,
@@ -423,7 +423,7 @@ class GloptiPolyConstrainedMinimizationProblem {
  private:
   class GloptipolyConstrainedExampleCost {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GloptipolyConstrainedExampleCost)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GloptipolyConstrainedExampleCost);
 
     GloptipolyConstrainedExampleCost() = default;
 
@@ -443,7 +443,7 @@ class GloptiPolyConstrainedMinimizationProblem {
       : public Constraint {  // Want to also support deriving directly from
                              // constraint without going through Function.
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptipolyConstrainedExampleConstraint)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptipolyConstrainedExampleConstraint);
 
     GloptipolyConstrainedExampleConstraint()
         : Constraint(
@@ -516,7 +516,7 @@ class GloptiPolyConstrainedMinimizationProblem {
 /// where A_hat = [A 0; 2*I Aᵀ].
 class MinDistanceFromPlaneToOrigin {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin);
 
   static std::vector<CostForm> cost_forms() {
     std::vector<CostForm> costs{CostForm::kNonSymbolic, CostForm::kSymbolic};
@@ -570,7 +570,7 @@ class MinDistanceFromPlaneToOrigin {
  */
 class ConvexCubicProgramExample : public MathematicalProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConvexCubicProgramExample)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConvexCubicProgramExample);
 
   ConvexCubicProgramExample();
 
@@ -591,7 +591,7 @@ class ConvexCubicProgramExample : public MathematicalProgram {
  */
 class UnitLengthProgramExample : public MathematicalProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnitLengthProgramExample)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnitLengthProgramExample);
 
   UnitLengthProgramExample();
 
@@ -612,7 +612,7 @@ class UnitLengthProgramExample : public MathematicalProgram {
 // This is just a feasibility problem, without a cost.
 class DistanceToTetrahedronExample : public MathematicalProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceToTetrahedronExample)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceToTetrahedronExample);
 
   explicit DistanceToTetrahedronExample(double distance_expected);
 
@@ -630,7 +630,7 @@ class DistanceToTetrahedronExample : public MathematicalProgram {
   // TODO(hongkai.dai): explain the mathematical formulation of this constraint.
   class DistanceToTetrahedronNonlinearConstraint : public Constraint {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceToTetrahedronNonlinearConstraint)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceToTetrahedronNonlinearConstraint);
 
     DistanceToTetrahedronNonlinearConstraint(
         const Eigen::Matrix<double, 4, 3>& A_tetrahedron,
@@ -732,7 +732,7 @@ class DistanceToTetrahedronExample : public MathematicalProgram {
  */
 class EckhardtProblem {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EckhardtProblem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EckhardtProblem);
 
   explicit EckhardtProblem(bool set_sparsity_pattern);
 

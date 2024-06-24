@@ -481,7 +481,7 @@ ComputeContactSurface<PolyMeshBuilder<AutoDiffXd>>(
     const math::RigidTransform<AutoDiffXd>&);
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&ComputeContactSurfaceFromSoftHalfSpaceRigidMesh<T>))
+    (&ComputeContactSurfaceFromSoftHalfSpaceRigidMesh<T>));
 
 }  // namespace internal
 }  // namespace geometry

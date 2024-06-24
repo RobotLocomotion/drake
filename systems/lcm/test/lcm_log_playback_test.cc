@@ -28,7 +28,7 @@ void SetInput(double time, const std::string& name, double val,
 
 class DummySys : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySys)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySys);
 
   DummySys() {
     DeclareAbstractInputPort("lcmt_drake_signal", Value<lcmt_drake_signal>());

@@ -21,7 +21,7 @@ By convention, a zero-dimensional spectrahedron is considered nonempty.
 @ingroup geometry_optimization */
 class Spectrahedron final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Spectrahedron)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Spectrahedron);
 
   /** Default constructor (yields the zero-dimensional nonempty set). */
   Spectrahedron();

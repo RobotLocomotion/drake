@@ -40,7 +40,7 @@ namespace systems {
 template <typename T>
 class Sine final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Sine)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Sine);
 
   /// Constructs a %Sine system where the amplitude, frequency, and phase is
   /// applied to every input.
@@ -130,4 +130,4 @@ class Sine final : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Sine)
+    class ::drake::systems::Sine);

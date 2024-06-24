@@ -73,7 +73,7 @@ struct KukaRobotJointReactionForces {
 template <typename T>
 class DrakeKukaIIwaRobot {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeKukaIIwaRobot)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeKukaIIwaRobot);
 
   /// Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
   /// The robot is constructed with 7 revolute joints.

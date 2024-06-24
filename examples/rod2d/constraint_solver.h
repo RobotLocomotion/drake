@@ -70,7 +70,7 @@ template <typename T>
 class ConstraintSolver {
  public:
   ConstraintSolver() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver);
 
   /// Structure used to convert a mixed linear complementarity problem to a
   /// pure linear complementarity problem (by solving for free variables).

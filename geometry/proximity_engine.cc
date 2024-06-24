@@ -1161,11 +1161,11 @@ void* ProximityEngine<T>::GetCollisionObject(GeometryId id) const {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&ProximityEngine<T>::template ToScalarType<U>))
+    (&ProximityEngine<T>::template ToScalarType<U>));
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&ProximityEngine<T>::template ComputeContactSurfaces<T>,
-     &ProximityEngine<T>::template ComputeContactSurfacesWithFallback<T>))
+     &ProximityEngine<T>::template ComputeContactSurfacesWithFallback<T>));
 
 template void ProximityEngine<double>::ComputeDeformableContact<double>(
     DeformableContact<double>*) const;
@@ -1175,4 +1175,4 @@ template void ProximityEngine<double>::ComputeDeformableContact<double>(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::internal::ProximityEngine)
+    class ::drake::geometry::internal::ProximityEngine);

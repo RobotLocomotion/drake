@@ -86,7 +86,7 @@ In general during SpanningForest building:
 separate LinkIndex type since these are necessarily the same. */
 class LinkJointGraph {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(LinkJointGraph)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(LinkJointGraph);
 
   class Link;  // Defined in separate headers.
   class Joint;

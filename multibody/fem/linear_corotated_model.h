@@ -34,7 +34,7 @@ class LinearCorotatedModel final
     : public ConstitutiveModel<LinearCorotatedModel<T, num_locations>,
                                LinearCorotatedModelTraits<T, num_locations>> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearCorotatedModel)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearCorotatedModel);
 
   using Traits = LinearCorotatedModelTraits<T, num_locations>;
   using Data = typename Traits::Data;

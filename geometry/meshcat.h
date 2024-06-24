@@ -135,7 +135,7 @@ See \ref allow_network "DRAKE_ALLOW_NETWORK" for an environment variable
 option to deny %Meshcat entirely. */
 class Meshcat {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Meshcat)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Meshcat);
 
   // Defines which side of faces will be rendered - front, back or both.
   // From https://github.com/mrdoob/three.js/blob/dev/src/constants.js

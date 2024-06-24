@@ -162,6 +162,6 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&PrintSimulatorStatistics<T>))
+    (&PrintSimulatorStatistics<T>));
 }  // namespace systems
 }  // namespace drake

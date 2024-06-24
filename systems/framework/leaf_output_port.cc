@@ -21,4 +21,4 @@ void LeafOutputPort<T>::ThrowIfInvalidPortValueType(
 }  // namespace drake::systems
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::LeafOutputPort)
+    class ::drake::systems::LeafOutputPort);

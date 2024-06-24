@@ -69,7 +69,7 @@ class MobyLcpSolverId {
 template <class T>
 class MobyLCPSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLCPSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLCPSolver);
 
   MobyLCPSolver();
   ~MobyLCPSolver() final;

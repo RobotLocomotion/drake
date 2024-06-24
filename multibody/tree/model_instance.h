@@ -58,7 +58,7 @@ namespace internal {
 template <typename T>
 class ModelInstance final : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelInstance)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelInstance);
 
   // Creates a new instance with the given values. The name must not be empty.
   ModelInstance(ModelInstanceIndex index, std::string name);
@@ -219,4 +219,4 @@ class ModelInstance final : public MultibodyElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::ModelInstance)
+    class ::drake::multibody::internal::ModelInstance);

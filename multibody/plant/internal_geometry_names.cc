@@ -140,10 +140,10 @@ std::string GeometryNames::GetFullName(GeometryId id,
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&GeometryNames::ResetFull<T>))
+    (&GeometryNames::ResetFull<T>));
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&GeometryNames::ResetBasic<T>))
+    (&GeometryNames::ResetBasic<T>));
 
 }  // namespace internal
 }  // namespace multibody
