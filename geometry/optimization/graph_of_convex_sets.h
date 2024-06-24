@@ -34,7 +34,7 @@ struct GraphOfConvexSetsOptions {
   the lowest cost path is returned. If convex_relaxation is false or this is
   less than or equal to zero, rounding is not performed. If
   max_rounded_paths=nullopt, then each GCS method is free to choose an
-  appropriate default.*/
+  appropriate default. */
   std::optional<int> max_rounded_paths{std::nullopt};
 
   /** Performs a preprocessing step to remove edges that cannot lie on the
