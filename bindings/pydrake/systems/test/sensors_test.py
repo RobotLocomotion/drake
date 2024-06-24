@@ -8,6 +8,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -573,3 +574,26 @@ class TestSensors(unittest.TestCase):
             publish_period=0.125,
             start_time=0.0)
         self.assertIsNotNone(input_port)
+
+    @numpy_compare.check_all_types
+    def test_rotary_encoders(self, T):
+        encoders = mut.RotaryEncoders_[T](ticks_per_revolution=[100, 200])
+        self.assertEqual(encoders.get_input_port().size(), 2)
+
+        encoders = mut.RotaryEncoders_[T](
+            input_port_size=5, input_vector_indices=[0, 2])
+        self.assertEqual(encoders.get_input_port().size(), 5)
+
+        encoders = mut.RotaryEncoders_[T](
+            input_port_size=5,
+            input_vector_indices=[0, 2],
+            ticks_per_revolution=[100, 200])
+        self.assertEqual(encoders.get_input_port().size(), 5)
+
+        context = encoders.CreateDefaultContext()
+        offsets = [T(0.1), T(0.2)]
+        encoders.set_calibration_offsets(
+            context=context, calibration_offsets=offsets)
+        numpy_compare.assert_equal(
+            encoders.get_calibration_offsets(context=context),
+            offsets)
