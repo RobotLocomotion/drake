@@ -226,15 +226,14 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcSpatialInertiasInWorld,
-              {position_kinematics_cache_entry().ticket(),
-               /* also all_parameters_ticket via position_kinematics */})
+              {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
   cache_indexes_.reflected_inertia =
       this->DeclareCacheEntry(std::string("reflected inertia"),
                               VectorX<T>(internal_tree().num_velocities()),
                               &MultibodyTreeSystem<T>::CalcReflectedInertia,
-                              {this->pn_ticket()})
+                              {this->all_parameters_ticket()})
           .cache_index();
 
   // Allocate cache entry for joint damping.
@@ -242,7 +241,7 @@ void MultibodyTreeSystem<T>::Finalize() {
       this->DeclareCacheEntry(std::string("joint damping"),
                               VectorX<T>(internal_tree().num_velocities()),
                               &MultibodyTreeSystem<T>::CalcJointDamping,
-                              {this->pn_ticket()})
+                              {this->all_parameters_ticket()})
           .cache_index();
 
   // Allocate cache entry for composite-body inertias Mc_B_W(q) for each body.
@@ -252,9 +251,7 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcCompositeBodyInertiasInWorld,
-              {this->cache_entry_ticket(
-                   cache_indexes_.spatial_inertia_in_world),
-               /* also position_kinematics via spatial_inertia_in_world. */})
+              {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
   // Declare cache entry for H_PB_W(q).
@@ -274,9 +271,7 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::string("velocity kinematics"),
               VelocityKinematicsCache<T>(internal_tree().get_topology()),
               &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache,
-              {velocity_ticket,
-               this->cache_entry_ticket(cache_indexes_.across_node_jacobians),
-               /* also position_kinematics via across_node_jacobians. */})
+              {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
 
   // Allocate cache entry to store Fb_Bo_W(q, v) for each body.
@@ -292,8 +287,7 @@ void MultibodyTreeSystem<T>::Finalize() {
               // resolved.
               {this->cache_entry_ticket(
                    cache_indexes_.spatial_inertia_in_world),
-               velocity_kinematics_cache_entry().ticket()
-               /* also position_kinematics via spatial_inertia_in_world. */})
+               velocity_kinematics_cache_entry().ticket()})
           .cache_index();
 
   // Allocate articulated body inertia cache.
@@ -318,9 +312,7 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::string("ABI force bias cache (Zb_Bo_W)"),
               std::vector<SpatialForce<T>>(internal_tree().num_bodies()),
               &MultibodyTreeSystem<T>::CalcArticulatedBodyForceBias,
-              {this->cache_entry_ticket(
-                   cache_indexes_.spatial_acceleration_bias),
-               this->cache_entry_ticket(cache_indexes_.abi_cache_index)})
+              {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
 
   // Since ForceElement can be user extended to depend on any of the following
