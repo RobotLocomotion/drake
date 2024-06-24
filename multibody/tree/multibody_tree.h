@@ -1341,7 +1341,6 @@ class MultibodyTree {
   // @param[out] reflected_inertia
   //   For each degree of freedom, reflected_inertia[i] contains the reflected
   //   inertia value for the i-th degree of freedom.
-  // @note the computation depends (only) on the SystemBase::pn_ticket().
   // @throws std::exception if reflected_inertia is nullptr or if its size is
   // not num_velocities().
   void CalcReflectedInertia(const systems::Context<T>& context,
@@ -1353,7 +1352,6 @@ class MultibodyTree {
   // @param[out] joint_damping
   //  For each degree of freedom, joint_damping[i] contains the viscous damping
   //  coefficient for the i-th degree of freedom.
-  // @note the computation depends (only) on the SystemBase::pn_ticket().
   // @throws std::exception if joint_damping is nullptr or if its size is not
   // num_velocities().
   void CalcJointDamping(const systems::Context<T>& context,

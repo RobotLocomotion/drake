@@ -10,6 +10,7 @@
 namespace drake {
 using systems::BasicVector;
 using systems::Context;
+using systems::DependencyTicket;
 using systems::LeafSystem;
 using systems::Parameters;
 using systems::State;
@@ -205,9 +206,9 @@ void MultibodyTreeSystem<T>::Finalize() {
   //  control over cache dependencies on parameters. For example,
   //  all_rigid_body_parameters, etc.
 
-  const systems::DependencyTicket position_ticket =
+  const DependencyTicket position_ticket =
       is_discrete_ ? this->xd_ticket() : this->q_ticket();
-  const systems::DependencyTicket velocity_ticket =
+  const DependencyTicket velocity_ticket =
       is_discrete_ ? this->xd_ticket() : this->v_ticket();
 
   // Allocate position cache.
@@ -226,15 +227,14 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcSpatialInertiasInWorld,
-              {position_kinematics_cache_entry().ticket(),
-               /* also all_parameters_ticket via position_kinematics */})
+              {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
   cache_indexes_.reflected_inertia =
       this->DeclareCacheEntry(std::string("reflected inertia"),
                               VectorX<T>(internal_tree().num_velocities()),
                               &MultibodyTreeSystem<T>::CalcReflectedInertia,
-                              {this->pn_ticket()})
+                              {this->all_parameters_ticket()})
           .cache_index();
 
   // Allocate cache entry for joint damping.
@@ -242,7 +242,7 @@ void MultibodyTreeSystem<T>::Finalize() {
       this->DeclareCacheEntry(std::string("joint damping"),
                               VectorX<T>(internal_tree().num_velocities()),
                               &MultibodyTreeSystem<T>::CalcJointDamping,
-                              {this->pn_ticket()})
+                              {this->all_parameters_ticket()})
           .cache_index();
 
   // Allocate cache entry for composite-body inertias Mc_B_W(q) for each body.
@@ -252,19 +252,6 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcCompositeBodyInertiasInWorld,
-              {this->cache_entry_ticket(
-                   cache_indexes_.spatial_inertia_in_world),
-               /* also position_kinematics via spatial_inertia_in_world. */})
-          .cache_index();
-
-  // Declare cache entry for H_PB_W(q).
-  // The type of this cache value is std::vector<Vector6<T>>.
-  cache_indexes_.across_node_jacobians =
-      this->DeclareCacheEntry(
-              std::string("H_PB_W(q)"),
-              std::vector<Vector6<T>>(internal_tree().num_velocities()),
-              &MultibodyTreeSystem<
-                  T>::CalcAcrossNodeJacobianWrtVExpressedInWorld,
               {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
@@ -274,9 +261,7 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::string("velocity kinematics"),
               VelocityKinematicsCache<T>(internal_tree().get_topology()),
               &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache,
-              {velocity_ticket,
-               this->cache_entry_ticket(cache_indexes_.across_node_jacobians),
-               /* also position_kinematics via across_node_jacobians. */})
+              {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
 
   // Allocate cache entry to store Fb_Bo_W(q, v) for each body.
@@ -292,8 +277,18 @@ void MultibodyTreeSystem<T>::Finalize() {
               // resolved.
               {this->cache_entry_ticket(
                    cache_indexes_.spatial_inertia_in_world),
-               velocity_kinematics_cache_entry().ticket()
-               /* also position_kinematics via spatial_inertia_in_world. */})
+               velocity_kinematics_cache_entry().ticket()})
+          .cache_index();
+
+  // Declare cache entry for H_PB_W(q).
+  // The type of this cache value is std::vector<Vector6<T>>.
+  cache_indexes_.across_node_jacobians =
+      this->DeclareCacheEntry(
+              std::string("H_PB_W(q)"),
+              std::vector<Vector6<T>>(internal_tree().num_velocities()),
+              &MultibodyTreeSystem<
+                  T>::CalcAcrossNodeJacobianWrtVExpressedInWorld,
+              {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
   // Allocate articulated body inertia cache.
@@ -318,15 +313,14 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::string("ABI force bias cache (Zb_Bo_W)"),
               std::vector<SpatialForce<T>>(internal_tree().num_bodies()),
               &MultibodyTreeSystem<T>::CalcArticulatedBodyForceBias,
-              {this->cache_entry_ticket(
-                   cache_indexes_.spatial_acceleration_bias),
-               this->cache_entry_ticket(cache_indexes_.abi_cache_index)})
+              {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
 
-  // Since ForceElement can be user extended to depend on any of the following
-  // and it affects force and acceleration, we need to include them all in the
-  // prerequisites.
-  const std::set<systems::DependencyTicket> force_and_acceleration_prereqs = {
+  // Forces, and thus accelerations, are functions not only of state but also
+  // inputs. In addition, the forces and accelerations can have extra
+  // user-injected dependencies through MultibodyElement and ForceDensityField,
+  // so we must include tickets that users might depend on.
+  const std::set<DependencyTicket> force_and_acceleration_prereqs = {
       position_ticket,
       velocity_ticket,
       this->all_parameters_ticket(),
