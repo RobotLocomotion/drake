@@ -28,10 +28,10 @@ class CompliantContactManagerTester {
   }
 
   template <typename T>
-  static const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
+  static const GeometryContactData<T>& EvalGeometryContactData(
       const CompliantContactManager<T>& manager,
-      const drake::systems::Context<T>& context) {
-    return manager.EvalContactSurfaces(context);
+      const systems::Context<T>& context) {
+    return manager.EvalGeometryContactData(context);
   }
 
   // N.B. Actuation input is always included, regardless of solver choice.
