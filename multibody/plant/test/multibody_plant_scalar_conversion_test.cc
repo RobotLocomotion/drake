@@ -361,40 +361,16 @@ INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestExpression,
 TEST_P(DiscretePlantTestExpression, ForcedUpdate) {
   const auto& diagram = model_->diagram();
   auto updates = diagram.AllocateDiscreteVariables();
-  const auto [contact_approximation, contact_model, contact_configuration] =
-      GetParam();
-
-  // In summary, even though the exceptions below are caused at different
-  // levels, we do not support discrete updates when T = symbolic::Expression.
-  std::string failure_cause_message;
-  if (model_->plant().get_discrete_contact_solver() ==
-      DiscreteContactSolver::kSap) {
-    failure_cause_message =
-        "Discrete updates with the SAP solver are not supported for T = "
-        ".*Expression";
-  } else {
-    if (model_->plant().get_contact_model() ==
-        ContactModel::kHydroelasticWithFallback) {
-      failure_cause_message =
-          ".*CalcHydroelasticWithFallback.*: This method doesn't support T = "
-          ".*Expression.";
-    } else if (model_->plant().get_contact_model() == ContactModel::kPoint) {
-      if (contact_configuration ==
-          RobotModelConfig::ContactConfig::kInContactState) {
-        failure_cause_message =
-            "Penetration queries between shapes .* are not supported for "
-            "scalar type .*Expression. .*";
-      } else {
-        failure_cause_message = "This method doesn't support T = .*Expression.";
-      }
-    } else {
-      throw std::runtime_error("Update unit test to verify this case.");
-    }
-  }
-
-  DRAKE_EXPECT_THROWS_MESSAGE(diagram.CalcForcedDiscreteVariableUpdate(
-                                  model_->context(), updates.get()),
-                              failure_cause_message);
+  // We don't support discrete updates when T = Expression. Depending on the
+  // plant configuration, the throw will happen from different places (with
+  // slightly different messages). We check two key elements of the message:
+  // - not supported
+  // - due to Expression
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
+                                               updates.get()),
+      ".* (doesn't support|does not support|not supported)"
+      ".* (T ?= ?|scalar type )[drake:symbolic]*Expression.*");
 }
 
 }  // namespace

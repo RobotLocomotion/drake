@@ -2038,6 +2038,9 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   }
 }
 
+// Deprecated for removal on 2024-10-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
   PendulumParameters parameters;
   unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
@@ -2057,6 +2060,7 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
   DRAKE_EXPECT_NO_THROW(
       autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
