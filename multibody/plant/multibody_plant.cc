@@ -68,6 +68,7 @@ using drake::multibody::SpatialForce;
 using drake::multibody::internal::AccelerationKinematicsCache;
 using drake::multibody::internal::ArticulatedBodyForceCache;
 using drake::multibody::internal::ArticulatedBodyInertiaCache;
+using drake::multibody::internal::GeometryContactSummary;
 using drake::multibody::internal::PositionKinematicsCache;
 using drake::multibody::internal::VelocityKinematicsCache;
 using systems::BasicVector;
@@ -1937,19 +1938,6 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcPointPairPenetrations(
-    const systems::Context<T>& context,
-    std::vector<PenetrationAsPointPair<T>>* output) const {
-  this->ValidateContext(context);
-  if (num_collision_geometries() > 0) {
-    const auto& query_object = EvalGeometryQueryInput(context, __func__);
-    *output = query_object.ComputePointPairPenetration();
-  } else {
-    output->clear();
-  }
-}
-
-template <typename T>
 void MultibodyPlant<T>::CopyContactResultsOutput(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
@@ -2028,7 +2016,7 @@ void MultibodyPlant<T>::AppendContactResultsPointPairContinuous(
   DRAKE_DEMAND(!is_discrete());
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      EvalPointPairPenetrations(context);
+      EvalGeometryContactSummary(context).point_pairs;
 
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
@@ -2218,7 +2206,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
   if (num_collision_geometries() == 0) return;
 
   const std::vector<ContactSurface<T>>& all_surfaces =
-      EvalContactSurfaces(context);
+      EvalGeometryContactSummary(context).surfaces;
 
   // Reserve memory here to keep from repeatedly allocating heap storage in the
   // loop below.
@@ -2612,53 +2600,57 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcContactSurfaces(
+void MultibodyPlant<T>::CalcGeometryContactSummary(
     const drake::systems::Context<T>& context,
-    std::vector<ContactSurface<T>>* contact_surfaces) const {
+    GeometryContactSummary<T>* result) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(contact_surfaces != nullptr);
-
+  result->point_pairs.clear();
+  result->surfaces.clear();
+  if (num_collision_geometries() == 0) {
+    return;
+  }
   const auto& query_object = EvalGeometryQueryInput(context, __func__);
-
-  *contact_surfaces =
-      query_object.ComputeContactSurfaces(get_contact_surface_representation());
-}
-
-template <>
-void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
-    const Context<symbolic::Expression>&,
-    std::vector<geometry::ContactSurface<symbolic::Expression>>*) const {
-  throw std::logic_error(
-      "This method doesn't support T = symbolic::Expression.");
+  switch (contact_model_) {
+    case ContactModel::kPoint: {
+      result->point_pairs = query_object.ComputePointPairPenetration();
+      return;
+    }
+    case ContactModel::kHydroelastic: {
+      if constexpr (scalar_predicate<T>::is_bool) {
+        result->surfaces = query_object.ComputeContactSurfaces(
+            get_contact_surface_representation());
+        return;
+      } else {
+        // TODO(SeanCurtis-TRI): Special case the QueryObject scalar support
+        //  such that it works as long as there are no collisions.
+        throw std::logic_error(
+            "MultibodyPlant::CalcGeometryContactSummary(): This method doesn't "
+            "support T=Expression once collision geometries have been added.");
+      }
+    }
+    case ContactModel::kHydroelasticWithFallback: {
+      if constexpr (scalar_predicate<T>::is_bool) {
+        query_object.ComputeContactSurfacesWithFallback(
+            get_contact_surface_representation(), &result->surfaces,
+            &result->point_pairs);
+        return;
+      } else {
+        // TODO(SeanCurtis-TRI): Special case the QueryObject scalar support
+        //  such that it works as long as there are no collisions.
+        throw std::logic_error(
+            "MultibodyPlant::CalcGeometryContactSummary(): This method doesn't "
+            "support T=Expression once collision geometries have been added.");
+      }
+    }
+  }
+  DRAKE_UNREACHABLE();
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<T>& context,
-    internal::HydroelasticWithFallbackCacheData<T>* data) const {
-  this->ValidateContext(context);
-  DRAKE_DEMAND(data != nullptr);
-
-  if (num_collision_geometries() > 0) {
-    const auto& query_object = EvalGeometryQueryInput(context, __func__);
-    data->contact_surfaces.clear();
-    data->point_pairs.clear();
-
-    query_object.ComputeContactSurfacesWithFallback(
-        get_contact_surface_representation(), &data->contact_surfaces,
-        &data->point_pairs);
-  }
-}
-
-template <>
-void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<symbolic::Expression>&,
-    internal::HydroelasticWithFallbackCacheData<symbolic::Expression>*) const {
-  // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
-  //  as long as there are no collisions -- akin to CalcPointPairPenetrations().
-  throw std::domain_error(
-      "MultibodyPlant<T>::CalcHydroelasticWithFallback(): This method doesn't "
-      "support T = drake::symbolic::Expression.");
+const GeometryContactSummary<T>& MultibodyPlant<T>::EvalGeometryContactSummary(
+    const Context<T>& context) const {
+  return this->get_cache_entry(cache_indices_.geometry_contact_summary)
+      .template Eval<GeometryContactSummary<T>>(context);
 }
 
 template <typename T>
@@ -3205,27 +3197,14 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // all_rigid_body_parameters, etc.
 
   // TODO(SeanCurtis-TRI): When SG caches the results of these queries itself,
-  //  (https://github.com/RobotLocomotion/drake/issues/12767), remove these
-  //  cache entries.
-  auto& hydroelastic_with_fallback_cache_entry = this->DeclareCacheEntry(
-      std::string("Hydroelastic contact with point-pair fallback"),
-      &MultibodyPlant::CalcHydroelasticWithFallback,
-      {this->configuration_ticket()});
-  cache_indices_.hydroelastic_with_fallback =
-      hydroelastic_with_fallback_cache_entry.cache_index();
-
-  // Cache entry for point contact queries.
-  auto& point_pairs_cache_entry =
-      this->DeclareCacheEntry(std::string("Point pair penetrations."),
-                              &MultibodyPlant<T>::CalcPointPairPenetrations,
+  //  (https://github.com/RobotLocomotion/drake/issues/12767), remove this
+  //  cache entry.
+  auto& geometry_contact_summary_cache_entry =
+      this->DeclareCacheEntry(std::string("GeometryContactSummary"),
+                              &MultibodyPlant::CalcGeometryContactSummary,
                               {this->configuration_ticket()});
-  cache_indices_.point_pairs = point_pairs_cache_entry.cache_index();
-
-  // Cache entry for hydroelastic contact surfaces.
-  auto& contact_surfaces_cache_entry = this->DeclareCacheEntry(
-      std::string("Hydroelastic contact surfaces."),
-      &MultibodyPlant<T>::CalcContactSurfaces, {this->configuration_ticket()});
-  cache_indices_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
+  cache_indices_.geometry_contact_summary =
+      geometry_contact_summary_cache_entry.cache_index();
 
   // Cache entry for HydroelasticContactForcesContinuous.
   const bool use_hydroelastic =
@@ -3544,6 +3523,27 @@ MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
   this->ValidateContext(context);
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   return ac.get_A_WB(body_B.mobod_index());
+}
+
+// Deprecated for removal on 2024-10-01.
+template <typename T>
+const std::vector<geometry::PenetrationAsPointPair<T>>&
+MultibodyPlant<T>::EvalPointPairPenetrations(
+    const systems::Context<T>& context) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
+  switch (contact_model_) {
+    case ContactModel::kPoint:
+    case ContactModel::kHydroelasticWithFallback: {
+      return EvalGeometryContactSummary(context).point_pairs;
+    }
+    case ContactModel::kHydroelastic: {
+      throw std::logic_error(
+          "Attempting to evaluate point pair contact for contact model that "
+          "doesn't use it");
+    }
+  }
+  DRAKE_UNREACHABLE();
 }
 
 template <typename T>
