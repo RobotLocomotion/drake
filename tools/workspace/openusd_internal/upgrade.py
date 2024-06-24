@@ -26,6 +26,7 @@ SUBDIRS = [
     "pxr/usd/sdr",
     "pxr/usd/usd",
     "pxr/usd/usdGeom",
+    "pxr/usd/usdPhysics",
     "pxr/usd/usdShade",
     "pxr/usd/usdUtils",
 ]

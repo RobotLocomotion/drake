@@ -20,18 +20,12 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
  public:
   UsdParserTest() { plant_.RegisterAsSourceForSceneGraph(&scene_graph_); }
 
-  std::vector<ModelInstanceIndex> ParseFile(const fs::path& filename) {
-    const std::string source_filename =
-        filename.is_relative()
-            ? FindResourceOrThrow("drake/multibody/parsing/test/" +
-                                  filename.string())
-            : filename.string();
-    const DataSource source{DataSource::kFilename, &source_filename};
+  std::vector<ModelInstanceIndex> ParseFile(const DataSource& source) {
     const std::optional<std::string> parent_model_name;
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_,  &resolver,    NoSelect};
-    UsdParser dut;
+    UsdParserWrapper dut;
     auto result = dut.AddAllModels(source, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
@@ -50,14 +44,80 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
   SceneGraph<double> scene_graph_;
 };
 
-TEST_F(UsdParserTest, NoSuchFile) {
-  ParseFile("/no/such/file");
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*Failed to open.*"));
+// Finds a file resource within 'usd_parser_test'.
+std::string FindUsdTestResourceOrThrow(const std::string& filename) {
+    const std::string resource_dir{
+      "drake/multibody/parsing/test/usd_parser_test/"};
+    return FindResourceOrThrow(resource_dir + filename);
 }
 
-TEST_F(UsdParserTest, BoxPlane) {
-  EXPECT_NO_THROW(ParseFile("usd_parser_test/box_plane.usda"));
-  // TODO(rpoyner-tri) Add real test logic.
+TEST_F(UsdParserTest, BasicImportTest) {
+  std::string filename = FindUsdTestResourceOrThrow("simple_geometries.usda");
+  const DataSource source{DataSource::kFilename, &filename};
+  ParseFile(source);
+  EXPECT_EQ(plant_.num_bodies(), 5);
+  EXPECT_EQ(plant_.num_collision_geometries(), 11);
+  EXPECT_EQ(plant_.num_visual_geometries(), 11);
+}
+
+TEST_F(UsdParserTest, NoSuchFile) {
+  std::string filename = "/no/such/file";
+  const DataSource source{DataSource::kFilename, &filename};
+  ParseFile(source);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*File does not exist.*"));
+}
+
+TEST_F(UsdParserTest, InvalidFileTest) {
+  std::string filename =
+    FindUsdTestResourceOrThrow("invalid/invalid_file.usd");
+  const DataSource source{DataSource::kFilename, &filename};
+  ParseFile(source);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to open USD stage:.*"));
+}
+
+TEST_F(UsdParserTest, InvalidInMemoryStageTest) {
+  std::string file_content = R"""(Invalid USD File})""";
+  const DataSource source{DataSource::kContents, &file_content};
+  ParseFile(source);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to load in-memory USD stage."));
+}
+
+TEST_F(UsdParserTest, MissingStageMetadataTest) {
+  std::string file_content = R"""(#usda 1.0
+    def "SomePrim" { })""";
+  const DataSource source{DataSource::kContents, &file_content};
+  ParseFile(source);
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+    ".*Failed to read metersPerUnit in stage metadata.*"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+    ".*Failed to read upAxis in stage metadata.*"));
+}
+
+TEST_F(UsdParserTest, UnsupportedPrimTypesTest) {
+  std::string file_content = R"""(#usda 1.0
+    (
+      metersPerUnit = 1
+      upAxis = "Z"
+    )
+    def Xform "World"
+    {
+      def "Box" (prepend apiSchemas = ["PhysicsCollisionAPI"]) { }
+      def Cone "Cone" (prepend apiSchemas = ["PhysicsCollisionAPI"]) { }
+    })""";
+  const DataSource source{DataSource::kContents, &file_content};
+  ParseFile(source);
+  // Errors from the `/World/Box` prim.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*The type of the Prim at /World/Box is not specified.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to create collision geometry.*"));
+  // Errors from the `/World/Cone` Prim.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Unsupported Prim type 'Cone'.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Failed to create collision geometry.*"));
 }
 
 }  // namespace
