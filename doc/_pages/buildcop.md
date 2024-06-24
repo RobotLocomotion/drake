@@ -189,6 +189,17 @@ If there is an issue with either cache server, post the details on the
 [#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
 channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
 
+## Monitor the Build Queue
+
+Check once per week that jobs are not stuck on the Build Queue. Occasionally,
+jobs are added to the queue but never start. This is likely due to
+infrastructure issues that prevent nodes from launching. In this case, as the
+jobs never fail, build cops are not notified via email.
+
+If jobs seems to be stuck, report the issue by tagging `@betsymcphail` on the
+[#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+channel on Slack.
+
 ## Respond to Breakage
 
 There are various reasons the build might break. Diagnose the failure, and
