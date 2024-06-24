@@ -187,9 +187,9 @@ ConvexHull::DoAddPointInSetConstraints(
     new_bindings.insert(new_bindings.end(), cons.begin(), cons.end());
     AddNewVariables(cons, &new_vars);
   }
-  return std::make_pair(std::move(Eigen::Map<VectorX<symbolic::Variable>>(
-                            new_vars.data(), new_vars.size())),
-                        std::move(new_bindings));
+  return std::make_pair(
+      Eigen::Map<VectorX<symbolic::Variable>>(new_vars.data(), new_vars.size()),
+      std::move(new_bindings));
 }
 
 std::vector<solvers::Binding<solvers::Constraint>>
