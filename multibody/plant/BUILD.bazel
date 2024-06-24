@@ -110,6 +110,7 @@ drake_cc_library(
         "deformable_model.h",
         "discrete_update_manager.h",
         "dummy_physical_model.h",
+        "geometry_contact_data.h",
         "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",

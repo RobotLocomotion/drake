@@ -20,6 +20,7 @@
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -300,7 +301,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* N.B. Keep the spelling and order of declarations here identical to the
    MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
-  const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
+  const GeometryContactData<T>& EvalGeometryContactData(
       const systems::Context<T>& context) const;
 
   void AddJointLimitsPenaltyForces(const systems::Context<T>& context,
@@ -458,10 +459,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcDiscreteContactPairs(
       const systems::Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* result) const;
-
-  int CalcNumberOfPointContacts(const systems::Context<T>& context) const;
-
-  int CalcNumberOfHydroContactPoints(const systems::Context<T>& context) const;
 
   /* Helper function for CalcDiscreteContactPairs() that computes all contact
    pairs from hydroelastic contact, if any. */

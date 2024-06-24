@@ -136,11 +136,13 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
     // Soft sphere/hard ground.
     MakeModel(hard_hydro_contact, sphere1_params, sphere2_params);
 
-    const std::vector<PenetrationAsPointPair<double>>& point_pair_penetrations =
-        plant_->EvalPointPairPenetrations(*plant_context_);
-    const int num_point_pairs = point_pair_penetrations.size();
+    const GeometryContactData<double>& geometry_contact_data =
+        EvalGeometryContactData(*plant_context_);
+    const std::vector<PenetrationAsPointPair<double>>& point_pairs =
+        geometry_contact_data.point_pairs;
     const std::vector<geometry::ContactSurface<double>>& surfaces =
-        EvalContactSurfaces(*plant_context_);
+        geometry_contact_data.surfaces;
+    const int num_point_pairs = point_pairs.size();
     ASSERT_EQ(surfaces.size(), 1u);
     const int num_hydro_pairs = surfaces[0].num_faces();
 
@@ -202,8 +204,7 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
         EXPECT_NEAR(point_pair.p_WC.z(), pz_WC, 1.0e-14);
 
         // Check the optional parameters are set correctly for point contact.
-        // The index into `point_pair_penetrations` should match the index into
-        // `pairs`.
+        // The index into `point_pairs` should match the index into `pairs`.
         EXPECT_TRUE(point_pair.point_pair_index.has_value());
         EXPECT_EQ(point_pair.point_pair_index.value(), i);
         EXPECT_FALSE(point_pair.surface_index.has_value());
@@ -264,10 +265,10 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
     return CompliantContactManagerTester::topology(*contact_manager_);
   }
 
-  const std::vector<geometry::ContactSurface<double>>& EvalContactSurfaces(
+  const GeometryContactData<double>& EvalGeometryContactData(
       const Context<double>& context) const {
-    return CompliantContactManagerTester::EvalContactSurfaces(*contact_manager_,
-                                                              context);
+    return CompliantContactManagerTester::EvalGeometryContactData(
+        *contact_manager_, context);
   }
 
   const SapContactProblem<double>& EvalSapContactProblem(
@@ -432,14 +433,14 @@ TEST_F(SpheresStackTest,
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
 
   const std::vector<PenetrationAsPointPair<double>>& point_pairs =
-      plant_->EvalPointPairPenetrations(*plant_context_);
+      EvalGeometryContactData(*plant_context_).point_pairs;
   const int num_point_pairs = point_pairs.size();
   EXPECT_EQ(num_point_pairs, 1);
   const DiscreteContactData<DiscreteContactPair<double>>& pairs =
       contact_manager_->EvalDiscreteContactPairs(*plant_context_);
 
   const std::vector<geometry::ContactSurface<double>>& surfaces =
-      EvalContactSurfaces(*plant_context_);
+      EvalGeometryContactData(*plant_context_).surfaces;
   ASSERT_EQ(surfaces.size(), 1);
   EXPECT_EQ(pairs.size(), surfaces[0].num_faces() + num_point_pairs);
 }
