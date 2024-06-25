@@ -16,14 +16,9 @@ namespace optimization {
 using drake::geometry::optimization::HPolyhedron;
 using drake::geometry::optimization::Hyperrectangle;
 using drake::geometry::optimization::Intersection;
-using drake::solvers::Binding;
-using drake::solvers::Constraint;
-using drake::solvers::LinearEqualityConstraint;
 using drake::solvers::MathematicalProgram;
 using drake::solvers::Solve;
 using drake::solvers::VectorXDecisionVariable;
-using drake::symbolic::Variable;
-using Eigen::VectorX;
 using Eigen::VectorXd;
 
 std::pair<double, double> internal::GetMinimumAndMaximumValueAlongDimension(
@@ -307,19 +302,23 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
       VectorXd ub = VectorXd::Zero(dimension);
       if (preprocess_bbox) {
         // Compute minimum and maximum value along all dimensions to store for
-        // the bounding box, and separate out those entries corresponding to
-        // continuous revolute joints.
+        // the bounding box.
         std::vector<std::pair<double, double>> bbox_values =
             internal::GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i],
                                                               all_indices);
+        // Code to convert a vector of pairs of doubles to two VectorXds.
         for (int j = 0; j < ssize(bbox_values); ++j) {
           lb[j] = bbox_values[j].first;
           ub[j] = bbox_values[j].second;
         }
       } else {
+        // Compute minimum and maximum value only along dimensions corresponding
+        // to continuous revolute joints. Other dimensions will be left with
+        // lower == upper == 0.
         std::vector<std::pair<double, double>> bbox_values =
             internal::GetMinimumAndMaximumValueAlongDimension(
                 *convex_sets_B[i], continuous_revolute_joints);
+        // Code to convert a vector of pairs of doubles to two VectorXds.
         for (int j = 0; j < ssize(bbox_values); ++j) {
           lb[continuous_revolute_joints[j]] = bbox_values[j].first;
           ub[continuous_revolute_joints[j]] = bbox_values[j].second;
@@ -329,25 +328,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     }
   }
 
-  // Mathematical program used to check if sets intersect when taking the offset
-  // into account.
-  MathematicalProgram prog;
-  VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
-  VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
-  Eigen::MatrixXd Aeq(dimension, 2 * dimension);
-  // Add x + offset == y by [-I, I][x; y] == [offset]
-  Aeq.leftCols(dimension) = -Eigen::MatrixXd::Identity(dimension, dimension);
-  Aeq.rightCols(dimension) = Eigen::MatrixXd::Identity(dimension, dimension);
-
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
-  Binding<LinearEqualityConstraint> offset_equality_constraint =
-      prog.AddLinearEqualityConstraint(Aeq, offset, {x, y});
-
-  std::vector<Variable> point_in_set_slack_variables;
-  std::vector<Binding<Constraint>> point_in_set_constraints;
-  VectorX<Variable> new_variables;
-  std::vector<Binding<Constraint>> new_constraints;
-
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     for (int j = 0; j < ssize(convex_sets_B); ++j) {
       if (convex_sets_A_and_B_are_identical && j <= i) {
@@ -400,40 +381,24 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
       // check if the sets intersect. First, if preprocess_bbox is true, we
       // perform the cheap axis-aligned bounding box intersection check,
       // possibly confirming the sets are disjoint and skipping the rest of the
-      // steps for this iteration. Otherwise, we update the offset equality
-      // constraint to use the new offset. Then, we remove any old point-in-set
-      // constraints (and associated slack variables) from the previous regions.
-      // Finally, we add the point-in-set constraints for the new convex sets.
+      // steps for this iteration. Then, we run the actual intersection program
+      // to check if the sets intersect.
       if (!HyperrectangleOffsetIntersection(bbox_A, bbox_B, offset)) {
         continue;
       }
 
-      offset_equality_constraint.evaluator()->UpdateCoefficients(Aeq, offset);
-
-      for (const auto& constraint : point_in_set_constraints) {
-        prog.RemoveConstraint(constraint);
-      }
-      for (const auto& variable : point_in_set_slack_variables) {
-        prog.RemoveDecisionVariable(variable);
-      }
-
-      point_in_set_constraints.clear();
-      point_in_set_slack_variables.clear();
-
-      std::tie(new_variables, new_constraints) =
-          convex_sets_A.at(i)->AddPointInSetConstraints(&prog, x);
-      std::move(new_variables.begin(), new_variables.end(),
-                std::back_inserter(point_in_set_slack_variables));
-      std::move(new_constraints.begin(), new_constraints.end(),
-                std::back_inserter(point_in_set_constraints));
-
-      std::tie(new_variables, new_constraints) =
-          convex_sets_B.at(j)->AddPointInSetConstraints(&prog, y);
-      std::move(new_variables.begin(), new_variables.end(),
-                std::back_inserter(point_in_set_slack_variables));
-      std::move(new_constraints.begin(), new_constraints.end(),
-                std::back_inserter(point_in_set_constraints));
-
+      MathematicalProgram prog;
+      VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
+      VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
+      Eigen::MatrixXd Aeq(dimension, 2 * dimension);
+      // Add x + offset == y by [-I, I][x; y] == [offset]
+      Aeq.leftCols(dimension) =
+          -Eigen::MatrixXd::Identity(dimension, dimension);
+      Aeq.rightCols(dimension) =
+          Eigen::MatrixXd::Identity(dimension, dimension);
+      prog.AddLinearEqualityConstraint(Aeq, offset, {x, y});
+      convex_sets_A.at(i)->AddPointInSetConstraints(&prog, x);
+      convex_sets_B.at(j)->AddPointInSetConstraints(&prog, y);
       const auto result = Solve(prog);
       if (result.is_success()) {
         // Regions are overlapping, add edge (i, j). If we're adding edges
