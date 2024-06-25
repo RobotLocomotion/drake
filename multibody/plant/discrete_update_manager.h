@@ -498,7 +498,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    number of faces discretizing the contact surface. */
   void CalcHydroelasticContactInfo(
       const systems::Context<T>& context,
-      std::vector<HydroelasticContactInfo<T>>* contact_info) const;
+      std::vector<HydroelasticContactInfo<T>>* contact_info) const
+    requires scalar_predicate<T>::is_bool;
 
   /* Eval version of CalcHydroelasticContactInfo() . */
   const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
