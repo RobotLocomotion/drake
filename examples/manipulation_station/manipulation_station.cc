@@ -867,8 +867,9 @@ void ManipulationStation<T>::Finalize(
   // TODO(SeanCurtis-TRI) It seems with the scene graph query object port
   // exported, this output port is superfluous/undesirable. This port
   // contains the FramePoseVector that connects MBP to SG. Definitely better
-  // to simply rely on the query object output port.
-  builder.ExportOutput(plant_->get_geometry_poses_output_port(),
+  // to simply rely on the query object output port. (Also the port name
+  // no longer matches what MbP provides.)
+  builder.ExportOutput(plant_->get_geometry_pose_output_port(),
                        "geometry_poses");
 
   builder.BuildInto(this);
