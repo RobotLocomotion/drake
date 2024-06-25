@@ -16,7 +16,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -24,18 +23,20 @@
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
-#include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model.h"
-#include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
+#include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/joint.h"
+#include "drake/multibody/tree/joint_actuator.h"
+#include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/scalar_conversion_traits.h"
 
 namespace drake {
 namespace multibody {
@@ -111,14 +112,18 @@ struct ContactByPenaltyMethodParameters {
   std::optional<double> gravity;
 };
 
-// Forward declaration.
+// Forward declarations for discrete_update_manager.h.
+template <typename>
+class DiscreteUpdateManager;
+// Forward declarations for geometry_contact_data.h.
+template <typename>
+struct GeometryContactData;
+// Forward declarations for plant_model_attorney.h.
 template <typename>
 class MultibodyPlantModelAttorney;
+// Forward declarations for multibody_plant_discrete_update_manager_attorney.h.
 template <typename>
 class MultibodyPlantDiscreteUpdateManagerAttorney;
-
-template <typename T>
-struct GeometryContactData;  // Defined in geometry_contact_data.h.
 
 }  // namespace internal
 
