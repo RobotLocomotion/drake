@@ -97,12 +97,22 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.collision_geometries_;
   }
 
-  static double default_contact_stiffness(const MultibodyPlant<T>& plant) {
-    return plant.penalty_method_contact_parameters_.geometry_stiffness;
+  static double default_point_contact_stiffness(
+      const MultibodyPlant<T>& plant) {
+    return plant.proximity_defaults_.point_contact_stiffness;
   }
 
-  static double default_contact_dissipation(const MultibodyPlant<T>& plant) {
-    return plant.penalty_method_contact_parameters_.dissipation;
+  static double default_hydroelasic_modulus(const MultibodyPlant<T>& plant) {
+    return plant.proximity_defaults_.hydroelasic_modulus;
+  }
+
+  static double default_hunt_crossley_dissipation(
+      const MultibodyPlant<T>& plant) {
+    return plant.proximity_defaults_.hunt_crossley_dissipation;
+  }
+
+  static double default_relaxation_time(const MultibodyPlant<T>& plant) {
+    return plant.proximity_defaults_.relaxation_time;
   }
 
   static const std::unordered_map<geometry::GeometryId, BodyIndex>&
