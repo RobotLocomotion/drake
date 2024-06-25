@@ -2621,7 +2621,9 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     GeometryContactData<T>* result) const {
   this->ValidateContext(context);
   result->point_pairs.clear();
-  result->surfaces.clear();
+  if constexpr (scalar_predicate<T>::is_bool) {
+    result->surfaces.clear();
+  }
 
   // Bail out early when there is not any proximity geometry.
   if (num_collision_geometries() == 0) {

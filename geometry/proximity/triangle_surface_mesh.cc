@@ -6,6 +6,16 @@ namespace drake {
 namespace geometry {
 
 template <typename T>
+void TriangleSurfaceMesh<T>::ReverseFaceWinding() {
+  for (auto& f : triangles_) {
+    f.ReverseWinding();
+  }
+  for (auto& n : face_normals_) {
+    n = -n;
+  }
+}
+
+template <typename T>
 void TriangleSurfaceMesh<T>::SetAllPositions(
     const Eigen::Ref<const VectorX<T>>& p_MVs) {
   if (p_MVs.size() != 3 * num_vertices()) {

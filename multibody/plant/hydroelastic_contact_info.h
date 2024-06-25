@@ -31,6 +31,9 @@ namespace multibody {
  `contact_surface().id_M()` and `contact_surface().id_N()`) are attached to
  bodies A and B, respectively.
 
+ When T = Expression, the class is specialized to not contain any member data,
+ because ContactSurface doesn't support Expression.
+
  @tparam_default_scalar
  */
 template <typename T>
@@ -124,8 +127,8 @@ class HydroelasticContactInfo {
 
   ~HydroelasticContactInfo();
 
-  /// Returns a reference to the ContactSurface data structure. Note that
-  /// the mesh and gradient vector fields are expressed in the world frame.
+  /** Returns a reference to the ContactSurface data structure. Note that
+   the mesh and gradient vector fields are expressed in the world frame. */
   const geometry::ContactSurface<T>& contact_surface() const {
     if (std::holds_alternative<const geometry::ContactSurface<T>*>(
             contact_surface_)) {
@@ -136,17 +139,17 @@ class HydroelasticContactInfo {
     }
   }
 
-  /// Gets the intermediate data, including tractions, computed by the
-  /// quadrature process.
+  /** Gets the intermediate data, including tractions, computed by the
+   quadrature process. */
   const std::vector<HydroelasticQuadraturePointData<T>>& quadrature_point_data()
       const {
     return quadrature_point_data_;
   }
 
-  /// Gets the spatial force applied on body A, at the centroid point C of the
-  /// surface mesh M, and expressed in the world frame W. The position `p_WC` of
-  /// the centroid point C in the world frame W can be obtained with
-  /// `contact_surface().centroid()`.
+  /** Gets the spatial force applied on body A, at the centroid point C of the
+   surface mesh M, and expressed in the world frame W. The position `p_WC` of
+   the centroid point C in the world frame W can be obtained with
+   `contact_surface().centroid()`. */
   const SpatialForce<T>& F_Ac_W() const { return F_Ac_W_; }
 
  private:
@@ -161,6 +164,17 @@ class HydroelasticContactInfo {
   // The traction and slip velocity evaluated at each quadrature point.
   std::vector<HydroelasticQuadraturePointData<T>> quadrature_point_data_;
 };
+
+#ifndef __MKDOC_PY__
+/** Full specialization of HydroelasticContactInfo for T = Expression, with
+ no member data. */
+template <>
+class HydroelasticContactInfo<symbolic::Expression> {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticContactInfo);
+  HydroelasticContactInfo() = default;
+};
+#endif
 
 }  // namespace multibody
 }  // namespace drake

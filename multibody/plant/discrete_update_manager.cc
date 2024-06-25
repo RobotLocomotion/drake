@@ -137,16 +137,18 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       discrete_contact_pairs_cache_entry.cache_index();
 
   // Cache hydroelastic contact info.
-  const auto& hydroelastic_contact_info_cache_entry = DeclareCacheEntry(
-      "Hydroelastic contact info.",
-      systems::ValueProducer(
-          this, &DiscreteUpdateManager<T>::CalcHydroelasticContactInfo),
-      // Compliant contact forces due to hydroelastics with Hunt &
-      // Crosseley are function of the kinematic variables q & v only.
-      {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
-  cache_indexes_.hydroelastic_contact_info =
-      hydroelastic_contact_info_cache_entry.cache_index();
+  if constexpr (scalar_predicate<T>::is_bool) {
+    const auto& hydroelastic_contact_info_cache_entry = DeclareCacheEntry(
+        "Hydroelastic contact info.",
+        systems::ValueProducer(
+            this, &DiscreteUpdateManager<T>::CalcHydroelasticContactInfo),
+        // Compliant contact forces due to hydroelastics with Hunt &
+        // Crosseley are function of the kinematic variables q & v only.
+        {systems::System<T>::xd_ticket(),
+         systems::System<T>::all_parameters_ticket()});
+    cache_indexes_.hydroelastic_contact_info =
+        hydroelastic_contact_info_cache_entry.cache_index();
+  }
 
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
@@ -569,7 +571,9 @@ void DiscreteUpdateManager<T>::AppendContactResultsForHydroelasticContact(
 template <typename T>
 void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
     const systems::Context<T>& context,
-    std::vector<HydroelasticContactInfo<T>>* contact_info) const {
+    std::vector<HydroelasticContactInfo<T>>* contact_info) const
+  requires scalar_predicate<T>::is_bool
+{  // NOLINT(whitespace/braces)
   DRAKE_DEMAND(contact_info != nullptr);
   const std::vector<ContactSurface<T>>& all_surfaces =
       EvalGeometryContactData(context).surfaces;
