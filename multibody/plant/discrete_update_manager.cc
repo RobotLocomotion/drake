@@ -283,8 +283,7 @@ DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {
   return plant()
       .get_cache_entry(cache_indexes_.contact_solver_results)
-      .template Eval<ContactSolverResults<T>>(
-          context);
+      .template Eval<ContactSolverResults<T>>(context);
 }
 
 template <typename T>
