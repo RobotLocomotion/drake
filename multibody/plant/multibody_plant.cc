@@ -2615,13 +2615,13 @@ void MultibodyPlant<T>::CalcGeometryContactData(
   switch (contact_model_) {
     case ContactModel::kPoint: {
       result->point_pairs = query_object.ComputePointPairPenetration();
-      return;
+      break;
     }
     case ContactModel::kHydroelastic: {
       if constexpr (scalar_predicate<T>::is_bool) {
         result->surfaces = query_object.ComputeContactSurfaces(
             get_contact_surface_representation());
-        return;
+        break;
       } else {
         // TODO(SeanCurtis-TRI): Special case the QueryObject scalar support
         //  such that it works as long as there are no collisions.
@@ -2635,7 +2635,7 @@ void MultibodyPlant<T>::CalcGeometryContactData(
         query_object.ComputeContactSurfacesWithFallback(
             get_contact_surface_representation(), &result->surfaces,
             &result->point_pairs);
-        return;
+        break;
       } else {
         // TODO(SeanCurtis-TRI): Special case the QueryObject scalar support
         //  such that it works as long as there are no collisions.
@@ -2645,7 +2645,16 @@ void MultibodyPlant<T>::CalcGeometryContactData(
       }
     }
   }
-  DRAKE_UNREACHABLE();
+  if constexpr (std::is_same_v<T, double>) {
+    if (is_discrete()) {
+      const auto* deformable_driver =
+          discrete_update_manager_->deformable_driver();
+      if (deformable_driver != nullptr) {
+        deformable_driver->CalcDeformableContact(query_object,
+                                                 &result->deformable);
+      }
+    }
+  }
 }
 
 template <typename T>

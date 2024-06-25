@@ -236,6 +236,12 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     return deformable_driver_.get();
   }
 
+  /* Private MultibodyPlant method, make public here. */
+  const GeometryContactData<T>& EvalGeometryContactData(
+      const systems::Context<T>& context) const;
+
+  systems::DependencyTicket geometry_contact_data_ticket() const;
+
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
@@ -301,8 +307,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* N.B. Keep the spelling and order of declarations here identical to the
    MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
-  const GeometryContactData<T>& EvalGeometryContactData(
-      const systems::Context<T>& context) const;
+  // Note that EvalGeometryContactData is in our public section, above.
 
   void AddJointLimitsPenaltyForces(const systems::Context<T>& context,
                                    MultibodyForces<T>* forces) const;
