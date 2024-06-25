@@ -776,6 +776,20 @@ ContactModel MultibodyPlant<T>::get_contact_model() const {
 }
 
 template <typename T>
+int MultibodyPlant<T>::num_collision_geometries() const {
+  int result = num_collision_geometries_;
+  if constexpr (std::is_same_v<T, double>) {
+    const DeformableModel<T>* deformable_model =
+        physical_models_->deformable_model();
+    if (deformable_model != nullptr) {
+      // We assume that all deformable bodies have proximity properties.
+      result += deformable_model->num_bodies();
+    }
+  }
+  return result;
+}
+
+template <typename T>
 void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
     const RigidBody<T>& body) {
   RandomGenerator generator;
@@ -2649,6 +2663,16 @@ void MultibodyPlant<T>::CalcGeometryContactData(
       }
     }
   }
+  if constexpr (std::is_same_v<T, double>) {
+    if (is_discrete()) {
+      const auto* deformable_driver =
+          discrete_update_manager_->deformable_driver();
+      if (deformable_driver != nullptr) {
+        deformable_driver->CalcDeformableContact(query_object,
+                                                 &result->deformable);
+      }
+    }
+  }
 
   // Filter out irrelevant contacts due to joint locking, i.e., between bodies
   // that belong to trees with 0 degrees of freedom. For a contact to remain in
@@ -2691,6 +2715,7 @@ void MultibodyPlant<T>::CalcGeometryContactData(
         };
     std::erase_if(result->surfaces, is_irrelevant_surface);
   }
+  // TODO(jwnimmer-tri) Filter out irrelevant deformable contact, too.
 }
 
 template <typename T>
