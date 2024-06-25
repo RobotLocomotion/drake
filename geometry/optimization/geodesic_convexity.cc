@@ -272,9 +272,8 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     VectorXd lb = VectorXd::Zero(dimension);
     VectorXd ub = VectorXd::Zero(dimension);
     if (preprocess_bbox) {
-      // Compute minimum and maximum value along all dimensions to store for the
-      // bounding box, and separate out those entries corresponding to
-      // continuous revolute joints.
+      // Compute minimum and maximum value along all dimensions to store for
+      // the bounding box.
       std::vector<std::pair<double, double>> bbox_values =
           internal::GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i],
                                                             all_indices);
@@ -283,6 +282,9 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
         ub[j] = bbox_values[j].second;
       }
     } else {
+      // Compute minimum and maximum value only along dimensions corresponding
+      // to continuous revolute joints. Other dimensions will be left with
+      // lower == upper == 0.
       std::vector<std::pair<double, double>> bbox_values =
           internal::GetMinimumAndMaximumValueAlongDimension(
               *convex_sets_A[i], continuous_revolute_joints);
@@ -383,7 +385,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
       // possibly confirming the sets are disjoint and skipping the rest of the
       // steps for this iteration. Then, we run the actual intersection program
       // to check if the sets intersect.
-      if (!HyperrectangleOffsetIntersection(bbox_A, bbox_B, offset)) {
+      if (preprocess_bbox && !HyperrectangleOffsetIntersection(bbox_A, bbox_B, offset)) {
         continue;
       }
 
