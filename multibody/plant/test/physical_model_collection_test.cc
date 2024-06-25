@@ -15,7 +15,7 @@ namespace {
 
 GTEST_TEST(PhysicalModelCollectionTest, EmptyCollection) {
   MultibodyPlant<double> plant(0.01);
-  PhysicalModelCollection<double> model_collection(&plant);
+  PhysicalModelCollection<double> model_collection;
   model_collection.DeclareSystemResources();
 
   EXPECT_EQ(model_collection.dummy_model(), nullptr);
@@ -42,7 +42,7 @@ GTEST_TEST(PhysicalModelCollectionTest, EmptyCollection) {
 
 GTEST_TEST(PhysicalModelCollectionTest, AddEmptyModels) {
   MultibodyPlant<double> plant(0.01);
-  PhysicalModelCollection<double> model_collection(&plant);
+  PhysicalModelCollection<double> model_collection;
 
   auto dummy_model = std::make_unique<DummyPhysicalModel<double>>(&plant);
   DummyPhysicalModel<double>* dummy_model_ptr = dummy_model.get();
@@ -94,7 +94,7 @@ GTEST_TEST(PhysicalModelCollectionTest, NonEmptyDeformableModel) {
   plant_config.time_step = 0.01;
   plant_config.discrete_contact_approximation = "sap";
   auto [plant, _] = AddMultibodyPlant(plant_config, &builder);
-  PhysicalModelCollection<double> model_collection(&plant);
+  PhysicalModelCollection<double> model_collection;
 
   DeformableModel<double>& deformable_model =
       model_collection.AddDeformableModel(
@@ -115,20 +115,12 @@ GTEST_TEST(PhysicalModelCollectionTest, NonEmptyDeformableModel) {
   EXPECT_FALSE(model_collection.is_cloneable_to_symbolic());
   /* Target owning plants. */
   MultibodyPlant<double> double_plant(0.01);
-  MultibodyPlant<AutoDiffXd> autodiff_plant(0.01);
-  MultibodyPlant<symbolic::Expression> symbolic_plant(0.01);
   EXPECT_NO_THROW(model_collection.CloneToScalar<double>(&double_plant));
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      model_collection.CloneToScalar<AutoDiffXd>(&autodiff_plant),
-      ".*CloneToAutoDiffXd.*is_empty.*failed.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      model_collection.CloneToScalar<symbolic::Expression>(&symbolic_plant),
-      ".*CloneToSymbolic.*is_empty.*failed.*");
 }
 
 GTEST_TEST(PhysicalModelCollectionTest, IncompatibleModel) {
   MultibodyPlant<double> plant(0.01);
-  PhysicalModelCollection<double> model_collection(&plant);
+  PhysicalModelCollection<double> model_collection;
   model_collection.AddDeformableModel(
       std::make_unique<DeformableModel<double>>(&plant));
 
@@ -143,8 +135,22 @@ GTEST_TEST(PhysicalModelCollectionTest, IncompatibleModel) {
       std::exception);
   DRAKE_EXPECT_THROWS_MESSAGE(
       model_collection.AddDummyModel(std::move(finalized_model)),
-      ".*AddDummyModel.*model->plant.*==.*plant.*failed.*");
+      "The given model belongs to a different MultibodyPlant.");
   EXPECT_NO_THROW(model_collection.AddDummyModel(std::move(ok_model)));
+}
+
+GTEST_TEST(PhysicalModelCollectionTest, DeclareSceneGraphPorts) {
+  MultibodyPlant<double> plant(0.01);
+  PhysicalModelCollection<double> model_collection;
+
+  model_collection.AddDummyModel(
+      std::make_unique<DummyPhysicalModel<double>>(&plant));
+  const DummyPhysicalModel<double>& dummy_model =
+      *model_collection.dummy_model();
+  DRAKE_ASSERT_THROWS_MESSAGE(dummy_model.GetSceneGraphPortOrThrow(),
+                              ".*SceneGraph.*port.*not.*declared.*");
+  model_collection.DeclareSceneGraphPorts();
+  EXPECT_NO_THROW(dummy_model.GetSceneGraphPortOrThrow());
 }
 
 }  // namespace
