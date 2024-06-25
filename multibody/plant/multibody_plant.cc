@@ -2704,15 +2704,17 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     vector_erase_unordered(&result->point_pairs, i);
     --i;
   }
-  for (int i = 0; i < ssize(result->surfaces); ++i) {
-    const geometry::ContactSurface<T>& surface = result->surfaces[i];
-    if (geometry_is_relevant(surface.id_M()) ||
-        geometry_is_relevant(surface.id_N())) {
-      continue;
+  if constexpr (scalar_predicate<T>::is_bool) {
+    for (int i = 0; i < ssize(result->surfaces); ++i) {
+      const geometry::ContactSurface<T>& surface = result->surfaces[i];
+      if (geometry_is_relevant(surface.id_M()) ||
+          geometry_is_relevant(surface.id_N())) {
+        continue;
+      }
+      // Filter out this contact; keep `i` the same next time through the loop.
+      vector_erase_unordered(&result->surfaces, i);
+      --i;
     }
-    // Filter out this contact; keep `i` the same next time through the loop.
-    vector_erase_unordered(&result->surfaces, i);
-    --i;
   }
 }
 
