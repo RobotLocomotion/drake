@@ -117,6 +117,15 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       V_WB_all[end_effector_link_->index()];
   EXPECT_EQ(V_WE.get_coeffs(), V_WE_from_port.get_coeffs());
 
+  // Also sanity check the deprecated port name (2024-10-01).
+  {
+    const auto& V_WB_all_deprecated =
+        plant_->GetOutputPort("spatial_velocities")
+            .Eval<std::vector<SpatialVelocity<double>>>(*context_);
+    EXPECT_EQ(V_WB_all_deprecated.at(end_effector_link_->index()).get_coeffs(),
+              V_WB_all.at(end_effector_link_->index()).get_coeffs());
+  }
+
   // Spatial velocity of link 3 measured in frame H and expressed in the
   // end-effector frame E.
   const Frame<double>& frame_E = end_effector_link_->body_frame();
@@ -354,6 +363,15 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   const SpatialAcceleration<double>& A_WE_W_expected3 =
       A_WB_all[end_effector_link_->index()];
   EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_expected3.get_coeffs());
+
+  // Also sanity check the deprecated port name (2024-10-01).
+  {
+    const auto& A_WB_all_deprecated =
+        plant_->GetOutputPort("spatial_accelerations")
+            .Eval<std::vector<SpatialAcceleration<double>>>(*context_);
+    EXPECT_EQ(A_WB_all_deprecated.at(end_effector_link_->index()).get_coeffs(),
+              A_WB_all.at(end_effector_link_->index()).get_coeffs());
+  }
 
   // Verify A_WH_W, frame_H's spatial acceleration in world W, expressed in W.
   // Do this by differentiating the spatial velocity V_WH_W.
