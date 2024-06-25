@@ -385,7 +385,8 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
       // possibly confirming the sets are disjoint and skipping the rest of the
       // steps for this iteration. Then, we run the actual intersection program
       // to check if the sets intersect.
-      if (preprocess_bbox && !HyperrectangleOffsetIntersection(bbox_A, bbox_B, offset)) {
+      if (preprocess_bbox &&
+          !HyperrectangleOffsetIntersection(bbox_A, bbox_B, offset)) {
         continue;
       }
 
