@@ -318,6 +318,13 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
   TestSocpDuplicatedVariable2(solver, std::nullopt, 1E-6);
 }
 
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable3) {
+  GurobiSolver solver;
+  SolverOptions solver_options;
+  solver_options.SetOption(GurobiSolver::id(), "BarQCPConvTol", 1E-9);
+  TestSocpDuplicatedVariable3(solver, solver_options, 1E-5);
+}
+
 GTEST_TEST(L2NormCost, ShortestDistanceToThreePoints) {
   GurobiSolver solver;
   ShortestDistanceToThreePoints tester{};

@@ -265,6 +265,19 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
     }
   }
 }
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable3) {
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    SCOPED_TRACE(fmt::format("method = {}", method));
+    CsdpSolver solver;
+    if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      TestSocpDuplicatedVariable3(solver, solver_options, 1E-4);
+    }
+  }
+}
 }  // namespace test
 
 namespace test {
