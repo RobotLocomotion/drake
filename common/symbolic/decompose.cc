@@ -95,8 +95,9 @@ void ThrowError(const string& type, const string& expression,
 // `m` does not appear in `map`, it uses `0.0` instead. If the coefficient is
 // not a constant, it throws a runtime_error.
 template <typename Derived>
-void FindCoefficientAndFill(const Polynomial::MapType& map, const Monomial& m,
-                            const int i, const Eigen::MatrixBase<Derived>& M) {
+bool FindCoefficientAndFill(const Polynomial::MapType& map, const Monomial& m,
+                            const int i, const Eigen::MatrixBase<Derived>& M,
+                            bool throw_on_failure = true) {
   const auto it = map.find(m);
   // Here, we use const_cast hack. See
   // https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html for
@@ -106,12 +107,16 @@ void FindCoefficientAndFill(const Polynomial::MapType& map, const Monomial& m,
   if (it != map.end()) {
     // m should have a constant coefficient.
     if (!is_constant(it->second)) {
+      if (!throw_on_failure) {
+        return false;
+      }
       ThrowError("non-constant", it->second.to_string(), "");
     }
     M_dummy(i) = get_constant_value(it->second);
   } else {
     M_dummy(i) = 0.0;
   }
+  return true;
 }
 }  // namespace
 
@@ -153,21 +158,28 @@ void DecomposeLinearExpressions(
   }
 }
 
-void DecomposeAffineExpressions(
+bool DecomposeAffineExpressions(
     const Eigen::Ref<const VectorX<Expression>>& expressions,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
-    EigenPtr<Eigen::MatrixXd> M, EigenPtr<Eigen::VectorXd> v) {
+    EigenPtr<Eigen::MatrixXd> M, EigenPtr<Eigen::VectorXd> v,
+    bool throw_on_failure) {
   DRAKE_DEMAND(M != nullptr && v != nullptr);
   DRAKE_DEMAND(M->rows() == expressions.rows() && M->cols() == vars.rows());
   DRAKE_DEMAND(v->rows() == expressions.rows());
   for (int i = 0; i < expressions.size(); ++i) {
     const Expression& e{expressions(i)};
     if (!e.is_polynomial()) {
+      if (!throw_on_failure) {
+        return false;
+      }
       ThrowError("non-polynomial", e.to_string(),
                  "");  // e should be a polynomial.
     }
     const Polynomial p{e, Variables{vars}};
     if (p.TotalDegree() > 1) {
+      if (!throw_on_failure) {
+        return false;
+      }
       ThrowError(
           "non-linear", e.to_string(),
           fmt::format(" of indeterminates {}",
@@ -176,11 +188,17 @@ void DecomposeAffineExpressions(
     const Polynomial::MapType& map{p.monomial_to_coefficient_map()};
     // Fill M(i, j).
     for (int j = 0; j < vars.size(); ++j) {
-      FindCoefficientAndFill(map, Monomial{vars.coeff(j)}, j, M->row(i));
+      if (!FindCoefficientAndFill(map, Monomial{vars.coeff(j)}, j, M->row(i),
+                                  throw_on_failure)) {
+        return false;
+      }
     }
     // Fill v(i).
-    FindCoefficientAndFill(map, Monomial{}, i, *v);
+    if (!FindCoefficientAndFill(map, Monomial{}, i, *v, throw_on_failure)) {
+      return false;
+    }
   }
+  return true;
 }
 
 void ExtractAndAppendVariablesFromExpression(
@@ -285,9 +303,10 @@ void DecomposeQuadraticPolynomial(
   }
 }
 
-void DecomposeAffineExpressions(const Eigen::Ref<const VectorX<Expression>>& v,
+bool DecomposeAffineExpressions(const Eigen::Ref<const VectorX<Expression>>& v,
                                 Eigen::MatrixXd* A, Eigen::VectorXd* b,
-                                VectorX<Variable>* vars) {
+                                VectorX<Variable>* vars,
+                                bool throw_on_failure) {
   // 0. Setup map_var_to_index and var_vec.
   std::unordered_map<Variable::Id, int> map_var_to_index;
   std::tie(*vars, map_var_to_index) = ExtractVariablesFromExpression(v);
@@ -299,21 +318,29 @@ void DecomposeAffineExpressions(const Eigen::Ref<const VectorX<Expression>>& v,
   Eigen::RowVectorXd Ai(A->cols());
   for (int i{0}; i < v.size(); ++i) {
     const Expression& e_i{v(i)};
-    DecomposeAffineExpression(e_i, map_var_to_index, &Ai, b->data() + i);
+    if (DecomposeAffineExpression(e_i, map_var_to_index, &Ai, b->data() + i,
+                                  throw_on_failure) < 0) {
+      return false;
+    }
     A->row(i) = Ai;
   }
+  return true;
 }
 
 int DecomposeAffineExpression(
     const symbolic::Expression& e,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
-    EigenPtr<Eigen::RowVectorXd> coeffs, double* constant_term) {
+    EigenPtr<Eigen::RowVectorXd> coeffs, double* constant_term,
+    bool throw_on_failure) {
   DRAKE_DEMAND(coeffs->cols() == static_cast<int>(map_var_to_index.size()));
   coeffs->setZero();
   *constant_term = 0;
   if (!e.is_polynomial()) {
+    if (!throw_on_failure) {
+      return -1;
+    }
     std::ostringstream oss;
-    oss << "Expression " << e << "is not a polynomial.\n";
+    oss << "Expression " << e << " is not a polynomial.\n";
     throw std::runtime_error(oss.str());
   }
   const symbolic::Polynomial poly{e};
@@ -323,6 +350,9 @@ int DecomposeAffineExpression(
     DRAKE_ASSERT(is_constant(p.second));
     const double p_coeff = symbolic::get_constant_value(p.second);
     if (p_monomial.total_degree() > 1) {
+      if (!throw_on_failure) {
+        return -1;
+      }
       std::stringstream oss;
       oss << "Expression " << e << " is non-linear.";
       throw std::runtime_error(oss.str());

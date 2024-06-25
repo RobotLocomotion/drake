@@ -1109,7 +1109,8 @@ void DefineSymbolicMonolith(py::module m) {
             return std::make_pair(M, v);
           },
           py::arg("expressions"), py::arg("vars"),
-          doc.DecomposeAffineExpressions.doc_4args_expressions_vars_M_v)
+          doc.DecomposeAffineExpressions
+              .doc_5args_expressions_vars_M_v_throw_on_failure)
       .def(
           "ExtractVariablesFromExpression",
           [](const symbolic::Expression& e) {
@@ -1148,7 +1149,8 @@ void DefineSymbolicMonolith(py::module m) {
             symbolic::DecomposeAffineExpressions(v, &A, &b, &vars);
             return std::make_tuple(A, b, vars);
           },
-          py::arg("v"), doc.DecomposeAffineExpressions.doc_4args_v_A_b_vars)
+          py::arg("v"),
+          doc.DecomposeAffineExpressions.doc_5args_v_A_b_vars_throw_on_failure)
       .def(
           "DecomposeAffineExpression",
           [](const symbolic::Expression& e,

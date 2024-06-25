@@ -312,8 +312,8 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
 
 // ParseLorentzConeConstraint needs to throw on failure, but ParseConstraint
 // needs to gracefully handle cases where the constraint is not a Lorentz cone;
-// this method provides the a single decomposition implementation to support
-// both cases. If throw_on_failure is false, and we fail, then this method will
+// this method provides a single decomposition implementation to support both
+// cases. If throw_on_failure is false, and we fail, then this method will
 // return a nullptr.
 std::unique_ptr<Binding<LorentzConeConstraint>> MaybeParseLorentzConeConstraint(
     const symbolic::Formula& f, bool throw_on_failure = true,
@@ -339,16 +339,11 @@ std::unique_ptr<Binding<LorentzConeConstraint>> MaybeParseLorentzConeConstraint(
   Eigen::MatrixXd A;
   Eigen::VectorXd b;
   VectorXDecisionVariable greater_vars;
-  if (!throw_on_failure) {
-    // Then we must catch the cases that would cause DecomposeAffineExpressions
-    // to throw.
-    if (!greater.is_polynomial() ||
-        symbolic::Polynomial(greater).TotalDegree() > 1) {
-      return nullptr;
-    }
+  if (!symbolic::DecomposeAffineExpressions(Vector1<Expression>{greater}, &A,
+                                            &b, &greater_vars,
+                                            throw_on_failure)) {
+    return nullptr;
   }
-  symbolic::DecomposeAffineExpressions(Vector1<Expression>{greater}, &A, &b,
-                                       &greater_vars);
   DRAKE_DEMAND(A.rows() == 1);
   DRAKE_DEMAND(b.size() == 1);
   auto [is_l2norm, C, d, lesser_vars] =

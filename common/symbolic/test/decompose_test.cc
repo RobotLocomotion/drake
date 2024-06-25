@@ -139,15 +139,15 @@ TEST_F(SymbolicDecomposeTest, DecomposeLinearExpressionsExceptionAffine) {
 }
 
 TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsDynamic) {
-  DecomposeAffineExpressions(M_ * x_ + v_, x_, &M_expected_dynamic_,
-                             &v_expected_dynamic_);
+  EXPECT_TRUE(DecomposeAffineExpressions(M_ * x_ + v_, x_, &M_expected_dynamic_,
+                                         &v_expected_dynamic_));
   EXPECT_EQ(M_expected_dynamic_, M_);
   EXPECT_EQ(v_expected_dynamic_, v_);
 }
 
 TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsStatic) {
-  DecomposeAffineExpressions(M_ * x_ + v_, x_, &M_expected_static_,
-                             &v_expected_static_);
+  EXPECT_TRUE(DecomposeAffineExpressions(M_ * x_ + v_, x_, &M_expected_static_,
+                                         &v_expected_static_));
   EXPECT_EQ(M_expected_static_, M_);
   EXPECT_EQ(v_expected_static_, v_);
 }
@@ -155,7 +155,8 @@ TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsStatic) {
 TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsBlock) {
   Eigen::Matrix4d M_expected;
   auto block = M_expected.block(0, 0, 3, 3);
-  DecomposeAffineExpressions(M_ * x_ + v_, x_, &block, &v_expected_static_);
+  EXPECT_TRUE(DecomposeAffineExpressions(M_ * x_ + v_, x_, &block,
+                                         &v_expected_static_));
   EXPECT_EQ(M_expected.block(0, 0, 3, 3), M_);
   EXPECT_EQ(v_expected_static_, v_);
 }
@@ -167,10 +168,22 @@ TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsExceptionNonlinear) {
                  x1_ * x1_,
                  x2_ * x2_;
   // clang-format on
-  EXPECT_THROW(
-      DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_, x_,
-                                 &M_expected_static_, &v_expected_static_),
-      runtime_error);
+  EXPECT_FALSE(DecomposeAffineExpressions(
+      M_ * x_ + extra_terms_, x_, &M_expected_static_, &v_expected_static_,
+      /*throw_on_failure=*/false));
+  EXPECT_THROW(DecomposeAffineExpressions(
+                   M_ * x_ + v_ + extra_terms_, x_, &M_expected_static_,
+                   &v_expected_static_, /*throw_on_failure=*/true),
+               runtime_error);
+
+  // Check variant with vars as an output.
+  EXPECT_FALSE(DecomposeAffineExpressions(
+      M_ * x_ + extra_terms_, &M_expected_dynamic_, &v_expected_dynamic_, &x_,
+      /*throw_on_failure=*/false));
+  EXPECT_THROW(DecomposeAffineExpressions(
+                   M_ * x_ + v_ + extra_terms_, &M_expected_dynamic_,
+                   &v_expected_dynamic_, &x_, /*throw_on_failure=*/true),
+               runtime_error);
 }
 
 // Adds terms with non-const coefficients to check if we have an exception.
@@ -181,10 +194,23 @@ TEST_F(SymbolicDecomposeTest,
                   b_ * x1_,
                   c_ * x2_;
   // clang-format on
-  EXPECT_THROW(
-      DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_, x_,
-                                 &M_expected_static_, &v_expected_static_),
-      runtime_error);
+  EXPECT_FALSE(DecomposeAffineExpressions(
+      M_ * x_ + v_ + extra_terms_, x_, &M_expected_static_, &v_expected_static_,
+      /*throw_on_failure=*/false));
+  EXPECT_THROW(DecomposeAffineExpressions(
+                   M_ * x_ + v_ + extra_terms_, x_, &M_expected_static_,
+                   &v_expected_static_, /*throw_on_failure=*/true),
+               runtime_error);
+
+  // Check variant with vars as an output.
+  EXPECT_FALSE(DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_,
+                                          &M_expected_dynamic_,
+                                          &v_expected_dynamic_, &x_,
+                                          /*throw_on_failure=*/false));
+  EXPECT_THROW(DecomposeAffineExpressions(
+                   M_ * x_ + v_ + extra_terms_, &M_expected_dynamic_,
+                   &v_expected_dynamic_, &x_, /*throw_on_failure=*/true),
+               runtime_error);
 }
 
 // Adds nonlinear terms to check if we have an exception.
@@ -195,10 +221,23 @@ TEST_F(SymbolicDecomposeTest,
                  cos(x1_),
                  log(x2_);
   // clang-format on
-  EXPECT_THROW(
-      DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_, x_,
-                                 &M_expected_static_, &v_expected_static_),
-      runtime_error);
+  EXPECT_FALSE(DecomposeAffineExpressions(
+      M_ * x_ + v_ + extra_terms_, x_, &M_expected_static_, &v_expected_static_,
+      /*throw_on_failure=*/false));
+  EXPECT_THROW(DecomposeAffineExpressions(
+                   M_ * x_ + v_ + extra_terms_, x_, &M_expected_static_,
+                   &v_expected_static_, /*throw_on_failure=*/true),
+               runtime_error);
+
+  // Check variant with vars as an output.
+  EXPECT_FALSE(DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_,
+                                          &M_expected_dynamic_,
+                                          &v_expected_dynamic_, &x_,
+                                          /*throw_on_failure=*/false));
+  EXPECT_THROW(DecomposeAffineExpressions(
+                   M_ * x_ + v_ + extra_terms_, &M_expected_dynamic_,
+                   &v_expected_dynamic_, &x_, /*throw_on_failure=*/true),
+               runtime_error);
 }
 
 // Check expected invariance
@@ -377,12 +416,54 @@ GTEST_TEST(SymbolicExtraction, DecomposeAffineExpression) {
     Eigen::MatrixXd coeffs(num_eq, num_variables);
     Eigen::VectorXd c(num_eq);
     VectorX<Variable> vars;
-    DecomposeAffineExpressions(ev, &coeffs, &c, &vars);
+    EXPECT_TRUE(DecomposeAffineExpressions(ev, &coeffs, &c, &vars));
 
     EXPECT_EQ(vars_expected, vars);
     EXPECT_TRUE(CompareMatrices(coeffs_expected, coeffs, kEps));
     EXPECT_TRUE(CompareMatrices(c_expected, c, kEps));
   }
+}
+
+// Confirm that the documented return values are true.
+GTEST_TEST(SymbolicExtraction, DecomposeAffineExpressionReturnValue) {
+  const Variable x("x");
+  const Variable y("y");
+  Eigen::RowVectorXd coeffs;
+  double c;
+
+  Expression e = 2 * x + 3;
+  auto [vars, map_var_to_index] = ExtractVariablesFromExpression(e);
+  coeffs.resize(1);
+  EXPECT_EQ(DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c), 1);
+
+  e = 2 * x + 3 * y - 2 * x;
+  std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
+  coeffs.resize(1);
+  EXPECT_EQ(DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c), 1);
+
+  // Not affine.
+  e = 2 * x * x;
+  std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
+  coeffs.resize(1);
+  EXPECT_EQ(DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c,
+                                      /* throw_on_failure=*/false),
+            -1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c,
+                                /* throw_on_failure=*/true),
+      ".*non-linear.*");
+
+  // Not even polynomial.
+  e = sin(x);
+  std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
+  coeffs.resize(1);
+  EXPECT_EQ(DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c,
+                                      /* throw_on_failure=*/false),
+            -1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c,
+                                /* throw_on_failure=*/true),
+      ".*not a polynomial.\n");
 }
 
 GTEST_TEST(SymbolicExtraction, DecomposeLumpedParameters) {

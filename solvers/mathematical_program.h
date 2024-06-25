@@ -2087,7 +2087,7 @@ class MathematicalProgram {
       const Binding<LorentzConeConstraint>& binding);
 
   /**
-   * Adds an Lorentz cone constraint of the form Ax+b >= |Cx+d|₂ from a symbolic
+   * Adds a Lorentz cone constraint of the form Ax+b >= |Cx+d|₂ from a symbolic
    * formula with one side which can be decomposed into sqrt((Cx+d)'(Cx+d)).
    *
    * @param eval_type The evaluation type when evaluating the lorentz cone

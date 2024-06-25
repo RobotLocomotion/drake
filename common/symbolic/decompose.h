@@ -35,13 +35,17 @@ void DecomposeLinearExpressions(
 
 /** Decomposes @p expressions into @p M * @p vars + @p v.
 
-@throws std::exception if @p expressions is not affine in @p vars.
+@throws std::exception if @p throw_on_failure is true and @p expressions is
+not affine in @p vars.
 @pre M.rows() == expressions.rows() && M.cols() == vars.rows().
-@pre v.rows() == expressions.rows(). */
-void DecomposeAffineExpressions(
+@pre v.rows() == expressions.rows().
+@returns true if the decomposition was successful, or false if @p
+throw_on_failure is false and @p expressions is not affine in @p vars. */
+bool DecomposeAffineExpressions(
     const Eigen::Ref<const VectorX<Expression>>& expressions,
     const Eigen::Ref<const VectorX<Variable>>& vars,
-    EigenPtr<Eigen::MatrixXd> M, EigenPtr<Eigen::VectorXd> v);
+    EigenPtr<Eigen::MatrixXd> M, EigenPtr<Eigen::VectorXd> v,
+    bool throw_on_failure = true);
 
 /** Given an expression `e`, extract all variables inside `e`, append these
 variables to `vars` if they are not included in `vars` yet.
@@ -102,9 +106,10 @@ void DecomposeQuadraticPolynomial(
 
 @throws std::exception if the input expressions are not affine.
 */
-void DecomposeAffineExpressions(
+bool DecomposeAffineExpressions(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
-    Eigen::MatrixXd* A, Eigen::VectorXd* b, VectorX<Variable>* vars);
+    Eigen::MatrixXd* A, Eigen::VectorXd* b, VectorX<Variable>* vars,
+    bool throw_on_failure = true);
 
 /** Decomposes an affine combination @p e = c0 + c1 * v1 + ... cn * vn into the
 following:
@@ -131,14 +136,17 @@ that map_var_to_index[vi.get_ID()] = i.
 @param[out] coeffs A row vector. coeffs(i) = ci.
 @param[out] constant_term c0 in the equation above.
 @return num_variable. Number of variables in the expression. 2 * x(0) + 3 has 1
-variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable.
+variable; 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable, since the x(0) term
+cancels. Returns -1 if the input expression is not affine.
 
-@throws std::exception if the input expression is not affine.
+@throws std::exception if @p throw_on_failure is true and the input expression
+is not affine.
 */
 int DecomposeAffineExpression(
     const symbolic::Expression& e,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
-    EigenPtr<Eigen::RowVectorXd> coeffs, double* constant_term);
+    EigenPtr<Eigen::RowVectorXd> coeffs, double* constant_term,
+    bool throw_on_failure = true);
 
 /** Given a vector of Expressions @p f and a list of @p parameters we define
 all additional variables in @p f to be a vector of "non-parameter variables",
