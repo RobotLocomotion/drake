@@ -160,54 +160,7 @@ enum class HydroelasticContactRepresentation { kTriangle, kPolygon };
 template <typename T>
 class ContactSurface {
  public:
-  ContactSurface(const ContactSurface& surface) { *this = surface; }
-
-  // TODO(SeanCurtis-TRI) Copy assignment, both constructors, and SwapMAndN
-  //  would all be better defined in the .cc file. The primary reason they are
-  //  not is that multibody::HydroelasticContactInfo and
-  //  multibody::ContactResultsToLcm unit tests
-  //  (which explicitly declare support for T = symbolic::Expression), blindly
-  //  assume that the contact surface likewise supports symbolic::Expression
-  //  (even though that is not the case). Their only meaningful actions are to
-  //  copy/create instances. By leaving these functions in the header, those
-  //  workflows continue to work. Ideally, they'd protect themselves against the
-  //  fact that they are instantiating types that don't *truly* support
-  //  symbolic::Expression and these functions can move into the .cc file.
-  //  This has a downstream effect of requiring the surface meshes
-  //  ReverseFaceWinding methods defined in the header as it gets invoked by
-  //  SwapMAndN.
-
-  ContactSurface& operator=(const ContactSurface& surface) {
-    if (&surface == this) return *this;
-
-    id_M_ = surface.id_M_;
-    id_N_ = surface.id_N_;
-    if (surface.is_triangle()) {
-      mesh_W_ = std::make_unique<TriangleSurfaceMesh<T>>(surface.tri_mesh_W());
-      // We can't simply copy the mesh fields; the copies must contain pointers
-      // to the new mesh. So, we use CloneAndSetMesh() instead.
-      e_MN_ = surface.tri_e_MN().CloneAndSetMesh(&tri_mesh_W());
-    } else {
-      mesh_W_ = std::make_unique<PolygonSurfaceMesh<T>>(surface.poly_mesh_W());
-      // We can't simply copy the mesh fields; the copies must contain pointers
-      // to the new mesh. So, we use CloneAndSetMesh() instead.
-      e_MN_ = surface.poly_e_MN().CloneAndSetMesh(&poly_mesh_W());
-    }
-
-    if (surface.grad_eM_W_) {
-      grad_eM_W_ =
-          std::make_unique<std::vector<Vector3<T>>>(*surface.grad_eM_W_);
-    }
-    if (surface.grad_eN_W_) {
-      grad_eN_W_ =
-          std::make_unique<std::vector<Vector3<T>>>(*surface.grad_eN_W_);
-    }
-
-    return *this;
-  }
-
-  ContactSurface(ContactSurface&&) = default;
-  ContactSurface& operator=(ContactSurface&&) = default;
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(ContactSurface);
 
   /** @name Constructors
 
@@ -243,7 +196,7 @@ class ContactSurface {
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W = nullptr,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W = nullptr)
       : ContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN),
-                       std::move(grad_eM_W), std::move(grad_eN_W), 1) {}
+                       std::move(grad_eM_W), std::move(grad_eN_W), 0) {}
 
   /** Constructs a %ContactSurface with a polygonal mesh representation. */
   ContactSurface(GeometryId id_M, GeometryId id_N,
@@ -252,7 +205,9 @@ class ContactSurface {
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W = nullptr,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W = nullptr)
       : ContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN),
-                       std::move(grad_eM_W), std::move(grad_eN_W), 1) {}
+                       std::move(grad_eM_W), std::move(grad_eN_W), 0) {}
+
+  ~ContactSurface();
 
   //@}
 
@@ -430,47 +385,10 @@ class ContactSurface {
   ContactSurface(GeometryId id_M, GeometryId id_N, MeshVariant mesh_W,
                  FieldVariant e_MN,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W,
-                 std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W, int)
-      : id_M_(id_M),
-        id_N_(id_N),
-        mesh_W_(std::move(mesh_W)),
-        e_MN_(std::move(e_MN)),
-        grad_eM_W_(std::move(grad_eM_W)),
-        grad_eN_W_(std::move(grad_eN_W)) {
-    // If defined the gradient values must map 1-to-1 onto elements.
-    if (is_triangle()) {
-      DRAKE_THROW_UNLESS(grad_eM_W_ == nullptr ||
-                         static_cast<int>(grad_eM_W_->size()) ==
-                             tri_mesh_W().num_elements());
-      DRAKE_THROW_UNLESS(grad_eN_W_ == nullptr ||
-                         static_cast<int>(grad_eN_W_->size()) ==
-                             tri_mesh_W().num_elements());
-    } else {
-      DRAKE_THROW_UNLESS(grad_eM_W_ == nullptr ||
-                         static_cast<int>(grad_eM_W_->size()) ==
-                             poly_mesh_W().num_elements());
-      DRAKE_THROW_UNLESS(grad_eN_W_ == nullptr ||
-                         static_cast<int>(grad_eN_W_->size()) ==
-                             poly_mesh_W().num_elements());
-    }
-    if (id_N_ < id_M_) SwapMAndN();
-  }
+                 std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W, int);
 
   // Swaps M and N (modifying the data in place to reflect the change).
-  void SwapMAndN() {
-    std::swap(id_M_, id_N_);
-    // TODO(SeanCurtis-TRI): Determine if this work is necessary. It is neither
-    // documented nor tested that the face winding is guaranteed to be one way
-    // or the other. Alternatively, this should be documented and tested.
-    std::visit(
-        [](auto&& mesh) {
-          mesh->ReverseFaceWinding();
-        },
-        mesh_W_);
-
-    // Note: the scalar field does not depend on the order of M and N.
-    std::swap(grad_eM_W_, grad_eN_W_);
-  }
+  void SwapMAndN();
 
   // The id of the first geometry M.
   GeometryId id_M_;
@@ -493,6 +411,12 @@ class ContactSurface {
   template <typename U>
   friend class ContactSurfaceTester;
 };
+
+// These are cheap enough to be inline for performance.
+template <typename T>
+ContactSurface<T>::ContactSurface(ContactSurface&&) = default;
+template <typename T>
+ContactSurface<T>& ContactSurface<T>::operator=(ContactSurface&&) = default;
 
 }  // namespace geometry
 }  // namespace drake

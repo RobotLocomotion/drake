@@ -2607,7 +2607,9 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     GeometryContactData<T>* result) const {
   this->ValidateContext(context);
   result->point_pairs.clear();
-  result->surfaces.clear();
+  if constexpr (scalar_predicate<T>::is_bool) {
+    result->surfaces.clear();
+  }
   if (num_collision_geometries() == 0) {
     return;
   }

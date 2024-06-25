@@ -91,10 +91,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.HydroelasticContactInfo;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "HydroelasticContactInfo", param, cls_doc.doc);
-    cls  // BR
-        .def("contact_surface", &Class::contact_surface,
-            cls_doc.contact_surface.doc)
-        .def("F_Ac_W", &Class::F_Ac_W, cls_doc.F_Ac_W.doc);
+    if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+      cls  // BR
+          .def("contact_surface", &Class::contact_surface,
+              cls_doc.contact_surface.doc)
+          .def("F_Ac_W", &Class::F_Ac_W, cls_doc.F_Ac_W.doc);
+    }
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
   }

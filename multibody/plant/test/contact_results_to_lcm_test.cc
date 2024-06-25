@@ -143,6 +143,8 @@ constexpr int kNumPointPerTri = 3;
 template <typename T>
 ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
                                      const Vector3<T>& offset) {
+  static_assert(!std::is_same_v<T, Expression>);
+
   /* Create the surface mesh first. It is simply two triangles (make sure we're
    looping through elements). The position of the vertices is offset by offset.
    The position of the vertices is irrelevant -- the mesh is just a collection
@@ -176,6 +178,8 @@ ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
 template <typename T>
 vector<HydroelasticQuadraturePointData<T>> MakeQuadratureData(
     const Vector3<T>& offset) {
+  static_assert(!std::is_same_v<T, Expression>);
+
   /* We'll pick *three* quadrature points per triangle, to make sure we get
    proper loop iteration. For simplicity, we'll explicitly define the first
    quadrature point and then express the others in terms of the first. */
@@ -344,6 +348,8 @@ class ContactResultsToLcmTest : public ::testing::Test {
   template <typename U = T>
   static void AddFakeHydroContact(ContactResultsToLcmSystem<U>* lcm_system,
                                   ContactResults<U>* results) {
+    static_assert(scalar_predicate<U>::is_bool);
+
     /* Everything here is static because the ContactResults really doesn't own
      any of its data; it keeps pointers to data stored elsewhere. So, we need
      this data to persist, so we keep it function static so it persists through
@@ -384,6 +390,12 @@ class ContactResultsToLcmTest : public ::testing::Test {
 
 using ScalarTypes = ::testing::Types<double, AutoDiffXd, Expression>;
 TYPED_TEST_SUITE(ContactResultsToLcmTest, ScalarTypes);
+
+template <typename T>
+class NonsymbolicContactResultsToLcmTest : public ContactResultsToLcmTest<T> {};
+
+using NonsymbolicScalarTypes = ::testing::Types<double, AutoDiffXd>;
+TYPED_TEST_SUITE(NonsymbolicContactResultsToLcmTest, NonsymbolicScalarTypes);
 
 /* We construct a plant with known contents, instantiate an instance of
  ContactResultsToLcmSystem on it and confirm the internal tables are populated
@@ -611,7 +623,7 @@ TYPED_TEST(ContactResultsToLcmTest, PointPairContactOnly) {
 
  As such, we don't need much for this test. We'll do two hydroelastic contacts
  with unique values to confirm successful iteration and copying. */
-TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
+TYPED_TEST(NonsymbolicContactResultsToLcmTest, HydroContactOnly) {
   using T = TypeParam;
 
   /* We're not going to populate the plant, because we're going to set the
@@ -732,6 +744,7 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
  Correctness of the serialization of each type relies on previous tests. */
 TYPED_TEST(ContactResultsToLcmTest, MixedContactData) {
   using T = TypeParam;
+  constexpr bool use_hydro = !std::is_same_v<T, Expression>;
 
   /* We're not going to populate the plant, because we're going to set the
    internal tables by hand and fix the input for the context. */
@@ -742,7 +755,9 @@ TYPED_TEST(ContactResultsToLcmTest, MixedContactData) {
 
   ContactResults<T> contacts;
   this->AddFakePointPairContact(&lcm, &contacts);
-  this->AddFakeHydroContact(&lcm, &contacts);
+  if constexpr (use_hydro) {
+    this->AddFakeHydroContact(&lcm, &contacts);
+  }
   lcm.get_contact_result_input_port().FixValue(context.get(), contacts);
 
   const auto& message =
@@ -751,8 +766,8 @@ TYPED_TEST(ContactResultsToLcmTest, MixedContactData) {
 
   EXPECT_EQ(message.num_point_pair_contacts, 2);
   EXPECT_EQ(message.point_pair_contact_info.size(), 2);
-  EXPECT_EQ(message.num_hydroelastic_contacts, 2);
-  EXPECT_EQ(message.hydroelastic_contacts.size(), 2);
+  EXPECT_EQ(message.num_hydroelastic_contacts, use_hydro ? 2 : 0);
+  EXPECT_EQ(message.hydroelastic_contacts.size(), use_hydro ? 2 : 0);
   /* Knowing that we have the right *numbers* of contact results suffices. We
    assume if the serialization got that far, it did the right thing at the
    detail level based on previous tests. */
@@ -771,6 +786,7 @@ TYPED_TEST(ContactResultsToLcmTest, MixedContactData) {
  port, and make sure things got serialized. */
 TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
   using T = TypeParam;
+  constexpr bool use_hydro = !std::is_same_v<T, Expression>;
 
   MultibodyPlant<double> plant(0.0);
   plant.Finalize();
@@ -784,7 +800,9 @@ TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
    populate the tables in lcm_double. These will get copied over. */
   ContactResults<double> contacts_double;
   this->AddFakePointPairContact(lcm_double.get(), &contacts_double);
-  this->AddFakeHydroContact(lcm_double.get(), &contacts_double);
+  if constexpr (use_hydro) {
+    this->AddFakeHydroContact(lcm_double.get(), &contacts_double);
+  }
 
   auto system_T = [&double_source = *lcm_double]() {
     if constexpr (std::is_same_v<T, double>) {
@@ -804,7 +822,9 @@ TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
 
   ContactResults<T> contacts;
   this->template AddFakePointPairContact<T>(nullptr, &contacts);
-  this->template AddFakeHydroContact<T>(nullptr, &contacts);
+  if constexpr (use_hydro) {
+    this->template AddFakeHydroContact<T>(nullptr, &contacts);
+  }
   const unique_ptr<Context<T>> context = lcm_T->AllocateContext();
   lcm_T->get_contact_result_input_port().FixValue(context.get(), contacts);
 
@@ -814,8 +834,8 @@ TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
 
   EXPECT_EQ(message.num_point_pair_contacts, 2);
   EXPECT_EQ(message.point_pair_contact_info.size(), 2);
-  EXPECT_EQ(message.num_hydroelastic_contacts, 2);
-  EXPECT_EQ(message.hydroelastic_contacts.size(), 2);
+  EXPECT_EQ(message.num_hydroelastic_contacts, use_hydro ? 2 : 0);
+  EXPECT_EQ(message.hydroelastic_contacts.size(), use_hydro ? 2 : 0);
 }
 
 /* There are four overloads of ConnectContactResultsToDrakeVisualizer(). They
