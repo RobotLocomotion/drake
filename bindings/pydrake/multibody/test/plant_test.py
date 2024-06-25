@@ -510,6 +510,11 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
+            plant.get_geometry_pose_output_port(), OutputPort)
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertIsInstance(
+                plant.get_geometry_poses_output_port(), OutputPort)
+        self.assertIsInstance(
             plant.get_net_actuation_output_port(), OutputPort)
         self.assertIsInstance(
             plant.get_net_actuation_output_port(model_instance), OutputPort)
