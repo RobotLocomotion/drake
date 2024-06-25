@@ -323,7 +323,9 @@ drake_cc_library(
     }),
     internal = True,
     visibility = ["//visibility:private"],
-    deps = [],
+    deps = [
+        "@highway_internal//:hwy",
+    ],
 )
 
 drake_cc_library(
