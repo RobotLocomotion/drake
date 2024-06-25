@@ -80,6 +80,7 @@ drake_cc_library_linux_only(
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
         "//systems/sensors:image",
+        "@tinygltf_internal//:tinygltf",
     ],
 )
 
@@ -190,6 +191,7 @@ drake_cc_library_linux_only(
         ":internal_opengl_context",
     ],
     deps = [
+        "//systems/sensors:image_io",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
         "@vtk_internal//:vtkIOImage",
@@ -232,15 +234,19 @@ drake_cc_googletest_linux_only(
     data = [
         "//examples/scene_graph:models",
         "//geometry/render:test_models",
-    ],
+    ] + glob(["test/*.png"]),
     tags = vtk_test_tags(),
     deps = [
         ":internal_render_engine_gl",
         "//common:find_resource",
+        "//common:temp_directory",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
+        "//systems/sensors:image_io",
+        "//systems/sensors/test_utilities:image_compare",
         "@gflags",
+        "@nlohmann_internal//:nlohmann",
         "@tinygltf_internal//:tinygltf",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",

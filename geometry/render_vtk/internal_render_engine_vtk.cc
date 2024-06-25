@@ -932,6 +932,8 @@ void RenderEngineVtk::InitializePipelines() {
 void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
                                         const RenderMaterial& material,
                                         const RegistrationData& data) {
+  // Parsing via VTK should never require an image to be flipped.
+  DRAKE_DEMAND(material.flip_y == false);
   std::array<vtkSmartPointer<vtkActor>, kNumPipelines> actors{
       vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
       vtkSmartPointer<vtkActor>::New()};
@@ -993,7 +995,7 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
       log()->warn(
           "Texture map '{}' has an unsupported bit depth, casting it to uchar "
           "channels.",
-          material.diffuse_map.string());
+          material.diffuse_map);
     }
 
     vtkNew<vtkImageCast> caster;
