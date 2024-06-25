@@ -203,14 +203,7 @@ class TriangleSurfaceMesh {
   /** (Internal use only) Reverses the ordering of all the triangles' indices
    -- see SurfaceTriangle::ReverseWinding().
    */
-  void ReverseFaceWinding() {
-    for (auto& f : triangles_) {
-      f.ReverseWinding();
-    }
-    for (auto& n : face_normals_) {
-      n = -n;
-    }
-  }
+  void ReverseFaceWinding();
 
   /** Returns the number of triangles in the mesh.
    */
