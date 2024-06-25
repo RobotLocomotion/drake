@@ -193,6 +193,13 @@ def drake_py_unittest(
         fail("Changing srcs= is not allowed by drake_py_unittest." +
              " Use drake_py_test instead, if you need something weird.")
     srcs = ["test/%s.py" % name, helper]
+
+    # kcov is only appropriate for small-sized unit tests. If a test needs a
+    # shard_count or a special timeout, we assume it is not small.
+    is_small = ("shard_count" not in kwargs and "timeout" not in kwargs)
+    if not is_small:
+        amend(kwargs, "tags", append = ["no_kcov"])
+
     drake_py_test(
         name = name,
         srcs = srcs,

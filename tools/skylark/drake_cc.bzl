@@ -894,6 +894,13 @@ def drake_cc_googletest(
             "no_tsan",
             "no_ubsan",
         ]
+    else:
+        # kcov is only appropriate for small-sized unit tests. If a test needs
+        # a shard_count or a special timeout, we assume it is not small.
+        is_small = ("shard_count" not in kwargs and "timeout" not in kwargs)
+        if not is_small:
+            new_tags = new_tags + ["no_kcov"]
+
     drake_cc_test(
         name = name,
         args = new_args,
