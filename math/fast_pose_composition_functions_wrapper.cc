@@ -1,4 +1,6 @@
+// clang-format off
 #include "drake/math/fast_pose_composition_functions.h"
+// clang-format on
 
 #include <algorithm>
 #include <cassert>

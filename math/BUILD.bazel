@@ -330,7 +330,12 @@ drake_cc_library(
 
 drake_cc_library(
     name = "fast_pose_composition_functions",
-    srcs = ["fast_pose_composition_functions.cc"],
+    srcs = [
+        # TODO(jeremy.nimmer) For now, this filename is inconsistent with its
+        # library name. We will soon combine the two "fast pose" targets into
+        # one, using consistent naming.
+        "fast_pose_composition_functions_wrapper.cc",
+    ],
     hdrs = ["fast_pose_composition_functions.h"],
     interface_deps = [],
     deps = [":fast_pose_composition_functions_avx2_fma"],
