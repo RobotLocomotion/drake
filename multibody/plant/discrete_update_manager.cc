@@ -1141,6 +1141,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
   }
 }
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 0
 template <>
 void DiscreteUpdateManager<symbolic::Expression>::
     AppendDiscreteContactPairsForHydroelasticContact(
@@ -1152,6 +1153,7 @@ void DiscreteUpdateManager<symbolic::Expression>::
       fmt::format("This method doesn't support T = {}.",
                   NiceTypeName::Get<symbolic::Expression>()));
 }
+#endif
 
 template <typename T>
 const MultibodyForces<T>&
