@@ -1,77 +1,54 @@
-#include "drake/math/fast_pose_composition_functions_avx2_fma.h"
+/* clang-format off to disable clang-format-includes */
+#include "drake/math/fast_pose_composition_functions.h"
+/* clang-format on */
 
-#if defined(__AVX2__) && defined(__FMA__)
+#include <algorithm>
 #include <cstdint>
 
-#include <cpuid.h>
+// Highway automatically compiles our impl functions for multiple CPU targets,
+// so that the code is tuned as best as possible for that target. However, some
+// of that specialization is unncessary for this particular file, so we opt-out
+// of targets that do not offer any advantages vs their build time / code size:
+// clang-format off
+#define HWY_DISABLED_TARGETS ( \
+    HWY_SSSE3     /* SSE2 is equivalent (HWY_MAX_BYTES is smaller than 32). */ \
+  | HWY_SSE4      /* SSE2 is equivalent (HWY_MAX_BYTES is smaller than 32). */ \
+  | HWY_AVX3_ZEN4 /* AVX3 is equivalent (we don't use BF16)               . */ \
+  | HWY_NEON      /* NEON_WITHOUT_AES is equivalent (we don't use AES).     */ \
+  | HWY_NEON_BF16 /* NEON is equivalent (we don't use BF16).                */ \
+  | HWY_SVE       /* NEON is equivalent (we opt-out of scaleable vectors).  */ \
+  | HWY_SVE2      /* NEON is equivalent (we opt-out of scaleable vectors).  */ \
+  | HWY_SVE2_128  /* NEON is equivalent (HWY_MAX_BYTES is smaller than 32). */ \
+)
+// clang-format on
 
+// This is the magic juju that compiles our impl functions for multiple CPUs.
+#undef HWY_TARGET_INCLUDE
+#define HWY_TARGET_INCLUDE "math/fast_pose_composition_functions_avx2_fma.cc"
 #pragma GCC diagnostic push
-// TODO(jwnimmer-tri) Ideally we would fix the old-style-cast warnings instead
-// of suppressing them, perhaps by submitting a patch upstream.
 #pragma GCC diagnostic ignored "-Wold-style-cast"
-// By setting the next two HWY_... macros, we're saying that we don't want to
-// generate any SIMD code for pre-AVX2 CPUs, and that we're okay not using the
-// carry-less multiplication and crypto stuff.
-#define HWY_BASELINE_TARGETS HWY_AVX2
-#define HWY_DISABLE_PCLMUL_AES 1
+#include "hwy/foreach_target.h"
 #include "hwy/highway.h"
 #pragma GCC diagnostic pop
-#else
-#include <iostream>
-#endif
 
-/* N.B. Do not include any other drake headers here because this file will be
-part of a compilation unit that may have a different opinion about whether SIMD
-instructions are enabled than Eigen does in the rest of Drake. */
+#include "drake/common/drake_assert.h"
+#include "drake/common/hwy_dynamic_impl.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
+// This is the magic juju that compiles our impl functions for multiple CPUs.
+HWY_BEFORE_NAMESPACE();
 namespace drake {
 namespace math {
 namespace internal {
-
-#if defined(__AVX2__) && defined(__FMA__)
 namespace {
-
-// The hn namespace holds the CPU-specific function overloads. By defining it
-// using a substitute-able macro, we achieve per-CPU instruction selection.
+namespace HWY_NAMESPACE {
 namespace hn = hwy::HWY_NAMESPACE;
 
-/* Reinterpret user-friendly class names to raw arrays of double.
-
-We make judicious use below of potentially-dangerous reinterpret_casts to
-convert from user-friendly APIs written in terms of RotationMatrix& and
-RigidTransform& (whose declarations are necessarily unknown here) to
-implementation-friendly double* types. Why this is safe here:
-  - our implementations of these classes guarantee a particular memory
-    layout on which we can depend,
-  - the address of a class is the address of its first member (mandated by
-    the standard), and
-  - reinterpret_cast of a pointer to another pointer type and back yields the
-    same pointer, i.e. the bit pattern does not change.
-*/
-
-const double* GetRawMatrixStart(const RotationMatrix<double>& R) {
-  return reinterpret_cast<const double*>(&R);
-}
-
-double* GetMutableRawMatrixStart(RotationMatrix<double>* R) {
-  return reinterpret_cast<double*>(R);
-}
-
-const double* GetRawMatrixStart(const RigidTransform<double>& X) {
-  return reinterpret_cast<const double*>(&X);
-}
-
-double* GetMutableRawMatrixStart(RigidTransform<double>* X) {
-  return reinterpret_cast<double*>(X);
-}
-
-// Check if AVX2 is supported by the CPU. We can assume that OS support for AVX2
-// is available if AVX2 is supported by hardware, and do not need to test if it
-// is enabled in software as well.
-bool CheckCpuForAvxSupport() {
-  __builtin_cpu_init();
-  return __builtin_cpu_supports("avx2");
-}
+// The SIMD approach is only useful when we have registers of size `double[4]`
+// or larger. When we have smaller registers (e.g., SSE2's 2-wide lanes, or
+// SVE's variable-length vectors) we will fall back to non-SIMD code.
+#if HWY_MAX_BYTES >= 32 && HWY_HAVE_SCALABLE == 0
 
 /* =============================================================================
    Notation conventions used in this file
@@ -165,7 +142,7 @@ but we're doing 60 here and throwing away 15 of them. However, we only issue 9
 SIMD floating point instructions (3 multiplies and 6 fused-multiply-adds).
 
 It is OK if the result R_AC overlaps one or both of the inputs. */
-void ComposeRRAvx(const double* R_AB, const double* R_BC, double* R_AC) {
+void ComposeRRImpl(const double* R_AB, const double* R_BC, double* R_AC) {
   const hn::FixedTag<double, 4> tag;
 
   const auto abc_ = hn::LoadU(tag, R_AB);      // (d is loaded but unused)
@@ -320,7 +297,7 @@ but we're doing 60 here and throwing away 15 of them. However, we only issue 9
 SIMD floating point instructions (3 multiplies and 6 fused-multiply-adds).
 
 It is OK if the result R_AC overlaps one or both of the inputs. */
-void ComposeRinvRAvx(const double* R_BA, const double* R_BC, double* R_AC) {
+void ComposeRinvRImpl(const double* R_BA, const double* R_BC, double* R_AC) {
   const hn::FixedTag<double, 4> tag;
 
   // Load the columns of R_AB (rows of the given R_BA).
@@ -445,7 +422,7 @@ but we're doing 84 here and throwing away 21 of them. However, we only issue 12
 SIMD floating point instructions (3 multiplies and 9 fused-multiply-adds).
 
 It is OK if the result X_AC overlaps one or both of the inputs. */
-void ComposeXXAvx(const double* X_AB, const double* X_BC, double* X_AC) {
+void ComposeXXImpl(const double* X_AB, const double* X_BC, double* X_AC) {
   const hn::FixedTag<double, 4> tag;
 
   // Load the input.
@@ -578,7 +555,7 @@ Rigid transform inverse composition requires 63 flops (36 multiplies, 24
 additions, and 3 subtractions) but we're doing 84 here and throwing away 21 of
 them. However, we only issue 13 SIMD floating point instructions (4 multiplies,
 8 fused-multiply-adds, and 1 subtraction). */
-void ComposeXinvXAvx(const double* X_BA, const double* X_BC, double* X_AC) {
+void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
   const hn::FixedTag<double, 4> tag;
 
   // Load the columns of R_AB (rows of the given R_BA).
@@ -632,75 +609,197 @@ void ComposeXinvXAvx(const double* X_BA, const double* X_BC, double* X_AC) {
   hn::StoreN(stu_, tag, X_AC + 9, 3);  // 3-wide write to stay in bounds
 }
 
-}  // namespace
+#else  // HWY_MAX_BYTES
 
-// See note above as to why these reinterpret_casts are safe.
+/* The portable versions are always defined. They should be written to maximize
+the chance that a dumb compiler can generate fast code.
 
-bool AvxSupported() {
-  static const bool avx_supported = CheckCpuForAvxSupport();
-  return avx_supported;
+Note that, except when explicitly marked "...NoAlias", the methods below must
+allow for the output argument's memory to overlap with any of the input
+arguments' memory. */
+
+/* Dot product of a row of l and a column of m, where both l and m are 3x3s
+in column order. */
+double row_x_col(const double* l, const double* m) {
+  return l[0] * m[0] + l[3] * m[1] + l[6] * m[2];
 }
 
-void ComposeRRAvx(const RotationMatrix<double>& R_AB,
+/* Dot product of a column of l and a column of m, where both l and m are 3x3s
+in column order. */
+double col_x_col(const double* l, const double* m) {
+  return l[0] * m[0] + l[1] * m[1] + l[2] * m[2];
+}
+
+/* @pre R_AC is disjoint in memory from the inputs. */
+void ComposeRRNoAlias(const double* R_AB, const double* R_BC, double* R_AC) {
+  R_AC[0] = row_x_col(&R_AB[0], &R_BC[0]);
+  R_AC[1] = row_x_col(&R_AB[1], &R_BC[0]);
+  R_AC[2] = row_x_col(&R_AB[2], &R_BC[0]);
+  R_AC[3] = row_x_col(&R_AB[0], &R_BC[3]);
+  R_AC[4] = row_x_col(&R_AB[1], &R_BC[3]);
+  R_AC[5] = row_x_col(&R_AB[2], &R_BC[3]);
+  R_AC[6] = row_x_col(&R_AB[0], &R_BC[6]);
+  R_AC[7] = row_x_col(&R_AB[1], &R_BC[6]);
+  R_AC[8] = row_x_col(&R_AB[2], &R_BC[6]);
+}
+
+/* @pre R_AC is disjoint in memory from the inputs. */
+void ComposeRinvRNoAlias(const double* R_BA, const double* R_BC, double* R_AC) {
+  R_AC[0] = col_x_col(&R_BA[0], &R_BC[0]);
+  R_AC[1] = col_x_col(&R_BA[3], &R_BC[0]);
+  R_AC[2] = col_x_col(&R_BA[6], &R_BC[0]);
+  R_AC[3] = col_x_col(&R_BA[0], &R_BC[3]);
+  R_AC[4] = col_x_col(&R_BA[3], &R_BC[3]);
+  R_AC[5] = col_x_col(&R_BA[6], &R_BC[3]);
+  R_AC[6] = col_x_col(&R_BA[0], &R_BC[6]);
+  R_AC[7] = col_x_col(&R_BA[3], &R_BC[6]);
+  R_AC[8] = col_x_col(&R_BA[6], &R_BC[6]);
+}
+
+/* @pre X_AC is disjoint in memory from the inputs. */
+void ComposeXXNoAlias(const double* X_AB, const double* X_BC, double* X_AC) {
+  const double* p_AB = X_AB + 9;  // Make some nice aliases.
+  const double* p_BC = X_BC + 9;
+  double* p_AC = X_AC + 9;
+
+  // X_AB * X_BC = [ R_AB; p_AB ] * [ R_BC; p_BC ]
+  //             = [ (R_AB*R_BC); (p_AB + R_AB*p_BC) ]
+
+  ComposeRRNoAlias(X_AB, X_BC, X_AC);  // Just works with first 9 elements.
+  p_AC[0] = p_AB[0] + row_x_col(&X_AB[0], p_BC);
+  p_AC[1] = p_AB[1] + row_x_col(&X_AB[1], p_BC);
+  p_AC[2] = p_AB[2] + row_x_col(&X_AB[2], p_BC);
+}
+
+/* @pre X_AC is disjoint in memory from the inputs. */
+void ComposeXinvXNoAlias(const double* X_BA, const double* X_BC, double* X_AC) {
+  const double* p_BA = X_BA + 9;  // Make some nice aliases.
+  const double* p_BC = X_BC + 9;
+  double* p_AC = X_AC + 9;
+
+  // X_BA⁻¹ * X_BC = [ R_BA⁻¹; (R_BA⁻¹ * -p_BA) ]  * [ R_BC; p_BC ]
+  //               = [ (R_BA⁻¹ * R_BC); (R_BA⁻¹ * (p_BC - p_BA)) ]
+
+  ComposeRinvRNoAlias(X_BA, X_BC, X_AC);  // Just works with first 9 elements.
+  const double p_AC_B[3] = {p_BC[0] - p_BA[0], p_BC[1] - p_BA[1],
+                            p_BC[2] - p_BA[2]};
+  p_AC[0] = col_x_col(&X_BA[0], p_AC_B);  // Note that R_BA⁻¹ = R_BAᵀ so we
+  p_AC[1] = col_x_col(&X_BA[3], p_AC_B);  // just need to use columns here
+  p_AC[2] = col_x_col(&X_BA[6], p_AC_B);  // rather than rows.
+}
+
+void ComposeRRImpl(const double* R_AB, const double* R_BC, double* R_AC) {
+  DRAKE_ASSERT(R_AC != nullptr);
+  double R_AC_temp[9];  // Protect from overlap with inputs.
+  ComposeRRNoAlias(R_AB, R_BC, R_AC_temp);
+  std::copy(R_AC_temp, R_AC_temp + 9, R_AC);
+}
+
+void ComposeRinvRImpl(const double* R_BA, const double* R_BC, double* R_AC) {
+  DRAKE_ASSERT(R_AC != nullptr);
+  double R_AC_temp[9];  // Protect from overlap with inputs.
+  ComposeRinvRNoAlias(R_BA, R_BC, R_AC_temp);
+  std::copy(R_AC_temp, R_AC_temp + 9, R_AC);
+}
+
+void ComposeXXImpl(const double* X_AB, const double* X_BC, double* X_AC) {
+  DRAKE_ASSERT(X_AC != nullptr);
+  double X_AC_temp[12];  // Protect from overlap with inputs.
+  ComposeXXNoAlias(X_AB, X_BC, X_AC_temp);
+  std::copy(X_AC_temp, X_AC_temp + 12, X_AC);
+}
+
+void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
+  DRAKE_ASSERT(X_AC != nullptr);
+  double X_AC_temp[12];  // Protect from overlap with inputs.
+  ComposeXinvXNoAlias(X_BA, X_BC, X_AC_temp);
+  std::copy(X_AC_temp, X_AC_temp + 12, X_AC);
+}
+
+#endif  // HWY_MAX_BYTES
+
+}  // namespace HWY_NAMESPACE
+}  // namespace
+}  // namespace internal
+}  // namespace math
+}  // namespace drake
+HWY_AFTER_NAMESPACE();
+
+// This part of the file is only compiled once total, instead of once per CPU.
+#if HWY_ONCE
+namespace drake {
+namespace math {
+namespace internal {
+namespace {
+
+// Create the lookup tables for the per-CPU hwy implementation functions, and
+// required functors that select from the lookup tables.
+HWY_EXPORT(ComposeRRImpl);
+struct ChooseBestComposeRR {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeRRImpl); }
+};
+HWY_EXPORT(ComposeRinvRImpl);
+struct ChooseBestComposeRinvR {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeRinvRImpl); }
+};
+HWY_EXPORT(ComposeXXImpl);
+struct ChooseBestComposeXX {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXXImpl); }
+};
+HWY_EXPORT(ComposeXinvXImpl);
+struct ChooseBestComposeXinvX {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXinvXImpl); }
+};
+
+// These sugar functions convert C++ types into bare arrays.
+const double* GetRawData(const RotationMatrix<double>& R) {
+  return R.matrix().data();
+}
+double* GetRawData(RotationMatrix<double>* R) {
+  return const_cast<double*>(R->matrix().data());
+}
+const double* GetRawData(const RigidTransform<double>& X) {
+  // In rigid_transform.h we assert that the memory layout is 12 doubles, with
+  // the rotation matrix first followed by the translation.
+  return X.rotation().matrix().data();
+}
+double* GetRawData(RigidTransform<double>* X) {
+  // In rigid_transform.h we assert that the memory layout is 12 doubles, with
+  // the rotation matrix first followed by the translation.
+  return const_cast<double*>(X->rotation().matrix().data());
+}
+
+}  // namespace
+
+void ComposeRR(const RotationMatrix<double>& R_AB,
+               const RotationMatrix<double>& R_BC,
+               RotationMatrix<double>* R_AC) {
+  LateBoundFunction<ChooseBestComposeRR>::Call(
+      GetRawData(R_AB), GetRawData(R_BC), GetRawData(R_AC));
+}
+
+void ComposeRinvR(const RotationMatrix<double>& R_BA,
                   const RotationMatrix<double>& R_BC,
                   RotationMatrix<double>* R_AC) {
-  ComposeRRAvx(GetRawMatrixStart(R_AB), GetRawMatrixStart(R_BC),
-               GetMutableRawMatrixStart(R_AC));
+  LateBoundFunction<ChooseBestComposeRinvR>::Call(
+      GetRawData(R_BA), GetRawData(R_BC), GetRawData(R_AC));
 }
 
-void ComposeRinvRAvx(const RotationMatrix<double>& R_BA,
-                     const RotationMatrix<double>& R_BC,
-                     RotationMatrix<double>* R_AC) {
-  ComposeRinvRAvx(GetRawMatrixStart(R_BA), GetRawMatrixStart(R_BC),
-                  GetMutableRawMatrixStart(R_AC));
+void ComposeXX(const RigidTransform<double>& X_AB,
+               const RigidTransform<double>& X_BC,
+               RigidTransform<double>* X_AC) {
+  LateBoundFunction<ChooseBestComposeXX>::Call(
+      GetRawData(X_AB), GetRawData(X_BC), GetRawData(X_AC));
 }
 
-void ComposeXXAvx(const RigidTransform<double>& X_AB,
+void ComposeXinvX(const RigidTransform<double>& X_BA,
                   const RigidTransform<double>& X_BC,
                   RigidTransform<double>* X_AC) {
-  ComposeXXAvx(GetRawMatrixStart(X_AB), GetRawMatrixStart(X_BC),
-               GetMutableRawMatrixStart(X_AC));
+  LateBoundFunction<ChooseBestComposeXinvX>::Call(
+      GetRawData(X_BA), GetRawData(X_BC), GetRawData(X_AC));
 }
-
-void ComposeXinvXAvx(const RigidTransform<double>& X_BA,
-                     const RigidTransform<double>& X_BC,
-                     RigidTransform<double>* X_AC) {
-  ComposeXinvXAvx(GetRawMatrixStart(X_BA), GetRawMatrixStart(X_BC),
-                  GetMutableRawMatrixStart(X_AC));
-}
-#else
-namespace {
-void AbortNotEnabledInBuild(const char* func) {
-  std::cerr << "abort: " << func << " is not enabled in build" << std::endl;
-  std::abort();
-}
-}  // namespace
-
-bool AvxSupported() {
-  return false;
-}
-
-void ComposeRRAvx(const RotationMatrix<double>&, const RotationMatrix<double>&,
-                  RotationMatrix<double>*) {
-  AbortNotEnabledInBuild(__func__);
-}
-
-void ComposeRinvRAvx(const RotationMatrix<double>&,
-                     const RotationMatrix<double>&, RotationMatrix<double>*) {
-  AbortNotEnabledInBuild(__func__);
-}
-
-void ComposeXXAvx(const RigidTransform<double>&, const RigidTransform<double>&,
-                  RigidTransform<double>*) {
-  AbortNotEnabledInBuild(__func__);
-}
-
-void ComposeXinvXAvx(const RigidTransform<double>&,
-                     const RigidTransform<double>&, RigidTransform<double>*) {
-  AbortNotEnabledInBuild(__func__);
-}
-#endif
 
 }  // namespace internal
 }  // namespace math
 }  // namespace drake
+#endif  // HWY_ONCE
