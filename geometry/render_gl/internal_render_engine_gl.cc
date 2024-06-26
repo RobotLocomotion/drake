@@ -1841,7 +1841,7 @@ class RenderEngineGl::GltfMeshExtractor {
        the vertex data buffer. */
       GLuint buffer_id;
       glCreateBuffers(1, &buffer_id);
-      glNamedBufferStorage(buffer_id, ssize(buffer.data),
+      glNamedBufferStorage(buffer_id, buffer_view.byteLength,
                            buffer.data.data() + offset, 0);
       index_buffers_[prim.indices] = {
           .buffer = buffer_id,
