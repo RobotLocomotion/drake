@@ -64,18 +64,17 @@ template <typename T>
 void DeformableDriver<T>::DeclareCacheEntries(
     DiscreteUpdateManager<T>* manager) {
   DRAKE_DEMAND(manager_ == manager);
-  const auto& deformable_contact_cache_entry = manager->DeclareCacheEntry(
-      "deformable contact data",
-      systems::ValueProducer(this, &DeformableDriver<T>::CalcDeformableContact),
-      {systems::System<T>::configuration_ticket()});
-  cache_indexes_.deformable_contact =
-      deformable_contact_cache_entry.cache_index();
+
+  // Our CalcDeformableContact() uses `query_object` (not `context`), and only
+  // returns deformable contact (not all geometry contact), so we know that this
+  // ticket is sufficient to cover our EvalDeformableContact().
+  const systems::DependencyTicket deformable_contact_ticket =
+      manager->plant().get_geometry_query_input_port().ticket();
 
   /* The collection of constraint participation tickets for *all* deformable
     bodies to be filled out in the loop below. */
   std::set<systems::DependencyTicket> constraint_participation_tickets;
-  constraint_participation_tickets.emplace(
-      deformable_contact_cache_entry.ticket());
+  constraint_participation_tickets.emplace(deformable_contact_ticket);
 
   for (DeformableBodyIndex i(0); i < deformable_model_->num_bodies(); ++i) {
     const DeformableBodyId id = deformable_model_->GetBodyId(i);
@@ -119,7 +118,7 @@ void DeformableDriver<T>::DeclareCacheEntries(
                               ContactParticipation* result) {
                       this->CalcConstraintParticipation(context, i, result);
                     }}),
-            {deformable_contact_cache_entry.ticket()});
+            {deformable_contact_ticket});
     cache_indexes_.constraint_participations.emplace_back(
         constraint_participation_cache_entry.cache_index());
     constraint_participation_tickets.emplace(
@@ -966,11 +965,8 @@ const FemState<T>& DeformableDriver<T>::EvalNextFemState(
 
 template <typename T>
 void DeformableDriver<T>::CalcDeformableContact(
-    const Context<T>& context, DeformableContact<T>* result) const {
-  const geometry::QueryObject<T>& query_object =
-      manager_->plant()
-          .get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
+    const geometry::QueryObject<T>& query_object,
+    DeformableContact<T>* result) const {
   /* Compute the DeformableContact from the geometry engine. */
   query_object.ComputeDeformableContact(result);
 
@@ -1003,9 +999,7 @@ void DeformableDriver<T>::CalcDeformableContact(
 template <typename T>
 const DeformableContact<T>& DeformableDriver<T>::EvalDeformableContact(
     const Context<T>& context) const {
-  return manager_->plant()
-      .get_cache_entry(cache_indexes_.deformable_contact)
-      .template Eval<DeformableContact<T>>(context);
+  return manager_->EvalGeometryContactData(context).deformable;
 }
 
 template <typename T>

@@ -17,6 +17,7 @@
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -178,6 +179,14 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   const geometry::internal::ContactParticipation& EvalConstraintParticipation(
       const systems::Context<T>& context, DeformableBodyIndex index) const;
 
+  /* Computes the contact information for all registered deformable bodies.
+   This is used by MbP to populate the GeometryContactData summary along with
+   all of the other types of geometry contacts (point, surface, etc).
+   @pre result != nullptr. */
+  void CalcDeformableContact(
+      const geometry::QueryObject<T>& query_object,
+      geometry::internal::DeformableContact<T>* result) const;
+
  private:
   friend class DeformableDriverTest;
   friend class DeformableDriverContactTest;
@@ -191,7 +200,6 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
     std::vector<systems::CacheIndex> fem_states;
     std::vector<systems::CacheIndex> fem_solvers;
     std::vector<systems::CacheIndex> next_fem_states;
-    systems::CacheIndex deformable_contact;
     std::vector<systems::CacheIndex> constraint_participations;
     std::vector<systems::CacheIndex> dof_permutations;
     std::unordered_map<geometry::GeometryId, systems::CacheIndex>
@@ -303,15 +311,8 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   const fem::FemState<T>& EvalNextFemState(const systems::Context<T>& context,
                                            DeformableBodyIndex index) const;
 
-  /* Computes the contact information for all registered deformable bodies
-   @pre The geometry query input port of the MultibodyPlant that owns the
-        manager associated with this DeformableDriver is connected.
-   @pre result != nullptr. */
-  void CalcDeformableContact(
-      const systems::Context<T>& context,
-      geometry::internal::DeformableContact<T>* result) const;
-
-  /* Eval version of CalcDeformableContact(). */
+  /* Eval version of CalcDeformableContact(), though notably routed through
+   MultibodyPlant so that the plant can own the GeometryContactData cache. */
   const geometry::internal::DeformableContact<T>& EvalDeformableContact(
       const systems::Context<T>& context) const;
 
