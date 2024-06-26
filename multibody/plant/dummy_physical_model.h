@@ -49,10 +49,26 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
     return *vector_output_port_;
   }
 
+  /* Returns the output port for SceneGraph communication if one is declared.
+   Throws a std::exception otherwise. */
+  const systems::OutputPort<T>& GetSceneGraphPortOrThrow() const {
+    if (scene_graph_output_port_ == nullptr) {
+      throw std::runtime_error(
+          "The SceneGraph output port has not been declared.");
+    }
+    return *scene_graph_output_port_;
+  }
+
   systems::DiscreteStateIndex discrete_state_index() const {
     this->ThrowIfSystemResourcesNotDeclared(__func__);
     return discrete_state_index_;
   }
+
+  bool is_cloneable_to_double() const final { return true; }
+
+  bool is_cloneable_to_autodiff() const final { return true; }
+
+  bool is_cloneable_to_symbolic() const final { return true; }
 
  private:
   /* Allow different specializations to access each other's private data for
@@ -82,12 +98,6 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
     return CloneImpl<symbolic::Expression>(plant);
   }
 
-  bool is_cloneable_to_double() const final { return true; }
-
-  bool is_cloneable_to_autodiff() const final { return true; }
-
-  bool is_cloneable_to_symbolic() const final { return true; }
-
   template <typename ScalarType>
   std::unique_ptr<PhysicalModel<ScalarType>> CloneImpl(
       MultibodyPlant<ScalarType>* plant) const {
@@ -108,10 +118,15 @@ class DummyPhysicalModel final : public PhysicalModel<T> {
    the same results as a sanity check. */
   void DoDeclareSystemResources() final;
 
+  /* Declares a dummy output port that always returns a constant double, 42.0.
+   */
+  void DoDeclareSceneGraphPorts() final;
+
   std::vector<VectorX<T>> discrete_states_{};
   int num_dofs_{0};
   const systems::OutputPort<T>* abstract_output_port_{nullptr};
   const systems::OutputPort<T>* vector_output_port_{nullptr};
+  const systems::OutputPort<T>* scene_graph_output_port_{nullptr};
   systems::DiscreteStateIndex discrete_state_index_;
 };
 

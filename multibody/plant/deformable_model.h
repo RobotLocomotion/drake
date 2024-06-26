@@ -35,7 +35,14 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableModel);
 
-  /** Constructs a DeformableModel to be owned by the given MultibodyPlant.
+  // TODO(xuchenhan-tri): The prerequisite isn't very precise. It's ok to call
+  // the constructor in the middle of finalizing a plant, as long as this
+  // DeformableModel has a chance to declare the system resources it needs.
+  // Consider making the constructor private and only allow construction via
+  // plant.AddDeformableModel().
+  /** (Internal only) Constructs a DeformableModel to be owned by the given
+   MultibodyPlant. This constructor is only intended to be called internally by
+   %MultibodyPlant.
    @pre plant != nullptr.
    @pre Finalize() has not been called on `plant`. */
   explicit DeformableModel(MultibodyPlant<T>* plant);
@@ -231,8 +238,11 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   }
 
   /** Returns the output port index of the vertex positions port for all
-   registered deformable bodies. */
-  const systems::OutputPortIndex& configuration_output_port_index() const {
+   registered deformable bodies.
+   @throws std::exception if called before `DeclareSceneGraphPorts()` is called.
+  */
+  systems::OutputPortIndex configuration_output_port_index() const {
+    DRAKE_DEMAND(configuration_output_port_index_.is_valid());
     return configuration_output_port_index_;
   }
 
@@ -274,6 +284,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       MultibodyPlant<symbolic::Expression>* plant) const final;
 
   void DoDeclareSystemResources() final;
+
+  void DoDeclareSceneGraphPorts() final;
 
   /* Builds a FEM model for the body with `id` with linear tetrahedral elements
    and a single quadrature point. The reference positions as well as the

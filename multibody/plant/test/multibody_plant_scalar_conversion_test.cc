@@ -111,6 +111,9 @@ void CompareMultibodyPlantPortIndices(const MultibodyPlant<T>& plant_t,
   EXPECT_EQ(plant_t.get_geometry_pose_output_port().get_index(),
             plant_u.get_geometry_pose_output_port().get_index());
   EXPECT_EQ(
+      plant_t.get_deformable_body_configuration_output_port().get_index(),
+      plant_u.get_deformable_body_configuration_output_port().get_index());
+  EXPECT_EQ(
       plant_t.get_state_output_port(default_model_instance()).get_index(),
       plant_u.get_state_output_port(default_model_instance()).get_index());
   EXPECT_EQ(
@@ -205,13 +208,12 @@ class DoubleOnlyDiscreteUpdateManager final
 // scalar types.
 GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   MultibodyPlant<double> plant(0.1);
-  std::unique_ptr<PhysicalModel<double>> dummy_physical_model =
+  std::unique_ptr<internal::DummyPhysicalModel<double>> dummy_physical_model =
       std::make_unique<internal::DummyPhysicalModel<double>>(&plant);
-  // The dummy model supports all scalar types.
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_double());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_autodiff());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_symbolic());
-  plant.AddPhysicalModel(std::move(dummy_physical_model));
+  plant.AddDummyModel(std::move(dummy_physical_model));
   plant.Finalize();
 
   // double -> AutoDiffXd
