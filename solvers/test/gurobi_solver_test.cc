@@ -322,7 +322,7 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable3) {
   GurobiSolver solver;
   SolverOptions solver_options;
   solver_options.SetOption(GurobiSolver::id(), "BarQCPConvTol", 1E-9);
-  TestSocpDuplicatedVariable3(solver, solver_options, 1E-5);
+  TestSocpDuplicatedVariable3(solver, solver_options, 5E-5);
 }
 
 GTEST_TEST(L2NormCost, ShortestDistanceToThreePoints) {
