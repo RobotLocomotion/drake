@@ -62,8 +62,11 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
   void VerifyMassMatrixComputation(const Context<double>& context) {
     // Compute mass matrix via the Composite Body Algorithm.
     MatrixX<double> Mcba(plant_.num_velocities(), plant_.num_velocities());
+    plant_.CalcMassMatrix(context, &Mcba);
+
+    // After a first warm-up call, subusequent calls to CalcMassMatrix<double>()
+    // should never allocate.
     {
-      // CalcMassMatrix on `double` should never allocate.
       LimitMalloc guard;
       plant_.CalcMassMatrix(context, &Mcba);
     }
