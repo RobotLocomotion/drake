@@ -631,10 +631,26 @@ class TestTrajectoryOptimization(unittest.TestCase):
         gcs_wraparound = GcsTrajectoryOptimization(
             num_positions=1, continuous_revolute_joints=[0])
         self.assertEqual(len(gcs_wraparound.continuous_revolute_joints()), 1)
-        gcs_wraparound.AddRegions(regions=[Point([0]), Point([2*np.pi])],
-                                  order=1,
-                                  edges_between_regions=[[0, 1]],
-                                  edge_offsets=[[2*np.pi]])
+        g1 = gcs_wraparound.AddRegions(regions=[Point([0]), Point([2*np.pi])],
+                                       order=1,
+                                       edges_between_regions=[[0, 1]],
+                                       edge_offsets=[[2*np.pi]])
+        g2 = gcs_wraparound.AddRegions(
+            regions=[VPolytope([[8*np.pi, 8*np.pi+1]])], order=2)
+        gcs_wraparound.AddEdges(g1, g2)
+        traj, result = gcs_wraparound.SolvePath(g1, g2)
+        self.assertTrue(result.is_success())
+
+        new_traj = GcsTrajectoryOptimization.UnwrapToContinousTrajectory(
+            gcs_trajectory=traj,
+            continuous_revolute_joints=[0],
+            starting_rounds=[43])
+        diff = (new_traj.value(new_traj.start_time())
+                - traj.value(traj.start_time())) % (2 * np.pi)
+        # Modulus may lead to the value being almost 2*pi, instead of zero.
+        if diff > np.pi:
+            diff -= 2 * np.pi
+        np.testing.assert_array_almost_equal(diff, np.zeros_like(diff))
 
     def test_get_continuous_revolute_joint_indices(self):
         plant = MultibodyPlant(0.0)

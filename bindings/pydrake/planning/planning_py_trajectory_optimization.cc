@@ -513,7 +513,12 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("graph_of_convex_sets", &Class::graph_of_convex_sets,
             py_rvp::reference_internal, cls_doc.graph_of_convex_sets.doc)
         .def_static("NormalizeSegmentTimes", &Class::NormalizeSegmentTimes,
-            py::arg("trajectory"), cls_doc.NormalizeSegmentTimes.doc);
+            py::arg("trajectory"), cls_doc.NormalizeSegmentTimes.doc)
+        .def_static("UnwrapToContinousTrajectory",
+            &Class::UnwrapToContinousTrajectory, py::arg("gcs_trajectory"),
+            py::arg("continuous_revolute_joints"),
+            py::arg("starting_rounds") = std::nullopt,
+            cls_doc.UnwrapToContinousTrajectory.doc);
   }
 
   m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,
