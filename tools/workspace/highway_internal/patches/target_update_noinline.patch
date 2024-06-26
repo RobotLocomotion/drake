@@ -1,0 +1,37 @@
+[highway_internal] Move Update function to be non-inline
+
+For some reason (probably the atomic write), having this function in a
+header file defeats -fvisibility=hidden and our exported_symbols_test
+flags it as a violation (non-Drake public symbol in a shared library).
+
+Moving the function to the cc file works around the problem.
+
+--- hwy/targets.h
++++ hwy/targets.h
+@@ -300,11 +300,7 @@
+  public:
+   // Reset bits according to `targets` (typically the return value of
+   // SupportedTargets()). Postcondition: IsInitialized() == true.
+-  void Update(int64_t targets) {
+-    // These are `targets` shifted downwards, see above. Also include SCALAR
+-    // (corresponds to the last entry in the function table) as fallback.
+-    StoreMask(HWY_CHOSEN_TARGET_SHIFT(targets) | HWY_CHOSEN_TARGET_MASK_SCALAR);
+-  }
++  void Update(int64_t targets);
+ 
+   // Reset to the uninitialized state, so that FunctionCache will call Update
+   // during the next HWY_DYNAMIC_DISPATCH, and IsInitialized returns false.
+
+--- hwy/targets.cc
++++ hwy/targets.cc
+@@ -774,4 +774,10 @@
+   return chosen_target;
+ }
+ 
++void ChosenTarget::Update(int64_t targets) {
++  // These are `targets` shifted downwards, see above. Also include SCALAR
++  // (corresponds to the last entry in the function table) as fallback.
++  StoreMask(HWY_CHOSEN_TARGET_SHIFT(targets) | HWY_CHOSEN_TARGET_MASK_SCALAR);
++}
++
+ }  // namespace hwy
