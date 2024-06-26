@@ -199,9 +199,6 @@ int do_main() {
                   : AddParallelGripper(&plant, rigid_proximity_props);
 
   /* Set up a deformable torus. */
-  auto owned_deformable_model =
-      std::make_unique<DeformableModel<double>>(&plant);
-
   DeformableBodyConfig<double> deformable_config;
   deformable_config.set_youngs_modulus(FLAGS_E);
   deformable_config.set_poissons_ratio(FLAGS_nu);
@@ -236,7 +233,8 @@ int do_main() {
   // TODO(xuchenhan-tri): Though unused, we still asserts the resolution hint is
   // positive. Remove the requirement of a resolution hint for meshed shapes.
   const double unused_resolution_hint = 1.0;
-  owned_deformable_model->RegisterDeformableBody(
+  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
+  deformable_model.RegisterDeformableBody(
       std::move(torus_instance), deformable_config, unused_resolution_hint);
 
   /* Add an external suction force if using a suction gripper. */
@@ -245,20 +243,11 @@ int do_main() {
     auto suction_force = std::make_unique<PointSourceForceField>(
         plant, plant.GetBodyByName("cup_body"), Vector3d(0, 0, -0.07), 0.1);
     suction_force_ptr = suction_force.get();
-    owned_deformable_model->AddExternalForce(std::move(suction_force));
+    deformable_model.AddExternalForce(std::move(suction_force));
   }
-
-  plant.AddPhysicalModel(std::move(owned_deformable_model));
 
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();
-
-  /* It's essential to connect the vertex position port in DeformableModel to
-   the source configuration port in SceneGraph when deformable bodies are
-   present in the plant. */
-  builder.Connect(
-      plant.get_deformable_body_configuration_output_port(),
-      scene_graph.get_source_configuration_port(plant.get_source_id().value()));
 
   /* Add a visualizer that emits LCM messages for visualization. */
   geometry::DrakeVisualizerParams params;
