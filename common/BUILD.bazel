@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":find_runfiles",
         ":fmt",
         ":hash",
+        ":hwy_dynamic",
         ":identifier",
         ":is_approx_equal_abstol",
         ":is_cloneable",
@@ -343,6 +344,20 @@ drake_cc_library(
     deps = [
         ":find_resource",
     ],
+)
+
+drake_cc_library(
+    name = "hwy_dynamic",
+    srcs = ["hwy_dynamic.cc"],
+    hdrs = [
+        "hwy_dynamic.h",
+        "hwy_dynamic_impl.h",
+    ],
+    internal = True,
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":essential",
+    ]
 )
 
 drake_cc_library(
