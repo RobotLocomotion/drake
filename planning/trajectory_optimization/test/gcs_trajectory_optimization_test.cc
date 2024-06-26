@@ -1116,7 +1116,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
   std::vector<int> starting_rounds = {-1, 0};
   const auto unwrapped_traj_with_start =
       GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
-          traj, continuous_revolute_joints, starting_rounds);
+          traj, continuous_revolute_joints, 1e-8, starting_rounds);
   // Check if the start is unwrapped to the correct value.
   EXPECT_TRUE(CompareMatrices(unwrapped_traj_with_start.value(0.0),
                               Eigen::Vector3d{0.0, 1.0 - 2 * M_PI, 2.0},
@@ -1129,9 +1129,10 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
       unwrapped_traj_with_start.value(middle_time_2 + time_eps), pos_eps));
   // Check for invalid start_rounds
   const std::vector<int> invalid_start_rounds = {-1, 0, 1};
-  EXPECT_THROW(GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
-                   traj, continuous_revolute_joints, invalid_start_rounds),
-               std::runtime_error);
+  EXPECT_THROW(
+      GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+          traj, continuous_revolute_joints, 1e-8, invalid_start_rounds),
+      std::runtime_error);
   // Check for discontinuity for continuous revolute joints
   control_points_2 << 2.5, 2.5, 4.0, 3.0 + 2 * M_PI, 1.0 + 2 * M_PI,
       0.0 + 2 * M_PI, 4.0 - 6 * M_PI, 3.0 - 6 * M_PI, 2.0 - 6 * M_PI;
@@ -1147,6 +1148,13 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
       GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
           traj_not_continous_on_revolute_manifold, continuous_revolute_joints),
       ".*is not a multiple of 2π at segment.*");
+  // If we set the tolerance to be very large, no error will occur. We use a
+  // tolerance of 0.6, which is larger than the 0.5 gap between adjacent
+  // segments.
+  const double loose_tol = 0.6;
+  EXPECT_NO_THROW(GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+      traj_not_continous_on_revolute_manifold, continuous_revolute_joints,
+      loose_tol));
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, NotBezierCurveError) {

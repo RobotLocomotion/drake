@@ -828,7 +828,7 @@ class GcsTrajectoryOptimization final {
     */
   static trajectories::CompositeTrajectory<double> UnwrapToContinousTrajectory(
       const trajectories::CompositeTrajectory<double>& gcs_trajectory,
-      std::vector<int> continuous_revolute_joints,
+      std::vector<int> continuous_revolute_joints, double tol = 1e-8,
       std::optional<std::vector<int>> starting_rounds = std::nullopt);
 
  private:
