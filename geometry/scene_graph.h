@@ -1165,6 +1165,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // The cache indices for the pose and configuration update cache entries.
   systems::CacheIndex pose_update_index_{};
   systems::CacheIndex configuration_update_index_{};
+
+  // (Testing only) a global count of calls to the scalar converting
+  // constructor.
+  static int64_t scalar_conversion_count_;
 };
 
 }  // namespace geometry

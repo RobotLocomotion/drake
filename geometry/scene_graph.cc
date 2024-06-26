@@ -176,7 +176,11 @@ SceneGraph<T>::SceneGraph()
       this->DeclareAbstractParameter(Value<SceneGraphConfig>());
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
+      this->DeclareAbstractOutputPort(
+              "query", &SceneGraph::CalcQueryObject,
+              {this->all_input_ports_ticket(),
+               this->abstract_parameter_ticket(
+                   systems::AbstractParameterIndex(geometry_state_index_))})
           .get_index();
 
   auto& pose_update_cache_entry = this->DeclareCacheEntry(
@@ -198,9 +202,13 @@ SceneGraph<T>::SceneGraph(const SceneGraphConfig& config)
 }
 
 template <typename T>
+int64_t SceneGraph<T>::scalar_conversion_count_{0};
+
+template <typename T>
 template <typename U>
 SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
     : SceneGraph() {
+  ++scalar_conversion_count_;
   hub_.mutable_config() = other.hub_.config();
   hub_.mutable_model() =
       GeometryState<T>(other.hub_.model());
