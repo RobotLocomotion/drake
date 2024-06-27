@@ -76,7 +76,10 @@ _IGNORED_REPOSITORIES = [
 
 # For these repositories, ignore any tags that match the specified regex.
 _IGNORED_TAGS = {
+    "gymnasium_py": r"v[0-9.]+a[0-9]+",
     "libpng_internal": r"v[0-9.]+(alpha|beta)[0-9]+",
+    "msgpack_internal": r"c-[0-9.]+",
+    "ros_xacro_internal": r"xacro-[0-9.]+",
     "sdformat_internal": r"sdformat-prerelease_[0-9.]+",
 }
 
@@ -170,7 +173,7 @@ def _is_ignored_tag(commit, workspace):
         # we don't spam the user.
         return True
 
-    development_stages = ["alpha", "beta", "rc", "pre"]
+    development_stages = ["alpha", "beta", "pre", "rc", "unstable"]
     prerelease = any(stage in commit for stage in development_stages)
     if prerelease:
         # Heuristically looks like a pre-release; ignore it, but log it for the
