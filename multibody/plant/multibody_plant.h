@@ -4929,7 +4929,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  int num_collision_geometries() const { return num_collision_geometries_; }
+  int num_collision_geometries() const;
 
   /// Returns the unique id identifying `this` plant as a source for a
   /// SceneGraph.
