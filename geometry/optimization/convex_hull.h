@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <optional>
-#include <set>
 #include <utility>
 #include <vector>
 
@@ -21,7 +20,7 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexHull)
 
-  /** Constructs the convex hull from a list of convex sets. */
+  /** Constructs the convex hull from a vector of convex sets. */
   explicit ConvexHull(const ConvexSets& sets);
 
   ~ConvexHull() final;
@@ -32,7 +31,7 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
   /** Returns a reference to the convex set at the given index. */
   const ConvexSet& element(int index) const;
 
-  /** Returns the number of convex sets constructing the convex hull. */
+  /** Returns the number of convex sets defining the convex hull. */
   int num_elements() const { return sets_.size(); }
 
   using ConvexSet::IsBounded;

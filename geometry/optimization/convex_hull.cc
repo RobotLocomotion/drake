@@ -36,7 +36,8 @@ int GetAmbientDimension(const ConvexSets& sets) {
   return ambient_dimension;
 }
 
-std::vector<symbolic::Variable> AddNewVariables(
+// Add the new variables to the existing_variables from the bindings.
+void AddNewVariables(
     const std::vector<solvers::Binding<solvers::Constraint>>& bindings,
     std::vector<symbolic::Variable>* existing_variables) {
   std::vector<symbolic::Variable> new_vars;
@@ -55,7 +56,6 @@ std::vector<symbolic::Variable> AddNewVariables(
       existing_variables->push_back(var);
     }
   }
-  return new_vars;
 }
 
 }  // namespace
@@ -75,14 +75,7 @@ std::unique_ptr<ConvexSet> ConvexHull::DoClone() const {
 }
 
 std::optional<bool> ConvexHull::DoIsBoundedShortcut() const {
-  // The convex hull is bounded if and only if all the participating sets are
-  // bounded.
-  for (const auto& set : sets_) {
-    if (!set->IsBounded()) {
-      return false;
-    }
-  }
-  return true;
+  return std::nullopt;
 }
 
 bool ConvexHull::DoIsEmpty() const {
@@ -99,50 +92,33 @@ bool ConvexHull::DoIsEmpty() const {
 }
 
 std::optional<VectorXd> ConvexHull::DoMaybeGetPoint() const {
-  if (IsEmpty()) {
-    return std::nullopt;
-  }
-  Eigen::VectorXd sum = Eigen::VectorXd::Zero(ambient_dimension());
-  for (const auto& set : sets_) {
-    const auto maybe_point = set->MaybeGetPoint();
-    if (maybe_point.has_value()) {
-      return maybe_point;
-    }
-  }
   return std::nullopt;
 }
 
 bool ConvexHull::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                               double tol) const {
-  // Check the feasibility of |x - ∑ᵢ xᵢ| <= tol*1, xᵢ ∈ 𝛼ᵢXᵢ, 𝛼ᵢ ≥ 0, ∑ᵢ 𝛼ᵢ =
+  // Check the feasibility of |x - ∑ᵢ xᵢ| <= tol * 1, xᵢ ∈ 𝛼ᵢXᵢ, 𝛼ᵢ ≥ 0, ∑ᵢ 𝛼ᵢ =
   // 1, where 1 is a vector of ones and |.| is interpreted element-wise.
   MathematicalProgram prog;
   const int n = std::ssize(sets_);
   const int d = ambient_dimension();
-  auto xz = prog.NewContinuousVariables(n + 1, d, "x");
+  // x_sets is d * n, each column is a variable for a convex set
+  auto x_sets = prog.NewContinuousVariables(d, n, "x_sets");
   auto alpha = prog.NewContinuousVariables(n, "alpha");
-  // constraint I: x - ∑ᵢ xᵢ <= z -->  ∑ᵢ xᵢ + z >= x
-  // constraint II: -x + ∑ᵢ xᵢ <= z -->  ∑ᵢ xᵢ - z <= x
-  Eigen::VectorXd a_1 = Eigen::VectorXd::Ones(n + 1);
-  Eigen::VectorXd a_2{a_1};
-  a_2(n) = -1;
-  // constraint I: inf >= A_1 * xz >= x
-  const double inf = std::numeric_limits<double>::infinity();
+  // constraint: x - tol * 1  ≤ ∑ᵢ xᵢ ≤ x + tol * 1
+  Eigen::VectorXd ones = Eigen::VectorXd::Ones(n);
   for (int i = 0; i < d; ++i) {
-    prog.AddLinearConstraint(a_1, x(i), inf, xz.col(i));
-    prog.AddLinearConstraint(a_2, -inf, x(i), xz.col(i));
+    prog.AddLinearConstraint(Eigen::VectorXd::Ones(n), x(i) - tol, x(i) + tol,
+                             x_sets.row(i));
   }
   // constraint: ∑ᵢ αᵢ = 1
   prog.AddLinearEqualityConstraint(Eigen::MatrixXd::Ones(1, n),
                                    VectorXd::Ones(1), alpha);
-  // constraint: 1 > αᵢ >= 0
+  // constraint: 1 ≥ αᵢ ≥ 0
   prog.AddBoundingBoxConstraint(0, 1, alpha);
-  // constraint: |z| <= tol
-  auto z = xz.row(n);
-  prog.AddBoundingBoxConstraint(-tol, tol, z);
   // add the constraints for each convex set
   for (int i = 0; i < n; ++i) {
-    sets_[i]->AddPointInNonnegativeScalingConstraints(&prog, xz.row(i),
+    sets_[i]->AddPointInNonnegativeScalingConstraints(&prog, x_sets.col(i),
                                                       alpha(i));
   }
   // check the feasibility
@@ -158,32 +134,34 @@ ConvexHull::DoAddPointInSetConstraints(
   // Add the constraint that vars = ∑ᵢ xᵢ, xᵢ ∈ 𝛼ᵢXᵢ, 𝛼ᵢ ≥ 0, ∑ᵢ 𝛼ᵢ = 1.
   const int n = std::ssize(sets_);
   const int d = ambient_dimension();
-  // The new variable is n * d, each row is a variable for a convex set
-  auto x = prog->NewContinuousVariables(n, d, "x");
+  // The variable is d * n, each column is a variable for a convex set
+  auto x_sets = prog->NewContinuousVariables(d, n, "x_sets");
   auto alpha = prog->NewContinuousVariables(n, "alpha");
-  prog->AddBoundingBoxConstraint(0, 1, alpha);
+  auto new_vars = std::vector<symbolic::Variable>(alpha.data(),
+                                                  alpha.data() + alpha.size());
   std::vector<solvers::Binding<solvers::Constraint>> new_bindings;
-  // constraint: x - ∑ᵢ xᵢ == 0
+  new_bindings.push_back(prog->AddBoundingBoxConstraint(0, 1, alpha));
+  // constraint: vars - ∑ᵢ xᵢ == 0 -> (1 ... 1 -1)(x_sets[i, :], vars) = 0
   Eigen::VectorXd a(n + 1);
   a.head(n) = Eigen::VectorXd::Ones(n);
   a(n) = -1;
   for (int i = 0; i < d; ++i) {
     Eigen::Ref<const solvers::VectorXDecisionVariable> vars_i =
         vars.segment(i, 1);
-    solvers::VariableRefList vars_list{x.col(i), vars_i};
-    new_bindings.push_back(prog->AddLinearEqualityConstraint(a, 0, vars_list));
+    solvers::VectorXDecisionVariable x_i_vars(n + 1);
+    x_i_vars.head(n) = x_sets.row(i);
+    x_i_vars(n) = vars(i);
+    new_bindings.push_back(prog->AddLinearEqualityConstraint(a, 0, x_i_vars));
   }
   // constraint: ∑ᵢ αᵢ = 1
   new_bindings.push_back(prog->AddLinearEqualityConstraint(
       Eigen::MatrixXd::Ones(1, n), VectorXd::Ones(1), alpha));
   // alpha and x should already be added
-  auto new_vars = std::vector<symbolic::Variable>(alpha.data(),
-                                                  alpha.data() + alpha.size());
-  new_vars.insert(new_vars.end(), x.data(), x.data() + x.size());
+  new_vars.insert(new_vars.end(), x_sets.data(), x_sets.data() + x_sets.size());
   // add the constraints for each convex set
   for (int i = 0; i < n; ++i) {
     auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
-        prog, x.row(i), alpha(i));
+        prog, x_sets.col(i), alpha(i));
     new_bindings.insert(new_bindings.end(), cons.begin(), cons.end());
     AddNewVariables(cons, &new_vars);
   }
@@ -195,13 +173,13 @@ ConvexHull::DoAddPointInSetConstraints(
 std::vector<solvers::Binding<solvers::Constraint>>
 ConvexHull::DoAddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog,
-    const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
     const symbolic::Variable& t) const {
   // Add the constraint that t >= 0, x = ∑ᵢ xᵢ, xᵢ ∈ 𝛼ᵢXᵢ, 𝛼ᵢ ≥ 0, ∑ᵢ 𝛼ᵢ = t.
   const int n = std::ssize(sets_);
   const int d = ambient_dimension();
-  // The new variable is n * d, each row is a variable for a convex set
-  auto x = prog->NewContinuousVariables(n, d, "x");
+  // The new variable is d * n, each row is a variable for a convex set
+  auto x_sets = prog->NewContinuousVariables(d, n, "x_sets");
   auto alpha = prog->NewContinuousVariables(n, "alpha");
   const double inf = std::numeric_limits<double>::infinity();
   std::vector<solvers::Binding<solvers::Constraint>> new_bindings;
@@ -210,10 +188,10 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   a.head(n) = Eigen::VectorXd::Ones(n);
   a(n) = -1;
   for (int i = 0; i < d; ++i) {
-    Eigen::Ref<const solvers::VectorXDecisionVariable> vars_i =
-        vars.segment(i, 1);
-    solvers::VariableRefList vars_list{x.col(i), vars_i};
-    new_bindings.push_back(prog->AddLinearEqualityConstraint(a, 0, vars_list));
+    solvers::VectorXDecisionVariable x_sets_i_x(n + 1);
+    x_sets_i_x.head(n) = x_sets.row(i);
+    x_sets_i_x(n) = x(i);
+    new_bindings.push_back(prog->AddLinearEqualityConstraint(a, 0, x_sets_i_x));
   }
   // Constraint II: ∑ᵢ αᵢ = t
   solvers::VectorXDecisionVariable alpha_t_vec(n + 1);
@@ -225,7 +203,7 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   // finally add the constraints for each convex set
   for (int i = 0; i < n; ++i) {
     auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
-        prog, x.row(i), alpha(i));
+        prog, x_sets.col(i), alpha(i));
     new_bindings.insert(new_bindings.end(), cons.begin(), cons.end());
   }
   return new_bindings;
@@ -239,28 +217,25 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
     const Eigen::Ref<const Eigen::VectorXd>& c, double d,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const {
-  // Add the constraint that A_x * x + b_x = ∑ᵢ sᵢ, sᵢ ∈ 𝛼ᵢSᵢ, 𝛼ᵢ ≥ 0,
+  // Add the constraint that A_x * x + b_x = ∑ᵢ xᵢ, xᵢ ∈ 𝛼ᵢXᵢ, 𝛼ᵢ ≥ 0,
   // ∑ᵢ 𝛼ᵢ = c't + d.
   const int dim = ambient_dimension();
   const int n = std::ssize(sets_);
-  // The new variable is n * d, each row is a variable for a convex set
-  auto s = prog->NewContinuousVariables(n, dim, "s");
+  // The new variable is dim * n, each column belongs to a convex set
+  auto x_sets = prog->NewContinuousVariables(dim, n, "x_sets");
   auto alpha = prog->NewContinuousVariables(n, "alpha");
-  const double inf = std::numeric_limits<double>::infinity();
   std::vector<solvers::Binding<solvers::Constraint>> new_bindings;
   // constraint: A_x * x - ∑ᵢ sᵢ == -b_x
-  DRAKE_DEMAND(A_x.rows() == dim);
   for (int i = 0; i < dim; ++i) {
-    Eigen::Ref<const solvers::VectorXDecisionVariable> s_i = s.col(i);
-    // A_x.row(i) * x - (1, ..., 1) sᵢ == -b_x[i]
-    solvers::VectorXDecisionVariable x_s_i(dim + n);
-    x_s_i.head(dim) = x;
-    x_s_i.tail(n) = s_i;
+    // A_x.row(i) * x - (1, ..., 1) xᵢ == -b_x[i]
+    solvers::VectorXDecisionVariable x_sets_i_(dim + n);
+    x_sets_i_.head(dim) = x;
+    x_sets_i_.tail(n) = x_sets.row(i);
     Eigen::VectorXd a_sum(A_x.cols() + n);
     a_sum.head(A_x.cols()) = A_x.row(i);
     a_sum.tail(n) = -Eigen::VectorXd::Ones(n);
     new_bindings.push_back(
-        prog->AddLinearEqualityConstraint(a_sum, -b_x[i], x_s_i));
+        prog->AddLinearEqualityConstraint(a_sum, -b_x[i], x_sets_i_));
   }
   // constraint: ∑ᵢ αᵢ = c't + d
   const int p = c.size();
@@ -273,12 +248,12 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   new_bindings.push_back(
       prog->AddLinearEqualityConstraint(a_con, d, alpha_t_vec));
   // c't + d and alpha should be positive
+  const double inf = std::numeric_limits<double>::infinity();
   new_bindings.push_back(prog->AddBoundingBoxConstraint(0, inf, alpha));
-  new_bindings.push_back(prog->AddLinearConstraint(c.transpose(), -d, inf, t));
   // finally add the constraints for each convex set
   for (int i = 0; i < n; ++i) {
     auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
-        prog, s.row(i), alpha(i));
+        prog, x_sets.col(i), alpha(i));
     new_bindings.insert(new_bindings.end(), cons.begin(), cons.end());
   }
   return new_bindings;
