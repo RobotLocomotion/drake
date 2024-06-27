@@ -346,6 +346,47 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "hwy_dynamic",
+    srcs = ["hwy_dynamic.cc"],
+    hdrs = [
+        "hwy_dynamic.h",
+        "hwy_dynamic_impl.h",
+    ],
+    defines = [
+        # Highway automatically compiles our code that uses it for multiple CPU
+        # targets, so that the code is tuned as best as possible for the user's
+        # CPU that it will run on.
+        #
+        # By default Highway compiles to a ~dozen different CPU targets, but
+        # in practice Drake only cares about a few of them. We'll disable the
+        # default list of targets and write down the CPUs we care about one by
+        # one so that the test / support burden is better matched to our needs.
+        #
+        # Highway only offers a deny-list for targets, so we'll need to deny
+        # everything and then un-deny what we want to allow.
+        "HWY_DISABLED_TARGETS=((~0LL)&" + "&".join([
+            "(~({}))".format(name)
+            for name in [
+                # We must always provide a portable fallback.
+                "HWY_BASELINE_SCALAR",
+                # x86: SIMD with 256-bit lanes and FMA.
+                "HWY_AVX2",
+                # x86: SIMD with the improved 512VL encodings.
+                "HWY_AVX3",
+                # arm: SIMD that has fixed 256-bit lanes.
+                # TODO(jwnimmer-tri) Enable this once we can test it.
+                # "HWY_SVE_256",
+            ]
+        ]) + ")",
+    ],
+    internal = True,
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
     deps = [
