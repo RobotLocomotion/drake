@@ -1116,8 +1116,11 @@ class System : public SystemBase {
   using SystemBase::num_output_ports;
 
   // TODO(sherm1) Make this an InputPortIndex.
-  /** Returns the typed input port at index @p port_index. */
-  const InputPort<T>& get_input_port(int port_index) const {
+  /** Returns the typed input port at index `port_index`.
+  @param warn_deprecated Whether or not to print a warning in case the port was
+  marked as deprecated. */
+  const InputPort<T>& get_input_port(int port_index,
+                                     bool warn_deprecated = true) const {
     // Profiling revealed that it is too expensive to do a dynamic_cast here.
     // A static_cast is safe as long as GetInputPortBaseOrThrow always returns
     // a satisfactory type. As of this writing, it only ever returns values
@@ -1125,8 +1128,7 @@ class System : public SystemBase {
     // has a check that port.get_system_interface() matches `this` which is a
     // System<T>, so we are safe.
     return static_cast<const InputPort<T>&>(
-        this->GetInputPortBaseOrThrow(__func__, port_index,
-                                      /* warn_deprecated = */ true));
+        this->GetInputPortBaseOrThrow(__func__, port_index, warn_deprecated));
   }
 
   /** Convenience method for the case of exactly one input port.
@@ -1159,8 +1161,11 @@ class System : public SystemBase {
   bool HasInputPort(const std::string& port_name) const;
 
   // TODO(sherm1) Make this an OutputPortIndex.
-  /** Returns the typed output port at index @p port_index. */
-  const OutputPort<T>& get_output_port(int port_index) const {
+  /** Returns the typed output port at index `port_index`.
+  @param warn_deprecated Whether or not to print a warning in case the port was
+  marked as deprecated. */
+  const OutputPort<T>& get_output_port(int port_index,
+                                       bool warn_deprecated = true) const {
     // Profiling revealed that it is too expensive to do a dynamic_cast here.
     // A static_cast is safe as long as GetInputPortBaseOrThrow always returns
     // a satisfactory type. As of this writing, it only ever returns values
@@ -1168,8 +1173,7 @@ class System : public SystemBase {
     // has a check that port.get_system_interface() matches `this` which is a
     // System<T>, so we are safe.
     return static_cast<const OutputPort<T>&>(
-        this->GetOutputPortBaseOrThrow(__func__, port_index,
-                                       /* warn_deprecated = */ true));
+        this->GetOutputPortBaseOrThrow(__func__, port_index, warn_deprecated));
   }
 
   /** Convenience method for the case of exactly one output port.
