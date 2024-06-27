@@ -1969,6 +1969,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   }
 }
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 2
 template <>
 void MultibodyPlant<symbolic::Expression>::
     AppendContactResultsHydroelasticContinuous(
@@ -1977,6 +1978,7 @@ void MultibodyPlant<symbolic::Expression>::
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
+#endif
 
 template <typename T>
 void MultibodyPlant<T>::AppendContactResultsHydroelasticContinuous(
@@ -2169,6 +2171,7 @@ void MultibodyPlant<T>::CalcAndAddPointContactForcesContinuous(
   }
 }
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 2
 template <>
 void MultibodyPlant<symbolic::Expression>::
     CalcHydroelasticContactForcesContinuous(
@@ -2178,6 +2181,7 @@ void MultibodyPlant<symbolic::Expression>::
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
+#endif
 
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
