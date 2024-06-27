@@ -15,3 +15,11 @@ patch.
      defines = DEFINES,
 +    linkstatic = True,
      local_defines = ["hwy_EXPORTS"],
+@@ -238,2 +238,3 @@
+     copts = COPTS,
++    linkstatic = True,
+     local_defines = ["hwy_EXPORTS"],
+@@ -419,2 +420,3 @@
+     copts = COPTS,
++    linkstatic = True,
+     local_defines = ["hwy_test_EXPORTS"],
