@@ -1309,13 +1309,20 @@ template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   IllustrationProperties properties,
                                   RoleAssign assign) {
+  InternalGeometry& geometry =
+      ValidateRoleAssign(source_id, geometry_id, Role::kIllustration, assign);
+
+  // We don't warn until after all the error checking has already happened.
   if (properties.HasProperty("phong", "diffuse_map")) {
     static logging::Warn log_once(
         "Explicitly defined values for the ('phong', 'diffuse_map') property "
         "are not currently used in illustration roles -- only perception "
-        "roles");
+        "roles. This warning is only shown during SceneGraph's first encounter "
+        "with an ignored 'diffuse_map', which occurred with the geometry named "
+        "'{}' on a geometry frame named '{}'; "
+        "further encounters will be silently ignored.",
+        GetName(geometry_id), GetName(GetFrameId(geometry_id)));
   }
-
   // TODO(SeanCurtis-TRI): We want to remove this warning. For that to happen,
   // we need systems dependent on illustration properties to recognize if there
   // has been a change since last they processed the state. The simplest way to
@@ -1332,9 +1339,6 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
         "initialization to have an effect. When in doubt, after making "
         "property changes, force the visualizer to re-initialize via its API.");
   }
-
-  InternalGeometry& geometry =
-      ValidateRoleAssign(source_id, geometry_id, Role::kIllustration, assign);
 
   geometry_version_.modify_illustration();
 
