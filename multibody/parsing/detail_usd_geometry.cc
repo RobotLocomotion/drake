@@ -489,15 +489,9 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForEllipsoid(
   const std::optional<Eigen::Vector3d> dimension = GetEllipsoidDimension(
     prim, meters_per_unit, diagnostic);
   if (dimension.has_value()) {
-    if (dimension.value()[0] == dimension.value()[1] &&
-        dimension.value()[1] == dimension.value()[2]) {
-      return SpatialInertia<double>::SolidSphereWithMass(
-        GetPrimMass(prim, diagnostic), dimension.value()[0]);
-    } else {
-      return SpatialInertia<double>::SolidEllipsoidWithMass(
-        GetPrimMass(prim, diagnostic),
-        dimension.value()[0], dimension.value()[1], dimension.value()[2]);
-    }
+    return SpatialInertia<double>::SolidEllipsoidWithMass(
+      GetPrimMass(prim, diagnostic),
+      dimension.value()[0], dimension.value()[1], dimension.value()[2]);
   } else {
     return std::nullopt;
   }

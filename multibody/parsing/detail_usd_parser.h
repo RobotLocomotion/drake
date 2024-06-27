@@ -30,8 +30,9 @@ class UsdParserWrapper final : public ParserInterface {
       const std::optional<std::string>& parent_model_name,
       const ParsingWorkspace& workspace) final;
 
-  // Initialize the OpenUSD library by registering relevant plugins.
-  // The function should only be invoked once before ingesting any USD assets.
+  // Initializes the OpenUSD library by registering relevant plugins.
+  // The function should be invoked once and only once before importing any
+  // USD asset.
   static void InitializeOpenUsdLibrary();
 };
 

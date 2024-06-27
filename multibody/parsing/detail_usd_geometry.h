@@ -17,20 +17,21 @@ std::optional<Eigen::Vector3d> GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
 
-// Returns the dimension of an UsdGeomSphere as `Vector3d(x_axis_length,
-// y_axis_length, z_axis_length)`, or nullopt if an error occurs.
+// Returns the dimension of an UsdGeomSphere as `Vector3d(a, b, c)`, where a,
+// b, c are the lengths of the ellipsoid's principal semi-axis along the x-,
+// y-, and z-axes, respectively. Returns nullopt if an error occurs.
 std::optional<Eigen::Vector3d> GetEllipsoidDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
 
-// Returns the dimension of an UsdGeomCylinder as `Vector2d(radius, height)`,
-// or nullopt if an error occurs
+// Returns the dimension of an UsdGeomCylinder as `Vector2d(cylinder_radius,
+// cylinder_height)`, or nullopt if an error occurs.
 std::optional<Eigen::Vector2d> GetCylinderDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic);
 
-// Returns the dimension of an UsdGeomCapsule as `Vector2d(radius, height)`,
-// or nullopt if an error occurs
+// Returns the dimension of an UsdGeomCapsule as `Vector2d(capsule_radius,
+// capsule_height)`, or nullopt if an error occurs.
 std::optional<Eigen::Vector2d> GetCapsuleDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic);
@@ -111,7 +112,7 @@ std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
 
 // Returns the CoulombFriction of a prim if the prim specifies its
 // `physics:dynamicFriction` and `physics:staticFriction attributes`. If not,
-// it returns the default values of `CoulombFriction`.
+// it returns the value specified by the `default_friction()` function.
 CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim);
 
 // Returns the mass of a prim if the prim specifies its `physics:mass`

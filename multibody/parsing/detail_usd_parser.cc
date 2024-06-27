@@ -201,6 +201,7 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
   }
 
   const RigidBody<double>* rigid_body;
+  // Pose of the geometry in the body frame.
   math::RigidTransform<double> X_BG;
   if (is_static) {
     rigid_body = &w_.plant->world_body();
