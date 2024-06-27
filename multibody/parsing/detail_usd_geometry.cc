@@ -37,6 +37,7 @@ Eigen::Quaterniond UsdQuatdToEigen(const pxr::GfQuatd& q) {
     q.GetImaginary()[2]);
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<Eigen::Vector3d> GetPrimScale(const pxr::UsdPrim& prim,
   const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomXformable xformable = pxr::UsdGeomXformable(prim);
@@ -61,6 +62,7 @@ CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim) {
   return default_friction();
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 double GetPrimMass(const pxr::UsdPrim& prim,
   const DiagnosticPolicy& diagnostic) {
   if (prim.HasAPI(pxr::TfToken("PhysicsMassAPI"))) {
@@ -88,6 +90,7 @@ double GetPrimMass(const pxr::UsdPrim& prim,
   return default_mass;
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<Eigen::Vector4d> GetGeomPrimColor(const pxr::UsdPrim& prim,
   const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomGprim gprim = pxr::UsdGeomGprim(prim);
@@ -110,6 +113,7 @@ void RaiseFailedToReadAttributeError(const std::string& attr_name,
       prim.GetPath().GetString()));
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
@@ -136,8 +140,9 @@ std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
     UsdVec3dToEigen(translation));
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 bool WriteMeshToObjFile(
-  const std::string& filename,
+  const std::string& file_path,
   const pxr::VtArray<pxr::GfVec3f>& vertices,
   const pxr::VtArray<int>& indices,
   const DiagnosticPolicy& diagnostic) {
@@ -156,10 +161,10 @@ bool WriteMeshToObjFile(
       fmt::format("f {} {} {}\n", index0, index1, index2));
   }
 
-  std::ofstream out_file(filename);
+  std::ofstream out_file(file_path);
   if (!out_file.is_open()) {
     diagnostic.Error(
-      fmt::format("Failed to create file {} for obj mesh.", filename));
+      fmt::format("Failed to create file {} for obj mesh.", file_path));
     return false;
   }
   out_file << obj_file_contents;
@@ -167,6 +172,7 @@ bool WriteMeshToObjFile(
   return true;
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<Eigen::Vector3d> GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
@@ -192,6 +198,7 @@ std::optional<Eigen::Vector3d> GetBoxDimension(
   return prim_scale.value() * cube_size * meters_per_unit;
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<Eigen::Vector3d> GetEllipsoidDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
@@ -216,10 +223,11 @@ std::optional<Eigen::Vector3d> GetEllipsoidDimension(
   return prim_scale.value() * sphere_radius * meters_per_unit;
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<Eigen::Vector2d> GetCylinderDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
-  pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
+  const pxr::UsdGeomCylinder cylinder = pxr::UsdGeomCylinder(prim);
   if (!cylinder) {
     diagnostic.Error(fmt::format(
       "Failed to cast the Prim at {} into an UsdGeomCylinder.",
@@ -273,6 +281,7 @@ std::optional<Eigen::Vector2d> GetCylinderDimension(
   return Eigen::Vector2d(cylinder_radius, cylinder_height);
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<Eigen::Vector2d> GetCapsuleDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
@@ -328,6 +337,7 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
   return Eigen::Vector2d(capsule_radius, capsule_height);
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<double> GetMeshScale(
   const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic) {
   std::optional<Eigen::Vector3d> prim_scale_opt = GetPrimScale(
@@ -346,6 +356,7 @@ std::optional<double> GetMeshScale(
   return prim_scale[0];
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::unique_ptr<geometry::Shape> CreateGeometryBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
@@ -358,6 +369,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryBox(
   }
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
@@ -376,6 +388,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
   }
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
@@ -388,6 +401,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
   }
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
@@ -400,8 +414,9 @@ std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
   }
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::unique_ptr<geometry::Shape> CreateGeometryMesh(
-  const std::string obj_filename, const pxr::UsdPrim& prim,
+  const std::string& obj_file_path, const pxr::UsdPrim& prim,
   double meters_per_unit, const DiagnosticPolicy& diagnostic) {
   pxr::UsdGeomMesh mesh = pxr::UsdGeomMesh(prim);
   if (!mesh) {
@@ -445,13 +460,14 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
     return nullptr;
   }
 
-  if (!WriteMeshToObjFile(obj_filename, vertices, indices, diagnostic)) {
+  if (!WriteMeshToObjFile(obj_file_path, vertices, indices, diagnostic)) {
     return nullptr;
   }
 
-  return std::make_unique<geometry::Mesh>(obj_filename, prim_scale.value());
+  return std::make_unique<geometry::Mesh>(obj_file_path, prim_scale.value());
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
@@ -466,6 +482,7 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForBox(
   }
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
@@ -486,6 +503,7 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForEllipsoid(
   }
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForCylinder(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
@@ -501,6 +519,7 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForCylinder(
   }
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForCapsule(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
@@ -516,6 +535,7 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForCapsule(
   }
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<pxr::TfToken> GetUsdGeomAxis(
   const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic) {
   pxr::TfToken axis;
@@ -535,6 +555,7 @@ std::optional<pxr::TfToken> GetUsdGeomAxis(
   return axis;
 }
 
+// TODO(hong-nvidia): Add test case for this function.
 std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
   const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic) {
   std::optional<pxr::TfToken> axis = GetUsdGeomAxis(prim, diagnostic);

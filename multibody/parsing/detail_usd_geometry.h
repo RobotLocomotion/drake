@@ -63,10 +63,13 @@ std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic);
 
-// Creates a geometry::Mesh with a dimension specified by the UsdGeomMesh prim.
-// Returns nullptr if an error occurs.
+// Creates a geometry::Mesh corresponding to the mesh represented by the
+// UsdGeomMesh prim. The function writes the vertices and indices data to a new
+// obj file specified by the argument `obj_file_path`, and uses that file to
+// initialize the resulting geometry::Mesh. Returns nullptr if an error occurs
+// during parsing.
 std::unique_ptr<geometry::Shape> CreateGeometryMesh(
-  const std::string obj_filename, const pxr::UsdPrim& prim,
+  const std::string& obj_file_path, const pxr::UsdPrim& prim,
   double meters_per_unit, const DiagnosticPolicy& diagnostic);
 
 // Returns the SpatialInertia corresponding to the geometry represented
@@ -130,7 +133,7 @@ std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
 
 // Formats the vertices and indices of a mesh and write to a new obj file.
 // Returns true if the file is successfully written, false otherwise.
-bool WriteMeshToObjFile(const std::string& filename,
+bool WriteMeshToObjFile(const std::string& file_path,
   const pxr::VtArray<pxr::GfVec3f>& vertices,
   const pxr::VtArray<int>& indices,
   const DiagnosticPolicy& diagnostic);

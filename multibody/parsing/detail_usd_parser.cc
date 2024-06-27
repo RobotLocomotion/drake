@@ -52,7 +52,7 @@ class UsdParser {
   const RigidBody<double>* CreateRigidBody(const pxr::UsdPrim& prim);
   void RaiseUnsupportedPrimTypeError(const pxr::UsdPrim& prim);
 
-  inline static std::vector<std::string> mesh_filenames_;
+  inline static std::vector<std::string> mesh_files_;
   const ParsingWorkspace& w_;
   UsdStageMetadata metadata_;
   ModelInstanceIndex model_instance_;
@@ -126,10 +126,11 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
     // the constructor of geometry::Mesh. This is a temporary solution while
     // https://github.com/RobotLocomotion/drake/issues/15263 is being worked
     // on.
-    std::string obj_filename = fmt::format("{}.obj", mesh_filenames_.size());
-    mesh_filenames_.push_back(obj_filename);
+    std::string obj_file_path = fmt::format("/tmp/{}.obj",
+      mesh_files_.size());
+    mesh_files_.push_back(obj_file_path);
     return CreateGeometryMesh(
-      obj_filename, prim, metadata_.meters_per_unit, w_.diagnostic);
+      obj_file_path, prim, metadata_.meters_per_unit, w_.diagnostic);
   } else {
     RaiseUnsupportedPrimTypeError(prim);
     return nullptr;
