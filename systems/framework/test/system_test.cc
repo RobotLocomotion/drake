@@ -606,6 +606,15 @@ TEST_F(SystemTest, PortSelectionTest) {
             &system_.get_output_port(0));
 }
 
+TEST_F(SystemTest, GetPortTwoArgs) {
+  system_.DeclareInputPort("input", kVectorValued, 1);
+  system_.AddAbstractOutputPort();
+
+  // Sanity check that the second argument to port getters doesn't hurt.
+  EXPECT_NO_THROW(system_.get_input_port(0, /* warn_deprecated = */ false));
+  EXPECT_NO_THROW(system_.get_output_port(0, /* warn_deprecated = */ false));
+}
+
 // Tests the constraint list logic.
 TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_EQ(system_.num_constraints(), 0);
