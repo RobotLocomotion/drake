@@ -39,6 +39,7 @@ using drake::multibody::fem::FemState;
 using drake::multibody::fem::internal::DirichletBoundaryCondition;
 using drake::multibody::fem::internal::FemSolver;
 using drake::systems::Context;
+using drake::systems::DependencyTicket;
 
 namespace drake {
 namespace multibody {
@@ -92,20 +93,6 @@ void DeformableDriver<T>::DeclareCacheEntries(
                 }}),
         {systems::System<T>::xd_ticket()});
     cache_indexes_.fem_states.emplace_back(fem_state_cache_entry.cache_index());
-
-    /* Cache entry for FEM state at next time step. */
-    const auto& next_fem_state_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("FEM state for body with index {} at next time step", i),
-        systems::ValueProducer(
-            *model_state,
-            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>{
-                [this, i](const systems::Context<T>& context,
-                          fem::FemState<T>* next_fem_state) {
-                  this->CalcNextFemState(context, i, next_fem_state);
-                }}),
-        {systems::SystemBase::all_sources_ticket()});
-    cache_indexes_.next_fem_states.emplace_back(
-        next_fem_state_cache_entry.cache_index());
 
     /* Constraint participation information for each body. */
     ContactParticipation empty_contact_participation(fem_model.num_nodes());
@@ -168,10 +155,31 @@ void DeformableDriver<T>::DeclareCacheEntries(
                           FemSolver<T>* fem_solver) {
                   this->CalcFreeMotionFemSolver(context, i, fem_solver);
                 }}),
+        /* Free motion velocities can depend on user defined external forces
+         which in turn depends on input ports. */
         {fem_state_cache_entry.ticket(),
-         vertex_permutation_cache_entry.ticket()});
+         vertex_permutation_cache_entry.ticket(),
+         systems::System<T>::all_input_ports_ticket()});
     cache_indexes_.fem_solvers.emplace_back(
         fem_solver_cache_entry.cache_index());
+
+    /* Cache entry for FEM state at next time step. */
+    const auto& next_fem_state_cache_entry = manager->DeclareCacheEntry(
+        fmt::format("FEM state for body with index {} at next time step", i),
+        systems::ValueProducer(
+            *model_state,
+            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>{
+                [this, i](const systems::Context<T>& context,
+                          fem::FemState<T>* next_fem_state) {
+                  this->CalcNextFemState(context, i, next_fem_state);
+                }}),
+        {systems::System<T>::xd_ticket(),
+         systems::System<T>::all_parameters_ticket(),
+         systems::System<T>::all_input_ports_ticket(),
+         systems::System<T>::time_ticket(),
+         systems::System<T>::accuracy_ticket()});
+    cache_indexes_.next_fem_states.emplace_back(
+        next_fem_state_cache_entry.cache_index());
   }
 
   const auto& participating_velocity_mux_cache_entry =
@@ -195,6 +203,12 @@ void DeformableDriver<T>::DeclareCacheEntries(
   cache_indexes_.participating_velocities =
       participating_velocities_cache_entry.cache_index();
 
+  /* Input ports are needed for the calculation of the free motion velocities
+   (via user defined external forces). */
+  auto participarting_free_motion_velocities_tickets =
+      constraint_participation_and_xd_tickets;
+  participarting_free_motion_velocities_tickets.insert(
+      systems::System<T>::all_input_ports_ticket());
   const auto& participating_free_motion_velocities_cache_entry =
       manager->DeclareCacheEntry(
           fmt::format("participating free motion velocities for all bodies"),
