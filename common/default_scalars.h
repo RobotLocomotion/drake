@@ -79,7 +79,7 @@
     SomeType) \
 template SomeType<double>; \
 template SomeType<::drake::AutoDiffXd>; \
-template SomeType<::drake::symbolic::Expression>
+template SomeType<::drake::symbolic::Expression>;
 
 /// Defines template instantiations for Drake's default nonsymbolic scalars.
 /// This should only be used in .cc files, never in .h files.
@@ -87,7 +87,7 @@ template SomeType<::drake::symbolic::Expression>
   DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
       SomeType) \
 template SomeType<double>; \
-template SomeType<::drake::AutoDiffXd>
+template SomeType<::drake::AutoDiffXd>;
 
 /// Declares that template instantiations exist for Drake's default scalars.
 /// This should only be used in .h files, never in .cc files.
@@ -95,7 +95,7 @@ template SomeType<::drake::AutoDiffXd>
     SomeType) \
 extern template SomeType<double>; \
 extern template SomeType<::drake::AutoDiffXd>; \
-extern template SomeType<::drake::symbolic::Expression>
+extern template SomeType<::drake::symbolic::Expression>;
 
 /// Declares that template instantiations exist for Drake's default nonsymbolic
 /// scalars.  This should only be used in .h files, never in .cc files.
@@ -103,7 +103,7 @@ extern template SomeType<::drake::symbolic::Expression>
   DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
       SomeType) \
 extern template SomeType<double>; \
-extern template SomeType<::drake::AutoDiffXd>
+extern template SomeType<::drake::AutoDiffXd>;
 
 /// @}
 
@@ -204,7 +204,7 @@ static constexpr auto Function_Femplates __attribute__((used)) = \
     Make_Function_Pointers_Pack1< \
         double, \
         ::drake::AutoDiffXd, \
-        ::drake::symbolic::Expression>()
+        ::drake::symbolic::Expression>();
 
 /// Defines template instantiations for Drake's default nonsymbolic scalars.
 /// This should only be used in .cc files, never in .h files.
@@ -227,6 +227,6 @@ constexpr auto Make_Function_Pointers_Nonsym_Pack1() { \
 static constexpr auto Function_Templates_Nonsym __attribute__((used)) = \
     Make_Function_Pointers_Nonsym_Pack1< \
         double, \
-        ::drake::AutoDiffXd>()
+        ::drake::AutoDiffXd>();
 
 /// @}
