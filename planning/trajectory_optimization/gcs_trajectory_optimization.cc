@@ -1847,11 +1847,9 @@ GcsTrajectoryOptimization::NormalizeSegmentTimes(
 }
 
 namespace {
-bool IsMultipleOf2Pi(double value) {
+bool IsMultipleOf2Pi(double value, double tol = 1e-8) {
   // We allow some tolerance for trajectories coming out of GCS.
-  // TODO(sadra): find out what tolerance is appropriate.
-  double kTol = 1e-10;  // To match what is provided in the docs.
-  return std::abs(value - 2 * M_PI * std::round(value / (2 * M_PI))) < kTol;
+  return std::abs(value - 2 * M_PI * std::round(value / (2 * M_PI))) < tol;
 }
 
 // Unwrap the angle to the range [2π * round, 2π * (round+1)).
@@ -1866,7 +1864,7 @@ trajectories::CompositeTrajectory<double>
 GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
     const trajectories::CompositeTrajectory<double>& gcs_trajectory,
     std::vector<int> continuous_revolute_joints,
-    std::optional<std::vector<int>> starting_rounds) {
+    std::optional<std::vector<int>> starting_rounds, double tol) {
   if (starting_rounds.has_value()) {
     DRAKE_THROW_UNLESS(starting_rounds->size() ==
                        continuous_revolute_joints.size());
@@ -1903,7 +1901,7 @@ GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
           const double joint_shift =
               old_start(joint_index) -
               UnwrapAngle(old_start(joint_index), start_round);
-          DRAKE_DEMAND(IsMultipleOf2Pi(joint_shift));
+          DRAKE_DEMAND(IsMultipleOf2Pi(joint_shift, tol));
           shift.push_back(joint_shift);
         }
       } else {
@@ -1915,7 +1913,7 @@ GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
       for (const int joint_index : continuous_revolute_joints) {
         const double joint_shift =
             old_start(joint_index) - last_segment_finish(joint_index);
-        if (!IsMultipleOf2Pi(joint_shift)) {
+        if (!IsMultipleOf2Pi(joint_shift, tol)) {
           throw std::runtime_error(
               fmt::format("UnwrapToContinuousTrajectory: The shift from "
                           "previous segment: {} is not a multiple "
