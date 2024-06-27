@@ -87,12 +87,12 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(
             lhs.num_output_ports(), rhs.num_output_ports())
         for i in range(lhs.num_input_ports()):
-            lhs_port = lhs.get_input_port(i)
-            rhs_port = rhs.get_input_port(i)
+            lhs_port = lhs.get_input_port(i, warn_deprecated=False)
+            rhs_port = rhs.get_input_port(i, warn_deprecated=False)
             self.assertEqual(lhs_port.size(), rhs_port.size())
         for i in range(lhs.num_output_ports()):
-            lhs_port = lhs.get_output_port(i)
-            rhs_port = rhs.get_output_port(i)
+            lhs_port = lhs.get_output_port(i, warn_deprecated=False)
+            rhs_port = rhs.get_output_port(i, warn_deprecated=False)
             self.assertEqual(lhs_port.size(), rhs_port.size())
 
     def test_system_base_api(self):
