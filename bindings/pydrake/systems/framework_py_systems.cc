@@ -457,10 +457,11 @@ Note: The above is for the C++ documentation. For Python, use
             py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
         // Utility methods.
         .def("get_input_port",
-            overload_cast_explicit<const InputPort<T>&, int>(
+            overload_cast_explicit<const InputPort<T>&, int, bool>(
                 &System<T>::get_input_port),
             py_rvp::reference_internal, py::arg("port_index"),
-            doc.System.get_input_port.doc_1args)
+            py::arg("warn_deprecated") = true,
+            doc.System.get_input_port.doc_2args)
         .def("get_input_port",
             overload_cast_explicit<const InputPort<T>&>(
                 &System<T>::get_input_port),
@@ -471,10 +472,11 @@ Note: The above is for the C++ documentation. For Python, use
         .def("HasInputPort", &System<T>::HasInputPort, py::arg("port_name"),
             doc.System.HasInputPort.doc)
         .def("get_output_port",
-            overload_cast_explicit<const OutputPort<T>&, int>(
+            overload_cast_explicit<const OutputPort<T>&, int, bool>(
                 &System<T>::get_output_port),
             py_rvp::reference_internal, py::arg("port_index"),
-            doc.System.get_output_port.doc_1args)
+            py::arg("warn_deprecated") = true,
+            doc.System.get_output_port.doc_2args)
         .def("get_output_port",
             overload_cast_explicit<const OutputPort<T>&>(
                 &System<T>::get_output_port),
