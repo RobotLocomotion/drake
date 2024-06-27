@@ -805,6 +805,9 @@ class GcsTrajectoryOptimization final {
    @param gcs_trajectory The trajectory to unwrap.
    @param continuous_revolute_joints The indices of the continuous revolute
    joints.
+   @param tol is the numerical tolerance used to determine if two subsequent
+   segments start and end at the same value modulo 2π for continuous revolute
+   joints.
    @param starting_rounds A vector of integers that sets the starting rounds for
    each continuous revolute joint. Given integer k for the starting_round of a
    joint, its initial position will be wrapped into [2πk , 2π(k+1)). If the
@@ -820,7 +823,7 @@ class GcsTrajectoryOptimization final {
    @throws std::exception if the gcs_trajectory is not continuous on the
    manifold defined by the continuous_revolute_joints, i.e., the shift between
    two consecutive segments is not an integer multiple of 2π (within a tolerance
-   of 1e-10 radians).
+   of `tol` radians).
    @throws std::exception if all the segments are not of type BezierCurve.
    Other types are not supported yet. Note that currently the output of
    GcsTrajectoryOptimization::SolvePath() is a CompositeTrajectory of
