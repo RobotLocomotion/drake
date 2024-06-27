@@ -17,6 +17,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/find_runfiles.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"
@@ -52,6 +53,7 @@ class UsdParser {
   const RigidBody<double>* CreateRigidBody(const pxr::UsdPrim& prim);
   void RaiseUnsupportedPrimTypeError(const pxr::UsdPrim& prim);
 
+  std::string temp_directory_;
   inline static std::vector<std::string> mesh_files_;
   const ParsingWorkspace& w_;
   UsdStageMetadata metadata_;
@@ -96,6 +98,10 @@ std::vector<ModelInstanceIndex> UsdParserWrapper::AddAllModels(
     const DataSource& data_source,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
+  // The first time AddAllModels is called, we need to call
+  // InitializeOpenUsdLibrary() to prepare.  We can ensure that happens
+  // exactly once, in a threadsafe manner, by using a dummy function-local
+  // static variable.
   static const int ignored = []() {
     InitializeOpenUsdLibrary();
     return 0;
@@ -105,7 +111,9 @@ std::vector<ModelInstanceIndex> UsdParserWrapper::AddAllModels(
   return parser.AddAllModels(data_source, parent_model_name);
 }
 
-UsdParser::UsdParser(const ParsingWorkspace& ws) : w_{ws} { }
+UsdParser::UsdParser(const ParsingWorkspace& ws) : w_{ws} {
+  temp_directory_ = temp_directory();
+}
 
 std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
   const pxr::UsdPrim& prim) {
@@ -122,11 +130,11 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
     return CreateGeometryCylinder(
       prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
-    // Create an obj file for each mesh and pass the filename into
-    // the constructor of geometry::Mesh. This is a temporary solution while
-    // https://github.com/RobotLocomotion/drake/issues/15263 is being worked
-    // on.
-    std::string obj_file_path = fmt::format("/tmp/{}.obj",
+    // TODO(#15263): Here we create an obj file for each mesh and pass the
+    // filename into the constructor of geometry::Mesh. It is a temporary
+    // solution while #15263 is being worked on. This is something we must fix
+    // before we enable this parser in the default build options.
+    std::string obj_file_path = fmt::format("{}/{}.obj", temp_directory_,
       mesh_files_.size());
     mesh_files_.push_back(obj_file_path);
     return CreateGeometryMesh(
