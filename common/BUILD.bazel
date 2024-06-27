@@ -346,6 +346,45 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "hwy_dynamic",
+    srcs = ["hwy_dynamic.cc"],
+    hdrs = [
+        "hwy_dynamic.h",
+        "hwy_dynamic_impl.h",
+    ],
+    defines = [
+        # Highway automatically compiles our functions for multiple CPU
+        # targets, so that the code is tuned as best as possible for that
+        # target. However, some of that specialization is unnecessary for our
+        # use of SIMD in Drake, so we opt-out of targets that do not offer any
+        # advantages vs their build time / code size.
+        "HWY_DISABLED_TARGETS=(" + "|".join([
+            # SSSE3 is not useful (HWY_MAX_BYTES is smaller than 32).
+            "HWY_SSSE3",
+            # SSE4 is not useful (HWY_MAX_BYTES is smaller than 32).
+            "HWY_SSE4",
+            # AVX3_ZEN4 is no better than AVX3 (we don't use BF16).
+            "HWY_AVX3_ZEN4",
+            # NEON is no better than NEON_WITHOUT_AES (we don't use AES).
+            "HWY_NEON",
+            # NEON_BF16 is no better than NEON (we don't use BF16).
+            "HWY_NEON_BF16",
+            # SVE is not useful (we can't effectively use scaleable vectors).
+            "HWY_SVE",
+            # SVE is not useful (we can't effectively use scaleable vectors).
+            "HWY_SVE2",
+            # SVE2_128 is not useful (HWY_MAX_BYTES is smaller than 32).
+            "HWY_SVE2_128",
+        ]) + ")",
+    ],
+    internal = True,
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
     deps = [
