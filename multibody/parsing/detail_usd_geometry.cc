@@ -17,7 +17,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-Eigen::Matrix3d UsdMat3dToEigen(pxr::GfMatrix3d m) {
+Eigen::Matrix3d UsdMat3dToEigen(const pxr::GfMatrix3d& m) {
   Eigen::Matrix3d matrix;
   matrix << m[0][0], m[0][1], m[0][2],
             m[1][0], m[1][1], m[1][2],
@@ -25,11 +25,11 @@ Eigen::Matrix3d UsdMat3dToEigen(pxr::GfMatrix3d m) {
   return matrix;
 }
 
-Eigen::Vector3d UsdVec3dToEigen(pxr::GfVec3d v) {
+Eigen::Vector3d UsdVec3dToEigen(const pxr::GfVec3d& v) {
   return Eigen::Vector3d{ v[0], v[1], v[2] };
 }
 
-Eigen::Quaterniond UsdQuatdToEigen(pxr::GfQuatd q) {
+Eigen::Quaterniond UsdQuatdToEigen(const pxr::GfQuatd& q) {
   return Eigen::Quaterniond(
     q.GetReal(),
     q.GetImaginary()[0],
@@ -88,25 +88,18 @@ double GetPrimMass(const pxr::UsdPrim& prim,
   return default_mass;
 }
 
-Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim,
+std::optional<Eigen::Vector4d> GetGeomPrimColor(const pxr::UsdPrim& prim,
   const DiagnosticPolicy& diagnostic) {
-  auto default_color = Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
   pxr::UsdGeomGprim gprim = pxr::UsdGeomGprim(prim);
   if (!gprim) {
-    diagnostic.Warning(fmt::format(
-      "Failed to cast the Prim at {} into an UsdGeomGprim. Returning default "
-      "color.", prim.GetPath().GetString()));
-    return default_color;
+    return std::nullopt;
   }
   pxr::VtArray<pxr::GfVec3f> colors;
   if (gprim.GetDisplayColorAttr().Get(&colors)) {
     pxr::GfVec3f color = colors[0];
     return Eigen::Vector4d(color[0], color[1], color[2], 1.0);
   } else {
-    diagnostic.Warning(fmt::format(
-      "Failed to read the DisplayColor of the Prim at {}. Returning default "
-      "color.", prim.GetPath().GetString()));
-    return default_color;
+    return std::nullopt;
   }
 }
 
@@ -144,13 +137,13 @@ std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
 }
 
 bool WriteMeshToObjFile(
-  const std::string filename,
+  const std::string& filename,
   const pxr::VtArray<pxr::GfVec3f>& vertices,
   const pxr::VtArray<int>& indices,
   const DiagnosticPolicy& diagnostic) {
   std::string obj_file_contents;
   int num_triangles = indices.size() / 3;
-  for (auto& vertex : vertices) {
+  for (const auto& vertex : vertices) {
     obj_file_contents.append(
       fmt::format("v {} {} {}\n", vertex[0], vertex[1], vertex[2]));
   }
@@ -356,7 +349,8 @@ std::optional<double> GetMeshScale(
 std::unique_ptr<geometry::Shape> CreateGeometryBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
-  auto dimension = GetBoxDimension(prim, meters_per_unit, diagnostic);
+  const std::optional<Eigen::Vector3d> dimension = GetBoxDimension(
+    prim, meters_per_unit, diagnostic);
   if (dimension.has_value()) {
     return std::make_unique<geometry::Box>(dimension.value());
   } else {
@@ -367,16 +361,15 @@ std::unique_ptr<geometry::Shape> CreateGeometryBox(
 std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
-  auto dimension_opt = GetEllipsoidDimension(
+  const std::optional<Eigen::Vector3d> dimension = GetEllipsoidDimension(
     prim, meters_per_unit, diagnostic);
-  if (dimension_opt.has_value()) {
-    auto dimension = dimension_opt.value();
-    if (dimension[0] == dimension[1] &&
-        dimension[1] == dimension[2]) {
-      return std::make_unique<geometry::Sphere>(dimension[0]);
+  if (dimension.has_value()) {
+    if (dimension.value()[0] == dimension.value()[1] &&
+        dimension.value()[1] == dimension.value()[2]) {
+      return std::make_unique<geometry::Sphere>(dimension.value()[0]);
     } else {
       return std::make_unique<geometry::Ellipsoid>(
-        dimension[0], dimension[1], dimension[2]);
+        dimension.value()[0], dimension.value()[1], dimension.value()[2]);
     }
   } else {
     return nullptr;
@@ -386,10 +379,10 @@ std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
 std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
-  auto dimension_opt = GetCapsuleDimension(
+  const std::optional<Eigen::Vector2d> dimension = GetCapsuleDimension(
     prim, meters_per_unit, stage_up_axis, diagnostic);
-  if (dimension_opt.has_value()) {
-    return std::make_unique<geometry::Capsule>(dimension_opt.value());
+  if (dimension.has_value()) {
+    return std::make_unique<geometry::Capsule>(dimension.value());
   } else {
     return nullptr;
   }
@@ -398,10 +391,10 @@ std::unique_ptr<geometry::Shape> CreateGeometryCapsule(
 std::unique_ptr<geometry::Shape> CreateGeometryCylinder(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
-  auto dimension_opt = GetCylinderDimension(
+  const std::optional<Eigen::Vector2d> dimension = GetCylinderDimension(
     prim, meters_per_unit, stage_up_axis, diagnostic);
-  if (dimension_opt.has_value()) {
-    return std::make_unique<geometry::Cylinder>(dimension_opt.value());
+  if (dimension.has_value()) {
+    return std::make_unique<geometry::Cylinder>(dimension.value());
   } else {
     return nullptr;
   }
@@ -462,11 +455,12 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
-  auto dimension_opt = GetBoxDimension(prim, meters_per_unit, diagnostic);
-  if (dimension_opt.has_value()) {
-    auto dimension = dimension_opt.value();
+  const std::optional<Eigen::Vector3d> dimension = GetBoxDimension(
+    prim, meters_per_unit, diagnostic);
+  if (dimension.has_value()) {
     return SpatialInertia<double>::SolidBoxWithMass(
-      GetPrimMass(prim, diagnostic), dimension[0], dimension[1], dimension[2]);
+      GetPrimMass(prim, diagnostic),
+      dimension.value()[0], dimension.value()[1], dimension.value()[2]);
   } else {
     return std::nullopt;
   }
@@ -475,18 +469,17 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForBox(
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic) {
-  auto dimension_opt = GetEllipsoidDimension(
+  const std::optional<Eigen::Vector3d> dimension = GetEllipsoidDimension(
     prim, meters_per_unit, diagnostic);
-  if (dimension_opt.has_value()) {
-    auto dimension = dimension_opt.value();
-    if (dimension[0] == dimension[1] &&
-        dimension[1] == dimension[2]) {
+  if (dimension.has_value()) {
+    if (dimension.value()[0] == dimension.value()[1] &&
+        dimension.value()[1] == dimension.value()[2]) {
       return SpatialInertia<double>::SolidSphereWithMass(
-        GetPrimMass(prim, diagnostic), dimension[0]);
+        GetPrimMass(prim, diagnostic), dimension.value()[0]);
     } else {
       return SpatialInertia<double>::SolidEllipsoidWithMass(
         GetPrimMass(prim, diagnostic),
-        dimension[0], dimension[1], dimension[2]);
+        dimension.value()[0], dimension.value()[1], dimension.value()[2]);
     }
   } else {
     return std::nullopt;
@@ -496,7 +489,7 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForEllipsoid(
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForCylinder(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
-  auto dimension = GetCylinderDimension(
+  const std::optional<Eigen::Vector2d> dimension = GetCylinderDimension(
     prim, meters_per_unit, stage_up_axis, diagnostic);
   auto cylinder_axis = GetUsdGeomAxisUnitVector(prim, diagnostic);
   if (dimension.has_value() && cylinder_axis.has_value()) {
@@ -511,7 +504,7 @@ std::optional<SpatialInertia<double>> CreateSpatialInertiaForCylinder(
 std::optional<SpatialInertia<double>> CreateSpatialInertiaForCapsule(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic) {
-  auto dimension = GetCapsuleDimension(
+  const std::optional<Eigen::Vector2d> dimension = GetCapsuleDimension(
     prim, meters_per_unit, stage_up_axis, diagnostic);
   auto capsule_axis = GetUsdGeomAxisUnitVector(prim, diagnostic);
   if (dimension.has_value() && capsule_axis.has_value()) {
@@ -556,7 +549,8 @@ std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
     return Eigen::Vector3d(0.0, 0.0, 1.0);
   } else {
     diagnostic.Error(fmt::format(
-      "The axis of cylinder at {} is invalid.", prim.GetPath().GetString()));
+      "The axis of the geometry at {} is invalid.",
+      prim.GetPath().GetString()));
     return std::nullopt;
   }
 }

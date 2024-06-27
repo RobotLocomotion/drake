@@ -11,25 +11,25 @@ namespace internal {
 
 using drake::internal::DiagnosticPolicy;
 
-// Returns the dimension of an UsdGeomCube as `Vector3d(length_x, length_y,
-// length_z)`, or nullopt if an error occurs.
+// Returns the dimension of an UsdGeomCube as `Vector3d(x_axis_length,
+// y_axis_length, z_axis_length)`, or nullopt if an error occurs.
 std::optional<Eigen::Vector3d> GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
 
-// Returns the dimension of an UsdGeomSphere as `Vector3d(length_x, length_y,
-// length_z)`, or nullopt if an error occurs.
+// Returns the dimension of an UsdGeomSphere as `Vector3d(x_axis_length,
+// y_axis_length, z_axis_length)`, or nullopt if an error occurs.
 std::optional<Eigen::Vector3d> GetEllipsoidDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
 
-// Returns the dimension of an UsdGeomCylinder as `Vector2d(radius, length)`,
+// Returns the dimension of an UsdGeomCylinder as `Vector2d(radius, height)`,
 // or nullopt if an error occurs
 std::optional<Eigen::Vector2d> GetCylinderDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic);
 
-// Returns the dimension of an UsdGeomCapsule as `Vector2d(radius, length)`,
+// Returns the dimension of an UsdGeomCapsule as `Vector2d(radius, height)`,
 // or nullopt if an error occurs
 std::optional<Eigen::Vector2d> GetCapsuleDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
@@ -45,7 +45,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryBox(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
 
-// Creates a geometry::Sphere or a drake::geometry::Ellipsoid with a dimension
+// Creates a geometry::Sphere or a geometry::Ellipsoid with a dimension
 // specified by the UsdGeomSphere prim. Returns nullptr if an error occurs.
 std::unique_ptr<geometry::Shape> CreateGeometryEllipsoid(
   const pxr::UsdPrim& prim, double meters_per_unit,
@@ -108,7 +108,7 @@ std::optional<Eigen::Vector3d> GetUsdGeomAxisUnitVector(
 
 // Returns the CoulombFriction of a prim if the prim specifies its
 // `physics:dynamicFriction` and `physics:staticFriction attributes`. If not,
-// it returns the default friction values.
+// it returns the default values of `CoulombFriction`.
 CoulombFriction<double> GetPrimFriction(const pxr::UsdPrim& prim);
 
 // Returns the mass of a prim if the prim specifies its `physics:mass`
@@ -117,8 +117,9 @@ double GetPrimMass(const pxr::UsdPrim& prim,
   const DiagnosticPolicy& diagnostic);
 
 // Returns the color of a UsdGeom prim as `Vector4d(r,g,b,a)` if it specifies
-// its `primvars:displayColor` attribute. If not, it returns the default color.
-Eigen::Vector4d GetGeomPrimColor(const pxr::UsdPrim& prim,
+// its `primvars:displayColor` attribute. If it doesn't, or if an error occurs,
+// it returns nullopt.
+std::optional<Eigen::Vector4d> GetGeomPrimColor(const pxr::UsdPrim& prim,
   const DiagnosticPolicy& diagnostic);
 
 // Returns the RigidTransform of a prim relative to the world frame, or nullopt
@@ -129,24 +130,24 @@ std::optional<math::RigidTransform<double>> GetPrimRigidTransform(
 
 // Formats the vertices and indices of a mesh and write to a new obj file.
 // Returns true if the file is successfully written, false otherwise.
-bool WriteMeshToObjFile(const std::string filename,
+bool WriteMeshToObjFile(const std::string& filename,
   const pxr::VtArray<pxr::GfVec3f>& vertices,
   const pxr::VtArray<int>& indices,
   const DiagnosticPolicy& diagnostic);
 
-// Returns the scale of a prim as `Vector3d(scale_x, scale_y, scale_z)`,
-// or nullopt if an error occurs.
+// Returns the scale of a prim as `Vector3d(x_dimension_scale,
+// y_dimension_scale, z_dimension_scale)`, or nullopt if an error occurs.
 std::optional<Eigen::Vector3d> GetPrimScale(const pxr::UsdPrim& prim,
   const DiagnosticPolicy& diagnostic);
 
 void RaiseFailedToReadAttributeError(const std::string& attr_name,
   const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic);
 
-Eigen::Matrix3d UsdMat3dToEigen(pxr::GfMatrix3d m);
+Eigen::Matrix3d UsdMat3dToEigen(const pxr::GfMatrix3d& m);
 
-Eigen::Vector3d UsdVec3dToEigen(pxr::GfVec3d v);
+Eigen::Vector3d UsdVec3dToEigen(const pxr::GfVec3d& v);
 
-Eigen::Quaterniond UsdQuatdToEigen(pxr::GfQuatd q);
+Eigen::Quaterniond UsdQuatdToEigen(const pxr::GfQuatd& q);
 
 }  // namespace internal
 }  // namespace multibody

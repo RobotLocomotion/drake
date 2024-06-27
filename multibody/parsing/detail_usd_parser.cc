@@ -157,10 +157,6 @@ const RigidBody<double>* UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
     inertia = CreateSpatialInertiaForCylinder(
       prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
-  } else if (prim.IsA<pxr::UsdGeomMesh>()) {
-    // TODO(hong-nvidia): Determine how to create SpatialInertia for a mesh.
-    inertia = std::optional<SpatialInertia<double>>{
-      SpatialInertia<double>::MakeUnitary()};
   } else {
     RaiseUnsupportedPrimTypeError(prim);
   }
@@ -196,14 +192,13 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
   }
 
   const RigidBody<double>* rigid_body;
-  math::RigidTransform<double> transform_relative_to_rigid_body;
+  math::RigidTransform<double> X_BG;
   if (is_static) {
     rigid_body = &w_.plant->world_body();
-    transform_relative_to_rigid_body = prim_transform.value();
+    X_BG = prim_transform.value();
   } else {
     rigid_body = CreateRigidBody(prim);
-    transform_relative_to_rigid_body =
-      math::RigidTransform<double>::Identity();
+    X_BG = math::RigidTransform<double>::Identity();
     w_.plant->SetDefaultFreeBodyPose(*rigid_body, prim_transform.value());
   }
 
@@ -214,17 +209,23 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
   }
   w_.plant->RegisterCollisionGeometry(
     *rigid_body,
-    transform_relative_to_rigid_body,
+    X_BG,
     *collision_geometry,
     fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
     GetPrimFriction(prim));
 
+  std::optional<Eigen::Vector4d> prim_color = GetGeomPrimColor(
+    prim, w_.diagnostic);
+  if (!prim_color.has_value()) {
+    prim_color = Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
+  }
+
   w_.plant->RegisterVisualGeometry(
     *rigid_body,
-    transform_relative_to_rigid_body,
+    X_BG,
     *visual_geometry,
     fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-    GetGeomPrimColor(prim, w_.diagnostic));
+    prim_color.value());
 }
 
 void UsdParser::ProcessPrim(const pxr::UsdPrim& prim) {
