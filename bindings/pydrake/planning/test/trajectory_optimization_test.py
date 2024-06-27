@@ -644,7 +644,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         new_traj = GcsTrajectoryOptimization.UnwrapToContinousTrajectory(
             gcs_trajectory=traj,
             continuous_revolute_joints=[0],
-            starting_rounds=[43])
+            starting_rounds=[43],
+            tol=1e-8)
         diff = (new_traj.value(new_traj.start_time())
                 - traj.value(traj.start_time())) % (2 * np.pi)
         # Modulus may lead to the value being almost 2*pi, instead of zero.
