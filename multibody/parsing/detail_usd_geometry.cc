@@ -106,6 +106,10 @@ std::optional<Eigen::Vector4d> GetGeomPrimColor(const pxr::UsdPrim& prim,
   }
 }
 
+Eigen::Vector4d default_geom_prim_color() {
+  return Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
+}
+
 void RaiseFailedToReadAttributeError(const std::string& attr_name,
   const pxr::UsdPrim& prim, const DiagnosticPolicy& diagnostic) {
     diagnostic.Error(fmt::format(

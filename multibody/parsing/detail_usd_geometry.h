@@ -11,8 +11,9 @@ namespace internal {
 
 using drake::internal::DiagnosticPolicy;
 
-// Returns the dimension of an UsdGeomCube as `Vector3d(x_axis_length,
-// y_axis_length, z_axis_length)`, or nullopt if an error occurs.
+// Returns the dimension of an UsdGeomCube as `Vector3d(a, b, c)`, where a, b,
+// and c are the side lengths of the box along the x-, y-, and z-axes,
+// respectively. Returns nullopt if an error occurs.
 std::optional<Eigen::Vector3d> GetBoxDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
@@ -24,14 +25,16 @@ std::optional<Eigen::Vector3d> GetEllipsoidDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const DiagnosticPolicy& diagnostic);
 
-// Returns the dimension of an UsdGeomCylinder as `Vector2d(cylinder_radius,
-// cylinder_height)`, or nullopt if an error occurs.
+// Returns the dimension of an UsdGeomCylinder as `Vector2d(a, b)`, where a is
+// the radius of the cylinder and b is the height of the cylinder. Returns
+// nullopts if an error occurs.
 std::optional<Eigen::Vector2d> GetCylinderDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic);
 
-// Returns the dimension of an UsdGeomCapsule as `Vector2d(capsule_radius,
-// capsule_height)`, or nullopt if an error occurs.
+// Returns the dimension of an UsdGeomCapsule as `Vector2d(a, b)`, where a is
+// the radius of the capsule and b is the height of the capsule. Returns
+// nullopt if an error occurs.
 std::optional<Eigen::Vector2d> GetCapsuleDimension(
   const pxr::UsdPrim& prim, double meters_per_unit,
   const pxr::TfToken& stage_up_axis, const DiagnosticPolicy& diagnostic);
@@ -125,6 +128,9 @@ double GetPrimMass(const pxr::UsdPrim& prim,
 // it returns nullopt.
 std::optional<Eigen::Vector4d> GetGeomPrimColor(const pxr::UsdPrim& prim,
   const DiagnosticPolicy& diagnostic);
+
+// Default color of a UsdGeom prim if the prim does not specify it explicitly.
+Eigen::Vector4d default_geom_prim_color();
 
 // Returns the RigidTransform of a prim relative to the world frame, or nullopt
 // if an error occurs.

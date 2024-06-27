@@ -224,18 +224,15 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
     fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
     GetPrimFriction(prim));
 
-  std::optional<Eigen::Vector4d> prim_color = GetGeomPrimColor(
-    prim, w_.diagnostic);
-  if (!prim_color.has_value()) {
-    prim_color = Eigen::Vector4d(0.5, 0.5, 0.5, 1.0);
-  }
+  std::optional<Eigen::Vector4d> prim_color = GetGeomPrimColor(prim,
+    w_.diagnostic);
 
   w_.plant->RegisterVisualGeometry(
     *rigid_body,
     X_BG,
     *visual_geometry,
     fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-    prim_color.value());
+    prim_color.has_value() ? prim_color.value() : default_geom_prim_color());
 }
 
 void UsdParser::ProcessPrim(const pxr::UsdPrim& prim) {
