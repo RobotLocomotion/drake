@@ -526,6 +526,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//common/yaml",
     ],
+    tags = ["no_kcov"]
 )
 
 drake_cc_googletest(
