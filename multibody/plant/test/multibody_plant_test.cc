@@ -91,6 +91,7 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::Linearize;
 using systems::LinearSystem;
+using systems::OutputPortIndex;
 using systems::VectorBase;
 
 namespace multibody {
@@ -1734,39 +1735,79 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
       ".*already has a joint.*extra_welds_to_world.*joint.*not allowed.*");
 }
 
-// Utility to verify the subset of output ports we expect to be direct a
-// feedthrough of the inputs.
-// @returns `true` iff only if a closed subset of the ports is direct
-// feedthrough.
+// Verifies exact set of output ports we expect to be a direct feedthrough of
+// the inputs. Returns true iff successful.
 bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
-  // Create a set of the indices of all ports that can be feedthrough.
-  std::set<int> ok_to_feedthrough;
-  ok_to_feedthrough.insert(plant.get_net_actuation_output_port().get_index());
-  ok_to_feedthrough.insert(plant.get_reaction_forces_output_port().get_index());
-  ok_to_feedthrough.insert(
-      plant.get_generalized_acceleration_output_port().get_index());
-  for (ModelInstanceIndex i(0); i < plant.num_model_instances(); ++i) {
-    ok_to_feedthrough.insert(
-        plant.get_generalized_acceleration_output_port(i).get_index());
-    ok_to_feedthrough.insert(
-        plant.get_net_actuation_output_port(i).get_index());
-    ok_to_feedthrough.insert(
-        plant.get_generalized_contact_forces_output_port(i).get_index());
-  }
-  ok_to_feedthrough.insert(
-      plant.get_body_spatial_accelerations_output_port().get_index());
-  ok_to_feedthrough.insert(  // Deprecated 2024-10-01.
-      plant.GetOutputPort("spatial_accelerations").get_index());
-  ok_to_feedthrough.insert(plant.get_contact_results_output_port().get_index());
+  // Write down the expected direct-feedthrough status for all ports. Use
+  // strings (not indices) so that developers can understand test failures.
+  // The order we list the ports here matches the MbP header file overview.
+  const std::vector<std::pair<std::string, bool>> manifest{
+      {"state", false},
+      {"body_poses", false},
+      {"body_spatial_velocities", false},
+      {"spatial_velocities", false},  // Deprecated synonym 2024-10-01.
+      {"body_spatial_accelerations", true},
+      {"spatial_accelerations", true},  // Deprecated synonym 2024-10-01.
+      {"generalized_acceleration", true},
+      {"net_actuation", true},
+      {"reaction_forces", true},
+      {"contact_results", true},
+      {"{instance}_state", false},
+      {"{instance}_generalized_acceleration", true},
+      {"{instance}_net_actuation", true},
+      {"{instance}_generalized_contact_forces", !plant.is_discrete()},
+      {"geometry_pose", false},
+      {"deformable_body_configuration", false},
+  };
 
-  // Now find all the feedthrough ports and make sure they are on the
-  // list of expected feedthrough ports.
-  const std::multimap<int, int> feedthroughs = plant.GetDirectFeedthroughs();
-  for (const auto& inout_pair : feedthroughs) {
-    if (!ok_to_feedthrough.contains(inout_pair.second))
-      return false;  // Found a spurious feedthrough port.
+  // Split the manifest into (non-)feedthrough sets, while also substituting and
+  // expanding the per-model-instance port names.
+  std::set<std::string> expected_feedthrough;
+  std::set<std::string> expected_non_feedthrough;
+  for (const auto& [name, is_feedthrough] : manifest) {
+    std::set<std::string>& destination =
+        is_feedthrough ? expected_feedthrough : expected_non_feedthrough;
+    const bool needs_fmt = name.at(0) == '{';
+    if (!needs_fmt) {
+      destination.insert(name);
+    } else {
+      for (ModelInstanceIndex i(0); i < plant.num_model_instances(); ++i) {
+        const std::string& instance = plant.GetModelInstanceName(i);
+        destination.insert(
+            fmt::format(fmt::runtime(name), fmt::arg("instance", instance)));
+      }
+    }
   }
-  return true;
+
+  // Cross-check that every output port was listed in the manifest.
+  {
+    std::set<std::string> manifest_all;
+    manifest_all.insert(expected_feedthrough.begin(),
+                        expected_feedthrough.end());
+    manifest_all.insert(expected_non_feedthrough.begin(),
+                        expected_non_feedthrough.end());
+    std::set<std::string> plant_all;
+    for (OutputPortIndex i{0}; i < plant.num_output_ports(); ++i) {
+      const auto& port = plant.get_output_port(i, /*warn_deprecated =*/false);
+      plant_all.insert(port.get_name());
+    }
+    EXPECT_THAT(manifest_all, testing::ContainerEq(plant_all));
+  }
+
+  // Extract actual feedthrough status of the plant.
+  std::set<OutputPortIndex> actual_feedthrough_indices;
+  for (const auto& [_, out] : plant.GetDirectFeedthroughs()) {
+    actual_feedthrough_indices.insert(OutputPortIndex{out});
+  }
+  std::set<std::string> actual_feedthrough;
+  for (const OutputPortIndex& i : actual_feedthrough_indices) {
+    actual_feedthrough.insert(
+        plant.get_output_port(i, /*warn_deprecated=*/false).get_name());
+  }
+
+  // Compare and return.
+  EXPECT_THAT(actual_feedthrough, testing::ContainerEq(expected_feedthrough));
+  return actual_feedthrough == expected_feedthrough;
 }
 
 // Verifies the process of collision geometry registration with a
