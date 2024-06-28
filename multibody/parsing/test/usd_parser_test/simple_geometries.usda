@@ -1,0 +1,228 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 100
+    metersPerUnit = 0.01
+    startTimeCode = 0
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+def Xform "World"
+{
+    def PhysicsScene "physicsScene"
+    {
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 981
+    }
+
+    def Cube "RigidBodyBox" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
+            "PhysicsMassAPI"]
+    )
+    {
+        vector3f physics:angularVelocity = (270, 0, 0)
+        float physics:mass = 1
+        vector3f physics:velocity = (2, 1, 2)
+        color3f[] primvars:displayColor = [(0.11764706, 0.23529412, 1)]
+        double size = 25
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (2, 2, 2)
+        double3 xformOp:translate = (0, 0, 220)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient",
+            "xformOp:scale"]
+    }
+
+    def Sphere "RigidBodyEllipsoid" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
+            "PhysicsMassAPI"]
+    )
+    {
+        double radius = 50
+        float physics:mass = 2
+        color3f[] primvars:displayColor = [(0.7, 0.7, 0.4)]
+        custom bool refinementEnableOverride = 1
+        custom int refinementLevel = 2
+        double3 xformOp:rotateXYZ = (-20, 0, 0)
+        double3 xformOp:scale = (0.5, 1, 0.5)
+        double3 xformOp:translate = (-180, -180, 200)
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Cylinder "RigidBodyCylinder" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
+            "PhysicsMassAPI"]
+    )
+    {
+        uniform token axis = "Z"
+        double height = 100
+        double radius = 50
+        float physics:mass = 3
+        color3f[] primvars:displayColor = [(0.2, 0.5, 0.9)]
+        custom bool refinementEnableOverride = 1
+        custom int refinementLevel = 2
+        double3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:scale = (0.5, 0.5, 1)
+        double3 xformOp:translate = (180, 180, 250)
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Capsule "RigidBodyCapsule" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI",
+            "PhysicsMassAPI"]
+    )
+    {
+        uniform token axis = "Z"
+        double height = 50
+        double radius = 25
+        float physics:mass = 4
+        color3f[] primvars:displayColor = [(0.5, 0.2, 0.5)]
+        custom bool refinementEnableOverride = 1
+        custom int refinementLevel = 2
+        double3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 160, 300)
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Cube "Floor" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        color3f[] primvars:displayColor = [(0.5, 0.75, 1.0)]
+        double size = 1
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (720, 720, 10)
+        double3 xformOp:translate = (0, 0, -80)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient",
+            "xformOp:scale"]
+    }
+
+    def Sphere "StaticEllipsoid" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        double radius = 50
+        color3f[] primvars:displayColor = [(0.8, 0.5, 0.5)]
+        custom bool refinementEnableOverride = 1
+        custom int refinementLevel = 2
+        double3 xformOp:rotateXYZ = (-20, 0, 0)
+        double3 xformOp:scale = (1, 2, 1)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Xform "StaticCapsuleXform"
+    {
+        double3 xformOp:rotateXYZ = (-90, 0, 45)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (200, 200, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Capsule "StaticCapsule" (
+            prepend apiSchemas = ["PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 60
+            double radius = 25
+            color3f[] primvars:displayColor = [(0.5, 0.8, 0.5)]
+            custom bool refinementEnableOverride = 1
+            custom int refinementLevel = 2
+            double3 xformOp:rotateXYZ = (0, 0, 0)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate",
+                "xformOp:rotateXYZ", "xformOp:scale"]
+        }
+    }
+
+    def Xform "StaticCylinderXform"
+    {
+        double3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (-200, 200, 1.9326762412674725e-12)
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Xform "StaticCylinderXform2"
+        {
+            double3 xformOp:rotateXYZ = (0, 45, 0)
+            double3 xformOp:scale = (1, 1, 2)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate",
+                "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Cylinder "StaticCylinder" (
+                prepend apiSchemas = ["PhysicsCollisionAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 100
+                double radius = 50
+                color3f[] primvars:displayColor = [(0.5, 0.5, 0.9)]
+                custom bool refinementEnableOverride = 1
+                custom int refinementLevel = 2
+                double3 xformOp:rotateXYZ = (0, 0, 0)
+                double3 xformOp:scale = (1, 1, 0.5)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate",
+                    "xformOp:rotateXYZ", "xformOp:scale"]
+            }
+        }
+    }
+
+    def Sphere "StaticSphere" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        double radius = 50
+        color3f[] primvars:displayColor = [(0.5, 0.9, 0.9)]
+        custom bool refinementEnableOverride = 1
+        custom int refinementLevel = 2
+        double3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (200, -200, 6.59383658785373e-12)
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Cube "StaticCube" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        double size = 100
+        color3f[] primvars:displayColor = [(0.3, 0.5, 1.0)]
+        double3 xformOp:rotateXYZ = (45, 45, 45)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (-200, -200, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate",
+            "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Xform "StaticOctahedronXform"
+    {
+        quatf xformOp:orient = (0.9238795, 0, 0, 0.38268343)
+        float3 xformOp:scale = (100, 100, 100)
+        double3 xformOp:translate = (0, 200, 150)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient",
+            "xformOp:scale"]
+
+        def Mesh "StaticOctahedron" (
+            prepend apiSchemas = ["PhysicsCollisionAPI"]
+        )
+        {
+            int[] faceVertexCounts = [3, 3, 3, 3, 3, 3, 3, 3]
+            int[] faceVertexIndices = [1, 0, 4, 2, 1, 4, 3, 2, 4, 0, 3, 4, 0,
+                1, 5, 1, 2, 5, 2, 3, 5, 3, 0, 5]
+            point3f[] points = [(1, 0, 0), (0, -1, 0), (-1, 0, 0), (0, 1, 0),
+                (0, 0, 1), (0, 0, -1)]
+            uniform token subdivisionScheme = "none"
+            color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+        }
+    }
+}

@@ -28,6 +28,7 @@ filegroup(
         "test/**/*.png",
         "test/**/*.sdf",
         "test/**/*.urdf",
+        "test/**/*.usd",
         "test/**/*.usda",
         "test/**/*.xml",
         "test/**/*.zip",
@@ -271,13 +272,22 @@ drake_cc_library(
     name = "detail_usd_parser",
     srcs = select({
         "//tools:with_usd": [
+            "detail_usd_geometry.cc",
             "detail_usd_parser.cc",
         ],
         "//conditions:default": [
             "detail_usd_parser_off.cc",
         ],
     }),
-    hdrs = ["detail_usd_parser.h"],
+    hdrs = select({
+        "//tools:with_usd": [
+            "detail_usd_geometry.h",
+            "detail_usd_parser.h",
+        ],
+        "//conditions:default": [
+            "detail_usd_parser.h",
+        ],
+    }),
     copts = [
         # TODO(jwnimmer-tri) OpenUSD has a gargantuan number of warnings.
         # We should really try to patch it to fix most/all of them.
@@ -291,6 +301,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_make_model_name",
         "//common:find_runfiles",
         "//common:unused",
     ] + select({
@@ -374,6 +385,7 @@ drake_cc_library(
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
+        ":detail_usd_parser",
     ],
 )
 

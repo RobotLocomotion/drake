@@ -47,6 +47,7 @@ _GOOD_SYMBOLS_SUBSTR = [
 # Any symbols whose name contains one of these are undesirable, but for now
 # will not cause this test to fail.
 _KNOWN_BAD_SYMBOLS_SUBSTR = [
+    "3tbb6detail",  # TODO(#20898): This line should be removed eventually.
     "5bazel5tools3cpp8runfiles",
     "Ampl",
     "BitVector128",
