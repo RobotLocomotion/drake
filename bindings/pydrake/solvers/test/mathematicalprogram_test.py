@@ -1187,9 +1187,14 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddCost(z[0])
 
         # Add LorentzConeConstraints
+        prog.AddLorentzConeConstraint(
+            f=(z[0] >= np.linalg.norm(x)),
+            eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth,
+            psd_tol=1e-7,
+            coefficient_tol=1e-7)
         prog.AddLorentzConeConstraint(np.array([0*x[0]+1, x[0]-1, x[1]-1]))
         prog.AddLorentzConeConstraint(np.array([z[0], x[0], x[1]]))
-        self.assertEqual(len(prog.lorentz_cone_constraints()), 2)
+        self.assertEqual(len(prog.lorentz_cone_constraints()), 3)
 
         # Test result
         # The default initial guess is [0, 0, 0]. This initial guess is bad

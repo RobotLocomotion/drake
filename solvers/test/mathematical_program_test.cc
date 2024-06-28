@@ -2566,6 +2566,35 @@ bool AreTwoPolynomialsNear(
 }  // namespace
 
 void CheckParsedSymbolicLorentzConeConstraint(
+    MathematicalProgram* prog, const Formula& f,
+    LorentzConeConstraint::EvalType eval_type) {
+  const auto& binding1 = prog->AddLorentzConeConstraint(f, eval_type);
+  EXPECT_EQ(binding1.evaluator()->eval_type(), eval_type);
+  const auto& binding2 = prog->lorentz_cone_constraints().back();
+  EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
+  EXPECT_EQ(binding1.variables(), binding2.variables());
+  const Eigen::MatrixXd A = binding1.evaluator()->A();
+  const Eigen::VectorXd b = binding1.evaluator()->b();
+  const VectorX<Expression> z = A * binding1.variables() + b;
+  Expression greater, lesser;
+  if (is_greater_than_or_equal_to(f)) {
+    greater = get_lhs_expression(f);
+    lesser = get_rhs_expression(f);
+  } else {
+    ASSERT_TRUE(is_less_than_or_equal_to(f));
+    greater = get_rhs_expression(f);
+    lesser = get_lhs_expression(f);
+  }
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(z(0)), symbolic::Polynomial(greater),
+      1E-10));
+  ASSERT_TRUE(is_sqrt(lesser));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(z.tail(z.rows() - 1).squaredNorm()),
+      symbolic::Polynomial(get_argument(lesser)), 1E-10));
+}
+
+void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog, const Expression& linear_expr,
     const Expression& quadratic_expr,
     LorentzConeConstraint::EvalType eval_type) {
@@ -2641,6 +2670,22 @@ class SymbolicLorentzConeTest : public ::testing::Test {
   MathematicalProgram prog_;
   VectorDecisionVariable<3> x_;
 };
+
+TEST_F(SymbolicLorentzConeTest, Formula) {
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, 2.0 * x_(2) >= x_.head<2>().cast<Expression>().norm(),
+      LorentzConeConstraint::EvalType::kConvex);
+
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_.head<2>().cast<Expression>().norm() <= 2.0 * x_(2),
+      LorentzConeConstraint::EvalType::kConvex);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog_.AddLorentzConeConstraint(
+          2.0 * x_(2) * x_(1) >= x_.head<2>().cast<Expression>().norm(),
+          LorentzConeConstraint::EvalType::kConvex),
+      ".*non-linear.*");
+}
 
 TEST_F(SymbolicLorentzConeTest, Test1) {
   // Add Lorentz cone constraint:
