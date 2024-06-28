@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/frame_base.h"
@@ -84,14 +85,37 @@ class Frame : public FrameBase<T> {
   /// with this frame.
   /// In particular, if `this` **is** the body frame B, this method directly
   /// returns the identity transformation.
-  virtual math::RigidTransform<T> CalcPoseInBodyFrame(
-      const systems::Context<T>& context) const = 0;
+  /// Note that this does not depend on State, rather only on Parameters.
+  math::RigidTransform<T> CalcPoseInBodyFrame(
+      const systems::Context<T>& context) const {
+    return CalcPoseInBodyFrame(context.get_parameters());
+  }
+
+  /// Returns the pose `X_BF` of `this` frame F in the body frame B associated
+  /// with this frame.
+  /// In particular, if `this` **is** the body frame B, this method directly
+  /// returns the identity transformation.
+  math::RigidTransform<T> CalcPoseInBodyFrame(
+      const systems::Parameters<T>& parameters) const {
+    return DoCalcPoseInBodyFrame(parameters);
+  }
 
   /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
   /// frame F (B is the body frame to which `this` frame F is attached).
   /// @note If `this` is B, this method returns the identity RotationMatrix.
-  virtual math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
-      const systems::Context<T>& context) const = 0;
+  /// Note that this does not depend on State, rather only on Parameters.
+  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
+      const systems::Context<T>& context) const {
+    return CalcRotationMatrixInBodyFrame(context.get_parameters());
+  }
+
+  /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
+  /// frame F (B is the body frame to which `this` frame F is attached).
+  /// @note If `this` is B, this method returns the identity RotationMatrix.
+  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
+      const systems::Parameters<T>& parameters) const {
+    return DoCalcRotationMatrixInBodyFrame(parameters);
+  }
 
   /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
   /// `this` frame F in the body frame B associated with this frame.
@@ -124,6 +148,28 @@ class Frame : public FrameBase<T> {
             "', which does not support this method.");
   }
 
+  DRAKE_DEPRECATED("2024-10-01", "Use CalcPoseInBodyFrame() * X_FQ.")
+  math::RigidTransform<T> CalcOffsetPoseInBody(
+      const systems::Context<T>& context,
+      const math::RigidTransform<T>& X_FQ) const {
+    return CalcOffsetPoseInBody(context.get_parameters(), X_FQ);
+  }
+
+  DRAKE_DEPRECATED("2024-10-01", "Use CalcRotationMatrixInBodyFrame() * X_FQ.")
+  math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
+      const systems::Context<T>& context,
+      const math::RotationMatrix<T>& R_FQ) const {
+    return CalcOffsetRotationMatrixInBody(context.get_parameters(), R_FQ);
+  }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // TODO(jwnimmer-tri) These two virtual functions only exist so that BodyFrame
+  // can override them to be a simple copy instead of of ComposeXX on identity.
+  // It is not at all clear to me that this implementation complexity is buying
+  // us any speed at runtime. ComposeXX is really fast, and non-predicable
+  // virtual function calls are generally not.
+
+  /// (Internal use only)
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
   /// computes the pose `X_BQ` of frame Q in the body frame B to which this
   /// frame is attached.
@@ -135,20 +181,16 @@ class Frame : public FrameBase<T> {
   /// Specific frame subclasses can override this method to provide faster
   /// implementations if needed.
   virtual math::RigidTransform<T> CalcOffsetPoseInBody(
-      const systems::Context<T>& context,
+      const systems::Parameters<T>& parameters,
       const math::RigidTransform<T>& X_FQ) const {
-    return CalcPoseInBodyFrame(context) * X_FQ;
+    return CalcPoseInBodyFrame(parameters) * X_FQ;
   }
-
-  /// Calculates and returns the rotation matrix `R_BQ` that relates body frame
-  /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
-  /// (B is the body frame to which `this` frame F is attached).
-  /// @param[in] R_FQ rotation matrix that relates frame F to frame Q.
   virtual math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
-      const systems::Context<T>& context,
+      const systems::Parameters<T>& parameters,
       const math::RotationMatrix<T>& R_FQ) const {
-    return CalcRotationMatrixInBodyFrame(context) * R_FQ;
+    return CalcRotationMatrixInBodyFrame(parameters) * R_FQ;
   }
+#endif
 
   /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
   /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
@@ -506,6 +548,14 @@ class Frame : public FrameBase<T> {
   virtual std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
   /// @}
+
+  // NVI for CalcPoseInBodyFrame.
+  virtual math::RigidTransform<T> DoCalcPoseInBodyFrame(
+      const systems::Parameters<T>& parameters) const = 0;
+
+  // NVI for CalcRotationMatrixInBodyFrame.
+  virtual math::RotationMatrix<T> DoCalcRotationMatrixInBodyFrame(
+      const systems::Parameters<T>& parameters) const = 0;
 
  private:
   // Implementation for MultibodyElement::DoSetTopology().

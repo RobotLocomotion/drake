@@ -198,7 +198,8 @@ TEST_F(RpyFloatingMobilizerTest, CalcAcrossMobilizer) {
   // Verify across mobilizer spatial velocity for an arbitrary non-zero state
   // and generalized accelrations.
   const SpatialAcceleration<double> A_FM =
-      mobilizer_->CalcAcrossMobilizerSpatialAcceleration(*context_, v);
+      mobilizer_->CalcAcrossMobilizerSpatialAcceleration(
+          tree().get_positions(*context_), tree().get_velocities(*context_), v);
   EXPECT_TRUE(CompareMatrices(A_FM.get_coeffs(), v, kTolerance,
                               MatrixCompareType::relative));
 
@@ -208,7 +209,7 @@ TEST_F(RpyFloatingMobilizerTest, CalcAcrossMobilizer) {
   // to the principle of virtual work.
   SpatialForce<double> F(v);
   Vector6<double> tau;
-  mobilizer_->ProjectSpatialForce(*context_, F, tau);
+  mobilizer_->ProjectSpatialForce(tree().get_positions(*context_), F, tau);
   EXPECT_TRUE(CompareMatrices(F.get_coeffs(), tau, kTolerance,
                               MatrixCompareType::relative));
 }
