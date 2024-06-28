@@ -5008,8 +5008,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::InputPortIndex actuation;
     systems::InputPortIndex applied_generalized_force;
     systems::InputPortIndex applied_spatial_force;
-    std::vector<systems::InputPortIndex> instance_actuation;
-    std::vector<systems::InputPortIndex> instance_desired_state;
+    struct Instance {
+      systems::InputPortIndex actuation;
+      systems::InputPortIndex desired_state;
+    };
+    std::vector<Instance> instance;
     systems::InputPortIndex geometry_query;  // Declared in ctor, not Finalize.
   };
 
@@ -5025,10 +5028,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::OutputPortIndex net_actuation;
     systems::OutputPortIndex reaction_forces;
     systems::OutputPortIndex contact_results;
-    std::vector<systems::OutputPortIndex> instance_state;
-    std::vector<systems::OutputPortIndex> instance_generalized_acceleration;
-    std::vector<systems::OutputPortIndex> instance_generalized_contact_forces;
-    std::vector<systems::OutputPortIndex> instance_net_actuation;
+    struct Instance {
+      systems::OutputPortIndex state;
+      systems::OutputPortIndex generalized_acceleration;
+      systems::OutputPortIndex generalized_contact_forces;
+      systems::OutputPortIndex net_actuation;
+    };
+    std::vector<Instance> instance;
     systems::OutputPortIndex geometry_pose;  // Declared in ctor, not Finalize.
     // N.B. The deformable_body_configuration port is owned by DeformableModel,
     // so is not tracked here.
@@ -5156,14 +5162,25 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // that still guarantees stability.
   void SetUpJointLimitsParameters();
 
-  // Helper method to declare state, cache entries, and ports after Finalize().
-  void DeclareStateCacheAndPorts();
-
-  // Declares the system-level cache entries specific to MultibodyPlant.
-  void DeclareCacheEntries();
+  // Declares any input ports that haven't yet been declared.
+  // This happens during Finalize().
+  void DeclareInputPorts();
 
   // Declares the system-level parameters specific to MultibodyPlant.
+  // This happens during Finalize().
   void DeclareParameters();
+
+  // Declares the system-level cache entries specific to MultibodyPlant.
+  // This happens during Finalize().
+  void DeclareCacheEntries();
+
+  // Declares any input ports that haven't yet been declared.
+  // This happens during Finalize().
+  void DeclareOutputPorts();
+
+  // Declares the state-update events.
+  // This happens during Finalize().
+  void DeclareStateUpdate();
 
   // Estimates a global set of point contact parameters given a
   // `penetration_allowance`. See set_penetration_allowance()` for details.
