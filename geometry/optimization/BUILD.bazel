@@ -520,6 +520,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_test",
+    tags = ["no_kcov"],
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",
