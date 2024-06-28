@@ -267,16 +267,27 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   point. The distribution of samples will converge to the true uniform
   distribution at a geometric rate in the total number of hit-and-run steps
   which is `mixing_steps` * the number of times this function is called.
+  If provided, the random direction is constrained to lie in the column space of
+  `subspace`. To obtain uniform samples, subspace should have orthonormal,
+  columns. This enables drawing uniform samples from an HPolyhedron which is not
+  full-dimensional -- one can pass the basis of the affine hull of the
+  HPolyhedron, which can be computed with the AffineSubspace class. `tol` is a
+  numerical tolerance for checking if halfspaces are parallel to the subspace,
+  and can be ignored.
   @throws std::exception if previous_sample is not in the set. */
   Eigen::VectorXd UniformSample(
       RandomGenerator* generator,
       const Eigen::Ref<const Eigen::VectorXd>& previous_sample,
-      int mixing_steps = 10) const;
+      int mixing_steps = 10,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& = std::nullopt,
+      double tol = 1e-8) const;
 
   /** Variant of UniformSample that uses the ChebyshevCenter() as the
   previous_sample as a feasible point to start the Markov chain sampling. */
-  Eigen::VectorXd UniformSample(RandomGenerator* generator,
-                                int mixing_steps = 10) const;
+  Eigen::VectorXd UniformSample(
+      RandomGenerator* generator, int mixing_steps = 10,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& = std::nullopt,
+      double tol = 1e-8) const;
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
   corners. */
