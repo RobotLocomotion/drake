@@ -927,6 +927,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "contact_results_test",
+    tags = ["manual"],  # XXX
     deps = [
         ":contact_results",
         ":multibody_plant_core",

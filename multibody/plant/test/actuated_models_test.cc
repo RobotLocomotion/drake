@@ -71,6 +71,7 @@ class ActuatedIiwaArmTest : public ::testing::Test {
     // Make a discrete model.
     plant_ = std::make_unique<MultibodyPlant<double>>(config.time_step);
     ApplyMultibodyPlantConfig(config, plant_.get());
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
 
     Parser parser(plant_.get());
 
