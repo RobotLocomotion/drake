@@ -124,6 +124,10 @@ class SolverOptions {
    * the option has not been set. */
   bool get_print_to_console() const;
 
+  /** Returns the kStandaloneReproductionFileName set via CommonSolverOption, or
+   * else an empty string if the option has not been set. */
+  std::string get_standalone_reproduction_file_name() const;
+
   template <typename T>
   const std::unordered_map<std::string, T>& GetOptions(
       const SolverId& solver_id) const {
