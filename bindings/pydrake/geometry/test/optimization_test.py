@@ -767,10 +767,14 @@ class TestGeometryOptimization(unittest.TestCase):
         options.rounding_seed = 1
         options.solver = ClpSolver()
         options.restriction_solver = ClpSolver()
+        options.preprocessing_solver = ClpSolver()
         options.solver_options = SolverOptions()
         options.solver_options.SetOption(ClpSolver.id(), "scaling", 2)
         options.restriction_solver_options = SolverOptions()
         options.restriction_solver_options.SetOption(ClpSolver.id(), "dual", 0)
+        options.preprocessing_solver_options = SolverOptions()
+        options.preprocessing_solver_options.SetOption(ClpSolver.id(),
+                                                       "dual", 0)
         self.assertIn("scaling",
                       options.solver_options.GetOptions(ClpSolver.id()))
         self.assertIn("dual", options.restriction_solver_options.GetOptions(
