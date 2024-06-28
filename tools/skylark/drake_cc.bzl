@@ -389,6 +389,7 @@ def _raw_drake_cc_library(
         tags = None,
         testonly = None,
         visibility = None,
+        compile_once_per_scalar = False,
         declare_installed_headers = None,
         install_hdrs_exclude = None,
         deprecation = None):
@@ -402,6 +403,10 @@ def _raw_drake_cc_library(
     _, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
         fail("private_hdrs = " + private_hdrs)
+    if implementation_deps and not linkstatic:
+        fail("implementation_deps are only supported for static libraries")
+    if compile_once_per_scalar and not linkstatic:
+        fail("compile_once_per_scalar is only supported for static libraries")
 
     # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
     if strip_include_prefix == None:
@@ -426,37 +431,53 @@ def _raw_drake_cc_library(
     # TODO(jwnimmer-tri) Once https://github.com/bazelbuild/bazel/issues/12350
     # is fixed and Bazel offers interface_deps natively, then we can switch to
     # that implementation instead of making our own sandwich.
-    compiled_name = name
-    compiled_visibility = visibility
-    compiled_deprecation = deprecation
-    if implementation_deps:
-        if not linkstatic:
-            fail("implementation_deps are only supported for static libraries")
-        compiled_name = "_{}_compiled_cc_impl".format(name)
-        compiled_visibility = ["//visibility:private"]
-    cc_library(
-        name = compiled_name,
-        srcs = srcs,
-        hdrs = hdrs,
-        strip_include_prefix = strip_include_prefix,
-        include_prefix = include_prefix,
-        copts = copts,
-        defines = defines,
-        data = data,
-        deps = interface_deps + implementation_deps,
-        linkstatic = linkstatic,
-        linkopts = linkopts,
-        alwayslink = alwayslink,
-        tags = tags,
-        testonly = testonly,
-        visibility = compiled_visibility,
-        deprecation = compiled_deprecation,
-    )
+    compilation_names_copts = {
+        # By default, we'll do the boring thing -- compile to a cc_library
+        # named 'name' with no special copts. If we need implementation_deps
+        # or compile_once_per_scalar, we'll do something else below.
+        name: [],
+    }
+    compilation_visibility = visibility
+    compilation_deprecation = deprecation
+    if implementation_deps or compile_once_per_scalar:
+        compilation_names_copts = {}
+        for i in range(3 if compile_once_per_scalar else 1):
+            phase_name = "_{}_compiled_cc_impl_{}".format(name, i)
+            if compile_once_per_scalar:
+                phase_copts = [
+                    "-DDRAKE_ONCE_PER_SCALAR_PHASE={}".format(i),
+                ]
+            else:
+                phase_copts = []
+            compilation_names_copts[phase_name] = phase_copts
+        compilation_visibility = ["//visibility:private"]
+        compilation_deprecation = None
+
+    # XXX this runs the linter too many times
+    for compilation_name, compilation_copts in compilation_names_copts.items():
+        cc_library(
+            name = compilation_name,
+            srcs = srcs,
+            hdrs = hdrs,
+            strip_include_prefix = strip_include_prefix,
+            include_prefix = include_prefix,
+            copts = copts + compilation_copts,
+            defines = defines,
+            data = data,
+            deps = interface_deps + implementation_deps,
+            linkstatic = linkstatic,
+            linkopts = linkopts,
+            alwayslink = alwayslink,
+            tags = tags,
+            testonly = testonly,
+            visibility = compilation_visibility,
+            deprecation = compilation_deprecation,
+        )
 
     # If we're using implementation_deps, then make me an "implementation
     # sandwich".  Create one library with our headers, one library with only
     # our static archive, and then squash them together to the final result.
-    if implementation_deps:
+    if implementation_deps or compile_once_per_scalar:
         headers_name = "_{}_headers_cc_impl".format(name)
         cc_library(
             name = headers_name,
@@ -473,7 +494,10 @@ def _raw_drake_cc_library(
         archive_name = "_{}_archive_cc_impl".format(name)
         cc_linkonly_library(
             name = archive_name,
-            deps = [":" + compiled_name],
+            deps = [
+                ":" + compilation_name
+                for compilation_name in compilation_names_copts.keys()
+            ],
             visibility = ["//visibility:private"],
             tags = tags,
         )
