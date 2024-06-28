@@ -21,6 +21,7 @@
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/solver_options.h"
 
 namespace drake {
@@ -83,6 +84,8 @@ GTEST_TEST(GraphOfConvexSetsOptionsTest, Serialize) {
   solvers::IpoptSolver ipopt_solver;
   options.restriction_solver = &ipopt_solver;
   options.restriction_solver_options = solvers::SolverOptions();
+  options.preprocessing_solver = &mosek_solver;
+  options.preprocessing_solver_options = solvers::SolverOptions();
   const std::string serialized = yaml::SaveYamlString(options);
   const auto deserialized =
       yaml::LoadYamlString<GraphOfConvexSetsOptions>(serialized);
@@ -95,8 +98,10 @@ GTEST_TEST(GraphOfConvexSetsOptionsTest, Serialize) {
   // The non-built-in types are not serialized.
   EXPECT_EQ(deserialized.solver, nullptr);
   EXPECT_EQ(deserialized.restriction_solver, nullptr);
+  EXPECT_EQ(deserialized.preprocessing_solver, nullptr);
   EXPECT_EQ(deserialized.solver_options, solvers::SolverOptions());
   EXPECT_FALSE(deserialized.restriction_solver_options.has_value());
+  EXPECT_FALSE(deserialized.preprocessing_solver_options.has_value());
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
@@ -370,8 +375,8 @@ TEST_F(TwoPoints, AddConstraint) {
                               ".*IsSubsetOf.*");
 }
 
-// Verifies that the correct solver is used for the MIP, relaxation and the
-// restriction.
+// Verifies that the correct solver is used for the MIP, relaxation,
+// preprocessing, and restriction.
 TEST_F(TwoPoints, ReportCorrectSolverId) {
   e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
   GraphOfConvexSetsOptions options;
@@ -428,6 +433,14 @@ TEST_F(TwoPoints, ReportCorrectSolverId) {
     EXPECT_TRUE(result.is_success());
     EXPECT_EQ(result.get_solver_id(), options.solver->solver_id());
   }
+
+  // Test the preprocessing solver. Since the results of these solves are not
+  // reported, we call the OSQP solver and expect an error -- this solver cannot
+  // handle LPs, the preprocessing problems are LPs.
+  solvers::OsqpSolver osqp;
+  options.preprocessing = true;
+  options.preprocessing_solver = &osqp;
+  EXPECT_THROW(g_.SolveShortestPath(*u_, *v_, options), std::exception);
 }
 
 // Verify that assigning a transcription to a constraint adds it to the correct
@@ -2292,6 +2305,27 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     options.convex_relaxation = false;
     auto successful_result = spp.SolveShortestPath(*source, *target, options);
     EXPECT_TRUE(successful_result.is_success());
+
+    // Test preprocessing_solver_options by setting the time limit to 0. This
+    // will cause the preprocessing to fail on every edge, tagging those edges
+    // as unusable, and thus causing the solve to fail.
+    options.preprocessing = true;
+    options.convex_relaxation = true;
+    options.restriction_solver_options = solvers::SolverOptions();
+    solvers::MosekSolver mosek_solver2;
+    options.preprocessing_solver = &mosek_solver2;
+    options.preprocessing_solver_options = solvers::SolverOptions();
+    options.preprocessing_solver_options->SetOption(
+        solvers::MosekSolver::id(), "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
+
+    auto failed_result_2 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_FALSE(failed_result_2.is_success());
+
+    // If preprocessing_solver is unspecified, preprocessing_solver_options
+    // should be ignored, so the optimization should succeed.
+    options.preprocessing_solver = nullptr;
+    auto successful_result_2 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_TRUE(successful_result_2.is_success());
   }
 }
 

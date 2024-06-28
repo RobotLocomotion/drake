@@ -75,9 +75,17 @@ struct GraphOfConvexSetsOptions {
   during the rounding stage of SolveShortestPath() given the relaxation.
   If not set, the interface at .solver will be used, if provided, otherwise the
   best solver for the given problem is selected. Note that if the solver cannot
-  handle the type of optimization problem generated, the calling the
+  handle the type of optimization problem generated, then calling the
   solvers::SolverInterface::Solve() method will throw. */
   const solvers::SolverInterface* restriction_solver{nullptr};
+
+  /** Optimizer to be used in the preprocessing stage of GCS, which is
+  performed when SolveShortestPath is called when the `preprocessing` setting
+  has been set to true. If not set, the interface at .solver will be used, if
+  provided, otherwise the best solver for the given problem is selected. Note
+  that if the solver cannot handle the type of optimization problem generated,
+  then calling the solvers::SolverInterface::Solve() method will throw. */
+  const solvers::SolverInterface* preprocessing_solver{nullptr};
 
   /** Options passed to the solver when solving the generated problem.*/
   solvers::SolverOptions solver_options{};
@@ -91,6 +99,15 @@ struct GraphOfConvexSetsOptions {
   std::optional<solvers::SolverOptions> restriction_solver_options{
       std::nullopt};
 
+  /** Optional solver options to be used by preprocessing_solver in the
+  preprocessing stage of GCS, which is used in SolveShortestPath. If
+  preprocessing_solver is set but this parameter is not then solver_options is
+  used. If preprocessing_solver is not set, this parameter is ignored. For
+  instance, one might want to print solver logs for the main optimization, but
+  not from the many smaller preprocessing optimizations. */
+  std::optional<solvers::SolverOptions> preprocessing_solver_options{
+      std::nullopt};
+
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. Note:
   This only serializes options that are YAML built-in types.  */
@@ -102,10 +119,11 @@ struct GraphOfConvexSetsOptions {
     a->Visit(DRAKE_NVP(max_rounding_trials));
     a->Visit(DRAKE_NVP(flow_tolerance));
     a->Visit(DRAKE_NVP(rounding_seed));
-    // N.B. We skip the DRAKE_NVP(solver) and DRAKE_NVP(restriction_solver),
-    // because it cannot be serialized.
+    // N.B. We skip the DRAKE_NVP(solver), DRAKE_NVP(restriction_solver), and
+    // DRAKE_NVP(preprocessing_solver), because it cannot be serialized.
     // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
     // TODO(#20967) Serialize the DRAKE_NVP(restriction_solver_options).
+    // TODO(#20967) Serialize the DRAKE_NVP(preprocessing_solver_options).
   }
 };
 

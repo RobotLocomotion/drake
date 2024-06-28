@@ -668,6 +668,19 @@ void DefineGeometryOptimization(py::module m) {
                       std::move(restriction_solver_options);
                 }),
             cls_doc.restriction_solver_options.doc)
+        .def_property("preprocessing_solver_options",
+            py::cpp_function(
+                [](GraphOfConvexSetsOptions& self) {
+                  return &(self.preprocessing_solver_options);
+                },
+                py_rvp::reference_internal),
+            py::cpp_function(
+                [](GraphOfConvexSetsOptions& self,
+                    solvers::SolverOptions preprocessing_solver_options) {
+                  self.preprocessing_solver_options =
+                      std::move(preprocessing_solver_options);
+                }),
+            cls_doc.preprocessing_solver_options.doc)
         .def("__repr__", [](const GraphOfConvexSetsOptions& self) {
           return py::str(
               "GraphOfConvexSetsOptions("
@@ -679,14 +692,17 @@ void DefineGeometryOptimization(py::module m) {
               "rounding_seed={}, "
               "solver={}, "
               "restriction_solver={}, "
+              "preprocessing_solver={}, "
               "solver_options={}, "
               "restriction_solver_options={}, "
+              "preprocessing_solver_options={}, "
               ")")
               .format(self.convex_relaxation, self.preprocessing,
                   self.max_rounded_paths, self.max_rounding_trials,
                   self.flow_tolerance, self.rounding_seed, self.solver,
-                  self.restriction_solver, self.solver_options,
-                  self.restriction_solver_options);
+                  self.restriction_solver, self.preprocessing_solver,
+                  self.solver_options, self.restriction_solver_options,
+                  self.preprocessing_solver_options);
         });
 
     DefReadWriteKeepAlive(&gcs_options, "solver",
@@ -694,6 +710,9 @@ void DefineGeometryOptimization(py::module m) {
     DefReadWriteKeepAlive(&gcs_options, "restriction_solver",
         &GraphOfConvexSetsOptions::restriction_solver,
         cls_doc.restriction_solver.doc);
+    DefReadWriteKeepAlive(&gcs_options, "preprocessing_solver",
+        &GraphOfConvexSetsOptions::preprocessing_solver,
+        cls_doc.preprocessing_solver.doc);
   }
 
   // GraphOfConvexSets
