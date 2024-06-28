@@ -126,7 +126,8 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // generalized accelerations `v̇ = dv/dt`, the rates of change of v.
   // This method aborts in Debug builds if `vdot.size()` is not two.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const systems::Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& all_q,
+      const Eigen::VectorBlock<const VectorX<T>>& all_v,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
   // Projects the spatial force `F_Mo = [τ_Mo, f_Mo]` on `this` mobilizer's
@@ -138,7 +139,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // Therefore, the result of this method is the vector of torques about each
   // rotation axis of `this` mobilizer.
   // This method aborts in Debug builds if `tau.size()` is not two.
-  void ProjectSpatialForce(const systems::Context<T>& context,
+  void ProjectSpatialForce(const Eigen::VectorBlock<const VectorX<T>>& all_q,
                            const SpatialForce<T>& F_Mo_F,
                            Eigen::Ref<VectorX<T>> tau) const override;
 
@@ -158,9 +159,12 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
 
  protected:
   // Calculates the rotational part of matrix H and optionally its derivative.
-  // See Mobilizer documentation for notation.
-  Eigen::Matrix<T, 3, 2> CalcHwMatrix(const systems::Context<T>& context,
-                                      Vector3<T>* Hw_dot = nullptr) const;
+  // See Mobilizer documentation for notation. (If the optional Hw_dot output
+  // argument is non-null, then all_v must also be non-null.)
+  Eigen::Matrix<T, 3, 2> CalcHwMatrix(
+      const Eigen::VectorBlock<const VectorX<T>>& all_q,
+      const Eigen::VectorBlock<const VectorX<T>>* all_v = nullptr,
+      Vector3<T>* Hw_dot = nullptr) const;
 
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;

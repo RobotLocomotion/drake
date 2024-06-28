@@ -193,8 +193,9 @@ TEST_F(UniversalMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   mobilizer_->SetAngularRates(context_.get(), angular_rates);
 
   const SpatialAcceleration<double> A_FM =
-      mobilizer_->CalcAcrossMobilizerSpatialAcceleration(*context_,
-                                                         angular_acceleration);
+      mobilizer_->CalcAcrossMobilizerSpatialAcceleration(
+          tree().get_positions(*context_), tree().get_velocities(*context_),
+          angular_acceleration);
 
   const MatrixXd H_expected = CalcHMatrix(angles);
   MatrixXd H_dot_expected = MatrixXd::Zero(6, 2);
@@ -217,7 +218,7 @@ TEST_F(UniversalMobilizerTest, ProjectSpatialForce) {
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);
   const SpatialForce<double> F_Mo_F(torque_Mo_F, force_Mo_F);
   Vector2d tau;
-  mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
+  mobilizer_->ProjectSpatialForce(tree().get_positions(*context_), F_Mo_F, tau);
 
   const MatrixXd H_expected = CalcHMatrix(angles);
   const Vector2d tau_expected = H_expected.topRows(3).transpose() * torque_Mo_F;

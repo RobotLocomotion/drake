@@ -44,42 +44,38 @@ namespace multibody {
 // pre-finalize.
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
-using geometry::CollisionFilterDeclaration;
-using geometry::CollisionFilterScope;
-using geometry::ContactSurface;
-using geometry::FrameId;
-using geometry::FramePoseVector;
-using geometry::GeometryFrame;
-using geometry::GeometryId;
-using geometry::GeometryInstance;
-using geometry::GeometrySet;
-using geometry::PenetrationAsPointPair;
-using geometry::ProximityProperties;
-using geometry::SceneGraph;
-using geometry::SceneGraphInspector;
-using geometry::SourceId;
-using geometry::render::RenderLabel;
-using systems::DependencyTicket;
-using systems::InputPort;
-using systems::OutputPort;
-using systems::State;
-
+using drake::geometry::CollisionFilterDeclaration;
+using drake::geometry::CollisionFilterScope;
+using drake::geometry::ContactSurface;
+using drake::geometry::FrameId;
+using drake::geometry::FramePoseVector;
+using drake::geometry::GeometryFrame;
+using drake::geometry::GeometryId;
+using drake::geometry::GeometryInstance;
+using drake::geometry::GeometrySet;
+using drake::geometry::PenetrationAsPointPair;
+using drake::geometry::ProximityProperties;
+using drake::geometry::SceneGraph;
+using drake::geometry::SceneGraphInspector;
+using drake::geometry::SourceId;
+using drake::geometry::render::RenderLabel;
 using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
-using drake::multibody::MultibodyForces;
-using drake::multibody::SpatialAcceleration;
-using drake::multibody::SpatialForce;
 using drake::multibody::internal::AccelerationKinematicsCache;
 using drake::multibody::internal::ArticulatedBodyForceCache;
 using drake::multibody::internal::ArticulatedBodyInertiaCache;
 using drake::multibody::internal::GeometryContactData;
 using drake::multibody::internal::PositionKinematicsCache;
 using drake::multibody::internal::VelocityKinematicsCache;
-using systems::BasicVector;
-using systems::Context;
-using systems::InputPort;
-using systems::InputPortIndex;
-using systems::OutputPortIndex;
+using drake::systems::BasicVector;
+using drake::systems::Context;
+using drake::systems::DependencyTicket;
+using drake::systems::InputPort;
+using drake::systems::InputPortIndex;
+using drake::systems::OutputPort;
+using drake::systems::OutputPortIndex;
+using drake::systems::Parameters;
+using drake::systems::State;
 
 namespace internal {
 // This is a helper struct used to estimate the parameters used in the penalty
@@ -2023,10 +2019,8 @@ void MultibodyPlant<T>::AppendContactResultsPointPairContinuous(
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalGeometryContactData(context).point_pairs;
 
-  const internal::PositionKinematicsCache<T>& pc =
-      EvalPositionKinematics(context);
-  const internal::VelocityKinematicsCache<T>& vc =
-      EvalVelocityKinematics(context);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
   const SceneGraphInspector<T>& inspector = EvalSceneGraphInspector(context);
 
@@ -2136,8 +2130,7 @@ void MultibodyPlant<T>::CalcAndAddPointContactForcesContinuous(
 
   const ContactResults<T>& contact_results = EvalContactResults(context);
 
-  const internal::PositionKinematicsCache<T>& pc =
-      EvalPositionKinematics(context);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   for (int pair_index = 0;
        pair_index < contact_results.num_point_pair_contacts(); ++pair_index) {
@@ -3605,8 +3598,7 @@ void MultibodyPlant<T>::CalcGeometryPoseOutput(
     const Context<T>& context, FramePoseVector<T>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-  const internal::PositionKinematicsCache<T>& pc =
-      EvalPositionKinematics(context);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   // NOTE: The body index to frame id map *always* includes the world body but
   // the world body does *not* get reported in the frame poses; only dynamic
@@ -3633,6 +3625,11 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
   this->ValidateContext(context);
   DRAKE_DEMAND(output != nullptr);
   DRAKE_DEMAND(ssize(*output) == num_joints());
+  const internal::MultibodyTree<T>& tree = internal_tree();
+
+  // The 'FUTURE' comments sprinkled throughout this function explain how we
+  // anticipate adjusting these calculations in the future when discrete-time
+  // MbP output ports switch over to operating in "sampled" mode.
 
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(context, get_reaction_forces_output_port());
@@ -3643,6 +3640,8 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
   auto& tau_applied = applied_forces.mutable_generalized_forces();
   if (is_discrete()) {
+    // FUTURE: Sampling must KEEP A COPY of the prior step multibody forces, and
+    // use that here instead of re-computing it again.
     applied_forces =
         discrete_update_manager_->EvalDiscreteUpdateMultibodyForces(context);
   } else {
@@ -3658,13 +3657,34 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
   // TODO(amcastro-tri): Consider having a
   // DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
   // this computation consistently with its discrete update.
-  const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
   VectorX<T> tau_id(num_velocities());
-  internal_tree().CalcInverseDynamics(context, vdot, Fapplied_Bo_W_array,
-                                      tau_applied, &A_WB_vector,
-                                      &F_BMo_W_vector, &tau_id);
+  // The 'FUTURE' comments inline below explain what we anticipate to handle
+  // these function arguments when the discrete-time MbP output ports are
+  // operating in "sampled" mode in the future.
+  const Parameters<T>& parameters = context.get_parameters();
+  // FUTURE: Recompute position kinematics from the sampled q.
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  tree.CalcInverseDynamics(
+      // FUTURE: These two arguments only depend on Parameters, so we will use
+      // the current values from the Context, no sampling required.
+      parameters, this->EvalReflectedInertiaCache(context),
+      // FUTURE: Sampling must KEEP A COPY of the prior step q,v.
+      tree.get_positions(context), tree.get_velocities(context),
+      // FUTURE: Recompute position kinematics from the sampled q.
+      pc,
+      // FUTURE: Recompute spatial inertias M_B_W from the position kinematics.
+      this->EvalSpatialInertiaInWorldCache(context),
+      // FUTURE: Recompute velocity kinematics from the sampled q,v.
+      &this->EvalVelocityKinematics(context),
+      // FUTURE: Recompute bias from velocity kinematics and M_B_W.
+      &this->EvalDynamicBiasCache(context),
+      // FUTURE: The sampling must KEEP A COPY of acceleration kinematics.
+      this->EvalForwardDynamics(context).get_vdot(),
+      // Nothing after here needs to change w.r.t. output port sampling, since
+      // the swear word `context` doesn't appear anywhere in the below.
+      Fapplied_Bo_W_array, tau_applied, &A_WB_vector, &F_BMo_W_vector, &tau_id);
 
   // Since vdot is the result of Fapplied and tau_applied we expect the result
   // from inverse dynamics to be zero.
@@ -3682,9 +3702,9 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
     const internal::MobilizerIndex mobilizer_index =
-        internal_tree().get_joint_mobilizer(joint_index);
+        tree.get_joint_mobilizer(joint_index);
     const internal::Mobilizer<T>& mobilizer =
-        internal_tree().get_mobilizer(mobilizer_index);
+        tree.get_mobilizer(mobilizer_index);
     const internal::MobodIndex mobod_index =
         mobilizer.get_topology().mobod_index;
 
@@ -3722,9 +3742,12 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
 
       // Now we need to shift the application point from Jp to Jc.
       // First we need to find the position vector p_JpJc_W.
-      const RotationMatrix<T> R_WJp =
-          frame_Jp.CalcRotationMatrixInWorld(context);
-      const RigidTransform<T> X_JpJc = frame_Jc.CalcPose(context, frame_Jp);
+      const RotationMatrix<T> R_WJp = tree.CalcRelativeRotationMatrix(
+          parameters, pc, tree.world_frame(), frame_Jp);
+
+      const RigidTransform<T> X_JpJc =
+          tree.CalcRelativeTransform(parameters, pc, frame_Jp, frame_Jc);
+
       const Vector3<T> p_JpJc_Jp = X_JpJc.translation();
       const Vector3<T> p_JpJc_W = R_WJp * p_JpJc_Jp;
 
@@ -3733,7 +3756,8 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
     }
 
     // Re-express in the joint's child frame Jc.
-    const RotationMatrix<T> R_WJc = frame_Jc.CalcRotationMatrixInWorld(context);
+    const RotationMatrix<T> R_WJc = tree.CalcRelativeRotationMatrix(
+        parameters, pc, tree.world_frame(), frame_Jc);
     const RotationMatrix<T> R_JcW = R_WJc.inverse();
     const SpatialForce<T> F_CJc_Jc = R_JcW * F_CJc_W;
     output->at(joint.ordinal()) = F_CJc_Jc;

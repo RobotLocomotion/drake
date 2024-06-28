@@ -84,14 +84,26 @@ class Frame : public FrameBase<T> {
   /// with this frame.
   /// In particular, if `this` **is** the body frame B, this method directly
   /// returns the identity transformation.
-  virtual math::RigidTransform<T> CalcPoseInBodyFrame(
-      const systems::Context<T>& context) const = 0;
+  math::RigidTransform<T> CalcPoseInBodyFrame(
+      const systems::Context<T>& context) const {
+    return CalcPoseInBodyFrame(context.get_parameters());
+  }
+  math::RigidTransform<T> CalcPoseInBodyFrame(
+      const systems::Parameters<T>& parameters) const {
+    return DoCalcPoseInBodyFrame(parameters);
+  }
 
   /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
   /// frame F (B is the body frame to which `this` frame F is attached).
   /// @note If `this` is B, this method returns the identity RotationMatrix.
-  virtual math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
-      const systems::Context<T>& context) const = 0;
+  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
+      const systems::Context<T>& context) const {
+    return CalcRotationMatrixInBodyFrame(context.get_parameters());
+  }
+  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
+      const systems::Parameters<T>& parameters) const {
+    return DoCalcRotationMatrixInBodyFrame(parameters);
+  }
 
   /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
   /// `this` frame F in the body frame B associated with this frame.
@@ -124,6 +136,14 @@ class Frame : public FrameBase<T> {
             "', which does not support this method.");
   }
 
+  // XXX The next two (groups of) methods are here just so that BodyFrame can
+  // override them to be a no-op, to avoid a ComposeRR or ComposeXX with an
+  // identity. I'm not sure the indirect call is actually saving us anything
+  // compared to the matmul (the matmul is cheap!) and I'm even less sure that
+  // the code complexity is warranted even if even if is epsilon faster. Who the
+  // hell wants to read through all of these bespoke API crap? At least make it
+  // protected or internal use only of something. Users absolutely do not care.
+
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
   /// computes the pose `X_BQ` of frame Q in the body frame B to which this
   /// frame is attached.
@@ -134,20 +154,40 @@ class Frame : public FrameBase<T> {
   /// identity transformation, this method directly returns `X_FQ`.
   /// Specific frame subclasses can override this method to provide faster
   /// implementations if needed.
-  virtual math::RigidTransform<T> CalcOffsetPoseInBody(
+  math::RigidTransform<T> CalcOffsetPoseInBody(
       const systems::Context<T>& context,
       const math::RigidTransform<T>& X_FQ) const {
-    return CalcPoseInBodyFrame(context) * X_FQ;
+    return CalcOffsetPoseInBody(context.get_parameters(), X_FQ);
+  }
+  math::RigidTransform<T> CalcOffsetPoseInBody(
+      const systems::Parameters<T>& parameters,
+      const math::RigidTransform<T>& X_FQ) const {
+    return DoCalcOffsetPoseInBody(parameters, X_FQ);
+  }
+  virtual math::RigidTransform<T> DoCalcOffsetPoseInBody(
+      const systems::Parameters<T>& parameters,
+      const math::RigidTransform<T>& X_FQ) const {
+    return CalcPoseInBodyFrame(parameters) * X_FQ;
   }
 
   /// Calculates and returns the rotation matrix `R_BQ` that relates body frame
   /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
   /// (B is the body frame to which `this` frame F is attached).
   /// @param[in] R_FQ rotation matrix that relates frame F to frame Q.
-  virtual math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
+  math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
       const systems::Context<T>& context,
       const math::RotationMatrix<T>& R_FQ) const {
-    return CalcRotationMatrixInBodyFrame(context) * R_FQ;
+    return CalcOffsetRotationMatrixInBody(context.get_parameters(), R_FQ);
+  }
+  math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
+      const systems::Parameters<T>& parameters,
+      const math::RotationMatrix<T>& R_FQ) const {
+    return DoCalcOffsetRotationMatrixInBody(parameters, R_FQ);
+  }
+  virtual math::RotationMatrix<T> DoCalcOffsetRotationMatrixInBody(
+      const systems::Parameters<T>& parameters,
+      const math::RotationMatrix<T>& R_FQ) const {
+    return CalcRotationMatrixInBodyFrame(parameters) * R_FQ;
   }
 
   /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
@@ -506,6 +546,14 @@ class Frame : public FrameBase<T> {
   virtual std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
   /// @}
+
+  // NVI for CalcPoseInBodyFrame.
+  virtual math::RigidTransform<T> DoCalcPoseInBodyFrame(
+      const systems::Parameters<T>& parameters) const = 0;
+
+  // NVI for CalcRotationMatrixInBodyFrame.
+  virtual math::RotationMatrix<T> DoCalcRotationMatrixInBodyFrame(
+      const systems::Parameters<T>& parameters) const = 0;
 
  private:
   // Implementation for MultibodyElement::DoSetTopology().

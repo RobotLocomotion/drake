@@ -124,7 +124,8 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   const double translational_acceleration = 1.5;
   const SpatialAcceleration<double> A_FM =
       slider_->CalcAcrossMobilizerSpatialAcceleration(
-          *context_, Vector1d(translational_acceleration));
+          tree().get_positions(*context_), tree().get_velocities(*context_),
+          Vector1d(translational_acceleration));
 
   const SpatialAcceleration<double> A_FM_expected(
       Vector3d::Zero(), axis_F_.normalized() * translational_acceleration);
@@ -140,7 +141,7 @@ TEST_F(PrismaticMobilizerTest, ProjectSpatialForce) {
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);
   const SpatialForce<double> F_Mo_F(torque_Mo_F, force_Mo_F);
   Vector1d tau;
-  slider_->ProjectSpatialForce(*context_, F_Mo_F, tau);
+  slider_->ProjectSpatialForce(tree().get_positions(*context_), F_Mo_F, tau);
 
   // Only the force along axis_F does work.
   const double tau_expected = force_Mo_F.dot(axis_F_.normalized());

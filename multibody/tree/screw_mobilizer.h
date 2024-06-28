@@ -184,7 +184,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    This method aborts in Debug builds if `vdot.size()` is not one.
    @pre vdot.size() == 1. */
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const systems::Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& all_q,
+      const Eigen::VectorBlock<const VectorX<T>>& all_v,
       const Eigen::Ref<const VectorX<T>>& vdot) const final;
 
   /* Projects the spatial force `F_Mo = [τ_Mo, f_Mo]` on `this` mobilizer's
@@ -196,7 +197,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    each degree of freedom of `this` mobilizer.
    This method aborts in Debug builds if `tau.size()` is not one.
    @pre tau.size() == 1 */
-  void ProjectSpatialForce(const systems::Context<T>& context,
+  void ProjectSpatialForce(const Eigen::VectorBlock<const VectorX<T>>& all_q,
                            const SpatialForce<T>& F_Mo_F,
                            Eigen::Ref<VectorX<T>> tau) const final;
 

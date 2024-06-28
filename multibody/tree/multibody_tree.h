@@ -1099,9 +1099,23 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Frame<T>& frame_G) const;
 
+  // An overload that uses cache entries instead of context.
+  math::RigidTransform<T> CalcRelativeTransform(
+      const systems::Parameters<T>& parameters,
+      const PositionKinematicsCache<T>& pc,
+      const Frame<T>& frame_F,
+      const Frame<T>& frame_G) const;
+
   // See MultibodyPlant method.
   math::RotationMatrix<T> CalcRelativeRotationMatrix(
       const systems::Context<T>& context,
+      const Frame<T>& frame_F,
+      const Frame<T>& frame_G) const;
+
+  // An overload that uses cache entries instead of context.
+  math::RotationMatrix<T> CalcRelativeRotationMatrix(
+      const systems::Parameters<T>& parameters,
+      const PositionKinematicsCache<T>& pc,
       const Frame<T>& frame_F,
       const Frame<T>& frame_G) const;
 
@@ -1343,7 +1357,7 @@ class MultibodyTree {
   //   inertia value for the i-th degree of freedom.
   // @throws std::exception if reflected_inertia is nullptr or if its size is
   // not num_velocities().
-  void CalcReflectedInertia(const systems::Context<T>& context,
+  void CalcReflectedInertia(const systems::Parameters<T>& parameters,
       VectorX<T>* reflected_inertia) const;
 
   // Computes the joint damping for each velocity index.
@@ -1387,6 +1401,9 @@ class MultibodyTree {
   // @throws std::exception if Fb_Bo_W_cache is nullptr or if its size is not
   // num_bodies().
   void CalcDynamicBiasForces(const systems::Context<T>& context,
+                             std::vector<SpatialForce<T>>* Fb_Bo_W_all) const;
+  void CalcDynamicBiasForces(const VelocityKinematicsCache<T>& vc,
+                             const std::vector<SpatialInertia<T>>& M_B_W_all,
                              std::vector<SpatialForce<T>>* Fb_Bo_W_all) const;
 
   // Computes all the kinematic quantities that depend on the generalized
@@ -1560,6 +1577,23 @@ class MultibodyTree {
       const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
       const Eigen::Ref<const VectorX<T>>& tau_applied_array,
       bool ignore_velocities, std::vector<SpatialAcceleration<T>>* A_WB_array,
+      std::vector<SpatialForce<T>>* F_BMo_W_array,
+      EigenPtr<VectorX<T>> tau_array) const;
+
+  // Overload that takes context-derived inputs separately.
+  void CalcInverseDynamics(
+      const systems::Parameters<T>& parameters,
+      const VectorX<T>& reflected_inertia,
+      const Eigen::VectorBlock<const VectorX<T>> all_positions,
+      const Eigen::VectorBlock<const VectorX<T>> all_velocities,
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<SpatialInertia<T>>& M_B_W_all,
+      const VelocityKinematicsCache<T>* vc,  // nullptr means ignore_velocities
+      const std::vector<SpatialForce<T>>* Fb_Bo_W,  // likewise
+      const VectorX<T>& known_vdot,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+      std::vector<SpatialAcceleration<T>>* A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
 
@@ -2801,6 +2835,16 @@ class MultibodyTree {
   void CalcSpatialAccelerationsFromVdot(
       const systems::Context<T>& context, const VectorX<T>& known_vdot,
       bool ignore_velocities,
+      std::vector<SpatialAcceleration<T>>* A_WB_array) const;
+
+  // XXX
+  void CalcSpatialAccelerationsFromVdot(
+      const systems::Parameters<T>& parameters,
+      const Eigen::VectorBlock<const VectorX<T>>& all_positions,
+      const Eigen::VectorBlock<const VectorX<T>>& all_velocities,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>* vc,  // nullptr means ignore_velocities
+      const VectorX<T>& known_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const;
 
   // Helper method for Jacobian methods, namely CalcJacobianAngularVelocity(),

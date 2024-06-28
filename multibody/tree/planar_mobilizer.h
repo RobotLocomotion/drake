@@ -148,7 +148,8 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
    `v̇ = dv/dt`, the rates of change of v.
    This method aborts in Debug builds if `vdot.size()` is not three. */
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const systems::Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& all_q,
+      const Eigen::VectorBlock<const VectorX<T>>& all_v,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
   /* Projects the spatial force `F_Mo = [τ_Mo, f_Mo]` on `this` mobilizer's
@@ -162,7 +163,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
    Therefore, the result of this method is the vector of torques and forces for
    each degree of freedom of `this` mobilizer.
    This method aborts in Debug builds if `tau.size()` is not three. */
-  void ProjectSpatialForce(const systems::Context<T>& context,
+  void ProjectSpatialForce(const Eigen::VectorBlock<const VectorX<T>>& all_q,
                            const SpatialForce<T>& F_Mo_F,
                            Eigen::Ref<VectorX<T>> tau) const override;
 

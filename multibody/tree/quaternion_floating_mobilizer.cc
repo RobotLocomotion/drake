@@ -251,7 +251,8 @@ QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 template <typename T>
 SpatialAcceleration<T>
 QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
-    const systems::Context<T>&,
+    const Eigen::VectorBlock<const VectorX<T>>&,
+    const Eigen::VectorBlock<const VectorX<T>>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   const auto& alpha_FM = vdot.template head<3>();
@@ -261,7 +262,7 @@ QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void QuaternionFloatingMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&, const SpatialForce<T>& F_Mo_F,
+    const Eigen::VectorBlock<const VectorX<T>>&, const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
   tau = F_Mo_F.get_coeffs();
