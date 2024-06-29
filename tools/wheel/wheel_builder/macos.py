@@ -1,6 +1,7 @@
 # This file contains macOS-specific logic used to build the PyPI wheels. See
 # build-wheels for the user interface.
 
+import atexit
 import glob
 import os
 import platform
