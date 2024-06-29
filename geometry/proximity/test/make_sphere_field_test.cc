@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/sample_volume_field.h"
 
 namespace drake {
 namespace geometry {
@@ -78,6 +79,38 @@ GTEST_TEST(MakeSphereFieldTest, MakeSpherePressureField) {
       MakeSpherePressureField<double>(sphere, &mesh, kElasticModulus);
 
   CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
+}
+
+GTEST_TEST(MakeSphereFieldTest, MakeSpherePressureFieldWithMargin) {
+  const double kEps = std::numeric_limits<double>::epsilon();
+  const double kMargin = 1.3e-2;
+  const Sphere sphere(2.0);
+  const Sphere inflated_sphere(2.0);
+
+  auto mesh = MakeSphereVolumeMesh<double>(
+      sphere, 0.5, TessellationStrategy::kDenseInteriorVertices);
+  auto inflated_mesh = MakeSphereVolumeMesh<double>(
+      inflated_sphere, 0.5, TessellationStrategy::kDenseInteriorVertices);
+  // For such small margin we expect the connectivity of these two meshes to be
+  // the same.
+  ASSERT_EQ(mesh.num_vertices(), inflated_mesh.num_vertices());
+  ASSERT_EQ(mesh.tetrahedra(), inflated_mesh.tetrahedra());
+
+  const double kElasticModulus = 1.0e5;
+  const VolumeMeshFieldLinear<double, double> pressure_field =
+      MakeSpherePressureField<double>(inflated_sphere, &inflated_mesh,
+                                      kElasticModulus, kMargin);
+
+  // Verify pressure is zero when evaluated on the surface of the original
+  // sphere.
+  std::vector<int> boundary_vertex_indices =
+      CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
+  const Bvh<Obb, VolumeMesh<double>> bvh(mesh);
+  for (int v : boundary_vertex_indices) {
+    const Vector3d& p = mesh.vertex(v);
+    const double pressure = SampleVolumeFieldOrThrow(pressure_field, p);
+    EXPECT_NEAR(pressure / kElasticModulus, 0.0, kEps);
+  }
 }
 
 }  // namespace
