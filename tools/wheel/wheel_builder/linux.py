@@ -5,6 +5,7 @@ import atexit
 import io
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -162,6 +163,63 @@ def _create_source_tar(path):
 
     print(' done')
     out.close()
+
+
+def _create_snopt_tgz(options, path):
+    """
+    If options.snopt_path is 'git', then fetches the SNOPT source code from
+    git and compresses it onto the given 'path'. Otherwise, just copies the
+    options.snopt_path to 'path'.
+    """
+    if options.snopt_path != 'git':
+        shutil.copy(src=options.snopt_path, dst=path)
+        return
+    print('[-] Creating SNOPT archive...', flush=True)
+    tgz = tarfile.open(path, 'w:gz')
+
+    # Ask Bazel where it keeps its externals.
+    command = ['bazel', 'info', 'output_base']
+    output_base = subprocess.check_output(
+        command, cwd=resource_root,
+        stderr=subprocess.DEVNULL, encoding='utf-8').strip()
+    bazel_snopt = os.path.join(output_base, 'external/snopt')
+
+    # Ask Bazel to fetch SNOPT from its default git pin.
+    command = [
+        'bazel', 'fetch', '@snopt//:snopt_cwrap',
+        '--repo_env=SNOPT_PATH=git',
+    ]
+    subprocess.run(command, check=True, cwd=resource_root)
+
+    # Compress the files into the required tgz format. We only want the files
+    # from these subdirectories (and not recursively):
+    keep_dirs = [
+        'interfaces/include',
+        'interfaces/src',
+        'src',
+    ]
+    for keep_dir in keep_dirs:
+        full_dir = os.path.join(bazel_snopt, keep_dir)
+        for name in sorted(os.listdir(full_dir)):
+            # Compute full_file as the local path, and tgz_file as the path
+            # as it will exist within the archive. Only add files, not dirs.
+            full_file = os.path.join(full_dir, name)
+            if not os.path.isfile(full_file):
+                continue
+            tgz_file = os.path.join('snopt', keep_dir, name)
+            # Now here's a bit of magic: we need to undo the 'patch' commands
+            # that were run by Bazel while fetching, since it will need to run
+            # them again inside of the container. If we see filenames 'foo' and
+            # 'foo.orig', we should skip 'foo' and add 'foo.orig' as 'foo'.
+            # we should skip 'foo'
+            if os.path.isfile(full_file + '.orig'):
+                continue
+            if tgz_file.endswith('.orig'):
+                tgz_file = tgz_file[:-len('.orig')]
+            # Add the file.
+            tgz.add(full_file, tgz_file, recursive=False,
+                    filter=_strip_tar_metadata)
+    tgz.close()
 
 
 def _tagname(target: Target, role: Role, tag_prefix: str):
@@ -331,6 +389,12 @@ def build(options):
     source_tar = os.path.join(resource_root, 'image', 'drake-src.tar')
     _files_to_remove.append(source_tar)
     _create_source_tar(source_tar)
+
+    # Provide the SNOPT source archive as a dependency.
+    snopt_tgz = os.path.join(
+        resource_root, 'image', 'dependencies', 'snopt.tar.gz')
+    _files_to_remove.append(snopt_tgz)
+    _create_snopt_tgz(options, snopt_tgz)
 
     # Build the requested wheels.
     for t in targets_to_build:

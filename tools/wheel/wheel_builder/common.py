@@ -122,6 +122,10 @@ def do_main(args, platform):
         '--no-test', dest='test', action='store_false',
         help='build images but do not run tests')
 
+    parser.add_argument(
+        '--snopt-path', default='git',
+        help='Path to snopt.tgz, otherwise defaults to fetching from git')
+
     if platform is not None:
         platform.add_build_arguments(parser)
         platform.add_selection_arguments(parser)
@@ -141,6 +145,10 @@ def do_main(args, platform):
     if options.pep440:
         print(f'Version \'{options.version}\' conforms to PEP 440')
         return
+
+    if options.snopt_path != 'git':
+        if not os.path.exists(options.snopt_path):
+            die(f'The snopt-file path \'{options.snopt_path}\' does not exist')
 
     if platform is not None:
         platform.build(options)

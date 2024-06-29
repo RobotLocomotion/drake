@@ -183,6 +183,8 @@ def build(options):
     # Inject the build version into the environment.
     environment['DRAKE_VERSION'] = options.version
 
+    environment['SNOPT_PATH'] = options.snopt_path
+
     # Build the wheel dependencies.
     if options.dependencies:
         build_deps_script = os.path.join(resource_root, 'macos',
