@@ -498,8 +498,10 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   internal::ParseLinearEqualityConstraints(
       prog, &A_triplets, &b, &A_row_count, &linear_eq_y_start_indices,
       &num_linear_equality_constraints_rows);
-  cones.push_back(
-      clarabel::ZeroConeT<double>(num_linear_equality_constraints_rows));
+  if (num_linear_equality_constraints_rows > 0) {
+    cones.push_back(
+        clarabel::ZeroConeT<double>(num_linear_equality_constraints_rows));
+  }
 
   // Parse bounding box constraints.
   // bbcon_dual_indices[i][j][0] (resp. bbcon_dual_indices[i][j][1]) is the dual
@@ -522,8 +524,10 @@ void ClarabelSolver::DoSolve(const MathematicalProgram& prog,
   internal::ParseLinearConstraints(prog, &A_triplets, &b, &A_row_count,
                                    &linear_constraint_dual_indices,
                                    &num_linear_constraint_rows);
-  cones.push_back(
-      clarabel::NonnegativeConeT<double>(num_linear_constraint_rows));
+  if (num_linear_constraint_rows > 0) {
+    cones.push_back(
+        clarabel::NonnegativeConeT<double>(num_linear_constraint_rows));
+  }
 
   // Parse Lorentz cone and rotated Lorentz cone constraint
   std::vector<int> second_order_cone_length;
