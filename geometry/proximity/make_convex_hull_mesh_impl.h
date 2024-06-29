@@ -22,7 +22,7 @@ namespace internal {
             vertices lying on a plane is *not* degenerate.
  @throws if there is an unforeseen error in computing the convex hull. */
 PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
-                                          double scale);
+                                          double scale, double margin = 0);
 
 }  // namespace internal
 }  // namespace geometry

@@ -496,8 +496,6 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Convex& convex_spec, const ProximityProperties& props) {
-  PositiveDouble validator("Convex", "soft");
-
   // Use the pre-computed convex hull for the shape.
   const TriangleSurfaceMesh<double> surface_mesh =
       MakeTriangleFromPolygonMesh(convex_spec.GetConvexHull());
@@ -505,10 +503,12 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeConvexVolumeMesh<double>(surface_mesh));
 
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      PositiveDouble("Convex", "soft").Extract(props, kHydroGroup, kElastic);
+  const double margin = NonNegativeDouble("Convex", "soft")
+                            .Extract(props, kMaterialGroup, kMargin);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeConvexPressureField(mesh.get(), hydroelastic_modulus));
+      MakeVolumeMeshPressureField(mesh.get(), hydroelastic_modulus, margin));
 
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }
@@ -524,7 +524,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure;
 
   const double margin =
-      NonNegativeDouble("Box", "soft").Extract(props, kMaterialGroup, kMargin);
+      NonNegativeDouble("Mesh", "soft").Extract(props, kMaterialGroup, kMargin);
 
   if (mesh_specification.extension() == ".vtk") {
     // If they've explicitly provided a .vtk file, we'll treat it as it is a
