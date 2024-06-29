@@ -459,6 +459,7 @@ GTEST_TEST(TestOptions, StandaloneReproduction) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>("x");
   prog.AddLinearEqualityConstraint(x(0) + x(1) == 1);
+  prog.AddLinearConstraint(x(0) + x(1) + x(2) >= 0);
   prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(x(0), x(1)));
   prog.AddExponentialConeConstraint(
       Vector3<symbolic::Expression>(x(2), x(0), x(1)));
