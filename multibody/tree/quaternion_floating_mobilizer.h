@@ -204,13 +204,13 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const Eigen::Ref<const VectorX<T>>& v) const final;
 
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const systems::Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& all_q,
+      const Eigen::VectorBlock<const VectorX<T>>& all_v,
       const Eigen::Ref<const VectorX<T>>& vdot) const final;
 
-  void ProjectSpatialForce(
-      const systems::Context<T>& context,
-      const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const final;
+  void ProjectSpatialForce(const Eigen::VectorBlock<const VectorX<T>>& all_q,
+                           const SpatialForce<T>& F_Mo_F,
+                           Eigen::Ref<VectorX<T>> tau) const final;
 
   bool is_velocity_equal_to_qdot() const final { return false; }
 

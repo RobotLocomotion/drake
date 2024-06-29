@@ -187,13 +187,13 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // @ref Dt_multibody_quantities for our notation of time derivatives in
   // different reference frames).
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const systems::Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& all_q,
+      const Eigen::VectorBlock<const VectorX<T>>& all_v,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
-  void ProjectSpatialForce(
-      const systems::Context<T>& context,
-      const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const override;
+  void ProjectSpatialForce(const Eigen::VectorBlock<const VectorX<T>>& all_q,
+                           const SpatialForce<T>& F_Mo_F,
+                           Eigen::Ref<VectorX<T>> tau) const override;
 
   bool is_velocity_equal_to_qdot() const override { return false; }
 

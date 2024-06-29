@@ -69,7 +69,8 @@ TEST_F(WeldMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   const VectorXd zero_sized_vector(0);
   const SpatialAcceleration<double> A_FM =
       weld_body_to_world_->CalcAcrossMobilizerSpatialAcceleration(
-          *context_, zero_sized_vector);
+          tree().get_positions(*context_), tree().get_velocities(*context_),
+          zero_sized_vector);
   EXPECT_EQ(A_FM.get_coeffs(), Vector6<double>::Zero());
 }
 
@@ -79,7 +80,7 @@ TEST_F(WeldMobilizerTest, ProjectSpatialForce) {
   const SpatialForce<double> F_Mo_F(Vector6d::Zero());
   // No-op, just tests we can call it with a zero sized vector.
   weld_body_to_world_->ProjectSpatialForce(
-      *context_, F_Mo_F, zero_sized_vector);
+      tree().get_positions(*context_), F_Mo_F, zero_sized_vector);
 }
 
 TEST_F(WeldMobilizerTest, MapVelocityToQDotAndBack) {

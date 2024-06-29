@@ -97,10 +97,12 @@ math::RigidTransform<T> UniversalMobilizer<T>::CalcAcrossMobilizerTransform(
 
 template <typename T>
 Eigen::Matrix<T, 3, 2> UniversalMobilizer<T>::CalcHwMatrix(
-    const systems::Context<T>& context, Vector3<T>* Hw_dot) const {
-  const Vector2<T>& q = this->get_positions(context);
-  const T s = sin(q[0]);
-  const T c = cos(q[0]);
+    const Eigen::VectorBlock<const VectorX<T>>& all_q,
+    const Eigen::VectorBlock<const VectorX<T>>* all_v,
+    Vector3<T>* Hw_dot) const {
+  const T& q0 = all_q[this->position_start_in_q()];
+  const T s = sin(q0);
+  const T c = cos(q0);
   // The Hw matrix is defined as Hw = [Fx_F, My_F] where Fx_F is the unit x
   // vector and My_F simply picks off the middle column of R_FI(θ₁) because My_M
   // is the unit y vector.
@@ -108,11 +110,12 @@ Eigen::Matrix<T, 3, 2> UniversalMobilizer<T>::CalcHwMatrix(
   const Vector3<T> My_F(0.0, c, s);
   Eigen::Matrix<T, 3, 2> H;
   H << Fx_F, My_F;
-  if (Hw_dot) {
+  if (Hw_dot != nullptr) {
+    DRAKE_DEMAND(all_v != nullptr);
+    const T& v0 = (*all_v)[this->velocity_start_in_v()];
     // Since only the second column of Hw evolves with time, we only return that
     // column as a vector. The vector is the time derivative of My_F.
-    const Vector2<T>& v = this->get_velocities(context);
-    *Hw_dot =  Vector3<T>(0, -s * v[0], c * v[0]);
+    *Hw_dot =  Vector3<T>(0, -s * v0, c * v0);
   }
   return H;
 }
@@ -122,31 +125,34 @@ SpatialVelocity<T> UniversalMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(context);
+  const Eigen::Matrix<T, 3, 2> Hw =
+      this->CalcHwMatrix(this->get_parent_tree().get_positions(context));
   return SpatialVelocity<T>(Hw * v, Vector3<T>::Zero());
 }
 
 template <typename T>
 SpatialAcceleration<T>
 UniversalMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
-    const systems::Context<T>& context,
+    const Eigen::VectorBlock<const VectorX<T>>& all_q,
+    const Eigen::VectorBlock<const VectorX<T>>& all_v,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
-  const Vector2<T>& v = this->get_velocities(context);
   DRAKE_ASSERT(vdot.size() == kNv);
   Vector3<T> Hw_dot_col1;
-  const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(context, &Hw_dot_col1);
+  const Eigen::Matrix<T, 3, 2> Hw =
+      this->CalcHwMatrix(all_q, &all_v, &Hw_dot_col1);
+  const T& v1 = all_v[this->velocity_start_in_v() + 1];
   // Calculated using alpha_FM = Hw_FM⋅v̇ + Hwdot_FM⋅v. See Mobilizer class
   // documentation for derivation.
-  return SpatialAcceleration<T>(Hw * vdot + Hw_dot_col1 * v[1],
+  return SpatialAcceleration<T>(Hw * vdot + Hw_dot_col1 * v1,
                                 Vector3<T>::Zero());
 }
 
 template <typename T>
 void UniversalMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>& context, const SpatialForce<T>& F_Mo_F,
-    Eigen::Ref<VectorX<T>> tau) const {
+    const Eigen::VectorBlock<const VectorX<T>>& all_q,
+    const SpatialForce<T>& F_Mo_F, Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(context);
+  const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(all_q);
   // Computes tau = H_FMᵀ * F_Mo_F where H_FM ∈ ℝ³ˣ² is calculated as described
   // in CalcHwMatrix().
   tau = Hw.transpose() * F_Mo_F.rotational();

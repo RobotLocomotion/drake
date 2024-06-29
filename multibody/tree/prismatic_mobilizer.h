@@ -132,7 +132,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // See class documentation for the translation sign convention.
   // This method aborts in Debug builds if `vdot.size()` is not one.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const systems::Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& all_q,
+      const Eigen::VectorBlock<const VectorX<T>>& all_v,
       const Eigen::Ref<const VectorX<T>>& vdot) const final;
 
   // Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
@@ -143,10 +144,9 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // Therefore, the result of this method is the scalar value of the linear
   // force along the axis of `this` mobilizer.
   // This method aborts in Debug builds if `tau.size()` is not one.
-  void ProjectSpatialForce(
-      const systems::Context<T>& context,
-      const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const final;
+  void ProjectSpatialForce(const Eigen::VectorBlock<const VectorX<T>>& all_q,
+                           const SpatialForce<T>& F_Mo_F,
+                           Eigen::Ref<VectorX<T>> tau) const final;
 
   bool is_velocity_equal_to_qdot() const override { return true; }
 

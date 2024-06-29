@@ -177,11 +177,21 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   // frame F given the pose of frame G in this frame F as: X_BG = X_BF * X_FG.
   // Since in this case frame F IS the body frame B, X_BF = Id and this method
   // simply returns X_FG.  Similarly, R_BG = R_BF * R_FG = Identity * R_FG.
-  EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(*context_, X_FG_)
+  EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(context_->get_parameters(), X_FG_)
                   .IsNearlyEqualTo(X_FG_, kEpsilon));
   const math::RotationMatrix<double>& R_FG = X_FG_.rotation();
+  EXPECT_TRUE(
+      frameB_->CalcOffsetRotationMatrixInBody(context_->get_parameters(), R_FG)
+          .IsNearlyEqualTo(R_FG, kEpsilon));
+
+  // Sanity check of deprecated methods (2024-10-01).
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(*context_, X_FG_)
+                  .IsNearlyEqualTo(X_FG_, kEpsilon));
   EXPECT_TRUE(frameB_->CalcOffsetRotationMatrixInBody(*context_, R_FG)
                   .IsNearlyEqualTo(R_FG, kEpsilon));
+#pragma GCC diagnostic pop
 
   // Now verify the fixed pose version of the same method.
   // As in the variant above, since in this case frame F IS the body frame B,
@@ -218,12 +228,13 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
   // the body frame B given we know the pose X_PQ of frame G in our frame P as:
   // X_BQ = X_BP * X_PQ.  Similarly for R_BQ = R_BP * R_PQ.
   const math::RigidTransform<double> X_BQ = X_BP_ * X_PQ_;
-  EXPECT_TRUE(frameP_->CalcOffsetPoseInBody(*context_, X_PQ_)
+  EXPECT_TRUE(frameP_->CalcOffsetPoseInBody(context_->get_parameters(), X_PQ_)
                   .IsNearlyEqualTo(X_BQ, kEpsilon));
   const math::RotationMatrix<double>& R_PQ = X_PQ_.rotation();
   const math::RotationMatrix<double>& R_BQ = X_BQ.rotation();
-  EXPECT_TRUE(frameP_->CalcOffsetRotationMatrixInBody(*context_, R_PQ)
-                  .IsNearlyEqualTo(R_BQ, kEpsilon));
+  EXPECT_TRUE(
+      frameP_->CalcOffsetRotationMatrixInBody(context_->get_parameters(), R_PQ)
+          .IsNearlyEqualTo(R_BQ, kEpsilon));
 
   // Now verify the fixed pose and rotation matrix versions of those methods.
   EXPECT_TRUE(
@@ -260,12 +271,13 @@ TEST_F(FrameTests, ChainedFixedOffsetFrames) {
   // the body frame B given we know the pose X_QG of frame G in our frame Q as:
   // X_BG = X_BP * X_PQ * X_QG.  Similarly for R_BG = R_BP * R_PQ * R_QG.
   const math::RigidTransform<double> X_BG = X_BP_ * X_PQ_ * X_QG_;
-  EXPECT_TRUE(frameQ_->CalcOffsetPoseInBody(*context_, X_QG_)
+  EXPECT_TRUE(frameQ_->CalcOffsetPoseInBody(context_->get_parameters(), X_QG_)
                   .IsNearlyEqualTo(X_BG, kEpsilon));
   const math::RotationMatrix<double>& R_QG = X_QG_.rotation();
   const math::RotationMatrix<double>& R_BG = X_BG.rotation();
-  EXPECT_TRUE(frameQ_->CalcOffsetRotationMatrixInBody(*context_, R_QG)
-                  .IsNearlyEqualTo(R_BG, kEpsilon));
+  EXPECT_TRUE(
+      frameQ_->CalcOffsetRotationMatrixInBody(context_->get_parameters(), R_QG)
+          .IsNearlyEqualTo(R_BG, kEpsilon));
 
   // Now verify the fixed pose and rotation matrix versions of those methods.
   EXPECT_TRUE(

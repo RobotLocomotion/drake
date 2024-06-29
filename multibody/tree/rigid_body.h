@@ -61,24 +61,14 @@ class RigidBodyFrame final : public Frame<T> {
 
   ~RigidBodyFrame() override;
 
-  math::RigidTransform<T> CalcPoseInBodyFrame(
-      const systems::Context<T>&) const override {
-    return math::RigidTransform<T>::Identity();
-  }
-
-  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
-      const systems::Context<T>&) const override {
-    return math::RotationMatrix<T>::Identity();
-  }
-
   math::RigidTransform<T> CalcOffsetPoseInBody(
-      const systems::Context<T>&,
+      const systems::Parameters<T>&,
       const math::RigidTransform<T>& X_FQ) const override {
     return X_FQ;
   }
 
   math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
-      const systems::Context<T>&,
+      const systems::Parameters<T>&,
       const math::RotationMatrix<T>& R_FQ) const override {
     return R_FQ;
   }
@@ -111,6 +101,16 @@ class RigidBodyFrame final : public Frame<T> {
 
   std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
+
+  math::RigidTransform<T> DoCalcPoseInBodyFrame(
+      const systems::Parameters<T>&) const override {
+    return math::RigidTransform<T>::Identity();
+  }
+
+  math::RotationMatrix<T> DoCalcRotationMatrixInBodyFrame(
+      const systems::Parameters<T>&) const override {
+    return math::RotationMatrix<T>::Identity();
+  }
 
  private:
   // RigidBody<T> and RigidBodyFrame<T> are natural allies. A RigidBodyFrame
@@ -519,10 +519,24 @@ class RigidBody : public MultibodyElement<T> {
   /// @pre the context makes sense for use by this RigidBody.
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const {
+    return CalcSpatialInertiaInBodyFrame(context.get_parameters());
+  }
+
+  /// Gets this body's spatial inertia about its origin from the given context
+  /// parameters.
+  /// @param[in] parameters The context parameters of the multibody system
+  //    associated with this body.
+  /// @returns M_BBo_B spatial inertia of this rigid body B about Bo (B's
+  /// origin), expressed in B. M_BBo_B contains properties related to B's mass,
+  /// the position vector from Bo to Bcm (B's center of mass), and G_BBo_B
+  /// (B's unit inertia about Bo expressed in B).
+  /// @pre the parameters make sense for use by this RigidBody.
+  SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
+      const systems::Parameters<T>& parameters) const {
     // TODO(joemasterjohn): Speed this up when we can store a reference to a
     //  SpatialInertia<T> as an abstract parameter.
     const systems::BasicVector<T>& spatial_inertia_parameter =
-        context.get_numeric_parameter(spatial_inertia_parameter_index_);
+        parameters.get_numeric_parameter(spatial_inertia_parameter_index_);
     return internal::parameter_conversion::ToSpatialInertia(
         spatial_inertia_parameter);
   }

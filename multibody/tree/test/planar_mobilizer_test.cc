@@ -225,8 +225,9 @@ TEST_F(PlanarMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   mobilizer_->SetAngularRate(context_.get(), angle_rate);
 
   const SpatialAcceleration<double> A_FM =
-      mobilizer_->CalcAcrossMobilizerSpatialAcceleration(*context_,
-                                                         acceleration);
+      mobilizer_->CalcAcrossMobilizerSpatialAcceleration(
+          tree().get_positions(*context_), tree().get_velocities(*context_),
+          acceleration);
 
   VectorXd a_expected(6);
   a_expected << 0.0, 0.0, acceleration[2], acceleration[0], acceleration[1],
@@ -246,7 +247,7 @@ TEST_F(PlanarMobilizerTest, ProjectSpatialForce) {
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);
   const SpatialForce<double> F_Mo_F(torque_Mo_F, force_Mo_F);
   Vector3d tau;
-  mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
+  mobilizer_->ProjectSpatialForce(tree().get_positions(*context_), F_Mo_F, tau);
 
   const Vector3d tau_expected(force_Mo_F[0], force_Mo_F[1], torque_Mo_F[2]);
   EXPECT_TRUE(CompareMatrices(tau, tau_expected, kTolerance,

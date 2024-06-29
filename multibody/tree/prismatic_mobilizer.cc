@@ -83,7 +83,8 @@ SpatialVelocity<T> PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 template <typename T>
 SpatialAcceleration<T>
 PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
-    const systems::Context<T>&,
+    const Eigen::VectorBlock<const VectorX<T>>&,
+    const Eigen::VectorBlock<const VectorX<T>>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   return SpatialAcceleration<T>(Vector3<T>::Zero(),
@@ -92,8 +93,7 @@ PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void PrismaticMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&,
-    const SpatialForce<T>& F_Mo_F,
+    const Eigen::VectorBlock<const VectorX<T>>&, const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
   // Computes tau = H_FMᵀ * F_Mo_F where H_FM ∈ ℝ⁶ is:

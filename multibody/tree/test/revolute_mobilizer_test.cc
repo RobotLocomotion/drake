@@ -173,7 +173,8 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   const double angular_acceleration = 1.5;
   const SpatialAcceleration<double> A_FM =
       mobilizer_->CalcAcrossMobilizerSpatialAcceleration(
-          *context_, Vector1d(angular_acceleration));
+          tree().get_positions(*context_), tree().get_velocities(*context_),
+          Vector1d(angular_acceleration));
 
   const SpatialAcceleration<double> A_FM_expected(
       axis_F_.normalized() * angular_acceleration, Vector3d::Zero());
@@ -189,7 +190,7 @@ TEST_F(RevoluteMobilizerTest, ProjectSpatialForce) {
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);
   const SpatialForce<double> F_Mo_F(torque_Mo_F, force_Mo_F);
   Vector1d tau;
-  mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
+  mobilizer_->ProjectSpatialForce(tree().get_positions(*context_), F_Mo_F, tau);
 
   // Only the torque along axis_F does work.
   const double tau_expected = torque_Mo_F.dot(axis_F_.normalized());

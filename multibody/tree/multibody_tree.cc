@@ -1275,7 +1275,8 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
 
 template <typename T>
 void MultibodyTree<T>::CalcReflectedInertia(
-    const systems::Context<T>& context, VectorX<T>* reflected_inertia) const {
+    const systems::Parameters<T>& parameters,
+    VectorX<T>* reflected_inertia) const {
   DRAKE_THROW_UNLESS(reflected_inertia != nullptr);
   DRAKE_THROW_UNLESS(static_cast<int>(reflected_inertia->size()) ==
                      num_velocities());
@@ -1287,7 +1288,7 @@ void MultibodyTree<T>::CalcReflectedInertia(
     const int joint_velocity_index =
         actuator->joint().velocity_start();  // within v
     (*reflected_inertia)(joint_velocity_index) =
-        actuator->calc_reflected_inertia(context);
+        actuator->calc_reflected_inertia(parameters);
   }
 }
 
@@ -1401,20 +1402,25 @@ void MultibodyTree<T>::CalcDynamicBiasForces(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* Fb_Bo_W_all) const {
   DRAKE_THROW_UNLESS(Fb_Bo_W_all != nullptr);
-  DRAKE_THROW_UNLESS(static_cast<int>(Fb_Bo_W_all->size()) ==
-      topology_.num_mobods());
+  DRAKE_THROW_UNLESS(ssize(*Fb_Bo_W_all) == topology_.num_mobods());
+  CalcDynamicBiasForces(EvalVelocityKinematics(context),
+                        EvalSpatialInertiaInWorldCache(context), Fb_Bo_W_all);
+}
 
-  const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
-      EvalSpatialInertiaInWorldCache(context);
-
-  const VelocityKinematicsCache<T>& vc = this->EvalVelocityKinematics(context);
+// Result is indexed by MobodIndex.
+template <typename T>
+void MultibodyTree<T>::CalcDynamicBiasForces(
+    const VelocityKinematicsCache<T>& vc,
+    const std::vector<SpatialInertia<T>>& M_B_W_all,
+    std::vector<SpatialForce<T>>* Fb_Bo_W_all) const {
+  DRAKE_ASSERT(Fb_Bo_W_all != nullptr);
+  DRAKE_ASSERT(ssize(*Fb_Bo_W_all) == topology_.num_mobods());
 
   // Skip the world.
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
 
-    const SpatialInertia<T>& M_B_W =
-        spatial_inertia_in_world_cache[body.mobod_index()];
+    const SpatialInertia<T>& M_B_W = M_B_W_all[body.mobod_index()];
 
     const T& mass = M_B_W.get_mass();
     // B's center of mass measured in B and expressed in W.
@@ -1454,13 +1460,23 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
   DRAKE_DEMAND(A_WB_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) ==
       topology_.num_mobods());
-
   DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
+  CalcSpatialAccelerationsFromVdot(
+      context.get_parameters(), get_positions(context), get_velocities(context),
+      EvalPositionKinematics(context),
+      ignore_velocities ? nullptr : &EvalVelocityKinematics(context),
+      known_vdot, A_WB_array);
+}
 
-  const auto& pc = EvalPositionKinematics(context);
-  const VelocityKinematicsCache<T>* vc =
-      ignore_velocities ? nullptr : &EvalVelocityKinematics(context);
-
+template <typename T>
+void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
+    const systems::Parameters<T>& parameters,
+    const Eigen::VectorBlock<const VectorX<T>>& all_positions,
+    const Eigen::VectorBlock<const VectorX<T>>& all_velocities,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>* vc,  // nullptr means ignore_velocities
+    const VectorX<T>& known_vdot,
+    std::vector<SpatialAcceleration<T>>* A_WB_array) const {
   // The world's spatial acceleration is always zero.
   A_WB_array->at(world_mobod_index()) = SpatialAcceleration<T>::Zero();
 
@@ -1474,8 +1490,9 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
       DRAKE_ASSERT(node.index() == mobod_index);
 
       // Update per-node kinematics.
-      node.CalcSpatialAcceleration_BaseToTip(
-          context, pc, vc, known_vdot, A_WB_array);
+      node.CalcSpatialAcceleration_BaseToTip(parameters, all_positions,
+                                             all_velocities, pc, vc, known_vdot,
+                                             A_WB_array);
     }
   }
 }
@@ -1529,35 +1546,65 @@ void MultibodyTree<T>::CalcInverseDynamics(
 // All argument vectors are indexed by MobodIndex.
 template <typename T>
 void MultibodyTree<T>::CalcInverseDynamics(
-    const systems::Context<T>& context,
-    const VectorX<T>& known_vdot,
+    const systems::Context<T>& context, const VectorX<T>& known_vdot,
     const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
     const Eigen::Ref<const VectorX<T>>& tau_applied_array,
-    bool ignore_velocities,
-    std::vector<SpatialAcceleration<T>>* A_WB_array,
+    bool ignore_velocities, std::vector<SpatialAcceleration<T>>* A_WB_array,
     std::vector<SpatialForce<T>>* F_BMo_W_array,
     EigenPtr<VectorX<T>> tau_array) const {
   DRAKE_DEMAND(known_vdot.size() == num_velocities());
-  const int Fapplied_size = static_cast<int>(Fapplied_Bo_W_array.size());
-  DRAKE_DEMAND(Fapplied_size == topology_.num_mobods() ||
-               Fapplied_size == 0);
+  const int Fapplied_size = ssize(Fapplied_Bo_W_array);
+  DRAKE_DEMAND(Fapplied_size == topology_.num_mobods() || Fapplied_size == 0);
   const int tau_applied_size = tau_applied_array.size();
   DRAKE_DEMAND(tau_applied_size == num_velocities() || tau_applied_size == 0);
 
   DRAKE_DEMAND(A_WB_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) ==
-      topology_.num_mobods());
+  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == topology_.num_mobods());
 
   DRAKE_DEMAND(F_BMo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) ==
-      topology_.num_mobods());
+               topology_.num_mobods());
 
   DRAKE_DEMAND(tau_array->size() == num_velocities());
 
+  CalcInverseDynamics(
+      // Evaluate relevant parts from `context`.
+      context.get_parameters(), EvalReflectedInertiaCache(context),
+      get_positions(context), get_velocities(context),
+      EvalPositionKinematics(context), EvalSpatialInertiaInWorldCache(context),
+      ignore_velocities ? nullptr : &EvalVelocityKinematics(context),
+      ignore_velocities ? nullptr : &EvalDynamicBiasCache(context),
+      // Forward these arguments from our caller.
+      known_vdot, Fapplied_Bo_W_array, tau_applied_array,
+      // Output argument pointers.
+      A_WB_array, F_BMo_W_array, tau_array);
+}
+
+// All argument vectors suffixed by "_array" are indexed by MobodIndex.
+// XXX We can write a better comment than that.
+template <typename T>
+void MultibodyTree<T>::CalcInverseDynamics(
+    const systems::Parameters<T>& parameters,
+    const VectorX<T>& reflected_inertia,
+    const Eigen::VectorBlock<const VectorX<T>> all_positions,
+    const Eigen::VectorBlock<const VectorX<T>> all_velocities,
+    const PositionKinematicsCache<T>& pc,
+    const std::vector<SpatialInertia<T>>& M_B_W_all,
+    const VelocityKinematicsCache<T>* vc,  // nullptr means ignore_velocities
+    const std::vector<SpatialForce<T>>* Fb_Bo_W,  // likewise
+    const VectorX<T>& known_vdot,
+    const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+    const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+    std::vector<SpatialAcceleration<T>>* A_WB_array,
+    std::vector<SpatialForce<T>>* F_BMo_W_array,
+    EigenPtr<VectorX<T>> tau_array) const {
+  // XXX assertions on input sizes and such?
+  DRAKE_DEMAND((vc == nullptr) == (Fb_Bo_W == nullptr));
+
   // Compute body spatial accelerations given the generalized accelerations are
   // known.
-  CalcSpatialAccelerationsFromVdot(context, known_vdot, ignore_velocities,
-                                   A_WB_array);
+  CalcSpatialAccelerationsFromVdot(parameters, all_positions, all_velocities,
+                                   pc, vc, known_vdot, A_WB_array);
 
   // Vector of generalized forces per mobilizer.
   // It has zero size if no forces are applied.
@@ -1566,18 +1613,6 @@ void MultibodyTree<T>::CalcInverseDynamics(
   // Spatial force applied on B at Bo.
   // It is left initialized to zero if no forces are applied.
   SpatialForce<T> Fapplied_Bo_W = SpatialForce<T>::Zero();
-
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-
-  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
-
-  // Eval M_Bo_W(q).
-  const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
-      EvalSpatialInertiaInWorldCache(context);
-
-  // Eval Fb_Bo_W(q, v). Fb_Bo_W = 0 if v = 0.
-  const std::vector<SpatialForce<T>>* dynamic_bias_cache =
-      ignore_velocities ? nullptr : &EvalDynamicBiasCache(context);
 
   // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
   // acting on body B, about point Mo, expressed in the world frame W.
@@ -1598,21 +1633,20 @@ void MultibodyTree<T>::CalcInverseDynamics(
       // This allows users to specify the same input and output arrays if
       // desired to minimize memory footprint.
       // Leave them initialized to zero if no applied forces were provided.
-      if (tau_applied_size != 0) {
+      if (tau_applied_array.size() != 0) {
         tau_applied_mobilizer =
             node.get_mobilizer().get_generalized_forces_from_array(
                 tau_applied_array);
       }
-      if (Fapplied_size != 0) {
+      if (ssize(Fapplied_Bo_W_array) != 0) {
         Fapplied_Bo_W = Fapplied_Bo_W_array[mobod_index];
       }
 
       // Compute F_BMo_W for the body associated with this node and project it
       // onto the space of generalized forces for the associated mobilizer.
       node.CalcInverseDynamics_TipToBase(
-          context, pc, spatial_inertia_in_world_cache, dynamic_bias_cache,
-          *A_WB_array, Fapplied_Bo_W, tau_applied_mobilizer, F_BMo_W_array,
-          tau_array);
+          parameters, all_positions, pc, M_B_W_all, Fb_Bo_W, *A_WB_array,
+          Fapplied_Bo_W, tau_applied_mobilizer, F_BMo_W_array, tau_array);
     }
   }
 
@@ -1954,37 +1988,57 @@ VectorX<T> MultibodyTree<T>::CalcGravityGeneralizedForces(
 
 template <typename T>
 RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_F,
+    const systems::Context<T>& context, const Frame<T>& frame_F,
     const Frame<T>& frame_G) const {
   // Shortcut: Efficiently return identity transform if frame_F == frame_G.
-  if (frame_F.index() == frame_G.index()) return RigidTransform<T>::Identity();
+  if (frame_F.index() == frame_G.index()) {
+    return RigidTransform<T>::Identity();
+  }
+  return CalcRelativeTransform(context.get_parameters(),
+                               EvalPositionKinematics(context), frame_F,
+                               frame_G);
+}
 
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+template <typename T>
+RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
+    const systems::Parameters<T>& parameters,
+    const PositionKinematicsCache<T>& pc, const Frame<T>& frame_F,
+    const Frame<T>& frame_G) const {
   const RigidBody<T>& A = frame_F.body();
   const RigidBody<T>& B = frame_G.body();
   const RigidTransform<T>& X_WA = pc.get_X_WB(A.mobod_index());
   const RigidTransform<T>& X_WB = pc.get_X_WB(B.mobod_index());
-  const RigidTransform<T> X_WF = X_WA * frame_F.CalcPoseInBodyFrame(context);
-  const RigidTransform<T> X_WG = X_WB * frame_G.CalcPoseInBodyFrame(context);
+  const RigidTransform<T> X_WF = X_WA * frame_F.CalcPoseInBodyFrame(parameters);
+  const RigidTransform<T> X_WG = X_WB * frame_G.CalcPoseInBodyFrame(parameters);
   return X_WF.InvertAndCompose(X_WG);  // X_FG = X_FW * X_WG;
 }
 
 template <typename T>
 RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_F,
+    const systems::Context<T>& context, const Frame<T>& frame_F,
     const Frame<T>& frame_G) const {
   // Shortcut: Efficiently return identity matrix if frame_F == frame_G.
-  if (frame_F.index() == frame_G.index()) return RotationMatrix<T>::Identity();
+  if (frame_F.index() == frame_G.index()) {
+    return RotationMatrix<T>::Identity();
+  }
+  return CalcRelativeRotationMatrix(context.get_parameters(),
+                                    EvalPositionKinematics(context), frame_F,
+                                    frame_G);
+}
 
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+template <typename T>
+RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
+    const systems::Parameters<T>& parameters,
+    const PositionKinematicsCache<T>& pc, const Frame<T>& frame_F,
+    const Frame<T>& frame_G) const {
   const RigidBody<T>& A = frame_F.body();
   const RigidBody<T>& B = frame_G.body();
   const RotationMatrix<T>& R_WA = pc.get_R_WB(A.mobod_index());
   const RotationMatrix<T>& R_WB = pc.get_R_WB(B.mobod_index());
-  const RotationMatrix<T> R_AF = frame_F.CalcRotationMatrixInBodyFrame(context);
-  const RotationMatrix<T> R_BG = frame_G.CalcRotationMatrixInBodyFrame(context);
+  const RotationMatrix<T> R_AF =
+      frame_F.CalcRotationMatrixInBodyFrame(parameters);
+  const RotationMatrix<T> R_BG =
+      frame_G.CalcRotationMatrixInBodyFrame(parameters);
   const RotationMatrix<T> R_WF = R_WA * R_AF;
   const RotationMatrix<T> R_WG = R_WB * R_BG;
   return R_WF.InvertAndCompose(R_WG);  // R_FG = R_FW * R_WG;
