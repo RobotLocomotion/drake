@@ -400,7 +400,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   void CalcReflectedInertia(const systems::Context<T>& context,
                             VectorX<T>* reflected_inertia) const {
-    internal_tree().CalcReflectedInertia(context, reflected_inertia);
+    internal_tree().CalcReflectedInertia(context.get_parameters(),
+                                         reflected_inertia);
   }
 
   void CalcJointDamping(const systems::Context<T>& context,

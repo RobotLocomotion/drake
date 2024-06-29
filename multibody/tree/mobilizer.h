@@ -443,10 +443,12 @@ class Mobilizer : public MultibodyElement<T> {
   // This method aborts in Debug builds if the dimension of the input vector of
   // generalized accelerations has a size different from num_velocities().
   //
-  // @param[in] context
-  //   The context of the parent tree that owns this mobilizer. This
-  //   mobilizer's generalized positions q and generalized velocities v are
-  //   taken from this context.
+  // @param[in] all_q
+  //   ALL generalized positions q of the parent tree that owns this mobilizer.
+  //   This mobilizer's positions are extracted within this function.
+  // @param[in] all_v
+  //   ALL generalized positions v of the parent tree that owns this mobilizer.
+  //   This mobilizer's velocities are extracted within this function.
   // @param[in] vdot
   //   The vector of generalized velocities' time derivatives v̇. It must live
   //   in ℝⁿᵛ.
@@ -454,7 +456,8 @@ class Mobilizer : public MultibodyElement<T> {
   //   The across-mobilizer spatial acceleration of the outboard frame M
   //   measured and expressed in the inboard frame F.
   virtual SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const systems::Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& all_q,
+      const Eigen::VectorBlock<const VectorX<T>>& all_v,
       const Eigen::Ref<const VectorX<T>>& vdot) const = 0;
 
   // Calculates a mobilizer's generalized forces `tau = H_FMᵀ(q) ⋅ F_Mo_F`,
@@ -475,18 +478,17 @@ class Mobilizer : public MultibodyElement<T> {
   // This method aborts in Debug builds if the dimension of the output vector
   // of generalized forces has a size different from num_velocities().
   //
-  // @param[in] context
-  //   The context of the parent tree that owns this mobilizer. This
-  //   mobilizer's generalized positions q are stored in this context.
+  // @param[in] all_q
+  //   ALL generalized positions q of the parent tree that owns this mobilizer.
+  //   This mobilizer's positions are extracted within this function.
   // @param[in] F_Mo_F
   //   A SpatialForce applied at `this` mobilizer's outboard frame origin `Mo`,
   //   expressed in the inboard frame F.
   // @retval tau
   //   The vector of generalized forces. It must live in ℝⁿᵛ.
   virtual void ProjectSpatialForce(
-      const systems::Context<T>& context,
-      const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const = 0;
+      const Eigen::VectorBlock<const VectorX<T>>& all_q,
+      const SpatialForce<T>& F_Mo_F, Eigen::Ref<VectorX<T>> tau) const = 0;
 
   // Computes the kinematic mapping matrix `N(q)` that maps generalized
   // velocities for this mobilizer to time derivatives of the generalized
