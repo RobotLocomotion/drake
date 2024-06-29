@@ -51,26 +51,6 @@ def _assert_isdir(path, name):
         die(f'{name} \'{path}\' is not a valid directory')
 
 
-def _find_host_key_types(host):
-    key_types = []
-
-    try:
-        command = ['ssh-keygen', '-F', host]
-        known_keys = subprocess.check_output(command, text=True)
-
-        for line in known_keys.split('\n'):
-            if not line or line.startswith('#'):
-                continue
-
-            host, key_type, key_hash = line.strip().split()
-            key_types.append(key_type)
-
-    except subprocess.CalledProcessError:
-        pass
-
-    return key_types
-
-
 def _provision(python_targets):
     """
     Prepares wheel build environment.
@@ -78,27 +58,6 @@ def _provision(python_targets):
     packages_path = os.path.join(resource_root, 'image', 'packages-macos')
     command = ['brew', 'bundle', f'--file={packages_path}', '--no-lock']
     subprocess.check_call(command)
-
-    try:
-        os.mkdir(os.path.expanduser('~/.ssh'), mode=0o700)
-    except FileExistsError:
-        pass
-
-    host_keys = ''
-    known_hosts_path = os.path.join(resource_root, 'image', 'known_hosts')
-    with open(known_hosts_path, 'rt', encoding='utf-8') as f:
-        for line in f:
-            host, key_type, key = line.strip().split()
-            if key_type in _find_host_key_types(host):
-                continue
-
-            host_keys += line
-
-    if host_keys:
-        known_hosts_path = os.path.expanduser('~/.ssh/known_hosts')
-        with open(known_hosts_path, 'at', encoding='utf-8') as f:
-            f.write(''.join(host_keys))
-            os.fchmod(f.fileno(), 0o600)
 
     for t in python_targets:
         subprocess.check_call(['brew', 'install', f'python@{t.version}'])

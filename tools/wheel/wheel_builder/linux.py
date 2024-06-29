@@ -279,7 +279,6 @@ def _build_image(target, identifier, options):
     Runs the build for a target and (optionally) extract the wheel.
     """
     args = [
-        '--ssh', 'default',
         '--build-arg', f'DRAKE_VERSION={options.version}',
         '--build-arg', f'DRAKE_GIT_SHA={_git_sha(resource_root)}',
     ] + _target_args(target, BUILD)
