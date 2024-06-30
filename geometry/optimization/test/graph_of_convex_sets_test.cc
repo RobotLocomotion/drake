@@ -302,6 +302,32 @@ TEST_F(TwoPoints, AddCost) {
   symbolic::Variable other_var("x");
   DRAKE_EXPECT_THROWS_MESSAGE(e_->AddCost(other_var), ".*IsSubsetOf.*");
   DRAKE_EXPECT_THROWS_MESSAGE(v_->AddCost(other_var), ".*IsSubsetOf.*");
+
+  // If no transcription is specified, the constraint won't be added.
+  EXPECT_THROW(e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm(), {}),
+               std::exception);
+  EXPECT_THROW(e_->AddCost(Binding(cost, e_->xu()), {}), std::exception);
+  EXPECT_THROW(u_->AddCost((v_->x() + Vector3d::Ones()).squaredNorm(), {}),
+               std::exception);
+  EXPECT_THROW(u_->AddCost(Binding(cost, u_->x()), {}), std::exception);
+
+  // By default Edge::AddCost or Vertex::AddCost is adding the binding to all
+  // transcriptions.
+  for (const auto& transcription :
+       {Transcription::kMIP, Transcription::kRelaxation,
+        Transcription::kRestriction}) {
+    const auto transcription_edge_costs = e_->GetCosts({transcription});
+    EXPECT_EQ(transcription_edge_costs.size(), 2);
+    EXPECT_EQ(transcription_edge_costs[0], b0);
+    EXPECT_EQ(transcription_edge_costs[1], b1);
+    const auto transcription_vertex_costs = v_->GetCosts({transcription});
+    EXPECT_EQ(transcription_vertex_costs.size(), 2);
+    EXPECT_EQ(transcription_vertex_costs[0], v_b0);
+    EXPECT_EQ(transcription_vertex_costs[1], v_b1);
+  }
+  // If no transcription is specified, nothing will be returned.
+  EXPECT_THROW(e_->GetCosts({}), std::exception);
+  EXPECT_THROW(v_->GetCosts({}), std::exception);
 }
 
 // Confirms that we can add constraints (both ways).
@@ -350,11 +376,11 @@ TEST_F(TwoPoints, AddConstraint) {
   for (const auto& transcription :
        {Transcription::kMIP, Transcription::kRelaxation,
         Transcription::kRestriction}) {
-    const auto& edge_constraints = e_->GetConstraints({transcription});
+    const auto edge_constraints = e_->GetConstraints({transcription});
     EXPECT_EQ(edge_constraints.size(), 2);
     EXPECT_EQ(edge_constraints[0], b0);
     EXPECT_EQ(edge_constraints[1], b1);
-    const auto& vertex_constraints = u_->GetConstraints({transcription});
+    const auto vertex_constraints = u_->GetConstraints({transcription});
     EXPECT_EQ(vertex_constraints.size(), 2);
     EXPECT_EQ(vertex_constraints[0], u_b0);
     EXPECT_EQ(vertex_constraints[1], u_b1);
@@ -395,7 +421,7 @@ TEST_F(TwoPoints, ReportCorrectSolverId) {
   EXPECT_TRUE(result.is_success());
   EXPECT_EQ(result.get_solver_id(), options.restriction_solver->solver_id());
 
-  // With the rounding on, the reported solver should be the restriciton solver
+  // With the rounding on, the reported solver should be the restriction solver
   options.max_rounded_paths = 1;
   result = g_.SolveShortestPath(*u_, *v_, options);
   EXPECT_TRUE(result.is_success());
@@ -427,6 +453,53 @@ TEST_F(TwoPoints, ReportCorrectSolverId) {
     result = g_.SolveShortestPath(*u_, *v_, options);
     EXPECT_TRUE(result.is_success());
     EXPECT_EQ(result.get_solver_id(), options.solver->solver_id());
+  }
+}
+
+// Verify that assigning a transcription to a cost adds it to the correct
+// problem.
+TEST_F(TwoPoints, VerifyCostTranscriptionAssignment) {
+  const double kCostRelaxation = 1.23;
+  const double kCostRestriction = 4.56;
+  const double kCostMIP = 7.89;
+  // We add each cost four times, once for each AddCost entry point.
+  for (const auto& [transcription, cost] :
+       {std::pair<Transcription, double>{Transcription::kMIP, kCostMIP},
+        std::pair<Transcription, double>{Transcription::kRelaxation,
+                                         kCostRelaxation},
+        std::pair<Transcription, double>{Transcription::kRestriction,
+                                         kCostRestriction}}) {
+    auto [ell, e_b] = e_->AddCost(cost, {transcription});
+    e_->AddCost(e_b, {transcription});
+    auto [v_ell, v_b] = v_->AddCost(cost, {transcription});
+    v_->AddCost(v_b, {transcription});
+  }
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  // The convex relaxation should be successful.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 0;
+  auto result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostRelaxation, 1e-6);
+
+  // The restriction, also in the rounding, should be successful.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 1;
+  result = g_.SolveConvexRestriction({e_}, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostRestriction, 1e-6);
+  result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostRestriction, 1e-6);
+
+  // The MIP should be successful as well.
+  options.convex_relaxation = false;
+  if (MixedIntegerSolverAvailable()) {
+    result = g_.SolveShortestPath(*u_, *v_, options);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostMIP, 1e-6);
   }
 }
 

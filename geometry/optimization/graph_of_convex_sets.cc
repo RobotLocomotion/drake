@@ -129,19 +129,22 @@ Vertex::Vertex(VertexId id, const ConvexSet& set, std::string name)
 Vertex::~Vertex() = default;
 
 std::pair<Variable, Binding<Cost>> Vertex::AddCost(
-    const symbolic::Expression& e) {
-  return AddCost(solvers::internal::ParseCost(e));
+    const symbolic::Expression& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  return AddCost(solvers::internal::ParseCost(e), use_in_transcription);
 }
 
 std::pair<Variable, Binding<Cost>> Vertex::AddCost(
-    const Binding<Cost>& binding) {
+    const Binding<Cost>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
   DRAKE_THROW_UNLESS(
       Variables(binding.variables()).IsSubsetOf(Variables(placeholder_x_)));
+  DRAKE_THROW_UNLESS(use_in_transcription.size() > 0);
   const int n = ell_.size();
   ell_.conservativeResize(n + 1);
   ell_[n] = Variable(fmt::format("v_ell{}", n), Variable::Type::CONTINUOUS);
-  costs_.emplace_back(binding);
-  return std::pair<Variable, Binding<Cost>>(ell_[n], costs_.back());
+  costs_.push_back({binding, use_in_transcription});
+  return std::pair<Variable, Binding<Cost>>(ell_[n], binding);
 }
 
 Binding<Constraint> Vertex::AddConstraint(
@@ -162,6 +165,23 @@ Binding<Constraint> Vertex::AddConstraint(
   DRAKE_THROW_UNLESS(use_in_transcription.size() > 0);
   constraints_.push_back({binding, use_in_transcription});
   return binding;
+}
+
+std::vector<solvers::Binding<solvers::Cost>> Vertex::GetCosts(
+    const std::unordered_set<GraphOfConvexSets::Transcription>&
+        used_in_transcription) const {
+  DRAKE_THROW_UNLESS(used_in_transcription.size() > 0);
+  std::vector<solvers::Binding<solvers::Cost>> costs;
+  // Add all costs that are used in the transcription.
+  for (const auto& [binding, transcriptions] : costs_) {
+    if (std::any_of(transcriptions.begin(), transcriptions.end(),
+                    [&used_in_transcription](const auto& elem) {
+                      return used_in_transcription.contains(elem);
+                    })) {
+      costs.push_back(binding);
+    }
+  }
+  return costs;
 }
 
 std::vector<solvers::Binding<solvers::Constraint>> Vertex::GetConstraints(
@@ -235,18 +255,22 @@ Edge::Edge(const EdgeId& id, Vertex* u, Vertex* v, std::string name)
 Edge::~Edge() = default;
 
 std::pair<Variable, Binding<Cost>> Edge::AddCost(
-    const symbolic::Expression& e) {
-  return AddCost(solvers::internal::ParseCost(e));
+    const symbolic::Expression& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  return AddCost(solvers::internal::ParseCost(e), use_in_transcription);
 }
 
-std::pair<Variable, Binding<Cost>> Edge::AddCost(const Binding<Cost>& binding) {
+std::pair<Variable, Binding<Cost>> Edge::AddCost(
+    const Binding<Cost>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
   DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
+  DRAKE_THROW_UNLESS(use_in_transcription.size() > 0);
   const int n = ell_.size();
   ell_.conservativeResize(n + 1);
   ell_[n] =
       Variable(fmt::format("{}ell{}", name_, n), Variable::Type::CONTINUOUS);
-  costs_.emplace_back(binding);
-  return std::pair<Variable, Binding<Cost>>(ell_[n], costs_.back());
+  costs_.push_back({binding, use_in_transcription});
+  return std::pair<Variable, Binding<Cost>>(ell_[n], binding);
 }
 
 Binding<Constraint> Edge::AddConstraint(
@@ -267,6 +291,23 @@ Binding<Constraint> Edge::AddConstraint(
   DRAKE_THROW_UNLESS(use_in_transcription.size() > 0);
   constraints_.push_back({binding, use_in_transcription});
   return binding;
+}
+
+std::vector<solvers::Binding<solvers::Cost>> Edge::GetCosts(
+    const std::unordered_set<GraphOfConvexSets::Transcription>&
+        used_in_transcription) const {
+  DRAKE_THROW_UNLESS(used_in_transcription.size() > 0);
+  std::vector<solvers::Binding<solvers::Cost>> costs;
+  // Add all costs that are used in the transcription.
+  for (const auto& [binding, transcriptions] : costs_) {
+    if (std::any_of(transcriptions.begin(), transcriptions.end(),
+                    [&used_in_transcription](const auto& elem) {
+                      return used_in_transcription.contains(elem);
+                    })) {
+      costs.push_back(binding);
+    }
+  }
+  return costs;
 }
 
 std::vector<solvers::Binding<solvers::Constraint>> Edge::GetConstraints(
@@ -890,6 +931,15 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     options.max_rounded_paths = 0;
   }
 
+  auto IncludesCurrentTranscription =
+      [&options](
+          const std::unordered_set<Transcription>& transcriptions) -> bool {
+    return ((*options.convex_relaxation &&
+             transcriptions.contains(Transcription::kRelaxation)) ||
+            (!*options.convex_relaxation &&
+             transcriptions.contains(Transcription::kMIP)));
+  };
+
   std::set<EdgeId> unusable_edges;
   if (*options.preprocessing) {
     unusable_edges = PreprocessShortestPath(source_id, target_id, options);
@@ -899,7 +949,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
   std::map<VertexId, std::vector<Edge*>> incoming_edges;
   std::map<VertexId, std::vector<Edge*>> outgoing_edges;
-  std::map<VertexId, MatrixXDecisionVariable> vertex_edge_ell;
+  std::map<VertexId, std::vector<VectorXDecisionVariable>> vertex_edge_ell;
   std::vector<Edge*> excluded_edges;
 
   std::map<EdgeId, Variable> relaxed_phi;
@@ -948,8 +998,6 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
     prog.AddDecisionVariables(e->y_);
     prog.AddDecisionVariables(e->z_);
-    prog.AddDecisionVariables(e->ell_);
-    prog.AddLinearCost(VectorXd::Ones(e->ell_.size()), e->ell_);
 
     // Spatial non-negativity: y ∈ ϕX, z ∈ ϕX.
     if (e->u().ambient_dimension() > 0) {
@@ -961,26 +1009,26 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
     // Edge costs.
     for (int i = 0; i < e->ell_.size(); ++i) {
-      const Binding<Cost>& b = e->costs_[i];
+      const auto& [b, transcriptions] = e->costs_[i];
+      if (IncludesCurrentTranscription(transcriptions)) {
+        prog.AddDecisionVariables(Vector1<Variable>{e->ell_[i]});
+        prog.AddLinearCost(VectorXd::Ones(1), Vector1<Variable>{e->ell_[i]});
+        const VectorXDecisionVariable& old_vars = b.variables();
+        VectorXDecisionVariable vars(old_vars.size() + 2);
+        // vars = [phi; ell; yz_vars]
+        vars[0] = phi;
+        vars[1] = e->ell_[i];
+        for (int j = 0; j < old_vars.size(); ++j) {
+          vars[j + 2] = e->x_to_yz_.at(old_vars[j]);
+        }
 
-      const VectorXDecisionVariable& old_vars = b.variables();
-      VectorXDecisionVariable vars(old_vars.size() + 2);
-      // vars = [phi; ell; yz_vars]
-      vars[0] = phi;
-      vars[1] = e->ell_[i];
-      for (int j = 0; j < old_vars.size(); ++j) {
-        vars[j + 2] = e->x_to_yz_.at(old_vars[j]);
+        AddPerspectiveCost(&prog, b, vars);
       }
-
-      AddPerspectiveCost(&prog, b, vars);
     }
 
     // Edge constraints.
     for (const auto& [b, transcriptions] : e->constraints_) {
-      if ((*options.convex_relaxation &&
-           transcriptions.contains(Transcription::kRelaxation)) ||
-          (!*options.convex_relaxation &&
-           transcriptions.contains(Transcription::kMIP))) {
+      if (IncludesCurrentTranscription(transcriptions)) {
         const VectorXDecisionVariable& old_vars = b.variables();
         VectorXDecisionVariable vars(old_vars.size() + 1);
         // vars = [phi; yz_vars]
@@ -1116,41 +1164,39 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
     // Vertex costs.
     if (v->ell_.size() > 0) {
-      vertex_edge_ell[v->id()] =
-          prog.NewContinuousVariables(cost_edges.size(), v->ell_.size());
       for (int ii = 0; ii < v->ell_.size(); ++ii) {
-        const Binding<Cost>& b = v->costs_[ii];
-        const VectorXDecisionVariable& old_vars = b.variables();
+        const auto& [b, transcriptions] = v->costs_[ii];
+        if (IncludesCurrentTranscription(transcriptions)) {
+          VectorXDecisionVariable vertex_ell =
+              prog.NewContinuousVariables(cost_edges.size());
+          vertex_edge_ell[v->id()].push_back(vertex_ell);
+          const VectorXDecisionVariable& old_vars = b.variables();
 
-        VectorXDecisionVariable vertex_ell =
-            vertex_edge_ell.at(v->id()).col(ii);
-        prog.AddLinearCost(VectorXd::Ones(vertex_ell.size()), vertex_ell);
+          prog.AddLinearCost(VectorXd::Ones(vertex_ell.size()), vertex_ell);
 
-        for (int jj = 0; jj < static_cast<int>(cost_edges.size()); ++jj) {
-          const Edge* e = cost_edges[jj];
-          VectorXDecisionVariable vars(old_vars.size() + 2);
-          // vars = [phi; ell; yz_vars]
-          if (*options.convex_relaxation) {
-            vars[0] = relaxed_phi.at(e->id());
-          } else {
-            vars[0] = e->phi_;
+          for (int jj = 0; jj < static_cast<int>(cost_edges.size()); ++jj) {
+            const Edge* e = cost_edges[jj];
+            VectorXDecisionVariable vars(old_vars.size() + 2);
+            // vars = [phi; ell; yz_vars]
+            if (*options.convex_relaxation) {
+              vars[0] = relaxed_phi.at(e->id());
+            } else {
+              vars[0] = e->phi_;
+            }
+            vars[1] = vertex_ell[jj];
+            for (int kk = 0; kk < old_vars.size(); ++kk) {
+              vars[kk + 2] = e->x_to_yz_.at(old_vars[kk]);
+            }
+
+            AddPerspectiveCost(&prog, b, vars);
           }
-          vars[1] = vertex_ell[jj];
-          for (int kk = 0; kk < old_vars.size(); ++kk) {
-            vars[kk + 2] = e->x_to_yz_.at(old_vars[kk]);
-          }
-
-          AddPerspectiveCost(&prog, b, vars);
         }
       }
     }
 
     // Vertex constraints.
     for (const auto& [b, transcriptions] : v->constraints_) {
-      if ((*options.convex_relaxation &&
-           transcriptions.contains(Transcription::kRelaxation)) ||
-          (!*options.convex_relaxation &&
-           transcriptions.contains(Transcription::kMIP))) {
+      if (IncludesCurrentTranscription(transcriptions)) {
         const VectorXDecisionVariable& old_vars = b.variables();
 
         for (const Edge* e : cost_edges) {
@@ -1255,10 +1301,17 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         decision_variable_index.emplace(v->x()[i].get_id(), count);
         x_val[count++] = x_v[i];
       }
+      int active_ell = 0;
       for (int i = 0; i < v->ell_.size(); ++i) {
         decision_variable_index.emplace(v->ell_[i].get_id(), count);
-        x_val[count++] =
-            result.GetSolution(vertex_edge_ell.at(v->id()).col(i)).sum();
+        const auto& [b, transcriptions] = v->costs_[i];
+        if (IncludesCurrentTranscription(transcriptions)) {
+          x_val[count++] =
+              result.GetSolution(vertex_edge_ell.at(v->id())[active_ell++])
+                  .sum();
+        } else {
+          x_val[count++] = 0.0;
+        }
       }
     }
     if (*options.convex_relaxation) {
@@ -1569,8 +1622,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
     v->set().AddPointInSetConstraints(&prog, v->x());
 
     // Vertex costs.
-    for (const Binding<Cost>& b : v->costs_) {
-      prog.AddCost(b);
+    for (const auto& [b, transcriptions] : v->costs_) {
+      if (transcriptions.contains(Transcription::kRestriction)) {
+        prog.AddCost(b);
+      }
     }
     // Vertex constraints.
     for (const auto& [b, transcriptions] : v->constraints_) {
@@ -1582,8 +1637,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
 
   for (const auto* e : active_edges) {
     // Edge costs.
-    for (const Binding<Cost>& b : e->costs_) {
-      prog.AddCost(b);
+    for (const auto& [b, transcriptions] : e->costs_) {
+      if (transcriptions.contains(Transcription::kRestriction)) {
+        prog.AddCost(b);
+      }
     }
     // Edge constraints.
     for (const auto& [b, transcriptions] : e->constraints_) {
