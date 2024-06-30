@@ -14,8 +14,6 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 
-#include<iostream>
-
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -68,8 +66,22 @@ class CanonicalMesh {
               [&mesh](int a, int b) {
                 const Vector3d& va = mesh.vertex(a);
                 const Vector3d& vb = mesh.vertex(b);
-                return std::lexicographical_compare(va.data(), va.data() + 3,
-                                                    vb.data(), vb.data() + 3);
+
+                auto almost_equal = [](double x, double y) {
+                  const double kAbsTolerance =
+                      4 * std::numeric_limits<double>::epsilon();
+                  return std::abs(x - y) < kAbsTolerance;
+                };
+
+                if (almost_equal(va[0], vb[0])) {
+                  if (almost_equal(va[1], vb[1])) {
+                    return va[2] < vb[2];
+                  } else {
+                    return va[1] < vb[1];
+                  }
+                } else {
+                  return va[0] < vb[0];
+                }
               });
     for (int v = 0; v < mesh.num_vertices(); ++v) {
       vertices_.push_back(mesh.vertex(canon_to_mesh[v]));
@@ -117,15 +129,12 @@ MATCHER_P(NearVertex, tolerance, "") {
 
 void MeshesAreEquivalent(const CanonicalMesh& dut,
                          const CanonicalMesh& expected, double tolerance) {
-  for (auto& p : dut.vertices()){
-    std::cout << fmt::format("p: {}\n", fmt_eigen(p.transpose()));
-  }
   // The Pointwise matcher compares dut and expected element-wise. The
   // comparison operator is the NearVertex matcher that requires the distance
   // between the two points to be less than tolerance.
-  ASSERT_THAT(dut.vertices(),
+  EXPECT_THAT(dut.vertices(),
               testing::Pointwise(NearVertex(tolerance), expected.vertices()));
-  ASSERT_THAT(dut.faces(), testing::Eq(expected.faces()));
+  EXPECT_THAT(dut.faces(), testing::Eq(expected.faces()));
 }
 
 /* Confirm that the constructor is working correctly.

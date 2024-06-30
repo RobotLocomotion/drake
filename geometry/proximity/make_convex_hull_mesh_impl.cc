@@ -27,8 +27,6 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 
-#include <iostream>
-
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -325,8 +323,6 @@ class ConvexHull {
       DRAKE_DEMAND(std::abs(normal.norm()-1.0) < 1.0e-14);
       const double d = -facet.hyperplane().offset();  // distance to origin.
       Vector4d h = (Vector4d() << normal, d).finished();
-      DRAKE_DEMAND(d > 0);   // Demand a normal pointing away from the origin.
-      //if (d < 0) h = -h;  // Ensure outwards normal.
       hyperplanes.push_back(h);
     }
     return hyperplanes;
@@ -384,8 +380,6 @@ class ConvexHull {
                      });
       // QHull doesn't necessarily order the vertices in the winding we want.
       const Vector3d normal(facet.hyperplane().coordinates());
-      const double distance = -facet.hyperplane().offset();
-      DRAKE_DEMAND(distance >= 0);  // Normal away from origin.
       const Vector3d center(facet.getCenter().coordinates());
       std::vector<int> ordered_vertices =
           OrderPolyVertices(vertices_M, mesh_indices, center, normal);
@@ -421,7 +415,7 @@ PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
   // convex hull. This is a mathematical pre-requisite to work with the dual
   // below. We'll remove the offset on the output mesh.
   Vector3d offset = Vector3d::Zero();
-  if (!is_planar) { // && margin != 0
+  if (!is_planar  && margin != 0) {
     // Compute offset.
     for (const auto& p : cloud.vertices) {
       offset += p;
@@ -437,7 +431,7 @@ PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
   ConvexHull hull(std::move(cloud));
 
   // We do not apply margin to planar clouds.
-  if (is_planar) { // || margin == 0
+  if (is_planar || margin == 0) {
     return hull.MakePolygonSurfaceMesh(offset);
   }
 
