@@ -320,7 +320,7 @@ class ConvexHull {
     for (auto& facet : qhull_.facetList()) {
       // QHull doesn't necessarily order the vertices in the winding we want.
       const Vector3d normal(facet.hyperplane().coordinates());
-      DRAKE_DEMAND(std::abs(normal.norm()-1.0) < 1.0e-14);
+      DRAKE_DEMAND(std::abs(normal.norm() - 1.0) < 1.0e-14);
       const double d = -facet.hyperplane().offset();  // distance to origin.
       Vector4d h = (Vector4d() << normal, d).finished();
       hyperplanes.push_back(h);
@@ -415,7 +415,7 @@ PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
   // convex hull. This is a mathematical pre-requisite to work with the dual
   // below. We'll remove the offset on the output mesh.
   Vector3d offset = Vector3d::Zero();
-  if (!is_planar  && margin != 0) {
+  if (!is_planar && margin != 0) {
     // Compute offset.
     for (const auto& p : cloud.vertices) {
       offset += p;
@@ -461,11 +461,6 @@ PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
     const Vector3d v = ni / di;
     v_inflated.push_back(v);
   }
-
-  // Remove offset.
-  //for (auto& p : v_inflated) {
-  //  p += offset;
-  //}
 
   // Convex hull of the inflated geometry.
   ConvexHull inflated_hull(std::move(v_inflated));

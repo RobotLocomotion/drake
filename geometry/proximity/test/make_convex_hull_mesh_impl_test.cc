@@ -471,6 +471,71 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
       ".*all vertices in the mesh appear to be co-linear.*colinear.obj.");
 }
 
+GTEST_TEST(MakeConvexHullMeshTest, CubeWithHoleWithMargin) {
+  const double margin = 0.01;
+  const double scale = 2.0;
+  const PolyMesh expected = MakeCube(scale + margin);
+
+  const PolyMesh dut = MakeConvexHull(
+      FindResourceOrThrow("drake/geometry/test/cube_with_hole.obj"), scale,
+      margin);
+
+  MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
+GTEST_TEST(MakeConvexHullMeshTest, DisjointMeshWithMargin) {
+  const double margin = 0.01;
+  const double scale = 2.0;
+  const PolyMesh expected = MakeCube(scale + margin);
+
+  const PolyMesh dut = MakeConvexHull(
+      FindResourceOrThrow("drake/geometry/test/cube_corners.obj"), scale,
+      margin);
+
+  MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
+GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
+  const double margin = 0.01;
+  const double scale = 2.0;
+
+  // We look at the one tilted face on the original mesh.
+  Vector3d c(scale / 3.0, scale / 3.0, scale / 3.0);  // Face's centroid.
+  const double d = c.norm();                          // Distance to the origin.
+  const Vector3d n = c.normalized();                  // Face's normal.
+
+  // We take a look at the original vertex with coordinates p = (0, 0, L). By
+  // symmetry we know that the other two are (L, 0, 0) and (0, L, 0) (plus the
+  // origin). We then work with pz. All faces move margin along their normal.
+  // Then the inflated point pz moves to p̃ = (-δ, -δ, L̃). The equation of the
+  // tilted plane is n⋅p=d+δ, with normal n and distance d computed above.
+  // Substituting p̃ = (-δ, -δ, L̃) allows us to compute L̃:
+  //  L̃ = (d + δ⋅(nx+ny)) / nz.
+  const double length = (d + margin * (1 + n(0) + n(1))) / n(2);
+  // Create an inflated surface mesh corresponding to the tet in
+  // one_tetrahedron.vtk.
+
+  // clang-format off
+  const PolyMesh expected({
+      3, 0, 1, 3,
+      3, 0, 2, 1,
+      3, 0, 3, 2,
+      3, 1, 2, 3
+    }, {
+      Vector3d(-margin, -margin, -margin),
+      Vector3d(length, -margin, -margin),
+      Vector3d(-margin,  length, -margin),
+      Vector3d(-margin, -margin,  length)
+    });
+  // clang-format on
+
+  const PolyMesh dut = MakeConvexHull(
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), scale,
+      margin);
+
+  MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
