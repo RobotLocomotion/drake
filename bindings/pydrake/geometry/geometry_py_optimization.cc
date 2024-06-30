@@ -743,13 +743,18 @@ void DefineGeometryOptimization(py::module m) {
         .def("set", &GraphOfConvexSets::Vertex::set, py_rvp::reference_internal,
             vertex_doc.set.doc)
         .def("AddCost",
-            py::overload_cast<const symbolic::Expression&>(
+            py::overload_cast<const symbolic::Expression&,
+                const std::unordered_set<GraphOfConvexSets::Transcription>&>(
                 &GraphOfConvexSets::Vertex::AddCost),
-            py::arg("e"), vertex_doc.AddCost.doc_expression)
+            py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
+            vertex_doc.AddCost.doc_expression)
         .def("AddCost",
-            py::overload_cast<const solvers::Binding<solvers::Cost>&>(
+            py::overload_cast<const solvers::Binding<solvers::Cost>&,
+                const std::unordered_set<GraphOfConvexSets::Transcription>&>(
                 &GraphOfConvexSets::Vertex::AddCost),
-            py::arg("binding"), vertex_doc.AddCost.doc_binding)
+            py::arg("binding"),
+            py::arg("use_in_transcription") = all_transcriptions,
+            vertex_doc.AddCost.doc_binding)
         .def("AddConstraint",
             overload_cast_explicit<solvers::Binding<solvers::Constraint>,
                 const symbolic::Formula&,
@@ -766,6 +771,7 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("use_in_transcription") = all_transcriptions,
             vertex_doc.AddConstraint.doc_binding)
         .def("GetCosts", &GraphOfConvexSets::Vertex::GetCosts,
+            py::arg("used_in_transcription") = all_transcriptions,
             vertex_doc.GetCosts.doc)
         .def("GetConstraints", &GraphOfConvexSets::Vertex::GetConstraints,
             py::arg("used_in_transcription") = all_transcriptions,
@@ -806,13 +812,18 @@ void DefineGeometryOptimization(py::module m) {
                 -> const VectorX<symbolic::Variable> { return self.xv(); },
             edge_doc.xv.doc)
         .def("AddCost",
-            py::overload_cast<const symbolic::Expression&>(
+            py::overload_cast<const symbolic::Expression&,
+                const std::unordered_set<GraphOfConvexSets::Transcription>&>(
                 &GraphOfConvexSets::Edge::AddCost),
-            py::arg("e"), edge_doc.AddCost.doc_expression)
+            py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
+            edge_doc.AddCost.doc_expression)
         .def("AddCost",
-            py::overload_cast<const solvers::Binding<solvers::Cost>&>(
+            py::overload_cast<const solvers::Binding<solvers::Cost>&,
+                const std::unordered_set<GraphOfConvexSets::Transcription>&>(
                 &GraphOfConvexSets::Edge::AddCost),
-            py::arg("binding"), edge_doc.AddCost.doc_binding)
+            py::arg("binding"),
+            py::arg("use_in_transcription") = all_transcriptions,
+            edge_doc.AddCost.doc_binding)
         .def("AddConstraint",
             overload_cast_explicit<solvers::Binding<solvers::Constraint>,
                 const symbolic::Formula&,
@@ -834,6 +845,7 @@ void DefineGeometryOptimization(py::module m) {
             &GraphOfConvexSets::Edge::ClearPhiConstraints,
             edge_doc.ClearPhiConstraints.doc)
         .def("GetCosts", &GraphOfConvexSets::Edge::GetCosts,
+            py::arg("used_in_transcription") = all_transcriptions,
             edge_doc.GetCosts.doc)
         .def("GetConstraints", &GraphOfConvexSets::Edge::GetConstraints,
             py::arg("used_in_transcription") = all_transcriptions,
