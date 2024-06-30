@@ -1,0 +1,28 @@
+# -*- bazel -*-
+
+package(default_visibility = ["//visibility:public"])
+
+# We maintain a different filegroup for each subdirectory of the repository,
+# and only once we have vetted the license (in the main LICENSE file).
+#
+# DO NOT ADD new subdirectories here unless and until you vet their LICENSE.
+
+filegroup(
+    name = "google_robot",
+    srcs = [
+        "google_robot/robot.xml",
+        "google_robot/LICENSE",
+    ] + glob([
+        "google_robot/assets/*.obj",
+        "google_robot/assets/*.png",
+        "google_robot/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "kuka_iiwa_14",
+    srcs = [
+        "kuka_iiwa_14/iiwa14.xml",
+        "kuka_iiwa_14/LICENSE",
+    ] + glob(["kuka_iiwa_14/assets/*.obj"]),
+)
