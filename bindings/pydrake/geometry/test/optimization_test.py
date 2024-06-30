@@ -815,13 +815,18 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(source.name(), "source")
         self.assertIsInstance(source.x()[0], Variable)
         self.assertIsInstance(source.set(), mut.Point)
-        var, binding = source.AddCost(e=1.0+source.x()[0])
+        var, binding = source.AddCost(
+            e=1.0+source.x()[0],
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        var, binding = source.AddCost(binding=binding)
+        var, binding = source.AddCost(
+            binding=binding,
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        self.assertEqual(len(source.GetCosts()), 2)
+        self.assertEqual(len(source.GetCosts(
+            used_in_transcription={kMIP, kRelaxation, kRestriction})), 2)
         binding = source.AddConstraint(f=(source.x()[0] <= 1.0))
         self.assertIsInstance(binding, Binding[Constraint])
         binding = source.AddConstraint(
@@ -882,13 +887,19 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(edge0.phi(), Variable)
         self.assertIsInstance(edge0.xu()[0], Variable)
         self.assertIsInstance(edge0.xv()[0], Variable)
-        var, binding = edge0.AddCost(e=1.0+edge0.xu()[0])
+        var, binding = edge0.AddCost(
+            e=1.0+edge0.xu()[0],
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        var, binding = edge0.AddCost(binding=binding)
+        var, binding = edge0.AddCost(
+            binding=binding,
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        self.assertEqual(len(edge0.GetCosts()), 2)
+        self.assertEqual(len(edge0.GetCosts(
+            used_in_transcription={kMIP, kRelaxation, kRestriction}
+            )), 2)
         binding = edge0.AddConstraint(f=(edge0.xu()[0] == edge0.xv()[0]))
         self.assertIsInstance(binding, Binding[Constraint])
         binding = edge0.AddConstraint(
