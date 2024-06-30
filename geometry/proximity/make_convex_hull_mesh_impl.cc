@@ -27,6 +27,8 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 
+#include <iostream>
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -74,7 +76,7 @@ std::vector<int> OrderPolyVertices(const std::vector<Vector3d>& vertices,
   /* Given the direction v_C0 (direction from center vertex to vertex 0), define
    the angle between v_C0 and v_CI for all vertices. We'll then sort the
    vertices on the angle and get a counter-clockwise winding. */
-  const Vector3d v_C0 = (vertices[0] - center).normalized();
+  const Vector3d v_C0 = (vertices[v_indices[0]] - center).normalized();
   std::vector<VertexScore> scored_vertices;
   scored_vertices.reserve(v_indices.size());
   for (int vi : v_indices) {
@@ -320,15 +322,18 @@ class ConvexHull {
     for (auto& facet : qhull_.facetList()) {
       // QHull doesn't necessarily order the vertices in the winding we want.
       const Vector3d normal(facet.hyperplane().coordinates());
+      DRAKE_DEMAND(std::abs(normal.norm()-1.0) < 1.0e-14);
       const double d = -facet.hyperplane().offset();  // distance to origin.
       Vector4d h = (Vector4d() << normal, d).finished();
-      if (d < 0) h = -h;  // Ensure outwards normal.
+      DRAKE_DEMAND(d > 0);   // Demand a normal pointing away from the origin.
+      //if (d < 0) h = -h;  // Ensure outwards normal.
       hyperplanes.push_back(h);
     }
     return hyperplanes;
   }
 
-  PolygonSurfaceMesh<double> MakePolygonSurfaceMesh() const {
+  PolygonSurfaceMesh<double> MakePolygonSurfaceMesh(
+      const Vector3d& offset) const {
     // The default mapping from qhull to convex hull mesh is simply a copy.
     std::function<Vector3d(double, double, double)> map_hull_vertex =
         [](double x, double y, double z) {
@@ -379,6 +384,8 @@ class ConvexHull {
                      });
       // QHull doesn't necessarily order the vertices in the winding we want.
       const Vector3d normal(facet.hyperplane().coordinates());
+      const double distance = -facet.hyperplane().offset();
+      DRAKE_DEMAND(distance >= 0);  // Normal away from origin.
       const Vector3d center(facet.getCenter().coordinates());
       std::vector<int> ordered_vertices =
           OrderPolyVertices(vertices_M, mesh_indices, center, normal);
@@ -388,6 +395,12 @@ class ConvexHull {
       face_data.insert(face_data.end(), ordered_vertices.begin(),
                        ordered_vertices.end());
     }
+
+    // Apply offset.
+    for (auto& p : vertices_M) {
+      p += offset;
+    }
+
     return PolygonSurfaceMesh(std::move(face_data), std::move(vertices_M));
   }
 
@@ -408,7 +421,7 @@ PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
   // convex hull. This is a mathematical pre-requisite to work with the dual
   // below. We'll remove the offset on the output mesh.
   Vector3d offset = Vector3d::Zero();
-  if (!is_planar && margin != 0) {
+  if (!is_planar) { // && margin != 0
     // Compute offset.
     for (const auto& p : cloud.vertices) {
       offset += p;
@@ -424,8 +437,8 @@ PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
   ConvexHull hull(std::move(cloud));
 
   // We do not apply margin to planar clouds.
-  if (is_planar || margin == 0) {
-    return hull.MakePolygonSurfaceMesh();
+  if (is_planar) { // || margin == 0
+    return hull.MakePolygonSurfaceMesh(offset);
   }
 
   // Vertices in the dual of the (inflated) original geometry.
@@ -456,14 +469,14 @@ PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
   }
 
   // Remove offset.
-  for (auto& p : v_inflated) {
-    p += offset;
-  }
+  //for (auto& p : v_inflated) {
+  //  p += offset;
+  //}
 
   // Convex hull of the inflated geometry.
   ConvexHull inflated_hull(std::move(v_inflated));
 
-  return inflated_hull.MakePolygonSurfaceMesh();
+  return inflated_hull.MakePolygonSurfaceMesh(offset);
 }
 
 }  // namespace internal

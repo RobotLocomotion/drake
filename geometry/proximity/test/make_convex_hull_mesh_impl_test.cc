@@ -14,6 +14,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 
+#include<iostream>
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -115,6 +117,9 @@ MATCHER_P(NearVertex, tolerance, "") {
 
 void MeshesAreEquivalent(const CanonicalMesh& dut,
                          const CanonicalMesh& expected, double tolerance) {
+  for (auto& p : dut.vertices()){
+    std::cout << fmt::format("p: {}\n", fmt_eigen(p.transpose()));
+  }
   // The Pointwise matcher compares dut and expected element-wise. The
   // comparison operator is the NearVertex matcher that requires the distance
   // between the two points to be less than tolerance.
