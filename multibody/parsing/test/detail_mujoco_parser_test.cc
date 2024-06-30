@@ -117,10 +117,10 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))};
 };
 
-class GymModelTest : public MujocoParserTest,
-                     public testing::WithParamInterface<const char*> {};
+class DeepMindControlTest : public MujocoParserTest,
+                            public testing::WithParamInterface<const char*> {};
 
-TEST_P(GymModelTest, GymModel) {
+TEST_P(DeepMindControlTest, DeepMindControl) {
   // Confirm successful parsing of the MuJoCo models in the DeepMind control
   // suite.
   std::string model{GetParam()};
@@ -134,13 +134,38 @@ TEST_P(GymModelTest, GymModel) {
   warning_records_.clear();
 }
 
-const char* gym_models[] = {
+const char* dm_control_models[] = {
     "acrobot",  "cartpole",   "cheetah",      "finger",  "fish",
     "hopper",   "humanoid",   "humanoid_CMU", "lqr",     "manipulator",
     "pendulum", "point_mass", "quadruped",    "reacher", "stacker",
     "swimmer",  "walker"};
-INSTANTIATE_TEST_SUITE_P(GymModels, GymModelTest,
-                         testing::ValuesIn(gym_models));
+INSTANTIATE_TEST_SUITE_P(DeepMindControl, DeepMindControlTest,
+                         testing::ValuesIn(dm_control_models));
+
+class MujocoMenagerieTest : public MujocoParserTest,
+                            public testing::WithParamInterface<const char*> {};
+
+TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
+  // Confirm successful parsing of the MuJoCo models in the DeepMind control
+  // suite.
+  std::string model{GetParam()};
+  const std::string filename = FindResourceOrThrow(
+      fmt::format("drake/multibody/parsing/mujoco_menagerie/{}.xml", model));
+  AddModelFromFile(filename, model);
+
+  EXPECT_TRUE(plant_.HasModelInstanceNamed(model));
+
+  // For this test, ignore all warnings.
+  warning_records_.clear();
+}
+
+const char* mujoco_menagerie_models[] = {"google_robot/robot",
+                                         "kuka_iiwa_14/iiwa14"};
+// TODO(russt): Add the remaining models, once they can be parsed correctly, as
+// tracked in #20444.
+
+INSTANTIATE_TEST_SUITE_P(MujocoMenagerie, MujocoMenagerieTest,
+                         testing::ValuesIn(mujoco_menagerie_models));
 
 // In addition to confirming that the parser can successfully parse the model,
 // this test can be used to manually inspect the resulting visualization.

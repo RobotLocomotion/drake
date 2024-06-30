@@ -10,7 +10,7 @@ namespace multibody {
 /** Computes the SpatialInertia of a body made up of a homogeneous material
  (of given `density` in kg/m³) uniformly distributed in the volume of the given
  `shape`.
- 
+
  The `shape` is defined in its canonical frame S and the body in frame B. The
  two frames are coincident and aligned (i.e., X_SB = I).
 
@@ -31,6 +31,10 @@ namespace multibody {
                  given `shape`.
  @throws std::exception if `shape` is an instance of geometry::HalfSpace or
                         geometry::MeshcatCone.
+ @throws std::exception if the resulting spatial inertia computation does not
+                        result in a physically meaningful value. See
+                        SpatialInertia::IsPhysicallyValid() for more
+                        information.
  @pydrake_mkdoc_identifier{shape} */
 SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
                                           double density);

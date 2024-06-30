@@ -17,6 +17,10 @@ load(
     "//tools/workspace/dm_control_internal:files.bzl",
     "dm_control_mujoco_files",
 )
+load(
+    "//tools/workspace/mujoco_menagerie_internal:files.bzl",
+    "mujoco_menagerie_files",
+)
 
 filegroup(
     name = "test_models",
@@ -40,6 +44,18 @@ _DM_CONTROL_MUJOCO_FILES = forward_files(
     srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
     dest_prefix = "",
     strip_prefix = "@dm_control_internal//:",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+_MUJOCO_MENAGERIE_FILES = forward_files(
+    srcs = [
+        "@mujoco_menagerie_internal//:" +
+        x
+        for x in mujoco_menagerie_files()
+    ],
+    dest_prefix = "mujoco_menagerie/",
+    strip_prefix = "@mujoco_menagerie_internal//:",
     tags = ["manual"],
     visibility = ["//visibility:private"],
 )
@@ -652,7 +668,7 @@ drake_cc_googletest(
         ":test_models",
         "//geometry:test_obj_files",
         "//geometry:test_stl_files",
-    ] + _DM_CONTROL_MUJOCO_FILES,
+    ] + _DM_CONTROL_MUJOCO_FILES + _MUJOCO_MENAGERIE_FILES,
     deps = [
         ":detail_mujoco_parser",
         "//common:find_resource",
