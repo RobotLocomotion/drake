@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/find_runfiles.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -149,9 +150,10 @@ TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
   // Confirm successful parsing of the MuJoCo models in the DeepMind control
   // suite.
   std::string model{GetParam()};
-  const std::string filename = FindResourceOrThrow(
-      fmt::format("drake/multibody/parsing/mujoco_menagerie/{}.xml", model));
-  AddModelFromFile(filename, model);
+  const RlocationOrError rlocation = FindRunfile(
+      fmt::format("mujoco_menagerie_internal/{}.xml", model));
+  ASSERT_EQ(rlocation.error, "");
+  AddModelFromFile(rlocation.abspath, model);
 
   EXPECT_TRUE(plant_.HasModelInstanceNamed(model));
 
