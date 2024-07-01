@@ -251,6 +251,7 @@ class L1NormCost : public Cost {
    * Construct a cost of the form ‖Ax + b‖₁.
    * @param A Linear term.
    * @param b Constant term.
+   * @throw an exception if the size of A and b don't match.
    */
   L1NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
              const Eigen::Ref<const Eigen::VectorXd>& b);
@@ -305,6 +306,7 @@ class L2NormCost : public Cost {
    * Construct a cost of the form ‖Ax + b‖₂.
    * @param A Linear term.
    * @param b Constant term.
+   * @throw an exception if the size of A and b don't match.
    * @pydrake_mkdoc_identifier{dense_A}
    */
   L2NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -381,6 +383,7 @@ class LInfNormCost : public Cost {
    * Construct a cost of the form ‖Ax + b‖∞.
    * @param A Linear term.
    * @param b Constant term.
+   * @throw an exception if the size of A and b don't match.
    */
   LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                const Eigen::Ref<const Eigen::VectorXd>& b);
@@ -503,7 +506,7 @@ class EvaluatorCost : public Cost {
         evaluator_{evaluator},
         a_{std::nullopt},
         b_{0} {
-    DRAKE_DEMAND(evaluator->num_outputs() == 1);
+    DRAKE_THROW_UNLESS(evaluator->num_outputs() == 1);
   }
 
   /**
@@ -513,7 +516,7 @@ class EvaluatorCost : public Cost {
   EvaluatorCost(const std::shared_ptr<EvaluatorType>& evaluator,
                 const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0)
       : Cost(evaluator->num_vars()), evaluator_(evaluator), a_{a}, b_{b} {
-    DRAKE_DEMAND(evaluator->num_outputs() == a_->rows());
+    DRAKE_THROW_UNLESS(evaluator->num_outputs() == a_->rows());
   }
 
  protected:
