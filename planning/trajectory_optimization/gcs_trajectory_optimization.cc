@@ -278,8 +278,8 @@ Subgraph::Subgraph(
   A.setFromTriplets(tripletList.begin(), tripletList.end());
   for (int idx = 0; idx < ssize(edges_between_regions); ++idx) {
     // Add edge.
-    Vertex* u = vertices_[edges_between_regions[idx].first];
-    Vertex* v = vertices_[edges_between_regions[idx].second];
+    Vertex* u = vertices_.at(edges_between_regions[idx].first);
+    Vertex* v = vertices_.at(edges_between_regions[idx].second);
     Edge* uv_edge = traj_opt_.AddEdge(u, v);
 
     edges_.emplace_back(uv_edge);

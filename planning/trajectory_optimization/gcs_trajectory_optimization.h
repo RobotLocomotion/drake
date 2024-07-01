@@ -518,6 +518,8 @@ class GcsTrajectoryOptimization final {
   component of the affine map τ_uv in equation (11) of "Non-Euclidean Motion
   Planning with Graphs of Geodesically-Convex Sets", and per the discussion in
   Subsection VI A, τ_uv has no rotation component.
+  @throws std::exception if any index referenced in `edges_between_regions` is
+  outside the range [0, ssize(regions)).
   */
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
