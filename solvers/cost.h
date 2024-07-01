@@ -503,7 +503,7 @@ class EvaluatorCost : public Cost {
         evaluator_{evaluator},
         a_{std::nullopt},
         b_{0} {
-    DRAKE_DEMAND(evaluator->num_outputs() == 1);
+    DRAKE_THROW_UNLESS(evaluator->num_outputs() == 1);
   }
 
   /**
@@ -513,7 +513,7 @@ class EvaluatorCost : public Cost {
   EvaluatorCost(const std::shared_ptr<EvaluatorType>& evaluator,
                 const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0)
       : Cost(evaluator->num_vars()), evaluator_(evaluator), a_{a}, b_{b} {
-    DRAKE_DEMAND(evaluator->num_outputs() == a_->rows());
+    DRAKE_THROW_UNLESS(evaluator->num_outputs() == a_->rows());
   }
 
  protected:

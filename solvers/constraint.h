@@ -67,8 +67,8 @@ class Constraint : public EvaluatorBase {
         lower_bound_(lb),
         upper_bound_(ub) {
     check(num_constraints);
-    DRAKE_DEMAND(!lower_bound_.array().isNaN().any());
-    DRAKE_DEMAND(!upper_bound_.array().isNaN().any());
+    DRAKE_THROW_UNLESS(!lower_bound_.array().isNaN().any());
+    DRAKE_THROW_UNLESS(!upper_bound_.array().isNaN().any());
   }
 
   /**
@@ -94,19 +94,19 @@ class Constraint : public EvaluatorBase {
    */
   bool CheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
                       double tol = 1E-6) const {
-    DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
+    DRAKE_THROW_UNLESS(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }
 
   bool CheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
                       double tol = 1E-6) const {
-    DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
+    DRAKE_THROW_UNLESS(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }
 
   symbolic::Formula CheckSatisfied(
       const Eigen::Ref<const VectorX<symbolic::Variable>>& x) const {
-    DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
+    DRAKE_THROW_UNLESS(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x);
   }
 
@@ -233,8 +233,8 @@ class QuadraticConstraint : public Constraint {
         Q_((Q0 + Q0.transpose()) / 2),
         b_(b) {
     UpdateHessianType(hessian_type);
-    DRAKE_ASSERT(Q_.rows() == Q_.cols());
-    DRAKE_ASSERT(Q_.cols() == b_.rows());
+    DRAKE_THROW_UNLESS(Q_.rows() == Q_.cols());
+    DRAKE_THROW_UNLESS(Q_.cols() == b_.rows());
   }
 
   ~QuadraticConstraint() override {}
@@ -444,8 +444,8 @@ class RotatedLorentzConeConstraint : public Constraint {
         A_(A.sparseView()),
         A_dense_(A),
         b_(b) {
-    DRAKE_DEMAND(A_.rows() >= 3);
-    DRAKE_ASSERT(A_.rows() == b_.rows());
+    DRAKE_THROW_UNLESS(A_.rows() >= 3);
+    DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
   }
 
   /** Getter for A. */
