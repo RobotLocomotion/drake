@@ -517,6 +517,37 @@ void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
 }
 
 template <typename T>
+void System<T>::ExecuteForcedEvents(Context<T>* context,
+                                    bool publish) const {
+  auto discrete_updates = AllocateDiscreteVariables();
+  auto state = context->CloneState();
+
+  // Do unrestricted updates first.
+  if (get_forced_unrestricted_update_events().HasEvents()) {
+    const EventStatus status = CalcUnrestrictedUpdate(
+        *context, get_forced_unrestricted_update_events(), state.get());
+    status.ThrowOnFailure(__func__);
+    ApplyUnrestrictedUpdate(get_forced_unrestricted_update_events(),
+                            state.get(), context);
+  }
+  // Do restricted (discrete variable) updates next.
+  if (get_forced_discrete_update_events().HasEvents()) {
+    const EventStatus status = CalcDiscreteVariableUpdate(
+        *context, get_forced_discrete_update_events(),
+        discrete_updates.get());
+    status.ThrowOnFailure(__func__);
+    ApplyDiscreteVariableUpdate(get_forced_discrete_update_events(),
+                                discrete_updates.get(), context);
+  }
+  // Do any publishes last.
+  if (publish && get_forced_publish_events().HasEvents()) {
+    const EventStatus status =
+        Publish(*context, get_forced_publish_events());
+    status.ThrowOnFailure(__func__);
+  }
+}
+
+template <typename T>
 std::optional<PeriodicEventData>
     System<T>::GetUniquePeriodicDiscreteUpdateAttribute() const {
   std::optional<PeriodicEventData> saved_attr;
