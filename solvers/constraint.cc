@@ -644,6 +644,25 @@ std::string LinearComplementarityConstraint::DoToLatex(
                      symbolic::ToLatex((M_ * vars + q_).eval(), precision));
 }
 
+PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint(int rows)
+    : Constraint(rows, rows * rows, Eigen::VectorXd::Zero(rows),
+                 Eigen::VectorXd::Constant(
+                     rows, std::numeric_limits<double>::infinity())),
+      matrix_rows_(rows) {
+  // TODO(hongkai.dai): remove the warning when we change the solver backend.
+  if (matrix_rows_ == 1) {
+    drake::log()->warn(
+        "PositiveSemidefiniteConstraint: rows==1, please consider to "
+        "reformulating this as a linear inequality constraint for better "
+        "speed/numerics.");
+  } else if (matrix_rows_ == 2) {
+    drake::log()->warn(
+        "PositiveSemidefiniteConstraint: rows==2, please consider to "
+        "reformulating this as a rotated Lorentz cone constraint for better "
+        "speed/numerics.");
+  }
+}
+
 void PositiveSemidefiniteConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   DRAKE_THROW_UNLESS(x.rows() == num_constraints() * num_constraints());
@@ -715,6 +734,21 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
       F_{std::move(F)},
       matrix_rows_(F_.empty() ? 0 : F_.front().rows()) {
   DRAKE_THROW_UNLESS(!F_.empty());
+  // TODO(hongkai.dai): remove the warning when we change the solver backend.
+  if (matrix_rows_ == 1) {
+    drake::log()->warn(
+        "LinearMatrixInequalityConstraint: the matrix has size 1. Please "
+        "consider"
+        "reformulating this as a linear inequality constraint for better "
+        "speed/numerics.");
+  } else if (matrix_rows_ == 2) {
+    drake::log()->warn(
+        "LinearMatrixInequalityConstraint: the matrix has size 2. Please "
+        "consider "
+        "reformulating this as a rotated Lorentz cone constraint for better "
+        "speed/numerics.");
+  }
+
   set_bounds(Eigen::VectorXd::Zero(matrix_rows_),
              Eigen::VectorXd::Constant(
                  matrix_rows_, std::numeric_limits<double>::infinity()));

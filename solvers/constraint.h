@@ -922,6 +922,12 @@ class LinearComplementarityConstraint : public Constraint {
  * }@f]
  * namely, all eigen values of S are non-negative.
  *
+ * @note if the matix S has 1 row, then it is better to impose a linear
+ * inequality constraints; if it has 2 rows, then it is better to impose
+ * a rotated Lorentz cone constraint, since a 2 x 2 matrix S being p.s.d is
+ * equivalent to the constraint [S(0, 0), S(1, 1), S(0, 1)] in the rotated
+ * Lorentz cone.
+ *
  * @ingroup solver_evaluators
  */
 class PositiveSemidefiniteConstraint : public Constraint {
@@ -936,15 +942,18 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * constraint as a place holder in MathematicalProgram, to indicate the
    * positive semidefiniteness of some decision variables.
    * @param rows The number of rows (and columns) of the symmetric matrix.
+   * @note `rows` should be a positive integer. If `rows`==1 or `rows`==2, then
+   * consider imposing a linear inequality or rotated Lorentz cone constraint
+   * respectively.
    *
    * Example:
    * @code{.cc}
    * // Create a MathematicalProgram object.
    * auto prog = MathematicalProgram();
    *
-   * // Add a 2 x 2 symmetric matrix S to optimization program as new decision
+   * // Add a 3 x 3 symmetric matrix S to optimization program as new decision
    * // variables.
-   * auto S = prog.NewSymmetricContinuousVariables<2>("S");
+   * auto S = prog.NewSymmetricContinuousVariables<3>("S");
    *
    * // Impose a positive semidefinite constraint on S.
    * std::shared_ptr<PositiveSemidefiniteConstraint> psd_constraint =
@@ -957,8 +966,8 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * // Add the constraint that S(1, 0) = 1.
    * prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
    *
-   * // Minimize S(0, 0) + S(1, 1).
-   * prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
+   * // Minimize S(0, 0) + S(1, 1) + S(2, 2).
+   * prog.AddLinearCost(Eigen::RowVector3d(1, 1, 1), {S.diagonal()});
    *
    * /////////////////////////////////////////////////////////////
    *
@@ -970,8 +979,8 @@ class PositiveSemidefiniteConstraint : public Constraint {
    *
    * // Compute the eigen values of the solution, to see if they are
    * // all non-negative.
-   * Eigen::Vector4d S_stacked;
-   * S_stacked << S_value.col(0), S_value.col(1);
+   * Vector6d S_stacked;
+   * S_stacked << S_value.col(0), S_value.col(1), S_value.col(2);
    *
    * Eigen::VectorXd S_eigen_values;
    * psd_constraint->Eval(S_stacked, S_eigen_values);
@@ -980,11 +989,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * std::cout<<"The eigen value of S is " << S_eigen_values << std::endl;
    * @endcode
    */
-  explicit PositiveSemidefiniteConstraint(int rows)
-      : Constraint(rows, rows * rows, Eigen::VectorXd::Zero(rows),
-                   Eigen::VectorXd::Constant(
-                       rows, std::numeric_limits<double>::infinity())),
-        matrix_rows_(rows) {}
+  explicit PositiveSemidefiniteConstraint(int rows);
 
   ~PositiveSemidefiniteConstraint() override {}
 
@@ -1030,6 +1035,12 @@ class PositiveSemidefiniteConstraint : public Constraint {
  * @f]
  * where p.s.d stands for positive semidefinite.
  * @f$ F_0, F_1, ..., F_n @f$ are all given symmetric matrices of the same size.
+ *
+ * @note if the matrices Fᵢ all have 1 row, then it is better to impose a linear
+ * inequality constraints; if they all have 2 rows, then it is better to impose
+ * a rotated Lorentz cone constraint, since a 2 x 2 matrix X being p.s.d is
+ * equivalent to the constraint [X(0, 0), X(1, 1), X(0, 1)] in the rotated
+ * Lorentz cone.
  *
  * @ingroup solver_evaluators
  */
