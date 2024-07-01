@@ -496,7 +496,8 @@ class GcsTrajectoryOptimization final {
   @param edges_between_regions is a list of pairs of indices into the regions
   vector. For each pair representing an edge between two regions, an edge is
   added within the subgraph. Note that the edges are directed so (i,j) will only
-  add an edge from region i to region j.
+  add an edge from region i to region j. Throws if any index is outside of the
+  range [0, ssize(regions)).
   @param order is the order of the Bézier curve.
   @param h_max is the maximum duration to spend in a region (seconds). Some
   solvers struggle numerically with large values.
