@@ -2775,6 +2775,16 @@ class EventSugarTestSystem : public LeafSystem<double> {
     return num_second_unrestricted_update_;
   }
 
+  // Expected order is unrestricted[2], discrete[2], publish[2].
+  void CheckCounts(const std::array<int, 6> expected) {
+    EXPECT_EQ(num_unrestricted_update(), expected[0]);
+    EXPECT_EQ(num_second_unrestricted_update(), expected[1]);
+    EXPECT_EQ(num_discrete_update(), expected[2]);
+    EXPECT_EQ(num_second_discrete_update(), expected[3]);
+    EXPECT_EQ(num_publish(), expected[4]);
+    EXPECT_EQ(num_second_publish_handler_publishes(), expected[5]);
+  };
+
  private:
   EventStatus MyPublishHandler(const Context<double>& context) const {
     MySuccessfulPublishHandler(context);
@@ -2909,12 +2919,7 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   EXPECT_TRUE(status.succeeded());
   dut.ForcedPublish(*context);
 
-  EXPECT_EQ(dut.num_publish(), 5);
-  EXPECT_EQ(dut.num_second_publish_handler_publishes(), 1);
-  EXPECT_EQ(dut.num_discrete_update(), 5);
-  EXPECT_EQ(dut.num_second_discrete_update(), 1);
-  EXPECT_EQ(dut.num_unrestricted_update(), 5);
-  EXPECT_EQ(dut.num_second_unrestricted_update(), 1);
+  dut.CheckCounts({5, 1, 5, 1, 5, 1});
 }
 
 // Verify that user-initiated event APIs throw on handler failure.
@@ -2974,6 +2979,33 @@ GTEST_TEST(EventSugarTest, ForcedEventsDontThrowWhenNoFailure) {
   EXPECT_NO_THROW(successful.ExecuteInitializationEvents(&*successful_context));
   EXPECT_NO_THROW(
       terminating.ExecuteInitializationEvents(&*terminating_context));
+}
+
+GTEST_TEST(EventSugarTest, ForceEventsCanBeTriggered) {
+  EventSugarTestSystem successful(EventStatus::kSucceeded);
+  EventSugarTestSystem terminating(EventStatus::kReachedTermination);
+  EventSugarTestSystem failing(EventStatus::kFailed);
+  failing.set_name("should_fail");
+  auto successful_context = successful.CreateDefaultContext();
+  auto terminating_context = terminating.CreateDefaultContext();
+  auto failing_context = failing.CreateDefaultContext();
+
+  successful.ExecuteForcedEvents(&*successful_context);
+  successful.CheckCounts({1, 1, 1, 1, 1, 1});
+
+  // Do that again but without the publish events.
+  successful.ExecuteForcedEvents(&*successful_context, /*publish=*/ false);
+  successful.CheckCounts({2, 2, 2, 2, 1, 1});
+
+  // A "reached termination" return should be ignored.
+  terminating.ExecuteForcedEvents(&*terminating_context);
+  terminating.CheckCounts({1, 1, 1, 1, 1, 1});
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      failing.ExecuteForcedEvents(&*failing_context),
+      "ExecuteForcedEvents.*event handler.*"
+      "EventSugarTestSystem.*should_fail.*failed.*Something bad happened.*");
+  failing.CheckCounts({1, 0, 0, 0, 0, 0});  // 1st fails, halts processing.
 }
 
 // A System that does not override the default implicit time derivatives
