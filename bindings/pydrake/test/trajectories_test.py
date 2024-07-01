@@ -539,6 +539,9 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(traj.segment(segment_index=1),
                               PiecewisePolynomial)
 
+        traj = CompositeTrajectory.AlignAndConcatenate(segments=[pp1, pp2])
+        self.assertIsInstance(traj, CompositeTrajectory)
+
     @numpy_compare.check_all_types
     def test_quaternion_slerp(self, T):
         AngleAxis = AngleAxis_[T]
