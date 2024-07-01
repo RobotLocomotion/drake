@@ -446,7 +446,9 @@ class Mobilizer : public MultibodyElement<T> {
   // @param[in] context
   //   The context of the parent tree that owns this mobilizer. This
   //   mobilizer's generalized positions q and generalized velocities v are
-  //   taken from this context.
+  //   taken from this context. The mobilizer is FORBIDDEN from using any
+  //   state from the context other than q,v, and is FORBIDDEN from being
+  //   time- or input-dependent.
   // @param[in] vdot
   //   The vector of generalized velocities' time derivatives v̇. It must live
   //   in ℝⁿᵛ.
@@ -478,6 +480,8 @@ class Mobilizer : public MultibodyElement<T> {
   // @param[in] context
   //   The context of the parent tree that owns this mobilizer. This
   //   mobilizer's generalized positions q are stored in this context.
+  //   The mobilizer is FORBIDDEN from using any state from the context other
+  //   than q, and is FORBIDDEN from being time- or input-dependent.
   // @param[in] F_Mo_F
   //   A SpatialForce applied at `this` mobilizer's outboard frame origin `Mo`,
   //   expressed in the inboard frame F.

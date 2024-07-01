@@ -44,26 +44,21 @@ namespace multibody {
 // pre-finalize.
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
-using geometry::CollisionFilterDeclaration;
-using geometry::CollisionFilterScope;
-using geometry::ContactSurface;
-using geometry::FrameId;
-using geometry::FramePoseVector;
-using geometry::GeometryFrame;
-using geometry::GeometryId;
-using geometry::GeometryInstance;
-using geometry::GeometrySet;
-using geometry::PenetrationAsPointPair;
-using geometry::ProximityProperties;
-using geometry::SceneGraph;
-using geometry::SceneGraphInspector;
-using geometry::SourceId;
-using geometry::render::RenderLabel;
-using systems::DependencyTicket;
-using systems::InputPort;
-using systems::OutputPort;
-using systems::State;
-
+using drake::geometry::CollisionFilterDeclaration;
+using drake::geometry::CollisionFilterScope;
+using drake::geometry::ContactSurface;
+using drake::geometry::FrameId;
+using drake::geometry::FramePoseVector;
+using drake::geometry::GeometryFrame;
+using drake::geometry::GeometryId;
+using drake::geometry::GeometryInstance;
+using drake::geometry::GeometrySet;
+using drake::geometry::PenetrationAsPointPair;
+using drake::geometry::ProximityProperties;
+using drake::geometry::SceneGraph;
+using drake::geometry::SceneGraphInspector;
+using drake::geometry::SourceId;
+using drake::geometry::render::RenderLabel;
 using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
 using drake::multibody::MultibodyForces;
@@ -75,11 +70,14 @@ using drake::multibody::internal::ArticulatedBodyInertiaCache;
 using drake::multibody::internal::GeometryContactData;
 using drake::multibody::internal::PositionKinematicsCache;
 using drake::multibody::internal::VelocityKinematicsCache;
-using systems::BasicVector;
-using systems::Context;
-using systems::InputPort;
-using systems::InputPortIndex;
-using systems::OutputPortIndex;
+using drake::systems::BasicVector;
+using drake::systems::Context;
+using drake::systems::DependencyTicket;
+using drake::systems::InputPort;
+using drake::systems::InputPortIndex;
+using drake::systems::OutputPort;
+using drake::systems::OutputPortIndex;
+using drake::systems::State;
 
 namespace internal {
 // This is a helper struct used to estimate the parameters used in the penalty
