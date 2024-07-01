@@ -52,6 +52,13 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
     return *segments_[segment_index];
   }
 
+  /** Constructs a composite trajectory from a list of trajectories whose start
+  and end times may not coincide, by translating their start and end times.
+  @pre ∀i, `segments[i].rows() == segments[0].rows()` and segments[i].cols() ==
+  segments[0].cols()`. */
+  static CompositeTrajectory<T> AlignAndConcatenate(
+      std::vector<copyable_unique_ptr<Trajectory<T>>> segments);
+
  private:
   bool do_has_derivative() const final;
 
