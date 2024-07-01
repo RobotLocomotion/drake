@@ -30,8 +30,8 @@ DiscreteUpdateManager<T>::~DiscreteUpdateManager() = default;
 
 template <typename T>
 void DiscreteUpdateManager<T>::CalcDiscreteValues(
-    const systems::Context<T>& context,
-    systems::DiscreteValues<T>* updates) const {
+    const systems::Context<T>& context, systems::DiscreteValues<T>* updates,
+    DiscreteStepMemory::Data<T>* memory) const {
   // The discrete sampling of input ports needs to be the first step of a
   // discrete update.
   SampleDiscreteInputPortForces(context);
@@ -44,6 +44,18 @@ void DiscreteUpdateManager<T>::CalcDiscreteValues(
   }
   // Perform discrete updates for rigid bodies.
   DoCalcDiscreteValues(context, updates);
+
+  // XXX This is somewhat hacky version of memory. At minimum, we probably want
+  // to integrate it more directly into the underlying calculation functions, so
+  // that we don't have all the extra copying.
+  if (memory != nullptr) {
+    memory->net_actuation = EvalActuation(context);
+    memory->geometry_contact_data = EvalGeometryContactData(context);
+    CalcAccelerationKinematicsCache(context,
+                                    &memory->acceleration_kinematics_cache);
+    memory->discrete_contact_pairs = EvalDiscreteContactPairs(context);
+    memory->contact_solver_results = EvalContactSolverResults(context);
+  }
 }
 
 template <typename T>
@@ -132,21 +144,6 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.actuation = actuation_cache_entry.cache_index();
 
-  const auto& contact_results_cache_entry = DeclareCacheEntry(
-      "Contact results (discrete)",
-      systems::ValueProducer(this,
-                             &DiscreteUpdateManager<T>::CalcContactResults),
-      // TODO(#20545): this should include all_input_ports_ticket, but we can't
-      //  include it yet due to the cache entry hack introduced in #19225.
-      // MultibodyForces include contribution from force elements, which could
-      // involve user-injected dependencies. So we need to include all possible
-      // tickets that users can choose to depend on.
-      {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket(),
-       systems::System<T>::time_ticket(),
-       systems::System<T>::accuracy_ticket()});
-  cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
-
   // Cache discrete contact pairs.
   const auto& discrete_contact_pairs_cache_entry = DeclareCacheEntry(
       "Discrete contact pairs.",
@@ -156,22 +153,6 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
        systems::System<T>::all_parameters_ticket(), query_object_input_ticket});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
-
-  // Cache hydroelastic contact info.
-  if constexpr (scalar_predicate<T>::is_bool) {
-    const auto& hydroelastic_contact_info_cache_entry = DeclareCacheEntry(
-        "Hydroelastic contact info.",
-        systems::ValueProducer(
-            this, &DiscreteUpdateManager<T>::CalcHydroelasticContactInfo),
-        // TODO(#20545): this should include all_input_ports_ticket, but we
-        //  can't include it yet due to the cache entry hack introduced in
-        //  #19225.
-        {systems::System<T>::xd_ticket(),
-         systems::System<T>::all_parameters_ticket(),
-         contact_solver_results_cache_entry.ticket()});
-    cache_indexes_.hydroelastic_contact_info =
-        hydroelastic_contact_info_cache_entry.cache_index();
-  }
 
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
@@ -294,13 +275,12 @@ void DiscreteUpdateManager<T>::CalcNonContactForces(
 }
 
 template <typename T>
-const contact_solvers::internal::ContactSolverResults<T>&
+const ContactSolverResults<T>&
 DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {
   return plant()
       .get_cache_entry(cache_indexes_.contact_solver_results)
-      .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
-          context);
+      .template Eval<ContactSolverResults<T>>(context);
 }
 
 template <typename T>
@@ -500,38 +480,55 @@ template <typename T>
 void DiscreteUpdateManager<T>::CalcContactResults(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  const GeometryContactData<T>& geometry_contact_data =
+      EvalGeometryContactData(context);
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
+      EvalDiscreteContactPairs(context);
+  const ContactSolverResults<T>& solver_results =
+      EvalContactSolverResults(context);
+  CalcContactResultsImpl(geometry_contact_data, contact_pairs, solver_results,
+                         contact_results);
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::CalcContactResults(
+    const DiscreteStepMemory::Data<T>& memory,
+    ContactResults<T>* contact_results) const {
+  CalcContactResultsImpl(memory.geometry_contact_data,
+                         memory.discrete_contact_pairs,
+                         memory.contact_solver_results, contact_results);
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::CalcContactResultsImpl(
+    const GeometryContactData<T>& geometry_contact_data,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
+    ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  plant().ValidateContext(context);
   contact_results->Clear();
   contact_results->set_plant(&plant());
-
-  switch (plant().get_contact_model()) {
-    case ContactModel::kPoint:
-      AppendContactResultsForPointContact(context, contact_results);
-      break;
-    case ContactModel::kHydroelastic:
-      AppendContactResultsForHydroelasticContact(context, contact_results);
-      break;
-    case ContactModel::kHydroelasticWithFallback:
-      AppendContactResultsForPointContact(context, contact_results);
-      AppendContactResultsForHydroelasticContact(context, contact_results);
-      break;
-  }
-  AppendContactResultsForDeformableContact(context, contact_results);
+  AppendContactResultsForPointContact(geometry_contact_data, contact_pairs,
+                                      solver_results, contact_results);
+  AppendContactResultsForHydroelasticContact(
+      geometry_contact_data, contact_pairs, solver_results, contact_results);
+  AppendContactResultsForDeformableContact(geometry_contact_data, contact_pairs,
+                                           solver_results, contact_results);
 }
 
 template <typename T>
 void DiscreteUpdateManager<T>::AppendContactResultsForPointContact(
-    const drake::systems::Context<T>& context,
+    const GeometryContactData<T>& geometry_contact_data,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      EvalGeometryContactData(context).point_pairs;
-  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
-      EvalDiscreteContactPairs(context);
-  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
-      EvalContactSolverResults(context);
+      geometry_contact_data.point_pairs;
+  if (point_pairs.empty()) {
+    return;
+  }
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -579,38 +576,38 @@ void DiscreteUpdateManager<T>::AppendContactResultsForPointContact(
 
 template <typename T>
 void DiscreteUpdateManager<T>::AppendContactResultsForHydroelasticContact(
-    const drake::systems::Context<T>& context,
+    const GeometryContactData<T>& geometry_contact_data,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
     ContactResults<T>* contact_results) const {
-  const std::vector<HydroelasticContactInfo<T>>& contact_info =
-      EvalHydroelasticContactInfo(context);
-
-  for (const HydroelasticContactInfo<T>& info : contact_info) {
-    // Note: caching dependencies guarantee that the lifetime of `info` is
-    // valid for the lifetime of the contact results.
-    contact_results->AddContactInfo(&info);
+  if constexpr (scalar_predicate<T>::is_bool) {
+    std::vector<HydroelasticContactInfo<T>> all;
+    CalcHydroelasticContactInfo(geometry_contact_data, contact_pairs,
+                                solver_results, &all);
+    contact_results->SetContactInfo(std::move(all));
   }
 }
 
 template <typename T>
 void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
-    const systems::Context<T>& context,
+    const GeometryContactData<T>& geometry_contact_data,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
     std::vector<HydroelasticContactInfo<T>>* contact_info) const
   requires scalar_predicate<T>::is_bool
 {  // NOLINT(whitespace/braces)
   DRAKE_DEMAND(contact_info != nullptr);
-  const std::vector<ContactSurface<T>>& all_surfaces =
-      EvalGeometryContactData(context).surfaces;
-
   contact_info->clear();
+
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      geometry_contact_data.surfaces;
+  if (all_surfaces.empty()) {
+    return;
+  }
+
   // Reserve memory here to keep from repeatedly allocating heap storage in the
   // loop below.
   contact_info->reserve(all_surfaces.size());
-
-  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
-      EvalDiscreteContactPairs(context);
-
-  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
-      EvalContactSolverResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -695,23 +692,18 @@ void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
 }
 
 template <typename T>
-const std::vector<HydroelasticContactInfo<T>>&
-DiscreteUpdateManager<T>::EvalHydroelasticContactInfo(
-    const systems::Context<T>& context) const {
-  return plant()
-      .get_cache_entry(cache_indexes_.hydroelastic_contact_info)
-      .template Eval<std::vector<HydroelasticContactInfo<T>>>(context);
-}
-
-template <typename T>
 void DiscreteUpdateManager<T>::AppendContactResultsForDeformableContact(
-    const drake::systems::Context<T>& context,
+    const GeometryContactData<T>& geometry_contact_data,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
       std::vector<DeformableContactInfo<T>> contact_info;
-      deformable_driver_->CalcDeformableContactInfo(context, &contact_info);
+      deformable_driver_->CalcDeformableContactInfo(
+          geometry_contact_data.deformable, contact_pairs, solver_results,
+          &contact_info);
       for (DeformableContactInfo<T>& info : contact_info) {
         contact_results->AddContactInfo(std::move(info));
       }
@@ -722,7 +714,8 @@ void DiscreteUpdateManager<T>::AppendContactResultsForDeformableContact(
           "Computation of contact results for deformable bodies is not "
           "supported for scalars other than `double`.");
     }
-    unused(context, contact_results);
+    unused(geometry_contact_data, contact_pairs, solver_results,
+           contact_results);
   }
 }
 
@@ -1193,14 +1186,6 @@ const VectorX<T>& DiscreteUpdateManager<T>::EvalActuation(
   return plant()
       .get_cache_entry(cache_indexes_.actuation)
       .template Eval<VectorX<T>>(context);
-}
-
-template <typename T>
-const ContactResults<T>& DiscreteUpdateManager<T>::EvalContactResults(
-    const systems::Context<T>& context) const {
-  return plant()
-      .get_cache_entry(cache_indexes_.contact_results)
-      .template Eval<ContactResults<T>>(context);
 }
 
 template <typename T>

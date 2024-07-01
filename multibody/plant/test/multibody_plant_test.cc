@@ -1741,21 +1741,33 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
   // Write down the expected direct-feedthrough status for all ports. Use
   // strings (not indices) so that developers can understand test failures.
   // The order we list the ports here matches the MbP header file overview.
+  const bool is_sampled = plant.has_sampled_output_ports();
   const std::vector<std::pair<std::string, bool>> manifest{
       {"state", false},
       {"body_poses", false},
       {"body_spatial_velocities", false},
       {"spatial_velocities", false},  // Deprecated synonym 2024-10-01.
-      {"body_spatial_accelerations", true},
-      {"spatial_accelerations", true},  // Deprecated synonym 2024-10-01.
-      {"generalized_acceleration", true},
-      {"net_actuation", true},
-      {"reaction_forces", true},
-      {"contact_results", true},
+      {"body_spatial_accelerations", !is_sampled},
+      {"spatial_accelerations", !is_sampled},  // Deprecated synonym 2024-10-01.
+      {"generalized_acceleration", !is_sampled},
+      {"net_actuation", !is_sampled},
+      {"reaction_forces", !is_sampled},
+      {"contact_results", !is_sampled},
+      // Grey group.
       {"{instance}_state", false},
-      {"{instance}_generalized_acceleration", true},
-      {"{instance}_net_actuation", true},
-      {"{instance}_generalized_contact_forces", !plant.is_discrete()},
+      {"{instance}_generalized_acceleration", !is_sampled},
+      {"{instance}_net_actuation", !is_sampled},
+      {"{instance}_generalized_contact_forces", !is_sampled},
+      // Purple group; ONLY these ports should be marked unconditionally true.
+      {"body_spatial_accelerations_unsampled", true},
+      {"generalized_acceleration_unsampled", true},
+      {"net_actuation_unsampled", true},
+      {"reaction_forces_unsampled", true},
+      {"contact_results_unsampled", true},
+      {"{instance}_generalized_acceleration_unsampled", true},
+      {"{instance}_net_actuation_unsampled", true},
+      {"{instance}_generalized_contact_forces_unsampled", true},
+      // Green group.
       {"geometry_pose", false},
       {"deformable_body_configuration", false},
   };
@@ -4571,11 +4583,16 @@ GTEST_TEST(MultibodyPlantTests, ActuationPorts) {
 // because contact forces do not depend on the external force input ports in
 // continuous mode.
 GTEST_TEST(MultibodyPlantTests, AlgebraicLoopDetection) {
-  std::vector<double> time_steps = {0.0, 1.0e-3};
-  for (double dt : time_steps) {
+  std::vector<std::pair<double, bool>> dt_and_sampled = {
+      {0.0, false},
+      {1e-3, true},
+      {1e-3, false},
+  };
+  for (const auto& [dt, sampled] : dt_and_sampled) {
     systems::DiagramBuilder<double> builder;
     MultibodyPlant<double>* plant =
         builder.AddSystem<MultibodyPlant<double>>(dt);
+    plant->SetUseSampledOutputPorts(sampled);
     const char kSdfUrl[] =
         "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
     Parser parser(plant);
@@ -4593,18 +4610,15 @@ GTEST_TEST(MultibodyPlantTests, AlgebraicLoopDetection) {
         diagram->CreateDefaultContext();
     const systems::Context<double>& plant_context =
         plant->GetMyContextFromRoot(*diagram_context);
+    const auto& output_port = plant->get_generalized_contact_forces_output_port(
+        default_model_instance());
     if (dt == 0.0) {
-      EXPECT_NO_THROW(plant
-                          ->get_generalized_contact_forces_output_port(
-                              default_model_instance())
-                          .Eval(plant_context));
+      EXPECT_NO_THROW(output_port.Eval(plant_context));
+    } else if (sampled) {
+      EXPECT_NO_THROW(output_port.Eval(plant_context));
     } else {
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          plant
-              ->get_generalized_contact_forces_output_port(
-                  default_model_instance())
-              .Eval(plant_context),
-          "Algebraic loop detected.*");
+      DRAKE_EXPECT_THROWS_MESSAGE(output_port.Eval(plant_context),
+                                  "Algebraic loop detected.*");
     }
   }
 }

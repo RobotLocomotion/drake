@@ -8,6 +8,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_fixed_constraint.h"
 #include "drake/multibody/contact_solvers/schur_complement.h"
@@ -156,11 +157,12 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
       std::vector<contact_solvers::internal::FixedConstraintKinematics<T>>*
           result) const;
 
-  /* Computes the contact information for all deformable bodies for the given
-   `context`.
+  /* Computes the contact information for all deformable bodies.
    @pre contact_info != nullptr. */
   void CalcDeformableContactInfo(
-      const systems::Context<T>& context,
+      const geometry::internal::DeformableContact<T>& deformable_contact,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+      const contact_solvers::internal::ContactSolverResults<T>& solver_results,
       std::vector<DeformableContactInfo<T>>* contact_info) const;
 
   /* Evaluates FemState at the next time step for each deformable body and
