@@ -1320,8 +1320,14 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
           path_vertex_ids.pop_back();
           new_path.pop_back();
           // Since this code requires result.is_success() to be true, we should
-          // always have a path. We assert that..
-          DRAKE_ASSERT(path_vertex_ids.size() > 0);
+          // always have a path. We assert that...
+          if (path_vertex_ids.size() == 0) {
+            throw std::runtime_error(
+                "Cannot find a valid solution path, even though "
+                "result.is_success() is true. This could be due to tighter "
+                "constraint tolerances on the rounding solution than the "
+                "relaxation solution.");
+          }
           continue;
         }
         Eigen::VectorXd candidate_flows(candidate_edges.size());
