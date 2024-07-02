@@ -346,6 +346,57 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "hwy_dynamic",
+    srcs = ["hwy_dynamic.cc"],
+    hdrs = [
+        "hwy_dynamic.h",
+        "hwy_dynamic_impl.h",
+    ],
+    defines = [
+        # Highway automatically compiles our code that uses it for multiple CPU
+        # targets, so that the code is tuned as best as possible for the user's
+        # CPU that it will run on.
+        #
+        # By default Highway compiles to a ~dozen different CPU targets, but
+        # in practice Drake only cares about a few of them. We'll disable the
+        # default list of targets and write down the CPUs we care about one by
+        # one so that the test / support burden is better matched to our needs.
+        #
+        # Highway represents target sets using a bitmask. Each target is given
+        # a single bit (e.g., '#define HWY_AVX2 (1LL << 9)'). To express a set
+        # of targets (e.g., to set HWY_DISABLED_TARGETS) we must binary-or the
+        # per-target constants together.
+        #
+        # Highway only offers a deny-list for targets, so we'll need to deny
+        # everything and then un-deny what we want to allow. Per De Morgan's
+        # law, an ENABLE list folded over OR is the same as the negation of the
+        # same list folded over NAND; to end up with a DISABLE list, we can
+        # just drop the outermost negation, i.e., ENABLE list folded over NAND.
+        "HWY_DISABLED_TARGETS=(" + "&".join([
+            "(~({}))".format(name)
+            for name in [
+                # We must always provide a portable fallback.
+                "HWY_BASELINE_SCALAR",
+                # x86: SIMD with 256-bit lanes and FMA.
+                "HWY_AVX2",
+                # x86: SIMD with the improved 512VL encodings.
+                # TODO(jwnimmer-tri) Enable this once we support opt-out of CPU
+                # targets via NPY_DISABLE_CPU_FEATURES environment variable.
+                # "HWY_AVX3",
+                # arm: SIMD that has fixed 256-bit lanes.
+                # TODO(jwnimmer-tri) Enable this once we can test it.
+                # "HWY_SVE_256",
+            ]
+        ]) + ")",
+    ],
+    internal = True,
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
     deps = [
@@ -841,6 +892,29 @@ drake_cc_googletest(
     name = "hash_test",
     deps = [
         ":hash",
+    ],
+)
+
+drake_cc_library(
+    name = "hwy_dynamic_test_array_mul",
+    testonly = True,
+    srcs = ["test/hwy_dynamic_test_array_mul.cc"],
+    hdrs = ["test/hwy_dynamic_test_array_mul.h"],
+    textual_hdrs = ["test/hwy_dynamic_test_array_mul.cc"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":hwy_dynamic",
+        "@highway_internal//:hwy",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hwy_dynamic_test",
+    deps = [
+        ":hwy_dynamic",
+        ":hwy_dynamic_test_array_mul",
+        "//common/test_utilities:eigen_matrix_compare",
+        "@highway_internal//:hwy_test_util",
     ],
 )
 
