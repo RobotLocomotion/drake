@@ -23,6 +23,7 @@ from pydrake.geometry import (
     Sphere,
     optimization,
 )
+from pydrake.multibody.all import ContactResults
 from pydrake.math import RigidTransform
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 
@@ -30,7 +31,7 @@ from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     """
     Given a SceneGraph and a view plane, provides a view of the robot by
-    projecting all geometry onto the view plane.
+    projecting all geometry and contact information onto the view plane.
 
     This is intended to be used for robots that operate in the plane, but
     should render any robot approximately correctly. It has the following
@@ -65,10 +66,14 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     xlim and ylim don't technically provide extra functionality, but it's
     easier to keep handling scaling with xlim, ylim, and view plane selection
     and *maybe* offsetting with the projection matrix.
+
+    Will render contact if constructor `contact` flag is set to true and the
+    corresponding contact port is connected.
     """
 
     def __init__(self,
                  scene_graph,
+                 contact=False,
                  draw_period=None,
                  T_VW=np.array([[1., 0., 0., 0.],
                                 [0., 0., 1., 0.],
@@ -83,6 +88,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         """
         Args:
             scene_graph: A SceneGraph object.
+            contact: boolean flag for contact visualization, default set to
+                False
             draw_period: The rate at which this class publishes to the
                 visualizer.  When None, a suitable default will be used.
             T_VW: The view projection matrix from world to view coordinates.
@@ -96,8 +103,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 will be the same color.)
             substitute_collocated_mesh_files: If True, then a mesh file
                 specified with an unsupported filename extension may be
-                replaced by a file of the same base name in the same
-                directory, but with a supported filename extension.
+                replaced by a file of the same base name in the same directory,
+                but with a supported filename extension.
             ax: If supplied, the visualizer will draw onto those axes instead
                 of creating a new set of axes. The visualizer will still change
                 the view range and figure size of those axes.
@@ -118,6 +125,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
         self._geometry_query_input_port = self.DeclareAbstractInputPort(
             "geometry_query", Value(QueryObject()))
+        self._contact_results_input_port = self.DeclareAbstractInputPort(
+            "contact_results", Value(ContactResults()))
 
         self.ax.axis('equal')
         self.ax.axis('off')
@@ -158,8 +167,24 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 # Then update the vertices for a more accurate initial draw.
                 self._update_body_fill_verts(body_fill, patch_V)
 
+        self._contact_flag = contact
+        # create matplotlib plots to visualise contacts and contact forces only
+        # if contact flag is provided
+        if self._contact_flag:
+            self._contacts = self.ax.plot([], [], 'bo', ms=5)[0]
+            self._contact_forces = []
+            for i in range(10):
+                self._contact_forces.append(
+                    self.ax.plot([],
+                                 [],
+                                 'g-',
+                                 ms=5)[0])
+
     def get_geometry_query_input_port(self):
         return self._geometry_query_input_port
+
+    def get_contact_results_input_port(self):
+        return self._contact_results_input_port
 
     @staticmethod
     def frame_name(frame_id, inspector):
@@ -354,6 +379,34 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         patch_V = patch_V[:2, :]
         return patch_V
 
+    def _contact_force_projection(self, contact_points, contact_forces):
+        """
+        Internal function that projects 3D force information, contact and force
+        magnitude onto the 2D visualization plane
+        """
+
+        # visualising contact points
+        contact_aug = np.vstack((contact_points, np.ones((
+            1, contact_points.shape[1]))))
+        point_2d = self._T_VW @ contact_aug
+        point_2d[0, :] /= point_2d[2, :]
+        point_2d[1, :] /= point_2d[2, :]
+        point_2d = point_2d[:2, :]
+
+        # visualising contact forces
+        contact_force_vis_points = contact_points + contact_forces
+        contact_force_vis_aug = np.vstack((contact_force_vis_points, np.ones
+                                           ((1,
+                                             contact_force_vis_points.shape[1]
+                                             ))))
+        contact_vis_2d = self._T_VW @ contact_force_vis_aug
+
+        contact_vis_2d[0, :] /= contact_vis_2d[2, :]
+        contact_vis_2d[1, :] /= contact_vis_2d[2, :]
+        contact_vis_2d = contact_vis_2d[:2, :]
+
+        return point_2d, contact_vis_2d
+
     def _update_body_fill_verts(self, body_fill, patch_V):
         """
         Takes a convex hull if necessary and uses in-place replacement of
@@ -376,6 +429,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     def draw(self, context):
         """Overrides base with the implementation."""
         query_object = self._geometry_query_input_port.Eval(context)
+        if self._contact_flag:
+            contact_results = self._contact_results_input_port.Eval(context)
         inspector = query_object.inspector()
 
         view_dir = np.cross(self._T_VW[0, :3], self._T_VW[1, :3])
@@ -396,14 +451,65 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 body_fill.zorder = X_WB.translation() @ view_dir
         self.ax.set_title('t = {:.1f}'.format(context.get_time()))
 
+        # contact visualisation
+        # draws the corresponding contact information onto plt figure
+        if self._contact_flag:
+            points = []
+            forces = []
+            # extract contact information
+            for id in range(contact_results.num_point_pair_contacts()):
+                point_contact_info = contact_results.point_pair_contact_info(
+                    id)
+                points.append(point_contact_info.contact_point())
+                forces.append(point_contact_info.contact_force())
+            for id in range(contact_results.num_hydroelastic_contacts()):
+                contact_info = contact_results.hydroelastic_contact_info(id)
+                surface_data = contact_info.contact_surface()
+                # extracts only translational force
+                spatial_force = contact_info.F_Ac_W().translational()
+                points.append(surface_data.centroid())
+                forces.append(spatial_force)
+
+            if len(points) == 0:
+                return
+            if len(forces) == 0:
+                print("no contact forces")
+                return
+            # experimental scaling down of forces for visualisation
+            # TODO: (@kamiradi) forces are randomly scaled down to visualise
+            # them on the matplotlib figure, maybe another way to do this?
+
+            # project 3D to 2D
+            contact_plt, contact_force = self._contact_force_projection(
+                np.asarray(points).transpose(),
+                np.asarray(forces).transpose()*0.05
+            )
+
+            # update contact points data for visualization
+            self._contacts.set_xdata(contact_plt[0, :])
+            self._contacts.set_ydata(contact_plt[1, :])
+
+            # hard coded only 10 contact force lines
+            if contact_plt.shape[1] >= 10:
+                contact_plt = contact_plt[:, :10]
+                contact_force = contact_force[:, :10]
+
+            # update contact force information for visualization
+            for i in range(contact_force.shape[1]):
+                self._contact_forces[i].set_data(
+                    [contact_plt[0, i], contact_force[0, i]],
+                    [contact_plt[1, i], contact_force[1, i]])
+
 
 def ConnectPlanarSceneGraphVisualizer(builder,
                                       scene_graph,
                                       output_port=None,
+                                      contact_port=None,
                                       **kwargs):
     """Creates an instance of PlanarSceneGraphVisualizer, adds it to the
     diagram, and wires the scene_graph pose bundle output port to the input
-    port of the visualizer.  Provides an interface comparable to
+    port of the visualizer. Optionally, contact_port - on provision - is wired
+    to the visualizer. Provides an interface comparable to
     DrakeVisualizer.AddToBuilder.
 
     Args:
@@ -416,6 +522,9 @@ def ConnectPlanarSceneGraphVisualizer(builder,
             when the SceneGraph is inside a Diagram, and we must connect the
             exposed port to the visualizer instead of the original SceneGraph
             port.
+        contact_port: (optional) If not None, then contact_port will be
+            connected to the visualizer's input port. If not provided, contacts
+            are not visualized.
 
         Additional kwargs are passed through to the PlanarSceneGraphVisualizer
         constructor.
@@ -423,11 +532,28 @@ def ConnectPlanarSceneGraphVisualizer(builder,
     Returns:
         The newly created PlanarSceneGraphVisualizer object.
     """
-    visualizer = builder.AddSystem(
-        PlanarSceneGraphVisualizer(scene_graph, **kwargs))
-
     if output_port is None:
         output_port = scene_graph.get_query_output_port()
 
-    builder.Connect(output_port, visualizer.get_geometry_query_input_port())
+    if contact_port is None:
+        visualizer = builder.AddSystem(
+            PlanarSceneGraphVisualizer(
+                scene_graph,
+                contact=False,
+                **kwargs))
+        builder.Connect(
+            output_port,
+            visualizer.get_geometry_query_input_port())
+    else:
+        visualizer = builder.AddSystem(
+            PlanarSceneGraphVisualizer(scene_graph,
+                                       contact=True,
+                                       **kwargs))
+        builder.Connect(
+            output_port,
+            visualizer.get_geometry_query_input_port())
+        builder.Connect(
+            contact_port,
+            visualizer.get_contact_results_input_port())
+
     return visualizer
