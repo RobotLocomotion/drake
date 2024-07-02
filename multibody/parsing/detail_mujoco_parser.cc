@@ -13,6 +13,8 @@
 #include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/geometry/proximity/obb.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -426,7 +428,33 @@ class MujocoParser {
       if (mesh_inertia_->contains(name_)) {
         M_GG_G_ = mesh_inertia_->at(name_);
       } else {
-        M_GG_G_ = CalcSpatialInertia(mesh, 1.0 /* density */);
+        try {  // # Per #21666, CalcSpatialInertia can fail and throw an
+               // exception for reasons that are very difficult to predetermine.
+          M_GG_G_ = CalcSpatialInertia(mesh, 1.0 /* density */);
+        } catch (const std::exception& e) {
+          // Fall back to using the volume of the oriented bounding box.
+
+          const geometry::TriangleSurfaceMesh<double>& surface_mesh =
+              geometry::ReadObjToTriangleSurfaceMesh(mesh.filename(),
+                                                     mesh.scale());
+          std::set<int> v;
+          for (int i = 0; i < surface_mesh.num_vertices(); ++i) {
+            v.insert(v.end(), i);
+          }
+
+          const geometry::internal::Obb obb =
+              geometry::internal::ObbMaker(surface_mesh, v).Compute();
+          UnitInertia<double> unit_M_GBox_Box =
+              multibody::UnitInertia<double>::SolidBox(
+                  obb.half_width()[0] * 2.0, obb.half_width()[1] * 2.0,
+                  obb.half_width()[2] * 2.0);
+          UnitInertia<double> unit_M_GG_G =
+              unit_M_GBox_Box.ReExpress(obb.pose().rotation())
+                  .ShiftFromCenterOfMass(-obb.pose().translation());
+          M_GG_G_ =
+              SpatialInertia<double>(obb.CalcVolume() /* since density = 1.0 */,
+                                     obb.center(), unit_M_GG_G);
+        }
         mesh_inertia_->insert_or_assign(name_, M_GG_G_);
       }
     }
@@ -573,15 +601,16 @@ class MujocoParser {
         }
         double length = (fromto.head<3>() - fromto.tail<3>()).norm();
         geom.shape = std::make_unique<geometry::Capsule>(size[0], length);
-
       } else {
         if (size.size() < 2) {
-          Error(*node,
-                "The size attribute for capsule geom must have at least two "
-                "elements.");
-          return geom;
+          // Allow zero-radius capsules (the MJCF default size is 0 0 0); they
+          // are equivalent to a zero-radius sphere.
+          geom.shape = std::make_unique<geometry::Sphere>(0.0);
+          compute_inertia = false;
+        } else {
+          geom.shape =
+              std::make_unique<geometry::Capsule>(size[0], 2 * size[1]);
         }
-        geom.shape = std::make_unique<geometry::Capsule>(size[0], 2 * size[1]);
       }
     } else if (type == "ellipsoid") {
       if (has_fromto) {

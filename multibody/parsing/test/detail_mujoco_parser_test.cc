@@ -161,9 +161,9 @@ TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
   warning_records_.clear();
 }
 
-const char* mujoco_menagerie_models[] = {"google_robot/robot",
-                                         "kuka_iiwa_14/iiwa14",
-                                         "rethink_robotics_sawyer/sawyer"};
+const char* mujoco_menagerie_models[] = {
+    "google_robot/robot", "kuka_iiwa_14/iiwa14", "realsense_d435i/d435i",
+    "rethink_robotics_sawyer/sawyer"};
 // TODO(russt): Add the remaining models, once they can be parsed correctly, as
 // tracked in #20444.
 
@@ -551,6 +551,7 @@ TEST_F(MujocoParserTest, GeometryProperties) {
           class="default_rgba"/>
     <geom name="no_collision" contype="0" conaffinity="0" />
     <geom name="no_visual" size="0.1" group="3" />
+    <geom name="default-sized capsule" type="capsule" />
   </worldbody>
 </mujoco>
 )""";
@@ -635,6 +636,15 @@ TEST_F(MujocoParserTest, GeometryProperties) {
           &inspector.GetShape(no_collision_id));
   ASSERT_NE(no_collision_shape, nullptr);
   EXPECT_EQ(no_collision_shape->radius(), 0.0);
+
+    // Confirm that the default capsule parses to a zero-radius sphere.
+  GeometryId default_capsule_id = inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kIllustration, "default-sized capsule");
+  const geometry::Sphere* default_capsule_shape =
+      dynamic_cast<const geometry::Sphere*>(
+          &inspector.GetShape(default_capsule_id));
+  ASSERT_NE(default_capsule_shape, nullptr);
+  EXPECT_EQ(default_capsule_shape->radius(), 0.0);
 }
 
 TEST_F(MujocoParserTest, Include) {
@@ -1473,7 +1483,6 @@ TEST_F(MujocoParserTest, GeomErrors) {
   <worldbody>
     <body>
       <geom/>
-      <geom type="capsule"/>
       <geom type="capsule" fromto="1 2 3 4 5 6"/>
       <geom type="ellipsoid"/>
       <geom type="ellipsoid" fromto="1 2 3 4 5 6"/>
@@ -1502,8 +1511,6 @@ TEST_F(MujocoParserTest, GeomErrors) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(
       ".*hfield.*unsupported.*ignored.*"));
 
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*size.*capsule.*must have.*two elements.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(
       ".*size.*capsule.*fromto.*must have.*one element.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(
