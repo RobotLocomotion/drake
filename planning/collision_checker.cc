@@ -828,6 +828,18 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
     // Start by assuming the whole edge is fine; we'll whittle away at it.
     alpha.store(1.0);
 
+    // This is a manual implementation of the core behavior of
+    // std::atomic<T>::fetch_min from C++26, and can be replaced with fetch_min
+    // once available.
+    const auto fetch_min = [](std::atomic<double>* existing, double value) {
+      double stored = existing->load();
+      while (value < stored) {
+        if (existing->compare_exchange_weak(stored, value)) {
+          break;
+        }
+      }
+    };
+
     const auto step_range_work = [&](const ThreadWorkRange& work_range) {
       for (int64_t step = work_range.GetRangeStart();
            step < work_range.GetRangeEnd(); ++step) {
@@ -846,15 +858,7 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
             // and now, another thread may have proven a *lower* alpha is
             // invalid; we need an atomic min of our current alpha and the
             // stored alpha.
-            // This is a manual implementation of the behavior of
-            // std::atomic<T>::fetch_min from C++26, and can be replaced with
-            // fetch_min once available.
-            double stored_alpha = alpha.load();
-            while (possible_alpha < stored_alpha) {
-              if (alpha.compare_exchange_weak(stored_alpha, possible_alpha)) {
-                break;
-              }
-            }
+            fetch_min(&alpha, possible_alpha);
             // Stop because we have found a colliding configuration.
             break;
           }
