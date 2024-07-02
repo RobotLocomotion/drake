@@ -1,0 +1,35 @@
+#- * - python - * -
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "sparse_grid",
+    srcs = [
+        "sparse_grid.cc",
+    ],
+    hdrs = [
+        "sparse_grid.h",
+    ],
+    deps = [
+        "//tools/workspace/spgrid:spgrid",
+    ],
+)
+
+# drake_cc_googletest(
+#     name = "sparse_grid_test",
+#     deps = [
+#         ":sparse_grid",
+#     ],
+# )
+
+add_lint_tests()

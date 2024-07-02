@@ -1,0 +1,14 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+cc_library(
+    name = "spgrid",
+    srcs = glob(["**/*.cpp"]),
+    hdrs = glob(["**/*.h"]),
+    include_prefix = "SPGrid/Core",
+    includes = ["."],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+)
+
+add_lint_tests()
