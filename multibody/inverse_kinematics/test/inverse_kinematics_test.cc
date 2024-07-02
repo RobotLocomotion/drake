@@ -5,6 +5,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/math/wrap_to.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
@@ -637,6 +638,46 @@ TEST_F(TwoFreeSpheresTest, MinimumDistanceUpperBoundConstraintTest) {
   // Now set the two spheres separated at the initial guess, and solve again.
   // TODO(hongkai.dai): SNOPT can solve the problem but IPOPT doesn't. I need to
   // investigate into it.
+}
+
+GTEST_TEST(InverseKinematicsTest, DistanceRelatedConstraintError) {
+  // If we pass in an incorrect plant or plant_context, and impose
+  // distance-related constraints, then we should get a meaningful error
+  // message.
+  // The plant is not registered with a scene graph.
+  auto plant = ConstructIiwaPlant(
+      "package://drake_models/iiwa_description/sdf/"
+      "iiwa14_polytope_collision.sdf",
+      0.01);
+  InverseKinematics dut(*plant);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.AddMinimumDistanceLowerBoundConstraint(0.01),
+      ".*MultibodyPlant has not registered with a SceneGraph yet.*");
+}
+
+TEST_F(TwoFreeSpheresTest, IncorrectPlantContext) {
+  // If InverseKinematics is constructed with incorrect plant context which
+  // doesn't support distance queries, and we impose distance-related
+  // constraints, then we should receive a meaningful error message.
+
+  {
+    // No plant context
+    InverseKinematics ik(*plant_double_);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ik.AddMinimumDistanceLowerBoundConstraint(0.1),
+        ".*check if the correct plant_context is passed "
+        "in the constructor of InverseKinematics.*");
+  }
+
+  {
+    // Wrong plant context
+    auto plant_context = plant_double_->CreateDefaultContext();
+    InverseKinematics ik(*plant_double_, plant_context.get());
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ik.AddMinimumDistanceLowerBoundConstraint(0.1),
+        ".*check if the correct plant_context is passed "
+        "in the constructor of InverseKinematics.*");
+  }
 }
 }  // namespace multibody
 }  // namespace drake
