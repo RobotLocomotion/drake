@@ -233,15 +233,21 @@ class GraphOfConvexSets {
     @verbatim
     min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x)
     @endverbatim
+    @param use_in_transcription specifies the components of the problem to
+    which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
     @returns the pair <ℓ, g(x)>.
     @throws std::exception if e.GetVariables() is not a subset of x().
-    @pydrake_mkdoc_identifier{expression}
+    @throws std::exception if no transcription is specified.
+     @pydrake_mkdoc_identifier{expression}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
-        const symbolic::Expression& e);
+        const symbolic::Expression& e,
+        const std::unordered_set<Transcription>& use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Adds a cost to this vertex.  @p binding must contain *only* elements of
     x() as variables. For technical reasons relating to being able to "turn-off"
@@ -250,15 +256,21 @@ class GraphOfConvexSets {
     @verbatim
     min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x)
     @endverbatim
+    @param use_in_transcription specifies the components of the problem to
+    which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
     @returns the pair <ℓ, g(x)>.
     @throws std::exception if binding.variables() is not a subset of x().
+    @throws std::exception if no transcription is specified.
     @pydrake_mkdoc_identifier{binding}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
-        const solvers::Binding<solvers::Cost>& binding);
+        const solvers::Binding<solvers::Cost>& binding,
+        const std::unordered_set<Transcription>& use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Adds a constraint to this vertex.
     @param f must contain *only* elements of x() as variables.
@@ -290,10 +302,15 @@ class GraphOfConvexSets {
             Transcription::kMIP, Transcription::kRelaxation,
             Transcription::kRestriction});
 
-    /** Returns all costs on this vertex. */
-    const std::vector<solvers::Binding<solvers::Cost>>& GetCosts() const {
-      return costs_;
-    }
+    /** Returns costs on this vertex.
+    @param used_in_transcription specifies the components of the problem from
+    which the constraint should be retrieved.
+    @throws std::exception if no transcription is specified.
+    */
+    std::vector<solvers::Binding<solvers::Cost>> GetCosts(
+        const std::unordered_set<Transcription>& used_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction}) const;
 
     /** Returns constraints on this vertex.
     @param used_in_transcription specifies the components of the problem from
@@ -337,7 +354,9 @@ class GraphOfConvexSets {
     const VectorX<symbolic::Variable> placeholder_x_{};
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
-    std::vector<solvers::Binding<solvers::Cost>> costs_{};
+    std::vector<std::pair<solvers::Binding<solvers::Cost>,
+                          std::unordered_set<Transcription>>>
+        costs_{};
     std::vector<std::pair<solvers::Binding<solvers::Constraint>,
                           std::unordered_set<Transcription>>>
         constraints_;
@@ -412,15 +431,21 @@ class GraphOfConvexSets {
     @verbatim
     min g(xu, xv) ⇒ min ℓ, s.t. ℓ ≥ g(xu,xv)
     @endverbatim
+    @param use_in_transcription specifies the components of the problem to
+    which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
     @returns the pair <ℓ, g(xu, xv)>.
     @throws std::exception if e.GetVariables() is not a subset of xu() ∪ xv().
+    @throws std::exception if no transcription is specified.
     @pydrake_mkdoc_identifier{expression}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
-        const symbolic::Expression& e);
+        const symbolic::Expression& e,
+        const std::unordered_set<Transcription>& use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Adds a cost to this edge.  @p binding must contain *only* elements of
     xu() and xv() as variables. For technical reasons relating to being able to
@@ -429,16 +454,22 @@ class GraphOfConvexSets {
     @verbatim
     min g(xu, xv) ⇒ min ℓ, s.t. ℓ ≥ g(xu,xv)
     @endverbatim
+    @param use_in_transcription specifies the components of the problem to
+    which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
     @returns the pair <ℓ, g(xu, xv)>.
     @throws std::exception if binding.variables() is not a subset of xu() ∪
     xv().
+    @throws std::exception if no transcription is specified.
     @pydrake_mkdoc_identifier{binding}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
-        const solvers::Binding<solvers::Cost>& binding);
+        const solvers::Binding<solvers::Cost>& binding,
+        const std::unordered_set<Transcription>& use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Adds a constraint to this edge.
     @param f must contain *only* elements of xu() and xv() as variables.
@@ -485,10 +516,15 @@ class GraphOfConvexSets {
     /** Removes any constraints added with AddPhiConstraint. */
     void ClearPhiConstraints();
 
-    /** Returns all costs on this edge. */
-    const std::vector<solvers::Binding<solvers::Cost>>& GetCosts() const {
-      return costs_;
-    }
+    /** Returns costs on this edge.
+    @param used_in_transcription specifies the components of the problem from
+    which the constraint should be retrieved.
+    @throws std::exception if no transcription is specified.
+    */
+    std::vector<solvers::Binding<solvers::Cost>> GetCosts(
+        const std::unordered_set<Transcription>& used_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction}) const;
 
     /** Returns constraints on this edge.
     @param used_in_transcription specifies the components of the problem from
@@ -539,7 +575,9 @@ class GraphOfConvexSets {
     std::unordered_map<symbolic::Variable, symbolic::Variable> x_to_yz_{};
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
-    std::vector<solvers::Binding<solvers::Cost>> costs_{};
+    std::vector<std::pair<solvers::Binding<solvers::Cost>,
+                          std::unordered_set<Transcription>>>
+        costs_{};
     std::vector<std::pair<solvers::Binding<solvers::Constraint>,
                           std::unordered_set<Transcription>>>
         constraints_;
