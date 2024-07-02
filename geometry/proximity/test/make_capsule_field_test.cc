@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/make_capsule_mesh.h"
+#include "drake/geometry/proximity/sample_volume_field.h"
 
 namespace drake {
 namespace geometry {
@@ -78,6 +79,37 @@ TEST_P(MakeCapsuleFieldTest, CheckMinMaxBoundaryValue) {
       MakeCapsulePressureField<double>(capsule, &mesh, kElasticModulus);
 
   CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
+}
+
+GTEST_TEST(MakeCapsuleFieldTest, MakeCapsuleFieldTestWithMargin) {
+  const double kEps = std::numeric_limits<double>::epsilon();
+  const double kMargin = 1.5e-3;
+  const double radius = 0.5;
+  const double length = 2.0;
+  // Number of vertices per circular rim of the capsule.
+  const int n = 8;  // Coarse capsule, enough for coverage.
+  const double resolution_hint = 2.0 * M_PI * radius / n;
+
+  const Capsule capsule(radius, length);
+  const Capsule inflated_capsule(radius + kMargin, length);
+  const auto mesh = MakeCapsuleVolumeMesh<double>(capsule, resolution_hint);
+  const auto inflated_mesh =
+      MakeCapsuleVolumeMesh<double>(inflated_capsule, resolution_hint);
+
+  const double kElasticModulus = 1.0e5;
+  const VolumeMeshFieldLinear<double, double> pressure_field =
+      MakeCapsulePressureField<double>(inflated_capsule, &inflated_mesh,
+                                       kElasticModulus, kMargin);
+
+  // Verify pressure is zero when evaluated on the surface of the original
+  // sphere.
+  std::vector<int> boundary_vertex_indices =
+      CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
+  for (int v : boundary_vertex_indices) {
+    const Vector3d& p = mesh.vertex(v);
+    const double pressure = SampleVolumeFieldOrThrow(pressure_field, p);
+    EXPECT_NEAR(pressure / kElasticModulus, 0.0, 2.0 * kEps);
+  }
 }
 
 }  // namespace

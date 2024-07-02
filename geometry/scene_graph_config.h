@@ -25,6 +25,7 @@ struct DefaultProximityProperties {
     a->Visit(DRAKE_NVP(static_friction));
     a->Visit(DRAKE_NVP(hunt_crossley_dissipation));
     a->Visit(DRAKE_NVP(relaxation_time));
+    a->Visit(DRAKE_NVP(margin));
     a->Visit(DRAKE_NVP(point_stiffness));
     ValidateOrThrow();
   }
@@ -87,6 +88,43 @@ struct DefaultProximityProperties {
   /** Controls energy damping from contact, *only for*
   multibody::DiscreteContactApproximation::kSap. Units are seconds. */
   std::optional<double> relaxation_time;
+
+  /** (Advanced) Specifies a thin layer of thickness "margin" (in meters) around
+   each geometry. Two bodies with margins δ₁ and δ₂ are considered for contact
+   resolution whenever their distance is within δ₁ + δ₂. That is, contact
+   constraints are added for objects at a distance smaller than δ₁ + δ₂.
+
+   If the thin margin layer of two objects overlaps, there will be no contact
+   nor contact forces. However, contact constraints will be added allowing our
+   discrete contact solvers to predict if a contact "will" occur at the next
+   time step. This leads to additional time coherence and stability.
+   Analytical studies of stability show that a value of 0.1 mm to 1.0 mm is more
+   than enough for most robotics applications. This is not an
+   "action-at-a-distance" trick, there is no contact when the thin margin layers
+   of two objects overlap. The margin is simply a "cheap" mechanism to avoid
+   significantly more complex and costly strategies such as Continuous Collision
+   Detection.
+
+   @warning Currently this is only implemented for the hydroelastic model and
+   not for point contact.
+
+   @note For primitive shapes, margin is implemented such that the original
+   geometry is not modified. For meshes however, margin effectively "shrinks"
+   the geometry of an object inwards by a magnitude equal to the margin. This is
+   as we had "shaved-off" a thin layer of thickness `margin` all around the
+   surface of the object. Since the margin is meant to be small, this is usually
+   negligible in most cases. Recall you can still overwrite this default value
+   of margin for each geometry through its ProximityProperties. The margin can
+   be zero, effectively removing its effect. While global value between 0.1 mm
+   to 1.0 mm should satisfy most users, users can set the margin on a per
+   geometry basis for instance for thin or very small objects.
+
+   @note Larger values of margin can be effective at minimizing and even
+   eliminating some pass through problems. However, larger margins will lead to
+   a higher count of constraints and therefore a more expensive proximity
+   computation and contact resolution phases. Moreover, the shrinking of mesh
+   models can be too excessive for large margin values. **/
+  std::optional<double> margin{0.0};
   /// @}
 
   /** @name Point Contact Properties

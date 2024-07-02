@@ -93,6 +93,7 @@ class SoftMesh {
  */
 struct SoftHalfSpace {
   double pressure_scale;
+  double margin;
   // TODO(SeanCurtis-TRI): Possibly add a customizable pressure function in the
   //  future; one that isn't simply the scaled, normalized penetration distance.
 };
