@@ -63,7 +63,7 @@ _logger = logging.getLogger("drake")
 
 _DEFAULT_MESHCAT_PARAMS = MeshcatParams(
     host="localhost",
-    show_stats_plot=False,
+    show_stats_plot=True,
 )
 
 
@@ -201,7 +201,7 @@ class _ViewerApplet:
 
     def __init__(self, *, meshcat, path, alpha_slider_name,
                  should_accept_link=None, start_visible=True,
-                 initial_alpha_value=1):
+                 initial_alpha_value=1, dispatch_rtr=False):
         """Constructs an applet.
 
         If should_accept_link is given, only links where
@@ -222,6 +222,9 @@ class _ViewerApplet:
         self._applet_name = alpha_slider_name
         self._start_visible = start_visible
         self._geom_paths = []
+
+        self._dispatch_rtr = dispatch_rtr
+        self._prior_times = None
 
         # Initialize ourself with an empty load message.
         self.on_viewer_load(message=lcmt_viewer_load_robot())
@@ -291,6 +294,14 @@ class _ViewerApplet:
             link_path = f"{self._path}/{robot_num}/{link_name}"
             pose = _to_pose(message.position[i], message.quaternion[i])
             self._meshcat.SetTransform(path=link_path, X_ParentPath=pose)
+        if self._dispatch_rtr:
+            sim_time = message.timestamp * 1e-3
+            wall_time = time.time()
+            if self._prior_times is not None:
+                sim_delta = sim_time - self._prior_times[0]
+                wall_delta = wall_time - self._prior_times[1]
+                self._meshcat.SetRealtimeRate(sim_delta / wall_delta)
+            self._prior_times = (sim_time, wall_time)
         if self._waiting_for_first_draw_message:
             self._waiting_for_first_draw_message = False
             self._build_links()
@@ -744,10 +755,12 @@ class Meldis:
         def is_not_inertia_link(link_name):
             return not is_inertia_link(link_name)
 
+        # Only the default viewer handles realtime rate.
         default_viewer = _ViewerApplet(meshcat=self.meshcat,
                                        path="/DRAKE_VIEWER",
                                        alpha_slider_name="Viewer",
-                                       should_accept_link=is_not_inertia_link)
+                                       should_accept_link=is_not_inertia_link,
+                                       dispatch_rtr=True)
         self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT",
                         message_type=lcmt_viewer_load_robot,
                         handler=default_viewer.on_viewer_load)
