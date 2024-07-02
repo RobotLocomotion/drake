@@ -47,7 +47,7 @@ namespace internal {
 // `X_FM` as a function of the generalized coordinates associated with that
 // mobilizer.
 //
-// In summary, there will a %BodyNode for each RigidBody in the MultibodyTree
+// In summary, there will a BodyNode for each RigidBody in the MultibodyTree
 // which encompasses:
 //
 // - a body B in a given MultibodyTree,
@@ -1400,9 +1400,9 @@ class BodyNode : public MultibodyElement<T> {
   friend class BodyNodeTester;
 
   // Returns the index to the parent RigidBody of the RigidBody associated with
-  // this node. For the root node, corresponding to the world body, this method
-  // returns an invalid body index. Attempts to using invalid indexes leads to
-  // an exception being thrown in Debug builds.
+  // this node. For the root node, corresponding to the world RigidBody, this
+  // method returns an invalid BodyIndex. Attempts to using invalid indexes
+  // leads to an exception being thrown in Debug builds.
   BodyIndex get_parent_body_index() const { return topology_.parent_rigid_body;}
 
   // =========================================================================
@@ -1410,8 +1410,10 @@ class BodyNode : public MultibodyElement<T> {
   // Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const systems::Context<T>& context) const {
-    return this->get_parent_tree().get_state_segment(context,
-        topology_.mobilizer_velocities_start_in_state,
+    const MultibodyTree<T>& tree = this->get_parent_tree();
+    return tree.get_state_segment(
+        context,
+        tree.num_positions() + topology_.mobilizer_velocities_start_in_v,
         topology_.num_mobilizer_velocities);
   }
 

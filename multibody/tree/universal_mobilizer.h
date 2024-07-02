@@ -53,9 +53,10 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting
   // two rotational degrees of freedom corresponding to angles θ₁, θ₂ as
   // described in this class's documentation.
-  UniversalMobilizer(const Frame<T>& inboard_frame_F,
+  UniversalMobilizer(const SpanningForest::Mobod& mobod,
+                     const Frame<T>& inboard_frame_F,
                      const Frame<T>& outboard_frame_M)
-      : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
+      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   ~UniversalMobilizer() final;
 

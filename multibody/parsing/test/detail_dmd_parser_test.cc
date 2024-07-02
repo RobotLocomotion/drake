@@ -304,7 +304,7 @@ directives:
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseModelDirectives(directives),
-      ".*already has a joint .* connecting 'dummy' to 'ball'.*");
+      ".*already has.*joint.*connecting.*dummy.*ball.*");
 }
 
 }  // namespace
