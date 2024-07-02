@@ -67,4 +67,4 @@ if ! command -v pip3.12 &>/dev/null; then
   exit 2
 fi
 
-pip3.12 install --break-system-packages -r "${BASH_SOURCE%/*}/requirements.txt"
+pip3.12 install --disable-pip-version-check --break-system-packages --ignore-installed -r "${BASH_SOURCE%/*}/requirements.txt"
