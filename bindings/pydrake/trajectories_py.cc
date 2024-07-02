@@ -10,6 +10,7 @@
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/common/trajectories/derivative_trajectory.h"
 #include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
+#include "drake/common/trajectories/function_handle_trajectory.h"
 #include "drake/common/trajectories/path_parameterized_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_pose.h"
@@ -330,6 +331,22 @@ struct Impl {
       cls  // BR
           .def(py::init<const Trajectory<T>&, int>(), py::arg("nominal"),
               py::arg("derivative_order") = 1, cls_doc.ctor.doc)
+          .def("Clone", &Class::Clone, cls_doc.Clone.doc);
+      DefCopyAndDeepCopy(&cls);
+    }
+
+    {
+      using Class = FunctionHandleTrajectory<T>;
+      constexpr auto& cls_doc = doc.FunctionHandleTrajectory;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "FunctionHandleTrajectory", param, cls_doc.doc);
+      cls  // BR
+          .def(py::init<const std::function<MatrixX<T>(const T&)>&, int, int,
+                   double, double>(),
+              py::arg("func"), py::arg("rows"), py::arg("cols") = 1,
+              py::arg("start_time") = -std::numeric_limits<double>::infinity(),
+              py::arg("end_time") = std::numeric_limits<double>::infinity(),
+              cls_doc.ctor.doc)
           .def("Clone", &Class::Clone, cls_doc.Clone.doc);
       DefCopyAndDeepCopy(&cls);
     }
