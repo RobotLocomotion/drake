@@ -2,14 +2,18 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 
 #include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
+#include "drake/common/string_map.h"
+#include "drake/common/string_set.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
@@ -28,21 +32,54 @@ std::string GetExtensionLower(const std::string& filename) {
   return ext;
 }
 
-// Computes a convex hull and assigns it to the given shared pointer in a
-// thread-safe manner. Only does work if the shared_ptr is null (i.e., there is
-// no convex hull yet). Used by Mesh::GetConvexHull() and
-// Convex::GetConvexHull(). Note: the correctness of this function is tested in
-// shape_specification_thread_test.cc.
-void ComputeConvexHullAsNecessary(
+void ThrowIfUnsupportedExtension(std::string_view extension,
+                                 std::string_view shape_name) {
+  // This list should support what is documented in
+  // geometry_file_formats_doxygen.h.
+  static const never_destroyed<string_set> supported(
+    std::initializer_list<string_set::value_type>{{".gltf", ".obj", ".vtk"}});
+  if (!supported.access().contains(extension)) {
+    throw std::runtime_error(fmt::format(
+        "The {} shape only supports the following geometry file formats: {}. "
+        "Given '{}'.",
+        shape_name, fmt::join(supported.access(), ", "), extension));
+  }
+}
+
+// Returns the mime-type encoding for the given extension.
+// @pre ThrowIfUnsupportedExtension(extension) does not throw.
+const std::string& MimeTypeFromExtension(std::string_view extension) {
+  // Mime types as defined by
+  // https://www.iana.org/assignments/media-types/media-types.xhtml#model
+  // Note: .vtk is not a registered media type; this definition is non standard.
+  static const never_destroyed<string_map<std::string>> types{
+      std::initializer_list<string_map<std::string>::value_type>{
+          {".obj", "obj"}, {".gltf", "gltf+json"}, {".vtk", "vtk"}}};
+  // Note: we can't use string_view as a key for .at().
+  const auto iter = types.access().find(extension);
+  DRAKE_DEMAND(iter != types.access().end());
+  return iter->second;
+}
+
+std::string MakeGeometryUrl(std::string_view data, std::string_view extension,
+                            bool is_file) {
+  return fmt::format(
+      "{}{}",
+      is_file ? "file://"
+              : fmt::format("data:model/{},", MimeTypeFromExtension(extension)),
+      data);
+}
+
+void ComputeConvexHullAsNecessaryUrl(
     std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
-    std::string_view filename, double scale) {
+    std::string_view geometry_url, double scale) {
   std::shared_ptr<PolygonSurfaceMesh<double>> check =
       std::atomic_load(hull_ptr);
   if (check == nullptr) {
     // Note: This approach means that multiple threads *may* redundantly compute
     // the convex hull; but only the first one will set the hull.
     auto new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(filename, scale));
+        internal::MakeConvexHullFromUrl(geometry_url, scale));
     std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
   }
 }
@@ -107,13 +144,15 @@ Convex::Convex(const std::string& filename, double scale)
     : filename_(std::filesystem::absolute(filename)),
       extension_(GetExtensionLower(filename_)),
       scale_(scale) {
+  ThrowIfUnsupportedExtension(extension_, "Convex");
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
 }
 
 const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
-  ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
+  ComputeConvexHullAsNecessaryUrl(
+      &hull_, MakeGeometryUrl(filename_, extension_, true), scale_);
   return *hull_;
 }
 
@@ -192,16 +231,42 @@ std::string HalfSpace::do_to_string() const {
 }
 
 Mesh::Mesh(const std::string& filename, double scale)
-    : filename_(std::filesystem::absolute(filename)),
-      extension_(GetExtensionLower(filename_)),
-      scale_(scale) {
+    : data_(std::filesystem::absolute(filename)),
+      extension_(GetExtensionLower(data_)),
+      scale_(scale),
+      is_file_(true) {
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
   }
+  ThrowIfUnsupportedExtension(extension_, "Mesh");
+}
+
+Mesh::Mesh(std::string_view data_format, std::string data, double scale)
+    : data_(data), extension_(data_format), scale_(scale), is_file_(false) {
+  if (std::abs(scale) < 1e-8) {
+    throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
+  }
+  ThrowIfUnsupportedExtension(extension_, "Mesh");
+  if (extension_ != ".obj") {
+    throw std::runtime_error(
+        "Mesh specification construction from data url; currently, only .obj "
+        "file data can be used.");
+  }
+}
+
+const std::string& Mesh::filename() const {
+  static const never_destroyed<std::string> empty_str;
+  return is_file_ ? data_ : empty_str.access();
+}
+
+const std::string& Mesh::data() const {
+  static const never_destroyed<std::string> empty_str;
+  return is_file_ ? empty_str.access() : data_;
 }
 
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
-  ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
+  ComputeConvexHullAsNecessaryUrl(
+      &hull_, MakeGeometryUrl(data_, extension_, is_file_), scale_);
   return *hull_;
 }
 

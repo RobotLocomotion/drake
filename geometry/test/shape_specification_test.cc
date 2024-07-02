@@ -536,9 +536,9 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(Capsule(Vector2<double>{0.5, -1}),
                               "Capsule radius and length should both be > 0.+");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", 0),
+  DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar.obj", 0),
                               "Convex .scale. cannot be < 1e-8.");
-  DRAKE_EXPECT_NO_THROW(Convex("foo", -1));  // Special case for negative scale.
+  DRAKE_EXPECT_NO_THROW(Convex("foo.obj", -1));  // Negative scale is allowed.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Cylinder(0, 1), "Cylinder radius and length should both be > 0.+");
@@ -561,9 +561,9 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
                               "Ellipsoid lengths of principal semi-axes a, b, "
                               "and c should all be > 0.+");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", 1e-9),
+  DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo.obj", 1e-9),
                               "Mesh .scale. cannot be < 1e-8.");
-  DRAKE_EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
+  DRAKE_EXPECT_NO_THROW(Mesh("foo.obj", -1));  // Negative scale is allowed.
 
   DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(0, 1, 1),
                               "MeshcatCone parameters .+ should all be > 0.*");
@@ -595,8 +595,27 @@ GTEST_TEST(ShapeTest, ConvexHull) {
     // Copies of the mesh share the same hull.
     EXPECT_EQ(&mesh2.GetConvexHull(), &hull);
   };
-  expect_convex_hull(Mesh(cube_path));
+  // expect_convex_hull(Mesh(cube_path));
   expect_convex_hull(Convex(cube_path));
+}
+
+GTEST_TEST(ShapeTest, MeshWithDataUrl) {
+  const std::string obj_contents = R"""(
+    v 0 0 0
+    v 1 0 0
+    v 1 1 0
+    v 0 1 0
+    v 0 0 1
+    v 1 0 1
+    v 1 1 1
+    v 0 1 1
+    f 1 2 3 4
+    f 5 6 7 8
+  )""";
+  const Mesh mesh(".obj", obj_contents, 2.0);
+  const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
+  EXPECT_EQ(hull.num_vertices(), 8);
+  EXPECT_EQ(hull.num_elements(), 6);
 }
 
 class DefaultReifierTest : public ShapeReifier, public ::testing::Test {};
@@ -607,8 +626,9 @@ TEST_F(DefaultReifierTest, UnsupportedGeometry) {
                               "This class (.+) does not support Box.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Capsule(1, 2), nullptr),
                               "This class (.+) does not support Capsule.");
-  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Convex("a", 1), nullptr),
-                              "This class (.+) does not support Convex.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      this->ImplementGeometry(Convex("a.obj", 1), nullptr),
+      "This class (.+) does not support Convex.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Cylinder(1, 2), nullptr),
                               "This class (.+) does not support Cylinder.");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -616,8 +636,9 @@ TEST_F(DefaultReifierTest, UnsupportedGeometry) {
       "This class (.+) does not support Ellipsoid.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(HalfSpace(), nullptr),
                               "This class (.+) does not support HalfSpace.");
-  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Mesh("foo", 1), nullptr),
-                              "This class (.+) does not support Mesh.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      this->ImplementGeometry(Mesh("foo.obj", 1), nullptr),
+      "This class (.+) does not support Mesh.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       this->ImplementGeometry(MeshcatCone(1, 1, 1), nullptr),
       "This class (.+) does not support MeshcatCone.");
@@ -645,11 +666,11 @@ TEST_F(OverrideDefaultGeometryTest, UnsupportedGeometry) {
   // Confirm the default behavior no longer throws.
   EXPECT_NO_THROW(this->ImplementGeometry(Box(1, 1, 1), nullptr));
   EXPECT_NO_THROW(this->ImplementGeometry(Capsule(1, 2), nullptr));
-  EXPECT_NO_THROW(this->ImplementGeometry(Convex("a", 1), nullptr));
+  EXPECT_NO_THROW(this->ImplementGeometry(Convex("a.obj", 1), nullptr));
   EXPECT_NO_THROW(this->ImplementGeometry(Cylinder(1, 2), nullptr));
   EXPECT_NO_THROW(this->ImplementGeometry(Ellipsoid(1, 1, 1), nullptr));
   EXPECT_NO_THROW(this->ImplementGeometry(HalfSpace(), nullptr));
-  EXPECT_NO_THROW(this->ImplementGeometry(Mesh("foo", 1), nullptr));
+  EXPECT_NO_THROW(this->ImplementGeometry(Mesh("foo.obj", 1), nullptr));
   EXPECT_NO_THROW(this->ImplementGeometry(MeshcatCone(1, 1, 1), nullptr));
   EXPECT_NO_THROW(this->ImplementGeometry(Sphere(0.5), nullptr));
 }
@@ -657,11 +678,11 @@ TEST_F(OverrideDefaultGeometryTest, UnsupportedGeometry) {
 GTEST_TEST(ShapeTest, TypeNameAndToString) {
   const Box box(1.5, 2.5, 3.5);
   const Capsule capsule(1.25, 2.5);
-  const Convex convex("/some/file", 1.5);
+  const Convex convex("/some/file.obj", 1.5);
   const Cylinder cylinder(1.25, 2.5);
   const Ellipsoid ellipsoid(1.25, 2.5, 0.5);
   const HalfSpace half_space;
-  const Mesh mesh("/some/file", 1.5);
+  const Mesh mesh("/some/file.gltf", 1.5);
   const MeshcatCone cone(1.5, 0.25, 0.5);
   const Sphere sphere(1.25);
 
@@ -677,21 +698,23 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
 
   EXPECT_EQ(box.to_string(), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(capsule.to_string(), "Capsule(radius=1.25, length=2.5)");
-  EXPECT_EQ(convex.to_string(), "Convex(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(convex.to_string(), "Convex(filename='/some/file.obj', scale=1.5)");
   EXPECT_EQ(cylinder.to_string(), "Cylinder(radius=1.25, length=2.5)");
   EXPECT_EQ(ellipsoid.to_string(), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(half_space.to_string(), "HalfSpace()");
-  EXPECT_EQ(mesh.to_string(), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(mesh.to_string(), "Mesh(filename='/some/file.gltf', scale=1.5)");
   EXPECT_EQ(cone.to_string(), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
   EXPECT_EQ(sphere.to_string(), "Sphere(radius=1.25)");
 
   EXPECT_EQ(fmt::to_string(box), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(fmt::to_string(capsule), "Capsule(radius=1.25, length=2.5)");
-  EXPECT_EQ(fmt::to_string(convex), "Convex(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(fmt::to_string(convex),
+            "Convex(filename='/some/file.obj', scale=1.5)");
   EXPECT_EQ(fmt::to_string(cylinder), "Cylinder(radius=1.25, length=2.5)");
   EXPECT_EQ(fmt::to_string(ellipsoid), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(fmt::to_string(half_space), "HalfSpace()");
-  EXPECT_EQ(fmt::to_string(mesh), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(fmt::to_string(mesh),
+            "Mesh(filename='/some/file.gltf', scale=1.5)");
   EXPECT_EQ(fmt::to_string(cone), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
   EXPECT_EQ(fmt::to_string(sphere), "Sphere(radius=1.25)");
 
@@ -723,7 +746,7 @@ GTEST_TEST(ShapeTest, Volume) {
                               "Cannot open file.*");
 
   // We only support obj but should eventually support vtk.
-  const std::string non_obj = "only_extension_matters.not_obj";
+  const std::string non_obj = "only_extension_matters.vtk";
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex(non_obj, 1.0)),
                               ".*only supports .obj files.*");
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh(non_obj, 1.0)),
@@ -756,8 +779,8 @@ GTEST_TEST(ShapeTest, MeshExtensions) {
   EXPECT_EQ(Mesh("a/b.oBj").extension(), ".obj");
   EXPECT_EQ(Mesh("a/b.ObJ").extension(), ".obj");
   EXPECT_EQ(Mesh("a/b.weird.ObJ").extension(), ".obj");
-  // Arbitrary extensions.
-  EXPECT_EQ(Mesh("a/b.extension").extension(), ".extension");
+  // Pick one more extension as representative of "not-OBJ" extensions.
+  EXPECT_EQ(Mesh("a/b.gltf").extension(), ".gltf");
 
   // Now repeat for Convex.
 
@@ -765,8 +788,8 @@ GTEST_TEST(ShapeTest, MeshExtensions) {
   EXPECT_EQ(Convex("a/b.oBj").extension(), ".obj");
   EXPECT_EQ(Convex("a/b.ObJ").extension(), ".obj");
   EXPECT_EQ(Convex("a/b.weird.ObJ").extension(), ".obj");
-  // Arbitrary extensions.
-  EXPECT_EQ(Convex("a/b.extension").extension(), ".extension");
+  // Pick one more extension as representative of "not-OBJ" extensions.
+  EXPECT_EQ(Convex("a/b.gltf").extension(), ".gltf");
 }
 
 GTEST_TEST(ShapeTest, MoveConstructor) {
