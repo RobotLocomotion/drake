@@ -415,6 +415,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "c_iris_collision_geometry_test",
+    tags = ["no_kcov"],
     deps = [
         ":c_iris_collision_geometry",
         ":c_iris_test_utilities",
