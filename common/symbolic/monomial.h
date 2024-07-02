@@ -136,7 +136,7 @@ class Monomial {
     hash_append(hasher, item.powers_);
   }
 
- private:
+ protected:
   int total_degree_{0};
   std::map<Variable, int> powers_;
   friend std::ostream& operator<<(std::ostream& out, const Monomial& m);

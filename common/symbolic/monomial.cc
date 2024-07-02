@@ -94,7 +94,7 @@ map<Variable, int> ToMonomialPower(
   DRAKE_DEMAND(vars.size() == exponents.size());
   map<Variable, int> powers;
   for (int i = 0; i < vars.size(); ++i) {
-    if (exponents[i] > 0) {
+    if (exponents[i] >= 0) {
       powers.emplace(vars[i], exponents[i]);
     } else if (exponents[i] < 0) {
       throw std::logic_error("The exponent is negative.");
@@ -115,7 +115,7 @@ Monomial::Monomial(const Variable& var) : total_degree_{1}, powers_{{var, 1}} {}
 Monomial::Monomial(const Variable& var, const int exponent)
     : total_degree_{exponent} {
   DRAKE_DEMAND(exponent >= 0);
-  if (exponent > 0) {
+  if (exponent >= 0) {
     powers_.emplace(var, exponent);
   }
 }
@@ -124,7 +124,7 @@ Monomial::Monomial(const map<Variable, int>& powers)
     : total_degree_{TotalDegree(powers)} {
   for (const auto& p : powers) {
     const int exponent{p.second};
-    if (exponent > 0) {
+    if (exponent >= 0) {
       powers_.insert(p);
     } else if (exponent < 0) {
       throw std::logic_error("The exponent is negative.");
@@ -287,16 +287,17 @@ ostream& operator<<(ostream& out, const Monomial& m) {
     return out << 1;
   }
   auto it = m.powers_.begin();
-  out << it->first;
-  if (it->second > 1) {
-    out << "^" << it->second;
-  }
+  out << it->first << "^" << it ->second;
+//  if (it->second > 0) {
+//    out << "^" << it->second;
+//  }
   for (++it; it != m.powers_.end(); ++it) {
     out << " * ";
     out << it->first;
-    if (it->second > 1) {
-      out << "^" << it->second;
-    }
+    out << "^" << it->second;
+//    if (it->second > 0) {
+//      out << "^" << it->second;
+//    }
   }
   return out;
 }
