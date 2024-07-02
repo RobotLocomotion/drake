@@ -261,6 +261,164 @@ const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
 }
 
 namespace internal {
+void DoAggregateConicConstraints(
+    const MathematicalProgram& prog,
+    const ConicConstraintAggregationOptions& options,
+    ConicConstraintAggregationInfo* info) {
+  // Parse Linear Equality Constraints.
+  info->num_linear_equality_constraint_rows = 0;
+  internal::ParseLinearEqualityConstraints(
+      prog, &(info->A_triplets), &(info->b_std), &(info->A_row_count),
+      &(info->linear_eq_dual_variable_start_indices),
+      &(info->num_linear_equality_constraint_rows));
+
+  // Parse the Bounding Box constraints. The bounding box constraints which are
+  // equalities are immediately added to A and b. The bounding box constraints
+  // which are inequality constraints are stored in A_bb_ineq_triplets and
+  // b_bb_ineq. They will be added to A and b after the linear constraints are
+  // added. The reason for this is we wish A to be compatible with the strict
+  // ordering of the cones given by SCS:
+  // https://www.cvxgrp.org/scs/api/cones.html.
+  std::vector<Eigen::Triplet<double>> A_bb_ineq_triplets;
+  std::vector<double> b_bb_ineq;
+  const int A_row_count_before_parsing_bb{info->A_row_count};
+  ParseBoundingBoxConstraints(
+      prog,
+      // We can directly add the bounding box equality constraints
+      // to A and b.
+      &(info->A_triplets), &(info->b_std), &(info->A_row_count),
+      // We delay adding the bounding box inequality constraints to A and b due
+      // to the strict ordering required by SCS.
+      &A_bb_ineq_triplets, &b_bb_ineq,
+      &(info->num_bounding_box_inequality_constraint_rows),
+      &(info->bounding_box_constraint_dual_indices));
+  const int num_bb_equality_constraint =
+      info->A_row_count - A_row_count_before_parsing_bb;
+  info->num_linear_equality_constraint_rows += num_bb_equality_constraint;
+
+  // Parse Linear Constraints
+  info->num_linear_constraint_rows = 0;
+  internal::ParseLinearConstraints(prog, &(info->A_triplets), &(info->b_std),
+                                   &(info->A_row_count),
+                                   &(info->linear_constraint_dual_indices),
+                                   &(info->num_linear_constraint_rows));
+  // Now we can add the bounding box constraints.
+  for (int i = 0; i < info->num_bounding_box_inequality_constraint_rows; ++i) {
+    info->A_triplets.emplace_back(
+        A_bb_ineq_triplets[i].row() + info->A_row_count,
+        A_bb_ineq_triplets[i].col(), A_bb_ineq_triplets[i].value());
+    info->b_std.push_back(b_bb_ineq[i]);
+  }
+
+  // We need to increment the dual variable index of only the inequality
+  // bounding box constraints.
+  for (int i = 0; i < ssize(prog.bounding_box_constraints()); ++i) {
+    for (int j = 0; j < prog.bounding_box_constraints()[i].variables().rows();
+         ++j) {
+      if (prog.bounding_box_constraints()[i].evaluator()->lower_bound()[j] !=
+          prog.bounding_box_constraints()[i].evaluator()->upper_bound()[j]) {
+        if (info->bounding_box_constraint_dual_indices[i][j].first != -1) {
+          info->bounding_box_constraint_dual_indices[i][j].first +=
+              info->A_row_count;
+        }
+        if (info->bounding_box_constraint_dual_indices[i][j].second != -1) {
+          info->bounding_box_constraint_dual_indices[i][j].second +=
+              info->A_row_count;
+        }
+      }
+    }
+  }
+  info->A_row_count += info->num_bounding_box_inequality_constraint_rows;
+
+  // Parse Second-Order cone constraints
+  internal::ParseSecondOrderConeConstraints(
+      prog, options.cast_rotated_lorentz_to_lorentz, &(info->A_triplets),
+      &(info->b_std), &(info->A_row_count), &(info->second_order_cone_lengths),
+      &(info->lorentz_cone_dual_variable_start_indices),
+      &(info->rotated_lorentz_cone_dual_variable_start_indices));
+
+  // Parse PSD cone constraints
+  internal::ParsePositiveSemidefiniteConstraints(
+      prog, options.parse_psd_using_upper_triangular,
+      options.preserve_psd_inner_product_vectorization, &(info->A_triplets),
+      &(info->b_std), &(info->A_row_count), &(info->psd_row_size));
+
+  // Parse Exponential Cone Constraints
+  internal::ParseExponentialConeConstraints(
+      prog, &(info->A_triplets), &(info->b_std), &(info->A_row_count));
+}
+
+void ParseBoundingBoxConstraints(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<double>>* A_eq_triplets,
+    std::vector<double>* b_eq, int* A_eq_row_count,
+    std::vector<Eigen::Triplet<double>>* A_ineq_triplets,
+    std::vector<double>* b_ineq, int* A_ineq_row_count,
+    std::vector<std::vector<std::pair<int, int>>>* bbcon_dual_indices) {
+  const std::unordered_map<symbolic::Variable, Bound> variable_bounds =
+      AggregateBoundingBoxConstraints(prog.bounding_box_constraints());
+
+  // For each variable with lb <= x <= ub, we check the following
+  // 1. If lb == ub (and both are finite), then we add the constraint x + s = ub
+  // to A_eq_triplets and b_eq
+  // 2. Otherwise, if ub is finite, then we add the constraint x + s = ub to
+  // A_ineq_triplets and b_ineq. If lb is finite, then we add the constraint -x
+  // + s = -lb to A_ineq_triplets and b_ineq.
+
+  // Set the dual variable indices.
+  bbcon_dual_indices->reserve(ssize(prog.bounding_box_constraints()));
+  for (int i = 0; i < ssize(prog.bounding_box_constraints()); ++i) {
+    bbcon_dual_indices->emplace_back(
+        prog.bounding_box_constraints()[i].variables().rows(),
+        std::pair<int, int>(-1, -1));
+    for (int j = 0; j < prog.bounding_box_constraints()[i].variables().rows();
+         ++j) {
+      const int var_index = prog.FindDecisionVariableIndex(
+          prog.bounding_box_constraints()[i].variables()(j));
+      const Bound& var_bound =
+          variable_bounds.at(prog.bounding_box_constraints()[i].variables()(j));
+      // We use the lower bound of this constraint in the optimization
+      // program.
+      const bool use_lb =
+          var_bound.lower ==
+              prog.bounding_box_constraints()[i].evaluator()->lower_bound()(
+                  j) &&
+          std::isfinite(var_bound.lower);
+      const bool use_ub =
+          var_bound.upper ==
+              prog.bounding_box_constraints()[i].evaluator()->upper_bound()(
+                  j) &&
+          std::isfinite(var_bound.upper);
+      if (use_lb && use_ub && var_bound.lower == var_bound.upper) {
+        // This is an equality constraint x = ub.
+        // Add the constraint x + s = ub and s in the zero cone.
+        A_eq_triplets->emplace_back(*A_eq_row_count, var_index, 1);
+        b_eq->push_back(var_bound.upper);
+        (*bbcon_dual_indices)[i][j].first = *A_eq_row_count;
+        (*bbcon_dual_indices)[i][j].second = *A_eq_row_count;
+        ++(*A_eq_row_count);
+      } else {
+        if (use_ub) {
+          // Add the constraint x + s = ub and s in the nonnegative orthant
+          // cone.
+          A_ineq_triplets->emplace_back(*A_ineq_row_count, var_index, 1);
+          b_ineq->push_back(var_bound.upper);
+          (*bbcon_dual_indices)[i][j].second = *A_ineq_row_count;
+          ++(*A_ineq_row_count);
+        }
+        if (use_lb) {
+          // Add the constraint -x + s = -lb and s in the nonnegative orthant
+          // cone.
+          A_ineq_triplets->emplace_back(*A_ineq_row_count, var_index, -1);
+          b_ineq->push_back(-var_bound.lower);
+          (*bbcon_dual_indices)[i][j].first = *A_ineq_row_count;
+          ++(*A_ineq_row_count);
+        }
+      }
+    }
+  }
+}
+
 const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
     const std::vector<Binding<QuadraticCost>>& quadratic_costs) {
   for (const auto& cost : quadratic_costs) {
@@ -403,8 +561,8 @@ void ParseLinearConstraints(const solvers::MathematicalProgram& prog,
     const Eigen::SparseMatrix<double>& Ai =
         linear_constraint.evaluator()->get_sparse_A();
     // We store the starting row index in A_triplets for each row of
-    // linear_constraint. Namely the constraint lb(i) <= A.row(i)*x <= ub(i) is
-    // stored in A_triplets with starting_row_indices[i] (or
+    // linear_constraint. Namely the constraint lb(i) <= A.row(i)*x <= ub(i)
+    // is stored in A_triplets with starting_row_indices[i] (or
     // starting_row_indices[i]+1 if both lb(i) and ub(i) are finite).
     std::vector<int> starting_row_indices(
         linear_constraint.evaluator()->num_constraints());
@@ -539,7 +697,7 @@ void ParseL2NormCosts(const MathematicalProgram& prog,
 }
 
 void ParseSecondOrderConeConstraints(
-    const MathematicalProgram& prog,
+    const MathematicalProgram& prog, const bool cast_rotated_lorentz_to_lorentz,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* second_order_cone_length,
     std::vector<int>* lorentz_cone_y_start_indices,
@@ -583,9 +741,10 @@ void ParseSecondOrderConeConstraints(
     const Eigen::VectorXd& bi = rotated_lorentz_cone.evaluator()->b();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
-    ParseRotatedLorentzConeConstraint(Ai_triplets, bi, x_indices, A_triplets, b,
-                                      A_row_count, second_order_cone_length,
-                                      rotated_lorentz_cone_y_start_indices);
+    ParseRotatedLorentzConeConstraint(
+        Ai_triplets, bi, x_indices, cast_rotated_lorentz_to_lorentz, A_triplets,
+        b, A_row_count, second_order_cone_length,
+        rotated_lorentz_cone_y_start_indices);
   }
 }
 
@@ -593,6 +752,7 @@ void ParseRotatedLorentzConeConstraint(
     const std::vector<Eigen::Triplet<double>>& A_cone_triplets,
     const Eigen::Ref<const Eigen::VectorXd>& b_cone,
     const std::vector<int>& x_indices,
+    const bool cast_rotated_lorentz_to_lorentz,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* second_order_cone_length,
     std::optional<std::vector<int>*> rotated_lorentz_cone_y_start_indices) {
@@ -608,7 +768,8 @@ void ParseRotatedLorentzConeConstraint(
   // [           a₂ᵀx +           b₂ ]
   //             ...
   // [         aₙ₋₁ᵀx +         bₙ₋₁ ]
-  // is in the Lorentz cone. We convert this to the SCS form, that
+  // is in the Lorentz cone. When cast_rotated_lorentz_to_lorentz is true, we
+  // convert this to the SCS form, that
   //  Cx + s = d
   //  s in Lorentz cone,
   // where C = [ -0.5(a₀ + a₁)ᵀ ]   d = [ 0.5(b₀ + b₁) ]
@@ -619,22 +780,36 @@ void ParseRotatedLorentzConeConstraint(
   for (const auto& Ai_triplet : A_cone_triplets) {
     const int x_index = x_indices[Ai_triplet.col()];
     if (Ai_triplet.row() == 0) {
-      A_triplets->emplace_back(*A_row_count, x_index,
-                               -0.5 * Ai_triplet.value());
-      A_triplets->emplace_back(*A_row_count + 1, x_index,
-                               -0.5 * Ai_triplet.value());
+      if (cast_rotated_lorentz_to_lorentz) {
+        A_triplets->emplace_back(*A_row_count, x_index,
+                                 -0.5 * Ai_triplet.value());
+        A_triplets->emplace_back(*A_row_count + 1, x_index,
+                                 -0.5 * Ai_triplet.value());
+      } else {
+        A_triplets->emplace_back(*A_row_count, x_index, -Ai_triplet.value());
+      }
     } else if (Ai_triplet.row() == 1) {
-      A_triplets->emplace_back(*A_row_count, x_index,
-                               -0.5 * Ai_triplet.value());
-      A_triplets->emplace_back(*A_row_count + 1, x_index,
-                               0.5 * Ai_triplet.value());
+      if (cast_rotated_lorentz_to_lorentz) {
+        A_triplets->emplace_back(*A_row_count, x_index,
+                                 -0.5 * Ai_triplet.value());
+        A_triplets->emplace_back(*A_row_count + 1, x_index,
+                                 0.5 * Ai_triplet.value());
+      } else {
+        A_triplets->emplace_back(*A_row_count + 1, x_index,
+                                 -Ai_triplet.value());
+      }
     } else {
       A_triplets->emplace_back(*A_row_count + Ai_triplet.row(), x_index,
                                -Ai_triplet.value());
     }
   }
-  b->push_back(0.5 * (b_cone(0) + b_cone(1)));
-  b->push_back(0.5 * (b_cone(0) - b_cone(1)));
+  if (cast_rotated_lorentz_to_lorentz) {
+    b->push_back(0.5 * (b_cone(0) + b_cone(1)));
+    b->push_back(0.5 * (b_cone(0) - b_cone(1)));
+  } else {
+    b->push_back(b_cone(0));
+    b->push_back(b_cone(1));
+  }
   for (int i = 2; i < b_cone.rows(); ++i) {
     b->push_back(b_cone(i));
   }
@@ -685,6 +860,7 @@ void ParseExponentialConeConstraints(
 
 void ParsePositiveSemidefiniteConstraints(
     const MathematicalProgram& prog, bool upper_triangular,
+    bool preserve_psd_inner_product_vectorization,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<int>* psd_cone_length) {
   DRAKE_ASSERT(ssize(*b) == *A_row_count);
@@ -729,7 +905,12 @@ void ParsePositiveSemidefiniteConstraints(
       const int i_start = upper_triangular ? 0 : j;
       const int i_end = upper_triangular ? j + 1 : X_rows;
       for (int i = i_start; i < i_end; ++i) {
-        const double scale_factor = i == j ? 1 : sqrt2;
+        double scale_factor{1};
+        if (i != j && preserve_psd_inner_product_vectorization) {
+          scale_factor = sqrt2;
+        } else if (i != j) {
+          scale_factor = 2;
+        }
         A_triplets->emplace_back(
             *A_row_count + x_index_count,
             prog.FindDecisionVariableIndex(flat_X(j * X_rows + i)),
@@ -789,7 +970,12 @@ void ParsePositiveSemidefiniteConstraints(
       const int i_start = upper_triangular ? 0 : j;
       const int i_end = upper_triangular ? j + 1 : F_rows;
       for (int i = i_start; i < i_end; ++i) {
-        const double scale_factor = i == j ? 1 : sqrt2;
+        double scale_factor{1};
+        if (i != j && preserve_psd_inner_product_vectorization) {
+          scale_factor = sqrt2;
+        } else if (i != j) {
+          scale_factor = 2;
+        }
         for (int k = 1; k < static_cast<int>(F.size()); ++k) {
           A_triplets->emplace_back(*A_row_count + A_cone_row_count,
                                    x_indices[k - 1],

@@ -736,7 +736,7 @@ GTEST_TEST(ParseSecondOrderConeConstraints, LorentzCone) {
   std::vector<int> lorentz_cone_y_start_indices;
   std::vector<int> rotated_lorentz_cone_y_start_indices;
   ParseSecondOrderConeConstraints(
-      prog, &A_triplets, &b, &A_row_count, &second_order_cone_length,
+      prog, true, &A_triplets, &b, &A_row_count, &second_order_cone_length,
       &lorentz_cone_y_start_indices, &rotated_lorentz_cone_y_start_indices);
   EXPECT_EQ(A_row_count, 8);
   Eigen::SparseMatrix<double> A(8, prog.num_vars());
@@ -783,7 +783,7 @@ GTEST_TEST(ParseSecondOrderConeConstraints, RotatedLorentzConeConstraint) {
   std::vector<int> lorentz_cone_y_start_indices;
   std::vector<int> rotated_lorentz_cone_y_start_indices;
   ParseSecondOrderConeConstraints(
-      prog, &A_triplets, &b, &A_row_count, &second_order_cone_length,
+      prog, true, &A_triplets, &b, &A_row_count, &second_order_cone_length,
       &lorentz_cone_y_start_indices, &rotated_lorentz_cone_y_start_indices);
   EXPECT_EQ(A_row_count, 7);
   Eigen::SparseMatrix<double> A(7, prog.num_vars());
@@ -853,8 +853,9 @@ GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestPsd) {
     std::vector<double> b(A_row_count_old);
     int A_row_count = A_row_count_old;
     std::vector<int> psd_cone_length;
-    ParsePositiveSemidefiniteConstraints(prog, upper_triangular, &A_triplets,
-                                         &b, &A_row_count, &psd_cone_length);
+    ParsePositiveSemidefiniteConstraints(prog, upper_triangular, true,
+                                         &A_triplets, &b, &A_row_count,
+                                         &psd_cone_length);
     EXPECT_EQ(psd_cone_length, std::vector<int>({3, 2}));
     // We add 3 * (3+1) / 2 = 6 rows in A for "X is psd", and 2 * (2+1) / 2 = 3
     // rows in A for "Y is psd".
@@ -970,8 +971,9 @@ GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestLmi) {
     std::vector<double> b(A_row_count_old, 0);
     int A_row_count = A_row_count_old;
     std::vector<int> psd_cone_length;
-    ParsePositiveSemidefiniteConstraints(prog, upper_triangular, &A_triplets,
-                                         &b, &A_row_count, &psd_cone_length);
+    ParsePositiveSemidefiniteConstraints(prog, upper_triangular, true,
+                                         &A_triplets, &b, &A_row_count,
+                                         &psd_cone_length);
     EXPECT_EQ(A_row_count, A_row_count_old + 3 * (3 + 1) / 2);
     EXPECT_EQ(psd_cone_length, std::vector<int>({3}));
     Eigen::SparseMatrix<double> A(A_row_count_old + 6, prog.num_vars());
