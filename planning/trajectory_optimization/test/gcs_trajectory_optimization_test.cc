@@ -2320,6 +2320,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuityConstraintSymbolic) {
   }
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, EdgeIndexChecking) {
+  GcsTrajectoryOptimization gcs(1);
+  auto sets = MakeConvexSets(Point(Vector1d(43.0)));
+  std::vector<std::pair<int, int>> edges;
+  edges.emplace_back(0, 1);
+  EXPECT_THROW(gcs.AddRegions(sets, edges, 1), std::exception);
+}
+
 }  // namespace
 }  // namespace trajectory_optimization
 }  // namespace planning
