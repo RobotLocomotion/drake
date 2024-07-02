@@ -14,6 +14,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/geometry_spatial_inertia.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
@@ -112,8 +113,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
 
   std::string box_obj_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/meshes/box.obj"))};
-  std::string non_convex_obj_{std::filesystem::canonical(FindResourceOrThrow(
-      "drake/geometry/test/non_convex_mesh.obj"))};
+  std::string non_convex_obj_{std::filesystem::canonical(
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"))};
   std::string box_urdf_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))};
 };
@@ -162,7 +163,8 @@ TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
 }
 
 const char* mujoco_menagerie_models[] = {"google_robot/robot",
-                                         "kuka_iiwa_14/iiwa14"};
+                                         "kuka_iiwa_14/iiwa14",
+                                         "rethink_robotics_sawyer/sawyer"};
 // TODO(russt): Add the remaining models, once they can be parsed correctly, as
 // tracked in #20444.
 
@@ -781,6 +783,35 @@ TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
       fmt::format(R"""(<mesh name="box" file="{}"/>)""", box_obj_);
   std::string defaults = R"""(<default><mesh scale="2 2 2"/></default>)""";
   TestBoxMesh(box_obj_, mesh_asset, defaults, 2.0);
+}
+
+// Per #21666, the CalcSpatialInertia method currently throws on open meshes.
+// The parser should still succeed (using a simplified fallback).
+TEST_F(MujocoParserTest, OpenMesh) {
+  // Per #21666, this obj is known to not be water tight (and cause
+  // CalcSpatialInertia to throw).
+  const RlocationOrError rlocation = FindRunfile(
+      "mujoco_menagerie_internal/hello_robot_stretch/assets/base_link_0.obj");
+  ASSERT_EQ(rlocation.error, "");
+  const geometry::Mesh open_box_mesh(rlocation.abspath, 1.0);
+
+  // If #21666 is fixed, but we still have the fallback in the mujoco parser,
+  // then this could be changed to detect the failure, but we should keep this
+  // test.
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(open_box_mesh, 1.0),
+                              ".*IsPhysicallyValid[\\s\\S]*");
+
+  std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}"/>  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""",  rlocation.abspath);
+
+  EXPECT_NO_THROW(AddModelFromString(xml, "test"));
 }
 
 TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
