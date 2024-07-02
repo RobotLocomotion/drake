@@ -409,10 +409,9 @@ class MujocoParser {
     // up mesh inertias, it uses the mujoco geometry _name_ and not the
     // mesh filename.
     InertiaCalculator(
-        const std::map<std::string, SpatialInertia<double>>* mesh_inertia,
-        std::string name)
-        : mesh_inertia_(*mesh_inertia),
-          name_(std::move(name)) {
+        std::string name,
+        std::map<std::string, SpatialInertia<double>>* mesh_inertia)
+        : mesh_inertia_(mesh_inertia), name_(std::move(name)) {
       DRAKE_DEMAND(mesh_inertia != nullptr);
     }
 
@@ -423,9 +422,13 @@ class MujocoParser {
 
     using geometry::ShapeReifier::ImplementGeometry;
 
-    void ImplementGeometry(const geometry::Mesh&, void*) final {
-      DRAKE_DEMAND(mesh_inertia_.contains(name_));
-      M_GG_G_ = mesh_inertia_.at(name_);
+    void ImplementGeometry(const geometry::Mesh& mesh, void*) final {
+      if (mesh_inertia_->contains(name_)) {
+        M_GG_G_ = mesh_inertia_->at(name_);
+      } else {
+        M_GG_G_ = CalcSpatialInertia(mesh, 1.0 /* density */);
+        mesh_inertia_->insert_or_assign(name_, M_GG_G_);
+      }
     }
 
     void ImplementGeometry(const geometry::HalfSpace&, void*) final {
@@ -437,7 +440,7 @@ class MujocoParser {
     }
 
    private:
-    const std::map<std::string, SpatialInertia<double>>& mesh_inertia_;
+    std::map<std::string, SpatialInertia<double>>* mesh_inertia_;
     std::string name_;
     SpatialInertia<double> M_GG_G_{SpatialInertia<double>::NaN()};
   };
@@ -772,8 +775,14 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
 
     if (compute_inertia) {
-      SpatialInertia<double> M_GG_G_one =
-          InertiaCalculator(&mesh_inertia_, mesh).Calc(*geom.shape);
+      SpatialInertia<double> M_GG_G_one{SpatialInertia<double>::NaN()};
+      try {
+        M_GG_G_one = InertiaCalculator(mesh, &mesh_inertia_).Calc(*geom.shape);
+      } catch (const std::exception& e) {
+        Error(*node, fmt::format("Failed to compute spatial inertia for mesh "
+                                 "{}: {}",
+                                 mesh, e.what()));
+      }
       double mass{};
       if (!ParseScalarAttribute(node, "mass", &mass)) {
         double density{1000};
@@ -1110,8 +1119,6 @@ class MujocoParser {
 
         if (std::filesystem::exists(filename)) {
           mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale[0]);
-          mesh_inertia_.insert_or_assign(name,
-                                         CalcSpatialInertia(*mesh_[name], 1));
         } else if (std::filesystem::exists(original_filename)) {
           Warning(
               *node,

@@ -666,6 +666,7 @@ drake_cc_googletest(
         "//geometry:test_stl_files",
         "@mujoco_menagerie_internal//:google_robot",
         "@mujoco_menagerie_internal//:kuka_iiwa_14",
+        "@mujoco_menagerie_internal//:rethink_robotics_sawyer",
     ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":detail_mujoco_parser",

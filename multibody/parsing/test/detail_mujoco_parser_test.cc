@@ -162,7 +162,8 @@ TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
 }
 
 const char* mujoco_menagerie_models[] = {"google_robot/robot",
-                                         "kuka_iiwa_14/iiwa14"};
+                                         "kuka_iiwa_14/iiwa14",
+                                         "rethink_robotics_sawyer/sawyer"};
 // TODO(russt): Add the remaining models, once they can be parsed correctly, as
 // tracked in #20444.
 
