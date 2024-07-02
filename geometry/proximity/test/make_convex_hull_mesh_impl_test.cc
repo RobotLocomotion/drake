@@ -64,10 +64,26 @@ class CanonicalMesh {
     std::iota(canon_to_mesh.begin(), canon_to_mesh.end(), 0);
     std::sort(canon_to_mesh.begin(), canon_to_mesh.end(),
               [&mesh](int a, int b) {
+                // N.B. We implement a lexicographical comparison up to a given
+                // tolerance to handle round-off errors robustly.
+                constexpr double kTolerance =
+                    4 * std::numeric_limits<double>::epsilon();
                 const Vector3d& va = mesh.vertex(a);
                 const Vector3d& vb = mesh.vertex(b);
-                return std::lexicographical_compare(va.data(), va.data() + 3,
-                                                    vb.data(), vb.data() + 3);
+
+                auto almost_equal = [](double x, double y) {
+                  return std::abs(x - y) < kTolerance;
+                };
+
+                if (almost_equal(va[0], vb[0])) {
+                  if (almost_equal(va[1], vb[1])) {
+                    return va[2] < vb[2];
+                  } else {
+                    return va[1] < vb[1];
+                  }
+                } else {
+                  return va[0] < vb[0];
+                }
               });
     for (int v = 0; v < mesh.num_vertices(); ++v) {
       vertices_.push_back(mesh.vertex(canon_to_mesh[v]));
@@ -118,9 +134,9 @@ void MeshesAreEquivalent(const CanonicalMesh& dut,
   // The Pointwise matcher compares dut and expected element-wise. The
   // comparison operator is the NearVertex matcher that requires the distance
   // between the two points to be less than tolerance.
-  ASSERT_THAT(dut.vertices(),
+  EXPECT_THAT(dut.vertices(),
               testing::Pointwise(NearVertex(tolerance), expected.vertices()));
-  ASSERT_THAT(dut.faces(), testing::Eq(expected.faces()));
+  EXPECT_THAT(dut.faces(), testing::Eq(expected.faces()));
 }
 
 /* Confirm that the constructor is working correctly.
@@ -455,6 +471,71 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeConvexHull(colinear_obj, 1.0),
       ".*all vertices in the mesh appear to be co-linear.*colinear.obj.");
+}
+
+GTEST_TEST(MakeConvexHullMeshTest, CubeWithHoleWithMargin) {
+  const double margin = 0.01;
+  const double scale = 2.0;
+  const PolyMesh expected = MakeCube(scale + margin);
+
+  const PolyMesh dut = MakeConvexHull(
+      FindResourceOrThrow("drake/geometry/test/cube_with_hole.obj"), scale,
+      margin);
+
+  MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
+GTEST_TEST(MakeConvexHullMeshTest, DisjointMeshWithMargin) {
+  const double margin = 0.01;
+  const double scale = 2.0;
+  const PolyMesh expected = MakeCube(scale + margin);
+
+  const PolyMesh dut = MakeConvexHull(
+      FindResourceOrThrow("drake/geometry/test/cube_corners.obj"), scale,
+      margin);
+
+  MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
+GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
+  const double margin = 0.01;
+  const double scale = 2.0;
+
+  // We look at the one tilted face on the original mesh.
+  Vector3d c(scale / 3.0, scale / 3.0, scale / 3.0);  // Face's centroid.
+  const double d = c.norm();                          // Distance to the origin.
+  const Vector3d n = c.normalized();                  // Face's normal.
+
+  // We take a look at the original vertex with coordinates p = (0, 0, L). By
+  // symmetry we know that the other two are (L, 0, 0) and (0, L, 0) (plus the
+  // origin). We then work with pz. All faces move margin along their normal.
+  // Then the inflated point pz moves to p̃ = (-δ, -δ, L̃). The equation of the
+  // tilted plane is n⋅p=d+δ, with normal n and distance d computed above.
+  // Substituting p̃ = (-δ, -δ, L̃) allows us to compute L̃:
+  //  L̃ = (d + δ⋅(nx+ny)) / nz.
+  const double length = (d + margin * (1 + n(0) + n(1))) / n(2);
+  // Create an inflated surface mesh corresponding to the tet in
+  // one_tetrahedron.vtk.
+
+  // clang-format off
+  const PolyMesh expected({
+      3, 0, 1, 3,
+      3, 0, 2, 1,
+      3, 0, 3, 2,
+      3, 1, 2, 3
+    }, {
+      Vector3d(-margin, -margin, -margin),
+      Vector3d(length, -margin, -margin),
+      Vector3d(-margin,  length, -margin),
+      Vector3d(-margin, -margin,  length)
+    });
+  // clang-format on
+
+  const PolyMesh dut = MakeConvexHull(
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), scale,
+      margin);
+
+  MeshesAreEquivalent(dut, expected, 1e-14);
 }
 
 }  // namespace
