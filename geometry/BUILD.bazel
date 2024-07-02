@@ -527,6 +527,7 @@ drake_cc_library(
         "//common:scope_exit",
         "//common:sha256",
         "//geometry/proximity:polygon_to_triangle_mesh",
+        "//systems/analysis:realtime_rate_calculator",
         "@common_robotics_utilities",
         "@msgpack_internal//:msgpack",
         "@nlohmann_internal//:nlohmann",
@@ -582,6 +583,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":meshcat",
+        "//common:timer",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@msgpack_internal//:msgpack",
@@ -700,7 +702,6 @@ drake_cc_library(
         "//common:essential",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//math:geometric_transform",
-        "//systems/analysis:realtime_rate_calculator",
         "//systems/framework:context",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
@@ -728,6 +729,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":meshcat_visualizer",
+        "//common:timer",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
         "//multibody/plant",
