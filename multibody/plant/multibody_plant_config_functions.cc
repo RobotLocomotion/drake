@@ -43,6 +43,9 @@ void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
   DRAKE_THROW_UNLESS(plant != nullptr);
   // TODO(russt): Add MultibodyPlant.set_time_step() and use it here.
   DRAKE_THROW_UNLESS(plant->time_step() == config.time_step);
+  if (plant->is_discrete()) {
+    plant->SetUseSampledOutputPorts(config.use_sampled_output_ports);
+  }
   plant->set_penetration_allowance(config.penetration_allowance);
   plant->set_stiction_tolerance(config.stiction_tolerance);
   plant->set_contact_model(

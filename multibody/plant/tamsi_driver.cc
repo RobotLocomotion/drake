@@ -308,6 +308,15 @@ void TamsiDriver<T>::CallTamsiSolver(
   results->tau_contact = tamsi_solver->get_generalized_contact_forces();
 }
 
+// XXX ContactResults seems like overkill.  We only use:
+//  BodyIndex for A,B
+// from PointPairContactInfo:
+//  contact_force
+//  contact_point
+// from hydro:
+//  info.F_Ac_W();
+//  info.contact_surface().centroid()
+
 template <typename T>
 void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
     const systems::Context<T>& context,
@@ -388,8 +397,11 @@ void TamsiDriver<T>::CalcDiscreteUpdateMultibodyForces(
                                  /* include_joint_limit_penalty_forces */ true,
                                  /* include_pd_controlled_input */ true,
                                  forces);
-  const ContactResults<T>& contact_results =
-      manager().EvalContactResults(context);
+  // TODO(jwnimmer-tri) This Calc be inefficient. On the other hand, this is
+  // in TAMSI so anyone using it deserves to keep the pieces when it breaks.
+  ContactResults<T> contact_results;
+  manager().CalcContactResults(context, &contact_results);
+
   auto& Fapplied_Bo_W_array = forces->mutable_body_forces();
   CalcAndAddSpatialContactForcesFromContactResults(context, contact_results,
                                                    &Fapplied_Bo_W_array);

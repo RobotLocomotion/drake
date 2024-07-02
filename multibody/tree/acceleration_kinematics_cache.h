@@ -30,6 +30,9 @@ class AccelerationKinematicsCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache);
 
+  // Objects that can be moved-from should always have a default constructor.
+  AccelerationKinematicsCache() = default;
+
   // Constructs an acceleration kinematics cache entry for the given
   // MultibodyTreeTopology.
   // In Release builds specific entries are left uninitialized resulting in a
