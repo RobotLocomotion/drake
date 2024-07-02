@@ -259,6 +259,7 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("colors"), py::arg("wireframe") = false,
             py::arg("wireframe_line_width") = 1.0,
             py::arg("side") = Meshcat::SideOfFaceToRender::kDoubleSide,
+            py::arg("time_in_recording") = std::nullopt,
             cls_doc.SetTriangleColorMesh.doc)
         .def("PlotSurface", &Class::PlotSurface, py::arg("path"), py::arg("X"),
             py::arg("Y"), py::arg("Z"),

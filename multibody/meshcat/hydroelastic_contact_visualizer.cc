@@ -149,14 +149,14 @@ void HydroelasticContactVisualizer::Update(
         }
       }
 
-      // TODO(russt): Support animations of the mesh, too.
-
       // TODO(#17682): Applying color map values as *vertex colors* produces
       // terrible visual artifacts. See the referenced issue for discussion.
-      meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
-                                     item.faces, colors, false);
+      meshcat_->SetTriangleColorMesh(
+          path + "/contact_surface", item.p_WV, item.faces, colors,
+          /* wireframe = */ false, /* wireframe_line_width = */ 0,
+          /* side = */ Meshcat::kDoubleSide, time);
       meshcat_->SetTransform(path + "/contact_surface",
-                             RigidTransformd(-item.centroid_W));
+                             RigidTransformd(-item.centroid_W), time);
     }
   }
 

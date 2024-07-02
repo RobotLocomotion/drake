@@ -127,6 +127,18 @@ or
 The AR/VR mode is not currently supported in offline mode (i.e., when saving as
 StaticHtml()).
 
+@section meshcat_animation_objects Changing objects while recording
+
+The threejs animation capability provides "tracks" (i.e., trajectories) for
+properties (e.g., a geometry's transform), but it can neither add nor remove
+objects. Instead, all objects must be added in an untimed manner, and then
+during the animation we can toggle their visibility at the appropriate time(s).
+
+Therefore, when %Meshcat is recording (see StartRecording()), any calls to add
+or delete objects with a non-null `time_in_recording` will be automatically
+re-spelled to be compatible with the threejs capability. Specifically, adding a
+timed object with `path`="/foo" will create the path "/foo/<animation>/frame#".
+
 @section network_access Network access
 
 See MeshcatParams for options to control the hostname and port to bind to.
@@ -302,14 +314,20 @@ class Meshcat {
                    the faces.
   @param wireframe_line_width is the width in pixels.  Due to limitations in
                               WebGL implementations, the line width may be 1
-                              regardless of the set value. */
-  void SetTriangleColorMesh(std::string_view path,
-                            const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
-                            const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
-                            const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
-                            bool wireframe = false,
-                            double wireframe_line_width = 1.0,
-                            SideOfFaceToRender side = kDoubleSide);
+                              regardless of the set value.
+  @param time_in_recording If recording (see StartRecording()), then this mesh
+                           is saved to the current animation at the given time.
+                           If not recording, then this argument is ignored.
+                           See @ref meshcat_animation_objects for more details.
+
+  @throws std::exception if `time_in_recording` for a given `path` ever moves
+  backwards in time for two subsequent calls. */
+  void SetTriangleColorMesh(
+      std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+      const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+      const Eigen::Ref<const Eigen::Matrix3Xd>& colors, bool wireframe = false,
+      double wireframe_line_width = 1.0, SideOfFaceToRender side = kDoubleSide,
+      std::optional<double> time_in_recording = std::nullopt);
 
   // TODO(russt): Add support for per vertex colors / colormaps.
   /** Sets the "object" at `path` to be a triangle surface mesh representing a
