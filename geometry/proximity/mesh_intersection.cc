@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/mesh_intersection.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <functional>
 #include <limits>
@@ -84,20 +85,21 @@ void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& input_vertices_F,
   // to support it or test it.
   const int size = static_cast<int>(input_vertices_F.size());
 
-  // TODO(SeanCurtis-TRI): If necessary, this can be made more efficient:
-  //  eliminating the modulus and eliminating the redundant "inside" calculation
-  //  on previous (by pre-determining previous and its "containedness" and then
-  //  propagating current -> previous in each loop. Probably a desirable
-  //  optimization as we need to make all of this work as cheap as possible.
+  static const int kMaxInputVertices = 8;
+  DRAKE_ASSERT(size <= kMaxInputVertices);
+  std::array<bool, kMaxInputVertices> contained;
   for (int i = 0; i < size; ++i) {
-    const Vector3<T>& current = input_vertices_F[i];
-    const Vector3<T>& previous = input_vertices_F[(i - 1 + size) % size];
     // Again, avoid doing classification on T-valued quantities so we don't
     // waste computation in applying the chain rule.
-    const bool current_contained =
-        H_F.CalcSignedDistance(convert_to_double(current)) <= 0;
-    const bool previous_contained =
-        H_F.CalcSignedDistance(convert_to_double(previous)) <= 0;
+    contained[i] =
+        H_F.CalcSignedDistance(convert_to_double(input_vertices_F[i])) <= 0;
+  }
+  int previous_index = size - 1;
+  for (int i = 0; i < size; ++i) {
+    const Vector3<T>& previous = input_vertices_F[previous_index];
+    const Vector3<T>& current = input_vertices_F[i];
+    const bool previous_contained = contained[previous_index];
+    const bool current_contained = contained[i];
     if (current_contained) {
       if (!previous_contained) {
         // Current is inside and previous is outside. Compute the point where
@@ -112,6 +114,7 @@ void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& input_vertices_F,
       // polygon and is included *instead* of current.
       output_vertices_F->push_back(CalcIntersection(current, previous, H_F));
     }
+    previous_index = i;
   }
 }
 
