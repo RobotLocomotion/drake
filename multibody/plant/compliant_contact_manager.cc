@@ -91,9 +91,6 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
   // AccelerationsDueNonConstraintForcesCache.
   AccelerationsDueNonConstraintForcesCache<T>
       non_constraint_forces_accelerations(this->internal_tree().get_topology());
-  const auto base_cache_indices = DiscreteUpdateManager<T>::cache_indexes();
-  const auto& discrete_input_port_forces_cache_entry =
-      plant().get_cache_entry(base_cache_indices.discrete_input_port_forces);
   const auto& non_constraint_forces_accelerations_cache_entry =
       this->DeclareCacheEntry(
           "Non-constraint forces and induced accelerations.",
@@ -104,11 +101,10 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
           // This includes contribution from force elements, which could
           // involve user-injected dependencies. So we need to include all
           // possible tickets that users can choose to depend on.
-          {systems::System<T>::xd_ticket(),
+          {systems::System<T>::all_input_ports_ticket(),
            systems::System<T>::all_parameters_ticket(),
            systems::System<T>::time_ticket(),
-           systems::System<T>::accuracy_ticket(),
-           discrete_input_port_forces_cache_entry.ticket()});
+           systems::System<T>::accuracy_ticket()});
   cache_indexes_.non_constraint_forces_accelerations =
       non_constraint_forces_accelerations_cache_entry.cache_index();
 
