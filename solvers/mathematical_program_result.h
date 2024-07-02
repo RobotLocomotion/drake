@@ -81,12 +81,21 @@ class MathematicalProgramResult final {
    */
   MathematicalProgramResult();
 
-  /** Returns true if the optimization problem is solved successfully; false
+  /** Returns true if the optimization problem found a solution; false
    * otherwise.
    * For more information on the solution status, the user could call
    * get_solver_details() to obtain the solver-specific solution status.
    */
   [[nodiscard]] bool is_success() const;
+
+  /** Returns true if the optimization problem was solved without any solver
+   * errors and therefore we have found either an optimal solution, a
+   * certificate of primal or dual infeasibility, or a certificate or primal or
+   * dual unboundedness. For more information on the solution status, the user
+   * could call get_solver_details() to obtain the solver-specific solution
+   * status.
+   */
+  [[nodiscard]] bool solved_without_errors() const;
 
   /**
    * Sets decision_variable_index mapping, that maps each decision variable to
