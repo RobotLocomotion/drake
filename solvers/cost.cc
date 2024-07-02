@@ -151,7 +151,7 @@ shared_ptr<QuadraticCost> Make2NormSquaredCost(
 L1NormCost::L1NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                        const Eigen::Ref<const Eigen::VectorXd>& b)
     : Cost(A.cols()), A_(A), b_(b) {
-  DRAKE_DEMAND(A_.rows() == b_.rows());
+  DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
 
 void L1NormCost::UpdateCoefficients(
@@ -200,13 +200,13 @@ std::string L1NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
 L2NormCost::L2NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                        const Eigen::Ref<const Eigen::VectorXd>& b)
     : Cost(A.cols()), A_(A), b_(b) {
-  DRAKE_DEMAND(A_.get_as_sparse().rows() == b_.rows());
+  DRAKE_THROW_UNLESS(A_.get_as_sparse().rows() == b_.rows());
 }
 
 L2NormCost::L2NormCost(const Eigen::SparseMatrix<double>& A,
                        const Eigen::Ref<const Eigen::VectorXd>& b)
     : Cost(A.cols()), A_(A), b_(b) {
-  DRAKE_DEMAND(A_.get_as_sparse().rows() == b_.rows());
+  DRAKE_THROW_UNLESS(A_.get_as_sparse().rows() == b_.rows());
 }
 
 void L2NormCost::UpdateCoefficients(
@@ -268,7 +268,7 @@ std::string L2NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
 LInfNormCost::LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                            const Eigen::Ref<const Eigen::VectorXd>& b)
     : Cost(A.cols()), A_(A), b_(b) {
-  DRAKE_DEMAND(A_.rows() == b_.rows());
+  DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
 
 void LInfNormCost::UpdateCoefficients(
@@ -319,8 +319,8 @@ PerspectiveQuadraticCost::PerspectiveQuadraticCost(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b)
     : Cost(A.cols()), A_(A), b_(b) {
-  DRAKE_DEMAND(A_.rows() >= 2);
-  DRAKE_DEMAND(A_.rows() == b_.rows());
+  DRAKE_THROW_UNLESS(A_.rows() >= 2);
+  DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
 
 void PerspectiveQuadraticCost::UpdateCoefficients(
