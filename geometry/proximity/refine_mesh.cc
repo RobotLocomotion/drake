@@ -2,6 +2,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/detect_zero_simplex.h"
 #include "drake/geometry/proximity/mesh_to_vtk.h"
@@ -11,6 +12,44 @@
 namespace drake {
 namespace geometry {
 namespace {
+
+using Eigen::Vector3d;
+
+struct TetrahedralVolume {
+  double volume{std::numeric_limits<double>::infinity()};
+  int tet_index{-1};
+  Vector3d centroid{0, 0, 0};
+};
+
+TetrahedralVolume CalcMinVolumeTetrahedron(const VolumeMesh<double>& mesh) {
+  TetrahedralVolume min_tet;
+  for (int tet = 0; tet < mesh.num_elements(); ++tet) {
+    const double tet_volume = mesh.CalcTetrahedronVolume(tet);
+    if (tet_volume < min_tet.volume) {
+      min_tet.volume = tet_volume;
+      min_tet.tet_index = tet;
+    }
+  }
+  min_tet.centroid =
+      (mesh.vertex(mesh.tetrahedra()[min_tet.tet_index].vertex(0)) +
+       mesh.vertex(mesh.tetrahedra()[min_tet.tet_index].vertex(1)) +
+       mesh.vertex(mesh.tetrahedra()[min_tet.tet_index].vertex(2)) +
+       mesh.vertex(mesh.tetrahedra()[min_tet.tet_index].vertex(3))) /
+      4.0;
+
+  return min_tet;
+}
+
+void ReportMinVolumeTetrahedron(const VolumeMesh<double>& mesh) {
+  TetrahedralVolume min_tet = CalcMinVolumeTetrahedron(mesh);
+  if (min_tet.volume < 1e-14) {
+    drake::log()->warn(
+        "The {}-th tetrahedron (0-based index) has very low minimum "
+        "volume {} m^3 less than 1e-14 m^3. Its centroid is at ({}, {}, {}).",
+        min_tet.tet_index, min_tet.volume, min_tet.centroid.x(),
+        min_tet.centroid.y(), min_tet.centroid.z());
+  }
+}
 
 int do_main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
@@ -52,6 +91,7 @@ int do_main(int argc, char* argv[]) {
       "The mesh has {} tets and {} vertices.",
       bad_tets.size(), bad_triangles.size(), bad_edges.size(),
       mesh.tetrahedra().size(), mesh.vertices().size());
+  ReportMinVolumeTetrahedron(mesh);
   bool found_bad =
       (!bad_tets.empty() || !bad_triangles.empty() || !bad_edges.empty());
   if (!found_bad) {
@@ -72,6 +112,8 @@ int do_main(int argc, char* argv[]) {
       "vertices.",
       outfile.string(), refined_mesh.tetrahedra().size(),
       refined_mesh.vertices().size());
+  ReportMinVolumeTetrahedron(refined_mesh);
+
   return 0;
 }
 
