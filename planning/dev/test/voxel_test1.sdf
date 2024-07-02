@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <!-- This model is used for testing generation of voxel-based environment
+  models and planning on voxelized environments. -->
+  <model name="voxel_test1">
+    <link name="voxel_test1">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <!--These values are arbitrary. This is not intended for simulation.-->
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>1.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.0</iyy>
+          <iyz>0</iyz>
+          <izz>1.0</izz>
+        </inertia>
+      </inertial>
+      <visual name="block1_visual">
+        <pose>0.25 0.25 0.25 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.5 0.5</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.3 0.3 0.3 1</diffuse>
+        </material>
+      </visual>
+      <collision name="block1_collision">
+        <pose>0.25 0.25 0.25 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.5 0.5</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="block2_visual">
+        <pose>0.75 0.75 0.25 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.5 0.5</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.3 0.3 0.3 1</diffuse>
+        </material>
+      </visual>
+      <collision name="block2_collision">
+        <pose>0.75 0.75 0.25 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.5 0.5</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
