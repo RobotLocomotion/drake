@@ -13,6 +13,8 @@
 #include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/geometry/proximity/obb.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -409,10 +411,9 @@ class MujocoParser {
     // up mesh inertias, it uses the mujoco geometry _name_ and not the
     // mesh filename.
     InertiaCalculator(
-        const std::map<std::string, SpatialInertia<double>>* mesh_inertia,
-        std::string name)
-        : mesh_inertia_(*mesh_inertia),
-          name_(std::move(name)) {
+        std::string name,
+        std::map<std::string, SpatialInertia<double>>* mesh_inertia)
+        : mesh_inertia_(mesh_inertia), name_(std::move(name)) {
       DRAKE_DEMAND(mesh_inertia != nullptr);
     }
 
@@ -423,9 +424,39 @@ class MujocoParser {
 
     using geometry::ShapeReifier::ImplementGeometry;
 
-    void ImplementGeometry(const geometry::Mesh&, void*) final {
-      DRAKE_DEMAND(mesh_inertia_.contains(name_));
-      M_GG_G_ = mesh_inertia_.at(name_);
+    void ImplementGeometry(const geometry::Mesh& mesh, void*) final {
+      if (mesh_inertia_->contains(name_)) {
+        M_GG_G_ = mesh_inertia_->at(name_);
+      } else {
+        try {  // # Per #21666, CalcSpatialInertia can fail and throw an
+               // exception for reasons that are very difficult to predetermine.
+          M_GG_G_ = CalcSpatialInertia(mesh, 1.0 /* density */);
+        } catch (const std::exception& e) {
+          // Fall back to using the volume of the oriented bounding box.
+
+          const geometry::TriangleSurfaceMesh<double>& surface_mesh =
+              geometry::ReadObjToTriangleSurfaceMesh(mesh.filename(),
+                                                     mesh.scale());
+          std::set<int> v;
+          for (int i = 0; i < surface_mesh.num_vertices(); ++i) {
+            v.insert(v.end(), i);
+          }
+
+          const geometry::internal::Obb obb =
+              geometry::internal::ObbMaker(surface_mesh, v).Compute();
+          UnitInertia<double> unit_M_GBox_Box =
+              multibody::UnitInertia<double>::SolidBox(
+                  obb.half_width()[0] * 2.0, obb.half_width()[1] * 2.0,
+                  obb.half_width()[2] * 2.0);
+          UnitInertia<double> unit_M_GG_G =
+              unit_M_GBox_Box.ReExpress(obb.pose().rotation())
+                  .ShiftFromCenterOfMass(-obb.pose().translation());
+          M_GG_G_ =
+              SpatialInertia<double>(obb.CalcVolume() /* since density = 1.0 */,
+                                     obb.center(), unit_M_GG_G);
+        }
+        mesh_inertia_->insert_or_assign(name_, M_GG_G_);
+      }
     }
 
     void ImplementGeometry(const geometry::HalfSpace&, void*) final {
@@ -437,7 +468,7 @@ class MujocoParser {
     }
 
    private:
-    const std::map<std::string, SpatialInertia<double>>& mesh_inertia_;
+    std::map<std::string, SpatialInertia<double>>* mesh_inertia_;
     std::string name_;
     SpatialInertia<double> M_GG_G_{SpatialInertia<double>::NaN()};
   };
@@ -570,15 +601,16 @@ class MujocoParser {
         }
         double length = (fromto.head<3>() - fromto.tail<3>()).norm();
         geom.shape = std::make_unique<geometry::Capsule>(size[0], length);
-
       } else {
         if (size.size() < 2) {
-          Error(*node,
-                "The size attribute for capsule geom must have at least two "
-                "elements.");
-          return geom;
+          // Allow zero-radius capsules (the MJCF default size is 0 0 0); they
+          // are equivalent to a zero-radius sphere.
+          geom.shape = std::make_unique<geometry::Sphere>(0.0);
+          compute_inertia = false;
+        } else {
+          geom.shape =
+              std::make_unique<geometry::Capsule>(size[0], 2 * size[1]);
         }
-        geom.shape = std::make_unique<geometry::Capsule>(size[0], 2 * size[1]);
       }
     } else if (type == "ellipsoid") {
       if (has_fromto) {
@@ -772,8 +804,14 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
 
     if (compute_inertia) {
-      SpatialInertia<double> M_GG_G_one =
-          InertiaCalculator(&mesh_inertia_, mesh).Calc(*geom.shape);
+      SpatialInertia<double> M_GG_G_one{SpatialInertia<double>::NaN()};
+      try {
+        M_GG_G_one = InertiaCalculator(mesh, &mesh_inertia_).Calc(*geom.shape);
+      } catch (const std::exception& e) {
+        Error(*node, fmt::format("Failed to compute spatial inertia for mesh "
+                                 "{}: {}",
+                                 mesh, e.what()));
+      }
       double mass{};
       if (!ParseScalarAttribute(node, "mass", &mass)) {
         double density{1000};
@@ -1110,8 +1148,6 @@ class MujocoParser {
 
         if (std::filesystem::exists(filename)) {
           mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale[0]);
-          mesh_inertia_.insert_or_assign(name,
-                                         CalcSpatialInertia(*mesh_[name], 1));
         } else if (std::filesystem::exists(original_filename)) {
           Warning(
               *node,
