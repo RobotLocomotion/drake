@@ -671,6 +671,14 @@ class TestCustom(unittest.TestCase):
         self.assertFalse(system.called_reset)
         self.assertFalse(system.called_system_reset)
 
+        # Test ExecuteForcedEvents.
+        system = TrivialSystem()
+        context = system.CreateDefaultContext()
+        system.ExecuteForcedEvents(context=context, publish=True)
+        self.assertTrue(system.called_forced_publish)
+        self.assertTrue(system.called_forced_discrete)
+        self.assertTrue(system.called_forced_unrestricted)
+
         # Test witness function error messages.
         system = TrivialSystem()
         system.getwitness_result = None

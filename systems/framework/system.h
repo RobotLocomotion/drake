@@ -760,6 +760,20 @@ class System : public SystemBase {
                          indicating failure. */
   void ExecuteInitializationEvents(Context<T>* context) const;
 
+  /** This method triggers all of the forced events registered with this
+  %System (which might be a Diagram). Ordering and status return handling
+  mimic the Simulator: unrestricted events are processed first, then
+  discrete update events, then publish events. "Reached termination" status
+  returns are ignored.
+
+  An option is provided to suppress publish events. This can be useful, for
+  example, to update state in a Diagram without triggering a visualization.
+
+  @throws std::exception if it invokes an event handler that returns status
+                         indicating failure. */
+  void ExecuteForcedEvents(Context<T>* context,
+                           bool publish = true) const;
+
   /** Determines whether there exists a unique periodic timing (offset and
   period) that triggers one or more discrete update events (and, if so, returns
   that unique periodic timing). Thus, this method can be used (1) as a test to
