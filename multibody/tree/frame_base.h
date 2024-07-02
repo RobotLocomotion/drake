@@ -41,6 +41,11 @@ namespace multibody {
 /// of frames, most importantly whether a frame is associated with a material
 /// point of a body.
 ///
+/// Even though the FrameBase class is virtual, it is not open for subclassing
+/// by third-party code. All subclasses of Frame must exist as a closed set of
+/// types inside of Drake. In other words, Drake's Stable API does NOT allow
+/// subclassing any of FrameBase, Frame, BodyFrame, FixedOffsetFrame, etc.
+///
 /// @tparam_default_scalar
 template <typename T>
 class FrameBase : public MultibodyElement<T> {

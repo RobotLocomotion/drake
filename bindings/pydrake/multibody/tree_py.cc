@@ -43,6 +43,7 @@ using Eigen::Vector3d;
 using std::string;
 
 using math::RigidTransform;
+using math::RotationMatrix;
 using multibody::SpatialAcceleration;
 using multibody::SpatialVelocity;
 
@@ -211,22 +212,52 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
         .def("GetFixedPoseInBodyFrame", &Frame<T>::GetFixedPoseInBodyFrame,
             cls_doc.GetFixedPoseInBodyFrame.doc)
-        .def("CalcPoseInBodyFrame", &Frame<T>::CalcPoseInBodyFrame,
-            py::arg("context"), cls_doc.CalcPoseInBodyFrame.doc)
+        .def("CalcPoseInBodyFrame",
+            overload_cast_explicit<RigidTransform<T>,
+                const systems::Context<T>&>(&Frame<T>::CalcPoseInBodyFrame),
+            py::arg("context"), cls_doc.CalcPoseInBodyFrame.doc_1args_context)
+        .def("CalcPoseInBodyFrame",
+            overload_cast_explicit<RigidTransform<T>,
+                const systems::Parameters<T>&>(&Frame<T>::CalcPoseInBodyFrame),
+            py::arg("parameters"),
+            cls_doc.CalcPoseInBodyFrame.doc_1args_parameters)
         .def("CalcRotationMatrixInBodyFrame",
-            &Frame<T>::CalcRotationMatrixInBodyFrame, py::arg("context"),
-            cls_doc.CalcRotationMatrixInBodyFrame.doc)
+            overload_cast_explicit<RotationMatrix<T>,
+                const systems::Context<T>&>(
+                &Frame<T>::CalcRotationMatrixInBodyFrame),
+            py::arg("context"),
+            cls_doc.CalcRotationMatrixInBodyFrame.doc_1args_context)
+        .def("CalcRotationMatrixInBodyFrame",
+            overload_cast_explicit<RotationMatrix<T>,
+                const systems::Parameters<T>&>(
+                &Frame<T>::CalcRotationMatrixInBodyFrame),
+            py::arg("parameters"),
+            cls_doc.CalcRotationMatrixInBodyFrame.doc_1args_parameters)
         .def("GetFixedPoseInBodyFrame", &Class::GetFixedPoseInBodyFrame,
             cls_doc.GetFixedPoseInBodyFrame.doc)
         .def("GetFixedRotationMatrixInBodyFrame",
             &Class::GetFixedRotationMatrixInBodyFrame,
-            cls_doc.GetFixedRotationMatrixInBodyFrame.doc)
-        .def("CalcOffsetPoseInBody", &Class::CalcOffsetPoseInBody,
+            cls_doc.GetFixedRotationMatrixInBodyFrame.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("CalcOffsetPoseInBody",
+            WrapDeprecated(cls_doc.CalcOffsetPoseInBody.doc_deprecated,
+                overload_cast_explicit<RigidTransform<T>,
+                    const systems::Context<T>&, const math::RigidTransform<T>&>(
+                    &Class::CalcOffsetPoseInBody)),
             py::arg("context"), py::arg("X_FQ"),
-            cls_doc.CalcOffsetPoseInBody.doc)
+            cls_doc.CalcOffsetPoseInBody.doc_deprecated)
         .def("CalcOffsetRotationMatrixInBody",
-            &Class::CalcOffsetRotationMatrixInBody, py::arg("context"),
-            py::arg("R_FQ"), cls_doc.CalcOffsetRotationMatrixInBody.doc)
+            WrapDeprecated(
+                cls_doc.CalcOffsetRotationMatrixInBody.doc_deprecated,
+                overload_cast_explicit<RotationMatrix<T>,
+                    const systems::Context<T>&, const RotationMatrix<T>&>(
+                    &Class::CalcOffsetRotationMatrixInBody)),
+            py::arg("context"), py::arg("R_FQ"),
+            cls_doc.CalcOffsetRotationMatrixInBody.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("GetFixedOffsetPoseInBody", &Class::GetFixedOffsetPoseInBody,
             py::arg("X_FQ"), cls_doc.GetFixedOffsetPoseInBody.doc)
         .def("GetFixedRotationMatrixInBody",
@@ -302,8 +333,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetPoseInParentFrame", &Class::SetPoseInParentFrame,
             py::arg("context"), py::arg("X_PF"),
             cls_doc.SetPoseInParentFrame.doc)
-        .def("GetPoseInParentFrame", &Class::GetPoseInParentFrame,
-            py::arg("context"), cls_doc.GetPoseInParentFrame.doc);
+        .def("GetPoseInParentFrame",
+            overload_cast_explicit<RigidTransform<T>,
+                const systems::Context<T>&>(&Class::GetPoseInParentFrame),
+            py::arg("context"), cls_doc.GetPoseInParentFrame.doc_1args_context)
+        .def("GetPoseInParentFrame",
+            overload_cast_explicit<RigidTransform<T>,
+                const systems::Parameters<T>&>(&Class::GetPoseInParentFrame),
+            py::arg("parameters"),
+            cls_doc.GetPoseInParentFrame.doc_1args_parameters);
   }
 
   // Rigid bodies.
@@ -345,8 +383,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcCenterOfMassInBodyFrame", &Class::CalcCenterOfMassInBodyFrame,
             py::arg("context"), cls_doc.CalcCenterOfMassInBodyFrame.doc)
         .def("CalcSpatialInertiaInBodyFrame",
-            &Class::CalcSpatialInertiaInBodyFrame, py::arg("context"),
-            cls_doc.CalcSpatialInertiaInBodyFrame.doc)
+            overload_cast_explicit<SpatialInertia<T>,
+                const systems::Context<T>&>(
+                &Class::CalcSpatialInertiaInBodyFrame),
+            py::arg("context"),
+            cls_doc.CalcSpatialInertiaInBodyFrame.doc_1args_context)
+        .def("CalcSpatialInertiaInBodyFrame",
+            overload_cast_explicit<SpatialInertia<T>,
+                const systems::Parameters<T>&>(
+                &Class::CalcSpatialInertiaInBodyFrame),
+            py::arg("parameters"),
+            cls_doc.CalcSpatialInertiaInBodyFrame.doc_1args_parameters)
         .def("EvalPoseInWorld", &Class::EvalPoseInWorld, py::arg("context"),
             cls_doc.EvalPoseInWorld.doc)
         .def("EvalSpatialVelocityInWorld", &Class::EvalSpatialVelocityInWorld,
@@ -1003,16 +1050,36 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("gear_ratio"), cls_doc.set_default_gear_ratio.doc)
         .def("default_reflected_inertia", &Class::default_reflected_inertia,
             cls_doc.default_reflected_inertia.doc)
-        .def("rotor_inertia", &Class::rotor_inertia, py::arg("context"),
-            cls_doc.rotor_inertia.doc)
-        .def("gear_ratio", &Class::gear_ratio, py::arg("context"),
-            cls_doc.gear_ratio.doc)
+        .def("rotor_inertia",
+            overload_cast_explicit<const T&, const systems::Context<T>&>(
+                &Class::rotor_inertia),
+            py::arg("context"), cls_doc.rotor_inertia.doc_1args_context)
+        .def("rotor_inertia",
+            overload_cast_explicit<const T&, const systems::Parameters<T>&>(
+                &Class::rotor_inertia),
+            py::arg("parameters"), cls_doc.rotor_inertia.doc_1args_parameters)
+        .def("gear_ratio",
+            overload_cast_explicit<const T&, const systems::Context<T>&>(
+                &Class::gear_ratio),
+            py::arg("context"), cls_doc.gear_ratio.doc_1args_context)
+        .def("gear_ratio",
+            overload_cast_explicit<const T&, const systems::Parameters<T>&>(
+                &Class::gear_ratio),
+            py::arg("parameters"), cls_doc.gear_ratio.doc_1args_parameters)
         .def("SetRotorInertia", &Class::SetRotorInertia, py::arg("context"),
             py::arg("rotor_inertia"), cls_doc.SetRotorInertia.doc)
         .def("SetGearRatio", &Class::SetGearRatio, py::arg("context"),
             py::arg("gear_ratio"), cls_doc.SetGearRatio.doc)
-        .def("calc_reflected_inertia", &Class::calc_reflected_inertia,
-            py::arg("context"), cls_doc.calc_reflected_inertia.doc)
+        .def("calc_reflected_inertia",
+            overload_cast_explicit<T, const systems::Context<T>&>(
+                &Class::calc_reflected_inertia),
+            py::arg("context"),
+            cls_doc.calc_reflected_inertia.doc_1args_context)
+        .def("calc_reflected_inertia",
+            overload_cast_explicit<T, const systems::Parameters<T>&>(
+                &Class::calc_reflected_inertia),
+            py::arg("parameters"),
+            cls_doc.calc_reflected_inertia.doc_1args_parameters)
         .def("get_controller_gains", &Class::get_controller_gains,
             cls_doc.get_controller_gains.doc)
         .def("set_controller_gains", &Class::set_controller_gains,

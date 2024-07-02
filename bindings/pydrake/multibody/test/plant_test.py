@@ -2470,13 +2470,15 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             dut.CalcRotationMatrixInBodyFrame(context=context),
             RotationMatrix_[T])
-        self.assertIsInstance(
-            dut.CalcOffsetPoseInBody(context=context, X_FQ=X),
-            RigidTransform_[T])
-        self.assertIsInstance(
-            dut.CalcOffsetRotationMatrixInBody(
-                context=context, R_FQ=X.rotation()),
-            RotationMatrix_[T])
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertIsInstance(
+                dut.CalcOffsetPoseInBody(context=context, X_FQ=X),
+                RigidTransform_[T])
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertIsInstance(
+                dut.CalcOffsetRotationMatrixInBody(
+                    context=context, R_FQ=X.rotation()),
+                RotationMatrix_[T])
         self.assertIsInstance(
             dut.GetFixedOffsetPoseInBody(X_FQ=X),
             RigidTransform_[T])
