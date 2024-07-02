@@ -29,7 +29,7 @@ def make_pepper_bowl_table(contact_model, time_step):
                              time_step=time_step,
                              contact_model=contact_model,
                              contact_surface_representation="polygon",
-                             discrete_contact_solver="sap"),
+                             discrete_contact_approximation="similar"),
                            builder)
 
     parser = Parser(plant)
