@@ -67,4 +67,9 @@ if ! command -v pip3.12 &>/dev/null; then
   exit 2
 fi
 
-pip3.12 install --break-system-packages -r "${BASH_SOURCE%/*}/requirements.txt"
+# Create a virtual environment to isolate the Drake Python depdendency tree 
+# from the system Python so we don't need to include --break-system-packages.
+# For more info, read https://github.com/RobotLocomotion/drake/pull/21013#issuecomment-1970181733.
+python3.12 -m venv "${HOME}/.drake_venv"
+source "${HOME}/.drake_venv/bin/activate"
+pip3.12 install -r "${BASH_SOURCE%/*}/requirements.txt"
