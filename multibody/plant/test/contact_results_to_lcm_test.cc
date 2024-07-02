@@ -141,8 +141,8 @@ constexpr int kNumPointPerTri = 3;
  by the given `offset` value so that we can distinguish between two "different"
  meshes. */
 template <typename T>
-ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
-                                     const Vector3<T>& offset) {
+std::unique_ptr<ContactSurface<T>> MakeContactSurface(
+    GeometryId id_M, GeometryId id_N, const Vector3<T>& offset) {
   static_assert(!std::is_same_v<T, Expression>);
 
   /* Create the surface mesh first. It is simply two triangles (make sure we're
@@ -167,7 +167,7 @@ ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
 
   TriangleSurfaceMesh<T>* mesh_pointer = mesh.get();
   EXPECT_EQ(mesh->num_triangles(), kNumFaces);
-  return ContactSurface<T>(
+  return std::make_unique<ContactSurface<T>>(
       id_M, id_N, std::move(mesh),
       make_unique<MeshFieldLinear<T, TriangleSurfaceMesh<T>>>(std::move(e_MN),
                                                               mesh_pointer));
@@ -325,20 +325,18 @@ class ContactResultsToLcmTest : public ::testing::Test {
     const BodyIndex b1{2};
     const BodyIndex b2{3};
 
-    static const never_destroyed<PointPairContactInfo<U>> pair1(
+    results->AddContactInfo(PointPairContactInfo<U>(
         b0, b1, Vector3<U>{1.1, 2.2, 3.3}, Vector3<U>{4.4, 5.5, 6.6}, 7.7, 8.8,
         PenetrationAsPointPair<U>{
             GeometryId::get_new_id(), GeometryId::get_new_id(),
             Vector3<U>{11.1, 22.2, 33.3}, Vector3<U>{44.4, 55.5, 66.6},
-            Vector3<U>{77.7, 88.8, 99.9}, 101.1});
-    results->AddContactInfo(pair1.access());
-    static const never_destroyed<PointPairContactInfo<U>> pair2(
+            Vector3<U>{77.7, 88.8, 99.9}, 101.1}));
+    results->AddContactInfo(PointPairContactInfo<U>(
         b1, b2, Vector3<U>{1.2, 2.3, 3.4}, Vector3<U>{4.5, 5.6, 6.7}, 7.8, 8.9,
         PenetrationAsPointPair<U>{
             GeometryId::get_new_id(), GeometryId::get_new_id(),
             Vector3<U>{11.2, 22.3, 33.4}, Vector3<U>{44.5, 55.6, 66.7},
-            Vector3<U>{77.8, 88.9, 99.1}, 101.1});
-    results->AddContactInfo(pair2.access());
+            Vector3<U>{77.8, 88.9, 99.1}, 101.1}));
   }
 
   /* Adds fake hydro contact results to the given set of contact `results`.
@@ -370,21 +368,15 @@ class ContactResultsToLcmTest : public ::testing::Test {
      can be meaningless garbage. All that matters is that they are unique values
      such that we can confirm that the right value got written to the right
      field. */
-    static const never_destroyed<ContactSurface<U>> surface1(
-        MakeContactSurface<U>(ids[0], ids[1], Vector3<U>{1, 2, 3}));
-    static const never_destroyed<HydroelasticContactInfo<U>> pair1(
-        &surface1.access(),
+    results->AddContactInfo(HydroelasticContactInfo<U>(
+        MakeContactSurface<U>(ids[0], ids[1], Vector3<U>{1, 2, 3}),
         SpatialForce<U>(Vector3<U>(1.1, 2.2, 3.3), Vector3<U>(4.4, 5.5, 6.6)),
-        MakeQuadratureData<U>(Vector3<U>{1, 2, 3}));
-    results->AddContactInfo(&pair1.access());
+        MakeQuadratureData<U>(Vector3<U>{1, 2, 3})));
 
-    static const never_destroyed<ContactSurface<U>> surface2(
-        MakeContactSurface<U>(ids[2], ids[3], Vector3<U>{-3, -1, 2}));
-    static const never_destroyed<HydroelasticContactInfo<U>> pair2(
-        &surface2.access(),
+    results->AddContactInfo(HydroelasticContactInfo<U>(
+        MakeContactSurface<U>(ids[2], ids[3], Vector3<U>{-3, -1, 2}),
         SpatialForce<U>(Vector3<U>(1.2, 2.3, 3.4), Vector3<U>(4.5, 5.6, 6.7)),
-        MakeQuadratureData<U>(Vector3<U>{-3, -1, -2}));
-    results->AddContactInfo(&pair2.access());
+        MakeQuadratureData<U>(Vector3<U>{-3, -1, -2})));
   }
 };
 

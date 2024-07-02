@@ -34,6 +34,10 @@ struct MultibodyPlantConfig {
   /// as a reasonably conservative estimate that works in many cases.
   double time_step{0.001};
 
+  /// Configures the MultibodyPlant::SetUseSampledOutputPorts().
+  /// Ignored when the time_step is zero.
+  bool use_sampled_output_ports{true};
+
   /// Configures the MultibodyPlant::set_penetration_allowance().
   double penetration_allowance{0.001};
 

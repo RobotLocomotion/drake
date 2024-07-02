@@ -35,6 +35,7 @@ class ContactVisualizerTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+    plant.SetUseSampledOutputPorts(false);  // We're not stepping time.
 
     // Add the point contact spheres and joints.
     const std::string sphere_url =

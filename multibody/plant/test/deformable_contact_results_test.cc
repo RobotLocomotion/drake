@@ -25,6 +25,7 @@ GTEST_TEST(CompliantContactManagerTest, ContactResultsWithDeformable) {
   MultibodyPlantConfig plant_config;
   plant_config.time_step = 1.0e-3;
   plant_config.discrete_contact_approximation = "sap";
+  plant_config.use_sampled_output_ports = false;  // We're not stepping time.
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 
   /* Add a hydro ground weld to the world*/
