@@ -234,10 +234,24 @@ std::queue<HPolyhedron> IrisWorker(
     checker.UpdatePositions(iris_options.starting_ellipse->center(),
                             builder_id);
     log()->debug("Iris builder thread {} is constructing a set.", builder_id);
-    ret.emplace(IrisInConfigurationSpace(
-        checker.plant(), checker.plant_context(builder_id), iris_options));
-    log()->debug("Iris builder thread {} has constructed a set.", builder_id);
-
+    std::optional<HPolyhedron> iris_region{std::nullopt};
+    try {
+      iris_region.emplace(IrisInConfigurationSpace(
+          checker.plant(), checker.plant_context(builder_id), iris_options));
+    } catch (const std::logic_error& e) {
+      // IrisInConfigurationSpace can fail for a large variety of reasons. We do
+      // not want to lose all the regions and crash the whole program if it
+      // fails.
+      log()->warn(
+          "Iris builder thread {} failed to compute a set from a clique. This "
+          "clique is being skipped. This can happen if the convex hull of the "
+          "clique contains collisions. The exact error message is {}",
+          builder_id, e.what());
+    }
+    if (iris_region.has_value()) {
+      ret.push(*iris_region);
+      log()->debug("Iris builder thread {} has constructed a set.", builder_id);
+    }
     current_clique = computed_cliques->pop();
   }
   log()->debug("Iris builder thread {} has completed.", builder_id);
