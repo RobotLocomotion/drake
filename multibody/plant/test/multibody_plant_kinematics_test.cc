@@ -51,7 +51,8 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     // Set a spatial inertia for each link (particle at distal end of link).
     const double link_mass = 5.0;  // kg
     const SpatialInertia<double> link_central_inertia =
-        SpatialInertia<double>::PointMass(link_mass, p_AoAf_A_);
+        SpatialInertia<double>::PointMass(
+            link_mass, 0.5 * link_length_ * Vector3<double>::UnitX());
 
     // Add the two links to the MultibodyPlant.
     bodyA_ = &plant_.AddRigidBody("BodyA", link_central_inertia);
@@ -88,7 +89,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     const Vector3<double> w_WA_A(0, 0, wAz_);        //     w_WA_A = wAz Az
     const Vector3<double> alpha_WA_A(0, 0, wAzdot);  // alpha_WA_A = ẇAz Az
 
-    // Calculate Ap's translational acceleration in frame W, expressed in A.
+    // Calculate Ap's translational acceleration in world W, expressed in A.
     // a_WAp_A = alpha_WA_A x p_AmAp_A + w_WA_A x (w_WA_A x p_AmAp_A).
     const Vector3<double> a_WAp_A =
         alpha_WA_A.cross(p_AmAp_A) + w_WA_A.cross(w_WA_A.cross(p_AmAp_A));
@@ -139,7 +140,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
         math::RotationMatrix<double>::MakeZRotation(qB_);
     const Vector3<double> p_BmBp_A = R_AB * p_BmBp_B;
 
-    // Calculate Bp's translational acceleration in frame W, expressed in A.
+    // Calculate Bp's translational acceleration in world W, expressed in A.
     // a_WBp_A = a_WAf_A + alpha_WB_A x p_BmBp_A + w_WB_A x (w_WB_A x p_BmBp_A).
     const Vector3<double> a_WBp_A = a_WAf_A + alpha_WB_A.cross(p_BmBp_A) +
                                     w_WB_A.cross(w_WB_A.cross(p_BmBp_A));
@@ -383,7 +384,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   EXPECT_TRUE(CompareMatrices(A_WAo_W.get_coeffs(),
                               (R_WA * A_WAo_A).get_coeffs(), kTolerance));
 
-  // Point Bo is the point of B located at its centroid (so Bo is Bcm).
+  // Point Bo is the point of B located at its centroid.
   // Calculate Bo's spatial acceleration in world W, expressed in link frame A.
   const Vector3<double> p_BoBo_B = Vector3<double>::Zero();
   const SpatialAcceleration<double> A_WBo_A =
