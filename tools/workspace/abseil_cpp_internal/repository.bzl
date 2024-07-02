@@ -6,8 +6,8 @@ def abseil_cpp_internal_repository(
     github_archive(
         name = name,
         repository = "abseil/abseil-cpp",
-        commit = "ed34153e0d9cd15f9b9eb45e86b457e0a495aeea",
-        sha256 = "a1537ce57c1392682cb675add67f147edc230103ecc7103b4dd26c4149b8bf88",  # noqa
+        commit = "0d9c2fc763dd766b868665a302ff4526748c4b36",
+        sha256 = "f81d7d7588fa8f9b3dc8f0d3a874288dd6ac6a12da21b073727ecf3f0570ef4a",  # noqa
         patches = [
             ":patches/disable_int128_on_clang.patch",
             ":patches/hidden_visibility.patch",
