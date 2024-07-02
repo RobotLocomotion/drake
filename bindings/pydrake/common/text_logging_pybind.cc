@@ -3,7 +3,12 @@
 
 #include <atomic>
 #include <cstdlib>
+#include <iostream>
 #include <memory>
+#include <string>
+#include <thread>
+
+#include <fmt/format.h>
 
 // clang-format off to disable clang-format-includes
 // N.B. text-logging.h must be included before spdlog headers
@@ -17,6 +22,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_ostream.h"
 #endif
 
 namespace drake {
@@ -49,7 +55,25 @@ class pylogging_sink final
 
  protected:
   void sink_it_(const spdlog::details::log_msg& msg) final {
+    // Create a thread to warn us in 1 second.
+    auto gil_acquire_warning_thread = std::jthread([](std::stop_token token) {
+      if (token.stop_requested()) {
+        return;
+      }
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      if (!token.stop_requested()) {
+        const std::string error_msg =
+            "C++ -> Python log redirection is taking unusually long to "
+            "acquire the Python GIL, you may be missing a GIL release in "
+            "bindings or need to disable logging redirection";
+        std::cerr << error_msg << std::endl;
+      }
+    });
+
     py::gil_scoped_acquire acquire;
+
+    // Stop the warning thread now that the GIL has been acquired.
+    gil_acquire_warning_thread.request_stop();
 
     // Bail out quickly in case this log level is disabled.
     const int level = to_py_level(msg.level);
