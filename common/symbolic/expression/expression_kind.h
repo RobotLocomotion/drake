@@ -50,8 +50,8 @@ enum class ExpressionKind : std::uint16_t {
 };
 
 /** Total ordering between ExpressionKinds. */
-inline bool operator<(ExpressionKind k1, ExpressionKind k2) {
-  return static_cast<std::uint16_t>(k1) < static_cast<std::uint16_t>(k2);
+inline auto operator<=>(ExpressionKind k1, ExpressionKind k2) {
+  return static_cast<std::uint16_t>(k1) <=> static_cast<std::uint16_t>(k2);
 }
 
 }  // namespace symbolic

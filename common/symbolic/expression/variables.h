@@ -4,6 +4,7 @@
 #error Do not include this file. Use "drake/common/symbolic/expression.h".
 #endif
 
+#include <compare>
 #include <cstddef>
 #include <functional>
 #include <initializer_list>
@@ -129,9 +130,12 @@ class Variables {
   /** Return true if @p vars is a strict superset of the Variables. */
   [[nodiscard]] bool IsStrictSupersetOf(const Variables& vars) const;
 
-  friend bool operator==(const Variables& vars1, const Variables& vars2);
+  friend bool operator==(const Variables& vars1, const Variables& vars2) {
+    return (vars1 <=> vars2) == 0;
+  }
 
-  friend bool operator<(const Variables& vars1, const Variables& vars2);
+  friend std::strong_ordering operator<=>(const Variables& vars1,
+                                          const Variables& vars2);
 
   friend std::ostream& operator<<(std::ostream&, const Variables& vars);
 

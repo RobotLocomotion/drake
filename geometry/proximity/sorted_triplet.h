@@ -56,6 +56,8 @@ struct SortedTriplet {
   // Gets the third (according to `operator<`) of the objects.
   const T& third() const { return objects_[2]; }
 
+  auto operator<=>(const SortedTriplet& other) const = default;
+
   // TODO(DamrongGuoy): Add Swap(t) to swap `this` and `t`.
 
   // TODO(DamrongGuoy): Add hash_append(HashAlgorithm&, SortedTriplet&) to
@@ -65,22 +67,6 @@ struct SortedTriplet {
   // The three objects in the order of T::operator<.
   std::array<T, 3> objects_{};
 };
-
-// Two triplets of the same type are equal iff their members are equal after
-// sorting.
-template <class T>
-inline bool operator==(const SortedTriplet<T>& x, const SortedTriplet<T>& y) {
-  return !(x < y) && !(y < x);
-}
-
-// Compares two triplets using lexicographic ordering.
-template <class T>
-inline bool operator<(const SortedTriplet<T>& x, const SortedTriplet<T>& y) {
-  return std::tie(x.first(), x.second(), x.third()) <
-         std::tie(y.first(), y.second(), y.third());
-}
-
-// TODO(DamrongGuoy): Provide operators !=, >, <=, >=.
 
 // TODO(DamrongGuoy): Provide MakeSortedTriplet() a convenience wrapper for
 //  creating a sorted triplet from three objects.

@@ -7,16 +7,21 @@ namespace drake {
 namespace test {
 namespace {
 
-#define DRAKE_CHECK_CMP(cmp)                             \
-  EXPECT_EQ(0 cmp 1, AutoDiffDut{0} cmp AutoDiffDut{1}); \
-  EXPECT_EQ(1 cmp 0, AutoDiffDut{1} cmp AutoDiffDut{0}); \
-  EXPECT_EQ(1 cmp 1, AutoDiffDut{1} cmp AutoDiffDut{1}); \
-  EXPECT_EQ(0 cmp 1, AutoDiffDut{0} cmp 1); /* NOLINT */ \
-  EXPECT_EQ(1 cmp 0, AutoDiffDut{1} cmp 0); /* NOLINT */ \
-  EXPECT_EQ(1 cmp 1, AutoDiffDut{1} cmp 1); /* NOLINT */ \
-  EXPECT_EQ(0 cmp 1, 0 cmp AutoDiffDut{1});              \
-  EXPECT_EQ(1 cmp 0, 1 cmp AutoDiffDut{0});              \
-  EXPECT_EQ(1 cmp 1, 1 cmp AutoDiffDut{1})
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+
+#define DRAKE_CHECK_CMP(cmp)                                   \
+  EXPECT_EQ(0 cmp 1, AutoDiffDut{0} cmp AutoDiffDut{1});       \
+  EXPECT_EQ(1 cmp 0, AutoDiffDut{1} cmp AutoDiffDut{0});       \
+  EXPECT_EQ(1 cmp 1, AutoDiffDut{1} cmp AutoDiffDut{1});       \
+  EXPECT_EQ(0 cmp 1, AutoDiffDut{0} cmp 1); /* NOLINT */       \
+  EXPECT_EQ(1 cmp 0, AutoDiffDut{1} cmp 0); /* NOLINT */       \
+  EXPECT_EQ(1 cmp 1, AutoDiffDut{1} cmp 1); /* NOLINT */       \
+  EXPECT_EQ(0 cmp 1, 0 cmp AutoDiffDut{1});                    \
+  EXPECT_EQ(1 cmp 0, 1 cmp AutoDiffDut{0});                    \
+  EXPECT_EQ(1 cmp 1, 1 cmp AutoDiffDut{1});                    \
+  EXPECT_EQ(0 cmp kNaN, AutoDiffDut{0} cmp AutoDiffDut{kNaN}); \
+  EXPECT_EQ(0 cmp kNaN, AutoDiffDut{0} cmp kNaN); /* NOLINT */ \
+  EXPECT_EQ(0 cmp kNaN, 0 cmp AutoDiffDut{kNaN})
 
 TEST_F(StandardOperationsTest, CmpLt) {
   DRAKE_CHECK_CMP(<);  // NOLINT
