@@ -20,11 +20,33 @@ filegroup(
 )
 
 filegroup(
+    name = "hello_robot_stretch",
+    srcs = [
+        "hello_robot_stretch/stretch.xml",
+        "hello_robot_stretch/LICENSE",
+    ] + glob([
+        "hello_robot_stretch/assets/*.obj",
+        "hello_robot_stretch/assets/*.png",
+        "hello_robot_stretch/assets/*.stl",
+    ])
+)
+
+filegroup(
     name = "kuka_iiwa_14",
     srcs = [
         "kuka_iiwa_14/iiwa14.xml",
         "kuka_iiwa_14/LICENSE",
     ] + glob(["kuka_iiwa_14/assets/*.obj"]),
+)
+
+filegroup(
+    name = "realsense_d435i",
+    srcs = [
+        "realsense_d435i/d435i.xml",
+        "realsense_d435i/LICENSE",
+    ] + glob([
+        "realsense_d435i/assets/*.obj",
+    ])
 )
 
 filegroup(
