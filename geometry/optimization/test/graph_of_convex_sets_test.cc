@@ -2915,6 +2915,8 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   options.preprocessing = true;
   options.convex_relaxation = true;
 
+  GcsGraphvizOptions viz_options;
+
   // Note: Testing the entire string against a const string is too fragile,
   // since the VertexIds are Identifier<> and increment on a global counter.
   EXPECT_THAT(g.GetGraphvizString(),
@@ -2934,46 +2936,42 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ =")));
 
   // No slack variables.
-  EXPECT_THAT(g.GetGraphvizString(result, /*show_slacks=*/false),
+  viz_options.show_slacks = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
                     Not(HasSubstr("ϕ xᵤ =")), Not(HasSubstr("ϕ xᵥ ="))));
 
   // Precision and scientific.
-  EXPECT_THAT(
-      g.GetGraphvizString(result, /*show_slacks=*/false, /*precision=*/2,
-                          /*scientific=*/false),
-      AllOf(HasSubstr("x = [1.00 2.00]"), HasSubstr("x = [0.00]")));
-  EXPECT_THAT(
-      g.GetGraphvizString(result, /*show_slacks=*/false, /*precision=*/2,
-                          /*scientific=*/true),
-      AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-05]")));
+  viz_options.precision = 2;
+  viz_options.scientific = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(HasSubstr("x = [1.00 2.00]"), HasSubstr("x = [0.00]")));
+
+  viz_options.scientific = true;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-05]")));
 
   // No vertex vars
-  EXPECT_THAT(
-      g.GetGraphvizString(result, /*show_slacks=*/false, /*precision=*/2,
-                          /*scientific=*/false, /*show_vars=*/false),
-      AllOf(Not(HasSubstr("x ="))));
+  viz_options.show_vars = false;
+  viz_options.scientific = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(Not(HasSubstr("x ="))));
 
   // No cost
-  EXPECT_THAT(
-      g.GetGraphvizString(result, /*show_slacks=*/false, /*precision=*/2,
-                          /*scientific=*/false, /*show_vars=*/false,
-                          /*show_costs=*/false),
-      AllOf(Not(HasSubstr("cost ="))));
+  viz_options.show_costs = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(Not(HasSubstr("cost ="))));
 
   // No flows
-  EXPECT_THAT(
-      g.GetGraphvizString(result, /*show_slacks=*/false, /*precision=*/2,
-                          /*scientific=*/false, /*show_vars=*/false,
-                          /*show_costs=*/false, /*show_flows*/ false),
-      Not(AllOf(HasSubstr("ϕ ="))));
+  viz_options.show_flows = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              Not(AllOf(HasSubstr("ϕ ="))));
 
   // Show active path
+  viz_options.show_flows = false;
+  viz_options.show_costs = false;
   EXPECT_THAT(
-      g.GetGraphvizString(result, /*show_slacks=*/false,
-                          /*precision=*/2, /*scientific=*/false,
-                          /*show_vars=*/false, /*show_costs=*/false,
-                          /*show_flows*/ false, std::vector<const Edge*>{edge}),
+      g.GetGraphvizString(result, viz_options, std::vector<const Edge*>{edge}),
       AllOf(HasSubstr("color=")));
 }
 
