@@ -806,9 +806,15 @@ class TestGeometryOptimization(unittest.TestCase):
                                     result=result,
                                     tolerance=0.1)), 1)
 
-        options = mut.GcsGraphvizOptions()
+        graphviz_options = mut.GcsGraphvizOptions()
+        graphviz_options.show_slacks = True
+        graphviz_options.show_vars = True
+        graphviz_options.show_flows = True
+        graphviz_options.show_costs = True
+        graphviz_options.scientific = False
+        graphviz_options.precision = 3
         self.assertIn("source", spp.GetGraphvizString(
-            result=result, options=options, active_path=[edge0]))
+            result=result, options=graphviz_options, active_path=[edge0]))
 
         # Vertex
         self.assertAlmostEqual(
