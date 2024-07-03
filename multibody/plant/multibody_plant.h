@@ -2198,8 +2198,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre this %MultibodyPlant is discrete.
   /// @pre manager != nullptr.
   /// @throws std::exception if called pre-finalize. See Finalize().
-  /// @note `this` MultibodyPlant will no longer support scalar conversion to or
-  /// from symbolic::Expression after a call to this method.
   void SetDiscreteUpdateManager(
       std::unique_ptr<internal::DiscreteUpdateManager<T>> manager);
 
@@ -5446,7 +5444,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // hydroelastic model for continuous plants.
   void CalcHydroelasticContactForcesContinuous(
       const systems::Context<T>& context,
-      internal::HydroelasticContactForcesContinuousCacheData<T>* output) const;
+      internal::HydroelasticContactForcesContinuousCacheData<T>* output) const
+    requires scalar_predicate<T>::is_bool;
 
   // Eval version of CalcHydroelasticContactForces().
   const internal::HydroelasticContactForcesContinuousCacheData<T>&
@@ -5823,23 +5822,6 @@ std::pair<T, T> CombinePointContactParameters(const T& k1, const T& k2,
       safe_divide(k2, k1 + k2) * d1 + safe_divide(k1, k1 + k2) * d2);  // d
 }
 }  // namespace internal
-
-#ifndef DRAKE_DOXYGEN_CXX
-// Forward-declare specializations, prior to DRAKE_DECLARE... below.
-// See the .cc file for an explanation why we specialize these methods.
-template <>
-void MultibodyPlant<symbolic::Expression>::
-    CalcHydroelasticContactForcesContinuous(
-        const systems::Context<symbolic::Expression>&,
-        internal::HydroelasticContactForcesContinuousCacheData<
-            symbolic::Expression>*) const;
-template <>
-void MultibodyPlant<symbolic::Expression>::
-    AppendContactResultsHydroelasticContinuous(
-        const systems::Context<symbolic::Expression>&,
-        ContactResults<symbolic::Expression>*) const;
-#endif
-
 }  // namespace multibody
 }  // namespace drake
 

@@ -752,7 +752,11 @@ void DiscreteUpdateManager<T>::CalcDiscreteContactPairs(
   DRAKE_DEMAND(result != nullptr);
   result->Clear();
   AppendDiscreteContactPairsForPointContact(context, result);
-  AppendDiscreteContactPairsForHydroelasticContact(context, result);
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    throw std::logic_error("This method doesn't support T = Expression.");
+  } else {
+    AppendDiscreteContactPairsForHydroelasticContact(context, result);
+  }
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
       deformable_driver_->AppendDiscreteContactPairs(context, result);
@@ -920,7 +924,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
 template <typename T>
 void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
     const systems::Context<T>& context,
-    DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const {
+    DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const
+  requires scalar_predicate<T>::is_bool
+{  // NOLINT(whitespace/braces)
   const std::vector<geometry::ContactSurface<T>>& surfaces =
       EvalGeometryContactData(context).surfaces;
   // N.B. For discrete hydro we use a first order quadrature rule. As such,
@@ -1162,18 +1168,6 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
       }
     }
   }
-}
-
-template <>
-void DiscreteUpdateManager<symbolic::Expression>::
-    AppendDiscreteContactPairsForHydroelasticContact(
-        const drake::systems::Context<symbolic::Expression>&,
-        DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const {
-  // Currently, the computation of contact pairs is not supported when T =
-  // symbolic::Expression.
-  throw std::domain_error(
-      fmt::format("This method doesn't support T = {}.",
-                  NiceTypeName::Get<symbolic::Expression>()));
 }
 
 template <typename T>
