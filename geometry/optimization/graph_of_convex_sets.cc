@@ -1332,10 +1332,12 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
           // always have a path. We assert that...
           if (path_vertex_ids.size() == 0) {
             throw std::runtime_error(
-                "Cannot find a valid solution path, even though "
-                "result.is_success() is true. This could be due to tighter "
-                "constraint tolerances on the rounding solution than the "
-                "relaxation solution.");
+                "GCS rounding failed. The convex relaxation returned a "
+                "feasible solution, but there is (definitely) no path from the "
+                "source to the target using only edges with flows > "
+                "options.flow_tolerance. You can set "
+                "options.max_rounded_paths=0 to disable rounding and return "
+                "the solution to the relaxation instead.");
           }
           continue;
         }

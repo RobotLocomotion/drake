@@ -2900,7 +2900,7 @@ GTEST_TEST(ShortestPathTest, InaccurateRelaxationSolve) {
   options.solver = &scs;
 
   DRAKE_EXPECT_THROWS_MESSAGE(g.SolveShortestPath(*v1, *v4, options),
-                              ".*even though result.is_success.*");
+                              ".*no path from the source to the target.*");
 }
 
 }  // namespace optimization
