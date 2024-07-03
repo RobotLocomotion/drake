@@ -555,8 +555,18 @@ def _do_upgrades(temp_dir, gh, local_drake_checkout,
             modified_paths += result.modified_paths
             commit_messages.append(result.commit_message)
             modified_workspace_names.append(workspace_name)
-        elif len(workspace_names) == 1:
-            raise RuntimeError(f"No upgrade needed for {workspace_name}")
+        else:
+            info(f"No updates for {workspace_name}")
+
+    if not modified_workspace_names:
+        # Nothing was updated
+        names = ", ".join(workspace_names)
+        info("")
+        info("*" * 72)
+        info(f"Done. No updates for {names}")
+        info("*" * 72)
+        info("")
+        return
 
     # Determine if we should and can commit the changes made.
     if len(modified_workspace_names) == 1:
