@@ -21,6 +21,8 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
+#include "drake/multibody/tree/rpy_floating_joint.h"
+#include "drake/multibody/tree/rpy_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
@@ -742,15 +744,25 @@ void MultibodyTree<T>::CreateJointImplementations() {
     // Loop must terminate since there are only a finite number of joints.
     while (HasJointNamed(floating_joint_name, body.model_instance()))
       floating_joint_name = "_" + floating_joint_name;
-    // The joint's model instance will be the same as body's.
-    const Joint<T>& joint = this->AddJoint<QuaternionFloatingJoint>(
+
+    // Add either a QuaternionFloatingJoint or RpyFloatingJoint.
+    // The joint's model instance will be the same as the body's.
+    const bool is_rpy_joint = false;
+    const Joint<T>* joint;
+    if (is_rpy_joint) {
+       joint = &this->AddJoint<RpyFloatingJoint>(
         floating_joint_name, world_body(), {}, body, {});
-    Joint<T>& mutable_joint = joints_.get_mutable_element(joint.index());
+    } else {
+       joint = &this->AddJoint<QuaternionFloatingJoint>(
+        floating_joint_name, world_body(), {}, body, {});
+    }
+
+    Joint<T>& mutable_joint = joints_.get_mutable_element(joint->index());
     Mobilizer<T>* mobilizer =
         internal::JointImplementationBuilder<T>::Build(&mutable_joint, this);
-    mobilizer->set_model_instance(joint.model_instance());
+    mobilizer->set_model_instance(joint->model_instance());
     // Record the joint to mobilizer map.
-    joint_to_mobilizer_[joint.index()] = mobilizer->index();
+    joint_to_mobilizer_[joint->index()] = mobilizer->index();
   }
 }
 
