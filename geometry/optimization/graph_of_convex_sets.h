@@ -127,6 +127,34 @@ struct GraphOfConvexSetsOptions {
   }
 };
 
+struct GcsGraphvizOptions {
+  /** Determines whether the values of the intermediate
+  (slack) variables are also displayed in the graph. */
+  bool show_slacks{true};
+
+  /** Determines whether the solution values for decision variables
+  in each set are shown. */
+  bool show_vars{true};
+
+  /** Determines whether the flow value results are shown. The
+  flow values are shown both with a numeric value and through the transparency
+  value on the edge, where a flow of 0.0 will correspond to an invisible edge,
+  and a flow of 1.0 will display as a fully black edge. */
+  bool show_flows{true};
+
+  /** Determines whether the cost value results are shown. This
+  will show both edge and vertex costs. */
+  bool show_costs{true};
+
+  /** Sets the floating point formatting to scientific (if true)
+  or fixed (if false). */
+  bool scientific{false};
+
+  /** Sets the floating point precision (how many digits are
+  generated) of the annotations. */
+  int precision{3};
+};
+
 /**
 GraphOfConvexSets (GCS) implements the design pattern and optimization problems
 first introduced in the paper "Shortest Paths in Graphs of Convex Sets".
@@ -627,30 +655,18 @@ class GraphOfConvexSets {
   /** Removes all constraints added to any edge with AddPhiConstraint. */
   void ClearAllPhiConstraints();
 
-  /** Returns a Graphviz string describing the graph vertices and edges.  If
+  /**
+  Returns a Graphviz string describing the graph vertices and edges. If
   `results` is supplied, then the graph will be annotated with the solution
-  values.
-  @param show_slacks determines whether the values of the intermediate
-  (slack) variables are also displayed in the graph.
-  @param show_vars determines whether the solution values for decision variables
-  in each set are shown.
-  @param show_flows determines whether the flow value results are shown. The
-  flow values are shown both with a numeric value and through the transparency
-  value on the edge, where a flow of 0.0 will correspond to an invisible edge,
-  and a flow of 1.0 will display as a fully black edge.
-  @param show_costs determines whether the cost value results are shown. This
-  will show both edge and vertex costs
-  @param precision sets the floating point precision (how many digits are
-  generated) of the annotations.
-  @param scientific sets the floating point formatting to scientific (if true)
-  or fixed (if false).
-  @param active_path highlights a path in the graph with red edges.
-  */
+  values, according to `options`.
+  @param result the optional result from a solver.
+  @param options the struct containing various options for visualization.
+  @param active_path optionally highlights a path in the graph. The path is
+  displayed addition to the edges as additional red edges in the graph. */
   std::string GetGraphvizString(
       const std::optional<solvers::MathematicalProgramResult>& result =
           std::nullopt,
-      bool show_slacks = true, int precision = 3, bool scientific = false,
-      bool show_vars = true, bool show_costs = true, bool show_flows = true,
+      const GcsGraphvizOptions& options = GcsGraphvizOptions(),
       const std::optional<std::vector<const Edge*>>& active_path =
           std::nullopt) const;
 

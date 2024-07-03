@@ -452,8 +452,7 @@ void GraphOfConvexSets::ClearAllPhiConstraints() {
 
 std::string GraphOfConvexSets::GetGraphvizString(
     const std::optional<solvers::MathematicalProgramResult>& result,
-    bool show_slacks, int precision, bool scientific, bool show_vars,
-    bool show_costs, bool show_flows,
+    const GcsGraphvizOptions& options,
     const std::optional<std::vector<const Edge*>>& active_path) const {
   // This function converts a 0.0 to 00 and 1.0 to FF
   auto floatToHex = [](float value) -> std::string {
@@ -467,17 +466,17 @@ std::string GraphOfConvexSets::GetGraphvizString(
   // Note: We use stringstream instead of fmt in order to control the
   // formatting of the Eigen output and double output in a consistent way.
   std::stringstream graphviz;
-  graphviz.precision(precision);
-  if (!scientific) graphviz << std::fixed;
+  graphviz.precision(options.precision);
+  if (!options.scientific) graphviz << std::fixed;
   graphviz << "digraph GraphOfConvexSets {\n";
   graphviz << "labelloc=t;\n";
   for (const auto& [v_id, v] : vertices_) {
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
-      if (show_vars) {
+      if (options.show_vars) {
         graphviz << "\nx = [" << result->GetSolution(v->x()).transpose() << "]";
       }
-      if (show_costs) {
+      if (options.show_costs) {
         graphviz << "\ncost = " << v->GetSolutionCost(*result);
       }
     }
@@ -488,7 +487,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << "v" << e->u().id() << " -> v" << e->v().id();
     graphviz << " [label=\"" << e->name();
     if (result) {
-      if (show_costs) {
+      if (options.show_costs) {
         graphviz << "\n";
         if (e->ell_.size() > 0) {
           // SolveConvexRestriction does not yet return the rewritten costs.
@@ -500,7 +499,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
           graphviz << "cost = 0";
         }
       }
-      if (show_slacks) {
+      if (options.show_slacks) {
         graphviz << "\n";
         if (result->get_decision_variable_index()->contains(
                 e->y_[0].get_id())) {
@@ -510,12 +509,12 @@ std::string GraphOfConvexSets::GetGraphvizString(
                    << "]";
         }
       }
-      if (show_flows) {
+      if (options.show_flows) {
         graphviz << "\n";
         graphviz << "ϕ = " << result->GetSolution(e->phi());
         graphviz << "\"";
-        // Note: This must be last, because it also sets the color parameter of
-        // the edge (and hence must close the name within quote-marks)
+        // Note: This must be last, because it also sets the color parameter
+        // of the edge (and hence must close the name within quote-marks)
         graphviz << ", color=" << "\"#000000"
                  << floatToHex(result->GetSolution(e->phi()));
       }

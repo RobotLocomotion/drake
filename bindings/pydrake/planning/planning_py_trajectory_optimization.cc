@@ -438,8 +438,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("continuous_revolute_joints", &Class::continuous_revolute_joints,
             cls_doc.continuous_revolute_joints.doc)
         .def("GetGraphvizString", &Class::GetGraphvizString,
-            py::arg("result") = std::nullopt, py::arg("show_slack") = true,
-            py::arg("precision") = 3, py::arg("scientific") = false,
+            py::arg("result") = std::nullopt,
+            py::arg("options") = geometry::optimization::GcsGraphvizOptions(),
             cls_doc.GetGraphvizString.doc)
         .def(
             "AddRegions",
