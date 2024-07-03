@@ -813,8 +813,12 @@ class TestGeometryOptimization(unittest.TestCase):
         graphviz_options.show_costs = True
         graphviz_options.scientific = False
         graphviz_options.precision = 3
-        self.assertIn("source", spp.GetGraphvizString(
-            result=result, options=graphviz_options, active_path=[edge0]))
+        self.assertIn(
+            "source",
+            spp.GetGraphvizString(
+                result=result, options=graphviz_options, active_path=[edge0]
+            ),
+        )
 
         # Vertex
         self.assertAlmostEqual(
