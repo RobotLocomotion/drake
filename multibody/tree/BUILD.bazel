@@ -265,6 +265,7 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/proximity:obj_to_surface_mesh",
+        "//geometry/proximity:polygon_to_triangle_mesh",
         "//geometry/proximity:triangle_surface_mesh",
         "//geometry/proximity:volume_to_surface_mesh",
     ],
@@ -687,6 +688,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "geometry_spatial_inertia_test",
     data = [
+        "//geometry:test_obj_files",
         "//geometry:test_vtk_files",
         "//multibody/parsing:test_models",
     ],
