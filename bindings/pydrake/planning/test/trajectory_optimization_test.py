@@ -586,8 +586,22 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertTrue(traj.end_time() - traj.start_time() >= 10)
 
         self.assertIsInstance(
-            gcs.GetGraphvizString(result=result,
-                                  options=GcsGraphvizOptions()), str)
+            gcs.GetGraphvizString(result=result, options=GcsGraphvizOptions()), str
+        )
+
+        self.assertIsInstance(
+            gcs.GetGraphvizString(
+                result=result,
+                show_slacks=True,
+                show_vars=True,
+                show_flows=True,
+                show_costs=True,
+                scientific=True,
+                precision=3,
+                active_path=[],
+            ),
+            str,
+        )
 
         # In the follwoing, we test adding the bindings for nonlinear
         # constraints.
