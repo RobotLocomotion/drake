@@ -715,34 +715,35 @@ void DefineGeometryOptimization(py::module m) {
         cls_doc.preprocessing_solver.doc);
   }
 
-    // GcsGraphvizOptions
+  // GcsGraphvizOptions
   {
-    const auto &cls_doc = doc.GcsGraphvizOptions;
+    const auto& cls_doc = doc.GcsGraphvizOptions;
     py::class_<GcsGraphvizOptions> gcs_options(m, "GcsGraphvizOptions");
     gcs_options.def(py::init<>())
         .def_readwrite("show_slacks", &GcsGraphvizOptions::show_slacks,
-                       cls_doc.show_slacks.doc)
-        .def_readwrite("show_vars", &GcsGraphvizOptions::show_vars,
-                       cls_doc.show_vars.doc)
+            cls_doc.show_slacks.doc)
+        .def_readwrite(
+            "show_vars", &GcsGraphvizOptions::show_vars, cls_doc.show_vars.doc)
         .def_readwrite("show_flows", &GcsGraphvizOptions::show_flows,
-                       cls_doc.show_flows.doc)
+            cls_doc.show_flows.doc)
         .def_readwrite("show_costs", &GcsGraphvizOptions::show_costs,
-                       cls_doc.show_costs.doc)
+            cls_doc.show_costs.doc)
         .def_readwrite("scientific", &GcsGraphvizOptions::scientific,
-                       cls_doc.scientific.doc)
-        .def_readwrite("precision", &GcsGraphvizOptions::precision,
-                       cls_doc.precision.doc)
-        .def("__repr__", [](const GcsGraphvizOptions &self) {
-          return py::str("GcsGraphvizOptions("
-                         "show_slacks={}, "
-                         "show_vars={}, "
-                         "show_flows={}, "
-                         "show_costs={}, "
-                         "scientific={}, "
-                         "precision={}"
-                         ")")
+            cls_doc.scientific.doc)
+        .def_readwrite(
+            "precision", &GcsGraphvizOptions::precision, cls_doc.precision.doc)
+        .def("__repr__", [](const GcsGraphvizOptions& self) {
+          return py::str(
+              "GcsGraphvizOptions("
+              "show_slacks={}, "
+              "show_vars={}, "
+              "show_flows={}, "
+              "show_costs={}, "
+              "scientific={}, "
+              "precision={}"
+              ")")
               .format(self.show_slacks, self.show_vars, self.show_flows,
-                      self.show_costs, self.scientific, self.precision);
+                  self.show_costs, self.scientific, self.precision);
         });
   }
 
@@ -940,6 +941,30 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
             py::arg("result") = std::nullopt,
             py::arg("options") = GcsGraphvizOptions(),
+            py::arg("active_path") = std::nullopt,
+            cls_doc.GetGraphvizString.doc)
+        .def(
+            "GetGraphvizString",
+            [](const GraphOfConvexSets& self,
+                const std::optional<solvers::MathematicalProgramResult>& result,
+                bool show_slacks, bool show_vars, bool show_flows,
+                bool show_costs, bool scientific, int precision,
+                const std::optional<
+                    std::vector<const GraphOfConvexSets::Edge*>>& active_path) {
+              GcsGraphvizOptions options;
+              options.show_slacks = show_slacks;
+              options.show_vars = show_vars;
+              options.show_flows = show_flows;
+              options.show_costs = show_costs;
+              options.scientific = scientific;
+              options.precision = precision;
+              return self.GetGraphvizString(result, options, active_path);
+            },
+            py::arg("result") =
+                std::optional<solvers::MathematicalProgramResult>(std::nullopt),
+            py::arg("show_slacks") = true, py::arg("show_vars") = true,
+            py::arg("show_flows") = true, py::arg("show_costs") = true,
+            py::arg("scientific") = false, py::arg("precision") = 3,
             py::arg("active_path") = std::nullopt,
             cls_doc.GetGraphvizString.doc)
         .def("SolveShortestPath",

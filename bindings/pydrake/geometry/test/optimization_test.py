@@ -819,6 +819,19 @@ class TestGeometryOptimization(unittest.TestCase):
                 result=result, options=graphviz_options, active_path=[edge0]
             ),
         )
+        self.assertIn(
+            "source",
+            spp.GetGraphvizString(
+                result=result,
+                show_slacks=True,
+                show_vars=True,
+                show_flows=True,
+                show_costs=True,
+                scientific=True,
+                precision=3,
+                active_path=[edge0],
+            ),
+        )
 
         # Vertex
         self.assertAlmostEqual(
