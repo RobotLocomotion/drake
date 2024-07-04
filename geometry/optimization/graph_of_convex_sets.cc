@@ -515,8 +515,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
         graphviz << "\"";
         // Note: This must be last, because it also sets the color parameter
         // of the edge (and hence must close the name within quote-marks)
-        graphviz << ", color=" << "\"#000000"
-                 << floatToHex(result->GetSolution(e->phi()));
+        graphviz << ", color="
+                 << "\"#000000" << floatToHex(result->GetSolution(e->phi()));
       }
     }
     graphviz << "\"];\n";
@@ -526,7 +526,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
     for (const auto& e : *active_path) {
       graphviz << "v" << e->u().id() << " -> v" << e->v().id();
       graphviz << " [label=\"" << e->name() << " = active\"";
-      graphviz << ", color=" << "\"#ff0000\"";
+      graphviz << ", color="
+               << "\"#ff0000\"";
       graphviz << ", style=\"dashed\"";
       graphviz << "];\n";
     }
