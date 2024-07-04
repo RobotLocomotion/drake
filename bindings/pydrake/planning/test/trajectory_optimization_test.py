@@ -586,7 +586,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertTrue(traj.end_time() - traj.start_time() >= 10)
 
         self.assertIsInstance(
-            gcs.GetGraphvizString(result=result, options=GcsGraphvizOptions()), str
+            gcs.GetGraphvizString(result=result, options=GcsGraphvizOptions()),
+            str
         )
 
         self.assertIsInstance(
