@@ -612,29 +612,6 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
     EXPECT_TRUE(F_Ac_W.IsApprox(
         SpatialForce<double>(Vector3d::Zero(), expected_contact_force),
         kTolerance));
-
-    const Vector3d f_Ac_W = F_Ac_W.translational();
-
-    const std::vector<HydroelasticQuadraturePointData<double>>&
-        quadrature_point_data = contact_info.quadrature_point_data();
-
-    // Sanity check the face indices.
-    EXPECT_EQ(quadrature_point_data.size(), 2);
-    EXPECT_NE(quadrature_point_data[0].face_index,
-              quadrature_point_data[1].face_index);
-
-    for (const HydroelasticQuadraturePointData<double>& data :
-         quadrature_point_data) {
-      // Sanity check the face indices.
-      EXPECT_THAT(std::vector<int>{data.face_index},
-                  testing::IsSubsetOf({0, 1}));
-      EXPECT_TRUE(CompareMatrices(data.vt_BqAq_W, Vector3d::Zero(), kEps));
-      // Each of the 2 faces have area kArea_ / 2 and exist in a plane of
-      // constant pressure within the compliant halfspace, thus they each
-      // contribute half of the total force.
-      // Therefore traction = (f_Ac_W/2) / (kArea_/2) = f_Ac_W / kArea_
-      EXPECT_TRUE(CompareMatrices(data.traction_Aq_W, f_Ac_W / kArea_, kEps));
-    }
   }
 }
 
@@ -757,12 +734,6 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
         kRelativeSlipTolerance * kMu_ * F_Ac_W.translational().z();
     EXPECT_NEAR(-F_Ac_W.translational().x(), kMu_ * F_Ac_W.translational().z(),
                 tolerance);
-
-    for (const HydroelasticQuadraturePointData<double>& data :
-         contact_info.quadrature_point_data()) {
-      // Check that the slip velocity has the correct sign.
-      EXPECT_LT(data.vt_BqAq_W.dot(F_Ac_W.translational()), 0);
-    }
   }
 }
 

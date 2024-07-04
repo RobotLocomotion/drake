@@ -631,12 +631,6 @@ void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
   std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
                                                   SpatialForce<T>::Zero());
 
-  std::vector<std::vector<HydroelasticQuadraturePointData<T>>> quadrature_data(
-      num_surfaces);
-  for (int isurface = 0; isurface < num_surfaces; ++isurface) {
-    quadrature_data[isurface].reserve(all_surfaces[isurface].num_faces());
-  }
-
   // We only scan discrete pairs corresponding to hydroelastic quadrature
   // points.
   for (int icontact = num_point_contacts;
@@ -667,30 +661,12 @@ void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
         SpatialForce<T>(Vector3<T>::Zero(), f_Aq_W).Shift(p_QO_W);
     // Accumulate force for the corresponding contact surface.
     F_Ao_W_per_surface[surface_index] += Fq_Ao_W;
-
-    // Velocity of Aq relative to Bq in the tangent direction.
-    // N.B. DiscreteUpdateManager<T>::CalcContactKinematics() uses the
-    // convention of computing J_AcBc_C and thus J_AcBc_C * v = v_AcBc_W (i.e.
-    // relative velocity of Bc with respect to Ac). Thus we flip the sign here
-    // for the convention used by HydroelasticQuadratureData.
-    const Vector3<T> vt_BqAq_C(-vt(2 * icontact), -vt(2 * icontact + 1), 0);
-    const Vector3<T> vt_BqAq_W = R_WC * vt_BqAq_C;
-
-    // Traction vector applied to body A at point Aq (Aq and Bq are coincident)
-    // expressed in the world frame.
-    DRAKE_DEMAND(pair.face_index.has_value());
-    const int face_index = pair.face_index.value();
-    const Vector3<T> traction_Aq_W = f_Aq_W / s.area(face_index);
-
-    quadrature_data[surface_index].emplace_back(p_WQ, face_index, vt_BqAq_W,
-                                                traction_Aq_W);
   }
 
   // Update contact info to include the correct contact forces.
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     contact_info->emplace_back(&all_surfaces[surface_index],
-                               F_Ao_W_per_surface[surface_index],
-                               std::move(quadrature_data[surface_index]));
+                               F_Ao_W_per_surface[surface_index]);
   }
 }
 
