@@ -1,7 +1,6 @@
 ipywidgets
 matplotlib
 notebook
-numpy < 2
 Pillow
 pydot
 PyYAML
