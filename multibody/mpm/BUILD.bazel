@@ -22,19 +22,60 @@ cc_library(
         "sparse_grid.h",
     ],
     deps = [
+        ":bspline_weights",
         "//common:essential",
         "//tools/workspace/spgrid",
     ],
 )
 
+drake_cc_library(
+    name = "particles",
+    hdrs = [
+        "particles.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "bspline_weights",
+    hdrs = [
+        "bspline_weights.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+cc_library(
+    name = "transfer",
+    hdrs = [
+        "transfer.h",
+    ],
+    deps = [
+        ":particles",
+        ":sparse_grid",
+        "//common:essential",
+    ],
+)
+
 drake_cc_googletest(
     name = "sparse_grid_test",
-    srcs = [
-        "test/sparse_grid_test.cc",
-    ],
     deps = [
         ":sparse_grid",
     ],
 )
 
-add_lint_tests()
+drake_cc_googletest(
+    name = "transfer_test",
+    srcs = [
+        "test/transfer_test.cc",
+    ],
+    deps = [
+        ":transfer",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+# add_lint_tests()
