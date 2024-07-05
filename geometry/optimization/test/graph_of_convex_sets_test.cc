@@ -1889,6 +1889,7 @@ TEST_F(ThreeBoxes, NewSlackVariablesCost) {
   target_z_2 << k, target_y;
   e_on_->AddConstraint(solvers::Binding(constraint, target_z_1));
 
+  // First we solve the convex relaxation
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
 
@@ -1904,6 +1905,23 @@ TEST_F(ThreeBoxes, NewSlackVariablesCost) {
   // The other one should still be kept at -1 due to the linear cost added
   // above.
   ASSERT_NEAR(target_res.minCoeff(), -1, 1e-5);
+
+  // Next we solve a ConvexRestriction.
+  auto restriction_result = g_.SolveConvexRestriction({e_on_});
+  ASSERT_TRUE(restriction_result.is_success());
+
+  auto restriction_source_res = source_->GetSolution(restriction_result);
+  // Both coordinates should be pushed towards 1
+  ASSERT_TRUE(restriction_source_res.isApproxToConstant(1.0, 1e-4));
+
+  auto restriction_target_res = target_->GetSolution(restriction_result);
+  // We expect that the cost will only push one of the coordinates to the
+  // positive side of the set.
+  ASSERT_NEAR(restriction_target_res.maxCoeff(), 1, 1e-4);
+
+  // The other one should still be kept at -1 due to the linear cost added
+  // above.
+  ASSERT_NEAR(restriction_target_res.minCoeff(), -1, 1e-4);
 }
 
 TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {

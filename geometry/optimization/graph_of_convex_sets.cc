@@ -1667,6 +1667,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
   }
 
   for (const auto* e : active_edges) {
+    prog.AddDecisionVariables(e->slacks_);
+
     // Edge costs.
     for (const auto& [b, transcriptions] : e->costs_) {
       if (transcriptions.contains(Transcription::kRestriction)) {
