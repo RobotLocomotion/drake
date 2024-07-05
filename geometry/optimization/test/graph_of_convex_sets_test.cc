@@ -2465,6 +2465,7 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
   }
 
   auto paths = spp.SamplePaths(*source, *target, relaxed_result, options);
+  // For this example, we should find exactly kNumPaths
   ASSERT_EQ(paths.size(), kNumPaths);
 
   // Check that all the paths start at the source and end at the target
