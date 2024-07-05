@@ -1418,18 +1418,23 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
   std::vector<std::vector<const Edge*>> paths;
 
   int num_trials = 0;
+  bool no_feasible_paths = false;
   while (static_cast<int>(paths.size()) < *options.max_rounded_paths &&
          num_trials < options.max_rounding_trials) {
+    if (no_feasible_paths) {
+      break;
+    }
+
     ++num_trials;
 
     // Find candidate path by traversing the graph with a depth first search
     // where edges are taken with probability proportional to their flow.
     std::vector<VertexId> visited_vertex_ids{source.id()};
-    std::vector<const Vertex*> path_vertices{&source};
-    std::vector<const Edge*> new_path;
-    while (path_vertices.back()->id() != target.id()) {
+    std::vector<const Edge*> new_path_edges;
+    std::vector<const Vertex*> new_path_vertices{&source};
+    while (new_path_vertices.back()->id() != target.id()) {
       std::vector<const Edge*> candidate_edges;
-      for (const Edge* e : path_vertices.back()->outgoing_edges()) {
+      for (const Edge* e : new_path_vertices.back()->outgoing_edges()) {
         if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
                       e->v().id()) == visited_vertex_ids.end() &&
             flows.at(e->id()) > options.flow_tolerance) {
@@ -1440,34 +1445,62 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
       // outbound edges, backtrack to the previous node and continue the
       // search.
       if (candidate_edges.size() == 0) {
-        path_vertices.pop_back();
-        new_path.pop_back();
+        // Remove the vertex with no candidate outgoing edges from the path.
+        new_path_vertices.pop_back();
+
+        // There may be no feasible paths
+        // (This can for instance happen if the convex relaxation was
+        // infeasible, or the provided flows do not correspond to any paths from
+        // the source to the target).
+        if (new_path_vertices.size() == 0) {
+          no_feasible_paths = true;
+          break;
+        }
+
+        // If there still are vertices in the path, we remove the edge to the
+        // vertex with no candidate outgoing vertices and try again.
+        new_path_edges.pop_back();
         continue;
       }
       Eigen::VectorXd candidate_flows(candidate_edges.size());
       for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
         candidate_flows(ii) = flows.at(candidate_edges[ii]->id());
       }
+      // Sample the next edge with probabily corresponding to the edge flow
+      // (normalized by the sum of all the current outgoing candidate edge
+      // flows).
       double edge_sample = uniform(generator) * candidate_flows.sum();
       for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
         if (edge_sample >= candidate_flows(ii)) {
           edge_sample -= candidate_flows(ii);
         } else {
           visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
-          path_vertices.push_back(&candidate_edges[ii]->v());
-          new_path.emplace_back(candidate_edges[ii]);
+          new_path_vertices.push_back(&candidate_edges[ii]->v());
+          new_path_edges.emplace_back(candidate_edges[ii]);
           break;
         }
       }
     }
 
-    if (std::find(paths.begin(), paths.end(), new_path) != paths.end()) {
+    if (new_path_vertices.size() == 0) {
       continue;
     }
-    paths.push_back(new_path);
+
+    if (std::find(paths.begin(), paths.end(), new_path_edges) != paths.end()) {
+      continue;
+    }
+
+    paths.push_back(new_path_edges);
   }
-  log()->info("Found {} unique paths, discarded {}", paths.size(),
-              num_trials - paths.size());
+
+  if (no_feasible_paths) {
+    log()->info("Could find no feasible paths using flow tolerance {}",
+                options.flow_tolerance);
+  } else {
+    log()->info("Found {} unique paths, discarded {}", paths.size(),
+                num_trials - paths.size());
+  }
+
   return paths;
 }
 
