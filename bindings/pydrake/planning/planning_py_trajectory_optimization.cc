@@ -443,13 +443,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             cls_doc.GetGraphvizString.doc)
         .def(
             "GetGraphvizString",
-            [](const geometry::optimization::GraphOfConvexSets& self,
+            [](const GcsTrajectoryOptimization& self,
                 const std::optional<solvers::MathematicalProgramResult>& result,
                 bool show_slacks, bool show_vars, bool show_flows,
-                bool show_costs, bool scientific, int precision,
-                const std::optional<std::vector<
-                    const geometry::optimization::GraphOfConvexSets::Edge*>>&
-                    active_path) {
+                bool show_costs, bool scientific, int precision) {
               geometry::optimization::GcsGraphvizOptions options;
               options.show_slacks = show_slacks;
               options.show_vars = show_vars;
@@ -457,14 +454,13 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
               options.show_costs = show_costs;
               options.scientific = scientific;
               options.precision = precision;
-              return self.GetGraphvizString(result, options, active_path);
+              return self.GetGraphvizString(result, options);
             },
             py::arg("result") =
                 std::optional<solvers::MathematicalProgramResult>(std::nullopt),
             py::arg("show_slacks") = true, py::arg("show_vars") = true,
             py::arg("show_flows") = true, py::arg("show_costs") = true,
             py::arg("scientific") = false, py::arg("precision") = 3,
-            py::arg("active_path") = std::nullopt,
             cls_doc.GetGraphvizString.doc)
         .def(
             "AddRegions",

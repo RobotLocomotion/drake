@@ -585,8 +585,10 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                              goal2[:, None], 6)
         self.assertTrue(traj.end_time() - traj.start_time() >= 10)
 
+        graphviz_options = GcsGraphvizOptions()
+        graphviz_options.show_costs = False
         self.assertIsInstance(
-            gcs.GetGraphvizString(result=result, options=GcsGraphvizOptions()),
+            gcs.GetGraphvizString(result=result, options=graphviz_options),
             str
         )
 
@@ -596,10 +598,9 @@ class TestTrajectoryOptimization(unittest.TestCase):
                 show_slacks=True,
                 show_vars=True,
                 show_flows=True,
-                show_costs=True,
+                show_costs=False,
                 scientific=True,
                 precision=3,
-                active_path=[],
             ),
             str,
         )
