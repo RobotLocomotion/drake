@@ -688,17 +688,17 @@ class GraphOfConvexSets {
 
   /** Samples a collection of unique paths from `source` to `target`, where the
    flow values (the relaxed binary variables associated with each `Edge`)
-   `flows` are interpreted as the probabilities of transitioning an edge. This
-   function implements the first part of the rounding scheme put forth in
-   Section 4.2 of "Motion Planning around Obstacles with Convex Optimization":
-   https://arxiv.org/abs/2205.04422
+   `flows` are interpreted as the probabilities of transitioning an edge.
+   The returned paths are guaranteed to be unique, and the number of returned
+   paths can be 0 if no paths are found. This function implements the first part
+   of the rounding scheme put forth in Section 4.2 of "Motion Planning around
+   Obstacles with Convex Optimization": https://arxiv.org/abs/2205.04422
 
    @param options include all settings for sampling the paths. Specifically,
-   the behavior of this function is determined through options.rounding_seed,
-   options.max_rounded_paths, options.max_rounding_trials, and
-   options.flow_tolerance, as described in `GraphOfConvexSetsOptions`.
-   Note that this function will throw unless options.max_rounded_paths > 0,
-   and that the number of returned paths can be 0 if no paths are found.
+   the behavior of this function is determined through `options.rounding_seed`,
+   `options.max_rounded_paths`, `options.max_rounding_trials`, and
+   `options.flow_tolerance`, as described in `GraphOfConvexSetsOptions`.
+   @throws std::exception if options.max_rounded_path < 1.
    @pydrake_mkdoc_identifier{flows}
    */
   std::vector<std::vector<const Edge*>> SamplePaths(
@@ -707,19 +707,19 @@ class GraphOfConvexSets {
       const GraphOfConvexSetsOptions& options) const;
 
   /** Samples a collection of unique paths from `source` to `target`, where the
-   flow values (the relaxed binary variables associated with each `Edge`) in
-   `result` are interpreted as the probabilities of transitioning an edge. This
-   function implements the first part of the rounding scheme put forth in
-   Section 4.2 of "Motion Planning around Obstacles with Convex Optimization":
-   https://arxiv.org/abs/2205.04422
+   flow values (the relaxed binary variables associated with each `Edge`)
+   in `result` are interpreted as the probabilities of transitioning an edge.
+   The returned paths are guaranteed to be unique, and the number of returned
+   paths can be 0 if no paths are found. This function implements the first part
+   of the rounding scheme put forth in Section 4.2 of "Motion Planning around
+   Obstacles with Convex Optimization": https://arxiv.org/abs/2205.04422
 
    @param options include all settings for sampling the paths. Specifically,
-   the behavior of this function is determined through options.rounding_seed,
-   options.max_rounded_paths, options.max_rounding_trials, and
-   options.flow_tolerance, as described in `GraphOfConvexSetsOptions`.
-   Note that this function will throw unless options.max_rounded_paths > 0,
-   and that the number of returned paths can be 0 if no paths are found.
-   @pydrake_mkdoc_identifier{result}
+   the behavior of this function is determined through `options.rounding_seed`,
+   `options.max_rounded_paths`, `options.max_rounding_trials`, and
+   `options.flow_tolerance`, as described in `GraphOfConvexSetsOptions`.
+   @throws std::exception if options.max_rounded_path < 1.
+   @pydrake_mkdoc_identifier{flows}
    */
   std::vector<std::vector<const Edge*>> SamplePaths(
       const Vertex& source, const Vertex& target,
