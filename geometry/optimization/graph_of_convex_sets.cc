@@ -1378,11 +1378,12 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       result.set_solution_result(SolutionResult::kIterationLimit);
       result.set_solver_id(best_rounded_result.get_solver_id());
     }
+    log()->info(
+        "Finished {} rounding solutions with {}, discarding {} duplicate "
+        "paths.",
+        candidate_paths.size(), result.get_solver_id().name(),
+        num_trials - candidate_paths.size());
   }
-  log()->info(
-      "Finished {} rounding solutions with {}, discarding {} duplicate "
-      "paths.",
-      num_solves, result.get_solver_id().name(), num_trials - num_solves);
 
   return result;
 }
