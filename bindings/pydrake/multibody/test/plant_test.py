@@ -1314,11 +1314,11 @@ class TestPlant(unittest.TestCase):
         if T == Expression and plant.time_step() != 0:
             # N.B. Discrete time dynamics are not supported for symbolic
             # scalars.
-            with self.assertRaises(ValueError) as cm:
+            with self.assertRaises(Exception) as cm:
                 A_base = plant.EvalBodySpatialAccelerationInWorld(
                     context, base)
             self.assertIn(
-                "This method doesn't support T = drake::symbolic::Expression",
+                "This method doesn't support T = Expression",
                 str(cm.exception))
         else:
             A_base = plant.EvalBodySpatialAccelerationInWorld(context, base)

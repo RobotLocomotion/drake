@@ -467,7 +467,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    pairs from hydroelastic contact, if any. */
   void AppendDiscreteContactPairsForHydroelasticContact(
       const systems::Context<T>& context,
-      DiscreteContactData<DiscreteContactPair<T>>* contact_kinematics) const;
+      DiscreteContactData<DiscreteContactPair<T>>* contact_kinematics) const
+    requires scalar_predicate<T>::is_bool;
 
   /* Helper function for CalcDiscreteContactPairs() that computes all contact
    pairs from point contact, if any. */
@@ -516,14 +517,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    to advance the discrete states. */
   std::unique_ptr<DeformableDriver<double>> deformable_driver_;
 };
-
-/* N.B. These geometry queries are not supported when T =
- symbolic::Expression */
-template <>
-void DiscreteUpdateManager<symbolic::Expression>::
-    AppendDiscreteContactPairsForHydroelasticContact(
-        const drake::systems::Context<symbolic::Expression>&,
-        DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
 
 }  // namespace internal
 }  // namespace multibody
