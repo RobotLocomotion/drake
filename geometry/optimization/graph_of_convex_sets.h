@@ -719,7 +719,7 @@ class GraphOfConvexSets {
    `options.max_rounded_paths`, `options.max_rounding_trials`, and
    `options.flow_tolerance`, as described in `GraphOfConvexSetsOptions`.
    @throws std::exception if options.max_rounded_path < 1.
-   @pydrake_mkdoc_identifier{flows}
+   @pydrake_mkdoc_identifier{result}
    */
   std::vector<std::vector<const Edge*>> SamplePaths(
       const Vertex& source, const Vertex& target,
