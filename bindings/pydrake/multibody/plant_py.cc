@@ -108,7 +108,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "ContactResults", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
             cls_doc.num_point_pair_contacts.doc)
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
