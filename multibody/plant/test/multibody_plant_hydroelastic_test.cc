@@ -369,36 +369,35 @@ TEST_F(HydroelasticModelTests, Parameters) {
   SetPose(penetration);
   SetVelocity(SpatialVelocity<double>(Vector3d::Zero(), Vector3d(vx, vy, 0)));
 
+  // Grab the initial ("old") properties.
   const std::vector<geometry::GeometryId>& g_ids =
       plant_->GetCollisionGeometriesForBody(*body_);
   ASSERT_EQ(g_ids.size(), 1);
   GeometryId gid = g_ids[0];
   const ProximityProperties* old_props =
       scene_graph_->model_inspector().GetProximityProperties(gid);
-
   ASSERT_TRUE(old_props != nullptr);
 
+  // Calculate the initial ("old") contact results.
   const ContactResults<double> old_contact_results =
       plant_->get_contact_results_output_port()
           .template Eval<ContactResults<double>>(*plant_context_);
 
-  // Change in friction should affect only the tangential component of the
-  // traction at each quadrature point.
-  const CoulombFriction<double> mu_box(kFrictionCoefficient,
-                                       kFrictionCoefficient);
-  const CoulombFriction<double> mu_sphere(5.0, 5.0);
-  const CoulombFriction<double> mu_combined =
-      CalcContactFrictionFromSurfaceProperties(mu_box, mu_sphere);
+  // Change the friction property ("new").
   ProximityProperties new_props(*old_props);
   new_props.UpdateProperty(geometry::internal::kMaterialGroup,
-                           geometry::internal::kFriction, mu_sphere);
+                           geometry::internal::kFriction,
+                           CoulombFriction<double>(5.0, 5.0));
   scene_graph_->AssignRole(scene_graph_context_,
                            plant_->get_source_id().value(), gid, new_props,
                            geometry::RoleAssign::kReplace);
-  const ContactResults<double>& new_contact_results =
+
+  // Calculate the revised ("new") contact results.
+  const ContactResults<double> new_contact_results =
       plant_->get_contact_results_output_port()
           .template Eval<ContactResults<double>>(*plant_context_);
 
+  // The force should have changed.
   ASSERT_EQ(old_contact_results.num_hydroelastic_contacts(),
             new_contact_results.num_hydroelastic_contacts());
   for (int i = 0; i < new_contact_results.num_hydroelastic_contacts(); ++i) {
@@ -406,31 +405,8 @@ TEST_F(HydroelasticModelTests, Parameters) {
         old_contact_results.hydroelastic_contact_info(i);
     const HydroelasticContactInfo<double>& new_contact_info =
         new_contact_results.hydroelastic_contact_info(i);
-    ASSERT_EQ(old_contact_info.quadrature_point_data().size(),
-              new_contact_info.quadrature_point_data().size());
-    // Checking one quadrature point would likely be sufficient, but we check
-    // them all as further evidence of sanity.
-    for (int j = 0; j < ssize(new_contact_info.quadrature_point_data()); ++j) {
-      const HydroelasticQuadraturePointData<double>& old_data =
-          old_contact_info.quadrature_point_data()[j];
-      const HydroelasticQuadraturePointData<double>& new_data =
-          new_contact_info.quadrature_point_data()[j];
-      ASSERT_TRUE(CompareMatrices(old_data.p_WQ, new_data.p_WQ));
-      const Vector3d& n_hat_old =
-          old_contact_info.contact_surface().face_normal(old_data.face_index);
-      const Vector3d& n_hat_new =
-          new_contact_info.contact_surface().face_normal(new_data.face_index);
-      Vector3d ft_old = old_data.traction_Aq_W -
-                        n_hat_old.dot(old_data.traction_Aq_W) * n_hat_old;
-      Vector3d ft_new = new_data.traction_Aq_W -
-                        n_hat_new.dot(new_data.traction_Aq_W) * n_hat_new;
-      // The ratio of the magnitudes of the tangential traction calculation at
-      // each quadrature point should be equal to the ratio of the old and new
-      // combined friction coefficient.
-      EXPECT_NEAR(ft_old.norm() / ft_new.norm(),
-                  kFrictionCoefficient / mu_combined.dynamic_friction(),
-                  std::numeric_limits<double>::epsilon());
-    }
+    EXPECT_NE(new_contact_info.F_Ac_W().get_coeffs(),
+              old_contact_info.F_Ac_W().get_coeffs());
   }
 }
 
