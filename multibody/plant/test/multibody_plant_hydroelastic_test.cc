@@ -13,6 +13,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/hydroelastic_contact_forces_continuous_cache_data.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -503,6 +504,7 @@ class ContactModelTest : public ::testing::Test {
       scene_graph_ = builder.AddSystem(std::make_unique<SceneGraph<double>>());
       plant_->RegisterAsSourceForSceneGraph(scene_graph_);
     }
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
 
     geometry::ProximityProperties props;
     geometry::AddContactMaterial(

@@ -5,6 +5,34 @@
 namespace drake {
 namespace multibody {
 
+using geometry::ContactSurface;
+
+// If `other` has its surface already shared, then we can alias it.
+// Otherwise, we need to clone the bare pointer to be shared.
+template <typename T>
+HydroelasticContactInfo<T>::HydroelasticContactInfo(
+    const HydroelasticContactInfo& other)
+    : contact_surface_((other.contact_surface_.use_count() > 0)
+                           ? other.contact_surface_
+                           : std::make_shared<const ContactSurface<T>>(
+                                 *other.contact_surface_)),
+      F_Ac_W_(other.F_Ac_W_) {}
+
+// If `other` has its surface already shared, then we can alias it.
+// Otherwise, we need to clone the bare pointer to be shared.
+template <typename T>
+HydroelasticContactInfo<T>& HydroelasticContactInfo<T>::operator=(
+    const HydroelasticContactInfo& other) {
+  if (this != &other) {
+    contact_surface_ = (other.contact_surface_.use_count() > 0)
+                           ? other.contact_surface_
+                           : std::make_shared<const ContactSurface<T>>(
+                                 *other.contact_surface_);
+    F_Ac_W_ = other.F_Ac_W_;
+  }
+  return *this;
+}
+
 template <typename T>
 HydroelasticContactInfo<T>::~HydroelasticContactInfo() = default;
 

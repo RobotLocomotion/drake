@@ -23,6 +23,7 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
+#include "drake/multibody/plant/hydroelastic_contact_forces_continuous_cache_data.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
@@ -69,10 +70,13 @@ using drake::math::RotationMatrix;
 using drake::multibody::MultibodyForces;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
+using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::internal::AccelerationKinematicsCache;
 using drake::multibody::internal::ArticulatedBodyForceCache;
 using drake::multibody::internal::ArticulatedBodyInertiaCache;
+using drake::multibody::internal::DiscreteStepMemory;
 using drake::multibody::internal::GeometryContactData;
+using drake::multibody::internal::NestedGeometryContactData;
 using drake::multibody::internal::PositionKinematicsCache;
 using drake::multibody::internal::VelocityKinematicsCache;
 using systems::BasicVector;
@@ -293,6 +297,16 @@ int NumOfPdControlledActuators(const MultibodyPlant<T>& plant,
   return num_actuators;
 }
 
+// Retrieves the DiscreteStepMemory pointer from state in the given `context`.
+// If there is no memory (e.g., has never been updated by a step), returns null.
+// @pre The context is from a plant with use_sampled_output_ports() == true.
+template <typename T>
+const DiscreteStepMemory::Data<T>* get_discrete_step_memory(
+    const Context<T>& context) {
+  return context.template get_abstract_state<DiscreteStepMemory>(0)
+      .template get<T>();
+}
+
 }  // namespace
 
 template <typename T>
@@ -325,7 +339,8 @@ MultibodyPlant<T>::MultibodyPlant(
                                        std::move(tree_in), time_step > 0),
       contact_surface_representation_(
           GetDefaultContactSurfaceRepresentation(time_step)),
-      time_step_(time_step) {
+      time_step_(time_step),
+      use_sampled_output_ports_(time_step > 0) {
   DRAKE_THROW_UNLESS(time_step >= 0);
   // TODO(eric.cousineau): Combine all of these elements into one struct, make
   // it less brittle.
@@ -386,6 +401,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // scene_graph_ is set to nullptr in FinalizePlantOnly() below.
 
     time_step_ = other.time_step_;
+    use_sampled_output_ports_ = other.use_sampled_output_ports_;
     // discrete_update_manager_ is copied below after FinalizePlantOnly().
 
     // Copy over physical models.
@@ -428,6 +444,16 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 
 template <typename T>
 MultibodyPlant<T>::~MultibodyPlant() = default;
+
+template <typename T>
+void MultibodyPlant<T>::SetUseSampledOutputPorts(
+    bool use_sampled_output_ports) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  if (!is_discrete()) {
+    DRAKE_THROW_UNLESS(use_sampled_output_ports == false);
+  }
+  use_sampled_output_ports_ = use_sampled_output_ports;
+}
 
 template <typename T>
 std::vector<MultibodyConstraintId> MultibodyPlant<T>::GetConstraintIds() const {
@@ -1949,15 +1975,37 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
 }
 
 template <typename T>
+template <bool sampled>
 void MultibodyPlant<T>::CalcContactResultsOutput(
     const systems::Context<T>& context, ContactResults<T>* output) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(output != nullptr);
 
   // Guard against failure to acquire the geometry input deep in the call graph.
-  ValidateGeometryInput(context, get_contact_results_output_port());
+  if constexpr (!sampled) {
+    ValidateGeometryInput(context, get_contact_results_output_port());
+  }
 
-  *output = EvalContactResults(context);
+  // Use is_discrete() and use_sampled_output_ports() to govern the approach.
+  if (this->is_discrete()) {
+    if constexpr (sampled) {
+      DRAKE_DEMAND(use_sampled_output_ports_);
+      const DiscreteStepMemory::Data<T>* const memory =
+          get_discrete_step_memory(context);
+      if (memory != nullptr) {
+        discrete_update_manager_->CalcContactResults(*memory, output);
+      } else {
+        // The plant has not been stepped yet.
+        *output = ContactResults<T>{};
+        output->set_plant(this);
+      }
+    } else {
+      discrete_update_manager_->CalcContactResults(context, output);
+    }
+  } else {
+    DRAKE_DEMAND(!sampled);
+    CalcContactResultsContinuous(context, output);
+  }
 }
 
 template <typename T>
@@ -1968,56 +2016,91 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   DRAKE_DEMAND(contact_results != nullptr);
   DRAKE_DEMAND(!is_discrete());
 
-  contact_results->Clear();
-  contact_results->set_plant(this);
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries() == 0) {
+    *contact_results = ContactResults<T>{};
+    contact_results->set_plant(this);
+    return;
+  }
 
+  bool use_point = false;
+  bool use_hydroelastic = false;
   switch (contact_model_) {
     case ContactModel::kPoint:
-      AppendContactResultsPointPairContinuous(context, contact_results);
+      use_point = true;
       break;
-
     case ContactModel::kHydroelastic:
-      AppendContactResultsHydroelasticContinuous(context, contact_results);
+      use_hydroelastic = true;
       break;
-
     case ContactModel::kHydroelasticWithFallback:
-      // Simply merge the contributions of each contact representation.
-      AppendContactResultsPointPairContinuous(context, contact_results);
-      AppendContactResultsHydroelasticContinuous(context, contact_results);
+      use_point = true;
+      use_hydroelastic = true;
       break;
   }
+
+  std::shared_ptr<const void> backing_store;
+  std::vector<PointPairContactInfo<T>> contact_results_point_pair;
+  std::vector<HydroelasticContactInfo<T>> contact_results_hydroelastic;
+  if (use_point) {
+    contact_results_point_pair =
+        this->get_cache_entry(
+                cache_indices_.contact_results_point_pair_continuous)
+            .template Eval<std::vector<PointPairContactInfo<T>>>(context);
+  }
+  if (use_hydroelastic) {
+    if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+      backing_store = EvalGeometryContactData(context).Share();
+      CalcContactResultsHydroelasticContinuous(context,
+                                               &contact_results_hydroelastic);
+    } else {
+      throw std::logic_error("This method doesn't support T = Expression");
+    }
+  }
+
+  *contact_results = ContactResults<T>(std::move(contact_results_point_pair),
+                                       std::move(contact_results_hydroelastic),
+                                       {},  // Empty contact_results_deformable.
+                                       std::move(backing_store));
+  contact_results->set_plant(this);
 }
 
 template <typename T>
-void MultibodyPlant<T>::AppendContactResultsHydroelasticContinuous(
+void MultibodyPlant<T>::CalcContactResultsHydroelasticContinuous(
     const systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
+    std::vector<HydroelasticContactInfo<T>>* contact_results_hydroelastic) const
+  requires scalar_predicate<T>::is_bool
+{  // NOLINT(whitespace/braces)
   this->ValidateContext(context);
-  DRAKE_DEMAND(contact_results != nullptr);
-  DRAKE_DEMAND(contact_results->plant() == this);
+  DRAKE_DEMAND(contact_results_hydroelastic != nullptr);
   DRAKE_DEMAND(!is_discrete());
 
-  const internal::HydroelasticContactForcesContinuousCacheData<T>& cache =
-      EvalHydroelasticContactForcesContinuous(context);
-  for (const HydroelasticContactInfo<T>& contact_info : cache.contact_info) {
-    // Note: caching dependencies guarantee that the lifetime of contact_info is
-    // valid for the lifetime of the contact results.
-    contact_results->AddContactInfo(&contact_info);
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      EvalGeometryContactData(context)->surfaces;
+  const std::vector<SpatialForce<T>>& F_Ac_W_array =
+      EvalHydroelasticContactForcesContinuous(context).F_Ac_W_array;
+  DRAKE_DEMAND(all_surfaces.size() == F_Ac_W_array.size());
+  contact_results_hydroelastic->clear();
+  contact_results_hydroelastic->reserve(all_surfaces.size());
+  for (int i = 0; i < ssize(all_surfaces); ++i) {
+    // Here we use emplacement to add a HydroelasticContactInfo with a raw
+    // pointer back into the GeometryContactData. This is safe only because
+    // our caller adds the GeometryContactData to the "backing store" as a
+    // keep-alive.
+    contact_results_hydroelastic->emplace_back(&all_surfaces[i],
+                                               F_Ac_W_array[i]);
   }
 }
 
 template <typename T>
-void MultibodyPlant<T>::AppendContactResultsPointPairContinuous(
+void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     const systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
+    std::vector<PointPairContactInfo<T>>* contact_results_point_pair) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(contact_results != nullptr);
-  DRAKE_DEMAND(contact_results->plant() == this);
+  DRAKE_DEMAND(contact_results_point_pair != nullptr);
   DRAKE_DEMAND(!is_discrete());
+  contact_results_point_pair->clear();
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      EvalGeometryContactData(context).point_pairs;
+      EvalGeometryContactData(context)->point_pairs;
 
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
@@ -2115,8 +2198,8 @@ void MultibodyPlant<T>::AppendContactResultsPointPairContinuous(
       const SpatialForce<T> F_AC_W(Vector3<T>::Zero(), fn_AC_W + ft_AC_W);
 
       const Vector3<T> f_Bc_W = -F_AC_W.translational();
-      contact_results->AddContactInfo(
-          {bodyA_index, bodyB_index, f_Bc_W, p_WC, vn, slip_velocity, pair});
+      contact_results_point_pair->emplace_back(bodyA_index, bodyB_index, f_Bc_W,
+                                               p_WC, vn, slip_velocity, pair);
     }
   }
 }
@@ -2130,15 +2213,18 @@ void MultibodyPlant<T>::CalcAndAddPointContactForcesContinuous(
   DRAKE_DEMAND(ssize(*F_BBo_W_array) == num_bodies());
   if (num_collision_geometries() == 0) return;
 
-  const ContactResults<T>& contact_results = EvalContactResults(context);
+  const std::vector<PointPairContactInfo<T>>& contact_results_point_pair =
+      this->get_cache_entry(
+              cache_indices_.contact_results_point_pair_continuous)
+          .template Eval<std::vector<PointPairContactInfo<T>>>(context);
 
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
-  for (int pair_index = 0;
-       pair_index < contact_results.num_point_pair_contacts(); ++pair_index) {
+  for (int pair_index = 0; pair_index < ssize(contact_results_point_pair);
+       ++pair_index) {
     const PointPairContactInfo<T>& contact_info =
-        contact_results.point_pair_contact_info(pair_index);
+        contact_results_point_pair[pair_index];
     const PenetrationAsPointPair<T>& pair = contact_info.point_pair();
 
     const GeometryId geometryA_id = pair.id_A;
@@ -2191,26 +2277,24 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
   DRAKE_DEMAND(!is_discrete());
 
   std::vector<SpatialForce<T>>& F_BBo_W_array = output->F_BBo_W_array;
+  std::vector<SpatialForce<T>>& F_Ac_W_array = output->F_Ac_W_array;
   DRAKE_DEMAND(ssize(F_BBo_W_array) == num_bodies());
-  std::vector<HydroelasticContactInfo<T>>& contact_info = output->contact_info;
-
-  // Initialize the body forces to zero.
   F_BBo_W_array.assign(num_bodies(), SpatialForce<T>::Zero());
-  if (num_collision_geometries() == 0) return;
+  F_Ac_W_array.clear();
+
+  if (num_collision_geometries() == 0) {
+    return;
+  }
 
   const std::vector<ContactSurface<T>>& all_surfaces =
-      EvalGeometryContactData(context).surfaces;
-
-  // Reserve memory here to keep from repeatedly allocating heap storage in the
-  // loop below.
-  contact_info.clear();
-  contact_info.reserve(all_surfaces.size());
+      EvalGeometryContactData(context)->surfaces;
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
 
   const SceneGraphInspector<T>& inspector = EvalSceneGraphInspector(context);
 
+  F_Ac_W_array.reserve(all_surfaces.size());
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
     const GeometryId geometryN_id = surface.id_N();
@@ -2273,38 +2357,29 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
 
     if (bodyA_index != world_index()) {
       F_BBo_W_array.at(bodyA.mobod_index()) += F_Ao_W;
+    }
 
     if (bodyB_index != world_index()) {
       F_BBo_W_array.at(bodyB.mobod_index()) += F_Bo_W;
     }
 
     // Add the information for contact reporting.
-    contact_info.emplace_back(&surface, F_Ac_W, std::move(traction_output));
+    F_Ac_W_array.push_back(F_Ac_W);
   }
 }
 
 template <typename T>
 const internal::HydroelasticContactForcesContinuousCacheData<T>&
 MultibodyPlant<T>::EvalHydroelasticContactForcesContinuous(
-    const systems::Context<T>& context) const {
+    const systems::Context<T>& context) const
+  requires scalar_predicate<T>::is_bool
+{  // NOLINT(whitespace/braces)
   this->ValidateContext(context);
   DRAKE_DEMAND(!is_discrete());
   return this
       ->get_cache_entry(cache_indices_.hydroelastic_contact_forces_continuous)
       .template Eval<internal::HydroelasticContactForcesContinuousCacheData<T>>(
           context);
-}
-
-template <typename T>
-const ContactResults<T>& MultibodyPlant<T>::EvalContactResults(
-    const systems::Context<T>& context) const {
-  this->ValidateContext(context);
-  if (this->is_discrete()) {
-    return discrete_update_manager_->EvalContactResults(context);
-  } else {
-    return this->get_cache_entry(cache_indices_.contact_results_continuous)
-        .template Eval<ContactResults<T>>(context);
-  }
 }
 
 template <typename T>
@@ -2518,24 +2593,42 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcNetActuationOutput(
-    const systems::Context<T>& context, BasicVector<T>* output) const {
+template <bool sampled>
+void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
+                                               BasicVector<T>* output) const {
   DRAKE_DEMAND(output != nullptr);
   DRAKE_DEMAND(output->size() == num_actuated_dofs());
+  // Use is_discrete() and use_sampled_output_ports() to govern the approach.
   if (is_discrete()) {
-    output->SetFromVector(discrete_update_manager_->EvalActuation(context));
+    if constexpr (sampled) {
+      DRAKE_DEMAND(use_sampled_output_ports_);
+      const DiscreteStepMemory::Data<T>* const memory =
+          get_discrete_step_memory(context);
+      if (memory != nullptr) {
+        output->SetFromVector(memory->net_actuation);
+      } else {
+        // The plant has not been stepped yet.
+        output->SetZero();
+      }
+    } else {
+      output->SetFromVector(discrete_update_manager_->EvalActuation(context));
+    }
   } else {
+    DRAKE_DEMAND(!sampled);
     output->SetFromVector(AssembleActuationInput(context));
   }
 }
 
 template <typename T>
+template <bool sampled>
 void MultibodyPlant<T>::CalcInstanceNetActuationOutput(
     ModelInstanceIndex model_instance, const systems::Context<T>& context,
     systems::BasicVector<T>* output) const {
   // The per-instance calc delegates to the full-model calc and then slices it.
-  const VectorX<T>& net_actuation =
-      get_net_actuation_output_port().Eval(context);
+  const auto& net_actuation_port =
+      sampled ? get_net_actuation_output_port()
+              : get_net_actuation_unsampled_output_port();
+  const VectorX<T>& net_actuation = net_actuation_port.Eval(context);
   output->SetFromVector(
       this->GetActuationFromArray(model_instance, net_actuation));
 }
@@ -2605,26 +2698,28 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     const drake::systems::Context<T>& context,
     GeometryContactData<T>* result) const {
   this->ValidateContext(context);
-  result->point_pairs.clear();
-  if constexpr (scalar_predicate<T>::is_bool) {
-    result->surfaces.clear();
-  }
 
   // Bail out early when there is not any proximity geometry.
   if (num_collision_geometries() == 0) {
+    result->Clear();
     return;
   }
+
+  // Replace the result with newly-allocated (empty) storage, keeping around a
+  // mutable reference for us to fill in. After we return, the geometry contact
+  // data is forevermore immutable.
+  NestedGeometryContactData<T>& storage = result->Allocate();
 
   // Add all of the contacts to `result`.
   const auto& query_object = EvalGeometryQueryInput(context, __func__);
   switch (contact_model_) {
     case ContactModel::kPoint: {
-      result->point_pairs = query_object.ComputePointPairPenetration();
+      storage.point_pairs = query_object.ComputePointPairPenetration();
       break;
     }
     case ContactModel::kHydroelastic: {
       if constexpr (scalar_predicate<T>::is_bool) {
-        result->surfaces = query_object.ComputeContactSurfaces(
+        storage.surfaces = query_object.ComputeContactSurfaces(
             get_contact_surface_representation());
         break;
       } else {
@@ -2638,8 +2733,8 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     case ContactModel::kHydroelasticWithFallback: {
       if constexpr (scalar_predicate<T>::is_bool) {
         query_object.ComputeContactSurfacesWithFallback(
-            get_contact_surface_representation(), &result->surfaces,
-            &result->point_pairs);
+            get_contact_surface_representation(), &storage.surfaces,
+            &storage.point_pairs);
         break;
       } else {
         // TODO(SeanCurtis-TRI): Special case the QueryObject scalar support
@@ -2656,7 +2751,7 @@ void MultibodyPlant<T>::CalcGeometryContactData(
           discrete_update_manager_->deformable_driver();
       if (deformable_driver != nullptr) {
         deformable_driver->CalcDeformableContact(query_object,
-                                                 &result->deformable);
+                                                 &storage.deformable);
       }
     }
   }
@@ -2692,7 +2787,7 @@ void MultibodyPlant<T>::CalcGeometryContactData(
         return is_irrelevant_geometry(point_pair.id_A) &&
                is_irrelevant_geometry(point_pair.id_B);
       };
-  std::erase_if(result->point_pairs, is_irrelevant_point_pair);
+  std::erase_if(storage.point_pairs, is_irrelevant_point_pair);
   if constexpr (scalar_predicate<T>::is_bool) {
     const auto is_irrelevant_surface =
         [&is_irrelevant_geometry](const ContactSurface<T>& surface) {
@@ -2700,7 +2795,7 @@ void MultibodyPlant<T>::CalcGeometryContactData(
           return is_irrelevant_geometry(surface.id_M()) &&
                  is_irrelevant_geometry(surface.id_N());
         };
-    std::erase_if(result->surfaces, is_irrelevant_surface);
+    std::erase_if(storage.surfaces, is_irrelevant_surface);
   }
   // TODO(jwnimmer-tri) Filter out irrelevant deformable contact, too.
 }
@@ -2863,37 +2958,41 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
   // Early exit if there are no contact forces.
   if (num_collision_geometries() == 0) return;
 
-  // Note: we don't need to know the applied forces here because we use a
-  // regularized friction model whose forces depend only on the current state; a
-  // constraint based friction model would require accounting for the applied
-  // forces.
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    throw std::logic_error("This method doesn't support T = Expression");
+  } else {
+    // Note: we don't need to know the applied forces here because we use a
+    // regularized friction model whose forces depend only on the current state;
+    // a constraint based friction model would require accounting for the
+    // applied forces.
 
-  // Compute the spatial forces on each body from contact.
-  switch (contact_model_) {
-    case ContactModel::kPoint:
-      // Note: consider caching the results from the following method (in which
-      // case we would also want to introduce the Eval... naming convention for
-      // the method).
-      CalcAndAddPointContactForcesContinuous(context, &(*F_BBo_W_array));
-      break;
+    // Compute the spatial forces on each body from contact.
+    switch (contact_model_) {
+      case ContactModel::kPoint:
+        // Note: consider caching the results from the following method (in
+        // which case we would also want to introduce the Eval... naming
+        // convention for the method).
+        CalcAndAddPointContactForcesContinuous(context, &(*F_BBo_W_array));
+        break;
 
-    case ContactModel::kHydroelastic:
-      *F_BBo_W_array =
-          EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
-      break;
+      case ContactModel::kHydroelastic:
+        *F_BBo_W_array =
+            EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
+        break;
 
-    case ContactModel::kHydroelasticWithFallback:
-      // Combine the point-penalty forces with the contact surface forces.
-      CalcAndAddPointContactForcesContinuous(context, &(*F_BBo_W_array));
-      const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
-          EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
-      DRAKE_DEMAND(F_BBo_W_array->size() == Fhydro_BBo_W_all.size());
-      for (int i = 0; i < ssize(Fhydro_BBo_W_all); ++i) {
-        // Both sets of forces are applied to the body's origins and expressed
-        // in frame W. They should simply sum.
-        (*F_BBo_W_array)[i] += Fhydro_BBo_W_all[i];
-      }
-      break;
+      case ContactModel::kHydroelasticWithFallback:
+        // Combine the point-penalty forces with the contact surface forces.
+        CalcAndAddPointContactForcesContinuous(context, &(*F_BBo_W_array));
+        const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
+            EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
+        DRAKE_DEMAND(F_BBo_W_array->size() == Fhydro_BBo_W_all.size());
+        for (int i = 0; i < ssize(Fhydro_BBo_W_all); ++i) {
+          // Both sets of forces are applied to the body's origins and expressed
+          // in frame W. They should simply sum.
+          (*F_BBo_W_array)[i] += Fhydro_BBo_W_all[i];
+        }
+        break;
+    }
   }
 }
 
@@ -2960,12 +3059,120 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
 }
 
 template <typename T>
-systems::EventStatus MultibodyPlant<T>::CalcDiscreteStep(
+systems::EventStatus MultibodyPlant<T>::CalcStepDiscrete(
     const systems::Context<T>& context0,
-    systems::DiscreteValues<T>* updates) const {
+    systems::DiscreteValues<T>* next_discrete_state) const {
   this->ValidateContext(context0);
-  discrete_update_manager_->CalcDiscreteValues(context0, updates);
+  discrete_update_manager_->CalcDiscreteValues(context0, next_discrete_state);
   return systems::EventStatus::Succeeded();
+}
+
+template <typename T>
+systems::EventStatus MultibodyPlant<T>::CalcStepUnrestricted(
+    const systems::Context<T>& context0, systems::State<T>* next_state) const {
+  this->ValidateContext(context0);
+  systems::DiscreteValues<T>& next_discrete_state =
+      next_state->get_mutable_discrete_state();
+  DiscreteStepMemory::Data<T>& next_memory =
+      next_state->template get_mutable_abstract_state<DiscreteStepMemory>(0)
+          .template Emplace<T>();
+
+  next_memory.acceleration_kinematics_cache =
+      AccelerationKinematicsCache<T>(internal_tree().get_topology());
+  discrete_update_manager_->CalcDiscreteValues(context0, &next_discrete_state,
+                                               &next_memory);
+  next_memory.reaction_forces.resize(num_joints());
+  if (discrete_update_manager_->deformable_driver() == nullptr) {
+    CalcReactionForcesOutput</* sampled = */ false>(
+        context0, &next_memory.reaction_forces);
+  } else {
+    // SapDriver<T>::CalcDiscreteUpdateMultibodyForces doesn't support reaction
+    // forces yet, so we can't sample this output port. We skip it here, with
+    // a corresponding throw in CalcReactionForcesOutput<true>.
+  }
+  return systems::EventStatus::Succeeded();
+}
+
+template <typename T>
+template <bool sampled>
+const AccelerationKinematicsCache<T>*
+MultibodyPlant<T>::EvalAccelerationKinematicsCache(
+    const systems::Context<T>& context) const {
+  if constexpr (sampled) {
+    DRAKE_DEMAND(is_discrete());
+    DRAKE_DEMAND(use_sampled_output_ports_);
+    const DiscreteStepMemory::Data<T>* const memory =
+        get_discrete_step_memory(context);
+    if (memory == nullptr) {
+      return nullptr;
+    }
+    return &memory->acceleration_kinematics_cache;
+  } else {
+    return &this->EvalForwardDynamics(context);
+  }
+}
+
+template <typename T>
+template <typename ModelValue, typename CalcFunction,
+          typename MaybeModelInstanceIndex>
+typename MultibodyPlant<T>::SampledOutputPortIndices
+MultibodyPlant<T>::DeclareSampledOutputPort(
+    const std::string& name, const ModelValue& model_value,
+    CalcFunction calc_sampled, CalcFunction calc_unsampled,
+    const std::set<DependencyTicket>& prerequisites_of_sampled,
+    const std::set<DependencyTicket>& prerequisites_of_unsampled,
+    MaybeModelInstanceIndex model_instance) {
+  constexpr bool is_vector_port = std::is_same_v<ModelValue, int>;
+  SampledOutputPortIndices result;
+  if constexpr (std::is_same_v<MaybeModelInstanceIndex, ModelInstanceIndex>) {
+    // We need to pass a model instance into the callback, so we'll use a
+    // callable helper struct to do that. (We avoid using a lambda, because
+    // it doesn't play nice with the ternary-conditional operator, below.)
+    using Output =
+        std::conditional_t<is_vector_port, BasicVector<T>, ModelValue>;
+    struct InstanceCall {
+      void operator()(const Context<T>& context, Output* output) const {
+        (plant->*calc)(model_instance, context, output);
+      }
+      const MultibodyPlant<T>* plant{};
+      CalcFunction calc{};
+      ModelInstanceIndex model_instance;
+    };
+    // Use a self-call without the model_instance, passing InstanceCall functors
+    // instead of member functions.
+    result = DeclareSampledOutputPort(
+        name, model_value, InstanceCall{this, calc_sampled, model_instance},
+        InstanceCall{this, calc_unsampled, model_instance},
+        prerequisites_of_sampled, prerequisites_of_unsampled);
+  } else {
+    // The use_sampled_output_ports_ governs whether the primary port is sampled
+    // or unsampled.
+    const auto& primary_calc =
+        use_sampled_output_ports_ ? calc_sampled : calc_unsampled;
+    const auto& primary_prerequisites = use_sampled_output_ports_
+                                            ? prerequisites_of_sampled
+                                            : prerequisites_of_unsampled;
+    if constexpr (is_vector_port) {
+      const int size = model_value;
+      result.primary = this->DeclareVectorOutputPort(name, size, primary_calc,
+                                                     primary_prerequisites)
+                           .get_index();
+      result.unsampled = this->DeclareVectorOutputPort(
+                                 fmt::format("{}_unsampled", name), size,
+                                 calc_unsampled, prerequisites_of_unsampled)
+                             .get_index();
+    } else {
+      result.primary =
+          this->DeclareAbstractOutputPort(name, model_value, primary_calc,
+                                          primary_prerequisites)
+              .get_index();
+      result.unsampled = this->DeclareAbstractOutputPort(
+                                 fmt::format("{}_unsampled", name), model_value,
+                                 calc_unsampled, prerequisites_of_unsampled)
+                             .get_index();
+    }
+  }
+  return result;
 }
 
 template <typename T>
@@ -3014,22 +3221,40 @@ void MultibodyPlant<T>::DeclareInputPorts() {
 
 template <typename T>
 void MultibodyPlant<T>::DeclareStateUpdate() {
+  // The model must be finalized.
+  DRAKE_DEMAND(this->is_finalized());
   if (is_discrete()) {
     // Declare our periodic update step, and also permit triggering a step via
-    // a Forced update.
-    this->DeclarePeriodicDiscreteUpdateEvent(
-        time_step_, 0.0, &MultibodyPlant<T>::CalcDiscreteStep);
-    this->DeclareForcedDiscreteUpdateEvent(
-        &MultibodyPlant<T>::CalcDiscreteStep);
+    // a Forced update. For output port sampling, we also need additional State.
+    if (use_sampled_output_ports_) {
+      this->DeclareAbstractState(Value<DiscreteStepMemory>{});
+      this->DeclarePeriodicUnrestrictedUpdateEvent(
+          time_step_, 0.0, &MultibodyPlant<T>::CalcStepUnrestricted);
+      this->DeclareForcedUnrestrictedUpdateEvent(
+          &MultibodyPlant<T>::CalcStepUnrestricted);
+    } else {
+      this->DeclarePeriodicDiscreteUpdateEvent(
+          time_step_, 0.0, &MultibodyPlant<T>::CalcStepDiscrete);
+      this->DeclareForcedDiscreteUpdateEvent(
+          &MultibodyPlant<T>::CalcStepDiscrete);
+    }
   }
 }
 
 template <typename T>
 void MultibodyPlant<T>::DeclareOutputPorts() {
+  // State tickets.
+  // When a discrete plant is operating in "sampled" mode (vs "minimal state"),
+  // sampled data from the prior step is stored as abstract state.
   const DependencyTicket state_ticket =
       is_discrete() ? this->xd_ticket() : this->kinematics_ticket();
   const DependencyTicket position_ticket =
       is_discrete() ? this->xd_ticket() : this->q_ticket();
+  // XXX probably the sampled output port sugar should hard-code this ticket.
+  const DependencyTicket memory_ticket =
+      use_sampled_output_ports_
+          ? this->abstract_state_ticket(systems::AbstractStateIndex{0})
+          : DependencyTicket{};
 
   // Output "state".
   output_port_indices_.state =
@@ -3067,13 +3292,12 @@ void MultibodyPlant<T>::DeclareOutputPorts() {
   }
 
   // Output "body_spatial_accelerations".
-  output_port_indices_.body_spatial_accelerations =
-      this->DeclareAbstractOutputPort(
-              "body_spatial_accelerations",
-              std::vector<SpatialAcceleration<T>>(num_bodies()),
-              &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
-              {this->acceleration_kinematics_cache_entry().ticket()})
-          .get_index();
+  output_port_indices_.body_spatial_accelerations = DeclareSampledOutputPort(
+      "body_spatial_accelerations",
+      std::vector<SpatialAcceleration<T>>(num_bodies()),
+      &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<true>,
+      &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<false>,
+      {memory_ticket}, {this->acceleration_kinematics_cache_entry().ticket()});
 
   // Output "spatial_accelerations" (deprecated).
   {
@@ -3081,48 +3305,47 @@ void MultibodyPlant<T>::DeclareOutputPorts() {
         this->DeclareAbstractOutputPort(
             "spatial_accelerations",
             std::vector<SpatialAcceleration<T>>(num_bodies()),
-            &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
-            {this->acceleration_kinematics_cache_entry().ticket()}),
+            is_discrete() && use_sampled_output_ports_
+                ? &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<true>
+                : &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<false>,
+            is_discrete() && use_sampled_output_ports_
+                ? std::set<DependencyTicket>({memory_ticket})
+                : std::set<DependencyTicket>(
+                      {this->acceleration_kinematics_cache_entry().ticket()})),
         "Use 'body_spatial_accelerations' not 'spatial_accelerations'. "
         "The deprecated spelling will be removed on 2024-10-01.");
   }
 
   // Output "generalized_acceleration".
-  output_port_indices_.generalized_acceleration =
-      this->DeclareVectorOutputPort(
-              "generalized_acceleration", num_velocities(),
-              &MultibodyPlant<T>::CalcGeneralizedAccelerationOutput,
-              {this->acceleration_kinematics_cache_entry().ticket()})
-          .get_index();
+  output_port_indices_.generalized_acceleration = DeclareSampledOutputPort(
+      "generalized_acceleration", num_velocities(),
+      &MultibodyPlant<T>::CalcGeneralizedAccelerationOutput<true>,
+      &MultibodyPlant<T>::CalcGeneralizedAccelerationOutput<false>,
+      {memory_ticket}, {this->acceleration_kinematics_cache_entry().ticket()});
 
   // Output "net_actuation".
-  // N.B. We intentionally declare a dependency on kinematics in the continuous
-  // mode in anticipation for adding PD support in continuous mode.
-  output_port_indices_.net_actuation =
-      this->DeclareVectorOutputPort(
-              "net_actuation", num_actuated_dofs(),
-              &MultibodyPlant::CalcNetActuationOutput,
-              {state_ticket, this->all_input_ports_ticket(),
-               this->all_parameters_ticket()})
-          .get_index();
+  output_port_indices_.net_actuation = DeclareSampledOutputPort(
+      "net_actuation", num_actuated_dofs(),
+      &MultibodyPlant<T>::CalcNetActuationOutput<true>,
+      &MultibodyPlant<T>::CalcNetActuationOutput<false>, {memory_ticket},
+      {// N.B. We intentionally declare a dependency on kinematics in the
+       // continuous mode in anticipation for adding PD support to it.
+       state_ticket, this->all_input_ports_ticket(),
+       this->all_parameters_ticket()});
 
   // Output "reaction_forces".
-  // Joint reaction forces are a function of accelerations, which in turn depend
-  // on state, parameters, inputs, time, and accuracy.
-  output_port_indices_.reaction_forces =
-      this->DeclareAbstractOutputPort(
-              "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
-              &MultibodyPlant<T>::CalcReactionForcesOutput,
-              {this->acceleration_kinematics_cache_entry().ticket()})
-          .get_index();
+  output_port_indices_.reaction_forces = DeclareSampledOutputPort(
+      "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
+      &MultibodyPlant<T>::CalcReactionForcesOutput<true>,
+      &MultibodyPlant<T>::CalcReactionForcesOutput<false>, {memory_ticket},
+      {this->acceleration_kinematics_cache_entry().ticket()});
 
   // Output port "contact_results".
-  output_port_indices_.contact_results =
-      this->DeclareAbstractOutputPort(
-              "contact_results", ContactResults<T>(),
-              &MultibodyPlant<T>::CalcContactResultsOutput,
-              {this->acceleration_kinematics_cache_entry().ticket()})
-          .get_index();
+  output_port_indices_.contact_results = DeclareSampledOutputPort(
+      "contact_results", ContactResults<T>(),
+      &MultibodyPlant<T>::CalcContactResultsOutput<true>,
+      &MultibodyPlant<T>::CalcContactResultsOutput<false>, {memory_ticket},
+      {this->acceleration_kinematics_cache_entry().ticket()});
 
   // Loop over model instances.
   output_port_indices_.instance.resize(num_model_instances());
@@ -3134,61 +3357,52 @@ void MultibodyPlant<T>::DeclareOutputPorts() {
         this->DeclareVectorOutputPort(
                 fmt::format("{}_state", model_instance_name),
                 num_multibody_states(i),
-                [this, i](const Context<T>& context, BasicVector<T>* output) {
-                  this->CalcInstanceStateOutput(i, context, output);
+                [this, i](const Context<T>& context, BasicVector<T>* result) {
+                  this->CalcInstanceStateOutput(i, context, result);
                 },
                 {state_ticket})
             .get_index();
 
     // Output "{model_instance_name}_generalized_acceleration".
-    output_port_indices_.instance[i].generalized_acceleration =
-        this->DeclareVectorOutputPort(
-                fmt::format("{}_generalized_acceleration", model_instance_name),
-                num_velocities(i),
-                [this, i](const Context<T>& context, BasicVector<T>* output) {
-                  this->CalcInstanceGeneralizedAccelerationOutput(i, context,
-                                                                  output);
-                },
-                {this->acceleration_kinematics_cache_entry().ticket()})
-            .get_index();
+    output_port_indices_.instance[i]
+        .generalized_acceleration = this->DeclareSampledOutputPort(
+        fmt::format("{}_generalized_acceleration", model_instance_name),
+        num_velocities(i),
+        &MultibodyPlant<T>::CalcInstanceGeneralizedAccelerationOutput<true>,
+        &MultibodyPlant<T>::CalcInstanceGeneralizedAccelerationOutput<false>,
+        {memory_ticket}, {this->acceleration_kinematics_cache_entry().ticket()},
+        i);
 
     // Output "{model_instance_name}_generalized_contact_forces".
-    std::set<DependencyTicket> prerequisites_of_generalized_contact_forces;
-    if (is_discrete()) {
-      prerequisites_of_generalized_contact_forces.insert(this->xd_ticket());
-      prerequisites_of_generalized_contact_forces.insert(
-          this->all_parameters_ticket());
-    } else {
-      prerequisites_of_generalized_contact_forces.insert(
-          this->get_cache_entry(
-                  cache_indices_.generalized_contact_forces_continuous)
-              .ticket());
-    }
-    output_port_indices_.instance[i].generalized_contact_forces =
-        this->DeclareVectorOutputPort(
-                fmt::format("{}_generalized_contact_forces",
-                            model_instance_name),
-                num_velocities(i),
-                [this, i](const systems::Context<T>& context,
-                          systems::BasicVector<T>* output) {
-                  this->CalcInstanceGeneralizedContactForcesOutput(i, context,
-                                                                   output);
-                },
-                prerequisites_of_generalized_contact_forces)
-            .get_index();
+    // XXX Needs a re-look at the unsampled ticket dependencies.
+    output_port_indices_.instance[i]
+        .generalized_contact_forces = this->DeclareSampledOutputPort(
+        fmt::format("{}_generalized_contact_forces", model_instance_name),
+        num_velocities(i),
+        &MultibodyPlant<T>::CalcInstanceGeneralizedContactForcesOutput<true>,
+        &MultibodyPlant<T>::CalcInstanceGeneralizedContactForcesOutput<false>,
+        {memory_ticket},
+        is_discrete()
+            ? std::set<DependencyTicket>(
+                  {this->acceleration_kinematics_cache_entry().ticket()})
+            : std::set<DependencyTicket>(
+                  {this->get_cache_entry(
+                           cache_indices_.generalized_contact_forces_continuous)
+                       .ticket()}),
+        i);
 
     // Output "{model_instance_name}_net_actuation".
-    output_port_indices_.instance[i].net_actuation =
-        this->DeclareVectorOutputPort(
-                fmt::format("{}_net_actuation", model_instance_name),
-                num_actuated_dofs(i),
-                [this, i](const systems::Context<T>& context,
-                          systems::BasicVector<T>* output) {
-                  this->CalcInstanceNetActuationOutput(i, context, output);
-                },
-                {state_ticket, this->all_input_ports_ticket(),
-                 this->all_parameters_ticket()})
-            .get_index();
+    output_port_indices_.instance[i].net_actuation = DeclareSampledOutputPort(
+        fmt::format("{}_net_actuation", model_instance_name),
+        num_actuated_dofs(i),
+        &MultibodyPlant<T>::CalcInstanceNetActuationOutput<true>,
+        &MultibodyPlant<T>::CalcInstanceNetActuationOutput<false>,
+        {memory_ticket},
+        {// N.B. We intentionally declare a dependency on kinematics in the
+         // continuous mode in anticipation for adding PD support to it.
+         state_ticket, this->all_input_ports_ticket(),
+         this->all_parameters_ticket()},
+        i);
   }
 }
 
@@ -3241,13 +3455,14 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
 
   // Cache entry for ContactResultsContinuous.
   if (!is_discrete()) {
-    auto& contact_results_continuous_cache_entry = this->DeclareCacheEntry(
-        std::string("ContactResultsContinuous"),
-        &MultibodyPlant<T>::CalcContactResultsContinuous,
-        {state_ticket, this->all_parameters_ticket(),
-         get_geometry_query_input_port().ticket()});
-    cache_indices_.contact_results_continuous =
-        contact_results_continuous_cache_entry.cache_index();
+    auto& contact_results_point_pair_continuous_cache_entry =
+        this->DeclareCacheEntry(
+            std::string("ContactResultsPointPairContinuous"),
+            &MultibodyPlant<T>::CalcContactResultsPointPairContinuous,
+            {state_ticket, this->all_parameters_ticket(),
+             get_geometry_query_input_port().ticket()});
+    cache_indices_.contact_results_point_pair_continuous =
+        contact_results_point_pair_continuous_cache_entry.cache_index();
   }
 
   // Cache entry for SpatialContactForcesContinuous.
@@ -3329,22 +3544,45 @@ void MultibodyPlant<T>::CalcInstanceStateOutput(
 }
 
 template <typename T>
+template <bool sampled>
 void MultibodyPlant<T>::CalcInstanceGeneralizedContactForcesOutput(
     ModelInstanceIndex model_instance, const Context<T>& context,
     BasicVector<T>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-  ValidateGeometryInput(
-      context, get_generalized_contact_forces_output_port(model_instance));
+
+  // XXX We used to have code to "Guard against failure to acquire the geometry
+  // input deep in the call graph." but it was too crappy to survive the
+  // rewrite. Maybe we try to put it back, somehow.
+
   // Vector of generalized contact forces for the entire multibody system.
-  const VectorX<T>& tau_contact =
-      is_discrete()
-          ? discrete_update_manager_->EvalContactSolverResults(context)
-                .tau_contact
-          : EvalGeneralizedContactForcesContinuous(context);
-  // Generalized velocities and generalized forces are ordered in the same
-  // way. Thus we can call GetVelocitiesFromArray().
-  output->SetFromVector(GetVelocitiesFromArray(model_instance, tau_contact));
+  // We will find a pointer to it based on the discrete / sampled mode.
+  const VectorX<T>* tau_contact{};
+  if (is_discrete()) {
+    if constexpr (sampled) {
+      DRAKE_DEMAND(use_sampled_output_ports_);
+      const DiscreteStepMemory::Data<T>* const memory =
+          get_discrete_step_memory(context);
+      if (memory == nullptr) {
+        // The plant has not been stepped yet.
+        DRAKE_DEMAND(sampled == true);
+        output->SetZero();
+        return;
+      }
+      tau_contact = &memory->contact_solver_results.tau_contact;
+    } else {
+      tau_contact = &discrete_update_manager_->EvalContactSolverResults(context)
+                         .tau_contact;
+    }
+  } else {
+    DRAKE_DEMAND(sampled == false);
+    tau_contact = &EvalGeneralizedContactForcesContinuous(context);
+  }
+  DRAKE_DEMAND(tau_contact != nullptr);
+
+  // Generalized velocities and generalized forces are ordered in the same way.
+  // Thus we can call GetVelocitiesFromArray().
+  output->SetFromVector(GetVelocitiesFromArray(model_instance, *tau_contact));
 }
 
 template <typename T>
@@ -3375,7 +3613,14 @@ template <typename T>
 const systems::OutputPort<T>& MultibodyPlant<T>::get_net_actuation_output_port()
     const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(output_port_indices_.net_actuation);
+  return this->get_output_port(output_port_indices_.net_actuation.primary);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_net_actuation_unsampled_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(output_port_indices_.net_actuation.unsampled);
 }
 
 template <typename T>
@@ -3385,7 +3630,18 @@ const systems::OutputPort<T>& MultibodyPlant<T>::get_net_actuation_output_port(
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
   return this->get_output_port(
-      output_port_indices_.instance.at(model_instance).net_actuation);
+      output_port_indices_.instance.at(model_instance).net_actuation.primary);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_net_actuation_unsampled_output_port(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  return this->get_output_port(
+      output_port_indices_.instance.at(model_instance).net_actuation.unsampled);
 }
 
 template <typename T>
@@ -3425,7 +3681,16 @@ template <typename T>
 const systems::OutputPort<T>&
 MultibodyPlant<T>::get_generalized_acceleration_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(output_port_indices_.generalized_acceleration);
+  return this->get_output_port(
+      output_port_indices_.generalized_acceleration.primary);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_generalized_acceleration_unsampled_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(
+      output_port_indices_.generalized_acceleration.unsampled);
 }
 
 template <typename T>
@@ -3436,7 +3701,18 @@ MultibodyPlant<T>::get_generalized_acceleration_output_port(
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
   return this->get_output_port(output_port_indices_.instance.at(model_instance)
-                                   .generalized_acceleration);
+                                   .generalized_acceleration.primary);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_generalized_acceleration_unsampled_output_port(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  return this->get_output_port(output_port_indices_.instance.at(model_instance)
+                                   .generalized_acceleration.unsampled);
 }
 
 template <typename T>
@@ -3447,21 +3723,46 @@ MultibodyPlant<T>::get_generalized_contact_forces_output_port(
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
   return this->get_output_port(output_port_indices_.instance.at(model_instance)
-                                   .generalized_contact_forces);
+                                   .generalized_contact_forces.primary);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_generalized_contact_forces_unsampled_output_port(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  return this->get_output_port(output_port_indices_.instance.at(model_instance)
+                                   .generalized_contact_forces.unsampled);
 }
 
 template <typename T>
 const systems::OutputPort<T>&
 MultibodyPlant<T>::get_contact_results_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(output_port_indices_.contact_results);
+  return this->get_output_port(output_port_indices_.contact_results.primary);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_contact_results_unsampled_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(output_port_indices_.contact_results.unsampled);
 }
 
 template <typename T>
 const systems::OutputPort<T>&
 MultibodyPlant<T>::get_reaction_forces_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(output_port_indices_.reaction_forces);
+  return this->get_output_port(output_port_indices_.reaction_forces.primary);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_reaction_forces_unsampled_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(output_port_indices_.reaction_forces.unsampled);
 }
 
 template <typename T>
@@ -3504,32 +3805,58 @@ void MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput(
 }
 
 template <typename T>
+template <bool sampled>
 void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
     const Context<T>& context,
     std::vector<SpatialAcceleration<T>>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
+
+  // Find or evaluate the AccelerationKinematicsCache.
+  const AccelerationKinematicsCache<T>* ac =
+      EvalAccelerationKinematicsCache<sampled>(context);
+
+  // Copy the data out.
   output->resize(num_bodies());
-  const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
-  for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
-    const RigidBody<T>& body = get_body(body_index);
-    output->at(body_index) = ac.get_A_WB(body.mobod_index());
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    if (ac != nullptr) {
+      const auto mobod_index = get_body(body_index).mobod_index();
+      output->at(body_index) = ac->get_A_WB(mobod_index);
+    } else {
+      // The plant has not been stepped yet.
+      DRAKE_DEMAND(sampled);
+      output->at(body_index).SetZero();
+    }
   }
 }
 
 template <typename T>
+template <bool sampled>
 void MultibodyPlant<T>::CalcGeneralizedAccelerationOutput(
     const Context<T>& context, BasicVector<T>* output) const {
-  output->SetFromVector(this->EvalForwardDynamics(context).get_vdot());
+  // Find or evaluate the AccelerationKinematicsCache.
+  const AccelerationKinematicsCache<T>* ac =
+      EvalAccelerationKinematicsCache<sampled>(context);
+  if (ac != nullptr) {
+    output->SetFromVector(ac->get_vdot());
+  } else {
+    // The plant has not been stepped yet.
+    DRAKE_DEMAND(sampled);
+    output->SetZero();
+  }
 }
 
 template <typename T>
+template <bool sampled>
 void MultibodyPlant<T>::CalcInstanceGeneralizedAccelerationOutput(
     ModelInstanceIndex model_instance, const Context<T>& context,
     BasicVector<T>* output) const {
   // The per-instance calc delegates to the full-model calc and then slices it.
+  const auto& generalized_acceleration_port =
+      sampled ? get_generalized_acceleration_output_port()
+              : get_generalized_acceleration_unsampled_output_port();
   const VectorX<T>& generalized_acceleration =
-      get_generalized_acceleration_output_port().Eval(context);
+      generalized_acceleration_port.Eval(context);
   output->SetFromVector(
       this->GetVelocitiesFromArray(model_instance, generalized_acceleration));
 }
@@ -3556,7 +3883,7 @@ MultibodyPlant<T>::EvalPointPairPenetrations(
   switch (contact_model_) {
     case ContactModel::kPoint:
     case ContactModel::kHydroelasticWithFallback: {
-      return EvalGeometryContactData(context).point_pairs;
+      return EvalGeometryContactData(context)->point_pairs;
     }
     case ContactModel::kHydroelastic: {
       throw std::logic_error(
@@ -3594,12 +3921,37 @@ void MultibodyPlant<T>::CalcGeometryPoseOutput(
 }
 
 template <typename T>
+template <bool sampled>
 void MultibodyPlant<T>::CalcReactionForcesOutput(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* output) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(output != nullptr);
   DRAKE_DEMAND(ssize(*output) == num_joints());
+
+  // Sampled mode is a simple copy.
+  const DiscreteStepMemory::Data<T>* memory = nullptr;
+  if (sampled) {
+    memory = get_discrete_step_memory(context);
+    if (memory == nullptr) {
+      // Bail out early when in sampled mode with no memory.
+      for (SpatialForce<T>& item : *output) {
+        item.SetZero();
+      }
+      return;
+    }
+    if (discrete_update_manager_->deformable_driver() == nullptr) {
+      *output = memory->reaction_forces;
+    } else {
+      // SapDriver<T>::CalcDiscreteUpdateMultibodyForces doesn't support
+      // reaction forces yet, so our CalcStepUnrestricted can't sample
+      // this output port.
+      throw std::logic_error(
+          "The computation of MultibodyForces must be updated to include "
+          "deformable objects.");
+    }
+    return;
+  }
 
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(context, get_reaction_forces_output_port());
@@ -3610,6 +3962,7 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
   auto& tau_applied = applied_forces.mutable_generalized_forces();
   if (is_discrete()) {
+    DRAKE_DEMAND(sampled == false);
     applied_forces =
         discrete_update_manager_->EvalDiscreteUpdateMultibodyForces(context);
   } else {
@@ -3724,7 +4077,16 @@ template <typename T>
 const OutputPort<T>&
 MultibodyPlant<T>::get_body_spatial_accelerations_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(output_port_indices_.body_spatial_accelerations);
+  return this->get_output_port(
+      output_port_indices_.body_spatial_accelerations.primary);
+}
+
+template <typename T>
+const OutputPort<T>& MultibodyPlant<
+    T>::get_body_spatial_accelerations_unsampled_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(
+      output_port_indices_.body_spatial_accelerations.unsampled);
 }
 
 template <typename T>
@@ -3752,10 +4114,11 @@ MultibodyPlant<T>::get_deformable_body_configuration_output_port() const {
 template <typename T>
 void MultibodyPlant<T>::ThrowIfFinalized(const char* source_method) const {
   if (is_finalized()) {
-    throw std::logic_error(
-        "Post-finalize calls to '" + std::string(source_method) +
-        "()' are "
-        "not allowed; calls to this method must happen before Finalize().");
+    throw std::logic_error("Post-finalize calls to '" +
+                           std::string(source_method) +
+                           "()' are "
+                           "not allowed; calls to this method must "
+                           "happen before Finalize().");
   }
 }
 
@@ -3812,10 +4175,11 @@ void MultibodyPlant<T>::set_gravity_enabled(ModelInstanceIndex model_instance,
 
 template <typename T>
 DeformableModel<T>& MultibodyPlant<T>::AddDeformableModel() {
-  // TODO(xuchenhan-tri): We should verify that the plant is not finalized yet.
-  // Right now, we can do exactly just that yet because is_finalized() returns
-  // true iff the MultibodyTree is finalized. There's no easy way to confirm
-  // that a plant is not yet finalized when the tree is already finalized.
+  // TODO(xuchenhan-tri): We should verify that the plant is not
+  // finalized yet. Right now, we can do exactly just that yet
+  // because is_finalized() returns true iff the MultibodyTree is
+  // finalized. There's no easy way to confirm that a plant is not
+  // yet finalized when the tree is already finalized.
   DRAKE_DEMAND(physical_models_->deformable_model() == nullptr);
   return physical_models_->AddDeformableModel(
       std::make_unique<DeformableModel<T>>(this));
