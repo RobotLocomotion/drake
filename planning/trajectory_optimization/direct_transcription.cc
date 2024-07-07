@@ -151,19 +151,27 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
   const double fixed_time_step_{0};
 };
 
-double get_period(const System<double>* system, std::string message) {
+double get_period(const System<double>* system) {
+  if (system->num_abstract_states() > 0) {
+    throw std::logic_error(
+        "DirectTranscription cannot operate on systems with abstract state.");
+  }
   std::optional<PeriodicEventData> periodic_data =
       system->GetUniquePeriodicDiscreteUpdateAttribute();
   if (!periodic_data.has_value()) {
-    throw std::invalid_argument(message);
+    throw std::logic_error(
+        "This constructor is for discrete-time systems with a single unique "
+        "update period. For continuous-time systems, you must use a different "
+        "constructor that specifies the time steps.");
   }
-  DRAKE_DEMAND(periodic_data->offset_sec() == 0.0);
+  DRAKE_THROW_UNLESS(periodic_data->offset_sec() == 0.0);
   return periodic_data->period_sec();
 }
 
 int get_input_port_size(
     const System<double>* system,
     std::variant<InputPortSelection, InputPortIndex> input_port_index) {
+  DRAKE_THROW_UNLESS(system != nullptr);
   if (system->get_input_port_selection(input_port_index)) {
     return system->get_input_port_selection(input_port_index)->size();
   } else {
@@ -179,12 +187,7 @@ DirectTranscription::DirectTranscription(
     const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
-                       get_period(system,
-                                  "This constructor is for discrete-time "
-                                  "systems.  For continuous-time "
-                                  "systems, you must use a different "
-                                  "constructor that specifies the "
-                                  "time steps.")),
+                       get_period(system)),
       discrete_time_system_(true) {
   ValidateSystem(*system, context, input_port_index);
 

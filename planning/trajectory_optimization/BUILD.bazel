@@ -166,6 +166,7 @@ drake_cc_googletest(
         "//solvers:solve",
         "//systems/primitives:symbolic_vector_system",
         "//systems/primitives:trajectory_linear_system",
+        "//systems/primitives:zero_order_hold",
     ],
 )
 
