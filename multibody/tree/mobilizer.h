@@ -206,6 +206,27 @@ template<typename T> class BodyNode;
 // - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
 //                       algorithms. Springer.
 //
+// <h3>Interaction with the Context</h3>
+//
+// Some member functions of a Mobilizer take a `const Context& context` as an
+// input argument. To ensure correctness of the MultibodyTreeSystem's cache
+// entry dependencies, it is essential that such functions only access an
+// appropriate subset the Context.
+//
+// A mobilizer's generalized positions q and generalized velocities v exist as
+// State in the context. The mobilizer is FORBIDDEN from using any State from
+// the context other than its own q and v data. Some functions are documented
+// to be only a function of q (not v); those functions must not access v.
+//
+// A mobilizer is allowed to access any Parameters in the context that it has
+// declared, from any method that takes a Context, without any further comment.
+// We always conservatively assume that all Mobilizer methods depend on all of a
+// Mobilizer's Parameters.
+//
+// A mobilizer is FORBIDDEN from being time- or input-dependent. (The context
+// provides access to the current simulation time and input port values, but
+// the mobilizer must not use that information.)
+//
 // @tparam_default_scalar
 template <typename T>
 class Mobilizer : public MultibodyElement<T> {
