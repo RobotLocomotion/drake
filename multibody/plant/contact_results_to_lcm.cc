@@ -223,23 +223,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
       assign_double(surface_message.moment_C_W,
                     hydroelastic_contact_info.F_Ac_W().rotational());
 
-      // Write all quadrature points on the contact surface.
-      const std::vector<HydroelasticQuadraturePointData<T>>&
-          quadrature_point_data =
-              hydroelastic_contact_info.quadrature_point_data();
-      surface_message.num_quadrature_points = quadrature_point_data.size();
-      surface_message.quadrature_point_data.resize(
-          surface_message.num_quadrature_points);
-
-      for (int j = 0; j < surface_message.num_quadrature_points; ++j) {
-        lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_data_message =
-            surface_message.quadrature_point_data[j];
-        assign_double(quad_data_message.p_WQ, quadrature_point_data[j].p_WQ);
-        assign_double(quad_data_message.vt_BqAq_W,
-                      quadrature_point_data[j].vt_BqAq_W);
-        assign_double(quad_data_message.traction_Aq_W,
-                      quadrature_point_data[j].traction_Aq_W);
-      }
+      // We no longer transmit quadrature points.
+      surface_message.num_quadrature_points = 0;
+      surface_message.quadrature_point_data.clear();
 
       // Now build the mesh.
       const int num_vertices = contact_surface.num_vertices();
