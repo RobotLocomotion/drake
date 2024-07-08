@@ -19,13 +19,14 @@ inline auto SpanningForest::mobods(MobodIndex mobod_index) const
   return mobods()[mobod_index];
 }
 
-inline BodyIndex SpanningForest::mobod_to_link(MobodIndex mobod_index) const {
-  return mobods(mobod_index).link();
+inline LinkOrdinal SpanningForest::mobod_to_link_ordinal(
+    MobodIndex mobod_index) const {
+  return mobods(mobod_index).link_ordinal();
 }
 
-inline const std::vector<BodyIndex>& SpanningForest::mobod_to_links(
+inline const std::vector<LinkOrdinal>& SpanningForest::mobod_to_link_ordinals(
     MobodIndex mobod_index) const {
-  return mobods(mobod_index).follower_links();
+  return mobods(mobod_index).follower_link_ordinals();
 }
 
 inline TreeIndex SpanningForest::q_to_tree(int q_index) const {

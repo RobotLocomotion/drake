@@ -9,7 +9,8 @@ namespace multibody {
 namespace internal {
 
 // Constructor for the World mobilized body.
-SpanningForest::Mobod::Mobod(MobodIndex mobod_index, BodyIndex world_link)
+SpanningForest::Mobod::Mobod(MobodIndex mobod_index,
+                             LinkOrdinal world_link_ordinal)
     : level_(0),
       index_(mobod_index),
       q_start_(0),
@@ -18,23 +19,23 @@ SpanningForest::Mobod::Mobod(MobodIndex mobod_index, BodyIndex world_link)
       nv_(0),
       nq_inboard_(0),
       nv_inboard_(0) {
-  DRAKE_DEMAND(mobod_index.is_valid() && world_link.is_valid());
-  DRAKE_DEMAND(world_link == 0 && mobod_index == 0);
-  follower_links_.push_back(world_link);
+  DRAKE_DEMAND(mobod_index.is_valid() && world_link_ordinal.is_valid());
+  DRAKE_DEMAND(world_link_ordinal == 0 && mobod_index == 0);
+  follower_link_ordinals_.push_back(world_link_ordinal);
 }
 
 // Constructor for mobilized bodies other than World.
-SpanningForest::Mobod::Mobod(MobodIndex mobod_index, BodyIndex link_index,
-                             JointIndex joint_index, int level,
+SpanningForest::Mobod::Mobod(MobodIndex mobod_index, LinkOrdinal link_ordinal,
+                             JointOrdinal joint_ordinal, int level,
                              bool is_reversed)
-    : joint_index_(joint_index),
+    : joint_ordinal_(joint_ordinal),
       use_reverse_mobilizer_(is_reversed),
       level_(level),
       index_(mobod_index) {
-  DRAKE_DEMAND(mobod_index.is_valid() && link_index.is_valid() &&
-               joint_index.is_valid());
-  DRAKE_DEMAND(mobod_index != 0 && link_index != 0 && level > 0);
-  follower_links_.push_back(link_index);
+  DRAKE_DEMAND(mobod_index.is_valid() && link_ordinal.is_valid() &&
+               joint_ordinal.is_valid());
+  DRAKE_DEMAND(mobod_index != 0 && link_ordinal != 0 && level > 0);
+  follower_link_ordinals_.push_back(link_ordinal);
 }
 
 void SpanningForest::Mobod::FixupAfterReordering(
@@ -45,8 +46,8 @@ void SpanningForest::Mobod::FixupAfterReordering(
 }
 
 void SpanningForest::Mobod::Swap(Mobod& other) {
-  std::swap(follower_links_, other.follower_links_);
-  std::swap(joint_index_, other.joint_index_);
+  std::swap(follower_link_ordinals_, other.follower_link_ordinals_);
+  std::swap(joint_ordinal_, other.joint_ordinal_);
   std::swap(use_reverse_mobilizer_, other.use_reverse_mobilizer_);
   std::swap(level_, other.level_);
   std::swap(index_, other.index_);
@@ -58,6 +59,7 @@ void SpanningForest::Mobod::Swap(Mobod& other) {
   std::swap(nq_, other.nq_);
   std::swap(v_start_, other.v_start_);
   std::swap(nv_, other.nv_);
+  std::swap(has_quaternion_, other.has_quaternion_);
   std::swap(nq_inboard_, other.nq_inboard_);
   std::swap(nv_inboard_, other.nv_inboard_);
   std::swap(nq_outboard_, other.nq_outboard_);
