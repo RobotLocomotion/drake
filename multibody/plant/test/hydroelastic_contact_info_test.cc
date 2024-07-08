@@ -30,7 +30,7 @@ std::unique_ptr<TriangleSurfaceMesh<double>> MakeTriangleMesh() {
 
 // Creates an arbitrary contact surface between the two given geometries.
 std::unique_ptr<ContactSurface<double>> MakeContactSurface() {
-  GeometryId arbitrary_id = GeometryId::get_new_id();
+  const GeometryId arbitrary_id = GeometryId::get_new_id();
   auto mesh = MakeTriangleMesh();
   std::vector<double> e_MN(mesh->num_vertices(), 0.0);
   TriangleSurfaceMesh<double>* mesh_pointer = mesh.get();
@@ -52,7 +52,7 @@ HydroelasticContactInfo<double> CreateContactInfo(
   // Create an arbitrary contact surface.
   *contact_surface = MakeContactSurface();
 
-  // Create the HydroelasticContactInfo using particular spatial force.
+  // Create the HydroelasticContactInfo using a particular spatial force.
   return HydroelasticContactInfo<double>(contact_surface->get(),
                                          MakeSpatialForce());
 }
@@ -60,10 +60,8 @@ HydroelasticContactInfo<double> CreateContactInfo(
 // Verifies that the HydroelasticContactInfo structure uses the raw pointer
 // and the unique pointer, as appropriate, on copy construction.
 GTEST_TEST(HydroelasticContactInfo, CopyConstruction) {
-  std::unique_ptr<ContactSurface<double>> contact_surface;
-  std::unique_ptr<HydroelasticContactInfo<double>> contact_info;
-  HydroelasticContactInfo<double> copy =
-      CreateContactInfo(&contact_surface, &contact_info);
+  HydroelasticContactInfo<double> dut(MakeContactSurface(), MakeSpatialForce());
+  HydroelasticContactInfo<double> copy(dut);
 
   // Verify that copy construction used the raw pointer.
   EXPECT_EQ(contact_surface.get(), &copy.contact_surface());

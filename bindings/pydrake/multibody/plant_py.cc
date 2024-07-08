@@ -215,6 +215,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("model_instance"), cls_doc.num_actuated_dofs.doc_1args);
     // Construction.
     cls  // BR
+        .def("SetUseSampledOutputPorts", &Class::SetUseSampledOutputPorts,
+            py::arg("use_sampled_output_ports"),
+            cls_doc.SetUseSampledOutputPorts.doc)
         .def(
             "AddJoint",
             [](Class * self, std::unique_ptr<Joint<T>> joint) -> auto& {
