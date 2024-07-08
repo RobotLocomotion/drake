@@ -29,8 +29,7 @@ class ContactResultsTest : public ::testing::Test {
         std::move(surface_mesh), std::move(field));
     my_hydroelastic_contact_info_ =
         std::make_unique<HydroelasticContactInfo<double>>(
-            contact_surface_.get(), SpatialForce<double>{},
-            std::vector<HydroelasticQuadraturePointData<double>>{});
+            contact_surface_.get(), SpatialForce<double>{});
     id_A_ = GeometryId::get_new_id();
     id_B_ = GeometryId::get_new_id();
     std::vector<DeformableContactPointData<double>>
