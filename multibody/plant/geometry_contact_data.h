@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -30,11 +31,7 @@ struct GeometryContactData {
 /* Full specialization of HydroelasticContactInfo for T = AutoDiffXd.
 This omits DeformableContact data. */
 template <>
-class GeometryContactData<AutoDiffXd> {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryContactData);
-  GeometryContactData() = default;
-
+struct GeometryContactData<AutoDiffXd> {
   using T = AutoDiffXd;
   std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
   std::vector<geometry::ContactSurface<T>> surfaces;
@@ -43,11 +40,7 @@ class GeometryContactData<AutoDiffXd> {
 /* Full specialization of HydroelasticContactInfo for T = Expression.
 This omits ContactSurface and DeformableContact data. */
 template <>
-class GeometryContactData<symbolic::Expression> {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryContactData);
-  GeometryContactData() = default;
-
+struct GeometryContactData<symbolic::Expression> {
   using T = symbolic::Expression;
   std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
 };
@@ -55,3 +48,6 @@ class GeometryContactData<symbolic::Expression> {
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    struct ::drake::multibody::internal::GeometryContactData);
