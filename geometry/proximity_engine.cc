@@ -168,6 +168,7 @@ struct ReifyData {
   const GeometryId id;
   const ProximityProperties& properties;
   const RigidTransformd X_WG;
+  const double margin;
 };
 
 // Helper functions to facilitate exercising FCL's broadphase code. FCL has
@@ -464,6 +465,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Box& box, void* user_data) override {
     auto fcl_box = make_shared<fcl::Boxd>(box.size());
+    InflateLocalAabbForHydroelasticTypesOnly(user_data, fcl_box.get());
     TakeShapeOwnership(fcl_box, user_data);
     ProcessHydroelastic(box, user_data);
     ProcessGeometriesForDeformableContact(box, user_data);
@@ -473,6 +475,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_capsule =
         make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
+    InflateLocalAabbForHydroelasticTypesOnly(user_data, fcl_capsule.get());
     TakeShapeOwnership(fcl_capsule, user_data);
     ProcessHydroelastic(capsule, user_data);
     ProcessGeometriesForDeformableContact(capsule, user_data);
@@ -489,6 +492,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_cylinder =
         make_shared<fcl::Cylinderd>(cylinder.radius(), cylinder.length());
+    InflateLocalAabbForHydroelasticTypesOnly(user_data, fcl_cylinder.get());
     TakeShapeOwnership(fcl_cylinder, user_data);
     ProcessHydroelastic(cylinder, user_data);
     ProcessGeometriesForDeformableContact(cylinder, user_data);
@@ -498,6 +502,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_ellipsoid = make_shared<fcl::Ellipsoidd>(
         ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
+    InflateLocalAabbForHydroelasticTypesOnly(user_data, fcl_ellipsoid.get());
     TakeShapeOwnership(fcl_ellipsoid, user_data);
     ProcessHydroelastic(ellipsoid, user_data);
     ProcessGeometriesForDeformableContact(ellipsoid, user_data);
@@ -507,6 +512,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                          void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_half_space = make_shared<fcl::Halfspaced>(0, 0, 1, 0);
+    InflateLocalAabbForHydroelasticTypesOnly(user_data, fcl_half_space.get());
     TakeShapeOwnership(fcl_half_space, user_data);
     ProcessHydroelastic(half_space, user_data);
     ProcessGeometriesForDeformableContact(half_space, user_data);
@@ -521,6 +527,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_sphere = make_shared<fcl::Sphered>(sphere.radius());
+    InflateLocalAabbForHydroelasticTypesOnly(user_data, fcl_sphere.get());
     TakeShapeOwnership(fcl_sphere, user_data);
     ProcessHydroelastic(sphere, user_data);
     ProcessGeometriesForDeformableContact(sphere, user_data);
@@ -829,12 +836,55 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   template <typename>
   friend class ProximityEngine;
 
+  // Helper to query if an object has a hydroelastic type from its reification
+  // data.
+  static bool IsHydroelasticType(const ReifyData& reify_data) {
+    const ProximityProperties& properties = reify_data.properties;
+    const HydroelasticType type = properties.GetPropertyOrDefault(
+        kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
+    return type != HydroelasticType::kUndefined;
+  }
+
+  // If a geometry has margin, we must include it in the size of the AABB used
+  // by FCL for broad-phase. This helper inflates the size of the underlying
+  // AABB local to a given geometry g (i.e. expressed in the geometry frame).
+  //
+  // Each CollisionObject stores its own pose in the world and its AABB in the
+  // world frame, which must be updated every time the pose of the object
+  // changes (those are the computeAABB() calls in this file.) This AABB in the
+  // world frame is computed given the object's pose and its AABB in the
+  // geometry's local frame. This local AABB is computed at construction of the
+  // CollisionObject object via its underlying CollisionGeometry, who stores the
+  // local AABB. Once the CollisionObject is constructed, its local AABB does
+  // not change. We apply the "inflation" by margin to this local AABB so that
+  // it affects the computation of the object's AABB when its pose changes.
+  static void InflateLocalAabb(double margin, fcl::CollisionGeometryd* g) {
+    g->aabb_local.max_ += Vector3d::Constant(margin);
+    g->aabb_local.min_ -= Vector3d::Constant(margin);
+    // Radius of the sphere circumscribing the local aabb.
+    g->aabb_radius = (g->aabb_local.min_ - g->aabb_center).norm();
+  }
+
+  // Inflates the local AABB (expressed in the g's frame) for hydroelastic
+  // geometries only.
+  // @see InflateLocalAabb() for details.
+  // @pre user_data must store a pointer to ReifyData.
+  static void InflateLocalAabbForHydroelasticTypesOnly(
+      void* user_data, fcl::CollisionGeometryd* g) {
+    const ReifyData& reify_data = *static_cast<ReifyData*>(user_data);
+    if (IsHydroelasticType(reify_data)) {
+      InflateLocalAabb(reify_data.margin, g);
+    }
+  }
+
   void AddGeometry(
       const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
       const ProximityProperties& props, bool is_dynamic,
       fcl::DynamicAABBTreeCollisionManager<double>* tree,
       unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects) {
-    ReifyData data{nullptr, id, props, X_WG};
+    const double margin =
+        props.GetPropertyOrDefault<double>(kMaterialGroup, kMargin, 0.0);
+    ReifyData data{nullptr, id, props, X_WG, margin};
     shape.Reify(this, &data);
 
     data.fcl_object->setTransform(X_WG.GetAsIsometry3());
@@ -894,6 +944,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     auto fcl_convex = make_shared<fcl::Convexd>(
         std::move(shared_verts), hull.num_elements(), std::move(shared_faces));
 
+    InflateLocalAabbForHydroelasticTypesOnly(user_data, fcl_convex.get());
     TakeShapeOwnership(fcl_convex, user_data);
     ProcessHydroelastic(mesh, user_data);
     // TODO(DamrongGuoy):  Right now ProcessGeometriesForDeformableContact()

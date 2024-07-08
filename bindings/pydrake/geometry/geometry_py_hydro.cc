@@ -115,7 +115,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     constexpr char internal_doc[] = "(internal use only)";
     m.def("_MakeConvexHull", &drake::geometry::internal::MakeConvexHull,
-        py::arg("shape"), internal_doc);
+        py::arg("shape"), py::arg("margin") = 0, internal_doc);
   }
 
   m.def("AddRigidHydroelasticProperties",

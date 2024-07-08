@@ -26,12 +26,14 @@ class Hullifier final : public ShapeReifier {
   }
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Mesh& mesh, void*) final {
-    hull_ = MakeConvexHull(mesh.filename(), mesh.scale());
+  void ImplementGeometry(const Mesh& mesh, void* user_data) final {
+    const double margin = *static_cast<double*>(user_data);
+    hull_ = MakeConvexHull(mesh.filename(), mesh.scale(), margin);
   }
 
-  void ImplementGeometry(const Convex& convex, void*) final {
-    hull_ = MakeConvexHull(convex.filename(), convex.scale());
+  void ImplementGeometry(const Convex& convex, void* user_data) final {
+    const double margin = *static_cast<double*>(user_data);
+    hull_ = MakeConvexHull(convex.filename(), convex.scale(), margin);
   }
 
   PolygonSurfaceMesh<double> hull_;
@@ -39,9 +41,9 @@ class Hullifier final : public ShapeReifier {
 
 }  // namespace
 
-PolygonSurfaceMesh<double> MakeConvexHull(const Shape& shape) {
+PolygonSurfaceMesh<double> MakeConvexHull(const Shape& shape, double margin) {
   Hullifier hullifier;
-  shape.Reify(&hullifier);
+  shape.Reify(&hullifier, &margin);
   return hullifier.release_hull();
 }
 

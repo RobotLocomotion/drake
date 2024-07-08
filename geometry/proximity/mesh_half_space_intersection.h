@@ -134,7 +134,10 @@ ComputeContactSurface(
 
 /*
  Computes the ContactSurface formed by a soft half space and the given rigid
- mesh.
+ mesh. Pressure is defined as p = −(ϕ + δ)⋅g, where ϕ is the signed distance to
+ the half space, δ is a margin value and g is a pressure scale (see below).
+ Therefore the zero pressure level set is located at ϕ = -δ with a (negative)
+ pressure value p = −δ⋅g.
 
  The definition of the half space is implicit in the call -- it is the type
  defined by the HalfSpace class, thus, only its id, its pose in a common frame
@@ -146,6 +149,7 @@ ComputeContactSurface(
  @param[in] pressure_scale  A linear scale factor that transforms penetration
                             depth into pressure values. Generally,
                             `pressure_scale = hydroelastic_modulus / thickness`.
+ @param[in] margin          The margin amount δ.
  @param[in] id_R            The id of the rigid mesh.
  @param[in] mesh_R          The rigid mesh. The mesh vertices are measured and
                             expressed in Frame R.
@@ -166,7 +170,7 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
-    GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
+    double margin, GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
     HydroelasticContactRepresentation representation);
