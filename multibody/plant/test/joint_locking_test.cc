@@ -501,6 +501,7 @@ class FilteredContactResultsTest
     systems::DiagramBuilder<double> builder;
     plant_ = &AddMultibodyPlantSceneGraph(&builder, time_step).plant;
     plant_->set_contact_model(config.contact_model);
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
     if (time_step > 0) {
       // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
       // arbitrarily choose two model approximations to accomplish this.
