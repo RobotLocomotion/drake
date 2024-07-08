@@ -14,6 +14,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/geometry_spatial_inertia.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
@@ -112,8 +113,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
 
   std::string box_obj_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/meshes/box.obj"))};
-  std::string non_convex_obj_{std::filesystem::canonical(FindResourceOrThrow(
-      "drake/geometry/test/non_convex_mesh.obj"))};
+  std::string non_convex_obj_{std::filesystem::canonical(
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"))};
   std::string box_urdf_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))};
 };
@@ -162,7 +163,8 @@ TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
 }
 
 const char* mujoco_menagerie_models[] = {"google_robot/robot",
-                                         "kuka_iiwa_14/iiwa14"};
+                                         "kuka_iiwa_14/iiwa14",
+                                         "rethink_robotics_sawyer/sawyer"};
 // TODO(russt): Add the remaining models, once they can be parsed correctly, as
 // tracked in #20444.
 
@@ -781,6 +783,44 @@ TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
       fmt::format(R"""(<mesh name="box" file="{}"/>)""", box_obj_);
   std::string defaults = R"""(<default><mesh scale="2 2 2"/></default>)""";
   TestBoxMesh(box_obj_, mesh_asset, defaults, 2.0);
+}
+
+// CalcSpatialInertia cannot necessarily compute a physical spatial inertia for
+// meshes which don't adhere to its requirements. The parser detects this and
+// provides a fallback so that it doesn't choke.
+// Per #21666 the failure is reported by throwing, in the future it will be
+// via some non-throwing protocol.
+TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
+  // This obj is known to produce a non-physical spatial inertia in
+  // CalcSpatialInertia.
+  const RlocationOrError rlocation = FindRunfile(
+      "mujoco_menagerie_internal/hello_robot_stretch/assets/base_link_0.obj");
+  ASSERT_EQ(rlocation.error, "");
+  const geometry::Mesh bad_mesh(rlocation.abspath, 1.0);
+
+  // For now, we know the spatial inertia is bad because it throws. When #21666
+  // is fixed, it will be some other mechanism. Evolve *this* test to match
+  // that API, but otherwise keep this confirmation that the mesh in question
+  // truly is "bad".
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(bad_mesh, 1.0),
+                              ".*IsPhysicallyValid[\\s\\S]*");
+
+  std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}"/>  </asset>
+  <worldbody>
+    <body name="body1">
+      <geom name="box_geom" type="mesh" mesh="box"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""",  rlocation.abspath);
+
+  EXPECT_NO_THROW(AddModelFromString(xml, "test"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*fallback.*"));
+  // Note: This test doesn't cover the properties of the fallback; just the fact
+  // that we're using it (and not choking).
 }
 
 TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {

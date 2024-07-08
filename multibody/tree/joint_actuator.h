@@ -229,6 +229,8 @@ class JointActuator final : public MultibodyElement<T> {
   /// Returns the associated rotor inertia value for this actuator, stored in
   /// `context`.
   /// See @ref reflected_inertia.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   const T& rotor_inertia(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(rotor_inertia_parameter_index_)[0];
   }
@@ -236,6 +238,8 @@ class JointActuator final : public MultibodyElement<T> {
   /// Returns the associated gear ratio value for this actuator, stored in
   /// `context`.
   /// See @ref reflected_inertia.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   const T& gear_ratio(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(gear_ratio_parameter_index_)[0];
   }
@@ -257,6 +261,8 @@ class JointActuator final : public MultibodyElement<T> {
 
   /// Calculates the reflected inertia value for this actuator in `context`.
   /// See @ref reflected_inertia.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   T calc_reflected_inertia(const systems::Context<T>& context) const {
     const T& rho = gear_ratio(context);
     const T& Ir = rotor_inertia(context);

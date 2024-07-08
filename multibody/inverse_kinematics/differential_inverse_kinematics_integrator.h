@@ -39,7 +39,7 @@ It is also important to set the initial state of the integrator:
 @system
 name: DifferentialInverseKinematicsIntegrator
 input_ports:
-- X_WE_desired
+- X_AE_desired
 - robot_state (optional)
 - use_robot_state (optional)
 output_ports:

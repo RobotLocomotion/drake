@@ -44,42 +44,37 @@ namespace multibody {
 // pre-finalize.
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
-using geometry::CollisionFilterDeclaration;
-using geometry::CollisionFilterScope;
-using geometry::ContactSurface;
-using geometry::FrameId;
-using geometry::FramePoseVector;
-using geometry::GeometryFrame;
-using geometry::GeometryId;
-using geometry::GeometryInstance;
-using geometry::GeometrySet;
-using geometry::PenetrationAsPointPair;
-using geometry::ProximityProperties;
-using geometry::SceneGraph;
-using geometry::SceneGraphInspector;
-using geometry::SourceId;
-using geometry::render::RenderLabel;
-using systems::DependencyTicket;
-using systems::InputPort;
-using systems::OutputPort;
-using systems::State;
-
+using drake::geometry::CollisionFilterDeclaration;
+using drake::geometry::CollisionFilterScope;
+using drake::geometry::ContactSurface;
+using drake::geometry::FrameId;
+using drake::geometry::FramePoseVector;
+using drake::geometry::GeometryFrame;
+using drake::geometry::GeometryId;
+using drake::geometry::GeometryInstance;
+using drake::geometry::GeometrySet;
+using drake::geometry::PenetrationAsPointPair;
+using drake::geometry::ProximityProperties;
+using drake::geometry::SceneGraph;
+using drake::geometry::SceneGraphInspector;
+using drake::geometry::SourceId;
+using drake::geometry::render::RenderLabel;
 using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
-using drake::multibody::MultibodyForces;
-using drake::multibody::SpatialAcceleration;
-using drake::multibody::SpatialForce;
 using drake::multibody::internal::AccelerationKinematicsCache;
 using drake::multibody::internal::ArticulatedBodyForceCache;
 using drake::multibody::internal::ArticulatedBodyInertiaCache;
 using drake::multibody::internal::GeometryContactData;
 using drake::multibody::internal::PositionKinematicsCache;
 using drake::multibody::internal::VelocityKinematicsCache;
-using systems::BasicVector;
-using systems::Context;
-using systems::InputPort;
-using systems::InputPortIndex;
-using systems::OutputPortIndex;
+using drake::systems::BasicVector;
+using drake::systems::Context;
+using drake::systems::DependencyTicket;
+using drake::systems::InputPort;
+using drake::systems::InputPortIndex;
+using drake::systems::OutputPort;
+using drake::systems::OutputPortIndex;
+using drake::systems::State;
 
 namespace internal {
 // This is a helper struct used to estimate the parameters used in the penalty
@@ -1989,15 +1984,6 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   }
 }
 
-template <>
-void MultibodyPlant<symbolic::Expression>::
-    AppendContactResultsHydroelasticContinuous(
-        const Context<symbolic::Expression>&,
-        ContactResults<symbolic::Expression>*) const {
-  throw std::logic_error(
-      "This method doesn't support T = symbolic::Expression.");
-}
-
 template <typename T>
 void MultibodyPlant<T>::AppendContactResultsHydroelasticContinuous(
     const systems::Context<T>& context,
@@ -2189,20 +2175,12 @@ void MultibodyPlant<T>::CalcAndAddPointContactForcesContinuous(
   }
 }
 
-template <>
-void MultibodyPlant<symbolic::Expression>::
-    CalcHydroelasticContactForcesContinuous(
-        const Context<symbolic::Expression>&,
-        internal::HydroelasticContactForcesContinuousCacheData<
-            symbolic::Expression>*) const {
-  throw std::logic_error(
-      "This method doesn't support T = symbolic::Expression.");
-}
-
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
     const Context<T>& context,
-    internal::HydroelasticContactForcesContinuousCacheData<T>* output) const {
+    internal::HydroelasticContactForcesContinuousCacheData<T>* output) const
+  requires scalar_predicate<T>::is_bool
+{  // NOLINT(whitespace/braces)
   this->ValidateContext(context);
   DRAKE_DEMAND(output != nullptr);
   DRAKE_DEMAND(!is_discrete());
@@ -3241,19 +3219,21 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   const bool use_hydroelastic =
       contact_model_ == ContactModel::kHydroelastic ||
       contact_model_ == ContactModel::kHydroelasticWithFallback;
-  if (!is_discrete() && use_hydroelastic) {
-    auto& hydroelastic_contact_forces_continuous_cache_entry =
-        this->DeclareCacheEntry(
-            std::string("HydroelasticContactForcesContinuous"),
-            internal::HydroelasticContactForcesContinuousCacheData<T>(
-                this->num_bodies()),
-            &MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous,
-            // Compliant contact forces due to hydroelastics with Hunt &
-            // Crossley are function of the kinematic variables q & v only.
-            {state_ticket, this->all_parameters_ticket(),
-             get_geometry_query_input_port().ticket()});
-    cache_indices_.hydroelastic_contact_forces_continuous =
-        hydroelastic_contact_forces_continuous_cache_entry.cache_index();
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    if (!is_discrete() && use_hydroelastic) {
+      auto& hydroelastic_contact_forces_continuous_cache_entry =
+          this->DeclareCacheEntry(
+              std::string("HydroelasticContactForcesContinuous"),
+              internal::HydroelasticContactForcesContinuousCacheData<T>(
+                  this->num_bodies()),
+              &MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous,
+              // Compliant contact forces due to hydroelastics with Hunt &
+              // Crossley are function of the kinematic variables q & v only.
+              {state_ticket, this->all_parameters_ticket(),
+               get_geometry_query_input_port().ticket()});
+      cache_indices_.hydroelastic_contact_forces_continuous =
+          hydroelastic_contact_forces_continuous_cache_entry.cache_index();
+    }
   }
 
   // Cache entry for ContactResultsContinuous.

@@ -6,10 +6,10 @@
 #     tools/workspace/crate_universe/upgrade.sh
 ###############################################################################
 
-load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
-load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@rules_license//rules:license.bzl", "license")
 load("@rules_license//rules:package_info.bzl", "package_info")
+load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
 package(
     default_package_metadata = [
@@ -114,7 +114,7 @@ rust_library(
 )
 
 cargo_build_script(
-    name = "num-traits_bs",
+    name = "_bs",
     srcs = glob(
         include = ["**/*.rs"],
         allow_empty = False,
@@ -139,6 +139,7 @@ cargo_build_script(
         ],
     ),
     edition = "2021",
+    pkg_name = "num-traits",
     rustc_flags = [
         "--cap-lints=allow",
     ],
@@ -158,6 +159,6 @@ cargo_build_script(
 
 alias(
     name = "build_script_build",
-    actual = ":num-traits_bs",
+    actual = ":_bs",
     tags = ["manual"],
 )
