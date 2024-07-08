@@ -316,10 +316,8 @@ class MultibodyPlantHydroelasticTractionTests
     UpdateCalculatorData();
 
     SpatialForce<double> F_Ac_W;
-    std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
     traction_calculator().ComputeSpatialForcesAtCentroidFromHydroelasticModel(
-        calculator_data(), dissipation, mu_coulomb, &quadrature_point_data,
-        &F_Ac_W);
+        calculator_data(), dissipation, mu_coulomb, &F_Ac_W);
 
     traction_calculator().ShiftSpatialForcesAtCentroidToBodyOrigins(
         calculator_data(), F_Ac_W, F_Ao_W, F_Bo_W);

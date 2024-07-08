@@ -6,6 +6,9 @@
 namespace drake {
 namespace multibody {
 
+// TODO(jwnimmer-tri) Move these types into an internal namespace (with
+// deprecation); they are not relevant to any public API.
+
 /**
  Results from intermediate calculations used during the quadrature routine.
  These results allow reporting quantities like slip velocity and traction that
