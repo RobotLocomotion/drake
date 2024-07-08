@@ -453,7 +453,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcCenterOfMassAcceleration) {
   const Frame<double>& frame_B = bodyB_->body_frame();
 
   // Point Acm is link A's center of mass.
-  // Calculate Acm's spatial acceleration in world W, expressed in world W.
+  // Calculate Acm's translational acceleration in world W, expressed in W.
   const Vector3<double> a_WAcm_W =
       bodyA_->CalcCenterOfMassTranslationalAccelerationInWorld(*context_);
 
@@ -478,11 +478,11 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcCenterOfMassAcceleration) {
                               kTolerance));
 
   // Point Bcm is link B's center of mass.
-  // Calculate Bcm's spatial acceleration in world W, expressed in world W.
+  // Calculate Bcm's translational acceleration in world W, expressed in W.
   const Vector3<double> a_WBcm_W =
       bodyB_->CalcCenterOfMassTranslationalAccelerationInWorld(*context_);
 
-  // Verify previous results by calculating Bcm's spatial acceleration in W.
+  // Verify previous results for Bcm's translational acceleration in W.
   // a_WBcm_W = a_WBo_W + alpha_WB_W x p_BoBcm_W + w_WB_W x (w_WB_W x p_BoBcm_W)
   const SpatialAcceleration<double> A_WBo_W_expected =
       frame_B.CalcSpatialAccelerationInWorld(*context_);
@@ -503,6 +503,18 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcCenterOfMassAcceleration) {
           plant_, *context_, vdot, frame_B, p_BoBcm_B, frame_W, frame_W);
   EXPECT_TRUE(CompareMatrices(a_WBcm_W, A_WBcm_W_alternate.translational(),
                               kTolerance));
+
+  // Denoting Scm as the center of mass of the system consisting of A and B,
+  // calculate Scm's translational acceleration in world W, expressed in W.
+  const Vector3<double> a_WScm_W =
+      plant_.CalcCenterOfMassTranslationalAccelerationInWorld(*context_);
+
+  // Verify previous calculation with by-hand calculation of a_WScm_W.
+  const double mA = bodyA_->get_mass(*context_);
+  const double mB = bodyB_->get_mass(*context_);
+  const double mS = mA + mB;
+  Vector3<double> a_WScm_W_expected = (mA * a_WAcm_W + mB * a_WBcm_W) / mS;
+  EXPECT_TRUE(CompareMatrices(a_WScm_W, a_WScm_W_expected, kTolerance));
 }
 
 }  // namespace
