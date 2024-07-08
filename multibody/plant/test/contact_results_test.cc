@@ -68,18 +68,13 @@ TEST_F(ContactResultsTest, Default) {
   EXPECT_EQ(default_contact_results.plant(), nullptr);
 }
 
-// Tests the set, access, and clear operations. For the access and clear
-// operations, the code has two branches that:
-//   1. use alias pointers for hydroealstic_contact_info_
-//   2. use unique pointers for hydroelastic_contact_info_ (happens after
-//      assignment or copy constructor).
+// Tests the set, access, and clear operations.
 TEST_F(ContactResultsTest, SetAccessClear) {
   // Set
-  // It will use alias pointer to my_hydroelastic_contact_info_.
   ContactResults<double> contact_results;
   contact_results.set_plant(&plant_);
   contact_results.AddContactInfo(point_pair_info_);
-  contact_results.AddContactInfo(my_hydroelastic_contact_info_.get());
+  contact_results.AddContactInfo(*my_hydroelastic_contact_info_);
   contact_results.AddContactInfo(*deformable_contact_info_);
 
   // Access
@@ -100,7 +95,7 @@ TEST_F(ContactResultsTest, SetAccessClear) {
   EXPECT_EQ(contact_results.deformable_contact_info(0).contact_point_data(),
             deformable_contact_info_->contact_point_data());
 
-  // `copy` will use unique pointers for hydroelastic_contact_info_.
+  // Copy
   ContactResults<double> copy(contact_results);
   EXPECT_EQ(copy.num_point_pair_contacts(), 1);
   EXPECT_EQ(copy.num_hydroelastic_contacts(), 1);
@@ -109,15 +104,11 @@ TEST_F(ContactResultsTest, SetAccessClear) {
   EXPECT_EQ(copy.num_deformable_contacts(), 1);
 
   // Clear
-  // Test the alias-pointer variant.
   contact_results.Clear();
   EXPECT_EQ(contact_results.plant(), nullptr);
   EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
   EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 0);
   EXPECT_EQ(contact_results.num_deformable_contacts(), 0);
-  // Test the unique-pointer variant.
-  copy.Clear();
-  EXPECT_EQ(copy.num_hydroelastic_contacts(), 0);
 }
 
 // This is just a coverage test of the assignment operator. It doesn't try to

@@ -83,6 +83,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest,
 // at a time. Therefore we set discrete_contact_solver to empty.
 const char* const kExampleConfig = R"""(
 time_step: 0.002
+use_sampled_output_ports: true
 penetration_allowance: 0.003
 stiction_tolerance: 0.004
 contact_model: hydroelastic
