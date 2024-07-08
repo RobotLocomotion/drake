@@ -470,7 +470,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcCenterOfMassAcceleration) {
 
   // Verify results from CalcCenterOfMassTranslationalAccelerationInWorld()
   // match test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation().
-  const Vector3<double> p_AoAcm_A = p_AoAf_A_;  // Af is colocated with Acm.
+  const Vector3<double> p_AoAcm_A = p_AoAf_A_;  // Af is collocated with Acm.
   const SpatialAcceleration<double> A_WAcm_W_alternate =
       test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           plant_, *context_, vdot, frame_A, p_AoAcm_A, frame_W, frame_W);
