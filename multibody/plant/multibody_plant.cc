@@ -2257,10 +2257,9 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
         geometryM_id, geometryN_id, inspector);
 
     // Integrate the hydroelastic traction field over the contact surface.
-    std::vector<HydroelasticQuadraturePointData<T>> traction_output;
     SpatialForce<T> F_Ac_W;
     traction_calculator.ComputeSpatialForcesAtCentroidFromHydroelasticModel(
-        data, dissipation, dynamic_friction, &traction_output, &F_Ac_W);
+        data, dissipation, dynamic_friction, &F_Ac_W);
 
     // Shift the traction at the centroid to tractions at the body origins.
     SpatialForce<T> F_Ao_W, F_Bo_W;
@@ -2276,7 +2275,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
     }
 
     // Add the information for contact reporting.
-    contact_info.emplace_back(&surface, F_Ac_W, std::move(traction_output));
+    contact_info.emplace_back(&surface, F_Ac_W);
   }
 }
 
