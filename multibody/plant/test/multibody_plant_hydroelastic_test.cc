@@ -504,6 +504,7 @@ class ContactModelTest : public ::testing::Test {
       scene_graph_ = builder.AddSystem(std::make_unique<SceneGraph<double>>());
       plant_->RegisterAsSourceForSceneGraph(scene_graph_);
     }
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
 
     geometry::ProximityProperties props;
     geometry::AddContactMaterial(
