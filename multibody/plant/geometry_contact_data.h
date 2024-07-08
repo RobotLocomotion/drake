@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -55,3 +56,6 @@ class GeometryContactData<symbolic::Expression> {
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::GeometryContactData);
