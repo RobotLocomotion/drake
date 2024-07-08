@@ -2,6 +2,7 @@
 Play a policy for //bindings/pydrake/examples/gym/envs:cart_pole.
 """
 import argparse
+import sys
 import warnings
 
 import gymnasium as gym
@@ -30,6 +31,12 @@ def _run_playing(args):
             debug=args.debug,
             obs_noise=True,
             add_disturbances=True)
+
+    if args.test and (sys.platform == "darwin"):
+        # TODO(#21577) Importing Gym on macOS Homebrew goes up in flames.
+        # We need to skip this test in Drake CI.
+        print("Testing is disabled when on macOS")
+        sys.exit(0)
 
     if args.test:
         check_env(env)
