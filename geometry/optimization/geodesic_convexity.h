@@ -146,7 +146,8 @@ continuous revolute joints.
 @param preprocess_bbox is a flag for whether the function should precompute
 axis-aligned bounding boxes for every set. This can speed up the pairwise
 intersection checks, by determining some sets to be disjoint without needing
-to solve an optimization problem.
+to solve an optimization problem. However, it does require some overhead to
+compute those bounding boxes.
 
 @throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the

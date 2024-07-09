@@ -1,5 +1,6 @@
 #include "drake/geometry/optimization/geodesic_convexity.h"
 
+#include <optional>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -243,6 +244,37 @@ bool HyperrectangleOffsetIntersection(const Hyperrectangle& h1,
   Hyperrectangle h1_offset(h1.lb() + offset, h1.ub() + offset);
   return h1_offset.MaybeGetIntersection(h2).has_value();
 }
+
+std::vector<Hyperrectangle> BoundingBoxesForListOfSets(
+    const ConvexSets& sets, const std::vector<int>& continuous_revolute_joints,
+    bool all_dimensions) {
+  std::vector<Hyperrectangle> bboxes;
+  for (int i = 0; i < ssize(sets); ++i) {
+    if (all_dimensions) {
+      // Compute minimum and maximum value along all dimensions to store for
+      // the bounding box.
+      std::optional<Hyperrectangle> maybe_bbox =
+          Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(*sets[i]);
+      DRAKE_THROW_UNLESS(maybe_bbox.has_value());
+      bboxes.emplace_back(maybe_bbox.value());
+    } else {
+      // Compute minimum and maximum value only along dimensions corresponding
+      // to continuous revolute joints. Other dimensions will be left with
+      // lower == upper == 0.
+      VectorXd lb = VectorXd::Zero(sets[0]->ambient_dimension());
+      VectorXd ub = VectorXd::Zero(sets[0]->ambient_dimension());
+      std::vector<std::pair<double, double>> bbox_values =
+          internal::GetMinimumAndMaximumValueAlongDimension(
+              *sets[i], continuous_revolute_joints);
+      for (int j = 0; j < ssize(bbox_values); ++j) {
+        lb[continuous_revolute_joints[j]] = bbox_values[j].first;
+        ub[continuous_revolute_joints[j]] = bbox_values[j].second;
+      }
+      bboxes.emplace_back(Hyperrectangle(lb, ub));
+    }
+  }
+  return bboxes;
+}
 }  // namespace
 
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
@@ -266,68 +298,14 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
   std::vector<Hyperrectangle> bboxes_A, bboxes_B;
 
   // Compute bounding boxes for convex_sets_A.
-  std::vector<int> all_indices(dimension);
-  std::iota(all_indices.begin(), all_indices.end(), 0);
-  for (int i = 0; i < ssize(convex_sets_A); ++i) {
-    VectorXd lb = VectorXd::Zero(dimension);
-    VectorXd ub = VectorXd::Zero(dimension);
-    if (preprocess_bbox) {
-      // Compute minimum and maximum value along all dimensions to store for
-      // the bounding box.
-      std::vector<std::pair<double, double>> bbox_values =
-          internal::GetMinimumAndMaximumValueAlongDimension(*convex_sets_A[i],
-                                                            all_indices);
-      for (int j = 0; j < ssize(bbox_values); ++j) {
-        lb[j] = bbox_values[j].first;
-        ub[j] = bbox_values[j].second;
-      }
-    } else {
-      // Compute minimum and maximum value only along dimensions corresponding
-      // to continuous revolute joints. Other dimensions will be left with
-      // lower == upper == 0.
-      std::vector<std::pair<double, double>> bbox_values =
-          internal::GetMinimumAndMaximumValueAlongDimension(
-              *convex_sets_A[i], continuous_revolute_joints);
-      for (int j = 0; j < ssize(bbox_values); ++j) {
-        lb[continuous_revolute_joints[j]] = bbox_values[j].first;
-        ub[continuous_revolute_joints[j]] = bbox_values[j].second;
-      }
-    }
-    bboxes_A.emplace_back(Hyperrectangle(lb, ub));
-  }
+  bboxes_A = BoundingBoxesForListOfSets(
+      convex_sets_A, continuous_revolute_joints, preprocess_bbox);
 
   // Compute bounding boxes for convex_sets_B if distinct from convex_sets_A.
   bool convex_sets_A_and_B_are_identical = convex_sets_A == convex_sets_B;
   if (!convex_sets_A_and_B_are_identical) {
-    for (int i = 0; i < ssize(convex_sets_B); ++i) {
-      VectorXd lb = VectorXd::Zero(dimension);
-      VectorXd ub = VectorXd::Zero(dimension);
-      if (preprocess_bbox) {
-        // Compute minimum and maximum value along all dimensions to store for
-        // the bounding box.
-        std::vector<std::pair<double, double>> bbox_values =
-            internal::GetMinimumAndMaximumValueAlongDimension(*convex_sets_B[i],
-                                                              all_indices);
-        // Code to convert a vector of pairs of doubles to two VectorXds.
-        for (int j = 0; j < ssize(bbox_values); ++j) {
-          lb[j] = bbox_values[j].first;
-          ub[j] = bbox_values[j].second;
-        }
-      } else {
-        // Compute minimum and maximum value only along dimensions corresponding
-        // to continuous revolute joints. Other dimensions will be left with
-        // lower == upper == 0.
-        std::vector<std::pair<double, double>> bbox_values =
-            internal::GetMinimumAndMaximumValueAlongDimension(
-                *convex_sets_B[i], continuous_revolute_joints);
-        // Code to convert a vector of pairs of doubles to two VectorXds.
-        for (int j = 0; j < ssize(bbox_values); ++j) {
-          lb[continuous_revolute_joints[j]] = bbox_values[j].first;
-          ub[continuous_revolute_joints[j]] = bbox_values[j].second;
-        }
-      }
-      bboxes_B.emplace_back(Hyperrectangle(lb, ub));
-    }
+    bboxes_B = BoundingBoxesForListOfSets(
+        convex_sets_B, continuous_revolute_joints, preprocess_bbox);
   }
 
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
