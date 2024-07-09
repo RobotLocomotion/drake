@@ -12,9 +12,10 @@ namespace internal {
 
 template <typename T>
 struct Particle {
-  Particle(Vector3<T>& x_in, Vector3<T>& v_in, Matrix3<T>& F_in,
+  Particle(T& m_in, Vector3<T>& x_in, Vector3<T>& v_in, Matrix3<T>& F_in,
            Matrix3<T>& C_in, Matrix3<T>& P_in, BSplineWeights<T>& bspline_in)
-      : x(x_in), v(v_in), F(F_in), C(C_in), P(P_in), bspline(bspline_in) {}
+      : m(m_in), x(x_in), v(v_in), F(F_in), C(C_in), P(P_in), bspline(bspline_in) {}
+  T& m;
   Vector3<T>& x;
   Vector3<T>& v;
   Matrix3<T>& F;
@@ -27,9 +28,10 @@ struct Particle {
 template <typename T>
 struct ParticleData {
   Particle<T> particle(int i) {
-    return Particle<T>(x[i], v[i], F[i], C[i], P[i], bspline[i]);
+    return Particle<T>(m[i], x[i], v[i], F[i], C[i], P[i], bspline[i]);
   }
 
+  std::vector<T> m;
   std::vector<Vector3<T>> x;
   std::vector<Vector3<T>> v;
   std::vector<Matrix3<T>> F;

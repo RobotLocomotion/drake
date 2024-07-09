@@ -136,6 +136,22 @@ NeighborArray<GridData<T>> SparseGrid<T>::GetNeighborData(
 }
 
 template <typename T>
+void SparseGrid<T>::SetNeighborData(
+    uint64_t base_node_offset, const NeighborArray<GridData<T>>& data) {
+  Array grid_data = allocator_->Get_Array();
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      for (int k = 0; k < 3; ++k) {
+        const uint64_t offset = Mask::Packed_Add(
+            base_node_offset, neighbor_offset_strides_[i][j][k]);
+        std::cout << data[i][j][k].m << std::endl;
+        grid_data(offset) = data[i][j][k];
+      }
+    }
+  }
+}
+
+template <typename T>
 Vector3<int> SparseGrid<T>::OffsetToCoordinate(uint64_t offset) const {
   const std::array<int, 3> reference_space_coordinate =
       Mask::LinearToCoord(offset);

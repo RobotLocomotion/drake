@@ -31,8 +31,12 @@ struct GridData {
     m = 0.0;
   }
 
-  Vector3<T> v;
-  T m;
+  bool operator==(const GridData<T>& other) const {
+    return v == other.v && m == other.m;
+  }
+
+  Vector3<T> v{Vector3<T>::Zero()};
+  T m{0.0};
 };
 
 /* Only grid nodes in the neighborhood of a particle are active.
@@ -93,6 +97,9 @@ class SparseGrid {
    neighbors. */
   NeighborArray<GridData<T>> GetNeighborData(uint64_t base_node_offset) const;
 
+  void SetNeighborData(uint64_t base_node_offset,
+                       const NeighborArray<GridData<T>>& data);
+
   /* Returns the offset (1D index) of a grid node given its 3D grid coordinates
    in world space. */
   uint64_t CoordinateToOffset(int x, int y, int z) const {
@@ -110,14 +117,36 @@ class SparseGrid {
   void SetGridState(
       const std::function<GridData<T>(const Vector3<T>&)>& callback);
 
+  /* Gets grid data from all active grid nodes (i.e. nodes with non-zero mass).
+   @note Testing only. */
+  std::vector<std::pair<Vector3<int>, GridData<T>>> GetGridData() const {
+    const uint64_t page_size = 1 << kLog2Page;
+    const uint64_t data_size = sizeof(GridData<T>);
+    std::vector<std::pair<Vector3<int>, GridData<T>>> result;
+    auto [block_offsets, num_blocks] = padded_blocks_->Get_Blocks();
+    ConstArray grid_data = allocator_->Get_Const_Array();
+    for (int b = 0; b < static_cast<int>(num_blocks); ++b) {
+      const uint64_t block_offset = block_offsets[b];
+      for (uint64_t i = 0; i < page_size; i += data_size) {
+        const uint64_t node_offset = block_offset + i;
+        const GridData<T>& node_data = grid_data(node_offset);
+        if (node_data.m > 0.0) {
+          const Vector3<int> node_coordinate = OffsetToCoordinate(node_offset);
+          result.emplace_back(std::make_pair(node_coordinate, node_data));
+        }
+      }
+    }
+    return result;
+  }
+
  private:
   static constexpr int kLog2Page = 12;  // 4KB page size.
   static constexpr int kDim = 3;        // 3D grid.
   /* The maximum grid size along a single dimension. That is even
    though the grid is sparsely populated, the maximum grid size
    that can ever be allocated is kMaxGridSize^3. With 1cm grid dx, that
-   corresponds to more than 40 meters in each dimension, which should be enough
-   for most manipulation simulations. */
+   corresponds to more than 40 meters in each dimension, which should be
+   enough for most manipulation simulations. */
   static constexpr int kLog2MaxGridSize = 12;
   static constexpr int kMaxGridSize = 1 << kLog2MaxGridSize;
 
@@ -132,7 +161,8 @@ class SparseGrid {
   using ConstArray = typename Allocator::Array_type<const GridData<T>>;
 
   /* Helper for `Allocate()` that sorts particles into bins based on their
-   positions. In that process, builds `partilces_` and `sentinel_particles_`. */
+   positions. In that process, builds `partilces_` and `sentinel_particles_`.
+ */
   void SortParticleIndices(const std::vector<Vector3<T>>& particle_positions);
 
   T dx_{};  // Grid spacing (in meters).
@@ -151,8 +181,9 @@ class SparseGrid {
   std::vector<int> sentinel_particles_;
   /* Stores the difference in linear offset from a given grid node to the grid
    node exactly one block away. For example, let `a` be
-   `block_offset_strides_[0][1][2]` and `b` be the linear offset of a grid node
-   `n`. Then, `a + b` gives the linear offset of the grid node `m` in the block
+   `block_offset_strides_[0][1][2]` and `b` be the linear offset of a grid
+   node `n`. Then, `a + b` gives the linear offset of the grid node `m` in the
+   block
    (-1, 0, 1) relative to the block containing `n`. Both `m` and `n` reside at
    the same relative position within their respective blocks. */
   std::array<std::array<std::array<uint64_t, 3>, 3>, 3> block_offset_strides_;
