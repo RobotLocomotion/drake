@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/mpm/bspline_weights.h"
+#include "drake/multibody/mpm/math.h"
 
 namespace drake {
 namespace multibody {

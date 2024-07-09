@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include <tbb/parallel_sort.h>
+
 namespace drake {
 namespace multibody {
 namespace mpm {
@@ -165,15 +167,11 @@ Vector3<int> SparseGrid<T>::OffsetToCoordinate(uint64_t offset) const {
 template <typename T>
 void SparseGrid<T>::SortParticleIndices(
     const std::vector<Vector3<T>>& particle_positions) {
-  std::cout << "SortParticleIndices" << std::endl;
   const int num_particles = particle_positions.size();
   particles_.resize(num_particles);
   for (int p = 0; p < num_particles; ++p) {
     const Vector3<int> base_node =
         mpm::internal::base_node<T>(particle_positions[p] / dx_);
-    std::cout << "base node" << std::endl;
-    std::cout << base_node[0] << " " << base_node[1] << " " << base_node[2]
-              << std::endl;
     particles_[p].base_node_offset =
         CoordinateToOffset(base_node[0], base_node[1], base_node[2]);
     particles_[p].index = p;

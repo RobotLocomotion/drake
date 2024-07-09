@@ -74,17 +74,7 @@ GTEST_TEST(TransferTest, GridToParticle) {
   Matrix3d F0 =
       (Matrix3d() << 1.0, 0.1, 0.2, 0.3, 1.0, 0.4, 0.5, 0.6, 1.0).finished();
   particles.F.push_back(F0);
-  // TODO(xuchenhan-tri): Move this to a Bspline test.
   BSplineWeights<double> bspline(x0, grid.dx());
-  double total_weight = 0.0;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      for (int k = 0; k < 3; ++k) {
-        total_weight += bspline.weight(i, j, k);
-      }
-    }
-  }
-  EXPECT_DOUBLE_EQ(total_weight, 1.0);
   particles.bspline.push_back(bspline);
 
   /* All other particle data are either unused or overwritten in G2P. */
@@ -97,18 +87,6 @@ GTEST_TEST(TransferTest, GridToParticle) {
   particles.P.push_back(nan_matrix);
 
   grid.Allocate(particles.x);
-
-  // TODO(xuchenhan-tri): Move this to a grid test.
-  EXPECT_EQ(grid.dx(), 0.01);
-
-  const std::vector<int> expected_sentinel_particles = {0, 1};
-  EXPECT_EQ(grid.sentinel_particles(), expected_sentinel_particles);
-
-  const std::vector<ParticleIndex> particle_indices = grid.particle_indices();
-  ASSERT_EQ(particle_indices.size(), 1);
-  EXPECT_EQ(particle_indices[0].base_node_offset,
-            grid.CoordinateToOffset(0, 0, 0));
-  EXPECT_EQ(particle_indices[0].index, 0);
 
   const double dt = 0.0123;
   Transfer<double> transfer(dt, &grid, &particles);

@@ -22,7 +22,7 @@ cc_library(
         "sparse_grid.h",
     ],
     deps = [
-        ":bspline_weights",
+        ":math",
         "//common:essential",
         "//tools/workspace/spgrid",
     ],
@@ -39,9 +39,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "bspline_weights",
+    name = "math",
     hdrs = [
-        "bspline_weights.h",
+        "math.h",
     ],
     deps = [
         "//common:essential",
@@ -64,6 +64,13 @@ drake_cc_googletest(
     name = "sparse_grid_test",
     deps = [
         ":sparse_grid",
+    ],
+)
+
+drake_cc_googletest(
+    name = "math_test",
+    deps = [
+        ":math",
     ],
 )
 
