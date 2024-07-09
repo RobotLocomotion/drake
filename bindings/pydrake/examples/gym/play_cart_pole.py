@@ -2,6 +2,7 @@
 Play a policy for //bindings/pydrake/examples/gym/envs:cart_pole.
 """
 import argparse
+import sys
 import warnings
 
 import gymnasium as gym
@@ -69,6 +70,12 @@ def _main():
     parser.add_argument('--model_path', help="path to the policy zip file.")
     parser.add_argument('--log_path', help="path to the logs directory.")
     args = parser.parse_args()
+
+    if args.test and (sys.platform == "darwin"):
+        # TODO(#21577) Importing Gym on macOS Homebrew goes up in flames.
+        # We need to skip this test in Drake CI.
+        print("Testing is disabled when on macOS")
+        return
 
     if not args.debug:
         warnings.filterwarnings("ignore")

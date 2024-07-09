@@ -40,12 +40,9 @@ ln -s /usr/local/bin/python /usr/bin/python
 
 # TODO(jwnimmer-tri): Should these be version-pinned? What's the process for
 # keeping them up to date if they are?
-# TODO(#21577) We are not yet compatible with NumPy 2.0, so we need to upper-
-# bound its version number here. Once we support NumPy 2.0 correctly, we should
-# remove this limit.
 pip install \
     matplotlib \
-    'numpy < 2' \
+    numpy \
     pyyaml \
     semantic-version \
     setuptools \
