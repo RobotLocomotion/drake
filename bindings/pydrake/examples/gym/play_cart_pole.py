@@ -32,12 +32,6 @@ def _run_playing(args):
             obs_noise=True,
             add_disturbances=True)
 
-    if args.test and (sys.platform == "darwin"):
-        # TODO(#21577) Importing Gym on macOS Homebrew goes up in flames.
-        # We need to skip this test in Drake CI.
-        print("Testing is disabled when on macOS")
-        sys.exit(0)
-
     if args.test:
         check_env(env)
 
@@ -76,6 +70,12 @@ def _main():
     parser.add_argument('--model_path', help="path to the policy zip file.")
     parser.add_argument('--log_path', help="path to the logs directory.")
     args = parser.parse_args()
+
+    if args.test and (sys.platform == "darwin"):
+        # TODO(#21577) Importing Gym on macOS Homebrew goes up in flames.
+        # We need to skip this test in Drake CI.
+        print("Testing is disabled when on macOS")
+        sys.exit(0)
 
     if not args.debug:
         warnings.filterwarnings("ignore")
