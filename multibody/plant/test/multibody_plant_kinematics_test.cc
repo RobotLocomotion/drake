@@ -204,11 +204,11 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const Vector3<double> p_BoBm_B_{-0.5 * link_length_, 0.0, 0.0};
 };
 
-// The point of this test is to
-// a. Verify the utility method
-//    test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation().
-// b. Show how that utility method can be used to test
-//    MultibodyPlant::CalcBiasSpatialAcceleration().
+// This tests the function MultibodyPlant::CalcBiasSpatialAcceleration() against
+// a. test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation()
+// b. CalcApSpatialAccelerationInWExpressedInA(),
+// c. CalcBpSpatialAccelerationInWExpressedInA().
+// d. CalcBpSpatialAccelerationInAExpressedInA().
 TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   // To calculate bias spatial accelerations, set vdot = [ẇAz, ẇBz] = [0, 0].
   const Eigen::VectorXd vdot = Eigen::Vector2d(0.0, 0.0);
@@ -318,12 +318,13 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
                               ABias_ABp_B.get_coeffs(), kTolerance));
 }
 
-// The point of this test is to
-// a. Verify the utility method
-//    test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation()
-// b. Show how that utility method can be used to test
-//    MultibodyPlant::CalcSpatialAcceleration().
-TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
+// The test cross-validates the utility method
+// test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation() with
+// a. CalcApSpatialAccelerationInWExpressedInA(),
+// b. CalcBpSpatialAccelerationInWExpressedInA(),
+// c. CalcBpSpatialAccelerationInAExpressedInA(), and
+// d. MultibodyPlant::CalcSpatialAccelerationsFromVdot().
+TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAccelerationForwardKinematics) {
   // To calculate spatial accelerations, set vdot to arbitrary values.
   const double wAzdot = 10;  // alpha_WA_A = ẇAz Az
   const double wBzdot = 20;  // alpha_AB_A = ẇBz Az
@@ -356,17 +357,8 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
   EXPECT_TRUE(CompareMatrices(A_WAo_A.get_coeffs(),
                               A_WAo_A_expected.get_coeffs(), kTolerance));
 
-  // TODO(Mitiguy) Verify frame_A.CalcSpatialAcceleration() results match those
-  //  of test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation().
-  //  Use code something like the following:
-  //  const SpatialAcceleration<double> A_WAo_A_alternate =
-  //   plant_.CalcSpatialAcceleration(*context_, frame_A, p_AoAp_A,
-  //       frame_W, frame_A);
-  //  EXPECT_TRUE(CompareMatrices(A_WAo_A_alternate.get_coeffs(),
-  //                              A_WAo_A.get_coeffs(), kTolerance));
-
   // Another way to check the results is setting vdot for all the joints, doing
-  // inverse dynamics, and calculating the spatial acceleration of all bodies.
+  // forward kinematics, and calculating the spatial acceleration of all bodies.
   // Herein, A_WallBody_W is an array of the spatial acceleration of all bodies
   // measured in the world frame W, and expressed in W.
   std::vector<SpatialAcceleration<double>> A_WallBody_W(plant_.num_bodies());
@@ -446,11 +438,49 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAcceleration) {
                               A_ABp_A_expected.get_coeffs(), kTolerance));
 }
 
-TEST_F(TwoDOFPlanarPendulumTest, CalcCenterOfMassAcceleration) {
+// This tests RigidBody::CalcCenterOfMassTranslationalAccelerationInWorld() and
+// MultibodyPlant::CalcCenterOfMassTranslationalAccelerationInWorld() using
+// a. test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation()
+// b. Frame::CalcSpatialAccelerationInWorld().
+TEST_F(TwoDOFPlanarPendulumTest, CalcCenterOfMassAccelerationForwardDynamics) {
   // Shortcuts to various frames.
   const Frame<double>& frame_W = plant_.world_frame();
   const Frame<double>& frame_A = bodyA_->body_frame();
   const Frame<double>& frame_B = bodyB_->body_frame();
+
+  // Use forward dynamics with no applied forces to calculate the joint
+  // generalized accelerations for use by test_utilities function.
+  const Vector2<double> vdot = CalcVdotForNoAppliedForces();  // [ẇAz, ẇBz]
+
+  // Before testing center of mass translational accelerations, ensure frame
+  // translational accelerations make sense.
+  // Calculate a_WAo_W, Ao's translational acceleration in the world frame W,
+  // expressed in W (point Ao is body A's origin point).
+  const SpatialAcceleration<double> A_WAo_W =
+      frame_A.CalcSpatialAccelerationInWorld(*context_);
+
+  // Verify test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation()
+  // results match frame_A.CalcSpatialAccelerationInWorld().
+  const Vector3<double> p_AoAo_A = Vector3<double>::Zero();
+  const SpatialAcceleration<double> A_WAo_W_expected =
+      test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
+          plant_, *context_, vdot, frame_A, p_AoAo_A, frame_W, frame_W);
+  EXPECT_TRUE(CompareMatrices(A_WAo_W.get_coeffs(),
+                              A_WAo_W_expected.get_coeffs(), kTolerance));
+
+  // Calculate a_WBo_W, Bo's translational acceleration in the world frame W,
+  // expressed in W (point Bo is body B's origin point).
+  const SpatialAcceleration<double> A_WBo_W =
+      frame_B.CalcSpatialAccelerationInWorld(*context_);
+
+  // Verify test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation()
+  // results match frame_B.CalcSpatialAccelerationInWorld().
+  const Vector3<double> p_BoBo_B = Vector3<double>::Zero();
+  const SpatialAcceleration<double> A_WBo_W_expected =
+      test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
+          plant_, *context_, vdot, frame_B, p_BoBo_B, frame_W, frame_W);
+  EXPECT_TRUE(CompareMatrices(A_WBo_W.get_coeffs(),
+                              A_WBo_W_expected.get_coeffs(), kTolerance));
 
   // Point Acm is link A's center of mass.
   // Calculate Acm's translational acceleration in world W, expressed in W.
@@ -464,9 +494,6 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcCenterOfMassAcceleration) {
       joint2_parent_frame.CalcSpatialAccelerationInWorld(*context_);
   EXPECT_TRUE(
       CompareMatrices(a_WAcm_W, A_WAcm_W_expected.translational(), kTolerance));
-
-  // Calculate generalized accelerations for use by test_utilities function.
-  const Vector2<double> vdot = CalcVdotForNoAppliedForces();  // [ẇAz, ẇBz]
 
   // Verify results from CalcCenterOfMassTranslationalAccelerationInWorld()
   // match test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation().
@@ -482,10 +509,8 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcCenterOfMassAcceleration) {
   const Vector3<double> a_WBcm_W =
       bodyB_->CalcCenterOfMassTranslationalAccelerationInWorld(*context_);
 
-  // Verify previous results for Bcm's translational acceleration in W.
+  // Verify previous results for Bcm's translational acceleration in world W.
   // a_WBcm_W = a_WBo_W + alpha_WB_W x p_BoBcm_W + w_WB_W x (w_WB_W x p_BoBcm_W)
-  const SpatialAcceleration<double> A_WBo_W_expected =
-      frame_B.CalcSpatialAccelerationInWorld(*context_);
   const Vector3<double> p_BoBcm_B(0.5 * link_length_, 0, 0);
   const math::RotationMatrix<double> R_WB =
       math::RotationMatrix<double>::MakeZRotation(qA_ + qB_);
