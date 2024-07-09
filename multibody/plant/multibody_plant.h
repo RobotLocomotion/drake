@@ -5331,17 +5331,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Accesses the AccelerationKinematicsCache for use by possibly-sampled
   // output port calculations:
   //
-  // - When `sampled` is true, the result can be null when the plant has not yet
-  //   taken a step. Otherwise, it will refer to the sampled acceleration
-  //   kinematics from the most recent step.
+  // - When `sampled` is true, the result will be all-zero when the plant has
+  //   not yet taken a step. Otherwise, it will refer to the sampled
+  //   acceleration kinematics from the most recent step.
   //
-  // - When `sampled` is false, the result is never null and will be an
-  //   instantaneously up-to-date function of the current context.
+  // - When `sampled` is false, the result will be an instantaneously up-to-date
+  //   function of the current context.
   //
   // Note that MbTS::EvalForwardDynamics is the non-sampled flavor of this eval
   // function. When sampled is false, we just call that.
   template <bool sampled>
-  const internal::AccelerationKinematicsCache<T>*
+  const internal::AccelerationKinematicsCache<T>&
   EvalAccelerationKinematicsCache(const systems::Context<T>& context) const;
 
   // Data will be resized on output according to the documentation for
@@ -5774,6 +5774,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Whether to apply collsion filters to adjacent bodies at Finalize().
   bool adjacent_bodies_collision_filters_{
       MultibodyPlantConfig{}.adjacent_bodies_collision_filters};
+
+  // When use_sampled_output_ports_ is true, then during Finalize() we populate
+  // this with all-zero data, for use when the State has not yet been stepped.
+  std::unique_ptr<internal::AccelerationKinematicsCache<T>>
+      zero_acceleration_kinematics_placeholder_;
 
   InputPortIndices input_port_indices_;
   OutputPortIndices output_port_indices_;

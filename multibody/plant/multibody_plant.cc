@@ -1382,6 +1382,11 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
       friction_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
   SetUpJointLimitsParameters();
+  if (use_sampled_output_ports_) {
+    zero_acceleration_kinematics_placeholder_ =
+        std::make_unique<AccelerationKinematicsCache<T>>(
+            internal_tree().get_topology());
+  }
   scene_graph_ = nullptr;  // must not be used after Finalize().
 }
 
@@ -3092,7 +3097,7 @@ systems::EventStatus MultibodyPlant<T>::CalcStepUnrestricted(
 
 template <typename T>
 template <bool sampled>
-const AccelerationKinematicsCache<T>*
+const AccelerationKinematicsCache<T>&
 MultibodyPlant<T>::EvalAccelerationKinematicsCache(
     const systems::Context<T>& context) const {
   if constexpr (sampled) {
@@ -3101,11 +3106,12 @@ MultibodyPlant<T>::EvalAccelerationKinematicsCache(
     const DiscreteStepMemory::Data<T>* const memory =
         get_discrete_step_memory(context);
     if (memory == nullptr) {
-      return nullptr;
+      DRAKE_DEMAND(zero_acceleration_kinematics_placeholder_ != nullptr);
+      return *zero_acceleration_kinematics_placeholder_;
     }
-    return &memory->acceleration_kinematics_cache;
+    return memory->acceleration_kinematics_cache;
   } else {
-    return &this->EvalForwardDynamics(context);
+    return this->EvalForwardDynamics(context);
   }
 }
 
@@ -3727,22 +3733,12 @@ void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
     std::vector<SpatialAcceleration<T>>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-
-  // Find or evaluate the AccelerationKinematicsCache.
-  const AccelerationKinematicsCache<T>* ac =
+  const AccelerationKinematicsCache<T>& ac =
       EvalAccelerationKinematicsCache<sampled>(context);
-
-  // Copy the data out.
   output->resize(num_bodies());
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
-    if (ac != nullptr) {
-      const auto mobod_index = get_body(body_index).mobod_index();
-      output->at(body_index) = ac->get_A_WB(mobod_index);
-    } else {
-      // The plant has not been stepped yet.
-      DRAKE_DEMAND(sampled);
-      output->at(body_index).SetZero();
-    }
+    const auto mobod_index = get_body(body_index).mobod_index();
+    output->at(body_index) = ac.get_A_WB(mobod_index);
   }
 }
 
@@ -3750,16 +3746,9 @@ template <typename T>
 template <bool sampled>
 void MultibodyPlant<T>::CalcGeneralizedAccelerationOutput(
     const Context<T>& context, BasicVector<T>* output) const {
-  // Find or evaluate the AccelerationKinematicsCache.
-  const AccelerationKinematicsCache<T>* ac =
+  const AccelerationKinematicsCache<T>& ac =
       EvalAccelerationKinematicsCache<sampled>(context);
-  if (ac != nullptr) {
-    output->SetFromVector(ac->get_vdot());
-  } else {
-    // The plant has not been stepped yet.
-    DRAKE_DEMAND(sampled);
-    output->SetZero();
-  }
+  output->SetFromVector(ac.get_vdot());
 }
 
 template <typename T>
