@@ -20,13 +20,16 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
+// We don't open the `internal` namespace in this file so that function calls
+// to the USD parser has to spell the `internal::` prefix. We do this in order
+// to make it easier to identify function calls that are being tested.
+// namespace internal {
 namespace {
 
 class UsdGeometryTest : public test::DiagnosticPolicyTestBase {
  public:
   UsdGeometryTest() {
-    UsdParserWrapper::InitializeOpenUsdLibrary();
+    internal::UsdParserWrapper::InitializeOpenUsdLibrary();
 
     stage_ = pxr::UsdStage::CreateInMemory();
     meters_per_unit_ = 0.01;
@@ -52,15 +55,15 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
     pxr::UsdGeomXformOp::PrecisionDouble);
   EXPECT_TRUE(scale_op.Set(scale_factor));
 
-  std::optional<Eigen::Vector3d> parsed_dimension = GetBoxDimension(
+  std::optional<Eigen::Vector3d> parsed_dimension = internal::GetBoxDimension(
     box.GetPrim(), meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(parsed_dimension.has_value());
 
   const Eigen::Vector3d correct_dimension =
-    UsdVec3dToEigen(scale_factor) * size * meters_per_unit_;
+    internal::UsdVec3dToEigen(scale_factor) * size * meters_per_unit_;
   EXPECT_EQ(parsed_dimension.value(), correct_dimension);
 
-  std::unique_ptr<geometry::Shape> shape = CreateGeometryBox(
+  std::unique_ptr<geometry::Shape> shape = internal::CreateGeometryBox(
     box.GetPrim(), meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape != nullptr);
   geometry::Box* shape_box = dynamic_cast<geometry::Box*>(shape.get());
@@ -71,15 +74,16 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
     box.GetPrim());
   pxr::UsdAttribute mass_attribute = mass_api.CreateMassAttr();
   EXPECT_TRUE(mass_attribute.Set(mass));
-  std::optional<SpatialInertia<double>> inertia = CreateSpatialInertiaForBox(
-    box.GetPrim(), meters_per_unit_, diagnostic_policy_);
+  std::optional<SpatialInertia<double>> inertia =
+    internal::CreateSpatialInertiaForBox(box.GetPrim(), meters_per_unit_,
+      diagnostic_policy_);
   EXPECT_TRUE(inertia.has_value());
   EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
 
   // Case: Input Prim is not an UsdGeomCube.
   pxr::UsdPrim empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  parsed_dimension = GetBoxDimension(empty_prim, meters_per_unit_,
+  parsed_dimension = internal::GetBoxDimension(empty_prim, meters_per_unit_,
     diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -87,7 +91,7 @@ TEST_F(UsdGeometryTest, BoxParsingTest) {
 
   // Case: Input Prim is missing the size attribute.
   EXPECT_TRUE(box.GetPrim().RemoveProperty(size_attribute.GetName()));
-  parsed_dimension = GetBoxDimension(box.GetPrim(), meters_per_unit_,
+  parsed_dimension = internal::GetBoxDimension(box.GetPrim(), meters_per_unit_,
     diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -108,15 +112,16 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
     pxr::UsdGeomXformOp::PrecisionDouble);
   EXPECT_TRUE(scale_op.Set(scale_factor));
 
-  std::optional<Eigen::Vector3d> parsed_dimension = GetEllipsoidDimension(
-    ellipsoid.GetPrim(), meters_per_unit_, diagnostic_policy_);
+  std::optional<Eigen::Vector3d> parsed_dimension =
+    internal::GetEllipsoidDimension(ellipsoid.GetPrim(), meters_per_unit_,
+      diagnostic_policy_);
   EXPECT_TRUE(parsed_dimension.has_value());
 
   const Eigen::Vector3d correct_dimension =
-    UsdVec3dToEigen(scale_factor) * radius * meters_per_unit_;
+    internal::UsdVec3dToEigen(scale_factor) * radius * meters_per_unit_;
   EXPECT_EQ(parsed_dimension.value(), correct_dimension);
 
-  std::unique_ptr<geometry::Shape> shape = CreateGeometryEllipsoid(
+  std::unique_ptr<geometry::Shape> shape = internal::CreateGeometryEllipsoid(
     ellipsoid.GetPrim(), meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape != nullptr);
   geometry::Ellipsoid* shape_ellipsoid =
@@ -131,23 +136,23 @@ TEST_F(UsdGeometryTest, EllipsoidParsingTest) {
   pxr::UsdAttribute mass_attribute = mass_api.CreateMassAttr();
   EXPECT_TRUE(mass_attribute.Set(mass));
   std::optional<SpatialInertia<double>> inertia =
-    CreateSpatialInertiaForEllipsoid(ellipsoid.GetPrim(), meters_per_unit_,
-    diagnostic_policy_);
+    internal::CreateSpatialInertiaForEllipsoid(ellipsoid.GetPrim(),
+      meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(inertia.has_value());
   EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
 
   // Case: Input Prim is not an UsdGeomSphere.
   pxr::UsdPrim empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  parsed_dimension = GetEllipsoidDimension(empty_prim, meters_per_unit_,
-    diagnostic_policy_);
+  parsed_dimension = internal::GetEllipsoidDimension(empty_prim,
+    meters_per_unit_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomSphere.*"));
 
   // Case: Input Prim is missing the radius attribute.
   EXPECT_TRUE(ellipsoid.GetPrim().RemoveProperty(radius_attribute.GetName()));
-  parsed_dimension = GetEllipsoidDimension(ellipsoid.GetPrim(),
+  parsed_dimension = internal::GetEllipsoidDimension(ellipsoid.GetPrim(),
     meters_per_unit_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -174,8 +179,9 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
     pxr::UsdGeomXformOp::PrecisionDouble);
   EXPECT_TRUE(scale_op.Set(scale_factor));
 
-  std::optional<Eigen::Vector2d> parsed_dimension = GetCylinderDimension(
-    cylinder.GetPrim(), meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  std::optional<Eigen::Vector2d> parsed_dimension =
+    internal::GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
+      stage_up_axis_, diagnostic_policy_);
   EXPECT_TRUE(parsed_dimension.has_value());
 
   const double correct_radius = scale_factor[0] * radius * meters_per_unit_;
@@ -184,7 +190,7 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
     correct_height);
   EXPECT_EQ(parsed_dimension.value(), correct_dimension);
 
-  std::unique_ptr<geometry::Shape> shape = CreateGeometryCylinder(
+  std::unique_ptr<geometry::Shape> shape = internal::CreateGeometryCylinder(
     cylinder.GetPrim(), meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_TRUE(shape != nullptr);
   geometry::Cylinder* shape_cylinder =
@@ -199,47 +205,47 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
   pxr::UsdAttribute mass_attribute = mass_api.CreateMassAttr();
   EXPECT_TRUE(mass_attribute.Set(mass));
   std::optional<SpatialInertia<double>> inertia =
-    CreateSpatialInertiaForCylinder(cylinder.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+    internal::CreateSpatialInertiaForCylinder(cylinder.GetPrim(),
+      meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_TRUE(inertia.has_value());
   EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
 
   // Case: Input Prim is not an UsdGeomCylinder.
   pxr::UsdPrim empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  parsed_dimension = GetCylinderDimension(empty_prim, meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCylinderDimension(empty_prim,
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomCylinder.*"));
 
   // Case: Input Prim is missing the height attribute.
   EXPECT_TRUE(cylinder.GetPrim().RemoveProperty(height_attribute.GetName()));
-  parsed_dimension = GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCylinderDimension(cylinder.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to read the 'height' attribute of the Prim at.*"));
 
   // Case: Input Prim is missing the radius attribute.
   EXPECT_TRUE(cylinder.GetPrim().RemoveProperty(radius_attribute.GetName()));
-  parsed_dimension = GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCylinderDimension(cylinder.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to read the 'radius' attribute of the Prim at.*"));
 
   // Case: Cylinder has different scaling in X and Y axis.
   scale_op.Set(pxr::GfVec3d(0.8, 0.7, 0.9));
-  parsed_dimension = GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCylinderDimension(cylinder.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*The cylinder at .* has different scaling in X and Y axis.*"));
 
   // Case: The axis attribute of the cylinder is invalid.
   axis_attribute.Set(pxr::TfToken("A"));
-  inertia = CreateSpatialInertiaForCylinder(cylinder.GetPrim(),
+  inertia = internal::CreateSpatialInertiaForCylinder(cylinder.GetPrim(),
     meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(inertia.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -249,8 +255,8 @@ TEST_F(UsdGeometryTest, CylinderParsingTest) {
 
   // Case: The axis attribute of the cylinder does not exist.
   EXPECT_TRUE(cylinder.GetPrim().RemoveProperty(axis_attribute.GetName()));
-  parsed_dimension = GetCylinderDimension(cylinder.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCylinderDimension(cylinder.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to read the 'axis' attribute of the Prim at.*"));
@@ -276,8 +282,9 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
     pxr::UsdGeomXformOp::PrecisionDouble);
   EXPECT_TRUE(scale_op.Set(scale_factor));
 
-  std::optional<Eigen::Vector2d> parsed_dimension = GetCapsuleDimension(
-    capsule.GetPrim(), meters_per_unit_, stage_up_axis_, diagnostic_policy_);
+  std::optional<Eigen::Vector2d> parsed_dimension =
+    internal::GetCapsuleDimension(capsule.GetPrim(), meters_per_unit_,
+      stage_up_axis_, diagnostic_policy_);
   EXPECT_TRUE(parsed_dimension.has_value());
 
   const double correct_radius = scale_factor[0] * radius * meters_per_unit_;
@@ -286,7 +293,7 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
     correct_height);
   EXPECT_EQ(parsed_dimension.value(), correct_dimension);
 
-  std::unique_ptr<geometry::Shape> shape = CreateGeometryCapsule(
+  std::unique_ptr<geometry::Shape> shape = internal::CreateGeometryCapsule(
     capsule.GetPrim(), meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_TRUE(shape != nullptr);
   geometry::Capsule* shape_capsule =
@@ -301,48 +308,48 @@ TEST_F(UsdGeometryTest, CapsuleParsingTest) {
   pxr::UsdAttribute mass_attribute = mass_api.CreateMassAttr();
   EXPECT_TRUE(mass_attribute.Set(mass));
   std::optional<SpatialInertia<double>> inertia =
-    CreateSpatialInertiaForCapsule(capsule.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+    internal::CreateSpatialInertiaForCapsule(capsule.GetPrim(),
+      meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_TRUE(inertia.has_value());
   EXPECT_EQ(mass, static_cast<float>(inertia.value().get_mass()));
 
   // Case: Input Prim is not an UsdGeomCapsule.
   pxr::UsdPrim empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  parsed_dimension = GetCapsuleDimension(empty_prim, meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCapsuleDimension(empty_prim,
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomCapsule.*"));
 
   // Case: Input Prim is missing the height attribute.
   EXPECT_TRUE(capsule.GetPrim().RemoveProperty(height_attribute.GetName()));
-  parsed_dimension = GetCapsuleDimension(capsule.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCapsuleDimension(capsule.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to read the 'height' attribute of the Prim at.*"));
 
   // Case: Input Prim is missing the radius attribute.
   EXPECT_TRUE(capsule.GetPrim().RemoveProperty(radius_attribute.GetName()));
-  parsed_dimension = GetCapsuleDimension(capsule.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCapsuleDimension(capsule.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to read the 'radius' attribute of the Prim at.*"));
 
   // Case: Capsule has different scaling in X and Y axis.
   scale_op.Set(pxr::GfVec3d(0.8, 0.7, 0.9));
-  parsed_dimension = GetCapsuleDimension(capsule.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCapsuleDimension(capsule.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*The capsule at .* has different scaling in X and Y axis.*"));
 
   // Case: The axis of the capsule is not the same as the up-axis of the stage.
   axis_attribute.Set(pxr::TfToken("Y"));
-  parsed_dimension = GetCapsuleDimension(capsule.GetPrim(), meters_per_unit_,
-    stage_up_axis_, diagnostic_policy_);
+  parsed_dimension = internal::GetCapsuleDimension(capsule.GetPrim(),
+    meters_per_unit_, stage_up_axis_, diagnostic_policy_);
   EXPECT_FALSE(parsed_dimension.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*The capsule at .* is not upright.*"));
@@ -375,7 +382,7 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
 
   EXPECT_TRUE(scale_op.Set(
     pxr::GfVec3d(scale_factor, scale_factor, scale_factor)));
-  std::unique_ptr<geometry::Shape> shape = CreateGeometryMesh(
+  std::unique_ptr<geometry::Shape> shape = internal::CreateGeometryMesh(
     "octahedron.obj", mesh.GetPrim(), meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape != nullptr);
   geometry::Mesh* shape_mesh = dynamic_cast<geometry::Mesh*>(shape.get());
@@ -390,15 +397,15 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   // Case: Input Prim is not an UsdGeomMesh.
   pxr::UsdPrim empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  shape = CreateGeometryMesh("invalid_prim.obj", empty_prim, meters_per_unit_,
-    diagnostic_policy_);
+  shape = internal::CreateGeometryMesh("invalid_prim.obj", empty_prim,
+    meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape == nullptr);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomMesh.*"));
 
   // Case: The UsdGeomMesh Prim does not have indices attribute.
   EXPECT_TRUE(mesh.GetPrim().RemoveProperty(indices_attribute.GetName()));
-  shape = CreateGeometryMesh("no_indices.obj", mesh.GetPrim(),
+  shape = internal::CreateGeometryMesh("no_indices.obj", mesh.GetPrim(),
     meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape == nullptr);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -406,7 +413,7 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
 
   // Case: The UsdGeomMesh Prim does not have points attribute.
   EXPECT_TRUE(mesh.GetPrim().RemoveProperty(points_attribute.GetName()));
-  shape = CreateGeometryMesh("no_points.obj", mesh.GetPrim(),
+  shape = internal::CreateGeometryMesh("no_points.obj", mesh.GetPrim(),
     meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape == nullptr);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -415,7 +422,7 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   // Case: The face count attribute of the Prim contains elements other than 3.
   face_vertex_counts[0] = 4;
   EXPECT_TRUE(face_counts_attribute.Set(face_vertex_counts));
-  shape = CreateGeometryMesh("quad_mesh.obj", mesh.GetPrim(),
+  shape = internal::CreateGeometryMesh("quad_mesh.obj", mesh.GetPrim(),
     meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape == nullptr);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -423,7 +430,7 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
 
   // Case: The UsdGeomMesh Prim does not have face counts attribute.
   EXPECT_TRUE(mesh.GetPrim().RemoveProperty(face_counts_attribute.GetName()));
-  shape = CreateGeometryMesh("no_face_counts.obj", mesh.GetPrim(),
+  shape = internal::CreateGeometryMesh("no_face_counts.obj", mesh.GetPrim(),
     meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape == nullptr);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -431,7 +438,7 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
 
   // Case: The UsdGeomMesh Prim has invalid (non-isotropic) scaling.
   EXPECT_TRUE(scale_op.Set(pxr::GfVec3d(1.0, 2.0, 1.0)));
-  shape = CreateGeometryMesh("invalid_scaling.obj", mesh.GetPrim(),
+  shape = internal::CreateGeometryMesh("invalid_scaling.obj", mesh.GetPrim(),
     meters_per_unit_, diagnostic_policy_);
   EXPECT_TRUE(shape == nullptr);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -453,16 +460,16 @@ TEST_F(UsdGeometryTest, GetRigidTransformTest) {
   EXPECT_TRUE(rotate_op.Set(rotation_xyz));
 
   std::optional<math::RigidTransform<double>> transform =
-    GetPrimRigidTransform(xform.GetPrim(), meters_per_unit_,
-    diagnostic_policy_);
+    internal::GetPrimRigidTransform(xform.GetPrim(), meters_per_unit_,
+      diagnostic_policy_);
   EXPECT_TRUE(transform.has_value());
   const Eigen::Vector3d parsed_translation = transform.value().translation();
   const Eigen::Vector3d parsed_rotation_xyz =
     transform.value().rotation().ToRollPitchYaw().vector();
 
-  const Eigen::Vector3d intended_translation = UsdVec3dToEigen(
+  const Eigen::Vector3d intended_translation = internal::UsdVec3dToEigen(
     translation * meters_per_unit_);
-  const Eigen::Vector3d intended_rotation_xyz = UsdVec3dToEigen(
+  const Eigen::Vector3d intended_rotation_xyz = internal::UsdVec3dToEigen(
     rotation_xyz * (M_PI / 180.0));
   EXPECT_TRUE(is_approx_equal_abstol(
     parsed_translation, intended_translation, 1e-10));
@@ -473,7 +480,8 @@ TEST_F(UsdGeometryTest, GetRigidTransformTest) {
   pxr::UsdPrim empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
   std::optional<math::RigidTransform<double>> empty_prim_transform =
-    GetPrimRigidTransform(empty_prim, meters_per_unit_, diagnostic_policy_);
+    internal::GetPrimRigidTransform(empty_prim, meters_per_unit_,
+      diagnostic_policy_);
   EXPECT_FALSE(empty_prim_transform.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Failed to cast the Prim at .* into an UsdGeomXformable.*"));
@@ -483,7 +491,7 @@ TEST_F(UsdGeometryTest, InvalidPrimScaleTest) {
   // Case: Input Prim is not an UsdGeomXformable type.
   pxr::UsdPrim empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  std::optional<Eigen::Vector3d> scale = GetPrimScale(empty_prim,
+  std::optional<Eigen::Vector3d> scale = internal::GetPrimScale(empty_prim,
     diagnostic_policy_);
   EXPECT_FALSE(scale.has_value());
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
@@ -494,14 +502,14 @@ TEST_F(UsdGeometryTest, GetPrimColorTest) {
   // Case: Invalid Prim type.
   pxr::UsdPrim empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  std::optional<Eigen::Vector4d> color = GetGeomPrimColor(empty_prim,
+  std::optional<Eigen::Vector4d> color = internal::GetGeomPrimColor(empty_prim,
     diagnostic_policy_);
   EXPECT_EQ(color, std::nullopt);
 
   // Case: Prim does not contain color attribute.
   pxr::UsdGeomCube box = pxr::UsdGeomCube::Define(stage_,
     pxr::SdfPath("/Box"));
-  color = GetGeomPrimColor(box.GetPrim(), diagnostic_policy_);
+  color = internal::GetGeomPrimColor(box.GetPrim(), diagnostic_policy_);
   EXPECT_EQ(color, std::nullopt);
 
   // Case: All inputs are valid.
@@ -509,7 +517,7 @@ TEST_F(UsdGeometryTest, GetPrimColorTest) {
   const pxr::VtArray<pxr::GfVec3f> input_color = {
     pxr::GfVec3f(0.1, 0.2, 0.0) };
   EXPECT_TRUE(box_gprim.CreateDisplayColorAttr().Set(input_color));
-  color = GetGeomPrimColor(box.GetPrim(), diagnostic_policy_);
+  color = internal::GetGeomPrimColor(box.GetPrim(), diagnostic_policy_);
   EXPECT_TRUE(color.has_value());
   const pxr::GfVec3f output_color = pxr::GfVec3f(
     color.value()[0], color.value()[1], color.value()[2]);
@@ -521,7 +529,7 @@ TEST_F(UsdGeometryTest, GetPrimFrictionTest) {
   // is implemented.
   pxr::UsdPrim empty_prim = stage_->DefinePrim(pxr::SdfPath("/InvalidType"),
     pxr::TfToken(""));
-  CoulombFriction<double> friction = GetPrimFriction(empty_prim);
+  CoulombFriction<double> friction = internal::GetPrimFriction(empty_prim);
 }
 
 TEST_F(UsdGeometryTest, InvalidMassTest) {
@@ -537,8 +545,8 @@ TEST_F(UsdGeometryTest, InvalidMassTest) {
     })""";
 
   EXPECT_TRUE(stage_->GetRootLayer()->ImportFromString(file));
-  const double mass = GetPrimMass(stage_->GetPrimAtPath(pxr::SdfPath("/Box")),
-    diagnostic_policy_);
+  const double mass = internal::GetPrimMass(
+    stage_->GetPrimAtPath(pxr::SdfPath("/Box")), diagnostic_policy_);
   EXPECT_EQ(1.0, mass);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
     ".*Double precision float is not supported by UsdPhysicsMassAPI.*"));
@@ -547,7 +555,7 @@ TEST_F(UsdGeometryTest, InvalidMassTest) {
 }
 
 }  // namespace
-}  // namespace internal
+// }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
