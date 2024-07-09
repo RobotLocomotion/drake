@@ -148,9 +148,9 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
     const GeometryContactData<double>& geometry_contact_data =
         EvalGeometryContactData(*plant_context_);
     const std::vector<PenetrationAsPointPair<double>>& point_pairs =
-        geometry_contact_data.point_pairs;
+        geometry_contact_data.get().point_pairs;
     const std::vector<geometry::ContactSurface<double>>& surfaces =
-        geometry_contact_data.surfaces;
+        geometry_contact_data.get().surfaces;
     const int num_point_pairs = point_pairs.size();
     ASSERT_EQ(surfaces.size(), 1u);
     const int num_hydro_pairs = surfaces[0].num_faces();
@@ -442,14 +442,14 @@ TEST_F(SpheresStackTest,
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
 
   const std::vector<PenetrationAsPointPair<double>>& point_pairs =
-      EvalGeometryContactData(*plant_context_).point_pairs;
+      EvalGeometryContactData(*plant_context_).get().point_pairs;
   const int num_point_pairs = point_pairs.size();
   EXPECT_EQ(num_point_pairs, 1);
   const DiscreteContactData<DiscreteContactPair<double>>& pairs =
       contact_manager_->EvalDiscreteContactPairs(*plant_context_);
 
   const std::vector<geometry::ContactSurface<double>>& surfaces =
-      EvalGeometryContactData(*plant_context_).surfaces;
+      EvalGeometryContactData(*plant_context_).get().surfaces;
   ASSERT_EQ(surfaces.size(), 1);
   EXPECT_EQ(pairs.size(), surfaces[0].num_faces() + num_point_pairs);
 }
