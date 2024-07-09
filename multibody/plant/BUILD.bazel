@@ -20,21 +20,17 @@ drake_cc_package_library(
         ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
-        ":deformable_contact_info",
         ":deformable_ids",
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
         ":force_density_field",
-        ":hydroelastic_contact_info",
-        ":hydroelastic_quadrature_point_data",
-        ":hydroelastic_traction",
+        ":hydroelastic_traction_calculator",
         ":internal_geometry_names",
         ":multibody_plant_config",
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
-        ":point_pair_contact_info",
         ":propeller",
         ":slicing_and_indexing",
         ":tamsi_solver",
@@ -95,6 +91,7 @@ drake_cc_library(
         "deformable_model.cc",
         "discrete_update_manager.cc",
         "dummy_physical_model.cc",
+        "geometry_contact_data.cc",
         "make_discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
@@ -111,6 +108,7 @@ drake_cc_library(
         "discrete_update_manager.h",
         "dummy_physical_model.h",
         "geometry_contact_data.h",
+        "hydroelastic_contact_forces_continuous_cache_data.h",
         "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
@@ -132,7 +130,7 @@ drake_cc_library(
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
-        ":hydroelastic_traction",
+        ":hydroelastic_traction_calculator",
         ":multibody_plant_config",
         ":slicing_and_indexing",
         ":tamsi_solver",
@@ -150,21 +148,6 @@ drake_cc_library(
         "//multibody/tree",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "point_pair_contact_info",
-    srcs = [
-        "point_pair_contact_info.cc",
-    ],
-    hdrs = [
-        "point_pair_contact_info.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//geometry/query_results:penetration_as_point_pair",
-        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -195,63 +178,67 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "deformable_contact_info",
-    srcs = [
-        "deformable_contact_info.cc",
-    ],
-    hdrs = [
-        "deformable_contact_info.h",
-    ],
-    deps = [
-        ":hydroelastic_quadrature_point_data",
-        "//common:default_scalars",
-        "//geometry:geometry_ids",
-        "//geometry/proximity:polygon_surface_mesh",
-        "//multibody/math",
-    ],
-)
-
-drake_cc_library(
-    name = "hydroelastic_contact_info",
-    srcs = [
-        "hydroelastic_contact_info.cc",
-    ],
-    hdrs = [
-        "hydroelastic_contact_info.h",
-    ],
-    deps = [
-        ":hydroelastic_quadrature_point_data",
-        "//common:default_scalars",
-        "//geometry/query_results:contact_surface",
-        "//multibody/math",
-    ],
-)
-
-drake_cc_library(
-    name = "hydroelastic_quadrature_point_data",
-    srcs = [],
-    hdrs = [
-        "hydroelastic_quadrature_point_data.h",
-    ],
-    deps = [
-        "//geometry/proximity:triangle_surface_mesh",
-    ],
-)
-
-drake_cc_library(
     name = "contact_results",
     srcs = [
         "contact_results.cc",
+        "deformable_contact_info.cc",
+        "hydroelastic_contact_info.cc",
+        "point_pair_contact_info.cc",
     ],
     hdrs = [
         "contact_results.h",
+        "deformable_contact_info.h",
+        "hydroelastic_contact_info.h",
+        "hydroelastic_quadrature_point_data.h",
+        "point_pair_contact_info.h",
     ],
     deps = [
-        ":deformable_contact_info",
-        ":hydroelastic_contact_info",
-        ":point_pair_contact_info",
         "//common:default_scalars",
+        "//geometry:geometry_ids",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
+        "//geometry/query_results:contact_surface",
+        "//geometry/query_results:penetration_as_point_pair",
+        "//multibody/math",
+        "//multibody/tree:multibody_tree_indexes",
     ],
+)
+
+_CONTACT_INFO_LABEL_DEPRECATION = """
+To access this header file, change your deps to
+ @drake//multibody/plant:contact_results
+or
+ @drake//multibody/plant
+instead, to avoid this warning.
+This target will be removed from Drake on or after 2024-11-01.
+""".strip()
+
+alias(
+    name = "deformable_contact_info",
+    actual = ":contact_results",
+    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
+    tags = ["manual"],
+)
+
+alias(
+    name = "hydroelastic_contact_info",
+    actual = ":contact_results",
+    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
+    tags = ["manual"],
+)
+
+alias(
+    name = "hydroelastic_quadrature_point_data",
+    actual = ":contact_results",
+    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
+    tags = ["manual"],
+)
+
+alias(
+    name = "point_pair_contact_info",
+    actual = ":contact_results",
+    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
+    tags = ["manual"],
 )
 
 drake_cc_library(
@@ -331,7 +318,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "hydroelastic_traction",
+    name = "hydroelastic_traction_calculator",
     srcs = [
         "hydroelastic_traction_calculator.cc",
     ],
@@ -339,14 +326,25 @@ drake_cc_library(
         "hydroelastic_traction_calculator.h",
     ],
     deps = [
-        ":hydroelastic_contact_info",
-        ":hydroelastic_quadrature_point_data",
+        ":contact_results",
         "//geometry/proximity:mesh_field",
         "//geometry/query_results:contact_surface",
         "//math",
         "//multibody/math",
         "//multibody/triangle_quadrature",
     ],
+)
+
+alias(
+    name = "hydroelastic_traction",
+    actual = ":hydroelastic_traction_calculator",
+    deprecation = """
+To access this header file, change your deps to
+ @drake//multibody/plant:hydroelastic_traction_calculator
+to avoid this warning.
+This target will be removed from Drake on or after 2024-11-01.
+""".strip(),
+    tags = ["manual"],
 )
 
 drake_cc_library(
@@ -588,12 +586,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "hydroelastic_traction_test",
+    name = "hydroelastic_contact_info_test",
+    deps = [
+        ":contact_results",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hydroelastic_traction_calculator_test",
     data = [
         "test/block_on_halfspace.sdf",
     ],
     deps = [
-        ":hydroelastic_traction",
+        ":hydroelastic_traction_calculator",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:gradient",
@@ -971,7 +977,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "deformable_contact_info_test",
     deps = [
-        ":deformable_contact_info",
+        ":contact_results",
         "//common:essential",
     ],
 )

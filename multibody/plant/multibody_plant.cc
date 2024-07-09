@@ -23,6 +23,7 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
+#include "drake/multibody/plant/hydroelastic_contact_forces_continuous_cache_data.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
@@ -2257,10 +2258,9 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
         geometryM_id, geometryN_id, inspector);
 
     // Integrate the hydroelastic traction field over the contact surface.
-    std::vector<HydroelasticQuadraturePointData<T>> traction_output;
     SpatialForce<T> F_Ac_W;
     traction_calculator.ComputeSpatialForcesAtCentroidFromHydroelasticModel(
-        data, dissipation, dynamic_friction, &traction_output, &F_Ac_W);
+        data, dissipation, dynamic_friction, &F_Ac_W);
 
     // Shift the traction at the centroid to tractions at the body origins.
     SpatialForce<T> F_Ao_W, F_Bo_W;
@@ -2276,7 +2276,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
     }
 
     // Add the information for contact reporting.
-    contact_info.emplace_back(&surface, F_Ac_W, std::move(traction_output));
+    contact_info.emplace_back(&surface, F_Ac_W);
   }
 }
 

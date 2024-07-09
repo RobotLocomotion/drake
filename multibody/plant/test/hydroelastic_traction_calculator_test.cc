@@ -1,4 +1,5 @@
-#include <fstream>
+#include "drake/multibody/plant/hydroelastic_traction_calculator.h"
+
 #include <ostream>
 
 #include <gmock/gmock.h>
@@ -12,7 +13,6 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -316,10 +316,8 @@ class MultibodyPlantHydroelasticTractionTests
     UpdateCalculatorData();
 
     SpatialForce<double> F_Ac_W;
-    std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
     traction_calculator().ComputeSpatialForcesAtCentroidFromHydroelasticModel(
-        calculator_data(), dissipation, mu_coulomb, &quadrature_point_data,
-        &F_Ac_W);
+        calculator_data(), dissipation, mu_coulomb, &F_Ac_W);
 
     traction_calculator().ShiftSpatialForcesAtCentroidToBodyOrigins(
         calculator_data(), F_Ac_W, F_Ao_W, F_Bo_W);
@@ -929,87 +927,6 @@ INSTANTIATE_TEST_SUITE_P(
     TractionTestsInstantiations, MultibodyPlantHydroelasticTractionTests,
     ::testing::Combine(::testing::ValuesIn(poses),
                        ::testing::ValuesIn(representations)));
-
-// TODO(edrumwri) Break the tests below out into a separate file.
-
-// Returns a distinct spatial force.
-SpatialForce<double> MakeSpatialForce() {
-  return SpatialForce<double>(Vector3<double>(1, 2, 3),
-                              Vector3<double>(4, 5, 6));
-}
-
-// Returns a distinct vector (containing a single element) of quadrature point
-// data.
-std::vector<HydroelasticQuadraturePointData<double>> GetQuadraturePointData() {
-  HydroelasticQuadraturePointData<double> data;
-  data.p_WQ = Vector3<double>(3.0, 5.0, 7.0);
-  data.face_index = 1;
-  data.vt_BqAq_W = Vector3<double>(11.0, 13.0, 17.0);
-  data.traction_Aq_W = Vector3<double>(19.0, 23.0, 29.0);
-  return {data};
-}
-
-HydroelasticContactInfo<double> CreateContactInfo(
-    std::unique_ptr<ContactSurface<double>>* contact_surface,
-    std::unique_ptr<HydroelasticContactInfo<double>>* contact_info) {
-  // Create the contact surface using a duplicated arbitrary ID and identity
-  // pose; pose and geometry IDs are irrelevant for this test.
-  GeometryId arbitrary_id = GeometryId::get_new_id();
-  *contact_surface = CreateContactSurface(arbitrary_id, arbitrary_id,
-                                          RigidTransform<double>::Identity());
-
-  // Create the HydroelasticContactInfo using particular spatial force and
-  // quadrature point data.
-  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data =
-      GetQuadraturePointData();
-  return HydroelasticContactInfo<double>(contact_surface->get(),
-                                         MakeSpatialForce(),
-                                         std::move(quadrature_point_data));
-}
-
-// Verifies that the HydroelasticContactInfo structure uses the raw pointer
-// and the unique pointer, as appropriate, on copy construction.
-GTEST_TEST(HydroelasticContactInfo, CopyConstruction) {
-  std::unique_ptr<ContactSurface<double>> contact_surface;
-  std::unique_ptr<HydroelasticContactInfo<double>> contact_info;
-  HydroelasticContactInfo<double> copy =
-      CreateContactInfo(&contact_surface, &contact_info);
-
-  // Verify that copy construction used the raw pointer.
-  EXPECT_EQ(contact_surface.get(), &copy.contact_surface());
-
-  // Copy it again and make sure that the surface is new.
-  HydroelasticContactInfo<double> copy2 = copy;
-  EXPECT_NE(contact_surface.get(), &copy2.contact_surface());
-
-  // Verify that the spatial force was copied.
-  EXPECT_EQ(copy.F_Ac_W().translational(), MakeSpatialForce().translational());
-  EXPECT_EQ(copy.F_Ac_W().rotational(), MakeSpatialForce().rotational());
-
-  // Verify that the quadrature point data was copied.
-  EXPECT_EQ(copy.quadrature_point_data(), GetQuadraturePointData());
-}
-
-// Verifies that the HydroelasticContactInfo structure transfers ownership of
-// the ContactSurface.
-GTEST_TEST(HydroelasticContactInfo, MoveConstruction) {
-  std::unique_ptr<ContactSurface<double>> contact_surface;
-  std::unique_ptr<HydroelasticContactInfo<double>> contact_info;
-  HydroelasticContactInfo<double> copy =
-      CreateContactInfo(&contact_surface, &contact_info);
-  HydroelasticContactInfo<double> moved_copy = std::move(copy);
-
-  // Verify that the move construction retained the raw pointer.
-  EXPECT_EQ(contact_surface.get(), &moved_copy.contact_surface());
-
-  // Verify that the spatial force was copied.
-  EXPECT_EQ(moved_copy.F_Ac_W().translational(),
-            MakeSpatialForce().translational());
-  EXPECT_EQ(moved_copy.F_Ac_W().rotational(), MakeSpatialForce().rotational());
-
-  // Verify that the quadrature point data was copied.
-  EXPECT_EQ(moved_copy.quadrature_point_data(), GetQuadraturePointData());
-}
 
 }  // namespace internal
 }  // namespace multibody
