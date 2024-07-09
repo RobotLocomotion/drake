@@ -43,6 +43,8 @@ class TamsiDriver {
   // @pre manager != nullptr.
   explicit TamsiDriver(const CompliantContactManager<T>* manager);
 
+  ~TamsiDriver();
+
   // Solves for the next time step velocities and contact forces given the
   // current state stored in `context`.
   void CalcContactSolverResults(

@@ -39,7 +39,7 @@ namespace internal {
 template <typename T>
 class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScrewMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScrewMobilizer);
 
   /* Constructor for a %ScrewMobilizer between an inboard frame F and
      an outboard frame M  granting one translational and one rotational degrees
@@ -66,6 +66,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
     axis_ = axis.normalized();
   }
+
+  ~ScrewMobilizer() final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -272,4 +274,4 @@ inline T get_screw_rotation_from_translation(const T& z, double screw_pitch) {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::ScrewMobilizer)
+    class ::drake::multibody::internal::ScrewMobilizer);

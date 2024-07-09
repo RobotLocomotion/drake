@@ -42,7 +42,7 @@ template <typename T> class RigidBody;
 template <typename T>
 class LinearSpringDamper final : public ForceElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSpringDamper)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSpringDamper);
 
   /// Constructor for a spring-damper between a point P on `bodyA` and a
   /// point Q on `bodyB`. Point P is defined by its position `p_AP` as
@@ -65,6 +65,8 @@ class LinearSpringDamper final : public ForceElement<T> {
       const RigidBody<T>& bodyA, const Vector3<double>& p_AP,
       const RigidBody<T>& bodyB, const Vector3<double>& p_BQ,
       double free_length, double stiffness, double damping);
+
+  ~LinearSpringDamper() override;
 
   const RigidBody<T>& bodyA() const { return bodyA_; }
 
@@ -150,4 +152,4 @@ class LinearSpringDamper final : public ForceElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::LinearSpringDamper)
+    class ::drake::multibody::LinearSpringDamper);

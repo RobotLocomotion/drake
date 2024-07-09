@@ -26,7 +26,7 @@ namespace internal {
 template <typename PyClass, typename Docs>
 class DefAttributesArchive {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DefAttributesArchive)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DefAttributesArchive);
 
   using CxxClass = typename PyClass::type;
 
@@ -260,7 +260,7 @@ namespace internal {
 // Helper for DefReprUsingSerialize.
 class DefReprArchive {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DefReprArchive)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DefReprArchive);
   DefReprArchive() = default;
 
   // Appends the visited item's name to the list of names.

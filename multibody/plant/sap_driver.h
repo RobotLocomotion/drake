@@ -85,6 +85,8 @@ class SapDriver {
   explicit SapDriver(const CompliantContactManager<T>* manager,
                      double near_rigid_threshold = 1.0);
 
+  ~SapDriver();
+
   void set_sap_solver_parameters(
       const contact_solvers::internal::SapSolverParameters& parameters);
 

@@ -76,7 +76,7 @@ class JointImplementationBuilder;
 template <typename T>
 class Joint : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint);
 
   /// Creates a joint between two Frame objects which imposes a given kinematic
   /// relation between frame F attached on the parent body P and frame M
@@ -173,7 +173,7 @@ class Joint : public MultibodyElement<T> {
               pos_upper_limits, vel_lower_limits, vel_upper_limits,
               acc_lower_limits, acc_upper_limits) {}
 
-  virtual ~Joint() {}
+  virtual ~Joint();
 
   /// Returns this element's unique index.
   JointIndex index() const { return this->template index_impl<JointIndex>(); }

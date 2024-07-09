@@ -248,7 +248,7 @@ reusing the simulator over the same system and time span.
 template <typename T>
 class Simulator {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Simulator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Simulator);
 
   /// Create a %Simulator that can advance a given System through time to
   /// produce a trajectory consisting of a sequence of Context values. The
@@ -966,4 +966,4 @@ T GetPreviousNormalizedValue(const T& value) {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::Simulator)
+    class drake::systems::Simulator);

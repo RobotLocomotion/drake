@@ -18,7 +18,7 @@ namespace fem {
 template <typename T>
 struct FemPlantData {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemPlantData)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemPlantData);
   FemPlantData(
       const systems::Context<T>& plant_context_in,
       const std::vector<const ForceDensityField<T>*>& force_density_fields_in)
@@ -34,4 +34,4 @@ struct FemPlantData {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    struct ::drake::multibody::fem::FemPlantData)
+    struct ::drake::multibody::fem::FemPlantData);

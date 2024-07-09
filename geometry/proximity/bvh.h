@@ -43,7 +43,7 @@ struct MeshTraits<VolumeMesh<T>> {
 template <class BvType, class MeshType>
 class BvNode {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BvNode)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BvNode);
 
   static constexpr int kMaxElementPerLeaf =
       MeshTraits<MeshType>::kMaxElementPerBvhLeaf;
@@ -147,7 +147,7 @@ class BvNode {
   BvType& bv() { return bv_; }
 
   struct NodeChildren {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(NodeChildren)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(NodeChildren);
 
     NodeChildren(std::unique_ptr<BvNode> left_in,
                  std::unique_ptr<BvNode> right_in)
@@ -198,7 +198,7 @@ using BvttCallback = std::function<BvttCallbackResult(int, int)>;
 template <class BvType, class SourceMeshType>
 class Bvh {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Bvh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Bvh);
 
   using MeshType = SourceMeshType;
   using NodeType = BvNode<BvType, MeshType>;

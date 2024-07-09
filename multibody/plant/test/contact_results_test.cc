@@ -29,8 +29,7 @@ class ContactResultsTest : public ::testing::Test {
         std::move(surface_mesh), std::move(field));
     my_hydroelastic_contact_info_ =
         std::make_unique<HydroelasticContactInfo<double>>(
-            contact_surface_.get(), SpatialForce<double>{},
-            std::vector<HydroelasticQuadraturePointData<double>>{});
+            contact_surface_.get(), F_);
     id_A_ = GeometryId::get_new_id();
     id_B_ = GeometryId::get_new_id();
     std::vector<DeformableContactPointData<double>>
@@ -38,8 +37,7 @@ class ContactResultsTest : public ::testing::Test {
     deformable_contact_point_data.emplace_back(
         Vector3d(11, 22, 33), 42, Vector3d(44, 55, 66), Vector3d(77, 88, 99));
     deformable_contact_info_ = std::make_unique<DeformableContactInfo<double>>(
-        id_A_, id_B_, PolygonSurfaceMesh<double>(),
-        SpatialForce<double>(Vector3d(1, 2, 3), Vector3d(4, 5, 6)),
+        id_A_, id_B_, PolygonSurfaceMesh<double>(), F_,
         std::move(deformable_contact_point_data));
   }
 
@@ -55,6 +53,7 @@ class ContactResultsTest : public ::testing::Test {
       PenetrationAsPointPair<double>{}};
   GeometryId id_A_;
   GeometryId id_B_;
+  SpatialForce<double> F_{Vector3d(1, 2, 3), Vector3d(4, 5, 6)};
   std::unique_ptr<DeformableContactInfo<double>> deformable_contact_info_;
   std::unique_ptr<ContactSurface<double>> contact_surface_;
   std::unique_ptr<HydroelasticContactInfo<double>>
@@ -193,6 +192,28 @@ TEST_F(ContactResultsTest, SelectHydroelastic) {
   // Verify the deep copy by checking for different memory address.
   EXPECT_NE(&one_hydro_contact.hydroelastic_contact_info(0),
             my_hydroelastic_contact_info_.get());
+}
+
+TEST_F(ContactResultsTest, VectorConstructor) {
+  // Call the vector-of-infos constructor.
+  const ContactResults<double> dut{
+      std::vector<PointPairContactInfo<double>>{point_pair_info_},
+      std::vector<HydroelasticContactInfo<double>>{
+          *my_hydroelastic_contact_info_},
+      std::vector<DeformableContactInfo<double>>{*deformable_contact_info_}};
+
+  // Spot check the basic counts.
+  EXPECT_EQ(dut.num_point_pair_contacts(), 1);
+  EXPECT_EQ(dut.num_hydroelastic_contacts(), 1);
+  EXPECT_EQ(dut.num_deformable_contacts(), 1);
+  EXPECT_EQ(dut.plant(), nullptr);
+
+  // Spot check one field on each sub-info.
+  EXPECT_EQ(dut.point_pair_contact_info(0).bodyB_index(),
+            point_pair_info_.bodyB_index());
+  EXPECT_EQ(dut.hydroelastic_contact_info(0).F_Ac_W().get_coeffs(),
+            F_.get_coeffs());
+  EXPECT_EQ(dut.deformable_contact_info(0).id_B(), id_B_);
 }
 
 }  // namespace multibody

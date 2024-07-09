@@ -9,6 +9,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+WeldMobilizer<T>::~WeldMobilizer() = default;
+
+template <typename T>
 math::RigidTransform<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>&) const { return X_FM_.cast<T>(); }
 
@@ -102,4 +105,4 @@ WeldMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::WeldMobilizer)
+    class ::drake::multibody::internal::WeldMobilizer);

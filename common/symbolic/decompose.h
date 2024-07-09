@@ -98,7 +98,10 @@ void DecomposeQuadraticPolynomial(
 @param[in] v A vector of affine expressions
 @param[out] A The matrix containing the linear coefficients.
 @param[out] b The vector containing all the constant terms.
-@param[out] vars All variables. */
+@param[out] vars All variables.
+
+@throws std::exception if the input expressions are not affine.
+*/
 void DecomposeAffineExpressions(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     Eigen::MatrixXd* A, Eigen::VectorXd* b, VectorX<Variable>* vars);
@@ -128,7 +131,11 @@ that map_var_to_index[vi.get_ID()] = i.
 @param[out] coeffs A row vector. coeffs(i) = ci.
 @param[out] constant_term c0 in the equation above.
 @return num_variable. Number of variables in the expression. 2 * x(0) + 3 has 1
-variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable. */
+variable; 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable, since the x(0) term
+cancels.
+
+@throws std::exception if the input expression is not affine.
+*/
 int DecomposeAffineExpression(
     const symbolic::Expression& e,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,

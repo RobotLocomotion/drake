@@ -19,7 +19,7 @@ namespace solvers {
 /** Abstract base class used by implementations of individual solvers. */
 class SolverBase : public SolverInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverBase);
 
   ~SolverBase() override;
 

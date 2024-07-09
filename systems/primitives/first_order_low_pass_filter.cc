@@ -81,4 +81,4 @@ void FirstOrderLowPassFilter<T>::DoCalcVectorOutput(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::FirstOrderLowPassFilter)
+    class ::drake::systems::FirstOrderLowPassFilter);

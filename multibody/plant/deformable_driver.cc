@@ -17,6 +17,7 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_properties.h"
+#include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
@@ -38,6 +39,7 @@ using drake::multibody::fem::FemState;
 using drake::multibody::fem::internal::DirichletBoundaryCondition;
 using drake::multibody::fem::internal::FemSolver;
 using drake::systems::Context;
+using drake::systems::DependencyTicket;
 
 namespace drake {
 namespace multibody {
@@ -64,18 +66,17 @@ template <typename T>
 void DeformableDriver<T>::DeclareCacheEntries(
     DiscreteUpdateManager<T>* manager) {
   DRAKE_DEMAND(manager_ == manager);
-  const auto& deformable_contact_cache_entry = manager->DeclareCacheEntry(
-      "deformable contact data",
-      systems::ValueProducer(this, &DeformableDriver<T>::CalcDeformableContact),
-      {systems::System<T>::configuration_ticket()});
-  cache_indexes_.deformable_contact =
-      deformable_contact_cache_entry.cache_index();
+
+  // Our CalcDeformableContact() uses `query_object` (not `context`), and only
+  // returns deformable contact (not all geometry contact), so we know that this
+  // ticket is sufficient to cover our EvalDeformableContact().
+  const systems::DependencyTicket deformable_contact_ticket =
+      manager->plant().get_geometry_query_input_port().ticket();
 
   /* The collection of constraint participation tickets for *all* deformable
     bodies to be filled out in the loop below. */
   std::set<systems::DependencyTicket> constraint_participation_tickets;
-  constraint_participation_tickets.emplace(
-      deformable_contact_cache_entry.ticket());
+  constraint_participation_tickets.emplace(deformable_contact_ticket);
 
   for (DeformableBodyIndex i(0); i < deformable_model_->num_bodies(); ++i) {
     const DeformableBodyId id = deformable_model_->GetBodyId(i);
@@ -93,20 +94,6 @@ void DeformableDriver<T>::DeclareCacheEntries(
         {systems::System<T>::xd_ticket()});
     cache_indexes_.fem_states.emplace_back(fem_state_cache_entry.cache_index());
 
-    /* Cache entry for FEM state at next time step. */
-    const auto& next_fem_state_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("FEM state for body with index {} at next time step", i),
-        systems::ValueProducer(
-            *model_state,
-            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>{
-                [this, i](const systems::Context<T>& context,
-                          fem::FemState<T>* next_fem_state) {
-                  this->CalcNextFemState(context, i, next_fem_state);
-                }}),
-        {systems::SystemBase::all_sources_ticket()});
-    cache_indexes_.next_fem_states.emplace_back(
-        next_fem_state_cache_entry.cache_index());
-
     /* Constraint participation information for each body. */
     ContactParticipation empty_contact_participation(fem_model.num_nodes());
     const auto& constraint_participation_cache_entry =
@@ -119,7 +106,7 @@ void DeformableDriver<T>::DeclareCacheEntries(
                               ContactParticipation* result) {
                       this->CalcConstraintParticipation(context, i, result);
                     }}),
-            {deformable_contact_cache_entry.ticket()});
+            {deformable_contact_ticket});
     cache_indexes_.constraint_participations.emplace_back(
         constraint_participation_cache_entry.cache_index());
     constraint_participation_tickets.emplace(
@@ -168,10 +155,31 @@ void DeformableDriver<T>::DeclareCacheEntries(
                           FemSolver<T>* fem_solver) {
                   this->CalcFreeMotionFemSolver(context, i, fem_solver);
                 }}),
+        /* Free motion velocities can depend on user defined external forces
+         which in turn depends on input ports. */
         {fem_state_cache_entry.ticket(),
-         vertex_permutation_cache_entry.ticket()});
+         vertex_permutation_cache_entry.ticket(),
+         systems::System<T>::all_input_ports_ticket()});
     cache_indexes_.fem_solvers.emplace_back(
         fem_solver_cache_entry.cache_index());
+
+    /* Cache entry for FEM state at next time step. */
+    const auto& next_fem_state_cache_entry = manager->DeclareCacheEntry(
+        fmt::format("FEM state for body with index {} at next time step", i),
+        systems::ValueProducer(
+            *model_state,
+            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>{
+                [this, i](const systems::Context<T>& context,
+                          fem::FemState<T>* next_fem_state) {
+                  this->CalcNextFemState(context, i, next_fem_state);
+                }}),
+        {systems::System<T>::xd_ticket(),
+         systems::System<T>::all_parameters_ticket(),
+         systems::System<T>::all_input_ports_ticket(),
+         systems::System<T>::time_ticket(),
+         systems::System<T>::accuracy_ticket()});
+    cache_indexes_.next_fem_states.emplace_back(
+        next_fem_state_cache_entry.cache_index());
   }
 
   const auto& participating_velocity_mux_cache_entry =
@@ -195,6 +203,12 @@ void DeformableDriver<T>::DeclareCacheEntries(
   cache_indexes_.participating_velocities =
       participating_velocities_cache_entry.cache_index();
 
+  /* Input ports are needed for the calculation of the free motion velocities
+   (via user defined external forces). */
+  auto participarting_free_motion_velocities_tickets =
+      constraint_participation_and_xd_tickets;
+  participarting_free_motion_velocities_tickets.insert(
+      systems::System<T>::all_input_ports_ticket());
   const auto& participating_free_motion_velocities_cache_entry =
       manager->DeclareCacheEntry(
           fmt::format("participating free motion velocities for all bodies"),
@@ -966,11 +980,8 @@ const FemState<T>& DeformableDriver<T>::EvalNextFemState(
 
 template <typename T>
 void DeformableDriver<T>::CalcDeformableContact(
-    const Context<T>& context, DeformableContact<T>* result) const {
-  const geometry::QueryObject<T>& query_object =
-      manager_->plant()
-          .get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
+    const geometry::QueryObject<T>& query_object,
+    DeformableContact<T>* result) const {
   /* Compute the DeformableContact from the geometry engine. */
   query_object.ComputeDeformableContact(result);
 
@@ -1003,9 +1014,7 @@ void DeformableDriver<T>::CalcDeformableContact(
 template <typename T>
 const DeformableContact<T>& DeformableDriver<T>::EvalDeformableContact(
     const Context<T>& context) const {
-  return manager_->plant()
-      .get_cache_entry(cache_indexes_.deformable_contact)
-      .template Eval<DeformableContact<T>>(context);
+  return manager_->EvalGeometryContactData(context).deformable;
 }
 
 template <typename T>

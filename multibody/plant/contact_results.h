@@ -34,10 +34,19 @@ template <typename T>
 class ContactResults {
  public:
   ContactResults();
+
   ContactResults(const ContactResults&);
   ContactResults(ContactResults&&) = default;
   ContactResults& operator=(const ContactResults&);
   ContactResults& operator=(ContactResults&&) = default;
+
+  /** Constructs a ContactResults with the given values. */
+  explicit ContactResults(
+      std::vector<PointPairContactInfo<T>>&& point_pair,
+      std::vector<HydroelasticContactInfo<T>>&& hydroelastic = {},
+      std::vector<DeformableContactInfo<T>>&& deformable = {});
+
+  ~ContactResults();
 
   /** Returns the number of point pair contacts. */
   int num_point_pair_contacts() const {
@@ -173,4 +182,4 @@ class ContactResults {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ContactResults)
+    class ::drake::multibody::ContactResults);

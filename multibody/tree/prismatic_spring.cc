@@ -26,6 +26,9 @@ PrismaticSpring<T>::PrismaticSpring(ModelInstanceIndex model_instance,
 }
 
 template <typename T>
+PrismaticSpring<T>::~PrismaticSpring() = default;
+
+template <typename T>
 const PrismaticJoint<T>& PrismaticSpring<T>::joint() const {
   const PrismaticJoint<T>* joint = dynamic_cast<const PrismaticJoint<T>*>(
       &this->get_parent_tree().get_joint(joint_index_));
@@ -114,4 +117,4 @@ PrismaticSpring<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::PrismaticSpring)
+    class ::drake::multibody::PrismaticSpring);

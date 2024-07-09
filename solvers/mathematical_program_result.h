@@ -73,7 +73,7 @@ GetVariableValue(
  */
 class MathematicalProgramResult final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MathematicalProgramResult)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MathematicalProgramResult);
 
   /**
    * Constructs the result.

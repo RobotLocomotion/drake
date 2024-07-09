@@ -28,7 +28,7 @@ namespace multibody {
 template <typename T>
 class PrismaticJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -70,6 +70,8 @@ class PrismaticJoint final : public Joint<T> {
       double pos_lower_limit = -std::numeric_limits<double>::infinity(),
       double pos_upper_limit = std::numeric_limits<double>::infinity(),
       double damping = 0);
+
+  ~PrismaticJoint() override;
 
   const std::string& type_name() const override;
 
@@ -365,4 +367,4 @@ template <typename T> const char PrismaticJoint<T>::kTypeName[] = "prismatic";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::PrismaticJoint)
+    class ::drake::multibody::PrismaticJoint);

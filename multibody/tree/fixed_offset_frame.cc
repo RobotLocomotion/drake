@@ -26,6 +26,9 @@ FixedOffsetFrame<T>::FixedOffsetFrame(const std::string& name,
     : Frame<T>(name, B), parent_frame_(B.body_frame()), X_PF_(X_BF) {}
 
 template <typename T>
+FixedOffsetFrame<T>::~FixedOffsetFrame() = default;
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> FixedOffsetFrame<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
@@ -58,4 +61,4 @@ FixedOffsetFrame<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::FixedOffsetFrame)
+    class drake::multibody::FixedOffsetFrame);

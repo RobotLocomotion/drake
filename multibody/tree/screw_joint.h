@@ -33,7 +33,7 @@ namespace multibody {
 template <typename T>
 class ScrewJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScrewJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScrewJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -106,6 +106,8 @@ class ScrewJoint final : public Joint<T> {
   ScrewJoint(const std::string& name, const Frame<T>& frame_on_parent,
              const Frame<T>& frame_on_child, const Vector3<double>& axis,
              double screw_pitch, double damping);
+
+  ~ScrewJoint() final;
 
   const std::string& type_name() const final;
 
@@ -405,4 +407,4 @@ class ScrewJoint final : public Joint<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ScrewJoint)
+    class ::drake::multibody::ScrewJoint);

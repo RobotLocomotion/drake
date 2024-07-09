@@ -89,10 +89,11 @@ def optimize_controller_params(
         return metric_value
 
     try:
-        x0 = np.asfarray(scenario["controller_params"])
+        x0 = np.asarray(scenario["controller_params"], dtype=float)
     except TypeError:
-        x0 = (np.asfarray(scenario["controller_params"]["min"])
-              + np.asfarray(scenario["controller_params"]["max"])) / 2
+        par_min = np.asarray(scenario["controller_params"]["min"], dtype=float)
+        par_max = np.asarray(scenario["controller_params"]["max"], dtype=float)
+        x0 = (par_min + par_max) / 2
 
     result = fmin(func=function_to_optimize,
                   x0=x0,

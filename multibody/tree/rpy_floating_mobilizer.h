@@ -62,13 +62,15 @@ namespace internal {
 template <typename T>
 class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyFloatingMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyFloatingMobilizer);
 
   // Constructor for an RpyFloatingMobilizer between an inboard frame F
   // inboard_frame_F and an outboard frame M outboard_frame_M.
   RpyFloatingMobilizer(const Frame<T>& inboard_frame_F,
                        const Frame<T>& outboard_frame_M)
       : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
+
+  ~RpyFloatingMobilizer() final;
 
   bool is_floating() const final { return true; }
 
@@ -327,4 +329,4 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::RpyFloatingMobilizer)
+    class ::drake::multibody::internal::RpyFloatingMobilizer);

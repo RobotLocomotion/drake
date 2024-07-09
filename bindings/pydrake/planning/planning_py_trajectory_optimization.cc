@@ -335,7 +335,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("weight") = 1.0, cls_doc.AddDurationCost.doc)
         .def("AddPathLengthCost", &Class::AddPathLengthCost,
             py::arg("weight") = 1.0, py::arg("use_conic_constraint") = false,
-            cls_doc.AddPathLengthCost.doc);
+            cls_doc.AddPathLengthCost.doc)
+        .def("AddPathEnergyCost", &Class::AddPathEnergyCost,
+            py::arg("weight") = 1.0, cls_doc.AddPathEnergyCost.doc);
   }
 
   {
@@ -354,6 +356,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 geometry::optimization::GraphOfConvexSets::Vertex*>&>(
                 &Class::Subgraph::Vertices),
             py_rvp::reference_internal, subgraph_doc.Vertices.doc)
+        .def("Edges",
+            overload_cast_explicit<const std::vector<
+                geometry::optimization::GraphOfConvexSets::Edge*>&>(
+                &Class::Subgraph::Edges),
+            py_rvp::reference_internal, subgraph_doc.Edges.doc)
         .def(
             "regions",
             [](Class::Subgraph* self) {
@@ -416,7 +423,12 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddContinuityConstraints",
             &Class::EdgesBetweenSubgraphs::AddContinuityConstraints,
             py::arg("continuity_order"),
-            subgraph_edges_doc.AddContinuityConstraints.doc);
+            subgraph_edges_doc.AddContinuityConstraints.doc)
+        .def("Edges",
+            overload_cast_explicit<const std::vector<
+                geometry::optimization::GraphOfConvexSets::Edge*>&>(
+                &Class::EdgesBetweenSubgraphs::Edges),
+            py_rvp::reference_internal, subgraph_edges_doc.Edges.doc);
 
     gcs_traj_opt  // BR
         .def(py::init<int, const std::vector<int>&>(), py::arg("num_positions"),
@@ -501,7 +513,12 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("graph_of_convex_sets", &Class::graph_of_convex_sets,
             py_rvp::reference_internal, cls_doc.graph_of_convex_sets.doc)
         .def_static("NormalizeSegmentTimes", &Class::NormalizeSegmentTimes,
-            py::arg("trajectory"), cls_doc.NormalizeSegmentTimes.doc);
+            py::arg("trajectory"), cls_doc.NormalizeSegmentTimes.doc)
+        .def_static("UnwrapToContinousTrajectory",
+            &Class::UnwrapToContinousTrajectory, py::arg("gcs_trajectory"),
+            py::arg("continuous_revolute_joints"),
+            py::arg("starting_rounds") = std::nullopt, py::arg("tol") = 1e-8,
+            cls_doc.UnwrapToContinousTrajectory.doc);
   }
 
   m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,

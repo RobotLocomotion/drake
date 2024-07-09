@@ -55,7 +55,7 @@ def drake_cc_googlebench_binary(
                 # runtime errors.)
                 "--benchmark_min_time=0s",
             ] + (test_args or []),
-            tags = (test_tags or []) + ["nolint"],
+            tags = (test_tags or []) + ["nolint", "no_kcov"],
         )
 
 def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):

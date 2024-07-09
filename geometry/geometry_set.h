@@ -35,7 +35,7 @@ class GeometryState;
  geometries rigidly affixed to frame f).  */
 class GeometrySet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometrySet)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometrySet);
 
   GeometrySet() = default;
 

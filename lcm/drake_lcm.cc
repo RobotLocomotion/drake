@@ -30,7 +30,7 @@ class DrakeSubscription;
 
 class DrakeLcm::Impl {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl);
 
   explicit Impl(const DrakeLcmParams& params)
       : requested_lcm_url_(params.lcm_url),
@@ -138,7 +138,7 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
  public:
   // We must disable copy/move/assign because we need our memory address to
   // remain stable; the native LCM stack keeps a pointer to this object.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeSubscription)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeSubscription);
 
   using HandlerFunction = DrakeLcmInterface::HandlerFunction;
   using MultichannelHandlerFunction =

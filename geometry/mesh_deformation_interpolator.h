@@ -23,7 +23,7 @@ namespace internal {
  their barycentric coordinates in the tetrahedron containing them. */
 class BarycentricInterpolator {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BarycentricInterpolator)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BarycentricInterpolator);
 
   /* Constructs a BarycentricInterpolator. The time complexity of this
    constructor is O(mn) where m is the number of elements in `positions_M` and n
@@ -67,7 +67,7 @@ class BarycentricInterpolator {
  extract a subset of vertex positions from the vertex positions of a mesh. */
 class VertexSampler {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VertexSampler)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VertexSampler);
 
   /* Constructs a VertexSampler.
    @pre `sampled_vertices` is non-empty, sorted, doesn't contain duplicates,

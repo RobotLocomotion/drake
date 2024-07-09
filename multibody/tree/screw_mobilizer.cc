@@ -8,6 +8,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+ScrewMobilizer<T>::~ScrewMobilizer() = default;
+
+template <typename T>
 std::string ScrewMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   if (position_index_in_mobilizer == 0) {
@@ -221,4 +224,4 @@ ScrewMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::ScrewMobilizer)
+    class ::drake::multibody::internal::ScrewMobilizer);

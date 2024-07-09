@@ -50,6 +50,9 @@ LinearBushingRollPitchYaw<T>::LinearBushingRollPitchYaw(
 }
 
 template <typename T>
+LinearBushingRollPitchYaw<T>::~LinearBushingRollPitchYaw() = default;
+
+template <typename T>
 SpatialForce<T> LinearBushingRollPitchYaw<T>::CalcBushingSpatialForceOnFrameA(
     const systems::Context<T>& context) const {
   // Reminder: The set of all forces applied by the bushing to frame A are
@@ -378,4 +381,4 @@ LinearBushingRollPitchYaw<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::LinearBushingRollPitchYaw)
+    class ::drake::multibody::LinearBushingRollPitchYaw);

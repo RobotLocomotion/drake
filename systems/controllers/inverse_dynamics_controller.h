@@ -67,7 +67,7 @@ class InverseDynamicsController final
     : public Diagram<T>,
       public StateFeedbackControllerInterface<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController);
 
   /**
    * Constructs an inverse dynamics controller for the given `plant` model.
@@ -186,4 +186,4 @@ class InverseDynamicsController final
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::controllers::InverseDynamicsController)
+    class ::drake::systems::controllers::InverseDynamicsController);

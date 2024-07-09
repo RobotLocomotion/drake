@@ -123,7 +123,7 @@ namespace systems {
 template <class T>
 class IntegratorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegratorBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegratorBase);
 
   /**
    Status returned by IntegrateNoFurtherThanTime().
@@ -1688,4 +1688,4 @@ class IntegratorBase {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::systems::IntegratorBase)
+    class drake::systems::IntegratorBase);

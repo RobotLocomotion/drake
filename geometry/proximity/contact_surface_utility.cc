@@ -360,13 +360,13 @@ bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
 // Instantiation to facilitate unit testing of this support function.
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&AddPolygonToTriangleMeshData<T>, &IsFaceNormalInNormalDirection<T>,
-     &CalcPolygonCentroid<T>))
+     &CalcPolygonCentroid<T>));
 
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::internal::TriMeshBuilder)
+    class ::drake::geometry::internal::TriMeshBuilder);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::internal::PolyMeshBuilder)
+    class ::drake::geometry::internal::PolyMeshBuilder);

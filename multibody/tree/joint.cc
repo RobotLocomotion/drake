@@ -4,6 +4,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+Joint<T>::~Joint() = default;
+
+template <typename T>
 bool Joint<T>::can_rotate() const {
   DRAKE_DEMAND(this->get_implementation().has_mobilizer());
   return get_implementation().mobilizer->can_rotate();
@@ -19,4 +22,4 @@ bool Joint<T>::can_translate() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::Joint)
+    class drake::multibody::Joint);

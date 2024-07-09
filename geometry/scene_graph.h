@@ -319,7 +319,7 @@ class QueryObject;
 template <typename T>
 class SceneGraph final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph);
 
   /** Constructs a default (empty) scene graph. */
   SceneGraph();
@@ -1165,10 +1165,14 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // The cache indices for the pose and configuration update cache entries.
   systems::CacheIndex pose_update_index_{};
   systems::CacheIndex configuration_update_index_{};
+
+  // (Testing only) a global count of calls to the scalar converting
+  // constructor.
+  static int64_t scalar_conversion_count_;
 };
 
 }  // namespace geometry
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::SceneGraph)
+    class ::drake::geometry::SceneGraph);

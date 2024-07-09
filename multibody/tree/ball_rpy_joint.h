@@ -26,7 +26,7 @@ namespace multibody {
 template <typename T>
 class BallRpyJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BallRpyJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BallRpyJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -70,6 +70,8 @@ class BallRpyJoint final : public Joint<T> {
                      3, std::numeric_limits<double>::infinity())) {
     DRAKE_THROW_UNLESS(damping >= 0);
   }
+
+  ~BallRpyJoint() override;
 
   const std::string& type_name() const override;
 
@@ -289,4 +291,4 @@ const char BallRpyJoint<T>::kTypeName[] = "ball_rpy";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::BallRpyJoint)
+    class ::drake::multibody::BallRpyJoint);

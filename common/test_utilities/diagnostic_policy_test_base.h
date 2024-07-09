@@ -155,7 +155,7 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
   // https://google.github.io/googletest/advanced.html#adding-traces-to-assertions
   class ScopedTrace {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScopedTrace)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScopedTrace);
     ScopedTrace() = default;
 
    private:

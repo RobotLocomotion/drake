@@ -91,6 +91,7 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::Linearize;
 using systems::LinearSystem;
+using systems::OutputPortIndex;
 using systems::VectorBase;
 
 namespace multibody {
@@ -669,7 +670,13 @@ class AcrobotPlantTests : public ::testing::Test {
 
     // Ensure that we can access the geometry ports pre-finalize.
     DRAKE_EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
+    DRAKE_EXPECT_NO_THROW(plant_->get_geometry_pose_output_port());
+
+    // Also sanity check the deprecated getter (2024-10-01).
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     DRAKE_EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
+#pragma GCC diagnostic push
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_state_output_port(),
@@ -1034,13 +1041,13 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   unique_ptr<systems::Context<double>> context = plant_->CreateDefaultContext();
 
   unique_ptr<AbstractValue> poses_value =
-      plant_->get_geometry_poses_output_port().Allocate();
+      plant_->get_geometry_pose_output_port().Allocate();
   DRAKE_EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->get_value<FramePoseVector<double>>();
 
   // Compute the poses for each geometry in the model.
-  plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  plant_->get_geometry_pose_output_port().Calc(*context, poses_value.get());
   EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   const FrameId world_frame_id =
@@ -1728,38 +1735,79 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
       ".*already has a joint.*extra_welds_to_world.*joint.*not allowed.*");
 }
 
-// Utility to verify the subset of output ports we expect to be direct a
-// feedthrough of the inputs.
-// @returns `true` iff only if a closed subset of the ports is direct
-// feedthrough.
+// Verifies exact set of output ports we expect to be a direct feedthrough of
+// the inputs. Returns true iff successful.
 bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
-  // Create a set of the indices of all ports that can be feedthrough.
-  std::set<int> ok_to_feedthrough;
-  ok_to_feedthrough.insert(plant.get_net_actuation_output_port().get_index());
-  ok_to_feedthrough.insert(plant.get_reaction_forces_output_port().get_index());
-  ok_to_feedthrough.insert(
-      plant.get_generalized_acceleration_output_port().get_index());
-  for (ModelInstanceIndex i(0); i < plant.num_model_instances(); ++i) {
-    ok_to_feedthrough.insert(
-        plant.get_generalized_acceleration_output_port(i).get_index());
-    ok_to_feedthrough.insert(
-        plant.get_net_actuation_output_port(i).get_index());
-  }
-  ok_to_feedthrough.insert(
-      plant.get_body_spatial_accelerations_output_port().get_index());
-  if (plant.is_discrete()) {
-    ok_to_feedthrough.insert(
-        plant.get_contact_results_output_port().get_index());
+  // Write down the expected direct-feedthrough status for all ports. Use
+  // strings (not indices) so that developers can understand test failures.
+  // The order we list the ports here matches the MbP header file overview.
+  const std::vector<std::pair<std::string, bool>> manifest{
+      {"state", false},
+      {"body_poses", false},
+      {"body_spatial_velocities", false},
+      {"spatial_velocities", false},  // Deprecated synonym 2024-10-01.
+      {"body_spatial_accelerations", true},
+      {"spatial_accelerations", true},  // Deprecated synonym 2024-10-01.
+      {"generalized_acceleration", true},
+      {"net_actuation", true},
+      {"reaction_forces", true},
+      {"contact_results", true},
+      {"{instance}_state", false},
+      {"{instance}_generalized_acceleration", true},
+      {"{instance}_net_actuation", true},
+      {"{instance}_generalized_contact_forces", !plant.is_discrete()},
+      {"geometry_pose", false},
+      {"deformable_body_configuration", false},
+  };
+
+  // Split the manifest into (non-)feedthrough sets, while also substituting and
+  // expanding the per-model-instance port names.
+  std::set<std::string> expected_feedthrough;
+  std::set<std::string> expected_non_feedthrough;
+  for (const auto& [name, is_feedthrough] : manifest) {
+    std::set<std::string>& destination =
+        is_feedthrough ? expected_feedthrough : expected_non_feedthrough;
+    const bool needs_fmt = name.at(0) == '{';
+    if (!needs_fmt) {
+      destination.insert(name);
+    } else {
+      for (ModelInstanceIndex i(0); i < plant.num_model_instances(); ++i) {
+        const std::string& instance = plant.GetModelInstanceName(i);
+        destination.insert(
+            fmt::format(fmt::runtime(name), fmt::arg("instance", instance)));
+      }
+    }
   }
 
-  // Now find all the feedthrough ports and make sure they are on the
-  // list of expected feedthrough ports.
-  const std::multimap<int, int> feedthroughs = plant.GetDirectFeedthroughs();
-  for (const auto& inout_pair : feedthroughs) {
-    if (!ok_to_feedthrough.contains(inout_pair.second))
-      return false;  // Found a spurious feedthrough port.
+  // Cross-check that every output port was listed in the manifest.
+  {
+    std::set<std::string> manifest_all;
+    manifest_all.insert(expected_feedthrough.begin(),
+                        expected_feedthrough.end());
+    manifest_all.insert(expected_non_feedthrough.begin(),
+                        expected_non_feedthrough.end());
+    std::set<std::string> plant_all;
+    for (OutputPortIndex i{0}; i < plant.num_output_ports(); ++i) {
+      const auto& port = plant.get_output_port(i, /*warn_deprecated =*/false);
+      plant_all.insert(port.get_name());
+    }
+    EXPECT_THAT(manifest_all, testing::ContainerEq(plant_all));
   }
-  return true;
+
+  // Extract actual feedthrough status of the plant.
+  std::set<OutputPortIndex> actual_feedthrough_indices;
+  for (const auto& [_, out] : plant.GetDirectFeedthroughs()) {
+    actual_feedthrough_indices.insert(OutputPortIndex{out});
+  }
+  std::set<std::string> actual_feedthrough;
+  for (const OutputPortIndex& i : actual_feedthrough_indices) {
+    actual_feedthrough.insert(
+        plant.get_output_port(i, /*warn_deprecated=*/false).get_name());
+  }
+
+  // Compare and return.
+  EXPECT_THAT(actual_feedthrough, testing::ContainerEq(expected_feedthrough));
+  return actual_feedthrough == expected_feedthrough;
 }
 
 // Verifies the process of collision geometry registration with a
@@ -1868,14 +1916,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
                         RigidTransformd(Vector3d(x_offset, radius, 0.0)));
 
   unique_ptr<AbstractValue> poses_value =
-      plant.get_geometry_poses_output_port().Allocate();
+      plant.get_geometry_pose_output_port().Allocate();
   DRAKE_EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& pose_data =
       poses_value->get_value<FramePoseVector<double>>();
 
   // Compute the poses for each geometry in the model.
-  plant.get_geometry_poses_output_port().Calc(*plant_context,
-                                              poses_value.get());
+  plant.get_geometry_pose_output_port().Calc(*plant_context, poses_value.get());
   EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
@@ -2038,6 +2085,9 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   }
 }
 
+// Deprecated for removal on 2024-10-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
   PendulumParameters parameters;
   unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
@@ -2057,6 +2107,7 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
   DRAKE_EXPECT_NO_THROW(
       autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
@@ -2434,7 +2485,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
 
   // Make sure the geometry ports were included in the autodiffed plant.
   DRAKE_EXPECT_NO_THROW(plant_autodiff->get_geometry_query_input_port());
-  DRAKE_EXPECT_NO_THROW(plant_autodiff->get_geometry_poses_output_port());
+  DRAKE_EXPECT_NO_THROW(plant_autodiff->get_geometry_pose_output_port());
 }
 
 // This test is used to verify the correctness of the methods to compute the
@@ -3835,9 +3886,9 @@ GTEST_TEST(MultibodyPlantTest, SceneGraphPorts) {
   // Test that SceneGraph ports exist and are accessible, both pre and post
   // finalize, without the presence of a connected SceneGraph.
   EXPECT_NO_THROW(plant.get_geometry_query_input_port());
-  EXPECT_NO_THROW(plant.get_geometry_poses_output_port());
+  EXPECT_NO_THROW(plant.get_geometry_pose_output_port());
   EXPECT_NO_THROW(plant_finalized.get_geometry_query_input_port());
-  EXPECT_NO_THROW(plant_finalized.get_geometry_poses_output_port());
+  EXPECT_NO_THROW(plant_finalized.get_geometry_pose_output_port());
 }
 
 GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {

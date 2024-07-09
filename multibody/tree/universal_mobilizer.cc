@@ -16,6 +16,9 @@ using std::cos;
 using std::sin;
 
 template <typename T>
+UniversalMobilizer<T>::~UniversalMobilizer() = default;
+
+template <typename T>
 std::string UniversalMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {
@@ -218,4 +221,4 @@ UniversalMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::UniversalMobilizer)
+    class ::drake::multibody::internal::UniversalMobilizer);

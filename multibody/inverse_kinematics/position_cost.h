@@ -16,7 +16,7 @@ namespace multibody {
  */
 class PositionCost : public solvers::Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositionCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositionCost);
 
   /**
    * Constructs PositionCost object.

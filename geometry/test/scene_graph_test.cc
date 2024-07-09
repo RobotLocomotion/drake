@@ -102,6 +102,11 @@ class SceneGraphTester {
       const SceneGraph<T>& scene_graph, systems::Context<T>* context) {
     return scene_graph.mutable_geometry_state(context);
   }
+
+  template <typename T>
+  static int64_t ScalarConversionCount() {
+    return SceneGraph<T>::scalar_conversion_count_;
+  }
 };
 
 namespace {
@@ -274,11 +279,15 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
 }
 
 // Confirms that the direct feedthrough logic is correct -- there is total
-// direct feedthrough.
+// direct feedthrough. Also confirm that feedthrough was calculated without the
+// need to fall back on SystemSymbolicInspector, and hence populate the
+// internal augmented model cache for T=Expression.
 TEST_F(SceneGraphTest, DirectFeedThrough) {
   scene_graph_.RegisterSource();
+  int64_t tare = SceneGraphTester::ScalarConversionCount<Expression>();
   EXPECT_EQ(scene_graph_.GetDirectFeedthroughs().size(),
             scene_graph_.num_input_ports() * scene_graph_.num_output_ports());
+  EXPECT_EQ(SceneGraphTester::ScalarConversionCount<Expression>(), tare);
 }
 
 // Test the functionality that accumulates the values from the input ports.

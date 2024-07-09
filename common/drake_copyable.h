@@ -24,7 +24,7 @@ declaration, e.g.:
 <pre>
 class Foo {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Foo)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Foo);
 
   // ...
 };
@@ -48,7 +48,7 @@ should invoke this macro in the public section of the class declaration, e.g.:
 <pre>
 class Foo {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo);
 
   // ...
 };
@@ -100,7 +100,7 @@ macro in the public section of the class declaration, e.g.:
 <pre>
 class Foo {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Foo)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Foo);
 
   // ...
 };

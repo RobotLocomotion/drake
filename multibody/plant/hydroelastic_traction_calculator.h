@@ -76,7 +76,7 @@ class HydroelasticTractionCalculator {
     const Vector3<T> p_WC;
   };
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator);
 
   explicit HydroelasticTractionCalculator(double vslip_regularizer = 1e-6)
       : vslip_regularizer_(vslip_regularizer) {}
@@ -98,8 +98,6 @@ class HydroelasticTractionCalculator {
    @param dissipation the nonnegative coefficient (in s/m) for dissipating
           energy along the direction of the surface normals.
    @param mu_coulomb the nonnegative coefficient for Coulomb friction.
-   @param[out] quadrature_point_data the intermediate data computed by the
-               quadrature process. This vector is cleared on entry.
    @param[out] F_Ac_W the spatial force computed by the hydroelastic model that
                acts on the body attached to geometry M (which is affixed to Body
                A) in `data`'s ContactSurface. This spatial force is applied at
@@ -107,7 +105,6 @@ class HydroelasticTractionCalculator {
    */
   void ComputeSpatialForcesAtCentroidFromHydroelasticModel(
       const Data& data, double dissipation, double mu_coulomb,
-      std::vector<HydroelasticQuadraturePointData<T>>* quadrature_point_data,
       multibody::SpatialForce<T>* F_Ac_W) const;
 
   /*
@@ -182,4 +179,4 @@ class HydroelasticTractionCalculator {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::internal::HydroelasticTractionCalculator)
+    class drake::multibody::internal::HydroelasticTractionCalculator);

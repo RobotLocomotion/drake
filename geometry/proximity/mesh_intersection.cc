@@ -447,7 +447,7 @@ template class SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb>;
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&CalcIntersection<T>, &ClipPolygonByHalfSpace<T>,
      &RemoveNearlyDuplicateVertices<T>,
-     &ComputeContactSurfaceFromSoftVolumeRigidSurface<T>))
+     &ComputeContactSurfaceFromSoftVolumeRigidSurface<T>));
 
 }  // namespace internal
 }  // namespace geometry

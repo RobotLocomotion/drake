@@ -23,6 +23,9 @@ MultibodyForces<T>::MultibodyForces(int nb, int nv) {
 }
 
 template <typename T>
+MultibodyForces<T>::~MultibodyForces() = default;
+
+template <typename T>
 MultibodyForces<T>& MultibodyForces<T>::SetZero() {
   std::fill(F_B_W_.begin(), F_B_W_.end(), SpatialForce<T>::Zero());
   tau_.setZero();
@@ -57,4 +60,4 @@ void MultibodyForces<T>::AddInForces(const MultibodyForces<T>& addend) {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MultibodyForces)
+    class ::drake::multibody::MultibodyForces);

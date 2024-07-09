@@ -36,7 +36,7 @@ class UnrevisedLemkeSolverId {
 template <class T>
 class UnrevisedLemkeSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolver);
 
   UnrevisedLemkeSolver();
   ~UnrevisedLemkeSolver() final;
@@ -123,7 +123,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
   // A structure for holding a linear complementarity problem variable.
   class LCPVariable {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LCPVariable)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LCPVariable);
     LCPVariable() {}
     LCPVariable(bool z, int index) : index_{index}, z_{z} {}
 

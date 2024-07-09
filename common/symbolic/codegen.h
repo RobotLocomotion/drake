@@ -20,7 +20,7 @@ class CodeGenVisitor {
   using IdToIndexMap =
       std::unordered_map<Variable::Id, std::vector<Variable>::size_type>;
 
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CodeGenVisitor)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CodeGenVisitor);
 
   /// Constructs an instance of this visitor class using the vector of
   /// variables, @p parameters. This visitor will map a symbolic variable `var`

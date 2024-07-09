@@ -48,6 +48,8 @@ namespace multibody {
 
 class MultibodyPlantTester {
  public:
+  // Returns the manager for the given plant.
+  // @pre The plant must be discrete time and already finalized.
   static CompliantContactManager<double>& manager(
       const MultibodyPlant<double>& plant) {
     auto* manager = dynamic_cast<CompliantContactManager<double>*>(

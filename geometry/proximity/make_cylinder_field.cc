@@ -75,7 +75,7 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeCylinderPressureField<T>))
+    (&MakeCylinderPressureField<T>));
 
 }  // namespace internal
 }  // namespace geometry

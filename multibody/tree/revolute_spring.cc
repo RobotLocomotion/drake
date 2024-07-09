@@ -25,6 +25,9 @@ RevoluteSpring<T>::RevoluteSpring(ModelInstanceIndex model_instance,
 }
 
 template <typename T>
+RevoluteSpring<T>::~RevoluteSpring() = default;
+
+template <typename T>
 const RevoluteJoint<T>& RevoluteSpring<T>::joint() const {
   const RevoluteJoint<T>* joint = dynamic_cast<const RevoluteJoint<T>*>(
       &this->get_parent_tree().get_joint(joint_index_));
@@ -113,4 +116,4 @@ RevoluteSpring<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RevoluteSpring)
+    class ::drake::multibody::RevoluteSpring);

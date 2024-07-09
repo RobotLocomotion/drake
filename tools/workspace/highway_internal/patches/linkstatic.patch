@@ -1,0 +1,25 @@
+[highway_internal] Link hidden and static
+
+In general, setting -fvisibility on C++ source code is problematic, but hwy
+upstream has been specifically engineered to allow it.
+
+This situation is unique to Drake, so we do not plan to upstream this
+patch.
+
+--- BUILD
++++ BUILD
+@@ -174,4 +174,5 @@
+     compatible_with = [],
+-    copts = COPTS,
++    copts = COPTS + ["-fvisibility=hidden"],
+     defines = DEFINES,
++    linkstatic = True,
+     local_defines = ["hwy_EXPORTS"],
+@@ -238,2 +238,3 @@
+     copts = COPTS,
++    linkstatic = True,
+     local_defines = ["hwy_EXPORTS"],
+@@ -419,2 +420,3 @@
+     copts = COPTS,
++    linkstatic = True,
+     local_defines = ["hwy_test_EXPORTS"],

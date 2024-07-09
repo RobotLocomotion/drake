@@ -19,7 +19,7 @@ namespace multibody {
 template <typename T>
 class UniformGravityFieldElement : public ForceElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniformGravityFieldElement)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniformGravityFieldElement);
 
   // TODO(sherm1) Switch to the NIST standard 9.80665 value but be sure that's
   // used consistently throughout the code, SDFs, etc.
@@ -42,6 +42,8 @@ class UniformGravityFieldElement : public ForceElement<T> {
   UniformGravityFieldElement(
       Vector3<double> g_W,
       std::set<ModelInstanceIndex> disabled_model_instances);
+
+  ~UniformGravityFieldElement() override;
 
   /// Returns the acceleration of the gravity vector in m/s², expressed in the
   /// world frame W.
@@ -140,4 +142,4 @@ class UniformGravityFieldElement : public ForceElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::UniformGravityFieldElement)
+    class ::drake::multibody::UniformGravityFieldElement);

@@ -9,6 +9,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+BallRpyJoint<T>::~BallRpyJoint() = default;
+
+template <typename T>
 const std::string& BallRpyJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();
@@ -74,4 +77,4 @@ BallRpyJoint<T>::MakeImplementationBlueprint() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::BallRpyJoint)
+    class ::drake::multibody::BallRpyJoint);

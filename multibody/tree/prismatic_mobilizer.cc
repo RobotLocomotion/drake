@@ -11,6 +11,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+PrismaticMobilizer<T>::~PrismaticMobilizer() = default;
+
+template <typename T>
 std::string PrismaticMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   if (position_index_in_mobilizer == 0) {
@@ -170,4 +173,4 @@ PrismaticMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::PrismaticMobilizer)
+    class ::drake::multibody::internal::PrismaticMobilizer);

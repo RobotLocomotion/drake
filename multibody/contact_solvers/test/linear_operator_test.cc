@@ -30,7 +30,7 @@ using Triplet = Eigen::Triplet<double>;
 template <typename T>
 class TestLinearOperator final : public LinearOperator<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestLinearOperator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestLinearOperator);
 
   explicit TestLinearOperator(const std::string& name)
       : LinearOperator<T>(name) {}

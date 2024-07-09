@@ -39,7 +39,7 @@ struct PdControllerGains {
 template <typename T>
 class JointActuator final : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator);
 
   /// Creates an actuator for `joint` with the given `name`.
   /// The name must be unique within the given multibody model. This is
@@ -57,6 +57,8 @@ class JointActuator final : public MultibodyElement<T> {
   ///   for prismatic joints.
   JointActuator(const std::string& name, const Joint<T>& joint,
                 double effort_limit = std::numeric_limits<double>::infinity());
+
+  ~JointActuator() final;
 
   /// Returns this element's unique index.
   JointActuatorIndex index() const {
@@ -227,6 +229,8 @@ class JointActuator final : public MultibodyElement<T> {
   /// Returns the associated rotor inertia value for this actuator, stored in
   /// `context`.
   /// See @ref reflected_inertia.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   const T& rotor_inertia(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(rotor_inertia_parameter_index_)[0];
   }
@@ -234,6 +238,8 @@ class JointActuator final : public MultibodyElement<T> {
   /// Returns the associated gear ratio value for this actuator, stored in
   /// `context`.
   /// See @ref reflected_inertia.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   const T& gear_ratio(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(gear_ratio_parameter_index_)[0];
   }
@@ -255,6 +261,8 @@ class JointActuator final : public MultibodyElement<T> {
 
   /// Calculates the reflected inertia value for this actuator in `context`.
   /// See @ref reflected_inertia.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   T calc_reflected_inertia(const systems::Context<T>& context) const {
     const T& rho = gear_ratio(context);
     const T& Ir = rotor_inertia(context);
@@ -406,4 +414,4 @@ class JointActuator final : public MultibodyElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::JointActuator)
+    class ::drake::multibody::JointActuator);

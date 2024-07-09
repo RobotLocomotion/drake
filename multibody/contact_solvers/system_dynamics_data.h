@@ -15,7 +15,7 @@ namespace internal {
 template <typename T>
 class SystemDynamicsData {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemDynamicsData)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemDynamicsData);
 
   // Specifies the dynamics of the system by providing Ainv, a linear operator
   // form of the inverse of the system dynamics Jacobian matrix A and the
@@ -94,4 +94,4 @@ class SystemDynamicsData {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SystemDynamicsData)
+    class ::drake::multibody::contact_solvers::internal::SystemDynamicsData);

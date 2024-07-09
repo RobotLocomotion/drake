@@ -13,6 +13,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+QuaternionFloatingMobilizer<T>::~QuaternionFloatingMobilizer() = default;
+
+template <typename T>
 std::string QuaternionFloatingMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   // Note: The order of variables here is documented in get_quaternion().
@@ -439,4 +442,4 @@ QuaternionFloatingMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::QuaternionFloatingMobilizer)
+    class ::drake::multibody::internal::QuaternionFloatingMobilizer);

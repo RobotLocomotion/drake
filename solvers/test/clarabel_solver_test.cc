@@ -1,7 +1,11 @@
 #include "drake/solvers/clarabel_solver.h"
 
+#include <fstream>
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
@@ -17,7 +21,11 @@
 namespace drake {
 namespace solvers {
 namespace test {
+
 const double kTol = 1E-5;
+
+using testing::HasSubstr;
+
 GTEST_TEST(LinearProgramTest, TestGeneralLP) {
   // Test a linear program with only equality constraint.
   // min x(0) + 2 * x(1)
@@ -241,6 +249,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 GTEST_TEST(TestDuplicatedVariableQuadraticProgram, Test) {
   ClarabelSolver solver;
   if (solver.available()) {
@@ -325,6 +340,11 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
   ClarabelSolver solver;
   TestSocpDuplicatedVariable2(solver, std::nullopt, 1E-6);
+}
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable3) {
+  ClarabelSolver solver;
+  TestSocpDuplicatedVariable3(solver, std::nullopt, 1E-4);
 }
 
 GTEST_TEST(TestL2NormCost, ShortestDistanceToThreePoints) {
@@ -432,6 +452,80 @@ GTEST_TEST(TestOptions, SetMaxIter) {
     result = solver.Solve(dut.prog(), std::nullopt, solver_options);
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+  }
+}
+
+GTEST_TEST(TestOptions, StandaloneReproduction) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>("x");
+  prog.AddLinearEqualityConstraint(x(0) + x(1) == 1);
+  prog.AddLinearConstraint(x(0) + x(1) + x(2) >= 0);
+  prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(x(0), x(1)));
+  prog.AddExponentialConeConstraint(
+      Vector3<symbolic::Expression>(x(2), x(0), x(1)));
+  const auto Y = prog.NewSymmetricContinuousVariables<2>("Y");
+  prog.AddPositiveSemidefiniteConstraint(Y);
+
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    const std::string repro_file_name =
+        temp_directory() + "/reproduction.py";
+    solver_options.SetOption(
+        CommonSolverOption::kStandaloneReproductionFileName, repro_file_name);
+    solver.Solve(prog, std::nullopt, solver_options);
+
+    // Read in the reproduction file.
+    std::ifstream input_stream(repro_file_name);
+    ASSERT_TRUE(input_stream.is_open());
+    std::stringstream buffer;
+    buffer << input_stream.rdbuf();
+    std::string repro_str = buffer.str();
+
+    EXPECT_THAT(repro_str, HasSubstr("import clarabel"));
+    EXPECT_THAT(repro_str, HasSubstr("ZeroConeT"));
+    EXPECT_THAT(repro_str, HasSubstr("NonnegativeConeT"));
+    EXPECT_THAT(repro_str, HasSubstr("SecondOrderConeT"));
+    EXPECT_THAT(repro_str, HasSubstr("PSDTriangleConeT"));
+    EXPECT_THAT(repro_str, HasSubstr("ExponentialConeT"));
+    EXPECT_THAT(repro_str, HasSubstr("solve"));
+  }
+}
+
+// Ensure that when we have no linear constraints, we do not generate programs
+// with empty Zero nor Nonnegative cones.
+GTEST_TEST(TestOptions, EmptyCones) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>("x");
+  prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(x(0), x(1)));
+  prog.AddExponentialConeConstraint(
+      Vector3<symbolic::Expression>(x(2), x(0), x(1)));
+  const auto Y = prog.NewSymmetricContinuousVariables<2>("Y");
+  prog.AddPositiveSemidefiniteConstraint(Y);
+
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    const std::string repro_file_name =
+        temp_directory() + "/reproduction.py";
+    solver_options.SetOption(
+        CommonSolverOption::kStandaloneReproductionFileName, repro_file_name);
+    solver.Solve(prog, std::nullopt, solver_options);
+
+    // Read in the reproduction file.
+    std::ifstream input_stream(repro_file_name);
+    ASSERT_TRUE(input_stream.is_open());
+    std::stringstream buffer;
+    buffer << input_stream.rdbuf();
+    std::string repro_str = buffer.str();
+
+    EXPECT_THAT(repro_str, HasSubstr("import clarabel"));
+    EXPECT_THAT(repro_str, Not(HasSubstr("ZeroConeT")));
+    EXPECT_THAT(repro_str, Not(HasSubstr("NonnegativeConeT")));
+    EXPECT_THAT(repro_str, HasSubstr("SecondOrderConeT"));
+    EXPECT_THAT(repro_str, HasSubstr("PSDTriangleConeT"));
+    EXPECT_THAT(repro_str, HasSubstr("ExponentialConeT"));
+    EXPECT_THAT(repro_str, HasSubstr("solve"));
   }
 }
 

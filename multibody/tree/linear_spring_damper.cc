@@ -28,6 +28,9 @@ LinearSpringDamper<T>::LinearSpringDamper(
 }
 
 template <typename T>
+LinearSpringDamper<T>::~LinearSpringDamper() = default;
+
+template <typename T>
 void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
     const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc,
@@ -231,4 +234,4 @@ T LinearSpringDamper<T>::CalcLengthTimeDerivative(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::LinearSpringDamper)
+    class ::drake::multibody::LinearSpringDamper);

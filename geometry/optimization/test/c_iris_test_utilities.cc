@@ -120,15 +120,8 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
 
 CIrisRobotPolytopicGeometryTest::CIrisRobotPolytopicGeometryTest() {
   systems::DiagramBuilder<double> builder;
-  plant_ = builder.AddSystem<multibody::MultibodyPlant<double>>(0.);
-  scene_graph_ = builder.AddSystem<geometry::SceneGraph<double>>();
-  plant_->RegisterAsSourceForSceneGraph(scene_graph_);
-
-  builder.Connect(scene_graph_->get_query_output_port(),
-                  plant_->get_geometry_query_input_port());
-  builder.Connect(
-      plant_->get_geometry_poses_output_port(),
-      scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
+  std::tie(plant_, scene_graph_) =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
 
   ProximityProperties proximity_properties{};
   // C-IRIS doesn't care about robot dynamics. Use arbitrary material

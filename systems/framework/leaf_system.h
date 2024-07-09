@@ -42,7 +42,7 @@ template <typename T>
 class LeafSystem : public System<T> {
  public:
   // LeafSystem objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystem);
 
   ~LeafSystem() override;
 
@@ -1910,4 +1910,4 @@ class LeafSystem : public System<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::LeafSystem)
+    class ::drake::systems::LeafSystem);

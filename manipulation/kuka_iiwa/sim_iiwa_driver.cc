@@ -187,4 +187,4 @@ const System<double>& SimIiwaDriver<T>::AddToBuilder(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::manipulation::kuka_iiwa::SimIiwaDriver)
+    class ::drake::manipulation::kuka_iiwa::SimIiwaDriver);

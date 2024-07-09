@@ -545,14 +545,14 @@ void AffineSystem<T>::UpdateCoefficients(
 // clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &TimeVaryingAffineSystem<T>::template ConfigureDefaultAndRandomStateFrom<U>
-))
+));
 // clang-format on
 
 }  // namespace systems
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::TimeVaryingAffineSystem)
+    class ::drake::systems::TimeVaryingAffineSystem);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::AffineSystem)
+    class ::drake::systems::AffineSystem);

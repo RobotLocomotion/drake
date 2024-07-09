@@ -51,7 +51,7 @@ same Meshcat instance.
 template <typename T>
 class MeshcatVisualizer final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatVisualizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatVisualizer);
 
   /** Creates an instance of %MeshcatVisualizer.
 
@@ -228,4 +228,4 @@ struct Traits<geometry::MeshcatVisualizer> : public NonSymbolicTraits {};
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::MeshcatVisualizer)
+    class ::drake::geometry::MeshcatVisualizer);

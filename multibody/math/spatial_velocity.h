@@ -45,7 +45,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   typedef SpatialVector<::drake::multibody::SpatialVelocity, T> Base;
 
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity);
 
   /// Default constructor. In Release builds, all 6 elements of a newly
   /// constructed spatial velocity are uninitialized (for speed).  In Debug
@@ -268,4 +268,4 @@ T SpatialVelocity<T>::dot(const SpatialMomentum<T>& momentum) const {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::SpatialVelocity)
+    class ::drake::multibody::SpatialVelocity);

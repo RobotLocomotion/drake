@@ -5,6 +5,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+DummyPhysicalModel<T>::~DummyPhysicalModel() = default;
+
+template <typename T>
 void DummyPhysicalModel<T>::DoDeclareSystemResources() {
   /* Declares the single group of discrete state. */
   VectorX<T> model_state(num_dofs_);
@@ -37,9 +40,18 @@ void DummyPhysicalModel<T>::DoDeclareSystemResources() {
       {systems::System<T>::xd_ticket()});
 }
 
+template <typename T>
+void DummyPhysicalModel<T>::DoDeclareSceneGraphPorts() {
+  scene_graph_output_port_ = &this->DeclareVectorOutputPort(
+      "dummy_scene_graph_port", systems::BasicVector<T>(1),
+      [](const systems::Context<T>&, systems::BasicVector<T>* output) {
+        output->set_value(VectorX<T>::Constant(1, 42.0));
+      });
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::DummyPhysicalModel)
+    class ::drake::multibody::internal::DummyPhysicalModel);

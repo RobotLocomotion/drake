@@ -269,7 +269,7 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
 // Simple class for converting shape specifications into LCM-compatible shapes.
 class ShapeToLcm : public ShapeReifier {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShapeToLcm)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShapeToLcm);
 
   ShapeToLcm() = default;
   ~ShapeToLcm() override = default;
@@ -793,4 +793,4 @@ DrakeVisualizer<T>::DoGetGraphvizFragment(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::DrakeVisualizer)
+    class ::drake::geometry::DrakeVisualizer);

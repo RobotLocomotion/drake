@@ -53,6 +53,26 @@ ContactResults<T>& ContactResults<T>::operator=(
 }
 
 template <typename T>
+ContactResults<T>::ContactResults(
+    std::vector<PointPairContactInfo<T>>&& point_pair,
+    std::vector<HydroelasticContactInfo<T>>&& hydroelastic,
+    std::vector<DeformableContactInfo<T>>&& deformable)
+    : point_pairs_info_(std::move(point_pair)),
+      deformable_contact_info_(std::move(deformable)) {
+  // TODO(jwnimmer-tri) The variant-based member field representation forces us
+  // into this outrageous allocation loop. A future rewrite of this class will
+  // use a simple full-vector move here, instead.
+  auto& destination = hydroelastic_contact_info_.template emplace<1>();
+  destination.reserve(hydroelastic.size());
+  for (const HydroelasticContactInfo<T>& item : hydroelastic) {
+    destination.push_back(std::make_unique<HydroelasticContactInfo<T>>(item));
+  }
+}
+
+template <typename T>
+ContactResults<T>::~ContactResults() = default;
+
+template <typename T>
 const MultibodyPlant<T>* ContactResults<T>::plant() const {
   return plant_;
 }
@@ -149,4 +169,4 @@ ContactResults<T> ContactResults<T>::SelectHydroelastic(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ContactResults)
+    class ::drake::multibody::ContactResults);

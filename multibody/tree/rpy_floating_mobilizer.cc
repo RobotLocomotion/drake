@@ -15,6 +15,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+RpyFloatingMobilizer<T>::~RpyFloatingMobilizer() = default;
+
+template <typename T>
 std::string RpyFloatingMobilizer<T>::position_suffix(
     int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {
@@ -487,4 +490,4 @@ RpyFloatingMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::RpyFloatingMobilizer)
+    class ::drake::multibody::internal::RpyFloatingMobilizer);

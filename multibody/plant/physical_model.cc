@@ -8,6 +8,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+PhysicalModel<T>::~PhysicalModel() = default;
+
+template <typename T>
 std::unique_ptr<PhysicalModel<double>> PhysicalModel<T>::CloneToDouble(
     MultibodyPlant<double>*) const {
   throw std::logic_error(
@@ -43,6 +46,21 @@ bool PhysicalModel<T>::is_cloneable_to_autodiff() const {
 template <typename T>
 bool PhysicalModel<T>::is_cloneable_to_symbolic() const {
   return false;
+}
+
+template <typename T>
+void PhysicalModel<T>::DeclareSystemResources() {
+  DRAKE_DEMAND(owning_plant_ != nullptr);
+  DoDeclareSystemResources();
+  owning_plant_ = nullptr;
+}
+
+template <typename T>
+void PhysicalModel<T>::DeclareSceneGraphPorts() {
+  ThrowIfSystemResourcesDeclared(__func__);
+  /* Note that DoDeclareSceneGraphPorts throws an exception when a port (with
+   the same name) is declared for the second time. */
+  DoDeclareSceneGraphPorts();
 }
 
 template <typename T>

@@ -51,7 +51,7 @@ namespace systems {
 template <typename T>
 class DiscreteTimeDelay final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteTimeDelay)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteTimeDelay);
 
   /// Constructs a DiscreteTimeDelay system updating every `update_sec` and
   /// delaying a vector-valued input of size `vector_size` for

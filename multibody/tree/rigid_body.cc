@@ -10,6 +10,9 @@ namespace multibody {
 // RigidBodyFrame function definitions.
 
 template <typename T>
+RigidBodyFrame<T>::~RigidBodyFrame() = default;
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> RigidBodyFrame<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
@@ -40,6 +43,9 @@ std::unique_ptr<Frame<symbolic::Expression>> RigidBodyFrame<T>::DoCloneToScalar(
 }
 
 // RigidBody function definitions.
+
+template <typename T>
+RigidBody<T>::~RigidBody() = default;
 
 template <typename T>
 ScopedName RigidBody<T>::scoped_name() const {
@@ -174,11 +180,37 @@ Vector3<T> RigidBody<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   return v_WBcm_W;
 }
 
+template <typename T>
+Vector3<T> RigidBody<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
+    const systems::Context<T>& context) const {
+  const RigidBody<T>& body_B = *this;
+  const Frame<T>& frame_B = body_B.body_frame();
+
+  // Form frame B's spatial acceleration in the world frame W, expressed in W.
+  const SpatialAcceleration<T>& A_WBo_W =
+      body_B.EvalSpatialAccelerationInWorld(context);
+
+  // Form Bcm's position from Bo, expressed in world W (for shift calculation).
+  const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context);
+  const math::RotationMatrix<T> R_WB =
+      frame_B.CalcRotationMatrixInWorld(context);
+  const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
+
+  // Form B's angular velocity in world, expressed in W (for shift calculation).
+  const SpatialVelocity<T>& V_WBo_W =
+      body_B.EvalSpatialVelocityInWorld(context);
+  const Vector3<T>& w_WB_W = V_WBo_W.rotational();
+
+  // Form a_WBcm_W, Bcm's translational acceleration in frame W, expressed in W.
+  const Vector3<T> a_WBcm_W = A_WBo_W.Shift(p_BoBcm_W, w_WB_W).translational();
+  return a_WBcm_W;
+}
+
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::RigidBodyFrame)
+    class drake::multibody::RigidBodyFrame);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RigidBody)
+    class ::drake::multibody::RigidBody);

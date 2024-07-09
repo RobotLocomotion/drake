@@ -313,7 +313,7 @@ int DecomposeAffineExpression(
   *constant_term = 0;
   if (!e.is_polynomial()) {
     std::ostringstream oss;
-    oss << "Expression " << e << "is not a polynomial.\n";
+    oss << "Expression " << e << " is not a polynomial.\n";
     throw std::runtime_error(oss.str());
   }
   const symbolic::Polynomial poly{e};

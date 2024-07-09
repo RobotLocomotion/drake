@@ -26,6 +26,9 @@ Propeller<T>::Propeller(const std::vector<PropellerInfo>& propeller_info)
 }
 
 template <typename T>
+Propeller<T>::~Propeller() = default;
+
+template <typename T>
 void Propeller<T>::CalcSpatialForces(
     const systems::Context<T>& context,
     std::vector<ExternallyAppliedSpatialForce<T>>* spatial_forces) const {
@@ -61,4 +64,4 @@ void Propeller<T>::CalcSpatialForces(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::Propeller)
+    class drake::multibody::Propeller);

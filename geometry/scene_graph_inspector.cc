@@ -322,4 +322,4 @@ std::unique_ptr<GeometryInstance> SceneGraphInspector<T>::CloneGeometryInstance(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::SceneGraphInspector)
+    class ::drake::geometry::SceneGraphInspector);

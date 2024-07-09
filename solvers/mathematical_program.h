@@ -2087,6 +2087,27 @@ class MathematicalProgram {
       const Binding<LorentzConeConstraint>& binding);
 
   /**
+   * Adds a Lorentz cone constraint of the form Ax+b >= |Cx+d|₂ from a symbolic
+   * formula with one side which can be decomposed into sqrt((Cx+d)'(Cx+d)).
+   *
+   * @param eval_type The evaluation type when evaluating the lorentz cone
+   * constraint in generic optimization. Refer to
+   * LorentzConeConstraint::EvalType for more details.
+   *
+   * See symbolic::DecomposeL2NormExpression for details on the tolerance
+   * parameters, @p psd_tol and @p coefficient_tol. Consider using the overload
+   * which takes a vector of expressions to avoid the numerical decomposition.
+   *
+   * @throws std::exception if @p f cannot be decomposed into a Lorentz cone.
+   * @pydrake_mkdoc_identifier{formula}
+   */
+  Binding<LorentzConeConstraint> AddLorentzConeConstraint(
+      const symbolic::Formula& f,
+      LorentzConeConstraint::EvalType eval_type =
+          LorentzConeConstraint::EvalType::kConvexSmooth, double psd_tol = 1e-8,
+                                    double coefficient_tol = 1e-8);
+
+  /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
    * decision variables.
    * @param v An Eigen::Vector of symbolic::Expression. Constraining that

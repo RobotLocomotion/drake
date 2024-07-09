@@ -38,6 +38,9 @@ ScrewJoint<T>::ScrewJoint(const std::string& name,
 }
 
 template <typename T>
+ScrewJoint<T>::~ScrewJoint() = default;
+
+template <typename T>
 const std::string& ScrewJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();
@@ -106,4 +109,4 @@ ScrewJoint<T>::MakeImplementationBlueprint() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ScrewJoint)
+    class ::drake::multibody::ScrewJoint);

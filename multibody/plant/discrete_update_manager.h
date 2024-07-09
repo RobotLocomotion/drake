@@ -20,6 +20,7 @@
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -83,7 +84,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   DiscreteUpdateManager() = default;
 
-  ~DiscreteUpdateManager() override = default;
+  ~DiscreteUpdateManager() override;
 
   /* (Internal) Creates a clone of the concrete DiscreteUpdateManager object
    with the scalar type `ScalarType`. This method is meant to be called only by
@@ -235,6 +236,10 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     return deformable_driver_.get();
   }
 
+  /* Private MultibodyPlant method, made public here. */
+  const GeometryContactData<T>& EvalGeometryContactData(
+      const systems::Context<T>& context) const;
+
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
@@ -300,8 +305,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* N.B. Keep the spelling and order of declarations here identical to the
    MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
-  const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
-      const systems::Context<T>& context) const;
+  // Note that EvalGeometryContactData is in our public section, above.
 
   void AddJointLimitsPenaltyForces(const systems::Context<T>& context,
                                    MultibodyForces<T>* forces) const;
@@ -409,8 +413,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     systems::CacheIndex actuation;
   };
 
-  /* Exposes indices for the cache entries declared by this class for derived
-   classes to depend on. */
+  /* Exposes indices for the cache entries declared by this class for other
+   cache entries to depend on. */
   CacheIndexes cache_indexes() const { return cache_indexes_; }
 
  private:
@@ -459,15 +463,12 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* result) const;
 
-  int CalcNumberOfPointContacts(const systems::Context<T>& context) const;
-
-  int CalcNumberOfHydroContactPoints(const systems::Context<T>& context) const;
-
   /* Helper function for CalcDiscreteContactPairs() that computes all contact
    pairs from hydroelastic contact, if any. */
   void AppendDiscreteContactPairsForHydroelasticContact(
       const systems::Context<T>& context,
-      DiscreteContactData<DiscreteContactPair<T>>* contact_kinematics) const;
+      DiscreteContactData<DiscreteContactPair<T>>* contact_kinematics) const
+    requires scalar_predicate<T>::is_bool;
 
   /* Helper function for CalcDiscreteContactPairs() that computes all contact
    pairs from point contact, if any. */
@@ -501,7 +502,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    number of faces discretizing the contact surface. */
   void CalcHydroelasticContactInfo(
       const systems::Context<T>& context,
-      std::vector<HydroelasticContactInfo<T>>* contact_info) const;
+      std::vector<HydroelasticContactInfo<T>>* contact_info) const
+    requires scalar_predicate<T>::is_bool;
 
   /* Eval version of CalcHydroelasticContactInfo() . */
   const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
@@ -515,14 +517,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    to advance the discrete states. */
   std::unique_ptr<DeformableDriver<double>> deformable_driver_;
 };
-
-/* N.B. These geometry queries are not supported when T =
- symbolic::Expression */
-template <>
-void DiscreteUpdateManager<symbolic::Expression>::
-    AppendDiscreteContactPairsForHydroelasticContact(
-        const drake::systems::Context<symbolic::Expression>&,
-        DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
 
 }  // namespace internal
 }  // namespace multibody

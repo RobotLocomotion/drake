@@ -113,15 +113,19 @@ class GcsTrajectoryOptimization final {
     The order of the vertices is the same as the order the regions were added.
     @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
     std::vector<const geometry::optimization::GraphOfConvexSets::Vertex*>
-    Vertices() const {
-      std::vector<const geometry::optimization::GraphOfConvexSets::Vertex*>
-          vertices;
-      vertices.reserve(vertices_.size());
-      for (const auto& v : vertices_) {
-        vertices.push_back(v);
-      }
-      return vertices;
+    Vertices() const;
+
+    /** Returns constant reference to a vector of mutable pointers to the
+    edges. */
+    const std::vector<geometry::optimization::GraphOfConvexSets::Edge*>&
+    Edges() {
+      return edges_;
     }
+
+    /** Returns pointers to the edges stored in the subgraph.
+    @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
+    std::vector<const geometry::optimization::GraphOfConvexSets::Edge*> Edges()
+        const;
 
     /** Returns the regions associated with this subgraph before the
     CartesianProduct. */
@@ -396,6 +400,18 @@ class GcsTrajectoryOptimization final {
     */
     void AddContinuityConstraints(int continuity_order);
 
+    /** Returns constant reference to a vector of mutable pointers to the
+    edges. */
+    const std::vector<geometry::optimization::GraphOfConvexSets::Edge*>&
+    Edges() {
+      return edges_;
+    }
+
+    /** Returns pointers to the edges.
+    @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
+    std::vector<const geometry::optimization::GraphOfConvexSets::Edge*> Edges()
+        const;
+
    private:
     EdgesBetweenSubgraphs(const Subgraph& from_subgraph,
                           const Subgraph& to_subgraph,
@@ -502,6 +518,8 @@ class GcsTrajectoryOptimization final {
   component of the affine map τ_uv in equation (11) of "Non-Euclidean Motion
   Planning with Graphs of Geodesically-Convex Sets", and per the discussion in
   Subsection VI A, τ_uv has no rotation component.
+  @throws std::exception if any index referenced in `edges_between_regions` is
+  outside the range [0, ssize(regions)).
   */
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
@@ -639,6 +657,8 @@ class GcsTrajectoryOptimization final {
   @param derivative_order is the order of the derivative to be constrained.
 
   @throws std::exception if lb or ub are not of size num_positions().
+  @throws std::exception if the derivative order <= 1, since the linear
+    velocity bounds are preferred.
   */
   void AddNonlinearDerivativeBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                                     const Eigen::Ref<const Eigen::VectorXd>& ub,
@@ -787,6 +807,9 @@ class GcsTrajectoryOptimization final {
    @param gcs_trajectory The trajectory to unwrap.
    @param continuous_revolute_joints The indices of the continuous revolute
    joints.
+   @param tol The numerical tolerance used to determine if two subsequent
+   segments start and end at the same value modulo 2π for continuous revolute
+   joints.
    @param starting_rounds A vector of integers that sets the starting rounds for
    each continuous revolute joint. Given integer k for the starting_round of a
    joint, its initial position will be wrapped into [2πk , 2π(k+1)). If the
@@ -802,7 +825,7 @@ class GcsTrajectoryOptimization final {
    @throws std::exception if the gcs_trajectory is not continuous on the
    manifold defined by the continuous_revolute_joints, i.e., the shift between
    two consecutive segments is not an integer multiple of 2π (within a tolerance
-   of 1e-10 radians).
+   of `tol` radians).
    @throws std::exception if all the segments are not of type BezierCurve.
    Other types are not supported yet. Note that currently the output of
    GcsTrajectoryOptimization::SolvePath() is a CompositeTrajectory of
@@ -811,7 +834,8 @@ class GcsTrajectoryOptimization final {
   static trajectories::CompositeTrajectory<double> UnwrapToContinousTrajectory(
       const trajectories::CompositeTrajectory<double>& gcs_trajectory,
       std::vector<int> continuous_revolute_joints,
-      std::optional<std::vector<int>> starting_rounds = std::nullopt);
+      std::optional<std::vector<int>> starting_rounds = std::nullopt,
+      double tol = 1e-8);
 
  private:
   const int num_positions_;

@@ -23,7 +23,7 @@ class BasicVector : public VectorBase<T> {
   // BasicVector cannot be copied or moved; use Clone instead.  (We cannot
   // support copy or move because of the slicing problem, and also because
   // assignment of a BasicVector could change its size.)
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BasicVector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BasicVector);
 
   /// Constructs an empty BasicVector.
   BasicVector() = default;
@@ -202,4 +202,4 @@ class BasicVector : public VectorBase<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::BasicVector)
+    class ::drake::systems::BasicVector);

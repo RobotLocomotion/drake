@@ -1,61 +1,36 @@
-#include "drake/math/fast_pose_composition_functions_avx2_fma.h"
+/* clang-format off to disable clang-format-includes */
+#include "drake/math/fast_pose_composition_functions.h"
+/* clang-format on */
 
-#if defined(__AVX2__) && defined(__FMA__)
+#include <algorithm>
 #include <cstdint>
 
-#include <cpuid.h>
-#include <immintrin.h>
-#else
-#include <iostream>
-#endif
+// This is the magic juju that compiles our impl functions for multiple CPUs.
+#undef HWY_TARGET_INCLUDE
+#define HWY_TARGET_INCLUDE "math/fast_pose_composition_functions_avx2_fma.cc"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include "hwy/foreach_target.h"
+#include "hwy/highway.h"
+#pragma GCC diagnostic pop
 
-/* N.B. Do not include any other drake headers here because this file will be
-part of a compilation unit that may have a different opinion about whether SIMD
-instructions are enabled than Eigen does in the rest of Drake. */
+#include "drake/common/drake_assert.h"
+#include "drake/common/hwy_dynamic_impl.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
+HWY_BEFORE_NAMESPACE();
 namespace drake {
 namespace math {
 namespace internal {
-
-#if defined(__AVX2__) && defined(__FMA__)
 namespace {
-/* Reinterpret user-friendly class names to raw arrays of double.
+namespace HWY_NAMESPACE {
+namespace hn = hwy::HWY_NAMESPACE;
 
-We make judicious use below of potentially-dangerous reinterpret_casts to
-convert from user-friendly APIs written in terms of RotationMatrix& and
-RigidTransform& (whose declarations are necessarily unknown here) to
-implementation-friendly double* types. Why this is safe here:
-  - our implementations of these classes guarantee a particular memory
-    layout on which we can depend,
-  - the address of a class is the address of its first member (mandated by
-    the standard), and
-  - reinterpret_cast of a pointer to another pointer type and back yields the
-    same pointer, i.e. the bit pattern does not change.
-*/
-
-const double* GetRawMatrixStart(const RotationMatrix<double>& R) {
-  return reinterpret_cast<const double*>(&R);
-}
-
-double* GetMutableRawMatrixStart(RotationMatrix<double>* R) {
-  return reinterpret_cast<double*>(R);
-}
-
-const double* GetRawMatrixStart(const RigidTransform<double>& X) {
-  return reinterpret_cast<const double*>(&X);
-}
-
-double* GetMutableRawMatrixStart(RigidTransform<double>* X) {
-  return reinterpret_cast<double*>(X);
-}
-
-// Check if AVX2 is supported by the CPU. We can assume that OS support for AVX2
-// is available if AVX2 is supported by hardware, and do not need to test if it
-// is enabled in software as well.
-bool CheckCpuForAvxSupport() {
-  __builtin_cpu_init();
-  return __builtin_cpu_supports("avx2");
-}
+// The SIMD approach is only useful when we have registers of size `double[4]`
+// or larger. When we have smaller registers (e.g., SSE2's 2-wide lanes, or
+// SVE's variable-length vectors) we will fall back to non-SIMD code.
+#if HWY_MAX_BYTES >= 32 && HWY_HAVE_SCALABLE == 0
 
 /* =============================================================================
    Notation conventions used in this file
@@ -67,9 +42,7 @@ use both lowercase and uppercase letters for naming lanes. In variable names,
 we leave out the <> marker so the variable name would be just "abcd".
 
 The lower order lanes are spelled on the left, so for example if YMM0 = <abcd>
-then we have XMM0 = <ab>. Note that even though we spell lanes from lowest to
-highest, bitwise constants end up being written highest to lowest (as is typical
-for numbers) so we have blend(<abcd>, <ABCD>, 0b0101) as <AbCd>.
+then we have XMM0 = <ab>.
 
 Sometimes we don't need to give a name to a lane (because we don't care what its
 value is). In that case we use the canonical "_" to indicate "don't care", e.g.,
@@ -88,12 +61,15 @@ For inspecting the machine code, see Godbolt and in particular the LLVM-MCA tool
 
  https://godbolt.org/
 
-============================================================================= */
+For a Highway function reference, see:
 
-// Turns d into <dddd>.
-__m256d four(double d) {
-  return _mm256_set1_pd(d);
-}
+ https://google.github.io/highway/en/master/quick_reference.html#operations
+
+Be very careful when reading Highway docs to distinguish "lane" vs "block".
+A lane holds one scalar (e.g., a `double`); a block is 16-bytes worth of lanes,
+e.g., two doubles.
+
+============================================================================= */
 
 /* Composition of rotation matrices R_AC = R_AB * R_BC.
 
@@ -148,46 +124,105 @@ but we're doing 60 here and throwing away 15 of them. However, we only issue 9
 SIMD floating point instructions (3 multiplies and 6 fused-multiply-adds).
 
 It is OK if the result R_AC overlaps one or both of the inputs. */
-void ComposeRRAvx(const double* R_AB, const double* R_BC, double* R_AC) {
-  constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no = uint64_t(0);
-  const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
+void ComposeRRImpl(const double* R_AB, const double* R_BC, double* R_AC) {
+  const hn::FixedTag<double, 4> tag;
 
-  // Load the input.
-  const __m256d abc_ = _mm256_loadu_pd(R_AB);      // (d is loaded but unused)
-  const __m256d def_ = _mm256_loadu_pd(R_AB + 3);  // (g is loaded but unused)
-  const __m256d ghi_ = _mm256_maskload_pd(R_AB + 6, mask);
-  const double A = R_BC[0];
-  const double B = R_BC[1];
-  const double C = R_BC[2];
-  const double D = R_BC[3];
-  const double E = R_BC[4];
-  const double F = R_BC[5];
-  const double G = R_BC[6];
-  const double H = R_BC[7];
-  const double I = R_BC[8];
+  const auto abc_ = hn::LoadU(tag, R_AB);      // (d is loaded but unused)
+  const auto def_ = hn::LoadU(tag, R_AB + 3);  // (g is loaded but unused)
+  const auto ghi_ = hn::LoadN(tag, R_AB + 6, 3);
 
-  // Column jkl:                                    j   k   l   _  =
-  __m256d jkl_ = _mm256_mul_pd(abc_, four(A));  //  aA  bA  cA  _
-  jkl_ = _mm256_fmadd_pd(def_, four(B), jkl_);  // +dB +eB +fB  _
-  jkl_ = _mm256_fmadd_pd(ghi_, four(C), jkl_);  // +gC +hC +iC  _
+  const auto AAA_ = hn::Set(tag, R_BC[0]);
+  const auto BBB_ = hn::Set(tag, R_BC[1]);
+  const auto CCC_ = hn::Set(tag, R_BC[2]);
+  const auto DDD_ = hn::Set(tag, R_BC[3]);
+  const auto EEE_ = hn::Set(tag, R_BC[4]);
+  const auto FFF_ = hn::Set(tag, R_BC[5]);
+  const auto GGG_ = hn::Set(tag, R_BC[6]);
+  const auto HHH_ = hn::Set(tag, R_BC[7]);
+  const auto III_ = hn::Set(tag, R_BC[8]);
 
-  // Column mno:                                    m   n   o   _  =
-  __m256d mno_ = _mm256_mul_pd(abc_, four(D));  //  aD  bD  cD  _
-  mno_ = _mm256_fmadd_pd(def_, four(E), mno_);  // +dE +eE +fE  _
-  mno_ = _mm256_fmadd_pd(ghi_, four(F), mno_);  // +gF +hF +iF  _
+  // Column jkl:                            j   k   l   _  =
+  auto jkl_ = hn::Mul(abc_, AAA_);      //  aA  bA  cA  _
+  jkl_ = hn::MulAdd(def_, BBB_, jkl_);  // +dB +eB +fB  _
+  jkl_ = hn::MulAdd(ghi_, CCC_, jkl_);  // +gC +hC +iC  _
 
-  // Column pqr:                                    p   q   r   _  =
-  __m256d pqr_ = _mm256_mul_pd(abc_, four(G));  //  aG  bG  cG  _
-  pqr_ = _mm256_fmadd_pd(def_, four(H), pqr_);  // +dH +eH +fH  _
-  pqr_ = _mm256_fmadd_pd(ghi_, four(I), pqr_);  // +gI +hI +iI  _
+  // Column mno:                            m   n   o   _  =
+  auto mno_ = hn::Mul(abc_, DDD_);      //  aD  bD  cD  _
+  mno_ = hn::MulAdd(def_, EEE_, mno_);  // +dE +eE +fE  _
+  mno_ = hn::MulAdd(ghi_, FFF_, mno_);  // +gF +hF +iF  _
+
+  // Column pqr:                            p   q   r   _  =
+  auto pqr_ = hn::Mul(abc_, GGG_);      //  aG  bG  cG  _
+  pqr_ = hn::MulAdd(def_, HHH_, pqr_);  // +dH +eH +fH  _
+  pqr_ = hn::MulAdd(ghi_, III_, pqr_);  // +gI +hI +iI  _
 
   // Store the output.
-  _mm256_storeu_pd(R_AC, jkl_);      // 4-wide write temporarily overwrites m
-  _mm256_storeu_pd(R_AC + 3, mno_);  // 4-wide write temporarily overwrites p
-  _mm256_maskstore_pd(R_AC + 6, mask, pqr_);  // 3-wide write to stay in bounds
+  hn::StoreU(jkl_, tag, R_AC);         // 4-wide write temporarily overwrites m
+  hn::StoreU(mno_, tag, R_AC + 3);     // 4-wide write temporarily overwrites p
+  hn::StoreN(pqr_, tag, R_AC + 6, 3);  // 3-wide write to stay in bounds
+}
 
-  // The compiler will generate a vzeroupper instruction if needed.
+/* Loads R_BA, transposed. Imagine R_BA as a array of doubles 'abcdefghi'. Upon
+return, the output arguments adg_, beh_, and cfi_ are filled with the like-named
+elements of R_BA. (As usual, underscore means undefined / don't care.) */
+template <typename Vec4>
+void LoadMatrix3Inv(const double* R_BA, Vec4* adg_, Vec4* beh_, Vec4* cfi_) {
+  const hn::FixedTag<double, 4> tag;
+  const auto abcd = hn::LoadU(tag, R_BA);
+  const auto defg = hn::LoadU(tag, R_BA + 3);
+  const auto efgh = hn::LoadU(tag, R_BA + 4);
+  const auto iiii = hn::Set(tag, R_BA[8]);
+
+  // Take special care in reading the below:
+  //
+  // - InterleaveEven(a, b) interleaves the even-numbered lanes of `a` and `b`
+  //   (and discards the odd-numbered lanes), i.e., the odd-numbered lanes
+  //   of `a` are replaced by the even-numbered lanes of `b`.
+  //
+  // - InterleaveOdd(a, b) interleaves the odd-numbered lanes of `a` and `b`
+  //   (and discards the even-numbered lanes), i.e., the even-numbered lanes
+  //   of `b` are replaced by the odd-numbered lanes of `a`.
+  //
+  // - ConcatFooBar(hi, lo) combines half of `hi` with half of `lo`.
+  //
+  //     Note that "half" here means splitting each 4-lane vector down the
+  //     middle, into the Lower two lanes (0 and 1) and Upper two lanes (2
+  //     and 3), not even- vs odd-numbered lanes.
+  //
+  //     The upper half of the result comes from the Foo part of `hi`. The lower
+  //     half of the result comes from the Bar half of `lo`. One important quirk
+  //     of this particular Highway function is that its argument order (hi, lo)
+  //     is the opposite of our usual convention of putting lower on the left.
+  //
+  //     Thus, for ConcatUpperLower:
+  //       The upper half of the result comes from the Upper half of `hi`.
+  //       The lower half of the result comes from the Lower half of `lo`.
+  //       The result is <lo[0] lo[1] hi[2] hi[3]>.
+  //                                  ^^^^^^^^^^^
+  //                                  This is "hi:Upper".
+  //                      ^^^^^^^^^^^
+  //                      This is lo:Lower.
+  //
+  //     Thus, for ConcatUpperUpper:
+  //       The upper half of the result comes is the Upper half of `hi`.
+  //       The lower half of the result comes is the Upper half of `lo`.
+  //       The result is <lo[2] lo[3] hi[2] hi[3]>.
+  //                                  ^^^^^^^^^^^
+  //                                  This is "hi:Upper".
+  //                      ^^^^^^^^^^^
+  //                      This is lo:Upper.
+  //
+  const auto abgh = hn::ConcatUpperLower(tag, efgh, abcd);  // ..gh|ab.. => abgh
+  const auto adgf = hn::InterleaveEven(tag, abgh, defg);    // a.g.|d.f. => adgf
+  const auto behg = hn::InterleaveOdd(tag, abgh, defg);     // .b.h|.e.g => behg
+  const auto adcf = hn::InterleaveEven(abcd, defg);         // a.c.|d.f. => adcf
+  const auto cfii = hn::ConcatUpperUpper(tag, iiii, adcf);  // ..ii|..cf => cfii
+
+  // These don't generate any instructions, but are just a nice way to use
+  // variable names with and without the don't-care markers, for clarity.
+  *adg_ = adgf;
+  *beh_ = behg;
+  *cfi_ = cfii;
 }
 
 /* Composition of rotation matrices R_AC = R_BA⁻¹ * R_BC.
@@ -244,53 +279,45 @@ but we're doing 60 here and throwing away 15 of them. However, we only issue 9
 SIMD floating point instructions (3 multiplies and 6 fused-multiply-adds).
 
 It is OK if the result R_AC overlaps one or both of the inputs. */
-void ComposeRinvRAvx(const double* R_BA, const double* R_BC, double* R_AC) {
-  constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no = uint64_t(0);
-  const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
+void ComposeRinvRImpl(const double* R_BA, const double* R_BC, double* R_AC) {
+  const hn::FixedTag<double, 4> tag;
 
-  // Load the input. Loads columns of R_AB (rows of the given R_BA) into
-  // registers via a series of loads, blends, and permutes.
-  const __m256d abcd = _mm256_loadu_pd(R_BA);
-  const __m256d efgh = _mm256_loadu_pd(R_BA + 4);
-  const __m256d eb_h = _mm256_blend_pd(abcd, efgh, 0b1101);
-  const __m256d beh_ = _mm256_permute_pd(eb_h, 0b0101);
-  const __m256d cdg_ = _mm256_permute2f128_pd(abcd, efgh, 0b00110001);
-  const __m256d adg_ = _mm256_blend_pd(abcd, cdg_, 0b1110);
-  const __m256d fghi = _mm256_loadu_pd(R_BA + 5);
-  const __m256d _fi_ = _mm256_permute_pd(fghi, 0b0100);
-  const __m256d cfi_ = _mm256_blend_pd(cdg_, _fi_, 0b0110);
-  const double A = R_BC[0];
-  const double B = R_BC[1];
-  const double C = R_BC[2];
-  const double D = R_BC[3];
-  const double E = R_BC[4];
-  const double F = R_BC[5];
-  const double G = R_BC[6];
-  const double H = R_BC[7];
-  const double I = R_BC[8];
+  // Load the columns of R_AB (rows of the given R_BA).
+  auto adg_ = hn::Undefined(tag);
+  auto beh_ = hn::Undefined(tag);
+  auto cfi_ = hn::Undefined(tag);
+  LoadMatrix3Inv(R_BA, &adg_, &beh_, &cfi_);
 
-  // Column jkl:                                    j   k   l   _  =
-  __m256d jkl_ = _mm256_mul_pd(adg_, four(A));  //  aA  dA  gA  _
-  jkl_ = _mm256_fmadd_pd(beh_, four(B), jkl_);  // +bB +eB +hB  _
-  jkl_ = _mm256_fmadd_pd(cfi_, four(C), jkl_);  // +cC +fC +iC  _
+  // Load R_BC.
+  const auto AAA_ = hn::Set(tag, R_BC[0]);
+  const auto BBB_ = hn::Set(tag, R_BC[1]);
+  const auto CCC_ = hn::Set(tag, R_BC[2]);
+  const auto DDD_ = hn::Set(tag, R_BC[3]);
+  const auto EEE_ = hn::Set(tag, R_BC[4]);
+  const auto FFF_ = hn::Set(tag, R_BC[5]);
+  const auto GGG_ = hn::Set(tag, R_BC[6]);
+  const auto HHH_ = hn::Set(tag, R_BC[7]);
+  const auto III_ = hn::Set(tag, R_BC[8]);
 
-  // Column mno:                                    m   n   o   _  =
-  __m256d mno_ = _mm256_mul_pd(adg_, four(D));  //  aD  dD  gD  _
-  mno_ = _mm256_fmadd_pd(beh_, four(E), mno_);  // +bE +eE +hE  _
-  mno_ = _mm256_fmadd_pd(cfi_, four(F), mno_);  // +cF +fF +iF  _
+  // Column jkl:                            j   k   l   _  =
+  auto jkl_ = hn::Mul(adg_, AAA_);      //  aA  dA  gA  _
+  jkl_ = hn::MulAdd(beh_, BBB_, jkl_);  // +bB +eB +hB  _
+  jkl_ = hn::MulAdd(cfi_, CCC_, jkl_);  // +cC +fC +iC  _
 
-  // Column pqr:                                    p   q   r   _  =
-  __m256d pqr_ = _mm256_mul_pd(adg_, four(G));  //  aG  dG  gG  _
-  pqr_ = _mm256_fmadd_pd(beh_, four(H), pqr_);  // +bH +eH +hH  _
-  pqr_ = _mm256_fmadd_pd(cfi_, four(I), pqr_);  // +cI +fI +iI  _
+  // Column mno:                            m   n   o   _  =
+  auto mno_ = hn::Mul(adg_, DDD_);      //  aD  dD  gD  _
+  mno_ = hn::MulAdd(beh_, EEE_, mno_);  // +bE +eE +hE  _
+  mno_ = hn::MulAdd(cfi_, FFF_, mno_);  // +cF +fF +iF  _
+
+  // Column pqr:                            p   q   r   _  =
+  auto pqr_ = hn::Mul(adg_, GGG_);      //  aG  dG  gG  _
+  pqr_ = hn::MulAdd(beh_, HHH_, pqr_);  // +bH +eH +hH  _
+  pqr_ = hn::MulAdd(cfi_, III_, pqr_);  // +cI +fI +iI  _
 
   // Store the output.
-  _mm256_storeu_pd(R_AC, jkl_);      // 4-wide write temporarily overwrites m
-  _mm256_storeu_pd(R_AC + 3, mno_);  // 4-wide write temporarily overwrites p
-  _mm256_maskstore_pd(R_AC + 6, mask, pqr_);  // 3-wide write to stay in bounds
-
-  // The compiler will generate a vzeroupper instruction if needed.
+  hn::StoreU(jkl_, tag, R_AC);         // 4-wide write temporarily overwrites m
+  hn::StoreU(mno_, tag, R_AC + 3);     // 4-wide write temporarily overwrites p
+  hn::StoreN(pqr_, tag, R_AC + 6, 3);  // 3-wide write to stay in bounds
 }
 
 /* Composition of transforms X_AC = X_AB * X_BC.
@@ -356,17 +383,17 @@ The <stu_> vector has the deepest pipeline, so we get it going first.
            + <def_> * <YYY_>
            + <ghi_> * <ZZZ_>
 
-  <jkl_> =   <adg_> * <AAA_>
-           + <beh_> * <BBB_>
-           + <cfi_> * <CCC_>
+  <jkl_> =   <abc_> * <AAA_>
+           + <def_> * <BBB_>
+           + <ghi_> * <CCC_>
 
-  <mno_> =   <adg_> * <DDD_>
-           + <beh_> * <EEE_>
-           + <cfi_> * <FFF_>
+  <mno_> =   <abc_> * <DDD_>
+           + <def_> * <EEE_>
+           + <ghi_> * <FFF_>
 
-  <pqr_> =   <adg_> * <GGG_>
-           + <beh_> * <HHH_>
-           + <cfi_> * <III_>
+  <pqr_> =   <abc_> * <GGG_>
+           + <def_> * <HHH_>
+           + <ghi_> * <III_>
 
 We load columns from left matrix and broadcast elements from right, performing
 4 operations in parallel but ignoring the 4th result. We must be careful not to
@@ -377,57 +404,54 @@ but we're doing 84 here and throwing away 21 of them. However, we only issue 12
 SIMD floating point instructions (3 multiplies and 9 fused-multiply-adds).
 
 It is OK if the result X_AC overlaps one or both of the inputs. */
-void ComposeXXAvx(const double* X_AB, const double* X_BC, double* X_AC) {
-  constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no = uint64_t(0);
-  const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
+void ComposeXXImpl(const double* X_AB, const double* X_BC, double* X_AC) {
+  const hn::FixedTag<double, 4> tag;
 
   // Load the input.
-  const __m256d abc_ = _mm256_loadu_pd(X_AB);      // (d is loaded but unused)
-  const __m256d def_ = _mm256_loadu_pd(X_AB + 3);  // (g is loaded but unused)
-  const __m256d ghi_ = _mm256_loadu_pd(X_AB + 6);  // (x is loaded but unused)
-  const __m256d xyz_ = _mm256_maskload_pd(X_AB + 9, mask);
-  const double A = X_BC[0];
-  const double B = X_BC[1];
-  const double C = X_BC[2];
-  const double D = X_BC[3];
-  const double E = X_BC[4];
-  const double F = X_BC[5];
-  const double G = X_BC[6];
-  const double H = X_BC[7];
-  const double I = X_BC[8];
-  const double X = X_BC[9];
-  const double Y = X_BC[10];
-  const double Z = X_BC[11];
+  const auto abc_ = hn::LoadU(tag, X_AB);      // (d is loaded but unused)
+  const auto def_ = hn::LoadU(tag, X_AB + 3);  // (g is loaded but unused)
+  const auto ghi_ = hn::LoadU(tag, X_AB + 6);  // (x is loaded but unused)
+  const auto xyz_ = hn::LoadN(tag, X_AB + 9, 3);
 
-  // Column stu:                                    s   t   u   _  =
-  __m256d stu_ = xyz_;                          //  x   y   z   _
-  stu_ = _mm256_fmadd_pd(abc_, four(X), stu_);  // +aX +bX +cX  _
-  stu_ = _mm256_fmadd_pd(def_, four(Y), stu_);  // +dY +eY +fY  _
-  stu_ = _mm256_fmadd_pd(ghi_, four(Z), stu_);  // +gZ +hZ +iZ  _
+  const auto AAA_ = hn::Set(tag, X_BC[0]);
+  const auto BBB_ = hn::Set(tag, X_BC[1]);
+  const auto CCC_ = hn::Set(tag, X_BC[2]);
+  const auto DDD_ = hn::Set(tag, X_BC[3]);
+  const auto EEE_ = hn::Set(tag, X_BC[4]);
+  const auto FFF_ = hn::Set(tag, X_BC[5]);
+  const auto GGG_ = hn::Set(tag, X_BC[6]);
+  const auto HHH_ = hn::Set(tag, X_BC[7]);
+  const auto III_ = hn::Set(tag, X_BC[8]);
+  const auto XXX_ = hn::Set(tag, X_BC[9]);
+  const auto YYY_ = hn::Set(tag, X_BC[10]);
+  const auto ZZZ_ = hn::Set(tag, X_BC[11]);
 
-  // Column jkl:                                    j   k   l   _  =
-  __m256d jkl_ = _mm256_mul_pd(abc_, four(A));  //  aA  bA  cA  _
-  jkl_ = _mm256_fmadd_pd(def_, four(B), jkl_);  // +dB +eB +fB  _
-  jkl_ = _mm256_fmadd_pd(ghi_, four(C), jkl_);  // +gC +hC +iC  _
+  // Column stu:                            s   t   u   _  =
+  auto stu_ = xyz_;                     //  x   y   z   _
+  stu_ = hn::MulAdd(abc_, XXX_, stu_);  // +aX +bX +cX  _
+  stu_ = hn::MulAdd(def_, YYY_, stu_);  // +dY +eY +fY  _
+  stu_ = hn::MulAdd(ghi_, ZZZ_, stu_);  // +gZ +hZ +iZ  _
 
-  // Column mno:                                    m   n   o   _  =
-  __m256d mno_ = _mm256_mul_pd(abc_, four(D));  //  aD  bD  cD  _
-  mno_ = _mm256_fmadd_pd(def_, four(E), mno_);  // +dE +eE +fE  _
-  mno_ = _mm256_fmadd_pd(ghi_, four(F), mno_);  // +gF +hF +iF  _
+  // Column jkl:                            j   k   l   _  =
+  auto jkl_ = hn::Mul(abc_, AAA_);      //  aA  bA  cA  _
+  jkl_ = hn::MulAdd(def_, BBB_, jkl_);  // +dB +eB +fB  _
+  jkl_ = hn::MulAdd(ghi_, CCC_, jkl_);  // +gC +hC +iC  _
 
-  // Column pqr:                                    p   q   r   _  =
-  __m256d pqr_ = _mm256_mul_pd(abc_, four(G));  //  aG  bG  cG  _
-  pqr_ = _mm256_fmadd_pd(def_, four(H), pqr_);  // +dH +eH +fH  _
-  pqr_ = _mm256_fmadd_pd(ghi_, four(I), pqr_);  // +gI +hI +iI  _
+  // Column mno:                            m   n   o   _  =
+  auto mno_ = hn::Mul(abc_, DDD_);      //  aD  bD  cD  _
+  mno_ = hn::MulAdd(def_, EEE_, mno_);  // +dE +eE +fE  _
+  mno_ = hn::MulAdd(ghi_, FFF_, mno_);  // +gF +hF +iF  _
+
+  // Column pqr:                            p   q   r   _  =
+  auto pqr_ = hn::Mul(abc_, GGG_);      //  aG  bG  cG  _
+  pqr_ = hn::MulAdd(def_, HHH_, pqr_);  // +dH +eH +fH  _
+  pqr_ = hn::MulAdd(ghi_, III_, pqr_);  // +gI +hI +iI  _
 
   // Store the output.
-  _mm256_storeu_pd(X_AC, jkl_);      // 4-wide write temporarily overwrites m
-  _mm256_storeu_pd(X_AC + 3, mno_);  // 4-wide write temporarily overwrites p
-  _mm256_storeu_pd(X_AC + 6, pqr_);  // 4-wide write temporarily overwrites s
-  _mm256_maskstore_pd(X_AC + 9, mask, stu_);  // 3-wide write to stay in bounds
-
-  // The compiler will generate a vzeroupper instruction if needed.
+  hn::StoreU(jkl_, tag, X_AC);         // 4-wide write temporarily overwrites m
+  hn::StoreU(mno_, tag, X_AC + 3);     // 4-wide write temporarily overwrites p
+  hn::StoreU(pqr_, tag, X_AC + 6);     // 4-wide write temporarily overwrites s
+  hn::StoreN(stu_, tag, X_AC + 9, 3);  // 3-wide write to stay in bounds
 }
 
 /* Composition of transforms X_AC = X_BA⁻¹ * X_BC.
@@ -513,136 +537,251 @@ Rigid transform inverse composition requires 63 flops (36 multiplies, 24
 additions, and 3 subtractions) but we're doing 84 here and throwing away 21 of
 them. However, we only issue 13 SIMD floating point instructions (4 multiplies,
 8 fused-multiply-adds, and 1 subtraction). */
-void ComposeXinvXAvx(const double* X_BA, const double* X_BC, double* X_AC) {
-  constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no = uint64_t(0);
-  const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
+void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
+  const hn::FixedTag<double, 4> tag;
 
-  // Load the input. Loads columns of R_AB (rows of the given R_BA) into
-  // registers via a series of loads, blends, and permutes.
-  const __m256d abcd = _mm256_loadu_pd(X_BA);
-  const __m256d efgh = _mm256_loadu_pd(X_BA + 4);
-  const __m256d eb_h = _mm256_blend_pd(abcd, efgh, 0b1101);
-  const __m256d beh_ = _mm256_permute_pd(eb_h, 0b0101);
-  const __m256d cdg_ = _mm256_permute2f128_pd(abcd, efgh, 0b00110001);
-  const __m256d adg_ = _mm256_blend_pd(abcd, cdg_, 0b1110);
-  const __m256d fghi = _mm256_loadu_pd(X_BA + 5);
-  const __m256d _fi_ = _mm256_permute_pd(fghi, 0b0100);
-  const __m256d cfi_ = _mm256_blend_pd(cdg_, _fi_, 0b0110);
-  const __m256d _xyz = _mm256_loadu_pd(X_BA + 8);
-  const __m256d IXYZ = _mm256_loadu_pd(X_BC + 8);  // (_XYZ is a reserved word.)
-  const __m256d subtract_XYZ_xyz = IXYZ - _xyz;
-  const double A = X_BC[0];
-  const double B = X_BC[1];
-  const double C = X_BC[2];
-  const double D = X_BC[3];
-  const double E = X_BC[4];
-  const double F = X_BC[5];
-  const double G = X_BC[6];
-  const double H = X_BC[7];
-  const double I = X_BC[8];
+  // Load the columns of R_AB (rows of the given R_BA).
+  auto adg_ = hn::Undefined(tag);
+  auto beh_ = hn::Undefined(tag);
+  auto cfi_ = hn::Undefined(tag);
+  LoadMatrix3Inv(X_BA, &adg_, &beh_, &cfi_);
 
-  const double subXx = subtract_XYZ_xyz[1];
-  const double subYy = subtract_XYZ_xyz[2];
-  const double subZz = subtract_XYZ_xyz[3];
-  // Column stu:                                         s       t       u     =
-  __m256d stu_ = _mm256_mul_pd(adg_, four(subXx));  //  a(X-x)  d(X-x)  g(X-x)
-  stu_ = _mm256_fmadd_pd(beh_, four(subYy), stu_);  // +b(Y-y) +e(Y-y) +h(Y-y)
-  stu_ = _mm256_fmadd_pd(cfi_, four(subZz), stu_);  // +c(Z-z) +f(Z-z) +i(Z-z)
+  // Load both translations.
+  const auto _xyz = hn::LoadU(tag, X_BA + 8);
+  const auto IXYZ = hn::LoadU(tag, X_BC + 8);  // (_XYZ is a reserved word.)
+  const auto subtract_XYZ_xyz = IXYZ - _xyz;
+  const auto subXx = hn::BroadcastLane<1>(subtract_XYZ_xyz);
+  const auto subYy = hn::BroadcastLane<2>(subtract_XYZ_xyz);
+  const auto subZz = hn::BroadcastLane<3>(subtract_XYZ_xyz);
 
-  // Column jkl:                                    j   k   l   _  =
-  __m256d jkl_ = _mm256_mul_pd(adg_, four(A));  //  aA  dA  gA  _
-  jkl_ = _mm256_fmadd_pd(beh_, four(B), jkl_);  // +bB +eB +hB  _
-  jkl_ = _mm256_fmadd_pd(cfi_, four(C), jkl_);  // +cC +fC +iC  _
+  const auto AAA_ = hn::Set(tag, X_BC[0]);
+  const auto BBB_ = hn::Set(tag, X_BC[1]);
+  const auto CCC_ = hn::Set(tag, X_BC[2]);
+  const auto DDD_ = hn::Set(tag, X_BC[3]);
+  const auto EEE_ = hn::Set(tag, X_BC[4]);
+  const auto FFF_ = hn::Set(tag, X_BC[5]);
+  const auto GGG_ = hn::Set(tag, X_BC[6]);
+  const auto HHH_ = hn::Set(tag, X_BC[7]);
+  const auto III_ = hn::Set(tag, X_BC[8]);
 
-  // Column mno:                                    m   n   o  _  =
-  __m256d mno_ = _mm256_mul_pd(adg_, four(D));  //  aD  dD  gD _
-  mno_ = _mm256_fmadd_pd(beh_, four(E), mno_);  // +bE +eE +hE _
-  mno_ = _mm256_fmadd_pd(cfi_, four(F), mno_);  // +cF +fF +iF _
+  // Column stu:                             s       t       u     =
+  auto stu_ = hn::Mul(adg_, subXx);      //  a(X-x)  d(X-x)  g(X-x)
+  stu_ = hn::MulAdd(beh_, subYy, stu_);  // +b(Y-y) +e(Y-y) +h(Y-y)
+  stu_ = hn::MulAdd(cfi_, subZz, stu_);  // +c(Z-z) +f(Z-z) +i(Z-z)
 
-  // Column pqr:                                    p   q   r   _  =
-  __m256d pqr_ = _mm256_mul_pd(adg_, four(G));  //  aG  dG  gG  _
-  pqr_ = _mm256_fmadd_pd(beh_, four(H), pqr_);  // +bH +eH +hH  _
-  pqr_ = _mm256_fmadd_pd(cfi_, four(I), pqr_);  // +cI +fI +iI  _
+  // Column jkl:                            j   k   l   _  =
+  auto jkl_ = hn::Mul(adg_, AAA_);      //  aA  dA  gA  _
+  jkl_ = hn::MulAdd(beh_, BBB_, jkl_);  // +bB +eB +hB  _
+  jkl_ = hn::MulAdd(cfi_, CCC_, jkl_);  // +cC +fC +iC  _
+
+  // Column mno:                            m   n   o   _  =
+  auto mno_ = hn::Mul(adg_, DDD_);      //  aD  dD  gD  _
+  mno_ = hn::MulAdd(beh_, EEE_, mno_);  // +bE +eE +hE  _
+  mno_ = hn::MulAdd(cfi_, FFF_, mno_);  // +cF +fF +iF  _
+
+  // Column pqr:                            p   q   r   _  =
+  auto pqr_ = hn::Mul(adg_, GGG_);      //  aG  dG  gG  _
+  pqr_ = hn::MulAdd(beh_, HHH_, pqr_);  // +bH +eH +hH  _
+  pqr_ = hn::MulAdd(cfi_, III_, pqr_);  // +cI +fI +iI  _
 
   // Store the result.
-  _mm256_storeu_pd(X_AC, jkl_);      // 4-wide write temporarily overwrites m
-  _mm256_storeu_pd(X_AC + 3, mno_);  // 4-wide write temporarily overwrites p
-  _mm256_storeu_pd(X_AC + 6, pqr_);  // 4-wide write temporarily overwrites s
-  _mm256_maskstore_pd(X_AC + 9, mask, stu_);  // 3-wide write to stay in bounds
+  hn::StoreU(jkl_, tag, X_AC);         // 4-wide write temporarily overwrites m
+  hn::StoreU(mno_, tag, X_AC + 3);     // 4-wide write temporarily overwrites p
+  hn::StoreU(pqr_, tag, X_AC + 6);     // 4-wide write temporarily overwrites s
+  hn::StoreN(stu_, tag, X_AC + 9, 3);  // 3-wide write to stay in bounds
+}
 
-  // The compiler will generate a vzeroupper instruction if needed.
+#else  // HWY_MAX_BYTES
+
+/* The portable versions are always defined. They should be written to maximize
+the chance that a dumb compiler can generate fast code.
+
+Note that, except when explicitly marked "...NoAlias", the methods below must
+allow for the output argument's memory to overlap with any of the input
+arguments' memory. */
+
+/* Dot product of a row of l and a column of m, where both l and m are 3x3s
+in column order. */
+double row_x_col(const double* l, const double* m) {
+  return l[0] * m[0] + l[3] * m[1] + l[6] * m[2];
+}
+
+/* Dot product of a column of l and a column of m, where both l and m are 3x3s
+in column order. */
+double col_x_col(const double* l, const double* m) {
+  return l[0] * m[0] + l[1] * m[1] + l[2] * m[2];
+}
+
+/* @pre R_AC is disjoint in memory from the inputs. */
+void ComposeRRNoAlias(const double* R_AB, const double* R_BC, double* R_AC) {
+  R_AC[0] = row_x_col(&R_AB[0], &R_BC[0]);
+  R_AC[1] = row_x_col(&R_AB[1], &R_BC[0]);
+  R_AC[2] = row_x_col(&R_AB[2], &R_BC[0]);
+  R_AC[3] = row_x_col(&R_AB[0], &R_BC[3]);
+  R_AC[4] = row_x_col(&R_AB[1], &R_BC[3]);
+  R_AC[5] = row_x_col(&R_AB[2], &R_BC[3]);
+  R_AC[6] = row_x_col(&R_AB[0], &R_BC[6]);
+  R_AC[7] = row_x_col(&R_AB[1], &R_BC[6]);
+  R_AC[8] = row_x_col(&R_AB[2], &R_BC[6]);
+}
+
+/* @pre R_AC is disjoint in memory from the inputs. */
+void ComposeRinvRNoAlias(const double* R_BA, const double* R_BC, double* R_AC) {
+  R_AC[0] = col_x_col(&R_BA[0], &R_BC[0]);
+  R_AC[1] = col_x_col(&R_BA[3], &R_BC[0]);
+  R_AC[2] = col_x_col(&R_BA[6], &R_BC[0]);
+  R_AC[3] = col_x_col(&R_BA[0], &R_BC[3]);
+  R_AC[4] = col_x_col(&R_BA[3], &R_BC[3]);
+  R_AC[5] = col_x_col(&R_BA[6], &R_BC[3]);
+  R_AC[6] = col_x_col(&R_BA[0], &R_BC[6]);
+  R_AC[7] = col_x_col(&R_BA[3], &R_BC[6]);
+  R_AC[8] = col_x_col(&R_BA[6], &R_BC[6]);
+}
+
+/* @pre X_AC is disjoint in memory from the inputs. */
+void ComposeXXNoAlias(const double* X_AB, const double* X_BC, double* X_AC) {
+  const double* p_AB = X_AB + 9;  // Make some nice aliases.
+  const double* p_BC = X_BC + 9;
+  double* p_AC = X_AC + 9;
+
+  // X_AB * X_BC = [ R_AB; p_AB ] * [ R_BC; p_BC ]
+  //             = [ (R_AB*R_BC); (p_AB + R_AB*p_BC) ]
+
+  ComposeRRNoAlias(X_AB, X_BC, X_AC);  // Just works with first 9 elements.
+  p_AC[0] = p_AB[0] + row_x_col(&X_AB[0], p_BC);
+  p_AC[1] = p_AB[1] + row_x_col(&X_AB[1], p_BC);
+  p_AC[2] = p_AB[2] + row_x_col(&X_AB[2], p_BC);
+}
+
+/* @pre X_AC is disjoint in memory from the inputs. */
+void ComposeXinvXNoAlias(const double* X_BA, const double* X_BC, double* X_AC) {
+  const double* p_BA = X_BA + 9;  // Make some nice aliases.
+  const double* p_BC = X_BC + 9;
+  double* p_AC = X_AC + 9;
+
+  // X_BA⁻¹ * X_BC = [ R_BA⁻¹; (R_BA⁻¹ * -p_BA) ]  * [ R_BC; p_BC ]
+  //               = [ (R_BA⁻¹ * R_BC); (R_BA⁻¹ * (p_BC - p_BA)) ]
+
+  ComposeRinvRNoAlias(X_BA, X_BC, X_AC);  // Just works with first 9 elements.
+  const double p_AC_B[3] = {p_BC[0] - p_BA[0], p_BC[1] - p_BA[1],
+                            p_BC[2] - p_BA[2]};
+  p_AC[0] = col_x_col(&X_BA[0], p_AC_B);  // Note that R_BA⁻¹ = R_BAᵀ so we
+  p_AC[1] = col_x_col(&X_BA[3], p_AC_B);  // just need to use columns here
+  p_AC[2] = col_x_col(&X_BA[6], p_AC_B);  // rather than rows.
+}
+
+void ComposeRRImpl(const double* R_AB, const double* R_BC, double* R_AC) {
+  DRAKE_ASSERT(R_AC != nullptr);
+  double R_AC_temp[9];  // Protect from overlap with inputs.
+  ComposeRRNoAlias(R_AB, R_BC, R_AC_temp);
+  std::copy(R_AC_temp, R_AC_temp + 9, R_AC);
+}
+
+void ComposeRinvRImpl(const double* R_BA, const double* R_BC, double* R_AC) {
+  DRAKE_ASSERT(R_AC != nullptr);
+  double R_AC_temp[9];  // Protect from overlap with inputs.
+  ComposeRinvRNoAlias(R_BA, R_BC, R_AC_temp);
+  std::copy(R_AC_temp, R_AC_temp + 9, R_AC);
+}
+
+void ComposeXXImpl(const double* X_AB, const double* X_BC, double* X_AC) {
+  DRAKE_ASSERT(X_AC != nullptr);
+  double X_AC_temp[12];  // Protect from overlap with inputs.
+  ComposeXXNoAlias(X_AB, X_BC, X_AC_temp);
+  std::copy(X_AC_temp, X_AC_temp + 12, X_AC);
+}
+
+void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
+  DRAKE_ASSERT(X_AC != nullptr);
+  double X_AC_temp[12];  // Protect from overlap with inputs.
+  ComposeXinvXNoAlias(X_BA, X_BC, X_AC_temp);
+  std::copy(X_AC_temp, X_AC_temp + 12, X_AC);
+}
+
+#endif  // HWY_MAX_BYTES
+
+}  // namespace HWY_NAMESPACE
+}  // namespace
+}  // namespace internal
+}  // namespace math
+}  // namespace drake
+HWY_AFTER_NAMESPACE();
+
+// This part of the file is only compiled once total, instead of once per CPU.
+#if HWY_ONCE
+namespace drake {
+namespace math {
+namespace internal {
+namespace {
+
+// Create the lookup tables for the per-CPU hwy implementation functions, and
+// required functors that select from the lookup tables.
+HWY_EXPORT(ComposeRRImpl);
+struct ChooseBestComposeRR {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeRRImpl); }
+};
+HWY_EXPORT(ComposeRinvRImpl);
+struct ChooseBestComposeRinvR {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeRinvRImpl); }
+};
+HWY_EXPORT(ComposeXXImpl);
+struct ChooseBestComposeXX {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXXImpl); }
+};
+HWY_EXPORT(ComposeXinvXImpl);
+struct ChooseBestComposeXinvX {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXinvXImpl); }
+};
+
+// These sugar functions convert C++ types into bare arrays.
+const double* GetRawData(const RotationMatrix<double>& R) {
+  return R.matrix().data();
+}
+double* GetRawData(RotationMatrix<double>* R) {
+  return const_cast<double*>(R->matrix().data());
+}
+const double* GetRawData(const RigidTransform<double>& X) {
+  // In rigid_transform.h we assert that the memory layout is 12 doubles, with
+  // the rotation matrix first followed by the translation.
+  return X.rotation().matrix().data();
+}
+double* GetRawData(RigidTransform<double>* X) {
+  // In rigid_transform.h we assert that the memory layout is 12 doubles, with
+  // the rotation matrix first followed by the translation.
+  return const_cast<double*>(X->rotation().matrix().data());
 }
 
 }  // namespace
 
-// See note above as to why these reinterpret_casts are safe.
-
-bool AvxSupported() {
-  static const bool avx_supported = CheckCpuForAvxSupport();
-  return avx_supported;
+void ComposeRR(const RotationMatrix<double>& R_AB,
+               const RotationMatrix<double>& R_BC,
+               RotationMatrix<double>* R_AC) {
+  LateBoundFunction<ChooseBestComposeRR>::Call(
+      GetRawData(R_AB), GetRawData(R_BC), GetRawData(R_AC));
 }
 
-void ComposeRRAvx(const RotationMatrix<double>& R_AB,
+void ComposeRinvR(const RotationMatrix<double>& R_BA,
                   const RotationMatrix<double>& R_BC,
                   RotationMatrix<double>* R_AC) {
-  ComposeRRAvx(GetRawMatrixStart(R_AB), GetRawMatrixStart(R_BC),
-               GetMutableRawMatrixStart(R_AC));
+  LateBoundFunction<ChooseBestComposeRinvR>::Call(
+      GetRawData(R_BA), GetRawData(R_BC), GetRawData(R_AC));
 }
 
-void ComposeRinvRAvx(const RotationMatrix<double>& R_BA,
-                     const RotationMatrix<double>& R_BC,
-                     RotationMatrix<double>* R_AC) {
-  ComposeRinvRAvx(GetRawMatrixStart(R_BA), GetRawMatrixStart(R_BC),
-                  GetMutableRawMatrixStart(R_AC));
+void ComposeXX(const RigidTransform<double>& X_AB,
+               const RigidTransform<double>& X_BC,
+               RigidTransform<double>* X_AC) {
+  LateBoundFunction<ChooseBestComposeXX>::Call(
+      GetRawData(X_AB), GetRawData(X_BC), GetRawData(X_AC));
 }
 
-void ComposeXXAvx(const RigidTransform<double>& X_AB,
+void ComposeXinvX(const RigidTransform<double>& X_BA,
                   const RigidTransform<double>& X_BC,
                   RigidTransform<double>* X_AC) {
-  ComposeXXAvx(GetRawMatrixStart(X_AB), GetRawMatrixStart(X_BC),
-               GetMutableRawMatrixStart(X_AC));
+  LateBoundFunction<ChooseBestComposeXinvX>::Call(
+      GetRawData(X_BA), GetRawData(X_BC), GetRawData(X_AC));
 }
-
-void ComposeXinvXAvx(const RigidTransform<double>& X_BA,
-                     const RigidTransform<double>& X_BC,
-                     RigidTransform<double>* X_AC) {
-  ComposeXinvXAvx(GetRawMatrixStart(X_BA), GetRawMatrixStart(X_BC),
-                  GetMutableRawMatrixStart(X_AC));
-}
-#else
-namespace {
-void AbortNotEnabledInBuild(const char* func) {
-  std::cerr << "abort: " << func << " is not enabled in build" << std::endl;
-  std::abort();
-}
-}  // namespace
-
-bool AvxSupported() {
-  return false;
-}
-
-void ComposeRRAvx(const RotationMatrix<double>&, const RotationMatrix<double>&,
-                  RotationMatrix<double>*) {
-  AbortNotEnabledInBuild(__func__);
-}
-
-void ComposeRinvRAvx(const RotationMatrix<double>&,
-                     const RotationMatrix<double>&, RotationMatrix<double>*) {
-  AbortNotEnabledInBuild(__func__);
-}
-
-void ComposeXXAvx(const RigidTransform<double>&, const RigidTransform<double>&,
-                  RigidTransform<double>*) {
-  AbortNotEnabledInBuild(__func__);
-}
-
-void ComposeXinvXAvx(const RigidTransform<double>&,
-                     const RigidTransform<double>&, RigidTransform<double>*) {
-  AbortNotEnabledInBuild(__func__);
-}
-#endif
 
 }  // namespace internal
 }  // namespace math
 }  // namespace drake
+#endif  // HWY_ONCE

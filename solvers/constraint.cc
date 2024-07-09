@@ -241,8 +241,8 @@ LorentzConeConstraint::LorentzConeConstraint(
       A_dense_(A),
       b_(b),
       eval_type_{eval_type} {
-  DRAKE_DEMAND(A_.rows() >= 2);
-  DRAKE_ASSERT(A_.rows() == b_.rows());
+  DRAKE_THROW_UNLESS(A_.rows() >= 2);
+  DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
 
 void LorentzConeConstraint::UpdateCoefficients(
@@ -257,8 +257,8 @@ void LorentzConeConstraint::UpdateCoefficients(
   A_ = new_A.sparseView();
   A_dense_ = new_A;
   b_ = new_b;
-  DRAKE_DEMAND(A_.rows() >= 2);
-  DRAKE_DEMAND(A_.rows() == b_.rows());
+  DRAKE_THROW_UNLESS(A_.rows() >= 2);
+  DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
   // Note that we don't need to update the lower and upper bounds as the
   // constraints lower/upper bounds are fixed (independent of A and b). The
   // bounds only depend on EvalType. When EvalType=kNonconvex, the lower/upper
@@ -356,8 +356,8 @@ void RotatedLorentzConeConstraint::UpdateCoefficients(
   A_ = new_A.sparseView();
   A_dense_ = new_A;
   b_ = new_b;
-  DRAKE_DEMAND(A_.rows() >= 3);
-  DRAKE_DEMAND(A_.rows() == b_.rows());
+  DRAKE_THROW_UNLESS(A_.rows() >= 3);
+  DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
   // Note that we don't need to update the lower and upper bounds as the
   // constraints lower/upper bounds are fixed (independent of A and b).
 }
@@ -644,16 +644,35 @@ std::string LinearComplementarityConstraint::DoToLatex(
                      symbolic::ToLatex((M_ * vars + q_).eval(), precision));
 }
 
+PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint(int rows)
+    : Constraint(rows, rows * rows, Eigen::VectorXd::Zero(rows),
+                 Eigen::VectorXd::Constant(
+                     rows, std::numeric_limits<double>::infinity())),
+      matrix_rows_(rows) {
+  // TODO(hongkai.dai): remove the warning when we change the solver backend.
+  if (matrix_rows_ == 1) {
+    drake::log()->warn(
+        "PositiveSemidefiniteConstraint: rows==1, please consider "
+        "reformulating this as a linear inequality constraint for better "
+        "speed/numerics.");
+  } else if (matrix_rows_ == 2) {
+    drake::log()->warn(
+        "PositiveSemidefiniteConstraint: rows==2, please consider to "
+        "reformulating this as a rotated Lorentz cone constraint for better "
+        "speed/numerics.");
+  }
+}
+
 void PositiveSemidefiniteConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
-  DRAKE_ASSERT(x.rows() == num_constraints() * num_constraints());
+  DRAKE_THROW_UNLESS(x.rows() == num_constraints() * num_constraints());
   Eigen::MatrixXd S(num_constraints(), num_constraints());
 
   for (int i = 0; i < num_constraints(); ++i) {
     S.col(i) = x.segment(i * num_constraints(), num_constraints());
   }
 
-  DRAKE_ASSERT(S.rows() == num_constraints());
+  DRAKE_THROW_UNLESS(S.rows() == num_constraints());
 
   // This uses the lower diagonal part of S to compute the eigen values.
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigen_solver(S);
@@ -684,7 +703,7 @@ std::string PositiveSemidefiniteConstraint::DoToLatex(
 
 void LinearMatrixInequalityConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
-  DRAKE_ASSERT(x.rows() == static_cast<int>(F_.size()) - 1);
+  DRAKE_THROW_UNLESS(x.rows() == static_cast<int>(F_.size()) - 1);
   Eigen::MatrixXd S = F_[0];
   for (int i = 1; i < static_cast<int>(F_.size()); ++i) {
     S += x(i - 1) * F_[i];
@@ -714,13 +733,28 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
                  F.empty() ? 0 : F.size() - 1),
       F_{std::move(F)},
       matrix_rows_(F_.empty() ? 0 : F_.front().rows()) {
-  DRAKE_DEMAND(!F_.empty());
+  DRAKE_THROW_UNLESS(!F_.empty());
+  // TODO(hongkai.dai): remove the warning when we change the solver backend.
+  if (matrix_rows_ == 1) {
+    drake::log()->warn(
+        "LinearMatrixInequalityConstraint: the matrix has size 1. Please "
+        "consider"
+        "reformulating this as a linear inequality constraint for better "
+        "speed/numerics.");
+  } else if (matrix_rows_ == 2) {
+    drake::log()->warn(
+        "LinearMatrixInequalityConstraint: the matrix has size 2. Please "
+        "consider "
+        "reformulating this as a rotated Lorentz cone constraint for better "
+        "speed/numerics.");
+  }
+
   set_bounds(Eigen::VectorXd::Zero(matrix_rows_),
              Eigen::VectorXd::Constant(
                  matrix_rows_, std::numeric_limits<double>::infinity()));
   for (const auto& Fi : F_) {
-    DRAKE_ASSERT(Fi.rows() == matrix_rows_);
-    DRAKE_ASSERT(math::IsSymmetric(Fi, symmetry_tolerance));
+    DRAKE_THROW_UNLESS(Fi.rows() == matrix_rows_);
+    DRAKE_THROW_UNLESS(math::IsSymmetric(Fi, symmetry_tolerance));
   }
 }
 
@@ -754,7 +788,7 @@ ExpressionConstraint::ExpressionConstraint(
 
 void ExpressionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                   Eigen::VectorXd* y) const {
-  DRAKE_DEMAND(x.rows() == vars_.rows());
+  DRAKE_THROW_UNLESS(x.rows() == vars_.rows());
 
   // Set environment with current x values.
   for (int i = 0; i < vars_.size(); i++) {
@@ -770,7 +804,7 @@ void ExpressionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 
 void ExpressionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                   AutoDiffVecXd* y) const {
-  DRAKE_DEMAND(x.rows() == vars_.rows());
+  DRAKE_THROW_UNLESS(x.rows() == vars_.rows());
 
   // Set environment with current x values.
   for (int i = 0; i < vars_.size(); i++) {
@@ -800,7 +834,7 @@ void ExpressionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
 void ExpressionConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
-  DRAKE_DEMAND(x.rows() == vars_.rows());
+  DRAKE_THROW_UNLESS(x.rows() == vars_.rows());
   symbolic::Substitution subst;
   for (int i = 0; i < vars_.size(); ++i) {
     if (!vars_[i].equal_to(x[i])) {
@@ -835,7 +869,7 @@ ExponentialConeConstraint::ExponentialConeConstraint(
           Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
       A_{A},
       b_{b} {
-  DRAKE_DEMAND(A.rows() == 3);
+  DRAKE_THROW_UNLESS(A.rows() == 3);
 }
 
 template <typename DerivedX, typename ScalarY>

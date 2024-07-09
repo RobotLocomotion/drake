@@ -48,7 +48,7 @@ namespace systems {
 template <typename T>
 class ZeroOrderHold final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold);
 
   /// Constructs a ZeroOrderHold system with the given `period_sec`, over a
   /// vector-valued input of size `vector_size`. The default initial value for
@@ -119,4 +119,4 @@ class ZeroOrderHold final : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::ZeroOrderHold)
+    class ::drake::systems::ZeroOrderHold);

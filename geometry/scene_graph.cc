@@ -42,7 +42,7 @@ namespace {
 template <typename T>
 class GeometryStateValue final : public Value<GeometryState<T>> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryStateValue)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryStateValue);
 
   GeometryStateValue() = default;
   explicit GeometryStateValue(const GeometryState<T>& state)
@@ -117,7 +117,7 @@ template <typename T>
 class SceneGraph<T>::Hub {
  public:
   Hub() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Hub)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Hub);
 
   const SceneGraphConfig& config() const { return config_; }
 
@@ -176,7 +176,11 @@ SceneGraph<T>::SceneGraph()
       this->DeclareAbstractParameter(Value<SceneGraphConfig>());
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
+      this->DeclareAbstractOutputPort(
+              "query", &SceneGraph::CalcQueryObject,
+              {this->all_input_ports_ticket(),
+               this->abstract_parameter_ticket(
+                   systems::AbstractParameterIndex(geometry_state_index_))})
           .get_index();
 
   auto& pose_update_cache_entry = this->DeclareCacheEntry(
@@ -198,9 +202,13 @@ SceneGraph<T>::SceneGraph(const SceneGraphConfig& config)
 }
 
 template <typename T>
+int64_t SceneGraph<T>::scalar_conversion_count_{0};
+
+template <typename T>
 template <typename U>
 SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
     : SceneGraph() {
+  ++scalar_conversion_count_;
   hub_.mutable_config() = other.hub_.config();
   hub_.mutable_model() =
       GeometryState<T>(other.hub_.model());
@@ -743,4 +751,4 @@ const SceneGraphConfig& SceneGraph<T>::get_config(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::SceneGraph)
+    class ::drake::geometry::SceneGraph);

@@ -322,7 +322,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // TODO(Mitiguy) Per issue #12982, implement CalcPotentialEnergy(),
   //  CalcConservativePower(), CalcNonConservativePower().
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearBushingRollPitchYaw)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearBushingRollPitchYaw);
 
   /// Construct a LinearBushingRollPitchYaw B that connects frames A and C,
   /// where frame A is welded to a link L0 and frame C is welded to a link L1.
@@ -354,6 +354,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
                             const Vector3<double>& torque_damping_constants,
                             const Vector3<double>& force_stiffness_constants,
                             const Vector3<double>& force_damping_constants);
+
+  ~LinearBushingRollPitchYaw() override;
 
   /// Returns link (body) L0 (frame A is welded to link L0).
   const RigidBody<T>& link0() const { return frameA().body(); }
@@ -803,4 +805,4 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::LinearBushingRollPitchYaw)
+    class ::drake::multibody::LinearBushingRollPitchYaw);

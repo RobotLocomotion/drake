@@ -69,7 +69,7 @@ class CIrisRobotPolytopicGeometryTest : public ::testing::Test {
 // functions in CspaceFreePolytope for unit testing.
 class CspaceFreePolytopeTester {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytopeTester)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytopeTester);
 
   CspaceFreePolytopeTester(const multibody::MultibodyPlant<double>* plant,
                            const geometry::SceneGraph<double>* scene_graph,

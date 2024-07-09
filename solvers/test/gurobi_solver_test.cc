@@ -106,6 +106,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  GurobiSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 GTEST_TEST(GurobiTest, TestInitialGuess) {
   GurobiSolver solver;
   if (solver.available()) {
@@ -309,6 +316,13 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
   GurobiSolver solver;
   TestSocpDuplicatedVariable2(solver, std::nullopt, 1E-6);
+}
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable3) {
+  GurobiSolver solver;
+  SolverOptions solver_options;
+  solver_options.SetOption(GurobiSolver::id(), "BarQCPConvTol", 1E-9);
+  TestSocpDuplicatedVariable3(solver, solver_options, 5E-5);
 }
 
 GTEST_TEST(L2NormCost, ShortestDistanceToThreePoints) {

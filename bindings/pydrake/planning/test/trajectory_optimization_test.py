@@ -248,6 +248,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
         trajopt.AddDurationCost(weight=1)
         trajopt.AddPathLengthCost(weight=1)
+        trajopt.AddPathEnergyCost(weight=1)
 
         result = mp.Solve(trajopt.prog())
         q = trajopt.ReconstructTrajectory(result=result)
@@ -268,10 +269,14 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertIn(target, gcs.GetSubgraphs())
         regions = gcs.AddRegions(regions=[HPolyhedron.MakeUnitBox(2)],
                                  order=1, h_min=1.0)
+        self.assertEqual(len(regions.Edges()), 0)
 
         self.assertIn(regions, gcs.GetSubgraphs())
-        self.assertIn(gcs.AddEdges(source, regions),
-                      gcs.GetEdgesBetweenSubgraphs())
+        edges = gcs.AddEdges(source, regions)
+        self.assertIn(edges, gcs.GetEdgesBetweenSubgraphs())
+        self.assertEqual(len(edges.Edges()), 1)
+        self.assertEqual(edges.Edges()[0].u(), source.Vertices()[0])
+        self.assertEqual(edges.Edges()[0].v(), regions.Vertices()[0])
         self.assertIn(gcs.AddEdges(regions, target),
                       gcs.GetEdgesBetweenSubgraphs())
         traj, result = gcs.SolvePath(source, target)
@@ -626,10 +631,27 @@ class TestTrajectoryOptimization(unittest.TestCase):
         gcs_wraparound = GcsTrajectoryOptimization(
             num_positions=1, continuous_revolute_joints=[0])
         self.assertEqual(len(gcs_wraparound.continuous_revolute_joints()), 1)
-        gcs_wraparound.AddRegions(regions=[Point([0]), Point([2*np.pi])],
-                                  order=1,
-                                  edges_between_regions=[[0, 1]],
-                                  edge_offsets=[[2*np.pi]])
+        g1 = gcs_wraparound.AddRegions(regions=[Point([0]), Point([2*np.pi])],
+                                       order=1,
+                                       edges_between_regions=[[0, 1]],
+                                       edge_offsets=[[2*np.pi]])
+        g2 = gcs_wraparound.AddRegions(
+            regions=[VPolytope([[8*np.pi, 8*np.pi+1]])], order=2)
+        gcs_wraparound.AddEdges(g1, g2)
+        traj, result = gcs_wraparound.SolvePath(g1, g2)
+        self.assertTrue(result.is_success())
+
+        new_traj = GcsTrajectoryOptimization.UnwrapToContinousTrajectory(
+            gcs_trajectory=traj,
+            continuous_revolute_joints=[0],
+            starting_rounds=[43],
+            tol=1e-8)
+        diff = (new_traj.value(new_traj.start_time())
+                - traj.value(traj.start_time())) % (2 * np.pi)
+        # Modulus may lead to the value being almost 2*pi, instead of zero.
+        if diff > np.pi:
+            diff -= 2 * np.pi
+        np.testing.assert_array_almost_equal(diff, np.zeros_like(diff))
 
     def test_get_continuous_revolute_joint_indices(self):
         plant = MultibodyPlant(0.0)

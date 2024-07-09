@@ -160,7 +160,7 @@ GTEST_TEST(TestIpoptSolverNlp, LinearConstraintsDuplicatedVariable) {
 
 class ToyConstraint : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ToyConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ToyConstraint);
 
   explicit ToyConstraint(bool set_sparsity_pattern)
       : Constraint(2, 4, Eigen::Vector2d(1, 2), Eigen::Vector2d(3, 4)) {

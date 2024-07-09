@@ -16,7 +16,7 @@ const int kSize = 3;
 
 class TestSource : public SingleOutputVectorSource<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestSource)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestSource);
 
   TestSource() : SingleOutputVectorSource<double>(kSize) {}
 
@@ -59,7 +59,7 @@ struct UseVector {};
 template <typename T>
 class Convertable final : public SingleOutputVectorSource<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Convertable)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Convertable);
 
   using Base = SingleOutputVectorSource<T>;
   using Tag = SystemTypeTag<Convertable>;

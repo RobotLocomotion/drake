@@ -35,7 +35,7 @@ namespace internal {
 template <typename T>
 class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarMobilizer);
 
   /* Constructor for a %PlanarMobilizer between an inboard frame F
    `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting two
@@ -44,6 +44,8 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
   PlanarMobilizer(const Frame<T>& inboard_frame_F,
                   const Frame<T>& outboard_frame_M)
       : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
+
+  ~PlanarMobilizer() final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -216,4 +218,4 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::PlanarMobilizer)
+    class ::drake::multibody::internal::PlanarMobilizer);

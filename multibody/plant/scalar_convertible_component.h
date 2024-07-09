@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -17,7 +18,7 @@ class ScalarConvertibleComponent {
 
   ScalarConvertibleComponent() = default;
 
-  virtual ~ScalarConvertibleComponent() = default;
+  virtual ~ScalarConvertibleComponent();
 
   /* Returns true if `this` component can be scalar converted to double. */
   virtual bool is_cloneable_to_double() const = 0;
@@ -33,3 +34,6 @@ class ScalarConvertibleComponent {
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::ScalarConvertibleComponent);

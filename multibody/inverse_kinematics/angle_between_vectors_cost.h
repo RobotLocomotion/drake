@@ -17,7 +17,7 @@ namespace multibody {
  */
 class AngleBetweenVectorsCost : public solvers::Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AngleBetweenVectorsCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AngleBetweenVectorsCost);
 
   /**
    * Constructs an AngleBetweenVectorsCost.

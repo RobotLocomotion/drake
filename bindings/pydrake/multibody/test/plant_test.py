@@ -510,6 +510,11 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
+            plant.get_geometry_pose_output_port(), OutputPort)
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertIsInstance(
+                plant.get_geometry_poses_output_port(), OutputPort)
+        self.assertIsInstance(
             plant.get_net_actuation_output_port(), OutputPort)
         self.assertIsInstance(
             plant.get_net_actuation_output_port(model_instance), OutputPort)
@@ -1309,11 +1314,11 @@ class TestPlant(unittest.TestCase):
         if T == Expression and plant.time_step() != 0:
             # N.B. Discrete time dynamics are not supported for symbolic
             # scalars.
-            with self.assertRaises(ValueError) as cm:
+            with self.assertRaises(Exception) as cm:
                 A_base = plant.EvalBodySpatialAccelerationInWorld(
                     context, base)
             self.assertIn(
-                "This method doesn't support T = drake::symbolic::Expression",
+                "This method doesn't support T = Expression",
                 str(cm.exception))
         else:
             A_base = plant.EvalBodySpatialAccelerationInWorld(context, base)
@@ -2825,7 +2830,8 @@ class TestPlant(unittest.TestCase):
 
         S = plant.MakeStateSelectorMatrix(
             user_to_joint_index_map=[sample_joint.index()])
-        numpy_compare.assert_float_equal(S, np.mat("0 1.0 0 0; 0 0 0 1.0"))
+        numpy_compare.assert_float_equal(S, np.array(
+            [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]]))
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
@@ -3265,7 +3271,7 @@ class TestPlant(unittest.TestCase):
     def test_deformable_model(self):
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
-        dut = DeformableModel(plant)
+        dut = plant.mutable_deformable_model()
         self.assertEqual(dut.num_bodies(), 0)
         # Add a deformable body to the model.
         deformable_body_config = DeformableBodyConfig_[float]()
@@ -3287,24 +3293,18 @@ class TestPlant(unittest.TestCase):
         # Verify that a body has been added to the model.
         self.assertEqual(dut.num_bodies(), 1)
         self.assertIsInstance(dut.GetReferencePositions(body_id), np.ndarray)
-        # Add the model to the plant.
-        plant.AddPhysicalModel(dut)
-        registered_models = plant.physical_models()
-        self.assertEqual(len(registered_models), 1)
-        self.assertEqual(registered_models[0].num_bodies(), 1)
+
+        deformable_model = plant.deformable_model()
+        self.assertEqual(deformable_model.num_bodies(), 1)
         # Turn on SAP and finalize.
         plant.set_discrete_contact_approximation(
             DiscreteContactApproximation.kSap)
         plant.Finalize()
 
-        # Post-finalize operations.
         self.assertIsInstance(
             plant.get_deformable_body_configuration_output_port(),
             OutputPort_[float])
-        builder.Connect(plant.get_deformable_body_configuration_output_port(),
-                        scene_graph.get_source_configuration_port(
-                            plant.get_source_id()))
-        self.assertEqual(dut.GetDiscreteStateIndex(body_id), 1)
+        self.assertEqual(deformable_model.GetDiscreteStateIndex(body_id), 1)
 
         diagram = builder.Build()
         # Ensure we can simulate this system.

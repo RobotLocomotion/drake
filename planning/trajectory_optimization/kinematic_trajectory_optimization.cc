@@ -205,8 +205,10 @@ KinematicTrajectoryOptimization::KinematicTrajectoryOptimization(
       num_positions_, num_control_points_, "control_point");
   duration_ = prog_.NewContinuousVariables(1, "duration")[0];
   // duration >= 0.
-  prog_.AddBoundingBoxConstraint(0, std::numeric_limits<double>::infinity(),
-                                 duration_);
+  auto duration_bbox_binding = prog_.AddBoundingBoxConstraint(
+      0, std::numeric_limits<double>::infinity(), duration_);
+  duration_bbox_binding.evaluator()->set_description(
+      "positive duration constraint");
 
   SetInitialGuess(trajectory);
 
@@ -504,6 +506,34 @@ std::vector<Binding<Cost>> KinematicTrajectoryOptimization::AddPathLengthCost(
     }
     binding[i - 1].evaluator()->set_description(
         fmt::format("path length cost {}", i));
+  }
+  return binding;
+}
+
+std::vector<solvers::Binding<solvers::Cost>>
+KinematicTrajectoryOptimization::AddPathEnergyCost(double weight) {
+  // For successive control points x, y, impose the cost (x-y)ᵀ(x-y) as
+  // [x;y]ᵀ [I, -I; -I, I] [x;y]. This matrix is positive semidefinite, so the
+  // resulting quadratic constraint is convex. We actually double the values in
+  // the matrix, since AddQuadraticCost multiplies by a factor of 0.5.
+  MatrixXd A(2 * num_positions_, 2 * num_positions_);
+  A.topLeftCorner(num_positions_, num_positions_) =
+      2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
+  A.bottomRightCorner(num_positions_, num_positions_) =
+      2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
+  A.topRightCorner(num_positions_, num_positions_) =
+      -2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
+  A.bottomLeftCorner(num_positions_, num_positions_) =
+      -2.0 * weight * MatrixXd::Identity(num_positions_, num_positions_);
+  const VectorXd b = VectorXd::Zero(2 * num_positions_);
+  VectorXDecisionVariable vars(2 * num_positions_);
+  std::vector<Binding<Cost>> binding;
+  for (int i = 1; i < num_control_points(); ++i) {
+    vars.head(num_positions_) = control_points_.col(i);
+    vars.tail(num_positions_) = control_points_.col(i - 1);
+    binding.emplace_back(prog_.AddQuadraticCost(A, b, vars, true));
+    binding[i - 1].evaluator()->set_description(
+        fmt::format("path energy cost {}", i));
   }
   return binding;
 }

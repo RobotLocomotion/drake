@@ -24,7 +24,7 @@ namespace geometry {
  */
 class VolumeElement {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeElement)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeElement);
 
   /** Constructs VolumeElement.
    We follow the convention that the first three vertices define a triangle with
@@ -92,7 +92,7 @@ class VolumeMeshTester;
 template <class T>
 class VolumeMesh {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh);
 
   /**
    @name Mesh type traits
@@ -455,7 +455,7 @@ std::optional<Vector3<T>> VolumeMesh<T>::MaybeCalcGradBarycentric(int e,
 }
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class VolumeMesh)
+    class VolumeMesh);
 
 }  // namespace geometry
 }  // namespace drake

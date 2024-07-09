@@ -19,6 +19,9 @@ std::string DeprecateWhenEmptyName(std::string name, std::string_view type) {
 }  // namespace internal
 
 template <typename T>
+Frame<T>::~Frame() = default;
+
+template <typename T>
 ScopedName Frame<T>::scoped_name() const {
   return ScopedName(
       this->get_parent_tree().GetModelInstanceName(this->model_instance()),
@@ -189,4 +192,7 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &drake::multibody::Frame<T>::CalcSpatialVelocity,
     &drake::multibody::Frame<T>::CalcSpatialAccelerationInWorld,
     &drake::multibody::Frame<T>::CalcSpatialAcceleration
-))
+));
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::Frame);

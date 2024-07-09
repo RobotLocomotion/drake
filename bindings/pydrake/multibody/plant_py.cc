@@ -91,10 +91,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.HydroelasticContactInfo;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "HydroelasticContactInfo", param, cls_doc.doc);
-    cls  // BR
-        .def("contact_surface", &Class::contact_surface,
-            cls_doc.contact_surface.doc)
-        .def("F_Ac_W", &Class::F_Ac_W, cls_doc.F_Ac_W.doc);
+    if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+      cls  // BR
+          .def("contact_surface", &Class::contact_surface,
+              cls_doc.contact_surface.doc)
+          .def("F_Ac_W", &Class::F_Ac_W, cls_doc.F_Ac_W.doc);
+    }
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
   }
@@ -106,7 +108,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "ContactResults", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
             cls_doc.num_point_pair_contacts.doc)
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
@@ -934,9 +936,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_rvp::reference_internal,
             cls_doc.get_geometry_query_input_port.doc)
-        .def("get_geometry_poses_output_port",
-            &Class::get_geometry_poses_output_port, py_rvp::reference_internal,
-            cls_doc.get_geometry_poses_output_port.doc)
+        .def("get_geometry_pose_output_port",
+            &Class::get_geometry_pose_output_port, py_rvp::reference_internal,
+            cls_doc.get_geometry_pose_output_port.doc)
         .def("get_deformable_body_configuration_output_port",
             &Class::get_deformable_body_configuration_output_port,
             py_rvp::reference_internal,
@@ -964,6 +966,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.EvalSceneGraphInspector.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("get_geometry_poses_output_port",
+            WrapDeprecated(
+                cls_doc.get_geometry_poses_output_port.doc_deprecated,
+                &Class::get_geometry_poses_output_port),
+            py_rvp::reference_internal,
+            cls_doc.get_geometry_poses_output_port.doc_deprecated);
+#pragma GCC diagnostic pop
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",
@@ -1109,10 +1121,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_adjacent_bodies_collision_filters",
             &Class::get_adjacent_bodies_collision_filters,
             cls_doc.get_adjacent_bodies_collision_filters.doc)
-        .def("AddPhysicalModel", &Class::AddPhysicalModel, py::arg("model"),
-            cls_doc.AddPhysicalModel.doc)
-        .def("physical_models", &Class::physical_models,
-            py_rvp::reference_internal, cls_doc.physical_models.doc)
+        .def("deformable_model", &Class::deformable_model,
+            py_rvp::reference_internal, cls_doc.deformable_model.doc)
+        .def("mutable_deformable_model", &Class::mutable_deformable_model,
+            py_rvp::reference_internal, cls_doc.mutable_deformable_model.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
             py::arg("penetration_allowance") = 0.001,
             cls_doc.set_penetration_allowance.doc)

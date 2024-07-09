@@ -312,4 +312,4 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::UnitInertia)
+    class drake::multibody::UnitInertia);

@@ -12,6 +12,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/random.h"
+#include "drake/common/string_map.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -1410,7 +1411,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
 // sets it to (100,200).
 class DummyVec2 : public BasicVector<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyVec2)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyVec2);
 
   DummyVec2(double e0, double e1) : BasicVector<double>(2) {
     SetAtIndex(0, e0);
@@ -2775,6 +2776,17 @@ class EventSugarTestSystem : public LeafSystem<double> {
     return num_second_unrestricted_update_;
   }
 
+  string_map<int> GetCounts() const {
+    return string_map<int>{
+        {"u1", num_unrestricted_update()},
+        {"u2", num_second_unrestricted_update()},
+        {"d1", num_discrete_update()},
+        {"d2", num_second_discrete_update()},
+        {"p1", num_publish()},
+        {"p2", num_second_publish_handler_publishes()}
+    };
+  }
+
  private:
   EventStatus MyPublishHandler(const Context<double>& context) const {
     MySuccessfulPublishHandler(context);
@@ -2909,12 +2921,10 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   EXPECT_TRUE(status.succeeded());
   dut.ForcedPublish(*context);
 
-  EXPECT_EQ(dut.num_publish(), 5);
-  EXPECT_EQ(dut.num_second_publish_handler_publishes(), 1);
-  EXPECT_EQ(dut.num_discrete_update(), 5);
-  EXPECT_EQ(dut.num_second_discrete_update(), 1);
-  EXPECT_EQ(dut.num_unrestricted_update(), 5);
-  EXPECT_EQ(dut.num_second_unrestricted_update(), 1);
+  EXPECT_EQ(
+      dut.GetCounts(),
+      (string_map<int>{
+          {"u1", 5}, {"u2", 1}, {"d1", 5}, {"d2", 1}, {"p1", 5}, {"p2", 1}}));
 }
 
 // Verify that user-initiated event APIs throw on handler failure.
@@ -2974,6 +2984,45 @@ GTEST_TEST(EventSugarTest, ForcedEventsDontThrowWhenNoFailure) {
   EXPECT_NO_THROW(successful.ExecuteInitializationEvents(&*successful_context));
   EXPECT_NO_THROW(
       terminating.ExecuteInitializationEvents(&*terminating_context));
+}
+
+GTEST_TEST(EventSugarTest, ForceEventsCanBeTriggered) {
+  EventSugarTestSystem successful(EventStatus::kSucceeded);
+  EventSugarTestSystem terminating(EventStatus::kReachedTermination);
+  EventSugarTestSystem failing(EventStatus::kFailed);
+  failing.set_name("should_fail");
+  auto successful_context = successful.CreateDefaultContext();
+  auto terminating_context = terminating.CreateDefaultContext();
+  auto failing_context = failing.CreateDefaultContext();
+
+  successful.ExecuteForcedEvents(&*successful_context);
+  EXPECT_EQ(
+      successful.GetCounts(),
+      (string_map<int>{
+          {"u1", 1}, {"u2", 1}, {"d1", 1}, {"d2", 1}, {"p1", 1}, {"p2", 1}}));
+
+  // Do that again but without the publish events.
+  successful.ExecuteForcedEvents(&*successful_context, /*publish=*/ false);
+  EXPECT_EQ(
+      successful.GetCounts(),
+      (string_map<int>{
+          {"u1", 2}, {"u2", 2}, {"d1", 2}, {"d2", 2}, {"p1", 1}, {"p2", 1}}));
+
+  // A "reached termination" return should be ignored.
+  terminating.ExecuteForcedEvents(&*terminating_context);
+  EXPECT_EQ(
+      terminating.GetCounts(),
+      (string_map<int>{
+          {"u1", 1}, {"u2", 1}, {"d1", 1}, {"d2", 1}, {"p1", 1}, {"p2", 1}}));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      failing.ExecuteForcedEvents(&*failing_context),
+      "ExecuteForcedEvents.*event handler.*"
+      "EventSugarTestSystem.*should_fail.*failed.*Something bad happened.*");
+  EXPECT_EQ(
+      failing.GetCounts(),
+      (string_map<int>{  // 1st (u1) fails, halts processing.
+          {"u1", 1}, {"u2", 0}, {"d1", 0}, {"d2", 0}, {"p1", 0}, {"p2", 0}}));
 }
 
 // A System that does not override the default implicit time derivatives

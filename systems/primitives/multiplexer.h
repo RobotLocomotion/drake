@@ -27,7 +27,7 @@ namespace systems {
 template <typename T>
 class Multiplexer : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Multiplexer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Multiplexer);
 
   /// Constructs a %Multiplexer with `num_scalar_inputs` scalar-valued input
   /// ports, and one vector-valued output port of size `num_scalar_inputs`.

@@ -152,4 +152,4 @@ void VisualizeRobotModel();
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::test::RobotModel)
+    class ::drake::multibody::test::RobotModel);

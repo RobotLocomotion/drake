@@ -51,7 +51,7 @@ namespace kinova_jaco {
 /// @endsystem
 class JacoCommandReceiver : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JacoCommandReceiver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JacoCommandReceiver);
 
   JacoCommandReceiver(int num_joints = kJacoDefaultArmNumJoints,
                       int num_fingers = kJacoDefaultArmNumFingers);

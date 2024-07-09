@@ -27,7 +27,7 @@ template <typename T>
 class Parameters {
  public:
   // Parameters are not copyable or moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parameters)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parameters);
 
   /// Constructs an empty Parameters.
   Parameters() : Parameters({}, {}) {}
@@ -174,4 +174,4 @@ class Parameters {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Parameters)
+    class ::drake::systems::Parameters);

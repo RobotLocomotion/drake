@@ -25,7 +25,7 @@ so should not depend on `T`.
 template <typename T>
 class SharedPointerSystem final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SharedPointerSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SharedPointerSystem);
 
   /** Creates a system holding the given value.
   The value is allowed to be `nullptr`.
@@ -117,4 +117,4 @@ class SharedPointerSystem final : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::SharedPointerSystem)
+    class ::drake::systems::SharedPointerSystem);

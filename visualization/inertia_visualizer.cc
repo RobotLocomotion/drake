@@ -100,7 +100,7 @@ const InertiaVisualizer<T>& InertiaVisualizer<T>::AddToBuilder(
   auto result =
       builder->template AddSystem<InertiaVisualizer<T>>(plant, scene_graph);
   result->set_name("inertia_visualizer");
-  builder->Connect(plant.get_geometry_poses_output_port(),
+  builder->Connect(plant.get_geometry_pose_output_port(),
                    result->get_input_port());
   builder->Connect(result->get_output_port(),
                    scene_graph->get_source_pose_port(result->source_id_));
@@ -195,4 +195,4 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::visualization::InertiaVisualizer)
+    class ::drake::visualization::InertiaVisualizer);

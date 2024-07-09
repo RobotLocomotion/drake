@@ -32,7 +32,7 @@ includes the zero-dimensional case.
 @ingroup geometry_optimization */
 class Hyperellipsoid final : public ConvexSet, private ShapeReifier {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperellipsoid)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperellipsoid);
 
   /** Constructs a default (zero-dimensional, nonempty) set. */
   Hyperellipsoid();

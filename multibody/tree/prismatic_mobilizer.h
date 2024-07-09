@@ -34,7 +34,7 @@ namespace internal {
 template <typename T>
 class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticMobilizer);
 
   // Constructor for a %PrismaticMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M` granting a single translational degree of freedom along
@@ -52,6 +52,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
     DRAKE_DEMAND(!axis_F.isZero(kEpsilon));
     axis_F_.normalize();
   }
+
+  ~PrismaticMobilizer() final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -204,4 +206,4 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::PrismaticMobilizer)
+    class ::drake::multibody::internal::PrismaticMobilizer);

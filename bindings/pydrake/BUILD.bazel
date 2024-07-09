@@ -438,6 +438,7 @@ PYI_FILES = [
     "pydrake/symbolic.pyi",
     "pydrake/systems/analysis.pyi",
     "pydrake/systems/controllers.pyi",
+    "pydrake/systems/estimators.pyi",
     "pydrake/systems/framework.pyi",
     "pydrake/systems/lcm.pyi",
     "pydrake/systems/primitives.pyi",

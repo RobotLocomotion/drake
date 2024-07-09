@@ -309,7 +309,9 @@ class MultibodyTreeTopology {
   // RigidBodyTopology for the world. The topology for the _world_ body does not
   // get added until MultibodyTree construction, which creates a _world_ body
   // and adds it to the tree.
-  MultibodyTreeTopology() {}
+  MultibodyTreeTopology() = default;
+
+  ~MultibodyTreeTopology();
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.

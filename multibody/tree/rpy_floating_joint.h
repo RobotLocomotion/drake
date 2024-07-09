@@ -40,7 +40,7 @@ singularity-free QuaternionFloatingJoint instead.
 template <typename T>
 class RpyFloatingJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyFloatingJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyFloatingJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -92,6 +92,8 @@ class RpyFloatingJoint final : public Joint<T> {
     // Parent constructor sets all default positions to zero which is correct
     // for this joint.
   }
+
+  ~RpyFloatingJoint() final;
 
   /** Returns the name of this joint type: "rpy_floating" */
   const std::string& type_name() const final;
@@ -481,4 +483,4 @@ const char RpyFloatingJoint<T>::kTypeName[] = "rpy_floating";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RpyFloatingJoint)
+    class ::drake::multibody::RpyFloatingJoint);

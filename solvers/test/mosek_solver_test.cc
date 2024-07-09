@@ -90,6 +90,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
@@ -162,6 +169,11 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
   MosekSolver solver;
   TestSocpDuplicatedVariable2(solver, std::nullopt, 1E-6);
+}
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable3) {
+  MosekSolver solver;
+  TestSocpDuplicatedVariable3(solver, std::nullopt, 1E-5);
 }
 
 GTEST_TEST(TestL2NormCost, ShortestDistanceToThreePoints) {

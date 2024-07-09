@@ -286,7 +286,7 @@ bool IsDetectable(const LinearSystem<double>& sys,
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::LinearSystem)
+    class ::drake::systems::LinearSystem);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::TimeVaryingLinearSystem)
+    class ::drake::systems::TimeVaryingLinearSystem);

@@ -30,7 +30,7 @@ implementing the DeclareOutputPort() variants in LeafSystem.
 template <typename T>
 class LeafOutputPort final : public OutputPort<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafOutputPort)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafOutputPort);
 
   ~LeafOutputPort() final = default;
 
@@ -123,4 +123,4 @@ class LeafOutputPort final : public OutputPort<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::LeafOutputPort)
+    class ::drake::systems::LeafOutputPort);

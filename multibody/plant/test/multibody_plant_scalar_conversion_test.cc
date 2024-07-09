@@ -108,8 +108,11 @@ void CompareMultibodyPlantPortIndices(const MultibodyPlant<T>& plant_t,
             plant_u.get_reaction_forces_output_port().get_index());
   EXPECT_EQ(plant_t.get_contact_results_output_port().get_index(),
             plant_u.get_contact_results_output_port().get_index());
-  EXPECT_EQ(plant_t.get_geometry_poses_output_port().get_index(),
-            plant_u.get_geometry_poses_output_port().get_index());
+  EXPECT_EQ(plant_t.get_geometry_pose_output_port().get_index(),
+            plant_u.get_geometry_pose_output_port().get_index());
+  EXPECT_EQ(
+      plant_t.get_deformable_body_configuration_output_port().get_index(),
+      plant_u.get_deformable_body_configuration_output_port().get_index());
   EXPECT_EQ(
       plant_t.get_state_output_port(default_model_instance()).get_index(),
       plant_u.get_state_output_port(default_model_instance()).get_index());
@@ -205,13 +208,12 @@ class DoubleOnlyDiscreteUpdateManager final
 // scalar types.
 GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   MultibodyPlant<double> plant(0.1);
-  std::unique_ptr<PhysicalModel<double>> dummy_physical_model =
+  std::unique_ptr<internal::DummyPhysicalModel<double>> dummy_physical_model =
       std::make_unique<internal::DummyPhysicalModel<double>>(&plant);
-  // The dummy model supports all scalar types.
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_double());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_autodiff());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_symbolic());
-  plant.AddPhysicalModel(std::move(dummy_physical_model));
+  plant.AddDummyModel(std::move(dummy_physical_model));
   plant.Finalize();
 
   // double -> AutoDiffXd
@@ -361,40 +363,16 @@ INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestExpression,
 TEST_P(DiscretePlantTestExpression, ForcedUpdate) {
   const auto& diagram = model_->diagram();
   auto updates = diagram.AllocateDiscreteVariables();
-  const auto [contact_approximation, contact_model, contact_configuration] =
-      GetParam();
-
-  // In summary, even though the exceptions below are caused at different
-  // levels, we do not support discrete updates when T = symbolic::Expression.
-  std::string failure_cause_message;
-  if (model_->plant().get_discrete_contact_solver() ==
-      DiscreteContactSolver::kSap) {
-    failure_cause_message =
-        "Discrete updates with the SAP solver are not supported for T = "
-        ".*Expression";
-  } else {
-    if (model_->plant().get_contact_model() ==
-        ContactModel::kHydroelasticWithFallback) {
-      failure_cause_message =
-          ".*CalcHydroelasticWithFallback.*: This method doesn't support T = "
-          ".*Expression.";
-    } else if (model_->plant().get_contact_model() == ContactModel::kPoint) {
-      if (contact_configuration ==
-          RobotModelConfig::ContactConfig::kInContactState) {
-        failure_cause_message =
-            "Penetration queries between shapes .* are not supported for "
-            "scalar type .*Expression. .*";
-      } else {
-        failure_cause_message = "This method doesn't support T = .*Expression.";
-      }
-    } else {
-      throw std::runtime_error("Update unit test to verify this case.");
-    }
-  }
-
-  DRAKE_EXPECT_THROWS_MESSAGE(diagram.CalcForcedDiscreteVariableUpdate(
-                                  model_->context(), updates.get()),
-                              failure_cause_message);
+  // We don't support discrete updates when T = Expression. Depending on the
+  // plant configuration, the throw will happen from different places (with
+  // slightly different messages). We check two key elements of the message:
+  // - not supported
+  // - due to Expression
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
+                                               updates.get()),
+      ".* (doesn't support|does not support|not supported)"
+      ".* (T ?= ?|scalar type )[drake:symbolic]*Expression.*");
 }
 
 }  // namespace

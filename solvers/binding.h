@@ -23,7 +23,7 @@ namespace solvers {
 template <typename C>
 class Binding {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Binding)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Binding);
 
   Binding(const std::shared_ptr<C>& c,
           const Eigen::Ref<const VectorXDecisionVariable>& v)

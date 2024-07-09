@@ -21,6 +21,7 @@
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/solver_options.h"
 
 namespace drake {
@@ -83,6 +84,8 @@ GTEST_TEST(GraphOfConvexSetsOptionsTest, Serialize) {
   solvers::IpoptSolver ipopt_solver;
   options.restriction_solver = &ipopt_solver;
   options.restriction_solver_options = solvers::SolverOptions();
+  options.preprocessing_solver = &mosek_solver;
+  options.preprocessing_solver_options = solvers::SolverOptions();
   const std::string serialized = yaml::SaveYamlString(options);
   const auto deserialized =
       yaml::LoadYamlString<GraphOfConvexSetsOptions>(serialized);
@@ -95,8 +98,10 @@ GTEST_TEST(GraphOfConvexSetsOptionsTest, Serialize) {
   // The non-built-in types are not serialized.
   EXPECT_EQ(deserialized.solver, nullptr);
   EXPECT_EQ(deserialized.restriction_solver, nullptr);
+  EXPECT_EQ(deserialized.preprocessing_solver, nullptr);
   EXPECT_EQ(deserialized.solver_options, solvers::SolverOptions());
   EXPECT_FALSE(deserialized.restriction_solver_options.has_value());
+  EXPECT_FALSE(deserialized.preprocessing_solver_options.has_value());
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
@@ -302,6 +307,32 @@ TEST_F(TwoPoints, AddCost) {
   symbolic::Variable other_var("x");
   DRAKE_EXPECT_THROWS_MESSAGE(e_->AddCost(other_var), ".*IsSubsetOf.*");
   DRAKE_EXPECT_THROWS_MESSAGE(v_->AddCost(other_var), ".*IsSubsetOf.*");
+
+  // If no transcription is specified, the constraint won't be added.
+  EXPECT_THROW(e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm(), {}),
+               std::exception);
+  EXPECT_THROW(e_->AddCost(Binding(cost, e_->xu()), {}), std::exception);
+  EXPECT_THROW(u_->AddCost((v_->x() + Vector3d::Ones()).squaredNorm(), {}),
+               std::exception);
+  EXPECT_THROW(u_->AddCost(Binding(cost, u_->x()), {}), std::exception);
+
+  // By default Edge::AddCost or Vertex::AddCost is adding the binding to all
+  // transcriptions.
+  for (const auto& transcription :
+       {Transcription::kMIP, Transcription::kRelaxation,
+        Transcription::kRestriction}) {
+    const auto transcription_edge_costs = e_->GetCosts({transcription});
+    EXPECT_EQ(transcription_edge_costs.size(), 2);
+    EXPECT_EQ(transcription_edge_costs[0], b0);
+    EXPECT_EQ(transcription_edge_costs[1], b1);
+    const auto transcription_vertex_costs = v_->GetCosts({transcription});
+    EXPECT_EQ(transcription_vertex_costs.size(), 2);
+    EXPECT_EQ(transcription_vertex_costs[0], v_b0);
+    EXPECT_EQ(transcription_vertex_costs[1], v_b1);
+  }
+  // If no transcription is specified, nothing will be returned.
+  EXPECT_THROW(e_->GetCosts({}), std::exception);
+  EXPECT_THROW(v_->GetCosts({}), std::exception);
 }
 
 // Confirms that we can add constraints (both ways).
@@ -350,11 +381,11 @@ TEST_F(TwoPoints, AddConstraint) {
   for (const auto& transcription :
        {Transcription::kMIP, Transcription::kRelaxation,
         Transcription::kRestriction}) {
-    const auto& edge_constraints = e_->GetConstraints({transcription});
+    const auto edge_constraints = e_->GetConstraints({transcription});
     EXPECT_EQ(edge_constraints.size(), 2);
     EXPECT_EQ(edge_constraints[0], b0);
     EXPECT_EQ(edge_constraints[1], b1);
-    const auto& vertex_constraints = u_->GetConstraints({transcription});
+    const auto vertex_constraints = u_->GetConstraints({transcription});
     EXPECT_EQ(vertex_constraints.size(), 2);
     EXPECT_EQ(vertex_constraints[0], u_b0);
     EXPECT_EQ(vertex_constraints[1], u_b1);
@@ -370,8 +401,8 @@ TEST_F(TwoPoints, AddConstraint) {
                               ".*IsSubsetOf.*");
 }
 
-// Verifies that the correct solver is used for the MIP, relaxation and the
-// restriction.
+// Verifies that the correct solver is used for the MIP, relaxation,
+// preprocessing, and restriction.
 TEST_F(TwoPoints, ReportCorrectSolverId) {
   e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
   GraphOfConvexSetsOptions options;
@@ -395,7 +426,7 @@ TEST_F(TwoPoints, ReportCorrectSolverId) {
   EXPECT_TRUE(result.is_success());
   EXPECT_EQ(result.get_solver_id(), options.restriction_solver->solver_id());
 
-  // With the rounding on, the reported solver should be the restriciton solver
+  // With the rounding on, the reported solver should be the restriction solver
   options.max_rounded_paths = 1;
   result = g_.SolveShortestPath(*u_, *v_, options);
   EXPECT_TRUE(result.is_success());
@@ -427,6 +458,61 @@ TEST_F(TwoPoints, ReportCorrectSolverId) {
     result = g_.SolveShortestPath(*u_, *v_, options);
     EXPECT_TRUE(result.is_success());
     EXPECT_EQ(result.get_solver_id(), options.solver->solver_id());
+  }
+
+  // Test the preprocessing solver. Since the results of these solves are not
+  // reported, we call the OSQP solver and expect an error -- this solver cannot
+  // handle LPs, the preprocessing problems are LPs.
+  solvers::OsqpSolver osqp;
+  options.preprocessing = true;
+  options.preprocessing_solver = &osqp;
+  EXPECT_THROW(g_.SolveShortestPath(*u_, *v_, options), std::exception);
+}
+
+// Verify that assigning a transcription to a cost adds it to the correct
+// problem.
+TEST_F(TwoPoints, VerifyCostTranscriptionAssignment) {
+  const double kCostRelaxation = 1.23;
+  const double kCostRestriction = 4.56;
+  const double kCostMIP = 7.89;
+  // We add each cost four times, once for each AddCost entry point.
+  for (const auto& [transcription, cost] :
+       {std::pair<Transcription, double>{Transcription::kMIP, kCostMIP},
+        std::pair<Transcription, double>{Transcription::kRelaxation,
+                                         kCostRelaxation},
+        std::pair<Transcription, double>{Transcription::kRestriction,
+                                         kCostRestriction}}) {
+    auto [ell, e_b] = e_->AddCost(cost, {transcription});
+    e_->AddCost(e_b, {transcription});
+    auto [v_ell, v_b] = v_->AddCost(cost, {transcription});
+    v_->AddCost(v_b, {transcription});
+  }
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  // The convex relaxation should be successful.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 0;
+  auto result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostRelaxation, 1e-6);
+
+  // The restriction, also in the rounding, should be successful.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 1;
+  result = g_.SolveConvexRestriction({e_}, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostRestriction, 1e-6);
+  result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostRestriction, 1e-6);
+
+  // The MIP should be successful as well.
+  options.convex_relaxation = false;
+  if (MixedIntegerSolverAvailable()) {
+    result = g_.SolveShortestPath(*u_, *v_, options);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostMIP, 1e-6);
   }
 }
 
@@ -538,6 +624,7 @@ TEST_F(TwoPoints, VerifyTranscriptionAssignmentkRelaxation) {
   options.max_rounded_paths = 1;
   EXPECT_FALSE(g_.SolveShortestPath(*u_, *v_, options).is_success());
 }
+
 TEST_F(TwoPoints, VerifyTranscriptionAssignmentkRestriction) {
   // We will be adding a few feasible constraints to all transcriptions, even
   // though there are redundant with the set constraint.
@@ -571,6 +658,33 @@ TEST_F(TwoPoints, VerifyTranscriptionAssignmentkRestriction) {
   options.convex_relaxation = true;
   options.max_rounded_paths = 0;
   EXPECT_FALSE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+}
+
+GTEST_TEST(GraphOfConvexSetsTest, InitialGuess) {
+  GraphOfConvexSets gcs;
+
+  // A source (with 1 free variable) and a target (a fixed point), with an edge
+  // between them.
+  Vertex* s = gcs.AddVertex(HPolyhedron::MakeUnitBox(1));
+  Vertex* t = gcs.AddVertex(Point(Vector1d(1.0)));
+  Edge* e = gcs.AddEdge(s, t);
+
+  using std::pow;
+  const double kMinima = 0.8;
+  // A quartic cost function w/ minima at 0 and kMinima.
+  s->AddCost(pow(s->x()[0], 2) * pow(s->x()[0] - kMinima, 2));
+
+  // Solving with no initial guess is like using an initial guess of zero.
+  auto result = gcs.SolveConvexRestriction({e});
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(s->x())[0], 0.0, 1e-6);
+
+  GraphOfConvexSetsOptions options;
+  MathematicalProgramResult initial_guess = result;
+  initial_guess.SetSolution(s->x()[0], kMinima);
+  result = gcs.SolveConvexRestriction({e}, options, &initial_guess);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(s->x())[0], kMinima, 1e-6);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, TwoNullPointsConstraint) {
@@ -2264,6 +2378,27 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     options.convex_relaxation = false;
     auto successful_result = spp.SolveShortestPath(*source, *target, options);
     EXPECT_TRUE(successful_result.is_success());
+
+    // Test preprocessing_solver_options by setting the time limit to 0. This
+    // will cause the preprocessing to fail on every edge, tagging those edges
+    // as unusable, and thus causing the solve to fail.
+    options.preprocessing = true;
+    options.convex_relaxation = true;
+    options.restriction_solver_options = solvers::SolverOptions();
+    solvers::MosekSolver mosek_solver2;
+    options.preprocessing_solver = &mosek_solver2;
+    options.preprocessing_solver_options = solvers::SolverOptions();
+    options.preprocessing_solver_options->SetOption(
+        solvers::MosekSolver::id(), "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
+
+    auto failed_result_2 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_FALSE(failed_result_2.is_success());
+
+    // If preprocessing_solver is unspecified, preprocessing_solver_options
+    // should be ignored, so the optimization should succeed.
+    options.preprocessing_solver = nullptr;
+    auto successful_result_2 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_TRUE(successful_result_2.is_success());
   }
 }
 

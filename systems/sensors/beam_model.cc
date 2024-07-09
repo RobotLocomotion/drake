@@ -114,4 +114,4 @@ void BeamModel<T>::CalcOutput(const systems::Context<T>& context,
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::systems::sensors::BeamModel)
+    class ::drake::systems::sensors::BeamModel);

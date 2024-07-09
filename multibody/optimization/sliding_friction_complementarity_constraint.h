@@ -67,7 +67,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
     : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
-      SlidingFrictionComplementarityNonlinearConstraint)
+      SlidingFrictionComplementarityNonlinearConstraint);
 
   /*
    * @param contact_wrench_evaluator An evaluator that computes the contact

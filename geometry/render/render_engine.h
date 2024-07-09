@@ -292,7 +292,7 @@ class RenderEngine {
 
  protected:
   // Allow derived classes to implement Cloning via copy-construction.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine);
 
   /** The NVI-function for sub-classes to implement actual rigid geometry
    registration. If the derived class chooses not to register this particular

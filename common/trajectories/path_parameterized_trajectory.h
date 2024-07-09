@@ -23,7 +23,7 @@ namespace trajectories {
 template <typename T>
 class PathParameterizedTrajectory final : public Trajectory<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PathParameterizedTrajectory)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PathParameterizedTrajectory);
 
   /** Constructs a trajectory with the given `path` and `time_scaling`.
   @pre time_scaling.rows() == time_scaling.cols() == 1 */
@@ -91,4 +91,4 @@ class PathParameterizedTrajectory final : public Trajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::PathParameterizedTrajectory)
+    class drake::trajectories::PathParameterizedTrajectory);

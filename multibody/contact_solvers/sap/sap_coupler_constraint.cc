@@ -109,4 +109,4 @@ std::unique_ptr<SapConstraint<double>> SapCouplerConstraint<T>::DoToDouble()
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapCouplerConstraint)
+    class ::drake::multibody::contact_solvers::internal::SapCouplerConstraint);

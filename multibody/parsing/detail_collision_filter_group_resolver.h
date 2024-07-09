@@ -10,7 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_set.h"
-#include "drake/multibody/parsing/collision_filter_groups.h"
+#include "drake/multibody/parsing/detail_collision_filter_groups_impl.h"
 #include "drake/multibody/parsing/detail_strongly_connected_components.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -58,13 +58,11 @@ namespace internal {
 //
 class CollisionFilterGroupResolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CollisionFilterGroupResolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CollisionFilterGroupResolver);
 
-  // Both parameters are aliased, and must outlive the resolver.
+  // The plant parameter is aliased, and must outlive the resolver.
   // @pre plant is not nullptr.
-  // @pre group_output is not nullptr.
-  CollisionFilterGroupResolver(MultibodyPlant<double>* plant,
-                               CollisionFilterGroups* group_output);
+  explicit CollisionFilterGroupResolver(MultibodyPlant<double>* plant);
 
   ~CollisionFilterGroupResolver();
 
@@ -118,9 +116,10 @@ class CollisionFilterGroupResolver {
       std::optional<ModelInstanceIndex> model_instance);
 
   // Resolves group pairs to rules. Emits diagnostics for undefined groups.
-  //
-  // @pre cannot have be previously invoked on this instance.
-  void Resolve(const drake::internal::DiagnosticPolicy& diagnostic);
+  // @pre cannot have been previously invoked on this instance.
+  // @returns the collision filter groups found after resolution.
+  CollisionFilterGroupsImpl<InstancedName> Resolve(
+      const drake::internal::DiagnosticPolicy& diagnostic);
 
  private:
   struct GroupData {
@@ -140,7 +139,6 @@ class CollisionFilterGroupResolver {
                                     ModelInstanceIndex model_instance) const;
 
   MultibodyPlant<double>* const plant_;
-  CollisionFilterGroups* const group_output_;
 
   std::map<std::string, GroupData> groups_;
   std::set<SortedPair<std::string>> pairs_;

@@ -28,7 +28,7 @@ namespace internal {
 // data from a C++ structure into a YAML file.
 class YamlWriteArchive final {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlWriteArchive)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlWriteArchive);
 
   // Creates an archive.
   YamlWriteArchive() {}

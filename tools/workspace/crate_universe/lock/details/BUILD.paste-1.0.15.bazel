@@ -6,10 +6,10 @@
 #     tools/workspace/crate_universe/upgrade.sh
 ###############################################################################
 
-load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
-load("@rules_rust//rust:defs.bzl", "rust_proc_macro")
 load("@rules_license//rules:license.bzl", "license")
 load("@rules_license//rules:package_info.bzl", "package_info")
+load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
+load("@rules_rust//rust:defs.bzl", "rust_proc_macro")
 
 package(
     default_package_metadata = [
@@ -109,7 +109,7 @@ rust_proc_macro(
 )
 
 cargo_build_script(
-    name = "paste_bs",
+    name = "_bs",
     srcs = glob(
         include = ["**/*.rs"],
         allow_empty = False,
@@ -129,6 +129,7 @@ cargo_build_script(
         ],
     ),
     edition = "2018",
+    pkg_name = "paste",
     rustc_flags = [
         "--cap-lints=allow",
     ],
@@ -145,6 +146,6 @@ cargo_build_script(
 
 alias(
     name = "build_script_build",
-    actual = ":paste_bs",
+    actual = ":_bs",
     tags = ["manual"],
 )

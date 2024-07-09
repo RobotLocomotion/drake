@@ -26,19 +26,24 @@ struct GraphOfConvexSetsOptions {
   /** Flag to solve the relaxed version of the problem.  As discussed in the
   paper, we know that this relaxation cannot solve the original NP-hard problem
   for all instances, but there are also many instances for which the convex
-  relaxation is tight. */
+  relaxation is tight. If convex_relaxation=nullopt, then each GCS method is
+  free to choose an appropriate default. */
   std::optional<bool> convex_relaxation{std::nullopt};
 
   /** Maximum number of distinct paths to compare during random rounding; only
   the lowest cost path is returned. If convex_relaxation is false or this is
-  less than or equal to zero, rounding is not performed. */
+  less than or equal to zero, rounding is not performed. If
+  max_rounded_paths=nullopt, then each GCS method is free to choose an
+  appropriate default. */
   std::optional<int> max_rounded_paths{std::nullopt};
 
   /** Performs a preprocessing step to remove edges that cannot lie on the
   path from source to target. In most cases, preprocessing causes a net
   reduction in computation by reducing the size of the optimization solved.
   Note that this preprocessing is not exact. There may be edges that cannot
-  lie on the path from source to target that this does not detect. */
+  lie on the path from source to target that this does not detect. If
+  preprocessing=nullopt, then each GCS method is free to choose an appropriate
+  default. */
   std::optional<bool> preprocessing{std::nullopt};
 
   /** Maximum number of trials to find a novel path during random rounding. If
@@ -70,9 +75,17 @@ struct GraphOfConvexSetsOptions {
   during the rounding stage of SolveShortestPath() given the relaxation.
   If not set, the interface at .solver will be used, if provided, otherwise the
   best solver for the given problem is selected. Note that if the solver cannot
-  handle the type of optimization problem generated, the calling the
+  handle the type of optimization problem generated, then calling the
   solvers::SolverInterface::Solve() method will throw. */
   const solvers::SolverInterface* restriction_solver{nullptr};
+
+  /** Optimizer to be used in the preprocessing stage of GCS, which is
+  performed when SolveShortestPath is called when the `preprocessing` setting
+  has been set to true. If not set, the interface at .solver will be used, if
+  provided, otherwise the best solver for the given problem is selected. Note
+  that if the solver cannot handle the type of optimization problem generated,
+  then calling the solvers::SolverInterface::Solve() method will throw. */
+  const solvers::SolverInterface* preprocessing_solver{nullptr};
 
   /** Options passed to the solver when solving the generated problem.*/
   solvers::SolverOptions solver_options{};
@@ -86,6 +99,15 @@ struct GraphOfConvexSetsOptions {
   std::optional<solvers::SolverOptions> restriction_solver_options{
       std::nullopt};
 
+  /** Optional solver options to be used by preprocessing_solver in the
+  preprocessing stage of GCS, which is used in SolveShortestPath. If
+  preprocessing_solver is set but this parameter is not then solver_options is
+  used. If preprocessing_solver is not set, this parameter is ignored. For
+  instance, one might want to print solver logs for the main optimization, but
+  not from the many smaller preprocessing optimizations. */
+  std::optional<solvers::SolverOptions> preprocessing_solver_options{
+      std::nullopt};
+
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. Note:
   This only serializes options that are YAML built-in types.  */
@@ -97,10 +119,11 @@ struct GraphOfConvexSetsOptions {
     a->Visit(DRAKE_NVP(max_rounding_trials));
     a->Visit(DRAKE_NVP(flow_tolerance));
     a->Visit(DRAKE_NVP(rounding_seed));
-    // N.B. We skip the DRAKE_NVP(solver) and DRAKE_NVP(restriction_solver),
-    // because it cannot be serialized.
+    // N.B. We skip the DRAKE_NVP(solver), DRAKE_NVP(restriction_solver), and
+    // DRAKE_NVP(preprocessing_solver), because it cannot be serialized.
     // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
     // TODO(#20967) Serialize the DRAKE_NVP(restriction_solver_options).
+    // TODO(#20967) Serialize the DRAKE_NVP(preprocessing_solver_options).
   }
 };
 
@@ -157,7 +180,7 @@ approximate the original non-convex problem.
 */
 class GraphOfConvexSets {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GraphOfConvexSets)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GraphOfConvexSets);
 
   /** Specify the transcription of the optimization problem to which a
   constraint or cost should be added, or from which they should be retrieved.*/
@@ -182,7 +205,7 @@ class GraphOfConvexSets {
   name. */
   class Vertex final {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Vertex)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Vertex);
 
     ~Vertex();
 
@@ -210,15 +233,21 @@ class GraphOfConvexSets {
     @verbatim
     min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x)
     @endverbatim
+    @param use_in_transcription specifies the components of the problem to
+    which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
     @returns the pair <ℓ, g(x)>.
     @throws std::exception if e.GetVariables() is not a subset of x().
-    @pydrake_mkdoc_identifier{expression}
+    @throws std::exception if no transcription is specified.
+     @pydrake_mkdoc_identifier{expression}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
-        const symbolic::Expression& e);
+        const symbolic::Expression& e,
+        const std::unordered_set<Transcription>& use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Adds a cost to this vertex.  @p binding must contain *only* elements of
     x() as variables. For technical reasons relating to being able to "turn-off"
@@ -227,15 +256,21 @@ class GraphOfConvexSets {
     @verbatim
     min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x)
     @endverbatim
+    @param use_in_transcription specifies the components of the problem to
+    which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
     @returns the pair <ℓ, g(x)>.
     @throws std::exception if binding.variables() is not a subset of x().
+    @throws std::exception if no transcription is specified.
     @pydrake_mkdoc_identifier{binding}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
-        const solvers::Binding<solvers::Cost>& binding);
+        const solvers::Binding<solvers::Cost>& binding,
+        const std::unordered_set<Transcription>& use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Adds a constraint to this vertex.
     @param f must contain *only* elements of x() as variables.
@@ -267,10 +302,15 @@ class GraphOfConvexSets {
             Transcription::kMIP, Transcription::kRelaxation,
             Transcription::kRestriction});
 
-    /** Returns all costs on this vertex. */
-    const std::vector<solvers::Binding<solvers::Cost>>& GetCosts() const {
-      return costs_;
-    }
+    /** Returns costs on this vertex.
+    @param used_in_transcription specifies the components of the problem from
+    which the constraint should be retrieved.
+    @throws std::exception if no transcription is specified.
+    */
+    std::vector<solvers::Binding<solvers::Cost>> GetCosts(
+        const std::unordered_set<Transcription>& used_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction}) const;
 
     /** Returns constraints on this vertex.
     @param used_in_transcription specifies the components of the problem from
@@ -314,7 +354,9 @@ class GraphOfConvexSets {
     const VectorX<symbolic::Variable> placeholder_x_{};
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
-    std::vector<solvers::Binding<solvers::Cost>> costs_{};
+    std::vector<std::pair<solvers::Binding<solvers::Cost>,
+                          std::unordered_set<Transcription>>>
+        costs_{};
     std::vector<std::pair<solvers::Binding<solvers::Constraint>,
                           std::unordered_set<Transcription>>>
         constraints_;
@@ -332,7 +374,7 @@ class GraphOfConvexSets {
   variables. */
   class Edge final {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Edge)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Edge);
 
     ~Edge();
 
@@ -389,15 +431,21 @@ class GraphOfConvexSets {
     @verbatim
     min g(xu, xv) ⇒ min ℓ, s.t. ℓ ≥ g(xu,xv)
     @endverbatim
+    @param use_in_transcription specifies the components of the problem to
+    which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
     @returns the pair <ℓ, g(xu, xv)>.
     @throws std::exception if e.GetVariables() is not a subset of xu() ∪ xv().
+    @throws std::exception if no transcription is specified.
     @pydrake_mkdoc_identifier{expression}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
-        const symbolic::Expression& e);
+        const symbolic::Expression& e,
+        const std::unordered_set<Transcription>& use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Adds a cost to this edge.  @p binding must contain *only* elements of
     xu() and xv() as variables. For technical reasons relating to being able to
@@ -406,16 +454,22 @@ class GraphOfConvexSets {
     @verbatim
     min g(xu, xv) ⇒ min ℓ, s.t. ℓ ≥ g(xu,xv)
     @endverbatim
+    @param use_in_transcription specifies the components of the problem to
+    which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
     @returns the pair <ℓ, g(xu, xv)>.
     @throws std::exception if binding.variables() is not a subset of xu() ∪
     xv().
+    @throws std::exception if no transcription is specified.
     @pydrake_mkdoc_identifier{binding}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
-        const solvers::Binding<solvers::Cost>& binding);
+        const solvers::Binding<solvers::Cost>& binding,
+        const std::unordered_set<Transcription>& use_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction});
 
     /** Adds a constraint to this edge.
     @param f must contain *only* elements of xu() and xv() as variables.
@@ -462,10 +516,15 @@ class GraphOfConvexSets {
     /** Removes any constraints added with AddPhiConstraint. */
     void ClearPhiConstraints();
 
-    /** Returns all costs on this edge. */
-    const std::vector<solvers::Binding<solvers::Cost>>& GetCosts() const {
-      return costs_;
-    }
+    /** Returns costs on this edge.
+    @param used_in_transcription specifies the components of the problem from
+    which the constraint should be retrieved.
+    @throws std::exception if no transcription is specified.
+    */
+    std::vector<solvers::Binding<solvers::Cost>> GetCosts(
+        const std::unordered_set<Transcription>& used_in_transcription = {
+            Transcription::kMIP, Transcription::kRelaxation,
+            Transcription::kRestriction}) const;
 
     /** Returns constraints on this edge.
     @param used_in_transcription specifies the components of the problem from
@@ -516,7 +575,9 @@ class GraphOfConvexSets {
     std::unordered_map<symbolic::Variable, symbolic::Variable> x_to_yz_{};
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
-    std::vector<solvers::Binding<solvers::Cost>> costs_{};
+    std::vector<std::pair<solvers::Binding<solvers::Cost>,
+                          std::unordered_set<Transcription>>>
+        costs_{};
     std::vector<std::pair<solvers::Binding<solvers::Constraint>,
                           std::unordered_set<Transcription>>>
         constraints_;
@@ -638,11 +699,19 @@ class GraphOfConvexSets {
 
   Note that one can specify additional non-convex constraints, which may be
   not supported by all solvers. In this case, the provided solver will throw
-  an exception.*/
+  an exception.
+
+  If an @p initial_guess is provided, the solution inside this result will be
+  used to set the initial guess for the convex restriction. Typically, this will
+  be the result obtained by solving the convex relaxation.
+
+  @throws std::exception if the @p initial_guess does not contain solutions for
+  the decision variables required in this convex restriction.
+  */
   solvers::MathematicalProgramResult SolveConvexRestriction(
       const std::vector<const Edge*>& active_edges,
-      const GraphOfConvexSetsOptions& options =
-          GraphOfConvexSetsOptions()) const;
+      const GraphOfConvexSetsOptions& options = GraphOfConvexSetsOptions(),
+      const solvers::MathematicalProgramResult* initial_guess = nullptr) const;
 
  private: /* Facilitates testing. */
   friend class PreprocessShortestPathTest;

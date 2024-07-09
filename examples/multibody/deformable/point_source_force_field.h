@@ -18,7 +18,7 @@ namespace deformable {
 class PointSourceForceField final
     : public multibody::ForceDensityField<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointSourceForceField)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointSourceForceField);
 
   /* Constructs a new PointSourceForceField object
    @param plant             The MultibodyPlant that owns this force field.

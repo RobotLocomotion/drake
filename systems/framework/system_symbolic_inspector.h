@@ -44,7 +44,7 @@ class SystemSymbolicInspector {
 
   ~SystemSymbolicInspector() = default;
 
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemSymbolicInspector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemSymbolicInspector);
 
   /// Returns true if the input port at the given @p input_port_index is or
   /// might possibly be a term in the output at the given @p output_port_index.

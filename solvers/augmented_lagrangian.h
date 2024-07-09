@@ -42,7 +42,7 @@ namespace solvers {
  */
 class AugmentedLagrangianNonsmooth {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AugmentedLagrangianNonsmooth)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AugmentedLagrangianNonsmooth);
 
   /**
    * @param prog The mathematical program we will evaluate.
@@ -158,7 +158,7 @@ class AugmentedLagrangianNonsmooth {
  */
 class AugmentedLagrangianSmooth {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AugmentedLagrangianSmooth)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AugmentedLagrangianSmooth);
 
   /**
    * @param prog The mathematical program we will evaluate.

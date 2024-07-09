@@ -30,7 +30,7 @@ class MultibodyPlant;
 template <typename T>
 class MultibodyElement {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyElement)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyElement);
 
   virtual ~MultibodyElement();
 
@@ -203,4 +203,4 @@ class MultibodyElement {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MultibodyElement)
+    class ::drake::multibody::MultibodyElement);

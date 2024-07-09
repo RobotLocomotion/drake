@@ -7,7 +7,9 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
@@ -22,14 +24,15 @@ namespace multibody {
 
     - The shared contact surface between the two geometries, which includes
       the virtual pressures acting at every point on the contact surface.
-    - The tractions acting at the quadrature points on the contact surface.
-    - The slip speeds at the quadrature points on the contact surface.
     - The spatial force from the integrated tractions that is applied at the
       centroid of the contact surface.
 
  The two geometries, denoted M and N (and obtainable via
  `contact_surface().id_M()` and `contact_surface().id_N()`) are attached to
  bodies A and B, respectively.
+
+ When T = Expression, the class is specialized to not contain any member data,
+ because ContactSurface doesn't support Expression.
 
  @tparam_default_scalar
  */
@@ -46,9 +49,7 @@ class HydroelasticContactInfo {
    parameters satisfy the documented invariants, see below. Similarly, the
    spatial force `F_Ac_W` must be provided as indicated by the monogram notation
    in use, that is, it is the spatial force on body A, at the contact surface's
-   centroid C, and expressed in the world frame. Quadrature points data must be
-   provided in accordance to the conventions and monogram notation documented in
-   HydroelasticQuadraturePointData. */
+   centroid C, and expressed in the world frame. */
   // @{
 
   /**
@@ -63,18 +64,14 @@ class HydroelasticContactInfo {
      centroid C, and expressed in the world frame W. The position `p_WC` of C in
      the world frame W can be obtained with
      `ContactSurface::centroid()`.
-   @param[in] quadrature_point_data Hydroelastic field data at each quadrature
-     point. Data must be provided in accordance to the convention that geometry
-     M and N are attached to bodies A and B, respectively. Refer to
-     HydroelasticQuadraturePointData for further details.
-   */
-  HydroelasticContactInfo(
-      const geometry::ContactSurface<T>* contact_surface,
-      const SpatialForce<T>& F_Ac_W,
-      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data)
-      : contact_surface_(contact_surface),
-        F_Ac_W_(F_Ac_W),
-        quadrature_point_data_(std::move(quadrature_point_data)) {
+   @param[in] quadrature_point_data Ignored data that will be discarded, kept
+     here as an argument only for backwards compatibility.  */
+  HydroelasticContactInfo(const geometry::ContactSurface<T>* contact_surface,
+                          const SpatialForce<T>& F_Ac_W,
+                          std::vector<HydroelasticQuadraturePointData<T>>&&
+                              quadrature_point_data = {})
+      : contact_surface_(contact_surface), F_Ac_W_(F_Ac_W) {
+    unused(quadrature_point_data);
     DRAKE_DEMAND(contact_surface != nullptr);
   }
 
@@ -86,10 +83,10 @@ class HydroelasticContactInfo {
   HydroelasticContactInfo(
       std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
       const SpatialForce<T>& F_Ac_W,
-      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data)
-      : contact_surface_(std::move(contact_surface)),
-        F_Ac_W_(F_Ac_W),
-        quadrature_point_data_(std::move(quadrature_point_data)) {
+      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data =
+          {})
+      : contact_surface_(std::move(contact_surface)), F_Ac_W_(F_Ac_W) {
+    unused(quadrature_point_data);
     DRAKE_DEMAND(std::get<std::unique_ptr<geometry::ContactSurface<T>>>(
                      contact_surface_) != nullptr);
   }
@@ -113,7 +110,6 @@ class HydroelasticContactInfo {
     contact_surface_ =
         std::make_unique<geometry::ContactSurface<T>>(info.contact_surface());
     F_Ac_W_ = info.F_Ac_W_;
-    quadrature_point_data_ = info.quadrature_point_data_;
     return *this;
   }
 
@@ -122,8 +118,10 @@ class HydroelasticContactInfo {
 
   //@}
 
-  /// Returns a reference to the ContactSurface data structure. Note that
-  /// the mesh and gradient vector fields are expressed in the world frame.
+  ~HydroelasticContactInfo();
+
+  /** Returns a reference to the ContactSurface data structure. Note that
+   the mesh and gradient vector fields are expressed in the world frame. */
   const geometry::ContactSurface<T>& contact_surface() const {
     if (std::holds_alternative<const geometry::ContactSurface<T>*>(
             contact_surface_)) {
@@ -134,17 +132,19 @@ class HydroelasticContactInfo {
     }
   }
 
-  /// Gets the intermediate data, including tractions, computed by the
-  /// quadrature process.
+  DRAKE_DEPRECATED(
+      "2024-11-01",
+      "This function is being removed. "
+      "This detailed information was too costly to report, so is effectively "
+      "no longer part of the ContactResults output port. The returned vector "
+      "will always be empty during the deprecation window.")
   const std::vector<HydroelasticQuadraturePointData<T>>& quadrature_point_data()
-      const {
-    return quadrature_point_data_;
-  }
+      const;
 
-  /// Gets the spatial force applied on body A, at the centroid point C of the
-  /// surface mesh M, and expressed in the world frame W. The position `p_WC` of
-  /// the centroid point C in the world frame W can be obtained with
-  /// `contact_surface().centroid()`.
+  /** Gets the spatial force applied on body A, at the centroid point C of the
+   surface mesh M, and expressed in the world frame W. The position `p_WC` of
+   the centroid point C in the world frame W can be obtained with
+   `contact_surface().centroid()`. */
   const SpatialForce<T>& F_Ac_W() const { return F_Ac_W_; }
 
  private:
@@ -155,13 +155,21 @@ class HydroelasticContactInfo {
 
   // The spatial force applied at the centroid (Point C) of the surface mesh.
   SpatialForce<T> F_Ac_W_;
-
-  // The traction and slip velocity evaluated at each quadrature point.
-  std::vector<HydroelasticQuadraturePointData<T>> quadrature_point_data_;
 };
+
+#ifndef __MKDOC_PY__
+/** Full specialization of HydroelasticContactInfo for T = Expression, with
+ no member data. */
+template <>
+class HydroelasticContactInfo<symbolic::Expression> {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticContactInfo);
+  HydroelasticContactInfo() = default;
+};
+#endif
 
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::HydroelasticContactInfo)
+    class ::drake::multibody::HydroelasticContactInfo);
