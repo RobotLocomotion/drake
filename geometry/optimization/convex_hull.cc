@@ -3,6 +3,8 @@
 #include <limits>
 #include <memory>
 
+#include <drake/common/symbolic/expression/variables.h>
+
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -39,22 +41,10 @@ int GetAmbientDimension(const ConvexSets& sets) {
 // Add the new variables to the existing_variables from the bindings.
 void AddNewVariables(
     const std::vector<solvers::Binding<solvers::Constraint>>& bindings,
-    std::vector<symbolic::Variable>* existing_variables) {
-  std::vector<symbolic::Variable> new_vars;
+    symbolic::Variables* existing_variables) {
   for (const auto& binding : bindings) {
     const auto& vars = binding.variables();
-    for (int i = 0; i < vars.size(); ++i) {
-      const auto& var = vars(i);
-      // If the variable is not in the existing_variables, then add it to
-      if (std::any_of(existing_variables->begin(), existing_variables->end(),
-                      [&var](const symbolic::Variable& v) {
-                        return v.equal_to(var);
-                      })) {
-        continue;
-      }
-      new_vars.push_back(var);
-      existing_variables->push_back(var);
-    }
+    existing_variables->insert(symbolic::Variables(vars));
   }
 }
 
@@ -121,7 +111,7 @@ bool ConvexHull::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
     sets_[i]->AddPointInNonnegativeScalingConstraints(&prog, x_sets.col(i),
                                                       alpha(i));
   }
-  // check the feasibility
+  // Check the feasibility.
   const auto result = solvers::Solve(prog);
   return result.is_success();
 }
@@ -137,8 +127,6 @@ ConvexHull::DoAddPointInSetConstraints(
   // The variable is d * n, each column is a variable for a convex set
   auto x_sets = prog->NewContinuousVariables(d, n, "x_sets");
   auto alpha = prog->NewContinuousVariables(n, "alpha");
-  auto new_vars = std::vector<symbolic::Variable>(alpha.data(),
-                                                  alpha.data() + alpha.size());
   std::vector<solvers::Binding<solvers::Constraint>> new_bindings;
   new_bindings.push_back(prog->AddBoundingBoxConstraint(0, 1, alpha));
   // constraint: vars - ∑ᵢ xᵢ == 0 -> (1 ... 1 -1)(x_sets[i, :], vars) = 0
@@ -156,8 +144,7 @@ ConvexHull::DoAddPointInSetConstraints(
   // constraint: ∑ᵢ αᵢ = 1
   new_bindings.push_back(prog->AddLinearEqualityConstraint(
       Eigen::MatrixXd::Ones(1, n), VectorXd::Ones(1), alpha));
-  // alpha and x should already be added
-  new_vars.insert(new_vars.end(), x_sets.data(), x_sets.data() + x_sets.size());
+  auto new_vars = drake::symbolic::Variables();
   // add the constraints for each convex set
   for (int i = 0; i < n; ++i) {
     auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
@@ -165,9 +152,13 @@ ConvexHull::DoAddPointInSetConstraints(
     new_bindings.insert(new_bindings.end(), cons.begin(), cons.end());
     AddNewVariables(cons, &new_vars);
   }
-  return std::make_pair(
-      Eigen::Map<VectorX<symbolic::Variable>>(new_vars.data(), new_vars.size()),
-      std::move(new_bindings));
+  // Convert to std::vector<symbolic::Variable> because sets do not have
+  // contiguous memory.
+  std::vector<symbolic::Variable> new_vars_vec(new_vars.size());
+  std::move(new_vars.begin(), new_vars.end(), new_vars_vec.begin());
+  return std::make_pair(Eigen::Map<VectorX<symbolic::Variable>>(
+                            new_vars_vec.data(), new_vars_vec.size()),
+                        std::move(new_bindings));
 }
 
 std::vector<solvers::Binding<solvers::Constraint>>
@@ -200,7 +191,7 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   new_bindings.push_back(prog->AddLinearEqualityConstraint(a, 0, alpha_t_vec));
   // t and alpha should be positive
   new_bindings.push_back(prog->AddBoundingBoxConstraint(0, inf, alpha_t_vec));
-  // finally add the constraints for each convex set
+  // Finally add the constraints for each convex set.
   for (int i = 0; i < n; ++i) {
     auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
         prog, x_sets.col(i), alpha(i));
@@ -221,7 +212,7 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   // ∑ᵢ 𝛼ᵢ = c't + d.
   const int dim = ambient_dimension();
   const int n = std::ssize(sets_);
-  // The new variable is dim * n, each column belongs to a convex set
+  // The new variable is dim * n, each column belongs to a convex set.
   auto x_sets = prog->NewContinuousVariables(dim, n, "x_sets");
   auto alpha = prog->NewContinuousVariables(n, "alpha");
   std::vector<solvers::Binding<solvers::Constraint>> new_bindings;
@@ -247,10 +238,9 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   alpha_t_vec.tail(p) = t;
   new_bindings.push_back(
       prog->AddLinearEqualityConstraint(a_con, d, alpha_t_vec));
-  // c't + d and alpha should be positive
+  // c't + d and alpha should be positive.
   const double inf = std::numeric_limits<double>::infinity();
   new_bindings.push_back(prog->AddBoundingBoxConstraint(0, inf, alpha));
-  // finally add the constraints for each convex set
   for (int i = 0; i < n; ++i) {
     auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
         prog, x_sets.col(i), alpha(i));

@@ -91,6 +91,9 @@ GTEST_TEST(ConvexHullTest, AddPointInSetConstraints2) {
   solvers::MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2, "x");
   auto [new_vars, new_constraints] = hull.AddPointInSetConstraints(&prog, x);
+  // How many new variables are added?
+  // 2 alphas, 2*2 x variables. Total 6.
+  EXPECT_EQ(new_vars.size(), 6);
   prog.AddQuadraticCost((x - Eigen::Vector2d(0.8, 0.0)).squaredNorm());
   const auto result = Solve(prog);
   EXPECT_TRUE(result.is_success());

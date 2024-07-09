@@ -15,6 +15,11 @@ namespace optimization {
  Xₙ}, the convex hull is the set of all convex combinations of points in the
  sets, i.e. {∑ᵢ λᵢ xᵢ | xᵢ ∈ Xᵢ, λᵢ ≥ 0, ∑ᵢ λᵢ = 1}.
 
+@note If any of the participating sets, Xᵢ = ∅, is empty, then the convex hull
+is also considered empty. This interpretation arises because mathematical
+problems involving constraints such as xᵢ ∈ Xᵢ or variations thereof become
+infeasible. It is advisable to verify the emptiness of the participating sets
+before attempting to construct the convex hull.
 @ingroup geometry_optimization */
 class ConvexHull final : public ConvexSet, private ShapeReifier {
  public:
