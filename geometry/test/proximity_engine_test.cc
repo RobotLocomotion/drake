@@ -2478,6 +2478,14 @@ GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
   std::vector<SignedDistancePair<double>> results_all =
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
   EXPECT_EQ(results_all.size(), 3u);
+  // Make sure the result is sorted
+  auto compare_signed_distance_pair = [](const SignedDistancePair<double>& p1,
+                                         const SignedDistancePair<double>& p2) {
+    if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
+    return p1.id_B < p2.id_B;
+  };
+  EXPECT_TRUE(compare_signed_distance_pair(results_all[0], results_all[1]));
+  EXPECT_TRUE(compare_signed_distance_pair(results_all[1], results_all[2]));
 
   std::vector<SignedDistancePair<double>> results_zero =
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, 0);
