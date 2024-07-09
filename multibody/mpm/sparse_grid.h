@@ -97,8 +97,28 @@ class SparseGrid {
    neighbors. */
   NeighborArray<GridData<T>> GetNeighborData(uint64_t base_node_offset) const;
 
+  /* Given the offset of a grid node, writes the grid data in its 3x3x3
+   neighbors to the sparse grid. */
   void SetNeighborData(uint64_t base_node_offset,
                        const NeighborArray<GridData<T>>& data);
+  
+  void ExplicitVelocityUpdate(const T& dt, const Vector3<T>& gravity) {
+    const uint64_t page_size = 1 << kLog2Page;
+    const uint64_t data_size = sizeof(GridData<T>);
+    auto [block_offsets, num_blocks] = padded_blocks_->Get_Blocks();
+    Array grid_data = allocator_->Get_Array();
+    for (int b = 0; b < static_cast<int>(num_blocks); ++b) {
+      const uint64_t block_offset = block_offsets[b];
+      for (uint64_t i = 0; i < page_size; i += data_size) {
+        const uint64_t node_offset = block_offset + i;
+        GridData<T>& node_data = grid_data(node_offset);
+        if (node_data.m > 0.0) {
+          node_data.v /= node_data.m;
+          node_data.v += gravity * dt;
+        }
+      }
+    }
+  }
 
   /* Returns the offset (1D index) of a grid node given its 3D grid coordinates
    in world space. */
@@ -139,6 +159,21 @@ class SparseGrid {
     return result;
   }
 
+  MassAndMomentum<T> ComputeTotalMassAndMomentum() const {
+    MassAndMomentum<T> result;
+    const std::vector<std::pair<Vector3<int>, GridData<T>>> grid_data =
+        GetGridData();
+    for (int i = 0; i < ssize(grid_data); ++i) {
+      const T& mi = grid_data[i].second.m;
+      const Vector3<T>& vi = grid_data[i].second.v;
+      const Vector3<T>& xi = grid_data[i].first.template cast<T>() * dx_;
+      result.mass += grid_data[i].second.m;
+      result.linear_momentum += mi * vi;
+      result.angular_momentum += mi * xi.cross(vi);
+    }
+    return result;
+  }
+
  private:
   static constexpr int kLog2Page = 12;  // 4KB page size.
   static constexpr int kDim = 3;        // 3D grid.
@@ -162,7 +197,7 @@ class SparseGrid {
 
   /* Helper for `Allocate()` that sorts particles into bins based on their
    positions. In that process, builds `partilces_` and `sentinel_particles_`.
- */
+  */
   void SortParticleIndices(const std::vector<Vector3<T>>& particle_positions);
 
   T dx_{};  // Grid spacing (in meters).

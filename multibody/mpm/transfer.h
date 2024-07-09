@@ -1,11 +1,13 @@
 #pragma once
 
 #include <array>
-#include <vector>
 #include <iostream>
+#include <vector>
 
 #include "particles.h"
 #include "sparse_grid.h"
+
+#include "drake/common/ssize.h"
 
 namespace drake {
 namespace multibody {
@@ -28,9 +30,22 @@ class Transfer {
     const int num_blocks = sparse_grid_->num_blocks();
     const std::vector<ParticleIndex>& particle_indices =
         sparse_grid_->particle_indices();
+    std::cout << "particle base nodes: " << std::endl;
+    for (int i = 0; i < ssize(particle_indices); i++) {
+      Vector3<int> grid_coords =
+          sparse_grid_->OffsetToCoordinate(particle_indices[i].base_node_offset);
+      std::cout << grid_coords[0] << " " << grid_coords[1] << " "
+                << grid_coords[2] << std::endl;
+    }
     const std::vector<int>& sentinel_particles =
         sparse_grid_->sentinel_particles();
+    std::cout << "sentinel_particles: " << std::endl;
+    for (int i = 0; i < ssize(sentinel_particles); i++) {
+      std::cout << sentinel_particles[i] << std::endl;
+    }
+
     for (int b = 0; b < num_blocks; ++b) {
+      std::cout << "b = " << b << std::endl;
       const int particle_start = sentinel_particles[b];
       const int particle_end = sentinel_particles[b + 1];
       NeighborArray<Vector3<T>> grid_x = sparse_grid_->GetNeighborNodes(
@@ -38,6 +53,7 @@ class Transfer {
       NeighborArray<GridData<T>> grid_data = sparse_grid_->GetNeighborData(
           particle_indices[particle_start].base_node_offset);
       for (int p = particle_start; p < particle_end; ++p) {
+        std::cout << "p = " << p << std::endl;
         const ParticleIndex& particle_index = particle_indices[p];
         const Particle<T> particle = particles_->particle(p);
         const T& m = particle.m;
@@ -50,11 +66,13 @@ class Transfer {
           for (int j = 0; j < 3; ++j) {
             for (int k = 0; k < 3; ++k) {
               const T& w = bspline.weight(i, j, k);
+              std::cout << "w = " << w << std::endl;
               const Vector3<T>& xi = grid_x[i][j][k];
               // TODO(xuchenhan): Better document this. The formula isn't
               // exactly the same as the paper spells out.
               /* Use the grid velocity data to store momentum. */
               T mi = m * w;
+              std::cout << "mi = " << mi << std::endl;
               grid_data[i][j][k].v +=
                   mi * v + (m * C - D_inverse_ * dt_ * P) * (xi - x) * w;
               grid_data[i][j][k].m += mi;

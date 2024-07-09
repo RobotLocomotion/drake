@@ -40,6 +40,23 @@ struct ParticleData {
   std::vector<BSplineWeights<T>> bspline;
 };
 
+template <typename T>
+MassAndMomentum<T> ComputeTotalMassAndMomentum(const ParticleData<T>& particles,
+                                               const T& dx) {
+  MassAndMomentum<T> result;
+  const T D = dx * dx * 0.25;
+  const int num_particles = particles.m.size();
+  for (int i = 0; i < num_particles; ++i) {
+    result.mass += particles.m[i];
+    result.linear_momentum += particles.m[i] * particles.v[i];
+    const Matrix3<T> B = particles.C[i] * D;  // C = B * D^{-1}
+    result.angular_momentum +=
+        particles.m[i] *
+        (particles.x[i].cross(particles.v[i]) + ContractWithLeviCivita(B));
+  }
+  return result;
+}
+
 }  // namespace internal
 }  // namespace mpm
 }  // namespace multibody

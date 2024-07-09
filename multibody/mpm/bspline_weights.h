@@ -9,6 +9,36 @@ namespace multibody {
 namespace mpm {
 namespace internal {
 
+/* Returns (i, j, k)th entry of the third order permutation tensor.
+ See https://en.wikipedia.org/wiki/Levi-Civita_symbol for details.
+ @pre i, j, k ∈ {0, 1, 2} */
+inline double LeviCivita(int i, int j, int k) {
+  static const double lookup_table[3][3][3] = {
+      {{0.0, 0.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, -1.0, 0.0}},
+      {{0.0, 0.0, -1.0}, {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}},
+      {{0.0, 1.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}};
+
+  return lookup_table[i][j][k];
+}
+
+/* Computes A: εwhere ε is the Levi-Civita tensor. */
+template <typename T>
+Vector3<T> ContractWithLeviCivita(const Matrix3<T>& A) {
+  Vector3<T> A_dot_eps = {0.0, 0.0, 0.0};
+  A_dot_eps(0) = A(1, 2) - A(2, 1);
+  A_dot_eps(1) = A(2, 0) - A(0, 2);
+  A_dot_eps(2) = A(0, 1) - A(1, 0);
+  return A_dot_eps;
+}
+
+// TODO(xuchenhan-tri): Move this into a separate file.
+template <typename T>
+struct MassAndMomentum {
+  T mass{0.0};
+  Vector3<T> linear_momentum{Vector3<T>::Zero()};
+  Vector3<T> angular_momentum{Vector3<T>::Zero()};
+};
+
 /* Computes the the 1D base node of a point x in reference space. */
 template <typename T>
 int base_node(const T& x) {
@@ -25,6 +55,7 @@ Vector3<int> base_node(const Vector3<T>& x) {
   return result;
 }
 
+// TODO(xuchenhan-tri): MLS-MPM doesn't need weight gradients.
 template <typename T>
 struct BSplineWeights {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BSplineWeights);
