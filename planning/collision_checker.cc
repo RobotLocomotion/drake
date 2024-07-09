@@ -28,6 +28,8 @@ using common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum;
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
 using common_robotics_utilities::parallelism::ParallelForBackend;
 using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
+using common_robotics_utilities::parallelism::StaticParallelForRangeLoop;
+using common_robotics_utilities::parallelism::ThreadWorkRange;
 using geometry::GeometryId;
 using geometry::QueryObject;
 using geometry::SceneGraphInspector;
@@ -710,9 +712,11 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
     // extensions/connections will result in a colliding configuration, so
     // failing fast on a colliding q2 helps reduce the work of checking
     // colliding edges.
-    // There is also no need to special case checking q1, since it will be the
-    // first configuration checked in the loop.
     if (!CheckConfigCollisionFree(q2)) {
+      return false;
+    }
+    // Special case q1 as well, so it gets checked before parallel dispatch.
+    if (!CheckConfigCollisionFree(q1)) {
       return false;
     }
 
@@ -721,20 +725,30 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
         static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
     std::atomic<bool> edge_valid(true);
 
-    const auto step_work = [&](const int thread_num, const int64_t step) {
-      if (edge_valid.load()) {
-        const double ratio =
-            static_cast<double>(step) / static_cast<double>(num_steps);
-        const Eigen::VectorXd qinterp =
-            InterpolateBetweenConfigurations(q1, q2, ratio);
-        if (!CheckConfigCollisionFree(qinterp, thread_num)) {
-          edge_valid.store(false);
+    const auto step_range_work = [&](const ThreadWorkRange& work_range) {
+      for (int64_t step = work_range.GetRangeStart();
+           step < work_range.GetRangeEnd(); ++step) {
+        if (edge_valid.load()) {
+          // If no collision has been found, check the next step.
+          const double ratio =
+              static_cast<double>(step) / static_cast<double>(num_steps);
+          const Eigen::VectorXd qinterp =
+              InterpolateBetweenConfigurations(q1, q2, ratio);
+          if (!CheckConfigCollisionFree(qinterp, work_range.GetThreadNum())) {
+            // If we have encountered a collision, record it and end early.
+            edge_valid.store(false);
+            break;
+          }
+        } else {
+          // If another thread encountered a collision, end early as well.
+          break;
         }
       }
     };
 
-    StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
-                               num_steps, step_work,
+    // Note that the range starts at 1, not 0, as we have already checked q1.
+    StaticParallelForRangeLoop(DegreeOfParallelism(number_of_threads), 1,
+                               num_steps, step_range_work,
                                ParallelForBackend::BEST_AVAILABLE);
 
     return edge_valid.load();
@@ -813,31 +827,50 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
     std::atomic<double> alpha;
     // Start by assuming the whole edge is fine; we'll whittle away at it.
     alpha.store(1.0);
-    std::mutex alpha_mutex;
 
-    const auto step_work = [&](const int thread_num, const int64_t step) {
-      const double ratio =
-          static_cast<double>(step) / static_cast<double>(num_steps);
-      // If this step fails, this is the alpha which we would report.
-      const double possible_alpha =
-          static_cast<double>(step - 1) / static_cast<double>(num_steps);
-      if (possible_alpha < alpha.load()) {
-        const Eigen::VectorXd qinterp =
-            InterpolateBetweenConfigurations(q1, q2, ratio);
-        if (!CheckConfigCollisionFree(qinterp, thread_num)) {
-          std::lock_guard<std::mutex> update_lock(alpha_mutex);
-          // Between the initial decision to interpolate and check collisions
-          // and now, another thread may have proven a *lower* alpha is invalid;
-          // check again before setting *this* as the lowest known invalid step.
-          if (possible_alpha < alpha.load()) {
-            alpha.store(possible_alpha);
-          }
+    // This is a manual implementation of the core behavior of
+    // std::atomic<T>::fetch_min from C++26, and can be replaced with fetch_min
+    // once available.
+    const auto fetch_min = [](std::atomic<double>* existing, double value) {
+      double stored = existing->load();
+      while (value < stored) {
+        if (existing->compare_exchange_weak(stored, value)) {
+          break;
         }
       }
     };
 
-    StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
-                               num_steps + 1, step_work,
+    const auto step_range_work = [&](const ThreadWorkRange& work_range) {
+      for (int64_t step = work_range.GetRangeStart();
+           step < work_range.GetRangeEnd(); ++step) {
+        const double ratio =
+            static_cast<double>(step) / static_cast<double>(num_steps);
+        // If this step fails, this is the alpha which we would report.
+        const double possible_alpha =
+            static_cast<double>(step - 1) / static_cast<double>(num_steps);
+
+        if (possible_alpha < alpha.load()) {
+          // If no lower alpha has been found, check the next configuration.
+          const Eigen::VectorXd qinterp =
+              InterpolateBetweenConfigurations(q1, q2, ratio);
+          if (!CheckConfigCollisionFree(qinterp, work_range.GetThreadNum())) {
+            // Between the initial decision to interpolate and check collisions
+            // and now, another thread may have proven a *lower* alpha is
+            // invalid; we need an atomic min of our current alpha and the
+            // stored alpha.
+            fetch_min(&alpha, possible_alpha);
+            // Stop because we have found a colliding configuration.
+            break;
+          }
+        } else {
+          // A different thread has already found a lower alpha, so we can stop.
+          break;
+        }
+      }
+    };
+
+    StaticParallelForRangeLoop(DegreeOfParallelism(number_of_threads), 0,
+                               num_steps + 1, step_range_work,
                                ParallelForBackend::BEST_AVAILABLE);
 
     return EdgeMeasure(distance, alpha.load());
