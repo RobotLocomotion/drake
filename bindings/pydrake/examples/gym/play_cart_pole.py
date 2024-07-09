@@ -75,7 +75,7 @@ def _main():
         # TODO(#21577) Importing Gym on macOS Homebrew goes up in flames.
         # We need to skip this test in Drake CI.
         print("Testing is disabled when on macOS")
-        sys.exit(0)
+        return
 
     if not args.debug:
         warnings.filterwarnings("ignore")
