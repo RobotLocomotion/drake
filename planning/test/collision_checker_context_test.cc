@@ -32,9 +32,11 @@ class DummyContext final : public CollisionCheckerContext {
 };
 
 /* Simply confirms that providing *only* a model populates all the contexts (and
- the attendant query object). */
+ the attendant query object). We disable output port sampling to check that the
+ plant operates correctly in minimal-state mode. */
 GTEST_TEST(CollisionCheckerContextTest, SimpleConstructor) {
   RobotDiagramBuilder<double> builder;
+  builder.plant().SetUseSampledOutputPorts(false);
   auto diagram = builder.Build();
   CollisionCheckerContext dut(diagram.get());
   EXPECT_EQ(dut.model_context().num_total_states(), 0);

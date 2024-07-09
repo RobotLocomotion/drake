@@ -26,6 +26,9 @@ class MultibodyForces {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces);
 
+  // Objects that can be moved-from should always have a default constructor.
+  MultibodyForces() = default;
+
   /// Constructs a force object to store a set of forces to be applied to
   /// the multibody model for `plant`. Forces are initialized to zero, meaning
   /// no forces are applied.
