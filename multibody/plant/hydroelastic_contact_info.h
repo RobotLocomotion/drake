@@ -2,16 +2,19 @@
 
 #include <memory>
 #include <utility>
-#include <variant>
+
+// Remove 2024-11-01 with deprecation.
 #include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/unused.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/multibody/math/spatial_algebra.h"
+
+// Remove 2024-11-01 with deprecation.
+#include "drake/common/unused.h"
 #include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 
 namespace drake {
@@ -39,97 +42,80 @@ namespace multibody {
 template <typename T>
 class HydroelasticContactInfo {
  public:
-  /** @name                 Construction
-   The constructors below adhere to a number of invariants. The
-   geometry::ContactSurface defines contact between two geometries M and N (via
-   contact_surface().id_M() and contact_surface().id_N(), respectively).
+  /** Constructs this structure using the given contact surface and spatial
+   force.
+
+   The geometry::ContactSurface defines contact between two geometries M and N
+   (via contact_surface().id_M() and contact_surface().id_N(), respectively).
    %HydroelasticContactInfo further associates geometries M and N with the
    bodies to which they are rigidly fixed, A and B, respectively. It is the
-   responsibility of the caller of these constructors to ensure that the
+   responsibility of the caller of this constructor to ensure that the
    parameters satisfy the documented invariants, see below. Similarly, the
    spatial force `F_Ac_W` must be provided as indicated by the monogram notation
    in use, that is, it is the spatial force on body A, at the contact surface's
-   centroid C, and expressed in the world frame. */
-  // @{
-
-  /**
-   @anchor hydro_contact_info_non_owning_ctor
-   Constructs this structure using the given contact surface, traction field,
-   and slip field. This constructor does not own the ContactSurface; it points
-   to a ContactSurface that another owns, see contact_surface().
+   centroid C, and expressed in the world frame.
 
    @param[in] contact_surface Contact surface between two geometries M and N,
      see geometry::ContactSurface::id_M() and geometry::ContactSurface::id_N().
+     This must point to immutable data (i.e., data that will never change),
+     and must not be nullptr.
    @param[in] F_Ac_W Spatial force applied on body A, at contact surface
      centroid C, and expressed in the world frame W. The position `p_WC` of C in
      the world frame W can be obtained with
-     `ContactSurface::centroid()`.
-   @param[in] quadrature_point_data Ignored data that will be discarded, kept
-     here as an argument only for backwards compatibility.  */
-  HydroelasticContactInfo(const geometry::ContactSurface<T>* contact_surface,
-                          const SpatialForce<T>& F_Ac_W,
-                          std::vector<HydroelasticQuadraturePointData<T>>&&
-                              quadrature_point_data = {})
-      : contact_surface_(contact_surface), F_Ac_W_(F_Ac_W) {
-    unused(quadrature_point_data);
-    DRAKE_DEMAND(contact_surface != nullptr);
+     `ContactSurface::centroid()`. */
+  HydroelasticContactInfo(
+      std::shared_ptr<const geometry::ContactSurface<T>> contact_surface,
+      const SpatialForce<T>& F_Ac_W)
+      : contact_surface_(std::move(contact_surface)), F_Ac_W_(F_Ac_W) {
+    DRAKE_THROW_UNLESS(contact_surface_ != nullptr);
   }
 
-  /** This constructor takes ownership of `contact_surface` via a
-   std::unique_ptr, instead of aliasing a pre-existing contact surface. In all
-   other respects, it is identical to the @ref
-   hydro_contact_info_non_owning_ctor "other overload" that takes
-   `contact_surface` by raw pointer.  */
+  /** (Advanced) Constructs by aliasing the given contact_surface, without any
+   expensive reference counting. It is the responsibility of the caller to
+   ensure that the given contact_surface outlives this object. Copying or
+   moving this object will result in a deep copy of the surface. */
+  HydroelasticContactInfo(const geometry::ContactSurface<T>* contact_surface,
+                          const SpatialForce<T>& F_Ac_W)
+      // Delegate to the prior constructor, by using a shared_ptr with no
+      // managed object.
+      : HydroelasticContactInfo(
+            std::shared_ptr<const geometry::ContactSurface<T>>(
+                /* managed object = */ std::shared_ptr<const void>{},
+                /* stored pointer = */ contact_surface),
+            F_Ac_W) {}
+
+  DRAKE_DEPRECATED("2024-11-01", "Do not pass quadrature_point_data.")
+  HydroelasticContactInfo(
+      const geometry::ContactSurface<T>* contact_surface,
+      const SpatialForce<T>& F_Ac_W,
+      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data)
+      : HydroelasticContactInfo(contact_surface, F_Ac_W) {
+    unused(quadrature_point_data);
+  }
+
+  DRAKE_DEPRECATED("2024-11-01", "Do not pass quadrature_point_data.")
   HydroelasticContactInfo(
       std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
       const SpatialForce<T>& F_Ac_W,
-      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data =
-          {})
-      : contact_surface_(std::move(contact_surface)), F_Ac_W_(F_Ac_W) {
+      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data)
+      : HydroelasticContactInfo(std::move(contact_surface), F_Ac_W) {
     unused(quadrature_point_data);
-    DRAKE_DEMAND(std::get<std::unique_ptr<geometry::ContactSurface<T>>>(
-                     contact_surface_) != nullptr);
-  }
-  // @}
-
-  /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
-  /// MoveAssignable.
-  //@{
-
-  /** Clones this data structure, making deep copies of all underlying data.
-   @note The new object will contain a cloned ContactSurface even if the
-         original was constructed using a raw pointer referencing an existing
-         ContactSurface.
-   */
-  HydroelasticContactInfo(const HydroelasticContactInfo& info) { *this = info; }
-
-  /** Clones this object in the same manner as the copy constructor.
-   @see HydroelasticContactInfo(const HydroelasticContactInfo&)
-   */
-  HydroelasticContactInfo& operator=(const HydroelasticContactInfo& info) {
-    contact_surface_ =
-        std::make_unique<geometry::ContactSurface<T>>(info.contact_surface());
-    F_Ac_W_ = info.F_Ac_W_;
-    return *this;
   }
 
-  HydroelasticContactInfo(HydroelasticContactInfo&&) = default;
-  HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
-
-  //@}
+  /** @name Implements CopyConstructible, CopyAssignable */
+  /** @{ */
+  HydroelasticContactInfo(const HydroelasticContactInfo&);
+  HydroelasticContactInfo& operator=(const HydroelasticContactInfo&);
+  // The move operators would offer no real performance advantage over copying,
+  // so we don't provide either of the move overloads.
+  /** @} */
 
   ~HydroelasticContactInfo();
 
   /** Returns a reference to the ContactSurface data structure. Note that
    the mesh and gradient vector fields are expressed in the world frame. */
   const geometry::ContactSurface<T>& contact_surface() const {
-    if (std::holds_alternative<const geometry::ContactSurface<T>*>(
-            contact_surface_)) {
-      return *std::get<const geometry::ContactSurface<T>*>(contact_surface_);
-    } else {
-      return *std::get<std::unique_ptr<geometry::ContactSurface<T>>>(
-          contact_surface_);
-    }
+    return *contact_surface_;
   }
 
   DRAKE_DEPRECATED(
@@ -149,9 +135,8 @@ class HydroelasticContactInfo {
 
  private:
   // Note that the mesh of the contact surface is defined in the world frame.
-  std::variant<const geometry::ContactSurface<T>*,
-               std::unique_ptr<geometry::ContactSurface<T>>>
-      contact_surface_;
+  // This is never nullptr.
+  std::shared_ptr<const geometry::ContactSurface<T>> contact_surface_;
 
   // The spatial force applied at the centroid (Point C) of the surface mesh.
   SpatialForce<T> F_Ac_W_;
