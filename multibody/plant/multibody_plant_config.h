@@ -17,6 +17,7 @@ struct MultibodyPlantConfig {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(time_step));
+    a->Visit(DRAKE_NVP(use_sampled_output_ports));
     a->Visit(DRAKE_NVP(penetration_allowance));
     a->Visit(DRAKE_NVP(stiction_tolerance));
     a->Visit(DRAKE_NVP(contact_model));
@@ -33,6 +34,15 @@ struct MultibodyPlantConfig {
   /// we choose a nominal value (a discrete system, with a 1ms periodic update)
   /// as a reasonably conservative estimate that works in many cases.
   double time_step{0.001};
+
+  /// Configures the MultibodyPlant::SetUseSampledOutputPorts().
+  /// Ignored when the time_step is zero.
+  ///
+  /// @experimental We hope that in the future, instead of disabling sampling,
+  /// instead you'll be able to use a continuous-time plant. However, at the
+  /// moment, that is impractical because the continuous-time plant does not
+  /// yet support all modeling features (e.g., constraints, implicit PD).
+  bool use_sampled_output_ports{true};
 
   /// Configures the MultibodyPlant::set_penetration_allowance().
   double penetration_allowance{0.001};
