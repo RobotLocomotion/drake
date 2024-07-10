@@ -1512,9 +1512,8 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
   }
 
   if (no_feasible_paths) {
-    log()->info(
-        "Could find not find any feasible paths using flow tolerance {}.",
-        options.flow_tolerance);
+    log()->info("Could not find any feasible paths using flow tolerance {}.",
+                options.flow_tolerance);
   } else {
     log()->info("Found {} unique paths, discarded {} duplicate paths.",
                 paths.size(), num_trials - paths.size());
