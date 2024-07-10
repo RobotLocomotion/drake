@@ -73,6 +73,7 @@
 /// See also @ref system_scalar_conversion.
 /// @{
 
+#ifndef DRAKE_ONCE_PER_SCALAR_PHASE
 /// Defines template instantiations for Drake's default scalars.
 /// This should only be used in .cc files, never in .h files.
 #define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
@@ -80,7 +81,25 @@
 template SomeType<double>; \
 template SomeType<::drake::AutoDiffXd>; \
 template SomeType<::drake::symbolic::Expression>;
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 0
+#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    SomeType) \
+template SomeType<double>;
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 1
+#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    SomeType) \
+template SomeType<::drake::AutoDiffXd>;
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 2
+#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    SomeType) \
+template SomeType<::drake::symbolic::Expression>;
+#else
+#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    SomeType) \
+static_assert(true);
+#endif
 
+#ifndef DRAKE_ONCE_PER_SCALAR_PHASE
 /// Defines template instantiations for Drake's default nonsymbolic scalars.
 /// This should only be used in .cc files, never in .h files.
 #define \
@@ -88,6 +107,22 @@ template SomeType<::drake::symbolic::Expression>;
       SomeType) \
 template SomeType<double>; \
 template SomeType<::drake::AutoDiffXd>;
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 0
+#define \
+  DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
+      SomeType) \
+template SomeType<double>;
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 1
+#define \
+  DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
+      SomeType) \
+template SomeType<::drake::AutoDiffXd>;
+#else
+#define \
+  DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
+      SomeType) \
+static_assert(true);
+#endif
 
 /// Declares that template instantiations exist for Drake's default scalars.
 /// This should only be used in .h files, never in .cc files.
@@ -184,6 +219,7 @@ extern template SomeType<::drake::AutoDiffXd>;
 // can't use a namespace because we need to allow for easy friendship in case a
 // member function does not have public access.
 
+#ifndef DRAKE_ONCE_PER_SCALAR_PHASE
 /// Defines template instantiations for Drake's default scalars.
 /// This should only be used in .cc files, never in .h files.
 #define DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
@@ -200,12 +236,69 @@ template<typename... Ts> \
 constexpr auto Make_Function_Pointers_Pack1() { \
   return std::tuple_cat(Make_Function_Pointers_Pack2<Ts, Ts...>()...); \
 } \
-static constexpr auto Function_Femplates __attribute__((used)) = \
+static constexpr auto Function_Templates __attribute__((used)) = \
     Make_Function_Pointers_Pack1< \
         double, \
         ::drake::AutoDiffXd, \
         ::drake::symbolic::Expression>();
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 0
+#define DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    FunctionPointersTuple) \
+template<typename T, typename U> \
+constexpr auto Make_Function_Pointers() { \
+  return std::make_tuple FunctionPointersTuple ; \
+} \
+template<typename T, typename... Us> \
+constexpr auto Make_Function_Pointers_Pack2() { \
+  return std::tuple_cat(Make_Function_Pointers<T, Us>()...); \
+} \
+static constexpr auto Function_Templates __attribute__((used)) = \
+    Make_Function_Pointers_Pack2< \
+        double, \
+        double, \
+        ::drake::AutoDiffXd, \
+        ::drake::symbolic::Expression>();
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 1
+#define DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    FunctionPointersTuple) \
+template<typename T, typename U> \
+constexpr auto Make_Function_Pointers() { \
+  return std::make_tuple FunctionPointersTuple ; \
+} \
+template<typename T, typename... Us> \
+constexpr auto Make_Function_Pointers_Pack2() { \
+  return std::tuple_cat(Make_Function_Pointers<T, Us>()...); \
+} \
+static constexpr auto Function_Templates __attribute__((used)) = \
+    Make_Function_Pointers_Pack2< \
+        ::drake::AutoDiffXd, \
+        double, \
+        ::drake::AutoDiffXd, \
+        ::drake::symbolic::Expression>();
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 2
+#define DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    FunctionPointersTuple) \
+template<typename T, typename U> \
+constexpr auto Make_Function_Pointers() { \
+  return std::make_tuple FunctionPointersTuple ; \
+} \
+template<typename T, typename... Us> \
+constexpr auto Make_Function_Pointers_Pack2() { \
+  return std::tuple_cat(Make_Function_Pointers<T, Us>()...); \
+} \
+static constexpr auto Function_Templates __attribute__((used)) = \
+    Make_Function_Pointers_Pack2< \
+        ::drake::symbolic::Expression, \
+        double, \
+        ::drake::AutoDiffXd, \
+        ::drake::symbolic::Expression>();
+#else
+#define DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    FunctionPointersTuple) \
+static_assert(true);
+#endif
 
+#ifndef DRAKE_ONCE_PER_SCALAR_PHASE
 /// Defines template instantiations for Drake's default nonsymbolic scalars.
 /// This should only be used in .cc files, never in .h files.
 #define \
@@ -228,5 +321,47 @@ static constexpr auto Function_Templates_Nonsym __attribute__((used)) = \
     Make_Function_Pointers_Nonsym_Pack1< \
         double, \
         ::drake::AutoDiffXd>();
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 0
+#define \
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
+    FunctionPointersTuple) \
+template<typename T, typename U> \
+constexpr auto Make_Function_Pointers_Nonsym() { \
+  return std::make_tuple FunctionPointersTuple ; \
+} \
+template<typename T, typename... Us> \
+constexpr auto Make_Function_Pointers_Nonsym_Pack2() { \
+  return std::tuple_cat(Make_Function_Pointers_Nonsym<T, Us>()...); \
+} \
+/* NOLINTNEXTLINE(readability/fn_size) */ \
+static constexpr auto Function_Templates_Nonsym __attribute__((used)) = \
+    Make_Function_Pointers_Nonsym_Pack2< \
+        double, \
+        double, \
+        ::drake::AutoDiffXd>();
+#elif DRAKE_ONCE_PER_SCALAR_PHASE == 1
+#define \
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
+    FunctionPointersTuple) \
+template<typename T, typename U> \
+constexpr auto Make_Function_Pointers_Nonsym() { \
+  return std::make_tuple FunctionPointersTuple ; \
+} \
+template<typename T, typename... Us> \
+constexpr auto Make_Function_Pointers_Nonsym_Pack2() { \
+  return std::tuple_cat(Make_Function_Pointers_Nonsym<T, Us>()...); \
+} \
+/* NOLINTNEXTLINE(readability/fn_size) */ \
+static constexpr auto Function_Templates_Nonsym __attribute__((used)) = \
+    Make_Function_Pointers_Nonsym_Pack2< \
+        ::drake::AutoDiffXd, \
+        double, \
+        ::drake::AutoDiffXd>();
+#else
+#define \
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
+    FunctionPointersTuple) \
+static_assert(true);
+#endif
 
 /// @}
