@@ -694,10 +694,16 @@ class GraphOfConvexSets {
    of the rounding scheme put forth in Section 4.2 of "Motion Planning around
    Obstacles with Convex Optimization": https://arxiv.org/abs/2205.04422
 
+   @param source specifies the source vertex.
+   @param target specifies the target vertex.
+   @param flows specifies the edge flows, which are interprested as the
+   probability of transition an edge. Edge flows that are not specified are
+   taken to be zero.
    @param options include all settings for sampling the paths. Specifically,
    the behavior of this function is determined through `options.rounding_seed`,
    `options.max_rounded_paths`, `options.max_rounding_trials`, and
    `options.flow_tolerance`, as described in `GraphOfConvexSetsOptions`.
+   @returns A vector of paths, where each path is a vector of `Edge`s.
    @throws std::exception if options.max_rounded_path < 1.
    @pydrake_mkdoc_identifier{flows}
    */
@@ -714,10 +720,13 @@ class GraphOfConvexSets {
    of the rounding scheme put forth in Section 4.2 of "Motion Planning around
    Obstacles with Convex Optimization": https://arxiv.org/abs/2205.04422
 
+   @param source specifies the source vertex.
+   @param target specifies the target vertex.
    @param options include all settings for sampling the paths. Specifically,
    the behavior of this function is determined through `options.rounding_seed`,
    `options.max_rounded_paths`, `options.max_rounding_trials`, and
    `options.flow_tolerance`, as described in `GraphOfConvexSetsOptions`.
+   @returns A vector of paths, where each path is a vector of `Edge`s.
    @throws std::exception if options.max_rounded_path < 1.
    @pydrake_mkdoc_identifier{result}
    */
