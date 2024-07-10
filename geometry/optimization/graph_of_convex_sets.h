@@ -673,8 +673,10 @@ class GraphOfConvexSets {
   values, according to `options`.
   @param result the optional result from a solver.
   @param options the struct containing various options for visualization.
-  @param active_path optionally highlights a path in the graph. The path is
-  displayed addition to the edges as additional red edges in the graph. */
+  @param active_path optionally highlights a given path in the graph. The path
+  is displayed as dashed edges in red, displayed in addition to the original
+  graph edges.
+   */
   std::string GetGraphvizString(
       const std::optional<solvers::MathematicalProgramResult>& result =
           std::nullopt,
