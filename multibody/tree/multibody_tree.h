@@ -1268,6 +1268,13 @@ class MultibodyTree {
       const Frame<T>& frame_A, const Frame<T>& frame_E) const;
 
   // See MultibodyPlant method.
+  Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A, const Frame<T>& frame_E) const;
+
+  // See MultibodyPlant method.
   Matrix3X<T> CalcBiasTranslationalAcceleration(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,

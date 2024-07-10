@@ -3324,6 +3324,70 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
 }
 
 template <typename T>
+Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances,
+    JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_A, const Frame<T>& frame_E) const {
+  // Reminder: MultibodyTree always declares a world body and 2 model instances
+  // "world" and "default" so num_model_instances() should always be >= 2.
+  if (num_bodies() <= 1) {
+    std::string message = fmt::format(
+        "{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.",
+        __func__);
+    throw std::logic_error(message);
+  }
+
+  // Sum over all the bodies that are in model_instances except for the 0th body
+  // (which is the world body), and count each body's contribution only once.
+  // Reminder: Although it is not possible for a body to belong to multiple
+  // model instances [as RigidBody::model_instance() returns a body's unique
+  // model instance], it is possible for the same model instance to be added
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances).
+  // The code below ensures a body's contribution to the sum occurs only once.
+  // Duplicate model_instances in std::vector are an upstream user error.
+  T total_mass = 0;
+  Vector3<T> sum_mi_ai = Vector3<T>::Zero();  // ∑ mᵢ aᵢ = ∑ mᵢ asBias_ABcm_E
+  int number_of_non_world_bodies_processed = 0;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const RigidBody<T>& body = get_body(body_index);
+    if (std::find(model_instances.begin(), model_instances.end(),
+                  body.model_instance()) != model_instances.end()) {
+      ++number_of_non_world_bodies_processed;
+      const T& body_mass = body.get_mass(context);
+      total_mass += body_mass;  // total mass = ∑ mᵢ.
+      const Frame<T> body_frame = body.body_frame();
+      const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+      const SpatialAcceleration<T> AsBias_ABcm_E = CalcBiasSpatialAcceleration(
+          context, with_respect_to, body_frame, p_BoBcm_B, frame_A, frame_E);
+      const Vector3<T> asBias_ABcm_E = AsBias_ABcm_E.translational();
+      sum_mi_ai += body_mass * asBias_ABcm_E;  // ∑ mᵢ aᵢ = ∑ mᵢ asBias_ABcm_E
+    }
+  }
+
+  // Throw an exception if there are zero non-world bodies in model_instances.
+  if (number_of_non_world_bodies_processed == 0) {
+    std::string message = fmt::format(
+        "{}(): There must be at least one "
+        "non-world body contained in model_instances.",
+        __func__);
+    throw std::logic_error(message);
+  }
+
+  if (total_mass <= 0) {
+    std::string message = fmt::format(
+        "{}(): The system's total mass must "
+        "be greater than zero.",
+        __func__);
+    throw std::logic_error(message);
+  }
+
+  return sum_mi_ai / total_mass;  // Return asBias_AScm_W
+}
+
+
+template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(
     const systems::Context<T>& context) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
