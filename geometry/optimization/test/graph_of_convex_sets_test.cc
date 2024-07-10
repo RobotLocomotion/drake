@@ -2901,6 +2901,27 @@ GTEST_TEST(ShortestPathTest, SavvaBoxExample) {
   }
 }
 
+GTEST_TEST(GcsGraphvizOptionsTest, Serialize) {
+  GcsGraphvizOptions options;
+  options.show_slacks = false;
+  options.show_vars = false;
+  options.show_flows = false;
+  options.show_costs = false;
+  options.scientific = true;
+  options.precision = 5;
+
+  const std::string serialized = yaml::SaveYamlString(options);
+  const auto deserialized =
+      yaml::LoadYamlString<GcsGraphvizOptions>(serialized);
+
+  EXPECT_EQ(deserialized.show_slacks, options.show_slacks);
+  EXPECT_EQ(deserialized.show_vars, options.show_vars);
+  EXPECT_EQ(deserialized.show_flows, options.show_flows);
+  EXPECT_EQ(deserialized.show_costs, options.show_costs);
+  EXPECT_EQ(deserialized.scientific, options.scientific);
+  EXPECT_EQ(deserialized.precision, options.precision);
+}
+
 GTEST_TEST(ShortestPathTest, Graphviz) {
   GraphOfConvexSets g;
   auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
