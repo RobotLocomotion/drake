@@ -2943,6 +2943,7 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   EXPECT_THAT(g.GetGraphvizString(),
               AllOf(HasSubstr("source"), HasSubstr("target"),
                     HasSubstr("source_to_target")));
+
   auto result = g.SolveShortestPath(*source, *target, options);
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
@@ -2954,7 +2955,8 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   // Note: The cost here only comes from the cost=0 on other_to_target until
   // SolveConvexRestriction provides the rewritten costs.
   EXPECT_THAT(g.GetGraphvizString(result),
-              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ =")));
+              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
+                    HasSubstr("color=\"#00000020\"]")));
 
   // No slack variables.
   viz_options.show_slacks = false;

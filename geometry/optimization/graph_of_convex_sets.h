@@ -138,8 +138,8 @@ struct GcsGraphvizOptions {
 
   /** Determines whether the flow value results are shown. The flow values are
    * shown both with a numeric value and through the transparency value on the
-   * edge, where a flow of 0.0 will correspond to an invisible edge, and a flow
-   * of 1.0 will display as a fully black edge. */
+   * edge, where a flow of 0.0 will correspond to an (almost) invisible edge,
+   * and a flow of 1.0 will display as a fully black edge. */
   bool show_flows{true};
 
   /** Determines whether the cost value results are shown. This will show both

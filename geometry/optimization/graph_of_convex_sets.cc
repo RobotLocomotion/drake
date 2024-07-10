@@ -454,12 +454,16 @@ std::string GraphOfConvexSets::GetGraphvizString(
     const std::optional<solvers::MathematicalProgramResult>& result,
     const GcsGraphvizOptions& options,
     const std::optional<std::vector<const Edge*>>& active_path) const {
-  // This function converts a 0.0 to 00 and 1.0 to FF
+  // This function converts the range (0.0, 1.0) to Hex strings in the range
+  // (20, FF).
+  const int kMaxHexValue = 255;
+  const int kMinHexValue = 32;
   auto floatToHex = [](float value) -> std::string {
     if (value < 0.0f || value > 1.0f) return "Out of range";
     std::ostringstream ss;
     ss << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
-       << static_cast<int>(value * 255);
+       << static_cast<int>(value * (kMaxHexValue - kMinHexValue) +
+                           kMinHexValue);
     return ss.str();
   };
 
@@ -515,8 +519,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
         graphviz << "\"";
         // Note: This must be last, because it also sets the color parameter
         // of the edge (and hence must close the name within quote-marks)
-        graphviz << ", color="
-                 << "\"#000000" << floatToHex(result->GetSolution(e->phi()));
+        graphviz << ", color=" << "\"#000000"
+                 << floatToHex(result->GetSolution(e->phi()));
       }
     }
     graphviz << "\"];\n";
@@ -526,8 +530,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
     for (const auto& e : *active_path) {
       graphviz << "v" << e->u().id() << " -> v" << e->v().id();
       graphviz << " [label=\"" << e->name() << " = active\"";
-      graphviz << ", color="
-               << "\"#ff0000\"";
+      graphviz << ", color=" << "\"#ff0000\"";
       graphviz << ", style=\"dashed\"";
       graphviz << "];\n";
     }
