@@ -199,6 +199,7 @@ class SparseGrid {
    positions. In that process, builds `partilces_` and `sentinel_particles_`.
   */
   void SortParticleIndices(const std::vector<Vector3<T>>& particle_positions);
+  void Sort(std::vector<ParticleIndex>* particles);
 
   T dx_{};  // Grid spacing (in meters).
   std::unique_ptr<Allocator> allocator_;

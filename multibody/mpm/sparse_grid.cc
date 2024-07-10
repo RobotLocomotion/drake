@@ -138,8 +138,8 @@ NeighborArray<GridData<T>> SparseGrid<T>::GetNeighborData(
 }
 
 template <typename T>
-void SparseGrid<T>::SetNeighborData(
-    uint64_t base_node_offset, const NeighborArray<GridData<T>>& data) {
+void SparseGrid<T>::SetNeighborData(uint64_t base_node_offset,
+                                    const NeighborArray<GridData<T>>& data) {
   Array grid_data = allocator_->Get_Array();
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
@@ -164,6 +164,19 @@ Vector3<int> SparseGrid<T>::OffsetToCoordinate(uint64_t offset) const {
       reference_space_coordinate[2] - reference_space_origin[2]);
 }
 
+/* Sort particles by base node offsets so that particles that are close to
+ each other in physical space are close to each other in memory. */
+template <typename T>
+void SparseGrid<T>::Sort(std::vector<ParticleIndex>* particles) {
+  std::sort(particles->begin(), particles->end(),
+            [](const ParticleIndex& a, const ParticleIndex& b) {
+              if (a.base_node_offset == b.base_node_offset) {
+                return a.index < b.index;
+              }
+              return a.base_node_offset < b.base_node_offset;
+            });
+}
+
 template <typename T>
 void SparseGrid<T>::SortParticleIndices(
     const std::vector<Vector3<T>>& particle_positions) {
@@ -176,15 +189,7 @@ void SparseGrid<T>::SortParticleIndices(
         CoordinateToOffset(base_node[0], base_node[1], base_node[2]);
     particles_[p].index = p;
   }
-  /* Sort particles by base node offsets so that particles that are close to
-   each other in physical space are close to each other in memory. */
-  std::sort(particles_.begin(), particles_.end(),
-            [](const ParticleIndex& a, const ParticleIndex& b) {
-              if (a.base_node_offset < b.base_node_offset) {
-                return true;
-              }
-              return a.index < b.index;
-            });
+  Sort(&particles_);
 
   /* We use sentinel_particles_ to indicate particles that belong to separate
    pages. */
