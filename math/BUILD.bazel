@@ -93,8 +93,8 @@ drake_cc_library(
     name = "continuous_algebraic_riccati_equation",
     srcs = ["continuous_algebraic_riccati_equation.cc"],
     hdrs = ["continuous_algebraic_riccati_equation.h"],
-    interface_deps = [],
-    deps = [
+    deps = [],
+    implementation_deps = [
         "//common:essential",
         "//common:is_approx_equal_abstol",
         # TODO(jwnimmer-tri) Move this code into //math to avoid the circular
@@ -165,7 +165,7 @@ drake_cc_library(
         "-O2",
     ],
     textual_hdrs = ["fast_pose_composition_functions_avx2_fma.cc"],
-    interface_deps = [
+    deps = [
         ":vector3_util",
         "//common:default_scalars",
         "//common:drake_bool",
@@ -175,7 +175,7 @@ drake_cc_library(
         "//common:unused",
         "//math:gradient",
     ],
-    deps = [
+    implementation_deps = [
         "//common:hwy_dynamic",
         "@highway_internal//:hwy",
     ],

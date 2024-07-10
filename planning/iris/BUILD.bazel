@@ -21,18 +21,18 @@ drake_cc_library(
     name = "iris_from_clique_cover",
     srcs = ["iris_from_clique_cover.cc"],
     hdrs = ["iris_from_clique_cover.h"],
-    interface_deps = [
+    deps = [
+        "//geometry:meshcat",
         "//geometry/optimization:convex_set",
         "//geometry/optimization:iris",
-        "//geometry:meshcat",
-        "//planning/graph_algorithms:max_clique_solver_via_greedy",
-        "//planning/graph_algorithms:max_clique_solver_base",
-        "//solvers:gurobi_solver",
-        "//solvers:mosek_solver",
         "//planning:scene_graph_collision_checker",
         "//planning:visibility_graph",
+        "//planning/graph_algorithms:max_clique_solver_base",
+        "//planning/graph_algorithms:max_clique_solver_via_greedy",
+        "//solvers:gurobi_solver",
+        "//solvers:mosek_solver",
     ],
-    deps = [
+    implementation_deps = [
         "@common_robotics_utilities",
     ],
 )

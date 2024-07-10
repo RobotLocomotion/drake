@@ -181,10 +181,10 @@ drake_cc_library(
         "monomial.h",
         "polynomial.h",
     ],
-    interface_deps = [
+    deps = [
         ":expression",
     ],
-    deps = [
+    implementation_deps = [
         "//math:quadratic_form",
     ],
 )
@@ -276,11 +276,11 @@ drake_cc_library(
     name = "replace_bilinear_terms",
     srcs = ["replace_bilinear_terms.cc"],
     hdrs = ["replace_bilinear_terms.h"],
-    interface_deps = [
+    deps = [
         "//common:essential",
         "//common/symbolic:expression",
     ],
-    deps = [
+    implementation_deps = [
         "//common/symbolic:polynomial",
     ],
 )
