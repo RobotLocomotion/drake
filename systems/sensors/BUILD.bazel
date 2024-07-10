@@ -102,7 +102,7 @@ drake_cc_library(
     name = "camera_config_functions",
     srcs = ["camera_config_functions.cc"],
     hdrs = ["camera_config_functions.h"],
-    interface_deps = [
+    deps = [
         ":camera_config",
         "//geometry:scene_graph",
         "//lcm:interface",
@@ -110,7 +110,7 @@ drake_cc_library(
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_buses",
     ],
-    deps = [
+    implementation_deps = [
         ":camera_info",
         ":rgbd_sensor",
         ":rgbd_sensor_async",
@@ -191,14 +191,14 @@ drake_cc_library(
     install_hdrs_exclude = [
         "image_io_internal.h",
     ],
-    interface_deps = [
+    deps = [
         ":image",
         ":image_file_format",
         "//common:diagnostic_policy",
         "//common:essential",
         "//common:name_value",
     ],
-    deps = [
+    implementation_deps = [
         ":vtk_diagnostic_event_observer",
         ":vtk_image_reader_writer",
         "//common:drake_export",
@@ -247,12 +247,12 @@ drake_cc_library(
     hdrs = [
         "lcm_image_array_to_images.h",
     ],
-    interface_deps = [
+    deps = [
         ":image",
         "//common:essential",
         "//systems/framework:leaf_system",
     ],
-    deps = [
+    implementation_deps = [
         ":lcm_image_traits",
         ":vtk_image_reader_writer",
         "//lcmtypes:image_array",
@@ -326,12 +326,12 @@ drake_cc_library(
     name = "image_writer",
     srcs = ["image_writer.cc"],
     hdrs = ["image_writer.h"],
-    interface_deps = [
+    deps = [
         ":image",
         "//common:essential",
         "//systems/framework:leaf_system",
     ],
-    deps = [
+    implementation_deps = [
         ":image_io",
     ],
 )

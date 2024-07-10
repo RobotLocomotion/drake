@@ -5,11 +5,17 @@
     "See": "https://github.com/bazelbuild/buildtools/blob/master/tables/tables.go"
   },
   "IsLabelArg": {
+    "implementation_deps": true,
+    "implementation_deps_always": true,
+    "implementation_deps_enabled": true
   },
   "LabelBlacklist": {
   },
   "IsSortableListArg": {
-    "allowed_externals": true
+    "allowed_externals": true,
+    "implementation_deps": true,
+    "implementation_deps_always": true,
+    "implementation_deps_enabled": true
   },
   "SortableWhitelist": {
     "install.data": true,
@@ -19,7 +25,11 @@
     "install_files.files": true
   },
   "NamePriority": {
-    "drake_cc_library.interface_deps": 3,
+    "drake_cc_library.implementation_deps": 5,
+    "drake_cc_library_linux_only.implementation_deps": 5,
+    "drake_cc_optional_library.implementation_deps": 5,
+    "drake_cc_variant_library.implementation_deps_always": 5,
+    "drake_cc_variant_library.implementation_deps_enabled": 5,
 
     "drake_cc_optional_library.opt_in_condition": -96,
     "drake_cc_optional_library.opt_out_condition": -96,
@@ -30,7 +40,6 @@
     "drake_cc_variant_library.srcs_always": -92,
     "drake_cc_variant_library.srcs_enabled": -91,
     "drake_cc_variant_library.srcs_disabled": -90,
-    "drake_cc_variant_library.interface_deps": 3,
     "drake_cc_variant_library.deps_always": 4,
     "drake_cc_variant_library.deps_enabled": 4,
 

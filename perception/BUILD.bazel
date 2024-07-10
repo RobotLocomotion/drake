@@ -33,12 +33,12 @@ drake_cc_library(
     name = "point_cloud",
     srcs = ["point_cloud.cc"],
     hdrs = ["point_cloud.h"],
-    interface_deps = [
+    deps = [
         ":point_cloud_flags",
         "//common:essential",
         "//common:parallelism",
     ],
-    deps = [
+    implementation_deps = [
         "//common:unused",
         "@common_robotics_utilities",
         "@nanoflann_internal//:nanoflann",

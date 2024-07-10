@@ -58,11 +58,11 @@ def _cc_check_allowed_headers_impl(ctx):
         error_messages = [
             "Dependency pollution has leaked into Drake's public headers:",
         ] + [
-            " {} is not allowed in interface_deps".format(item)
+            " {} is not allowed in deps".format(item)
             for item in depset(failures).to_list()
         ] + [
             "To resolve this problem, alter your drake_cc_library to either:",
-            " split up 'interface_deps = [...]' vs 'deps = [...]', or",
+            " split up 'deps = [...]' vs 'implementation_deps = [...]', or",
             " use 'internal = True'.",
             "Check the drake_cc_library documentation for details, or",
             " ask for help on drakedevelopers#build slack.",

@@ -84,11 +84,11 @@ drake_cc_library(
         "@drake_models//:package.xml",
     ],
     visibility = ["//visibility:public"],
-    interface_deps = [
+    deps = [
         "//common:essential",
         "//common:name_value",
     ],
-    deps = [
+    implementation_deps = [
         "//common:diagnostic_policy",
         "//common:find_cache",
         "//common:find_resource",
@@ -106,12 +106,12 @@ drake_cc_library(
     srcs = ["collision_filter_groups.cc"],
     hdrs = ["collision_filter_groups.h"],
     visibility = ["//visibility:public"],
-    interface_deps = [
+    deps = [
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//common:sorted_pair",
     ],
-    deps = [
+    implementation_deps = [
         ":detail_collision_filter_groups_impl",
     ],
 )
@@ -295,12 +295,12 @@ drake_cc_library(
     ],
     internal = True,
     visibility = ["//visibility:private"],
-    interface_deps = [
+    deps = [
         ":detail_misc",
         ":detail_parsing_workspace",
         "//multibody/plant",
     ],
-    deps = [
+    implementation_deps = [
         ":detail_make_model_name",
         "//common:find_runfiles",
         "//common:unused",
@@ -405,13 +405,13 @@ drake_cc_library(
         "detail_composite_parse.h",
     ],
     visibility = ["//visibility:public"],
-    interface_deps = [
+    deps = [
         ":collision_filter_groups",
         ":package_map",
         "//common:diagnostic_policy",
         "//multibody/plant",
     ],
-    deps = [
+    implementation_deps = [
         ":detail_parsing_workspace",
         ":detail_select_parser",
     ],
@@ -444,13 +444,13 @@ drake_cc_library(
     srcs = ["process_model_directives.cc"],
     hdrs = ["process_model_directives.h"],
     visibility = ["//visibility:public"],
-    interface_deps = [
+    deps = [
         ":model_directives",
         ":model_instance_info",
         ":parser",
         "//multibody/plant",
     ],
-    deps = [
+    implementation_deps = [
         ":detail_dmd_parser",
         ":detail_misc",
         ":detail_parsing_workspace",
