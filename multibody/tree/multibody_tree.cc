@@ -3183,7 +3183,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   if (num_bodies() <= 1) {
     throw std::runtime_error(
         "CalcJacobianCenterOfMassTranslationalVelocity(): this "
-        "MultibodyPlant contains only world_body() so its center of mass "
+        "MultibodyPlant only contains the world_body() so its center of mass "
         "is undefined.");
   }
 
@@ -3289,16 +3289,15 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
 }
 
 template <typename T>
-Vector3<T>
-MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
+Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_A, const Frame<T>& frame_E) const {
   DRAKE_THROW_UNLESS(&frame_A == &world_frame());
 
   if (num_bodies() <= 1) {
     throw std::runtime_error(
-        "CalcBiasCenterOfMassTranslationalAcceleration(): this "
-        "MultibodyPlant contains only world_body() so its center of mass "
+        "CalcBiasCenterOfMassTranslationalAcceleration(): This "
+        "MultibodyPlant only contains the world_body() so its center of mass "
         "is undefined.");
   }
 
@@ -3324,7 +3323,7 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
 }
 
 template <typename T>
-Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
+Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances,
     JacobianWrtVariable with_respect_to,
@@ -3357,7 +3356,7 @@ Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
       ++number_of_non_world_bodies_processed;
       const T& body_mass = body.get_mass(context);
       total_mass += body_mass;  // total mass = ∑ mᵢ.
-      const Frame<T> body_frame = body.body_frame();
+      const Frame<T>& body_frame = body.body_frame();
       const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
       const SpatialAcceleration<T> AsBias_ABcm_E = CalcBiasSpatialAcceleration(
           context, with_respect_to, body_frame, p_BoBcm_B, frame_A, frame_E);

@@ -4286,7 +4286,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_E) const {
     this->ValidateContext(context);
     return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
-        context, model_instances with_respect_to, frame_A, frame_E);
+        context, model_instances, with_respect_to, frame_A, frame_E);
   }
 
   /// This method allows users to map the state of `this` model, x, into a

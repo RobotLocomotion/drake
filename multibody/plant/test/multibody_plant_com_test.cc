@@ -36,6 +36,14 @@ GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, CalcCenterOfMassPositionEtc) {
       "CalcCenterOfMassTranslationalAccelerationInWorld\\(\\): "
       "This MultibodyPlant only contains the world_body\\(\\) so "
       "its center of mass is undefined.");
+
+  const Frame<double>& frame_W = plant.world_frame();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, JacobianWrtVariable::kV, frame_W, frame_W),
+      "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): "
+      "This MultibodyPlant only contains the world_body\\(\\) so "
+      "its center of mass is undefined.");
 }
 
 class MultibodyPlantCenterOfMassTest : public ::testing::Test {
@@ -258,8 +266,14 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPositionVelocityEtc) {
       "CalcCenterOfMassTranslationalAccelerationInWorld\\(\\): There must be "
       "at least one non-world body contained in model_instances.");
 
-  Eigen::MatrixXd Js_v_WCcm_W(3, plant_.num_velocities());
   const Frame<double>& frame_W = plant_.world_frame();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcBiasCenterOfMassTranslationalAcceleration(*context_,
+          model_instances, JacobianWrtVariable::kV, frame_W, frame_W),
+      "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): There must be at "
+      "least one non-world body contained in model_instances.");
+
+  Eigen::MatrixXd Js_v_WCcm_W(3, plant_.num_velocities());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcJacobianCenterOfMassTranslationalVelocity(
           *context_, model_instances, JacobianWrtVariable::kV, frame_W, frame_W,
@@ -338,8 +352,18 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPositionVelocityEtc) {
   set_mass_sphere(0.0);
   set_mass_triangle(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassPositionInWorld(*context_),
+      "CalcCenterOfMassPositionInWorld\\(\\): The "
+      "system's total mass must be greater than zero.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances),
       "CalcCenterOfMassPositionInWorld\\(\\): The "
+      "system's total mass must be greater than zero.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_),
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): The "
       "system's total mass must be greater than zero.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -350,14 +374,14 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPositionVelocityEtc) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcJacobianCenterOfMassTranslationalVelocity(
-          *context_, model_instances, JacobianWrtVariable::kV, frame_W, frame_W,
-          &Js_v_WCcm_W),
+          *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WCcm_W),
       "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): The "
       "system's total mass must be greater than zero.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcJacobianCenterOfMassTranslationalVelocity(
-          *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WCcm_W),
+          *context_, model_instances, JacobianWrtVariable::kV, frame_W, frame_W,
+          &Js_v_WCcm_W),
       "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): The "
       "system's total mass must be greater than zero.");
 
@@ -365,6 +389,18 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPositionVelocityEtc) {
       plant_.CalcBiasCenterOfMassTranslationalAcceleration(
           *context_, JacobianWrtVariable::kV, frame_W, frame_W),
       "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): The "
+      "system's total mass must be greater than zero.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, model_instances, JacobianWrtVariable::kV, frame_W,
+          frame_W),
+      "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): The "
+      "system's total mass must be greater than zero.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalAccelerationInWorld(*context_),
+      "CalcCenterOfMassTranslationalAccelerationInWorld\\(\\): The "
       "system's total mass must be greater than zero.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
