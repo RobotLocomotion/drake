@@ -34,7 +34,7 @@ class MbpEnvironmentCollisionChecker final
   void operator=(const MbpEnvironmentCollisionChecker&) = delete;
   /** @} */
 
-  /// Construct a collision checker using MbP/SG to model environment geometry.
+  /// Creates a new checker with the given params.
   explicit MbpEnvironmentCollisionChecker(CollisionCheckerParams params);
 
   /// Query the (distance, gradient) of the provided point from obstacles.
