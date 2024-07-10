@@ -717,34 +717,13 @@ void DefineGeometryOptimization(py::module m) {
 
   // GcsGraphvizOptions
   {
-    const auto& cls_doc = doc.GcsGraphvizOptions;
-    py::class_<GcsGraphvizOptions> gcs_options(m, "GcsGraphvizOptions");
-    gcs_options.def(py::init<>())
-        .def_readwrite("show_slacks", &GcsGraphvizOptions::show_slacks,
-            cls_doc.show_slacks.doc)
-        .def_readwrite(
-            "show_vars", &GcsGraphvizOptions::show_vars, cls_doc.show_vars.doc)
-        .def_readwrite("show_flows", &GcsGraphvizOptions::show_flows,
-            cls_doc.show_flows.doc)
-        .def_readwrite("show_costs", &GcsGraphvizOptions::show_costs,
-            cls_doc.show_costs.doc)
-        .def_readwrite("scientific", &GcsGraphvizOptions::scientific,
-            cls_doc.scientific.doc)
-        .def_readwrite(
-            "precision", &GcsGraphvizOptions::precision, cls_doc.precision.doc)
-        .def("__repr__", [](const GcsGraphvizOptions& self) {
-          return py::str(
-              "GcsGraphvizOptions("
-              "show_slacks={}, "
-              "show_vars={}, "
-              "show_flows={}, "
-              "show_costs={}, "
-              "scientific={}, "
-              "precision={}"
-              ")")
-              .format(self.show_slacks, self.show_vars, self.show_flows,
-                  self.show_costs, self.scientific, self.precision);
-        });
+    using Class = GcsGraphvizOptions;
+    constexpr auto& cls_doc = doc.GcsGraphvizOptions;
+    py::class_<Class> cls(m, "GcsGraphvizOptions", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // GraphOfConvexSets

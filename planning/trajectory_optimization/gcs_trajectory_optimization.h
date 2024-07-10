@@ -483,8 +483,7 @@ class GcsTrajectoryOptimization final {
   std::string GetGraphvizString(
       const std::optional<solvers::MathematicalProgramResult>& result =
           std::nullopt,
-      const geometry::optimization::GcsGraphvizOptions& options =
-          geometry::optimization::GcsGraphvizOptions()) const {
+      const geometry::optimization::GcsGraphvizOptions& options = {}) const {
     return gcs_.GetGraphvizString(result, options);
   }
 
