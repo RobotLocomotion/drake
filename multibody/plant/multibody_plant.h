@@ -4282,8 +4282,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
-      JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_A, const Frame<T>& frame_E) const {
+      JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const {
     this->ValidateContext(context);
     return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
         context, model_instances with_respect_to, frame_A, frame_E);
