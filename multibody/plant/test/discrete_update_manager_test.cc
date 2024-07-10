@@ -185,14 +185,16 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     }
   }
 
-  // Not used in these tests.
-  void DoCalcDiscreteUpdateMultibodyForces(const systems::Context<T>&,
-                                           MultibodyForces<T>*) const final {
-    throw std::logic_error("Must implement if needed for these tests.");
+  void DoCalcDiscreteUpdateMultibodyForces(
+      const systems::Context<T>&, MultibodyForces<T>* forces) const final {
+    DRAKE_DEMAND(forces != nullptr);
+    forces->SetZero();
   }
 
-  void DoCalcActuation(const systems::Context<T>&, VectorX<T>*) const final {
-    throw std::logic_error("Must implement if needed for these tests.");
+  void DoCalcActuation(const systems::Context<T>&,
+                       VectorX<T>* tau) const final {
+    DRAKE_DEMAND(tau != nullptr);
+    tau->setZero();
   }
 
  private:
@@ -260,12 +262,7 @@ TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
  MultibodyPlant. */
 TEST_F(DiscreteUpdateManagerTest, CalcContactSolverResults) {
   auto context = plant_.CreateDefaultContext();
-  context->DisableCaching();
-  // Evaluates an output port whose Calc function invokes
-  // CalcContactSolverResults().
-  const auto& port = plant_.get_generalized_contact_forces_output_port(
-      default_model_instance());
-  port.Eval(*context);
+  plant_.ExecuteForcedEvents(context.get());  // Force a time step.
   EXPECT_EQ(dummy_manager_->num_calls_to_calc_contact_solver_results(), 1);
 }
 
@@ -273,6 +270,7 @@ TEST_F(DiscreteUpdateManagerTest, CalcContactSolverResults) {
  to MultibodyPlant. */
 TEST_F(DiscreteUpdateManagerTest, CalcAccelerationKinematicsCache) {
   auto context = plant_.CreateDefaultContext();
+  plant_.ExecuteForcedEvents(context.get());  // Force a time step.
   const auto generalized_acceleration =
       plant_.get_generalized_acceleration_output_port().Eval(*context);
   EXPECT_TRUE(CompareMatrices(generalized_acceleration,
@@ -304,135 +302,6 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
                       dummy_discrete_state() +
                           2.0 * VectorXd::Ones(kNumAdditionalDofs) * time_steps,
                       std::numeric_limits<double>::epsilon()));
-}
-
-// DiscreteUpdateManager implements a workaround for issue #12786 which might
-// lead to undetected algebraic loops in the systems framework. Therefore
-// DiscreteUpdateManager implements an internal algebraic loop detection to
-// properly warn users. This should go away as issue #12786 is resolved. This
-// test verifies the algebraic loop detection logic.
-class AlgebraicLoopDetection
-    : public ::testing::TestWithParam<std::tuple<bool, std::string_view>> {
- public:
-  // Makes a system containing a multibody plant. When with_algebraic_loop =
-  // true the model includes a feedback system that creates an algebraic loop.
-  void MakeDiagram(bool with_algebraic_loop,
-                   std::string_view contact_approximation) {
-    systems::DiagramBuilder<double> builder;
-
-    MultibodyPlantConfig plant_config;
-    plant_config.time_step = 1.0e-3;
-    plant_config.discrete_contact_approximation = contact_approximation;
-    std::tie(plant_, scene_graph_) =
-        multibody::AddMultibodyPlant(plant_config, &builder);
-    plant_->Finalize();
-
-    systems::System<double>* feedback{nullptr};
-    if (with_algebraic_loop) {
-      // We intentionally create an algebraic loop by placing a pass through
-      // system between the contact forces output and the input forces. This
-      // test is based on a typical user story: a user wants to write a
-      // controller that uses the estimated forces as input to the controller.
-      // For instance, the controller could implement force feedback for
-      // grasping. To simplify the model, a user might choose to emulate a real
-      // sensor or force estimator by connecting the output forces from the
-      // plant straight into the controller, creating an algebraic loop.
-      feedback =
-          builder.AddSystem<systems::PassThrough>(plant_->num_velocities());
-    } else {
-      // A more realistic model would include a force estimator, that most
-      // likely would introduce state and break the algebraic loop. Another
-      // option would be to introduce a delay between the force output and the
-      // controller, effectively modeling a delay in the measured signal. Here
-      // we emulate one of these strategies using a zero-order-hold (ZOH) system
-      // to add feedback. This will not create an algebraic loop.
-      // N.B. The discrete period of the ZOH does not necessarily need to match
-      // that of the plant. This example makes them different to illustrate this
-      // point.
-      feedback = builder.AddSystem<systems::ZeroOrderHold>(
-          2.0e-4, plant_->num_velocities());
-    }
-    builder.Connect(plant_->get_generalized_contact_forces_output_port(
-                        default_model_instance()),
-                    feedback->get_input_port(0));
-    builder.Connect(feedback->get_output_port(0),
-                    plant_->get_applied_generalized_force_input_port());
-    diagram_ = builder.Build();
-    diagram_context_ = diagram_->CreateDefaultContext();
-    plant_context_ =
-        &plant_->GetMyMutableContextFromRoot(diagram_context_.get());
-  }
-
-  void VerifyLoopIsDetected() const {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_
-            ->get_generalized_contact_forces_output_port(
-                default_model_instance())
-            .Eval(*plant_context_),
-        "Algebraic loop detected.*");
-  }
-
-  void VerifyNoLoopIsDetected() const {
-    EXPECT_NO_THROW(plant_
-                        ->get_generalized_contact_forces_output_port(
-                            default_model_instance())
-                        .Eval(*plant_context_));
-  }
-
- protected:
-  std::unique_ptr<systems::Diagram<double>> diagram_;
-  MultibodyPlant<double>* plant_{nullptr};
-  geometry::SceneGraph<double>* scene_graph_{nullptr};
-  std::unique_ptr<Context<double>> diagram_context_;
-  Context<double>* plant_context_{nullptr};
-};
-
-INSTANTIATE_TEST_SUITE_P(AlgebraicLoopTests, AlgebraicLoopDetection,
-                         ::testing::Combine(::testing::Bool(),
-                                            ::testing::Values("tamsi", "sap")));
-
-// N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-// arbitrarily choose two model approximations to accomplish this.
-TEST_P(AlgebraicLoopDetection, LoopDetectionTest) {
-  const auto& [with_algebraic_loop, contact_approximation] = GetParam();
-
-  MakeDiagram(with_algebraic_loop, contact_approximation);
-  if (with_algebraic_loop) {
-    VerifyLoopIsDetected();
-  } else {
-    {
-      SCOPED_TRACE("Pulling on the output port for the first time.");
-      VerifyNoLoopIsDetected();
-    }
-    {
-      // Since the computation is cached, we can evaluate it multiple times
-      // without triggering the loop detection, as desired.
-      SCOPED_TRACE("Pulling on the output port for the second time.");
-      VerifyNoLoopIsDetected();
-    }
-  }
-}
-
-TEST_P(AlgebraicLoopDetection, LoopDetectionTestWhenCachingIsDisabled) {
-  const auto& [with_algebraic_loop, contact_approximation] = GetParam();
-
-  MakeDiagram(with_algebraic_loop, contact_approximation);
-  diagram_context_->DisableCaching();
-
-  if (with_algebraic_loop) {
-    VerifyLoopIsDetected();
-  } else {
-    {
-      SCOPED_TRACE("Pulling on the output port for the first time.");
-      VerifyNoLoopIsDetected();
-    }
-    {
-      SCOPED_TRACE("Pulling on the output port for the second time.");
-      // Even if the computation is not cached, the loop detection is not
-      // triggered, as desired
-      VerifyNoLoopIsDetected();
-    }
-  }
 }
 
 /* Tests that the contact solver results correctly depends on the actuation

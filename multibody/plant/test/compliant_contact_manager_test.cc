@@ -564,8 +564,8 @@ TEST_F(SpheresStackTest, DoCalcDiscreteValues) {
 TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
   const double kTolerance = 1e-15;
 
-  const ContactResults<double>& contact_results =
-      manager_->EvalContactResults(*plant_context_);
+  ContactResults<double> contact_results;
+  manager_->CalcContactResults(*plant_context_, &contact_results);
   const ContactTestConfig& config = GetParam();
 
   // Body should be in equilibrium so we expect the contact force to oppose
@@ -624,8 +624,8 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
   // Simulate the plant for 50 time steps, long enough to reach steady state.
   Simulate(50);
 
-  const ContactResults<double>& contact_results =
-      manager_->EvalContactResults(*plant_context_);
+  ContactResults<double> contact_results;
+  manager_->CalcContactResults(*plant_context_, &contact_results);
 
   // Body should be in stiction so we expect the contact force to oppose both
   // gravity and the externally applied tangential force.
@@ -679,8 +679,8 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
   // Simulate the plant for 10 time steps, long enough to reach steady state.
   Simulate(10);
 
-  const ContactResults<double>& contact_results =
-      manager_->EvalContactResults(*plant_context_);
+  ContactResults<double> contact_results;
+  manager_->CalcContactResults(*plant_context_, &contact_results);
 
   // For this case the friction force must be on the friction cone. For TAMSI
   // accuracy of this prediction depends on the accuracy of the slip speed,
