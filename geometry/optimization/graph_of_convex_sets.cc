@@ -1353,6 +1353,16 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     std::vector<std::vector<const Edge*>> candidate_paths =
         SamplePaths(source, target, flows, options);
 
+    if (candidate_paths.size() == 0) {
+      throw std::runtime_error(
+          "GCS rounding failed. The convex relaxation returned a "
+          "feasible solution, but there is (definitely) no path from the "
+          "source to the target using only edges with flows > "
+          "options.flow_tolerance. You can set "
+          "options.max_rounded_paths=0 to disable rounding and return "
+          "the solution to the relaxation instead.");
+    }
+
     MathematicalProgramResult best_rounded_result;
 
     for (auto new_path : candidate_paths) {

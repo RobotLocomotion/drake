@@ -22,6 +22,7 @@
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/osqp_solver.h"
+#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/solver_options.h"
 
 namespace drake {
@@ -2530,6 +2531,37 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
   auto paths_empty = spp.SamplePaths(*source, *target, relaxed_result, options);
   // There should be no candidate paths
   ASSERT_EQ(paths_empty.size(), 0);
+}
+
+GTEST_TEST(ShortestPathTest, InaccurateRelaxationSolve) {
+  // If the convex relaxation is solved inaccurately, infeasibility may go
+  // undetected. Previously, this could lead the randomized rounding process to
+  // fail quietly, eventually leading to a segmentation fault or other memory
+  // error.
+  Point p1(Vector1d(0.0));
+  Point p2(Vector1d(1.0));
+
+  GraphOfConvexSets g;
+
+  auto v1 = g.AddVertex(p1);
+  auto v2 = g.AddVertex(p1);
+  auto v3 = g.AddVertex(p2);
+  auto v4 = g.AddVertex(p2);
+
+  g.AddEdge(v1, v2);
+  g.AddEdge(v3, v4);
+
+  // Prevent the solver from detecting infeasibility.
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 100;
+
+  options.solver_options.SetOption(solvers::ScsSolver::id(), "max_iters", 1);
+  solvers::ScsSolver scs;
+  options.solver = &scs;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(g.SolveShortestPath(*v1, *v4, options),
+                              ".*no path from the source to the target.*");
 }
 
 // In some cases, the depth first search performed in rounding will lead to a
