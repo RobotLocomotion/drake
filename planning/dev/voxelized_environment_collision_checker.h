@@ -32,21 +32,7 @@ class VoxelizedEnvironmentCollisionChecker final
   void operator=(const VoxelizedEnvironmentCollisionChecker&) = delete;
   /** @} */
 
-  /// Construct a collision checker for voxelized environments.
-  /// @param model a Diagram+MbP+SG model of the robot and environment.
-  /// @param robot_model_instances is a vector of model instance indices that
-  /// identify which model instances belong to the robot.
-  /// @param distance_fn Configuration (probably weighted) distance function.
-  /// @param edge_step_size Step size for collision checking, in radians.
-  /// Collision checking of edges q1->q2 is performed by interpolating from q1
-  /// to q2 at edge_step_size steps and checking the interpolated
-  /// configuration for collision.
-  /// @param env_collision_padding Additional padding to apply to all
-  /// robot-environment collision queries. If distance between robot and
-  /// environment is less than padding, the checker reports a collision.
-  /// @param self_collision_padding Additional padding to apply to all
-  /// robot-robot self collision queries. If distance between robot and
-  /// itself is less than padding, the checker reports a collision.
+  /// Creates a new checker with the given params.
   explicit VoxelizedEnvironmentCollisionChecker(CollisionCheckerParams params);
 
   /// Update the voxelized environment.
