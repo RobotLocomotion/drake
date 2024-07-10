@@ -9,6 +9,12 @@ load(
     "drake_cc_package_library",
 )
 
+load(
+    "//tools/performance:defs.bzl",
+    "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
+)
+
 package(
     default_visibility = ["//visibility:public"],
 )
@@ -83,6 +89,23 @@ drake_cc_googletest(
         ":transfer",
         "//common/test_utilities:eigen_matrix_compare",
     ],
+)
+
+drake_cc_googlebench_binary(
+    name = "transfer_benchmark",
+    srcs = ["transfer_benchmark.cc"],
+    add_test_rule = True,
+    deps = [
+        ":transfer",
+        "//common:add_text_logging_gflags",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "transfer_experiment",
+    googlebench_binary = ":transfer_benchmark",
 )
 
 # add_lint_tests()
