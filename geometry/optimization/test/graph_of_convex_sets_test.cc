@@ -2469,15 +2469,16 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
     relaxed_result.SetSolution(e->phi(), 0.5);
   }
 
-  auto check_paths = [&](const auto& paths, const auto& source,
-                         const auto& target, std::size_t expected_num_paths) {
+  auto check_paths = [&](const auto& paths, const auto& source_vertex,
+                         const auto& target_vertex,
+                         std::size_t expected_num_paths) {
     ASSERT_EQ(paths.size(), expected_num_paths);
 
     // Check that all the paths start at the source and end at the target
     for (const auto& p : paths) {
       ASSERT_GE(p.size(), 0);
-      ASSERT_EQ(p.front()->u().id(), source->id());
-      ASSERT_EQ(p.back()->v().id(), target->id());
+      ASSERT_EQ(p.front()->u().id(), source_vertex->id());
+      ASSERT_EQ(p.back()->v().id(), target_vertex->id());
     }
 
     // Make sure no paths are equal
