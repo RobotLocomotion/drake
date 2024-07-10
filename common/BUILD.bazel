@@ -287,8 +287,7 @@ drake_cc_library(
     hdrs = ["find_cache.h"],
     internal = True,
     visibility = ["//:__subpackages__"],
-    interface_deps = [],
-    deps = [
+    implementation_deps = [
         ":essential",
     ],
 )
@@ -297,8 +296,7 @@ drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
     hdrs = ["find_runfiles.h"],
-    interface_deps = [],
-    deps = [
+    implementation_deps = [
         ":essential",
         "@bazel_tools//tools/cpp/runfiles",
     ],
@@ -322,10 +320,10 @@ drake_cc_library(
         "//tools/cc_toolchain:linux": ["-ldl"],
         "//conditions:default": [],
     }),
-    interface_deps = [
+    deps = [
         ":essential",
     ],
-    deps = [
+    implementation_deps = [
         ":drake_marker_shared_library",
         ":find_runfiles",
     ],
@@ -339,8 +337,7 @@ drake_cc_library(
         DRAKE_RESOURCE_SENTINEL,
     ],
     visibility = ["//tools/install/libdrake:__pkg__"],
-    interface_deps = [],
-    deps = [
+    implementation_deps = [
         ":find_resource",
     ],
 )
@@ -442,10 +439,10 @@ drake_cc_library(
     hdrs = [
         "nice_type_name.h",
     ],
-    interface_deps = [
+    deps = [
         ":essential",
     ],
-    deps = [
+    implementation_deps = [
         ":nice_type_name_override_header",
     ],
 )
@@ -479,12 +476,12 @@ drake_cc_library(
     name = "random",
     srcs = ["random.cc"],
     hdrs = ["random.h"],
-    interface_deps = [
+    deps = [
         ":copyable_unique_ptr",
         ":essential",
         ":extract_double",
     ],
-    deps = [
+    implementation_deps = [
         ":autodiff",
     ],
 )
@@ -503,10 +500,10 @@ drake_cc_library(
     name = "sha256",
     srcs = ["sha256.cc"],
     hdrs = ["sha256.h"],
-    interface_deps = [
+    deps = [
         ":essential",
     ],
-    deps = [
+    implementation_deps = [
         "@picosha2_internal//:picosha2",
     ],
 )
@@ -524,10 +521,9 @@ drake_cc_library(
     name = "temp_directory",
     srcs = ["temp_directory.cc"],
     hdrs = ["temp_directory.h"],
-    interface_deps = [
+    deps = [
         ":essential",
     ],
-    deps = [],
 )
 
 # This is a Drake-internal utility for use only as a direct dependency

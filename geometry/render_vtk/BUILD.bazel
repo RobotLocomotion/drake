@@ -38,11 +38,11 @@ drake_cc_library(
     srcs = ["factory.cc"],
     hdrs = ["factory.h"],
     visibility = ["//visibility:public"],
-    interface_deps = [
-        "//geometry/render:render_engine",
-        ":render_engine_vtk_params",
-    ],
     deps = [
+        ":render_engine_vtk_params",
+        "//geometry/render:render_engine",
+    ],
+    implementation_deps = [
         ":internal_render_engine_vtk",
     ],
 )
