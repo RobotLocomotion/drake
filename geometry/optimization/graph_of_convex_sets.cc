@@ -1391,7 +1391,10 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
     const GraphOfConvexSetsOptions& options) const {
   std::unordered_map<const Edge*, double> flows;
   for (const auto& [edge_id, e] : edges_) {
-    flows.emplace(e.get(), result.GetSolution(e->phi_));
+    double flow = result.GetSolution(e->phi_);
+    if (flow >= options.flow_tolerance) {
+      flows.emplace(e.get(), flow);
+    }
   }
   return SamplePaths(source, target, flows, options);
 }
@@ -1412,6 +1415,11 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
         "Target vertex {} is not a vertex in this GraphOfConvexSets.",
         target.name()));
   }
+
+  auto flow_exists_and_above_treshold = [&](const Edge* edge) -> bool {
+    auto it = flows.find(edge);
+    return it != flows.end() && it->second > options.flow_tolerance;
+  };
 
   RandomGenerator generator(options.rounding_seed);
   std::uniform_real_distribution<double> uniform;
@@ -1437,7 +1445,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
       for (const Edge* e : new_path_vertices.back()->outgoing_edges()) {
         if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
                       e->v().id()) == visited_vertex_ids.end() &&
-            flows.at(e) > options.flow_tolerance) {
+            flow_exists_and_above_treshold(e)) {
           candidate_edges.emplace_back(e);
         }
       }

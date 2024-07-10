@@ -2427,11 +2427,11 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
       spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, 1), Vector2d(2, 2)));
 
   // Edges pointing towards target
-  spp.AddEdge(source, p1);
+  const auto e_s1 = spp.AddEdge(source, p1);
   spp.AddEdge(source, p2);
-  spp.AddEdge(p1, p3);
+  const auto e_13 = spp.AddEdge(p1, p3);
   spp.AddEdge(p2, p4);
-  spp.AddEdge(p3, target);
+  const auto e_3t = spp.AddEdge(p3, target);
   spp.AddEdge(p4, target);
 
   // Edges between parallel vertices
@@ -2464,79 +2464,62 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
     relaxed_result.SetSolution(e->phi(), 0.5);
   }
 
-  auto paths = spp.SamplePaths(*source, *target, relaxed_result, options);
-  // For this example, we should find exactly kNumPaths
-  ASSERT_EQ(paths.size(), kNumPaths);
+  auto check_paths = [&](const auto& paths, const auto& source,
+                         const auto& target, std::size_t expected_num_paths) {
+    ASSERT_EQ(paths.size(), expected_num_paths);
 
-  // Check that all the paths start at the source and end at the target
-  for (const auto& p : paths) {
-    ASSERT_GE(p.size(), 0);
-    ASSERT_EQ(p.front()->u().id(), source->id());
-    ASSERT_EQ(p.back()->v().id(), target->id());
-  }
-
-  // Make sure no paths are equal
-  for (std::size_t i = 0; i < paths.size(); ++i) {
-    const auto& curr_path = paths[i];
-
-    for (std::size_t other_idx = 0; other_idx < paths.size(); ++other_idx) {
-      if (other_idx == i) continue;
-
-      std::vector<EdgeId> curr_path_ids;
-      for (const auto& edge : curr_path) curr_path_ids.push_back(edge->id());
-
-      std::vector<EdgeId> other_path_ids;
-      for (const auto& edge : paths[other_idx])
-        other_path_ids.push_back(edge->id());
-
-      // Sort the IDs
-      std::sort(curr_path_ids.begin(), curr_path_ids.end());
-      std::sort(other_path_ids.begin(), other_path_ids.end());
-      bool paths_equal = curr_path_ids == other_path_ids;
-
-      ASSERT_FALSE(paths_equal);
+    // Check that all the paths start at the source and end at the target
+    for (const auto& p : paths) {
+      ASSERT_GE(p.size(), 0);
+      ASSERT_EQ(p.front()->u().id(), source->id());
+      ASSERT_EQ(p.back()->v().id(), target->id());
     }
-  }
+
+    // Make sure no paths are equal
+    for (std::size_t i = 0; i < paths.size(); ++i) {
+      const auto& curr_path = paths[i];
+
+      for (std::size_t other_idx = 0; other_idx < paths.size(); ++other_idx) {
+        if (other_idx == i) continue;
+
+        std::vector<EdgeId> curr_path_ids;
+        for (const auto& edge : curr_path) curr_path_ids.push_back(edge->id());
+
+        std::vector<EdgeId> other_path_ids;
+        for (const auto& edge : paths[other_idx])
+          other_path_ids.push_back(edge->id());
+
+        // Sort the IDs
+        std::sort(curr_path_ids.begin(), curr_path_ids.end());
+        std::sort(other_path_ids.begin(), other_path_ids.end());
+        bool paths_equal = curr_path_ids == other_path_ids;
+
+        ASSERT_FALSE(paths_equal);
+      }
+    }
+  };
+
+  auto paths = spp.SamplePaths(*source, *target, relaxed_result, options);
+  check_paths(paths, source, target, kNumPaths);
 
   // Now sample the paths using flows
   std::unordered_map<const Edge*, double> flows;
   for (const auto& e : spp.Edges()) {
-    flows.emplace(e, relaxed_result.GetSolution(e->phi()));
+    flows.emplace(e, 0.5);
   }
   auto paths_from_flows = spp.SamplePaths(*source, *target, flows, options);
+  check_paths(paths_from_flows, source, target, kNumPaths);
 
-  // For this example, we should find exactly kNumPaths
-  ASSERT_EQ(paths.size(), kNumPaths);
-
-  // Check that all the paths start at the source and end at the target
-  for (const auto& p : paths) {
-    ASSERT_GE(p.size(), 0);
-    ASSERT_EQ(p.front()->u().id(), source->id());
-    ASSERT_EQ(p.back()->v().id(), target->id());
-  }
-
-  // Make sure no paths are equal
-  for (std::size_t i = 0; i < paths.size(); ++i) {
-    const auto& curr_path = paths[i];
-
-    for (std::size_t other_idx = 0; other_idx < paths.size(); ++other_idx) {
-      if (other_idx == i) continue;
-
-      std::vector<EdgeId> curr_path_ids;
-      for (const auto& edge : curr_path) curr_path_ids.push_back(edge->id());
-
-      std::vector<EdgeId> other_path_ids;
-      for (const auto& edge : paths[other_idx])
-        other_path_ids.push_back(edge->id());
-
-      // Sort the IDs
-      std::sort(curr_path_ids.begin(), curr_path_ids.end());
-      std::sort(other_path_ids.begin(), other_path_ids.end());
-      bool paths_equal = curr_path_ids == other_path_ids;
-
-      ASSERT_FALSE(paths_equal);
-    }
-  }
+  // Now sample the paths using a subset of the flows (all flows not included
+  // should be assumed identical to 0).
+  std::unordered_map<const Edge*, double> flows_subset;
+  flows_subset.emplace(e_s1, 0.5);
+  flows_subset.emplace(e_13, 0.5);
+  flows_subset.emplace(e_3t, 0.5);
+  // Because all other flows are assumed 0, there should only be one found path.
+  auto paths_from_flows_subset =
+      spp.SamplePaths(*source, *target, flows_subset, options);
+  check_paths(paths_from_flows_subset, source, target, 1);
 }
 
 /*
