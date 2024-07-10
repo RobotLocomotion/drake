@@ -2947,7 +2947,9 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   auto result = g.SolveShortestPath(*source, *target, options);
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
-                    HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ =")));
+                    HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ ="),
+                    Not(HasSubstr("color=\"#ff0000\"")),
+                    HasSubstr("color=\"#00000020\"]")));
 
   // With a rounded result.
   options.max_rounded_paths = 1;
@@ -2987,15 +2989,16 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
 
   // No flows
   viz_options.show_flows = false;
-  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
-              Not(AllOf(HasSubstr("ϕ ="))));
+  EXPECT_THAT(
+      g.GetGraphvizString(result, viz_options),
+      AllOf(Not(HasSubstr("ϕ =")), Not(HasSubstr("color=\"#00000020\"]"))));
 
   // Show active path
   viz_options.show_flows = false;
   viz_options.show_costs = false;
   EXPECT_THAT(
       g.GetGraphvizString(result, viz_options, std::vector<const Edge*>{edge}),
-      AllOf(HasSubstr("color=")));
+      AllOf(HasSubstr("color=\"#ff0000\"")));
 }
 
 }  // namespace optimization
