@@ -1474,7 +1474,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
       for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
         candidate_flows(ii) = flows.at(candidate_edges[ii]);
       }
-      // Sample the next edge with probabily corresponding to the edge flow
+      // Sample the next edge with probability corresponding to the edge flow
       // (normalized by the sum of all the current outgoing candidate edge
       // flows).
       double edge_sample = uniform(generator) * candidate_flows.sum();
@@ -1502,11 +1502,12 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
   }
 
   if (no_feasible_paths) {
-    log()->info("Could find no feasible paths using flow tolerance {}",
-                options.flow_tolerance);
+    log()->info(
+        "Could find not find any feasible paths using flow tolerance {}.",
+        options.flow_tolerance);
   } else {
-    log()->info("Found {} unique paths, discarded {}", paths.size(),
-                num_trials - paths.size());
+    log()->info("Found {} unique paths, discarded {} duplicate paths.",
+                paths.size(), num_trials - paths.size());
   }
 
   return paths;
