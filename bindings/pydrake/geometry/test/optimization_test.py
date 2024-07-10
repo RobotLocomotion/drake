@@ -810,12 +810,30 @@ class TestGeometryOptimization(unittest.TestCase):
             result=result, show_slacks=True, precision=2, scientific=False))
 
         options.max_rounded_paths = 5
-        spp.SamplePaths(
-            source=source, target=target, result=result, options=options)
+        self.assertTrue(
+            isinstance(
+                spp.SamplePaths(
+                    source=source,
+                    target=target,
+                    result=result,
+                    options=options
+                ),
+                list,
+            )
+        )
+
         flows = {e: result.GetSolution(e.phi()) for e in spp.Edges()}
-        spp.SamplePaths(
-            source=source, target=target, flows=flows, options=options)
-        options.max_rounded_paths = 5
+        self.assertTrue(
+            isinstance(
+                spp.SamplePaths(
+                    source=source,
+                    target=target,
+                    flows=flows,
+                    options=options
+                ),
+                list,
+            )
+        )
 
         # Vertex
         self.assertAlmostEqual(
