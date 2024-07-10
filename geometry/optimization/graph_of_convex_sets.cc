@@ -1341,12 +1341,12 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   // https://arxiv.org/abs/2205.04422
   if (*options.convex_relaxation && *options.max_rounded_paths > 0 &&
       result.is_success()) {
-    std::map<EdgeId, double> flows;
+    std::unordered_map<const Edge*, double> flows;
     for (const auto& [edge_id, e] : edges_) {
       if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
-        flows.emplace(edge_id, 0);
+        flows.emplace(e.get(), 0.0);
       } else {
-        flows.emplace(edge_id, result.GetSolution(relaxed_phi[edge_id]));
+        flows.emplace(e.get(), result.GetSolution(relaxed_phi[edge_id]));
       }
     }
 
@@ -1389,16 +1389,16 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
     const Vertex& source, const Vertex& target,
     const solvers::MathematicalProgramResult& result,
     const GraphOfConvexSetsOptions& options) const {
-  std::map<EdgeId, double> flows;
+  std::unordered_map<const Edge*, double> flows;
   for (const auto& [edge_id, e] : edges_) {
-    flows.emplace(edge_id, result.GetSolution(e->phi_));
+    flows.emplace(e.get(), result.GetSolution(e->phi_));
   }
   return SamplePaths(source, target, flows, options);
 }
 
 std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
     const Vertex& source, const Vertex& target,
-    const std::map<EdgeId, double>& flows,
+    const std::unordered_map<const Edge*, double>& flows,
     const GraphOfConvexSetsOptions& options) const {
   DRAKE_THROW_UNLESS(*options.max_rounded_paths > 0);
 
@@ -1437,7 +1437,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
       for (const Edge* e : new_path_vertices.back()->outgoing_edges()) {
         if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
                       e->v().id()) == visited_vertex_ids.end() &&
-            flows.at(e->id()) > options.flow_tolerance) {
+            flows.at(e) > options.flow_tolerance) {
           candidate_edges.emplace_back(e);
         }
       }
@@ -1464,7 +1464,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
       }
       Eigen::VectorXd candidate_flows(candidate_edges.size());
       for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-        candidate_flows(ii) = flows.at(candidate_edges[ii]->id());
+        candidate_flows(ii) = flows.at(candidate_edges[ii]);
       }
       // Sample the next edge with probabily corresponding to the edge flow
       // (normalized by the sum of all the current outgoing candidate edge

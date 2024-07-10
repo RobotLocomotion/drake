@@ -703,7 +703,7 @@ class GraphOfConvexSets {
    */
   std::vector<std::vector<const Edge*>> SamplePaths(
       const Vertex& source, const Vertex& target,
-      const std::map<EdgeId, double>& flows,
+      const std::unordered_map<const Edge*, double>& flows,
       const GraphOfConvexSetsOptions& options) const;
 
   /** Samples a collection of unique paths from `source` to `target`, where the
