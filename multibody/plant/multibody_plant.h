@@ -102,7 +102,7 @@ template <typename>
 class DiscreteUpdateManager;
 // Forward declarations for geometry_contact_data.h.
 template <typename>
-struct GeometryContactData;
+class GeometryContactData;
 // Forward declarations for hydroelastic_contact_forces_continuous_cache_data.h.
 template <typename T>
 struct HydroelasticContactForcesContinuousCacheData;
@@ -5035,7 +5035,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex hydroelastic_contact_forces_continuous;
 
     // These are only valid for a continuous-time plant.
-    systems::CacheIndex contact_results_continuous;
+    systems::CacheIndex contact_results_point_pair_continuous;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex generalized_contact_forces_continuous;
   };
@@ -5270,24 +5270,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcContactResultsContinuous(const systems::Context<T>& context,
                                     ContactResults<T>* contact_results) const;
 
-  // Helper method for the continuous mode plant, to fill in the ContactResults
-  // for the point pair model, given the current context. Called by
-  // CalcContactResultsContinuous.
-  // @param[in,out] contact_results is appended to
-  void AppendContactResultsPointPairContinuous(
+  // Calc function for the like-named cache entry
+  // (contact_results_point_pair_continuous).
+  void CalcContactResultsPointPairContinuous(
       const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
+      std::vector<PointPairContactInfo<T>>*
+          contact_results_point_pair_continuous) const;
 
-  // Helper method to fill in `contact_results` with hydroelastic forces as a
-  // function of the state stored in `context`.
-  // @param[in,out] contact_results is appended to
-  void AppendContactResultsHydroelasticContinuous(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
-
-  // Evaluate contact results.
-  const ContactResults<T>& EvalContactResults(
+  // Eval function for the like-named cache entry
+  // (contact_results_point_pair_continuous).
+  const std::vector<PointPairContactInfo<T>>&
+  EvalContactResultsPointPairContinuous(
       const systems::Context<T>& context) const;
+
+  // Helper used by CalcContactResultsContinuous() to fill a ContactResults.
+  // This function computes the continuous-time hydroelastic forces as a
+  // function of the state stored in `context`.
+  // @param[out] contact_results_hydroelastic is fully overwritten
+  void CalcContactResultsHydroelasticContinuous(
+      const systems::Context<T>& context,
+      std::vector<HydroelasticContactInfo<T>>* contact_results_hydroelastic)
+      const
+    requires scalar_predicate<T>::is_bool;
 
   // Calc method for the "reaction_forces" output port.
   void CalcReactionForcesOutput(const systems::Context<T>& context,
@@ -5437,7 +5441,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Eval version of CalcHydroelasticContactForces().
   const internal::HydroelasticContactForcesContinuousCacheData<T>&
   EvalHydroelasticContactForcesContinuous(
-      const systems::Context<T>& context) const;
+      const systems::Context<T>& context) const
+    requires scalar_predicate<T>::is_bool;
 
   // Helper method to apply penalty forces that enforce joint limits.
   // At each joint with joint limits this penalty method applies a force law of
