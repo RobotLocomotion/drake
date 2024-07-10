@@ -153,6 +153,18 @@ struct GcsGraphvizOptions {
   /** Sets the floating point precision (how many digits are generated) of the
    * annotations. */
   int precision{3};
+
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(show_slacks));
+    a->Visit(DRAKE_NVP(show_vars));
+    a->Visit(DRAKE_NVP(show_flows));
+    a->Visit(DRAKE_NVP(show_costs));
+    a->Visit(DRAKE_NVP(scientific));
+    a->Visit(DRAKE_NVP(precision));
+  }
 };
 
 /**
