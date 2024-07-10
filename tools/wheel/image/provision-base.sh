@@ -5,10 +5,6 @@
 
 set -eu -o pipefail
 
-# Fix ssh permissions.
-chmod 700 ~/.ssh
-chmod 600 ~/.ssh/known_hosts
-
 # Prepare system to install packages, and apply any updates.
 apt-get -y update
 apt-get -y upgrade
