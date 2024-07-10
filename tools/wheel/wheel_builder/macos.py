@@ -1,17 +1,21 @@
 # This file contains macOS-specific logic used to build the PyPI wheels. See
 # build-wheels for the user interface.
 
+import atexit
 import glob
 import os
 import platform
 import shutil
 import subprocess
 
-from .common import die, wheel_name
+from .common import create_snopt_tgz, die, wheel_name
 from .common import build_root, resource_root, wheel_root, wheelhouse
 from .common import test_root, find_tests
 
 from .macos_types import PythonTarget
+
+# Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
+_files_to_remove = []
 
 # This is the complete set of defined targets (i.e. potential wheels). By
 # default, all targets are built, but the user may down-select from this set.
@@ -20,6 +24,18 @@ python_targets = (
     PythonTarget(3, 11),
     PythonTarget(3, 12),
 )
+
+
+@atexit.register
+def _cleanup():
+    """
+    Removes temporary artifacts on exit.
+    """
+    for f in _files_to_remove:
+        try:
+            os.unlink(f)
+        except FileNotFoundError:
+            gripe(f'Warning: failed to remove \'{f}\'?')
 
 
 def _find_wheel(path, version, python_target):
@@ -51,26 +67,6 @@ def _assert_isdir(path, name):
         die(f'{name} \'{path}\' is not a valid directory')
 
 
-def _find_host_key_types(host):
-    key_types = []
-
-    try:
-        command = ['ssh-keygen', '-F', host]
-        known_keys = subprocess.check_output(command, text=True)
-
-        for line in known_keys.split('\n'):
-            if not line or line.startswith('#'):
-                continue
-
-            host, key_type, key_hash = line.strip().split()
-            key_types.append(key_type)
-
-    except subprocess.CalledProcessError:
-        pass
-
-    return key_types
-
-
 def _provision(python_targets):
     """
     Prepares wheel build environment.
@@ -78,27 +74,6 @@ def _provision(python_targets):
     packages_path = os.path.join(resource_root, 'image', 'packages-macos')
     command = ['brew', 'bundle', f'--file={packages_path}', '--no-lock']
     subprocess.check_call(command)
-
-    try:
-        os.mkdir(os.path.expanduser('~/.ssh'), mode=0o700)
-    except FileExistsError:
-        pass
-
-    host_keys = ''
-    known_hosts_path = os.path.join(resource_root, 'image', 'known_hosts')
-    with open(known_hosts_path, 'rt', encoding='utf-8') as f:
-        for line in f:
-            host, key_type, key = line.strip().split()
-            if key_type in _find_host_key_types(host):
-                continue
-
-            host_keys += line
-
-    if host_keys:
-        known_hosts_path = os.path.expanduser('~/.ssh/known_hosts')
-        with open(known_hosts_path, 'at', encoding='utf-8') as f:
-            f.write(''.join(host_keys))
-            os.fchmod(f.fileno(), 0o600)
 
     for t in python_targets:
         subprocess.check_call(['brew', 'install', f'python@{t.version}'])
@@ -182,6 +157,14 @@ def build(options):
 
     # Inject the build version into the environment.
     environment['DRAKE_VERSION'] = options.version
+
+    # Create the snopt source archive (and pass along as an environment var).
+    snopt_tgz = os.path.join(
+        resource_root, 'image', 'dependencies', 'snopt.tar.gz')
+    environment['SNOPT_PATH'] = snopt_tgz
+    if options.dependencies:
+        _files_to_remove.append(snopt_tgz)
+        create_snopt_tgz(snopt_path=options.snopt_path, output=snopt_tgz)
 
     # Build the wheel dependencies.
     if options.dependencies:

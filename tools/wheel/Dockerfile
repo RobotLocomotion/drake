@@ -10,7 +10,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ADD image/packages-* /image/
 ADD image/provision-base.sh /image/
-ADD image/known_hosts /root/.ssh/
 
 RUN /image/provision-base.sh
 
@@ -56,9 +55,9 @@ ARG DRAKE_GIT_SHA
 
 ENV DRAKE_VERSION=${DRAKE_VERSION}
 ENV DRAKE_GIT_SHA=${DRAKE_GIT_SHA}
+ENV SNOPT_PATH=/opt/drake-wheel-build/dependencies/src/snopt.tar.gz
 
-RUN --mount=type=ssh \
-    --mount=type=cache,target=/var/cache/bazel \
+RUN --mount=type=cache,target=/var/cache/bazel \
     /image/build-drake.sh
 
 ADD image/build-wheel.sh /image/
