@@ -496,6 +496,7 @@ class TestMeldis(unittest.TestCase):
         url = "package://drake_models/manipulation_station/sphere.sdf"
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
+        plant.SetUseSampledOutputPorts(False)  # We're not stepping time.
         sphere1_model, = Parser(plant, "sphere1").AddModels(url=url)
         sphere2_model, = Parser(plant, "sphere2").AddModels(url=url)
         body1 = plant.GetBodyByName("base_link", sphere1_model)
@@ -538,6 +539,7 @@ class TestMeldis(unittest.TestCase):
         url = "package://drake/multibody/meshcat/test/hydroelastic.sdf"
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
+        plant.SetUseSampledOutputPorts(False)  # We're not stepping time.
         parser = Parser(plant=plant)
         parser.AddModels(url=url)
         body1 = plant.GetBodyByName("body1")

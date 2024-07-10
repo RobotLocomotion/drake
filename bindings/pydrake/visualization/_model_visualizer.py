@@ -310,6 +310,9 @@ class ModelVisualizer:
                 frame_on_parent_F=sensor_offset_frame,
                 frame_on_child_M=sensor_body.body_frame())
 
+        # We're not going to step time, so we don't want output port sampling.
+        self._builder.plant().SetUseSampledOutputPorts(False)
+
         self._builder.plant().Finalize()
 
         # (Re-)initialize the meshcat instance, creating one if needed.
