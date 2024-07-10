@@ -409,7 +409,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
     systems::CacheIndex contact_results;
     systems::CacheIndex discrete_update_multibody_forces;
-    systems::CacheIndex hydroelastic_contact_info;
     systems::CacheIndex actuation;
   };
 
@@ -478,36 +477,37 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* Helper method to fill in contact_results with point contact information
    for the given state stored in `context`.
-   @param[in,out] contact_results is appended to. */
-  void AppendContactResultsForPointContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
+   @param[out] contact_results_point_pair is cleared then appended to. */
+  void CalcContactResultsForPointContact(
+      const GeometryContactData<T>& geometry_contact_data,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+      const contact_solvers::internal::ContactSolverResults<T>& solver_results,
+      std::vector<PointPairContactInfo<T>>* contact_results_point_pair) const;
 
   /* Helper method to fill in `contact_results` with hydroelastic contact
    information for the given state stored in `context`.
-   @param[in,out] contact_results is appended to. */
-  void AppendContactResultsForHydroelasticContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
+
+   Note that items inside of the `geometry_contact_data.get().surfaces` vector
+   will be aliased by `contact_results_hydroelastic` result, so the geometry
+   contact must remain alive longer than the output. See the implementation
+   comments about "backing store" for details.
+
+   @param[out] contact_results_hydroelastic is cleared then appended to. */
+  void CalcContactResultsForHydroelasticContact(
+      const GeometryContactData<T>& geometry_contact_data,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+      const contact_solvers::internal::ContactSolverResults<T>& solver_results,
+      std::vector<HydroelasticContactInfo<T>>* contact_results_hydroelastic)
+      const;
 
   /* Helper method to fill in `contact_results` with deformable contact
-   information for the given state stored in `context`.
-   @param[in,out] contact_results is appended to. */
-  void AppendContactResultsForDeformableContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
-
-  /* Computes per-face contact information for the hydroelastic model (slip
-   velocity, traction, etc). On return contact_info->size() will equal the
-   number of faces discretizing the contact surface. */
-  void CalcHydroelasticContactInfo(
-      const systems::Context<T>& context,
-      std::vector<HydroelasticContactInfo<T>>* contact_info) const
-    requires scalar_predicate<T>::is_bool;
-
-  /* Eval version of CalcHydroelasticContactInfo() . */
-  const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
-      const systems::Context<T>& context) const;
+   information.
+   @param[out] contact_results_deformable is cleared then appended to. */
+  void CalcContactResultsForDeformableContact(
+      const GeometryContactData<T>& geometry_contact_data,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+      const contact_solvers::internal::ContactSolverResults<T>& solver_results,
+      std::vector<DeformableContactInfo<T>>* contact_results_deformable) const;
 
   const MultibodyPlant<T>* plant_{nullptr};
   MultibodyPlant<T>* mutable_plant_{nullptr};

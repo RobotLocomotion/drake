@@ -935,6 +935,7 @@ drake_cc_googletest(
     deps = [
         ":contact_results",
         ":multibody_plant_core",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 

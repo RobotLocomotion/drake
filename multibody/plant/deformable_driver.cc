@@ -668,12 +668,11 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
 
 template <typename T>
 void DeformableDriver<T>::CalcDeformableContactInfo(
-    const systems::Context<T>& context,
+    const DeformableContact<T>& deformable_contact,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
     std::vector<DeformableContactInfo<T>>* contact_info) const {
   DRAKE_DEMAND(contact_info != nullptr);
-
-  const DeformableContact<T>& deformable_contact =
-      EvalDeformableContact(context);
 
   const std::vector<DeformableContactSurface<T>>& contact_surfaces =
       deformable_contact.contact_surfaces();
@@ -681,11 +680,6 @@ void DeformableDriver<T>::CalcDeformableContactInfo(
 
   contact_info->clear();
   contact_info->reserve(num_surfaces);
-
-  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
-      manager_->EvalDiscreteContactPairs(context);
-  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
-      manager_->EvalContactSolverResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -1014,7 +1008,7 @@ void DeformableDriver<T>::CalcDeformableContact(
 template <typename T>
 const DeformableContact<T>& DeformableDriver<T>::EvalDeformableContact(
     const Context<T>& context) const {
-  return manager_->EvalGeometryContactData(context).deformable;
+  return manager_->EvalGeometryContactData(context).get().deformable;
 }
 
 template <typename T>

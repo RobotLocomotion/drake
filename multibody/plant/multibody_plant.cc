@@ -66,6 +66,7 @@ using drake::multibody::internal::AccelerationKinematicsCache;
 using drake::multibody::internal::ArticulatedBodyForceCache;
 using drake::multibody::internal::ArticulatedBodyInertiaCache;
 using drake::multibody::internal::GeometryContactData;
+using drake::multibody::internal::NestedGeometryContactData;
 using drake::multibody::internal::PositionKinematicsCache;
 using drake::multibody::internal::VelocityKinematicsCache;
 using drake::systems::BasicVector;
@@ -1953,7 +1954,11 @@ void MultibodyPlant<T>::CalcContactResultsOutput(
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(context, get_contact_results_output_port());
 
-  *output = EvalContactResults(context);
+  if (this->is_discrete()) {
+    *output = discrete_update_manager_->EvalContactResults(context);
+  } else {
+    CalcContactResultsContinuous(context, output);
+  }
 }
 
 template <typename T>
@@ -1964,56 +1969,89 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   DRAKE_DEMAND(contact_results != nullptr);
   DRAKE_DEMAND(!is_discrete());
 
-  contact_results->Clear();
-  contact_results->set_plant(this);
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries() == 0) {
+    *contact_results = ContactResults<T>{};
+    contact_results->set_plant(this);
+    return;
+  }
 
+  bool use_point = false;
+  bool use_hydroelastic = false;
   switch (contact_model_) {
     case ContactModel::kPoint:
-      AppendContactResultsPointPairContinuous(context, contact_results);
+      use_point = true;
       break;
-
     case ContactModel::kHydroelastic:
-      AppendContactResultsHydroelasticContinuous(context, contact_results);
+      use_hydroelastic = true;
       break;
-
     case ContactModel::kHydroelasticWithFallback:
-      // Simply merge the contributions of each contact representation.
-      AppendContactResultsPointPairContinuous(context, contact_results);
-      AppendContactResultsHydroelasticContinuous(context, contact_results);
+      use_point = true;
+      use_hydroelastic = true;
       break;
   }
+
+  std::vector<PointPairContactInfo<T>> contact_results_point_pair;
+  std::vector<HydroelasticContactInfo<T>> contact_results_hydroelastic;
+  std::shared_ptr<const void> backing_store;
+  if (use_point) {
+    contact_results_point_pair = EvalContactResultsPointPairContinuous(context);
+  }
+  if (use_hydroelastic) {
+    if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+      CalcContactResultsHydroelasticContinuous(context,
+                                               &contact_results_hydroelastic);
+      backing_store = EvalGeometryContactData(context).Share();
+    } else {
+      throw std::logic_error("This method doesn't support T = Expression");
+    }
+  }
+
+  *contact_results = ContactResults<T>(std::move(contact_results_point_pair),
+                                       std::move(contact_results_hydroelastic),
+                                       {},  // Empty contact_results_deformable.
+                                       std::move(backing_store));
+  contact_results->set_plant(this);
 }
 
 template <typename T>
-void MultibodyPlant<T>::AppendContactResultsHydroelasticContinuous(
+void MultibodyPlant<T>::CalcContactResultsHydroelasticContinuous(
     const systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
+    std::vector<HydroelasticContactInfo<T>>* contact_results_hydroelastic) const
+  requires scalar_predicate<T>::is_bool
+{  // NOLINT(whitespace/braces)
   this->ValidateContext(context);
-  DRAKE_DEMAND(contact_results != nullptr);
-  DRAKE_DEMAND(contact_results->plant() == this);
+  DRAKE_DEMAND(contact_results_hydroelastic != nullptr);
   DRAKE_DEMAND(!is_discrete());
 
-  const internal::HydroelasticContactForcesContinuousCacheData<T>& cache =
-      EvalHydroelasticContactForcesContinuous(context);
-  for (const HydroelasticContactInfo<T>& contact_info : cache.contact_info) {
-    // Note: caching dependencies guarantee that the lifetime of contact_info is
-    // valid for the lifetime of the contact results.
-    contact_results->AddContactInfo(&contact_info);
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      EvalGeometryContactData(context).get().surfaces;
+  const std::vector<SpatialForce<T>>& F_Ac_W_array =
+      EvalHydroelasticContactForcesContinuous(context).F_Ac_W_array;
+  DRAKE_DEMAND(all_surfaces.size() == F_Ac_W_array.size());
+  contact_results_hydroelastic->clear();
+  contact_results_hydroelastic->reserve(all_surfaces.size());
+  for (int i = 0; i < ssize(all_surfaces); ++i) {
+    // Here we use emplacement to add a HydroelasticContactInfo with a raw
+    // pointer back into the GeometryContactData. This is safe only because
+    // our caller adds the GeometryContactData to the "backing store" as a
+    // keep-alive.
+    contact_results_hydroelastic->emplace_back(&all_surfaces[i],
+                                               F_Ac_W_array[i]);
   }
 }
 
 template <typename T>
-void MultibodyPlant<T>::AppendContactResultsPointPairContinuous(
+void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     const systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
+    std::vector<PointPairContactInfo<T>>* contact_results_point_pair_continuous)
+    const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(contact_results != nullptr);
-  DRAKE_DEMAND(contact_results->plant() == this);
+  DRAKE_DEMAND(contact_results_point_pair_continuous != nullptr);
   DRAKE_DEMAND(!is_discrete());
+  contact_results_point_pair_continuous->clear();
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      EvalGeometryContactData(context).point_pairs;
+      EvalGeometryContactData(context).get().point_pairs;
 
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
@@ -2111,10 +2149,19 @@ void MultibodyPlant<T>::AppendContactResultsPointPairContinuous(
       const SpatialForce<T> F_AC_W(Vector3<T>::Zero(), fn_AC_W + ft_AC_W);
 
       const Vector3<T> f_Bc_W = -F_AC_W.translational();
-      contact_results->AddContactInfo(
-          {bodyA_index, bodyB_index, f_Bc_W, p_WC, vn, slip_velocity, pair});
+      contact_results_point_pair_continuous->emplace_back(
+          bodyA_index, bodyB_index, f_Bc_W, p_WC, vn, slip_velocity, pair);
     }
   }
+}
+
+template <typename T>
+const std::vector<PointPairContactInfo<T>>&
+MultibodyPlant<T>::EvalContactResultsPointPairContinuous(
+    const systems::Context<T>& context) const {
+  return this
+      ->get_cache_entry(cache_indices_.contact_results_point_pair_continuous)
+      .template Eval<std::vector<PointPairContactInfo<T>>>(context);
 }
 
 template <typename T>
@@ -2126,15 +2173,16 @@ void MultibodyPlant<T>::CalcAndAddPointContactForcesContinuous(
   DRAKE_DEMAND(ssize(*F_BBo_W_array) == num_bodies());
   if (num_collision_geometries() == 0) return;
 
-  const ContactResults<T>& contact_results = EvalContactResults(context);
+  const std::vector<PointPairContactInfo<T>>& contact_results_point_pair =
+      EvalContactResultsPointPairContinuous(context);
 
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
-  for (int pair_index = 0;
-       pair_index < contact_results.num_point_pair_contacts(); ++pair_index) {
+  for (int pair_index = 0; pair_index < ssize(contact_results_point_pair);
+       ++pair_index) {
     const PointPairContactInfo<T>& contact_info =
-        contact_results.point_pair_contact_info(pair_index);
+        contact_results_point_pair[pair_index];
     const PenetrationAsPointPair<T>& pair = contact_info.point_pair();
 
     const GeometryId geometryA_id = pair.id_A;
@@ -2187,26 +2235,24 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
   DRAKE_DEMAND(!is_discrete());
 
   std::vector<SpatialForce<T>>& F_BBo_W_array = output->F_BBo_W_array;
+  std::vector<SpatialForce<T>>& F_Ac_W_array = output->F_Ac_W_array;
   DRAKE_DEMAND(ssize(F_BBo_W_array) == num_bodies());
-  std::vector<HydroelasticContactInfo<T>>& contact_info = output->contact_info;
-
-  // Initialize the body forces to zero.
   F_BBo_W_array.assign(num_bodies(), SpatialForce<T>::Zero());
-  if (num_collision_geometries() == 0) return;
+  F_Ac_W_array.clear();
+
+  if (num_collision_geometries() == 0) {
+    return;
+  }
 
   const std::vector<ContactSurface<T>>& all_surfaces =
-      EvalGeometryContactData(context).surfaces;
-
-  // Reserve memory here to keep from repeatedly allocating heap storage in the
-  // loop below.
-  contact_info.clear();
-  contact_info.reserve(all_surfaces.size());
+      EvalGeometryContactData(context).get().surfaces;
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
 
   const SceneGraphInspector<T>& inspector = EvalSceneGraphInspector(context);
 
+  F_Ac_W_array.reserve(all_surfaces.size());
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
     const GeometryId geometryN_id = surface.id_N();
@@ -2276,32 +2322,22 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
     }
 
     // Add the information for contact reporting.
-    contact_info.emplace_back(&surface, F_Ac_W);
+    F_Ac_W_array.push_back(F_Ac_W);
   }
 }
 
 template <typename T>
 const internal::HydroelasticContactForcesContinuousCacheData<T>&
 MultibodyPlant<T>::EvalHydroelasticContactForcesContinuous(
-    const systems::Context<T>& context) const {
+    const systems::Context<T>& context) const
+  requires scalar_predicate<T>::is_bool
+{  // NOLINT(whitespace/braces)
   this->ValidateContext(context);
   DRAKE_DEMAND(!is_discrete());
   return this
       ->get_cache_entry(cache_indices_.hydroelastic_contact_forces_continuous)
       .template Eval<internal::HydroelasticContactForcesContinuousCacheData<T>>(
           context);
-}
-
-template <typename T>
-const ContactResults<T>& MultibodyPlant<T>::EvalContactResults(
-    const systems::Context<T>& context) const {
-  this->ValidateContext(context);
-  if (this->is_discrete()) {
-    return discrete_update_manager_->EvalContactResults(context);
-  } else {
-    return this->get_cache_entry(cache_indices_.contact_results_continuous)
-        .template Eval<ContactResults<T>>(context);
-  }
 }
 
 template <typename T>
@@ -2602,26 +2638,28 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     const drake::systems::Context<T>& context,
     GeometryContactData<T>* result) const {
   this->ValidateContext(context);
-  result->point_pairs.clear();
-  if constexpr (scalar_predicate<T>::is_bool) {
-    result->surfaces.clear();
-  }
 
   // Bail out early when there is not any proximity geometry.
   if (num_collision_geometries() == 0) {
+    result->Clear();
     return;
   }
+
+  // Replace the result with newly-allocated (empty) storage, keeping around a
+  // mutable reference for us to fill in. After we return, the geometry contact
+  // data is forevermore immutable.
+  NestedGeometryContactData<T>& storage = result->Allocate();
 
   // Add all of the contacts to `result`.
   const auto& query_object = EvalGeometryQueryInput(context, __func__);
   switch (contact_model_) {
     case ContactModel::kPoint: {
-      result->point_pairs = query_object.ComputePointPairPenetration();
+      storage.point_pairs = query_object.ComputePointPairPenetration();
       break;
     }
     case ContactModel::kHydroelastic: {
       if constexpr (scalar_predicate<T>::is_bool) {
-        result->surfaces = query_object.ComputeContactSurfaces(
+        storage.surfaces = query_object.ComputeContactSurfaces(
             get_contact_surface_representation());
         break;
       } else {
@@ -2635,8 +2673,8 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     case ContactModel::kHydroelasticWithFallback: {
       if constexpr (scalar_predicate<T>::is_bool) {
         query_object.ComputeContactSurfacesWithFallback(
-            get_contact_surface_representation(), &result->surfaces,
-            &result->point_pairs);
+            get_contact_surface_representation(), &storage.surfaces,
+            &storage.point_pairs);
         break;
       } else {
         // TODO(SeanCurtis-TRI): Special case the QueryObject scalar support
@@ -2653,7 +2691,7 @@ void MultibodyPlant<T>::CalcGeometryContactData(
           discrete_update_manager_->deformable_driver();
       if (deformable_driver != nullptr) {
         deformable_driver->CalcDeformableContact(query_object,
-                                                 &result->deformable);
+                                                 &storage.deformable);
       }
     }
   }
@@ -2689,7 +2727,7 @@ void MultibodyPlant<T>::CalcGeometryContactData(
         return is_irrelevant_geometry(point_pair.id_A) &&
                is_irrelevant_geometry(point_pair.id_B);
       };
-  std::erase_if(result->point_pairs, is_irrelevant_point_pair);
+  std::erase_if(storage.point_pairs, is_irrelevant_point_pair);
   if constexpr (scalar_predicate<T>::is_bool) {
     const auto is_irrelevant_surface =
         [&is_irrelevant_geometry](const ContactSurface<T>& surface) {
@@ -2697,7 +2735,7 @@ void MultibodyPlant<T>::CalcGeometryContactData(
           return is_irrelevant_geometry(surface.id_M()) &&
                  is_irrelevant_geometry(surface.id_N());
         };
-    std::erase_if(result->surfaces, is_irrelevant_surface);
+    std::erase_if(storage.surfaces, is_irrelevant_surface);
   }
   // TODO(jwnimmer-tri) Filter out irrelevant deformable contact, too.
 }
@@ -2860,37 +2898,41 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
   // Early exit if there are no contact forces.
   if (num_collision_geometries() == 0) return;
 
-  // Note: we don't need to know the applied forces here because we use a
-  // regularized friction model whose forces depend only on the current state; a
-  // constraint based friction model would require accounting for the applied
-  // forces.
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    throw std::logic_error("This method doesn't support T = Expression");
+  } else {
+    // Note: we don't need to know the applied forces here because we use a
+    // regularized friction model whose forces depend only on the current state;
+    // a constraint based friction model would require accounting for the
+    // applied forces.
 
-  // Compute the spatial forces on each body from contact.
-  switch (contact_model_) {
-    case ContactModel::kPoint:
-      // Note: consider caching the results from the following method (in which
-      // case we would also want to introduce the Eval... naming convention for
-      // the method).
-      CalcAndAddPointContactForcesContinuous(context, &(*F_BBo_W_array));
-      break;
+    // Compute the spatial forces on each body from contact.
+    switch (contact_model_) {
+      case ContactModel::kPoint:
+        // Note: consider caching the results from the following method (in
+        // which case we would also want to introduce the Eval... naming
+        // convention for the method).
+        CalcAndAddPointContactForcesContinuous(context, &(*F_BBo_W_array));
+        break;
 
-    case ContactModel::kHydroelastic:
-      *F_BBo_W_array =
-          EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
-      break;
+      case ContactModel::kHydroelastic:
+        *F_BBo_W_array =
+            EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
+        break;
 
-    case ContactModel::kHydroelasticWithFallback:
-      // Combine the point-penalty forces with the contact surface forces.
-      CalcAndAddPointContactForcesContinuous(context, &(*F_BBo_W_array));
-      const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
-          EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
-      DRAKE_DEMAND(F_BBo_W_array->size() == Fhydro_BBo_W_all.size());
-      for (int i = 0; i < ssize(Fhydro_BBo_W_all); ++i) {
-        // Both sets of forces are applied to the body's origins and expressed
-        // in frame W. They should simply sum.
-        (*F_BBo_W_array)[i] += Fhydro_BBo_W_all[i];
-      }
-      break;
+      case ContactModel::kHydroelasticWithFallback:
+        // Combine the point-penalty forces with the contact surface forces.
+        CalcAndAddPointContactForcesContinuous(context, &(*F_BBo_W_array));
+        const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
+            EvalHydroelasticContactForcesContinuous(context).F_BBo_W_array;
+        DRAKE_DEMAND(F_BBo_W_array->size() == Fhydro_BBo_W_all.size());
+        for (int i = 0; i < ssize(Fhydro_BBo_W_all); ++i) {
+          // Both sets of forces are applied to the body's origins and expressed
+          // in frame W. They should simply sum.
+          (*F_BBo_W_array)[i] += Fhydro_BBo_W_all[i];
+        }
+        break;
+    }
   }
 }
 
@@ -3236,15 +3278,16 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
     }
   }
 
-  // Cache entry for ContactResultsContinuous.
+  // Cache entry for ContactResultsPointPairContinuous.
   if (!is_discrete()) {
-    auto& contact_results_continuous_cache_entry = this->DeclareCacheEntry(
-        std::string("ContactResultsContinuous"),
-        &MultibodyPlant<T>::CalcContactResultsContinuous,
-        {state_ticket, this->all_parameters_ticket(),
-         get_geometry_query_input_port().ticket()});
-    cache_indices_.contact_results_continuous =
-        contact_results_continuous_cache_entry.cache_index();
+    auto& contact_results_point_pair_continuous_cache_entry =
+        this->DeclareCacheEntry(
+            std::string("ContactResultsPointPairContinuous"),
+            &MultibodyPlant<T>::CalcContactResultsPointPairContinuous,
+            {state_ticket, this->all_parameters_ticket(),
+             get_geometry_query_input_port().ticket()});
+    cache_indices_.contact_results_point_pair_continuous =
+        contact_results_point_pair_continuous_cache_entry.cache_index();
   }
 
   // Cache entry for SpatialContactForcesContinuous.
@@ -3553,7 +3596,7 @@ MultibodyPlant<T>::EvalPointPairPenetrations(
   switch (contact_model_) {
     case ContactModel::kPoint:
     case ContactModel::kHydroelasticWithFallback: {
-      return EvalGeometryContactData(context).point_pairs;
+      return EvalGeometryContactData(context).get().point_pairs;
     }
     case ContactModel::kHydroelastic: {
       throw std::logic_error(
