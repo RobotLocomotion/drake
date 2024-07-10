@@ -2445,11 +2445,15 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
   spp.AddEdge(p3, p1);
   spp.AddEdge(p4, p2);
 
-  const int kNumPaths = 4;
+  // The maximum number of distinct paths without revisits in this graph is 8,
+  // hence given enough samples (and high probabilities of traversing all
+  // edges) we should find all of them.
+  const int kNumPaths = 8;
 
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = true;
   options.preprocessing = false;
+  // Set max_rounded_paths to 0 to we only solve the convex relaxation.
   options.max_rounded_paths = 0;
   // We won't care about this result, but we solve to obtain a result we can
   // later modify.
