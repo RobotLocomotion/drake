@@ -8,6 +8,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 0
 std::string DeprecateWhenEmptyName(std::string name, std::string_view type) {
   if (name.empty()) {
     throw std::runtime_error(fmt::format(
@@ -15,6 +16,7 @@ std::string DeprecateWhenEmptyName(std::string name, std::string_view type) {
   }
   return name;
 }
+#endif
 
 }  // namespace internal
 
