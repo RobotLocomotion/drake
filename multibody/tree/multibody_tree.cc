@@ -3059,8 +3059,8 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
   if (num_bodies() <= 1) {
     throw std::runtime_error(
-        "CalcJacobianCenterOfMassTranslationalVelocity(): this "
-        "MultibodyPlant contains only world_body() so its center of mass "
+        "CalcJacobianCenterOfMassTranslationalVelocity(): This "
+        "MultibodyPlant only contains the world_body() so its center of mass "
         "is undefined.");
   }
 
@@ -3174,8 +3174,8 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
 
   if (num_bodies() <= 1) {
     throw std::runtime_error(
-        "CalcBiasCenterOfMassTranslationalAcceleration(): this "
-        "MultibodyPlant contains only world_body() so its center of mass "
+        "CalcBiasCenterOfMassTranslationalAcceleration(): This "
+        "MultibodyPlant only contains the world_body() so its center of mass "
         "is undefined.");
   }
 
