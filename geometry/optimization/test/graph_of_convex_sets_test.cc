@@ -2520,70 +2520,16 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
   auto paths_from_flows_subset =
       spp.SamplePaths(*source, *target, flows_subset, options);
   check_paths(paths_from_flows_subset, source, target, 1);
-}
 
-/*
-┌──────┐     ┌────┐     ┌────┐
-|source├────►│ p1 │◄───►│ p3 │─────────┐
-└───┬──┘     └─▲──┘     └─▲──┘         |
-    │          |          |            |
-    │        ┌─▼──┐     ┌─▼──┐     ┌───▼────┐
-    └───────►│ p2 │◄───►│ p4 │────►│ target │
-             └────┘     └────┘     └────────┘
-
-*/
-GTEST_TEST(ShortestPathTest, SamplePathsNoPaths) {
-  GraphOfConvexSets spp;
-
-  Vertex* source = spp.AddVertex(Point(Vector2d(-1.5, -1.5)));
-  Vertex* target = spp.AddVertex(Point(Vector2d(1.5, 1.5)));
-  Vertex* p1 =
-      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(2, -1)));
-  Vertex* p2 =
-      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(-1, 2)));
-  Vertex* p3 =
-      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(1, -2), Vector2d(2, 2)));
-  Vertex* p4 =
-      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, 1), Vector2d(2, 2)));
-
-  // Edges pointing towards target
-  spp.AddEdge(source, p1);
-  spp.AddEdge(source, p2);
-  spp.AddEdge(p1, p3);
-  spp.AddEdge(p2, p4);
-  spp.AddEdge(p3, target);
-  spp.AddEdge(p4, target);
-
-  // Edges between parallel vertices
-  spp.AddEdge(p1, p2);
-  spp.AddEdge(p2, p1);
-  spp.AddEdge(p3, p4);
-  spp.AddEdge(p4, p3);
-
-  // Edges pointing towards source
-  spp.AddEdge(p3, p1);
-  spp.AddEdge(p4, p2);
-
-  GraphOfConvexSetsOptions options;
-  options.convex_relaxation = true;
-  options.preprocessing = false;
-  options.max_rounded_paths = 0;
-  // We won't care about this result, but we solve to obtain a result we can
-  // later modify.
-  auto relaxed_result = spp.SolveShortestPath(*source, *target, options);
-  ASSERT_TRUE(relaxed_result.is_success());
-
-  options.max_rounded_paths = 4;
-  options.max_rounding_trials = 100;
-
+  // Check the case where there are no possible paths
   // Set all the flow variables to 0.0 so there are no candidate paths
   for (const auto& e : spp.Edges()) {
     relaxed_result.SetSolution(e->phi(), 0.0);
   }
 
-  auto paths = spp.SamplePaths(*source, *target, relaxed_result, options);
+  auto paths_empty = spp.SamplePaths(*source, *target, relaxed_result, options);
   // There should be no candidate paths
-  ASSERT_EQ(paths.size(), 0);
+  ASSERT_EQ(paths_empty.size(), 0);
 }
 
 // In some cases, the depth first search performed in rounding will lead to a
