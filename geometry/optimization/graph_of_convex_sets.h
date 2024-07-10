@@ -128,30 +128,30 @@ struct GraphOfConvexSetsOptions {
 };
 
 struct GcsGraphvizOptions {
-  /** Determines whether the values of the intermediate
-  (slack) variables are also displayed in the graph. */
+  /** Determines whether the values of the intermediate (slack) variables are
+  also displayed in the graph. */
   bool show_slacks{true};
 
-  /** Determines whether the solution values for decision variables
-  in each set are shown. */
+  /** Determines whether the solution values for decision variables in each set
+   * are shown. */
   bool show_vars{true};
 
-  /** Determines whether the flow value results are shown. The
-  flow values are shown both with a numeric value and through the transparency
-  value on the edge, where a flow of 0.0 will correspond to an invisible edge,
-  and a flow of 1.0 will display as a fully black edge. */
+  /** Determines whether the flow value results are shown. The flow values are
+   * shown both with a numeric value and through the transparency value on the
+   * edge, where a flow of 0.0 will correspond to an invisible edge, and a flow
+   * of 1.0 will display as a fully black edge. */
   bool show_flows{true};
 
-  /** Determines whether the cost value results are shown. This
-  will show both edge and vertex costs. */
+  /** Determines whether the cost value results are shown. This will show both
+   * edge and vertex costs. */
   bool show_costs{true};
 
-  /** Sets the floating point formatting to scientific (if true)
-  or fixed (if false). */
+  /** Sets the floating point formatting to scientific (if true) or fixed (if
+   * false). */
   bool scientific{false};
 
-  /** Sets the floating point precision (how many digits are
-  generated) of the annotations. */
+  /** Sets the floating point precision (how many digits are generated) of the
+   * annotations. */
   int precision{3};
 };
 
