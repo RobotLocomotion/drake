@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "parallel_stable_sort/openmp/parallel_stable_sort.h"
+#include <omp.h>
 #include <tbb/parallel_sort.h>
 
 namespace drake {
@@ -167,13 +169,13 @@ Vector3<int> SparseGrid<T>::OffsetToCoordinate(uint64_t offset) const {
  each other in physical space are close to each other in memory. */
 template <typename T>
 void SparseGrid<T>::Sort(std::vector<ParticleIndex>* particles) {
-  std::sort(particles->begin(), particles->end(),
-            [](const ParticleIndex& a, const ParticleIndex& b) {
-              if (a.base_node_offset == b.base_node_offset) {
-                return a.index < b.index;
-              }
-              return a.base_node_offset < b.base_node_offset;
-            });
+  pss::parallel_stable_sort(particles->begin(), particles->end(),
+                            [](const ParticleIndex& a, const ParticleIndex& b) {
+                              if (a.base_node_offset == b.base_node_offset) {
+                                return a.index < b.index;
+                              }
+                              return a.base_node_offset < b.base_node_offset;
+                            });
 }
 
 template <typename T>
@@ -181,9 +183,12 @@ void SparseGrid<T>::SortParticleIndices(ParticleData<T>* data) {
   const std::vector<Vector3<T>>& particle_positions = data->x;
   const int num_particles = particle_positions.size();
   particles_.resize(num_particles);
+#pragma omp parallel for
   for (int p = 0; p < num_particles; ++p) {
     const Vector3<int> base_node =
         mpm::internal::base_node<T>(particle_positions[p] / dx_);
+    // TODO(xuchenhan-tri): We are computing base nodes twice. We should cut it
+    // down to once.
     data->bspline[p] = BSplineWeights<T>(particle_positions[p], dx_);
     particles_[p].base_node_offset =
         CoordinateToOffset(base_node[0], base_node[1], base_node[2]);
