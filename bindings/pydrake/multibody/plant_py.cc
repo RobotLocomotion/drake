@@ -215,6 +215,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("model_instance"), cls_doc.num_actuated_dofs.doc_1args);
     // Construction.
     cls  // BR
+        .def("SetUseSampledOutputPorts", &Class::SetUseSampledOutputPorts,
+            py::arg("use_sampled_output_ports"),
+            cls_doc.SetUseSampledOutputPorts.doc)
         .def(
             "AddJoint",
             [](Class * self, std::unique_ptr<Joint<T>> joint) -> auto& {
@@ -1071,6 +1074,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("world_frame", &Class::world_frame, py_rvp::reference_internal,
             cls_doc.world_frame.doc)
         .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
+        .def("has_sampled_output_ports", &Class::has_sampled_output_ports,
+            cls_doc.has_sampled_output_ports.doc)
         .def("Finalize", py::overload_cast<>(&Class::Finalize),
             cls_doc.Finalize.doc)
         .def("set_contact_model", &Class::set_contact_model, py::arg("model"),

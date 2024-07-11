@@ -15,6 +15,7 @@ using yaml::LoadYamlString;
 GTEST_TEST(MultibodyPlantConfigFunctionsTest, AddMultibodyBasicTest) {
   MultibodyPlantConfig config;
   config.time_step = 0.002;
+  config.use_sampled_output_ports = false;
   config.penetration_allowance = 0.003;
   config.stiction_tolerance = 0.004;
   config.sap_near_rigid_threshold = 0.1;
@@ -25,6 +26,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, AddMultibodyBasicTest) {
   drake::systems::DiagramBuilder<double> builder;
   auto result = AddMultibodyPlant(config, &builder);
   EXPECT_EQ(result.plant.time_step(), 0.002);
+  EXPECT_EQ(result.plant.has_sampled_output_ports(), false);
   EXPECT_EQ(result.plant.get_sap_near_rigid_threshold(), 0.1);
   EXPECT_EQ(result.plant.get_contact_model(), ContactModel::kHydroelasticsOnly);
   EXPECT_EQ(result.plant.get_contact_surface_representation(),
@@ -83,6 +85,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest,
 // at a time. Therefore we set discrete_contact_solver to empty.
 const char* const kExampleConfig = R"""(
 time_step: 0.002
+use_sampled_output_ports: true
 penetration_allowance: 0.003
 stiction_tolerance: 0.004
 contact_model: hydroelastic

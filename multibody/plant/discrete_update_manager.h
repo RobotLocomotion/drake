@@ -7,7 +7,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "drake/common/scope_exit.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -20,6 +19,7 @@
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/discrete_step_memory.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
@@ -29,13 +29,12 @@
 namespace drake {
 namespace multibody {
 
+#ifndef DRAKE_DOXYGEN_CXX
 template <typename T>
 class MultibodyPlant;
+#endif
 
 namespace internal {
-
-template <typename T>
-class AccelerationKinematicsCache;
 
 template <typename T>
 struct JointLockingCacheData;
@@ -162,14 +161,20 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   }
 
   /* MultibodyPlant invokes this method to perform the discrete variables
-   update. */
+   update. The optional `memory` output is sometimes requested, to preserve
+   a snapshot of the second-order inputs and/or outputs. */
   void CalcDiscreteValues(const systems::Context<T>& context,
-                          systems::DiscreteValues<T>* updates) const;
+                          systems::DiscreteValues<T>* updates,
+                          DiscreteStepMemory::Data<T>* memory = nullptr) const;
 
-  /* Evaluates the contact results used in CalcDiscreteValues() to advance the
-   discrete update from the state stored in `context`. */
-  const ContactResults<T>& EvalContactResults(
-      const systems::Context<T>& context) const;
+  /* Computes the "contact_results" output port on MbP. Those results can be
+   computed from the current instantaneous `context`, or the discrete step
+   sampled `memory. Both functions are thin wrappers that delegate to the
+   private helper function CalcContactResultsImpl(). */
+  void CalcContactResults(const systems::Context<T>& context,
+                          ContactResults<T>* contact_results) const;
+  void CalcContactResults(const DiscreteStepMemory::Data<T>& memory,
+                          ContactResults<T>* contact_results) const;
 
   /* Computes all non-contact applied forces including:
      - Force elements.
@@ -289,16 +294,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
                                 VectorX<T>* actuation_w_pd,
                                 VectorX<T>* actuation_wo_pd) const;
 
-  /* Evaluates the discretely sampled MultibodyPlant input port force values.
-   This includes forces from externally applied spatial forces, externally
-   applied generalized forces, and joint actuation forces.  */
-  const InputPortForces<T>& EvalInputPortForces(
-      const drake::systems::Context<T>& context) const {
-    return plant()
-        .get_cache_entry(cache_indexes_.discrete_input_port_forces)
-        .template Eval<InputPortForces<T>>(context);
-  }
-
   /* Exposed MultibodyPlant private/protected methods.
    @{ */
 
@@ -404,10 +399,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
      happened. Evaluating this cache entry when caching is disabled throws an
      exception. */
     systems::CacheIndex discrete_contact_pairs;
-    systems::CacheIndex discrete_input_port_forces;
     systems::CacheIndex contact_solver_results;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
-    systems::CacheIndex contact_results;
     systems::CacheIndex discrete_update_multibody_forces;
     systems::CacheIndex actuation;
   };
@@ -417,25 +410,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   CacheIndexes cache_indexes() const { return cache_indexes_; }
 
  private:
-  /* Due to issue #12786, we cannot mark the calculation of non-contact forces
-   (and the acceleration it induces) dependent on the discrete
-   MultibodyPlant's inputs, as it should. However, by removing this
-   dependency, we run the risk of an undetected algebraic loop. We use this
-   function to guard against such algebraic loop. In particular, calling this
-   function immediately upon entering the calculation of non-contact forces
-   sets a flag indicating the calculation of non-contact forces is in
-   progress. Then, this function returns a ScopeExit which turns off the flag
-   when going out of scope at the end of the non-contact forces calculation.
-   If this function is called again while the flag is on, it means that an
-   algebraic loop exists and an exception is thrown. */
-  [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
-      const systems::Context<T>& context) const;
-
-  /* Updates the discrete_input_forces cache entry. This should only be called
-   at the beginning of each discrete update.
-   @throws std::exception if caching is disabled for the given `context`. */
-  void SampleDiscreteInputPortForces(const systems::Context<T>& context) const;
-
   /* Collects the sum of all forces added to the owning MultibodyPlant and store
    them in given `forces`. The existing values in `forces` is cleared. */
   void CalcInputPortForces(const systems::Context<T>& context,
@@ -444,9 +418,12 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* NVI to DoDeclareCacheEntries(). */
   void DeclareCacheEntries();
 
-  /* Calc version of EvalContactResults(). */
-  void CalcContactResults(const systems::Context<T>& context,
-                          ContactResults<T>* contact_results) const;
+  /* Common implementation for both overloads of CalcContactResults(). */
+  void CalcContactResultsImpl(
+      const GeometryContactData<T>& geometry_contact_data,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+      const contact_solvers::internal::ContactSolverResults<T>& solver_results,
+      ContactResults<T>* contact_results) const;
 
   /* Calc version of EvalDiscreteUpdateMultibodyForces, NVI to
    DoCalcDiscreteUpdateMultibodyForces. */
