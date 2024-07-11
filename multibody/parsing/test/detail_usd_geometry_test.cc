@@ -23,7 +23,6 @@ namespace multibody {
 // We don't open the `internal` namespace in this file so that function calls
 // to the USD parser has to spell the `internal::` prefix. We do this in order
 // to make it easier to identify function calls that are being tested.
-// namespace internal {
 namespace {
 
 class UsdGeometryTest : public test::DiagnosticPolicyTestBase {
@@ -540,7 +539,6 @@ TEST_F(UsdGeometryTest, InvalidMassTest) {
 }
 
 }  // namespace
-// }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
