@@ -74,6 +74,12 @@ _IGNORED_REPOSITORIES = [
     "uwebsockets_internal",  # Pinned due to upstream regression.
 ]
 
+# These repositories cannot be auto-upgraded. When checking for new releases,
+# print a reminder to manually check for upgrades.
+_OTHER_REPOSITORIES = [
+    "bazel",
+]
+
 # For these repositories, ignore any tags that match the specified regex.
 _IGNORED_TAGS = {
     "gymnasium_py": r"v[0-9.]+a[0-9]+",
@@ -446,7 +452,9 @@ def _do_upgrade_scripted(
 
 def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     """Returns an `UpgradeResult` describing what (if anything) was done."""
-    if workspace_name not in metadata:
+    if workspace_name in _OTHER_REPOSITORIES:
+        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
+    elif workspace_name not in metadata:
         raise RuntimeError(f"Unknown repository {workspace_name}")
 
     data = metadata[workspace_name]
@@ -680,6 +688,9 @@ def main():
         # Run our report of what's available.
         info("Checking for new releases...")
         _check_for_upgrades(gh, args, metadata)
+
+        for repo in _OTHER_REPOSITORIES:
+            info(f"{repo} may need upgrade but cannot be auto-upgraded.")
 
     if args.lint:
         subprocess.check_call(["bazel", "test", "--config=lint", "//..."])
