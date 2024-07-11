@@ -785,7 +785,10 @@ class QueryObject {
    @retval signed_distances   A vector populated with per-object signed distance
                               values (and supporting data) for every supported
                               geometry as shown in the table. See
-                              SignedDistanceToPoint. */
+                              SignedDistanceToPoint. The ordering of the
+                              results is guaranteed to be consistent -- for
+                              fixed geometry poses, the results will remain the
+                              same.*/
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
       const double threshold = std::numeric_limits<double>::infinity()) const;
