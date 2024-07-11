@@ -245,12 +245,20 @@ bool HyperrectangleOffsetIntersection(const Hyperrectangle& h1,
   return h1_offset.MaybeGetIntersection(h2).has_value();
 }
 
-std::vector<Hyperrectangle> BoundingBoxesForListOfSets(
-    const ConvexSets& sets, const std::vector<int>& continuous_revolute_joints,
-    bool all_dimensions) {
+/* This function takes in a list of convex sets, and also a list of dimensions,
+for which we want to know the upper and lower bounds of each set. It returns a
+list of Hyperrectangle objects corresponding to the convex sets, for which the
+upper and lower limit on each dimension corresponds to the highest and lowest
+value attained by the corresponding convex set along that dimension.
+
+Note that the entries of dimensions are expected to be unique and in increasing
+order, but we do not check for this. */
+std::vector<Hyperrectangle> BoundingBoxesForListOfSetsSomeDimensions(
+    const ConvexSets& sets, const std::vector<int>& dimensions) {
+  DRAKE_ASSERT(sets.size() > 0);
   std::vector<Hyperrectangle> bboxes;
   for (int i = 0; i < ssize(sets); ++i) {
-    if (all_dimensions) {
+    if (ssize(dimensions) == sets[0]->ambient_dimension()) {
       // Compute minimum and maximum value along all dimensions to store for
       // the bounding box.
       std::optional<Hyperrectangle> maybe_bbox =
@@ -264,11 +272,11 @@ std::vector<Hyperrectangle> BoundingBoxesForListOfSets(
       VectorXd lb = VectorXd::Zero(sets[0]->ambient_dimension());
       VectorXd ub = VectorXd::Zero(sets[0]->ambient_dimension());
       std::vector<std::pair<double, double>> bbox_values =
-          internal::GetMinimumAndMaximumValueAlongDimension(
-              *sets[i], continuous_revolute_joints);
+          internal::GetMinimumAndMaximumValueAlongDimension(*sets[i],
+                                                            dimensions);
       for (int j = 0; j < ssize(bbox_values); ++j) {
-        lb[continuous_revolute_joints[j]] = bbox_values[j].first;
-        ub[continuous_revolute_joints[j]] = bbox_values[j].second;
+        lb[dimensions[j]] = bbox_values[j].first;
+        ub[dimensions[j]] = bbox_values[j].second;
       }
       bboxes.emplace_back(Hyperrectangle(lb, ub));
     }
@@ -280,6 +288,8 @@ std::vector<Hyperrectangle> BoundingBoxesForListOfSets(
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
+  // TODO(cohnt): Add an optional argument to take in bounding boxes for all of
+  // the sets, so they can be reused across multiple calls to this function.
   DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
   const int dimension = convex_sets_A[0]->ambient_dimension();
@@ -297,15 +307,28 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
   // instead point to the corresponding element in bboxes_A.
   std::vector<Hyperrectangle> bboxes_A, bboxes_B;
 
+  std::vector<int> all_joints(dimension);
+  std::iota(all_joints.begin(), all_joints.end(), 0);
+
   // Compute bounding boxes for convex_sets_A.
-  bboxes_A = BoundingBoxesForListOfSets(
-      convex_sets_A, continuous_revolute_joints, preprocess_bbox);
+  if (preprocess_bbox) {
+    bboxes_A =
+        BoundingBoxesForListOfSetsSomeDimensions(convex_sets_A, all_joints);
+  } else {
+    bboxes_A = BoundingBoxesForListOfSetsSomeDimensions(
+        convex_sets_A, continuous_revolute_joints);
+  }
 
   // Compute bounding boxes for convex_sets_B if distinct from convex_sets_A.
   bool convex_sets_A_and_B_are_identical = convex_sets_A == convex_sets_B;
   if (!convex_sets_A_and_B_are_identical) {
-    bboxes_B = BoundingBoxesForListOfSets(
-        convex_sets_B, continuous_revolute_joints, preprocess_bbox);
+    if (preprocess_bbox) {
+      bboxes_B =
+          BoundingBoxesForListOfSetsSomeDimensions(convex_sets_B, all_joints);
+    } else {
+      bboxes_B = BoundingBoxesForListOfSetsSomeDimensions(
+          convex_sets_B, continuous_revolute_joints);
+    }
   }
 
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
@@ -399,6 +422,8 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
+  // TODO(cohnt): Add an optional argument to take in bounding boxes for all of
+  // the sets, so they can be reused across multiple calls to this function.
   return CalcPairwiseIntersections(convex_sets, convex_sets,
                                    continuous_revolute_joints, preprocess_bbox);
 }
