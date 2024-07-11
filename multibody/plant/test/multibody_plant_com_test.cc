@@ -31,6 +31,12 @@ GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, CalcCenterOfMassPosition) {
       "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): This MultibodyPlant "
       "only contains the world_body\\(\\) so its center of mass is undefined.");
 
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcCenterOfMassTranslationalAccelerationInWorld(*context_),
+      "CalcCenterOfMassTranslationalAccelerationInWorld\\(\\): "
+      "This MultibodyPlant only contains the world_body\\(\\) so "
+      "its center of mass is undefined.");
+
   const Frame<double>& frame_W = plant.world_frame();
   Eigen::MatrixXd Js_v_WScm_W(3, plant.num_velocities());
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -143,6 +149,14 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
 
     const double kTolerance = 16 * std::numeric_limits<double>::epsilon();
     EXPECT_TRUE(CompareMatrices(v_WScm_W, v_WScm_W_expected, kTolerance));
+
+    // Calculate Scm's translational acceleration in frame W, expressed in W.
+    const Vector3<double> a_WScm_W =
+        plant_.CalcCenterOfMassTranslationalAccelerationInWorld(*context_);
+
+    // Verify previous calculation knowing that bodies are in free-fall.
+    const Vector3<double>& gravity = plant_.gravity_field().gravity_vector();
+    EXPECT_TRUE(CompareMatrices(a_WScm_W, gravity, kTolerance));
   }
 
  protected:
@@ -210,7 +224,7 @@ TEST_F(MultibodyPlantCenterOfMassTest, CalcTotalMass) {
   DRAKE_EXPECT_NO_THROW(plant_.CalcTotalMass(*context_, model_instances));
 }
 
-TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
+TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPositionEtc) {
   // Verify the plant's default center of mass position makes sense.
   Eigen::Vector3d p_WCcm = plant_.CalcCenterOfMassPositionInWorld(*context_);
   const math::RigidTransformd X_WS0 = math::RigidTransformd::Identity();
@@ -254,6 +268,12 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): There must be at "
       "least one non-world body contained in model_instances.");
 
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalAccelerationInWorld(*context_,
+                                                              model_instances),
+      "CalcCenterOfMassTranslationalAccelerationInWorld\\(\\): There must be "
+      "at least one non-world body contained in model_instances.");
+
   Eigen::MatrixXd Js_v_WCcm_W(3, plant_.num_velocities());
   const Frame<double>& frame_W = plant_.world_frame();
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -275,9 +295,15 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       "least one non-world body contained in model_instances.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalAccelerationInWorld(
+          *context_, world_model_instance_array),
+      "CalcCenterOfMassTranslationalAccelerationInWorld\\(\\): There must be "
+      "at least one non-world body contained in model_instances.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcJacobianCenterOfMassTranslationalVelocity(
-          *context_, model_instances, JacobianWrtVariable::kV, frame_W, frame_W,
-          &Js_v_WCcm_W),
+          *context_, world_model_instance_array, JacobianWrtVariable::kV,
+          frame_W, frame_W, &Js_v_WCcm_W),
       "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): There must be at "
       "least one non-world body contained in model_instances.");
 
@@ -290,9 +316,15 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       "least one non-world body contained in model_instances.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalAccelerationInWorld(
+          *context_, world_model_instance_array),
+      "CalcCenterOfMassTranslationalAccelerationInWorld\\(\\): There must be "
+      "at least one non-world body contained in model_instances.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcJacobianCenterOfMassTranslationalVelocity(
-          *context_, model_instances, JacobianWrtVariable::kV, frame_W, frame_W,
-          &Js_v_WCcm_W),
+          *context_, world_model_instance_array, JacobianWrtVariable::kV,
+          frame_W, frame_W, &Js_v_WCcm_W),
       "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): There must be at "
       "least one non-world body contained in model_instances.");
 
@@ -333,6 +365,12 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       "system's total mass must be greater than zero.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalAccelerationInWorld(*context_,
+                                                              model_instances),
+      "CalcCenterOfMassTranslationalAccelerationInWorld\\(\\): The "
+      "system's total mass must be greater than zero.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcJacobianCenterOfMassTranslationalVelocity(
           *context_, model_instances, JacobianWrtVariable::kV, frame_W, frame_W,
           &Js_v_WCcm_W),
@@ -358,6 +396,9 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances),
       std::exception);
   EXPECT_THROW(plant_.CalcCenterOfMassTranslationalVelocityInWorld(
+                   *context_, model_instances),
+               std::exception);
+  EXPECT_THROW(plant_.CalcCenterOfMassTranslationalAccelerationInWorld(
                    *context_, model_instances),
                std::exception);
   EXPECT_THROW(plant_.CalcJacobianCenterOfMassTranslationalVelocity(
