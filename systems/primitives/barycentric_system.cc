@@ -12,7 +12,8 @@ template <typename T>
 BarycentricMeshSystem<T>::BarycentricMeshSystem(
     math::BarycentricMesh<T> mesh,
     const Eigen::Ref<const MatrixX<T>>& output_values)
-    : VectorSystem<T>(mesh.get_input_size(), output_values.rows()),
+    : VectorSystem<T>(mesh.get_input_size(), output_values.rows(),
+                      /* direct_feedthrough = */ true),
       mesh_(std::move(mesh)),
       output_values_(output_values) {
   DRAKE_DEMAND(output_values_.rows() > 0);

@@ -86,7 +86,11 @@ GTEST_TEST(RandomSimulationTest, WithRandomSimulator) {
 // SetRandomState().
 class RandomContextSystem : public VectorSystem<double> {
  public:
-  RandomContextSystem() : VectorSystem(0, 1) { this->DeclareDiscreteState(1); }
+  RandomContextSystem()
+      : VectorSystem(0, 1,
+                     /* direct_feedthrough = */ false) {
+    this->DeclareDiscreteState(1);
+  }
 
  private:
   void SetRandomState(const Context<double>& context, State<double>* state,
@@ -199,7 +203,9 @@ GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
 // throws.
 class ThrowingRandomContextSystem : public VectorSystem<double> {
  public:
-  ThrowingRandomContextSystem() : VectorSystem(0, 1) {
+  ThrowingRandomContextSystem()
+      : VectorSystem(0, 1,
+                     /* direct_feedthrough = */ false) {
     this->DeclareDiscreteState(1);
   }
 

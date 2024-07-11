@@ -512,6 +512,7 @@ drake_cc_googletest(
     deps = [
         ":first_order_low_pass_filter",
         "//common:unused",
+        "//common/test_utilities:limit_malloc",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],

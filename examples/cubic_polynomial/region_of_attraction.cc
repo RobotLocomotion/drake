@@ -35,8 +35,9 @@ template <typename T>
 class CubicPolynomialSystem : public systems::VectorSystem<T> {
  public:
   CubicPolynomialSystem()
-      : systems::VectorSystem<T>(0, 0) {  // Zero inputs, zero outputs.
-    this->DeclareContinuousState(1);      // One state variable.
+      // Zero inputs, zero outputs, no feedthrough.
+      : systems::VectorSystem<T>(0, 0, false) {
+    this->DeclareContinuousState(1);  // One state variable.
   }
 
  private:

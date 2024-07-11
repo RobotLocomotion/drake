@@ -49,7 +49,8 @@ class JointSliders(VectorSystem):
             update_period_sec: Specifies how often the window update() method
                          gets called.
         """
-        VectorSystem.__init__(self, 0, robot.num_positions())
+        VectorSystem.__init__(self, 0, robot.num_positions(),
+                              direct_feedthrough=False)
 
         # The widgets themselves have undeclared state.  For now, we accept it,
         # and simply disable caching on the output port.

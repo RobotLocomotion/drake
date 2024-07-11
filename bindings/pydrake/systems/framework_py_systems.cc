@@ -1032,20 +1032,32 @@ Note: The above is for the C++ documentation. For Python, use
         .def("GetSystems", &Diagram<T>::GetSystems, py_rvp::reference_internal,
             doc.Diagram.GetSystems.doc);
 
-    // N.B. This will effectively allow derived classes of `VectorSystem` to
-    // override `LeafSystem` methods, disrespecting `final`-ity.
-    // This could be changed (see https://stackoverflow.com/a/2425785), but meh,
-    // we're already abusing Python and C++ enough.
-    DefineTemplateClassWithDefault<VectorSystem<T>, PyVectorSystem,
-        LeafSystem<T>>(m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc)
-        .def(py::init([](int input_size, int output_size,
-                          std::optional<bool> direct_feedthrough) {
-          return new PyVectorSystem(
-              input_size, output_size, direct_feedthrough);
-        }),
-            py::arg("input_size"), py::arg("output_size"),
-            py::arg("direct_feedthrough") = std::nullopt,
-            doc.VectorSystem.ctor.doc_3args);
+    {
+      // N.B. This will effectively allow derived classes of `VectorSystem` to
+      // override `LeafSystem` methods, disrespecting `final`-ity.
+      // This could be changed (see https://stackoverflow.com/a/2425785), but
+      // meh, we're already abusing Python and C++ enough.
+      auto cls = DefineTemplateClassWithDefault<VectorSystem<T>, PyVectorSystem,
+          LeafSystem<T>>(
+          m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc);
+      cls  // BR
+          .def(py::init([](int input_size, int output_size,
+                            std::optional<bool> direct_feedthrough) {
+            return new PyVectorSystem(
+                input_size, output_size, direct_feedthrough);
+          }),
+              py::arg("input_size"), py::arg("output_size"),
+              py::arg("direct_feedthrough"), doc.VectorSystem.ctor.doc_3args);
+      cls  // Deprecated 2024-11-01.
+          .def(py_init_deprecated(doc.VectorSystem.ctor.doc_deprecated_2args,
+                   [](int input_size, int output_size) {
+                     return std::make_unique<PyVectorSystem>(
+                         input_size, output_size, std::nullopt);
+                   }),
+              py::arg("input_size"), py::arg("output_size"),
+              doc.VectorSystem.ctor.doc_deprecated_2args);
+    }
+
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in
