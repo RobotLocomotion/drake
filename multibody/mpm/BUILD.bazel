@@ -1,4 +1,4 @@
-load("@drake//tools/skylark:cc.bzl", "cc_library", "cc_test")
+load("@drake//tools/skylark:cc.bzl", "cc_library", "cc_binary")
 
 #- * - python - * -
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -26,6 +26,7 @@ cc_library(
     ],
     hdrs = [
         "sparse_grid.h",
+        "particles.h",
     ],
     deps = [
         ":math",
@@ -100,6 +101,16 @@ drake_cc_googlebench_binary(
         "//common:add_text_logging_gflags",
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
+    ],
+)
+
+cc_binary(
+    name = "p2g2p",
+    srcs = ["p2g2p.cc"],
+    testonly = True,
+    deps = [
+        ":transfer",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
