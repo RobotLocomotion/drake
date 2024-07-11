@@ -30,6 +30,22 @@ GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, CalcCenterOfMassPosition) {
       plant.CalcCenterOfMassTranslationalVelocityInWorld(*context_),
       "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): This MultibodyPlant "
       "only contains the world_body\\(\\) so its center of mass is undefined.");
+
+  const Frame<double>& frame_W = plant.world_frame();
+  Eigen::MatrixXd Js_v_WScm_W(3, plant.num_velocities());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcJacobianCenterOfMassTranslationalVelocity(
+          *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WScm_W),
+      "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): "
+      "This MultibodyPlant only contains the world_body\\(\\) so "
+      "its center of mass is undefined.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, JacobianWrtVariable::kV, frame_W, frame_W),
+      "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): "
+      "This MultibodyPlant only contains the world_body\\(\\) so "
+      "its center of mass is undefined.");
 }
 
 class MultibodyPlantCenterOfMassTest : public ::testing::Test {

@@ -514,6 +514,9 @@ class RigidBody : public MultibodyElement<T> {
   /// @param[in] context The context contains the state of the model.
   /// @retval a_WBcm_W The translational acceleration of Bcm (this rigid body's
   /// center of mass) in the world frame W, expressed in W.
+  /// @note When cached values are out of sync with the state stored in context,
+  /// this method performs an expensive forward dynamics computation, whereas
+  /// once evaluated, successive calls to this method are inexpensive.
   Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
       const systems::Context<T>& context) const;
 
