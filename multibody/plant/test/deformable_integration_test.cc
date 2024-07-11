@@ -203,8 +203,8 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   EXPECT_TRUE(CompareMatrices(expected_contact_force, f_A_W, kForceThreshold));
 
   /* Verifies the contact results agree with the contact solver results. */
-  const ContactResults<double>& contact_results =
-      manager_->EvalContactResults(plant_context);
+  ContactResults<double> contact_results;
+  manager_->CalcContactResults(plant_context, &contact_results);
   ASSERT_EQ(contact_results.num_deformable_contacts(), 1);
   const DeformableContactInfo<double>& contact_info =
       contact_results.deformable_contact_info(0);

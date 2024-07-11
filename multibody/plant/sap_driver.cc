@@ -1098,9 +1098,10 @@ void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
 
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
   const VectorX<T>& gamma = sap_results.gamma;
-  VectorX<T> tau_pd = VectorX<T>::Zero(plant().num_velocities());
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
+  VectorX<T> tau_pd = VectorX<T>::Zero(sap_problem.num_velocities());
   sap_problem.CalcConstraintGeneralizedForces(gamma, start, end, &tau_pd);
+  tau_pd.conservativeResize(plant().num_velocities());
 
   // Map generalized forces to actuation indexing.
   int constraint_index = start;
