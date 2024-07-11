@@ -42,7 +42,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
                                   const std::vector<int>& input_vector_indices,
                                   const std::vector<int>& ticks_per_revolution)
     : VectorSystem<T>(SystemTypeTag<RotaryEncoders>{}, input_port_size,
-                      input_vector_indices.size() /* output_port_size */),
+                      /* output_port_size = */ input_vector_indices.size(),
+                      /* direct_feedthrough = */ true),
       num_encoders_(input_vector_indices.size()),
       indices_(input_vector_indices),
       ticks_per_revolution_(ticks_per_revolution) {

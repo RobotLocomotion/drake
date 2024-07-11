@@ -9,7 +9,8 @@ namespace systems {
 
 template <typename T>
 Integrator<T>::Integrator(int size)
-    : VectorSystem<T>(SystemTypeTag<Integrator>{}, size, size) {
+    : VectorSystem<T>(SystemTypeTag<Integrator>{}, size, size,
+                      /* direct_feedthrough = */ false) {
   this->DeclareContinuousState(size);
 }
 
