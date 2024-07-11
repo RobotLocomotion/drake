@@ -175,6 +175,10 @@ class SparseGrid {
     return result;
   }
 
+  const std::array<std::vector<int>, 8>& colored_pages() const {
+    return colored_pages_;
+  }
+
  private:
   static constexpr int kLog2Page = 12;  // 4KB page size.
   static constexpr int kDim = 3;        // 3D grid.
@@ -185,6 +189,12 @@ class SparseGrid {
    enough for most manipulation simulations. */
   static constexpr int kLog2MaxGridSize = 10;
   static constexpr int kMaxGridSize = 1 << kLog2MaxGridSize;
+
+  static int get_color(uint64_t page) {
+    int color = (page & 0x7);
+    DRAKE_DEMAND(color >= 0 && color < 8);
+    return color;
+  }
 
   using Allocator = SPGrid::SPGrid_Allocator<GridData<T>, kDim, kLog2Page>;
   /* PageMap keeps track of which blocks in the SPGrid are actually allocated.
@@ -229,6 +239,8 @@ class SparseGrid {
    immediate grid neighbors). */
   std::array<std::array<std::array<uint64_t, 3>, 3>, 3>
       neighbor_offset_strides_;
+
+  std::array<std::vector<int>, 1 << kDim> colored_pages_;
 };
 
 }  // namespace internal

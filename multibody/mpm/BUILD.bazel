@@ -85,6 +85,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "transfer_test",
+    copts = ["-fopenmp",],
     srcs = [
         "test/transfer_test.cc",
     ],
@@ -94,21 +95,27 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googlebench_binary(
-    name = "transfer_benchmark",
-    srcs = ["transfer_benchmark.cc"],
-    add_test_rule = True,
-    deps = [
-        ":transfer",
-        "//common:add_text_logging_gflags",
-        "//tools/performance:fixture_common",
-        "//tools/performance:gflags_main",
-    ],
-)
+# drake_cc_googlebench_binary(
+#     name = "transfer_benchmark",
+#     srcs = ["transfer_benchmark.cc"],
+#     add_test_rule = True,
+#     deps = [
+#         ":transfer",
+#         "//common:add_text_logging_gflags",
+#         "//tools/performance:fixture_common",
+#         "//tools/performance:gflags_main",
+#     ],
+# )
+
+# drake_py_experiment_binary(
+#     name = "transfer_experiment",
+#     googlebench_binary = ":transfer_benchmark",
+# )
 
 cc_binary(
     name = "p2g2p",
     srcs = ["p2g2p.cc"],
+    copts = ["-fopenmp", "-O2", "-march=native", "-g"],
     testonly = True,
     deps = [
         ":transfer",
@@ -127,9 +134,15 @@ cc_binary(
     ],
 )
 
-drake_py_experiment_binary(
-    name = "transfer_experiment",
-    googlebench_binary = ":transfer_benchmark",
+cc_binary(
+    name = "p2g",
+    srcs = ["p2g.cc"],
+    testonly = True,
+    copts = ["-fopenmp", "-O2", "-march=native", "-g"],
+    deps = [
+        ":transfer",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
 )
 
 # add_lint_tests()

@@ -194,7 +194,11 @@ void SparseGrid<T>::SortParticleIndices(ParticleData<T>* data) {
   /* We use sentinel_particles_ to indicate particles that belong to separate
    pages. */
   sentinel_particles_.clear();
+  for (int b = 0; b < 8; ++b) {
+    colored_pages_[b].clear();
+  }
   uint64_t last_page = 0;
+  int block = 0;
   for (int p = 0; p < num_particles; ++p) {
     /* The bits in the offset is ordered as follows:
 
@@ -206,6 +210,8 @@ void SparseGrid<T>::SortParticleIndices(ParticleData<T>* data) {
     if (p == 0 || last_page != page) {
       last_page = page;
       sentinel_particles_.push_back(p);
+      int color = get_color(page);
+      colored_pages_[color].push_back(block++);
     }
   }
   sentinel_particles_.push_back(num_particles);
