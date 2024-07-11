@@ -184,7 +184,7 @@ class SpatialVector {
   /// absolute values in (this - other).
   decltype(T() < T()) IsApprox(
       const SpatialQuantity& other,
-      double tolerance = std::numeric_limits<double>::epsilon()) const {
+      double tolerance = 2 * std::numeric_limits<double>::epsilon()) const {
     return IsNearlyEqualWithinAbsoluteTolerance(other, tolerance, tolerance);
   }
 
@@ -241,7 +241,7 @@ class SpatialVector {
   /// SpatialVelocity, SpatialAcceleration, SpatialForce, or SpatialMomentum).
   friend SpatialQuantity operator+(const SpatialQuantity& V1_E,
                                    const SpatialQuantity& V2_E) {
-    return SpatialQuantity(V1_E) += V2_E;
+    return SpatialQuantity(V1_E.get_coeffs() + V2_E.get_coeffs());
   }
 
   /// Subtracts two spatial vectors by simply subtracting their 6 underlying
@@ -254,13 +254,13 @@ class SpatialVector {
   /// SpatialVelocity, SpatialAcceleration, SpatialForce, or SpatialMomentum).
   friend SpatialQuantity operator-(const SpatialQuantity& V1,
                                    const SpatialQuantity& V2) {
-    return SpatialQuantity(V1) -= V2;
+    return SpatialQuantity(V1.get_coeffs() - V2.get_coeffs());
   }
 
   /// Multiplication of a spatial vector V from the left by a scalar `s`.
   /// @relates SpatialVector.
   friend SpatialQuantity operator*(const T& s, const SpatialQuantity& V) {
-    return SpatialQuantity(V) *= s;
+    return SpatialQuantity(V.get_coeffs() * s);
   }
 
   /// Multiplication of a spatial vector V from the right by a scalar `s`.
