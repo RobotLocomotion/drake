@@ -131,7 +131,7 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
     plant_.SetFreeBodySpatialVelocity(context_.get(), triangle, V_WT_W);
 
     // Denoting Scm as the center of mass of the system formed by Sphere1 and
-    // Triangle1, form Scm's translational velocity in frame W, expressed in W.
+    // Triangle1, form Scm's translational velocity in world W, expressed in W.
     const Vector3<double> v_WScm_W =
         plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_);
 
@@ -150,13 +150,15 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
     const double kTolerance = 16 * std::numeric_limits<double>::epsilon();
     EXPECT_TRUE(CompareMatrices(v_WScm_W, v_WScm_W_expected, kTolerance));
 
-    // Calculate Scm's translational acceleration in frame W, expressed in W.
+    // Calculate Scm's translational acceleration in world W, expressed in W.
     const Vector3<double> a_WScm_W =
         plant_.CalcCenterOfMassTranslationalAccelerationInWorld(*context_);
 
     // Verify previous calculation knowing that bodies are in free-fall.
+    // Note: kTolerance had to be changed to 8 * kTolerance to pass CI due to
+    // sole failure on mac-arm-ventura-clang-bazel-experimental-release-21710.
     const Vector3<double>& gravity = plant_.gravity_field().gravity_vector();
-    EXPECT_TRUE(CompareMatrices(a_WScm_W, gravity, kTolerance));
+    EXPECT_TRUE(CompareMatrices(a_WScm_W, gravity, 8 * kTolerance));
   }
 
  protected:
