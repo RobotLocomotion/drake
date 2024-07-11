@@ -216,6 +216,13 @@ bool OrderSignedDistancePair(const SignedDistancePair<T>& p1,
   return p1.id_B < p2.id_B;
 }
 
+// Compare function to use when ordering ComputeSignedDistanceToPoint.
+template <typename T>
+bool OrderSignedDistanceToPoint(const SignedDistanceToPoint<T>& p1,
+                                const SignedDistanceToPoint<T>& p2) {
+  return p1.id_G < p2.id_G;
+}
+
 }  // namespace
 
 // The implementation class for the fcl engine. Each of these functions
@@ -604,6 +611,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Perform query of point vs anchored objects.
     anchored_tree_.distance(&query_point, &data, point_distance::Callback<T>);
 
+    std::sort(distances.begin(), distances.end(),
+              OrderSignedDistanceToPoint<T>);
     return distances;
   }
 

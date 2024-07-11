@@ -913,10 +913,17 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointNonPositiveThreshold) {
   std::vector<SignedDistanceToPoint<double>> results_all =
       engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, kInf);
   EXPECT_EQ(results_all.size(), 2u);
+  // Make sure the result is sorted.
+  auto parameters_in_order = [](const SignedDistanceToPoint<double>& p1,
+                                const SignedDistanceToPoint<double>& p2) {
+    return p1.id_G < p2.id_G;
+  };
+  EXPECT_TRUE(parameters_in_order(results_all[0], results_all[1]));
 
   std::vector<SignedDistanceToPoint<double>> results_zero =
       engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, 0);
   EXPECT_EQ(results_zero.size(), 2u);
+  EXPECT_TRUE(parameters_in_order(results_zero[0], results_zero[1]));
 
   const double kEps = std::numeric_limits<double>::epsilon();
 
@@ -924,6 +931,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointNonPositiveThreshold) {
       engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs,
                                           -kPenetration * 0.5 + kEps);
   EXPECT_EQ(results_barely_in.size(), 2u);
+  EXPECT_TRUE(parameters_in_order(results_barely_in[0], results_barely_in[1]));
 
   std::vector<SignedDistanceToPoint<double>> results_barely_out =
       engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs,
