@@ -362,15 +362,14 @@ INSTANTIATE_TEST_SUITE_P(SupportMatrixTests, DiscretePlantTestExpression,
 
 TEST_P(DiscretePlantTestExpression, ForcedUpdate) {
   const auto& diagram = model_->diagram();
-  auto updates = diagram.AllocateDiscreteVariables();
+  auto context = diagram.CreateDefaultContext();
   // We don't support discrete updates when T = Expression. Depending on the
   // plant configuration, the throw will happen from different places (with
   // slightly different messages). We check two key elements of the message:
   // - not supported
   // - due to Expression
   DRAKE_EXPECT_THROWS_MESSAGE(
-      diagram.CalcForcedDiscreteVariableUpdate(model_->context(),
-                                               updates.get()),
+      diagram.ExecuteForcedEvents(context.get()),
       ".* (doesn't support|does not support|not supported)"
       ".* (T ?= ?|scalar type )[drake:symbolic]*Expression.*");
 }
