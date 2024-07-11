@@ -158,12 +158,14 @@ class SlidingBoxTest : public ::testing::Test {
   }
 
   // Creates a MultibodyPlant model with the given `discrete_period`
-  // (discrete_period = 0 for a continuous model).
+  // (discrete_period = 0 for a continuous model). When in discrete mode,
+  // we'll set output port sampling to be off.
   std::unique_ptr<Diagram<double>> MakeBoxDiagram(double time_step) {
     DiagramBuilder<double> builder;
     MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
         &builder, std::make_unique<MultibodyPlant<double>>(time_step));
     plant.set_name("plant");
+    plant.SetUseSampledOutputPorts(false);  // We're not stepping time.
     Parser(&plant).AddModelsFromUrl(
         "package://drake/multibody/plant/test/box.sdf");
 
