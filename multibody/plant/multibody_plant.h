@@ -3521,11 +3521,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context);
   }
 
-  /// Calculates the system's center of mass translational acceleration in the
-  /// world frame W.
+  /// For the system S contained in this %MultibodyPlant, calculates Scm's
+  /// translational acceleration in the world frame W expressed in W, where
+  /// Scm is the center of mass of S.
   /// @param[in] context The context contains the state of the model.
-  /// @retval a_WScm_W Scm's translational acceleration in world W, expressed in
-  /// W, where Scm is the center of mass of the system S stored by `this` plant.
+  /// @retval a_WScm_W Scm translational acceleration in world W expressed in W.
   /// @throws std::exception if `this` has no body except world_body().
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
   /// @note The world_body() is ignored.  a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where
@@ -3542,14 +3542,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// For the system S containing the selected model instances, calculates
-  /// a_WScm_W, Scm's translational acceleration in world W expressed in W,
+  /// Scm's translational acceleration in the world frame W expressed in W,
   /// where Scm is the center of mass of S.
   /// @param[in] context The context contains the state of the model.
   /// @param[in] model_instances Vector of selected model instances.  If a model
   /// instance is repeated in the vector (unusual), it is only counted once.
-  /// @retval a_WScm_W Scm's translational acceleration in the world frame W,
-  /// expressed in W, where Scm is the center of mass of the system S of
-  /// non-world bodies contained in model_instances.
+  /// @retval a_WScm_W Scm translational acceleration in world W expressed in W.
   /// @throws std::exception if model_instances is empty or only has world body.
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
   /// @note The world_body() is ignored.  a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where
