@@ -76,7 +76,8 @@ class MultibodyForceToWsgForceSystem : public systems::VectorSystem<T> {
  public:
   MultibodyForceToWsgForceSystem()
       : systems::VectorSystem<T>(
-            systems::SystemTypeTag<MultibodyForceToWsgForceSystem>{}, 2, 1) {}
+            systems::SystemTypeTag<MultibodyForceToWsgForceSystem>{}, 2, 1,
+            /* direct_feedthrough = */ true) {}
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
