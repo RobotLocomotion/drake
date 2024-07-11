@@ -11,11 +11,14 @@ namespace {
 using Eigen::Vector3d;
 
 GTEST_TEST(SparseGridTest, Allocate) {
-  SparseGrid<double> grid(0.01);
-  std::vector<Vector3d> positions;
+  const double dx = 0.01; 
+  SparseGrid<double> grid(dx);
+  ParticleData<double> particles;
   const Vector3d x = Vector3d(0.001, 0.001, 0.001);
-  positions.push_back(x);
-  grid.Allocate(positions);
+  particles.x.push_back(x);
+  particles.bspline.push_back(BSplineWeights<double>(x, dx));
+
+  grid.Allocate(&particles);
 
   EXPECT_EQ(grid.dx(), 0.01);
 

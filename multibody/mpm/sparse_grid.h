@@ -16,6 +16,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/mpm/math.h"
+#include "particles.h"
 
 namespace drake {
 namespace multibody {
@@ -72,7 +73,7 @@ class SparseGrid {
 
   /* Allocates memory for the grid pages affected by particles and initialize
    all grid data to zero. */
-  void Allocate(const std::vector<Vector3<T>>& particle_positions);
+  void Allocate(ParticleData<T>* particles);
 
   /* All but last entry store indices of particles marking the boundary of a new
    block. The last entry stores the number of particles. */
@@ -182,7 +183,7 @@ class SparseGrid {
    that can ever be allocated is kMaxGridSize^3. With 1cm grid dx, that
    corresponds to more than 40 meters in each dimension, which should be
    enough for most manipulation simulations. */
-  static constexpr int kLog2MaxGridSize = 12;
+  static constexpr int kLog2MaxGridSize = 10;
   static constexpr int kMaxGridSize = 1 << kLog2MaxGridSize;
 
   using Allocator = SPGrid::SPGrid_Allocator<GridData<T>, kDim, kLog2Page>;
@@ -198,7 +199,7 @@ class SparseGrid {
   /* Helper for `Allocate()` that sorts particles into bins based on their
    positions. In that process, builds `partilces_` and `sentinel_particles_`.
   */
-  void SortParticleIndices(const std::vector<Vector3<T>>& particle_positions);
+  void SortParticleIndices(ParticleData<T>* particles);
   void Sort(std::vector<ParticleIndex>* particles);
 
   T dx_{};  // Grid spacing (in meters).

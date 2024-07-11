@@ -86,7 +86,7 @@ GTEST_TEST(TransferTest, GridToParticle) {
   particles.C.push_back(nan_matrix);
   particles.P.push_back(nan_matrix);
 
-  grid.Allocate(particles.x);
+  grid.Allocate(&particles);
 
   const double dt = 0.0123;
   Transfer<double> transfer(dt, &grid, &particles);
@@ -124,7 +124,7 @@ GTEST_TEST(TransferTest, ParticleToGrid) {
   particles.P.push_back(Matrix3d::Zero());
   particles.bspline.push_back(bspline);
 
-  grid.Allocate(particles.x);
+  grid.Allocate(&particles);
   const double dt = 0.0123;
   Transfer<double> transfer(dt, &grid, &particles);
   transfer.ParticleToGrid();
