@@ -6,6 +6,7 @@
 
 #include "particles.h"
 #include "sparse_grid.h"
+#include <omp.h>
 
 #include "drake/common/ssize.h"
 
@@ -88,9 +89,10 @@ class Transfer {
     const int num_blocks = sparse_grid_->num_blocks();
     const std::vector<ParticleIndex>& particle_indices =
         sparse_grid_->particle_indices();
-    NeighborArray<Vector3<T>> grid_x;
-    NeighborArray<GridData<T>> grid_data;
+#pragma omp parallel for
     for (int b = 0; b < num_blocks; ++b) {
+      NeighborArray<Vector3<T>> grid_x;
+      NeighborArray<GridData<T>> grid_data;
       const int particle_start = sentinel_particles[b];
       const int particle_end = sentinel_particles[b + 1];
       for (int p = particle_start; p < particle_end; ++p) {

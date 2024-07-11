@@ -48,19 +48,19 @@ int do_main() {
   SparseGrid<float> grid(dx);
 
   SetUp(num_nodes_per_dim, particles_per_cell, dx, &particles);
+  Transfer<float> transfer(dt, &grid, &particles);
+  transfer.ParticleToGrid();
+  grid.ExplicitVelocityUpdate(dt, Vector3f::Zero());
 
   auto start = std::chrono::high_resolution_clock::now();
-  omp_set_num_threads(4);
-  for (int i = 0; i < 100; ++i) {
-    Transfer<float> transfer(dt, &grid, &particles);
-    transfer.ParticleToGrid();
-    grid.ExplicitVelocityUpdate(dt, Vector3f::Zero());
+  omp_set_num_threads(12);
+  for (int i = 0; i < 300; ++i) {
     transfer.GridToParticles();
   }
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> duration = end - start;
-  std::cout << "Each time step takes: " << duration.count() * 10.0
+  std::cout << "Each time step takes: " << duration.count() / 300.0 * 1000.0 
             << " milliseconds" << std::endl;
   return 0;
 }
