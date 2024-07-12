@@ -15,27 +15,31 @@ namespace geometry {
 namespace optimization {
 
 GTEST_TEST(ConvexHullTest, BasicTests) {
+  // Empty convex hull without any sets.
+  ConvexHull null_hull({});
+  EXPECT_TRUE(null_hull.IsEmpty());
+  EXPECT_TRUE(null_hull.IsBounded());
+  EXPECT_FALSE(null_hull.MaybeGetPoint().has_value());
+  EXPECT_EQ(null_hull.num_elements(), 0);
+  EXPECT_EQ(null_hull.ambient_dimension(), 0);
+  // Convex hull with a point and a rectangle.
   const Point point(Eigen::Vector2d(1.0, 2.0));
   const Hyperrectangle rectangle(Eigen::Vector2d(-1.0, 1.0),
                                  Eigen::Vector2d(1.0, 1.0));
   ConvexHull hull(MakeConvexSets(point, rectangle));
-  EXPECT_EQ(hull.sets().size(), 2);
-  // It is not empty.
+  EXPECT_EQ(hull.num_elements(), 2);
+  EXPECT_EQ(hull.ambient_dimension(), 2);
   EXPECT_FALSE(hull.IsEmpty());
-  // It is bounded.
   EXPECT_TRUE(hull.IsBounded());
-  // Convex hull is not a single point.
   EXPECT_FALSE(hull.MaybeGetPoint().has_value());
-  // Make an HPolyhedron that is empty.
+  // Add an HPolyhedron that is empty.
   Eigen::MatrixXd A(2, 2);
   A << 1, 0, -1, 0;
   Eigen::VectorXd b(2);
   b << 1, -2;
   HPolyhedron empty_hpolyhedron(A, b);
   ConvexHull empty_hull(MakeConvexSets(point, rectangle, empty_hpolyhedron));
-  // It is empty.
   EXPECT_TRUE(empty_hull.IsEmpty());
-  // Do not have a point in the convex hull.
   EXPECT_FALSE(empty_hull.MaybeGetPoint().has_value());
   // Inppropriate dimensions.
   Point point_3d = Point(Eigen::Vector3d(1.0, 2.0, 3.0));

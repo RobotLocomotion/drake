@@ -111,7 +111,7 @@ bool ConvexHull::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
     sets_[i]->AddPointInNonnegativeScalingConstraints(&prog, x_sets.col(i),
                                                       alpha(i));
   }
-  // Check the feasibility.
+  // Check feasibility.
   const auto result = solvers::Solve(prog);
   return result.is_success();
 }
@@ -189,8 +189,8 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   alpha_t_vec.head(n) = alpha;
   alpha_t_vec(n) = t;
   new_bindings.push_back(prog->AddLinearEqualityConstraint(a, 0, alpha_t_vec));
-  // t and alpha should be positive
-  new_bindings.push_back(prog->AddBoundingBoxConstraint(0, inf, alpha_t_vec));
+  // alpha should be positive.
+  new_bindings.push_back(prog->AddBoundingBoxConstraint(0, inf, alpha));
   // Finally add the constraints for each convex set.
   for (int i = 0; i < n; ++i) {
     auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
@@ -238,9 +238,7 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   alpha_t_vec.tail(p) = t;
   new_bindings.push_back(
       prog->AddLinearEqualityConstraint(a_con, d, alpha_t_vec));
-  // c't + d and alpha should be positive.
-  const double inf = std::numeric_limits<double>::infinity();
-  new_bindings.push_back(prog->AddBoundingBoxConstraint(0, inf, alpha));
+  // Add the inclusion constraints for each convex set.
   for (int i = 0; i < n; ++i) {
     auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
         prog, x_sets.col(i), alpha(i));
