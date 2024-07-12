@@ -845,6 +845,37 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "detail_usd_geometry_test",
+    args = select({
+        "//tools:with_usd": [],
+        "//conditions:default": [
+            "--gtest_filter=-*",
+        ],
+    }),
+    copts = [
+        "-w",
+    ],
+    defines = select({
+        "//tools:with_usd": [
+            "WITH_USD=1",
+        ],
+        "//conditions:default": [
+            "WITH_USD=0",
+        ],
+    }),
+    deps = [
+        ":detail_usd_parser",
+        "//common:is_approx_equal_abstol",
+        "//common/test_utilities:diagnostic_policy_test_base",
+    ] + select({
+        "//tools:with_usd": [
+            "@openusd_internal//:openusd",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
 install_files(
     name = "install",
     dest = "share/drake/multibody/parsing",
