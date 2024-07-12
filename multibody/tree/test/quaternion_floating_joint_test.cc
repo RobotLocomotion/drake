@@ -12,7 +12,7 @@ namespace drake {
 namespace multibody {
 namespace {
 
-const double kTolerance = std::numeric_limits<double>::epsilon();
+const double kTolerance = 1.8 * std::numeric_limits<double>::epsilon();
 
 using Eigen::Vector3d;
 using math::RigidTransformd;

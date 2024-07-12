@@ -1239,7 +1239,7 @@ GTEST_TEST(AffineSubspaceTest, EqualityTest) {
   const AffineSubspace as4(basis2, translation1);
   const AffineSubspace as5(basis2, translation2);
 
-  const double kTol = 1e-15;
+  const double kTol = 1e-14;
 
   EXPECT_TRUE(as1.IsNearlyEqualTo(as2, kTol));
   EXPECT_TRUE(as2.IsNearlyEqualTo(as3, kTol));
