@@ -46,53 +46,66 @@ SpatialForce<double> MakeSpatialForce() {
                               Vector3<double>(4, 5, 6));
 }
 
-HydroelasticContactInfo<double> CreateContactInfo(
-    std::unique_ptr<ContactSurface<double>>* contact_surface,
-    std::unique_ptr<HydroelasticContactInfo<double>>* contact_info) {
-  // Create an arbitrary contact surface.
-  *contact_surface = MakeContactSurface();
+GTEST_TEST(HydroelasticContactInfo, BarePointerConstruction) {
+  // When passed a bare pointer surface, it is kept without any copying.
+  auto original_surface = MakeContactSurface();
+  HydroelasticContactInfo<double> dut(original_surface.get(),
+                                      MakeSpatialForce());
+  ASSERT_EQ(&dut.contact_surface(), original_surface.get());
 
-  // Create the HydroelasticContactInfo using particular spatial force.
-  return HydroelasticContactInfo<double>(contact_surface->get(),
-                                         MakeSpatialForce());
-}
+  // Self-assigning does not copy.
+  {
+    const auto& other = dut;
+    dut = other;
+  }
+  ASSERT_EQ(&dut.contact_surface(), original_surface.get());
 
-// Verifies that the HydroelasticContactInfo structure uses the raw pointer
-// and the unique pointer, as appropriate, on copy construction.
-GTEST_TEST(HydroelasticContactInfo, CopyConstruction) {
-  std::unique_ptr<ContactSurface<double>> contact_surface;
-  std::unique_ptr<HydroelasticContactInfo<double>> contact_info;
-  HydroelasticContactInfo<double> copy =
-      CreateContactInfo(&contact_surface, &contact_info);
+  // Copying the dut causes the surface to be copied as well.
+  HydroelasticContactInfo<double> copy1(dut);
+  ASSERT_NE(&copy1.contact_surface(), original_surface.get());
 
-  // Verify that copy construction used the raw pointer.
-  EXPECT_EQ(contact_surface.get(), &copy.contact_surface());
+  // Copying again shares the surface, no extra copying.
+  HydroelasticContactInfo<double> copy2(copy1);
+  ASSERT_EQ(&copy2.contact_surface(), &copy1.contact_surface());
 
-  // Copy it again and make sure that the surface is new.
-  HydroelasticContactInfo<double> copy2 = copy;
-  EXPECT_NE(contact_surface.get(), &copy2.contact_surface());
+  // Copy-assign shares the surface, no extra copying.
+  HydroelasticContactInfo<double> copy_assign(MakeContactSurface(),
+                                              SpatialForce<double>::Zero());
+  copy_assign = copy2;
+  ASSERT_EQ(&copy_assign.contact_surface(), &copy1.contact_surface());
 
-  // Verify that the spatial force was copied.
-  EXPECT_EQ(copy.F_Ac_W().translational(), MakeSpatialForce().translational());
-  EXPECT_EQ(copy.F_Ac_W().rotational(), MakeSpatialForce().rotational());
-}
-
-// Verifies that the HydroelasticContactInfo structure transfers ownership of
-// the ContactSurface.
-GTEST_TEST(HydroelasticContactInfo, MoveConstruction) {
-  std::unique_ptr<ContactSurface<double>> contact_surface;
-  std::unique_ptr<HydroelasticContactInfo<double>> contact_info;
-  HydroelasticContactInfo<double> copy =
-      CreateContactInfo(&contact_surface, &contact_info);
-  HydroelasticContactInfo<double> moved_copy = std::move(copy);
-
-  // Verify that the move construction retained the raw pointer.
-  EXPECT_EQ(contact_surface.get(), &moved_copy.contact_surface());
-
-  // Verify that the spatial force was copied.
-  EXPECT_EQ(moved_copy.F_Ac_W().translational(),
+  // Verify that the spatial force makes it all the way through.
+  EXPECT_EQ(copy_assign.F_Ac_W().translational(),
             MakeSpatialForce().translational());
-  EXPECT_EQ(moved_copy.F_Ac_W().rotational(), MakeSpatialForce().rotational());
+  EXPECT_EQ(copy_assign.F_Ac_W().rotational(), MakeSpatialForce().rotational());
+}
+
+GTEST_TEST(HydroelasticContactInfo, UniquePtrConstruction) {
+  // When passed a unique_ptr surface, it is kept without any copying.
+  auto temp_surface = MakeContactSurface();
+  const ContactSurface<double>* const original_surface = temp_surface.get();
+  HydroelasticContactInfo<double> dut(std::move(temp_surface),
+                                      MakeSpatialForce());
+  ASSERT_EQ(&dut.contact_surface(), original_surface);
+
+  // Copying still shares the original surface.
+  HydroelasticContactInfo<double> copy1(dut);
+  ASSERT_EQ(&copy1.contact_surface(), original_surface);
+
+  // Copying again still shares the original surface.
+  HydroelasticContactInfo<double> copy2(copy1);
+  ASSERT_EQ(&copy2.contact_surface(), original_surface);
+
+  // Copying again still shares the surface, no extra copying.
+  HydroelasticContactInfo<double> copy_assign(MakeContactSurface(),
+                                              SpatialForce<double>::Zero());
+  copy_assign = copy2;
+  ASSERT_EQ(&copy_assign.contact_surface(), original_surface);
+
+  // Verify that the spatial force make it all the way through.
+  EXPECT_EQ(copy_assign.F_Ac_W().translational(),
+            MakeSpatialForce().translational());
+  EXPECT_EQ(copy_assign.F_Ac_W().rotational(), MakeSpatialForce().rotational());
 }
 
 }  // namespace

@@ -140,8 +140,8 @@ constexpr int kNumFaces = 2;
  by the given `offset` value so that we can distinguish between two "different"
  meshes. */
 template <typename T>
-ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
-                                     const Vector3<T>& offset) {
+std::unique_ptr<ContactSurface<T>> MakeContactSurface(
+    GeometryId id_M, GeometryId id_N, const Vector3<T>& offset) {
   static_assert(!std::is_same_v<T, Expression>);
 
   /* Create the surface mesh first. It is simply two triangles (make sure we're
@@ -166,7 +166,7 @@ ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
 
   TriangleSurfaceMesh<T>* mesh_pointer = mesh.get();
   EXPECT_EQ(mesh->num_triangles(), kNumFaces);
-  return ContactSurface<T>(
+  return std::make_unique<ContactSurface<T>>(
       id_M, id_N, std::move(mesh),
       make_unique<MeshFieldLinear<T, TriangleSurfaceMesh<T>>>(std::move(e_MN),
                                                               mesh_pointer));
@@ -272,20 +272,19 @@ class ContactResultsToLcmTest : public ::testing::Test {
     }
   }
 
-  /* Adds fake point-pair contact results to the given set of contact `results`.
-   Also adds names to the given `lcm_system`'s "body names" table so that the
-   body indices stored in the point-pair results map to names (if `lcm_system`
-   is not nullptr). This doesn't affect the geometry id -> body name map.
+  /* Returns fake point-pair contact results. Also adds names to the given
+   `lcm_system`'s "body names" table so that the body indices stored in the
+   point-pair results map to names (if `lcm_system` is not nullptr). This
+   doesn't affect the geometry id -> body name map.
 
    @pre The given `lcm_system` has a *single* entry in its body_names look-up
         table. */
   template <typename U = T>
-  static void AddFakePointPairContact(ContactResultsToLcmSystem<U>* lcm_system,
-                                      ContactResults<U>* results) {
+  static std::vector<PointPairContactInfo<U>> MakeFakePointPairContact(
+      ContactResultsToLcmSystem<U>* lcm_system) {
     if (lcm_system != nullptr) {
-      ASSERT_EQ(ContactResultsToLcmTester::get_body_names(lcm_system).size(),
-                1);
-
+      DRAKE_DEMAND(
+          ContactResultsToLcmTester::get_body_names(lcm_system).size() == 1);
       ContactResultsToLcmTester::AddToBodyNames(
           lcm_system, {"Body1", "Body2", "Body3", "Unreferenced"});
     }
@@ -296,29 +295,29 @@ class ContactResultsToLcmTest : public ::testing::Test {
     const BodyIndex b1{2};
     const BodyIndex b2{3};
 
-    static const never_destroyed<PointPairContactInfo<U>> pair1(
-        b0, b1, Vector3<U>{1.1, 2.2, 3.3}, Vector3<U>{4.4, 5.5, 6.6}, 7.7, 8.8,
-        PenetrationAsPointPair<U>{
-            GeometryId::get_new_id(), GeometryId::get_new_id(),
-            Vector3<U>{11.1, 22.2, 33.3}, Vector3<U>{44.4, 55.5, 66.6},
-            Vector3<U>{77.7, 88.8, 99.9}, 101.1});
-    results->AddContactInfo(pair1.access());
-    static const never_destroyed<PointPairContactInfo<U>> pair2(
-        b1, b2, Vector3<U>{1.2, 2.3, 3.4}, Vector3<U>{4.5, 5.6, 6.7}, 7.8, 8.9,
-        PenetrationAsPointPair<U>{
-            GeometryId::get_new_id(), GeometryId::get_new_id(),
-            Vector3<U>{11.2, 22.3, 33.4}, Vector3<U>{44.5, 55.6, 66.7},
-            Vector3<U>{77.8, 88.9, 99.1}, 101.1});
-    results->AddContactInfo(pair2.access());
+    return {PointPairContactInfo<U>(
+                b0, b1, Vector3<U>{1.1, 2.2, 3.3}, Vector3<U>{4.4, 5.5, 6.6},
+                7.7, 8.8,
+                PenetrationAsPointPair<U>{
+                    GeometryId::get_new_id(), GeometryId::get_new_id(),
+                    Vector3<U>{11.1, 22.2, 33.3}, Vector3<U>{44.4, 55.5, 66.6},
+                    Vector3<U>{77.7, 88.8, 99.9}, 101.1}),
+            PointPairContactInfo<U>(
+                b1, b2, Vector3<U>{1.2, 2.3, 3.4}, Vector3<U>{4.5, 5.6, 6.7},
+                7.8, 8.9,
+                PenetrationAsPointPair<U>{
+                    GeometryId::get_new_id(), GeometryId::get_new_id(),
+                    Vector3<U>{11.2, 22.3, 33.4}, Vector3<U>{44.5, 55.6, 66.7},
+                    Vector3<U>{77.8, 88.9, 99.1}, 101.1})};
   }
 
-  /* Adds fake hydro contact results to the given set of contact `results`.
-   Also adds entries to the given `lcm_system`'s geometry id -> body name map so
-   that the ids stored in the results map to names (if `lcm_system` is not
-   nullptr). This doesn't affect the simple body_names vector. */
+  /* Returns fake hydro contact results. Also adds entries to the given
+   `lcm_system`'s geometry id -> body name map so that the ids stored in the
+   results map to names (if `lcm_system` is not nullptr). This doesn't affect
+   the simple body_names vector. */
   template <typename U = T>
-  static void AddFakeHydroContact(ContactResultsToLcmSystem<U>* lcm_system,
-                                  ContactResults<U>* results) {
+  static std::vector<HydroelasticContactInfo<U>> MakeFakeHydroContact(
+      ContactResultsToLcmSystem<U>* lcm_system) {
     static_assert(scalar_predicate<U>::is_bool);
 
     /* Everything here is static because the ContactResults really doesn't own
@@ -341,19 +340,14 @@ class ContactResultsToLcmTest : public ::testing::Test {
      can be meaningless garbage. All that matters is that they are unique values
      such that we can confirm that the right value got written to the right
      field. */
-    static const never_destroyed<ContactSurface<U>> surface1(
-        MakeContactSurface<U>(ids[0], ids[1], Vector3<U>{1, 2, 3}));
-    static const never_destroyed<HydroelasticContactInfo<U>> pair1(
-        &surface1.access(),
-        SpatialForce<U>(Vector3<U>(1.1, 2.2, 3.3), Vector3<U>(4.4, 5.5, 6.6)));
-    results->AddContactInfo(&pair1.access());
-
-    static const never_destroyed<ContactSurface<U>> surface2(
-        MakeContactSurface<U>(ids[2], ids[3], Vector3<U>{-3, -1, 2}));
-    static const never_destroyed<HydroelasticContactInfo<U>> pair2(
-        &surface2.access(),
-        SpatialForce<U>(Vector3<U>(1.2, 2.3, 3.4), Vector3<U>(4.5, 5.6, 6.7)));
-    results->AddContactInfo(&pair2.access());
+    return {HydroelasticContactInfo<U>(
+                MakeContactSurface<U>(ids[0], ids[1], Vector3<U>{1, 2, 3}),
+                SpatialForce<U>(Vector3<U>(1.1, 2.2, 3.3),
+                                Vector3<U>(4.4, 5.5, 6.6))),
+            HydroelasticContactInfo<U>(
+                MakeContactSurface<U>(ids[2], ids[3], Vector3<U>{-3, -1, 2}),
+                SpatialForce<U>(Vector3<U>(1.2, 2.3, 3.4),
+                                Vector3<U>(4.5, 5.6, 6.7)))};
   }
 };
 
@@ -531,8 +525,11 @@ TYPED_TEST(ContactResultsToLcmTest, PointPairContactOnly) {
    detect that. */
   const double kTime = 1.5;
   context->SetTime(kTime);
-  ContactResults<T> contacts;
-  this->AddFakePointPairContact(&lcm, &contacts);
+  ContactResults<T> contacts{
+      this->MakeFakePointPairContact(&lcm),
+      {},  // No hydroelastic.
+      {}   // No deformable.
+  };
   lcm.get_contact_result_input_port().FixValue(context.get(), contacts);
 
   const auto& message =
@@ -603,8 +600,11 @@ TYPED_TEST(NonsymbolicContactResultsToLcmTest, HydroContactOnly) {
   const unique_ptr<Context<T>> context = lcm.AllocateContext();
 
   /* Hydroelastic contact doesn't store time; so we'll leave it alone. */
-  ContactResults<T> contacts;
-  this->AddFakeHydroContact(&lcm, &contacts);
+  ContactResults<T> contacts{
+      {},  // No point_pair.
+      this->MakeFakeHydroContact(&lcm),
+      {}  // No deformable.
+  };
   lcm.get_contact_result_input_port().FixValue(context.get(), contacts);
 
   const auto& message =
@@ -707,11 +707,15 @@ TYPED_TEST(ContactResultsToLcmTest, MixedContactData) {
   ContactResultsToLcmSystem<T> lcm(plant);
   const unique_ptr<Context<T>> context = lcm.AllocateContext();
 
-  ContactResults<T> contacts;
-  this->AddFakePointPairContact(&lcm, &contacts);
+  std::vector<HydroelasticContactInfo<T>> hydroelastic_contact_info;
   if constexpr (use_hydro) {
-    this->AddFakeHydroContact(&lcm, &contacts);
+    hydroelastic_contact_info = this->MakeFakeHydroContact(&lcm);
   }
+  ContactResults<T> contacts{
+      this->MakeFakePointPairContact(&lcm),
+      std::move(hydroelastic_contact_info),
+      {}  // No deformable.
+  };
   lcm.get_contact_result_input_port().FixValue(context.get(), contacts);
 
   const auto& message =
@@ -752,10 +756,9 @@ TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
 
   /* We don't care about double-valued results, we're just using it to
    populate the tables in lcm_double. These will get copied over. */
-  ContactResults<double> contacts_double;
-  this->AddFakePointPairContact(lcm_double.get(), &contacts_double);
+  unused(this->MakeFakePointPairContact(lcm_double.get()));
   if constexpr (use_hydro) {
-    this->AddFakeHydroContact(lcm_double.get(), &contacts_double);
+    unused(this->MakeFakeHydroContact(lcm_double.get()));
   }
 
   auto system_T = [&double_source = *lcm_double]() {
@@ -774,11 +777,15 @@ TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
 
   EXPECT_TRUE(ContactResultsToLcmTester::Equals(*lcm_double, *lcm_T));
 
-  ContactResults<T> contacts;
-  this->template AddFakePointPairContact<T>(nullptr, &contacts);
+  std::vector<HydroelasticContactInfo<T>> hydroelastic_contact_info;
   if constexpr (use_hydro) {
-    this->template AddFakeHydroContact<T>(nullptr, &contacts);
+    hydroelastic_contact_info = this->template MakeFakeHydroContact<T>(nullptr);
   }
+  ContactResults<T> contacts{
+      this->template MakeFakePointPairContact<T>(nullptr),
+      std::move(hydroelastic_contact_info),
+      {}  // No deformable.
+  };
   const unique_ptr<Context<T>> context = lcm_T->AllocateContext();
   lcm_T->get_contact_result_input_port().FixValue(context.get(), contacts);
 

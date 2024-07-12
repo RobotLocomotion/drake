@@ -657,7 +657,9 @@ class QueryObject {
 
    @returns The signed distance (and supporting data) for all unfiltered
             geometry pairs whose distance is less than or equal to
-            `max_distance`.
+            `max_distance`. The ordering of the results is guaranteed to be
+            consistent -- for fixed geometry poses, the results will remain the
+            same.
    @throws std::exception as indicated in the table above.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.  */

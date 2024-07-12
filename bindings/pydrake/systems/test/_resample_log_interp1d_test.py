@@ -14,7 +14,8 @@ class SimpleContinuousTimeSystem(VectorSystem):
         self.output_size = 1
         VectorSystem.__init__(self,
                               0,                 # Zero inputs.
-                              self.output_size)  # One output.
+                              self.output_size,  # One output.
+                              False)             # No direct feedthrough.
         self.DeclareContinuousState(1)           # One state variable.
 
     # xdot(t) = -x(t) + x^3(t)
@@ -31,7 +32,8 @@ class MultiDimensionalTimeSystem(VectorSystem):
         self.output_size = 3
         VectorSystem.__init__(self,
                               0,                 # Zero inputs.
-                              self.output_size)  # One output.
+                              self.output_size,  # One output.
+                              False)             # No direct feedthrough.
         self.DeclareContinuousState(1)           # One state variable.
 
     # dx/dt = 2 * t -> x(t) = t^2 + const.

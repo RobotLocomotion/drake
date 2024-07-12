@@ -62,7 +62,11 @@ drake_cc_library(
     hdrs = [
         "proximity_engine.h",
     ],
-    interface_deps = [
+    deps = [
+        ":geometry_ids",
+        ":geometry_roles",
+        ":internal_geometry",
+        ":shape_specification",
         "//common:default_scalars",
         "//common:sorted_pair",
         "//geometry/proximity:collision_filter",
@@ -71,12 +75,8 @@ drake_cc_library(
         "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/query_results",
         "//math",
-        ":geometry_ids",
-        ":geometry_roles",
-        ":shape_specification",
-        ":internal_geometry",
     ],
-    deps = [
+    implementation_deps = [
         ":read_obj",
         ":utilities",
         "//geometry/proximity",
@@ -130,7 +130,7 @@ drake_cc_library(
     name = "drake_visualizer",
     srcs = ["drake_visualizer.cc"],
     hdrs = ["drake_visualizer.h"],
-    interface_deps = [
+    deps = [
         ":drake_visualizer_params",
         ":geometry_roles",
         ":geometry_version",
@@ -140,7 +140,7 @@ drake_cc_library(
         "//systems/framework:context",
         "//systems/framework:leaf_system",
     ],
-    deps = [
+    implementation_deps = [
         "//lcm:drake_lcm",
         "//lcmtypes:viewer",
         "//systems/lcm:lcm_system_graphviz",
@@ -165,12 +165,12 @@ drake_cc_library(
     hdrs = [
         "kinematics_vector.h",
     ],
-    interface_deps = [
+    deps = [
         ":geometry_ids",
         "//common:essential",
         "//math:geometric_transform",
     ],
-    deps = [
+    implementation_deps = [
         "//common:default_scalars",
         "//common:nice_type_name",
     ],
@@ -378,10 +378,10 @@ drake_cc_library(
     name = "read_obj",
     srcs = ["read_obj.cc"],
     hdrs = ["read_obj.h"],
-    interface_deps = [
+    deps = [
         "@eigen",
     ],
-    deps = [
+    implementation_deps = [
         "//common:essential",
         "@fmt",
         "@tinyobjloader_internal//:tinyobjloader",
@@ -392,12 +392,12 @@ drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
-    interface_deps = [
+    deps = [
         "//common:essential",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
     ],
-    deps = [
+    implementation_deps = [
         "//common:nice_type_name",
         "//common:overloaded",
         "//geometry/proximity:make_convex_hull_mesh_impl",
@@ -508,7 +508,7 @@ drake_cc_library(
         "meshcat_recording_internal.h",
         "meshcat_types_internal.h",
     ],
-    interface_deps = [
+    deps = [
         ":geometry_ids",
         ":meshcat_animation",
         ":rgba",
@@ -520,7 +520,7 @@ drake_cc_library(
         "//math:geometric_transform",
         "//perception:point_cloud",
     ],
-    deps = [
+    implementation_deps = [
         "//common:drake_export",
         "//common:find_resource",
         "//common:network_policy",

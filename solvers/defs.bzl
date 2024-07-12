@@ -25,9 +25,9 @@ def drake_cc_variant_library(
         srcs_enabled,
         srcs_disabled,
         hdrs,
-        interface_deps,
-        deps_always,
-        deps_enabled,
+        deps,
+        implementation_deps_always,
+        implementation_deps_enabled,
         internal = False,
         visibility = None):
     """Declares a library with a uniform set of header files (typically just
@@ -35,7 +35,7 @@ def drake_cc_variant_library(
     on a configuration setting. This is how we turn on/off specific solver
     back-end implementations, e.g., `snopt_solver.cc` vs `no_snopt.cc`.
 
-    The same hdrs are used unconditionally. The interface_deps should list the
+    The same hdrs are used unconditionally. The deps should list the
     dependencies for the header file(s), and thus are also unconditional.
 
     Exactly one of opt_in_condition or opt_out_condition must be provided, to
@@ -46,11 +46,13 @@ def drake_cc_variant_library(
 
     The sources listed in srcs_always contain definitions that are appropriate
     whether or not a back-end is enabled. This usually contains things such as
-    the solver name, ID, and attribute support. The deps_always lists the
-    dependencies of these files.
+    the solver name, ID, and attribute support. The implementation_deps_always
+    lists the dependencies of these files.
 
     The sources listed in srcs_enabled contain the code of the fully-featured
-    implementation. The deps_enabled lists the dependencies of these srcs.
+    implementation. The implementation_deps_enabled lists the dependencies of
+    these files.
+
     The sources listed in srcs_disabled contain the alternative (stub)
     definitions that report failure (e.g., returning false or throwing).
 
@@ -69,10 +71,12 @@ def drake_cc_variant_library(
             opt_out_condition: srcs_always + srcs_disabled,
         }),
         hdrs = hdrs,
-        interface_deps = interface_deps,
-        deps = select({
-            opt_in_condition: deps_always + deps_enabled,
-            opt_out_condition: deps_always,
+        deps = deps,
+        implementation_deps = select({
+            opt_in_condition: (
+                implementation_deps_always + implementation_deps_enabled
+            ),
+            opt_out_condition: implementation_deps_always,
         }),
         internal = internal,
         visibility = visibility,
@@ -91,8 +95,8 @@ def drake_cc_optional_library(
         hdrs,
         copts = None,
         visibility = ["//visibility:private"],
-        interface_deps = None,
-        deps = None):
+        deps = None,
+        implementation_deps = None):
     """Declares a private library (package-local, not installed) guarded by a
     configuration setting. When the configuration is disabled, the library is
     totally empty (but still a valid library label). This is used for helper
@@ -132,12 +136,12 @@ def drake_cc_optional_library(
         }),
         tags = ["exclude_from_package"],
         visibility = visibility,
-        interface_deps = None if interface_deps == None else select({
-            opt_in_condition: interface_deps,
-            opt_out_condition: [],
-        }),
         deps = select({
             opt_in_condition: deps or [],
+            opt_out_condition: [],
+        }),
+        implementation_deps = None if implementation_deps == None else select({
+            opt_in_condition: implementation_deps,
             opt_out_condition: [],
         }),
     )

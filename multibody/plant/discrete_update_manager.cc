@@ -157,22 +157,6 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
 
-  // Cache hydroelastic contact info.
-  if constexpr (scalar_predicate<T>::is_bool) {
-    const auto& hydroelastic_contact_info_cache_entry = DeclareCacheEntry(
-        "Hydroelastic contact info.",
-        systems::ValueProducer(
-            this, &DiscreteUpdateManager<T>::CalcHydroelasticContactInfo),
-        // TODO(#20545): this should include all_input_ports_ticket, but we
-        //  can't include it yet due to the cache entry hack introduced in
-        //  #19225.
-        {systems::System<T>::xd_ticket(),
-         systems::System<T>::all_parameters_ticket(),
-         contact_solver_results_cache_entry.ticket()});
-    cache_indexes_.hydroelastic_contact_info =
-        hydroelastic_contact_info_cache_entry.cache_index();
-  }
-
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
       deformable_driver_->DeclareCacheEntries(this);
@@ -294,13 +278,12 @@ void DiscreteUpdateManager<T>::CalcNonContactForces(
 }
 
 template <typename T>
-const contact_solvers::internal::ContactSolverResults<T>&
+const ContactSolverResults<T>&
 DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {
   return plant()
       .get_cache_entry(cache_indexes_.contact_solver_results)
-      .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
-          context);
+      .template Eval<ContactSolverResults<T>>(context);
 }
 
 template <typename T>
@@ -502,36 +485,52 @@ void DiscreteUpdateManager<T>::CalcContactResults(
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
   plant().ValidateContext(context);
-  contact_results->Clear();
-  contact_results->set_plant(&plant());
 
-  switch (plant().get_contact_model()) {
-    case ContactModel::kPoint:
-      AppendContactResultsForPointContact(context, contact_results);
-      break;
-    case ContactModel::kHydroelastic:
-      AppendContactResultsForHydroelasticContact(context, contact_results);
-      break;
-    case ContactModel::kHydroelasticWithFallback:
-      AppendContactResultsForPointContact(context, contact_results);
-      AppendContactResultsForHydroelasticContact(context, contact_results);
-      break;
-  }
-  AppendContactResultsForDeformableContact(context, contact_results);
+  const GeometryContactData<T>& geometry_contact_data =
+      EvalGeometryContactData(context);
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
+      EvalDiscreteContactPairs(context);
+  const ContactSolverResults<T>& solver_results =
+      EvalContactSolverResults(context);
+
+  std::vector<PointPairContactInfo<T>> contact_results_point_pair;
+  CalcContactResultsForPointContact(geometry_contact_data, contact_pairs,
+                                    solver_results,
+                                    &contact_results_point_pair);
+
+  std::vector<HydroelasticContactInfo<T>> contact_results_hydroelastic;
+  CalcContactResultsForHydroelasticContact(geometry_contact_data, contact_pairs,
+                                           solver_results,
+                                           &contact_results_hydroelastic);
+
+  std::vector<DeformableContactInfo<T>> contact_results_deformable;
+  CalcContactResultsForDeformableContact(geometry_contact_data, contact_pairs,
+                                         solver_results,
+                                         &contact_results_deformable);
+
+  std::shared_ptr<const void> backing_store = geometry_contact_data.Share();
+
+  *contact_results = ContactResults<T>(std::move(contact_results_point_pair),
+                                       std::move(contact_results_hydroelastic),
+                                       std::move(contact_results_deformable),
+                                       std::move(backing_store));
+  contact_results->set_plant(&plant());
 }
 
 template <typename T>
-void DiscreteUpdateManager<T>::AppendContactResultsForPointContact(
-    const drake::systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
-  DRAKE_DEMAND(contact_results != nullptr);
+void DiscreteUpdateManager<T>::CalcContactResultsForPointContact(
+    const GeometryContactData<T>& geometry_contact_data,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
+    std::vector<PointPairContactInfo<T>>* contact_results_point_pair) const {
+  DRAKE_DEMAND(contact_results_point_pair != nullptr);
+  contact_results_point_pair->clear();
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      EvalGeometryContactData(context).point_pairs;
-  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
-      EvalDiscreteContactPairs(context);
-  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
-      EvalContactSolverResults(context);
+      geometry_contact_data.get().point_pairs;
+  if (point_pairs.empty()) {
+    return;
+  }
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -545,6 +544,7 @@ void DiscreteUpdateManager<T>::AppendContactResultsForPointContact(
   DRAKE_DEMAND(vn.size() >= num_point_contacts);
   DRAKE_DEMAND(vt.size() >= 2 * num_point_contacts);
 
+  contact_results_point_pair->reserve(num_point_contacts);
   for (int icontact = 0; icontact < num_point_contacts; ++icontact) {
     const DiscreteContactPair<T>& pair = contact_pairs[icontact];
 
@@ -571,134 +571,109 @@ void DiscreteUpdateManager<T>::AppendContactResultsForPointContact(
     const T separation_velocity = vn(icontact);
 
     // Add pair info to the contact results.
-    contact_results->AddContactInfo({bodyA_index, bodyB_index, f_Bc_W,
-                                     pair.p_WC, separation_velocity, slip,
-                                     point_pair});
+    contact_results_point_pair->emplace_back(bodyA_index, bodyB_index, f_Bc_W,
+                                             pair.p_WC, separation_velocity,
+                                             slip, point_pair);
   }
 }
 
 template <typename T>
-void DiscreteUpdateManager<T>::AppendContactResultsForHydroelasticContact(
-    const drake::systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
-  const std::vector<HydroelasticContactInfo<T>>& contact_info =
-      EvalHydroelasticContactInfo(context);
+void DiscreteUpdateManager<T>::CalcContactResultsForHydroelasticContact(
+    const GeometryContactData<T>& geometry_contact_data,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
+    std::vector<HydroelasticContactInfo<T>>* contact_results_hydroelastic)
+    const {
+  DRAKE_DEMAND(contact_results_hydroelastic != nullptr);
+  contact_results_hydroelastic->clear();
 
-  for (const HydroelasticContactInfo<T>& info : contact_info) {
-    // Note: caching dependencies guarantee that the lifetime of `info` is
-    // valid for the lifetime of the contact results.
-    contact_results->AddContactInfo(&info);
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    const std::vector<ContactSurface<T>>& all_surfaces =
+        geometry_contact_data.get().surfaces;
+    if (all_surfaces.empty()) {
+      return;
+    }
+
+    const VectorX<T>& fn = solver_results.fn;
+    const VectorX<T>& ft = solver_results.ft;
+    const VectorX<T>& vt = solver_results.vt;
+    const VectorX<T>& vn = solver_results.vn;
+
+    // Discrete pairs contain point, hydro, and deformable contact force
+    // results.
+    const int num_contacts = contact_pairs.size();
+    DRAKE_DEMAND(fn.size() == num_contacts);
+    DRAKE_DEMAND(ft.size() == 2 * num_contacts);
+    DRAKE_DEMAND(vn.size() == num_contacts);
+    DRAKE_DEMAND(vt.size() == 2 * num_contacts);
+
+    const int num_point_contacts = contact_pairs.num_point_contacts();
+    const int num_hydro_contacts = contact_pairs.num_hydro_contacts();
+    const int num_surfaces = all_surfaces.size();
+
+    std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
+                                                    SpatialForce<T>::Zero());
+    // We only scan discrete pairs corresponding to hydroelastic quadrature
+    // points.
+    for (int icontact = num_point_contacts;
+         icontact < num_point_contacts + num_hydro_contacts; ++icontact) {
+      const DiscreteContactPair<T>& pair = contact_pairs[icontact];
+      // Quadrature point Q.
+      const Vector3<T>& p_WQ = pair.p_WC;
+      const RotationMatrix<T>& R_WC = pair.R_WC;
+
+      // Contact forces applied on B at quadrature point Q expressed in the
+      // contact frame.
+      const Vector3<T> f_Bq_C(ft(2 * icontact), ft(2 * icontact + 1),
+                              fn(icontact));
+      // Contact force applied on A at quadrature point Q expressed in the world
+      // frame.
+      const Vector3<T> f_Aq_W = -(R_WC * f_Bq_C);
+
+      DRAKE_DEMAND(pair.surface_index.has_value());
+      const int surface_index = pair.surface_index.value();
+      const auto& s = all_surfaces[surface_index];
+      // Surface's centroid point O.
+      const Vector3<T>& p_WO = s.is_triangle() ? s.tri_mesh_W().centroid()
+                                               : s.poly_mesh_W().centroid();
+
+      // Spatial force
+      const Vector3<T> p_QO_W = p_WO - p_WQ;
+      const SpatialForce<T> Fq_Ao_W =
+          SpatialForce<T>(Vector3<T>::Zero(), f_Aq_W).Shift(p_QO_W);
+      // Accumulate force for the corresponding contact surface.
+      F_Ao_W_per_surface[surface_index] += Fq_Ao_W;
+    }
+
+    // Update contact info to include the correct contact forces.
+    contact_results_hydroelastic->reserve(num_surfaces);
+    for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
+      // Here we use emplacement to add a HydroelasticContactInfo with a raw
+      // pointer back into the GeometryContactData. This is safe only because
+      // our caller adds the GeometryContactData to the "backing store" as a
+      // keep-alive.
+      contact_results_hydroelastic->emplace_back(
+          &all_surfaces[surface_index], F_Ao_W_per_surface[surface_index]);
+    }
   }
 }
 
 template <typename T>
-void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
-    const systems::Context<T>& context,
-    std::vector<HydroelasticContactInfo<T>>* contact_info) const
-  requires scalar_predicate<T>::is_bool
-{  // NOLINT(whitespace/braces)
-  DRAKE_DEMAND(contact_info != nullptr);
-  const std::vector<ContactSurface<T>>& all_surfaces =
-      EvalGeometryContactData(context).surfaces;
-
-  contact_info->clear();
-  // Reserve memory here to keep from repeatedly allocating heap storage in the
-  // loop below.
-  contact_info->reserve(all_surfaces.size());
-
-  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
-      EvalDiscreteContactPairs(context);
-
-  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
-      EvalContactSolverResults(context);
-
-  const VectorX<T>& fn = solver_results.fn;
-  const VectorX<T>& ft = solver_results.ft;
-  const VectorX<T>& vt = solver_results.vt;
-  const VectorX<T>& vn = solver_results.vn;
-
-  // Discrete pairs contain point, hydro, and deformable contact force results.
-  const int num_contacts = contact_pairs.size();
-  DRAKE_DEMAND(fn.size() == num_contacts);
-  DRAKE_DEMAND(ft.size() == 2 * num_contacts);
-  DRAKE_DEMAND(vn.size() == num_contacts);
-  DRAKE_DEMAND(vt.size() == 2 * num_contacts);
-
-  const int num_point_contacts = contact_pairs.num_point_contacts();
-  const int num_hydro_contacts = contact_pairs.num_hydro_contacts();
-  const int num_surfaces = all_surfaces.size();
-
-  std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
-                                                  SpatialForce<T>::Zero());
-
-  // We only scan discrete pairs corresponding to hydroelastic quadrature
-  // points.
-  for (int icontact = num_point_contacts;
-       icontact < num_point_contacts + num_hydro_contacts; ++icontact) {
-    const DiscreteContactPair<T>& pair = contact_pairs[icontact];
-    // Quadrature point Q.
-    const Vector3<T>& p_WQ = pair.p_WC;
-    const RotationMatrix<T>& R_WC = pair.R_WC;
-
-    // Contact forces applied on B at quadrature point Q expressed in the
-    // contact frame.
-    const Vector3<T> f_Bq_C(ft(2 * icontact), ft(2 * icontact + 1),
-                            fn(icontact));
-    // Contact force applied on A at quadrature point Q expressed in the world
-    // frame.
-    const Vector3<T> f_Aq_W = -(R_WC * f_Bq_C);
-
-    DRAKE_DEMAND(pair.surface_index.has_value());
-    const int surface_index = pair.surface_index.value();
-    const auto& s = all_surfaces[surface_index];
-    // Surface's centroid point O.
-    const Vector3<T>& p_WO = s.is_triangle() ? s.tri_mesh_W().centroid()
-                                             : s.poly_mesh_W().centroid();
-
-    // Spatial force
-    const Vector3<T> p_QO_W = p_WO - p_WQ;
-    const SpatialForce<T> Fq_Ao_W =
-        SpatialForce<T>(Vector3<T>::Zero(), f_Aq_W).Shift(p_QO_W);
-    // Accumulate force for the corresponding contact surface.
-    F_Ao_W_per_surface[surface_index] += Fq_Ao_W;
-  }
-
-  // Update contact info to include the correct contact forces.
-  for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
-    contact_info->emplace_back(&all_surfaces[surface_index],
-                               F_Ao_W_per_surface[surface_index]);
-  }
-}
-
-template <typename T>
-const std::vector<HydroelasticContactInfo<T>>&
-DiscreteUpdateManager<T>::EvalHydroelasticContactInfo(
-    const systems::Context<T>& context) const {
-  return plant()
-      .get_cache_entry(cache_indexes_.hydroelastic_contact_info)
-      .template Eval<std::vector<HydroelasticContactInfo<T>>>(context);
-}
-
-template <typename T>
-void DiscreteUpdateManager<T>::AppendContactResultsForDeformableContact(
-    const drake::systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
-  DRAKE_DEMAND(contact_results != nullptr);
+void DiscreteUpdateManager<T>::CalcContactResultsForDeformableContact(
+    const GeometryContactData<T>& geometry_contact_data,
+    const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+    const ContactSolverResults<T>& solver_results,
+    std::vector<DeformableContactInfo<T>>* contact_results_deformable) const {
+  DRAKE_DEMAND(contact_results_deformable != nullptr);
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
-      std::vector<DeformableContactInfo<T>> contact_info;
-      deformable_driver_->CalcDeformableContactInfo(context, &contact_info);
-      for (DeformableContactInfo<T>& info : contact_info) {
-        contact_results->AddContactInfo(std::move(info));
-      }
+      deformable_driver_->CalcDeformableContactInfo(
+          geometry_contact_data.get().deformable, contact_pairs, solver_results,
+          contact_results_deformable);
     }
   } else {
-    if (deformable_driver_ != nullptr) {
-      throw std::logic_error(
-          "Computation of contact results for deformable bodies is not "
-          "supported for scalars other than `double`.");
-    }
-    unused(context, contact_results);
+    unused(geometry_contact_data, contact_pairs, solver_results,
+           contact_results_deformable);
   }
 }
 
@@ -745,7 +720,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     const systems::Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const {
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      EvalGeometryContactData(context).point_pairs;
+      EvalGeometryContactData(context).get().point_pairs;
   const int num_point_contacts = point_pairs.size();
   if (num_point_contacts == 0) {
     return;
@@ -904,7 +879,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
   requires scalar_predicate<T>::is_bool
 {  // NOLINT(whitespace/braces)
   const std::vector<geometry::ContactSurface<T>>& surfaces =
-      EvalGeometryContactData(context).surfaces;
+      EvalGeometryContactData(context).get().surfaces;
   // N.B. For discrete hydro we use a first order quadrature rule. As such,
   // the per-face quadrature point is the face's centroid and the weight is 1.
   // This is compatible with a mesh that is triangle or polygon. If we attempted

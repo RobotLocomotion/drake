@@ -60,11 +60,11 @@ drake_cc_library(
     name = "affine_system",
     srcs = ["affine_system.cc"],
     hdrs = ["affine_system.h"],
-    interface_deps = [
+    deps = [
         "//common/symbolic:expression",
         "//systems/framework",
     ],
-    deps = [
+    implementation_deps = [
         "//common/symbolic:polynomial",
     ],
 )
@@ -176,12 +176,12 @@ drake_cc_library(
     name = "linear_system",
     srcs = ["linear_system.cc"],
     hdrs = ["linear_system.h"],
-    interface_deps = [
+    deps = [
         ":affine_system",
         "//common:essential",
         "//common/symbolic:expression",
     ],
-    deps = [
+    implementation_deps = [
         ":linear_system_internal",
         "//common/symbolic:polynomial",
         "//math:autodiff",
@@ -196,10 +196,9 @@ drake_cc_library(
     hdrs = ["linear_system_internal.h"],
     internal = True,
     visibility = ["//:__subpackages__"],
-    interface_deps = [
+    deps = [
         "//common:essential",
     ],
-    deps = [],
 )
 
 drake_cc_library(
@@ -513,6 +512,7 @@ drake_cc_googletest(
     deps = [
         ":first_order_low_pass_filter",
         "//common:unused",
+        "//common/test_utilities:limit_malloc",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],

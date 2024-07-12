@@ -29,11 +29,11 @@ drake_cc_library(
     srcs = ["factory.cc"],
     hdrs = ["factory.h"],
     visibility = ["//visibility:public"],
-    interface_deps = [
+    deps = [
         ":render_engine_gltf_client_params",
         "//geometry/render:render_engine",
     ],
-    deps = [
+    implementation_deps = [
         ":internal_render_engine_gltf_client",
         "//common:network_policy",
     ],
@@ -56,10 +56,10 @@ drake_cc_library(
     hdrs = ["internal_http_service.h"],
     internal = True,
     visibility = ["//visibility:private"],
-    interface_deps = [
+    deps = [
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         "@fmt",
     ],
 )
@@ -70,10 +70,10 @@ drake_cc_library(
     hdrs = ["internal_http_service_curl.h"],
     internal = True,
     visibility = ["//visibility:private"],
-    interface_deps = [
+    deps = [
         ":internal_http_service",
     ],
-    deps = [
+    implementation_deps = [
         "//common:unused",
         "@curl_internal//:libcurl",
         "@fmt",

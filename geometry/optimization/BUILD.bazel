@@ -35,11 +35,11 @@ drake_cc_library(
     name = "geodesic_convexity",
     srcs = ["geodesic_convexity.cc"],
     hdrs = ["geodesic_convexity.h"],
-    interface_deps = [
+    deps = [
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
     ],
-    deps = [
+    implementation_deps = [
         "//geometry/optimization:convex_set",
         "//solvers:solve",
     ],
@@ -77,13 +77,13 @@ drake_cc_library(
         "spectrahedron.h",
         "vpolytope.h",
     ],
-    interface_deps = [
+    deps = [
         "//geometry:scene_graph",
+        "//math:matrix_util",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
-        "//math:matrix_util",
     ],
-    deps = [
+    implementation_deps = [
         "//geometry:read_obj",
         "//solvers:aggregate_costs_constraints",
         "//solvers:choose_best_solver",

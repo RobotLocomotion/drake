@@ -207,6 +207,15 @@ bool OrderContactSurface(const ContactSurface<T>& s1,
   return s1.id_N() < s2.id_N();
 }
 
+// Compare function to use when ordering
+// ComputeSignedDistancePairwiseClosestPoints.
+template <typename T>
+bool OrderSignedDistancePair(const SignedDistancePair<T>& p1,
+                             const SignedDistancePair<T>& p2) {
+  if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
+  return p1.id_B < p2.id_B;
+}
+
 }  // namespace
 
 // The implementation class for the fcl engine. Each of these functions
@@ -529,6 +538,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // anchored against anchored because those pairs are implicitly filtered.
     FclDistance(dynamic_tree_, anchored_tree_, &data,
                 shape_distance::Callback<T>);
+    std::sort(witness_pairs.begin(), witness_pairs.end(),
+              OrderSignedDistancePair<T>);
     return witness_pairs;
   }
 

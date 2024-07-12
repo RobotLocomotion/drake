@@ -19,7 +19,7 @@ namespace planning {
      free. This is the *only* time completely_free() reports `true`.
  - 0 ≤ α < 1:
      A collision was detected between q1 and q2. α is the *largest*
-     interpolation value such that an edge from q to qα can be considered
+     interpolation value such that an edge from q1 to qα can be considered
      collision free (where qα = interpolate(q1, q2, α)). partially_free()
      reports `true`.
  - α is undefined:

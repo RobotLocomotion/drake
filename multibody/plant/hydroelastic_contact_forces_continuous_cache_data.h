@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "drake/multibody/math/spatial_force.h"
-#include "drake/multibody/plant/hydroelastic_contact_info.h"
 
 namespace drake {
 namespace multibody {
@@ -20,9 +19,13 @@ struct HydroelasticContactForcesContinuousCacheData {
   // (indexed by MobodIndex) in the MultibodyPlant.
   std::vector<SpatialForce<T>> F_BBo_W_array;
 
-  // Information used for contact reporting collected through the evaluation
-  // of the hydroelastic model.
-  std::vector<HydroelasticContactInfo<T>> contact_info;
+  // The i'th element of this vector is congruent with the i'th element of the
+  // vector of `surfaces` in its related GeometryContactData. Together, this
+  // i'th force and i'th surface pair up to form the HydroelasticContactInfo for
+  // a hydroelastic contact. See HydroelasticContactInfo::F_Ac_W() for full
+  // documentation on the semantics (but in short: it's the force on the body
+  // associated with the i'th surface).
+  std::vector<SpatialForce<T>> F_Ac_W_array;
 };
 
 }  // namespace internal

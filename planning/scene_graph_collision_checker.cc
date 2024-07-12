@@ -1,6 +1,5 @@
 #include "drake/planning/scene_graph_collision_checker.h"
 
-#include <algorithm>
 #include <functional>
 #include <set>
 #include <utility>
@@ -173,14 +172,9 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
   // Compute the (sorted) list of SceneGraph distances.
   const double max_influence_distance =
       influence_distance + GetLargestPadding();
-  std::vector<SignedDistancePair<double>> signed_distance_pairs =
+  const std::vector<SignedDistancePair<double>> signed_distance_pairs =
       query_object.ComputeSignedDistancePairwiseClosestPoints(
           max_influence_distance);
-  std::sort(signed_distance_pairs.begin(), signed_distance_pairs.end(),
-            [](const auto& item0, const auto& item1) {
-              return (item0.id_A < item1.id_A) ||
-                     ((item0.id_A == item1.id_A) && (item0.id_B < item1.id_B));
-            });
 
   // For each signed distance pair we're computing ϕ and
   // ∂ϕ/∂qᵣ = ∂ϕ/∂p_BAᵀ⋅∂p_BA/∂qᵣ (as documented in RobotClearance). In this

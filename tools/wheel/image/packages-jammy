@@ -23,7 +23,6 @@ pkg-config
 # Other general tools.
 file
 patch
-ssh
 wget
 unzip
 zip

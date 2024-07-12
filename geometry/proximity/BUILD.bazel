@@ -131,13 +131,13 @@ drake_cc_library(
     hdrs = ["calc_distance_to_surface_mesh.h"],
     internal = True,
     visibility = ["//visibility:private"],
-    interface_deps = [
+    deps = [
         ":bv",
         ":bvh",
         ":triangle_surface_mesh",
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         ":distance_to_point_callback",
         "//math:geometric_transform",
     ],
@@ -414,11 +414,11 @@ drake_cc_library(
     name = "make_box_field",
     srcs = ["make_box_field.cc"],
     hdrs = ["make_box_field.h"],
-    interface_deps = [
+    deps = [
         ":mesh_field",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":distance_to_point_callback",
         "//common:default_scalars",
         "//common:essential",
@@ -430,13 +430,13 @@ drake_cc_library(
     name = "make_box_mesh",
     srcs = ["make_box_mesh.cc"],
     hdrs = ["make_box_mesh.h"],
-    interface_deps = [
+    deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":proximity_utilities",
         "//common:default_scalars",
     ],
@@ -457,14 +457,14 @@ drake_cc_library(
     name = "make_capsule_mesh",
     srcs = ["make_capsule_mesh.cc"],
     hdrs = ["make_capsule_mesh.h"],
-    interface_deps = [
+    deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common:essential",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":meshing_utilities",
         ":proximity_utilities",
         "//common:default_scalars",
@@ -485,10 +485,10 @@ drake_cc_library(
     hdrs = ["make_convex_hull_mesh_impl.h"],
     internal = True,
     visibility = ["//geometry:__subpackages__"],
-    interface_deps = [
+    deps = [
         "//geometry/proximity:polygon_surface_mesh",
     ],
-    deps = [
+    implementation_deps = [
         ":volume_mesh",
         ":vtk_to_volume_mesh",
         "//common:essential",
@@ -507,11 +507,11 @@ drake_cc_library(
     name = "make_convex_hull_mesh",
     srcs = ["make_convex_hull_mesh.cc"],
     hdrs = ["make_convex_hull_mesh.h"],
-    interface_deps = [
-        "//geometry/proximity:polygon_surface_mesh",
-        "//geometry:shape_specification",
-    ],
     deps = [
+        "//geometry:shape_specification",
+        "//geometry/proximity:polygon_surface_mesh",
+    ],
+    implementation_deps = [
         ":make_convex_hull_mesh_impl",
     ],
 )
@@ -520,11 +520,11 @@ drake_cc_library(
     name = "make_convex_mesh",
     srcs = ["make_convex_mesh.cc"],
     hdrs = ["make_convex_mesh.h"],
-    interface_deps = [
+    deps = [
         ":volume_mesh",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":obj_to_surface_mesh",
         ":triangle_surface_mesh",
         "//common:default_scalars",
@@ -536,11 +536,11 @@ drake_cc_library(
     name = "make_cylinder_field",
     srcs = ["make_cylinder_field.cc"],
     hdrs = ["make_cylinder_field.h"],
-    interface_deps = [
+    deps = [
         ":mesh_field",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":distance_to_point_callback",
         ":volume_to_surface_mesh",
         "//common:default_scalars",
@@ -553,14 +553,14 @@ drake_cc_library(
     name = "make_cylinder_mesh",
     srcs = ["make_cylinder_mesh.cc"],
     hdrs = ["make_cylinder_mesh.h"],
-    interface_deps = [
+    deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common:essential",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":meshing_utilities",
         ":proximity_utilities",
         "//common:default_scalars",
@@ -744,11 +744,11 @@ drake_cc_library(
     name = "obj_to_surface_mesh",
     srcs = ["obj_to_surface_mesh.cc"],
     hdrs = ["obj_to_surface_mesh.h"],
-    interface_deps = [
+    deps = [
         ":triangle_surface_mesh",
         "//common:diagnostic_policy",
     ],
-    deps = [
+    implementation_deps = [
         "//common:essential",
         "@fmt",
         "@tinyobjloader_internal//:tinyobjloader",
@@ -916,11 +916,11 @@ drake_cc_library(
     hdrs = [
         "vtk_to_volume_mesh.h",
     ],
-    interface_deps = [
+    deps = [
         ":volume_mesh",
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         "@fmt",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",

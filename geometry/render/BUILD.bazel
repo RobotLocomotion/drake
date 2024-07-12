@@ -80,13 +80,13 @@ drake_cc_library(
     name = "render_material",
     srcs = ["render_material.cc"],
     hdrs = ["render_material.h"],
-    interface_deps = [
+    deps = [
         "//common:diagnostic_policy",
         "//common:essential",
         "//geometry:geometry_properties",
         "//geometry:rgba",
     ],
-    deps = [
+    implementation_deps = [
         "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
@@ -95,7 +95,7 @@ drake_cc_library(
     name = "render_mesh",
     srcs = ["render_mesh.cc"],
     hdrs = ["render_mesh.h"],
-    interface_deps = [
+    deps = [
         ":render_material",
         "//common:diagnostic_policy",
         "//common:essential",
@@ -103,7 +103,7 @@ drake_cc_library(
         "//geometry:rgba",
         "//geometry/proximity:triangle_surface_mesh",
     ],
-    deps = [
+    implementation_deps = [
         "@tinyobjloader_internal//:tinyobjloader",
     ],
 )

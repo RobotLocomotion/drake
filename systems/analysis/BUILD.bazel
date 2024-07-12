@@ -398,12 +398,12 @@ drake_cc_library(
     hdrs = [
         "batch_eval.h",
     ],
-    interface_deps = [
+    deps = [
         "//common:essential",
         "//common:parallelism",
         "//systems/framework:system",
     ],
-    deps = [
+    implementation_deps = [
         "@common_robotics_utilities",
     ],
 )
@@ -446,7 +446,7 @@ drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
-    interface_deps = [
+    deps = [
         ":integrator_base",
         ":simulator_config",
         ":simulator_status",
@@ -455,7 +455,7 @@ drake_cc_library(
         "//systems/framework:context",
         "//systems/framework:system",
     ],
-    deps = [
+    implementation_deps = [
         ":runge_kutta3_integrator",
         ":simulator_python_internal_header",
     ],

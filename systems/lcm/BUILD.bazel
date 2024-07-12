@@ -49,12 +49,12 @@ drake_cc_library(
     name = "lcm_publisher_system",
     srcs = ["lcm_publisher_system.cc"],
     hdrs = ["lcm_publisher_system.h"],
-    interface_deps = [
+    deps = [
         ":serializer",
         "//lcm:interface",
         "//systems/framework:leaf_system",
     ],
-    deps = [
+    implementation_deps = [
         ":lcm_system_graphviz",
         "//lcm:drake_lcm",
     ],
@@ -77,12 +77,12 @@ drake_cc_library(
     name = "lcm_subscriber_system",
     srcs = ["lcm_subscriber_system.cc"],
     hdrs = ["lcm_subscriber_system.h"],
-    interface_deps = [
+    deps = [
         ":serializer",
         "//lcm:interface",
         "//systems/framework:leaf_system",
     ],
-    deps = [
+    implementation_deps = [
         ":lcm_system_graphviz",
         "//lcm:drake_lcm",
     ],
@@ -92,11 +92,11 @@ drake_cc_library(
     name = "lcm_interface_system",
     srcs = ["lcm_interface_system.cc"],
     hdrs = ["lcm_interface_system.h"],
-    interface_deps = [
+    deps = [
         "//lcm:drake_lcm_params",
         "//systems/framework:leaf_system",
     ],
-    deps = [
+    implementation_deps = [
         ":lcm_system_graphviz",
         "//lcm:drake_lcm",
     ],
@@ -140,13 +140,13 @@ drake_cc_library(
     name = "lcm_config_functions",
     srcs = ["lcm_config_functions.cc"],
     hdrs = ["lcm_config_functions.h"],
-    interface_deps = [
+    deps = [
         ":lcm_buses",
         ":lcm_interface_system",
         "//lcm:drake_lcm_params",
         "//systems/framework:diagram_builder",
     ],
-    deps = [
+    implementation_deps = [
         "//lcm:drake_lcm",
         "//systems/primitives:shared_pointer_system",
     ],
