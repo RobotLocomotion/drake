@@ -300,7 +300,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 
   // Bounding boxes along all dimensions (including joints which are not
   // continuous revolute). If preprocess_bbox is true, all lower and upper
-  // limites will be computed and stored. Otherwise, only the entries
+  // limits will be computed and stored. Otherwise, only the entries
   // corresponding to continuous revolute joints will be populated, and all
   // lower and upper bounds will be set to zero (and left unused). If
   // convex_sets_B == convex_sets_A, then we do not populate bboxes_B, and
@@ -390,6 +390,10 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
           !HyperrectangleOffsetIntersection(bbox_A, bbox_B, offset)) {
         continue;
       }
+      // TODO(cohnt) we should still be able to confirm some sets don't overlap
+      // when preprocess_bbox is false, since we have to compute the upper and
+      // lower limits along dimensions corresponding to continuous revolute
+      // joints.
 
       MathematicalProgram prog;
       VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
