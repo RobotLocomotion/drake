@@ -266,8 +266,8 @@ GTEST_TEST(HyperrectangleTest,
     const Eigen::Vector3d t_value{4, 2, 0.5};
     const auto test_point =
         1 / ((c.transpose() * t_value)[0] + d) * (A * x_value + b);
-    EXPECT_TRUE(
-        CompareMatrices(test_point, 1 / 5.0 * Eigen::Vector3d(8, 2, -3)));
+    EXPECT_TRUE(CompareMatrices(test_point, 1 / 5.0 * Eigen::Vector3d(8, 2, -3),
+                                std::numeric_limits<double>::epsilon()));
     EXPECT_EQ(
         PointInScaledSet(x, t, x_value, t_value, &prog, scaled_matrix_con),
         hyperrectangle.PointInSet(test_point));

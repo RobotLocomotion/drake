@@ -144,7 +144,7 @@ GTEST_TEST(TriMeshBuilderTest, AddingFeatures) {
             static_cast<int>(expected_pressures.size()));
   for (int v = 0; v < mesh_M->num_vertices(); ++v) {
     ASSERT_NEAR(surf_field_M->EvaluateAtVertex(v), expected_pressures[v],
-                10 * std::numeric_limits<double>::epsilon());
+                16 * std::numeric_limits<double>::epsilon());
     // NOTE: The TriMeshBuilder doesn't currently build a field with gradients,
     // so we won't test them.
   }

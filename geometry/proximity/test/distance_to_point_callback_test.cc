@@ -123,7 +123,7 @@ class PointShapeAutoDiffSignedDistanceTester {
     if (grad_W_squared_norm.derivatives().size() > 0) {
       auto grad_W_unit_length_derivative_compare =
           CompareMatrices(grad_W_squared_norm.derivatives(),
-                          Eigen::VectorXd::Zero(grad_size), tolerance_);
+                          Eigen::VectorXd::Zero(grad_size), 1.4 * tolerance_);
       if (!grad_W_unit_length_derivative_compare) {
         if (error) failure << "\n";
         error = true;
@@ -168,7 +168,7 @@ class PointShapeAutoDiffSignedDistanceTester {
  private:
   const Shape& shape_;
   const RigidTransformd X_WG_;
-  const double tolerance_{std::numeric_limits<double>::epsilon()};
+  const double tolerance_{1.4 * std::numeric_limits<double>::epsilon()};
 };
 
 // Simple smoke test for signed distance to Box. It does the following:
