@@ -2,11 +2,13 @@ load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_library",
 )
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
+    "drake_py_library",
 )
 
 package(default_visibility = [
@@ -70,6 +72,38 @@ drake_py_binary(
     srcs = ["benchmark_tool.py"],
     data = [
         "//tools/workspace/cc:compiler.txt",
+    ],
+)
+
+drake_cc_library(
+    name = "perf_controller",
+    srcs = ["perf_controller.cc"],
+    hdrs = ["perf_controller.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_py_library(
+    name = "perf_controller_py",
+    srcs = ["perf_controller.py"],
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_binary(
+    name = "perf_controller_test_target",
+    srcs = ["perf_controller_test_target.cc"],
+    deps = [
+        ":perf_controller",
+    ],
+)
+
+drake_py_binary(
+    name = "perf_controller_py_test_target",
+    srcs = ["perf_controller_py_test_target.py"],
+    deps = [
+        ":perf_controller_py",
     ],
 )
 
