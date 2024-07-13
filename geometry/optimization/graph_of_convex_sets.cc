@@ -1426,7 +1426,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
         target.name()));
   }
 
-  auto flow_exists_and_above_treshold = [&](const Edge* edge) -> bool {
+  auto flow_exists_and_above_threshold = [&](const Edge* edge) -> bool {
     auto it = flows.find(edge);
     return it != flows.end() && it->second > options.flow_tolerance;
   };
@@ -1455,7 +1455,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
       for (const Edge* e : new_path_vertices.back()->outgoing_edges()) {
         if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
                       e->v().id()) == visited_vertex_ids.end() &&
-            flow_exists_and_above_treshold(e)) {
+            flow_exists_and_above_threshold(e)) {
           candidate_edges.emplace_back(e);
         }
       }
