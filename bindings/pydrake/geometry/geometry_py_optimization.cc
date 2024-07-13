@@ -305,15 +305,19 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("other"), cls_doc.PontryaginDifference.doc)
         .def("UniformSample",
             overload_cast_explicit<Eigen::VectorXd, RandomGenerator*,
-                const Eigen::Ref<const Eigen::VectorXd>&, int>(
-                &HPolyhedron::UniformSample),
+                const Eigen::Ref<const Eigen::VectorXd>&, int,
+                const std::optional<Eigen::Ref<const Eigen::MatrixXd>>&,
+                double>(&HPolyhedron::UniformSample),
             py::arg("generator"), py::arg("previous_sample"),
-            py::arg("mixing_steps") = 10, cls_doc.UniformSample.doc_3args)
+            py::arg("mixing_steps") = 10, py::arg("subspace") = std::nullopt,
+            py::arg("tol") = 1e-8, cls_doc.UniformSample.doc_5args)
         .def("UniformSample",
-            overload_cast_explicit<Eigen::VectorXd, RandomGenerator*, int>(
-                &HPolyhedron::UniformSample),
+            overload_cast_explicit<Eigen::VectorXd, RandomGenerator*, int,
+                const std::optional<Eigen::Ref<const Eigen::MatrixXd>>&,
+                double>(&HPolyhedron::UniformSample),
             py::arg("generator"), py::arg("mixing_steps") = 10,
-            cls_doc.UniformSample.doc_2args)
+            py::arg("subspace") = std::nullopt, py::arg("tol") = 1e-8,
+            cls_doc.UniformSample.doc_4args)
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
