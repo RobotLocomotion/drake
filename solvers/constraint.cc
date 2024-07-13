@@ -167,8 +167,13 @@ void QuadraticConstraint::UpdateHessianType(
     // Hessian type.
     drake::log()->warn(
         "UpdateHessianType(): Unable to determine Hessian type of the "
-        "Quadratic Constraint. Falling "
-        "back to indefinite Hessian type.");
+        "Quadratic Constraint. Falling back to indefinite Hessian type. To get "
+        "rid of this warning, if you know the type of the hessian (positive "
+        "semidefinite, negative semidefinite, or indefinite), then set "
+        "hessian_type explicitly when you construct "
+        "or set the quadratic constraint, such as in"
+        "QuadraticConstraint(), UpdateCoefficients() or "
+        "AddQuadraticConstraint() functions.");
     hessian_type_ = HessianType::kIndefinite;
   } else {
     if (ldlt_solver.isPositive()) {
