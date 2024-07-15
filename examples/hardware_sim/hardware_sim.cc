@@ -15,11 +15,13 @@ controller operates the robot, without extra hassle.
 Drake maintainers should keep this file in sync with hardware_sim.py. */
 
 #include <fstream>
+#include <thread>
 
 #include <gflags/gflags.h>
 
 #include "drake/common/unused.h"
 #include "drake/examples/hardware_sim/scenario.h"
+#include "drake/geometry/meshcat_visualizer.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_driver_functions.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h"
 #include "drake/manipulation/util/apply_driver_configs.h"
@@ -64,6 +66,11 @@ using systems::lcm::ApplyLcmBusConfig;
 using systems::lcm::LcmBuses;
 using systems::sensors::ApplyCameraConfig;
 using visualization::ApplyVisualizationConfig;
+
+void Sleep(double seconds) {
+  auto millis = static_cast<int64_t>(seconds * 1000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(millis));
+}
 
 /* Class that holds the configuration and data of a simulation. */
 class Simulation {
@@ -130,6 +137,17 @@ void Simulation::Setup() {
 }
 
 void Simulation::Simulate() {
+  simulator_->AdvanceTo(10);
+  const std::string vis_name = "meshcat_visualizer(illustration)";
+  const auto& vis_system = diagram_->GetSubsystemByName(vis_name);
+  auto& visualizer = const_cast<geometry::MeshcatVisualizer<double>&>(
+      static_cast<const geometry::MeshcatVisualizer<double>&>(vis_system));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  visualizer.ResetRealtimeRateCalculator();
+#pragma GCC diagnostic pop
+  fmt::print("Hello! Please wait two seconds.\n");
+  Sleep(2.0);
   simulator_->AdvanceTo(scenario_.simulation_duration);
 }
 
