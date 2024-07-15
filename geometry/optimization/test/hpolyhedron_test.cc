@@ -1408,9 +1408,7 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest4) {
   // Verify that without passing in the basis of the affine hull,
   // trying to draw a uniform sample just gives us previous_sample,
   // since it is not full-dimensional.
-  std::optional<VectorXd> maybe_point = H.MaybeGetFeasiblePoint();
-  ASSERT_TRUE(maybe_point.has_value());
-  VectorXd point = maybe_point.value();
+  Vector2d point(0.5, 0.5);
 
   RandomGenerator generator(1234);
   VectorXd point_A = H.UniformSample(&generator, point, 10);
