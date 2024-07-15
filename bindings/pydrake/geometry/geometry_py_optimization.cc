@@ -930,8 +930,7 @@ void DefineGeometryOptimization(py::module m) {
                 bool show_costs, bool scientific, int precision,
                 const std::optional<
                     std::vector<const GraphOfConvexSets::Edge*>>& active_path) {
-              const GcsGraphvizOptions options{
-                  .show_slacks = show_slacks,
+              const GcsGraphvizOptions options{.show_slacks = show_slacks,
                   .show_vars = show_vars,
                   .show_flows = show_flows,
                   .show_costs = show_costs,
