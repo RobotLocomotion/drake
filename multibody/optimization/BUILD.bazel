@@ -302,6 +302,7 @@ drake_cc_googletest(
     data = [
         "@drake_models//:iiwa_description",
     ],
+    tags = ["no_kcov"],
     use_default_main = False,
     deps = [
         ":toppra",
