@@ -1272,22 +1272,26 @@ void DefineGeometryOptimization(py::module m) {
       "CalcPairwiseIntersections",
       [](const std::vector<ConvexSet*>& convex_sets_A,
           const std::vector<ConvexSet*>& convex_sets_B,
-          const std::vector<int>& continuous_revolute_joints) {
+          const std::vector<int>& continuous_revolute_joints,
+          bool preprocess_bbox) {
         return CalcPairwiseIntersections(CloneConvexSets(convex_sets_A),
-            CloneConvexSets(convex_sets_B), continuous_revolute_joints);
+            CloneConvexSets(convex_sets_B), continuous_revolute_joints,
+            preprocess_bbox);
       },
       py::arg("convex_sets_A"), py::arg("convex_sets_B"),
-      py::arg("continuous_revolute_joints"),
-      doc.CalcPairwiseIntersections.doc_3args);
+      py::arg("continuous_revolute_joints"), py::arg("preprocess_bbox") = true,
+      doc.CalcPairwiseIntersections.doc_4args);
   m.def(
       "CalcPairwiseIntersections",
       [](const std::vector<ConvexSet*>& convex_sets,
-          const std::vector<int>& continuous_revolute_joints) {
-        return CalcPairwiseIntersections(
-            CloneConvexSets(convex_sets), continuous_revolute_joints);
+          const std::vector<int>& continuous_revolute_joints,
+          bool preprocess_bbox) {
+        return CalcPairwiseIntersections(CloneConvexSets(convex_sets),
+            continuous_revolute_joints, preprocess_bbox);
       },
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
-      doc.CalcPairwiseIntersections.doc_2args);
+      py::arg("preprocess_bbox") = true,
+      doc.CalcPairwiseIntersections.doc_3args);
   // NOLINTNEXTLINE(readability/fn_size)
 }
 

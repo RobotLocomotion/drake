@@ -143,6 +143,11 @@ computed between `convex_sets_A` and `convex_sets_B`.
 @param convex_sets_B is the other vector of convex sets.
 @param continuous_revolute_joints is a list of joint indices corresponding to
 continuous revolute joints.
+@param preprocess_bbox is a flag for whether the function should precompute
+axis-aligned bounding boxes for every set. This can speed up the pairwise
+intersection checks, by determining some sets to be disjoint without needing
+to solve an optimization problem. However, it does require some overhead to
+compute those bounding boxes.
 
 @throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
@@ -151,7 +156,8 @@ ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
 */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
-    const std::vector<int>& continuous_revolute_joints);
+    const std::vector<int>& continuous_revolute_joints,
+    bool preprocess_bbox = true);
 
 /** Convenience overload to compute pairwise intersections within a list of
 convex sets. Equivalent to calling CalcPairwiseIntersections(convex_sets,
@@ -161,6 +167,10 @@ convex_sets, continuous_revolute_joints).
 computed within `convex_sets_A`.
 @param continuous_revolute_joints is a list of joint indices corresponding to
 continuous revolute joints.
+@param preprocess_bbox is a flag for whether the function should precompute
+axis-aligned bounding boxes for every set. This can speed up the pairwise
+intersection checks, by determining some sets to be disjoint without needing
+to solve an optimization problem.
 
 @throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
@@ -169,7 +179,8 @@ ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
 */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
-    const std::vector<int>& continuous_revolute_joints);
+    const std::vector<int>& continuous_revolute_joints,
+    bool preprocess_bbox = true);
 
 }  // namespace optimization
 }  // namespace geometry
