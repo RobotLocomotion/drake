@@ -51,9 +51,8 @@ int do_main() {
   Transfer<float> transfer(dt, &grid, &particles);
 
   auto start = std::chrono::high_resolution_clock::now();
-  omp_set_num_threads(12);
   for (int i = 0; i < 300; ++i) {
-    transfer.ParticleToGrid();
+    transfer.ParticleToGrid(true);
   }
 
   auto end = std::chrono::high_resolution_clock::now();

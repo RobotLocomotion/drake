@@ -28,8 +28,6 @@ cc_library(
         "sparse_grid.h",
         "particles.h",
     ],
-    copts = ["-fopenmp"],
-    linkopts = ["-fopenmp"],
     deps = [
         ":math",
         "//common:essential",
@@ -59,15 +57,18 @@ drake_cc_library(
 
 cc_library(
     name = "transfer",
+    srcs = [
+        "transfer.cc",
+    ],
     hdrs = [
         "transfer.h",
     ],
-    copts = ["-fopenmp"],
-    linkopts = ["-fopenmp"],
+    copts = ["-fopenmp", "-O3", "-march=native", "-g", "-ffast-math"],
     deps = [
         ":particles",
         ":sparse_grid",
         "//common:essential",
+        "//common:parallelism",
     ],
 )
 
@@ -87,7 +88,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "transfer_test",
-    copts = ["-fopenmp",],
     srcs = [
         "test/transfer_test.cc",
     ],
@@ -117,7 +117,7 @@ drake_cc_googletest(
 cc_binary(
     name = "p2g2p",
     srcs = ["p2g2p.cc"],
-    copts = ["-fopenmp", "-O3", "-march=native", "-g"],
+    copts = ["-fopenmp", "-O3", "-march=native", "-g", "-ffast-math"],
     testonly = True,
     deps = [
         ":transfer",
@@ -129,7 +129,6 @@ cc_binary(
     name = "g2p",
     srcs = ["g2p.cc"],
     testonly = True,
-    copts = ["-fopenmp", "-O3", "-march=native", "-g"],
     deps = [
         ":transfer",
         "//common/test_utilities:eigen_matrix_compare",
@@ -140,7 +139,6 @@ cc_binary(
     name = "p2g",
     srcs = ["p2g.cc"],
     testonly = True,
-    copts = ["-fopenmp", "-O3", "-march=native", "-g"],
     deps = [
         ":transfer",
         "//common/test_utilities:eigen_matrix_compare",

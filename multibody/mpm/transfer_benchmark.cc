@@ -70,7 +70,7 @@ BENCHMARK_REGISTER_F(TransferBenchmark, P2G)->Args({16, 8})->Args({32, 8});
 
 BENCHMARK_DEFINE_F(TransferBenchmark, G2P)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
-    transfer_->GridToParticles();
+    transfer_->GridToParticle();
   }
 }
 

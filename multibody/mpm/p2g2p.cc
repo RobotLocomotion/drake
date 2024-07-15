@@ -55,7 +55,7 @@ int do_main() {
     Transfer<float> transfer(dt, &grid, &particles);
     transfer.ParticleToGrid();
     grid.ExplicitVelocityUpdate(dt, Vector3f::Zero());
-    transfer.GridToParticles();
+    transfer.GridToParticle();
   }
 
   auto end = std::chrono::high_resolution_clock::now();

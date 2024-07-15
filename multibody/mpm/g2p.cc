@@ -40,7 +40,7 @@ void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
 }
 
 int do_main() {
-  int num_nodes_per_dim = 32;
+  int num_nodes_per_dim = 16;
   int particles_per_cell = 8;
   const float dx = 0.01;
   const float dt = 0.002;
@@ -49,13 +49,12 @@ int do_main() {
 
   SetUp(num_nodes_per_dim, particles_per_cell, dx, &particles);
   Transfer<float> transfer(dt, &grid, &particles);
-  transfer.ParticleToGrid();
+  transfer.ParticleToGrid(false);
   grid.ExplicitVelocityUpdate(dt, Vector3f::Zero());
 
   auto start = std::chrono::high_resolution_clock::now();
-  omp_set_num_threads(12);
   for (int i = 0; i < 300; ++i) {
-    transfer.GridToParticles();
+    transfer.GridToParticle(false);
   }
 
   auto end = std::chrono::high_resolution_clock::now();

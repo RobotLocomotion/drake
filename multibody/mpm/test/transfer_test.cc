@@ -95,7 +95,7 @@ GTEST_TEST(TransferTest, GridToParticle) {
     return GridData<double>{.v = vel, .m = 1.0};
   };
   grid.SetGridState(constant_velocity_field);
-  transfer.GridToParticles();
+  transfer.GridToParticle();
 
   EXPECT_TRUE(CompareMatrices(particles.v[0], vel,
                               4.0 * std::numeric_limits<double>::epsilon()));
@@ -207,7 +207,7 @@ GTEST_TEST(TransferTest, MomentumConservation) {
                             ComputeTotalMassAndMomentum(particles, grid.dx()),
                             expected);
 
-  transfer.GridToParticles();
+  transfer.GridToParticle();
   CheckMomentumConservation(grid.ComputeTotalMassAndMomentum(),
                             ComputeTotalMassAndMomentum(particles, grid.dx()),
                             expected);
