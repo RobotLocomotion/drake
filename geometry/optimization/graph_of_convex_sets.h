@@ -424,6 +424,14 @@ class GraphOfConvexSets {
     */
     const VectorX<symbolic::Variable>& xv() const { return v_->x(); }
 
+    /** Creates continuous slack variables for this edge, appending them to
+    an internal vector of existing slack variables. These slack variables
+    can be used in any cost or constraint on this edge only, and allows for
+    modeling more complex costs and constraints.
+     */
+    solvers::VectorXDecisionVariable NewSlackVariables(int rows,
+                                                       const std::string& name);
+
     /** Adds a cost to this edge, described by a symbolic::Expression @p e
     containing *only* elements of xu() and xv() as variables.  For technical
     reasons relating to being able to "turn-off" the cost on inactive edges, all
@@ -578,6 +586,7 @@ class GraphOfConvexSets {
     std::vector<std::pair<solvers::Binding<solvers::Cost>,
                           std::unordered_set<Transcription>>>
         costs_{};
+    solvers::VectorXDecisionVariable slacks_{};
     std::vector<std::pair<solvers::Binding<solvers::Constraint>,
                           std::unordered_set<Transcription>>>
         constraints_;
