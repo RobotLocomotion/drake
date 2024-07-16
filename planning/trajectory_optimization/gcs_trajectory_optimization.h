@@ -81,12 +81,15 @@ class GcsTrajectoryOptimization final {
   /**
    * @enum PathLengthType
    * @brief Describes the type of cost to add with a PathLengthCost
-   * 
-   * This enum is passed as an argument to AddPathLength functions to determine the specific type of path length cost to add
+   *
+   * This enum is passed as an argument to AddPathLength functions to determine
+   * the specific type of path length cost to add
    */
   enum class PathLengthType {
-      L2Norm, /**< Add an L2Norm Path length cost to the control points of the b spline trajectory output. */
-      SQUARED_L2Norm /**< Add a Squared L2Norm Path length cost to the control points of the b spline trajectory output. */
+    L2Norm, /**< Add an L2Norm Path length cost to the control points of the b
+               spline trajectory output. */
+    SQUARED_L2Norm /**< Add a Squared L2Norm Path length cost to the control
+                      points of the b spline trajectory output. */
   };
 
   /** A Subgraph is a subset of the larger graph. It is defined by a set of
@@ -162,11 +165,14 @@ class GcsTrajectoryOptimization final {
     The diagonal of the matrix is the weight for each dimension. The
     off-diagonal elements are the weight for the cross terms, which can be used
     to penalize diagonal movement.
-    @param path_type is the metric to use when measuring the path length. For example, 
-    the L2 norm distance or the squared L2 Norm distance can be passed in this argument.
-    @pre weight_matrix must be of size num_positions() x num_positions() for the default path_type, otherwise weight_matrix must be 2 x 2
+    @param path_type is the metric to use when measuring the path length. For
+    example, the L2 norm distance or the squared L2 Norm distance can be passed
+    in this argument.
+    @pre weight_matrix must be of size num_positions() x num_positions() for the
+    default path_type, otherwise weight_matrix must be 2 x 2
     */
-    void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix, PathLengthType path_type = PathLengthType::L2Norm);
+    void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix,
+                           PathLengthType path_type = PathLengthType::L2Norm);
 
     /** Adds multiple L2Norm Costs on the upper bound of the path length.
     We upper bound the trajectory length by the sum of the distances between
@@ -177,10 +183,12 @@ class GcsTrajectoryOptimization final {
 
     @param weight is the relative weight of the cost.
 
-    @param path_type is the metric to use when measuring the path length. For example, 
-    the L2 norm distance or the squared L2 Norm distance can be passed in this argument.
+    @param path_type is the metric to use when measuring the path length. For
+    example, the L2 norm distance or the squared L2 Norm distance can be passed
+    in this argument.
     */
-    void AddPathLengthCost(double weight = 1.0, PathLengthType path_type = PathLengthType::L2Norm);
+    void AddPathLengthCost(double weight = 1.0,
+                           PathLengthType path_type = PathLengthType::L2Norm);
 
     /** Adds a linear velocity constraint to the subgraph `lb` ≤ q̇(t) ≤
     `ub`.
@@ -624,9 +632,11 @@ class GcsTrajectoryOptimization final {
   off-diagonal elements are the weight for the cross terms, which can be used
   to penalize diagonal movement.
   @param path_type TODO
-  @pre weight_matrix must be of size num_positions() x num_positions() for L2 Norm or 2 x 2 for L2 Norm Squared
+  @pre weight_matrix must be of size num_positions() x num_positions() for L2
+  Norm or 2 x 2 for L2 Norm Squared
   */
-  void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix, PathLengthType path_type = PathLengthType::L2Norm);
+  void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix,
+                         PathLengthType path_type = PathLengthType::L2Norm);
 
   /** Adds multiple distance costs on the upper bound of the path length.
   Since we cannot directly compute the path length of a Bézier curve, we
@@ -643,10 +653,12 @@ class GcsTrajectoryOptimization final {
 
   @param weight is the relative weight of the cost.
 
-  @param path_type is the metric to use when measuring the path length. For example, 
-    the L2 norm distance or the squared L2 Norm distance can be passed in this argument.
+  @param path_type is the metric to use when measuring the path length. For
+  example, the L2 norm distance or the squared L2 Norm distance can be passed in
+  this argument.
   */
-  void AddPathLengthCost(double weight = 1.0, PathLengthType path_type = PathLengthType::L2Norm);
+  void AddPathLengthCost(double weight = 1.0,
+                         PathLengthType path_type = PathLengthType::L2Norm);
 
   /** Adds a linear velocity constraint to the entire graph `lb` ≤ q̇(t) ≤
   `ub`.
