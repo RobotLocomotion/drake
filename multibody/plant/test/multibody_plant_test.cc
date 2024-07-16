@@ -714,11 +714,12 @@ class AcrobotPlantTests : public ::testing::Test {
         &plant_->get_actuation_input_port().FixValue(plant_context_, 0.0);
   }
 
-  void SetUpDiscreteAcrobotPlant(double time_step) {
+  void SetUpDiscreteAcrobotPlant(double time_step, bool sampled) {
     systems::DiagramBuilder<double> builder;
     const std::string url =
         "package://drake/multibody/benchmarks/acrobot/acrobot.sdf";
     discrete_plant_ = std::make_unique<MultibodyPlant<double>>(time_step);
+    discrete_plant_->SetUseSampledOutputPorts(sampled);
     Parser(discrete_plant_.get()).AddModelsFromUrl(url);
     discrete_plant_->Finalize();
 
@@ -1001,7 +1002,7 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
 // on a model of an acrobot.
 TEST_F(AcrobotPlantTests, DoCalcDiscreteVariableUpdates) {
   // Set up an additional discrete state model of the same acrobot model.
-  SetUpDiscreteAcrobotPlant(0.001 /* time step in seconds. */);
+  SetUpDiscreteAcrobotPlant(/* time_step = */ 0.001, /* sampled = */ false);
 
   const ModelInstanceIndex instance_index =
       discrete_plant_->GetModelInstanceByName("acrobot");
@@ -1741,21 +1742,25 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
   // Write down the expected direct-feedthrough status for all ports. Use
   // strings (not indices) so that developers can understand test failures.
   // The order we list the ports here matches the MbP header file overview.
+  // Nothing in the list below should ever be unconditionally `true`.
+  const bool is_sampled = plant.has_sampled_output_ports();
   const std::vector<std::pair<std::string, bool>> manifest{
       {"state", false},
       {"body_poses", false},
       {"body_spatial_velocities", false},
       {"spatial_velocities", false},  // Deprecated synonym 2024-10-01.
-      {"body_spatial_accelerations", true},
-      {"spatial_accelerations", true},  // Deprecated synonym 2024-10-01.
-      {"generalized_acceleration", true},
-      {"net_actuation", true},
-      {"reaction_forces", true},
-      {"contact_results", true},
+      {"body_spatial_accelerations", !is_sampled},
+      {"spatial_accelerations", !is_sampled},  // Deprecated synonym 2024-10-01.
+      {"generalized_acceleration", !is_sampled},
+      {"net_actuation", !is_sampled},
+      {"reaction_forces", !is_sampled},
+      {"contact_results", !is_sampled},
+      // Grey group.
       {"{instance}_state", false},
-      {"{instance}_generalized_acceleration", true},
-      {"{instance}_net_actuation", true},
-      {"{instance}_generalized_contact_forces", !plant.is_discrete()},
+      {"{instance}_generalized_acceleration", !is_sampled},
+      {"{instance}_net_actuation", !is_sampled},
+      {"{instance}_generalized_contact_forces", !is_sampled},
+      // Green group.
       {"geometry_pose", false},
       {"deformable_body_configuration", false},
   };
@@ -4560,53 +4565,6 @@ GTEST_TEST(MultibodyPlantTests, ActuationPorts) {
         (reaction_forces[i].rotational().norm() < kTolerance);
   }
   EXPECT_FALSE(all_reaction_forces_zero);
-}
-
-// Due to issue #12786, we cannot mark the calculation of non-contact forces
-// (and the acceleration it induces) dependent on a discrete MultibodyPlant's
-// inputs, as it should. However, by removing this dependency, we run the risk
-// of an undetected algebraic loop. This tests verifies that if such an
-// algebraic loop exists, a nice throw message is emitted instead of an infinite
-// recursion. The algebraic loop isn't present if the plant is continuous
-// because contact forces do not depend on the external force input ports in
-// continuous mode.
-GTEST_TEST(MultibodyPlantTests, AlgebraicLoopDetection) {
-  std::vector<double> time_steps = {0.0, 1.0e-3};
-  for (double dt : time_steps) {
-    systems::DiagramBuilder<double> builder;
-    MultibodyPlant<double>* plant =
-        builder.AddSystem<MultibodyPlant<double>>(dt);
-    const char kSdfUrl[] =
-        "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf";
-    Parser parser(plant);
-    auto iiwa_instance = parser.AddModelsFromUrl(kSdfUrl).at(0);
-    plant->Finalize();
-    auto feedback = builder.AddSystem<systems::PassThrough<double>>(
-        plant->num_velocities());
-    builder.Connect(
-        plant->get_generalized_contact_forces_output_port(iiwa_instance),
-        feedback->get_input_port());
-    builder.Connect(feedback->get_output_port(),
-                    plant->get_applied_generalized_force_input_port());
-    std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
-    std::unique_ptr<systems::Context<double>> diagram_context =
-        diagram->CreateDefaultContext();
-    const systems::Context<double>& plant_context =
-        plant->GetMyContextFromRoot(*diagram_context);
-    if (dt == 0.0) {
-      EXPECT_NO_THROW(plant
-                          ->get_generalized_contact_forces_output_port(
-                              default_model_instance())
-                          .Eval(plant_context));
-    } else {
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          plant
-              ->get_generalized_contact_forces_output_port(
-                  default_model_instance())
-              .Eval(plant_context),
-          "Algebraic loop detected.*");
-    }
-  }
 }
 
 // Verifies that a nice error message is thrown if actuation input port contains

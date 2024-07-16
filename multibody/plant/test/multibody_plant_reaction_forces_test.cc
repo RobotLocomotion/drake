@@ -655,6 +655,7 @@ class SpinningRodTest : public ::testing::Test {
  protected:
   void BuildModel(double discrete_update_period) {
     plant_ = std::make_unique<MultibodyPlant<double>>(discrete_update_period);
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
 
     // We define rod B's origin Bo to be located at the rod's center of mass.
     const SpatialInertia<double> M_BBo_B =
@@ -764,6 +765,7 @@ class WeldedBoxesTest : public ::testing::Test {
  protected:
   void BuildModel(double discrete_update_period) {
     plant_ = std::make_unique<MultibodyPlant<double>>(discrete_update_period);
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
     AddBoxes();
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
@@ -859,6 +861,7 @@ class WeldedAndFloatingTest : public ::testing::TestWithParam<bool> {
     const bool replace_joints = GetParam();
 
     plant_ = std::make_unique<MultibodyPlant<double>>(0.01);
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
 
     // Create four rigid bodies.
     const RigidBody<double>& sphere0 = plant_->AddRigidBody(
