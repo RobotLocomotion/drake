@@ -14,6 +14,10 @@ namespace {
 using Eigen::Matrix3f;
 using Eigen::Vector3f;
 
+/* Creates a grid with `num_nodes_per_dim` nodes in each dimension. Samples
+ `particles_per_cell` particles around a single grid node.
+ @param[in] dx grid spacing (meter).
+ @param[out] particles Sampled particle data. */
 void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
            ParticleData<float>* particles) {
   // Create the particles.
@@ -40,6 +44,7 @@ void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
 }
 
 int do_main() {
+  /* Total number of particles is 32^3 * 8 = 262k. */
   int num_nodes_per_dim = 32;
   int particles_per_cell = 8;
   const float dx = 0.01;

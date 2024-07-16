@@ -124,6 +124,107 @@ inline SimdScalar<T> operator/(T a, SimdScalar<T> b) {
   result /= b;
   return result;
 }
+#else
+
+/** Standard compound addition and assignment operator. */
+// NOLINTNEXTLINE(runtime/references) to match the required signature.
+template <typename T>
+inline SimdScalar<T>& operator+=(SimdScalar<T>& a, const SimdScalar<T>& b) {
+  a.value() = a.value() + b.value();
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator+(SimdScalar<T> a, const SimdScalar<T>& b) {
+  a += b;
+  return a;
+}
+
+/** Standard compound subtraction and assignment operator. */
+// NOLINTNEXTLINE(runtime/references) to match the required signature.
+template <typename T>
+inline SimdScalar<T>& operator-=(SimdScalar<T>& a, SimdScalar<T> b) {
+  a.value() = a.value() - b.value();
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator-(SimdScalar<T> a, SimdScalar<T> b) {
+  a -= b;
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator-(SimdScalar<T> a, T b) {
+  a -= SimdScalar<T>(b);
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator-(T a, SimdScalar<T> b) {
+  SimdScalar<T> result(a);
+  result -= b;
+  return result;
+}
+
+/** Standard compound multiplication and assignment operator. */
+// NOLINTNEXTLINE(runtime/references) to match the required signature.
+template <typename T>
+inline SimdScalar<T>& operator*=(SimdScalar<T>& a, const SimdScalar<T>& b) {
+  a.value() = a.value() * b.value();
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T>& operator*=(SimdScalar<T>& a, T b) {
+  a *= SimdScalar<T>(b);
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator*(SimdScalar<T> a, SimdScalar<T> b) {
+  a *= b;
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator*(SimdScalar<T> a, T b) {
+  a *= b;
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator*(T a, SimdScalar<T> b) {
+  b *= a;
+  return b;
+}
+
+/** Standard compound division and assignment operator. */
+// NOLINTNEXTLINE(runtime/references) to match the required signature.
+template <typename T>
+inline SimdScalar<T>& operator/=(SimdScalar<T>& a, SimdScalar<T> b) {
+  a.value() = a.value() / b.value();
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator/(SimdScalar<T> a, SimdScalar<T> b) {
+  a /= b;
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator/(SimdScalar<T> a, T b) {
+  a /= b;
+  return a;
+}
+
+template <typename T>
+inline SimdScalar<T> operator/(T a, SimdScalar<T> b) {
+  SimdScalar<T> result(a);
+  result /= b;
+  return result;
+}
 
 #endif
 

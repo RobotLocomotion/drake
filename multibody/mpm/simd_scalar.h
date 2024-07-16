@@ -38,7 +38,7 @@ class SimdScalar {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SimdScalar);
   static const hn::ScalableTag<T> d;
-  using V = decltype(hn::Zero(d));
+  using ValueType = decltype(hn::Zero(d));
 
   SimdScalar() : value_(hn::Zero(d)) {}
 
@@ -56,12 +56,12 @@ class SimdScalar {
 
   SimdScalar(const T* input, size_t lanes)
       : value_(hn::LoadN(d, input, lanes)) {
-    DRAKE_ASSERT(lanes <= N);
+    DRAKE_ASSERT(0 < lanes && lanes <= kN);
   }
 
   void Write(T* output) const { hn::StoreU(value_, d, output); }
   void Write(T* output, size_t lanes) const {
-    DRAKE_ASSERT(lanes <= N);
+    DRAKE_ASSERT(lanes <= kN);
     hn::StoreN(value_, d, output, lanes);
   }
 
@@ -71,15 +71,14 @@ class SimdScalar {
     return hn::AllTrue(d, hn::Eq(value_, other.value_));
   }
 
-  const V& value() const { return value_; }
-  V& value() { return value_; }
+  const ValueType& value() const { return value_; }
+  ValueType& value() { return value_; }
 
-  static size_t lanes() { return N; }
+  static size_t lanes() { return kN; }
 
  private:
-  static const size_t N = Lanes(d);
-
-  V value_;
+  static const size_t kN = Lanes(d);
+  ValueType value_;
 };
 
 #else
@@ -87,18 +86,45 @@ template <typename T>
 class SimdScalar {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SimdScalar);
+
+  using ValueType = T;
+
   SimdScalar() = default;
   // NOLINTNEXTLINE(runtime/explicit) to allow implicit conversion.
   SimdScalar(T value) : value_(value) {}
+
+  /* Compile is confused about implicit conversion when `value` is of type
+   `int`. So we help it here*/
+  template <typename U>
+  SimdScalar(U value,
+             typename std::enable_if<std::is_integral<U>::value, U>::type* = 0)
+      : value_(static_cast<T>(value)) {}
+
   explicit SimdScalar(const T* input) : value_(*input) {}
 
-  void Write(T* output) const { *output = value_; }
+  SimdScalar(const T* input, size_t lanes) : value_(input[0]) {
+    DRAKE_ASSERT(0 < lanes && lanes <= kN);
+  }
 
-  static size_t lanes() { return 1; }
+  void Write(T* output) const { *output = value_; }
+  void Write(T* output, size_t lanes) const {
+    DRAKE_ASSERT(lanes <= kN);
+    output[0] = value_;
+  }
 
   T get_lane() const { return value_; }
 
+  bool operator==(const SimdScalar<T>& other) const {
+    return value_ == other.value_;
+  }
+
+  const ValueType& value() const { return value_; }
+  ValueType& value() { return value_; }
+
+  static size_t lanes() { return kN; }
+
  private:
+  static const size_t kN = 1;
   T value_{};
 };
 #endif

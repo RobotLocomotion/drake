@@ -14,9 +14,12 @@ namespace {
 using Eigen::Matrix3f;
 using Eigen::Vector3f;
 
+/* Creates a grid with `num_nodes_per_dim` nodes in each dimension. Samples
+ `particles_per_cell` particles around a single grid node. 
+ @param[in] dx grid spacing (meter).
+ @param[out] particles Sampled particle data. */
 void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
            ParticleData<float>* particles) {
-  // Create the particles.
   for (int i = 0; i < num_nodes_per_dim; ++i) {
     for (int j = 0; j < num_nodes_per_dim; ++j) {
       for (int k = 0; k < num_nodes_per_dim; ++k) {
@@ -40,6 +43,7 @@ void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
 }
 
 int do_main() {
+  /* Total number of particles is 32^3 * 8 = 262k. */
   int num_nodes_per_dim = 32;
   int particles_per_cell = 8;
   const float dx = 0.01;
@@ -49,12 +53,13 @@ int do_main() {
 
   SetUp(num_nodes_per_dim, particles_per_cell, dx, &particles);
   Transfer<float> transfer(dt, &grid, &particles);
-  transfer.ParticleToGrid(false);
+  transfer.ParticleToGrid(/* parallelize? */ false);
   grid.ExplicitVelocityUpdate(dt, Vector3f::Zero());
 
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < 300; ++i) {
-    transfer.GridToParticle(Parallelism(4));
+    /* Use a fixed number of threads to get fair comparison across machines. */
+    transfer.GridToParticle(Parallelism(12));
   }
 
   auto end = std::chrono::high_resolution_clock::now();

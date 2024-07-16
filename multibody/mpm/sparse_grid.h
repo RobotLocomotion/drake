@@ -43,7 +43,8 @@ struct GridData {
 /* Only grid nodes in the neighborhood of a particle are active.
  ParticleIndices is a helper struct to determine which nodes are active. */
 struct ParticleIndex {
-  // TODO(xuchenhan-tri): define the concept of "base node".
+  // TODO(xuchenhan-tri): define the concept of "base node" in the
+  // documentation somewhere.
   /* The linear offset of the base node of the particle. */
   uint64_t base_node_offset{};
   /* Index into particle data. */
@@ -160,6 +161,9 @@ class SparseGrid {
     return result;
   }
 
+  /* Computes the mass, linear momentum, and angular momentum (around world
+   origin) on the grid.
+   @note Testing only. */
   MassAndMomentum<T> ComputeTotalMassAndMomentum() const {
     MassAndMomentum<T> result;
     const std::vector<std::pair<Vector3<int>, GridData<T>>> grid_data =

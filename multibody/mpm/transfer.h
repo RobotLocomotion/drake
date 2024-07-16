@@ -31,8 +31,8 @@ class Transfer {
       // SerialGridToParticle();
       SerialSimdGridToParticle();
     } else {
-      ParallelGridToParticle(parallelize);
-      // ParallelSimdGridToParticle(parallelize);
+      // ParallelGridToParticle(parallelize);
+      ParallelSimdGridToParticle(parallelize);
     }
   }
 
