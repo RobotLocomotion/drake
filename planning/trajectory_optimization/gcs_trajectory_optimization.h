@@ -416,7 +416,11 @@ class GcsTrajectoryOptimization final {
     EdgesBetweenSubgraphs(const Subgraph& from_subgraph,
                           const Subgraph& to_subgraph,
                           const geometry::optimization::ConvexSet* subspace,
-                          GcsTrajectoryOptimization* traj_opt);
+                          GcsTrajectoryOptimization* traj_opt,
+                          std::optional<const std::vector<std::pair<int, int>>>
+                              edges_between_regions = std::nullopt,
+                          std::optional<const std::vector<Eigen::VectorXd>>
+                              edge_offsets = std::nullopt);
 
     /* Convenience accessor, for brevity. */
     int num_positions() const { return traj_opt_.num_positions(); }
@@ -508,10 +512,10 @@ class GcsTrajectoryOptimization final {
   @param name is the name of the subgraph. If the passed name is an empty
   string, a default name will be provided.
   @param edge_offsets is an optional list of vectors. If defined, the list must
-  contain the same number of entries as edges_between_regions. In other words,
+  contain the same number of entries as `edges_between_regions`. In other words,
   if defined, there must be one edge offset for each specified edge. For each
-  pair of sets listed in edges_between_regions, the first set is translated (in
-  configuration space) by the corresponding vector in edge_offsets before
+  pair of sets listed in `edges_between_regions`, the first set is translated
+  (in configuration space) by the corresponding vector in edge_offsets before
   computing the constraints associated to that edge. This is used to add edges
   between sets that "wrap around" 2π along some dimension, due to, e.g., a
   continuous revolute joint. This edge offset corresponds to the translation
@@ -570,14 +574,36 @@ class GcsTrajectoryOptimization final {
   added, and the subspace is added as a constraint on the connecting control
   points. Subspaces of type point or HPolyhedron are supported since other sets
   require constraints that are not yet supported by the GraphOfConvexSets::Edge
-  constraint, e.g., set containment of a HyperEllipsoid is formulated via
+  constraint, e.g., set containment of a Hyperellipsoid is formulated via
   LorentzCone constraints. Workaround: Create a subgraph of zero order with the
   subspace as the region and connect it between the two subgraphs. This works
-  because GraphOfConvexSet::Vertex , supports arbitrary instances of ConvexSets.
+  because GraphOfConvexSet::Vertex supports arbitrary instances of ConvexSets.
+  @param edges_between_regions can be used to manually specify which edges
+  should be added, avoiding the intersection checks. It should be a list of
+  tuples `(i,j)`, where an edge will be added from the `i`th index region in
+  `from_subgraph` to the `j`th index region in `to_subgraph`.
+  @param edge_offsets is an optional list of vectors. If defined, the list must
+  contain the same number of entries as `edges_between_regions`, and the order
+  must match. In other words, if defined, there must be one edge offset for each
+  specified edge, and they must be at the same index. For each pair of sets
+  listed in `edges_between_regions`, the first set is translated (in
+  configuration space) by the corresponding vector in edge_offsets before
+  computing the constraints associated to that edge. This is used to add edges
+  between sets that "wrap around" 2π along some dimension, due to, e.g., a
+  continuous revolute joint. This edge offset corresponds to the translation
+  component of the affine map τ_uv in equation (11) of "Non-Euclidean Motion
+  Planning with Graphs of Geodesically-Convex Sets", and per the discussion in
+  Subsection VI A, τ_uv has no rotation component.
+  @throws std::exception if `edge_offsets` is provided, but `edge_offsets.size()
+  != edges_between_regions.size()`.
   */
   EdgesBetweenSubgraphs& AddEdges(
       const Subgraph& from_subgraph, const Subgraph& to_subgraph,
-      const geometry::optimization::ConvexSet* subspace = nullptr);
+      const geometry::optimization::ConvexSet* subspace = nullptr,
+      std::optional<const std::vector<std::pair<int, int>>>
+          edges_between_regions = std::nullopt,
+      std::optional<const std::vector<Eigen::VectorXd>> edge_offsets =
+          std::nullopt);
 
   /** Adds a minimum time cost to all regions in the whole graph. The cost is
   the sum of the time scaling variables.
