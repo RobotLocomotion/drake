@@ -1,5 +1,6 @@
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
 
+#include <iostream>
 #include <limits>
 #include <tuple>
 #include <unordered_map>
@@ -685,10 +686,15 @@ symbolic::Variable Subgraph::GetTimeScaling(
 
 EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
-    const ConvexSet* subspace, GcsTrajectoryOptimization* traj_opt)
+    const ConvexSet* subspace, GcsTrajectoryOptimization* traj_opt,
+    const std::vector<std::pair<int, int>>& edges_between_regions,
+    std::optional<const std::vector<Eigen::VectorXd>> edge_offsets)
     : traj_opt_(*traj_opt),
       from_subgraph_(from_subgraph),
       to_subgraph_(to_subgraph) {
+  if (edge_offsets.has_value()) {
+    DRAKE_THROW_UNLESS(edge_offsets->size() == edges_between_regions.size());
+  }
   // Formulate edge costs and constraints.
   if (subspace != nullptr) {
     if (subspace->ambient_dimension() != num_positions()) {
@@ -732,9 +738,25 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     }
   }
 
-  const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
-      CalcPairwiseIntersections(from_subgraph.regions(), to_subgraph.regions(),
-                                continuous_revolute_joints());
+  std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data;
+  if (edges_between_regions.size() > 0) {
+    edge_data.reserve(edges_between_regions.size());
+    for (int edge_idx = 0; edge_idx < ssize(edges_between_regions);
+         ++edge_idx) {
+      int i = std::get<0>(edges_between_regions[edge_idx]);
+      int j = std::get<1>(edges_between_regions[edge_idx]);
+      DRAKE_THROW_UNLESS(0 <= i && 0 <= j && i < from_subgraph_.size() &&
+                         j < to_subgraph_.size());
+      edge_data.emplace_back(i, j,
+                             edge_offsets.has_value()
+                                 ? edge_offsets->at(edge_idx)
+                                 : VectorXd::Zero(num_positions()));
+    }
+  } else {
+    edge_data = CalcPairwiseIntersections(from_subgraph.regions(),
+                                          to_subgraph.regions(),
+                                          continuous_revolute_joints());
+  }
   for (const auto& edge : edge_data) {
     int i = std::get<0>(edge);
     int j = std::get<1>(edge);
@@ -1461,9 +1483,12 @@ void GcsTrajectoryOptimization::RemoveSubgraph(const Subgraph& subgraph) {
 
 EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
-    const ConvexSet* subspace) {
+    const ConvexSet* subspace,
+    const std::vector<std::pair<int, int>>& edges_between_regions,
+    std::optional<const std::vector<Eigen::VectorXd>> edge_offsets) {
   EdgesBetweenSubgraphs* subgraph_edge =
-      new EdgesBetweenSubgraphs(from_subgraph, to_subgraph, subspace, this);
+      new EdgesBetweenSubgraphs(from_subgraph, to_subgraph, subspace, this,
+                                edges_between_regions, edge_offsets);
 
   // Add global continuity constraints to the edges between subgraphs.
   for (int continuity_order : global_path_continuity_constraints_) {
@@ -1758,6 +1783,8 @@ GcsTrajectoryOptimization::ReconstructTrajectoryFromSolutionPath(
   double h = phi_inv * result.GetSolution(last_edge.xv()).tail<1>().value();
   const double start_time =
       bezier_curves.empty() ? 0 : bezier_curves.back()->end_time();
+
+  std::cout << start_time << std::endl;
 
   // Skip edges with a single control point that spend near zero time in the
   // region, since zero order continuity constraint is sufficient.
