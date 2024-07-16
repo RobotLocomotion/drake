@@ -59,6 +59,7 @@ using solvers::ConcatenateVariableRefList;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::L2NormCost;
+using solvers::QuadraticCost;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
@@ -379,35 +380,26 @@ void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix, PathLengthType p
     }
   } else if (path_type == PathLengthType::SQUARED_L2Norm) {
 
-    // Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(2,2);
+    Eigen::MatrixXd b = Eigen::VectorXd::Zero(2);
 
-    // Q(0,0) = 2;
-    // Q(0,1) = -2;
-    // Q(1,0) = -2;
-    // Q(1, 1) = 2;
+    for (int i = 0; i < b.rows(); i++) {
+      for (int j = 0; j < b.cols(); j++) {
+        b(i, j) = 0;
+      }
+    }
 
-    // Eigen::MatrixXd b = Eigen::VectorXd::Zero(2);
-
-    // for (int i = 0; i < b.rows(); i++) {
-    //   for (int j = 0; j < b.cols(); j++) {
-    //     b(i, j) = 0;
-    //   }
-    // }
-
-    // double constTerm = 0;
-    // const auto path_squared_cost =
-    //   std::make_shared<QuadraticCost>(Q, b, constTerm);
+    double constTerm = 0;
+    const auto path_squared_cost =
+      std::make_shared<QuadraticCost>(weight_matrix, b, constTerm);
 
     for (Vertex* v : vertices_) {
       auto control_points = GetControlPoints(*v);
       for (int i = 0; i < control_points.cols() - 1; ++i) {
         for (int j = 0; j < num_positions(); j++) {
-          // auto vars_vec = {control_points.col(i + 1)(j), control_points.col(i)(j)};
-          // v->AddCost(drake::solvers::internal::CreateBinding(
-          //  std::make_shared<QuadraticCost>(Q, b, constTerm),
-          //  vars_vec));
-          v->AddCost(((weight_matrix(0,0) * control_points.col(i + 1)(j) - weight_matrix(0,1) * control_points.col(i)(j)) *
-                      (weight_matrix(1,0) * control_points.col(i + 1)(j) - weight_matrix(1,1) * control_points.col(i)(j))));
+          auto vars_vec = {control_points.col(i + 1)(j), control_points.col(i)(j)};
+          v->AddCost(Binding<QuadraticCost>(
+            path_squared_cost,
+          {control_points.col(i + 1).row(j), control_points.col(i).row(j)}));
         }
       }
     }
@@ -420,9 +412,12 @@ void Subgraph::AddPathLengthCost(double weight, PathLengthType path_type) {
       weight * MatrixXd::Identity(num_positions(), num_positions());
   return Subgraph::AddPathLengthCost(weight_matrix, path_type);
   } else if (path_type == PathLengthType::SQUARED_L2Norm) {
-    const MatrixXd weight_matrix =
-      Eigen::MatrixXd::Constant(2, 2, weight);;
-  return Subgraph::AddPathLengthCost(weight_matrix, path_type);
+    Eigen::MatrixXd Q(2, 2);
+    Q << 2, -2,
+        -2, 2;
+
+
+  return Subgraph::AddPathLengthCost(weight * Q, path_type);
   }
 }
 
@@ -1553,9 +1548,17 @@ void GcsTrajectoryOptimization::AddPathLengthCost(
 }
 
 void GcsTrajectoryOptimization::AddPathLengthCost(double weight, PathLengthType path_type) {
+  if (path_type == PathLengthType::L2Norm) {
   const MatrixXd weight_matrix =
       weight * MatrixXd::Identity(num_positions(), num_positions());
   return GcsTrajectoryOptimization::AddPathLengthCost(weight_matrix, path_type);
+  } else if (path_type == PathLengthType::SQUARED_L2Norm) {
+    Eigen::MatrixXd Q(2, 2);
+    Q << 2, -2,
+        -2, 2;
+
+  return GcsTrajectoryOptimization::AddPathLengthCost(weight * Q, path_type);
+  }
 }
 
 void GcsTrajectoryOptimization::AddVelocityBounds(
