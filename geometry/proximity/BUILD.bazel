@@ -149,13 +149,13 @@ drake_cc_library(
     hdrs = ["calc_signed_distance_to_surface_mesh.h"],
     internal = True,
     visibility = ["//visibility:private"],
-    interface_deps = [
+    deps = [
         ":bv",
         ":bvh",
         ":triangle_surface_mesh",
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         ":distance_to_point_callback",
         "//math:geometric_transform",
     ],
@@ -167,7 +167,7 @@ drake_cc_library(
     hdrs = ["calc_signed_distance_to_volume_mesh.h"],
     internal = True,
     visibility = ["//visibility:private"],
-    interface_deps = [
+    deps = [
         ":bv",
         ":bvh",
         ":calc_signed_distance_to_surface_mesh",
