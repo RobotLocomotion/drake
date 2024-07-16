@@ -184,7 +184,7 @@ class SpatialVector {
   /// absolute values in (this - other).
   decltype(T() < T()) IsApprox(
       const SpatialQuantity& other,
-      double tolerance = std::numeric_limits<double>::epsilon()) const {
+      double tolerance = 2 * std::numeric_limits<double>::epsilon()) const {
     return IsNearlyEqualWithinAbsoluteTolerance(other, tolerance, tolerance);
   }
 
