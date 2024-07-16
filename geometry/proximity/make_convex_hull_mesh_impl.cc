@@ -33,6 +33,7 @@ namespace internal {
 namespace {
 
 using Eigen::Vector3d;
+using Eigen::Vector4d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
@@ -73,7 +74,7 @@ std::vector<int> OrderPolyVertices(const std::vector<Vector3d>& vertices,
   /* Given the direction v_C0 (direction from center vertex to vertex 0), define
    the angle between v_C0 and v_CI for all vertices. We'll then sort the
    vertices on the angle and get a counter-clockwise winding. */
-  const Vector3d v_C0 = (vertices[0] - center).normalized();
+  const Vector3d v_C0 = (vertices[v_indices[0]] - center).normalized();
   std::vector<VertexScore> scored_vertices;
   scored_vertices.reserve(v_indices.size());
   for (int vi : v_indices) {
@@ -107,8 +108,7 @@ struct VertexCloud {
   bool is_planar{false};
   /* If `is_planar` is `true`, the normal of the plane (otherwise undefined). */
   Vector3d n;
-  /* If `is_planar` a point on the plane contained within the cloud's convex
-   hull (otherwise undefined). */
+  /* Mean vertex point, guaranteed to be within the convex hull. */
   Vector3d interior_point;
 };
 
@@ -272,101 +272,248 @@ VertexCloud ReadVertices(const fs::path filename, double scale) {
     const double dist = std::abs(cloud.n.dot(v) - d);
     if (dist > 1e-12) {
       cloud.is_planar = false;
-      break;
     }
   }
 
-  if (cloud.is_planar) {
-    /* We define the interior point as simply the mean point. */
-    cloud.interior_point /= ssize(cloud.vertices);
-  }
+  /* We define the interior point as simply the mean point. */
+  cloud.interior_point /= ssize(cloud.vertices);
+
   return cloud;
 }
+
+/* Wrapper around qhull that provides construction from either a cloud of
+ vertices or half spaces, along with useful utilities. */
+class ConvexHull {
+ public:
+  /* Construct the convex hull for a `cloud` of vertices. */
+  explicit ConvexHull(VertexCloud cloud) : cloud_(std::move(cloud)) {
+    if (cloud_.is_planar) {
+      /* When the vertices are planar, we introduce a single point off the plane
+       (which still projects into the cloud). Later, when we convert qhull's
+       result into a mesh, we'll find the one vertex obviously off the plane and
+       move it back onto the plane again. */
+      cloud_.vertices.push_back(cloud_.interior_point + cloud_.n);
+    }
+    RunQHull();
+  }
+
+  /* Makes a new convex hull representing a polytope which is the result of
+   moving all faces of `this` convex hull an amount `margin` along their
+   normals. */
+  ConvexHull MakeInflatedConvexHull(double margin) const {
+    // The same hull described by a set of half-spaces.
+    std::vector<Vector4d> h = GetHalfSpaces();
+    const Vector3d& c = cloud_.interior_point;
+
+    // Construct the hull of the half spaces moved by a "margin" amount.
+    return ConvexHull(c, std::move(h), margin);
+  }
+
+  /* Makes a polygon surface mesh for `this` convex hull. */
+  PolygonSurfaceMesh<double> MakePolygonSurfaceMesh() const {
+    // The default mapping from qhull to convex hull mesh is simply a copy.
+    std::function<Vector3d(double, double, double)> map_hull_vertex =
+        [](double x, double y, double z) {
+          return Vector3d(x, y, z);
+        };
+
+    if (cloud_.is_planar) {
+      /* When the vertices are planar, we introduce a single point off the plane
+       (which still projects into the cloud). Later, when we convert qhull's
+       result into a mesh, we'll find the one vertex obviously off the plane and
+       move it back onto the plane again. */
+      const double d = cloud_.n.dot(cloud_.interior_point);
+      map_hull_vertex = [this, d](double x, double y, double z) {
+        const Vector3d p(x, y, z);
+        if (cloud_.n.dot(p) - d > 0.75) {
+          // The only point that should measurably lie off the plane is the
+          // interior point we perturbed. We'll put it back onto the plane.
+          return cloud_.interior_point;
+        }
+        return p;
+      };
+    }
+
+    // A mapping from qhull vertex ids to indices in the final mesh
+    // (vertices_M).
+    // Note: `countT` is the qhull type for mesh ids.
+    std::map<countT, int> id_to_mesh_index;
+    std::vector<Vector3d> vertices_M;
+    vertices_M.reserve(qhull_.vertexCount());
+    for (auto& vertex : qhull_.vertexList()) {
+      const int index = ssize(vertices_M);
+      id_to_mesh_index[vertex.id()] = index;
+      const auto* p_MV = vertex.point().coordinates();
+      vertices_M.push_back(map_hull_vertex(p_MV[0], p_MV[1], p_MV[2]));
+    }
+
+    std::vector<int> face_data;
+    // Note: 4 * facet count will not generally be enough, but it's a safe
+    // starting size.
+    face_data.reserve(qhull_.facetCount() * 4);
+    for (auto& facet : qhull_.facetList()) {
+      auto qhull_vertices = facet.vertices().toStdVector();
+      std::vector<int> mesh_indices;
+      std::transform(qhull_vertices.cbegin(), qhull_vertices.cend(),
+                     std::back_inserter(mesh_indices),
+                     [&id_to_mesh_index](auto v) {
+                       return id_to_mesh_index[v.id()];
+                     });
+      // QHull doesn't necessarily order the vertices in the winding we want.
+      const Vector3d normal(facet.hyperplane().coordinates());
+      const Vector3d center(facet.getCenter().coordinates());
+      std::vector<int> ordered_vertices =
+          OrderPolyVertices(vertices_M, mesh_indices, center, normal);
+
+      // Now populate the face data.
+      face_data.push_back(ssize(ordered_vertices));
+      face_data.insert(face_data.end(), ordered_vertices.begin(),
+                       ordered_vertices.end());
+    }
+
+    return PolygonSurfaceMesh(std::move(face_data), std::move(vertices_M));
+  }
+
+ private:
+  /* Convex hull for a set of vertices `v`.
+   @pre Vertices are not planar. */
+  explicit ConvexHull(std::vector<Vector3d> v)
+      : ConvexHull(VertexCloud{.vertices = std::move(v)}) {}
+
+  /* Constructs the convex hull of a polytope given its H-representation
+   (representation as the intersection of half spaces). See GetHalfSpaces()
+   for the data format of the half spaces. Half spaces are moved a distance
+   `margin` along their (outward) normal, effectively "inflating" the
+   resulting convex hull.
+   @param c A point inside the H-polytope. While the half-spaces fully
+   represent the polytope, an interior point is needed to construct the dual.
+   @param h The half-spaces defining the polytope.
+   @param margin The margin value.
+   @pre The intersection of the half spaces forms a closed polytope.
+   @pre The polytope includes vertex c. */
+  ConvexHull(const Vector3d& c, std::vector<Vector4d> h, double margin) {
+    /* We use the result in Proposition 5.6 in the book by [Gallier and
+     Quaintance, 2022]. Paraphrased, we can construct the convex hull of the
+     dual of an H-Polytope (a polyhedron described by its half spaces) by taking
+     the convex hull of the normals scaled by the inverse of the distance to the
+     origin. To recover the desired (primal) convex hull, we use the result that
+     for a convex set A, the dual of the dual recovers the set A.
+
+     With this result, "inflating" a convex geometry simply entails modifying
+     the distance dᵢ of a half space into dᵢ + margin.
+
+     Gallier, Jean, and Jocelyn Quaintance, 2022. "Aspects of convex geometry
+     polyhedra, linear programming, shellings, Voronoi diagrams, Delaunay
+     triangulations". Available online at:
+     https://www.cis.upenn.edu/~jean/gbooks/convexpoly.html */
+
+    // Shift the frame of the half-spaces to the interior point c. In other
+    // words, v = 0 is contained within the polytope expressed in this shifted
+    // frame. This is a requirement to compute the dual of this hull.
+    for (Vector4d& hi : h) {
+      auto ni = hi.head<3>();  // normal
+      double& di = hi(3);      // distance to origin.
+      di -= ni.dot(c);
+      DRAKE_DEMAND(di > 0);  // c must be inside the H-polygon.
+    }
+
+    // First hull to compute the dual.
+    std::vector<Vector3d> v_dual;
+    v_dual.reserve(h.size());
+    for (const Vector4d& hi : h) {
+      const auto ni = hi.head<3>();  // normal
+      const double di = hi(3);       // distance to origin.
+      DRAKE_DEMAND(di > 0);  // Must be true since we shifted to the origin.
+      const Vector3d v = ni / (di + margin);
+      v_dual.push_back(v);
+    }
+    ConvexHull dual_hull(std::move(v_dual));
+
+    // Second hull to compute the dual of the dual.
+    const std::vector<Vector4d> h_dual = dual_hull.GetHalfSpaces();
+    std::vector<Vector3d> v_inflated;
+    v_inflated.reserve(h_dual.size());
+    for (const Vector4d& hi : h_dual) {
+      const auto ni = hi.head<3>();  // normal
+      const double di = hi(3);       // distance to origin.
+      DRAKE_DEMAND(di > 0);
+      const Vector3d v = ni / di;
+      v_inflated.push_back(v + c);  // Shift back to c.
+    }
+    cloud_ = VertexCloud{.vertices = std::move(v_inflated)};
+    /* N.B. While not required for the RunQHull() call below, we make sure to
+     leave the ConvexHull object in a valid state. This would allow, for
+     instance, to compute a valid PolygonMesh of the dual if so needed for
+     debugging or visualization. */
+    cloud_.interior_point = c;
+    RunQHull();
+  }
+
+  /* Returns a vector of half spaces that delimit `this` convex hull. Each half
+   space is represented by the equation n̂ᵢ⋅x ≤ dᵢ, where n̂ᵢ is the outward
+   normal to the plane delimiting the half space and dᵢ the distance to the
+   origin. Each entry in the returned vector corresponds to a half space
+   represented as a Vector4d, where the first three entries correspond to the
+   normal n̂ᵢ and the last component corresponds to dᵢ. */
+  std::vector<Vector4d> GetHalfSpaces() const {
+    std::vector<Vector4d> hyperplanes;
+    hyperplanes.reserve(qhull_.facetCount());
+    for (auto& facet : qhull_.facetList()) {
+      // QHull doesn't necessarily order the vertices in the winding we want.
+      const Vector3d normal(facet.hyperplane().coordinates());
+      DRAKE_DEMAND(std::abs(normal.norm() - 1.0) < 1.0e-14);
+      const double d = -facet.hyperplane().offset();  // distance to origin.
+      Vector4d h = (Vector4d() << normal, d).finished();
+      hyperplanes.push_back(h);
+    }
+    return hyperplanes;
+  }
+
+  /* Helper to run the underlying qhull on the owned vertex cloud.
+    @pre member cloud_ is not empty and contains a non-planar cloud. */
+  void RunQHull() {
+    // This is a cheat that relies on the fact that a vector of Vector3d really
+    // is just a vector<double> with three times as many entries. It *does*
+    // eliminate a copy.
+    static_assert(sizeof(Vector3d) == 3 * sizeof(double));
+    qhull_.runQhull(/* inputComment = */ "", kDim, cloud_.vertices.size(),
+                    reinterpret_cast<const double*>(cloud_.vertices.data()),
+                    /* qhullCommand = */ "");
+
+    if (qhull_.qhullStatus() != 0) {
+      throw std::runtime_error(
+          fmt::format("RunQHull failed. Qhull terminated with status {} "
+                      "and message:\n{}",
+                      qhull_.qhullStatus(), qhull_.qhullMessage()));
+    }
+  }
+
+  static constexpr int kDim{3};
+  VertexCloud cloud_;
+  // The underlying qhull object.
+  orgQhull::Qhull qhull_;
+};
 
 }  // namespace
 
 PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
-                                          double scale) {
+                                          double scale, double margin) {
+  DRAKE_THROW_UNLESS(scale > 0);
+  DRAKE_THROW_UNLESS(margin >= 0);
   VertexCloud cloud = ReadVertices(mesh_file, scale);
 
-  // The default mapping from qhull to convex hull mesh is simply a copy.
-  std::function<Vector3d(double, double, double)> map_hull_vertex =
-      [](double x, double y, double z) {
-        return Vector3d(x, y, z);
-      };
+  // Hull of the input cloud of vertices.
+  const ConvexHull hull(std::move(cloud));
 
-  if (cloud.is_planar) {
-    /* When the vertices are planar, we introduce a single point off the plane
-     (which still projects into the cloud). Later, when we convert qhull's
-     result into a mesh, we'll find the one vertex obviously off the plane and
-     move it back onto the plane again. */
-    cloud.vertices.push_back(cloud.interior_point + cloud.n);
-    const double d = cloud.n.dot(cloud.interior_point);
-    map_hull_vertex = [&cloud, d](double x, double y, double z) {
-      const Vector3d p(x, y, z);
-      if (cloud.n.dot(p) - d > 0.75) {
-        // The only point that should measurably lie off the plane is the
-        // interior point we perturbed. We'll put it back onto the plane.
-        return cloud.interior_point;
-      }
-      return p;
-    };
+  // We do not apply margin to planar clouds.
+  if (cloud.is_planar || margin == 0) {
+    return hull.MakePolygonSurfaceMesh();
   }
 
-  orgQhull::Qhull qhull;
-  const int dim = 3;
+  // Construct the hull of the half spaces moved by a "margin" amount.
+  const ConvexHull inflated_hull = hull.MakeInflatedConvexHull(margin);
 
-  // This is a cheat that relies on the fact that a vector of Vector3d really
-  // is just a vector<double> with three times as many entries. It *does*
-  // eliminate a copy.
-  static_assert(sizeof(Vector3d) == 3 * sizeof(double));
-  qhull.runQhull(/* inputComment = */ "", dim, cloud.vertices.size(),
-                 reinterpret_cast<const double*>(cloud.vertices.data()),
-                 /* qhullCommand = */ "");
-
-  if (qhull.qhullStatus() != 0) {
-    throw std::runtime_error(
-        fmt::format("MakeConvexHull failed. Qhull terminated with status {} "
-                    "and message:\n{}",
-                    qhull.qhullStatus(), qhull.qhullMessage()));
-  }
-
-  // A mapping from qhull vertex ids to indices in the final mesh (vertices_M).
-  // Note: `countT` is the qhull type for mesh ids.
-  std::map<countT, int> id_to_mesh_index;
-  std::vector<Vector3d> vertices_M;
-  vertices_M.reserve(qhull.vertexCount());
-  for (auto& vertex : qhull.vertexList()) {
-    const int index = ssize(vertices_M);
-    id_to_mesh_index[vertex.id()] = index;
-    const auto* p_MV = vertex.point().coordinates();
-    vertices_M.push_back(map_hull_vertex(p_MV[0], p_MV[1], p_MV[2]));
-  }
-
-  std::vector<int> face_data;
-  // Note: 4 * facet count will not generally be enough, but it's a safe
-  // starting size.
-  face_data.reserve(qhull.facetCount() * 4);
-  for (auto& facet : qhull.facetList()) {
-    auto qhull_vertices = facet.vertices().toStdVector();
-    std::vector<int> mesh_indices;
-    std::transform(qhull_vertices.cbegin(), qhull_vertices.cend(),
-                   std::back_inserter(mesh_indices),
-                   [&id_to_mesh_index](auto v) {
-                     return id_to_mesh_index[v.id()];
-                   });
-    // QHull doesn't necessarily order the vertices in the winding we want.
-    const Vector3d normal(facet.hyperplane().coordinates());
-    const Vector3d center(facet.getCenter().coordinates());
-    std::vector<int> ordered_vertices =
-        OrderPolyVertices(vertices_M, mesh_indices, center, normal);
-
-    // Now populate the face data.
-    face_data.push_back(ssize(ordered_vertices));
-    face_data.insert(face_data.end(), ordered_vertices.begin(),
-                     ordered_vertices.end());
-  }
-  return PolygonSurfaceMesh(std::move(face_data), std::move(vertices_M));
+  return inflated_hull.MakePolygonSurfaceMesh();
 }
 
 }  // namespace internal
