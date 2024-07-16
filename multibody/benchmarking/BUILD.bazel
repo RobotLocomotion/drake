@@ -79,6 +79,7 @@ drake_cc_googlebench_binary(
     name = "homecart_global_ik",
     srcs = ["homecart_global_ik.cc"],
     add_test_rule = True,
+    test_size = "medium",
     data = [
         "@drake_models//:tri_homecart",
         "@drake_models//:ur_description",
