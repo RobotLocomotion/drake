@@ -541,7 +541,7 @@ Here are some practical tips that might help inform your particular situation:
 (1) If you need a minimal-state representation for motion planning, mathematical
 optimization, or similar, then you can either use a continuous-time plant or set
 the config option `use_sampled_output_ports=false` on a discrete-time plant.
-    
+
 (2) By default, setting the positions of a discrete-time plant in the Context
 will not have any effect on the dynamics-related output ports, e.g., the contact
 results will not change. If you need to see changes to outputs without running
