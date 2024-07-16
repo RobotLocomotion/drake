@@ -78,9 +78,15 @@ class GcsTrajectoryOptimization final {
 
   ~GcsTrajectoryOptimization();
 
+  /**
+   * @enum PathLengthType
+   * @brief Describes the type of cost to add with a PathLengthCost
+   * 
+   * This enum is passed as an argument to AddPathLength functions to determine the specific type of path length cost to add
+   */
   enum class PathLengthType {
-      L2Norm,
-      SQUARED_L2Norm
+      L2Norm, /**< Add an L2Norm Path length cost to the control points of the b spline trajectory output. */
+      SQUARED_L2Norm /**< Add a Squared L2Norm Path length cost to the control points of the b spline trajectory output. */
   };
 
   /** A Subgraph is a subset of the larger graph. It is defined by a set of
@@ -144,19 +150,21 @@ class GcsTrajectoryOptimization final {
     */
     void AddTimeCost(double weight = 1.0);
 
-    /** Adds multiple L2Norm Costs on the upper bound of the path length.
+    /** Adds multiple length costs on the upper bound of the path length.
     Since we cannot directly compute the path length of a Bézier curve, we
     minimize the upper bound of the path integral by minimizing the sum of
     distances between control points. For Bézier curves, this is equivalent to
     the sum of the L2Norm of the derivative control points of the curve divided
-    by the order.
+    by the order. However, for faster GCS planning, alternative distance metrics
+    can be passed as an argument.
 
     @param weight_matrix is the relative weight of each component for the cost.
     The diagonal of the matrix is the weight for each dimension. The
     off-diagonal elements are the weight for the cross terms, which can be used
     to penalize diagonal movement.
-    @param path_type TODO
-    @pre weight_matrix must be of size num_positions() x num_positions().
+    @param path_type is the metric to use when measuring the path length. For example, 
+    the L2 norm distance or the squared L2 Norm distance can be passed in this argument.
+    @pre weight_matrix must be of size num_positions() x num_positions() for the default path_type, otherwise weight_matrix must be 2 x 2
     */
     void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix, PathLengthType path_type = PathLengthType::L2Norm);
 
@@ -164,11 +172,13 @@ class GcsTrajectoryOptimization final {
     We upper bound the trajectory length by the sum of the distances between
     control points. For Bézier curves, this is equivalent to the sum
     of the L2Norm of the derivative control points of the curve divided by the
-    order.
+    order. However, for faster GCS planning, alternative distance metrics
+    can be passed as an argument.
 
     @param weight is the relative weight of the cost.
 
-    @param path_type TODO
+    @param path_type is the metric to use when measuring the path length. For example, 
+    the L2 norm distance or the squared L2 Norm distance can be passed in this argument.
     */
     void AddPathLengthCost(double weight = 1.0, PathLengthType path_type = PathLengthType::L2Norm);
 
@@ -600,7 +610,9 @@ class GcsTrajectoryOptimization final {
   /** Adds multiple L2Norm Costs on the upper bound of the path length.
   Since we cannot directly compute the path length of a Bézier curve, we
   minimize the upper bound of the path integral by minimizing the sum of
-  (weighted) distances between control points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂.
+  (weighted) distances between control points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂
+  if the default distance metric is seleted. Alternative distance metrics
+  can be specified for faster GCS planning.
 
   This cost will be added to the entire graph. Since the path length is only
   defined for Bézier curves that have two or more control points, this cost will
@@ -612,16 +624,17 @@ class GcsTrajectoryOptimization final {
   off-diagonal elements are the weight for the cross terms, which can be used
   to penalize diagonal movement.
   @param path_type TODO
-  @pre weight_matrix must be of size num_positions() x num_positions().
+  @pre weight_matrix must be of size num_positions() x num_positions() for L2 Norm or 2 x 2 for L2 Norm Squared
   */
   void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix, PathLengthType path_type = PathLengthType::L2Norm);
 
-  /** Adds multiple L2Norm Costs on the upper bound of the path length.
+  /** Adds multiple distance costs on the upper bound of the path length.
   Since we cannot directly compute the path length of a Bézier curve, we
   minimize the upper bound of the path integral by minimizing the sum of
   distances between control points. For Bézier curves, this is equivalent to the
   sum of the L2Norm of the derivative control points of the curve divided by the
-  order.
+  order. However, alternative distance metrics can be specified for faster
+  GCS planning.
 
   This cost will be added to the entire graph. Since the path length is only
   defined for Bézier curves that have two or more control points, this cost will
@@ -630,7 +643,8 @@ class GcsTrajectoryOptimization final {
 
   @param weight is the relative weight of the cost.
 
-  @param path_type TODO
+  @param path_type is the metric to use when measuring the path length. For example, 
+    the L2 norm distance or the squared L2 Norm distance can be passed in this argument.
   */
   void AddPathLengthCost(double weight = 1.0, PathLengthType path_type = PathLengthType::L2Norm);
 

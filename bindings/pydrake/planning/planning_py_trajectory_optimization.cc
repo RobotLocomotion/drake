@@ -345,9 +345,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
     constexpr auto& cls_doc = doc.GcsTrajectoryOptimization;
     py::class_<Class> gcs_traj_opt(m, "GcsTrajectoryOptimization", cls_doc.doc);
 
-    py::enum_<Class::PathLengthType>(gcs_traj_opt, "PathLengthType")
-        .value("L2Norm", Class::PathLengthType::L2Norm)
-        .value("SQUARED_L2Norm", Class::PathLengthType::SQUARED_L2Norm)
+    py::enum_<Class::PathLengthType>(gcs_traj_opt, "PathLengthType", "Describes the type of path length cost to apply.")
+        .value("L2Norm", Class::PathLengthType::L2Norm, "The L2 norm path length cost.")
+        .value("SQUARED_L2Norm", Class::PathLengthType::SQUARED_L2Norm, "The squared L2 norm path length cost.")
         .export_values();
     // Subgraph
     const auto& subgraph_doc = doc.GcsTrajectoryOptimization.Subgraph;

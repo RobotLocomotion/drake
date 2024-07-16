@@ -380,6 +380,10 @@ void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix, PathLengthType p
     }
   } else if (path_type == PathLengthType::SQUARED_L2Norm) {
 
+    /*
+    Add a cost to the control points of the trajectory that is of the form ∑ (rᵢ₊₁ * weight_matrix * rᵢ)
+    */
+
     Eigen::MatrixXd b = Eigen::VectorXd::Zero(2);
 
     for (int i = 0; i < b.rows(); i++) {
