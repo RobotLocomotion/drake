@@ -203,9 +203,9 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 template <typename T>
 inline SpatialVelocity<T> operator+(
     const SpatialVelocity<T>& V1_E, const SpatialVelocity<T>& V2_E) {
-  // Although this operator+() function simply calls an associated
-  // SpatialVector operator+=() function, it is needed for documentation.
-  return SpatialVelocity<T>(V1_E) += V2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialVelocity, T>::operator+(V1_E, V2_E);
 }
 
 /// Subtracts spatial velocities by simply subtracting their 6 underlying
@@ -235,9 +235,9 @@ inline SpatialVelocity<T> operator+(
 template <typename T>
 inline SpatialVelocity<T> operator-(
     const SpatialVelocity<T>& V1_E, const SpatialVelocity<T>& V2_E) {
-  // Although this operator-() function simply calls an associated
-  // SpatialVector operator-=() function, it is needed for documentation.
-  return SpatialVelocity<T>(V1_E) -= V2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialVelocity, T>::operator-(V1_E, V2_E);
 }
 
 template <typename T>

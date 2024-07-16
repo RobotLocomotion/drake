@@ -172,9 +172,9 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
 template <typename T>
 inline SpatialMomentum<T> operator+(const SpatialMomentum<T>& L1_E,
                                     const SpatialMomentum<T>& L2_E) {
-  // Although this operator+() function simply calls an associated
-  // SpatialVector operator+=() function, it is needed for documentation.
-  return SpatialMomentum<T>(L1_E) += L2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialMomentum, T>::operator+(L1_E, L2_E);
 }
 
 /// Subtracts spatial momenta by simply subtracting their 6 underlying elements.
@@ -186,9 +186,9 @@ inline SpatialMomentum<T> operator+(const SpatialMomentum<T>& L1_E,
 template <typename T>
 inline SpatialMomentum<T> operator-(const SpatialMomentum<T>& L1_E,
                                     const SpatialMomentum<T>& L2_E) {
-  // Although this operator-() function simply calls an associated
-  // SpatialVector operator-=() function, it is needed for documentation.
-  return SpatialMomentum<T>(L1_E) -= L2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialMomentum, T>::operator+(L1_E, L2_E);
 }
 
 }  // namespace multibody

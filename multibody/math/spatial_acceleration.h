@@ -326,9 +326,9 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
 template <typename T>
 inline SpatialAcceleration<T> operator+(const SpatialAcceleration<T>& A1_E,
                                         const SpatialAcceleration<T>& A2_E) {
-  // Although this operator+() function simply calls an associated
-  // SpatialVector operator+=() function, it is needed for documentation.
-  return SpatialAcceleration<T>(A1_E) += A2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialAcceleration, T>::operator+(A1_E, A2_E);
 }
 
 /// Subtracts spatial accelerations by simply subtracting their 6 underlying
@@ -342,9 +342,9 @@ inline SpatialAcceleration<T> operator+(const SpatialAcceleration<T>& A1_E,
 template <typename T>
 inline SpatialAcceleration<T> operator-(const SpatialAcceleration<T>& A1_E,
                                         const SpatialAcceleration<T>& A2_E) {
-  // Although this operator-() function simply calls an associated
-  // SpatialVector operator-=() function, it is needed for documentation.
-  return SpatialAcceleration<T>(A1_E) -= A2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialAcceleration, T>::operator-(A1_E, A2_E);
 }
 
 }  // namespace multibody
