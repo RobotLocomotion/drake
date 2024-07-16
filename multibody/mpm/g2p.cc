@@ -40,7 +40,7 @@ void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
 }
 
 int do_main() {
-  int num_nodes_per_dim = 16;
+  int num_nodes_per_dim = 32;
   int particles_per_cell = 8;
   const float dx = 0.01;
   const float dt = 0.002;

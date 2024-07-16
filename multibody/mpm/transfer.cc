@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 
+#include "simd_scalar.h"
 #include <omp.h>
 
 #include "drake/common/ssize.h"
@@ -224,6 +225,72 @@ void Transfer<T>::SerialGridToParticle() {
       particle.x += particle.v * dt_;
       particle.C *= D_inverse_;
       particle.F += particle.C * dt_;
+    }
+  }
+}
+
+template <typename T>
+void Transfer<T>::SerialSimdGridToParticle() {
+  const int lanes = SimdScalar<T>::lanes();
+  const std::vector<int>& sentinel_particles =
+      sparse_grid_->sentinel_particles();
+  const int num_blocks = sparse_grid_->num_blocks();
+  const std::vector<ParticleIndex>& particle_indices =
+      sparse_grid_->particle_indices();
+  for (int b = 0; b < num_blocks; ++b) {
+    const int particle_start = sentinel_particles[b];
+    const int particle_end = sentinel_particles[b + 1];
+    NeighborArray<Vector3<T>> grid_x;
+    NeighborArray<GridData<T>> grid_data;
+    int p = particle_start;
+    bool need_new_pad = true;
+    while (p < particle_end) {
+      int next_p = p + 1;
+      while (particle_indices[next_p].base_node_offset ==
+                 particle_indices[p].base_node_offset &&
+             next_p - p < lanes && next_p < particle_end) {
+        ++next_p;
+      }
+      const int simd_lanes = next_p - p;
+      // TODO(xuchenhan): should I get rid of this branch and always load new
+      // pad? Also, if we make the pad as large as the page, then we can load
+      // exactly once.
+      if (need_new_pad) {
+        /* Write grid data to local pad to ensure they fit in L1 cache. */
+        grid_data =
+            sparse_grid_->GetNeighborData(particle_indices[p].base_node_offset);
+        grid_x = sparse_grid_->GetNeighborNodes(
+            particles_->x[particle_indices[p].index]);
+      }
+      Vector3<SimdScalar<T>> v = Vector3<SimdScalar<T>>::Zero();
+      Matrix3<SimdScalar<T>> B = Matrix3<SimdScalar<T>>::Zero();
+      Vector3<SimdScalar<T>> x = Load(&particles_->x[p], simd_lanes);
+      Matrix3<SimdScalar<T>> C = Load(&particles_->C[p], simd_lanes);
+      Matrix3<SimdScalar<T>> F = Load(&particles_->F[p], simd_lanes);
+      const BSplineWeights<SimdScalar<T>>& bspline =
+          BSplineWeights<SimdScalar<T>>(x, sparse_grid_->dx());
+      for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+          for (int k = 0; k < 3; ++k) {
+            const Vector3<T>& vi = grid_data[i][j][k].v;
+            const Vector3<T>& xi = grid_x[i][j][k];
+            const SimdScalar<T>& w = bspline.weight(i, j, k);
+            v += w * vi;
+            B += (w * vi) * (xi - x).transpose();
+          }
+        }
+      }
+      x += v * dt_;
+      C = B * D_inverse_;
+      F += C * dt_;
+      Store(v, &particles_->v[p], simd_lanes);
+      Store(x, &particles_->x[p], simd_lanes);
+      Store(C, &particles_->C[p], simd_lanes);
+      Store(F, &particles_->F[p], simd_lanes);
+
+      need_new_pad = particle_indices[next_p].base_node_offset !=
+                     particle_indices[p].base_node_offset;
+      p = next_p;
     }
   }
 }

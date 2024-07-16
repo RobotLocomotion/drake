@@ -50,7 +50,6 @@ int do_main() {
   SetUp(num_nodes_per_dim, particles_per_cell, dx, &particles);
 
   auto start = std::chrono::high_resolution_clock::now();
-  omp_set_num_threads(12);
   for (int i = 0; i < 100; ++i) {
     Transfer<float> transfer(dt, &grid, &particles);
     transfer.ParticleToGrid();

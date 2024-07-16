@@ -3,6 +3,7 @@
 #include <array>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/mpm/simd_scalar.h"
 
 namespace drake {
 namespace multibody {
@@ -45,6 +46,18 @@ int base_node(const T& x) {
   return static_cast<int>(std::floor(x + static_cast<T>(0.5)));
 }
 
+template <>
+inline int base_node(const SimdScalar<double>& x) {
+  double x0 = x.get_lane();
+  return static_cast<int>(std::floor(x0 + static_cast<double>(0.5)));
+}
+
+template <>
+inline int base_node(const SimdScalar<float>& x) {
+  float x0 = x.get_lane();
+  return static_cast<int>(std::floor(x0 + static_cast<float>(0.5)));
+}
+
 /* Computes the the 3D base node of a point x reference space. */
 template <typename T>
 Vector3<int> base_node(const Vector3<T>& x) {
@@ -63,7 +76,6 @@ struct BSplineWeights {
   /* Weights and weight gradients in a single dimension for three neighbor grid
    nodes. */
   struct Data {
-    Vector3<T> dw;
     Vector3<T> w;
   };
 
@@ -87,19 +99,16 @@ struct BSplineWeights {
    @param[in] base_node    The base grid node position in reference frame. */
   Data Compute(const T& x_reference, int base_node) const {
     Data result;
-    const T d0 = x_reference - base_node;
-    const T z = 0.5 - d0;
+    const T d0 = x_reference - static_cast<T>(base_node);
+    const T z = static_cast<T>(0.5) - d0;
     const T z2 = z * z;
-    result.w(0) = 0.5 * z2;
-    result.w(1) = 0.75 - d0 * d0;
-    const T d1 = 1.0 - d0;
-    const T zz = 1.5 - d1;
+    result.w(0) = static_cast<T>(0.5) * z2;
+    result.w(1) = static_cast<T>(0.75) - d0 * d0;
+    const T d1 = static_cast<T>(1.0) - d0;
+    const T zz = static_cast<T>(1.5) - d1;
     const T zz2 = zz * zz;
-    result.w(2) = 0.5 * zz2;
+    result.w(2) = static_cast<T>(0.5) * zz2;
 
-    result.dw(0) = -z;
-    result.dw(1) = -2.0 * d0;
-    result.dw(2) = zz;
     return result;
   }
 
