@@ -1273,25 +1273,31 @@ void DefineGeometryOptimization(py::module m) {
       [](const std::vector<ConvexSet*>& convex_sets_A,
           const std::vector<ConvexSet*>& convex_sets_B,
           const std::vector<int>& continuous_revolute_joints,
-          bool preprocess_bbox) {
+          bool preprocess_bbox,
+          const std::vector<Hyperrectangle>& maybe_bboxes_A,
+          const std::vector<Hyperrectangle>& maybe_bboxes_B) {
         return CalcPairwiseIntersections(CloneConvexSets(convex_sets_A),
             CloneConvexSets(convex_sets_B), continuous_revolute_joints,
-            preprocess_bbox);
+            preprocess_bbox, maybe_bboxes_A, maybe_bboxes_B);
       },
       py::arg("convex_sets_A"), py::arg("convex_sets_B"),
       py::arg("continuous_revolute_joints"), py::arg("preprocess_bbox") = true,
-      doc.CalcPairwiseIntersections.doc_4args);
+      py::arg("maybe_bboxes_A") = std::vector<Hyperrectangle>{},
+      py::arg("maybe_bboxes_B") = std::vector<Hyperrectangle>{},
+      doc.CalcPairwiseIntersections.doc_6args);
   m.def(
       "CalcPairwiseIntersections",
       [](const std::vector<ConvexSet*>& convex_sets,
           const std::vector<int>& continuous_revolute_joints,
-          bool preprocess_bbox) {
+          bool preprocess_bbox,
+          const std::vector<Hyperrectangle>& maybe_bboxes) {
         return CalcPairwiseIntersections(CloneConvexSets(convex_sets),
-            continuous_revolute_joints, preprocess_bbox);
+            continuous_revolute_joints, preprocess_bbox, maybe_bboxes);
       },
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
       py::arg("preprocess_bbox") = true,
-      doc.CalcPairwiseIntersections.doc_3args);
+      py::arg("maybe_bboxes") = std::vector<Hyperrectangle>{},
+      doc.CalcPairwiseIntersections.doc_4args);
   // NOLINTNEXTLINE(readability/fn_size)
 }
 

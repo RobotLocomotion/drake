@@ -15,6 +15,7 @@ of robots.
 #include <vector>
 
 #include "drake/geometry/optimization/convex_set.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -144,43 +145,73 @@ computed between `convex_sets_A` and `convex_sets_B`.
 @param continuous_revolute_joints is a list of joint indices corresponding to
 continuous revolute joints.
 @param preprocess_bbox is a flag for whether the function should precompute
-axis-aligned bounding boxes for every set. This can speed up the pairwise
-intersection checks, by determining some sets to be disjoint without needing
-to solve an optimization problem. However, it does require some overhead to
-compute those bounding boxes.
+axis-aligned bounding boxes (AABBs) for every set. This can speed up the
+pairwise intersection checks, by determining some sets to be disjoint without
+needing to solve an optimization problem. However, it does require some overhead
+to compute those bounding boxes.
+@param maybe_bboxes_A is a vector of Hyperrectangles, allowing the user to
+manually pass in the AABBs of each set in `convex_sets_A` to avoid
+recomputation. This argument is only used if `preprocess_bbox` is `true`, and
+the function does not check that the entries are indeed the AABBs corresponding
+to the sets in `convex_sets_A`. If an empty vector is passed, then the AABBs are
+computed automatically.
+@param maybe_bboxes_B serves the same role to `convex_sets_B` as
+`maybe_bboxes_A` does to `convex_sets_A`.
 
 @throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
 ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
 @throws if `convex_sets_A` or `convex_sets_B` are empty.
+@throws if `maybe_bboxes_A.size() > 0 && convex_sets_A.size() !=
+maybe_bboxes_A.size()`.
+@throws if `maybe_bboxes_B.size() > 0 && convex_sets_B.size() !=
+maybe_bboxes_B.size()`.
+@throws if not all entries of `convex_sets_A`, `convex_sets_B`,
+`maybe_bboxes_A`, and `maybe_bboxes_B` have the same ambient dimension.
 */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints,
-    bool preprocess_bbox = true);
+    bool preprocess_bbox = true,
+    const std::vector<geometry::optimization::Hyperrectangle>& maybe_bboxes_A =
+        {},
+    const std::vector<geometry::optimization::Hyperrectangle>& maybe_bboxes_B =
+        {});
 
 /** Convenience overload to compute pairwise intersections within a list of
 convex sets. Equivalent to calling CalcPairwiseIntersections(convex_sets,
 convex_sets, continuous_revolute_joints).
 
-@param convex_sets_A is a vector of convex sets. Pairwise intersections will be
-computed within `convex_sets_A`.
+@param convex_sets is a vector of convex sets. Pairwise intersections will be
+computed within `convex_sets`.
 @param continuous_revolute_joints is a list of joint indices corresponding to
 continuous revolute joints.
 @param preprocess_bbox is a flag for whether the function should precompute
 axis-aligned bounding boxes for every set. This can speed up the pairwise
 intersection checks, by determining some sets to be disjoint without needing
 to solve an optimization problem.
+@param maybe_bboxes is a vector of Hyperrectangles, allowing the user to
+manually pass in the AABBs of each set in `convex_sets` to avoid recomputation.
+This argument is only used if `preprocess_bbox` is `true`, and the function does
+not check that the entries are indeed the AABBs corresponding to the sets in
+`convex_sets`. If an empty vector is passed, then the AABBs are computed
+automatically.
 
 @throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
-ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
-@throws if `convex_sets_A` is empty.
+ambient dimension of the convex sets in `convex_sets`.
+@throws if `convex_sets` is empty.
+@throws if `maybe_bboxes.size() > 0 && convex_sets.size() !=
+maybe_bboxes.size()`.
+@throws if not all entries of `convex_sets` and `maybe_bboxes` have the same
+ambient dimension.
 */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
-    bool preprocess_bbox = true);
+    bool preprocess_bbox = true,
+    const std::vector<geometry::optimization::Hyperrectangle>& maybe_bboxes =
+        {});
 
 }  // namespace optimization
 }  // namespace geometry

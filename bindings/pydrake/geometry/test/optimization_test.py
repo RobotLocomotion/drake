@@ -1371,13 +1371,16 @@ class TestCspaceFreePolytope(unittest.TestCase):
         out = mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
                                             convex_sets_B=sets_B,
                                             continuous_revolute_joints=[0],
-                                            preprocess_bbox=True)
+                                            preprocess_bbox=True,
+                                            maybe_bboxes_A=[],
+                                            maybe_bboxes_B=[])
         self.assertIsInstance(out, list)
         self.assertEqual(len(out), 2)
         self.assertIsInstance(out[0], tuple)
         out2 = mut.CalcPairwiseIntersections(convex_sets=sets_A,
                                              continuous_revolute_joints=[0],
-                                             preprocess_bbox=True)
+                                             preprocess_bbox=True,
+                                             maybe_bboxes=[])
         self.assertIsInstance(out, list)
         self.assertEqual(len(out), 2)
         self.assertIsInstance(out[0], tuple)
