@@ -78,6 +78,11 @@ class GcsTrajectoryOptimization final {
 
   ~GcsTrajectoryOptimization();
 
+  enum class PathLengthType {
+      L2Norm,
+      SQUARED_L2Norm
+  };
+
   /** A Subgraph is a subset of the larger graph. It is defined by a set of
   regions and edges between them based on intersection. From an API standpoint,
   a Subgraph is useful to define a multi-modal motion planning problem. Further,
@@ -150,9 +155,10 @@ class GcsTrajectoryOptimization final {
     The diagonal of the matrix is the weight for each dimension. The
     off-diagonal elements are the weight for the cross terms, which can be used
     to penalize diagonal movement.
+    @param path_type TODO
     @pre weight_matrix must be of size num_positions() x num_positions().
     */
-    void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix);
+    void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix, PathLengthType path_type = PathLengthType::L2Norm);
 
     /** Adds multiple L2Norm Costs on the upper bound of the path length.
     We upper bound the trajectory length by the sum of the distances between
@@ -161,8 +167,10 @@ class GcsTrajectoryOptimization final {
     order.
 
     @param weight is the relative weight of the cost.
+
+    @param path_type TODO
     */
-    void AddPathLengthCost(double weight = 1.0);
+    void AddPathLengthCost(double weight = 1.0, PathLengthType path_type = PathLengthType::L2Norm);
 
     /** Adds a linear velocity constraint to the subgraph `lb` ≤ q̇(t) ≤
     `ub`.
@@ -603,9 +611,10 @@ class GcsTrajectoryOptimization final {
   The diagonal of the matrix is the weight for each dimension. The
   off-diagonal elements are the weight for the cross terms, which can be used
   to penalize diagonal movement.
+  @param path_type TODO
   @pre weight_matrix must be of size num_positions() x num_positions().
   */
-  void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix);
+  void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix, PathLengthType path_type = PathLengthType::L2Norm);
 
   /** Adds multiple L2Norm Costs on the upper bound of the path length.
   Since we cannot directly compute the path length of a Bézier curve, we
@@ -620,8 +629,10 @@ class GcsTrajectoryOptimization final {
   will be applied even to subgraphs added in the future.
 
   @param weight is the relative weight of the cost.
+
+  @param path_type TODO
   */
-  void AddPathLengthCost(double weight = 1.0);
+  void AddPathLengthCost(double weight = 1.0, PathLengthType path_type = PathLengthType::L2Norm);
 
   /** Adds a linear velocity constraint to the entire graph `lb` ≤ q̇(t) ≤
   `ub`.
@@ -860,6 +871,7 @@ class GcsTrajectoryOptimization final {
       vertex_to_subgraph_;
   std::vector<double> global_time_costs_;
   std::vector<Eigen::MatrixXd> global_path_length_costs_;
+  std::vector<Eigen::MatrixXd> global_quad_path_length_costs_;
   std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
       global_velocity_bounds_{};
   std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, int>>

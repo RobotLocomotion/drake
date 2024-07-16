@@ -165,6 +165,82 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, PathLengthCost) {
               (x.segment(4, 2) - x.segment(2, 2)).norm(), 1e-12);
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, QuadPathLengthCost) {
+  const int kDimension = 2;
+  GcsTrajectoryOptimization trajopt(kDimension);
+
+  // Add the unit box.
+  const int kOrder = 2;
+  auto& regions = trajopt.AddRegions(
+      MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), kOrder);
+  regions.AddPathLengthCost(1, drake::planning::trajectory_optimization::GcsTrajectoryOptimization::PathLengthType::SQUARED_L2Norm);
+
+  const GraphOfConvexSets& gcs = trajopt.graph_of_convex_sets();
+  EXPECT_EQ(gcs.Vertices().size(), 1);
+  const GraphOfConvexSets::Vertex* v = gcs.Vertices()[0];
+  EXPECT_EQ(v->ambient_dimension(), kDimension * (kOrder + 1) + 1);
+
+  EXPECT_EQ(v->GetCosts().size(), 4);
+
+  // Make a small mathematical program just to evaluate the bindings.
+  VectorXd x = VectorXd::LinSpaced(v->ambient_dimension(), 1.23, 4.56);
+  MathematicalProgram prog;
+  prog.AddDecisionVariables(v->x());
+  prog.SetInitialGuessForAllVariables(x);
+  EXPECT_NEAR((prog.EvalBindingAtInitialGuess(v->GetCosts()[0])[0] + prog.EvalBindingAtInitialGuess(v->GetCosts()[1])[0]),
+              (x.segment(2, 2) - x.segment(0, 2)).squaredNorm(), 1e-12);
+  EXPECT_NEAR((prog.EvalBindingAtInitialGuess(v->GetCosts()[2])[0]+prog.EvalBindingAtInitialGuess(v->GetCosts()[3])[0]),
+              (x.segment(4, 2) - x.segment(2, 2)).squaredNorm(), 1e-12);
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, QuadraticPathLengthSpacing) {
+  const int kDimension = 2;
+  const int kOrder = 3;
+  Vector2d start(0.4, -0.4), goal(1.1, 1.9);
+  GcsTrajectoryOptimization gcs(kDimension);
+
+  auto& regions = gcs.AddRegions(
+      MakeConvexSets(
+          HPolyhedron::MakeBox(Vector2d(-0.5, -0.5), Vector2d(0.5, 0.5)),
+          HPolyhedron::MakeBox(Vector2d(0.25, 0.25), Vector2d(1.25, 1.25)),
+          HPolyhedron::MakeBox(Vector2d(1.0, 1.0), Vector2d(2.0, 2.0))
+      ),
+      kOrder, 0, 20, "boxes"
+  );
+
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0, 20, "source");
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0, 20, "target");
+
+  gcs.AddEdges(source, regions);
+  gcs.AddEdges(regions, target);
+
+  gcs.AddPathLengthCost(1, drake::planning::trajectory_optimization::GcsTrajectoryOptimization::PathLengthType::SQUARED_L2Norm);
+
+  auto verts = regions.Vertices();
+
+  verts.insert(verts.begin(), source.Vertices().begin(), source.Vertices().end());
+
+  verts.push_back(target.Vertices()[0]);
+
+  std::vector<const drake::geometry::optimization::GraphOfConvexSets::Vertex*> constVerts;
+  for (auto* vertex : verts) {
+    constVerts.push_back(vertex);
+  }
+
+  auto [shortestPathTraj, shortestPathResult] = gcs.SolveConvexRestriction(constVerts);
+
+  for (int i = 1; i < shortestPathTraj.get_number_of_segments() - 1; i++) {
+    auto& segment = shortestPathTraj.segment(i);
+    const auto* bezier = dynamic_cast<const drake::trajectories::BezierCurve<double>*>(&segment);
+    EXPECT_TRUE(bezier);
+    auto controlPts = bezier->control_points();
+    for (int j = 0; j < (kOrder - 1); j++) {
+      EXPECT_NEAR((controlPts.col(j) - controlPts.col(j + 1)).norm(),
+                  (controlPts.col(j + 1) - controlPts.col(j + 2)).norm(), 1e-10);
+    }
+  }
+}
+
 GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBounds) {
   const int kDimension = 2;
   GcsTrajectoryOptimization trajopt(kDimension);
