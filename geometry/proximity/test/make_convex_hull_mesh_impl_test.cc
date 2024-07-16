@@ -64,8 +64,21 @@ class CanonicalMesh {
     std::iota(canon_to_mesh.begin(), canon_to_mesh.end(), 0);
     std::sort(canon_to_mesh.begin(), canon_to_mesh.end(),
               [&mesh](int a, int b) {
-                // N.B. We implement a lexicographical comparison up to a given
-                // tolerance to handle round-off errors robustly.
+                /* N.B. We're ordering the vertices using a lexicographical sort
+                 with *tolerance*. Previously, we used a lexicographical sort on
+                 the exact measure values -- this worked for straightforward
+                 convex hull computations because the hull's vertex measures are
+                 bit identical to the input mesh's. However, we needed to add
+                 this tolerance to handle rounding error that *can* be
+                 introduced when inflating the hull (the process of transforming
+                 vertices twice is the source of the rounding error).
+
+                 It does mean that equality is no longer transitive. That means
+                 the final order can depend on the initial order of the
+                 measures. We don't expect for this to be a problem in practice,
+                 but if, for example, a change in qhull version causes an
+                 otherwise inexplicable failure in an inflated convex hull test,
+                 *this* might be the reason. */
                 constexpr double kTolerance =
                     4 * std::numeric_limits<double>::epsilon();
                 const Vector3d& va = mesh.vertex(a);
