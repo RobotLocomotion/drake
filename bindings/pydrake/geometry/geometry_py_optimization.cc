@@ -1280,7 +1280,24 @@ void DefineGeometryOptimization(py::module m) {
       },
       py::arg("convex_sets_A"), py::arg("convex_sets_B"),
       py::arg("continuous_revolute_joints"), py::arg("preprocess_bbox") = true,
-      doc.CalcPairwiseIntersections.doc_4args);
+      doc.CalcPairwiseIntersections
+          .doc_4args_convex_sets_A_convex_sets_B_continuous_revolute_joints_preprocess_bbox);
+  m.def(
+      "CalcPairwiseIntersections",
+      [](const std::vector<ConvexSet*>& convex_sets_A,
+          const std::vector<ConvexSet*>& convex_sets_B,
+          const std::vector<int>& continuous_revolute_joints,
+          const std::vector<Hyperrectangle>& bboxes_A,
+          const std::vector<Hyperrectangle>& bboxes_B) {
+        return CalcPairwiseIntersections(CloneConvexSets(convex_sets_A),
+            CloneConvexSets(convex_sets_B), continuous_revolute_joints,
+            bboxes_A, bboxes_B);
+      },
+      py::arg("convex_sets_A"), py::arg("convex_sets_B"),
+      py::arg("continuous_revolute_joints"), py::arg("bboxes_A"),
+      py::arg("bboxes_B"),
+      doc.CalcPairwiseIntersections
+          .doc_5args_convex_sets_A_convex_sets_B_continuous_revolute_joints_bboxes_A_bboxes_B);
   m.def(
       "CalcPairwiseIntersections",
       [](const std::vector<ConvexSet*>& convex_sets,
@@ -1291,7 +1308,20 @@ void DefineGeometryOptimization(py::module m) {
       },
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
       py::arg("preprocess_bbox") = true,
-      doc.CalcPairwiseIntersections.doc_3args);
+      doc.CalcPairwiseIntersections
+          .doc_3args_convex_sets_continuous_revolute_joints_preprocess_bbox);
+  m.def(
+      "CalcPairwiseIntersections",
+      [](const std::vector<ConvexSet*>& convex_sets,
+          const std::vector<int>& continuous_revolute_joints,
+          const std::vector<Hyperrectangle>& bboxes) {
+        return CalcPairwiseIntersections(
+            CloneConvexSets(convex_sets), continuous_revolute_joints, bboxes);
+      },
+      py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
+      py::arg("bboxes") = std::vector<Hyperrectangle>{},
+      doc.CalcPairwiseIntersections
+          .doc_3args_convex_sets_continuous_revolute_joints_bboxes);
   // NOLINTNEXTLINE(readability/fn_size)
 }
 

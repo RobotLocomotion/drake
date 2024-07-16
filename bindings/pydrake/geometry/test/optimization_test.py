@@ -1368,16 +1368,40 @@ class TestCspaceFreePolytope(unittest.TestCase):
         sets_A = [mut.VPolytope(np.array([[0, 4]])),
                   mut.VPolytope(np.array([[2, 6]]))]
         sets_B = [mut.VPolytope(np.array([[1, 5]]) - (2 * np.pi))]
-        out = mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
-                                            convex_sets_B=sets_B,
-                                            continuous_revolute_joints=[0],
-                                            preprocess_bbox=True)
-        self.assertIsInstance(out, list)
-        self.assertEqual(len(out), 2)
-        self.assertIsInstance(out[0], tuple)
-        out2 = mut.CalcPairwiseIntersections(convex_sets=sets_A,
-                                             continuous_revolute_joints=[0],
-                                             preprocess_bbox=True)
-        self.assertIsInstance(out, list)
-        self.assertEqual(len(out), 2)
-        self.assertIsInstance(out[0], tuple)
+        bboxes_A = [mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(s)
+                    for s in sets_A]
+        bboxes_B = [mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(s)
+                    for s in sets_B]
+        for bbox_A in bboxes_A:
+            self.assertTrue(bbox_A is not None)
+        for bbox_B in bboxes_B:
+            self.assertTrue(bbox_B is not None)
+        outputs = []
+        outputs.append(
+                mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
+                                              convex_sets_B=sets_B,
+                                              continuous_revolute_joints=[0],
+                                              preprocess_bbox=True))
+        outputs.append(
+                mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
+                                              convex_sets_B=sets_B,
+                                              continuous_revolute_joints=[0],
+                                              bboxes_A=bboxes_A,
+                                              bboxes_B=bboxes_B))
+        for out in outputs:
+            self.assertIsInstance(out, list)
+            self.assertEqual(len(out), 2)
+            self.assertIsInstance(out[0], tuple)
+        outputs2 = []
+        outputs2.append(
+                mut.CalcPairwiseIntersections(convex_sets=sets_A,
+                                              continuous_revolute_joints=[0],
+                                              preprocess_bbox=True))
+        outputs2.append(
+                mut.CalcPairwiseIntersections(convex_sets=sets_A,
+                                              continuous_revolute_joints=[0],
+                                              bboxes=bboxes_A))
+        for out in outputs2:
+            self.assertIsInstance(out, list)
+            self.assertEqual(len(out), 2)
+            self.assertIsInstance(out[0], tuple)
