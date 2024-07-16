@@ -154,7 +154,9 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
 double get_period(const System<double>* system) {
   if (system->num_abstract_states() > 0) {
     throw std::logic_error(
-        "DirectTranscription cannot operate on systems with abstract state.");
+        "DirectTranscription cannot operate on systems with abstract state. "
+        "(For a MultibodyPlant, set its use_sampled_output_ports config option "
+        "to false to remove the unwanted abstract state.)");
   }
   std::optional<PeriodicEventData> periodic_data =
       system->GetUniquePeriodicDiscreteUpdateAttribute();
