@@ -39,9 +39,8 @@ class SlidingBoxTest : public ::testing::Test {
   // Creates a MultibodyPlant model with the given `discrete_period`
   // (discrete_period = 0 for a continuous model), runs a simulation to reach
   // steady state, and verifies contact results.
-  void RunSimulationToSteadyStateAndVerifyContactResults(
-      double discrete_period) {
-    auto diagram = MakeBoxDiagram(discrete_period);
+  void RunSimulationToSteadyStateAndVerifyContactResults(double time_step) {
+    auto diagram = MakeBoxDiagram(time_step);
     const auto& plant = dynamic_cast<const MultibodyPlant<double>&>(
         diagram->GetSubsystemByName("plant"));
 
@@ -143,7 +142,7 @@ class SlidingBoxTest : public ::testing::Test {
     // simulation to set the new context. Thus contact results evaluation in the
     // following test is completely independent from the simulation above
     // (besides of course the initial condition).
-    auto diagram2 = MakeBoxDiagram(discrete_period);
+    auto diagram2 = MakeBoxDiagram(time_step);
     const auto& plant2 = dynamic_cast<const MultibodyPlant<double>&>(
         diagram2->GetSubsystemByName("plant"));
     std::unique_ptr<Context<double>> diagram_context2 =
@@ -154,11 +153,13 @@ class SlidingBoxTest : public ::testing::Test {
     // Set the state from the computed solution.
     plant2.SetPositionsAndVelocities(
         &plant_context2, plant.GetPositionsAndVelocities(plant_context));
+    // Take a step so that the sampled output ports will update.
+    diagram2->ExecuteForcedEvents(diagram_context2.get());
     VerifyContactResults(plant2, plant_context2);
   }
 
-  // Creates a MultibodyPlant model with the given `discrete_period`
-  // (discrete_period = 0 for a continuous model).
+  // Creates a MultibodyPlant model with the given `time_step` (time_step = 0
+  // for a continuous model).
   std::unique_ptr<Diagram<double>> MakeBoxDiagram(double time_step) {
     DiagramBuilder<double> builder;
     MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
@@ -203,11 +204,11 @@ class SlidingBoxTest : public ::testing::Test {
   const double kTolerance{1.0e-12};
 };
 
-TEST_F(SlidingBoxTest, ContinuousModel) {
+TEST_F(SlidingBoxTest, DiscreteModel) {
   RunSimulationToSteadyStateAndVerifyContactResults(1.0e-3);
 }
 
-TEST_F(SlidingBoxTest, DiscreteModel) {
+TEST_F(SlidingBoxTest, ContinuousModel) {
   RunSimulationToSteadyStateAndVerifyContactResults(0.0);
 }
 
