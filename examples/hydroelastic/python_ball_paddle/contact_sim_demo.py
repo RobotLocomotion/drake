@@ -7,6 +7,7 @@ The ball is dropped on an edge of the paddle and bounces off.
 import argparse
 import numpy as np
 
+from pydrake.geometry import Meshcat
 from pydrake.math import RigidTransform
 from pydrake.math import RollPitchYaw
 from pydrake.multibody.parsing import Parser
@@ -52,7 +53,8 @@ def make_ball_paddle(contact_model, contact_surface_representation,
 
     plant.Finalize()
 
-    AddDefaultVisualization(builder=builder)
+    meshcat = Meshcat()
+    AddDefaultVisualization(builder=builder, meshcat=meshcat)
 
     nx = plant.num_positions() + plant.num_velocities()
     state_logger = builder.AddSystem(VectorLogSink(nx))
@@ -60,10 +62,10 @@ def make_ball_paddle(contact_model, contact_surface_representation,
                     state_logger.get_input_port())
 
     diagram = builder.Build()
-    return diagram, plant, state_logger
+    return diagram, plant, state_logger, meshcat
 
 
-def simulate_diagram(diagram, ball_paddle_plant, state_logger,
+def simulate_diagram(diagram, ball_paddle_plant, state_logger, meshcat,
                      ball_init_position, ball_init_velocity,
                      simulation_time, target_realtime_rate):
     q_init_val = np.array([
@@ -87,7 +89,10 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     state_log = state_logger.FindMutableLog(simulator.get_mutable_context())
     state_log.Clear()
     simulator.Initialize()
+    meshcat.StartRecording()
     simulator.AdvanceTo(boundary_time=simulation_time)
+    meshcat.StopRecording()
+    meshcat.PublishRecording()
     PrintSimulatorStatistics(simulator)
     return state_log.sample_times(), state_log.data()
 
@@ -123,11 +128,11 @@ if __name__ == "__main__":
         help="Target realtime rate. Default 1.0.")
     args = parser.parse_args()
 
-    diagram, ball_paddle_plant, state_logger = make_ball_paddle(
+    diagram, ball_paddle_plant, state_logger, meshcat = make_ball_paddle(
         args.contact_model, args.contact_surface_representation,
         args.time_step)
     time_samples, state_samples = simulate_diagram(
-        diagram, ball_paddle_plant, state_logger,
+        diagram, ball_paddle_plant, state_logger, meshcat,
         np.array(args.ball_initial_position),
         np.array([0., 0., 0.]),
         args.simulation_time, args.target_realtime_rate)

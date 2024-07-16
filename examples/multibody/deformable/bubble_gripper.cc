@@ -75,8 +75,9 @@ int do_main() {
   MultibodyPlantConfig plant_config;
   DRAKE_DEMAND(FLAGS_discrete_time_step > 0.0);
   plant_config.time_step = FLAGS_discrete_time_step;
-  /* Deformable simulation only works with SAP solver. */
-  plant_config.discrete_contact_approximation = "sap";
+  /* Deformable simulation only works with approximations that use the SAP
+   solver. */
+  plant_config.discrete_contact_approximation = "similar";
 
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 
@@ -134,8 +135,10 @@ int do_main() {
 
   /* Minimally required proximity properties for deformable bodies: A valid
    Coulomb friction coefficient. */
+  const double hunt_crossley_dissipation = 20.0;
   ProximityProperties deformable_proximity_props;
-  AddContactMaterial({}, {}, surface_friction, &deformable_proximity_props);
+  AddContactMaterial(hunt_crossley_dissipation, {}, surface_friction,
+                     &deformable_proximity_props);
 
   /* The mesh we render in the camera sim. */
   PerceptionProperties perception_properties;
