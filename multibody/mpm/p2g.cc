@@ -52,7 +52,7 @@ int do_main() {
 
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < 300; ++i) {
-    transfer.ParticleToGrid(true);
+    transfer.ParticleToGrid(Parallelism(12));
   }
 
   auto end = std::chrono::high_resolution_clock::now();

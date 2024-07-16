@@ -54,7 +54,7 @@ int do_main() {
 
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < 300; ++i) {
-    transfer.GridToParticle(false);
+    transfer.GridToParticle(Parallelism(4));
   }
 
   auto end = std::chrono::high_resolution_clock::now();

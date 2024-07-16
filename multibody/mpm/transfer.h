@@ -31,7 +31,8 @@ class Transfer {
       // SerialGridToParticle();
       SerialSimdGridToParticle();
     } else {
-      ParallelParticleToGrid(parallelize);
+      ParallelGridToParticle(parallelize);
+      // ParallelSimdGridToParticle(parallelize);
     }
   }
 
@@ -42,6 +43,7 @@ class Transfer {
   void SerialGridToParticle();
   void SerialSimdGridToParticle();
   void ParallelGridToParticle(Parallelism parallelize);
+  void ParallelSimdGridToParticle(Parallelism parallelize);
 
   T dt_{0.0};
   SparseGrid<T>* sparse_grid_{};

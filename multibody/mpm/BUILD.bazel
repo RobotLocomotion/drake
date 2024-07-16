@@ -64,7 +64,8 @@ cc_library(
     hdrs = [
         "transfer.h",
     ],
-    copts = ["-O3", "-march=native", "-g", "-ffast-math"],
+    copts = ["-fopenmp", "-O3", "-march=native", "-g", "-ffast-math"],
+    linkopts = ["-fopenmp"],
     deps = [
         ":particles",
         ":sparse_grid",
@@ -168,6 +169,7 @@ cc_binary(
 cc_binary(
     name = "g2p",
     srcs = ["g2p.cc"],
+    copts = ["-fopenmp", "-O3", "-march=native", "-g", "-ffast-math"],
     testonly = True,
     deps = [
         ":transfer",
