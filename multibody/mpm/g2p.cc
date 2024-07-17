@@ -25,7 +25,7 @@ void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
       for (int k = 0; k < num_nodes_per_dim; ++k) {
         const Vector3f base_node(dx * i, dx * j, dx * k);
         for (int p = 0; p < particles_per_cell; ++p) {
-          particles->m.push_back(1.0);
+          particles->m.push_back(1e-5);
           const Vector3f x =
               base_node + static_cast<float>(p) * dx /
                               (static_cast<float>(particles_per_cell) + 1.0) *
@@ -63,7 +63,7 @@ int do_main() {
   }
 
   auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> duration = end - start;
+  std::chrono::duration<float> duration = end - start;
   std::cout << "Each time step takes: " << duration.count() / 300.0 * 1000.0 
             << " milliseconds" << std::endl;
   return 0;

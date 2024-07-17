@@ -11,28 +11,28 @@ namespace mpm {
 namespace internal {
 namespace {
 
-using Eigen::Matrix3f;
-using Eigen::Vector3f;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
-void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
-           ParticleData<float>* particles) {
+void SetUp(int num_nodes_per_dim, int particles_per_cell, double dx,
+           ParticleData<double>* particles) {
   // Create the particles.
   for (int i = 0; i < num_nodes_per_dim; ++i) {
     for (int j = 0; j < num_nodes_per_dim; ++j) {
       for (int k = 0; k < num_nodes_per_dim; ++k) {
-        const Vector3f base_node(dx * i, dx * j, dx * k);
+        const Vector3d base_node(dx * i, dx * j, dx * k);
         for (int p = 0; p < particles_per_cell; ++p) {
-          particles->m.push_back(1.0);
-          const Vector3f x =
-              base_node + static_cast<float>(p) * dx /
-                              (static_cast<float>(particles_per_cell) + 1.0) *
-                              Vector3f::Ones();
+          particles->m.push_back(1e-5);
+          const Vector3d x =
+              base_node + static_cast<double>(p) * dx /
+                              (static_cast<double>(particles_per_cell) + 1.0) *
+                              Vector3d::Ones();
           particles->x.push_back(x);
-          particles->v.push_back(Vector3f(1.0, 1.0, 1.0));
-          particles->F.push_back(Matrix3f::Identity());
-          particles->C.push_back(Matrix3f::Zero());
-          particles->P.push_back(Matrix3f::Zero());
-          particles->bspline.push_back(BSplineWeights<float>(x, dx));
+          particles->v.push_back(Vector3d(1.0, 1.0, 1.0));
+          particles->F.push_back(Matrix3d::Identity());
+          particles->C.push_back(Matrix3d::Zero());
+          particles->P.push_back(Matrix3d::Zero());
+          particles->bspline.push_back(BSplineWeights<double>(x, dx));
         }
       }
     }
@@ -42,19 +42,29 @@ void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
 int do_main() {
   int num_nodes_per_dim = 32;
   int particles_per_cell = 8;
-  const float dx = 0.01;
-  const float dt = 0.002;
-  ParticleData<float> particles;
-  SparseGrid<float> grid(dx);
+  const double dx = 0.01;
+  const double dt = 0.002;
+  ParticleData<double> particles;
+  SparseGrid<double> grid(dx);
 
   SetUp(num_nodes_per_dim, particles_per_cell, dx, &particles);
 
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < 100; ++i) {
-    Transfer<float> transfer(dt, &grid, &particles);
-    transfer.ParticleToGrid();
-    grid.ExplicitVelocityUpdate(dt, Vector3f::Zero());
-    transfer.GridToParticle();
+    Transfer<double> transfer(dt, &grid, &particles);
+    transfer.ParticleToGrid(true);
+    grid.ExplicitVelocityUpdate(dt, Vector3d::Zero());
+    MassAndMomentum<double> grid_stat = grid.ComputeTotalMassAndMomentum();
+    transfer.GridToParticle(false);
+    MassAndMomentum<double> particle_stat =
+        ComputeTotalMassAndMomentum(particles, dx);
+    DRAKE_DEMAND(std::abs(grid_stat.mass - particle_stat.mass) < 1E-8);
+    DRAKE_DEMAND(CompareMatrices(grid_stat.linear_momentum,
+                                 particle_stat.linear_momentum, 1E-8,
+                                 MatrixCompareType::absolute));
+    DRAKE_DEMAND(CompareMatrices(grid_stat.angular_momentum,
+                                 particle_stat.angular_momentum, 1E-8,
+                                 MatrixCompareType::absolute));
   }
 
   auto end = std::chrono::high_resolution_clock::now();

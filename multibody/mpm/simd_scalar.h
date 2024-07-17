@@ -130,12 +130,14 @@ class SimdScalar {
 #endif
 
 template <typename T>
-Vector3<SimdScalar<T>> Load(const Vector3<T>* source, size_t size) {
-  T data[SimdScalar<T>::lanes()];
+Vector3<SimdScalar<T>> Load(const std::vector<Vector3<T>>& source,
+                            const std::vector<int>& indices) {
+  const size_t size = indices.size();
+  T data[size];
   Vector3<SimdScalar<T>> result;
   for (int i = 0; i < 3; ++i) {
     for (size_t j = 0; j < size; ++j) {
-      data[j] = source[j][i];
+      data[j] = source[indices[j]][i];
     }
     result[i] = SimdScalar<T>(data, size);
   }
@@ -143,13 +145,15 @@ Vector3<SimdScalar<T>> Load(const Vector3<T>* source, size_t size) {
 }
 
 template <typename T>
-Matrix3<SimdScalar<T>> Load(const Matrix3<T>* source, size_t size) {
-  T data[SimdScalar<T>::lanes()];
+Matrix3<SimdScalar<T>> Load(const std::vector<Matrix3<T>>& source,
+                            const std::vector<int>& indices) {
+  const size_t size = indices.size();
+  T data[size];
   Matrix3<SimdScalar<T>> result;
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
       for (size_t k = 0; k < size; ++k) {
-        data[k] = source[k](i, j);
+        data[k] = source[indices[k]](i, j);
       }
       result(i, j) = SimdScalar<T>(data, size);
     }
@@ -158,24 +162,28 @@ Matrix3<SimdScalar<T>> Load(const Matrix3<T>* source, size_t size) {
 }
 
 template <typename T>
-void Store(const Vector3<SimdScalar<T>>& v, Vector3<T>* dest, size_t size) {
+void Store(const Vector3<SimdScalar<T>>& v, std::vector<Vector3<T>>* dest,
+           const std::vector<int>& indices) {
+  const size_t size = indices.size();
   T data[SimdScalar<T>::lanes()];
   for (int i = 0; i < 3; ++i) {
     v[i].Write(data);
     for (size_t j = 0; j < size; ++j) {
-      dest[j][i] = data[j];
+      (*dest)[indices[j]][i] = data[j];
     }
   }
 }
 
 template <typename T>
-void Store(const Matrix3<SimdScalar<T>>& m, Matrix3<T>* dest, size_t size) {
+void Store(const Matrix3<SimdScalar<T>>& m, std::vector<Matrix3<T>>* dest,
+           const std::vector<int>& indices) {
+  const size_t size = indices.size();
   T data[SimdScalar<T>::lanes()];
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
       m(i, j).Write(data);
       for (size_t k = 0; k < size; ++k) {
-        dest[k](i, j) = data[k];
+        (*dest)[indices[k]](i, j) = data[k];
       }
     }
   }

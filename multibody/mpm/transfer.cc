@@ -244,6 +244,8 @@ void Transfer<T>::ParallelSimdGridToParticle(const Parallelism parallelize) {
   for (int b = 0; b < num_blocks; ++b) {
     const int particle_start = sentinel_particles[b];
     const int particle_end = sentinel_particles[b + 1];
+    std::vector<int> indices;
+    indices.reserve(lanes);
     NeighborArray<Vector3<T>> grid_x;
     NeighborArray<GridData<T>> grid_data;
     int p = particle_start;
@@ -255,7 +257,6 @@ void Transfer<T>::ParallelSimdGridToParticle(const Parallelism parallelize) {
              next_p - p < lanes && next_p < particle_end) {
         ++next_p;
       }
-      const int simd_lanes = next_p - p;
       // TODO(xuchenhan): should I get rid of this branch and always load new
       // pad? Also, if we make the pad as large as the page, then we can load
       // exactly once.
@@ -266,11 +267,15 @@ void Transfer<T>::ParallelSimdGridToParticle(const Parallelism parallelize) {
         grid_x = sparse_grid_->GetNeighborNodes(
             particles_->x[particle_indices[p].index]);
       }
+      indices.clear();
+      for (int i = 0; i < next_p - p; ++i) {
+        indices.push_back(particle_indices[p + i].index);
+      }
       Vector3<SimdScalar<T>> v = Vector3<SimdScalar<T>>::Zero();
       Matrix3<SimdScalar<T>> B = Matrix3<SimdScalar<T>>::Zero();
-      Vector3<SimdScalar<T>> x = Load(&particles_->x[p], simd_lanes);
-      Matrix3<SimdScalar<T>> C = Load(&particles_->C[p], simd_lanes);
-      Matrix3<SimdScalar<T>> F = Load(&particles_->F[p], simd_lanes);
+      Vector3<SimdScalar<T>> x = Load(particles_->x, indices);
+      Matrix3<SimdScalar<T>> C = Load(particles_->C, indices);
+      Matrix3<SimdScalar<T>> F = Load(particles_->F, indices);
       const BSplineWeights<SimdScalar<T>>& bspline =
           BSplineWeights<SimdScalar<T>>(x, sparse_grid_->dx());
       for (int i = 0; i < 3; ++i) {
@@ -287,10 +292,10 @@ void Transfer<T>::ParallelSimdGridToParticle(const Parallelism parallelize) {
       x += v * dt_;
       C = B * D_inverse_;
       F += C * dt_;
-      Store(v, &particles_->v[p], simd_lanes);
-      Store(x, &particles_->x[p], simd_lanes);
-      Store(C, &particles_->C[p], simd_lanes);
-      Store(F, &particles_->F[p], simd_lanes);
+      Store(v, &particles_->v, indices);
+      Store(x, &particles_->x, indices);
+      Store(C, &particles_->C, indices);
+      Store(F, &particles_->F, indices);
 
       need_new_pad = particle_indices[next_p].base_node_offset !=
                      particle_indices[p].base_node_offset;
@@ -307,6 +312,8 @@ void Transfer<T>::SerialSimdGridToParticle() {
   const int num_blocks = sparse_grid_->num_blocks();
   const std::vector<ParticleIndex>& particle_indices =
       sparse_grid_->particle_indices();
+  std::vector<int> indices;
+  indices.reserve(lanes);
   for (int b = 0; b < num_blocks; ++b) {
     const int particle_start = sentinel_particles[b];
     const int particle_end = sentinel_particles[b + 1];
@@ -316,12 +323,12 @@ void Transfer<T>::SerialSimdGridToParticle() {
     bool need_new_pad = true;
     while (p < particle_end) {
       int next_p = p + 1;
-      while (particle_indices[next_p].base_node_offset ==
+      while (next_p < particle_end &&
+             particle_indices[next_p].base_node_offset ==
                  particle_indices[p].base_node_offset &&
-             next_p - p < lanes && next_p < particle_end) {
+             next_p - p < lanes) {
         ++next_p;
       }
-      const int simd_lanes = next_p - p;
       // TODO(xuchenhan): should I get rid of this branch and always load new
       // pad? Also, if we make the pad as large as the page, then we can load
       // exactly once.
@@ -332,11 +339,15 @@ void Transfer<T>::SerialSimdGridToParticle() {
         grid_x = sparse_grid_->GetNeighborNodes(
             particles_->x[particle_indices[p].index]);
       }
+      indices.clear();
+      for (int i = 0; i < next_p - p; ++i) {
+        indices.push_back(particle_indices[p + i].index);
+      }
       Vector3<SimdScalar<T>> v = Vector3<SimdScalar<T>>::Zero();
       Matrix3<SimdScalar<T>> B = Matrix3<SimdScalar<T>>::Zero();
-      Vector3<SimdScalar<T>> x = Load(&particles_->x[p], simd_lanes);
-      Matrix3<SimdScalar<T>> C = Load(&particles_->C[p], simd_lanes);
-      Matrix3<SimdScalar<T>> F = Load(&particles_->F[p], simd_lanes);
+      Vector3<SimdScalar<T>> x = Load(particles_->x, indices);
+      Matrix3<SimdScalar<T>> C = Load(particles_->C, indices);
+      Matrix3<SimdScalar<T>> F = Load(particles_->F, indices);
       const BSplineWeights<SimdScalar<T>>& bspline =
           BSplineWeights<SimdScalar<T>>(x, sparse_grid_->dx());
       for (int i = 0; i < 3; ++i) {
@@ -353,13 +364,14 @@ void Transfer<T>::SerialSimdGridToParticle() {
       x += v * dt_;
       C = B * D_inverse_;
       F += C * dt_;
-      Store(v, &particles_->v[p], simd_lanes);
-      Store(x, &particles_->x[p], simd_lanes);
-      Store(C, &particles_->C[p], simd_lanes);
-      Store(F, &particles_->F[p], simd_lanes);
+      Store(v, &particles_->v, indices);
+      Store(x, &particles_->x, indices);
+      Store(C, &particles_->C, indices);
+      Store(F, &particles_->F, indices);
 
-      need_new_pad = particle_indices[next_p].base_node_offset !=
-                     particle_indices[p].base_node_offset;
+      need_new_pad = (next_p != particle_end) &&
+                     (particle_indices[next_p].base_node_offset !=
+                      particle_indices[p].base_node_offset);
       p = next_p;
     }
   }

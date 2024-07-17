@@ -4,7 +4,7 @@
 
 #include "parallel_stable_sort/openmp/parallel_stable_sort.h"
 #include <omp.h>
-#include <tbb/parallel_sort.h>
+// #include <tbb/parallel_sort.h>
 
 namespace drake {
 namespace multibody {
