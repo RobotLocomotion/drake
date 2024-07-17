@@ -22,11 +22,6 @@ namespace multibody {
  @ref CalcSpatialInertia(const geometry::TriangleSurfaceMesh<double>&,double)
  "see below".
 
- Note: Spatial inertia calculations for the geometry::Convex type do not
- currently require that the underlying mesh actually be convex. Although certain
- collision calculations involving geometry::Convex may use the mesh's convex
- hull, this function uses the *actual* mesh.
-
  @retval M_BBo_B The spatial inertia of the hypothetical body implied by the
                  given `shape`.
  @throws std::exception if `shape` is an instance of geometry::HalfSpace or

@@ -422,7 +422,9 @@ class MujocoParser {
       return M_GG_G_;
     }
 
-    bool used_obb_fallback() const { return used_obb_fallback_; }
+    bool used_convex_hull_fallback() const {
+      return used_convex_hull_fallback_;
+    }
 
     using geometry::ShapeReifier::ImplementGeometry;
 
@@ -433,31 +435,12 @@ class MujocoParser {
         try {  // TODO(21666), remove the try-catch.
           M_GG_G_ = CalcSpatialInertia(mesh, 1.0 /* density */);
         } catch (const std::exception& e) {
-          // Fall back to using the volume of the oriented bounding box.
-          // TODO(21681): Use the convex hull as fallback when
-          // CalcSpatialInertia() handles Convex properly.
-          used_obb_fallback_ = true;
-
-          const geometry::TriangleSurfaceMesh<double> surface_mesh =
-              geometry::ReadObjToTriangleSurfaceMesh(mesh.filename(),
-                                                     mesh.scale());
-          std::set<int> v;
-          for (int i = 0; i < surface_mesh.num_vertices(); ++i) {
-            v.insert(v.end(), i);
-          }
-
-          const geometry::internal::Obb obb =
-              geometry::internal::ObbMaker(surface_mesh, v).Compute();
-          UnitInertia<double> unit_M_GBox_Box =
-              multibody::UnitInertia<double>::SolidBox(
-                  obb.half_width()[0] * 2.0, obb.half_width()[1] * 2.0,
-                  obb.half_width()[2] * 2.0);
-          UnitInertia<double> unit_M_GG_G =
-              unit_M_GBox_Box.ReExpress(obb.pose().rotation())
-                  .ShiftFromCenterOfMass(-obb.pose().translation());
-          M_GG_G_ =
-              SpatialInertia<double>(obb.CalcVolume() /* since density = 1.0 */,
-                                     obb.center(), unit_M_GG_G);
+          // As with mujoco, failure leads to using the convex hull.
+          // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
+          M_GG_G_ = CalcSpatialInertia(
+              geometry::Convex(mesh.filename(), mesh.scale()),
+              1.0 /* density */);
+          used_convex_hull_fallback_ = true;
         }
         mesh_inertia_->insert_or_assign(name_, M_GG_G_);
       }
@@ -474,7 +457,7 @@ class MujocoParser {
    private:
     std::string name_;
     std::map<std::string, SpatialInertia<double>>* mesh_inertia_{nullptr};
-    bool used_obb_fallback_{false};
+    bool used_convex_hull_fallback_{false};
     SpatialInertia<double> M_GG_G_{SpatialInertia<double>::NaN()};
   };
 
@@ -810,13 +793,21 @@ class MujocoParser {
     if (compute_inertia) {
       InertiaCalculator calculator(mesh, &mesh_inertia_);
       const SpatialInertia<double> M_GG_G_one = calculator.Calc(*geom.shape);
-      if (calculator.used_obb_fallback()) {
+      if (calculator.used_convex_hull_fallback()) {
+        // When the Mujoco parser falls back to using a convex hull, it prints
+        // a warning. We ape that behavior to provide a similar experience.
+        //
+        // N.B. Mujoco falls back only if the mesh reported a negative volume.
+        // SpatialInertia::IsPhysicallyValid() will also fail in that case. But
+        // fails in other cases (e.g., positive mass but negative inertia) where
+        // Drake will fallback and Mujoco won't. Such a mesh would be rare.
+        // Generally, we expect Drake and Mujoco to agree on real world meshes.
         Warning(
             *node,
             fmt::format("CalcSpatialInertia() failed to compute a physically "
                         "valid inertia for mesh {} (probably the mesh is not "
                         "watertight). The spatial inertia was computed using "
-                        "its oriented bounding box as a fallback.",
+                        "its convex hull as a fallback.",
                         mesh));
       }
       double mass{};
