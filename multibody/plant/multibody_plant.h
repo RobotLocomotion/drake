@@ -3558,7 +3558,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
   /// @note The world_body() is ignored.  a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body in
-  /// in model_instances, and aᵢ is the translational acceleration of Bᵢcm in
+  /// model_instances, and aᵢ is the translational acceleration of Bᵢcm in
   /// world W expressed in W (Bᵢcm is the center of mass of the iᵗʰ body).
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
