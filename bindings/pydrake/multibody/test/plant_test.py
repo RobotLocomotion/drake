@@ -196,6 +196,8 @@ class TestPlant(unittest.TestCase):
 
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant.SetUseSampledOutputPorts(use_sampled_output_ports=False)
+        self.assertEqual(plant.has_sampled_output_ports(), False)
         self.assertEqual(plant.time_step(), 0.0)
         spatial_inertia = SpatialInertia.NaN()
         body = plant.AddRigidBody(name="new_body",
@@ -3216,6 +3218,7 @@ class TestPlant(unittest.TestCase):
         Parser(plant).AddModels(FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/hydroelastic.sdf"))
         plant.set_contact_model(ContactModel.kHydroelastic)
+        plant.SetUseSampledOutputPorts(False)  # We're not stepping time.
         plant.Finalize()
 
         diagram = builder.Build()

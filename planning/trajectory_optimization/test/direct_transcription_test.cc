@@ -315,6 +315,7 @@ void SolvePendulumTrajectory(bool continuous_time) {
 
   auto pendulum =
       std::make_unique<multibody::MultibodyPlant<double>>(kTimeStep);
+  pendulum->SetUseSampledOutputPorts(false);  // Avoid abstract state.
   multibody::Parser parser(pendulum.get());
   parser.AddModels(FindResourceOrThrow(urdf_path));
   pendulum->Finalize();
