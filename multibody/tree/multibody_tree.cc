@@ -2088,7 +2088,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
   // Reminder: Although it is not possible for a body to belong to multiple
   // model instances [as RigidBody::model_instance() returns a body's unique
   // model instance], it is possible for the same model instance to be added
-  // multiple times to std::vector<ModelInstanceIndex>& model_instances).  The
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances). The
   // code below ensures a body's contribution to the sum occurs only once.
   // Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
@@ -2244,7 +2244,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   // Reminder: Although it is not possible for a body to belong to multiple
   // model instances [as RigidBody::model_instance() returns a body's unique
   // model instance], it is possible for the same model instance to be added
-  // multiple times to std::vector<ModelInstanceIndex>& model_instances).  The
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances). The
   // code below ensures a body's contribution to the sum occurs only once.
   // Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
@@ -3221,7 +3221,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   // Reminder: Although it is not possible for a body to belong to multiple
   // model instances [as RigidBody::model_instance() returns a body's unique
   // model instance], it is possible for the same model instance to be added
-  // multiple times to std::vector<ModelInstanceIndex>& model_instances).  The
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances). The
   // code below ensures a body's contribution to the sum occurs only once.
   // Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
