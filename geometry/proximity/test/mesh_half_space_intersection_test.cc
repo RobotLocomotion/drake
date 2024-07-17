@@ -1049,14 +1049,16 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
 
     // Put the half space well below the box.
     const RigidTransform<double> X_WH{Vector3<double>{0, 0, -5}};
-    EXPECT_EQ(ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-                  hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
-                  HydroelasticContactRepresentation::kTriangle),
-              nullptr);
-    EXPECT_EQ(ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-                  hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
-                  HydroelasticContactRepresentation::kPolygon),
-              nullptr);
+    EXPECT_EQ(
+        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+            hs_id, X_WH, pressure_scale, 0.0 /* margin */, mesh_id, mesh_F,
+            bvh_F, X_WF, HydroelasticContactRepresentation::kTriangle),
+        nullptr);
+    EXPECT_EQ(
+        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+            hs_id, X_WH, pressure_scale, 0.0 /* margin */, mesh_id, mesh_F,
+            bvh_F, X_WF, HydroelasticContactRepresentation::kPolygon),
+        nullptr);
   }
 
   // Define an intersecting configuration.
@@ -1080,8 +1082,8 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
   {
     const std::unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-            hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
-            HydroelasticContactRepresentation::kTriangle);
+            hs_id, X_WH, pressure_scale, 0.0 /* margin */, mesh_id, mesh_F,
+            bvh_F, X_WF, HydroelasticContactRepresentation::kTriangle);
     ASSERT_NE(contact_surface, nullptr);
     ASSERT_EQ(contact_surface->representation(),
               HydroelasticContactRepresentation::kTriangle);
@@ -1091,11 +1093,110 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
   {
     const std::unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-            hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
+            hs_id, X_WH, pressure_scale, 0.0 /* margin */, mesh_id, mesh_F,
+            bvh_F, X_WF, HydroelasticContactRepresentation::kPolygon);
+    ASSERT_NE(contact_surface, nullptr);
+    ASSERT_EQ(contact_surface->representation(),
+              HydroelasticContactRepresentation::kPolygon);
+  }
+}
+
+// double-valued instantiation.
+GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, Margin) {
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+
+  // An arbitrary relationship between the box's frame F and the world's frame W
+  // -- avoiding additive and multiplicative identities.
+  const RigidTransform<double> X_WF(
+      RotationMatrix<double>(
+          AngleAxis<double>{M_PI / 7, Vector3<double>{1, 2, 3}.normalized()}),
+      Vector3<double>{-0.25, 0.5, 0.75});
+  const Vector3<double>& p_WF = X_WF.translation();
+
+  // The box's center frame B is translated one unit along the z-axis so that
+  // the -z face lies at z = 0 when expressed in frame F.
+  const TriangleSurfaceMesh<double> mesh_F =
+      CreateBoxMesh(RigidTransform<double>{Vector3<double>{0, 0, 1.0}});
+  const GeometryId mesh_id = GeometryId::get_new_id();
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_F(mesh_F);
+
+  // Construct the half-space.
+  const GeometryId hs_id = GeometryId::get_new_id();
+  const double pressure_scale{1.5};
+  const double margin{0.012};
+
+  // We defined the half space's normal as aligned with F's z-axis.
+  const Vector3<double> normal_W = X_WF.rotation().matrix().col(2);
+
+  {
+    // Case: non-intersecting.
+
+    // We place the half space a well below the box.
+    const double distance = -5.0;
+    RigidTransform<double> X_WH = X_WF;                // Same orientation as F.
+    X_WH.set_translation(p_WF + distance * normal_W);  // Translate to H.
+
+    EXPECT_EQ(ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+                  hs_id, X_WH, pressure_scale, margin, mesh_id, mesh_F, bvh_F,
+                  X_WF, HydroelasticContactRepresentation::kTriangle),
+              nullptr);
+    EXPECT_EQ(ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+                  hs_id, X_WH, pressure_scale, margin, mesh_id, mesh_F, bvh_F,
+                  X_WF, HydroelasticContactRepresentation::kPolygon),
+              nullptr);
+  }
+
+  // Define a configuration so that the box intersects the thin layer of
+  // thickness margin. Still, the box does not intersect the actual half space,
+  // only its margin layer.
+  //
+  // We will simply confirm that the resulting ContactSurface exists and
+  // respects the requested representation.
+  const double distance = -margin / 2.0;
+  RigidTransform<double> X_WH = X_WF;                // Same orientation as F.
+  X_WH.set_translation(p_WF + distance * normal_W);  // Translate to H.
+
+  const double expected_min_pressure = -margin * pressure_scale;
+  const double expected_max_pressure = -margin * pressure_scale / 2.0;
+
+  // Helper to verify pressure values are in the expected min/max range for this
+  // case.
+  auto verify_minmax_pressure = [&](const std::vector<double>& pressures) {
+    double min_pressure{std::numeric_limits<double>::max()};
+    double max_pressure{std::numeric_limits<double>::lowest()};
+    for (double p : pressures) {
+      min_pressure = std::min(p, min_pressure);
+      max_pressure = std::max(p, max_pressure);
+    }
+    EXPECT_NEAR(min_pressure, expected_min_pressure, kEps);
+    EXPECT_NEAR(max_pressure, expected_max_pressure, kEps);
+  };
+
+  // Case: Request triangle surface mesh.
+  {
+    const std::unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+            hs_id, X_WH, pressure_scale, margin, mesh_id, mesh_F, bvh_F, X_WF,
+            HydroelasticContactRepresentation::kTriangle);
+    ASSERT_NE(contact_surface, nullptr);
+    ASSERT_EQ(contact_surface->representation(),
+              HydroelasticContactRepresentation::kTriangle);
+    const std::vector<double>& pressures = contact_surface->tri_e_MN().values();
+    verify_minmax_pressure(pressures);
+  }
+
+  // Case: Request polygon surface mesh.
+  {
+    const std::unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+            hs_id, X_WH, pressure_scale, margin, mesh_id, mesh_F, bvh_F, X_WF,
             HydroelasticContactRepresentation::kPolygon);
     ASSERT_NE(contact_surface, nullptr);
     ASSERT_EQ(contact_surface->representation(),
               HydroelasticContactRepresentation::kPolygon);
+    const std::vector<double>& pressures =
+        contact_surface->poly_e_MN().values();
+    verify_minmax_pressure(pressures);
   }
 }
 
@@ -1134,8 +1235,8 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
 
   const std::unique_ptr<ContactSurface<double>> contact_surface =
       ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-          hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
-          HydroelasticContactRepresentation::kTriangle);
+          hs_id, X_WH, pressure_scale, 0.0 /* margin */, mesh_id, mesh_F, bvh_F,
+          X_WF, HydroelasticContactRepresentation::kTriangle);
   // It definitely produces a contact surface.
   ASSERT_NE(contact_surface, nullptr);
 
@@ -1346,8 +1447,8 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
       const RigidTransform<AutoDiffXd> X_WR{R_WR_d.cast<AutoDiffXd>(), p_WR};
 
       auto surface = ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-          id_S_, X_WS_, pressure_scale_, id_R_, *mesh_R_, *bvh_R_, X_WR,
-          HydroelasticContactRepresentation::kTriangle);
+          id_S_, X_WS_, pressure_scale_, 0.0 /* margin */, id_R_, *mesh_R_,
+          *bvh_R_, X_WR, HydroelasticContactRepresentation::kTriangle);
 
       SCOPED_TRACE(config.name);
       ASSERT_NE(surface, nullptr);
@@ -1716,8 +1817,8 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtOrientation) {
     const Vector3d v_W = convert_to_double(this->X_WS_).rotation() * v_S;
 
     auto surface = ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-        id_S_, X_WS_, pressure_scale_, id_R_, *mesh_R_, *bvh_R_, X_WR,
-        HydroelasticContactRepresentation::kTriangle);
+        id_S_, X_WS_, pressure_scale_, 0.0 /* margin */, id_R_, *mesh_R_,
+        *bvh_R_, X_WR, HydroelasticContactRepresentation::kTriangle);
 
     SCOPED_TRACE(fmt::format("theta = {:.5f} radians", theta));
     /* surface != nullptr --> num_elements() > 0 as documented in the API but
