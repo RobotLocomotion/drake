@@ -76,6 +76,8 @@ class SimdScalar {
 
   static size_t lanes() { return kN; }
 
+  T reduce_sum() const { return hn::ReduceSum(d, value_); }
+
  private:
   static const size_t kN = Lanes(d);
   ValueType value_;
@@ -123,11 +125,24 @@ class SimdScalar {
 
   static size_t lanes() { return kN; }
 
+  T reduce_sum() const { return value_; }
+
  private:
   static const size_t kN = 1;
   T value_{};
 };
 #endif
+
+template <typename T>
+SimdScalar<T> Load(const std::vector<T>& source,
+                   const std::vector<int>& indices) {
+  const size_t size = indices.size();
+  T data[size];
+  for (size_t j = 0; j < size; ++j) {
+    data[j] = source[indices[j]];
+  }
+  return SimdScalar<T>(data, size);
+}
 
 template <typename T>
 Vector3<SimdScalar<T>> Load(const std::vector<Vector3<T>>& source,
@@ -187,6 +202,20 @@ void Store(const Matrix3<SimdScalar<T>>& m, std::vector<Matrix3<T>>* dest,
       }
     }
   }
+}
+
+template <typename T>
+inline T ReduceSum(SimdScalar<T> v) {
+  return v.reduce_sum();
+}
+
+template <typename T>
+inline Vector3<T> ReduceSum(Vector3<SimdScalar<T>> v) {
+  Vector3<T> result;
+  for (int i = 0; i < 3; ++i) {
+    result[i] = v[i].reduce_sum();
+  }
+  return result;
 }
 
 }  // namespace internal

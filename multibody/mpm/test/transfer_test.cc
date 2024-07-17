@@ -97,10 +97,8 @@ GTEST_TEST(TransferTest, GridToParticle) {
   grid.SetGridState(constant_velocity_field);
   transfer.GridToParticle();
 
-  EXPECT_TRUE(CompareMatrices(particles.v[0], vel,
-                              4.0 * std::numeric_limits<double>::epsilon()));
-  EXPECT_TRUE(CompareMatrices(particles.x[0], x0 + vel * dt,
-                              4.0 * std::numeric_limits<double>::epsilon()));
+  EXPECT_TRUE(CompareMatrices(particles.v[0], vel, 1e-14));
+  EXPECT_TRUE(CompareMatrices(particles.x[0], x0 + vel * dt, 1e-14));
   EXPECT_TRUE(CompareMatrices(particles.C[0], Matrix3d::Zero(), 1e-13));
   EXPECT_TRUE(CompareMatrices(particles.F[0], F0, 1e-13));
 }

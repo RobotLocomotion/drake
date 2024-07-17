@@ -21,6 +21,7 @@ class Transfer {
   void ParticleToGrid(Parallelism parallelize = false) {
     if (parallelize.num_threads() == 1) {
       SerialParticleToGrid();
+      // SerialSimdParticleToGrid();
     } else {
       ParallelParticleToGrid(parallelize);
     }
@@ -38,6 +39,7 @@ class Transfer {
 
  private:
   void SerialParticleToGrid();
+  void SerialSimdParticleToGrid();
   void ParallelParticleToGrid(Parallelism parallelize);
 
   void SerialGridToParticle();
