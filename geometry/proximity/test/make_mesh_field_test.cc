@@ -46,6 +46,39 @@ TYPED_TEST(MakeVolumeMeshPressureFieldTest, PressureOnNonConvexMesh) {
   }
 }
 
+// Unit tests invariants for a pressure field with margin.
+GTEST_TEST(MakeVolumeMeshPressureFieldTest, WithMargin) {
+  const VolumeMesh<double> non_convex_mesh = MakeVolumeMeshFromVtk<double>(
+      Mesh(FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk")));
+
+  const double kHydroelasticModulus = 1e7;
+  const double kMargin = 0.01;
+  const VolumeMeshFieldLinear<double, double> field =
+      MakeVolumeMeshPressureField(&non_convex_mesh, kHydroelasticModulus,
+                                  kMargin);
+
+  // Min/max pressures.
+  double p_min = std::numeric_limits<double>::max();
+  double p_max = std::numeric_limits<double>::lowest();
+  for (double p : field.values()) {
+    p_min = std::min(p, p_min);
+    p_max = std::max(p, p_max);
+  }
+  // With margin, we know the minimum pressure is negative.
+  EXPECT_LT(p_min, 0.0);
+  EXPECT_EQ(p_max, kHydroelasticModulus);
+
+  // The first five vertices are on the boundary, so they all have the minimum
+  // pressure p_min.
+  for (int v = 0; v < 5; ++v) {
+    SCOPED_TRACE(fmt::format("v: {}", v));
+    EXPECT_EQ(field.EvaluateAtVertex(v), p_min);
+  }
+  // Only the last vertex is an interior vertex, so its pressure value is the
+  // hydroelastic modulus.
+  EXPECT_EQ(field.EvaluateAtVertex(5), kHydroelasticModulus);
+}
+
 // Tests that an input mesh without interior vertices will throw. For
 // simplicity, use double as the representative scalar type.
 GTEST_TEST(MakeVolumeMeshPressureFieldTest, NoInteriorVertex) {
