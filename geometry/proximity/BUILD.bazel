@@ -839,6 +839,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sample_volume_field",
+    testonly = 1,
+    srcs = ["sample_volume_field.cc"],
+    hdrs = ["sample_volume_field.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":mesh_field",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        "//common:essential",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
     name = "sorted_triplet",
     srcs = ["sorted_triplet.cc"],
     hdrs = ["sorted_triplet.h"],
@@ -1232,6 +1247,7 @@ drake_cc_googletest(
     deps = [
         ":make_box_field",
         ":make_box_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1250,6 +1266,7 @@ drake_cc_googletest(
     deps = [
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1325,6 +1342,7 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_field",
         ":make_cylinder_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1342,6 +1360,7 @@ drake_cc_googletest(
     deps = [
         ":make_ellipsoid_field",
         ":make_ellipsoid_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1383,6 +1402,7 @@ drake_cc_googletest(
     deps = [
         ":make_sphere_field",
         ":make_sphere_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
