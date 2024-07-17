@@ -2090,7 +2090,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
   // model instance], it is possible for the same model instance to be added
   // multiple times to std::vector<ModelInstanceIndex>& model_instances).  The
   // code below ensures a body's contribution to the sum occurs only once.
-  // Duplicate model_instances in std::vector are considered a user error.
+  // Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
@@ -2246,7 +2246,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   // model instance], it is possible for the same model instance to be added
   // multiple times to std::vector<ModelInstanceIndex>& model_instances).  The
   // code below ensures a body's contribution to the sum occurs only once.
-  // Duplicate model_instances in std::vector are considered a user error.
+  // Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
@@ -2328,8 +2328,6 @@ template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
-  // Reminder: MultibodyTree always declares a world body and 2 model instances
-  // "world" and "default" so num_model_instances() should always be >= 2.
   if (num_bodies() <= 1) {
     std::string message = fmt::format("{}(): This MultibodyPlant only contains "
         "the world_body() so its center of mass is undefined.", __func__);
@@ -2340,7 +2338,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
   // zero or negative, check if ∑ mᵢ ≤ 0 _before_ calculating ∑ mᵢ * aᵢ.
   // Why? Acceleration calculations may require a dynamic analysis that will
   // issue a significantly less helpful exception message.
-  // Sum over all the bodies except the 0th body (which is the world body).
+  // Sum over all the bodies in model_instances except the 0th body (which is
+  // the world body).
   T total_mass = 0;
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
@@ -2373,7 +2372,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
   // model instance], it is possible for the same model instance to be added
   // multiple times to std::vector<ModelInstanceIndex>& model_instances).
   // The code below ensures a body's contribution to the sum occurs only once.
-  // Duplicate model_instances in std::vector are considered a user error.
+  // Duplicate model_instances in std::vector are ignored.
   Vector3<T> sum_mi_ai = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
@@ -3224,7 +3223,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   // model instance], it is possible for the same model instance to be added
   // multiple times to std::vector<ModelInstanceIndex>& model_instances).  The
   // code below ensures a body's contribution to the sum occurs only once.
-  // Duplicate model_instances in std::vector are considered a user error.
+  // Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
