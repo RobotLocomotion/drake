@@ -23,7 +23,8 @@ class Transfer {
       SerialParticleToGrid();
       // SerialSimdParticleToGrid();
     } else {
-      ParallelParticleToGrid(parallelize);
+      // ParallelParticleToGrid(parallelize);
+      ParallelSimdParticleToGrid(parallelize);
     }
   }
 
@@ -41,6 +42,7 @@ class Transfer {
   void SerialParticleToGrid();
   void SerialSimdParticleToGrid();
   void ParallelParticleToGrid(Parallelism parallelize);
+  void ParallelSimdParticleToGrid(Parallelism parallelize);
 
   void SerialGridToParticle();
   void SerialSimdGridToParticle();
