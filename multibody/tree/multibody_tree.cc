@@ -2339,7 +2339,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
   // Why? Acceleration calculations may require a dynamic analysis that will
   // issue a significantly less helpful exception message.
   // Sum over all the bodies in model_instances except the 0th body (which is
-  // the world body).
+  // the world body). Each body is counted only once even if its model instance
+  // is listed multiple times.
   T total_mass = 0;
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {

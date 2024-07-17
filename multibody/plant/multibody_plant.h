@@ -3455,8 +3455,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` has no body except world_body().
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
   /// @note The world_body() is ignored.  p_WoScm_W = ∑ (mᵢ pᵢ) / mₛ, where
-  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and pᵢ is Bcm's position vector
-  /// from Wo expressed in frame W (Bcm is the center of mass of the iᵗʰ body).
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and pᵢ is Bᵢcm's position from
+  /// Wo expressed in frame W (Bᵢcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
@@ -3476,8 +3476,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
   /// @note The world_body() is ignored.  p_WoScm_W = ∑ (mᵢ pᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
-  /// and pᵢ is Bcm's position vector from Wo expressed in frame W
-  /// (Bcm is the center of mass of the iᵗʰ body).
+  /// and pᵢ is Bᵢcm's position vector from Wo expressed in frame W
+  /// (Bᵢcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {
@@ -3513,8 +3513,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` has no body except world_body().
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
   /// @note The world_body() is ignored.  v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where
-  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and vᵢ is Bcm's velocity in
-  /// world W (Bcm is the center of mass of the iᵗʰ body).
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and vᵢ is Bᵢcm's velocity in
+  /// world W (Bᵢcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -3533,8 +3533,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
   /// @note The world_body() is ignored.  a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body, and
-  /// aᵢ is the translational acceleration of Bcm in world W expressed in W
-  /// (Bcm is the center of mass of the iᵗʰ body).
+  /// aᵢ is the translational acceleration of Bᵢcm in world W expressed in W
+  /// (Bᵢcm is the center of mass of the iᵗʰ body).
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
   /// once evaluated, successive calls to this method are inexpensive.
@@ -3557,9 +3557,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if model_instances is empty or only has world body.
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
   /// @note The world_body() is ignored.  a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where
-  /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body
-  /// contained in model_instances, and aᵢ is the translational acceleration of
-  /// Bcm in world W expressed in W (Bcm is the center of mass of the iᵗʰ body).
+  /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body in
+  /// in model_instances, and aᵢ is the translational acceleration of Bᵢcm in
+  /// world W expressed in W (Bᵢcm is the center of mass of the iᵗʰ body).
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
   /// once evaluated, successive calls to this method are inexpensive.
@@ -3583,8 +3583,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
   /// @note The world_body() is ignored.  v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
-  /// and vᵢ is Bcm's velocity in world W expressed in frame W
-  /// (Bcm is the center of mass of the iᵗʰ body).
+  /// and vᵢ is Bᵢcm's velocity in world W expressed in frame W
+  /// (Bᵢcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {
@@ -4382,8 +4382,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if model_instances is empty or only has world body.
   /// @note The world_body() is ignored.  J𝑠_v_ACcm_ = ∑ (mᵢ Jᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
-  /// and Jᵢ is Bcm's translational velocity Jacobian in frame A, expressed in
-  /// frame E (Bcm is the center of mass of the iᵗʰ body).
+  /// and Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
+  /// frame E (Bᵢcm is the center of mass of the iᵗʰ body).
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
