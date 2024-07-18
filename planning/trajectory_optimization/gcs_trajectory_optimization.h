@@ -10,6 +10,7 @@
 
 #include "drake/common/trajectories/bezier_curve.h"
 #include "drake/common/trajectories/composite_trajectory.h"
+#include "drake/common/trajectories/piecewise_trajectory.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -524,7 +525,7 @@ class GcsTrajectoryOptimization final {
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-      double h_min = 0, double h_max = 20, std::string name = "",
+      double h_min = 1e-6, double h_max = 20, std::string name = "",
       std::optional<const std::vector<Eigen::VectorXd>> edge_offsets =
           std::nullopt);
 

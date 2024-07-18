@@ -2328,6 +2328,25 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, EdgeIndexChecking) {
   EXPECT_THROW(gcs.AddRegions(sets, edges, 1), std::exception);
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroTimeTrajectory) {
+  // If a user has h_min=0 and no velocity constraints, an infinite-speed
+  // trajectory is fastest. Verify that the error message is interpretable to
+  // the user.
+  GcsTrajectoryOptimization gcs(1);
+  const double kMinimumDuration = 0;
+  auto& start =
+      gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0, kMinimumDuration);
+  auto& middle =
+      gcs.AddRegions(MakeConvexSets(Hyperrectangle(Vector1d(0), Vector1d(1))),
+                     1, kMinimumDuration);
+  auto& goal =
+      gcs.AddRegions(MakeConvexSets(Point(Vector1d(1))), 0, kMinimumDuration);
+  gcs.AddEdges(start, middle);
+  gcs.AddEdges(middle, goal);
+  gcs.AddTimeCost();
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.SolvePath(start, goal), ".*zero duration.*");
+}
+
 }  // namespace
 }  // namespace trajectory_optimization
 }  // namespace planning
