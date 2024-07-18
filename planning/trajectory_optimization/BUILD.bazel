@@ -110,6 +110,7 @@ drake_cc_library(
         "//common",
         "//common/trajectories:bezier_curve",
         "//common/trajectories:composite_trajectory",
+        "//common/trajectories:piecewise_trajectory",
         "//geometry/optimization:geodesic_convexity",
         "//geometry/optimization:graph_of_convex_sets",
         "//multibody/plant",

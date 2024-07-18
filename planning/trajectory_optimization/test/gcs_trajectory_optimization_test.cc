@@ -278,8 +278,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   scooter_regions.AddVelocityBounds(Vector2d(-kScooterSpeed, -kScooterSpeed),
                                     Vector2d(kScooterSpeed, kScooterSpeed));
 
-  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0);
 
   gcs.AddEdges(source, walking_regions);
   gcs.AddEdges(walking_regions, target);
@@ -497,8 +497,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, DerivativeBoundsOnEdges) {
       MakeConvexSets(HPolyhedron::MakeBox(Vector2d(75, -5), Vector2d(75, 5))),
       0, kDuckDelay, kDuckDelay + 10);
 
-  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0);
 
   auto& source_to_race_track_1 = gcs.AddEdges(source, race_track_1);
   auto& race_track_1_to_ducks = gcs.AddEdges(race_track_1, ducks);
@@ -926,9 +926,10 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, DisjointGraph) {
   Vector2d goal1(4.8, 4.8), goal2(4.9, 2.4);
 
   auto& source =
-      gcs.AddRegions(MakeConvexSets(Point(start1), Point(start2)), 0);
+      gcs.AddRegions(MakeConvexSets(Point(start1), Point(start2)), 0, 0);
 
-  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal1), Point(goal2)), 0);
+  auto& target =
+      gcs.AddRegions(MakeConvexSets(Point(goal1), Point(goal2)), 0, 0);
 
   // Define solver options.
   GraphOfConvexSetsOptions options;
@@ -1013,8 +1014,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MultipleEdgesInConvexRestriction) {
       gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 1,
                      kMinimumDuration);
 
-  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0);
 
   gcs.AddEdges(source, graph1);
   gcs.AddEdges(graph1, graph2, &subspace1);
@@ -1315,8 +1316,8 @@ TEST_F(SimpleEnv2D, BasicShortestPath) {
 
   Vector2d start(0.2, 0.2), goal(4.8, 4.8);
   auto& regions = gcs.AddRegions(regions_, 1, kMinimumDuration);
-  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0);
 
   gcs.AddEdges(source, regions);
   gcs.AddEdges(regions, target);
@@ -1659,8 +1660,9 @@ TEST_F(SimpleEnv2D, MultiStartGoal) {
 
   auto& regions = gcs.AddRegions(regions_, 3);
   auto& source =
-      gcs.AddRegions(MakeConvexSets(Point(start1), Point(start2)), 0);
-  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal1), Point(goal2)), 0);
+      gcs.AddRegions(MakeConvexSets(Point(start1), Point(start2)), 0, 0);
+  auto& target =
+      gcs.AddRegions(MakeConvexSets(Point(goal1), Point(goal2)), 0, 0);
 
   gcs.AddEdges(source, regions);
   gcs.AddEdges(regions, target);
@@ -1747,8 +1749,8 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   auto& main1 = gcs.AddRegions(regions_, 3, 1e-6, 20, "main1");
   auto& main2 = gcs.AddRegions(regions_, 2, 1e-6, 20, "main2");
 
-  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0);
 
   // The following wiring will give GCS the choice to either go
   // through subspace point or the subspace region.
@@ -1924,8 +1926,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
     GcsTrajectoryOptimization gcs1(1, continuous_revolute_joints);
     auto& regions1 = gcs1.AddRegions(convexsets, 1, 0.01, 1, "");
 
-    auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0);
-    auto& target1 = gcs1.AddRegions(MakeConvexSets(Point(goal)), 0);
+    auto& source1 = gcs1.AddRegions(MakeConvexSets(Point(start)), 0, 0);
+    auto& target1 = gcs1.AddRegions(MakeConvexSets(Point(goal)), 0, 0);
 
     gcs1.AddEdges(source1, regions1);
     gcs1.AddEdges(regions1, target1);
@@ -1950,9 +1952,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
     Vector1d start_alternate(start[0] - 4.0 * M_PI);
     Vector1d goal_alternate(goal[0] + 6.0 * M_PI);
     auto& source1_alternate =
-        gcs1.AddRegions(MakeConvexSets(Point(start_alternate)), 0);
+        gcs1.AddRegions(MakeConvexSets(Point(start_alternate)), 0, 0);
     auto& target1_alternate =
-        gcs1.AddRegions(MakeConvexSets(Point(goal_alternate)), 0);
+        gcs1.AddRegions(MakeConvexSets(Point(goal_alternate)), 0, 0);
 
     gcs1.AddEdges(source1_alternate, regions1);
     gcs1.AddEdges(regions1, target1_alternate);
@@ -1973,8 +1975,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInOneDimension) {
   GcsTrajectoryOptimization gcs2(1);
   auto& regions2 = gcs2.AddRegions(MakeConvexSets(v1, v2, v3), 1, 0.01, 1, "");
 
-  auto& source2 = gcs2.AddRegions(MakeConvexSets(Point(start)), 0);
-  auto& target2 = gcs2.AddRegions(MakeConvexSets(Point(goal)), 0);
+  auto& source2 = gcs2.AddRegions(MakeConvexSets(Point(start)), 0, 0);
+  auto& target2 = gcs2.AddRegions(MakeConvexSets(Point(goal)), 0, 0);
 
   gcs2.AddEdges(source2, regions2);
   gcs2.AddEdges(regions2, target2);
@@ -2076,8 +2078,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, WraparoundInTwoDimensions) {
     GcsTrajectoryOptimization gcs(2, config.continuous_joints);
     auto& regions = gcs.AddRegions(sets, 1, 0.01, 1, "");
 
-    auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
-    auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
+    auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0, 0);
+    auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0, 0);
 
     gcs.AddEdges(source, regions);
     gcs.AddEdges(regions, target);
@@ -2326,6 +2328,25 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, EdgeIndexChecking) {
   std::vector<std::pair<int, int>> edges;
   edges.emplace_back(0, 1);
   EXPECT_THROW(gcs.AddRegions(sets, edges, 1), std::exception);
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroTimeTrajectory) {
+  // If a user has h_min=0 and no velocity constraints, an infinite-speed
+  // trajectory is fastest. Verify that the error message is interpretable to
+  // the user.
+  GcsTrajectoryOptimization gcs(1);
+  const double kMinimumDuration = 0;
+  auto& start =
+      gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0, kMinimumDuration);
+  auto& middle =
+      gcs.AddRegions(MakeConvexSets(Hyperrectangle(Vector1d(0), Vector1d(1))),
+                     1, kMinimumDuration);
+  auto& goal =
+      gcs.AddRegions(MakeConvexSets(Point(Vector1d(1))), 0, kMinimumDuration);
+  gcs.AddEdges(start, middle);
+  gcs.AddEdges(middle, goal);
+  gcs.AddTimeCost();
+  DRAKE_EXPECT_THROWS_MESSAGE(gcs.SolvePath(start, goal), ".*zero duration.*");
 }
 
 }  // namespace
