@@ -1,40 +1,35 @@
 #include "drake/geometry/proximity/boxes_overlap.h"
 
-#if defined(__AVX2__) && defined(__FMA__)
-#include <cstdint>
-
-#include <cpuid.h>
-
-// TODO(SeanCurtis-TRI): This pragma/define boilerplate was first defined (and
-// documented) in fast_pose_composition_functions_avx2_fma.cc. It would be
-// better if we refactored it so that including highway simply did the right
-// configuring for Drake.
+// This is the magic juju that compiles our impl functions for multiple CPUs.
+#undef HWY_TARGET_INCLUDE
+#define HWY_TARGET_INCLUDE "geometry/proximity/boxes_overlap.cc"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
-#define HWY_BASELINE_TARGETS HWY_AVX2
-#define HWY_DISABLE_PCLMUL_AES 1
+#include "hwy/foreach_target.h"
 #include "hwy/highway.h"
-#include "hwy/print-inl.h"
-
 #pragma GCC diagnostic pop
-#else
-// TODO: I need to handle the case where AVX2/FMA is not supported.
-// Presumably, that's simply the old code preserved.
-#error
-#endif
 
+#include "drake/common/hwy_dynamic_impl.h"
+
+HWY_BEFORE_NAMESPACE();
 namespace drake {
 namespace geometry {
 namespace internal {
-#if defined(__AVX2__) && defined(__FMA__) || 1
-using Eigen::Matrix3d;
+
 using Eigen::Vector3d;
+using Eigen::Matrix3d;
+using math::RigidTransformd;
 
 namespace {
-
+namespace HWY_NAMESPACE {
 // The hn namespace holds the CPU-specific function overloads. By defining it
 // using a substitute-able macro, we achieve per-CPU instruction selection.
 namespace hn = hwy::HWY_NAMESPACE;
+
+// The SIMD approach is only useful when we have registers of size `double[4]`
+// or larger. When we have smaller registers (e.g., SSE2's 2-wide lanes, or
+// SVE's variable-length vectors) we will fall back to non-SIMD code.
+#if HWY_MAX_BYTES >= 32 && HWY_HAVE_SCALABLE == 0
 
 // TODO: How do I get this from highway?
 // OMG there is really no intrinsic for this?
@@ -44,13 +39,11 @@ VecType abs4(VecType x) {
   return hn::AndNot(hn::Set(tag, -0.0), x);
 }
 
-}  // namespace
-
 // This implementation follows section 64 (on PDF page 102) of:
 //  http://gamma.cs.unc.edu/users/gottschalk/main.pdf
 
-bool BoxesOverlap(const Vector3d& half_size_a, const Vector3d& half_size_b,
-                  const math::RigidTransformd& X_AB) {
+bool BoxesOverlapImpl(const Vector3d& half_size_a, const Vector3d& half_size_b,
+                      const math::RigidTransformd& X_AB) {
   const Vector3d& p_AB = X_AB.translation();
   const Matrix3d& R_AB = X_AB.rotation().matrix();
   // We'll be adding epsilon to counteract arithmetic error, e.g., when two
@@ -184,17 +177,97 @@ bool BoxesOverlap(const Vector3d& half_size_a, const Vector3d& half_size_b,
 
   return true;
 }
-#else
 
-bool BoxesOverlap(const Vector3d&, const Vector3d&, const Vector3d&,
-                  const Matrix3d&) {
-  // TODO: Use the CPU implementation here.
-  std::cerr << "abort: BoxesOverlap() currently not enabled. " << std::endl;
-  std::abort();
+#else  // HWY_MAX_BYTES
+
+bool BoxesOverlapImpl(const Vector3d& half_size_a, const Vector3d& half_size_b,
+                      const RigidTransformd& X_AB) {
+  // We need to split the transform into the position and rotation components,
+  // `p_AB` and `R_AB`. For the purposes of streamlining the math below, they
+  // will henceforth be named `t` and `r` respectively.
+  const Vector3d& t = X_AB.translation();
+  const Matrix3d& r = X_AB.rotation().matrix();
+
+  // Compute some common subexpressions and add epsilon to counteract
+  // arithmetic error, e.g. when two edges are parallel. We use the value as
+  // specified from Gottschalk's OBB robustness tests.
+  const double kEpsilon = 0.000001;
+  Matrix3d abs_r = r;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      abs_r(i, j) = abs(abs_r(i, j)) + kEpsilon;
+    }
+  }
+
+  // First category of cases separating along a's axes.
+  for (int i = 0; i < 3; ++i) {
+    if (abs(t[i]) > half_size_a[i] + half_size_b.dot(abs_r.block<1, 3>(i, 0))) {
+      return false;
+    }
+  }
+
+  // Second category of cases separating along b's axes.
+  for (int i = 0; i < 3; ++i) {
+    if (abs(t.dot(r.block<3, 1>(0, i))) >
+        half_size_b[i] + half_size_a.dot(abs_r.block<3, 1>(0, i))) {
+      return false;
+    }
+  }
+
+  // Third category of cases separating along the axes formed from the cross
+  // products of a's and b's axes.
+  int i1 = 1;
+  for (int i = 0; i < 3; ++i) {
+    const int i2 = (i1 + 1) % 3;  // Calculate common sub expressions.
+    int j1 = 1;
+    for (int j = 0; j < 3; ++j) {
+      const int j2 = (j1 + 1) % 3;
+      if (abs(t[i2] * r(i1, j) - t[i1] * r(i2, j)) >
+          half_size_a[i1] * abs_r(i2, j) + half_size_a[i2] * abs_r(i1, j) +
+              half_size_b[j1] * abs_r(i, j2) + half_size_b[j2] * abs_r(i, j1)) {
+        return false;
+      }
+      j1 = j2;
+    }
+    i1 = i2;
+  }
+
+  return true;
 }
 
-#endif
+#endif  // HWY_MAX_BYTES
+
+}  // HWY_NAMESPACE
+}  //
+}  // namespace internal
+}  // namespace geometry
+}  // namespace drake
+HWY_AFTER_NAMESPACE();
+
+// This part of the file is only compiled once total, instead of once per CPU.
+#if HWY_ONCE
+namespace drake {
+namespace geometry {
+namespace internal {
+namespace {
+
+// Create the lookup tables for the per-CPU hwy implementation functions, and
+// required functors that select from the lookup tables.
+HWY_EXPORT(BoxesOverlapImpl);
+struct ChooseBestBoxesOverlapImpl {
+  auto operator()() { return HWY_DYNAMIC_POINTER(BoxesOverlapImpl); }
+};
+
+}  // namespace
+
+bool BoxesOverlap(const Vector3<double>& half_size_a,
+                  const Vector3<double>& half_size_b,
+                  const math::RigidTransformd& X_AB) {
+  return LateBoundFunction<ChooseBestBoxesOverlapImpl>::Call(
+      half_size_a, half_size_b, X_AB);
+}
 
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
+#endif  // HWY_ONCE
