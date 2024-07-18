@@ -1,6 +1,5 @@
 #include "drake/geometry/proximity/boxes_overlap.h"
 
-#include <iostream>
 #include <string>
 
 #include <fmt/format.h>
