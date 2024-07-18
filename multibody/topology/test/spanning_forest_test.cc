@@ -269,6 +269,7 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
 
   // Build with default options.
   EXPECT_TRUE(graph.BuildForest());
+
   EXPECT_EQ(forest.options(), ForestBuildingOptions::kDefault);
   EXPECT_EQ(forest.options(left_instance), ForestBuildingOptions::kDefault);
   EXPECT_EQ(forest.options(right_instance), ForestBuildingOptions::kDefault);
@@ -1010,23 +1011,14 @@ With all massful Links, loop should be broken at Joint 3 (between links
 {3} and {4} since that minimizes the maximum chain length. In that case we
 have trees {1234s} and {564} where {4s} is the shadow of {4}.
 
-If we make {3}* massless we'll have to extend the first chain
-to link {4} before breaking the loop at Joint 6, giving trees
-{1234} and {564s} ({4} is still split since it is the child of Joint 6).
-
-TODO(sherm1) With massless handling stubbed out, the algorithm will _not_
- extend the first chain when it sees massless {3} so produces the same two
- trees as the massful case above. As it happens, that's still a good forest.
+If we make just {3}* massless we'll get the same Forest since we can see
+that there is an outboard massful body {4}. When we split {4} both halves are
+massful, so we'll still get {1234s} and {564}.
 
 If we make _both_ {3}* and {4}* massless, modeling should start with {12} and
 {56} but then next extend the first tree to {12346s} because we can't stop at
 {3} or {4}. Joint 6 is the loop joint but the mobilizer has to be reversed so
-that we end with a massful shadow link {6s} rather than the massless {4}.
-
-TODO(sherm1) With massless handling stubbed out, we once again get the same
- two trees but now the forest can't be used for dynamics due to terminal
- massless bodies 4 and 4s.
-*/
+that we end with a massful shadow link {6s} rather than the massless {4}. */
 GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   LinkJointGraph graph;
   graph.RegisterJointType("revolute", 1, 1);
@@ -1056,6 +1048,11 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   EXPECT_TRUE(graph.link_by_index(BodyIndex(7)).is_shadow());
   EXPECT_EQ(graph.link_by_index(BodyIndex(7)).primary_link(), BodyIndex(4));
 
+  EXPECT_EQ(ssize(graph.links()), 8);  // Added a shadow.
+  EXPECT_EQ(ssize(graph.joints()), 7);
+  EXPECT_TRUE(graph.link_by_index(BodyIndex(7)).is_shadow());
+  EXPECT_EQ(graph.link_by_index(BodyIndex(7)).primary_link(), BodyIndex(4));
+
   EXPECT_EQ(ssize(forest.trees()), 2);
   EXPECT_EQ(forest.trees()[0].num_mobods(), 4);
   EXPECT_EQ(forest.trees()[1].num_mobods(), 3);
@@ -1071,26 +1068,31 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   EXPECT_TRUE(graph.link_by_index(BodyIndex(7)).is_shadow());
   EXPECT_EQ(graph.link_by_index(BodyIndex(7)).primary_link(), BodyIndex(4));
 
+  EXPECT_EQ(ssize(graph.links()), 8);
+  EXPECT_EQ(ssize(graph.joints()), 7);
+  EXPECT_TRUE(graph.link_by_index(BodyIndex(7)).is_shadow());
+  EXPECT_EQ(graph.link_by_index(BodyIndex(7)).primary_link(), BodyIndex(4));
+
   EXPECT_EQ(ssize(forest.trees()), 2);
   EXPECT_EQ(forest.trees()[0].num_mobods(), 4);
   EXPECT_EQ(forest.trees()[1].num_mobods(), 3);
   EXPECT_EQ(graph.links(forest.mobods(MobodIndex(4)).link_ordinal()).index(),
             BodyIndex(7));
 
-  // TODO(sherm1) With both 3 and 4 massless and massless handling stubbed,
-  //  we'll end up with a no-dynamics model. Should not happen once this gets
-  //  un-stubbed.
+  // Changing both 3 and 4 to massless breaks the loop at 6 instead of 4.
   graph.ChangeLinkFlags(BodyIndex(4), LinkFlags::kTreatAsMassless);
-  EXPECT_FALSE(graph.BuildForest());  // Indicates "no dynamics".
+  EXPECT_TRUE(graph.BuildForest());
 
-  EXPECT_THAT(
-      forest.why_no_dynamics(),
-      testing::MatchesRegex("Loop.*joint3.*massless.*link3.*link4.*singular.*"
-                            "cannot be used for dynamics.*"));
+  EXPECT_EQ(ssize(graph.links()), 8);
+  EXPECT_EQ(ssize(graph.joints()), 7);
+  EXPECT_TRUE(graph.link_by_index(BodyIndex(7)).is_shadow());
+  EXPECT_EQ(graph.link_by_index(BodyIndex(7)).primary_link(), BodyIndex(6));
 
   EXPECT_EQ(ssize(forest.trees()), 2);
-  EXPECT_EQ(forest.trees()[0].num_mobods(), 3);
-  EXPECT_EQ(forest.trees()[1].num_mobods(), 4);
+  EXPECT_EQ(forest.trees()[0].num_mobods(), 5);
+  EXPECT_EQ(forest.trees()[1].num_mobods(), 2);
+  EXPECT_EQ(graph.links(forest.mobods(MobodIndex(5)).link_ordinal()).index(),
+            BodyIndex(7));
 }
 
 /* Here is a tricky case that should be handled correctly and without warnings.

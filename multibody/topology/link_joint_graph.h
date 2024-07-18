@@ -26,7 +26,7 @@ namespace multibody {
 namespace internal {
 
 // TODO(sherm1) The class comment describes the complete functionality of
-//  PR #20225; only part of that code is actually here.
+//  PR #20225; some functionality is currently missing.
 
 // TODO(sherm1) During the PR train leading up to MbP using this code in Drake
 //  master, I'm using Doxygen comments /** despite the fact that this is
