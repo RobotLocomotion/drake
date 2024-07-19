@@ -367,7 +367,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // `this` ProximityEngine as a deformable geometry (via
   // "AddDeformableGeometry()") and has not been since removed (via
   // "RemoveDeformableGeometry()").
-  bool IsRegisteredAsDeformable(GeometryId id) {
+  bool IsRegisteredAsDeformable(GeometryId id) const {
     return geometries_for_deformable_contact_.is_deformable(id);
   }
 
@@ -375,7 +375,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // `this` ProximityEngine as a rigid (non-deformable) geometry (via
   // "AddDynamicGeometry() or AddAnchoredGeometry()") and has not been since
   // removed (via "RemoveGeometry()").
-  bool IsRegisteredAsRigid(GeometryId id) {
+  bool IsRegisteredAsRigid(GeometryId id) const {
     return dynamic_objects_.contains(id) || anchored_objects_.contains(id);
   }
 
@@ -677,18 +677,36 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   ComputeContactSurfaces(
       HydroelasticContactRepresentation representation,
       const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+    auto candidates = FindCollisionCandidates();
+
     vector<ContactSurface<T>> surfaces;
     // All these quantities are aliased in the callback data.
     hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs,
                                        &hydroelastic_geometries_,
                                        representation, &surfaces};
 
-    // Perform a query of the dynamic objects against themselves.
-    dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
+    vector<std::unique_ptr<ContactSurface<T>>> surface_ptrs(candidates.size());
+    int k = 0;
+    // TODO(rpoyner-tri): try some thread parallelism here.
+    for (const auto& [id0, id1] : candidates) {
+      auto [result, surface] = MaybeMakeContactSurface(id0, id1, data);
+      if (surface != nullptr) {
+        surface_ptrs[k] = std::move(surface);
+      }
+      if (result != hydroelastic::CalcContactSurfaceResult::kCalculated) {
+        // This will certainly throw.
+        RejectContactSurfaceResult(result, GetFclPtr(id0), GetFclPtr(id1),
+                                   data);
+      }
+      ++k;
+    }
 
-    // Perform a query of the dynamic objects against the anchored. We don't do
-    // anchored against anchored because those pairs are implicitly filtered.
-    FclCollide(dynamic_tree_, anchored_tree_, &data, hydroelastic::Callback<T>);
+    // Filter out any nullptr surface results.
+    for (const auto& surface_ptr : surface_ptrs) {
+      if (surface_ptr != nullptr) {
+        surfaces.emplace_back(std::move(*surface_ptr));
+      }
+    }
 
     std::sort(surfaces.begin(), surfaces.end(), OrderContactSurface<T>);
 
@@ -705,19 +723,47 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_DEMAND(surfaces != nullptr);
     DRAKE_DEMAND(point_pairs != nullptr);
 
+    auto candidates = FindCollisionCandidates();
+
     // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackWithFallbackData<T> data{
-        hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
-                                      &hydroelastic_geometries_, representation,
-                                      surfaces},
-        point_pairs};
+    hydroelastic::CallbackData<T> hydro_data{&collision_filter_, &X_WGs,
+      &hydroelastic_geometries_, representation,
+      surfaces};
+    penetration_as_point_pair::CallbackData<T> point_data{&collision_filter_,
+      &X_WGs, point_pairs};
 
-    // Dynamic vs dynamic and dynamic vs anchored represent all the geometries
-    // that we can support with the point-pair fallback. Do those first.
-    dynamic_tree_.collide(&data, hydroelastic::CallbackWithFallback<T>);
 
-    FclCollide(dynamic_tree_, anchored_tree_, &data,
-               hydroelastic::CallbackWithFallback<T>);
+    vector<std::unique_ptr<ContactSurface<T>>> surface_ptrs(candidates.size());
+    vector<std::unique_ptr<PenetrationAsPointPair<T>>> penetration_ptrs(
+        candidates.size());
+    int k = 0;
+    // TODO(rpoyner-tri): try some thread parallelism here.
+    for (const auto& [id0, id1] : candidates) {
+      auto [result, surface] = MaybeMakeContactSurface(id0, id1, hydro_data);
+      if (surface != nullptr) {
+        surface_ptrs[k] = std::move(surface);
+      }
+      if (result != hydroelastic::CalcContactSurfaceResult::kCalculated) {
+        auto penetration = penetration_as_point_pair::MaybeMakePointPair(
+            GetFclPtr(id0), GetFclPtr(id1), point_data);
+        if (penetration != nullptr) {
+          penetration_ptrs[k] = std::move(penetration);
+        }
+      }
+      ++k;
+    }
+
+    // Filter out any nullptr results.
+    for (const auto& surface_ptr : surface_ptrs) {
+      if (surface_ptr != nullptr) {
+        surfaces->emplace_back(std::move(*surface_ptr));
+      }
+    }
+    for (const auto& penetration_ptr : penetration_ptrs) {
+      if (penetration_ptr != nullptr) {
+        point_pairs->emplace_back(std::move(*penetration_ptr));
+      }
+    }
 
     std::sort(surfaces->begin(), surfaces->end(), OrderContactSurface<T>);
 
@@ -828,6 +874,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   friend class ProximityEngineTester;
   template <typename>
   friend class ProximityEngine;
+
+  // @returns fully-typed FCL collision object pointer for `id`.
+  // @pre IsRegisteredAsRigid(id) == true
+  CollisionObjectd* GetFclPtr(GeometryId id) const {
+    DRAKE_ASSERT(IsRegisteredAsRigid(id));
+    return static_cast<CollisionObjectd*>(GetCollisionObject(id));
+  }
 
   void AddGeometry(
       const Shape& shape, const RigidTransformd& X_WG, GeometryId id,

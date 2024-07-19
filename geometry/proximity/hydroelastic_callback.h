@@ -183,65 +183,83 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   const EncodedData encoding_a(*object_A_ptr);
   const EncodedData encoding_b(*object_B_ptr);
 
+  auto [result, surface] =
+      MaybeMakeContactSurface(encoding_a.id(), encoding_b.id(), *data);
+  if (surface != nullptr) {
+    DRAKE_DEMAND(surface->id_M() < surface->id_N());
+    data->surfaces.emplace_back(std::move(*surface));
+  }
+  return result;
+}
+
+template <typename T>
+struct MaybeMakeContactSurfaceResult {
+  CalcContactSurfaceResult result;
+  std::unique_ptr<ContactSurface<T>> surface;
+};
+
+/* Makes the contact surface (if it exists) between two potentially
+ colliding geometries.
+
+ @param id0         Id of the first object in the pair (order insignificant).
+ @param id1         Id of the second object in the pair (order insignificant).
+ @param[out] callback_data   Supporting data to compute the contact surface.
+ @returns a struct containing both the result code, and the new surface, if any.
+ @tparam T  The scalar type for the query.  */
+template <typename T>
+MaybeMakeContactSurfaceResult<T> MaybeMakeContactSurface(
+    GeometryId id0, GeometryId id1, const CallbackData<T>& data) {
   // One or two objects have vanished. We can report that we're done
   // calculating the contact (no contact).
-  if (data->geometries.is_vanished(encoding_a.id()) ||
-      data->geometries.is_vanished(encoding_b.id())) {
-    return CalcContactSurfaceResult::kCalculated;
+  if (data.geometries.is_vanished(id0) || data.geometries.is_vanished(id1)) {
+    return {CalcContactSurfaceResult::kCalculated, nullptr};
   }
 
-  const HydroelasticType type_A =
-      data->geometries.hydroelastic_type(encoding_a.id());
-  const HydroelasticType type_B =
-      data->geometries.hydroelastic_type(encoding_b.id());
+  const HydroelasticType type_A = data.geometries.hydroelastic_type(id0);
+  const HydroelasticType type_B = data.geometries.hydroelastic_type(id1);
 
   // One or two objects have no hydroelastic type.
   if (type_A == HydroelasticType::kUndefined ||
       type_B == HydroelasticType::kUndefined) {
-    return CalcContactSurfaceResult::kUnsupported;
+    return {CalcContactSurfaceResult::kUnsupported, nullptr};
   }
 
   // Rigid-rigid contact is not supported in hydroelastic contact model.
   // Callers might optionally fall back to point contact model.
   if (type_A == HydroelasticType::kRigid &&
       type_B == HydroelasticType::kRigid) {
-    return CalcContactSurfaceResult::kRigidRigid;
+    return {CalcContactSurfaceResult::kRigidRigid, nullptr};
   }
 
   // Compliant-compliant contact.
   if (type_A == HydroelasticType::kSoft && type_B == HydroelasticType::kSoft) {
-    GeometryId id0 = encoding_a.id();
-    GeometryId id1 = encoding_b.id();
     // Enforce consistent ordering for reproducibility/repeatability of
     // simulation since the same pair of geometries (A,B) may be called
     // either as (A,B) or (B,A).
     if (id0.get_value() > id1.get_value()) {
       std::swap(id0, id1);
     }
-    const SoftGeometry& soft0 = data->geometries.soft_geometry(id0);
-    const SoftGeometry& soft1 = data->geometries.soft_geometry(id1);
+    const SoftGeometry& soft0 = data.geometries.soft_geometry(id0);
+    const SoftGeometry& soft1 = data.geometries.soft_geometry(id1);
 
     // Halfspace vs. halfspace is not supported.
     if (soft0.is_half_space() && soft1.is_half_space()) {
-      return CalcContactSurfaceResult::kHalfSpaceHalfSpace;
+      return {CalcContactSurfaceResult::kHalfSpaceHalfSpace, nullptr};
     }
 
     // Compliant-halfspace vs. compliant-mesh is not supported.
     if (soft0.is_half_space() || soft1.is_half_space()) {
-      return CalcContactSurfaceResult::kCompliantHalfSpaceCompliantMesh;
+      return {CalcContactSurfaceResult::kCompliantHalfSpaceCompliantMesh,
+              nullptr};
     }
 
     // Compliant mesh vs. compliant mesh.
     DRAKE_DEMAND(!soft0.is_half_space() && !soft1.is_half_space());
     std::unique_ptr<ContactSurface<T>> surface =
-        DispatchCompliantCompliantCalculation(soft0, data->X_WGs.at(id0), id0,
-                                              soft1, data->X_WGs.at(id1), id1,
-                                              data->representation);
-    if (surface != nullptr) {
-      DRAKE_DEMAND(surface->id_M() < surface->id_N());
-      data->surfaces.emplace_back(std::move(*surface));
-    }
-    return CalcContactSurfaceResult::kCalculated;
+        DispatchCompliantCompliantCalculation(soft0, data.X_WGs.at(id0), id0,
+                                              soft1, data.X_WGs.at(id1), id1,
+                                              data.representation);
+    return {CalcContactSurfaceResult::kCalculated, std::move(surface)};
   }
 
   // Rigid-compliant contact
@@ -251,28 +269,23 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
                 type_B == HydroelasticType::kRigid));
 
   bool A_is_rigid = type_A == HydroelasticType::kRigid;
-  const GeometryId id_S = A_is_rigid ? encoding_b.id() : encoding_a.id();
-  const GeometryId id_R = A_is_rigid ? encoding_a.id() : encoding_b.id();
+  const GeometryId id_S = A_is_rigid ? id1 : id0;
+  const GeometryId id_R = A_is_rigid ? id0 : id1;
 
-  const SoftGeometry& soft = data->geometries.soft_geometry(id_S);
-  const RigidGeometry& rigid = data->geometries.rigid_geometry(id_R);
+  const SoftGeometry& soft = data.geometries.soft_geometry(id_S);
+  const RigidGeometry& rigid = data.geometries.rigid_geometry(id_R);
 
   if (soft.is_half_space() && rigid.is_half_space()) {
-    return CalcContactSurfaceResult::kHalfSpaceHalfSpace;
+    return {CalcContactSurfaceResult::kHalfSpaceHalfSpace, nullptr};
   }
 
-  const math::RigidTransform<T>& X_WS(data->X_WGs.at(id_S));
-  const math::RigidTransform<T>& X_WR(data->X_WGs.at(id_R));
+  const math::RigidTransform<T>& X_WS(data.X_WGs.at(id_S));
+  const math::RigidTransform<T>& X_WR(data.X_WGs.at(id_R));
 
   std::unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-      soft, X_WS, id_S, rigid, X_WR, id_R, data->representation);
+      soft, X_WS, id_S, rigid, X_WR, id_R, data.representation);
 
-  if (surface != nullptr) {
-    DRAKE_DEMAND(surface->id_M() < surface->id_N());
-    data->surfaces.emplace_back(std::move(*surface));
-  }
-
-  return CalcContactSurfaceResult::kCalculated;
+  return {CalcContactSurfaceResult::kCalculated, std::move(surface)};
 }
 
 /* Assess contact between two objects -- if it can't be determined with
@@ -300,49 +313,67 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
     // Surface calculated; we're done.
     if (result == CalcContactSurfaceResult::kCalculated) return false;
 
-    const HydroelasticType type_A =
-        data.geometries.hydroelastic_type(encoding_a.id());
-    const HydroelasticType type_B =
-        data.geometries.hydroelastic_type(encoding_b.id());
-
-    switch (result) {
-      case CalcContactSurfaceResult::kUnsupported:
-        throw std::logic_error(fmt::format(
-            "Requested a contact surface between a pair of geometries without "
-            "hydroelastic representation for at least one shape: a {} {} with "
-            "id {} and a {} {} with id {}",
-            type_A, GetGeometryName(*object_A_ptr), encoding_a.id(), type_B,
-            GetGeometryName(*object_B_ptr), encoding_b.id()));
-      case CalcContactSurfaceResult::kRigidRigid:
-        throw std::logic_error(fmt::format(
-            "Requested contact between two rigid objects ({} with id "
-            "{}, {} with id {}); that is not allowed in hydroelastic-only "
-            "contact. Please consider using hydroelastics with point-contact "
-            "fallback, e.g., QueryObject::ComputeContactSurfacesWithFallback() "
-            "or MultibodyPlant::set_contact_model("
-            "ContactModel::kHydroelasticWithFallback)",
-            GetGeometryName(*object_A_ptr), encoding_a.id(),
-            GetGeometryName(*object_B_ptr), encoding_b.id()));
-      case CalcContactSurfaceResult::kCompliantHalfSpaceCompliantMesh:
-        throw std::logic_error(fmt::format(
-            "Requested hydroelastic contact between two compliant geometries, "
-            "one of which is a half space ({} with id {}, {} with id {}); "
-            "that is not allowed",
-            GetGeometryName(*object_A_ptr), encoding_a.id(),
-            GetGeometryName(*object_B_ptr), encoding_b.id()));
-      case CalcContactSurfaceResult::kHalfSpaceHalfSpace:
-        throw std::logic_error(fmt::format(
-            "Requested contact between two half spaces with ids {} and {}; "
-            "that is not allowed",
-            encoding_a.id(), encoding_b.id()));
-      case CalcContactSurfaceResult::kCalculated:
-        // Already handled above.
-        break;
-    }
+    RejectContactSurfaceResult(result, object_A_ptr, object_B_ptr, data);
   }
 
   // Tell the broadphase to keep searching.
   return false;
+}
+
+/* @throws a std::exception with an appropriate error message for the various
+ result codes that indicate failure.
+ @pre result != kCalculated
+*/
+template <typename T>
+[[noreturn]] void RejectContactSurfaceResult(
+    CalcContactSurfaceResult result, fcl::CollisionObjectd* object_A_ptr,
+    fcl::CollisionObjectd* object_B_ptr, const CallbackData<T>& data) {
+  // Give a slightly better diagnostic for a misplaced happy result code.
+  DRAKE_DEMAND(result != CalcContactSurfaceResult::kCalculated);
+  const EncodedData encoding_a(*object_A_ptr);
+  const EncodedData encoding_b(*object_B_ptr);
+
+  const HydroelasticType type_A =
+      data.geometries.hydroelastic_type(encoding_a.id());
+  const HydroelasticType type_B =
+      data.geometries.hydroelastic_type(encoding_b.id());
+
+  switch (result) {
+    case CalcContactSurfaceResult::kUnsupported:
+      throw std::logic_error(fmt::format(
+          "Requested a contact surface between a pair of geometries without "
+          "hydroelastic representation for at least one shape: a {} {} with "
+          "id {} and a {} {} with id {}",
+          type_A, GetGeometryName(*object_A_ptr), encoding_a.id(), type_B,
+          GetGeometryName(*object_B_ptr), encoding_b.id()));
+    case CalcContactSurfaceResult::kRigidRigid:
+      throw std::logic_error(fmt::format(
+          "Requested contact between two rigid objects ({} with id "
+          "{}, {} with id {}); that is not allowed in hydroelastic-only "
+          "contact. Please consider using hydroelastics with point-contact "
+          "fallback, e.g., QueryObject::ComputeContactSurfacesWithFallback() "
+          "or MultibodyPlant::set_contact_model("
+          "ContactModel::kHydroelasticWithFallback)",
+          GetGeometryName(*object_A_ptr), encoding_a.id(),
+          GetGeometryName(*object_B_ptr), encoding_b.id()));
+    case CalcContactSurfaceResult::kCompliantHalfSpaceCompliantMesh:
+      throw std::logic_error(fmt::format(
+          "Requested hydroelastic contact between two compliant geometries, "
+          "one of which is a half space ({} with id {}, {} with id {}); "
+          "that is not allowed",
+          GetGeometryName(*object_A_ptr), encoding_a.id(),
+          GetGeometryName(*object_B_ptr), encoding_b.id()));
+    case CalcContactSurfaceResult::kHalfSpaceHalfSpace:
+      throw std::logic_error(fmt::format(
+          "Requested contact between two half spaces with ids {} and {}; "
+          "that is not allowed",
+          encoding_a.id(), encoding_b.id()));
+    case CalcContactSurfaceResult::kCalculated:
+      // This should never happen (see DRAKE_DEMAND()) above), but is here for
+      // compiler switch code completeness checking.
+      break;
+  }
+  DRAKE_UNREACHABLE();
 }
 
 /* Supporting data for the shape-to-shape hydroelastic contact callback with
