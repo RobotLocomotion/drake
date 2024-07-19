@@ -384,13 +384,6 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
     std::swap(fcl_object_A_ptr, fcl_object_B_ptr);
   }
 
-  // NOTE: Although this function *takes* non-const pointers to satisfy the
-  // fcl api, it should not exploit the non-constness to modify the collision
-  // objects. We ensure this by immediately assigning to a const version and
-  // not directly using the provided parameters.
-  const GeometryId id_A = encoding_A.id();
-  const GeometryId id_B = encoding_B.id();
-
   const bool can_collide =
       data.collision_filter.CanCollideWith(encoding_A.id(), encoding_B.id());
 
@@ -398,6 +391,39 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // is detected or not because true tells the broadphase manager to terminate.
   // Since we want *all* collisions, we return false.
   if (!can_collide) return false;
+
+  auto result = MaybeMakePointPair(fcl_object_A_ptr, fcl_object_B_ptr, data);
+  if (result != nullptr) {
+    data.point_pairs.push_back(std::move(*result));
+  }
+
+  return false;
+}
+
+template <typename T>
+std::unique_ptr<PenetrationAsPointPair<T>> MaybeMakePointPair(
+    fcl::CollisionObjectd* fcl_object_A_ptr,
+    fcl::CollisionObjectd* fcl_object_B_ptr, const CallbackData<T>& data) {
+  // Extract the collision filter keys from the fcl collision objects. These
+  // keys will also be used to map the fcl collision object back to the Drake
+  // GeometryId for colliding geometries.
+  EncodedData encoding_A(*fcl_object_A_ptr);
+  EncodedData encoding_B(*fcl_object_B_ptr);
+
+  // Guarantee for geometries A and B, we always evaluate the collision between
+  // them in a fixed order (e.g., the first geometry gets transformed into the
+  // second geometry's frame for evaluation).
+  if (encoding_B.id() < encoding_A.id()) {
+    std::swap(encoding_A, encoding_B);
+    std::swap(fcl_object_A_ptr, fcl_object_B_ptr);
+  }
+
+  // NOTE: Although this function *takes* non-const pointers to satisfy the
+  // fcl api, it should not exploit the non-constness to modify the collision
+  // objects. We ensure this by immediately assigning to a const version and
+  // not directly using the provided parameters.
+  const GeometryId id_A = encoding_A.id();
+  const GeometryId id_B = encoding_B.id();
 
   if (ScalarSupport<T>::is_supported(
           fcl_object_A_ptr->collisionGeometry()->getNodeType(),
@@ -413,7 +439,8 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
                                   *fcl_object_B_ptr, data.X_WGs.at(id_B),
                                   data.request, &penetration);
     if (ExtractDoubleOrThrow(penetration.depth) >= 0) {
-      data.point_pairs.push_back(std::move(penetration));
+      return std::make_unique<PenetrationAsPointPair<T>>(
+          std::move(penetration));
     }
   } else {
     throw std::logic_error(fmt::format(
@@ -424,12 +451,11 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
         GetGeometryName(*fcl_object_A_ptr), GetGeometryName(*fcl_object_B_ptr),
         NiceTypeName::Get<T>()));
   }
-
-  return false;
+  return {};
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&Callback<T>));
+    (&Callback<T>, &MaybeMakePointPair<T>));
 
 }  // namespace penetration_as_point_pair
 }  // namespace internal
