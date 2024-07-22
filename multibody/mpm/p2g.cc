@@ -32,10 +32,10 @@ void SetUp(int num_nodes_per_dim, int particles_per_cell, float dx,
                               (static_cast<float>(particles_per_cell) + 1.0) *
                               Vector3f::Ones();
           particles->x.push_back(x);
-          particles->v.push_back(Vector3f(1.0, 1.0, 1.0));
+          particles->v.push_back(Vector3f(1 * i, 2 * j, 3 * k));
           particles->F.push_back(Matrix3f::Identity());
-          particles->C.push_back(Matrix3f::Zero());
-          particles->P.push_back(Matrix3f::Zero());
+          particles->C.push_back(Matrix3f::Identity());
+          particles->P.push_back(Matrix3f::Identity());
           particles->bspline.push_back(BSplineWeights<float>(x, dx));
         }
       }
@@ -48,22 +48,22 @@ int do_main() {
   int num_nodes_per_dim = 32;
   int particles_per_cell = 8;
   const float dx = 0.01;
-  const float dt = 0.002;
+  const float dt = 0.01;
   ParticleData<float> particles;
   SparseGrid<float> grid(dx);
 
   SetUp(num_nodes_per_dim, particles_per_cell, dx, &particles);
   Transfer<float> transfer(dt, &grid, &particles);
 
-  auto start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < 300; ++i) {
-    transfer.ParticleToGrid(false);
+  auto start = std::chrono::steady_clock::now();
+  for (int i = 0; i < 1000; ++i) {
+    transfer.ParallelSimdParticleToGrid(Parallelism(32));
   }
+  auto end = std::chrono::steady_clock::now();
 
-  auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> duration = end - start;
-  std::cout << "Each time step takes: " << duration.count() / 300.0 * 1000.0
-            << " milliseconds" << std::endl;
+  std::cout << "Each time step takes: " << duration.count() << " milliseconds"
+            << std::endl;
   return 0;
 }
 

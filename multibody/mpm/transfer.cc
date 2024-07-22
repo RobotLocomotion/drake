@@ -23,6 +23,28 @@ Transfer<T>::Transfer(T dt, SparseGrid<T>* sparse_grid,
 }
 
 template <typename T>
+void Transfer<T>::ParticleToGrid(Parallelism parallelize) {
+  if (parallelize.num_threads() == 1) {
+    SerialParticleToGrid();
+    // SerialSimdParticleToGrid();
+  } else {
+    // ParallelParticleToGrid(parallelize);
+    ParallelSimdParticleToGrid(parallelize);
+  }
+}
+
+template <typename T>
+void Transfer<T>::GridToParticle(Parallelism parallelize) {
+  if (parallelize.num_threads() == 1) {
+    SerialGridToParticle();
+    // SerialSimdGridToParticle();
+  } else {
+    // ParallelGridToParticle(parallelize);
+    ParallelSimdGridToParticle(parallelize);
+  }
+}
+
+template <typename T>
 void Transfer<T>::ParallelSimdParticleToGrid(const Parallelism parallelize) {
   const int lanes = SimdScalar<T>::lanes();
   const std::vector<ParticleIndex>& particle_indices =

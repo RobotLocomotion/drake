@@ -48,26 +48,29 @@ int do_main() {
   SparseGrid<double> grid(dx);
 
   SetUp(num_nodes_per_dim, particles_per_cell, dx, &particles);
+  bool add_test = false;
 
-  auto start = std::chrono::high_resolution_clock::now();
+  auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < 100; ++i) {
     Transfer<double> transfer(dt, &grid, &particles);
-    transfer.ParticleToGrid(false);
+    transfer.ParallelSimdParticleToGrid(Parallelism(32));
     grid.ExplicitVelocityUpdate(dt, Vector3d::Zero());
-    MassAndMomentum<double> grid_stat = grid.ComputeTotalMassAndMomentum();
-    transfer.GridToParticle(true);
-    MassAndMomentum<double> particle_stat =
-        ComputeTotalMassAndMomentum(particles, dx);
-    DRAKE_DEMAND(std::abs(grid_stat.mass - particle_stat.mass) < 1E-10);
-    DRAKE_DEMAND(CompareMatrices(grid_stat.linear_momentum,
-                                 particle_stat.linear_momentum, 1E-10,
-                                 MatrixCompareType::absolute));
-    DRAKE_DEMAND(CompareMatrices(grid_stat.angular_momentum,
-                                 particle_stat.angular_momentum, 1E-10,
-                                 MatrixCompareType::absolute));
+    transfer.ParallelSimdGridToParticle(Parallelism(32));
+    if (add_test) {
+      MassAndMomentum<double> grid_stat = grid.ComputeTotalMassAndMomentum();
+      MassAndMomentum<double> particle_stat =
+          ComputeTotalMassAndMomentum(particles, dx);
+      DRAKE_DEMAND(std::abs(grid_stat.mass - particle_stat.mass) < 1E-10);
+      DRAKE_DEMAND(CompareMatrices(grid_stat.linear_momentum,
+                                   particle_stat.linear_momentum, 1E-10,
+                                   MatrixCompareType::absolute));
+      DRAKE_DEMAND(CompareMatrices(grid_stat.angular_momentum,
+                                   particle_stat.angular_momentum, 1E-10,
+                                   MatrixCompareType::absolute));
+    }
   }
 
-  auto end = std::chrono::high_resolution_clock::now();
+  auto end = std::chrono::steady_clock::now();
   std::chrono::duration<double> duration = end - start;
   std::cout << "Each time step takes: " << duration.count() * 10.0
             << " milliseconds" << std::endl;

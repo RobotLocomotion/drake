@@ -18,25 +18,9 @@ class Transfer {
   Transfer() = default;
   Transfer(T dt, SparseGrid<T>* sparse_grid, ParticleData<T>* particles);
 
-  void ParticleToGrid(Parallelism parallelize = false) {
-    if (parallelize.num_threads() == 1) {
-      SerialParticleToGrid();
-      // SerialSimdParticleToGrid();
-    } else {
-      // ParallelParticleToGrid(parallelize);
-      ParallelSimdParticleToGrid(parallelize);
-    }
-  }
+  void ParticleToGrid(Parallelism parallelize = false);
 
-  void GridToParticle(Parallelism parallelize = false) {
-    if (parallelize.num_threads() == 1) {
-      SerialGridToParticle();
-      // SerialSimdGridToParticle();
-    } else {
-      // ParallelGridToParticle(parallelize);
-      ParallelSimdGridToParticle(parallelize);
-    }
-  }
+  void GridToParticle(Parallelism parallelize = false);
 
   void SerialParticleToGrid();
   void SerialSimdParticleToGrid();

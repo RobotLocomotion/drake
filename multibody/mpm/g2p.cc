@@ -56,13 +56,13 @@ int do_main() {
   transfer.ParticleToGrid(/* parallelize? */ false);
   grid.ExplicitVelocityUpdate(dt, Vector3f::Zero());
 
-  auto start = std::chrono::high_resolution_clock::now();
+  auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < 300; ++i) {
     /* Use a fixed number of threads to get fair comparison across machines. */
     transfer.GridToParticle(Parallelism(12));
   }
 
-  auto end = std::chrono::high_resolution_clock::now();
+  auto end = std::chrono::steady_clock::now();
   std::chrono::duration<float> duration = end - start;
   std::cout << "Each time step takes: " << duration.count() / 300.0 * 1000.0 
             << " milliseconds" << std::endl;
