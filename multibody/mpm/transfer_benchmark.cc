@@ -11,12 +11,13 @@ namespace {
 
 using Eigen::Vector3f;
 using Eigen::Matrix3f;
+constexpr int kNumThreads = 32;
 
 class TransferBenchmark : public benchmark::Fixture {
  public:
   TransferBenchmark() {
     tools::performance::AddMinMaxStatistics(this);
-    this->Unit(benchmark::kMicrosecond);
+    this->Unit(benchmark::kMillisecond);
   }
 
   void SetUp(benchmark::State& state) {  // NOLINT(runtime/references)
@@ -59,23 +60,71 @@ class TransferBenchmark : public benchmark::Fixture {
   std::unique_ptr<Transfer<float>> transfer_;
 };
 
-BENCHMARK_DEFINE_F(TransferBenchmark, P2G)(benchmark::State& state) {  // NOLINT
+BENCHMARK_DEFINE_F(TransferBenchmark, SerialP2G)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
-    transfer_->ParticleToGrid();
+    transfer_->SerialParticleToGrid();
   }
 }
-
 // The Args are { num_nodes_per_dim, particles_per_cell }.
-BENCHMARK_REGISTER_F(TransferBenchmark, P2G)->Args({16, 8})->Args({32, 8});
+BENCHMARK_REGISTER_F(TransferBenchmark, SerialP2G)->Args({16, 8})->Args({32, 8});
 
-BENCHMARK_DEFINE_F(TransferBenchmark, G2P)(benchmark::State& state) {  // NOLINT
+BENCHMARK_DEFINE_F(TransferBenchmark, SerialSimdP2G)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
-    transfer_->GridToParticle();
+    transfer_->SerialSimdParticleToGrid();
   }
 }
-
 // The Args are { num_nodes_per_dim, particles_per_cell }.
-BENCHMARK_REGISTER_F(TransferBenchmark, G2P)->Args({16, 8})->Args({32, 8});
+BENCHMARK_REGISTER_F(TransferBenchmark, SerialSimdP2G)->Args({16, 8})->Args({32, 8});
+
+BENCHMARK_DEFINE_F(TransferBenchmark, ParallelP2G)(benchmark::State& state) {  // NOLINT
+  for (auto _ : state) {
+    transfer_->ParallelParticleToGrid(Parallelism(kNumThreads));
+  }
+}
+// The Args are { num_nodes_per_dim, particles_per_cell }.
+BENCHMARK_REGISTER_F(TransferBenchmark, ParallelP2G)->Args({16, 8})->Args({32, 8});
+
+BENCHMARK_DEFINE_F(TransferBenchmark, ParallelSimdP2G)(benchmark::State& state) {  // NOLINT
+  for (auto _ : state) {
+    transfer_->ParallelSimdParticleToGrid(Parallelism(kNumThreads));
+  }
+}
+// The Args are { num_nodes_per_dim, particles_per_cell }.
+BENCHMARK_REGISTER_F(TransferBenchmark, ParallelSimdP2G)->Args({16, 8})->Args({32, 8});
+
+
+BENCHMARK_DEFINE_F(TransferBenchmark, SerialG2P)(benchmark::State& state) {  // NOLINT
+  for (auto _ : state) {
+    transfer_->SerialGridToParticle();
+  }
+}
+// The Args are { num_nodes_per_dim, particles_per_cell }.
+BENCHMARK_REGISTER_F(TransferBenchmark, SerialG2P)->Args({16, 8})->Args({32, 8});
+
+BENCHMARK_DEFINE_F(TransferBenchmark, SerialSimdG2P)(benchmark::State& state) {  // NOLINT
+  for (auto _ : state) {
+    transfer_->SerialSimdGridToParticle();
+  }
+}
+// The Args are { num_nodes_per_dim, particles_per_cell }.
+BENCHMARK_REGISTER_F(TransferBenchmark, SerialSimdG2P)->Args({16, 8})->Args({32, 8});
+
+BENCHMARK_DEFINE_F(TransferBenchmark, ParallelG2P)(benchmark::State& state) {  // NOLINT
+  for (auto _ : state) {
+    transfer_->ParallelGridToParticle(Parallelism(kNumThreads));
+  }
+}
+// The Args are { num_nodes_per_dim, particles_per_cell }.
+BENCHMARK_REGISTER_F(TransferBenchmark, ParallelG2P)->Args({16, 8})->Args({32, 8});
+
+BENCHMARK_DEFINE_F(TransferBenchmark, ParallelSimdG2P)(benchmark::State& state) {  // NOLINT
+  for (auto _ : state) {
+    transfer_->ParallelSimdGridToParticle(Parallelism(kNumThreads));
+  }
+}
+// The Args are { num_nodes_per_dim, particles_per_cell }.
+BENCHMARK_REGISTER_F(TransferBenchmark, ParallelSimdG2P)->Args({16, 8})->Args({32, 8});
+
 
 }  // namespace
 }  // namespace internal

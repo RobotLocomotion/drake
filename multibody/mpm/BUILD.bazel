@@ -138,22 +138,22 @@ drake_cc_googletest(
     ],
 )
 
-# drake_cc_googlebench_binary(
-#     name = "transfer_benchmark",
-#     srcs = ["transfer_benchmark.cc"],
-#     add_test_rule = True,
-#     deps = [
-#         ":transfer",
-#         "//common:add_text_logging_gflags",
-#         "//tools/performance:fixture_common",
-#         "//tools/performance:gflags_main",
-#     ],
-# )
+drake_cc_googlebench_binary(
+    name = "transfer_benchmark",
+    srcs = ["transfer_benchmark.cc"],
+    add_test_rule = True,
+    deps = [
+        ":transfer",
+        "//common:add_text_logging_gflags",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+    ],
+)
 
-# drake_py_experiment_binary(
-#     name = "transfer_experiment",
-#     googlebench_binary = ":transfer_benchmark",
-# )
+drake_py_experiment_binary(
+    name = "transfer_experiment",
+    googlebench_binary = ":transfer_benchmark",
+)
 
 cc_binary(
     name = "p2g2p",
