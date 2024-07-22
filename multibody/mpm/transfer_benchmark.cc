@@ -18,6 +18,7 @@ class TransferBenchmark : public benchmark::Fixture {
   TransferBenchmark() {
     tools::performance::AddMinMaxStatistics(this);
     this->Unit(benchmark::kMillisecond);
+    this->MinWarmUpTime(10);
   }
 
   void SetUp(benchmark::State& state) {  // NOLINT(runtime/references)
@@ -124,7 +125,6 @@ BENCHMARK_DEFINE_F(TransferBenchmark, ParallelSimdG2P)(benchmark::State& state) 
 }
 // The Args are { num_nodes_per_dim, particles_per_cell }.
 BENCHMARK_REGISTER_F(TransferBenchmark, ParallelSimdG2P)->Args({16, 8})->Args({32, 8});
-
 
 }  // namespace
 }  // namespace internal

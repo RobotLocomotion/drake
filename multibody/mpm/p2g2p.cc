@@ -49,13 +49,14 @@ int do_main() {
 
   SetUp(num_nodes_per_dim, particles_per_cell, dx, &particles);
   bool add_test = false;
+  const int kNumThreads = 2;
 
   auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < 100; ++i) {
     Transfer<double> transfer(dt, &grid, &particles);
-    transfer.ParallelSimdParticleToGrid(Parallelism(32));
+    transfer.ParallelSimdParticleToGrid(Parallelism(kNumThreads));
     grid.ExplicitVelocityUpdate(dt, Vector3d::Zero());
-    transfer.ParallelSimdGridToParticle(Parallelism(32));
+    transfer.ParallelSimdGridToParticle(Parallelism(kNumThreads));
     if (add_test) {
       MassAndMomentum<double> grid_stat = grid.ComputeTotalMassAndMomentum();
       MassAndMomentum<double> particle_stat =
