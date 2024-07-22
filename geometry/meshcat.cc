@@ -1904,6 +1904,11 @@ class Meshcat::Impl {
     DRAKE_UNREACHABLE();
   }
 
+  void InjectMockTimer(std::unique_ptr<Timer> timer) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    rate_calculator_.InjectMockTimer(std::move(timer));
+  }
+
  private:
   bool IsThread(std::thread::id thread_id) const {
     return (std::this_thread::get_id() == thread_id);
@@ -2777,6 +2782,10 @@ void Meshcat::InjectWebsocketMessage(std::string_view message) {
 
 void Meshcat::InjectWebsocketThreadFault(int fault_number) {
   impl().InjectWebsocketThreadFault(fault_number);
+}
+
+void Meshcat::InjectMockTimer(std::unique_ptr<Timer> timer) {
+  impl().InjectMockTimer(std::move(timer));
 }
 
 }  // namespace geometry

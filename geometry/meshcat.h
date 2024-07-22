@@ -10,6 +10,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
+#include "drake/common/timer.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_params.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -988,6 +989,10 @@ class Meshcat {
   /* (Internal use for unit testing only) The max value (inclusive) for
   fault_number, above. */
   static constexpr int kMaxFaultNumber = 3;
+
+  /* (Internal use for unit testing only) Used to mock the monotonic wall time
+   source to control time during unit testing.  */
+  void InjectMockTimer(std::unique_ptr<Timer>);
 #endif
 
  private:

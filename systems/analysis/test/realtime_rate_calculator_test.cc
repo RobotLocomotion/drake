@@ -10,17 +10,6 @@ namespace {
 
 using internal::RealtimeRateCalculator;
 
-/* Mock timer allows the test to determine the time that Tick() reports. */
-class ManualTimer final : public Timer {
- public:
-  void Start() final { tick_ = 0.0; };
-  double Tick() final { return tick_; }
-  void set_tick(double tick) { tick_ = tick; }
-
- private:
-  double tick_{0};
-};
-
 GTEST_TEST(RealtimeRateCalculatorTest, Calculation) {
   const double kPeriod = 1;
   RealtimeRateCalculator calculator(kPeriod);

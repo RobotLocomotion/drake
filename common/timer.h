@@ -43,4 +43,20 @@ class SteadyTimer final : public Timer {
   clock::time_point start_time_;
 };
 
+/// Implementation of timing for use with unit tests that control time manually.
+class ManualTimer final : public Timer {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ManualTimer);
+  ManualTimer();
+  void Start() final;
+  double Tick() final;
+
+  /// Sets the return value of Tick().
+  void set_tick(double tick) { tick_ = tick; }
+
+ private:
+  double tick_{};
+};
+
+
 }  // namespace drake
