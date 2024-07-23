@@ -164,7 +164,6 @@ drake_cc_library(
         # this out temporarily.
         "-O2",
     ],
-    textual_hdrs = ["fast_pose_composition_functions_avx2_fma.cc"],
     deps = [
         ":vector3_util",
         "//common:default_scalars",
