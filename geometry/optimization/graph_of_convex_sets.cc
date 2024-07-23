@@ -1366,7 +1366,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     MathematicalProgramResult best_rounded_result;
 
     for (auto new_path : candidate_paths) {
-      // Optimize path
+      // Optimize path.
       MathematicalProgramResult rounded_result =
           SolveConvexRestriction(new_path, options, &result);
 
@@ -1413,7 +1413,7 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
     const Vertex& source, const Vertex& target,
     const std::unordered_map<const Edge*, double>& flows,
     const GraphOfConvexSetsOptions& options) const {
-  DRAKE_THROW_UNLESS(*options.max_rounded_paths > 0);
+  DRAKE_THROW_UNLESS(options.max_rounded_paths.value_or(0) > 0);
 
   if (vertices_.count(source.id()) == 0) {
     throw std::invalid_argument(fmt::format(

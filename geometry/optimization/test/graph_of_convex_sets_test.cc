@@ -2470,8 +2470,7 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
   }
 
   auto check_paths = [&](const auto& paths, const auto& source_vertex,
-                         const auto& target_vertex,
-                         std::size_t expected_num_paths) {
+                         const auto& target_vertex, int expected_num_paths) {
     ASSERT_EQ(paths.size(), expected_num_paths);
 
     // Check that all the paths start at the source and end at the target
@@ -2481,7 +2480,7 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
       ASSERT_EQ(p.back()->v().id(), target_vertex->id());
     }
 
-    // Make sure no paths are equal
+    // Make sure no paths are equal.
     for (std::size_t i = 0; i < paths.size(); ++i) {
       const auto& curr_path = paths[i];
 
@@ -2508,7 +2507,7 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
   auto paths = spp.SamplePaths(*source, *target, relaxed_result, options);
   check_paths(paths, source, target, kNumPaths);
 
-  // Now sample the paths using flows
+  // Now sample the paths using flows.
   std::unordered_map<const Edge*, double> flows;
   for (const auto& e : spp.Edges()) {
     flows.emplace(e, 0.5);
@@ -2527,14 +2526,14 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
       spp.SamplePaths(*source, *target, flows_subset, options);
   check_paths(paths_from_flows_subset, source, target, 1);
 
-  // Check the case where there are no possible paths
-  // Set all the flow variables to 0.0 so there are no candidate paths
+  // Check the case where there are no possible paths.
+  // Set all the flow variables to 0.0 so there are no candidate paths.
   for (const auto& e : spp.Edges()) {
     relaxed_result.SetSolution(e->phi(), 0.0);
   }
 
   auto paths_empty = spp.SamplePaths(*source, *target, relaxed_result, options);
-  // There should be no candidate paths
+  // There should be no candidate paths.
   ASSERT_EQ(paths_empty.size(), 0);
 }
 
