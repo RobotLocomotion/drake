@@ -24,6 +24,7 @@ cc_library(
     srcs = [
         "sparse_grid.cc",
     ],
+    copts = ["-fopenmp", "-march=native"],
     hdrs = [
         "sparse_grid.h",
         "particles.h",
@@ -32,6 +33,7 @@ cc_library(
         ":math",
         "//common:essential",
         "//tools/workspace/spgrid",
+        "//tools/workspace/ips2ra_internal",
     ],
 )
 

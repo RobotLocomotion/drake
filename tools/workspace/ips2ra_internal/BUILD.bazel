@@ -1,0 +1,34 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+cc_library(
+    name = "tbb",
+    hdrs = glob([
+        "include/oneapi/*.h",
+        "include/oneapi/tbb/*.h",
+        "include/oneapi/tbb/detail/*.h",
+    ]),
+    includes = [
+        "include",
+        "include/oneapi",
+    ],
+    deps = [
+        "@mosek//:tbb",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "ips2ra_internal",
+    srcs = glob(["**/*.cpp"]),
+    hdrs = glob(["**/*.hpp"]),
+    includes = ["."],
+    linkstatic = 1,
+    linkopts = ["-latomic"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "tbb",
+    ],
+)
+
+add_lint_tests()

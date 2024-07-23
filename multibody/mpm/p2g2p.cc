@@ -49,10 +49,10 @@ int do_main() {
 
   SetUp(num_nodes_per_dim, particles_per_cell, dx, &particles);
   bool add_test = false;
-  const int kNumThreads = 2;
+  const int kNumThreads = 12;
 
   auto start = std::chrono::steady_clock::now();
-  for (int i = 0; i < 100; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     Transfer<double> transfer(dt, &grid, &particles);
     transfer.ParallelSimdParticleToGrid(Parallelism(kNumThreads));
     grid.ExplicitVelocityUpdate(dt, Vector3d::Zero());
@@ -73,8 +73,8 @@ int do_main() {
 
   auto end = std::chrono::steady_clock::now();
   std::chrono::duration<double> duration = end - start;
-  std::cout << "Each time step takes: " << duration.count() * 10.0
-            << " milliseconds" << std::endl;
+  std::cout << "Each time step takes: " << duration.count() << " milliseconds"
+            << std::endl;
   return 0;
 }
 

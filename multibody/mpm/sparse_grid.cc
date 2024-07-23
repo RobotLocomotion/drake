@@ -2,9 +2,8 @@
 
 #include <iostream>
 
-#include "parallel_stable_sort/openmp/parallel_stable_sort.h"
+#include "ips2ra/ips2ra.hpp"
 #include <omp.h>
-// #include <tbb/parallel_sort.h>
 
 namespace drake {
 namespace multibody {
@@ -168,22 +167,15 @@ Vector3<int> SparseGrid<T>::OffsetToCoordinate(uint64_t offset) const {
 /* Sort particles by base node offsets so that particles that are close to
  each other in physical space are close to each other in memory. */
 template <typename T>
-void SparseGrid<T>::Sort(std::vector<ParticleIndex>* particles) {
-  // pss::parallel_stable_sort(particles->begin(), particles->end(),
-  //                           [](const ParticleIndex& a, const ParticleIndex&
-  //                           b) {
-  //                             if (a.base_node_offset == b.base_node_offset) {
-  //                               return a.index < b.index;
-  //                             }
-  //                             return a.base_node_offset < b.base_node_offset;
-  //                           });
-  std::sort(particles->begin(), particles->end(),
-            [](const ParticleIndex& a, const ParticleIndex& b) {
-              if (a.base_node_offset == b.base_node_offset) {
-                return a.index < b.index;
-              }
-              return a.base_node_offset < b.base_node_offset;
-            });
+void SparseGrid<T>::Sort(std::vector<uint64_t>* sorter,
+                         std::vector<ParticleIndex>* particles) {
+  ips2ra::parallel::sort(sorter->begin(), sorter->end(),
+                         ips2ra::Config<>::identity{}, 32);
+  for (int p = 0; p < ssize(*sorter); ++p) {
+    (*particles)[p].index = (*sorter)[p] & ((uint64_t(1) << kIndexBits) - 1);
+    (*particles)[p].base_node_offset = ((*sorter)[p] >> kIndexBits)
+                                       << kDataBits;
+  }
 }
 
 template <typename T>
@@ -191,6 +183,23 @@ void SparseGrid<T>::SortParticleIndices(ParticleData<T>* data) {
   const std::vector<Vector3<T>>& particle_positions = data->x;
   const int num_particles = particle_positions.size();
   particles_.resize(num_particles);
+  /* We sort particles first based on it's base node offset, and if those are
+   the same, we sort by particle indices. To do that, we notice that the base
+   node offset of the particle looks like
+
+       page bits | block bits | data bits
+
+   with all the data bits being equal to zero. Also, the left most bits of the
+   page bits are zero because at most 2^(3*kLog2MaxGridSize) number of grid
+   nodes and that takes up 3*kLog2MaxGridSize bits. The page bits and block bits
+   have 64 - data bits in total, so the left most 64 - data bits - 3 *
+   kLog2MaxGridSize bits are zero. So we left shift the base node offset by that
+   amount and now we get the lowest 64 - 3 * kLog2MaxGridSize bits to be zero.
+   With kLog2MaxGridSize == 10, we have 44 bits to work with, more than enough
+   to store the particle indices. We then sort the resulting 64 bit unsigned
+   integers. */
+  particle_sorters_.resize(num_particles);
+
 #if defined (_OPENMP)
 #pragma omp parallel for
 #endif
@@ -203,8 +212,17 @@ void SparseGrid<T>::SortParticleIndices(ParticleData<T>* data) {
     particles_[p].base_node_offset =
         CoordinateToOffset(base_node[0], base_node[1], base_node[2]);
     particles_[p].index = p;
+    /* Confirm the data bits are all zero. */
+    DRAKE_ASSERT((particles_[p].base_node_offset &
+                  ((uint64_t(1) << kDataBits) - 1)) == 0);
+    /* Confirm the left most bits in the page bits are unused. */
+    constexpr int kZeroPageBits = 64 - kDataBits - 3 * kLog2MaxGridSize;
+    DRAKE_ASSERT((particles_[p].base_node_offset &
+                  ~((uint64_t(1) << (64 - kZeroPageBits)) - 1)) == 0);
+    particle_sorters_[p] =
+        (particles_[p].base_node_offset << kZeroPageBits) + particles_[p].index;
   }
-  Sort(&particles_);
+  Sort(&particle_sorters_, &particles_);
 
   /* We use sentinel_particles_ to indicate particles that belong to separate
    pages. */

@@ -193,6 +193,7 @@ class SparseGrid {
    enough for most manipulation simulations. */
   static constexpr int kLog2MaxGridSize = 10;
   static constexpr int kMaxGridSize = 1 << kLog2MaxGridSize;
+  static constexpr int kIndexBits = 64 - 3 * kLog2MaxGridSize;
 
   static int get_color(uint64_t page) {
     int color = (page & 0x7);
@@ -209,12 +210,14 @@ class SparseGrid {
   /* Array type for GridData. */
   using Array = typename Allocator::Array_type<GridData<T>>;
   using ConstArray = typename Allocator::Array_type<const GridData<T>>;
+  static constexpr int kDataBits = Mask::data_bits;
 
   /* Helper for `Allocate()` that sorts particles into bins based on their
    positions. In that process, builds `partilces_` and `sentinel_particles_`.
   */
   void SortParticleIndices(ParticleData<T>* particles);
-  void Sort(std::vector<ParticleIndex>* particles);
+  void Sort(std::vector<uint64_t>* sorter,
+            std::vector<ParticleIndex>* particles);
 
   T dx_{};  // Grid spacing (in meters).
   std::unique_ptr<Allocator> allocator_;
@@ -229,6 +232,7 @@ class SparseGrid {
       kMaxGridSize / 2, kMaxGridSize / 2, kMaxGridSize / 2)};
 
   std::vector<ParticleIndex> particles_;
+  std::vector<uint64_t> particle_sorters_;
   std::vector<int> sentinel_particles_;
   /* Stores the difference in linear offset from a given grid node to the grid
    node exactly one block away. For example, let `a` be
