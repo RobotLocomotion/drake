@@ -2481,24 +2481,19 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
     }
 
     // Make sure no paths are equal.
-    for (std::size_t i = 0; i < paths.size(); ++i) {
-      const auto& curr_path = paths[i];
+    for (const std::vector<const Edge*>& path : paths) {
+      for (const std::vector<const Edge*>& other : paths) {
+        if (&path == &other) {
+          continue;
+        }
+        // Compare `path` with `other`.
+        std::vector<EdgeId> path_ids;
+        for (const auto& edge : path) path_ids.push_back(edge->id());
 
-      for (std::size_t other_idx = 0; other_idx < paths.size(); ++other_idx) {
-        if (other_idx == i) continue;
+        std::vector<EdgeId> other_ids;
+        for (const auto& edge : other) other_ids.push_back(edge->id());
 
-        std::vector<EdgeId> curr_path_ids;
-        for (const auto& edge : curr_path) curr_path_ids.push_back(edge->id());
-
-        std::vector<EdgeId> other_path_ids;
-        for (const auto& edge : paths[other_idx])
-          other_path_ids.push_back(edge->id());
-
-        // Sort the IDs
-        std::sort(curr_path_ids.begin(), curr_path_ids.end());
-        std::sort(other_path_ids.begin(), other_path_ids.end());
-        bool paths_equal = curr_path_ids == other_path_ids;
-
+        bool paths_equal = path_ids == other_ids;
         ASSERT_FALSE(paths_equal);
       }
     }
