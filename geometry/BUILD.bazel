@@ -516,6 +516,7 @@ drake_cc_library(
         ":scene_graph_inspector",
         ":shape_specification",
         "//common:essential",
+        "//common:file_contents",
         "//common:name_value",
         "//common:timer",
         "//geometry/proximity:triangle_surface_mesh",

@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":dummy_value",
         ":essential",
         ":extract_double",
+        ":file_contents",
         ":find_resource",
         ":find_runfiles",
         ":fmt",
@@ -179,6 +180,16 @@ drake_cc_library(
     hdrs = ["extract_double.h"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "file_contents",
+    srcs = ["file_contents.cc"],
+    hdrs = ["file_contents.h"],
+    deps = [
+        ":essential",
+        ":sha256",
     ],
 )
 
@@ -946,6 +957,11 @@ drake_cc_googletest(
         ":extract_double",
         "//common/test_utilities:eigen_matrix_compare",
     ],
+)
+
+drake_cc_googletest(
+    name = "file_contents_test",
+    deps = [":file_contents"],
 )
 
 drake_cc_googletest(
