@@ -41,6 +41,7 @@ drake_cc_package_library(
         ":is_approx_equal_abstol",
         ":is_cloneable",
         ":is_less_than_comparable",
+        ":memory_file",
         ":name_value",
         ":network_policy",
         ":nice_type_name",
@@ -179,6 +180,19 @@ drake_cc_library(
     hdrs = ["extract_double.h"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "memory_file",
+    srcs = ["memory_file.cc"],
+    hdrs = ["memory_file.h"],
+    deps = [
+        ":essential",
+        ":sha256",
+    ],
+    implementation_deps = [
+        ":find_resource",
     ],
 )
 
@@ -1052,6 +1066,18 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":is_approx_equal_abstol",
+    ],
+)
+
+drake_cc_googletest(
+    name = "memory_file_test",
+    data = [
+        "test/find_resource_test_data.txt",
+    ],
+    deps = [
+        ":memory_file",
+        ":temp_directory",
+        "//common:find_resource",
     ],
 )
 
