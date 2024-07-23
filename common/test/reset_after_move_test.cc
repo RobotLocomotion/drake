@@ -48,9 +48,10 @@ GTEST_TEST(DefaultValueTest, Access) {
   EXPECT_EQ(ForceInt(x_value_ref), 2);
 }
 
-// For the next test.
+// For the next two tests.
 struct Thing {
   int i{};
+  std::vector<int> values;
 };
 
 // Check that the dereferencing operators *ptr and ptr-> work for pointer types.
@@ -82,6 +83,25 @@ GTEST_TEST(DefaultValueTest, Pointers) {
   thing_ptr->i = 10;
   EXPECT_EQ(thing_ptr->i, 10);
   EXPECT_EQ((*thing_ptr).i, 10);
+}
+
+// Tests direct access to the underlying value.
+GTEST_TEST(DefaultValueTest, ValueAccess) {
+  reset_after_move<Thing> dut = Thing{17, {1, 2, 3}};
+  EXPECT_EQ(dut.value().i, 17);
+  dut.value().i = 18;
+  EXPECT_EQ(dut.value().i, 18);
+  EXPECT_EQ(dut.value().values.size(), 3);
+
+  const reset_after_move<Thing> const_dut(dut);
+  EXPECT_EQ(const_dut.value().i, 18);
+  EXPECT_EQ(const_dut.value().values.size(), 3);
+  // We also want to make sure that dereferencing a const reset_after_move only
+  // gives us const access to the contained value.
+  static_assert(
+      std::is_const_v<std::remove_reference_t<
+          decltype(std::declval<const reset_after_move<Thing>>().value())>>,
+      "*const must return const Thing&.");
 }
 
 GTEST_TEST(DefaultValueTest, Copy) {
