@@ -471,22 +471,39 @@ void GraphOfConvexSets::ClearAllPhiConstraints() {
   }
 }
 
-// TODO(russt): We could get fancy and dim the color of the nodes/edges
-// according to phi, using e.g. https://graphviz.org/docs/attr-types/color/ .
 std::string GraphOfConvexSets::GetGraphvizString(
     const std::optional<solvers::MathematicalProgramResult>& result,
-    bool show_slacks, int precision, bool scientific) const {
+    const GcsGraphvizOptions& options,
+    const std::optional<std::vector<const Edge*>>& active_path) const {
+  // This function converts the range (0.0, 1.0) to Hex strings in the range
+  // (20, FF).
+  const int kMaxHexValue = 255;
+  const int kMinHexValue = 32;
+  auto floatToHex = [](float value) -> std::string {
+    if (value < 0.0f || value > 1.0f) return "Out of range";
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
+       << static_cast<int>(value * (kMaxHexValue - kMinHexValue) +
+                           kMinHexValue);
+    return ss.str();
+  };
+
   // Note: We use stringstream instead of fmt in order to control the
   // formatting of the Eigen output and double output in a consistent way.
   std::stringstream graphviz;
-  graphviz.precision(precision);
-  if (!scientific) graphviz << std::fixed;
+  graphviz.precision(options.precision);
+  if (!options.scientific) graphviz << std::fixed;
   graphviz << "digraph GraphOfConvexSets {\n";
   graphviz << "labelloc=t;\n";
   for (const auto& [v_id, v] : vertices_) {
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
-      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose() << "]";
+      if (options.show_vars) {
+        graphviz << "\nx = [" << result->GetSolution(v->x()).transpose() << "]";
+      }
+      if (options.show_costs) {
+        graphviz << "\ncost = " << v->GetSolutionCost(*result);
+      }
     }
     graphviz << "\"]\n";
   }
@@ -495,19 +512,20 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << "v" << e->u().id() << " -> v" << e->v().id();
     graphviz << " [label=\"" << e->name();
     if (result) {
-      graphviz << "\n";
-      if (e->ell_.size() > 0) {
-        // SolveConvexRestriction does not yet return the rewritten costs.
-        if (result->get_decision_variable_index()->contains(
-                e->ell_[0].get_id())) {
-          graphviz << "cost = " << e->GetSolutionCost(*result);
+      if (options.show_costs) {
+        graphviz << "\n";
+        if (e->ell_.size() > 0) {
+          // SolveConvexRestriction does not yet return the rewritten costs.
+          if (result->get_decision_variable_index()->contains(
+                  e->ell_[0].get_id())) {
+            graphviz << "cost = " << e->GetSolutionCost(*result);
+          }
+        } else {
+          graphviz << "cost = 0";
         }
-      } else {
-        graphviz << "cost = 0";
       }
-      if (show_slacks) {
-        graphviz << ",\n";
-        graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
+      if (options.show_slacks) {
+        graphviz << "\n";
         if (result->get_decision_variable_index()->contains(
                 e->y_[0].get_id())) {
           graphviz << "ϕ xᵤ = [" << e->GetSolutionPhiXu(*result).transpose()
@@ -516,8 +534,28 @@ std::string GraphOfConvexSets::GetGraphvizString(
                    << "]";
         }
       }
+      if (options.show_flows) {
+        graphviz << "\n";
+        graphviz << "ϕ = " << result->GetSolution(e->phi());
+        graphviz << "\"";
+        // Note: This must be last, because it also sets the color parameter
+        // of the edge (and hence must close the name within quote-marks)
+        graphviz << ", color="
+                 << "\"#000000" << floatToHex(result->GetSolution(e->phi()));
+      }
     }
     graphviz << "\"];\n";
+  }
+
+  if (active_path) {
+    for (const auto& e : *active_path) {
+      graphviz << "v" << e->u().id() << " -> v" << e->v().id();
+      graphviz << " [label=\"" << e->name() << " = active\"";
+      graphviz << ", color="
+               << "\"#ff0000\"";
+      graphviz << ", style=\"dashed\"";
+      graphviz << "];\n";
+    }
   }
   graphviz << "}\n";
   return graphviz.str();

@@ -483,9 +483,8 @@ class GcsTrajectoryOptimization final {
   std::string GetGraphvizString(
       const std::optional<solvers::MathematicalProgramResult>& result =
           std::nullopt,
-      bool show_slack = true, int precision = 3,
-      bool scientific = false) const {
-    return gcs_.GetGraphvizString(result, show_slack, precision, scientific);
+      const geometry::optimization::GcsGraphvizOptions& options = {}) const {
+    return gcs_.GetGraphvizString(result, options);
   }
 
   /** Creates a Subgraph with the given regions and indices.

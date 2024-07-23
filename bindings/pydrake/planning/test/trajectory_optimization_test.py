@@ -19,6 +19,7 @@ from pydrake.geometry.optimization import (
     ConvexSet,
     GraphOfConvexSetsOptions,
     GraphOfConvexSets,
+    GcsGraphvizOptions,
     HPolyhedron,
     Point,
     VPolytope,
@@ -584,11 +585,25 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                              goal2[:, None], 6)
         self.assertTrue(traj.end_time() - traj.start_time() >= 10)
 
+        graphviz_options = GcsGraphvizOptions()
+        graphviz_options.show_costs = False
         self.assertIsInstance(
-            gcs.GetGraphvizString(result=result,
-                                  show_slack=True,
-                                  precision=3,
-                                  scientific=False), str)
+            gcs.GetGraphvizString(result=result, options=graphviz_options),
+            str
+        )
+
+        self.assertIsInstance(
+            gcs.GetGraphvizString(
+                result=result,
+                show_slacks=True,
+                show_vars=True,
+                show_flows=True,
+                show_costs=False,
+                scientific=True,
+                precision=3,
+            ),
+            str,
+        )
 
         # In the follwoing, we test adding the bindings for nonlinear
         # constraints.

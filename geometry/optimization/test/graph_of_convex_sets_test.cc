@@ -3002,11 +3002,33 @@ GTEST_TEST(ShortestPathTest, SavvaBoxExample) {
   }
 }
 
+GTEST_TEST(GcsGraphvizOptionsTest, Serialize) {
+  GcsGraphvizOptions options;
+  options.show_slacks = false;
+  options.show_vars = false;
+  options.show_flows = false;
+  options.show_costs = false;
+  options.scientific = true;
+  options.precision = 5;
+
+  const std::string serialized = yaml::SaveYamlString(options);
+  const auto deserialized =
+      yaml::LoadYamlString<GcsGraphvizOptions>(serialized);
+
+  EXPECT_EQ(deserialized.show_slacks, options.show_slacks);
+  EXPECT_EQ(deserialized.show_vars, options.show_vars);
+  EXPECT_EQ(deserialized.show_flows, options.show_flows);
+  EXPECT_EQ(deserialized.show_costs, options.show_costs);
+  EXPECT_EQ(deserialized.scientific, options.scientific);
+  EXPECT_EQ(deserialized.precision, options.precision);
+}
+
 GTEST_TEST(ShortestPathTest, Graphviz) {
   GraphOfConvexSets g;
   auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
   auto target = g.AddVertex(Point(Vector1d{1e-5}), "target");
-  g.AddEdge(source, target, "source_to_target")->AddCost(1.23);
+  Edge* edge = g.AddEdge(source, target, "source_to_target");
+  edge->AddCost(1.23);
   auto other = g.AddVertex(Point(Vector1d{4.0}), "other");
   g.AddEdge(source, other, "source_to_other")->AddCost(3.45);
   g.AddEdge(other, target, "other_to_target");  // No cost from other to target.
@@ -3015,15 +3037,20 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   options.preprocessing = true;
   options.convex_relaxation = true;
 
+  GcsGraphvizOptions viz_options;
+
   // Note: Testing the entire string against a const string is too fragile,
   // since the VertexIds are Identifier<> and increment on a global counter.
   EXPECT_THAT(g.GetGraphvizString(),
               AllOf(HasSubstr("source"), HasSubstr("target"),
                     HasSubstr("source_to_target")));
+
   auto result = g.SolveShortestPath(*source, *target, options);
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
-                    HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ =")));
+                    HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ ="),
+                    Not(HasSubstr("color=\"#ff0000\"")),
+                    HasSubstr("color=\"#00000020\"]")));
 
   // With a rounded result.
   options.max_rounded_paths = 1;
@@ -3031,18 +3058,48 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   // Note: The cost here only comes from the cost=0 on other_to_target until
   // SolveConvexRestriction provides the rewritten costs.
   EXPECT_THAT(g.GetGraphvizString(result),
-              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ =")));
+              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
+                    HasSubstr("color=\"#00000020\"]")));
 
   // No slack variables.
-  EXPECT_THAT(
-      g.GetGraphvizString(result, false),
-      AllOf(HasSubstr("x ="), HasSubstr("cost ="), Not(HasSubstr("ϕ =")),
-            Not(HasSubstr("ϕ xᵤ =")), Not(HasSubstr("ϕ xᵥ ="))));
+  viz_options.show_slacks = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
+                    Not(HasSubstr("ϕ xᵤ =")), Not(HasSubstr("ϕ xᵥ ="))));
+
   // Precision and scientific.
-  EXPECT_THAT(g.GetGraphvizString(result, false, 2, false),
+  viz_options.precision = 2;
+  viz_options.scientific = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
               AllOf(HasSubstr("x = [1.00 2.00]"), HasSubstr("x = [0.00]")));
-  EXPECT_THAT(g.GetGraphvizString(result, false, 2, true),
+
+  viz_options.scientific = true;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
               AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-05]")));
+
+  // No vertex vars
+  viz_options.show_vars = false;
+  viz_options.scientific = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(Not(HasSubstr("x ="))));
+
+  // No cost
+  viz_options.show_costs = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(Not(HasSubstr("cost ="))));
+
+  // No flows
+  viz_options.show_flows = false;
+  EXPECT_THAT(
+      g.GetGraphvizString(result, viz_options),
+      AllOf(Not(HasSubstr("ϕ =")), Not(HasSubstr("color=\"#00000020\"]"))));
+
+  // Show active path
+  viz_options.show_flows = false;
+  viz_options.show_costs = false;
+  EXPECT_THAT(
+      g.GetGraphvizString(result, viz_options, std::vector<const Edge*>{edge}),
+      AllOf(HasSubstr("color=\"#ff0000\"")));
 }
 
 }  // namespace optimization
