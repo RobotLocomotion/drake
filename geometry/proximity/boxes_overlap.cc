@@ -29,7 +29,7 @@ namespace hn = hwy::HWY_NAMESPACE;
 // The SIMD approach is only useful when we have registers of size `double[4]`
 // or larger. When we have smaller registers (e.g., SSE2's 2-wide lanes, or
 // SVE's variable-length vectors) we will fall back to non-SIMD code.
-#if HWY_MAX_BYTES >= 32 && HWY_HAVE_SCALABLE == 0
+#if HWY_MAX_BYTES >= 32 && HWY_HAVE_SCALABLE == 0 && 0
 
 template <typename Tag, typename VecT = hn::Vec<Tag>>
 bool GreaterThan(const Tag& tag, const VecT& left, const VecT& right) {
