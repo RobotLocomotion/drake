@@ -84,7 +84,7 @@ namespace {
 // @param gltf_filename Only used for debugging and error messages.
 // @param array_hint The place where this URI occurred, e.g., "buffers[1]".
 //  Only used for debugging and error messages.
-std::shared_ptr<const FileStorage::Handle> LoadGltfUri(
+std::shared_ptr<const common::FileContents> LoadGltfUri(
     const fs::path& gltf_filename, std::string_view array_hint,
     std::string_view uri, FileStorage* storage) {
   DRAKE_DEMAND(storage != nullptr);
@@ -126,12 +126,12 @@ std::shared_ptr<const FileStorage::Handle> LoadGltfUri(
 
 }  // namespace
 
-std::vector<std::shared_ptr<const FileStorage::Handle>> UnbundleGltfAssets(
+std::vector<std::shared_ptr<const common::FileContents>> UnbundleGltfAssets(
     const fs::path& gltf_filename, std::string* gltf_contents,
     FileStorage* storage) {
   DRAKE_DEMAND(gltf_contents != nullptr);
   DRAKE_DEMAND(storage != nullptr);
-  std::vector<std::shared_ptr<const FileStorage::Handle>> assets;
+  std::vector<std::shared_ptr<const common::FileContents>> assets;
   json gltf;
   try {
     gltf = json::parse(*gltf_contents);
@@ -152,7 +152,7 @@ std::vector<std::shared_ptr<const FileStorage::Handle>> UnbundleGltfAssets(
         const std::string_view uri =
             item["uri"].template get<std::string_view>();
         const std::string array_hint = fmt::format("{}[{}]", array_name, i);
-        std::shared_ptr<const FileStorage::Handle> asset =
+        std::shared_ptr<const common::FileContents> asset =
             LoadGltfUri(gltf_filename, array_hint, uri, storage);
         if (asset != nullptr) {
           item["uri"] = FileStorage::GetCasUrl(*asset);
