@@ -394,6 +394,8 @@ drake_cc_library(
     hdrs = ["shape_specification.h"],
     deps = [
         "//common:essential",
+        "//common:file_contents",
+        "//common:string_container",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
     ],
