@@ -1426,6 +1426,14 @@ std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
         target.name()));
   }
 
+  for (const auto& [edge, flow] : flows) {
+    if (edges_.count(edge->id()) == 0) {
+      throw std::invalid_argument(fmt::format(
+          "Edge with id {} does not exist in this GraphOfConvexSets.",
+          edge->id()));
+    }
+  }
+
   auto flow_exists_and_above_threshold = [&](const Edge* edge) -> bool {
     auto it = flows.find(edge);
     return it != flows.end() && it->second > options.flow_tolerance;

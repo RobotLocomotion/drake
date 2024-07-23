@@ -2532,6 +2532,37 @@ GTEST_TEST(ShortestPathTest, SamplePaths) {
   ASSERT_EQ(paths_empty.size(), 0);
 }
 
+GTEST_TEST(ShortestPathTest, SamplePathsInvalidEdgeInFlows) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* target = spp.AddVertex(Point(Vector2d(1.5, 1.5)));
+  spp.AddEdge(source, target);
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 5;
+  options.max_rounding_trials = 10;
+
+  // Create an edge that does not belong to the graph.
+  GraphOfConvexSets other_gcs;
+  Vertex* other_source = other_gcs.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* other_target = other_gcs.AddVertex(Point(Vector2d(1.5, 1.5)));
+  Edge* invalid_edge = other_gcs.AddEdge(other_source, other_target);
+
+  // Create flows with an invalid edge.
+  std::unordered_map<const Edge*, double> flows;
+  for (const auto& e : spp.Edges()) {
+    flows.emplace(e, 0.5);
+  }
+  flows.emplace(invalid_edge, 0.5);  // Add invalid edge.
+
+  // Ensure that the invalid argument exception is thrown.
+  EXPECT_THROW(spp.SamplePaths(*source, *target, flows, options),
+               std::invalid_argument);
+}
+
 GTEST_TEST(ShortestPathTest, InaccurateRelaxationSolve) {
   // If the convex relaxation is solved inaccurately, infeasibility may go
   // undetected. Previously, this could lead the randomized rounding process to
