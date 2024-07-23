@@ -31,6 +31,47 @@ class TestCommon(unittest.TestCase):
     def test_find_resource_or_throw(self):
         mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf")
 
+    def test_sha256(self):
+        empty = mut.Sha256()
+        not_empty = mut.Sha256.Checksum("Some string")
+        self.assertFalse(empty == not_empty)
+        self.assertTrue(empty != not_empty)
+        self.assertTrue(empty < not_empty)
+
+        str_value = not_empty.to_string()
+        not_empty2 = mut.Sha256.Parse(str_value)
+        self.assertTrue(not_empty == not_empty2)
+
+        copy.copy(not_empty)
+        copy.deepcopy(not_empty)
+
+    def test_memory_file(self):
+        content_string = "Some string"
+        hint = "hint"
+        ext = ".bob"
+        file = mut.MemoryFile(content_string, ext, hint)
+
+        self.assertEqual(file.sha256(), mut.Sha256.Checksum(content_string))
+        self.assertEqual(file.contents(), content_string)
+        self.assertEqual(file.extension(), ext)
+        self.assertEqual(file.filename_hint(), hint)
+
+        def string_regex(s):
+            """Confirm that the string is surrounded by quotes (either double
+            or single; we don't care which, just so long as they match)."""
+            return f"""(['"]){s}\\1"""
+        representation = repr(file)
+        self.assertRegex(representation, string_regex(content_string))
+        self.assertRegex(representation, string_regex(hint))
+        self.assertRegex(representation, string_regex(ext))
+
+        copy.copy(file)
+        copy.deepcopy(file)
+
+        file = mut.MemoryFile.Make(
+            mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"))
+        self.assertEqual(file.extension(), ".urdf")
+
     def test_parallelism(self):
         # This matches the BUILD.bazel rule for this test program.
         self.assertEqual(os.environ.get("DRAKE_NUM_THREADS"), "2")
