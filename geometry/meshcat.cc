@@ -2472,9 +2472,15 @@ void Meshcat::SetTriangleColorMesh(
     std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
     const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
     const Eigen::Ref<const Eigen::Matrix3Xd>& colors, bool wireframe,
-    double wireframe_line_width, SideOfFaceToRender side) {
-  impl().SetTriangleColorMesh(path, vertices, faces, colors, wireframe,
-                              wireframe_line_width, side);
+    double wireframe_line_width, SideOfFaceToRender side,
+    std::optional<double> time_in_recording) {
+  internal::MeshcatRecording::SetObjectDetail detail =
+      recording_->SetObject(path, time_in_recording);
+  for (const auto& item : detail.properties) {
+    SetProperty(item.path, "visible", item.visible, item.time);
+  }
+  impl().SetTriangleColorMesh(detail.new_path, vertices, faces, colors,
+                              wireframe, wireframe_line_width, side);
 }
 
 void Meshcat::PlotSurface(std::string_view path,

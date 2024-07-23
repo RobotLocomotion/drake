@@ -2,9 +2,12 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/math/rigid_transform.h"
 
@@ -67,6 +70,22 @@ class MeshcatRecording {
                     const math::RigidTransformd& X_ParentPath,
                     std::optional<double> time_in_recording);
 
+  /* XXX */
+  struct SetObjectDetail {
+    struct Visible {
+      std::string path;
+      double time{};
+      bool visible{};
+    };
+
+    std::string new_path;
+    std::vector<Visible> properties;
+  };
+
+  /* XXX */
+  SetObjectDetail SetObject(std::string_view path,
+                            std::optional<double> time_in_recording);
+
  private:
   struct AnimationDetail {
     // A frame number for use with MeshcatAnimation, or nullopt if this event
@@ -87,6 +106,9 @@ class MeshcatRecording {
   std::unique_ptr<MeshcatAnimation> animation_;
   bool recording_{false};
   bool set_visualizations_while_recording_{false};
+
+  // XXX comment me.
+  string_unordered_map<int> last_frames_;
 };
 
 }  // namespace internal

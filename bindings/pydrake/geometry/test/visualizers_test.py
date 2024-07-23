@@ -172,7 +172,8 @@ class TestGeometryVisualizers(unittest.TestCase):
             colors=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]]).T,
             wireframe=False,
             wireframe_line_width=2.0,
-            side=meshcat.SideOfFaceToRender.kDoubleSide)
+            side=meshcat.SideOfFaceToRender.kDoubleSide,
+            time_in_recording=0.1)
         # Plot the six-hump camel
         xs = np.linspace(-2.2, 2.2, 51)
         ys = np.linspace(-1.2, 1.2, 51)
