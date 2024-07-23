@@ -785,14 +785,14 @@ TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
   TestBoxMesh(box_obj_, mesh_asset, defaults, 2.0);
 }
 
-// CalcSpatialInertia cannot necessarily compute a physical spatial inertia for
-// meshes which don't adhere to its requirements. The parser detects this and
-// provides a fallback so that it doesn't choke.
+// CalcSpatialInertia() cannot necessarily compute a physical spatial inertia
+// for meshes which don't adhere to its requirements. The parser detects this
+// and provides a fallback so that it doesn't choke.
 // Per #21666 the failure is reported by throwing, in the future it will be
 // via some non-throwing protocol.
 TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
   // This obj is known to produce a non-physical spatial inertia in
-  // CalcSpatialInertia.
+  // CalcSpatialInertia().
   const RlocationOrError rlocation = FindRunfile(
       "mujoco_menagerie_internal/hello_robot_stretch/assets/base_link_0.obj");
   ASSERT_EQ(rlocation.error, "");
@@ -802,8 +802,9 @@ TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
   // is fixed, it will be some other mechanism. Evolve *this* test to match
   // that API, but otherwise keep this confirmation that the mesh in question
   // truly is "bad".
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(bad_mesh, 1.0),
-                              ".*IsPhysicallyValid[\\s\\S]*");
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(
+      bad_mesh, 1.0 /* air density ≈ 1 kg/m³ */),
+          ".*IsPhysicallyValid[\\s\\S]*");
 
   std::string xml = fmt::format(R"""(
 <mujoco model="test">

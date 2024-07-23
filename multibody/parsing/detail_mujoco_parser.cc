@@ -433,13 +433,19 @@ class MujocoParser {
         M_GG_G_ = mesh_inertia_->at(name_);
       } else {
         try {  // TODO(21666), remove the try-catch.
-          M_GG_G_ = CalcSpatialInertia(mesh, 1.0 /* density */);
+          // Below: density = 1 kg/m³ is used to calculate a spatial inertia.
+          // Later, after InertiaCalculator::Calc(), spatial inertia may be
+          // scaled with a proper density (e.g., water density ≈ 1000 kg/m³).
+          M_GG_G_ = CalcSpatialInertia(mesh, 1.0 /* air density ≈ 1 kg/m³ */);
         } catch (const std::exception& e) {
           // As with mujoco, failure leads to using the convex hull.
           // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
+          // Below: density = 1 kg/m³ is used to calculate a spatial inertia.
+          // Later, after InertiaCalculator::Calc(), spatial inertia may be
+          // scaled with a proper density (e.g., water density ≈ 1000 kg/m³).
           M_GG_G_ = CalcSpatialInertia(
               geometry::Convex(mesh.filename(), mesh.scale()),
-              1.0 /* density */);
+              1.0 /* air density ≈ 1 kg/m³ */);
           used_convex_hull_fallback_ = true;
         }
         mesh_inertia_->insert_or_assign(name_, M_GG_G_);
@@ -451,7 +457,10 @@ class MujocoParser {
     }
 
     void DefaultImplementGeometry(const geometry::Shape& shape) final {
-      M_GG_G_ = CalcSpatialInertia(shape, 1.0 /* density */);
+      // Below: density = 1 kg/m³ is used to calculate a spatial inertia.
+      // Later, after InertiaCalculator::Calc(), spatial inertia may be
+      // scaled with a proper density (e.g., water density ≈ 1000 kg/m³).
+      M_GG_G_ = CalcSpatialInertia(shape, 1.0 /* air density ≈ 1 kg/m³ */);
     }
 
    private:
@@ -812,7 +821,7 @@ class MujocoParser {
       }
       double mass{};
       if (!ParseScalarAttribute(node, "mass", &mass)) {
-        double density{1000};
+        double density{1000};  /* water density ≈ 1000 kg/m³ */
         ParseScalarAttribute(node, "density", &density);
         // M_GG_G_one was calculated with ρ₁ = 1 which produced mass m₁. Actual
         // density is ρₐ. We have the following ratio: mₐ / m₁ = ρₐ / ρ₁.
