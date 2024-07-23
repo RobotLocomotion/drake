@@ -22,6 +22,7 @@
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/osqp_solver.h"
+#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/solver_options.h"
 
 namespace drake {
@@ -2501,6 +2502,197 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     auto successful_result_2 = spp.SolveShortestPath(*source, *target, options);
     EXPECT_TRUE(successful_result_2.is_success());
   }
+}
+
+/*
+┌──────┐     ┌────┐     ┌────┐
+|source├────►│ p1 │◄───►│ p3 │─────────┐
+└───┬──┘     └─▲──┘     └─▲──┘         |
+    │          |          |            |
+    │        ┌─▼──┐     ┌─▼──┐     ┌───▼────┐
+    └───────►│ p2 │◄───►│ p4 │────►│ target │
+             └────┘     └────┘     └────────┘
+
+*/
+GTEST_TEST(ShortestPathTest, SamplePaths) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* target = spp.AddVertex(Point(Vector2d(1.5, 1.5)));
+  Vertex* p1 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(2, -1)));
+  Vertex* p2 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(-1, 2)));
+  Vertex* p3 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(1, -2), Vector2d(2, 2)));
+  Vertex* p4 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, 1), Vector2d(2, 2)));
+
+  // Edges pointing towards target
+  const auto e_s1 = spp.AddEdge(source, p1);
+  spp.AddEdge(source, p2);
+  const auto e_13 = spp.AddEdge(p1, p3);
+  spp.AddEdge(p2, p4);
+  const auto e_3t = spp.AddEdge(p3, target);
+  spp.AddEdge(p4, target);
+
+  // Edges between parallel vertices
+  spp.AddEdge(p1, p2);
+  spp.AddEdge(p2, p1);
+  spp.AddEdge(p3, p4);
+  spp.AddEdge(p4, p3);
+
+  // Edges pointing towards source
+  spp.AddEdge(p3, p1);
+  spp.AddEdge(p4, p2);
+
+  // The maximum number of distinct paths without revisits in this graph is 8,
+  // hence given enough samples (and high probabilities of traversing all
+  // edges) we should find all of them.
+  const int kNumPaths = 8;
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  // Set max_rounded_paths to 0 to we only solve the convex relaxation.
+  options.max_rounded_paths = 0;
+  // We won't care about this result, but we solve to obtain a result we can
+  // later modify.
+  auto relaxed_result = spp.SolveShortestPath(*source, *target, options);
+  ASSERT_TRUE(relaxed_result.is_success());
+
+  // Set a high number of rounding trials so we find at least kNumPaths paths.
+  options.max_rounded_paths = kNumPaths;
+  options.max_rounding_trials = 100;
+
+  // Set all the flow variables to 0.5 so we will sample multiple random paths.
+  for (const auto& e : spp.Edges()) {
+    relaxed_result.SetSolution(e->phi(), 0.5);
+  }
+
+  auto check_paths = [&](const auto& paths, const auto& source_vertex,
+                         const auto& target_vertex, int expected_num_paths) {
+    ASSERT_EQ(paths.size(), expected_num_paths);
+
+    // Check that all the paths start at the source and end at the target
+    for (const auto& p : paths) {
+      ASSERT_GE(p.size(), 0);
+      ASSERT_EQ(p.front()->u().id(), source_vertex->id());
+      ASSERT_EQ(p.back()->v().id(), target_vertex->id());
+    }
+
+    // Make sure no paths are equal.
+    for (const std::vector<const Edge*>& path : paths) {
+      for (const std::vector<const Edge*>& other : paths) {
+        if (&path == &other) {
+          continue;
+        }
+        // Compare `path` with `other`.
+        std::vector<EdgeId> path_ids;
+        for (const auto& edge : path) path_ids.push_back(edge->id());
+
+        std::vector<EdgeId> other_ids;
+        for (const auto& edge : other) other_ids.push_back(edge->id());
+
+        bool paths_equal = path_ids == other_ids;
+        ASSERT_FALSE(paths_equal);
+      }
+    }
+  };
+
+  auto paths = spp.SamplePaths(*source, *target, relaxed_result, options);
+  check_paths(paths, source, target, kNumPaths);
+
+  // Now sample the paths using flows.
+  std::unordered_map<const Edge*, double> flows;
+  for (const auto& e : spp.Edges()) {
+    flows.emplace(e, 0.5);
+  }
+  auto paths_from_flows = spp.SamplePaths(*source, *target, flows, options);
+  check_paths(paths_from_flows, source, target, kNumPaths);
+
+  // Now sample the paths using a subset of the flows (all flows not included
+  // should be assumed identical to 0).
+  std::unordered_map<const Edge*, double> flows_subset;
+  flows_subset.emplace(e_s1, 0.5);
+  flows_subset.emplace(e_13, 0.5);
+  flows_subset.emplace(e_3t, 0.5);
+  // Because all other flows are assumed 0, there should only be one found path.
+  auto paths_from_flows_subset =
+      spp.SamplePaths(*source, *target, flows_subset, options);
+  check_paths(paths_from_flows_subset, source, target, 1);
+
+  // Check the case where there are no possible paths.
+  // Set all the flow variables to 0.0 so there are no candidate paths.
+  for (const auto& e : spp.Edges()) {
+    relaxed_result.SetSolution(e->phi(), 0.0);
+  }
+
+  auto paths_empty = spp.SamplePaths(*source, *target, relaxed_result, options);
+  // There should be no candidate paths.
+  ASSERT_EQ(paths_empty.size(), 0);
+}
+
+GTEST_TEST(ShortestPathTest, SamplePathsInvalidEdgeInFlows) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* target = spp.AddVertex(Point(Vector2d(1.5, 1.5)));
+  spp.AddEdge(source, target);
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 5;
+  options.max_rounding_trials = 10;
+
+  // Create an edge that does not belong to the graph.
+  GraphOfConvexSets other_gcs;
+  Vertex* other_source = other_gcs.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* other_target = other_gcs.AddVertex(Point(Vector2d(1.5, 1.5)));
+  Edge* invalid_edge = other_gcs.AddEdge(other_source, other_target);
+
+  // Create flows with an invalid edge.
+  std::unordered_map<const Edge*, double> flows;
+  for (const auto& e : spp.Edges()) {
+    flows.emplace(e, 0.5);
+  }
+  flows.emplace(invalid_edge, 0.5);  // Add invalid edge.
+
+  // Ensure that the invalid argument exception is thrown.
+  EXPECT_THROW(spp.SamplePaths(*source, *target, flows, options),
+               std::invalid_argument);
+}
+
+GTEST_TEST(ShortestPathTest, InaccurateRelaxationSolve) {
+  // If the convex relaxation is solved inaccurately, infeasibility may go
+  // undetected. Previously, this could lead the randomized rounding process to
+  // fail quietly, eventually leading to a segmentation fault or other memory
+  // error.
+  Point p1(Vector1d(0.0));
+  Point p2(Vector1d(1.0));
+
+  GraphOfConvexSets g;
+
+  auto v1 = g.AddVertex(p1);
+  auto v2 = g.AddVertex(p1);
+  auto v3 = g.AddVertex(p2);
+  auto v4 = g.AddVertex(p2);
+
+  g.AddEdge(v1, v2);
+  g.AddEdge(v3, v4);
+
+  // Prevent the solver from detecting infeasibility.
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 100;
+
+  options.solver_options.SetOption(solvers::ScsSolver::id(), "max_iters", 1);
+  solvers::ScsSolver scs;
+  options.solver = &scs;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(g.SolveShortestPath(*v1, *v4, options),
+                              ".*no path from the source to the target.*");
 }
 
 // In some cases, the depth first search performed in rounding will lead to a
