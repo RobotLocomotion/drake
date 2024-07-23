@@ -283,6 +283,24 @@ def pretty_class_name(cls: type, *, use_qualname: bool = False) -> str:
         name = cls.__name__
     return _MangledName.demangle(name)
 
+def _add_extraneous_repr_functions():
+    """Defines repr functions for various classes in common where defining it
+    in python is simply more convenient.
+    """
+    def mem_file_repr(file):
+        if len(file.contents()) > 1024:
+            repr_contents = f"<{file.contents()[:1024]}...>"
+        else:
+            repr_contents = repr(file.contents())
+        return (
+            f"MemoryFile("
+            f"  contents={repr_contents},"
+            f"  extension={repr(file.extension())},"
+            f"  filename_hint={repr(file.filename_hint())})"
+        )
+    MemoryFile.__repr__ = mem_file_repr
+
+_add_extraneous_repr_functions()
 
 # We must be able to do `from pydrake.symbolic import _symbolic_sympy` so we
 # need `pydrake.symbolic` to be a Python package, not merely a module. (See
