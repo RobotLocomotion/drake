@@ -64,7 +64,7 @@ GTEST_TEST(UnbundleGltfAssetsTest, DataUri) {
 
   // Unbundle it.
   FileStorage storage;
-  std::vector<std::shared_ptr<const FileStorage::Handle>> assets =
+  std::vector<std::shared_ptr<const MemoryFile>> assets =
       UnbundleGltfAssets(gltf_filename, &gltf_contents, &storage);
 
   // The contents got smaller due to unbundling (but not too small).
@@ -76,7 +76,7 @@ GTEST_TEST(UnbundleGltfAssetsTest, DataUri) {
   const Sha256 expected_sha256 = Sha256::Checksum(ReadFileOrThrow(
       FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.bin")));
   ASSERT_EQ(assets.size(), 1);
-  EXPECT_EQ(assets.front()->sha256, expected_sha256);
+  EXPECT_EQ(assets.front()->sha256(), expected_sha256);
 
   // Make sure the new URI seems correct.
   EXPECT_THAT(json::parse(gltf_contents)["buffers"][0]["uri"],
@@ -116,14 +116,14 @@ GTEST_TEST(UnbundleGltfAssetsTest, RelativeUri) {
 
   // Unbundle it.
   FileStorage storage;
-  std::vector<std::shared_ptr<const FileStorage::Handle>> assets =
+  std::vector<std::shared_ptr<const MemoryFile>> assets =
       UnbundleGltfAssets(gltf_filename, &gltf_contents, &storage);
 
   // One asset was added to storage, identical to cube2.bin.
   const Sha256 expected_sha256 = Sha256::Checksum(ReadFileOrThrow(
       FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.bin")));
   ASSERT_EQ(assets.size(), 1);
-  EXPECT_EQ(assets.front()->sha256, expected_sha256);
+  EXPECT_EQ(assets.front()->sha256(), expected_sha256);
 
   // Make sure the new URI seems correct.
   EXPECT_THAT(json::parse(gltf_contents)["buffers"][0]["uri"],
