@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":detect_zero_simplex",
         ":field_intersection",
         ":hydroelastic_internal",
+        ":inflate_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
@@ -381,6 +382,7 @@ drake_cc_library(
     hdrs = ["hydroelastic_internal.h"],
     deps = [
         ":bvh",
+        ":inflate_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
@@ -407,6 +409,22 @@ drake_cc_library(
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "inflate_mesh",
+    srcs = ["inflate_mesh.cc"],
+    hdrs = ["inflate_mesh.h"],
+    deps = [
+        ":volume_mesh",
+    ],
+    implementation_deps = [
+        ":volume_to_surface_mesh",
+        "//common:essential",
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+        "//solvers:solve",
     ],
 )
 
@@ -827,6 +845,7 @@ drake_cc_library(
         "//multibody/fixed_fem/dev:__pkg__",
     ],
     deps = [
+        ":mesh_field",
         ":sorted_triplet",
         ":volume_mesh",
         "//common:drake_export",
@@ -835,6 +854,25 @@ drake_cc_library(
         "//geometry:shape_specification",
         "@fcl_internal//:fcl",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "sample_volume_field",
+    srcs = ["sample_volume_field.cc"],
+    hdrs = ["sample_volume_field.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":mesh_field",
+        ":volume_mesh",
+        "//math:geometric_transform",
+    ],
+    implementation_deps = [
+        ":bv",
+        ":bvh",
+        ":triangle_surface_mesh",
+        "//common:essential",
     ],
 )
 
@@ -1228,10 +1266,25 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "inflate_mesh_test",
+    data = [
+        "//geometry:test_vtk_files",
+    ],
+    deps = [
+        ":inflate_mesh",
+        ":make_mesh_from_vtk",
+        ":volume_to_surface_mesh",
+        "//common:find_resource",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_googletest(
     name = "make_box_field_test",
     deps = [
         ":make_box_field",
         ":make_box_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1250,6 +1303,7 @@ drake_cc_googletest(
     deps = [
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1325,6 +1379,7 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_field",
         ":make_cylinder_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1342,6 +1397,7 @@ drake_cc_googletest(
     deps = [
         ":make_ellipsoid_field",
         ":make_ellipsoid_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1383,6 +1439,7 @@ drake_cc_googletest(
     deps = [
         ":make_sphere_field",
         ":make_sphere_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )

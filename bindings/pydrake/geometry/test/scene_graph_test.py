@@ -361,14 +361,15 @@ class TestGeometrySceneGraph(unittest.TestCase):
             static_friction=6,
             hunt_crossley_dissipation=7,
             relaxation_time=None,  # Test optionality.
-            point_stiffness=9,
+            margin=9,
+            point_stiffness=10,
         )
         param_init_scene_graph = mut.SceneGraphConfig(
             default_proximity_properties=param_init_props)
         # Spot-check that at least some value got passed through.
         got_props = param_init_scene_graph.default_proximity_properties
         self.assertEqual(got_props.relaxation_time, None)
-        self.assertEqual(got_props.point_stiffness, 9)
+        self.assertEqual(got_props.point_stiffness, 10)
 
     @numpy_compare.check_all_types
     def test_scene_graph_renderer_with_context(self, T):

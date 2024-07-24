@@ -93,6 +93,7 @@ class SoftMesh {
  */
 struct SoftHalfSpace {
   double pressure_scale;
+  double margin;
   // TODO(SeanCurtis-TRI): Possibly add a customizable pressure function in the
   //  future; one that isn't simply the scaled, normalized penetration distance.
 };
@@ -169,6 +170,16 @@ class SoftGeometry {
           "SoftGeometry::pressure_scale() cannot be invoked for soft mesh");
     }
     return std::get<SoftHalfSpace>(geometry_).pressure_scale;
+  }
+
+  /* Returns the half space's margin -- calling this will throw if
+   is_half_space() returns `false`.  */
+  double margin() const {
+    if (!is_half_space()) {
+      throw std::runtime_error(
+          "SoftGeometry::margin() cannot be invoked for soft mesh");
+    }
+    return std::get<SoftHalfSpace>(geometry_).margin;
   }
 
   //@}

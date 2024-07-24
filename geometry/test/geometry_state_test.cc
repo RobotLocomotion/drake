@@ -4555,10 +4555,10 @@ class ApplyProximityDefaultsTests : public testing::Test {
   }
 
   DefaultProximityProperties empty_defaults_{
-    "undefined", {}, {}, {}, {}, {}, {}, {}, {}};
+    "undefined", {}, {}, {}, {}, {}, {}, {}, {}, {}};
   // Use stupid values distinct from those in MakeFullProperties().
   DefaultProximityProperties full_defaults_{
-    "compliant", 0.1, 0.2, 0.3, 0.4, 0.4, 0.5, 0.6, 0.7};
+    "compliant", 0.1, 0.2, 0.3, 0.4, 0.4, 0.5, 0.6, 0.7, 0.8};
   GeometryState<double> geometry_state_;
   SourceId source_id_{geometry_state_.RegisterNewSource("test")};
   FrameId frame_id_{
