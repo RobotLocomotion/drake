@@ -571,7 +571,7 @@ TEST_F(TwoDOFPlanarPendulumTest,
   // Test CalcBiasCenterOfMassTranslationalAcceleration() for full MBP.
   const Vector3d aBias_WScm_W =
       plant_->CalcBiasCenterOfMassTranslationalAcceleration(
-      *context_, JacobianWrtVariable::kV, frame_W, frame_W);
+          *context_, JacobianWrtVariable::kV, frame_W, frame_W);
 
   // Denoting Scm as the center of mass of the system formed by links A and B,
   // Scm's bias translational acceleration in world W is expected to be
@@ -584,12 +584,13 @@ TEST_F(TwoDOFPlanarPendulumTest,
   // Test CalcBiasCenterOfMassTranslationalAcceleration() for 1 model instance.
   const Vector3d aBias_WAcm_W =
       plant_->CalcBiasCenterOfMassTranslationalAcceleration(
-      *context_, model_instances, JacobianWrtVariable::kV, frame_W, frame_W);
+          *context_, model_instances, JacobianWrtVariable::kV, frame_W,
+          frame_W);
 
   // The bias translational acceleration of Acm (link A's center of mass) in
   // world W is aBias_WAcm_W = -0.5 L wAz_² 𝐖𝐱
-  const Vector3d aBias_WAcm_W_expected = -0.5 * link_length_ * wAz_ * wAz_ *
-      Vector3d::UnitX();
+  const Vector3d aBias_WAcm_W_expected =
+      -0.5 * link_length_ * wAz_ * wAz_ * Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(aBias_WAcm_W, aBias_WAcm_W_expected, kTolerance));
 
   // Test CalcJacobianCenterOfMassTranslationalVelocity() for 2 model instances.
@@ -605,8 +606,9 @@ TEST_F(TwoDOFPlanarPendulumTest,
   // Test CalcBiasCenterOfMassTranslationalAcceleration() for 2 model instances.
   // This should produce the same results as Scm (system center of mass).
   const Vector3d aBias_WScm_W_model2 =
-      plant_->CalcBiasCenterOfMassTranslationalAcceleration(*context_,
-          model_instances, JacobianWrtVariable::kV, frame_W, frame_W);
+      plant_->CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, model_instances, JacobianWrtVariable::kV, frame_W,
+          frame_W);
   EXPECT_TRUE(CompareMatrices(aBias_WScm_W, aBias_WScm_W_model2, kTolerance));
 }
 
