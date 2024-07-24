@@ -402,15 +402,17 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
   }
 
-  // Computes the spatial inertia for a shape given the assumption of unit
-  // density.
-  class InertiaCalculator final : public geometry::ShapeReifier {
+  // Computes spatial inertia for a shape assuming a density of 1 kg/m³ (≈ air).
+  // Later: A calling function is responsible for scaling the spatial inertia's
+  // underlying mass and rotational inertia, e.g, with a parser-specified mass
+  // or density or a fallback density of 1000 kg/m³ (≈ water density).
+  class UnitDensityInertiaCalculator final : public geometry::ShapeReifier {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InertiaCalculator);
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnitDensityInertiaCalculator);
     // The reifier aliases the pre-computed mesh spatial inertias. When looking
     // up mesh inertias, it uses the mujoco geometry _name_ and not the
     // mesh filename.
-    InertiaCalculator(
+    UnitDensityInertiaCalculator(F
         std::string name,
         std::map<std::string, SpatialInertia<double>>* mesh_inertia)
         : name_(std::move(name)), mesh_inertia_(mesh_inertia) {
@@ -419,7 +421,7 @@ class MujocoParser {
 
     SpatialInertia<double> Calc(const geometry::Shape& shape) {
       shape.Reify(this);
-      return M_GG_G_;
+      return M_GG_G_unitDensity;
     }
 
     bool used_convex_hull_fallback() const {
@@ -430,44 +432,34 @@ class MujocoParser {
 
     void ImplementGeometry(const geometry::Mesh& mesh, void*) final {
       if (mesh_inertia_->contains(name_)) {
-        M_GG_G_ = mesh_inertia_->at(name_);
+        M_GG_G_unitDensity = mesh_inertia_->at(name_);
       } else {
         try {  // TODO(21666), remove the try-catch.
-          // Below: density = 1 kg/m³ is used to calculate a spatial inertia.
-          // Later, after InertiaCalculator::Calc(), spatial inertia may be
-          // scaled with a proper density (e.g., water density ≈ 1000 kg/m³).
-          M_GG_G_ = CalcSpatialInertia(mesh, 1.0 /* air density ≈ 1 kg/m³ */);
+          M_GG_G_unitDensity = CalcSpatialInertia(mesh, 1.0 /* density */);
         } catch (const std::exception& e) {
           // As with mujoco, failure leads to using the convex hull.
           // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
-          // Below: density = 1 kg/m³ is used to calculate a spatial inertia.
-          // Later, after InertiaCalculator::Calc(), spatial inertia may be
-          // scaled with a proper density (e.g., water density ≈ 1000 kg/m³).
-          M_GG_G_ = CalcSpatialInertia(
-              geometry::Convex(mesh.filename(), mesh.scale()),
-              1.0 /* air density ≈ 1 kg/m³ */);
+          M_GG_G_unitDensity = CalcSpatialInertia(
+              geometry::Convex(mesh.filename(), mesh.scale()), 1 /* density */);
           used_convex_hull_fallback_ = true;
         }
-        mesh_inertia_->insert_or_assign(name_, M_GG_G_);
+        mesh_inertia_->insert_or_assign(name_, M_GG_G_unitDensity);
       }
     }
 
     void ImplementGeometry(const geometry::HalfSpace&, void*) final {
-      // Do nothing; leave M_GG_G_ default initialized.
+      // Do nothing; leave M_GG_G_unitDensity default initialized.
     }
 
     void DefaultImplementGeometry(const geometry::Shape& shape) final {
-      // Below: density = 1 kg/m³ is used to calculate a spatial inertia.
-      // Later, after InertiaCalculator::Calc(), spatial inertia may be
-      // scaled with a proper density (e.g., water density ≈ 1000 kg/m³).
-      M_GG_G_ = CalcSpatialInertia(shape, 1.0 /* air density ≈ 1 kg/m³ */);
+      M_GG_G_unitDensity = CalcSpatialInertia(shape, 1.0 /* density */);
     }
 
    private:
     std::string name_;
     std::map<std::string, SpatialInertia<double>>* mesh_inertia_{nullptr};
     bool used_convex_hull_fallback_{false};
-    SpatialInertia<double> M_GG_G_{SpatialInertia<double>::NaN()};
+    SpatialInertia<double> M_GG_G_unitDensity{SpatialInertia<double>::NaN()};
   };
 
   SpatialInertia<double> ParseInertial(XMLElement* node) {
@@ -800,8 +792,9 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
 
     if (compute_inertia) {
-      InertiaCalculator calculator(mesh, &mesh_inertia_);
-      const SpatialInertia<double> M_GG_G_one = calculator.Calc(*geom.shape);
+      UnitDensityInertiaCalculator calculator(mesh, &mesh_inertia_);
+      const SpatialInertia<double> M_GG_G_unitDensity =
+          calculator.Calc(*geom.shape);
       if (calculator.used_convex_hull_fallback()) {
         // When the Mujoco parser falls back to using a convex hull, it prints
         // a warning. We ape that behavior to provide a similar experience.
@@ -821,15 +814,15 @@ class MujocoParser {
       }
       double mass{};
       if (!ParseScalarAttribute(node, "mass", &mass)) {
-        double density{1000};  /* water density ≈ 1000 kg/m³ */
+        double density{1000};  /* fallback default ≈ water density */
         ParseScalarAttribute(node, "density", &density);
-        // M_GG_G_one was calculated with ρ₁ = 1 which produced mass m₁. Actual
-        // density is ρₐ. We have the following ratio: mₐ / m₁ = ρₐ / ρ₁.
+        // M_GG_G_unitDensity was calculated with ρ₁ = 1 which produced mass m₁.
+        // Actual density is ρₐ. We have the following ratio: mₐ / m₁ = ρₐ / ρ₁.
         // So, mₐ = m₁⋅(ρₐ / ρ₁) = m₁⋅(ρₐ / 1) = m₁⋅ρₐ.
-        mass = M_GG_G_one.get_mass() * density;
+        mass = M_GG_G_unitDensity.get_mass() * density;
       }
-      SpatialInertia<double> M_GG_G(mass, M_GG_G_one.get_com(),
-                                    M_GG_G_one.get_unit_inertia());
+      SpatialInertia<double> M_GG_G(mass, M_GG_G_unitDensity.get_com(),
+                                    M_GG_G_unitDensity.get_unit_inertia());
       geom.M_GBo_B = M_GG_G.ReExpress(geom.X_BG.rotation())
                          .Shift(-geom.X_BG.translation());
     }

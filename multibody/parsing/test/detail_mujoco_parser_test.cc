@@ -802,8 +802,7 @@ TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
   // is fixed, it will be some other mechanism. Evolve *this* test to match
   // that API, but otherwise keep this confirmation that the mesh in question
   // truly is "bad".
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(
-      bad_mesh, 1.0 /* air density ≈ 1 kg/m³ */),
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(bad_mesh, 1.0),
           ".*IsPhysicallyValid[\\s\\S]*");
 
   std::string xml = fmt::format(R"""(

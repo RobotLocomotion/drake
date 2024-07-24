@@ -53,7 +53,7 @@ SpatialInertia<double> CalcSpatialInertia(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density);
 
 DRAKE_DEPRECATED(
-    "2025-01-01",
+    "2024-11-01",
     "In the function CalcSpatialInertia(), the density argument's default "
     "value of 1.0 was removed. Provide a sensible density value.")
 SpatialInertia<double> CalcSpatialInertia(
