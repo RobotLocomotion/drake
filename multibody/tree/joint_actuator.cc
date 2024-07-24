@@ -23,10 +23,10 @@ JointActuator<T>::~JointActuator() = default;
 
 template <typename T>
 void JointActuator<T>::set_controller_gains(PdControllerGains gains) {
-  if (topology_.actuator_index_start >= 0) {
+  if (!pd_controller_gains_ && topology_.actuator_index_start >= 0) {
     throw std::runtime_error(
-        "JointActuator::set_controller_gains() must be called before "
-        "MultibodyPlant::Finalize(). ");
+        "The first call to JointActuator::set_controller_gains() must happen "
+        "before MultibodyPlant::Finalize().");
   }
   DRAKE_THROW_UNLESS(gains.p > 0);
   DRAKE_THROW_UNLESS(gains.d >= 0);

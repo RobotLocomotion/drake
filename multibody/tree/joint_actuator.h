@@ -294,8 +294,9 @@ class JointActuator final : public MultibodyElement<T> {
   ///
   /// @throws iff the proportional gain is not strictly positive or if the
   /// derivative gain is negative.
-  /// @throws iff the owning MultibodyPlant is finalized. See
-  /// MultibodyPlant::Finalize().
+  /// @throws iff the owning MultibodyPlant is finalized and no gains were set
+  /// pre-finalize. In other words, *editing* gains post-finalize is fine, but
+  /// *adding* gains post-finalize is an error. See MultibodyPlant::Finalize().
   void set_controller_gains(PdControllerGains gains);
 
   /// Returns `true` if controller gains have been specified with a call to

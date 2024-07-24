@@ -100,6 +100,9 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
 
   EXPECT_THAT(tree.GetJointActuatorIndices(),
               testing::ElementsAre(actuator1.index(), actuator4.index()));
+
+  // Changing the gains post-Finalize doesn't throw.
+  EXPECT_NO_THROW(mutable_actuator1.set_controller_gains(gains));
 }
 
 GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {
