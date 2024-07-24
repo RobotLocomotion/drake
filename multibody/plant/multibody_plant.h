@@ -4396,7 +4396,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         Js_v_ACcm_E);
   }
 
-
   /// For the system S of all bodies other than the world body, calculates
   /// a𝑠Bias_AScm_E, Scm's translational acceleration bias in frame A with
   /// respect to "speeds" 𝑠, expressed in frame E, where Scm is the center of
