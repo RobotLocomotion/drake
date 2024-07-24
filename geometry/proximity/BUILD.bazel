@@ -62,6 +62,7 @@ drake_cc_package_library(
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_mesh_refiner",
+        ":volume_mesh_topology",
         ":volume_to_surface_mesh",
         ":vtk_to_volume_mesh",
     ],
@@ -882,6 +883,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "volume_mesh_topology",
+    srcs = [
+        "volume_mesh_topology.cc",
+    ],
+    hdrs = [
+        "volume_mesh_topology.h",
+    ],
+    deps = [
+        ":sorted_triplet",
+        ":volume_mesh",
+        "//common:default_scalars",
+        "//common:reset_on_copy",
+    ],
+)
+
+drake_cc_library(
     name = "volume_mesh_refiner",
     srcs = ["volume_mesh_refiner.cc"],
     hdrs = ["volume_mesh_refiner.h"],
@@ -1614,6 +1631,13 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volume_mesh_topology_test",
+    deps = [
+        ":volume_mesh_topology",
     ],
 )
 
