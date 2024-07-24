@@ -28,12 +28,25 @@ void CheckVertices(
   }
 }
 
-GTEST_TEST(ReadObjFile, QuadCube) {
-  // TODO(hongkai.dai): add the test with triangulate=true.
-  for (const double scale : {1., 0.5, 1.5}) {
+// We want to simply confirm that triangulate is propagating through. We rely
+// on tinyobj to triangulate correctly. We'll just confirm that quads become
+// triangles upon request.
+GTEST_TEST(ReadObjFile, Triangulate) {
+  for (const bool triangulate : {true, false}) {
     const auto [vertices, faces, num_faces] =
         ReadObjFile(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
-                    scale, false /*triangulate */);
+                    /* scale= */ 1, triangulate);
+    EXPECT_EQ(vertices->size(), 8);
+    EXPECT_EQ(num_faces, triangulate ? 16 : 8);
+  }
+}
+
+// Performs the test over multiple scales to make sure scale is included.
+GTEST_TEST(ReadObjFile, QuadCube) {
+  for (const double scale : {0.5, 1.5}) {
+    const auto [vertices, faces, num_faces] =
+        ReadObjFile(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+                    scale, /* triangulate= */ false);
     EXPECT_EQ(vertices->size(), 8);
     EXPECT_EQ(num_faces, 6);
     Eigen::Matrix<double, 8, 3> vertices_expected;
@@ -73,13 +86,13 @@ GTEST_TEST(ReadObjFile, QuadCube) {
   }
 }
 
-GTEST_TEST(ReadObjFile, Octahedron) {
-  // TODO(hongkai.dai): add the test with triangulate=true. With triangulation,
-  // the vertices and faces should be the same as triangulate=false.
-  for (const double scale : {1., 0.5, 1.5}) {
+// The octahedron.obj is comprised only of triangles; we should get the same
+// result regardless of whether triangulate is true or false.
+GTEST_TEST(ReadObjFile, TriangulatingTriangles) {
+  for (const bool triangulate : {true, false}) {
     const auto [vertices, faces, num_faces] =
         ReadObjFile(FindResourceOrThrow("drake/geometry/test/octahedron.obj"),
-                    scale, false /*triangulate */);
+                    /* scale= */ 1.0, triangulate);
     EXPECT_EQ(vertices->size(), 6u);
     Eigen::Matrix<double, 6, 3> vertices_expected;
     // clang-format off
@@ -90,7 +103,6 @@ GTEST_TEST(ReadObjFile, Octahedron) {
                          0, 0, std::sqrt(2),
                          0, 0, -std::sqrt(2);
     // clang-format on
-    vertices_expected *= scale;
     CheckVertices(vertices, vertices_expected.transpose(), 1E-5);
     EXPECT_EQ(num_faces, 8);
     // Each face has 3 vertices, so faces.size() = num_faces * (1 + 3).
@@ -98,43 +110,60 @@ GTEST_TEST(ReadObjFile, Octahedron) {
   }
 }
 
-GTEST_TEST(ReadObjFile, NonconvexMesh) {
-  for (const double scale : {1., 0.5, 1.5}) {
-    const auto [vertices, faces, num_faces] = ReadObjFile(
-        FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"), scale,
-        false /*triangulate */);
-    Eigen::Matrix<double, 5, 3> vertices_expected;
-    // clang-format off
-    vertices_expected << 0.0, 0.0, 0.0,
-                         1.0, 0.0, 0.0,
-                         0.0, 1.0, 0.0,
-                         0.0, 0.0, 1.0,
-                         0.2, 0.2, 0.2;
-    // clang-format on
-    vertices_expected *= scale;
-    CheckVertices(vertices, vertices_expected.transpose(), 1E-12);
-    // Now check the faces.
-    EXPECT_EQ(num_faces, 6);
-    EXPECT_EQ(faces->size(), num_faces * 4);
-    // The expected face include these vertices (directly copied from
-    // non_convex_mesh.obj which uses 1-index).
-    // (1, 2, 4)
-    // (1, 4, 3)
-    // (1, 3, 2)
-    // (2, 3, 5)
-    // (3, 4, 5)
-    // (4, 2, 5)
-    const std::set<std::set<int>> faces_expected{
-        {{1, 2, 4}, {1, 4, 3}, {1, 3, 2}, {2, 3, 5}, {3, 4, 5}, {4, 2, 5}}};
-    for (int i = 0; i < num_faces; ++i) {
-      // obj file uses 1-index, so we add 1 for each index stored in `faces`.
-      EXPECT_NE(faces_expected.find(std::set<int>({(*faces)[4 * i + 1] + 1,
-                                                   (*faces)[4 * i + 2] + 1,
-                                                   (*faces)[4 * i + 3] + 1})),
-                faces_expected.end());
-    }
+// Simply tests that multiple objects are supported. Scale and triangulate have
+// been tested elsewhere.
+GTEST_TEST(ReadObjFile, MultipleObjects) {
+  const auto [vertices, faces, num_faces] = ReadObjFile(
+      FindResourceOrThrow("drake/geometry/test/two_cube_objects.obj"), 1.0,
+      /* triangulate= */ false);
+  Eigen::Matrix<double, 16, 3> vertices_expected;
+  // clang-format off
+    vertices_expected << 1, -1, -1,  // Cube 1 vertices.
+                         1, -1, -1,
+                         -1, -1, 1,
+                         -1, -1, -1,
+                         1, 1, -1,
+                         1, 1, 1,
+                         -1, 1, 1,
+                         -1, 1, -1,
+                         5, -1, -1,  // Cube 2 vertices.
+                         5, -1, 1,
+                         3, -1, 1,
+                         3, -1, -1,
+                         5, 1, -1,
+                         5, 1, 1,
+                         3, 1, 1,
+                         3, 1, -1;
+  // clang-format on
+  CheckVertices(vertices, vertices_expected.transpose(), 1E-12);
+  // Now check the faces - six quads per cube --> 12 faces.
+  EXPECT_EQ(num_faces, 12);
+  // A face includes size and vertex indices. 5 ints per quad face.
+  EXPECT_EQ(faces->size(), num_faces * 5);
+  // The expected faces, as defined by indexes to the face's vertices. This
+  // uses the 1-indexed values taken directly from two_cube_objects.obj.
+  const std::set<std::set<int>> faces_expected{{{1, 2, 3, 4},  // Cube 1.
+                                                {5, 8, 7, 6},
+                                                {1, 5, 6, 2},
+                                                {2, 6, 7, 3},
+                                                {3, 7, 8, 4},
+                                                {5, 1, 4, 8},
+                                                {9, 10, 11, 12},  // Cube 2.
+                                                {13, 16, 15, 14},
+                                                {9, 13, 14, 10},
+                                                {10, 14, 15, 11},
+                                                {11, 15, 16, 12},
+                                                {13, 9, 12, 16}}};
+  for (int i = 0; i < num_faces; ++i) {
+    // obj file uses 1-index, so we add 1 for each index stored in `faces`.
+    ASSERT_NE(faces_expected.find(std::set<int>({(*faces)[5 * i + 1] + 1,
+                                                 (*faces)[5 * i + 2] + 1,
+                                                 (*faces)[5 * i + 3] + 1,
+                                                 (*faces)[5 * i + 4] + 1})),
+              faces_expected.end());
   }
 }
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

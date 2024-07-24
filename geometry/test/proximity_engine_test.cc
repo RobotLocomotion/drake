@@ -626,7 +626,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
   // The obj contains multiple objects.
   {
     Convex convex{drake::FindResourceOrThrow(
-                      "drake/geometry/test/forbidden_two_cubes.obj"),
+                      "drake/geometry/test/two_cube_objects.obj"),
                   1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
