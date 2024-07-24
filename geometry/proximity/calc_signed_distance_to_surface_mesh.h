@@ -32,7 +32,7 @@ namespace internal {
 // Graphics (Volume: 11, Issue: 3, May-June 2005).
 class VertexEdgeNormal {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VertexEdgeNormal);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VertexEdgeNormal);
 
   // Computes and stores the normals at vertices and edges of the given
   // surface mesh.

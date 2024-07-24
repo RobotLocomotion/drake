@@ -270,11 +270,7 @@ GTEST_TEST(CalcSquaredDistanceToTriangleTest, ClosestToVertex) {
   EXPECT_EQ(dut.v, 1);
 }
 
-// TODO(DamrongGuoy) Test with a nonconvex mesh. It will allow an interior
-//  query point with its nearest point at a concave vertex or a concave edge.
-//  Perhaps an L-shape geometry would be good.
-
-GTEST_TEST(CalcSignedDistanceToSurfaceMeshTest, Test) {
+GTEST_TEST(CalcSignedDistanceToSurfaceMeshTest, TestBox) {
   const TriangleSurfaceMesh<double> mesh_M =
       MakeBoxSurfaceMesh<double>(Box(0.08, 0.04, 0.02), 0.005);
   const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M(mesh_M);
@@ -328,6 +324,69 @@ GTEST_TEST(CalcSignedDistanceToSurfaceMeshTest, Test) {
     EXPECT_TRUE(CompareMatrices(d.gradient, Vector3d::UnitX(), kEps) ||
                 CompareMatrices(d.gradient, Vector3d::UnitY(), kEps) ||
                 CompareMatrices(d.gradient, Vector3d::UnitZ(), kEps));
+  }
+}
+
+GTEST_TEST(CalcSignedDistanceToSurfaceMeshTest, NonConvex) {
+  // This nonconvex surface mesh has six triangles with one concave vertex v4.
+  //
+  //              Mz
+  //              ┆
+  //           v3 ●
+  //              ┆
+  //              ┆
+  //              ┆
+  //              ┆v4
+  //              ┆●           v2
+  //           v0 ●┄┄┄┄┄┄┄┄┄┄┄┄┄●┄┄┄ My
+  //             ╱┆
+  //            ╱ ┆
+  //           ╱  ┆
+  //          ╱   ┆
+  //      v1 ●
+  //        ╱
+  //       Mx
+  //
+  const TriangleSurfaceMesh<double> mesh_M{
+      {
+          // The first three triangles share the vertex v0. Their windings
+          // give outward normals.
+          SurfaceTriangle{0, 2, 1},
+          SurfaceTriangle{0, 1, 3},
+          SurfaceTriangle{0, 3, 2},
+          // The last three triangles share the concave vertex v4. Their
+          // windings give outward normals.
+          SurfaceTriangle{4, 1, 2},
+          SurfaceTriangle{4, 3, 1},
+          SurfaceTriangle{4, 2, 3},
+      },
+      {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
+       Vector3d::UnitZ(), Vector3d(0.25, 0.25, 0.25)}};
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M(mesh_M);
+  const VertexEdgeNormal mesh_normal_M(mesh_M);
+  {
+    // The query point is inside, nearest to the concave vertex v4. The signed
+    // distance is negative. The gradient is in the direction from the query
+    // point to the nearest point.
+    const Vector3d p_MQ = mesh_M.vertex(4) + Vector3d(-0.005, -0.005, -0.005);
+    const SignedDistanceToSurfaceMesh d =
+        CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M, bvh_M, mesh_normal_M);
+    const Vector3d kExpectNearestPoint = mesh_M.vertex(4);
+    EXPECT_EQ(d.nearest_point, kExpectNearestPoint);
+    EXPECT_EQ(d.signed_distance, -(p_MQ - kExpectNearestPoint).norm());
+    EXPECT_EQ(d.gradient, (kExpectNearestPoint - p_MQ).normalized());
+  }
+  {
+    // The query point is outside, nearest to the vertex v1. The signed
+    // distance is positive. The gradient is in the direction from the
+    // nearest point to the query point.
+    const Vector3d p_MQ = mesh_M.vertex(1) + Vector3d(0.005, -0.005, -0.005);
+    const SignedDistanceToSurfaceMesh d =
+        CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M, bvh_M, mesh_normal_M);
+    const Vector3d kExpectNearestPoint = mesh_M.vertex(1);
+    EXPECT_EQ(d.nearest_point, kExpectNearestPoint);
+    EXPECT_EQ(d.signed_distance, (p_MQ - kExpectNearestPoint).norm());
+    EXPECT_EQ(d.gradient, (p_MQ - kExpectNearestPoint).normalized());
   }
 }
 
