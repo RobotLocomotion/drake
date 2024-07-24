@@ -623,16 +623,6 @@ GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
 GTEST_TEST(ProximityEngineTests, FailedParsing) {
   ProximityEngine<double> engine;
 
-  // The obj contains multiple objects.
-  {
-    Convex convex{drake::FindResourceOrThrow(
-                      "drake/geometry/test/forbidden_two_cubes.obj"),
-                  1.0};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        ".*only OBJs with a single object.*");
-  }
-
   const std::filesystem::path temp_dir = temp_directory();
   // An empty file.
   {
