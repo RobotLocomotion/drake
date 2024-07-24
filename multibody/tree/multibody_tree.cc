@@ -2049,7 +2049,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
 
-    // total mass = ∑ mᵢ.
+    // total_mass = ∑ mᵢ.
     const T& body_mass = body.get_mass(context);
     total_mass += body_mass;
 
@@ -2096,9 +2096,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const RigidBody<T>& body = get_body(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      // total mass = ∑ mᵢ.
       const T& body_mass = body.get_mass(context);
-      total_mass += body_mass;
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
@@ -2201,7 +2200,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
 
-    // total mass = ∑ mᵢ.
+    // total_mass = ∑ mᵢ.
     const T& body_mass = body.get_mass(context);
     total_mass += body_mass;
 
@@ -2252,9 +2251,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const RigidBody<T>& body = get_body(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      // total mass = ∑ mᵢ.
       const T& body_mass = body.get_mass(context);
-      total_mass += body_mass;
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_vi = ∑ mᵢ * vi_WBcm_W.
@@ -2298,7 +2296,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     const T& body_mass = body.get_mass(context);
-    total_mass += body_mass;  // total mass = ∑ mᵢ.
+    total_mass += body_mass;  // total_mass = ∑ mᵢ.
   }
 
   if (total_mass <= 0) {
@@ -2348,7 +2346,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
       const T& body_mass = body.get_mass(context);
-      total_mass += body_mass;  // total mass = ∑ mᵢ.
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
     }
   }
@@ -3164,11 +3162,12 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
                           num_positions() : num_velocities();
   DRAKE_THROW_UNLESS(Js_v_ACcm_E != nullptr);
   DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
+
+  // Reminder: MultibodyTree always declares a world body (0ᵗʰ body).
   if (num_bodies() <= 1) {
-    throw std::runtime_error(
-        "CalcJacobianCenterOfMassTranslationalVelocity(): This "
-        "MultibodyPlant only contains the world_body() so its center of mass "
-        "is undefined.");
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
   }
 
   Js_v_ACcm_E->setZero();
@@ -3230,9 +3229,8 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     const RigidBody<T>& body = get_body(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      // total mass = ∑ mᵢ.
       const T& body_mass = body.get_mass(context);
-      total_mass += body_mass;
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_Ji = ∑ (mᵢ Jᵢ), where mᵢ is the mass of the iᵗʰ body and
@@ -3274,13 +3272,11 @@ Vector3<T>
 MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_A, const Frame<T>& frame_E) const {
-  DRAKE_THROW_UNLESS(&frame_A == &world_frame());
-
+  // Reminder: MultibodyTree always declares a world body (0ᵗʰ body).
   if (num_bodies() <= 1) {
-    throw std::runtime_error(
-        "CalcBiasCenterOfMassTranslationalAcceleration(): This "
-        "MultibodyPlant only contains the world_body() so its center of mass "
-        "is undefined.");
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
   }
 
   T composite_mass = 0;
@@ -3302,6 +3298,74 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
   }
   asBias_ACcm_E /= composite_mass;
   return asBias_ACcm_E;
+}
+
+template <typename T>
+Vector3<T>
+MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances,
+    JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E) const {
+  // Reminder: MultibodyTree always declares a world body (0ᵗʰ body).
+  if (num_bodies() <= 1) {
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
+  }
+
+  T total_mass = 0;
+  Vector3<T> sum_mi_aBiasi = Vector3<T>::Zero();
+  // Sum over all bodies contained in model_instances except for the 0th body
+  // (which is the world body), and count each body's contribution only once.
+  // Reminder: Although it is not possible for a body to belong to multiple
+  // model instances [as RigidBody::model_instance() returns a body's unique
+  // model instance], it is possible for the same model instance to be added
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances). The
+  // code below ensures a body's contribution to the sum occurs only once.
+  // Duplicate model_instances in std::vector are ignored.
+  int number_of_non_world_bodies_processed = 0;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const RigidBody<T>& body = get_body(body_index);
+    if (std::find(model_instances.begin(), model_instances.end(),
+                  body.model_instance()) != model_instances.end()) {
+      const T& body_mass = body.get_mass(context);
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
+      ++number_of_non_world_bodies_processed;
+
+      // sum_mi_aBiasi = ∑ (mᵢ aBiasᵢ), where mᵢ is the mass of the iᵗʰ body and
+      // aBiasᵢ is Bcm's bias translational acceleration in frame A, expressed
+      // in frame E (Bcm is the center of mass of the iᵗʰ body).
+      const Frame<T>& frame_B = body.body_frame();
+      const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+      const Vector3<T> aBiasi_ABcm_E = CalcBiasTranslationalAcceleration(
+                                        context,
+                                        with_respect_to,
+                                        frame_B,
+                                        pi_BoBcm_B,
+                                        frame_A,
+                                        frame_E);
+      sum_mi_aBiasi += body_mass * aBiasi_ABcm_E;
+    }
+  }
+
+  // Throw an exception if there are zero non-world bodies in model_instances.
+  if (number_of_non_world_bodies_processed == 0) {
+    std::string message = fmt::format("{}(): There must be at least one "
+        "non-world body contained in model_instances.", __func__);
+    throw std::logic_error(message);
+  }
+
+  if (total_mass <= 0) {
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
+  }
+
+  /// aBias_AScm_E = ∑ (mᵢ sum_mi_aBiasi) / mₛ, where mₛ = ∑ mᵢ.
+  const Vector3<T> aBias_AScm_E = sum_mi_aBiasi / total_mass;
+  return aBias_AScm_E;
 }
 
 template <typename T>
