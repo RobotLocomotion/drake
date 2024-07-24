@@ -440,7 +440,8 @@ class MujocoParser {
           // As with mujoco, failure leads to using the convex hull.
           // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
           M_GG_G_unitDensity = CalcSpatialInertia(
-              geometry::Convex(mesh.filename(), mesh.scale()), 1 /* density */);
+              geometry::Convex(mesh.filename(), mesh.scale()),
+              1.0 /* density */);
           used_convex_hull_fallback_ = true;
         }
         mesh_inertia_->insert_or_assign(name_, M_GG_G_unitDensity);
