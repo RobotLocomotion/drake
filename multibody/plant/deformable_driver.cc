@@ -759,8 +759,7 @@ void DeformableDriver<T>::CalcDeformableContactInfo(
     // every time DeformableContactInfo is computed.
     contact_info->emplace_back(surface.id_A(), surface.id_B(),
                                contact_surfaces[surface_index].contact_mesh_W(),
-                               F_Ao_W_per_surface[surface_index],
-                               std::move(contact_point_data[surface_index]));
+                               F_Ao_W_per_surface[surface_index]);
   }
 }
 
