@@ -353,6 +353,7 @@ drake_cc_library(
     internal = True,
     visibility = [
         "//geometry:__pkg__",
+        "//geometry/benchmarking:__pkg__",
     ],
     deps = [
         ":collision_filter",
