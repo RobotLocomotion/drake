@@ -51,6 +51,24 @@ drake_cc_googlebench_binary(
     ],
 )
 
+drake_cc_googlebench_binary(
+    name = "compliant_mesh_intersection_benchmark",
+    srcs = ["compliant_mesh_intersection_benchmark.cc"],
+    add_test_rule = True,
+    test_timeout = "moderate",
+    deps = [
+        "//common:essential",
+        "//geometry/proximity:hydroelastic_callback",
+        "//geometry/proximity:hydroelastic_internal",
+        "//geometry/proximity:make_ellipsoid_field",
+        "//geometry/proximity:make_ellipsoid_mesh",
+        "//geometry/proximity:make_sphere_field",
+        "//geometry/proximity:make_sphere_mesh",
+        "//math",
+        "//tools/performance:gflags_main",
+    ],
+)
+
 drake_py_experiment_binary(
     name = "mesh_intersection_experiment",
     googlebench_binary = ":mesh_intersection_benchmark",
