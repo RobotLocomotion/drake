@@ -278,8 +278,9 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPositionEtc) {
 
   const Frame<double>& frame_W = plant_.world_frame();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_.CalcBiasCenterOfMassTranslationalAcceleration(*context_,
-          model_instances, JacobianWrtVariable::kV, frame_W, frame_W),
+      plant_.CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, model_instances, JacobianWrtVariable::kV, frame_W,
+          frame_W),
       "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): There must be at "
       "least one non-world body contained in model_instances.");
 
