@@ -376,7 +376,6 @@ def _raw_drake_cc_library(
         name,
         srcs = None,  # Cannot list any headers here.
         hdrs = None,
-        textual_hdrs = None,
         strip_include_prefix = None,
         include_prefix = None,
         copts = None,
@@ -439,7 +438,6 @@ def _raw_drake_cc_library(
         name = compiled_name,
         srcs = srcs,
         hdrs = hdrs,
-        textual_hdrs = textual_hdrs,
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
         copts = copts,
