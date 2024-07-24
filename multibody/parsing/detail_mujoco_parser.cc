@@ -402,8 +402,8 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
   }
 
-  // Computes spatial inertia for a shape assuming a density of 1 kg/m³ (≈ air).
-  // Later: A calling function is responsible for scaling the spatial inertia's
+  // Computes a shape's spatial inertia assuming a density of 1 kg/m³ (≈ air).
+  // Note: A calling function is responsible for scaling the spatial inertia's
   // underlying mass and rotational inertia, e.g, with a parser-specified mass
   // or density or a fallback density of 1000 kg/m³ (≈ water density).
   class UnitDensityInertiaCalculator final : public geometry::ShapeReifier {
@@ -412,7 +412,7 @@ class MujocoParser {
     // The reifier aliases the pre-computed mesh spatial inertias. When looking
     // up mesh inertias, it uses the mujoco geometry _name_ and not the
     // mesh filename.
-    UnitDensityInertiaCalculator(F
+    UnitDensityInertiaCalculator(
         std::string name,
         std::map<std::string, SpatialInertia<double>>* mesh_inertia)
         : name_(std::move(name)), mesh_inertia_(mesh_inertia) {
