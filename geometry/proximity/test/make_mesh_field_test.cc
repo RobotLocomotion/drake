@@ -31,18 +31,18 @@ TYPED_TEST(MakeVolumeMeshPressureFieldTest, PressureOnNonConvexMesh) {
   VolumeMeshFieldLinear<T, T> field =
       MakeVolumeMeshPressureField(&non_convex_mesh, kHydroelasticModulus);
 
-  // The first five vertices are on the boundary, so they have zero pressure.
-  for (int v = 0; v < 5; ++v) {
+  // The last five vertices are on the boundary, so they have zero pressure.
+  for (int v = 1; v <= 5; ++v) {
     SCOPED_TRACE(fmt::format("v: {}", v));
     EXPECT_EQ(field.EvaluateAtVertex(v), T(0.0));
   }
-  // Only the last vertex is an interior vertex, so its pressure value is the
+  // Only the first vertex is an interior vertex, so its pressure value is the
   // hydroelastic modulus.
   if constexpr (std::is_same_v<T, double>) {
-    EXPECT_EQ(field.EvaluateAtVertex(5), kHydroelasticModulus);
+    EXPECT_EQ(field.EvaluateAtVertex(0), kHydroelasticModulus);
   } else {
     static_assert(std::is_same_v<T, AutoDiffXd>);
-    EXPECT_EQ(field.EvaluateAtVertex(5).value(), kHydroelasticModulus.value());
+    EXPECT_EQ(field.EvaluateAtVertex(0).value(), kHydroelasticModulus.value());
   }
 }
 
