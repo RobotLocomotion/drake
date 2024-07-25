@@ -2218,8 +2218,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
 
   // For a system S with center of mass Scm, Scm's translational velocity in the
   // world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
-  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bcm's velocity in world frame W
-  // (Bcm is the center of mass of the iᵗʰ body).
+  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bᵢcm's velocity in world frame W
+  // (Bᵢcm is the center of mass of the iᵗʰ body).
   return sum_mi_vi / total_mass;
 }
 
@@ -2317,8 +2317,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
 
   // For a system S with center of mass Scm, Scm's translational acceleration in
   // the world W is calculated as a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where mₛ = ∑ mᵢ,
-  // mᵢ is the mass of the  iᵗʰ body, and aᵢ is Bcm's acceleration in world W
-  // (Bcm is the center of mass of the iᵗʰ body).
+  // mᵢ is the mass of the  iᵗʰ body, and aᵢ is Bᵢcm's acceleration in world W
+  // (Bᵢcm is the center of mass of the iᵗʰ body).
   return sum_mi_ai / total_mass;
 }
 
@@ -3185,9 +3185,9 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   }
 
   if (composite_mass <= 0) {
-    throw std::logic_error(
-        "CalcJacobianCenterOfMassTranslationalVelocity(): The "
-        "system's total mass must be greater than zero.");
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
   }
 
   *Js_v_ACcm_E /= composite_mass;
@@ -3234,8 +3234,8 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_Ji = ∑ (mᵢ Jᵢ), where mᵢ is the mass of the iᵗʰ body and
-      // Jᵢ is Bcm's translational velocity Jacobian in frame A, expressed in
-      // frame E (Bcm is the center of mass of the iᵗʰ body).
+      // Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
+      // frame E (Bᵢcm is the center of mass of the iᵗʰ body).
       const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
       MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
       CalcJacobianTranslationalVelocity(context,
@@ -3283,18 +3283,19 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
   Vector3<T> asBias_ACcm_E = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+    const Frame<T>& frame_B = body.body_frame();
     const SpatialAcceleration<T> AsBiasi_ACcm_E = CalcBiasSpatialAcceleration(
-       context, with_respect_to, body.body_frame(), pi_BoBcm, frame_A, frame_E);
+       context, with_respect_to, frame_B, pi_BoBcm_B, frame_A, frame_E);
     const T& body_mass = body.get_mass(context);
     asBias_ACcm_E += body_mass * AsBiasi_ACcm_E.translational();
     composite_mass += body_mass;
   }
 
   if (composite_mass <= 0) {
-    throw std::logic_error(
-        "CalcBiasCenterOfMassTranslationalAcceleration(): The "
-        "system's total mass must be greater than zero.");
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
   }
   asBias_ACcm_E /= composite_mass;
   return asBias_ACcm_E;
@@ -3335,8 +3336,8 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_aBiasi = ∑ (mᵢ aBiasᵢ), where mᵢ is the mass of the iᵗʰ body and
-      // aBiasᵢ is Bcm's bias translational acceleration in frame A, expressed
-      // in frame E (Bcm is the center of mass of the iᵗʰ body).
+      // aBiasᵢ is Bᵢcm's bias translational acceleration in frame A, expressed
+      // in frame E (Bᵢcm is the center of mass of the iᵗʰ body).
       const Frame<T>& frame_B = body.body_frame();
       const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
       const Vector3<T> aBiasi_ABcm_E = CalcBiasTranslationalAcceleration(
