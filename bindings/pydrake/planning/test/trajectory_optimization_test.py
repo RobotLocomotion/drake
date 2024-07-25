@@ -273,7 +273,11 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertEqual(len(regions.Edges()), 0)
 
         self.assertIn(regions, gcs.GetSubgraphs())
-        edges = gcs.AddEdges(source, regions)
+        edges = gcs.AddEdges(from_subgraph=source,
+                             to_subgraph=regions,
+                             subspace=None,
+                             edges_between_regions=None,
+                             edge_offsets=None)
         self.assertIn(edges, gcs.GetEdgesBetweenSubgraphs())
         self.assertEqual(len(edges.Edges()), 1)
         self.assertEqual(edges.Edges()[0].u(), source.Vertices()[0])

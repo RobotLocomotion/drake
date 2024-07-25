@@ -495,7 +495,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             cls_doc.RemoveSubgraph.doc)
         .def("AddEdges", &Class::AddEdges, py_rvp::reference_internal,
             py::arg("from_subgraph"), py::arg("to_subgraph"),
-            py::arg("subspace") = py::none(), cls_doc.AddEdges.doc)
+            py::arg("subspace") = py::none(),
+            py::arg("edges_between_regions") = py::none(),
+            py::arg("edge_offsets") = py::none(), cls_doc.AddEdges.doc)
         .def("AddTimeCost", &Class::AddTimeCost, py::arg("weight") = 1.0,
             cls_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",
