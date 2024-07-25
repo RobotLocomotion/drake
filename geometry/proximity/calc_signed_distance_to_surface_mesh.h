@@ -14,10 +14,10 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-// TODO(DamrongGuoy) Consider moving VertexEdgeNormal into its own file if it
+// TODO(DamrongGuoy) Consider moving FeatureNormalSet into its own file if it
 //  is useful for other applications.
 
-// %VertexEdgeNormal provides a certain kind of outward normal vectors at
+// %FeatureNormalSet provides a certain kind of outward normal vectors at
 // vertices and edges of a triangle surface mesh. The normal at a vertex is
 // the angle weighted average of face normals of triangles sharing the vertex.
 // The normal at an edge is the equal-weight average of face normals of two
@@ -30,13 +30,13 @@ namespace internal {
 // J.A. Baerentzen; H. Aanaes. Signed distance computation using the angle
 // weighted pseudonormal. IEEE Transactions on Visualization and Computer
 // Graphics (Volume: 11, Issue: 3, May-June 2005).
-class VertexEdgeNormal {
+class FeatureNormalSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VertexEdgeNormal);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FeatureNormalSet);
 
   // Computes and stores the normals at vertices and edges of the given
   // surface mesh.
-  explicit VertexEdgeNormal(const TriangleSurfaceMesh<double>& mesh_M);
+  explicit FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M);
 
   // Returns the normal at a vertex `v` as the angle weighted average of face
   // normals of triangles sharing the vertex. The weight of a triangle is the
@@ -101,7 +101,7 @@ struct SignedDistanceToSurfaceMesh {
 // Calculates the signed distance, the nearest point, and the signed-distance
 // gradient from the query point Q to the surface mesh. It accelerates the
 // computation using BVH. It determines the sign using the given
-// VertexEdgeNormal of the mesh.
+// FeatureNormalSet of the mesh.
 //
 // @param p_MQ  position of the query point expressed in frame M of the
 //              surface mesh.
@@ -112,7 +112,7 @@ struct SignedDistanceToSurfaceMesh {
 SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
-    const VertexEdgeNormal& mesh_normal_M);
+    const FeatureNormalSet& mesh_normal_M);
 
 }  // namespace internal
 }  // namespace geometry

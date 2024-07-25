@@ -41,7 +41,7 @@ GTEST_TEST(VertexEdgeNormalTest, EdgeNormalSuccess_SomeFaceNormalFail) {
       {SurfaceTriangle{0, 1, 2}, SurfaceTriangle{0, 3, 1}},
       {Vector3d(2, 1, 0), Vector3d::UnitY(), Vector3d(2, 0, 1),
        Vector3d(2, 0, 0)}};
-  const VertexEdgeNormal dut(mesh_M);
+  const FeatureNormalSet dut(mesh_M);
   // The query point Q is outside the prism, near the middle of edge v0v1, and
   // slightly above the X-Y plane of frame M of the mesh.
   const Vector3d p_MQ(1, 1.01, 0.01);
@@ -52,7 +52,7 @@ GTEST_TEST(VertexEdgeNormalTest, EdgeNormalSuccess_SomeFaceNormalFail) {
   EXPECT_GT(dut.edge_normal({0, 1}).dot(p_MQ - p_MN), 0);
   // The face normal of triangle v0v1v2 can classify correctly, but the face
   // normal of triangle v0v3v1 cannot. These checks illustrate the need for
-  // VertexEdgeNormal.
+  // FeatureNormalSet.
   EXPECT_GT(mesh_M.face_normal(0).dot(p_MQ - p_MN), 0);
   EXPECT_LT(mesh_M.face_normal(1).dot(p_MQ - p_MN), 0);
 }
@@ -85,7 +85,7 @@ GTEST_TEST(VertexEdgeNormalTest, VertexNormalSucess_SomeFaceNormalFail) {
        SurfaceTriangle{0, 2, 3}},
       {Vector3d(2, 1, 0), Vector3d::UnitY(), Vector3d(2, 0, 1),
        Vector3d(2, 0, 0)}};
-  const VertexEdgeNormal dut(mesh_M);
+  const FeatureNormalSet dut(mesh_M);
   // The query point Q is outside the prism, near the vertex v0, and slightly
   // below the plane of triangle v0v1v2.
   const Vector3d p_MQ(2.01, 1.01, -0.02);
@@ -97,7 +97,7 @@ GTEST_TEST(VertexEdgeNormalTest, VertexNormalSucess_SomeFaceNormalFail) {
   // The face normal of triangle v0v1v2 incorrectly classifies the query
   // point Q as being inside (negative dot product), although each of the
   // face normals of the other two triangles does it correctly.
-  // These checks illustrate the need for VertexEdgeNormal.
+  // These checks illustrate the need for FeatureNormalSet.
   EXPECT_LT(mesh_M.face_normal(0).dot(p_MQ - p_MN), 0);
   EXPECT_GT(mesh_M.face_normal(1).dot(p_MQ - p_MN), 0);
   EXPECT_GT(mesh_M.face_normal(2).dot(p_MQ - p_MN), 0);
@@ -125,7 +125,7 @@ GTEST_TEST(VertexEdgeNormalTest, EdgeNormalIsAverageFaceNormal) {
       {SurfaceTriangle{0, 2, 1}, SurfaceTriangle{1, 2, 3}},
       {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
        Vector3d::UnitZ()}};
-  VertexEdgeNormal dut(mesh_M);
+  FeatureNormalSet dut(mesh_M);
 
   const double kEps = std::numeric_limits<double>::epsilon();
   // Edge v1v2 is shared by the two faces.
@@ -158,7 +158,7 @@ GTEST_TEST(VertexEdgeNormalTest, VertexNormalIsAngleWeightedAverage) {
        SurfaceTriangle{1, 2, 3}},
       {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
        Vector3d::UnitZ()}};
-  VertexEdgeNormal dut(mesh_M);
+  FeatureNormalSet dut(mesh_M);
 
   const double kEps = std::numeric_limits<double>::epsilon();
   //   face index   vertices of the triangle    angle at v1 in the triangle
@@ -274,7 +274,7 @@ GTEST_TEST(CalcSignedDistanceToSurfaceMeshTest, TestBox) {
   const TriangleSurfaceMesh<double> mesh_M =
       MakeBoxSurfaceMesh<double>(Box(0.08, 0.04, 0.02), 0.005);
   const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M(mesh_M);
-  const VertexEdgeNormal mesh_normal_M(mesh_M);
+  const FeatureNormalSet mesh_normal_M(mesh_M);
   {
     // The query point Q is inside the box. The signed distance is negative.
     const Vector3d p_MQ(0, 0, 0.01 - 0.001);
@@ -363,7 +363,7 @@ GTEST_TEST(CalcSignedDistanceToSurfaceMeshTest, NonConvex) {
       {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
        Vector3d::UnitZ(), Vector3d(0.25, 0.25, 0.25)}};
   const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M(mesh_M);
-  const VertexEdgeNormal mesh_normal_M(mesh_M);
+  const FeatureNormalSet mesh_normal_M(mesh_M);
   {
     // The query point is inside, nearest to the concave vertex v4. The signed
     // distance is negative. The gradient is in the direction from the query

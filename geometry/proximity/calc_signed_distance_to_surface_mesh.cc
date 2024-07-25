@@ -93,7 +93,7 @@ class BvhVisitor {
 
 }  // namespace
 
-VertexEdgeNormal::VertexEdgeNormal(const TriangleSurfaceMesh<double>& mesh_M) {
+FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M) {
   vertex_normal_.clear();
   vertex_normal_.resize(mesh_M.num_vertices(), Vector3d::Zero());
   edge_normal_.clear();
@@ -193,7 +193,7 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
 SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
-    const VertexEdgeNormal& mesh_normal_M) {
+    const FeatureNormalSet& mesh_normal_M) {
   int tri_index;
   SquaredDistanceToTriangle closest;
   BvhVisitor::CalcSquaredDistance(p_MQ, mesh_M, bvh_M.root_node(), &tri_index,

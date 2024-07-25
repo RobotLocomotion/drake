@@ -28,9 +28,7 @@ class VolumeMeshBoundary {
   const Bvh<Obb, TriangleSurfaceMesh<double>>& tri_bvh() const {
     return tri_bvh_M_;
   }
-  const VertexEdgeNormal& vertex_edge_normal() const {
-    return vertex_edge_normal_M_;
-  }
+  const FeatureNormalSet& feature_normal() const { return feature_normal_M_; }
 
  private:
   // The boundary surface of the volume mesh expressed in the same frame M of
@@ -42,7 +40,7 @@ class VolumeMeshBoundary {
 
   // Provides angle weighted normals at vertices and edges of the
   // triangle surface mesh, expressed in frame M of the volume mesh.
-  VertexEdgeNormal vertex_edge_normal_M_;
+  FeatureNormalSet feature_normal_M_;
 };
 
 }  // namespace internal

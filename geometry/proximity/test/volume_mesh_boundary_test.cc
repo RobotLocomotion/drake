@@ -20,7 +20,7 @@ GTEST_TEST(VolumeMeshBoundary, FromVolumeMesh) {
   // Check that data was populated. The actual value depends on other code.
   EXPECT_EQ(dut.tri_mesh().num_triangles(), 4);
   EXPECT_FALSE(dut.tri_bvh().root_node().is_leaf());
-  EXPECT_NE(dut.vertex_edge_normal().vertex_normal(0), Vector3d::Zero());
+  EXPECT_NE(dut.feature_normal().vertex_normal(0), Vector3d::Zero());
 }
 
 GTEST_TEST(VolumeMeshBoundary, FromSurfaceMesh) {
@@ -54,7 +54,7 @@ GTEST_TEST(VolumeMeshBoundary, FromSurfaceMesh) {
   // Check that data was populated. The actual value depends on other code.
   EXPECT_EQ(dut.tri_mesh().num_triangles(), 4);
   EXPECT_FALSE(dut.tri_bvh().root_node().is_leaf());
-  EXPECT_NE(dut.vertex_edge_normal().vertex_normal(0), Vector3d::Zero());
+  EXPECT_NE(dut.feature_normal().vertex_normal(0), Vector3d::Zero());
 }
 
 }  // namespace

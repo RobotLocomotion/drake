@@ -13,12 +13,12 @@ namespace internal {
 VolumeMeshBoundary::VolumeMeshBoundary(const VolumeMesh<double>& mesh_M)
     : tri_mesh_M_{ConvertVolumeToSurfaceMesh(mesh_M)},
       tri_bvh_M_{tri_mesh_M_},
-      vertex_edge_normal_M_{tri_mesh_M_} {}
+      feature_normal_M_{tri_mesh_M_} {}
 
 VolumeMeshBoundary::VolumeMeshBoundary(TriangleSurfaceMesh<double>&& mesh_M)
     : tri_mesh_M_(std::move(mesh_M)),
       tri_bvh_M_{tri_mesh_M_},
-      vertex_edge_normal_M_{tri_mesh_M_} {}
+      feature_normal_M_{tri_mesh_M_} {}
 
 }  // namespace internal
 }  // namespace geometry
