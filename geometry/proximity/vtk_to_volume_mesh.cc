@@ -7,6 +7,7 @@
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkCellIterator.h>            // vtkCommonDataModel
+#include <vtkCharArray.h>               // vtkCommonCore
 #include <vtkNew.h>                     // vtkCommonCore
 #include <vtkUnstructuredGrid.h>        // vtkCommonDataModel
 #include <vtkUnstructuredGridReader.h>  // vtkIOLegacy
@@ -19,16 +20,11 @@ namespace geometry {
 using Eigen::Vector3d;
 
 namespace internal {
+namespace {
 
-VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
+VolumeMesh<double> ReadVtkToVolumeMesh(vtkUnstructuredGridReader* reader,
+                                       std::string_view description,
                                        double scale) {
-  if (scale <= 0.0) {
-    throw std::runtime_error(fmt::format(
-        "ReadVtkToVolumeMesh('{}', {}): scale={} is not a positive number",
-        filename, scale, scale));
-  }
-  vtkNew<vtkUnstructuredGridReader> reader;
-  reader->SetFileName(filename.c_str());
   reader->Update();
   vtkUnstructuredGrid* vtk_mesh = reader->GetOutput();
 
@@ -52,11 +48,12 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
       vtkNew<vtkGenericCell> bad_cell;
       iter->GetCell(bad_cell);
       auto msg = fmt::format(
-          "ReadVtkToVolumeMesh('{}', {}): file contains a"
+          "ReadVtkToVolumeMesh(): mesh data contains a"
           " non-tetrahedron(type id={}) cell with type id {}, dimension {},"
-          " and number of points {}",
-          filename, scale, static_cast<int>(VTK_TETRA), bad_cell->GetCellType(),
-          bad_cell->GetCellDimension(), bad_cell->GetNumberOfPoints());
+          " and number of points {}: '{}'.",
+          scale, static_cast<int>(VTK_TETRA), bad_cell->GetCellType(),
+          bad_cell->GetCellDimension(), bad_cell->GetNumberOfPoints(),
+          description);
       throw std::runtime_error(msg);
     }
     vtkIdList* vtk_vertex_ids = iter->GetPointIds();
@@ -69,6 +66,40 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
   }
 
   return {std::move(elements), std::move(vertices)};
+}
+
+}  // namespace
+
+VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
+                                       double scale) {
+  if (scale <= 0.0) {
+    throw std::runtime_error(fmt::format(
+        "ReadVtkToVolumeMesh('{}', {}): scale={} is not a positive number",
+        filename, scale, scale));
+  }
+  vtkNew<vtkUnstructuredGridReader> reader;
+  reader->SetFileName(filename.c_str());
+  return ReadVtkToVolumeMesh(reader, filename, scale);
+}
+
+VolumeMesh<double> ReadVtkContentsToVolumeMesh(
+    const common::FileContents& contents, double scale) {
+  if (scale <= 0.0) {
+    throw std::runtime_error(
+        fmt::format("ReadVtkToVolumeMesh() from vtk file contents: scale={} is "
+                    "not a positive number",
+                    scale));
+  }
+  vtkNew<vtkUnstructuredGridReader> reader;
+  vtkNew<vtkCharArray> char_array;
+  const std::string& data = contents.contents();
+  // vtkCharArray requires a non-const pointer. Yuck. But this allows us to
+  // avoid copying the string.
+  char* contents_array = const_cast<char*>(data.c_str());
+  char_array->SetArray(contents_array, data.size(), 1 /* don't delete */);
+  reader->SetInputArray(char_array);
+  reader->SetReadFromInputString(true);
+  return ReadVtkToVolumeMesh(reader, contents.filename_hint(), scale);
 }
 
 }  // namespace internal
