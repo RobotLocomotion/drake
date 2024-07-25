@@ -978,6 +978,7 @@ drake_cc_library(
     deps = [
         ":volume_mesh",
         "//common:essential",
+        "//common:file_contents",
     ],
     implementation_deps = [
         "@fmt",

@@ -1,5 +1,8 @@
 #include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 
+#include <fstream>
+#include <sstream>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -43,6 +46,26 @@ GTEST_TEST(VtkToVolumeMeshTest, Scale) {
   const double kScale = 0.01;
   VolumeMesh<double> volume_mesh =
       internal::ReadVtkToVolumeMesh(test_file, kScale);
+
+  const VolumeMesh<double> expected_mesh{
+      {{0, 1, 2, 3}},
+      {kScale * Vector3d::Zero(), kScale * Vector3d::UnitX(),
+       kScale * Vector3d::UnitY(), kScale * Vector3d::UnitZ()}};
+  EXPECT_TRUE(volume_mesh.Equal(expected_mesh));
+}
+
+GTEST_TEST(VtkToVolumeMeshTest, FromContents) {
+  const std::string test_file =
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
+  std::ifstream input(test_file);
+  DRAKE_DEMAND(input.good());
+  std::stringstream file_contents;
+  file_contents << input.rdbuf();
+  common::FileContents contents(std::move(file_contents).str(), test_file);
+  // Scale from a one-meter object to a one-centimeter object.
+  const double kScale = 0.01;
+  VolumeMesh<double> volume_mesh =
+      internal::ReadVtkContentsToVolumeMesh(contents, kScale);
 
   const VolumeMesh<double> expected_mesh{
       {{0, 1, 2, 3}},
