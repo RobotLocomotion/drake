@@ -402,10 +402,18 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
   }
 
-  // Computes a shape's spatial inertia assuming a density of 1 kg/m³ (≈ air).
-  // Note: A calling function is responsible for scaling the spatial inertia's
-  // underlying mass and rotational inertia, e.g, with a parser-specified mass
-  // or density or a fallback density of 1000 kg/m³ (≈ water density).
+  // Computes the unit inertia, center of mass, and encoded _volume_ for a
+  // shape. This calculator is used in a context where the density of the
+  // shape's material is not yet determined. The calculation uses a unit
+  // density as a placeholder, making the `mass` property of the returned
+  // SpatialInertia equal to the shape's volume. Once density is determined, the
+  // final mass can be calculated by multiplying the returned "mass" value by
+  // the new density (leaving unit inertia and center of mass unchanged).
+  // Alternatively, if mass is specified explicitly, the returned "mass" value
+  // can simply be replaced with the given mass value.
+  //
+  // To be clear, unit density is a mathematical trick and not a reasonable
+  // *physical* default value. Air's density is approximately 1 kg/m³.
   class UnitDensityInertiaCalculator final : public geometry::ShapeReifier {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnitDensityInertiaCalculator);
