@@ -400,17 +400,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("model_instances"),
             py::arg("with_respect_to"), py::arg("frame_A"), py::arg("frame_E"),
             cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc_5args)
-        .def("CalcCenterOfMassTranslationalAccelerationInWorld",
-            overload_cast_explicit<Vector3<T>, const Context<T>&>(
-                &Class::CalcCenterOfMassTranslationalAccelerationInWorld),
-            py::arg("context"),
-            cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld.doc_1args)
-        .def("CalcCenterOfMassTranslationalAccelerationInWorld",
-            overload_cast_explicit<Vector3<T>, const Context<T>&,
-                const std::vector<ModelInstanceIndex>&>(
-                &Class::CalcCenterOfMassTranslationalAccelerationInWorld),
-            py::arg("context"), py::arg("model_instances"),
-            cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld.doc_2args)
         .def(
             "CalcJacobianCenterOfMassTranslationalVelocity",
             [](const Class* self, const Context<T>& context,

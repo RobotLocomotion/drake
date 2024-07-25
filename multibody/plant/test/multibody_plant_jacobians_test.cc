@@ -581,6 +581,19 @@ TEST_F(TwoDOFPlanarPendulumTest,
       Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(aBias_WScm_W, aBias_WScm_W_expected, kTolerance));
 
+  // Re-test CalcBiasCenterOfMassTranslationalAcceleration() for full MBP, but
+  // instead measure in frame_A.
+  const Frame<double>& frame_A = body_A.body_frame();
+  const Vector3d aBias_AScm_W =
+      plant_->CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, JacobianWrtVariable::kV, frame_A, frame_W);
+
+  // Scm's bias translational acceleration in frame A, expressed in W is
+  // aBias_AScm_W = (-0.25 * L * wBz_²) 𝐖𝐱
+  const Vector3d aBias_AScm_W_expected =
+      -0.25 * link_length_ * wBz_ * wBz_ * Vector3d::UnitX();
+  EXPECT_TRUE(CompareMatrices(aBias_AScm_W, aBias_AScm_W_expected, kTolerance));
+
   // Test CalcBiasCenterOfMassTranslationalAcceleration() for 1 model instance.
   const Vector3d aBias_WAcm_W =
       plant_->CalcBiasCenterOfMassTranslationalAcceleration(
@@ -592,6 +605,13 @@ TEST_F(TwoDOFPlanarPendulumTest,
   const Vector3d aBias_WAcm_W_expected =
       -0.5 * link_length_ * wAz_ * wAz_ * Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(aBias_WAcm_W, aBias_WAcm_W_expected, kTolerance));
+
+  // Ensure aBias_AAcm_W is zero.
+  const Vector3d aBias_AAcm_W =
+      plant_->CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, model_instances, JacobianWrtVariable::kV, frame_A,
+          frame_W);
+  EXPECT_TRUE(CompareMatrices(aBias_AAcm_W, Vector3d::Zero(), kTolerance));
 
   // Test CalcJacobianCenterOfMassTranslationalVelocity() for 2 model instances.
   // This should produce the same results as Scm (system center of mass).
@@ -610,6 +630,14 @@ TEST_F(TwoDOFPlanarPendulumTest,
           *context_, model_instances, JacobianWrtVariable::kV, frame_W,
           frame_W);
   EXPECT_TRUE(CompareMatrices(aBias_WScm_W, aBias_WScm_W_model2, kTolerance));
+
+  // Re-test CalcBiasCenterOfMassTranslationalAcceleration(), but in frame_A.
+  // This should produce the same results as Scm (system center of mass).
+  const Vector3d aBias_AScm_W_model2 =
+      plant_->CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, model_instances, JacobianWrtVariable::kV, frame_A,
+          frame_W);
+  EXPECT_TRUE(CompareMatrices(aBias_AScm_W, aBias_AScm_W_model2, kTolerance));
 }
 
 // Fixture for two degree-of-freedom 3D satellite tracker with bodies A and B.
