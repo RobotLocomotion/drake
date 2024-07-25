@@ -1,0 +1,55 @@
+[highway_internal] Force GetIndex() method to always be inline
+
+Prior upstream work on the HWY_INLINE macro definition made it
+effectively no-op in non-MSVC debug builds.  In the specific case of
+ChosenTarget::GetIndex(), it must always be inline for correctness of
+the target configuration scheme.
+
+Introduce a new macro HWY_INLINE_ALWAYS and use it to repair the
+GetIndex() method.
+
+Note that the first change block below gives compatible definitions for
+an `#if MSVC` stanza. This is not strictly necessary for Drake, but
+would be necessary for upstream adoption of the patch. The second change
+block is for all remaining compilers, and the third change block applies
+the repair.
+
+These changes should be upstreamed to highway.
+
+--- hwy/base.h
++++ hwy/base.h
+@@ -91,7 +91,8 @@
+ 
+ #define HWY_FUNCTION __FUNCSIG__  // function name + template args
+ #define HWY_RESTRICT __restrict
+-#define HWY_INLINE __forceinline
++#define HWY_INLINE_ALWAYS __forceinline
++#define HWY_INLINE HWY_INLINE_ALWAYS
+ #define HWY_NOINLINE __declspec(noinline)
+ #define HWY_FLATTEN
+ #define HWY_NORETURN __declspec(noreturn)
+@@ -112,10 +113,11 @@
+ 
+ #define HWY_FUNCTION __PRETTY_FUNCTION__  // function name + template args
+ #define HWY_RESTRICT __restrict__
++#define HWY_INLINE_ALWAYS inline __attribute__((always_inline))
+ // force inlining without optimization enabled creates very inefficient code
+ // that can cause compiler timeout
+ #ifdef __OPTIMIZE__
+-#define HWY_INLINE inline __attribute__((always_inline))
++#define HWY_INLINE HWY_INLINE_ALWAYS
+ #else
+ #define HWY_INLINE inline
+ #endif
+
+--- hwy/targets.h
++++ hwy/targets.h
+@@ -315,7 +315,7 @@ struct ChosenTarget {
+   // of HWY_CHOSEN_TARGET_MASK_TARGETS defined in the translation unit that
+   // calls it, which may be different from others. This means we only enable
+   // those targets that were actually compiled in this module.
+-  size_t HWY_INLINE GetIndex() const {
++  size_t HWY_INLINE_ALWAYS GetIndex() const {
+     return hwy::Num0BitsBelowLS1Bit_Nonzero64(
+         static_cast<uint64_t>(LoadMask() & HWY_CHOSEN_TARGET_MASK_TARGETS));
+   }
