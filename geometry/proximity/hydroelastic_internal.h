@@ -509,7 +509,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
  properties have sufficient information). Requires the ('hydroelastic',
  'hydroelastic_modulus') properties. */
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Mesh& mesh_specification, const ProximityProperties& props);
+    const Mesh& mesh_spec, const ProximityProperties& props);
 
 //@}
 

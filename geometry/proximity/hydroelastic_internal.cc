@@ -13,6 +13,7 @@
 #include "drake/geometry/proximity/make_capsule_field.h"
 #include "drake/geometry/proximity/make_capsule_mesh.h"
 #include "drake/geometry/proximity/make_convex_field.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 #include "drake/geometry/proximity/make_convex_mesh.h"
 #include "drake/geometry/proximity/make_cylinder_field.h"
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
@@ -511,10 +512,13 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Convex& convex_spec, const ProximityProperties& props) {
   const double margin = NonNegativeDouble("Convex", "soft")
-                            .Extract(props, kMaterialGroup, kMargin);
+                            .Extract(props, kHydroGroup, kMargin);
   // Use the pre-computed convex hull for the shape.
   const TriangleSurfaceMesh<double> inflated_surface_mesh =
-      MakeTriangleFromPolygonMesh(convex_spec.GetConvexHull(margin));
+      MakeTriangleFromPolygonMesh(
+          margin > 0 ? MakeConvexHull(convex_spec.filename(),
+                                      convex_spec.scale(), margin)
+                     : convex_spec.GetConvexHull());
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
       MakeConvexVolumeMesh<double>(inflated_surface_mesh));
 
@@ -529,32 +533,33 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
-    const Mesh& mesh_specification, const ProximityProperties& props) {
+    const Mesh& mesh_spec, const ProximityProperties& props) {
   PositiveDouble validator("Mesh", "soft");
 
   const double hydroelastic_modulus =
       validator.Extract(props, kHydroGroup, kElastic);
 
-  // The mesh is inflated only when its convex hull approximation is used. If
-  // the full volume mesh (a vtk file) is provided, the mesh is not inflated.
   std::unique_ptr<VolumeMesh<double>> mesh;
   std::unique_ptr<VolumeMesh<double>> inflated_mesh;
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure;
 
   const double margin =
-      NonNegativeDouble("Mesh", "soft").Extract(props, kMaterialGroup, kMargin);
+      NonNegativeDouble("Mesh", "soft").Extract(props, kHydroGroup, kMargin);
 
-  if (mesh_specification.extension() == ".vtk") {
+  if (mesh_spec.extension() == ".vtk") {
     // If they've explicitly provided a .vtk file, we'll treat it as it is a
     // volume mesh. If that's not true, we'll get an error.
     mesh = make_unique<VolumeMesh<double>>(
-        MakeVolumeMeshFromVtk<double>(mesh_specification));
+        MakeVolumeMeshFromVtk<double>(mesh_spec));
     inflated_mesh =
         make_unique<VolumeMesh<double>>(MakeInflatedMesh(*mesh, margin));
   } else {
     // Otherwise, we'll create a compliant representation of its convex hull.
     const TriangleSurfaceMesh<double> inflated_surface_mesh =
-        MakeTriangleFromPolygonMesh(mesh_specification.GetConvexHull(margin));
+        MakeTriangleFromPolygonMesh(
+            margin > 0 ? MakeConvexHull(mesh_spec.filename(), mesh_spec.scale(),
+                                        margin)
+                       : mesh_spec.GetConvexHull());
     inflated_mesh = make_unique<VolumeMesh<double>>(
         MakeConvexVolumeMesh<double>(inflated_surface_mesh));
   }

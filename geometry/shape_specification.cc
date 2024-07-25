@@ -35,14 +35,14 @@ std::string GetExtensionLower(const std::string& filename) {
 // shape_specification_thread_test.cc.
 void ComputeConvexHullAsNecessary(
     std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
-    std::string_view filename, double scale, double margin) {
+    std::string_view filename, double scale) {
   std::shared_ptr<PolygonSurfaceMesh<double>> check =
       std::atomic_load(hull_ptr);
   if (check == nullptr) {
     // Note: This approach means that multiple threads *may* redundantly compute
     // the convex hull; but only the first one will set the hull.
     auto new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(filename, scale, margin));
+        internal::MakeConvexHull(filename, scale));
     std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
   }
 }
@@ -112,8 +112,8 @@ Convex::Convex(const std::string& filename, double scale)
   }
 }
 
-const PolygonSurfaceMesh<double>& Convex::GetConvexHull(double margin) const {
-  ComputeConvexHullAsNecessary(&hull_, filename_, scale_, margin);
+const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
+  ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
   return *hull_;
 }
 
@@ -200,8 +200,8 @@ Mesh::Mesh(const std::string& filename, double scale)
   }
 }
 
-const PolygonSurfaceMesh<double>& Mesh::GetConvexHull(double margin) const {
-  ComputeConvexHullAsNecessary(&hull_, filename_, scale_, margin);
+const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
+  ComputeConvexHullAsNecessary(&hull_, filename_, scale_);
   return *hull_;
 }
 

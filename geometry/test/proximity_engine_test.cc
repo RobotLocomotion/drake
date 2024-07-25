@@ -333,6 +333,10 @@ GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
   const Vector3d mesh_min(-1, -1, -1.414213562373);
   const Vector3d mesh_max = -mesh_min;
 
+  const Mesh vol_mesh(FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"));
+  const Vector3d vol_min(0, 0, 0);
+  const Vector3d vol_max(1, 1, 1);
+
   struct TestCase {
     const Shape* shape;
     ProximityProperties properties;
@@ -352,6 +356,8 @@ GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
        "No hydro mesh -> no inflation"},
       {&convex, no_hydro_properties, mesh_min, mesh_max, true,
        "No hydro convex -> no inflation"},
+      {&vol_mesh, no_hydro_properties, vol_min, vol_max, true,
+       "No hydro volume mesh -> no inflation"},
       {&box, rigid_properties, Vector3d::Constant(-0.5),
        Vector3d::Constant(0.5), true, "Rigid-> no inflation"},
       {&box, soft_properties, Vector3d::Constant(-0.5 - kMarginValue),
@@ -363,6 +369,11 @@ GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
       {&convex, soft_properties, mesh_min - Vector3d::Constant(kMarginValue),
        mesh_max + Vector3d::Constant(kMarginValue), false,
        "Soft convex -> inflation exceeds minimum"},
+      // TODO(SeanCurtis-TRI): This currently crashes; once the mesh is
+      // properly inflated, restore this test case.
+      // {&vol_mesh, soft_properties, vol_min - Vector3d::Constant(kMarginValue),
+      //  vol_max + Vector3d::Constant(kMarginValue), false,
+      //  "Soft vol mesh -> inflation exceeds minimum"},
   };
 
   for (const auto& test_case : cases) {
@@ -380,14 +391,11 @@ GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
       for (int i = 0; i < 3; ++i) {
         EXPECT_LT(aabb.min_[i], test_case.expected_min[i])
             << test_case.description;
-        EXPECT_LT(aabb.max_[i], test_case.expected_max[i])
+        EXPECT_GT(aabb.max_[i], test_case.expected_max[i])
             << test_case.description;
       }
     }
   }
-
-  GTEST_FAIL() << "Mesh and convex aren't inflated yet; so this will fail. "
-               << "Remove this when this is the only cause of test failure."
 }
 
 // Test a combination that used to throw an exception.

@@ -282,7 +282,7 @@ class Convex final : public Shape {
            (insufficient number of vertices, co-linear or coincident vertices,
            etc.) All of the vertices lying on a plane is *not* considered
            degenerate. */
-  const PolygonSurfaceMesh<double>& GetConvexHull(double margin = 0) const;
+  const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
  private:
   void DoReify(ShapeReifier*, void*) const final;
@@ -480,7 +480,7 @@ class Mesh final : public Shape {
            (insufficient number of vertices, co-linear or coincident vertices,
            etc.) All of the vertices lying on a plane is *not* considered
            degenerate. */
-  const PolygonSurfaceMesh<double>& GetConvexHull(double margin = 0) const;
+  const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
  private:
   void DoReify(ShapeReifier*, void*) const final;
