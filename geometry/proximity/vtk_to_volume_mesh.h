@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/common/file_contents.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
@@ -42,10 +43,14 @@ namespace internal {
  @note Error handling from parsing the file is performed by VTK library.
 
  @throw  std::exception if the file does not exist or unsupported.
-         std::exceptoin for non-positive scale factors.
+         std::exception for non-positive scale factors.
  */
 VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
                                        double scale = 1.0);
+
+/* Reads the VolumeMesh from the `contents` of a tetrahedral .vtk file. */
+VolumeMesh<double> ReadVtkContentsToVolumeMesh(
+    const common::FileContents& contents, double scale = 1.0);
 
 //@}
 
