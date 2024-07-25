@@ -94,9 +94,9 @@ class BvhVisitor {
 }  // namespace
 
 FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M) {
-  vertex_normal_.clear();
-  vertex_normal_.resize(mesh_M.num_vertices(), Vector3d::Zero());
-  edge_normal_.clear();
+  vertex_normals_.clear();
+  vertex_normals_.resize(mesh_M.num_vertices(), Vector3d::Zero());
+  edge_normals_.clear();
   const std::vector<Vector3d>& vertices = mesh_M.vertices();
   // Accumulate data from the mesh. They are not normal vectors yet. We will
   // normalize them afterward.
@@ -113,23 +113,23 @@ FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M) {
     for (int i = 0; i < 3; ++i) {
       const double angle =
           std::acos(unit_edge_vector[i].dot(-unit_edge_vector[(i + 2) % 3]));
-      vertex_normal_[v[i]] += angle * triangle_normal;
+      vertex_normals_[v[i]] += angle * triangle_normal;
     }
     // Accumulate normal for each edge of the triangle.
     for (int i = 0; i < 3; ++i) {
       const auto edge = MakeSortedPair(v[i], v[(i + 1) % 3]);
-      auto it = edge_normal_.find(edge);
-      if (it == edge_normal_.end()) {
-        edge_normal_[edge] = triangle_normal;
+      auto it = edge_normals_.find(edge);
+      if (it == edge_normals_.end()) {
+        edge_normals_[edge] = triangle_normal;
       } else {
         it->second += triangle_normal;
       }
     }
   }
   for (int i = 0; i < mesh_M.num_vertices(); ++i) {
-    vertex_normal_[i].stableNormalize();
+    vertex_normals_[i].stableNormalize();
   }
-  std::ranges::for_each(edge_normal_, [](auto& e) {
+  std::ranges::for_each(edge_normals_, [](auto& e) {
     e.second.stableNormalize();
   });
 }

@@ -47,7 +47,7 @@ class FeatureNormalSet {
   // @param v  the vertex index into the mesh
   //
   // @pre 0 <= v < mesh_M.num_vertices()
-  Vector3<double> vertex_normal(int v) const { return vertex_normal_.at(v); }
+  Vector3<double> vertex_normal(int v) const { return vertex_normals_.at(v); }
 
   // Returns the normal at an edge `uv` as the average normal from the two
   // triangles sharing the edge. Both triangles have equal weight.
@@ -60,12 +60,12 @@ class FeatureNormalSet {
   // @pre 0 <= u,v < mesh_M.num_vertices()
   // @pre The edge `uv` is in the mesh.
   Vector3<double> edge_normal(const SortedPair<int>& uv) const {
-    return edge_normal_.at(uv);
+    return edge_normals_.at(uv);
   }
 
  private:
-  std::vector<Vector3<double>> vertex_normal_{};
-  std::map<SortedPair<int>, Vector3<double>> edge_normal_{};
+  std::vector<Vector3<double>> vertex_normals_{};
+  std::map<SortedPair<int>, Vector3<double>> edge_normals_{};
 };
 
 struct SquaredDistanceToTriangle {
