@@ -7,6 +7,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -402,34 +403,30 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
   }
 
-  // Computes the unit inertia, center of mass, and encoded _volume_ for a
-  // shape. This calculator is used in a context where the density of the
-  // shape's material is not yet determined. The calculation uses a unit
-  // density as a placeholder, making the `mass` property of the returned
-  // SpatialInertia equal to the shape's volume. Once density is determined, the
-  // final mass can be calculated by multiplying the returned "mass" value by
-  // the new density (leaving unit inertia and center of mass unchanged).
-  // Alternatively, if mass is specified explicitly, the returned "mass" value
-  // can simply be replaced with the given mass value.
-  //
-  // To be clear, unit density is a mathematical trick and not a reasonable
-  // *physical* default value. Air's density is approximately 1 kg/m³.
-  class UnitDensityInertiaCalculator final : public geometry::ShapeReifier {
+  // Computes the volume, center of mass, and unit inertia for a shape. This
+  // calculator is used in a context where the calculation of the mass needs to
+  // be deferred (e.g., density is not yet determined or mass has been
+  // explicitly specified). The caller is responsible for defining the final
+  // value for mass.
+  class InertiaCalculator final : public geometry::ShapeReifier {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnitDensityInertiaCalculator);
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InertiaCalculator);
     // The reifier aliases the pre-computed mesh spatial inertias. When looking
     // up mesh inertias, it uses the mujoco geometry _name_ and not the
     // mesh filename.
-    UnitDensityInertiaCalculator(
+    InertiaCalculator(
         std::string name,
         std::map<std::string, SpatialInertia<double>>* mesh_inertia)
         : name_(std::move(name)), mesh_inertia_(mesh_inertia) {
       DRAKE_DEMAND(mesh_inertia != nullptr);
     }
 
-    SpatialInertia<double> Calc(const geometry::Shape& shape) {
+    // Returns the tuple of [volume, p_GGcm_G, G_GG].
+    std::tuple<double, Vector3d, UnitInertia<double>> Calc(
+        const geometry::Shape& shape) {
       shape.Reify(this);
-      return M_GG_G_unitDensity;
+      return {M_GG_G_unitDensity.get_mass(), M_GG_G_unitDensity.get_com(),
+              M_GG_G_unitDensity.get_unit_inertia()};
     }
 
     bool used_convex_hull_fallback() const {
@@ -468,6 +465,11 @@ class MujocoParser {
     std::string name_;
     std::map<std::string, SpatialInertia<double>>* mesh_inertia_{nullptr};
     bool used_convex_hull_fallback_{false};
+    // Note: This is the spatial inertia assuming unit density because the
+    // resultant value for mass is equal to the value of volume.
+    // To be clear, unit density is a mathematical trick to use
+    // CalcSpatialInertia() to report volume and not a reasonable
+    // *physical* default value. Air's density is approximately 1 kg/m³.
     SpatialInertia<double> M_GG_G_unitDensity{SpatialInertia<double>::NaN()};
   };
 
@@ -801,8 +803,8 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
 
     if (compute_inertia) {
-      UnitDensityInertiaCalculator calculator(mesh, &mesh_inertia_);
-      const SpatialInertia<double> M_GG_G_unitDensity =
+      InertiaCalculator calculator(mesh, &mesh_inertia_);
+      const auto [volume, p_GGcm_G, G_GGcm_G] =
           calculator.Calc(*geom.shape);
       if (calculator.used_convex_hull_fallback()) {
         // When the Mujoco parser falls back to using a convex hull, it prints
@@ -825,13 +827,9 @@ class MujocoParser {
       if (!ParseScalarAttribute(node, "mass", &mass)) {
         double density{1000};  /* fallback default ≈ water density */
         ParseScalarAttribute(node, "density", &density);
-        // M_GG_G_unitDensity was calculated with ρ₁ = 1 which produced mass m₁.
-        // Actual density is ρₐ. We have the following ratio: mₐ / m₁ = ρₐ / ρ₁.
-        // So, mₐ = m₁⋅(ρₐ / ρ₁) = m₁⋅(ρₐ / 1) = m₁⋅ρₐ.
-        mass = M_GG_G_unitDensity.get_mass() * density;
+        mass = volume * density;
       }
-      SpatialInertia<double> M_GG_G(mass, M_GG_G_unitDensity.get_com(),
-                                    M_GG_G_unitDensity.get_unit_inertia());
+      SpatialInertia<double> M_GG_G(mass, p_GGcm_G, G_GGcm_G);
       geom.M_GBo_B = M_GG_G.ReExpress(geom.X_BG.rotation())
                          .Shift(-geom.X_BG.translation());
     }
