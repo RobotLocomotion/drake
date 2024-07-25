@@ -4404,7 +4404,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// translational acceleration in A) that does not include 𝑠̇, i.e.,
   /// a𝑠Bias_AScm is Scm's translational acceleration in A when 𝑠̇ = 0. <pre>
   ///   a_AScm =  J𝑠_v_AScm ⋅ 𝑠̇  +  J̇𝑠_v_AScm ⋅ 𝑠   (𝑠 = q̇ or 𝑠 = v), hence
-  ///   a𝑠Bias_AScm = J̇𝑠_V_Ascm ⋅ 𝑠
+  ///   a𝑠Bias_AScm = J̇𝑠_v_Ascm ⋅ 𝑠
   /// </pre>
   /// where J𝑠_v_AScm is Scm's translational velocity Jacobian in frame A for
   /// speeds s (see CalcJacobianSpatialVelocity() for details on J𝑠_V_ABp).
@@ -4428,8 +4428,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
   /// @note The world_body() is ignored. asBias_AScm_E = ∑ (mᵢ aᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body, and
-  /// aᵢ is the translational bias acceleration of Bcm in frame A expressed in
-  /// frame E for speeds 𝑠 (Bcm is the center of mass of the iᵗʰ body).
+  /// aᵢ is the translational bias acceleration of Bᵢcm in frame A expressed in
+  /// frame E for speeds 𝑠 (Bᵢcm is the center of mass of the iᵗʰ body).
   /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
   Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
@@ -4448,7 +4448,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// translational acceleration in A) that does not include 𝑠̇, i.e.,
   /// a𝑠Bias_AScm is Scm's translational acceleration in A when 𝑠̇ = 0. <pre>
   ///   a_AScm =  J𝑠_v_AScm ⋅ 𝑠̇  +  J̇𝑠_v_AScm ⋅ 𝑠   (𝑠 = q̇ or 𝑠 = v), hence
-  ///   a𝑠Bias_AScm = J̇𝑠_V_Ascm ⋅ 𝑠
+  ///   a𝑠Bias_AScm = J̇𝑠_v_Ascm ⋅ 𝑠
   /// </pre>
   /// where J𝑠_v_AScm is Scm's translational velocity Jacobian in frame A for
   /// speeds s (see CalcJacobianSpatialVelocity() for details on J𝑠_V_ABp).
@@ -4474,8 +4474,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
   /// @note The world_body() is ignored. asBias_AScm_E = ∑ (mᵢ aᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body, and
-  /// aᵢ is the translational bias acceleration of Bcm in frame A expressed in
-  /// frame E for speeds 𝑠 (Bcm is the center of mass of the iᵗʰ body).
+  /// aᵢ is the translational bias acceleration of Bᵢcm in frame A expressed in
+  /// frame E for speeds 𝑠 (Bᵢcm is the center of mass of the iᵗʰ body).
   /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
   Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
       const systems::Context<T>& context,
