@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -68,11 +67,9 @@ class BvhVisitor {
     // Check for possible pruning.
     if (phi_BQ > 0) {
       // The query point is outside, so we can get the lower bound.
-      const double squared_distance_from_this_node_is_at_least =
-          phi_BQ * phi_BQ;
+      const double squared_distance_from_node = phi_BQ * phi_BQ;
       // Use the lower bound to possibly prune this subtree.
-      if (squared_distance_from_this_node_is_at_least >
-          closest_info_.squared_distance) {
+      if (squared_distance_from_node > closest_info_.squared_distance) {
         return;
       }
     }
@@ -94,9 +91,7 @@ class BvhVisitor {
 }  // namespace
 
 FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M) {
-  vertex_normals_.clear();
   vertex_normals_.resize(mesh_M.num_vertices(), Vector3d::Zero());
-  edge_normals_.clear();
   const std::vector<Vector3d>& vertices = mesh_M.vertices();
   // Accumulate data from the mesh. They are not normal vectors yet. We will
   // normalize them afterward.
@@ -126,12 +121,12 @@ FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M) {
       }
     }
   }
-  for (int i = 0; i < mesh_M.num_vertices(); ++i) {
-    vertex_normals_[i].stableNormalize();
+  for (auto& v_normal : vertex_normals_) {
+    v_normal.stableNormalize();
   }
-  std::ranges::for_each(edge_normals_, [](auto& e) {
-    e.second.stableNormalize();
-  });
+  for (auto& [_, e_normal] : edge_normals_) {
+    e_normal.stableNormalize();
+  }
 }
 
 SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
@@ -208,8 +203,8 @@ SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
         normal_M = mesh_M.face_normal(tri_index);
         break;
       case SquaredDistanceToTriangle::Location::kEdge:
-        normal_M = mesh_normal_M.edge_normal(
-            MakeSortedPair(tri.vertex(v), tri.vertex((v + 1) % 3)));
+        normal_M =
+            mesh_normal_M.edge_normal({tri.vertex(v), tri.vertex((v + 1) % 3)});
         break;
       case SquaredDistanceToTriangle::Location::kVertex:
         normal_M = mesh_normal_M.vertex_normal(tri.vertex(v));

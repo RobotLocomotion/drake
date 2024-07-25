@@ -72,7 +72,7 @@ struct SquaredDistanceToTriangle {
   double squared_distance;
   Vector3<double> closest_point{};
   enum class Location { kTriangle, kEdge, kVertex } location;
-  // The meaning of v depends on location:
+  // The meaning of v depends on `location`:
   // - kTriangle: v is zero. The closest point is in the triangle.
   // - kEdge: The closest point is in the edge between the triangle's
   //          v-th vertex and (v+1)%3-th vertex; 0 <= v < 3.
@@ -109,6 +109,9 @@ struct SignedDistanceToSurfaceMesh {
 // @param bvh_M    the BVH of the surface mesh, expressed in frame M.
 // @param mesh_normal_M  provides angle weighted normals at vertices and
 //                       edges of the surface mesh, expressed in frame M.
+//
+// @pre  The surface mesh is watertight and a closed manifold.
+//
 SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
