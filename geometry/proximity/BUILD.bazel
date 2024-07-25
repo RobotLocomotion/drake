@@ -72,11 +72,9 @@ drake_cc_library(
     srcs = ["boxes_overlap.cc"],
     hdrs = ["boxes_overlap.h"],
     copts = [
-        # Hard coding optimization keeps performance high in debug, but it also
-        # is necessary for highway to work; the critical function must be
-        # inlined. Without -O2, it might not be, leading to badness. If you are
+        # Hard coding optimization keeps performance high in debug.  If you are
         # a developer trying to debug these files, you might want to comment
-        # this out temporarily (and hope your platform is not the crash kind).
+        # this out temporarily.
         "-O2",
     ],
     deps = [
