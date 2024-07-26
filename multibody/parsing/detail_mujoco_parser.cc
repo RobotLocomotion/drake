@@ -403,9 +403,11 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
   }
 
-  // Computes and stores a shape's volume, centroid, and unit inertia. These
-  // quantities are useful for subsequently forming a spatial inertia e.g., with
-  // a user or parser specified mass or density (or a fallback default density).
+  // Computes a shape's volume, centroid, and unit inertia. This calculator is
+  // used in a context where the calculation of mass needs to be deferred (e.g.,
+  // density is not yet determined or mass has been explicitly specified). The
+  // caller is responsible for defining the final value for mass, e.g., using a
+  // parser-specified mass or density (or a fallback default density).
   class InertiaCalculator final : public geometry::ShapeReifier {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InertiaCalculator);
@@ -419,19 +421,19 @@ class MujocoParser {
       DRAKE_DEMAND(mesh_inertia != nullptr);
     }
 
-    // Returns the tuple [volume, p_GoGcm_G, G_GGcm_G], where for a geometry G,
+    // Returns the tuple [volume, p_GoGcm_G, G_GGo_G], where for a geometry G,
     // volume is G's volume, p_GoGcm_G is the position from G's origin point Go
-    // to its centroid Gcm expressed in the G frame, and G_GoGcm_G is G's unit
-    // inertia about Gcm expressed in the G frame.
+    // to its centroid Gcm expressed in the G frame, and G_GGo_G is G's unit
+    // inertia about Go expressed in the G frame.
     // Note: if G has uniform density, Gcm is G's center of mass.
     std::tuple<double, Vector3d, UnitInertia<double>> Calc(
         const geometry::Shape& shape) {
       shape.Reify(this);
-      const double& volume = M_GGcm_G_unitDensity.get_mass();
-      const Vector3<double>& p_GoGcm_G = M_GGcm_G_unitDensity.get_com();
-      const UnitInertia<double>& G_GGcm_G =
-          M_GGcm_G_unitDensity.get_unit_inertia();
-      return {volume, p_GoGcm_G, G_GGcm_G};
+      const double& volume = M_GGo_G_unitDensity.get_mass();
+      const Vector3<double>& p_GoGcm_G = M_GGo_G_unitDensity.get_com();
+      const UnitInertia<double>& G_GGo_G =
+          M_GGo_G_unitDensity.get_unit_inertia();
+      return {volume, p_GoGcm_G, G_GGo_G};
     }
 
     bool used_convex_hull_fallback() const {
@@ -442,39 +444,40 @@ class MujocoParser {
 
     void ImplementGeometry(const geometry::Mesh& mesh, void*) final {
       if (mesh_inertia_->contains(name_)) {
-        M_GGcm_G_unitDensity = mesh_inertia_->at(name_);
+        M_GGo_G_unitDensity = mesh_inertia_->at(name_);
       } else {
         try {  // TODO(21666), remove the try-catch.
-          M_GGcm_G_unitDensity = CalcSpatialInertia(mesh, 1.0 /* density */);
+          M_GGo_G_unitDensity = CalcSpatialInertia(mesh, 1.0 /* density */);
         } catch (const std::exception& e) {
           // As with mujoco, failure leads to using the convex hull.
           // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
-          M_GGcm_G_unitDensity = CalcSpatialInertia(
+          M_GGo_G_unitDensity = CalcSpatialInertia(
               geometry::Convex(mesh.filename(), mesh.scale()),
               1.0 /* density */);
           used_convex_hull_fallback_ = true;
         }
-        mesh_inertia_->insert_or_assign(name_, M_GGcm_G_unitDensity);
+        mesh_inertia_->insert_or_assign(name_, M_GGo_G_unitDensity);
       }
     }
 
     void ImplementGeometry(const geometry::HalfSpace&, void*) final {
-      // Do nothing; leave M_GGcm_G_unitDensity default initialized.
+      // Do nothing; leave M_GGo_G_unitDensity default initialized.
     }
 
     void DefaultImplementGeometry(const geometry::Shape& shape) final {
-      M_GGcm_G_unitDensity = CalcSpatialInertia(shape, 1.0 /* density */);
+      M_GGo_G_unitDensity = CalcSpatialInertia(shape, 1.0 /* density */);
     }
 
    private:
     std::string name_;
     std::map<std::string, SpatialInertia<double>>* mesh_inertia_{nullptr};
     bool used_convex_hull_fallback_{false};
-    // Note: The spatial inertia below uses unit density (1 kg/m³ ≈ air density)
-    // so the shape's mass value is equal to its volume value. To be clear,
-    // unit density is a mathematical trick so CalcSpatialInertia() stores
-    // a mass value = volume (which is not a physically meaningful mass value).
-    SpatialInertia<double> M_GGcm_G_unitDensity{SpatialInertia<double>::NaN()};
+    // Note: The spatial inertia below uses unit density so the shape's volume
+    // value is equal to its mass value. To be clear, unit density is a
+    // mathematical trick (1 kg/m³ ≈ air density is an unreasonable *physical*
+    // value) that causes CalcSpatialInertia() to report a mass value equal to
+    // volume.
+    SpatialInertia<double> M_GGo_G_unitDensity{SpatialInertia<double>::NaN()};
   };
 
   SpatialInertia<double> ParseInertial(XMLElement* node) {
@@ -582,7 +585,6 @@ class MujocoParser {
       geom.X_BG = ParseTransform(node);
     }
 
-    multibody::UnitInertia<double> unit_M_GG_G;
     std::string mesh;
     if (type == "plane") {
       // We interpret the MuJoCo infinite plane as a half-space.
@@ -808,7 +810,7 @@ class MujocoParser {
 
     if (compute_inertia) {
       InertiaCalculator calculator(mesh, &mesh_inertia_);
-      const auto [volume, p_GGcm_G, G_GGcm_G] = calculator.Calc(*geom.shape);
+      const auto [volume, p_GoGcm_G, G_GGo_G] = calculator.Calc(*geom.shape);
       if (calculator.used_convex_hull_fallback()) {
         // When the Mujoco parser falls back to using a convex hull, it prints
         // a warning. We ape that behavior to provide a similar experience.
@@ -832,9 +834,12 @@ class MujocoParser {
         ParseScalarAttribute(node, "density", &density);
         mass = volume * density;
       }
-      SpatialInertia<double> M_GGcm_G(mass, p_GGcm_G, G_GGcm_G);
-      geom.M_GBo_B = M_GGcm_G.ReExpress(geom.X_BG.rotation())
-                         .Shift(-geom.X_BG.translation());
+      SpatialInertia<double> M_GGo_G(mass, p_GoGcm_G, G_GGo_G);
+
+      // Shift spatial inertia from Go to Bo.
+      const math::RotationMatrix<double>& R_BG = geom.X_BG.rotation();
+      const Vector3<double>& p_BoGo_B = geom.X_BG.translation();
+      geom.M_GBo_B = M_GGo_G.ReExpress(R_BG).Shift(-p_BoGo_B);
     }
     return geom;
   }
