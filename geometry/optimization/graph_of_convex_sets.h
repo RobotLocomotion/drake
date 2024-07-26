@@ -686,11 +686,9 @@ class GraphOfConvexSets {
   graph edges.
   */
   std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result =
-          std::nullopt,
+      const solvers::MathematicalProgramResult* result = nullptr,
       const GcsGraphvizOptions& options = GcsGraphvizOptions(),
-      const std::optional<std::vector<const Edge*>>& active_path =
-          std::nullopt) const;
+      const std::vector<const Edge*>* active_path = nullptr) const;
 
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the graph, as discussed in detail in

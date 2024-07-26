@@ -250,7 +250,7 @@ class GcsTrajectoryOptimization final {
              const std::vector<std::pair<int, int>>& regions_to_connect,
              int order, double h_min, double h_max, std::string name,
              GcsTrajectoryOptimization* traj_opt,
-             std::optional<const std::vector<Eigen::VectorXd>> edge_offsets);
+             const std::vector<Eigen::VectorXd>* edge_offsets);
 
     /* Convenience accessor, for brevity. */
     int num_positions() const { return traj_opt_.num_positions(); }
@@ -413,14 +413,12 @@ class GcsTrajectoryOptimization final {
         const;
 
    private:
-    EdgesBetweenSubgraphs(const Subgraph& from_subgraph,
-                          const Subgraph& to_subgraph,
-                          const geometry::optimization::ConvexSet* subspace,
-                          GcsTrajectoryOptimization* traj_opt,
-                          std::optional<const std::vector<std::pair<int, int>>>
-                              edges_between_regions = std::nullopt,
-                          std::optional<const std::vector<Eigen::VectorXd>>
-                              edge_offsets = std::nullopt);
+    EdgesBetweenSubgraphs(
+        const Subgraph& from_subgraph, const Subgraph& to_subgraph,
+        const geometry::optimization::ConvexSet* subspace,
+        GcsTrajectoryOptimization* traj_opt,
+        const std::vector<std::pair<int, int>>* edges_between_regions = nullptr,
+        const std::vector<Eigen::VectorXd>* edge_offsets = nullptr);
 
     /* Convenience accessor, for brevity. */
     int num_positions() const { return traj_opt_.num_positions(); }
@@ -434,9 +432,8 @@ class GcsTrajectoryOptimization final {
         const geometry::optimization::ConvexSet& A,
         const geometry::optimization::ConvexSet& B,
         const geometry::optimization::ConvexSet& subspace,
-        std::optional<const Eigen::VectorXd> maybe_set_B_offset = std::nullopt,
-        std::optional<const Eigen::VectorXd> maybe_subspace_offset =
-            std::nullopt);
+        const Eigen::VectorXd* maybe_set_B_offset = nullptr,
+        const Eigen::VectorXd* maybe_subspace_offset = nullptr);
 
     /* Extracts the control points variables from an edge. */
     Eigen::Map<const MatrixX<symbolic::Variable>> GetControlPointsU(
@@ -485,8 +482,7 @@ class GcsTrajectoryOptimization final {
   or fixed (if false).
   */
   std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result =
-          std::nullopt,
+      const solvers::MathematicalProgramResult* result = nullptr,
       const geometry::optimization::GcsGraphvizOptions& options = {}) const {
     return gcs_.GetGraphvizString(result, options);
   }
@@ -527,8 +523,7 @@ class GcsTrajectoryOptimization final {
       const geometry::optimization::ConvexSets& regions,
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
       double h_min = 0, double h_max = 20, std::string name = "",
-      std::optional<const std::vector<Eigen::VectorXd>> edge_offsets =
-          std::nullopt);
+      const std::vector<Eigen::VectorXd>* edge_offsets = nullptr);
 
   /** Creates a Subgraph with the given regions.
   This function will compute the edges between the regions based on the set
@@ -598,10 +593,8 @@ class GcsTrajectoryOptimization final {
   EdgesBetweenSubgraphs& AddEdges(
       const Subgraph& from_subgraph, const Subgraph& to_subgraph,
       const geometry::optimization::ConvexSet* subspace = nullptr,
-      std::optional<const std::vector<std::pair<int, int>>>
-          edges_between_regions = std::nullopt,
-      std::optional<const std::vector<Eigen::VectorXd>> edge_offsets =
-          std::nullopt);
+      const std::vector<std::pair<int, int>>* edges_between_regions = nullptr,
+      const std::vector<Eigen::VectorXd>* edge_offsets = nullptr);
 
   /** Adds a minimum time cost to all regions in the whole graph. The cost is
   the sum of the time scaling variables.

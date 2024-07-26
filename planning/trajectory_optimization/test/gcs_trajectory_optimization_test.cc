@@ -2333,7 +2333,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, EdgeIndexChecking) {
   auto& subgraph2 = gcs.AddRegions(sets_good_2, 1);
   std::vector<std::pair<int, int>> edges_bad_2;
   edges_bad_2.emplace_back(0, 1);
-  EXPECT_THROW(gcs.AddEdges(subgraph1, subgraph2, nullptr, edges_bad_2),
+  EXPECT_THROW(gcs.AddEdges(subgraph1, subgraph2, nullptr, &edges_bad_2),
                std::exception);
 }
 
@@ -2378,9 +2378,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
   const int expected_num_edges = 7;
 
   // Add edges without offsets. This makes the problem infeasible.
-  gcs.AddEdges(start, subgraph1, nullptr, edges_start_1);
-  gcs.AddEdges(subgraph1, subgraph2, nullptr, edges_1_2);
-  gcs.AddEdges(subgraph2, goal, nullptr, edges_2_goal);
+  gcs.AddEdges(start, subgraph1, nullptr, &edges_start_1);
+  gcs.AddEdges(subgraph1, subgraph2, nullptr, &edges_1_2);
+  gcs.AddEdges(subgraph2, goal, nullptr, &edges_2_goal);
   EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
   auto [traj_fail, result_fail] = gcs.SolvePath(start, goal);
   unused(traj_fail);
@@ -2392,9 +2392,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
   gcs.RemoveSubgraph(subgraph2);
   auto& new_subgraph1 = gcs.AddRegions(sets1, 1, 1e-6);
   auto& new_subgraph2 = gcs.AddRegions(sets2, 1, 1e-6);
-  gcs.AddEdges(start, new_subgraph1, nullptr, edges_start_1, offsets_start_1);
-  gcs.AddEdges(new_subgraph1, new_subgraph2, nullptr, edges_1_2, offsets_1_2);
-  gcs.AddEdges(new_subgraph2, goal, nullptr, edges_2_goal, offsets_2_goal);
+  gcs.AddEdges(start, new_subgraph1, nullptr, &edges_start_1, &offsets_start_1);
+  gcs.AddEdges(new_subgraph1, new_subgraph2, nullptr, &edges_1_2, &offsets_1_2);
+  gcs.AddEdges(new_subgraph2, goal, nullptr, &edges_2_goal, &offsets_2_goal);
   EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
   auto [traj_succeed, result_succeed] = gcs.SolvePath(start, goal);
   unused(traj_succeed);
@@ -2402,16 +2402,16 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
 
   // Throw if edges and offsets have mismatched lengths.
   offsets_2_goal.emplace_back(Vector1d(0));
-  EXPECT_THROW(
-      gcs.AddEdges(new_subgraph2, goal, nullptr, edges_2_goal, offsets_2_goal),
-      std::exception);
+  EXPECT_THROW(gcs.AddEdges(new_subgraph2, goal, nullptr, &edges_2_goal,
+                            &offsets_2_goal),
+               std::exception);
 
   // Throw if offsets has wrong dimension.
   offsets_2_goal.resize(0);
   offsets_2_goal.emplace_back(Vector2d(0, 0));
-  EXPECT_THROW(
-      gcs.AddEdges(new_subgraph2, goal, nullptr, edges_2_goal, offsets_2_goal),
-      std::exception);
+  EXPECT_THROW(gcs.AddEdges(new_subgraph2, goal, nullptr, &edges_2_goal,
+                            &offsets_2_goal),
+               std::exception);
 }
 
 }  // namespace
