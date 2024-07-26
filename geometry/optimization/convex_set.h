@@ -19,14 +19,10 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-// TODO(russt): Remove the experimental caveat once we've given this a proper
-// spin.
 /** @defgroup geometry_optimization Geometry Optimization
 @ingroup geometry
 @brief Provides an abstraction for reasoning about geometry in optimization
 problems, and using optimization problems to solve geometry problems.
-
-@experimental
 
 ### Relationship to other components in Drake.
 
