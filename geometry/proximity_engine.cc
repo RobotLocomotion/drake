@@ -198,13 +198,20 @@ bool OrderPointPair(const PenetrationAsPointPair<T>& p1,
   if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
   return p1.id_B < p2.id_B;
 }
+template <typename T>
+bool OrderPointPairPtr(const std::unique_ptr<PenetrationAsPointPair<T>>& p1,
+                       const std::unique_ptr<PenetrationAsPointPair<T>>& p2) {
+  if (p1 == nullptr || p2 == nullptr) return p1 < p2;
+  return OrderPointPair(*p1, *p2);
+}
 
 // Compare function to use with ordering ContactSurfaces.
 template <typename T>
-bool OrderContactSurface(const ContactSurface<T>& s1,
-                         const ContactSurface<T>& s2) {
-  if (s1.id_M() != s2.id_M()) return s1.id_M() < s2.id_M();
-  return s1.id_N() < s2.id_N();
+bool OrderContactSurfacePtr(const std::unique_ptr<ContactSurface<T>>& s1,
+                            const std::unique_ptr<ContactSurface<T>>& s2) {
+  if (s1 == nullptr || s2 == nullptr) return s1 < s2;
+  if (s1->id_M() != s2->id_M()) return s1->id_M() < s2->id_M();
+  return s1->id_N() < s2->id_N();
 }
 
 // Compare function to use when ordering
@@ -221,6 +228,25 @@ template <typename T>
 bool OrderSignedDistanceToPoint(const SignedDistanceToPoint<T>& p1,
                                 const SignedDistanceToPoint<T>& p2) {
   return p1.id_G < p2.id_G;
+}
+
+// Sort the vector of `ptrs`, (per `less_than_op`), then move the sorted objects
+// to `objects`, ignoring any nullptr entries.
+template <typename R>
+void SortCullFlatten(
+    std::vector<std::unique_ptr<R>>* ptrs,
+    std::vector<R>* objects,
+    std::function<bool(const std::unique_ptr<R>&, const std::unique_ptr<R>&)>
+        less_than_op) {
+  std::sort(ptrs->begin(), ptrs->end(), less_than_op);
+
+  // While flattening, filter out any nullptr results.
+  objects->reserve(ptrs->size());
+  for (const auto& ptr : *ptrs) {
+    if (ptr != nullptr) {
+      objects->emplace_back(std::move(*ptr));
+    }
+  }
 }
 
 }  // namespace
@@ -680,10 +706,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                                        &hydroelastic_geometries_,
                                        representation, &surfaces};
 
+    // As a suggestion to future thread parallelizers, make available a fully
+    // allocated and prepared vector for results of the parallelizable step.
     vector<std::unique_ptr<ContactSurface<T>>> surface_ptrs(candidates.size());
-    int k = 0;
     // TODO(rpoyner-tri): try some thread parallelism here.
-    for (const auto& [id0, id1] : candidates) {
+    for (int k = 0; k < ssize(candidates); ++k) {
+      const auto& [id0, id1] = candidates[k];
       auto [result, surface] = MaybeMakeContactSurface(id0, id1, data);
       if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
@@ -693,18 +721,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         RejectContactSurfaceResult(result, GetFclPtr(id0), GetFclPtr(id1),
                                    data);
       }
-      ++k;
     }
-
-    // Filter out any nullptr surface results.
-    for (const auto& surface_ptr : surface_ptrs) {
-      if (surface_ptr != nullptr) {
-        surfaces.emplace_back(std::move(*surface_ptr));
-      }
-    }
-
-    std::sort(surfaces.begin(), surfaces.end(), OrderContactSurface<T>);
-
+    SortCullFlatten(&surface_ptrs, &surfaces, OrderContactSurfacePtr<T>);
     return surfaces;
   }
 
@@ -728,12 +746,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       &X_WGs, point_pairs};
 
 
+    // As a suggestion to future thread parallelizers, make available fully
+    // allocated and prepared vectors for results of the parallelizable steps.
     vector<std::unique_ptr<ContactSurface<T>>> surface_ptrs(candidates.size());
-    vector<std::unique_ptr<PenetrationAsPointPair<T>>> penetration_ptrs(
+    vector<std::unique_ptr<PenetrationAsPointPair<T>>> point_pair_ptrs(
         candidates.size());
-    int k = 0;
     // TODO(rpoyner-tri): try some thread parallelism here.
-    for (const auto& [id0, id1] : candidates) {
+    for (int k = 0; k < ssize(candidates); ++k) {
+      const auto& [id0, id1] = candidates[k];
       auto [result, surface] = MaybeMakeContactSurface(id0, id1, hydro_data);
       if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
@@ -742,27 +762,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         auto penetration = penetration_as_point_pair::MaybeMakePointPair(
             GetFclPtr(id0), GetFclPtr(id1), point_data);
         if (penetration != nullptr) {
-          penetration_ptrs[k] = std::move(penetration);
+          point_pair_ptrs[k] = std::move(penetration);
         }
       }
-      ++k;
     }
-
-    // Filter out any nullptr results.
-    for (const auto& surface_ptr : surface_ptrs) {
-      if (surface_ptr != nullptr) {
-        surfaces->emplace_back(std::move(*surface_ptr));
-      }
-    }
-    for (const auto& penetration_ptr : penetration_ptrs) {
-      if (penetration_ptr != nullptr) {
-        point_pairs->emplace_back(std::move(*penetration_ptr));
-      }
-    }
-
-    std::sort(surfaces->begin(), surfaces->end(), OrderContactSurface<T>);
-
-    std::sort(point_pairs->begin(), point_pairs->end(), OrderPointPair<T>);
+    SortCullFlatten(&surface_ptrs, surfaces, OrderContactSurfacePtr<T>);
+    SortCullFlatten(&point_pair_ptrs, point_pairs, OrderPointPairPtr<T>);
   }
 
   void ComputeDeformableContact(
