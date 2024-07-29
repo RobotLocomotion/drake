@@ -12,6 +12,28 @@ namespace {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using Eigen::Vector3i;
+
+/* Confirms that the computed particle data matches with the expected
+ values. */
+void CheckParticleData(const ParticleData<double>& expected,
+                       const ParticleData<double>& computed) {
+  ASSERT_EQ(expected.m.size(), computed.m.size());
+  ASSERT_EQ(expected.x.size(), computed.x.size());
+  ASSERT_EQ(expected.v.size(), computed.v.size());
+  ASSERT_EQ(expected.F.size(), computed.F.size());
+  ASSERT_EQ(expected.C.size(), computed.C.size());
+  ASSERT_EQ(expected.tau_v0.size(), computed.tau_v0.size());
+  const double kTol = 1e-13;
+  for (int i = 0; i < ssize(expected.m); ++i) {
+    EXPECT_DOUBLE_EQ(expected.m[i], computed.m[i]);
+    EXPECT_TRUE(CompareMatrices(expected.x[i], computed.x[i], kTol));
+    EXPECT_TRUE(CompareMatrices(expected.v[i], computed.v[i], kTol));
+    EXPECT_TRUE(CompareMatrices(expected.F[i], computed.F[i], kTol));
+    EXPECT_TRUE(CompareMatrices(expected.C[i], computed.C[i], kTol));
+    EXPECT_TRUE(CompareMatrices(expected.tau_v0[i], computed.tau_v0[i], kTol));
+  }
+}
 
 /* Confirms that the computed grid mass and velocities matches with the expected
  values. */
@@ -74,8 +96,6 @@ GTEST_TEST(TransferTest, GridToParticle) {
   Matrix3d F0 =
       (Matrix3d() << 1.0, 0.1, 0.2, 0.3, 1.0, 0.4, 0.5, 0.6, 1.0).finished();
   particles.F.push_back(F0);
-  BSplineWeights<double> bspline(x0, grid.dx());
-  particles.bspline.push_back(bspline);
 
   /* All other particle data are either unused or overwritten in G2P. */
   const double nan = std::numeric_limits<double>::quiet_NaN();
@@ -84,18 +104,18 @@ GTEST_TEST(TransferTest, GridToParticle) {
   particles.m.push_back(nan);
   particles.v.push_back(nan_vector);
   particles.C.push_back(nan_matrix);
-  particles.P.push_back(nan_matrix);
+  particles.tau_v0.push_back(nan_matrix);
 
-  grid.Allocate(&particles);
+  grid.Allocate(particles.x);
 
   const double dt = 0.0123;
   Transfer<double> transfer(dt, &grid, &particles);
   const Vector3d vel = Vector3d(1.2, 2.3, 3.4);
-  auto constant_velocity_field = [&](const Vector3d& coordinate) {
+  auto constant_velocity_field = [&](const Vector3i& coordinate) {
     return GridData<double>{.v = vel, .m = 1.0};
   };
-  grid.SetGridState(constant_velocity_field);
-  transfer.GridToParticle();
+  grid.SetGridData(constant_velocity_field);
+  transfer.SerialGridToParticle();
 
   EXPECT_TRUE(CompareMatrices(particles.v[0], vel, 1e-14));
   EXPECT_TRUE(CompareMatrices(particles.x[0], x0 + vel * dt, 1e-14));
@@ -110,7 +130,7 @@ GTEST_TEST(TransferTest, ParticleToGrid) {
   const double m0 = 0.42;
   const Vector3d x0 = Vector3d(0.001, 0.001, 0.001);
   const Vector3d v0 = Vector3d(0.1, 0.1, 0.1);
-  BSplineWeights<double> bspline(x0, grid.dx());
+  BsplineWeights<double> bspline(x0, grid.dx());
 
   const double nan = std::numeric_limits<double>::quiet_NaN();
   const Matrix3d nan_matrix = Matrix3d::Constant(nan);
@@ -119,14 +139,13 @@ GTEST_TEST(TransferTest, ParticleToGrid) {
   particles.v.push_back(v0);
   particles.F.push_back(nan_matrix);
   particles.C.push_back(Matrix3d::Zero());
-  particles.P.push_back(Matrix3d::Zero());
-  particles.bspline.push_back(bspline);
+  particles.tau_v0.push_back(Matrix3d::Zero());
 
-  grid.Allocate(&particles);
+  grid.Allocate(particles.x);
   const double dt = 0.0123;
   Transfer<double> transfer(dt, &grid, &particles);
-  transfer.ParticleToGrid();
-  grid.ExplicitVelocityUpdate(dt, /* gravity */ Vector3d::Zero());
+  transfer.SerialParticleToGrid();
+  grid.ExplicitVelocityUpdate(/* dv = */ Vector3d::Zero());
 
   std::vector<std::pair<Vector3<int>, GridData<double>>> expected_data;
   for (int i = -1; i <= 1; ++i) {
@@ -167,9 +186,6 @@ GTEST_TEST(TransferTest, MomentumConservation) {
   particles.x.push_back(x0);
   particles.x.push_back(x1);
   particles.x.push_back(x2);
-  particles.bspline.push_back(BSplineWeights<double>(x0, grid.dx()));
-  particles.bspline.push_back(BSplineWeights<double>(x1, grid.dx()));
-  particles.bspline.push_back(BSplineWeights<double>(x2, grid.dx()));
 
   Matrix3d nan_matrix =
       Matrix3d::Constant(std::numeric_limits<double>::quiet_NaN());
@@ -190,7 +206,7 @@ GTEST_TEST(TransferTest, MomentumConservation) {
         P(i, j) = i + j + p;
       }
     }
-    particles.P.push_back(P);
+    particles.tau_v0.push_back(P);
     /* F is unused in the transfer. */
     particles.F.push_back(nan_matrix);
   }
@@ -199,16 +215,87 @@ GTEST_TEST(TransferTest, MomentumConservation) {
 
   const double dt = 0.0123;
   Transfer<double> transfer(dt, &grid, &particles);
-  transfer.ParticleToGrid();
-  grid.ExplicitVelocityUpdate(dt, /* gravity */ Vector3d::Zero());
+  transfer.SerialParticleToGrid();
+  grid.ExplicitVelocityUpdate(/* dv = */ Vector3d::Zero());
   CheckMomentumConservation(grid.ComputeTotalMassAndMomentum(),
                             ComputeTotalMassAndMomentum(particles, grid.dx()),
                             expected);
 
-  transfer.GridToParticle();
+  transfer.SerialGridToParticle();
   CheckMomentumConservation(grid.ComputeTotalMassAndMomentum(),
                             ComputeTotalMassAndMomentum(particles, grid.dx()),
                             expected);
+}
+
+/* Verify the variants of all 4 P2G and 4 G2P give the same results. */
+GTEST_TEST(TransferTest, Parity) {
+  const double dx = 0.01;
+  ParticleData<double> particles;
+  const int num_nodes_per_dim = 3;
+  const int particles_per_cell = 2;
+  for (int i = 0; i < num_nodes_per_dim; ++i) {
+    for (int j = 0; j < num_nodes_per_dim; ++j) {
+      for (int k = 0; k < num_nodes_per_dim; ++k) {
+        const Vector3d base_node(dx * i, dx * j, dx * k);
+        for (int p = 0; p < particles_per_cell; ++p) {
+          particles.m.push_back(0.01);
+          const Vector3d x =
+              base_node + static_cast<double>(p) * dx /
+                              (static_cast<double>(particles_per_cell) + 1.0) *
+                              Vector3d::Ones();
+          particles.x.push_back(x);
+          particles.v.push_back(Vector3d(0.01 * i, 0.02 * j, 0.03 * k));
+          particles.F.push_back(0.01 * Matrix3d::Identity());
+          particles.C.push_back(0.02 * Matrix3d::Identity());
+          particles.tau_v0.push_back(0.03 * Matrix3d::Identity());
+        }
+      }
+    }
+  }
+
+  ParticleData particles_simd = particles;
+  ParticleData particles_parallel = particles;
+  ParticleData particles_parallel_simd = particles;
+
+  SparseGrid<double> grid(dx);
+  SparseGrid<double> grid_simd(dx);
+  SparseGrid<double> grid_parallel(dx);
+  SparseGrid<double> grid_parallel_simd(dx);
+
+  grid.Allocate(particles.x);
+  grid_simd.Allocate(particles.x);
+  grid_parallel.Allocate(particles.x);
+  grid_parallel_simd.Allocate(particles.x);
+
+  const double dt = 0.00123;
+  Transfer<double> transfer(dt, &grid, &particles);
+  Transfer<double> transfer_simd(dt, &grid_simd, &particles_simd);
+  Transfer<double> transfer_parallel(dt, &grid_parallel, &particles_parallel);
+  Transfer<double> transfer_parallel_simd(dt, &grid_parallel_simd,
+                                          &particles_parallel_simd);
+
+  transfer.SerialParticleToGrid();
+  transfer_simd.SerialSimdParticleToGrid();
+  transfer_parallel.ParallelParticleToGrid(Parallelism(2));
+  transfer_parallel_simd.ParallelSimdParticleToGrid(Parallelism(2));
+
+  CheckGridData(grid.GetGridData(), grid_simd.GetGridData());
+  CheckGridData(grid.GetGridData(), grid_parallel.GetGridData());
+  CheckGridData(grid.GetGridData(), grid_parallel_simd.GetGridData());
+
+  grid.ExplicitVelocityUpdate(/* dv = */ Vector3d::Zero());
+  grid_simd.ExplicitVelocityUpdate(/* dv = */ Vector3d::Zero());
+  grid_parallel.ExplicitVelocityUpdate(/* dv = */ Vector3d::Zero());
+  grid_parallel_simd.ExplicitVelocityUpdate(/* dv = */ Vector3d::Zero());
+
+  transfer.SerialGridToParticle();
+  transfer_simd.SerialSimdGridToParticle();
+  transfer_parallel.ParallelGridToParticle(Parallelism(2));
+  transfer_parallel_simd.ParallelSimdGridToParticle(Parallelism(2));
+
+  CheckParticleData(particles, particles_simd);
+  CheckParticleData(particles, particles_parallel);
+  CheckParticleData(particles, particles_parallel_simd);
 }
 
 }  // namespace

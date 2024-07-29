@@ -13,7 +13,7 @@ using Eigen::Vector3d;
 GTEST_TEST(BsplineTest, PartitionOfUnity) {
   const Vector3d x = Vector3d(0.01, 0.02, 0.03);
   const double dx = 0.01;
-  BSplineWeights<double> bspline(x, dx);
+  BsplineWeights<double> bspline(x, dx);
   double total_weight = 0.0;
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {

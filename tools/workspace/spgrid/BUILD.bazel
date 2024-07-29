@@ -6,6 +6,7 @@ cc_library(
     srcs = glob(["**/*.cpp"]),
     hdrs = glob(["**/*.h"]),
     include_prefix = "SPGrid/Core",
+    copts = ["-march=native"],
     includes = ["."],
     linkstatic = 1,
     visibility = ["//visibility:public"],

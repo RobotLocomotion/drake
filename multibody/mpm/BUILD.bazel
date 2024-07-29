@@ -1,6 +1,6 @@
-load("@drake//tools/skylark:cc.bzl", "cc_library", "cc_binary")
-
 #- * - python - * -
+
+load("@drake//tools/skylark:cc.bzl", "cc_library", "cc_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
@@ -24,14 +24,16 @@ cc_library(
     srcs = [
         "sparse_grid.cc",
     ],
+    # TODO(xuchenhan-tri): Remove the hard-coded flag when we build this as a drake_cc_library.
     copts = ["-fopenmp", "-march=native"],
     hdrs = [
         "sparse_grid.h",
-        "particles.h",
     ],
+    linkopts = ["-fopenmp"],
     deps = [
         ":math",
         "//common:essential",
+        "//common:parallelism",
         "//tools/workspace/spgrid",
         "//tools/workspace/ips2ra_internal",
     ],
@@ -66,6 +68,7 @@ cc_library(
     hdrs = [
         "transfer.h",
     ],
+    # TODO(xuchenhan-tri): Remove the hard-coded flag when we build this as a drake_cc_library.
     copts = ["-fopenmp", "-march=native"],
     linkopts = ["-fopenmp"],
     deps = [
@@ -111,6 +114,7 @@ drake_cc_googletest(
     name = "sparse_grid_test",
     deps = [
         ":sparse_grid",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -134,6 +138,7 @@ drake_cc_googletest(
     srcs = [
         "test/transfer_test.cc",
     ],
+    copts = ["-march=native"],
     deps = [
         ":transfer",
         "//common/test_utilities:eigen_matrix_compare",
@@ -155,36 +160,6 @@ drake_cc_googlebench_binary(
 drake_py_experiment_binary(
     name = "transfer_experiment",
     googlebench_binary = ":transfer_benchmark",
-)
-
-cc_binary(
-    name = "p2g2p",
-    srcs = ["p2g2p.cc"],
-    testonly = True,
-    deps = [
-        ":transfer",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-cc_binary(
-    name = "g2p",
-    srcs = ["g2p.cc"],
-    testonly = True,
-    deps = [
-        ":transfer",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-cc_binary(
-    name = "p2g",
-    srcs = ["p2g.cc"],
-    testonly = True,
-    deps = [
-        ":transfer",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
 )
 
 # add_lint_tests()

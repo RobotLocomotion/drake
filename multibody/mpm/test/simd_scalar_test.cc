@@ -86,7 +86,7 @@ GTEST_TEST(SimdScalar, Div) {
   EXPECT_EQ(x, quot);
 }
 
-GTEST_TEST(SimdScalar, Eigen) {
+GTEST_TEST(SimdScalar, Matrix3) {
   Matrix3<SimdScalar<double>> m;
   // clang-format off
   m << SimdScalar<double>(1.0), SimdScalar<double>(2.0), SimdScalar<double>(3.0),

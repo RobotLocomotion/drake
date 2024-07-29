@@ -15,6 +15,7 @@
 #endif
 
 #include <iostream>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -46,7 +47,7 @@ class SimdScalar {
   SimdScalar(T value) : value_(hn::Set(d, value)) {}
 
   /* Compile is confused about implicit conversion when `value` is of type
-   `int`. So we help it here*/
+   `int`. So we help it here. */
   template <typename U>
   SimdScalar(U value,
              typename std::enable_if<std::is_integral<U>::value, U>::type* = 0)
@@ -133,6 +134,11 @@ class SimdScalar {
 };
 #endif
 
+/* Loads scalars from `source` into a SimdScalar by picking out the data with
+ the given indices.
+ @tparam T float or double.
+ @pre indices.size() <= the SimdScalar<T>::lanes().
+ @pre Each entry in `indices` is in [0, source.size()). */
 template <typename T>
 SimdScalar<T> Load(const std::vector<T>& source,
                    const std::vector<int>& indices) {
@@ -144,6 +150,12 @@ SimdScalar<T> Load(const std::vector<T>& source,
   return SimdScalar<T>(data, size);
 }
 
+/* Loads vector3s from `source` into a vector3 of SimdScalars.
+ The d-th component of the result is a SimdScalar of the d-th component of the
+ vectors in `source` with the given indices.
+ @tparam T float or double.
+ @pre indices.size() <= the SimdScalar<T>::lanes().
+ @pre Each entry in `indices` is in [0, source.size()). */
 template <typename T>
 Vector3<SimdScalar<T>> Load(const std::vector<Vector3<T>>& source,
                             const std::vector<int>& indices) {
@@ -159,6 +171,12 @@ Vector3<SimdScalar<T>> Load(const std::vector<Vector3<T>>& source,
   return result;
 }
 
+/* Loads Matrix3s from `source` into a Matrix3 of SimdScalars.
+ The (i,j)-th component of the result is a SimdScalar of the (i,j)-th component
+ of the matrices in `source` with the given indices.
+ @tparam T float or double.
+ @pre indices.size() <= the SimdScalar<T>::lanes().
+ @pre Each entry in `indices` is in [0, source.size()). */
 template <typename T>
 Matrix3<SimdScalar<T>> Load(const std::vector<Matrix3<T>>& source,
                             const std::vector<int>& indices) {
@@ -176,6 +194,11 @@ Matrix3<SimdScalar<T>> Load(const std::vector<Matrix3<T>>& source,
   return result;
 }
 
+/* Writes the data in `v` to `dest` at the given indices.
+ @tparam T float or double.
+ @pre dest is not nullptr.
+ @pre indices.size() <= the SimdScalar<T>::lanes().
+ @pre Each entry in `indices` is in [0, dest.size()). */
 template <typename T>
 void Store(const Vector3<SimdScalar<T>>& v, std::vector<Vector3<T>>* dest,
            const std::vector<int>& indices) {
@@ -189,6 +212,11 @@ void Store(const Vector3<SimdScalar<T>>& v, std::vector<Vector3<T>>* dest,
   }
 }
 
+/* Writes the data in `v` to `dest` at the given indices.
+ @tparam T float or double.
+ @pre dest is not nullptr.
+ @pre indices.size() <= the SimdScalar<T>::lanes().
+ @pre Each entry in `indices` is in [0, dest.size()). */
 template <typename T>
 void Store(const Matrix3<SimdScalar<T>>& m, std::vector<Matrix3<T>>* dest,
            const std::vector<int>& indices) {
@@ -204,11 +232,13 @@ void Store(const Matrix3<SimdScalar<T>>& m, std::vector<Matrix3<T>>* dest,
   }
 }
 
+/* Returns the sum over all lanes of v. */
 template <typename T>
 inline T ReduceSum(SimdScalar<T> v) {
   return v.reduce_sum();
 }
 
+/* For each dimension, computes the sum over all lanes of v. */
 template <typename T>
 inline Vector3<T> ReduceSum(Vector3<SimdScalar<T>> v) {
   Vector3<T> result;

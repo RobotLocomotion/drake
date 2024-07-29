@@ -1,1 +1,1 @@
-#include "drake/multibody/mpm/simd_operations.h"  
+#include "drake/multibody/mpm/simd_operations.h"

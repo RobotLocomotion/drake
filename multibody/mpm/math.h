@@ -10,19 +10,7 @@ namespace multibody {
 namespace mpm {
 namespace internal {
 
-/* Returns (i, j, k)th entry of the third order permutation tensor.
- See https://en.wikipedia.org/wiki/Levi-Civita_symbol for details.
- @pre i, j, k ∈ {0, 1, 2} */
-inline double LeviCivita(int i, int j, int k) {
-  static const double lookup_table[3][3][3] = {
-      {{0.0, 0.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, -1.0, 0.0}},
-      {{0.0, 0.0, -1.0}, {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}},
-      {{0.0, 1.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}};
-
-  return lookup_table[i][j][k];
-}
-
-/* Computes A: εwhere ε is the Levi-Civita tensor. */
+/* Computes A: ε where ε is the Levi-Civita tensor. */
 template <typename T>
 Vector3<T> ContractWithLeviCivita(const Matrix3<T>& A) {
   Vector3<T> A_dot_eps = {0.0, 0.0, 0.0};
@@ -33,6 +21,8 @@ Vector3<T> ContractWithLeviCivita(const Matrix3<T>& A) {
 }
 
 // TODO(xuchenhan-tri): Move this into a separate file.
+/* MassAndMomentum stores the mass, linear momentum, and angular momentum of an
+ object, represented by a collection of particles or a grid. */
 template <typename T>
 struct MassAndMomentum {
   T mass{0.0};
@@ -40,80 +30,85 @@ struct MassAndMomentum {
   Vector3<T> angular_momentum{Vector3<T>::Zero()};
 };
 
-/* Computes the the 1D base node of a point x in reference space. */
+/* Computes the the 1D base node of a point x in reference space.
+ @tparam double or float. */
 template <typename T>
-int base_node(const T& x) {
+int ComputeBaseNode(const T& x) {
   return static_cast<int>(std::floor(x + static_cast<T>(0.5)));
 }
 
-template <>
-inline int base_node(const SimdScalar<double>& x) {
-  double x0 = x.get_lane();
-  return static_cast<int>(std::floor(x0 + static_cast<double>(0.5)));
-}
-
-template <>
-inline int base_node(const SimdScalar<float>& x) {
-  float x0 = x.get_lane();
-  return static_cast<int>(std::floor(x0 + static_cast<float>(0.5)));
-}
-
-/* Computes the the 3D base node of a point x reference space. */
+/* Computes the the 1D base node of a few points in reference space.
+ @param x A vector of points in reference space.
+ @pre all points in `x` are have the same base node.
+ @tparam double or float. */
 template <typename T>
-Vector3<int> base_node(const Vector3<T>& x) {
+inline int ComputeBaseNode(const SimdScalar<T>& x) {
+  T x0 = x.get_lane();
+  return static_cast<int>(std::floor(x0 + static_cast<T>(0.5)));
+}
+
+/* Computes the the 3D base node of a point x reference space.
+ @tparam double, float, SimdScalar<double>, or SimdScalar<float> */
+template <typename T>
+Vector3<int> ComputeBaseNode(const Vector3<T>& x) {
   Vector3<int> result;
-  result[0] = base_node(x[0]);
-  result[1] = base_node(x[1]);
-  result[2] = base_node(x[2]);
+  result[0] = ComputeBaseNode(x[0]);
+  result[1] = ComputeBaseNode(x[1]);
+  result[2] = ComputeBaseNode(x[2]);
   return result;
 }
 
-// TODO(xuchenhan-tri): MLS-MPM doesn't need weight gradients.
+/* BsplineWeights computes and stores the weights between a particle and the
+grid nodes in its support in the cartesian grid with grid spacing dx (meter).
+The weights are computed using the quadratic B-spline kernel, and each particle
+has 3x3x3=27 grid nodes in its support and the weights can be queried with the
+`weight()` function.
+@tparam double, float, Simdscalar<double>, or Simdscalar<float>. */
 template <typename T>
-struct BSplineWeights {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BSplineWeights);
+struct BsplineWeights {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BsplineWeights);
 
-  /* Weights and weight gradients in a single dimension for three neighbor grid
-   nodes. */
-  struct Data {
-    Vector3<T> w;
-  };
-
-  BSplineWeights(const Vector3<T>& x, const T& dx) {
+  /* Constructs the BsplineWeights between a particle with world frame positions
+   x and the grid nodes in its support in the cartesian grid with grid spacing
+   dx (meter).
+   @pre if T is a SimdScalar, all particles in x have the same base node. */
+  BsplineWeights(const Vector3<T>& x, const T& dx) {
     const Vector3<T> x_reference = x / dx;
-    const Vector3<int> base_node = mpm::internal::base_node(x_reference);
+    const Vector3<int> base_node = ComputeBaseNode(x_reference);
     for (int d = 0; d < 3; ++d) {
       data_[d] = Compute(x_reference[d], base_node[d]);
     }
   }
 
-  const std::array<Data, 3>& data() const { return data_; }
-
+  /* Returns between the particle and the ijk-th grid node in its support.
+   @pre 0 <= i, j, k < 3. */
   T weight(int i, int j, int k) const {
-    return data_[0].w(i) * data_[1].w(j) * data_[2].w(k);
+    return data_[0](i) * data_[1](j) * data_[2](k);
   }
 
  private:
-  /* Computes the weight and weight gradients in a single dimension.
+  /* Computes the weights in a single dimension.
    @param[in] x_reference  The particle position in the reference frame.
-   @param[in] base_node    The base grid node position in reference frame. */
-  Data Compute(const T& x_reference, int base_node) const {
-    Data result;
+   @param[in] base_node    The base grid node position in reference frame.
+   @returns the weights between the particle and the three grid nodes in its
+   support in a single dimension. */
+  Vector3<T> Compute(const T& x_reference, int base_node) const {
+    Vector3<T> result;
     const T d0 = x_reference - static_cast<T>(base_node);
     const T z = static_cast<T>(0.5) - d0;
     const T z2 = z * z;
-    result.w(0) = static_cast<T>(0.5) * z2;
-    result.w(1) = static_cast<T>(0.75) - d0 * d0;
+    result(0) = static_cast<T>(0.5) * z2;
+    result(1) = static_cast<T>(0.75) - d0 * d0;
     const T d1 = static_cast<T>(1.0) - d0;
     const T zz = static_cast<T>(1.5) - d1;
     const T zz2 = zz * zz;
-    result.w(2) = static_cast<T>(0.5) * zz2;
+    result(2) = static_cast<T>(0.5) * zz2;
 
     return result;
   }
 
   static constexpr int kDim = 3;
-  std::array<Data, kDim> data_;
+  std::array<Vector3<T>, kDim> data_;
 };
 
 }  // namespace internal
