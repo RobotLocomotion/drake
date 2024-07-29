@@ -437,7 +437,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
         .def("continuous_revolute_joints", &Class::continuous_revolute_joints,
             cls_doc.continuous_revolute_joints.doc)
-        .def("GetGraphvizString", &Class::GetGraphvizString,
+        .def("GetGraphvizString",
+            overload_cast_explicit<std::string,
+                const solvers::MathematicalProgramResult*,
+                const geometry::optimization::GcsGraphvizOptions&>(
+                &Class::GetGraphvizString),
             py::arg("result") = nullptr,
             py::arg("options") = geometry::optimization::GcsGraphvizOptions(),
             cls_doc.GetGraphvizString.doc)
@@ -469,7 +473,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 const std::vector<geometry::optimization::ConvexSet*>& regions,
                 const std::vector<std::pair<int, int>>& edges_between_regions,
                 int order, double h_min, double h_max, std::string name,
-                const std::optional<std::vector<Eigen::VectorXd>> edge_offsets)
+                std::optional<std::vector<Eigen::VectorXd>> edge_offsets)
                 -> Class::Subgraph& {
               return self.AddRegions(CloneConvexSets(regions),
                   edges_between_regions, order, h_min, h_max, std::move(name),
@@ -516,8 +520,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             },
             py_rvp::reference_internal, py::arg("from_subgraph"),
             py::arg("to_subgraph"), py::arg("subspace") = py::none(),
-            py::arg("edges_between_regions") = nullptr,
-            py::arg("edge_offsets") = nullptr, cls_doc.AddEdges.doc)
+            py::arg("edges_between_regions") = py::none(),
+            py::arg("edge_offsets") = py::none(), cls_doc.AddEdges.doc_5args)
         .def("AddTimeCost", &Class::AddTimeCost, py::arg("weight") = 1.0,
             cls_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",

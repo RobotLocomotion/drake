@@ -921,7 +921,12 @@ void DefineGeometryOptimization(py::module m) {
         .def("ClearAllPhiConstraints",
             &GraphOfConvexSets::ClearAllPhiConstraints,
             cls_doc.ClearAllPhiConstraints.doc)
-        .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
+        .def("GetGraphvizString",
+            overload_cast_explicit<std::string,
+                const solvers::MathematicalProgramResult*,
+                const GcsGraphvizOptions&,
+                const std::vector<const GraphOfConvexSets::Edge*>*>(
+                &GraphOfConvexSets::GetGraphvizString),
             py::arg("result") = nullptr,
             py::arg("options") = GcsGraphvizOptions(),
             py::arg("active_path") = nullptr, cls_doc.GetGraphvizString.doc)

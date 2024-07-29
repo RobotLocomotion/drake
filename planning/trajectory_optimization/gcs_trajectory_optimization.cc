@@ -747,8 +747,8 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     edge_data.reserve(edges_between_regions->size());
     for (int edge_idx = 0; edge_idx < ssize(*edges_between_regions);
          ++edge_idx) {
-      int i = std::get<0>(edges_between_regions->at(edge_idx));
-      int j = std::get<1>(edges_between_regions->at(edge_idx));
+      int i = std::get<0>((*edges_between_regions)[edge_idx]);
+      int j = std::get<1>((*edges_between_regions)[edge_idx]);
       DRAKE_THROW_UNLESS(0 <= i && 0 <= j && i < from_subgraph_.size() &&
                          j < to_subgraph_.size());
       edge_data.emplace_back(i, j,

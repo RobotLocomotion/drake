@@ -677,7 +677,7 @@ class GraphOfConvexSets {
   void ClearAllPhiConstraints();
 
   /** Returns a Graphviz string describing the graph vertices and edges. If
-  `results` is supplied, then the graph will be annotated with the solution
+  `result` is supplied, then the graph will be annotated with the solution
   values, according to `options`.
   @param result the optional result from a solver.
   @param options the struct containing various options for visualization.
@@ -689,6 +689,36 @@ class GraphOfConvexSets {
       const solvers::MathematicalProgramResult* result = nullptr,
       const GcsGraphvizOptions& options = GcsGraphvizOptions(),
       const std::vector<const Edge*>* active_path = nullptr) const;
+
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "result should be of type const solvers::MathematicalProgramResult*.");
+  std::string GetGraphvizString(
+      const std::optional<solvers::MathematicalProgramResult>& result) const {
+    return GetGraphvizString(result ? std::addressof(result.value()) : nullptr);
+  }
+
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "result should be of type const solvers::MathematicalProgramResult*.");
+  std::string GetGraphvizString(
+      const std::optional<solvers::MathematicalProgramResult>& result,
+      const geometry::optimization::GcsGraphvizOptions& options) const {
+    return GetGraphvizString(result ? std::addressof(result.value()) : nullptr,
+                             options);
+  }
+
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "result should be of type const solvers::MathematicalProgramResult*.");
+  std::string GetGraphvizString(
+      const std::optional<solvers::MathematicalProgramResult>& result,
+      const geometry::optimization::GcsGraphvizOptions& options,
+      const std::optional<std::vector<const Edge*>>& active_path) const {
+    return GetGraphvizString(
+        result ? std::addressof(result.value()) : nullptr, options,
+        active_path ? std::addressof(active_path.value()) : nullptr);
+  }
 
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the graph, as discussed in detail in
