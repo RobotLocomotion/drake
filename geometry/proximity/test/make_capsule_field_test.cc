@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/make_capsule_mesh.h"
+#include "drake/geometry/proximity/pressure_field_invariants.h"
 
 namespace drake {
 namespace geometry {
@@ -78,6 +79,26 @@ TEST_P(MakeCapsuleFieldTest, CheckMinMaxBoundaryValue) {
       MakeCapsulePressureField<double>(capsule, &mesh, kElasticModulus);
 
   CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
+}
+
+GTEST_TEST(MakeCapsuleFieldTest, WithMargin) {
+  const double kElasticModulus = 1.0e5;
+  const double kMargin = 0.12;
+  const double radius = 0.5;
+  const double length = 2.0;
+  // Number of vertices per circular rim of the capsule.
+  const int n = 8;  // Coarse capsule, enough for coverage.
+  const double resolution_hint = 2.0 * M_PI * radius / n;
+  const Capsule capsule(radius, length);
+  const VolumeMesh<double> mesh =
+      MakeCapsuleVolumeMesh<double>(capsule, resolution_hint);
+  const VolumeMeshFieldLinear<double, double> field_no_margin =
+      MakeCapsulePressureField<double>(capsule, &mesh, kElasticModulus);
+  const VolumeMeshFieldLinear<double, double> field_with_margin =
+      MakeCapsulePressureField<double>(capsule, &mesh, kElasticModulus,
+                                       kMargin);
+  VerifyInvariantsOfThePressureFieldWithMargin(field_no_margin,
+                                               field_with_margin);
 }
 
 }  // namespace
