@@ -1,6 +1,8 @@
 #include "drake/geometry/read_obj.h"
 
 #include <fstream>
+#include <sstream>
+#include <utility>
 
 #include <fmt/format.h>
 #include <tiny_obj_loader.h>
@@ -15,6 +17,8 @@ namespace drake {
 namespace geometry {
 namespace internal {
 namespace {
+
+using common::FileContents;
 
 // TODO(SeanCurtis-TRI) Move this tinyobj->fcl code into its own library that
 //  can be built and tested separately.
@@ -112,28 +116,27 @@ std::vector<int> TinyObjToFclFaces(
 
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
-ReadObjStream(std::istream* data_stream, double scale, bool triangulate,
-              std::string_view description, bool vertices_only) {
-  tinyobj::attrib_t attrib;
-  std::vector<tinyobj::shape_t> shapes;
-  std::vector<tinyobj::material_t> materials;
-  std::string warn;
-  std::string err;
-
+ReadObjContents(const FileContents& file_contents, double scale,
+                bool triangulate, bool vertices_only) {
   // We're not reading materials.
-  tinyobj::MaterialReader* null_reader = nullptr;
+  const std::string no_mtl_contents;
 
-  bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
-                              data_stream, null_reader, triangulate);
-  if (!ret || !err.empty()) {
-    throw std::runtime_error(
-        fmt::format("Error parsing OBJ '{}': {}", description, err));
+  tinyobj::ObjReader reader;
+  tinyobj::ObjReaderConfig config;
+  config.triangulate = triangulate;
+  reader.ParseFromString(file_contents.contents(), no_mtl_contents, config);
+
+  if (!reader.Valid() || !reader.Error().empty()) {
+    throw std::runtime_error(fmt::format("Error parsing OBJ '{}': {}",
+                                         file_contents.filename_hint(),
+                                         reader.Error()));
   }
-  if (!warn.empty()) {
-    drake::log()->warn("Warning while parsing OBJ '{}' : {}", description,
-                       warn);
+  if (!reader.Warning().empty()) {
+    drake::log()->warn("Warning while parsing OBJ '{}' : {}",
+                       file_contents.filename_hint(), reader.Warning());
   }
 
+  const tinyobj::attrib_t& attrib = reader.GetAttrib();
   auto vertices = std::make_shared<std::vector<Eigen::Vector3d>>(
       TinyObjToFclVertices(attrib, scale));
 
@@ -141,11 +144,12 @@ ReadObjStream(std::istream* data_stream, double scale, bool triangulate,
     return {vertices, std::make_shared<std::vector<int>>(), 0};
   }
 
+  const std::vector<tinyobj::shape_t>& shapes = reader.GetShapes();
   if (shapes.size() == 0) {
     throw std::runtime_error(
         fmt::format("The OBJ data parsed contains no objects; the data could "
                     "be corrupt, empty, or not an OBJ file. Name: '{}'",
-                    description));
+                    file_contents.filename_hint()));
   }
 
   // We will have `faces.size()` larger than the number of faces. For each
@@ -170,8 +174,17 @@ std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
 ReadObjFile(const std::string& filename, double scale, bool triangulate,
             bool vertices_only) {
   std::ifstream f(filename);
-  DRAKE_DEMAND(f.good());
-  return ReadObjStream(&f, scale, triangulate, filename, vertices_only);
+  if (!f.good()) {
+    throw std::runtime_error(
+        fmt::format("Unable to open file to read obj data: {}.", filename));
+  }
+  std::stringstream contents;
+  contents << f.rdbuf();
+  // TODO(SeanCurtis-TRI): The file contents of this file should be read once
+  // and stored in some geometry cache -- only accessed here rather than created
+  // anew. For now, we are unnecessarily computing the hash for the contents.
+  return ReadObjContents(FileContents(std::move(contents).str(), filename),
+                         scale, triangulate, vertices_only);
 }
 
 }  // namespace internal
