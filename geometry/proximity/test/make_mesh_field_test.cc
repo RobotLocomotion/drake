@@ -5,6 +5,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_mesh_from_vtk.h"
+#include "drake/geometry/proximity/pressure_field_invariants.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -44,6 +45,20 @@ TYPED_TEST(MakeVolumeMeshPressureFieldTest, PressureOnNonConvexMesh) {
     static_assert(std::is_same_v<T, AutoDiffXd>);
     EXPECT_EQ(field.EvaluateAtVertex(0).value(), kHydroelasticModulus.value());
   }
+}
+
+GTEST_TEST(MakeVolumeMeshPressureFieldTest, WithMargin) {
+  const double kHydroelasticModulus = 1.0e5;
+  const double kMargin = 0.012;
+  const VolumeMesh<double> non_convex_mesh = MakeVolumeMeshFromVtk<double>(
+      Mesh(FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk")));
+  const VolumeMeshFieldLinear<double, double> field_no_margin =
+      MakeVolumeMeshPressureField(&non_convex_mesh, kHydroelasticModulus);
+  const VolumeMeshFieldLinear<double, double> field_with_margin =
+      MakeVolumeMeshPressureField(&non_convex_mesh, kHydroelasticModulus,
+                                  kMargin);
+  VerifyInvariantsOfThePressureFieldWithMargin(field_no_margin,
+                                               field_with_margin);
 }
 
 // Tests that an input mesh without interior vertices will throw. For
