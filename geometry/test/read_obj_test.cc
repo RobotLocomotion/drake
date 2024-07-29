@@ -165,52 +165,56 @@ GTEST_TEST(ReadObjFile, MultipleObjects) {
   }
 }
 
-// A simple test to exercise the streaming-variant of ReadObjFile. We know that
-// the file-variant simply delegates to this API, so this test merely serves
-// as a regression test on the API.
-GTEST_TEST(ReadObjStreamTest, Regression) {
-  std::istringstream ss(R"""(
+// A simple test to exercise ReadObjContents. We know that the file-variant
+// simply delegates to the same implementation, so this test merely serves
+// as a regression test on the content-based API.
+GTEST_TEST(ReadObjContentsTest, Regression) {
+  const common::FileContents obj(R"""(
     v 0 0 0
     v 0 1 0
     v 1 0 0
     v 1 1 0
     f 1 2 3 4
-  )""");
+  )""",
+                                 "test");
   const auto [vertices, faces, num_faces] =
-      ReadObjStream(&ss, 2.0, true, "test");
+      ReadObjContents(obj, 2.0, /* triangulate= */ true);
   EXPECT_EQ(vertices->size(), 4);
   EXPECT_EQ(faces->size(), 8);  // Two encoded triangles, 4 indices per tri.
 }
 
 // When requesting only vertices, we get only vertices. In fact, we can get the
 // vertices from an obj that would ordinarily throw if we asked for the face
-// data (see BadObjectCount, below).
-GTEST_TEST(ReadObjStream, VertexOnly) {
-  std::istringstream ss(R"""(
+// data (see EmptyObj, below).
+GTEST_TEST(ReadObjContents, VertexOnly) {
+  const common::FileContents obj(R"""(
     v 0 0 0
     v 0 1 0
     v 1 0 0
     v 1 1 0
-  )""");
-  const auto [vertices, faces, num_faces] =
-      ReadObjStream(&ss, 2.0, false, "test", /* vertex_only= */ true);
+  )""",
+                                 "test");
+  const auto [vertices, faces, num_faces] = ReadObjContents(
+      obj, 2.0, /* triangulate= */ true, /* vertex_only= */ true);
   EXPECT_EQ(vertices->size(), 4);
   EXPECT_EQ(faces->size(), 0);
   EXPECT_EQ(num_faces, 0);
 }
 
-// Test the error conditions in which we have no faces.
-GTEST_TEST(ReadObjStream, EmpyObj) {
-  {
-    std::istringstream ss(R"""(
+// Test the error conditions in which we have no faces (and haven't requested
+// vertex only).
+GTEST_TEST(ReadObjContents, EmptyObj) {
+  const common::FileContents obj(R"""(
     v 0 0 0
     v 0 1 0
     v 1 0 0
     v 1 1 0
-  )""");
-    DRAKE_EXPECT_THROWS_MESSAGE(ReadObjStream(&ss, 2.0, false, "test"),
-                                ".*no objects.*");
-  }
+  )""",
+                                 "test");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ReadObjContents(obj, 2.0, /* triangulate= */ false,
+                      /* vertex_only= */ false),
+      ".*no objects.*");
 }
 
 }  // namespace
