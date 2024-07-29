@@ -47,7 +47,6 @@ drake_py_library(
         "__init__.py",
     ],
     deps = [
-        "//bindings:bazel_workaround_4594_libdrake_py",
         "//bindings/pydrake/common:_init_py",
     ],
 )

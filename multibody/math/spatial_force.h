@@ -216,9 +216,9 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
 template <typename T>
 inline SpatialForce<T> operator+(const SpatialForce<T>& F1_E,
                                  const SpatialForce<T>& F2_E) {
-  // Although this operator+() function simply calls an associated
-  // SpatialVector operator+=() function, it is needed for documentation.
-  return SpatialForce<T>(F1_E) += F2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialForce, T>::operator+(F1_E, F2_E);
 }
 
 /// Subtracts spatial forces by simply subtracting their 6 underlying elements.
@@ -232,9 +232,9 @@ inline SpatialForce<T> operator+(const SpatialForce<T>& F1_E,
 template <typename T>
 inline SpatialForce<T> operator-(const SpatialForce<T>& F1_E,
                                  const SpatialForce<T>& F2_E) {
-  // Although this operator-() function simply calls an associated
-  // SpatialVector operator-=() function, it is needed for documentation.
-  return SpatialForce<T>(F1_E) -= F2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialForce, T>::operator-(F1_E, F2_E);
 }
 
 }  // namespace multibody

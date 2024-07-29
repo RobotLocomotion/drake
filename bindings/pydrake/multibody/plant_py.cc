@@ -215,6 +215,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("model_instance"), cls_doc.num_actuated_dofs.doc_1args);
     // Construction.
     cls  // BR
+        .def("SetUseSampledOutputPorts", &Class::SetUseSampledOutputPorts,
+            py::arg("use_sampled_output_ports"),
+            cls_doc.SetUseSampledOutputPorts.doc)
         .def(
             "AddJoint",
             [](Class * self, std::unique_ptr<Joint<T>> joint) -> auto& {
@@ -332,6 +335,28 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::CalcCenterOfMassPositionInWorld),
             py::arg("context"), py::arg("model_instances"),
             cls_doc.CalcCenterOfMassPositionInWorld.doc_2args)
+        .def("CalcCenterOfMassTranslationalVelocityInWorld",
+            overload_cast_explicit<Vector3<T>, const Context<T>&>(
+                &Class::CalcCenterOfMassTranslationalVelocityInWorld),
+            py::arg("context"),
+            cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc_1args)
+        .def("CalcCenterOfMassTranslationalVelocityInWorld",
+            overload_cast_explicit<Vector3<T>, const Context<T>&,
+                const std::vector<ModelInstanceIndex>&>(
+                &Class::CalcCenterOfMassTranslationalVelocityInWorld),
+            py::arg("context"), py::arg("model_instances"),
+            cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc_2args)
+        .def("CalcCenterOfMassTranslationalAccelerationInWorld",
+            overload_cast_explicit<Vector3<T>, const Context<T>&>(
+                &Class::CalcCenterOfMassTranslationalAccelerationInWorld),
+            py::arg("context"),
+            cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld.doc_1args)
+        .def("CalcCenterOfMassTranslationalAccelerationInWorld",
+            overload_cast_explicit<Vector3<T>, const Context<T>&,
+                const std::vector<ModelInstanceIndex>&>(
+                &Class::CalcCenterOfMassTranslationalAccelerationInWorld),
+            py::arg("context"), py::arg("model_instances"),
+            cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld.doc_2args)
         .def(
             "CalcSpatialInertia",
             [](const Class* self, const Context<T>& context,
@@ -1071,6 +1096,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("world_frame", &Class::world_frame, py_rvp::reference_internal,
             cls_doc.world_frame.doc)
         .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
+        .def("has_sampled_output_ports", &Class::has_sampled_output_ports,
+            cls_doc.has_sampled_output_ports.doc)
         .def("Finalize", py::overload_cast<>(&Class::Finalize),
             cls_doc.Finalize.doc)
         .def("set_contact_model", &Class::set_contact_model, py::arg("model"),

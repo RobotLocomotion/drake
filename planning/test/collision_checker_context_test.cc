@@ -31,10 +31,14 @@ class DummyContext final : public CollisionCheckerContext {
   int value_{};
 };
 
-/* Simply confirms that providing *only* a model populates all the contexts (and
- the attendant query object). */
+/* Simply confirms that providing *only* an (empty) model populates all the
+ contexts (and the attendant query object). We configure the plant for "live"
+ mode, to opt-out of the extra non-kinematic state that would be used the plant
+ in "sampled" mode. This would be a typical choice for a collision checker,
+ because its plant is not used for simulation. */
 GTEST_TEST(CollisionCheckerContextTest, SimpleConstructor) {
   RobotDiagramBuilder<double> builder;
+  builder.plant().SetUseSampledOutputPorts(false);
   auto diagram = builder.Build();
   CollisionCheckerContext dut(diagram.get());
   EXPECT_EQ(dut.model_context().num_total_states(), 0);

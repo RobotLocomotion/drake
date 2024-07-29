@@ -48,6 +48,8 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(graph.world_link().model_instance(), world_model_instance());
   const BodyIndex world_link_index = graph.world_link().index();
   EXPECT_EQ(world_link_index, BodyIndex(0));
+  const LinkOrdinal world_link_ordinal = graph.world_link().ordinal();
+  EXPECT_EQ(world_link_ordinal, LinkOrdinal(0));
 
   // Now build a forest representing the World-only graph.
   EXPECT_TRUE(graph.BuildForest());
@@ -70,11 +72,14 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(forest.height(), 1);
   EXPECT_EQ(ssize(forest.welded_mobods()), 1);
   EXPECT_EQ(forest.welded_mobods()[0][0], world_mobod_index);
-  EXPECT_EQ(forest.mobod_to_link(world_mobod_index), world_link_index);
-  EXPECT_EQ(ssize(forest.mobod_to_links(world_mobod_index)), 1);
-  EXPECT_EQ(forest.mobod_to_links(world_mobod_index)[0], world_link_index);
+  EXPECT_EQ(forest.mobod_to_link_ordinal(world_mobod_index),
+            world_link_ordinal);
+  EXPECT_EQ(ssize(forest.mobod_to_link_ordinals(world_mobod_index)), 1);
+  EXPECT_EQ(forest.mobod_to_link_ordinals(world_mobod_index)[0],
+            world_link_ordinal);
   EXPECT_EQ(forest.num_positions(), 0);
   EXPECT_EQ(forest.num_velocities(), 0);
+  EXPECT_TRUE(forest.quaternion_starts().empty());
 
   // Exercise the Mobod API to check the World Mobod for reasonableness.
   EXPECT_TRUE(world.is_world());
@@ -85,10 +90,10 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_TRUE(world.is_weld());       // Defined as having no inboard dofs.
   EXPECT_FALSE(world.inboard().is_valid());
   EXPECT_TRUE(world.outboards().empty());
-  EXPECT_EQ(world.link(), world_link_index);
-  EXPECT_EQ(ssize(world.follower_links()), 1);
-  EXPECT_EQ(world.follower_links()[0], world_link_index);
-  EXPECT_FALSE(world.joint().is_valid());
+  EXPECT_EQ(world.link_ordinal(), world_link_ordinal);
+  EXPECT_EQ(ssize(world.follower_link_ordinals()), 1);
+  EXPECT_EQ(world.follower_link_ordinals()[0], world_link_ordinal);
+  EXPECT_FALSE(world.joint_ordinal().is_valid());
   EXPECT_FALSE(world.tree().is_valid());
   EXPECT_EQ(world.welded_mobods_group(), WeldedMobodsIndex(0));
   EXPECT_EQ(world.level(), 0);
@@ -100,6 +105,7 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(world.nv_inboard(), 0);
   EXPECT_EQ(world.nq_outboard(), 0);
   EXPECT_EQ(world.nv_outboard(), 0);
+  EXPECT_FALSE(world.has_quaternion());
   EXPECT_EQ(world.num_subtree_mobods(), 1);
   EXPECT_EQ(world.subtree_velocities(), (std::pair{0, 0}));
   EXPECT_EQ(world.outboard_velocities(), (std::pair{0, 0}));
@@ -221,9 +227,21 @@ LinkJointGraph MakeMultiBranchGraph(ModelInstanceIndex left,
       {12, 3}, {3, 8}, {3, 7}, {8, 11}, {11, 13}, {11, 14}, {14, 15}};  // right
   for (int i = 0; i < ssize(joints); ++i) {
     const auto joint = joints[i];
-    graph.AddJoint("joint_" + std::to_string(i), link_to_instance[joint.second],
+    graph.AddJoint("joint" + std::to_string(i), link_to_instance[joint.second],
                    "revolute", BodyIndex(joint.first), BodyIndex(joint.second));
   }
+
+  // Remove and re-add a joint to mess up the numbering. It will now have
+  // JointIndex 12, and 7 should be unused.
+  EXPECT_TRUE(graph.has_joint(JointIndex(7)));
+  EXPECT_TRUE(graph.HasJointNamed("joint7", link_to_instance[7]));
+  graph.RemoveJoint(JointIndex(7));  // The joint between 3 & 8.
+  graph.AddJoint("joint7replaced", link_to_instance[7], "revolute",
+                 BodyIndex(3), BodyIndex(7));
+  EXPECT_FALSE(graph.has_joint(JointIndex(7)));
+  EXPECT_FALSE(graph.HasJointNamed("joint7", link_to_instance[7]));
+  EXPECT_TRUE(graph.has_joint(JointIndex(12)));
+  EXPECT_TRUE(graph.HasJointNamed("joint7replaced", link_to_instance[7]));
 
   // Make sure we got the graph we're expecting. Before building the forest
   // the only links and joints are the user-added ones.
@@ -251,6 +269,7 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
 
   // Build with default options.
   EXPECT_TRUE(graph.BuildForest());
+
   EXPECT_EQ(forest.options(), ForestBuildingOptions::kDefault);
   EXPECT_EQ(forest.options(left_instance), ForestBuildingOptions::kDefault);
   EXPECT_EQ(forest.options(right_instance), ForestBuildingOptions::kDefault);
@@ -275,6 +294,14 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
   EXPECT_EQ(forest.num_positions(), 33);   // 12 revolute, 3 x 7 quat floating
   EXPECT_EQ(forest.num_velocities(), 30);  // 12 revolute, 3 x 6 floating
 
+  // Verify that we're tracking quaternions properly.
+  EXPECT_EQ(ssize(forest.quaternion_starts()), 3);  // One per floating joint.
+  EXPECT_EQ(forest.quaternion_starts(), (std::vector{0, 12, 26}));
+  EXPECT_FALSE(forest.mobods(MobodIndex(10)).has_quaternion());  // Arbitrary.
+  EXPECT_TRUE(forest.mobods(MobodIndex(1)).has_quaternion());
+  EXPECT_TRUE(forest.mobods(MobodIndex(7)).has_quaternion());
+  EXPECT_TRUE(forest.mobods(MobodIndex(15)).has_quaternion());
+
   // Check Mobod->Link and Link->Mobod mappings.
   const std::vector<pair<int, int>> mobod_link_map{
       {0, 0}, {1, 1}, {2, 4},   {3, 5},   {4, 6},   {5, 9},   {6, 10}, {7, 12},
@@ -282,12 +309,13 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
   for (auto mobod_link : mobod_link_map) {
     EXPECT_EQ(graph.link_to_mobod(BodyIndex(mobod_link.second)),
               MobodIndex(mobod_link.first));
-    EXPECT_EQ(forest.mobod_to_link(MobodIndex(mobod_link.first)),
-              BodyIndex(mobod_link.second));
+    EXPECT_EQ(forest.mobod_to_link_ordinal(MobodIndex(mobod_link.first)),
+              LinkOrdinal(mobod_link.second));
     // Each Mobod has only a single Link that follows it.
-    EXPECT_EQ(ssize(forest.mobod_to_links(MobodIndex(mobod_link.first))), 1);
-    EXPECT_EQ(forest.mobod_to_links(MobodIndex(mobod_link.first))[0],
-              BodyIndex(mobod_link.second));
+    EXPECT_EQ(
+        ssize(forest.mobod_to_link_ordinals(MobodIndex(mobod_link.first))), 1);
+    EXPECT_EQ(forest.mobod_to_link_ordinals(MobodIndex(mobod_link.first))[0],
+              LinkOrdinal(mobod_link.second));
   }
   EXPECT_EQ(forest.height(), 7);
 
@@ -413,9 +441,9 @@ GTEST_TEST(SpanningForest, MultipleBranchesBaseJointOptions) {
   EXPECT_TRUE(tree1.front().is_anchored());
   EXPECT_FALSE(tree2.front().is_anchored());
 
-  EXPECT_FALSE(graph.links(tree0.front().link()).is_anchored());
-  EXPECT_TRUE(graph.links(tree1.front().link()).is_anchored());
-  EXPECT_FALSE(graph.links(tree2.front().link()).is_anchored());
+  EXPECT_FALSE(graph.links(tree0.front().link_ordinal()).is_anchored());
+  EXPECT_TRUE(graph.links(tree1.front().link_ordinal()).is_anchored());
+  EXPECT_FALSE(graph.links(tree2.front().link_ordinal()).is_anchored());
 
   // There is only the World composite, but now tree1's base link is included.
   EXPECT_EQ(ssize(graph.link_composites()), 1);  // just World
@@ -423,7 +451,7 @@ GTEST_TEST(SpanningForest, MultipleBranchesBaseJointOptions) {
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0],
             graph.world_link().index());
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[1],
-            tree1.front().link());
+            graph.links(tree1.front().link_ordinal()).index());
 
   // Similarly, there is only one WeldedMobods group, containing just World
   // and tree1's base
@@ -624,7 +652,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   // joint. Verify that ChangeJointType() refuses to operate on an ephemeral
   // (added) joint.
   const JointIndex static8_joint_index =
-      graph.links(static8_index).inboard_joint_index();
+      graph.link_by_index(static8_index).inboard_joint_index();
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.ChangeJointType(static8_joint_index, "revolute"),
       "ChangeJointType.*can't change the type.*ephemeral.*static8.* only "
@@ -636,9 +664,9 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   EXPECT_EQ(ssize(graph.joints()), 11);
   const JointIndex base11_joint_index(9);  // See above picture.
   const JointIndex free9_joint_index(10);
-  EXPECT_EQ(graph.joints(base11_joint_index).traits_index(),
+  EXPECT_EQ(graph.joint_by_index(base11_joint_index).traits_index(),
             LinkJointGraph::quaternion_floating_joint_traits_index());
-  EXPECT_EQ(graph.joints(free9_joint_index).traits_index(),
+  EXPECT_EQ(graph.joint_by_index(free9_joint_index).traits_index(),
             LinkJointGraph::quaternion_floating_joint_traits_index());
 
   const std::vector<BodyIndex> link_composites0{BodyIndex(0), BodyIndex(7),
@@ -666,8 +694,8 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
 
   // Counts for generic middle Mobod.
   const SpanningForest::Mobod& mobod_for_link3 =
-      forest.mobods(graph.links(BodyIndex(3)).mobod_index());
-  EXPECT_EQ(mobod_for_link3.link(), BodyIndex(3));
+      forest.mobods(graph.link_by_index(BodyIndex(3)).mobod_index());
+  EXPECT_EQ(graph.links(mobod_for_link3.link_ordinal()).index(), BodyIndex(3));
   EXPECT_EQ(mobod_for_link3.q_start(), 2);
   EXPECT_EQ(mobod_for_link3.v_start(), 2);
   EXPECT_EQ(mobod_for_link3.nq(), 1);
@@ -680,7 +708,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
 
   // Counts for a Mobod with nq != nv.
   const SpanningForest::Mobod& mobod_for_base11 =
-      forest.mobods(graph.links(BodyIndex(11)).mobod_index());
+      forest.mobods(graph.link_by_index(BodyIndex(11)).mobod_index());
   EXPECT_EQ(mobod_for_base11.q_start(), 5);
   EXPECT_EQ(mobod_for_base11.v_start(), 5);
   EXPECT_EQ(mobod_for_base11.nq(), 7);
@@ -842,13 +870,13 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
   // Check that the shadows are connected up properly. See the test comment
   // above for why we expect these particular links to get split.
   for (BodyIndex link(14); link <= 16; ++link)
-    EXPECT_TRUE(graph.links(link).is_shadow());
-  EXPECT_EQ(graph.links(BodyIndex(14)).primary_link(), 11);
-  EXPECT_EQ(graph.links(BodyIndex(11)).num_shadows(), 1);
-  EXPECT_EQ(graph.links(BodyIndex(15)).primary_link(), 1);
-  EXPECT_EQ(graph.links(BodyIndex(1)).num_shadows(), 1);
-  EXPECT_EQ(graph.links(BodyIndex(16)).primary_link(), 8);
-  EXPECT_EQ(graph.links(BodyIndex(8)).num_shadows(), 1);
+    EXPECT_TRUE(graph.link_by_index(link).is_shadow());
+  EXPECT_EQ(graph.link_by_index(BodyIndex(14)).primary_link(), 11);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(11)).num_shadows(), 1);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(15)).primary_link(), 1);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(1)).num_shadows(), 1);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(16)).primary_link(), 8);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(8)).num_shadows(), 1);
 
   // Check that we built the LinkComposites properly (see above).
   EXPECT_EQ(ssize(graph.link_composites()), 3);
@@ -876,9 +904,11 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
   const std::array mobod2joint{-1, 12, 11, 9, 8, 10, 13, 14, 3,
                                0,  7,  4,  6, 5, 2,  1,  15};
   for (const SpanningForest::Mobod& mobod : forest.mobods()) {
-    EXPECT_EQ(mobod.link(), BodyIndex(mobod2link[mobod.index()]));
+    EXPECT_EQ(graph.links(mobod.link_ordinal()).index(),
+              BodyIndex(mobod2link[mobod.index()]));
     if (mobod.is_world()) continue;  // No joint for World mobod.
-    EXPECT_EQ(mobod.joint(), JointIndex(mobod2joint[mobod.index()]));
+    EXPECT_EQ(graph.joints(mobod.joint_ordinal()).index(),
+              JointIndex(mobod2joint[mobod.index()]));
   }
 
   // Should get the same information from the graph.
@@ -937,6 +967,7 @@ GTEST_TEST(SpanningForest, SimpleTrees) {
   // We should report that the resulting forest is unsuited for dynamics due
   // to a terminal massless body. Specifically, it should complain about link
   // 4 rather than link 2 since 4 is at a lower level and should be seen first.
+  // (Tests Case 2 in ExtendTreesOneLevel())
   EXPECT_FALSE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
   EXPECT_FALSE(forest.dynamics_ok());
@@ -946,7 +977,7 @@ GTEST_TEST(SpanningForest, SimpleTrees) {
                             "singular.*cannot be used for dynamics.*"));
 
   // Change link 4's joint type to "weld". That should shift the complaint to
-  // link 2.
+  // link 2. (Tests Case 2 in ExtendTreesOneLevel())
   graph.ChangeJointType(JointIndex(5), "weld");
   EXPECT_FALSE(graph.BuildForest());
   EXPECT_FALSE(forest.dynamics_ok());
@@ -981,23 +1012,14 @@ With all massful Links, loop should be broken at Joint 3 (between links
 {3} and {4} since that minimizes the maximum chain length. In that case we
 have trees {1234s} and {564} where {4s} is the shadow of {4}.
 
-If we make {3}* massless we'll have to extend the first chain
-to link {4} before breaking the loop at Joint 6, giving trees
-{1234} and {564s} ({4} is still split since it is the child of Joint 6).
-
-TODO(sherm1) With massless handling stubbed out, the algorithm will _not_
- extend the first chain when it sees massless {3} so produces the same two
- trees as the massful case above. As it happens, that's still a good forest.
+If we make just {3}* massless we'll get the same Forest since we can see
+that there is an outboard massful body {4}. When we split {4} both halves are
+massful, so we'll still get {1234s} and {564}.
 
 If we make _both_ {3}* and {4}* massless, modeling should start with {12} and
 {56} but then next extend the first tree to {12346s} because we can't stop at
 {3} or {4}. Joint 6 is the loop joint but the mobilizer has to be reversed so
-that we end with a massful shadow link {6s} rather than the massless {4}.
-
-TODO(sherm1) With massless handling stubbed out, we once again get the same
- two trees but now the forest can't be used for dynamics due to terminal
- massless bodies 4 and 4s.
-*/
+that we end with a massful shadow link {6s} rather than the massless {4}. */
 GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   LinkJointGraph graph;
   graph.RegisterJointType("revolute", 1, 1);
@@ -1022,31 +1044,48 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   EXPECT_TRUE(graph.BuildForest());  // Using default options.
   const SpanningForest& forest = graph.forest();
 
+  EXPECT_EQ(ssize(graph.links()), 8);  // Added a shadow.
+  EXPECT_EQ(ssize(graph.joints()), 7);
+  EXPECT_TRUE(graph.link_by_index(BodyIndex(7)).is_shadow());
+  EXPECT_EQ(graph.link_by_index(BodyIndex(7)).primary_link(), BodyIndex(4));
+
   EXPECT_EQ(ssize(forest.trees()), 2);
   EXPECT_EQ(forest.trees()[0].num_mobods(), 4);
   EXPECT_EQ(forest.trees()[1].num_mobods(), 3);
+  EXPECT_EQ(graph.links(forest.mobods(MobodIndex(4)).link_ordinal()).index(),
+            BodyIndex(7));
 
+  // Changing just 3 to massless results in the same forest.
+  // (Tests Case 1 in ExtendTreesOneLevel())
   graph.ChangeLinkFlags(BodyIndex(3), LinkFlags::kTreatAsMassless);
   EXPECT_TRUE(graph.BuildForest());
 
+  EXPECT_EQ(ssize(graph.links()), 8);
+  EXPECT_EQ(ssize(graph.joints()), 7);
+  EXPECT_TRUE(graph.link_by_index(BodyIndex(7)).is_shadow());
+  EXPECT_EQ(graph.link_by_index(BodyIndex(7)).primary_link(), BodyIndex(4));
+
   EXPECT_EQ(ssize(forest.trees()), 2);
   EXPECT_EQ(forest.trees()[0].num_mobods(), 4);
   EXPECT_EQ(forest.trees()[1].num_mobods(), 3);
+  EXPECT_EQ(graph.links(forest.mobods(MobodIndex(4)).link_ordinal()).index(),
+            BodyIndex(7));
 
-  // TODO(sherm1) With both 3 and 4 massless and massless handling stubbed,
-  //  we'll end up with a no-dynamics model. Should not happen once this gets
-  //  un-stubbed.
+  // Changing both 3 and 4 to massless breaks the loop at 6 instead of 4.
+  // (Tests Case 3 in ExtendTreesOneLevel())
   graph.ChangeLinkFlags(BodyIndex(4), LinkFlags::kTreatAsMassless);
-  EXPECT_FALSE(graph.BuildForest());  // Indicates "no dynamics".
+  EXPECT_TRUE(graph.BuildForest());
 
-  EXPECT_THAT(
-      forest.why_no_dynamics(),
-      testing::MatchesRegex("Loop.*joint3.*massless.*link3.*link4.*singular.*"
-                            "cannot be used for dynamics.*"));
+  EXPECT_EQ(ssize(graph.links()), 8);
+  EXPECT_EQ(ssize(graph.joints()), 7);
+  EXPECT_TRUE(graph.link_by_index(BodyIndex(7)).is_shadow());
+  EXPECT_EQ(graph.link_by_index(BodyIndex(7)).primary_link(), BodyIndex(6));
 
   EXPECT_EQ(ssize(forest.trees()), 2);
-  EXPECT_EQ(forest.trees()[0].num_mobods(), 3);
-  EXPECT_EQ(forest.trees()[1].num_mobods(), 4);
+  EXPECT_EQ(forest.trees()[0].num_mobods(), 5);
+  EXPECT_EQ(forest.trees()[1].num_mobods(), 2);
+  EXPECT_EQ(graph.links(forest.mobods(MobodIndex(5)).link_ordinal()).index(),
+            BodyIndex(7));
 }
 
 /* Here is a tricky case that should be handled correctly and without warnings.
@@ -1107,7 +1146,7 @@ GTEST_TEST(SpanningForest, MasslessBodiesShareSplitLink) {
   EXPECT_EQ(graph.num_user_links(), 4);
   EXPECT_EQ(ssize(graph.loop_constraints()), 1);
 
-  const auto& shadow_link = graph.links(BodyIndex(4));
+  const auto& shadow_link = graph.link_by_index(BodyIndex(4));
   EXPECT_TRUE(shadow_link.is_shadow());
   EXPECT_EQ(shadow_link.primary_link(), BodyIndex(3));
   EXPECT_EQ(shadow_link.mobod_index(), MobodIndex(4));
@@ -1117,9 +1156,9 @@ GTEST_TEST(SpanningForest, MasslessBodiesShareSplitLink) {
   EXPECT_EQ(shadow_link.joints_as_child()[0], JointIndex(3));
   EXPECT_EQ(shadow_link.joints()[0], JointIndex(3));
 
-  EXPECT_EQ(graph.links(BodyIndex(3)).num_shadows(), 1);
-  EXPECT_EQ(graph.links(BodyIndex(2)).num_shadows(), 0);
-  EXPECT_EQ(graph.links(BodyIndex(4)).num_shadows(), 0);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(3)).num_shadows(), 1);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(2)).num_shadows(), 0);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(4)).num_shadows(), 0);
 
   EXPECT_EQ(ssize(forest.mobods()), 5);
   EXPECT_EQ(ssize(forest.trees()), 2);
@@ -1172,7 +1211,6 @@ Notes:
 GTEST_TEST(SpanningForest, DoubleLoop) {
   LinkJointGraph graph;
   graph.RegisterJointType("revolute", 1, 1);
-  graph.RegisterJointType("prismatic", 1, 1);
   const ModelInstanceIndex model_instance(19);
 
   for (int i = 1; i <= 7; ++i)
@@ -1181,7 +1219,7 @@ GTEST_TEST(SpanningForest, DoubleLoop) {
   const std::vector<std::pair<int, int>> joints{{1, 2}, {1, 4}, {1, 3}, {2, 5},
                                                 {4, 7}, {3, 6}, {5, 6}, {7, 6}};
   for (int i = 0; i < 8; ++i) {
-    graph.AddJoint("joint_" + std::to_string(i), model_instance, "revolute",
+    graph.AddJoint("joint" + std::to_string(i), model_instance, "revolute",
                    BodyIndex(joints[i].first), BodyIndex(joints[i].second));
   }
 
@@ -1198,9 +1236,9 @@ GTEST_TEST(SpanningForest, DoubleLoop) {
   EXPECT_EQ(graph.num_user_links(), 8);
   EXPECT_EQ(graph.num_user_joints(), 8);
 
-  const LinkJointGraph::Link& primary_link = graph.links(BodyIndex(6));
-  const LinkJointGraph::Link& shadow_link_1 = graph.links(BodyIndex(8));
-  const LinkJointGraph::Link& shadow_link_2 = graph.links(BodyIndex(9));
+  const LinkJointGraph::Link& primary_link = graph.link_by_index(BodyIndex(6));
+  const LinkJointGraph::Link& shadow_link_1 = graph.link_by_index(BodyIndex(8));
+  const LinkJointGraph::Link& shadow_link_2 = graph.link_by_index(BodyIndex(9));
 
   EXPECT_EQ(primary_link.name(), "link6");
   EXPECT_EQ(shadow_link_1.name(), "link6$1");
@@ -1210,8 +1248,8 @@ GTEST_TEST(SpanningForest, DoubleLoop) {
   EXPECT_TRUE(shadow_link_1.is_shadow());
   EXPECT_TRUE(shadow_link_2.is_shadow());
 
-  EXPECT_EQ(graph.links(BodyIndex(5)).num_shadows(), 0);
-  EXPECT_EQ(graph.links(BodyIndex(7)).num_shadows(), 0);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(5)).num_shadows(), 0);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(7)).num_shadows(), 0);
 
   EXPECT_EQ(ssize(forest.mobods()), 10);
   EXPECT_EQ(ssize(forest.trees()), 1);
@@ -1225,9 +1263,11 @@ GTEST_TEST(SpanningForest, DoubleLoop) {
   const std::array mobod2link{0, 1, 2, 5, 8, 4, 7, 9, 3, 6};
   const std::array mobod2joint{-1, 8, 0, 3, 6, 1, 4, 7, 2, 5};
   for (const SpanningForest::Mobod& mobod : forest.mobods()) {
-    EXPECT_EQ(mobod.link(), BodyIndex(mobod2link[mobod.index()]));
+    EXPECT_EQ(graph.links(mobod.link_ordinal()).index(),
+              BodyIndex(mobod2link[mobod.index()]));
     if (mobod.is_world()) continue;  // No joint for World mobod.
-    EXPECT_EQ(mobod.joint(), JointIndex(mobod2joint[mobod.index()]));
+    EXPECT_EQ(graph.joints(mobod.joint_ordinal()).index(),
+              JointIndex(mobod2joint[mobod.index()]));
   }
 
   const LinkJointGraph::LoopConstraint& loop0 =
@@ -1274,11 +1314,11 @@ GTEST_TEST(SpanningForest, WorldCompositeComesFirst) {
   graph.AddLink("link3", model_instance);
   graph.AddLink("link4", model_instance);
 
-  const auto& world = graph.links(BodyIndex(0));
-  const auto& massless_link = graph.links(BodyIndex(1));
-  const auto& link2 = graph.links(BodyIndex(2));
-  const auto& link3 = graph.links(BodyIndex(3));
-  const auto& link4 = graph.links(BodyIndex(4));
+  const auto& world = graph.link_by_index(BodyIndex(0));
+  const auto& massless_link = graph.link_by_index(BodyIndex(1));
+  const auto& link2 = graph.link_by_index(BodyIndex(2));
+  const auto& link3 = graph.link_by_index(BodyIndex(3));
+  const auto& link4 = graph.link_by_index(BodyIndex(4));
 
   graph.AddJoint("joint0", model_instance, "revolute", world.index(),
                  massless_link.index());
@@ -1377,7 +1417,7 @@ GTEST_TEST(SpanningForest, ShadowLinkPreservesJointOrder) {
 
   // See right-hand graph above. We're expecting to split link 3 since that
   // will produce equal-length branches.
-  const LinkJointGraph::Link& primary_link = graph.links(BodyIndex(3));
+  const LinkJointGraph::Link& primary_link = graph.link_by_index(BodyIndex(3));
   EXPECT_FALSE(primary_link.is_shadow());
   EXPECT_EQ(primary_link.num_shadows(), 1);
   EXPECT_EQ(primary_link.mobod_index(), MobodIndex(2));
@@ -1390,7 +1430,7 @@ GTEST_TEST(SpanningForest, ShadowLinkPreservesJointOrder) {
   EXPECT_EQ(primary_link.joints_as_child(), (std::vector{JointIndex(2)}));
   EXPECT_EQ(primary_link.joints_as_parent(), (std::vector{JointIndex(3)}));
 
-  const LinkJointGraph::Link& shadow_link = graph.links(BodyIndex(4));
+  const LinkJointGraph::Link& shadow_link = graph.link_by_index(BodyIndex(4));
   EXPECT_TRUE(shadow_link.is_shadow());
   // Shadow 1 of link 3 should be "link3$1", but that name conflicts with a
   // nutty user name so we have to disambiguate with underscores.
@@ -1425,8 +1465,10 @@ GTEST_TEST(SpanningForest, ShadowLinkPreservesJointOrder) {
   // Now make link3 massless, rebuild, and check a few things.
   graph.ChangeLinkFlags(BodyIndex(3), LinkFlags::kTreatAsMassless);
   graph.BuildForest();
-  const LinkJointGraph::Link& new_primary_link = graph.links(BodyIndex(2));
-  const LinkJointGraph::Link& new_shadow_link = graph.links(BodyIndex(4));
+  const LinkJointGraph::Link& new_primary_link =
+      graph.link_by_index(BodyIndex(2));
+  const LinkJointGraph::Link& new_shadow_link =
+      graph.link_by_index(BodyIndex(4));
 
   EXPECT_EQ(ssize(forest.mobods()), 5);
   EXPECT_EQ(ssize(forest.trees()), 2);

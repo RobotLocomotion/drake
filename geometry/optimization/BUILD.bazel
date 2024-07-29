@@ -460,6 +460,7 @@ drake_cc_googletest(
         "//solvers:linear_system_solver",
         "//solvers:mosek_solver",
         "//solvers:osqp_solver",
+        "//solvers:scs_solver",
     ],
 )
 

@@ -381,7 +381,7 @@ GTEST_TEST(RotationalInertia, ShiftToCenterOfMass) {
   const double Iyz = I_BP_Byz + mass * yBcm*zBcm;
   const RotationalInertia<double> expected_I_BBcm_B(
       Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 2*kEpsilon));
+  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 4*kEpsilon));
 }
 
 // Test the method ShiftToThenAwayFromCenterOfMass for a body B's

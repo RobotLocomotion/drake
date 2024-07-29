@@ -23,8 +23,13 @@ class LinkJointGraph::Link {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link);
 
-  /** Returns this %Link's unique index in the graph. */
+  /** Returns this %Link's unique index in the graph. This is persistent after
+  the %Link has been allocated. */
   BodyIndex index() const { return index_; }
+
+  /** Returns the current value of this %Link's ordinal (position in the
+  links() vector). This can change as %Links are removed. */
+  LinkOrdinal ordinal() const { return ordinal_; }
 
   /** Returns this %Link's model instance. */
   ModelInstanceIndex model_instance() const { return model_instance_; }
@@ -63,11 +68,12 @@ class LinkJointGraph::Link {
   of the World Composite (that is, it is directly or indirectly welded to
   World). */
   bool is_anchored() const {
-    return is_world() || is_static() || (composite() == LinkCompositeIndex(0));
+    return is_world() || is_static_flag_set() ||
+           (composite() == LinkCompositeIndex(0));
   }
 
   /** Returns `true` if this %Link was added with LinkFlags::kStatic. */
-  bool is_static() const {
+  bool is_static_flag_set() const {
     return static_cast<bool>(flags_ & LinkFlags::kStatic);
   }
 
@@ -121,8 +127,8 @@ class LinkJointGraph::Link {
   friend class LinkJointGraph;
   friend class LinkJointGraphTester;
 
-  Link(BodyIndex index, std::string name, ModelInstanceIndex model_instance,
-       LinkFlags flags);
+  Link(BodyIndex index, LinkOrdinal ordinal, std::string name,
+       ModelInstanceIndex model_instance, LinkFlags flags);
 
   // (For testing) If `to_set` is LinkFlags::kDefault sets the flags to
   // Default. Otherwise or's in the given flags to the current set. Returns
@@ -136,19 +142,26 @@ class LinkJointGraph::Link {
     if (mobod_.is_valid()) mobod_ = old_to_new[mobod_];
   }
 
-  // Notes that this Link is connected by `joint`.
-  void add_joint_as_parent(JointIndex joint) {
-    joints_as_parent_.push_back(joint);
-    joints_.push_back(joint);
+  // Notes that this Link is connected by the given joint.
+  void add_joint_as_parent(JointIndex joint_index) {
+    joints_as_parent_.push_back(joint_index);
+    joints_.push_back(joint_index);
   }
 
-  void add_joint_as_child(JointIndex joint) {
-    joints_as_child_.push_back(joint);
-    joints_.push_back(joint);
+  void add_joint_as_child(JointIndex joint_index) {
+    joints_as_child_.push_back(joint_index);
+    joints_.push_back(joint_index);
   }
 
-  void add_loop_constraint(LoopConstraintIndex constraint) {
-    loop_constraints_.push_back(constraint);
+  void add_loop_constraint(LoopConstraintIndex constraint_index) {
+    loop_constraints_.push_back(constraint_index);
+  }
+
+  // This is used when a Joint is removed.
+  void RemoveJointReferences(JointIndex joint_index) {
+    std::erase(joints_as_parent_, joint_index);
+    std::erase(joints_as_child_, joint_index);
+    std::erase(joints_, joint_index);
   }
 
   // Removes any as-modeled information added to this user link during forest
@@ -156,9 +169,10 @@ class LinkJointGraph::Link {
   // constraints. Preserves only the as-constructed information: index, name,
   // model instance, flags, and primary_link (= index for a user link).
   // @pre this is a user link, not a shadow.
-  void ClearModel(int num_user_joints);
+  void ClearModel(JointIndex max_user_joint_index);
 
-  BodyIndex index_;
+  BodyIndex index_;      // persistent
+  LinkOrdinal ordinal_;  // can change
   std::string name_;
   ModelInstanceIndex model_instance_;
   LinkFlags flags_{LinkFlags::kDefault};

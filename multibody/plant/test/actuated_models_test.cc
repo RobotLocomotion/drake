@@ -71,6 +71,7 @@ class ActuatedIiwaArmTest : public ::testing::Test {
     // Make a discrete model.
     plant_ = std::make_unique<MultibodyPlant<double>>(config.time_step);
     ApplyMultibodyPlantConfig(config, plant_.get());
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
 
     Parser parser(plant_.get());
 
@@ -839,6 +840,35 @@ TEST_F(ActuatedIiwaArmTest, RemoveJointActuator) {
       plant_->GetJointActuatorByName("ShoulderJoint");
   EXPECT_THAT(plant_->GetJointActuatorIndices(acrobot_model_),
               testing::ElementsAre(shoulder_joint_actuator.index()));
+}
+
+GTEST_TEST(ActuatedModelsTest, ZeroActuationPriorToStepping) {
+  // Load a discrete model.
+  const char kArmSdfUrl[] =
+      "package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf";
+  auto plant = std::make_unique<MultibodyPlant<double>>(0.01);
+  Parser parser(plant.get());
+  parser.AddModelsFromUrl(kArmSdfUrl);
+  plant->Finalize();
+
+  // Provide actuation input.
+  auto model = plant->GetModelInstanceByName("iiwa7");
+  auto context = plant->CreateDefaultContext();
+  plant->get_actuation_input_port(model).FixValue(
+      context.get(), Eigen::VectorXd::Constant(7, 1.0));
+
+  // Evaluate all of the actuation output ports to confirm they are zero.
+  EXPECT_TRUE(plant->get_net_actuation_output_port().Eval(*context).isZero());
+  for (ModelInstanceIndex i{0}; i < plant->num_model_instances(); ++i) {
+    const auto& ith_port = plant->get_net_actuation_output_port(i);
+    EXPECT_TRUE(ith_port.Eval(*context).isZero());
+  }
+
+  // Take a step and now they are non-zero.
+  plant->ExecuteForcedEvents(context.get());
+  EXPECT_FALSE(plant->get_net_actuation_output_port().Eval(*context).isZero());
+  const auto& model_port = plant->get_net_actuation_output_port(model);
+  EXPECT_FALSE(model_port.Eval(*context).isZero());
 }
 
 }  // namespace

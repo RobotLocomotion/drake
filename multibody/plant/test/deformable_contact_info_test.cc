@@ -18,18 +18,13 @@ GTEST_TEST(DeformableContactInfo, ConstructAndAccess) {
   GeometryId id_A = GeometryId::get_new_id();
   GeometryId id_B = GeometryId::get_new_id();
   const SpatialForce<double> F_Ac_W(Vector3d(1, 2, 3), Vector3d(4, 5, 6));
-  std::vector<DeformableContactPointData<double>> contact_point_data;
-  contact_point_data.emplace_back(Vector3d(11, 22, 33), 42,
-                                  Vector3d(44, 55, 66), Vector3d(77, 88, 99));
-  const DeformableContactInfo<double> dut(id_A, id_B, contact_mesh, F_Ac_W,
-                                          contact_point_data);
+  const DeformableContactInfo<double> dut(id_A, id_B, contact_mesh, F_Ac_W);
 
   EXPECT_EQ(dut.id_A(), id_A);
   EXPECT_EQ(dut.id_B(), id_B);
   EXPECT_TRUE(dut.contact_mesh().Equal(contact_mesh));
   EXPECT_EQ(dut.F_Ac_W().translational(), F_Ac_W.translational());
   EXPECT_EQ(dut.F_Ac_W().rotational(), F_Ac_W.rotational());
-  EXPECT_EQ(dut.contact_point_data(), contact_point_data);
 }
 
 }  // namespace

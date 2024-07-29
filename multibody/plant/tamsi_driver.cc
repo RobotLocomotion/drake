@@ -388,8 +388,12 @@ void TamsiDriver<T>::CalcDiscreteUpdateMultibodyForces(
                                  /* include_joint_limit_penalty_forces */ true,
                                  /* include_pd_controlled_input */ true,
                                  forces);
-  const ContactResults<T>& contact_results =
-      manager().EvalContactResults(context);
+  // This Calc is somewhat inefficient. On the other hand, TAMSI is dispreferred
+  // and is only kept for backwards compatibility, so we don't plan on trying to
+  // optimize this.
+  ContactResults<T> contact_results;
+  manager().CalcContactResults(context, &contact_results);
+
   auto& Fapplied_Bo_W_array = forces->mutable_body_forces();
   CalcAndAddSpatialContactForcesFromContactResults(context, contact_results,
                                                    &Fapplied_Bo_W_array);

@@ -2398,10 +2398,96 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuityConstraintSymbolic) {
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, EdgeIndexChecking) {
   GcsTrajectoryOptimization gcs(1);
-  auto sets = MakeConvexSets(Point(Vector1d(43.0)));
-  std::vector<std::pair<int, int>> edges;
-  edges.emplace_back(0, 1);
-  EXPECT_THROW(gcs.AddRegions(sets, edges, 1), std::exception);
+  auto sets_bad = MakeConvexSets(Point(Vector1d(43.0)));
+  std::vector<std::pair<int, int>> edges_bad_1;
+  edges_bad_1.emplace_back(0, 1);
+  EXPECT_THROW(gcs.AddRegions(sets_bad, edges_bad_1, 1), std::exception);
+
+  auto sets_good_1 = MakeConvexSets(Hyperrectangle(Vector1d(0), Vector1d(2)));
+  auto sets_good_2 = MakeConvexSets(Hyperrectangle(Vector1d(1), Vector1d(3)));
+  auto& subgraph1 = gcs.AddRegions(sets_good_1, 1);
+  auto& subgraph2 = gcs.AddRegions(sets_good_2, 1);
+  std::vector<std::pair<int, int>> edges_bad_2;
+  edges_bad_2.emplace_back(0, 1);
+  EXPECT_THROW(gcs.AddEdges(subgraph1, subgraph2, nullptr, edges_bad_2),
+               std::exception);
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
+  std::vector<int> continuous_revolute_joints = {0};
+  GcsTrajectoryOptimization gcs(1, continuous_revolute_joints);
+  auto sets1 = MakeConvexSets(Hyperrectangle(Vector1d(0), Vector1d(1)),
+                              Hyperrectangle(Vector1d(1.25), Vector1d(3)));
+  auto sets2 = MakeConvexSets(
+      Hyperrectangle(Vector1d(0.5), Vector1d(1.5)),
+      Hyperrectangle(Vector1d(1.25 + 2 * M_PI), Vector1d(2.5 + 2 * M_PI)));
+  auto& subgraph1 = gcs.AddRegions(sets1, 1, 1e-6);
+  auto& subgraph2 = gcs.AddRegions(sets2, 1, 1e-6);
+
+  auto& start = gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0);
+  auto& goal = gcs.AddRegions(MakeConvexSets(Point(Vector1d(2))), 0);
+
+  // sets1 is the intervals [0, 1] and [1.25, 3]
+  // sets2 is the intervals [0.5, 1.5] and [1.25 + 2π, 2.5 + 2π]
+  // So there's an edge (0, 0) with a zero offset, an edge (1, 0) with a zero
+  // offset, and an edge (1, 1) with a 2π offset.
+  std::vector<std::pair<int, int>> edges_start_1, edges_1_2, edges_2_goal;
+  std::vector<VectorXd> offsets_start_1, offsets_1_2, offsets_2_goal;
+  edges_start_1.emplace_back(0, 0);
+  offsets_start_1.emplace_back(Vector1d(0));
+
+  edges_1_2.emplace_back(0, 0);
+  offsets_1_2.emplace_back(Vector1d(0));
+  edges_1_2.emplace_back(1, 0);
+  offsets_1_2.emplace_back(Vector1d(0));
+  edges_1_2.emplace_back(1, 1);
+  offsets_1_2.emplace_back(Vector1d(2 * M_PI));
+
+  edges_2_goal.emplace_back(1, 0);
+  offsets_2_goal.emplace_back(Vector1d(-2 * M_PI));
+
+  // We consider edges start -> subgraph1 -> subgraph2 -> goal, plus the edges
+  // within subgraph2. (Subgraph1 is disconnected.) There's one edge from the
+  // start to subgraph 1, no edges within subgraph 1, 3 edges between subgraph 1
+  // and subgraph 2, 2 edges within subgraph 2, and 1 edge from subgraph 2 to
+  // the goal, for a total of 7.
+  const int expected_num_edges = 7;
+
+  // Add edges without offsets. This makes the problem infeasible.
+  gcs.AddEdges(start, subgraph1, nullptr, edges_start_1);
+  gcs.AddEdges(subgraph1, subgraph2, nullptr, edges_1_2);
+  gcs.AddEdges(subgraph2, goal, nullptr, edges_2_goal);
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
+  auto [traj_fail, result_fail] = gcs.SolvePath(start, goal);
+  unused(traj_fail);
+  EXPECT_FALSE(result_fail.is_success());
+
+  // Add edges with the offset. (We remove and re-add the middle twosubgraphs to
+  // clear the edges.)
+  gcs.RemoveSubgraph(subgraph1);
+  gcs.RemoveSubgraph(subgraph2);
+  auto& new_subgraph1 = gcs.AddRegions(sets1, 1, 1e-6);
+  auto& new_subgraph2 = gcs.AddRegions(sets2, 1, 1e-6);
+  gcs.AddEdges(start, new_subgraph1, nullptr, edges_start_1, offsets_start_1);
+  gcs.AddEdges(new_subgraph1, new_subgraph2, nullptr, edges_1_2, offsets_1_2);
+  gcs.AddEdges(new_subgraph2, goal, nullptr, edges_2_goal, offsets_2_goal);
+  EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
+  auto [traj_succeed, result_succeed] = gcs.SolvePath(start, goal);
+  unused(traj_succeed);
+  EXPECT_TRUE(result_succeed.is_success());
+
+  // Throw if edges and offsets have mismatched lengths.
+  offsets_2_goal.emplace_back(Vector1d(0));
+  EXPECT_THROW(
+      gcs.AddEdges(new_subgraph2, goal, nullptr, edges_2_goal, offsets_2_goal),
+      std::exception);
+
+  // Throw if offsets has wrong dimension.
+  offsets_2_goal.resize(0);
+  offsets_2_goal.emplace_back(Vector2d(0, 0));
+  EXPECT_THROW(
+      gcs.AddEdges(new_subgraph2, goal, nullptr, edges_2_goal, offsets_2_goal),
+      std::exception);
 }
 
 }  // namespace

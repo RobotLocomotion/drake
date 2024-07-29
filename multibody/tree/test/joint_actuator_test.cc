@@ -100,6 +100,15 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
 
   EXPECT_THAT(tree.GetJointActuatorIndices(),
               testing::ElementsAre(actuator1.index(), actuator4.index()));
+
+  // Changing the gains post-Finalize doesn't throw.
+  EXPECT_NO_THROW(mutable_actuator1.set_controller_gains(gains));
+
+  // Trying to add new gains post-Finalize throws.
+  JointActuator<double>& mutable_actuator4 =
+      tree.get_mutable_joint_actuator(actuator4.index());
+  DRAKE_EXPECT_THROWS_MESSAGE(mutable_actuator4.set_controller_gains(gains),
+                              ".*add PD.*Finalize.*");
 }
 
 GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {

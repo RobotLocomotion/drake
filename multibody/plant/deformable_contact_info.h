@@ -1,14 +1,10 @@
 #pragma once
 
-#include <utility>
-#include <vector>
-
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/multibody/math/spatial_algebra.h"
-#include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 
 namespace drake {
 namespace multibody {
@@ -40,14 +36,10 @@ class DeformableContactInfo {
    world frame.
    @param[in] F_Ac_W Spatial force acting on body A, at contact mesh centroid C,
    and expressed in the world frame.
-   @param[in] contact_point_data The vector of per-contact-point data where the
-   contact points are sampled at the centroid of each face of the contact mesh.
-   This vector is ordered the same way as the faces of `contact_mesh_W`.
    @pre id_A corresponds to a deformable geometry. */
-  DeformableContactInfo(
-      geometry::GeometryId id_A, geometry::GeometryId id_B,
-      geometry::PolygonSurfaceMesh<T> contact_mesh_W, SpatialForce<T> F_Ac_W,
-      std::vector<DeformableContactPointData<T>> contact_point_data);
+  DeformableContactInfo(geometry::GeometryId id_A, geometry::GeometryId id_B,
+                        geometry::PolygonSurfaceMesh<T> contact_mesh_W,
+                        SpatialForce<T> F_Ac_W);
 
   ~DeformableContactInfo();
 
@@ -68,13 +60,6 @@ class DeformableContactInfo {
    expressed in the world frame W. */
   const SpatialForce<T>& F_Ac_W() const { return F_Ac_W_; }
 
-  /** Gets the contact point data, including tractions and slip velocities, at
-   each contact point located at the centroid of each element of the contact
-   mesh. Ordered the same way as the faces of contact_mesh()`. */
-  const std::vector<DeformableContactPointData<T>>& contact_point_data() const {
-    return contact_point_data_;
-  }
-
  private:
   /* The geometry ids of the geometries in contact. Geometry A is guaranteed to
    be deformable. */
@@ -87,10 +72,6 @@ class DeformableContactInfo {
   /* The spatial force applied at the centroid (Point C) of the contact surface
    mesh. */
   SpatialForce<T> F_Ac_W_;
-
-  /* Per-contact-point data evaluated at the centroid of each face of the
-   contact surface mesh. */
-  std::vector<DeformableContactPointData<T>> contact_point_data_;
 };
 
 }  // namespace multibody

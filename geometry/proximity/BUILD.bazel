@@ -71,9 +71,21 @@ drake_cc_library(
     name = "boxes_overlap",
     srcs = ["boxes_overlap.cc"],
     hdrs = ["boxes_overlap.h"],
+    copts = [
+        # Hard coding optimization keeps performance high in debug, but it also
+        # is necessary for highway to work; the critical function must be
+        # inlined. Without -O2, it might not be, leading to badness. If you are
+        # a developer trying to debug these files, you might want to comment
+        # this out temporarily (and hope your platform is not the crash kind).
+        "-O2",
+    ],
     deps = [
-        "//common:essential",
         "//math:geometric_transform",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//common:hwy_dynamic",
+        "@highway_internal//:hwy",
     ],
 )
 
@@ -353,6 +365,7 @@ drake_cc_library(
     internal = True,
     visibility = [
         "//geometry:__pkg__",
+        "//geometry/benchmarking:__pkg__",
     ],
     deps = [
         ":collision_filter",

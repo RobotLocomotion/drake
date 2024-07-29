@@ -37,7 +37,11 @@ class ContactResults {
 
   (Advanced) The optional `backing_store` argument allows the caller to keep
   alive type-erased shared_ptr data that is referenced by the contact infos.
-  This object will hold the `backing_store` until this object is destroyed. */
+  This object will hold the `backing_store` until this object is destroyed.
+  Because backing_store is type-erased (a pointer to void), it can keep alive
+  any kind of necessary storage, e.g., a cache entry whose declaration is not
+  available to this header file, and call sites can change how that storage
+  ends up being organized without any changes to this file. */
   explicit ContactResults(
       std::vector<PointPairContactInfo<T>>&& point_pair,
       std::vector<HydroelasticContactInfo<T>>&& hydroelastic = {},

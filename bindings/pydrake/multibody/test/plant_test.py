@@ -196,6 +196,8 @@ class TestPlant(unittest.TestCase):
 
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant.SetUseSampledOutputPorts(use_sampled_output_ports=False)
+        self.assertEqual(plant.has_sampled_output_ports(), False)
         self.assertEqual(plant.time_step(), 0.0)
         spatial_inertia = SpatialInertia.NaN()
         body = plant.AddRigidBody(name="new_body",
@@ -1205,6 +1207,41 @@ class TestPlant(unittest.TestCase):
         p_com = plant.CalcCenterOfMassPositionInWorld(
             context=context, model_instances=[instance])
         self.assertTupleEqual(p_com.shape, (3, ))
+
+        v_com = plant.CalcCenterOfMassTranslationalVelocityInWorld(
+            context=context)
+        self.assertTupleEqual(v_com.shape, (3, ))
+        v_com = plant.CalcCenterOfMassTranslationalVelocityInWorld(
+            context=context, model_instances=[instance])
+        self.assertTupleEqual(v_com.shape, (3, ))
+
+        # Test center of mass translational acceleration for entire plant.
+        if T == Expression and plant.time_step() != 0:
+            # Discrete time dynamics are not supported for symbolic scalars.
+            with self.assertRaises(Exception) as cm:
+                a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
+                    context=context)
+            self.assertIn(
+                "This method doesn't support T = Expression",
+                str(cm.exception))
+        else:
+            a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
+                context=context)
+            self.assertTupleEqual(a_com.shape, (3, ))
+
+        # Test center of mass translational acceleration for model_instances.
+        if T == Expression and plant.time_step() != 0:
+            # Discrete time dynamics are not supported for symbolic scalars.
+            with self.assertRaises(Exception) as cm:
+                a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
+                    context=context, model_instances=[instance])
+            self.assertIn(
+                "This method doesn't support T = Expression",
+                str(cm.exception))
+        else:
+            a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
+                context=context, model_instances=[instance])
+            self.assertTupleEqual(a_com.shape, (3, ))
 
         M_WWo_W = plant.CalcSpatialInertia(
             context=context, frame_F=world_frame,
@@ -3216,6 +3253,7 @@ class TestPlant(unittest.TestCase):
         Parser(plant).AddModels(FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/hydroelastic.sdf"))
         plant.set_contact_model(ContactModel.kHydroelastic)
+        plant.SetUseSampledOutputPorts(False)  # We're not stepping time.
         plant.Finalize()
 
         diagram = builder.Build()
