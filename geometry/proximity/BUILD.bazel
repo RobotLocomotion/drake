@@ -395,11 +395,13 @@ drake_cc_library(
     hdrs = ["hydroelastic_internal.h"],
     deps = [
         ":bvh",
+        ":inflate_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
         ":make_capsule_mesh",
         ":make_convex_field",
+        ":make_convex_hull_mesh_impl",
         ":make_convex_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
@@ -857,6 +859,7 @@ drake_cc_library(
         "//multibody/fixed_fem/dev:__pkg__",
     ],
     deps = [
+        ":mesh_field",
         ":sorted_triplet",
         ":volume_mesh",
         "//common:drake_export",
@@ -865,6 +868,25 @@ drake_cc_library(
         "//geometry:shape_specification",
         "@fcl_internal//:fcl",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "sample_volume_field",
+    srcs = ["sample_volume_field.cc"],
+    hdrs = ["sample_volume_field.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":mesh_field",
+        ":volume_mesh",
+        "//math:geometric_transform",
+    ],
+    implementation_deps = [
+        ":bv",
+        ":bvh",
+        ":triangle_surface_mesh",
+        "//common:essential",
     ],
 )
 
@@ -1276,6 +1298,7 @@ drake_cc_googletest(
     deps = [
         ":make_box_field",
         ":make_box_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1294,6 +1317,7 @@ drake_cc_googletest(
     deps = [
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1369,6 +1393,7 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_field",
         ":make_cylinder_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1386,6 +1411,7 @@ drake_cc_googletest(
     deps = [
         ":make_ellipsoid_field",
         ":make_ellipsoid_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1427,6 +1453,7 @@ drake_cc_googletest(
     deps = [
         ":make_sphere_field",
         ":make_sphere_mesh",
+        ":sample_volume_field",
         ":volume_to_surface_mesh",
     ],
 )

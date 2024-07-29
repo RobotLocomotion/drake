@@ -118,8 +118,8 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
       const TriangleSurfaceMesh<double>& mesh_R = rigid.mesh();
       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R = rigid.bvh();
       return ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-          id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR,
-          representation);
+          id_S, X_WS, soft.pressure_scale(), soft.margin(), id_R, mesh_R, bvh_R,
+          X_WR, representation);
     } else {
       // Soft volume vs rigid half space.
       const VolumeMeshFieldLinear<double, double>& field_S =
