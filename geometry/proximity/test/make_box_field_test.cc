@@ -6,7 +6,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/pressure_field_invariants.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
+
+using Eigen::Vector3d;
 
 namespace drake {
 namespace geometry {
@@ -49,6 +52,20 @@ GTEST_TEST(MakeBoxFieldTest, MakeBoxPressureField) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_EQ(pressure, 0.0);
   }
+}
+
+GTEST_TEST(MakeBoxFieldTest, WithMargin) {
+  const double kElasticModulus = 1.0e5;
+  const double kMargin = 0.12;
+  // Box dimensions are set to avoid symmetry.
+  const Box box(1.0, 2.0, 3.0);
+  const VolumeMesh<double> mesh = MakeBoxVolumeMeshWithMa<double>(box);
+  const VolumeMeshFieldLinear<double, double> field_no_margin =
+      MakeBoxPressureField<double>(box, &mesh, kElasticModulus);
+  const VolumeMeshFieldLinear<double, double> field_with_margin =
+      MakeBoxPressureField<double>(box, &mesh, kElasticModulus, kMargin);
+  VerifyInvariantsOfThePressureFieldWithMargin(field_no_margin,
+                                               field_with_margin);
 }
 
 GTEST_TEST(MakeBoxFieldTest, MakeBoxPressureFieldInMeshWithMedialAxis) {

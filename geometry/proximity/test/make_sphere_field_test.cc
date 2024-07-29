@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/pressure_field_invariants.h"
 
 namespace drake {
 namespace geometry {
@@ -78,6 +79,20 @@ GTEST_TEST(MakeSphereFieldTest, MakeSpherePressureField) {
       MakeSpherePressureField<double>(sphere, &mesh, kElasticModulus);
 
   CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
+}
+
+GTEST_TEST(MakeSphereFieldTest, WithMargin) {
+  const double kElasticModulus = 1.0e5;
+  const double kMargin = 0.12;
+  const Sphere sphere(2.0);
+  auto mesh = MakeSphereVolumeMesh<double>(
+      sphere, 0.5, TessellationStrategy::kSingleInteriorVertex);
+  const VolumeMeshFieldLinear<double, double> field_no_margin =
+      MakeSpherePressureField<double>(sphere, &mesh, kElasticModulus);
+  const VolumeMeshFieldLinear<double, double> field_with_margin =
+      MakeSpherePressureField<double>(sphere, &mesh, kElasticModulus, kMargin);
+  VerifyInvariantsOfThePressureFieldWithMargin(field_no_margin,
+                                               field_with_margin);
 }
 
 }  // namespace
