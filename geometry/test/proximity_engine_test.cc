@@ -12,6 +12,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -149,15 +150,19 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
   EXPECT_EQ(engine.num_dynamic(), 1);
 }
 
-// "Processing" hydroelastic geometry is simply a case of invoking a method
-// on hydroelastic::Geometries. All error handling is done there. So, it is
-// sufficient to confirm that it is being properly invoked. We'll simply attempt
-// to instantiate every shape and assert its classification based on whether
-// it's supported or not (note: this test doesn't depend on the choice of
-// rigid/compliant -- for each shape, we pick an arbitrary compliance type,
-// preferring one that is supported over one that is not. Otherwise, the
+// "Processing" hydroelastic geometry is mostly a case of invoking a method
+// on hydroelastic::Geometries. Assuming Geometries successfully adds a
+// geometry, ProximityEngine has an additional task to inflate fcl AABB bounding
+// volumes for compliant hydroelastic geometries with non-zero margins. This
+// test merely confirms that meshes with hydroelastic properties invoke
+// hydroelastic::Geometries (relying on its tests to cover the details). So,
+// we'll simply attempt to instantiate every shape and assert its classification
+// based on whether it's supported or not (note: this test doesn't depend on the
+// choice of rigid/compliant -- for each shape, we pick an arbitrary compliance
+// type, preferring one that is supported over one that is not. Otherwise, the
 // compliance choice is immaterial.) One exception is that the rigid Mesh and
 // the compliant Mesh use two different kinds of files, so we test both of them.
+// The test HydroelasticAabbInflation covers ProximityEngine's second task.
 GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   ProximityEngine<double> engine;
   // All of the geometries will have a scale comparable to edge_length, so that
@@ -288,6 +293,108 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
     engine.AddDynamicGeometry(convex, {}, convex_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
               HydroelasticType::kRigid);
+  }
+}
+
+// When compliant hydroelastic geometries have a positive margin value,
+// ProximityEngine must inflate the AABB that fcl uses. This test confirms that
+// inflations happen as expected. Our expectations are as follows:
+//
+//    1. Geometry that has no hydro representation does not get inflated.
+//    2. Geometry that has a *rigid* representation does not get inflated.
+//    3. Geometry that has a *compliant* representation get inflated.
+//       - Primitives get inflated by the margin amount in each direction.
+//       - Meshes get inflated an arbitrary amount in each direction at least as
+//         large as the margin value.
+GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
+  ProximityEngine<double> engine;
+  // All of the geometries will have a scale comparable to edge_length, so that
+  // the mesh creation is as cheap as possible. The exception is Mesh
+  // geometry since we have no re-meshing.
+  const double edge_length = 0.5;
+  const double E = 1e8;  // Elastic modulus.
+  const double kMarginValue = 0.0625;
+
+  // We'll add the margin property to all sets of properties -- it will be
+  // ignored for all geometries, except those with compliant hydro.
+  ProximityProperties no_hydro_properties;
+  no_hydro_properties.AddProperty(kHydroGroup, kMargin, kMarginValue);
+
+  ProximityProperties soft_properties(no_hydro_properties);
+  AddCompliantHydroelasticProperties(edge_length, E, &soft_properties);
+
+  ProximityProperties rigid_properties(no_hydro_properties);
+  AddRigidHydroelasticProperties(edge_length, &rigid_properties);
+
+  // We'll use a Box as representative of all primitives.
+  const Box box(1, 1, 1);
+
+  const Mesh mesh{FindResourceOrThrow("drake/geometry/test/octahedron.obj")};
+  const Convex convex(mesh.filename());
+  const Vector3d mesh_min(-1, -1, -1.414213562373);
+  const Vector3d mesh_max = -mesh_min;
+
+  const Mesh vol_mesh(
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
+  const Vector3d vol_min(0, 0, 0);
+  const Vector3d vol_max(1, 1, 1);
+
+  struct TestCase {
+    const Shape* shape;
+    ProximityProperties properties;
+    Vector3d expected_min;
+    Vector3d expected_max;
+    // If true, the bounding box extents must match the expected extents.
+    // If false, they must be bigger (i.e., the expected box must lie completely
+    // within the actual box).
+    bool expect_exact{};
+    std::string description;
+  };
+
+  vector<TestCase> cases{
+      {&box, no_hydro_properties, Vector3d::Constant(-0.5),
+       Vector3d::Constant(0.5), true, "No hydro primitive -> no inflation"},
+      {&mesh, no_hydro_properties, mesh_min, mesh_max, true,
+       "No hydro mesh -> no inflation"},
+      {&convex, no_hydro_properties, mesh_min, mesh_max, true,
+       "No hydro convex -> no inflation"},
+      {&vol_mesh, no_hydro_properties, vol_min, vol_max, true,
+       "No hydro volume mesh -> no inflation"},
+      {&box, rigid_properties, Vector3d::Constant(-0.5),
+       Vector3d::Constant(0.5), true, "Rigid-> no inflation"},
+      {&box, soft_properties, Vector3d::Constant(-0.5 - kMarginValue),
+       Vector3d::Constant(0.5 + kMarginValue), true,
+       "Soft primitive-> exact inflation"},
+      {&mesh, soft_properties, mesh_min - Vector3d::Constant(kMarginValue),
+       mesh_max + Vector3d::Constant(kMarginValue), false,
+       "Soft mesh -> inflation exceeds minimum"},
+      {&convex, soft_properties, mesh_min - Vector3d::Constant(kMarginValue),
+       mesh_max + Vector3d::Constant(kMarginValue), false,
+       "Soft convex -> inflation exceeds minimum"},
+      {&vol_mesh, soft_properties, vol_min - Vector3d::Constant(kMarginValue),
+       vol_max + Vector3d::Constant(kMarginValue), false,
+       "Soft vol mesh -> inflation exceeds minimum"},
+  };
+
+  for (const auto& test_case : cases) {
+    const GeometryId id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(*test_case.shape, {}, id, test_case.properties);
+    const auto* fcl = ProximityEngineTester::GetCollisionObject(engine, id);
+    DRAKE_DEMAND(fcl != nullptr);
+    const auto& aabb = fcl->collisionGeometry()->aabb_local;
+    if (test_case.expect_exact) {
+      EXPECT_TRUE(CompareMatrices(aabb.min_, test_case.expected_min))
+          << test_case.description;
+      EXPECT_TRUE(CompareMatrices(aabb.max_, test_case.expected_max))
+          << test_case.description;
+    } else {
+      for (int i = 0; i < 3; ++i) {
+        EXPECT_LT(aabb.min_[i], test_case.expected_min[i])
+            << test_case.description;
+        EXPECT_GT(aabb.max_[i], test_case.expected_max[i])
+            << test_case.description;
+      }
+    }
   }
 }
 
