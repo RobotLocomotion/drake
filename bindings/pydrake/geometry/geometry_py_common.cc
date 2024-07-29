@@ -422,7 +422,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("filename", &Convex::filename, doc.Convex.filename.doc)
         .def("extension", &Convex::extension, doc.Convex.extension.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
-        .def("GetConvexHull", &Convex::GetConvexHull,
+        .def("GetConvexHull", &Convex::GetConvexHull, py::arg("margin") = 0.0,
             doc.Convex.GetConvexHull.doc)
         .def(py::pickle(
             [](const Convex& self) {
@@ -476,7 +476,8 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
-        .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
+        .def("GetConvexHull", &Mesh::GetConvexHull, py::arg("margin") = 0.0,
+            doc.Mesh.GetConvexHull.doc)
         .def(py::pickle(
             [](const Mesh& self) {
               return std::make_pair(self.filename(), self.scale());
