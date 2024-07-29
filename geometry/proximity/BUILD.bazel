@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":detect_zero_simplex",
         ":field_intersection",
         ":hydroelastic_internal",
+        ":inflate_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
@@ -420,6 +421,22 @@ drake_cc_library(
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "inflate_mesh",
+    srcs = ["inflate_mesh.cc"],
+    hdrs = ["inflate_mesh.h"],
+    deps = [
+        ":volume_mesh",
+    ],
+    implementation_deps = [
+        ":volume_to_surface_mesh",
+        "//common:essential",
+        "//solvers:clarabel_solver",
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
     ],
 )
 
@@ -1237,6 +1254,20 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inflate_mesh_test",
+    data = [
+        "//geometry:test_vtk_files",
+    ],
+    deps = [
+        ":inflate_mesh",
+        ":make_mesh_from_vtk",
+        ":volume_to_surface_mesh",
+        "//common:find_resource",
+        "//geometry:shape_specification",
     ],
 )
 
