@@ -41,6 +41,7 @@ extern const char* const kRelaxationTime;  ///< Linear dissipation
                                            ///< property name.
 extern const char* const kPointStiffness;  ///< Point stiffness property
                                            ///< name.
+extern const char* const kMargin;          ///< Contact margin.
 
 //@}
 

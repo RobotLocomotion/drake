@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/make_mesh_field.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <utility>
@@ -43,9 +44,11 @@ TriangleSurfaceMesh<double> ConvertVolumeToSurfaceMeshDouble(
 
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
-    const VolumeMesh<T>* mesh_M, const T& hydroelastic_modulus) {
+    const VolumeMesh<T>* mesh_M, const T& hydroelastic_modulus, double margin) {
   DRAKE_DEMAND(hydroelastic_modulus > T(0));
   DRAKE_DEMAND(mesh_M != nullptr);
+  using std::max;
+
   std::vector<int> boundary_vertices;
   // The subscript _d is for the scalar type double.
   TriangleSurfaceMesh<double> surface_d =
@@ -55,7 +58,7 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
   //  cause a vertex on the boundary to have a non-zero value. Consider
   //  initializing pressure_values to zeros and skip the computation for
   //  boundary vertices.
-  std::vector<T> pressure_values;
+  std::vector<T> values;
   T max_value(std::numeric_limits<double>::lowest());
   // First round, it's actually unsigned distance, not pressure values yet.
   const Bvh<Obb, TriangleSurfaceMesh<double>> bvh(surface_d);
@@ -63,16 +66,19 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
   for (int v = 0; v < ssize(mesh_M->vertices()); ++v) {
     if (boundary_iter != boundary_vertices.end() && *boundary_iter == v) {
       ++boundary_iter;
-      pressure_values.push_back(0);
+      values.push_back(0);
       continue;
     }
     const Vector3<T>& p_MV = mesh_M->vertex(v);
     const Vector3<double> p_MV_d = ExtractDoubleOrThrow(p_MV);
-    T pressure = internal::CalcDistanceToSurfaceMesh(p_MV_d, surface_d, bvh);
-    pressure_values.push_back(pressure);
-    if (max_value < pressure) {
-      max_value = pressure;
-    }
+    // N.B. For small margin values, we can approximate the distance to the
+    // inflated surface as the distance to the original surface plus the margin.
+    // Given the algorithm we use to inflate meshes, this is a lower bound on
+    // the correct distance. This correction only applies to interior vertices.
+    const T distance =
+        internal::CalcDistanceToSurfaceMesh(p_MV_d, surface_d, bvh) + margin;
+    values.push_back(distance);
+    max_value = max(distance, max_value);
   }
 
   if (max_value <= T(0)) {
@@ -82,11 +88,14 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
         "all mesh vertices is non-positive. Perhaps "
         "the mesh lacks interior vertices.");
   }
-  for (T& p : pressure_values) {
-    p = hydroelastic_modulus * p / max_value;
+
+  DRAKE_DEMAND(max_value > margin);
+
+  for (T& p : values) {
+    p = hydroelastic_modulus * (p - margin) / (max_value - margin);
   }
 
-  return {std::move(pressure_values), mesh_M, MeshGradientMode::kOkOrThrow};
+  return {std::move(values), mesh_M, MeshGradientMode::kOkOrThrow};
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

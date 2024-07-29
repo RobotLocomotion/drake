@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
+#include "drake/geometry/proximity/sample_volume_field.h"
 
 namespace drake {
 namespace geometry {
@@ -18,9 +19,13 @@ using Eigen::Vector3d;
 //  make_`shape`_field_test.cc for box, sphere, ellipsoid, etc.
 void CheckMinMaxBoundaryValue(
     const VolumeMeshFieldLinear<double, double>& pressure_field,
-    const double hydroelastic_modulus) {
+    double hydroelastic_modulus, double expected_min_pressure = 0) {
   // We pick the relative error 1e-14 of the elastic modulus empirically.
   const double tolerance = 1e-14 * hydroelastic_modulus;
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  // N.B. The slop is zero, thus exact comparison, when the expected minimum
+  // pressure is zero.
+  const double min_pressure_slop = kEps * std::abs(expected_min_pressure);
   // Check that all vertices have their pressure values within the range of
   // zero to hydroelastic_modulus, and their minimum and maximum values are
   // indeed zero and hydroelastic_modulus respectively.
@@ -29,7 +34,7 @@ void CheckMinMaxBoundaryValue(
   for (int v = 0; v < pressure_field.mesh().num_vertices(); ++v) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     ASSERT_LE(pressure, hydroelastic_modulus + tolerance);
-    ASSERT_GE(pressure, 0.0);
+    ASSERT_GE(pressure, expected_min_pressure - min_pressure_slop);
     if (pressure > max_pressure) {
       max_pressure = pressure;
     }
@@ -37,7 +42,7 @@ void CheckMinMaxBoundaryValue(
       min_pressure = pressure;
     }
   }
-  EXPECT_EQ(min_pressure, 0.0);
+  EXPECT_NEAR(min_pressure, expected_min_pressure, min_pressure_slop);
   EXPECT_NEAR(max_pressure, hydroelastic_modulus, tolerance);
 
   // Check that all boundary vertices have zero pressure.
@@ -45,7 +50,7 @@ void CheckMinMaxBoundaryValue(
       IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
   for (int v : boundary_vertex_indices) {
     double pressure = pressure_field.EvaluateAtVertex(v);
-    ASSERT_EQ(pressure, 0.0);
+    EXPECT_NEAR(pressure, expected_min_pressure, min_pressure_slop);
   }
 
   // This test only applies to a mesh that has a vertex at the center of
@@ -115,6 +120,45 @@ GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureFieldWithMaShort) {
       MakeCylinderPressureField<double>(cylinder, &mesh, kElasticModulus);
 
   CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
+}
+
+GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureFieldWithMargin) {
+  const double kEps = std::numeric_limits<double>::epsilon();
+  const double kMargin = 1.3e-2;
+  const Cylinder cylinder(1., 3.);
+  const Cylinder inflated_cylinder(cylinder.radius() + kMargin,
+                                   cylinder.length() + 2.0 * kMargin);
+
+  const VolumeMesh<double> mesh =
+      MakeCylinderVolumeMeshWithMa<double>(cylinder, 0.25);
+  const VolumeMesh<double> inflated_mesh =
+      MakeCylinderVolumeMeshWithMa<double>(inflated_cylinder, 0.25);
+  // For such small margin we expect the connectivity of these two meshes to be
+  // the same.
+  ASSERT_EQ(mesh.num_vertices(), inflated_mesh.num_vertices());
+  ASSERT_EQ(mesh.tetrahedra(), inflated_mesh.tetrahedra());
+
+  const double kElasticModulus = 1.0e5;
+  const VolumeMeshFieldLinear<double, double> pressure_field =
+      MakeCylinderPressureField<double>(inflated_cylinder, &inflated_mesh,
+                                        kElasticModulus, kMargin);
+
+  const double foundation_length =
+      std::min(cylinder.radius(), cylinder.length() / 2.0);
+  const double expected_min_pressure =
+      -kElasticModulus * kMargin / foundation_length;
+  CheckMinMaxBoundaryValue(pressure_field, kElasticModulus,
+                           expected_min_pressure);
+
+  // Verify pressure is zero when evaluated on the surface of the original
+  // sphere.
+  std::vector<int> boundary_vertex_indices =
+      CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
+  for (int v : boundary_vertex_indices) {
+    const Vector3d& p = mesh.vertex(v);
+    const double pressure = SampleVolumeFieldOrThrow(pressure_field, p);
+    EXPECT_NEAR(pressure / kElasticModulus, 0.0, kEps);
+  }
 }
 
 }  // namespace
