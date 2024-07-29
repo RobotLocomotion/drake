@@ -379,6 +379,7 @@ drake_cc_library(
     srcs = ["read_obj.cc"],
     hdrs = ["read_obj.h"],
     deps = [
+        "//common:file_contents",
         "@eigen",
     ],
     implementation_deps = [
