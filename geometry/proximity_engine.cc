@@ -648,12 +648,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     FclCollide(dynamic_tree_, anchored_tree_, &data,
                find_collision_candidates::Callback);
 
-    std::sort(
-        pairs.begin(), pairs.end(),
-        [](const SortedPair<GeometryId>& p1, const SortedPair<GeometryId>& p2) {
-          if (p1.first() != p2.first()) return p1.first() < p2.first();
-          return p1.second() < p2.second();
-        });
+    std::sort(pairs.begin(), pairs.end());
 
     return pairs;
   }
