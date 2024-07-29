@@ -722,7 +722,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                                    data);
       }
     }
-    SortCullFlatten(&surface_ptrs, &surfaces, OrderContactSurfacePtr<T>);
+    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, &surfaces,
+                                       OrderContactSurfacePtr<T>);
     return surfaces;
   }
 
@@ -766,8 +767,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         }
       }
     }
-    SortCullFlatten(&surface_ptrs, surfaces, OrderContactSurfacePtr<T>);
-    SortCullFlatten(&point_pair_ptrs, point_pairs, OrderPointPairPtr<T>);
+    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, surfaces,
+                                       OrderContactSurfacePtr<T>);
+    SortCullFlatten<PenetrationAsPointPair<T>>(&point_pair_ptrs, point_pairs,
+                                               OrderPointPairPtr<T>);
   }
 
   void ComputeDeformableContact(
