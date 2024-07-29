@@ -869,6 +869,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "pressure_field_invariants",
+    testonly = 1,
+    srcs = ["test/pressure_field_invariants.cc"],
+    hdrs = ["test/pressure_field_invariants.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":mesh_field",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
+        "//common:essential",
+        "//math:geometric_transform",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
     name = "sorted_triplet",
     srcs = ["sorted_triplet.cc"],
     hdrs = ["sorted_triplet.h"],
@@ -1276,6 +1293,7 @@ drake_cc_googletest(
     deps = [
         ":make_box_field",
         ":make_box_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1294,6 +1312,7 @@ drake_cc_googletest(
     deps = [
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1369,6 +1388,7 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_field",
         ":make_cylinder_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1386,6 +1406,7 @@ drake_cc_googletest(
     deps = [
         ":make_ellipsoid_field",
         ":make_ellipsoid_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1405,6 +1426,7 @@ drake_cc_googletest(
     deps = [
         ":make_mesh_field",
         ":make_mesh_from_vtk",
+        ":pressure_field_invariants",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -1427,6 +1449,7 @@ drake_cc_googletest(
     deps = [
         ":make_sphere_field",
         ":make_sphere_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )

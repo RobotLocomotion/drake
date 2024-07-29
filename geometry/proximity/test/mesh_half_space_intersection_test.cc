@@ -1099,6 +1099,87 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
   }
 }
 
+// double-valued instantiation.
+GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, Margin) {
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+
+  // An arbitrary relationship between the box's frame F and the world's frame W
+  // -- avoiding additive and multiplicative identities.
+  const RigidTransform<double> X_WF(
+      RotationMatrix<double>(
+          AngleAxis<double>{M_PI / 7, Vector3<double>{1, 2, 3}.normalized()}),
+      Vector3<double>{-0.25, 0.5, 0.75});
+  const Vector3<double>& p_WF = X_WF.translation();
+
+  // The box's center frame B is translated one unit along the z-axis so that
+  // the -z face lies at z = 0 when expressed in frame F.
+  const TriangleSurfaceMesh<double> mesh_F =
+      CreateBoxMesh(RigidTransform<double>{Vector3<double>{0, 0, 1.0}});
+  const GeometryId mesh_id = GeometryId::get_new_id();
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_F(mesh_F);
+
+  // Construct the half-space.
+  const GeometryId hs_id = GeometryId::get_new_id();
+  const double pressure_scale{1.5};
+  const double margin{0.012};
+
+  // We defined the half space's normal as aligned with F's z-axis.
+  const Vector3<double> normal_W = X_WF.rotation().matrix().col(2);
+
+  // Define a configuration so that the box intersects the thin layer of
+  // thickness margin. Still, the box does not intersect the actual half space,
+  // only its margin layer.
+  //
+  // We will simply confirm that the resulting ContactSurface exists and
+  // respects the requested representation.
+  const double distance = -margin / 2.0;
+  RigidTransform<double> X_WH = X_WF;                // Same orientation as F.
+  X_WH.set_translation(p_WF + distance * normal_W);  // Translate to H.
+
+  const double expected_min_pressure = -margin * pressure_scale;
+  const double expected_max_pressure = -margin * pressure_scale / 2.0;
+
+  // Helper to verify pressure values are in the expected min/max range for this
+  // case.
+  auto verify_minmax_pressure = [&](const std::vector<double>& pressures) {
+    double min_pressure{std::numeric_limits<double>::max()};
+    double max_pressure{std::numeric_limits<double>::lowest()};
+    for (double p : pressures) {
+      min_pressure = std::min(p, min_pressure);
+      max_pressure = std::max(p, max_pressure);
+    }
+    EXPECT_NEAR(min_pressure, expected_min_pressure, kEps);
+    EXPECT_NEAR(max_pressure, expected_max_pressure, kEps);
+  };
+
+  // Case: Request triangle surface mesh.
+  {
+    const std::unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+            hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
+            HydroelasticContactRepresentation::kTriangle, margin);
+    ASSERT_NE(contact_surface, nullptr);
+    ASSERT_EQ(contact_surface->representation(),
+              HydroelasticContactRepresentation::kTriangle);
+    const std::vector<double>& pressures = contact_surface->tri_e_MN().values();
+    verify_minmax_pressure(pressures);
+  }
+
+  // Case: Request polygon surface mesh.
+  {
+    const std::unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+            hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
+            HydroelasticContactRepresentation::kPolygon, margin);
+    ASSERT_NE(contact_surface, nullptr);
+    ASSERT_EQ(contact_surface->representation(),
+              HydroelasticContactRepresentation::kPolygon);
+    const std::vector<double>& pressures =
+        contact_surface->poly_e_MN().values();
+    verify_minmax_pressure(pressures);
+  }
+}
+
 // Confirm that the rigid-soft intersection correctly culls backface geometry.
 // Culling is independent of ultimate contact surface mesh representation, so
 // we'll simply test it against one mesh and scalar type and call it good. We

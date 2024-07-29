@@ -134,7 +134,10 @@ ComputeContactSurface(
 
 /*
  Computes the ContactSurface formed by a soft half space and the given rigid
- mesh.
+ mesh. Pressure is defined as p = −(ϕ + δ)⋅g, where ϕ is the signed distance to
+ the half space, δ is a margin value and g is a pressure scale (see below).
+ Therefore the zero pressure level set is located at ϕ = -δ and the surface has
+ the pressure value p = −δ⋅g.
 
  The definition of the half space is implicit in the call -- it is the type
  defined by the HalfSpace class, thus, only its id, its pose in a common frame
@@ -155,6 +158,8 @@ ComputeContactSurface(
                             mesh is defined in -- and the world frame W.
  @param[in] representation  The preferred representation of each contact
                             polygon.
+ @param[in] margin          The margin amount δ.
+
  @returns `nullptr` if there is no collision, otherwise the ContactSurface
           between geometries S and R. Each triangle in the contact surface is a
           piece of a triangle in the input `mesh_R`; the normals of the former
@@ -169,7 +174,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
-    HydroelasticContactRepresentation representation);
+    HydroelasticContactRepresentation representation, double margin = 0);
 
 }  // namespace internal
 }  // namespace geometry
