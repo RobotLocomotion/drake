@@ -1,12 +1,13 @@
 #pragma once
 
-#include <istream>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
 
 #include <Eigen/Core>
+
+#include "drake/common/file_contents.h"
 
 namespace drake {
 namespace geometry {
@@ -21,12 +22,9 @@ namespace internal {
  data. It includes the vertex positions, face encodings (see TinyObjToFclFaces()
  in the .cc file), and number of faces.
 
- @param data_stream    The stream containing the obj file data.
+ @param file_contents  The contents of an obj file.
  @param scale          Scale to coordinates.
  @param triangulate    If `true` polygons in the obj will be triangulated.
- @param description    A label associated with the OBJ file data to be used in
-                       error messages. Could be, for example, the file name from
-                       which the stream comes.
  @param vertices_only  If true, only the vertex data will be populated; faces
                        and num_faces will be "empty".
  @return (vertices, faces, num_faces) vertices[i] is the i'th vertex in the
@@ -42,8 +40,8 @@ namespace internal {
  num_faces. */
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
-ReadObjStream(std::istream* data_stream, double scale, bool triangulate,
-              std::string_view description, bool vertices_only = false);
+ReadObjContents(const common::FileContents& file_contents, double scale,
+                bool triangulate, bool vertices_only = false);
 
 /* Reads the OBJ file with the given `filename` into a collection of data. It
  includes the vertex positions, face encodings (see TinyObjToFclFaces), and
