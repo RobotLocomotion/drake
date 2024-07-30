@@ -429,6 +429,8 @@ class MujocoParser {
     std::tuple<double, Vector3d, UnitInertia<double>> Calc(
         const geometry::Shape& shape) {
       shape.Reify(this);
+      // For unit density (1 kg/m³), the value of mass is equal to the value of
+      // volume.
       const double& volume = M_GGo_G_unitDensity.get_mass();
       const Vector3<double>& p_GoGcm_G = M_GGo_G_unitDensity.get_com();
       const UnitInertia<double>& G_GGo_G =
@@ -472,11 +474,11 @@ class MujocoParser {
     std::string name_;
     std::map<std::string, SpatialInertia<double>>* mesh_inertia_{nullptr};
     bool used_convex_hull_fallback_{false};
-    // Note: The spatial inertia below uses unit density so the shape's volume
-    // value is equal to its mass value. To be clear, unit density is a
-    // mathematical trick (1 kg/m³ ≈ air density is an unreasonable *physical*
-    // value) that causes CalcSpatialInertia() to report a mass value equal to
-    // volume.
+    // Note: The spatial inertia below uses unit density so that the shape's
+    // volume value is equal to its mass value. To be clear, unit density is a
+    // mathematical trick to use CalcSpatialInertia() to report volume and not
+    // a reasonable *physical* default value; 1 kg/m³ is approximately air's
+    // density.
     SpatialInertia<double> M_GGo_G_unitDensity{SpatialInertia<double>::NaN()};
   };
 
