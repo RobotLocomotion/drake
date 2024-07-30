@@ -593,6 +593,13 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   const common::FileContents vtk_data(file_contents(tet_path), "tet.vtk");
   const PolyMesh expected_tet = GetTetrahedronWithMargin(kScale, kMargin);
 
+  // The rainbow_box.gltf has embedded data *and* has a non-trivial hierarchy
+  // with transformations.
+  const std::string embedded_gltf_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf");
+  const common::FileContents gltf_embedded_data(
+      file_contents(embedded_gltf_path), "embedded.gltf");
+
   struct TestCase {
     const common::FileContents* mesh_data{};
     std::string extension;
@@ -600,24 +607,16 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
     std::string_view description;
   };
 
+  // TODO(SeanCurtis-TRI): non-embedded obj.
   std::vector<TestCase> test_cases{
-      {&obj_data, ".obj", &expected_box, "Valid obj stream"},
-      {&vtk_data, ".vtk", &expected_tet, "Valid vtk stream"}};
+      {&obj_data, ".obj", &expected_box, "Valid obj"},
+      {&vtk_data, ".vtk", &expected_tet, "Valid vtk"},
+      {&gltf_embedded_data, ".gltf", &expected_box, "Valid embedded gltf"}};
   for (const TestCase& test_case : test_cases) {
     SCOPED_TRACE(test_case.description);
     const PolyMesh dut = MakeConvexHullFromContents(
         *test_case.mesh_data, test_case.extension, kScale, kMargin);
     MeshesAreEquivalent(dut, *test_case.expected_mesh, 1e-14);
-  }
-
-  // Unimplemented extensions.
-  {
-    for (const auto* ext : {".gltf"}) {
-      SCOPED_TRACE(fmt::format("Unimplemented {} stream", ext));
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          MakeConvexHullFromContents(obj_data, ext, kScale, kMargin),
-          ".*can't be used with stream.*");
-    }
   }
 
   // Unsupported extension.
@@ -627,6 +626,13 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
         MakeConvexHullFromContents(obj_data, ".txt", kScale, kMargin),
         ".*only applies to .obj.*; unsupported extension '.txt'.*");
   }
+
+  // TODO(SeanCurtis-TRI): Error conditions
+  //  - badly formatted vtk or obj files
+  //  - missing files from glTF ecosystem.
+  //  - glTF with multiple nodes
+  //  - glTF with intermediate transforms
+  //
 }
 
 }  // namespace
