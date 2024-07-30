@@ -25,9 +25,6 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-// TODO(sherm1) The class comment describes the complete functionality of
-//  PR #20225; some functionality is currently missing.
-
 // TODO(sherm1) During the PR train leading up to MbP using this code in Drake
 //  master, I'm using Doxygen comments /** despite the fact that this is
 //  currently just internal. That allows me to validate Doxygen syntax in
@@ -430,17 +427,32 @@ class LinkJointGraph {
   here at all. LinkComposites are discovered as a side effect of
   forest-building; there is no cost to accessing them here.
 
-  If there is no valid Forest, the returned vector is empty. */
+  A LinkComposite consisting only of massless Links is itself massless. If a
+  composite contains World or any massful body then it is massful. You can
+  check with link_composite_is_massless().
+
+  If there is no valid Forest, the returned vector is empty.
+
+  @see link_composite_is_massless() */
   [[nodiscard]] const std::vector<std::vector<BodyIndex>>& link_composites()
       const {
     return data_.link_composites;
   }
 
   /** Returns a reference to a particular LinkComposite. Requires a
-  LinkCompositeIndex, not a plain integer.*/
+  LinkCompositeIndex, not a plain integer.
+  @pre `link_composite_index` is valid and in range. */
   [[nodiscard]] const std::vector<BodyIndex>& link_composites(
-      LinkCompositeIndex composite_link_index) const {
-    return link_composites().at(composite_link_index);
+      LinkCompositeIndex link_composite_index) const {
+    return link_composites().at(link_composite_index);
+  }
+
+  /** Returns `true` if the indicated LinkComposite consists only of massless
+  links. LinkComposite 0 contains World so is never massless.
+  @pre `link_composite_index` is valid and in range. */
+  [[nodiscard]] bool link_composite_is_massless(
+      LinkCompositeIndex link_composite_index) const {
+    return data_.link_composite_is_massless.at(link_composite_index);
   }
 
   /** @returns `true` if a Link named `name` was added to `model_instance`.
@@ -638,6 +650,11 @@ class LinkJointGraph {
                : std::nullopt;
   }
 
+  // Notes that we didn't model this Joint in the Forest because it is just a
+  // weld to an existing Composite.
+  void AddUnmodeledJointToComposite(JointOrdinal unmodeled_joint_ordinal,
+                                    LinkCompositeIndex which);
+
   [[noreturn]] void ThrowLinkWasRemoved(const char* func,
                                         BodyIndex link_index) const;
 
@@ -710,6 +727,10 @@ class LinkJointGraph {
     // only present if there are at least two Links welded together. The first
     // Link in the composite is the active Link.
     std::vector<std::vector<BodyIndex>> link_composites;
+
+    // This is always the same length as link_composites. (Would be
+    // a vector<bool> if that wasn't brain dead.)
+    std::vector<int> link_composite_is_massless;
 
     bool forest_is_valid{false};  // set false whenever changes are made
 

@@ -64,6 +64,7 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(ssize(graph.link_composites()), 1);
   EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0))), 1);
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0], world_link_index);
+  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
 
   // Check that the World-only forest makes sense.
   EXPECT_EQ(ssize(forest.mobods()), 1);
@@ -452,6 +453,7 @@ GTEST_TEST(SpanningForest, MultipleBranchesBaseJointOptions) {
             graph.world_link().index());
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[1],
             graph.links(tree1.front().link_ordinal()).index());
+  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
 
   // Similarly, there is only one WeldedMobods group, containing just World
   // and tree1's base
@@ -560,8 +562,8 @@ The LinkJointGraph
     * link10 would be the preferred base link but link 11 "base11" is marked
       "must be base link" so we have to use a reversed mobilizer there
 
-SpanningForest 1 (don't combine LinkComposites)
------------------------------------------------
+SerialChain 1 (don't merge LinkComposites)
+------------------------------------------
   ≡> added weld joint       [mobods]
   6> added floating joint   {links}
 
@@ -587,7 +589,8 @@ SpanningForest 1 (don't combine LinkComposites)
   (1) World is always present and is first, and (2) the active link comes first
   in any LinkComposite.
 
-TODO(sherm1) Retest with "combine composites" option on (currently stubbed).
+We will also vary this graph in several ways and retest. The details are
+described in the code below.
 */
 GTEST_TEST(SpanningForest, SerialChainAndMore) {
   LinkJointGraph graph;
@@ -626,10 +629,11 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   const BodyIndex link10_index = graph.AddLink("link10", model_instance);
   const BodyIndex base11_index =
       graph.AddLink("base11", model_instance, LinkFlags::kMustBeBaseBody);
-  graph.AddJoint("weld", model_instance, "weld", link10_index, base11_index);
+  const JointIndex joint_10_11_index = graph.AddJoint(
+      "weld", model_instance, "weld", link10_index, base11_index);
 
-  // SpanningForest 1 (not combining welded Links onto one Mobod)
-  // ------------------------------------------------------------
+  // SerialChain 1 (not merging welded Links onto one Mobod)
+  // -------------------------------------------------------
   graph.ResetForestBuildingOptions();  // Unnecessary; just being tidy.
   graph.SetForestBuildingOptions(static_model_instance,
                                  ForestBuildingOptions::kStatic);
@@ -675,6 +679,8 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   const std::vector<std::vector<BodyIndex>> expected_link_composites{
       link_composites0, link_composites1};
   EXPECT_EQ(graph.link_composites(), expected_link_composites);
+  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
+  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(1)));
 
   EXPECT_EQ(ssize(forest.mobods()), 12);
   EXPECT_EQ(ssize(forest.trees()), 6);
@@ -739,17 +745,107 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   EXPECT_EQ(find_outv(11), pair(17, 0));
   EXPECT_FALSE(forest.mobods(MobodIndex(3)).is_base_body());  // Generic case
   EXPECT_EQ(find_outv(3), pair(3, 2));
+
+  /* SerialChain 2 (merge link composites)
+  ----------------------------------------
+  If instead we ask to merge welded Links we should get a much smaller
+  forest:
+
+    tree      {world static7 static6 static8} [0]
+     0 [1-5]  ->link1->link2->link3->link4->link5
+     1 [6]    6>{base11<=link10} (added 6dof, unmodeled weld)
+     2 [7]    6>free9            (added 6dof, free bodies are always last)
+
+    Link Composites: {0 7 6 8} {11 10}  (no change)
+    Welded Mobods groups: [0]  (just the World group) */
+
+  graph.ResetForestBuildingOptions();  // Restore default options.
+  graph.SetGlobalForestBuildingOptions(
+      ForestBuildingOptions::kMergeLinkComposites);
+  graph.SetForestBuildingOptions(static_model_instance,
+                                 ForestBuildingOptions::kStatic);
+  EXPECT_TRUE(graph.BuildForest());
+
+  // The graph shouldn't change from SpanningForest 1, but the forest will.
+  EXPECT_EQ(ssize(graph.joints()) - graph.num_user_joints(), 4);
+  EXPECT_EQ(graph.link_composites(), expected_link_composites);
+
+  EXPECT_EQ(ssize(forest.mobods()), 8);
+  EXPECT_EQ(ssize(forest.trees()), 3);
+  EXPECT_EQ(ssize(forest.welded_mobods()), 1);  // Just World.
+
+  /* SerialChain 3 (merge composites except for 10 & 11)
+  ------------------------------------------------------
+  We can optionally insist that a weld joint within a composite that would
+  otherwise be ignored is actually modeled with a weld mobilizer (useful if
+  you need to know reaction forces within that weld). We'll rebuild but
+  specifying that the joint between link10 and link11 must be modeled. That
+  should produce this forest:
+
+    tree      {world static7 static6 static8} [0]
+     0 [1-5]  ->link1->link2->link3->link4->link5
+     1 [6-7]  6>{base11<=link10} (added 6dof, weld is now modeled)
+     2 [8]    6>free9            (added 6dof, free bodies are always last)
+
+    Link Composites: {0 7 6 8} {11 10}  (no change)
+    Welded Mobods groups: [0] [6 7] */
+
+  // Now force one of the joints in a composite to be modeled (meaning it
+  // should get its own Mobod). This should split that composite into
+  // two Mobods, which should be noted as a Welded Mobods group.
+  graph.ChangeJointFlags(joint_10_11_index, JointFlags::kMustBeModeled);
+  // Built the forest with same options as used for 2a.
+  EXPECT_TRUE(graph.BuildForest());
+
+  EXPECT_EQ(ssize(forest.mobods()), 9);
+  EXPECT_EQ(ssize(forest.trees()), 3);
+  EXPECT_EQ(ssize(forest.welded_mobods()), 2);
+  const std::vector<MobodIndex> now_expected{MobodIndex(6), MobodIndex(7)};
+  EXPECT_EQ(forest.welded_mobods(WeldedMobodsIndex(1)), now_expected);
+
+  /* SerialChain 4 (merge composites and use a fixed base)
+  --------------------------------------------------------
+  Finally, we'll restore joint 10-11 to its default setting and build again but
+  this time with the kUseFixedBase option for model_instance.
+  That means we'll use weld joints rather than floating joints for links that
+  have no path to World in the input graph. Now we expect this forest:
+
+    tree        {world static7 static6 static8 base11 link10 free9} [0]
+      0  [1-5]  ->link1->link2->link3->link4->link5
+
+    Link Composites: {0 7 6 8 11 10 9}
+    Welded Mobods groups: [0]  (just World) */
+
+  // Put the joint back the way we found it.
+  graph.ChangeJointFlags(joint_10_11_index, JointFlags::kDefault);
+  graph.ResetForestBuildingOptions();  // Back to defaults.
+  graph.SetGlobalForestBuildingOptions(
+      ForestBuildingOptions::kMergeLinkComposites);
+  // Caution: we must specify all the forest building options we want for
+  // a model instance; it won't inherit any of the global ones if set.
+  graph.SetForestBuildingOptions(model_instance,
+                                 ForestBuildingOptions::kMergeLinkComposites |
+                                     ForestBuildingOptions::kUseFixedBase);
+  graph.SetForestBuildingOptions(static_model_instance,
+                                 ForestBuildingOptions::kStatic);
+  EXPECT_TRUE(graph.BuildForest());
+
+  EXPECT_EQ(ssize(forest.mobods()), 6);
+  EXPECT_EQ(ssize(forest.trees()), 1);
+  EXPECT_EQ(ssize(forest.welded_mobods()), 1);  // Just World.
+  const std::vector<BodyIndex> expected_link_composite{
+      BodyIndex(0),  BodyIndex(7),  BodyIndex(6), BodyIndex(8),
+      BodyIndex(11), BodyIndex(10), BodyIndex(9)};
+  EXPECT_EQ(ssize(graph.link_composites()), 1);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)),
+            expected_link_composite);
 }
 
 /* Topological loops formed entirely by welds can be handled specially when
-we're combining LinkComposites onto single Mobods. We build a Forest containing
+we're merging LinkComposites onto single Mobods. We build a Forest containing
 a number of kinematic loops and subgraphs of welded bodies.
 
-TODO(sherm1) Combining composites is stubbed out but the first part of this
- test is still relevant since the composites are still computed, though not
- yet combined. More cases will follow.
-
-The input is given as three unconnected graphs. Joints are shown with
+The input is given as three unconnected subgraphs. Joints are shown with
 parent->child direction. Double bars are welds, single bars are moving joints.
 Links {0-13} are shown in braces, joint numbers 0-13 are plain.
 
@@ -823,7 +919,24 @@ though each Link has its own Mobod. Those are:
 The corresponding Mobods are in WeldedMobod groups:
 [0 1 2 6] [8 9 14 15] [10 11 13 12]
 
-TODO(sherm1) Retest with "combine composites" option on (currently stubbed). */
+Remodeling with composite link merging turned on should immediately create
+composite {0 5 7 12} on mobod 0, then see outboard links {2} and {11} as new
+base bodies and grow those two trees, discovering a loop at joint 8. As before,
+Link {11} gets split with a shadow link {14} for joint 8. Then it
+should choose link {3} as a base link and add floating joint 14, and grow that
+tree. Finally it makes free link {9} a base body. The forest should then look
+like this:
+
+
+      level 3                         6{10 6 8}
+      level 2      2{14}              5{13 1 4}
+  base mobods       1{2}    3{11}     4{3}        7{9}  (four trees)
+                      \       \        |           /
+        World          ...........0{0 5 7 12}......
+
+In this case we don't need to split the all-Weld loops since they are now
+just composite links {0 5 7 12} {13 1 4} {10 6 8}. There are no Welded
+Mobods (except World alone). */
 GTEST_TEST(SpanningForest, WeldedSubgraphs) {
   LinkJointGraph graph;
   graph.RegisterJointType("revolute", 1, 1);
@@ -883,6 +996,7 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
   const std::vector<std::vector<int>> expected_links{
       {0, 5, 7, 12}, {13, 1, 4, 15}, {10, 6, 8, 16}};
   for (LinkCompositeIndex c(0); c < 3; ++c) {
+    EXPECT_FALSE(graph.link_composite_is_massless(c));
     for (int link = 0; link < ssize(expected_links[c]); ++link)
       EXPECT_EQ(graph.link_composites(c)[link], expected_links[c][link]);
   }
@@ -924,6 +1038,38 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
     for (int mobod = 0; mobod < ssize(expected_mobods[w]); ++mobod)
       EXPECT_EQ(forest.welded_mobods(w)[mobod], expected_mobods[w][mobod]);
   }
+
+  // Now merge composites so they get a single Mobod.
+  graph.SetGlobalForestBuildingOptions(
+      ForestBuildingOptions::kMergeLinkComposites);
+  EXPECT_TRUE(graph.BuildForest());
+
+  EXPECT_EQ(ssize(graph.links()), 15);  // Only one added shadow.
+  EXPECT_EQ(ssize(graph.link_composites()), 3);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)),
+            (std::vector<BodyIndex>{BodyIndex(0), BodyIndex(5), BodyIndex(7),
+                                    BodyIndex(12)}));
+  EXPECT_EQ(
+      graph.link_composites(LinkCompositeIndex(1)),
+      (std::vector<BodyIndex>{BodyIndex(13), BodyIndex(1), BodyIndex(4)}));
+  EXPECT_EQ(
+      graph.link_composites(LinkCompositeIndex(2)),
+      (std::vector<BodyIndex>{BodyIndex(10), BodyIndex(6), BodyIndex(8)}));
+  for (LinkCompositeIndex i(0); i < 3; ++i) {
+    EXPECT_FALSE(graph.link_composite_is_massless(i));
+  }
+
+  // Now let's verify that we got the expected SpanningForest. To understand,
+  // refer to the shorter (max level 3) diagram above.
+  EXPECT_EQ(ssize(forest.mobods()), 8);
+  std::array<int, 8> expected_level_merged{0, 1, 2, 1, 1, 2, 3, 1};
+  for (auto& mobod : forest.mobods()) {
+    EXPECT_EQ(mobod.level(), expected_level_merged[mobod.index()]);
+  }
+
+  EXPECT_EQ(ssize(forest.welded_mobods()), 1);  // just World
+  EXPECT_EQ(ssize(forest.welded_mobods(WeldedMobodsIndex(0))), 1);
+  EXPECT_EQ(forest.welded_mobods(WeldedMobodsIndex(0))[0], MobodIndex(0));
 }
 
 /* Ten links, 8 in a tree and 2 free ones. Internal link 8 is massless (should
@@ -967,7 +1113,7 @@ GTEST_TEST(SpanningForest, SimpleTrees) {
   // We should report that the resulting forest is unsuited for dynamics due
   // to a terminal massless body. Specifically, it should complain about link
   // 4 rather than link 2 since 4 is at a lower level and should be seen first.
-  // (Tests Case 2 in ExtendTreesOneLevel())
+  // (Tests Case 1 in ExtendTreesOneLevel())
   EXPECT_FALSE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
   EXPECT_FALSE(forest.dynamics_ok());
@@ -977,7 +1123,9 @@ GTEST_TEST(SpanningForest, SimpleTrees) {
                             "singular.*cannot be used for dynamics.*"));
 
   // Change link 4's joint type to "weld". That should shift the complaint to
-  // link 2. (Tests Case 2 in ExtendTreesOneLevel())
+  // link 2. (Tests Case 1 in ExtendTreesOneLevel())
+  // Also, we should get a massful composite {4,9}, with 9 the active
+  // link (so must be listed first in the composite).
   graph.ChangeJointType(JointIndex(5), "weld");
   EXPECT_FALSE(graph.BuildForest());
   EXPECT_FALSE(forest.dynamics_ok());
@@ -985,6 +1133,11 @@ GTEST_TEST(SpanningForest, SimpleTrees) {
       forest.why_no_dynamics(),
       testing::MatchesRegex("Link link2 on revolute joint joint1.*terminal.*"
                             "singular.*cannot be used for dynamics.*"));
+  EXPECT_EQ(ssize(graph.link_composites()), 2);
+  const std::vector<BodyIndex> composite94 =
+      graph.link_composites(LinkCompositeIndex(1));
+  EXPECT_EQ(composite94, (std::vector<BodyIndex>{BodyIndex(9), BodyIndex(4)}));
+  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(1)));
 
   // Finally if we connect link 2 to a massful link forming a loop, we should
   // get a dynamics-ready forest by splitting the massful link.
@@ -1056,7 +1209,7 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
             BodyIndex(7));
 
   // Changing just 3 to massless results in the same forest.
-  // (Tests Case 1 in ExtendTreesOneLevel())
+  // (Tests Case 2 in ExtendTreesOneLevel())
   graph.ChangeLinkFlags(BodyIndex(3), LinkFlags::kTreatAsMassless);
   EXPECT_TRUE(graph.BuildForest());
 
@@ -1103,7 +1256,8 @@ sufficient to prevent both massless Links from being terminal.
 
   {1}           {2}      massless       1{1}            3{2}
 
-   🡑 0           🡑 1                     🡑 T0            🡑 T1     T = tree
+   🡑 0           🡑 1                     🡑 T0            🡑 T1     T
+= tree
                            ---->
  ........{0}........                     ........ 0 ........
         World                                   World
@@ -1333,7 +1487,7 @@ GTEST_TEST(SpanningForest, WorldCompositeComesFirst) {
   const SpanningForest& forest = graph.forest();
 
   EXPECT_EQ(ssize(graph.links()), 5);
-  EXPECT_EQ(ssize(forest.mobods()), 5);  // Because we're not combining.
+  EXPECT_EQ(ssize(forest.mobods()), 5);  // Because we're not merging.
 
   // "Anchored" means "fixed to World" (by welds).
   EXPECT_TRUE(world.is_anchored());
@@ -1347,12 +1501,30 @@ GTEST_TEST(SpanningForest, WorldCompositeComesFirst) {
             (std::vector<BodyIndex>{BodyIndex(0), BodyIndex(3)}));
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(1)),
             (std::vector<BodyIndex>{BodyIndex(1), BodyIndex(2)}));
+  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
+  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(1)));
 
   EXPECT_EQ(ssize(forest.welded_mobods()), 2);
   EXPECT_EQ(forest.welded_mobods(WeldedMobodsIndex(0)),
             (std::vector<MobodIndex>{MobodIndex(0), MobodIndex(3)}));
   EXPECT_EQ(forest.welded_mobods(WeldedMobodsIndex(1)),
             (std::vector<MobodIndex>{MobodIndex(1), MobodIndex(2)}));
+
+  // Remodel making single Mobods for composite links.
+  graph.SetGlobalForestBuildingOptions(
+      ForestBuildingOptions::kMergeLinkComposites);
+  EXPECT_TRUE(graph.BuildForest());
+
+  EXPECT_EQ(ssize(forest.mobods()), 3);  // Because we're merging.
+  EXPECT_EQ(forest.mobods(MobodIndex(0)).follower_link_ordinals(),
+            (std::vector<LinkOrdinal>{LinkOrdinal(0), LinkOrdinal(3)}));
+  EXPECT_EQ(forest.mobods(MobodIndex(1)).follower_link_ordinals(),
+            (std::vector<LinkOrdinal>{LinkOrdinal(1), LinkOrdinal(2)}));
+  EXPECT_EQ(forest.mobods(MobodIndex(2)).follower_link_ordinals(),
+            (std::vector<LinkOrdinal>{LinkOrdinal(4)}));
+
+  EXPECT_EQ(ssize(graph.link_composites()), 2);  // no change expected
+  EXPECT_EQ(ssize(forest.welded_mobods()), 1);   // just World now
 }
 
 /* We always preserve the user's parent->child order for a joint, even if we
@@ -1486,6 +1658,277 @@ GTEST_TEST(SpanningForest, ShadowLinkPreservesJointOrder) {
   EXPECT_EQ(new_shadow_link.num_shadows(), 0);
   EXPECT_TRUE(new_shadow_link.is_shadow());
   EXPECT_EQ(new_shadow_link.primary_link(), new_primary_link.index());
+}
+
+/* Composite bodies should be treated the same as single bodies while
+building the trees a level at a time. We'll create a loop out of two
+trees, one composed of two-body composites and the other single bodies.
+Our loop-splitting algorithm should result in two trees of equal length in
+mobilized bodies though unequal in links.
+
+              0               1             2
+      +--> {1}==>{2} --> {3*}==>{4*} --> {5}==>{6}
+  {0} | 3             4              5          | 10   {Links} & Joints
+      |                                         v      * = massless
+      +--->   {7}  --->  {8}  --->  {9}  ---> {10}
+        6           7          8          9
+
+
+      +---> [1] ---> [2*] --> [3] ---> [4] {10}
+      |    {1,2}    {3,4}*   {5,6}      #
+  [0] |                                 # Weld            [Mobods]
+      |     {7}      {8}      {9}       V                 * = massless
+      +---> [5] ---> [6] ---> [7] ---> [8] {10s}
+
+Not that the presence of massless links {3} and {4} should have almost no
+consequence since they are followed by a massful body. However, the {3,4}
+link composite should be marked "massless".
+
+This test case also opportunistically uses this graph to test that copy, move,
+and assign work correctly. */
+GTEST_TEST(SpanningForest, LoopWithComposites) {
+  LinkJointGraph graph;
+  graph.RegisterJointType("revolute", 1, 1);
+  const ModelInstanceIndex model_instance(19);
+
+  const std::set<int> massless{3, 4};
+  for (int i = 1; i <= 10; ++i) {
+    graph.AddLink("link" + std::to_string(i), model_instance,
+                  massless.contains(i) ? LinkFlags::kTreatAsMassless
+                                       : LinkFlags::kDefault);
+  }
+
+  const std::vector<std::pair<int, int>> weld_joints{{1, 2}, {3, 4}, {5, 6}};
+  const std::vector<std::pair<int, int>> revolute_joints{
+      {0, 1}, {2, 3}, {4, 5}, {0, 7}, {7, 8}, {8, 9}, {9, 10}, {6, 10}};
+  for (int i = 0; i < ssize(weld_joints); ++i) {
+    graph.AddJoint("weld_joint_" + std::to_string(i), model_instance, "weld",
+                   BodyIndex(weld_joints[i].first),
+                   BodyIndex(weld_joints[i].second));
+  }
+  for (int i = 0; i < ssize(revolute_joints); ++i) {
+    const int j = ssize(weld_joints) + i;  // joint number
+    graph.AddJoint("revolute_joint_" + std::to_string(j), model_instance,
+                   "revolute", BodyIndex(revolute_joints[i].first),
+                   BodyIndex(revolute_joints[i].second));
+  }
+
+  // Before modeling
+  EXPECT_EQ(ssize(graph.links()), 11);  // counting World
+  EXPECT_EQ(ssize(graph.joints()), 11);
+  EXPECT_EQ(ssize(graph.loop_constraints()), 0);
+
+  graph.SetGlobalForestBuildingOptions(
+      ForestBuildingOptions::kMergeLinkComposites);
+  EXPECT_TRUE(graph.BuildForest());
+  const SpanningForest& forest = graph.forest();
+
+  // After modeling
+  EXPECT_EQ(ssize(graph.links()), 12);            // split one, added shadow
+  EXPECT_EQ(ssize(graph.joints()), 11);           // no change
+  EXPECT_EQ(ssize(graph.loop_constraints()), 1);  // welded shadow to primary
+  EXPECT_EQ(ssize(graph.link_composites()), 4);   // World + 3
+  std::array<bool, 4> expect_massless{false, false, true, false};
+  for (LinkCompositeIndex i{0}; i < 4; ++i) {
+    EXPECT_EQ(graph.link_composite_is_massless(i), expect_massless[i]);
+  }
+
+  EXPECT_EQ(ssize(forest.mobods()), 9);
+  EXPECT_EQ(ssize(forest.loop_constraints()), 1);
+  EXPECT_EQ(ssize(forest.trees()), 2);
+  EXPECT_EQ(ssize(forest.welded_mobods()), 1);  // just World
+
+  EXPECT_EQ(forest.mobods(MobodIndex(1)).follower_link_ordinals(),
+            (std::vector<LinkOrdinal>{LinkOrdinal(1), LinkOrdinal(2)}));
+  EXPECT_EQ(forest.mobods(MobodIndex(2)).follower_link_ordinals(),
+            (std::vector<LinkOrdinal>{LinkOrdinal(3), LinkOrdinal(4)}));
+  EXPECT_EQ(forest.mobods(MobodIndex(3)).follower_link_ordinals(),
+            (std::vector<LinkOrdinal>{LinkOrdinal(5), LinkOrdinal(6)}));
+
+  const SpanningForest::Tree tree0 = forest.trees(TreeIndex(0)),
+                             tree1 = forest.trees(TreeIndex(1));
+  EXPECT_EQ(tree0.num_mobods(), 4);
+  EXPECT_EQ(tree0.nq(), 4);
+  EXPECT_EQ(tree1.num_mobods(), 4);
+  EXPECT_EQ(tree1.nq(), 4);
+
+  // Sanity checks for graph copy, move, and assignment. These are mostly
+  // compiler-generated so we just need to test any field and that the
+  // bespoke backpointer adjustments get done correctly.
+
+  LinkJointGraph graph_copy(graph);
+  EXPECT_EQ(ssize(graph_copy.links()), 12);
+  EXPECT_TRUE(graph_copy.forest_is_valid());
+  const SpanningForest& copy_model = graph_copy.forest();
+  EXPECT_NE(&copy_model, &forest);
+  EXPECT_EQ(&copy_model.graph(), &graph_copy);  // backpointer
+
+  LinkJointGraph graph_assign;
+  graph_assign = graph;
+  EXPECT_EQ(ssize(graph_assign.links()), 12);
+  EXPECT_TRUE(graph_assign.forest_is_valid());
+  EXPECT_NE(&graph_assign.forest(), &forest);
+  EXPECT_EQ(&graph_assign.forest().graph(), &graph_assign);
+
+  LinkJointGraph graph_move(std::move(graph));
+  EXPECT_EQ(ssize(graph_move.links()), 12);
+  EXPECT_EQ(ssize(graph.links()), 1);  // Just world now.
+  EXPECT_EQ(&graph_move.forest(), &forest);
+  EXPECT_EQ(&graph_move.forest().graph(), &graph_move);
+  // graph is now default-constructed so still has a forest
+  EXPECT_NE(&graph.forest(), &forest);
+  EXPECT_FALSE(graph.forest_is_valid());
+  EXPECT_EQ(&graph.forest().graph(), &graph);
+
+  LinkJointGraph graph_move_assign;
+  graph_move_assign = std::move(graph_copy);
+  EXPECT_EQ(ssize(graph_move_assign.links()), 12);
+  EXPECT_TRUE(graph_move_assign.forest_is_valid());
+  EXPECT_EQ(&graph_move_assign.forest(), &copy_model);
+  EXPECT_EQ(&graph_move_assign.forest().graph(), &graph_move_assign);
+  // graph_copy is now default-constructed. Should have world and a
+  // new (empty) forest.
+  EXPECT_EQ(ssize(graph_copy.links()), 1);
+  EXPECT_NE(&graph_copy.forest(), &copy_model);
+  EXPECT_FALSE(graph_copy.forest_is_valid());
+  EXPECT_EQ(&graph_copy.forest().graph(), &graph_copy);
+}
+
+/* Make sure massless, merged composites are working correctly. They are
+supposed to behave the same way as individual massless bodies:
+  - They should use only a single Mobod, and be treated as a single level
+    along a branch for branch-length minimization purposes.
+  - If there is anything massful attached to the massless composite, we
+    assume that mass always moves with the composite so we don't need to
+    give up branch-length minimization. (Test 2 below)
+  - We should not break a loop in a way that leaves a branch with a
+    terminal massless composite. (Test 3 below)
+*/
+GTEST_TEST(SpanningForest, MasslessMergedComposites) {
+  LinkJointGraph graph;
+  const SpanningForest& forest = graph.forest();
+  graph.SetGlobalForestBuildingOptions(
+      ForestBuildingOptions::kMergeLinkComposites);
+  graph.RegisterJointType("revolute", 1, 1);
+  const ModelInstanceIndex model_instance(19);
+
+  /* (Test 1) Massless composite welded to World ends up on the World
+  LinkComposite and doesn't count as a level in its tree. All its links should
+  be at level 0, and branch-length balancing should ignore the composite.
+
+  Input graph:
+    {1} link, *=massless, joint numbers are plain
+    --> revolute  ==> weld
+
+           0        1        2
+         +---> {1} ---> {2} ---> {3}     {4:5:6} is a massless composite
+     {0} |                        | 5            but welded to World
+         | 6      7      3     4  v
+         +==>{4*}==>{5*}-->{7}-->{8}     Should cut {3} to leave two
+               ∥ 8                       branches of length 3:
+               v                          {1 2 3} and {7 8 3s}
+              {6*}
+
+  Expected Forest:
+    [1] mobod
+
+           + --> [1]{1} --> [2]{2} --> [3]{3}
+       [0] |                            # loop weld
+  {0 4 5 6}|                            #
+           + --> [4]{7} --> [5]{8} --> [6]{3s}
+  */
+
+  const std::set<int> massless{4, 5, 6};
+  for (int i = 1; i <= 8; ++i) {
+    graph.AddLink("link" + std::to_string(i), model_instance,
+                  massless.contains(i) ? LinkFlags::kTreatAsMassless
+                                       : LinkFlags::kDefault);
+  }
+
+  const std::vector<std::pair<int, int>> revolute_joints{
+      {0, 1}, {1, 2}, {2, 3}, {5, 7}, {7, 8}, {3, 8}};
+  const std::vector<std::pair<int, int>> weld_joints{{0, 4}, {4, 5}, {4, 6}};
+
+  for (int i = 0; i < ssize(revolute_joints); ++i) {
+    graph.AddJoint("joint_" + std::to_string(i), model_instance, "revolute",
+                   BodyIndex(revolute_joints[i].first),
+                   BodyIndex(revolute_joints[i].second));
+  }
+  for (int i = 0; i < ssize(weld_joints); ++i) {
+    const int j = ssize(revolute_joints) + i;  // joint number
+    graph.AddJoint("joint_" + std::to_string(j), model_instance, "weld",
+                   BodyIndex(weld_joints[i].first),
+                   BodyIndex(weld_joints[i].second));
+  }
+
+  // Before modeling
+  EXPECT_EQ(ssize(graph.links()), 9);  // counting World
+  EXPECT_EQ(ssize(graph.joints()), 9);
+  EXPECT_EQ(ssize(graph.loop_constraints()), 0);
+
+  EXPECT_TRUE(graph.BuildForest());
+
+  // After modeling
+  EXPECT_EQ(ssize(graph.links()), 10);  // added shadow 3s {9}
+  EXPECT_EQ(ssize(graph.joints()), 9);
+  EXPECT_EQ(ssize(graph.loop_constraints()), 1);  // glue {3} back together
+  EXPECT_EQ(ssize(forest.mobods()), 7);
+
+  // Check for equal-height trees.
+  ASSERT_EQ(ssize(forest.trees()), 2);
+  EXPECT_EQ(forest.trees(TreeIndex(0)).height(), 3);
+  EXPECT_EQ(forest.trees(TreeIndex(1)).height(), 3);
+
+  const auto& shadow_link = graph.link_by_index(BodyIndex(9));
+  EXPECT_TRUE(shadow_link.is_shadow());
+  EXPECT_EQ(shadow_link.name(), "link3$1");
+  EXPECT_EQ(shadow_link.index(), BodyIndex(9));
+  EXPECT_EQ(shadow_link.primary_link(), BodyIndex(3));
+  EXPECT_EQ(shadow_link.mobod_index(), MobodIndex(6));
+  ASSERT_EQ(ssize(shadow_link.joints()), 1);
+  EXPECT_EQ(shadow_link.joints()[0], JointIndex(5));
+
+  ASSERT_EQ(ssize(graph.link_composites()), 1);  // just the world composite
+  EXPECT_EQ(
+      graph.link_composites(LinkCompositeIndex(0)),
+      (std::vector{BodyIndex(0), BodyIndex(4), BodyIndex(5), BodyIndex(6)}));
+
+  /* (Test 2) Change the type of joint 6 (connects {4} to World) from weld
+  to revolute. That should move massless composite {4:5:6} onto its own Mobod.
+  Since it is immediately followed by massful link {7}, it won't prevent
+  the Forest from being suited for dynamics. This should cause the loop to be
+  split at {8} now, resulting in Tree 0 having a height of 4 and Tree 1 a
+  height of 3. */
+  graph.ChangeJointType(JointIndex(6), "revolute");
+  EXPECT_TRUE(graph.BuildForest());
+
+  EXPECT_EQ(forest.trees(TreeIndex(0)).height(), 4);
+  EXPECT_EQ(forest.trees(TreeIndex(1)).height(), 3);
+  const auto& new_shadow_link = graph.link_by_index(BodyIndex(9));
+  EXPECT_TRUE(new_shadow_link.is_shadow());
+  EXPECT_EQ(new_shadow_link.name(), "link8$1");
+
+  for (BodyIndex i(4); i <= 6; ++i)
+    EXPECT_EQ(graph.link_by_index(i).mobod_index(), 5);  // Merged to one Mobod.
+
+  ASSERT_EQ(ssize(graph.link_composites()), 2);  // world and {4:5:6}
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(1)),
+            (std::vector{BodyIndex(4), BodyIndex(5), BodyIndex(6)}));
+
+  /* (Test 3) Change links 7 and 8 to be massless so that we have to continue
+  extending the branch after the massless composite to hunt down something
+  massful with which to end the branch in Tree 1. This should affect when we see
+  the loop so Tree 0 will have height 3 and Tree 1 height 4, with link 3
+  split. */
+  graph.ChangeLinkFlags(BodyIndex(7), LinkFlags::kTreatAsMassless);
+  graph.ChangeLinkFlags(BodyIndex(8), LinkFlags::kTreatAsMassless);
+  EXPECT_TRUE(graph.BuildForest());
+  const auto& newer_shadow_link = graph.link_by_index(BodyIndex(9));
+  EXPECT_TRUE(newer_shadow_link.is_shadow());
+  EXPECT_EQ(newer_shadow_link.name(), "link3$1");
+
+  EXPECT_EQ(forest.trees(TreeIndex(0)).height(), 3);
+  EXPECT_EQ(forest.trees(TreeIndex(1)).height(), 4);
 }
 
 }  // namespace

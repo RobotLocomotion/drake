@@ -83,12 +83,23 @@ class SpanningForest::Mobod {
   @see joint() */
   LinkOrdinal link_ordinal() const { return follower_link_ordinals()[0]; }
 
+  /** Returns true if _any_ of the follower links is massful, in which case
+  this Mobod is also massful. */
+  bool has_massful_follower_link() const { return has_massful_follower_link_; }
+
   /** Returns all the Links that are mobilized by this %Mobod. If this %Mobod
   represents a LinkComposite, the first Link returned is the "active" Link as
   returned by link(). There is always at least one Link. */
   const std::vector<LinkOrdinal>& follower_link_ordinals() const {
     DRAKE_ASSERT(!follower_link_ordinals_.empty());
     return follower_link_ordinals_;
+  }
+
+  bool HasFollower(LinkOrdinal link_ordinal) const {
+    DRAKE_DEMAND(link_ordinal.is_valid());
+    return std::find(follower_link_ordinals_.cbegin(),
+                     follower_link_ordinals_.cend(),
+                     link_ordinal) != follower_link_ordinals_.cend();
   }
 
   /** Returns the ordinal of the Joint represented by this %Mobod. If this
@@ -198,6 +209,9 @@ class SpanningForest::Mobod {
   // Links represented by this Mobod. The first one is always present and is
   // the active Link if we're mobilizing a LinkComposite.
   std::vector<LinkOrdinal> follower_link_ordinals_;
+
+  // Set to true if _any_ follower link has mass.
+  bool has_massful_follower_link_{false};
 
   // Corresponding Joint (user or modeling joint). If this Mobod represents
   // a LinkComposite, this is the Joint that mobilizes the whole Composite.

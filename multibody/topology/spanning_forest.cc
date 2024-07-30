@@ -50,14 +50,6 @@ void SpanningForest::Clear() {
   data_.graph = saved_graph;
 }
 
-// TODO(sherm1) For review purposes, the code here implements only a
-//  subset of the algorithm described.
-//  What's here: the ability to model tree-structured graphs, add joints to
-//  world as needed, grow breadth-first and then renumber depth-first,
-//  assign coordinates, break loops, treat massless bodies specially.
-//  What's not here (see #20225): Use a single Mobod for composites. The related
-//  option is allowed but ignored.
-
 /* This is the algorithm that takes an arbitrary link-joint graph and models
 it as a spanning forest of mobilized bodies plus loop-closing constraints.
 
@@ -374,6 +366,10 @@ void SpanningForest::AssignCoordinates() {
 
 /* Phase 1 steps 1.4 and 1.5. */
 void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
+  // TODO(sherm1) Consider whether a LinkComposite that is treated as a single
+  //  body (i.e., follows just one Mobod) should be allowed to be a base body or
+  //  should wait along with the other unjointed Links.
+
   /* Partition the unmodeled links into jointed and unjointed. O(n) */
   std::vector<LinkOrdinal> jointed_links, unjointed_links;
   for (const auto& link : links()) {
@@ -411,14 +407,12 @@ void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
 
   /* Should be nothing left now except unjointed (single) Links. We'll attach
   with either a floating joint or a weld joint depending on modeling options.
-  It gets a new Mobod that serves as the base body of a new
+  If a weld and we're optimizing composites the Link will just join the World
+  Mobod. Otherwise it gets a new Mobod that serves as the base body of a new
   Tree. Although static links and links belonging to a static model instance
   get welded to World at the start of forest building, it is still possible
   to need a weld here for a lone link that is in a "use fixed base" model
   instance (that's not technically a static link). (1.5) */
-  // TODO(sherm1) If the required joint here is a weld and we're optimizing
-  //  composites, the Link should just join the World Mobod and the joint is
-  //  unmodeled. Coming soon.
   DRAKE_DEMAND(*num_unprocessed_links == ssize(unjointed_links));
 
   for (LinkOrdinal unjointed_link : unjointed_links) {
@@ -431,9 +425,12 @@ void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
                                                  unjointed_link);
     const JointOrdinal next_joint_ordinal =
         graph().index_to_ordinal(next_joint_index);
-
-    AddNewMobod(unjointed_link, next_joint_ordinal, world_mobod().index(),
-                false);  // Not reversed; World is parent
+    if (should_be_unmodeled_weld_in_composite(joints(next_joint_ordinal))) {
+      JoinExistingMobod(&data_.mobods[0], unjointed_link, next_joint_ordinal);
+    } else {
+      AddNewMobod(unjointed_link, next_joint_ordinal, world_mobod().index(),
+                  false);  // Not reversed; World is parent
+    }
     /* No tree to extend here. */
   }
   *num_unprocessed_links -= ssize(unjointed_links);
@@ -446,168 +443,284 @@ void SpanningForest::ExtendTrees(const std::vector<JointIndex>& joints_to_model,
 
   /* E.1 - E.3 */
   while (!to_model.empty()) {
-    ExtendTreesOneLevel(to_model, &*num_unprocessed_links, &to_model_next);
+    ExtendTreesOneLevel(to_model, &to_model_next, &*num_unprocessed_links);
     std::swap(to_model, to_model_next);
   }
 }
 
 /* Grows each Tree by one level with two exceptions:
-   - If we're optimizing LinkComposites (welded-together Links following a
-     single Mobod), keep growing LinkComposites as far as possible since they
-     constitue only a single level in the tree.
-     TODO(sherm1) LinkComposite optimization is implemented in #20225 but not
-      yet here; will port in the next PR.
-   - If we encounter a "treat as massless" Link it can't be a terminal body
-     of a branch. In that case we keep growing that branch until we can end
-     with something massful. Note that an optimized LinkComposite can be
-     terminal if _any_ of its Links are massful. */
-void SpanningForest::ExtendTreesOneLevel(
-    const std::vector<JointIndex>& joints_to_model, int* num_unprocessed_links,
-    std::vector<JointIndex>* joints_to_model_next) {
-  DRAKE_DEMAND(!joints_to_model.empty());
-  DRAKE_DEMAND(num_unprocessed_links != nullptr);
-  DRAKE_DEMAND(joints_to_model_next != nullptr);
-  joints_to_model_next->clear();
+   1 If we're optimizing composites (by merging welded-together Links onto a
+     single Mobod), keep growing a LinkComposite as far as possible to build
+     the complete composite and model it with a single Mobod.
+   2 If we encounter a "treat as massless" Link (or massless merged
+     LinkComposite) its Mobod can't be a terminal body of a branch. In that
+     case we keep growing that branch until we can end with something massful.
+     Note that a merged LinkComposite can be terminal if _any_ one of its Links
+     is massful.
 
-  for (JointIndex joint_index : joints_to_model) {
-    const JointOrdinal joint_ordinal = graph().index_to_ordinal(joint_index);
-    const Joint& joint = joints(joint_ordinal);
-    if (joint.has_been_processed())
+Exception 1 preserves the goal of minimizing maximum branch length since we
+still only advance by one Mobod, regardless of how many merged Links that
+entails.
+
+Exception 2 sacrifices the even growth of branches in order to achieve the more
+critical goal of ending every branch with a massful body so that the system
+mass matrix is non-singular.
+
+Definitions used below
+----------------------
+- Given a link L, we denote the _merged_ LinkComposite it belongs to as L+.
+    If we're not merging (optimizing) LinkComposites, then L+ == L.
+- A joint connects two links, parent and child. Every joint of interest here
+    has at least one of its links already in the forest; that is its "inboard"
+    link I. The other link is the "outboard" link O and is usually not yet in
+    the forest.
+- A "merged joint" is a weld joint that connects two links that should be part
+    of the same merged LinkComposite. Merged joints do not have a corresponding
+    mobilizer in the forest; they are unmodeled.
+- Define Jₒₚₑₙ(L+) as the set of all as-yet-unmodeled joints connected to any
+    link in L+. These are "open" in the sense that only inboard link I of the
+    joint is in L+; the other link O still needs to be dealt with. Open joints
+    define the next level to be added to the forest outboard of L+.
+
+
+Algorithm A(Jᵢₙ, &Jₒᵤₜ)
+-----------------------
+Inputs:  graph, partially built forest F, a set Jᵢₙ of unmodeled joints that
+         will extend F by one level (i.e. one joint per branch).
+Outputs: updated forest F, the set Jₒᵤₜ of as-yet-unmodeled joints to add at
+         the next level.
+
+Note: Every j ∈ Jᵢₙ and j ∈ Jₒᵤₜ has at least one of its two links (parent
+  and child) already modeled in the current forest F. If both links are
+  in then j is a loop joint.
+
+Jₒᵤₜ = {}
+For each jᵢₙ ∈ Jᵢₙ:
+  A.1 If jᵢₙ should be a merged joint (see above), then merge O+ with the
+      LinkComposite I+. Mark weld joint jᵢₙ as "unmodeled". We haven't yet
+      extended this branch by a level though, so we need to keep going.
+      Set Jₗₑᵥₑₗ = Jₒₚₑₙ(O+). Otherwise (jᵢₙ not a merged joint), set
+      Jₗₑᵥₑₗ = {jᵢₙ}.
+
+  For each jₗₑᵥₑₗ ∈ Jₗₑᵥₑₗ:
+    A.2 If both parent and child links of jₗₑᵥₑₗ are already in the forest,
+        jₗₑᵥₑₗ is a loop closing joint. Handle the loop. -> NEXT jₗₑᵥₑₗ
+    A.3 Otherwise, add a new Mobod M to the forest whose body models link O and
+        whose mobilizer models joint jₗₑᵥₑₗ. A.4 Determine O+ (O or its
+        composite) and make all links in O+ follow M. A.5 If M is massful, set
+        Jₒᵤₜ += Jₒₚₑₙ(O+). -> NEXT jₗₑᵥₑₗ
+    A.6 (M is massless) Examine the joints in Jₒₚₑₙ(O+). If there aren't any
+        open joints then we have to terminate this branch with a massless body
+        and note that the forest can't be used for dynamics. Make a note and a
+        suitable message. -> NEXT jₗₑᵥₑₗ
+    A.7 (M is massless, but Jₒₚₑₙ(O+) is not empty) If any one of those open
+        joints leads to an outboard link which is massful, we're fine.
+        Set Jₒᵤₜ += Jₒₚₑₙ(O+). -> NEXT jₗₑᵥₑₗ
+    A.8 (M is massless, and all outboard links in Jₒₚₑₙ(O+) are massless).
+        Recursively run this algorithm A(J'ᵢₙ, &J'ₒᵤₜ) with J'ᵢₙ=Jₒₚₑₙ(O+) to
+        extend this branch another level in the hope of encountering something
+        massful. Set Jₒᵤₜ += J'ₒᵤₜ. -> NEXT jₗₑᵥₑₗ
+*/
+void SpanningForest::ExtendTreesOneLevel(const std::vector<JointIndex>& J_in,
+                                         std::vector<JointIndex>* J_out,
+                                         int* num_unprocessed_links) {
+  DRAKE_DEMAND(!J_in.empty());
+  DRAKE_DEMAND(num_unprocessed_links != nullptr);
+  DRAKE_DEMAND(J_out != nullptr);
+  J_out->clear();
+
+  std::vector<JointIndex> J_level, J_open;  // Temps for use below.
+  for (JointIndex j_in_index : J_in) {
+    const JointOrdinal joint_in_ordinal = graph().index_to_ordinal(j_in_index);
+    const Joint& j_in = joints(joint_in_ordinal);
+    if (j_in.has_been_processed())
       continue;  // Already did this one from the other side.
 
-    const LinkOrdinal parent_link_ordinal =
-        graph().index_to_ordinal(joint.parent_link_index());
-    const LinkOrdinal child_link_ordinal =
-        graph().index_to_ordinal(joint.child_link_index());
+    /* Find the inboard Mobod that we're extending via j_in, which link
+    follows that Mobod (link I), which is the outboard link O, and are those
+    reversed from parent P and child C. */
+    const auto [inboard_mobod_index, inboard_link_ordinal,
+                outboard_link_ordinal, is_joint_in_reversed] =
+        FindInboardMobod(j_in);
 
-    /* At least one of the Joint's Links must have already been modeled.
-    (Could be both in the case of a loop.) */
-    const bool parent_is_modeled =
-        link_is_already_in_forest(parent_link_ordinal);
-    const bool child_is_modeled = link_is_already_in_forest(child_link_ordinal);
-    DRAKE_DEMAND(parent_is_modeled || child_is_modeled);
+    /* Step A.1 */
+    FindNextLevelJoints(inboard_mobod_index, {j_in_index}, &J_level,
+                        &*num_unprocessed_links);
 
-    const BodyIndex inboard_link_index = parent_is_modeled
-                                             ? joint.parent_link_index()
-                                             : joint.child_link_index();
+    for (JointIndex j_level_index : J_level) {
+      const JointOrdinal j_level_ordinal =
+          graph().index_to_ordinal(j_level_index);
+      const Joint& j_level = joints(j_level_ordinal);
+      DRAKE_DEMAND(!should_be_unmodeled_weld_in_composite(j_level));
 
-    /* Don't keep references to Mobods since we're growing the vector below. */
-    const MobodIndex inboard_mobod_index =
-        graph().link_to_mobod(inboard_link_index);
+      /* j_level might connect to any link of an inboard LinkComposite
+      that follows inboard_mobod. That's the link we want as inboard link; not
+      the Composite's active link. */
+      const auto [j_level_inboard_link_ordinal, j_level_outboard_link_ordinal,
+                  is_reversed] =
+          graph().FindInboardOutboardLinks(inboard_mobod_index,
+                                           j_level_ordinal);
 
-    const JointIndex modeled_joint_index = joint_index;  // For easier stubbing.
-    const JointOrdinal modeled_joint_ordinal =
-        graph().index_to_ordinal(modeled_joint_index);
-
-    // TODO(sherm1) Combining composites stubbed out here (E.4)
-
-    const Joint& modeled_joint = joints(modeled_joint_ordinal);
-
-    const auto [modeled_inboard_link_ordinal, modeled_outboard_link_ordinal,
-                is_reversed] =
-        graph().FindInboardOutboardLinks(inboard_mobod_index,
-                                         modeled_joint_ordinal);
-
-    /* If the outboard link is already modeled, this is a loop-closing
-    joint (E.5). */
-    if (link_is_already_in_forest(modeled_outboard_link_ordinal)) {
-      /* Invalidates references to Links, Joints, Mobods, LoopConstraints. */
-      HandleLoopClosure(modeled_joint_ordinal);
-      continue;
-    }
-
-    /* There isn't a loop and the outboard Link isn't part of a combined
-    LinkComposite so we can model it with a Mobod.
-    Note: this invalidates references to Mobods. */
-    AddNewMobod(modeled_outboard_link_ordinal, modeled_joint_ordinal,
-                inboard_mobod_index,
-                is_reversed);  // Is mobilizer reversed from Joint?
-    --(*num_unprocessed_links);
-
-    /* Now determine if we can stop here or if we have to keep extending
-    the branch we're on. If the Mobod we just added was a massless body
-    on an articulated (non-weld) mobilizer, we may need to extend "one more
-    level" from here. This can continue recursively if we run into
-    more massless Links. */
-    const Link& modeled_link = links(modeled_outboard_link_ordinal);
-    if (modeled_joint.is_weld() || !modeled_link.treat_as_massless()) {
-      /* We can stop here. Collect up the Joints for the next level and
-      go on to the next Joint to model at this level. */
-      for (JointIndex next_joint_index : modeled_link.joints()) {
-        const JointOrdinal next_joint_ordinal =
-            graph().index_to_ordinal(next_joint_index);
-        if (!joints(next_joint_ordinal).has_been_processed())
-          joints_to_model_next->push_back(next_joint_index);
+      /* If the outboard link is already modeled, this is a loop-closing
+      joint. (A.2) */
+      if (link_is_already_in_forest(j_level_outboard_link_ordinal)) {
+        /* Invalidates references to Links, Joints, Mobods, LoopConstraints. */
+        HandleLoopClosure(j_level_ordinal);
+        continue;
       }
-      continue;
-    }
 
-    /* The Link we just added to the branch is massless and articulated; we
-    don't want to terminate the branch with it. Three possibilities:
-    1 If it has outboard joints and at least one leads to a massful link,
-      we're fine and can end here knowing that the massless link will get
-      covered at the next level.
-    2 If the link has no outboard joints we're stuck and will just have to
-      declare this as a "no dynamics" model.
-    3 If all the outboard joints lead to massless links, we must not stop
-      here but instead need to move on to the next level in the hope that
-      we'll eventually run into something massful. */
-    std::vector<JointIndex> massless_link_unmodeled_joints;
-    bool has_outboard_massful_link = false;
-    for (JointIndex massless_link_joint_index : modeled_link.joints()) {
-      const JointOrdinal massless_link_joint_ordinal =
-          graph().index_to_ordinal(massless_link_joint_index);
-      if (joints(massless_link_joint_ordinal).has_been_processed()) continue;
-      massless_link_unmodeled_joints.push_back(massless_link_joint_index);
+      /* There isn't a loop and the outboard link isn't part of the same
+      merged LinkComposite as the inboard link. That means we are going to
+      need a new Mobod. Note: a reference to this Mobod could be invalidated
+      below; refer to it by its stable index instead. (A.3)*/
+      const MobodIndex new_mobod_index =
+          AddNewMobod(j_level_outboard_link_ordinal, j_level_ordinal,
+                      inboard_mobod_index, is_reversed)
+              .index();
+      --(*num_unprocessed_links);
 
-      if (!has_outboard_massful_link) {
-        const Joint& outboard_joint = joints(massless_link_joint_ordinal);
-        const Link& modeled_outboard_link =
-            links(modeled_outboard_link_ordinal);
-        const BodyIndex outboard_link_index =
-            outboard_joint.other_link_index(modeled_outboard_link.index());
-        has_outboard_massful_link =
-            !link_by_index(outboard_link_index).treat_as_massless();
+      /* We just put link O on the new Mobod. O might just be the active
+      link of a merged LinkComposite O+. If so we need to build O+ now and find
+      all its open joints. (A.4) */
+      J_open.clear();
+      const Link& j_level_outboard_link = links(j_level_outboard_link_ordinal);
+      FindNextLevelJoints(new_mobod_index, j_level_outboard_link.joints(),
+                          &J_open, &*num_unprocessed_links);
+
+      /* Now determine if we can stop here or if we have to keep extending
+      the branch we're on. If the Mobod we just added was a massless body
+      on an articulated (non-weld) mobilizer, we may need to extend "one more
+      level" from here. This can continue recursively if we run into
+      more massless Links. */
+      if (j_level.is_weld() ||
+          mobods(new_mobod_index).has_massful_follower_link()) {
+        /* We can stop here. Collect up the Joints for the next level and
+        go on to the next Joint to model at this level. (A.5) */
+        J_out->insert(J_out->end(), J_open.begin(), J_open.end());
+        continue;  // -> NEXT jₗₑᵥₑₗ
       }
-    }
 
-    /* Case 1: all good. */
-    if (has_outboard_massful_link) {
-      /* The outboard joints we just collected are the ones we should
-      process at the next level. */
-      joints_to_model_next->insert(joints_to_model_next->end(),
-                                   massless_link_unmodeled_joints.begin(),
-                                   massless_link_unmodeled_joints.end());
-      continue;
-    }
+      /* The Link or LinkComposite O+ we just added to the branch is massless
+      and articulated; we don't want to terminate the branch with it. We have
+      Jₒₚₑₙ(O+) in J_open. Three possibilities:
+      1 If Jₒₚₑₙ is empty we're stuck and will just have to declare this as a
+        "no dynamics" model.
+      2 If there is a joint in Jₒₚₑₙ that leads to a massful link, we'll
+        assume we're fine and can end here knowing that the massless Mobod will
+        get covered at the next level. (There could still be problems that
+        we can't detect here.)
+      3 If all the outboard joints in Jₒₚₑₙ lead to massless links, we must not
+        stop here but instead need to move on to the next level in the hope that
+        we'll eventually run into something massful. */
 
-    /* Case 2: we're not going to be able to do dynamics :(. */
-    if (massless_link_unmodeled_joints.empty()) {
-      /* If this is the first problem we've seen, record it. */
-      if (data_.dynamics_ok) {
-        const LinkJointGraph::JointTraits& modeled_joint_traits =
-            graph().joint_traits(modeled_joint.traits_index());
-        data_.dynamics_ok = false;
-        data_.why_no_dynamics = fmt::format(
-            "Link {} on {} joint {} is a terminal, articulated, massless "
-            "link. The resulting multibody system will have a singular "
-            "mass matrix so cannot be used for dynamics.",
-            modeled_link.name(), modeled_joint_traits.name,
-            modeled_joint.name());
+      /* Case 1: we're not going to be able to do dynamics. (A.6)*/
+      if (J_open.empty()) {
+        /* If this is the first problem we've seen, record it. */
+        if (data_.dynamics_ok) {
+          const LinkJointGraph::JointTraits& j_level_traits =
+              graph().joint_traits(j_level.traits_index());
+          data_.dynamics_ok = false;
+          data_.why_no_dynamics = fmt::format(
+              "Link {} on {} joint {} is a terminal, articulated, massless "
+              "link. The resulting multibody system will have a singular "
+              "mass matrix so cannot be used for dynamics.",
+              j_level_outboard_link.name(), j_level_traits.name,
+              j_level.name());
+        }
+        continue;  // -> NEXT jₗₑᵥₑₗ
       }
-      continue;
-    }
 
-    /* Case 3: there is still hope. The massless link does have some
-    not-yet-modeled joints, but they all lead to more massless links. Extend
-    further and collect up the outboard joints at the next level. */
-    std::vector<JointIndex> next_level_outboard_joints;
-    ExtendTreesOneLevel(massless_link_unmodeled_joints, &*num_unprocessed_links,
-                        &next_level_outboard_joints);
-    joints_to_model_next->insert(joints_to_model_next->end(),
-                                 next_level_outboard_joints.begin(),
-                                 next_level_outboard_joints.end());
+      /* Case 2: all good. (A.7) */
+      if (HasMassfulOutboardLink(new_mobod_index, J_open)) {
+        /* The outboard joints we just collected are the ones we should
+        process at the next level. */
+        J_out->insert(J_out->end(), J_open.begin(), J_open.end());
+        continue;  // -> NEXT jₗₑᵥₑₗ
+      }
+
+      /* Case 3: there is still hope. The massless link does have some
+      not-yet-modeled joints, but they all lead to more massless links. Extend
+      further and collect up the outboard joints at the next level. (A.8) */
+      std::vector<JointIndex> next_level_J_open;
+      ExtendTreesOneLevel(J_open, &next_level_J_open, &*num_unprocessed_links);
+      J_out->insert(J_out->end(), next_level_J_open.begin(),
+                    next_level_J_open.end());
+      // -> NEXT jₗₑᵥₑₗ
+    }
   }
+}
+
+std::tuple<MobodIndex, LinkOrdinal, LinkOrdinal, bool>
+SpanningForest::FindInboardMobod(const Joint& open_joint) const {
+  const LinkOrdinal parent_link_ordinal =
+      graph().index_to_ordinal(open_joint.parent_link_index());
+  const LinkOrdinal child_link_ordinal =
+      graph().index_to_ordinal(open_joint.child_link_index());
+  const Link& parent_link = links(parent_link_ordinal);
+  if (parent_link.mobod_index().is_valid()) {
+    return std::make_tuple(parent_link.mobod_index(), parent_link_ordinal,
+                           child_link_ordinal, false);
+  }
+  const Link& child_link = links(child_link_ordinal);
+  DRAKE_DEMAND(child_link.mobod_index().is_valid());
+  return std::make_tuple(child_link.mobod_index(), child_link_ordinal,
+                         parent_link_ordinal, true);
+}
+
+void SpanningForest::FindNextLevelJoints(MobodIndex inboard_mobod_index,
+                                         const std::vector<JointIndex>& J_in,
+                                         std::vector<JointIndex>* J_level,
+                                         int* num_unprocessed_links) {
+  DRAKE_DEMAND(J_level != nullptr && num_unprocessed_links != nullptr);
+  J_level->clear();
+
+  for (auto j_in_index : J_in) {
+    const Joint& j_in = joint_by_index(j_in_index);
+    if (j_in.has_been_processed()) continue;
+
+    if (!should_be_unmodeled_weld_in_composite(j_in)) {
+      J_level->push_back(j_in.index());
+      continue;
+    }
+
+    /* This has to be a merged joint with parent & child links part of the
+    same merged LinkComposite. We must grow the composite in the outboard
+    direction of the joint, which is the end that is _not_ already following
+    the inboard Mobod. */
+    const BodyIndex outboard_link_index =
+        FindOutboardLink(inboard_mobod_index, j_in);
+
+    /* Adds the outboard link O to the inboard composite and keeps collecting
+    the welded links of O+ to the composite recursively, while collecting up
+    all the further-outboard non-weld joints Jₒₚₑₙ(O+) into J_level. */
+    GrowCompositeMobod(&data_.mobods[inboard_mobod_index], outboard_link_index,
+                       j_in.ordinal(), &*J_level, &*num_unprocessed_links);
+  }
+}
+
+BodyIndex SpanningForest::FindOutboardLink(MobodIndex inboard_mobod_index,
+                                           const Joint& joint) const {
+  const Link& parent_link = link_by_index(joint.parent_link_index());
+  const Link& child_link = link_by_index(joint.child_link_index());
+  if (parent_link.mobod_index().is_valid() &&
+      parent_link.mobod_index() == inboard_mobod_index) {
+    return child_link.index();
+  }
+  DRAKE_DEMAND(child_link.mobod_index().is_valid() &&
+               child_link.mobod_index() == inboard_mobod_index);
+  return parent_link.index();
+}
+
+bool SpanningForest::HasMassfulOutboardLink(
+    MobodIndex inboard_mobod_index,
+    const std::vector<JointIndex>& joints) const {
+  for (JointIndex joint_index : joints) {
+    const Joint& joint = joint_by_index(joint_index);
+    const BodyIndex outboard_link_index =
+        FindOutboardLink(inboard_mobod_index, joint);
+    if (!link_by_index(outboard_link_index).treat_as_massless()) return true;
+  }
+  return false;
 }
 
 /* See documentation in header before trying to decipher this. */
@@ -624,9 +737,12 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
   Mobod& new_mobod =
       data_.mobods.emplace_back(new_mobod_index, outboard_link_ordinal,
                                 joint_ordinal, inboard_level + 1, is_reversed);
-  Mobod& inboard_mobod = data_.mobods[inboard_mobod_index];
+  const Link& outboard_link = links(outboard_link_ordinal);
+  if (!outboard_link.treat_as_massless())
+    new_mobod.has_massful_follower_link_ = true;
 
   /* If the inboard Mobod is World, start a new Tree. */
+  Mobod& inboard_mobod = data_.mobods[inboard_mobod_index];
   TreeIndex tree_index = inboard_mobod.tree();
   if (!tree_index.is_valid()) {
     DRAKE_DEMAND(inboard_mobod.is_world());  // Otherwise should have a tree.
@@ -641,7 +757,7 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
   tree.height_ = std::max(tree.height_, new_mobod.level_);
   data_.forest_height = std::max(data_.forest_height, tree.height_ + 1);
 
-  // Record connections in forest and graph.
+  /* Record connections in forest and graph. */
   new_mobod.inboard_mobod_ = inboard_mobod_index;
   inboard_mobod.outboard_mobods_.push_back(new_mobod_index);
   mutable_graph().set_primary_mobod_for_link(outboard_link_ordinal,
@@ -649,7 +765,9 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
   mutable_graph().set_mobod_for_joint(joint_ordinal, new_mobod_index);
 
   /* Build up both WeldedMobods group (in forest) and LinkComposite (in graph)
-  if we have a Weld joint, starting a new group or composite as needed. */
+  if we have a Weld joint, starting a new group or composite as needed.
+  Note that if we get here we are _not_ merging LinkComposites or we wouldn't
+  have asked for a new Mobod! */
   if (joint.traits_index() == LinkJointGraph::weld_joint_traits_index()) {
     if (!inboard_mobod.welded_mobods_index_.has_value()) {
       inboard_mobod.welded_mobods_index_ =
@@ -812,6 +930,79 @@ const SpanningForest::Mobod& SpanningForest::AddShadowMobod(
       loop_constraint_index, primary_mobod_index, shadow_mobod.index());
 
   return shadow_mobod;
+}
+
+const SpanningForest::Mobod& SpanningForest::JoinExistingMobod(
+    Mobod* inboard_mobod, LinkOrdinal follower_link_ordinal,
+    JointOrdinal weld_joint_ordinal) {
+  const Joint& weld_joint = joints(weld_joint_ordinal);
+  DRAKE_DEMAND(weld_joint.traits_index() ==
+               LinkJointGraph::weld_joint_traits_index());
+  const LinkCompositeIndex link_composite_index =
+      mutable_graph().AddToLinkComposite(inboard_mobod->link_ordinal(),
+                                         follower_link_ordinal);
+  mutable_graph().set_primary_mobod_for_link(
+      follower_link_ordinal, inboard_mobod->index(), weld_joint.index());
+  inboard_mobod->follower_link_ordinals_.push_back(follower_link_ordinal);
+  const Link& follower_link = links(follower_link_ordinal);
+  if (!follower_link.treat_as_massless())
+    inboard_mobod->has_massful_follower_link_ = true;
+
+  /* We're not going to model this weld Joint since it is interior to
+  a LinkComposite. We need to note the composite it is part of. */
+  mutable_graph().AddUnmodeledJointToComposite(weld_joint_ordinal,
+                                               link_composite_index);
+  return *inboard_mobod;
+}
+
+void SpanningForest::GrowCompositeMobod(
+    Mobod* mobod, BodyIndex follower_link_index,
+    JointOrdinal weld_joint_ordinal,
+    std::vector<JointIndex>* outboard_joint_indexes,
+    int* num_unprocessed_links) {
+  /* If the follower_link has already been processed we're looking at a loop
+  of welds within this LinkComposite. That's harmless: we just add the Joint
+  to the composite and move on. */
+  const LinkOrdinal follower_link_ordinal =
+      graph().index_to_ordinal(follower_link_index);
+  if (link_is_already_in_forest(follower_link_ordinal)) {
+    const Link& inboard_link = links(mobod->link_ordinal());
+    const Link& follower_link = links(follower_link_ordinal);
+    DRAKE_DEMAND(follower_link.composite() == inboard_link.composite());
+    mutable_graph().AddUnmodeledJointToComposite(weld_joint_ordinal,
+                                                 *follower_link.composite());
+    return;
+  }
+
+  JoinExistingMobod(&*mobod, follower_link_ordinal, weld_joint_ordinal);
+  --(*num_unprocessed_links);
+
+  const Link& follower_link = links(follower_link_ordinal);
+  for (JointIndex joint_index : follower_link.joints()) {
+    const JointOrdinal joint_ordinal = graph().index_to_ordinal(joint_index);
+    const Joint& joint = joints(joint_ordinal);
+    if (!should_be_unmodeled_weld_in_composite(joint)) {
+      outboard_joint_indexes->push_back(joint_index);
+      continue;
+    }
+    const BodyIndex other_link_index =
+        joint.other_link_index(follower_link_index);
+    const LinkOrdinal other_link_ordinal =
+        graph().index_to_ordinal(other_link_index);
+
+    /* If the other link has already been processed this is a loop as above. */
+    if (link_is_already_in_forest(other_link_ordinal)) {
+      const Link& other_link = links(other_link_ordinal);
+      DRAKE_DEMAND(other_link.composite() == follower_link.composite());
+      mutable_graph().AddUnmodeledJointToComposite(joint_ordinal,
+                                                   *follower_link.composite());
+      continue;  // On to the next Joint.
+    }
+
+    /* Recursively extend the Composite along the new weld. */
+    GrowCompositeMobod(&*mobod, other_link_index, joint_ordinal,
+                       &*outboard_joint_indexes, &*num_unprocessed_links);
+  }
 }
 
 // TODO(sherm1) Remove this.
