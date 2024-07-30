@@ -210,6 +210,10 @@ template <typename T>
   DRAKE_UNREACHABLE();
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&DispatchRigidSoftCalculation<T>,
+     &DispatchCompliantCompliantCalculation<T>));
+
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ContactCalculator);
 

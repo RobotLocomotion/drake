@@ -230,8 +230,8 @@ bool OrderSignedDistanceToPoint(const SignedDistanceToPoint<T>& p1,
   return p1.id_G < p2.id_G;
 }
 
-// Sort the vector of `ptrs`, (per `less_than_op`), then move the sorted objects
-// to `objects`, ignoring any nullptr entries.
+// Sort the vector of `ptrs`, then move the sorted objects to `objects`,
+// ignoring any nullptr entries.
 template <typename R>
 void SortCullFlatten(
     std::vector<std::unique_ptr<R>>* ptrs,
