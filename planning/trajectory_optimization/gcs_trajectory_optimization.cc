@@ -351,78 +351,77 @@ void Subgraph::AddTimeCost(double weight) {
   }
 }
 
-void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix,
-                                 PathLengthType path_type) {
+void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix) {
   /*
     We will upper bound the trajectory length by the sum of the distances
     between the control points. ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂
   */
-  if (path_type == PathLengthType::L2Norm) {
-    DRAKE_THROW_UNLESS(weight_matrix.rows() == num_positions());
-    DRAKE_THROW_UNLESS(weight_matrix.cols() == num_positions());
+  DRAKE_THROW_UNLESS(weight_matrix.rows() == num_positions());
+  DRAKE_THROW_UNLESS(weight_matrix.cols() == num_positions());
 
-    if (order() == 0) {
-      throw std::runtime_error(
-          "Path length cost is not defined for a set of order 0.");
+  if (order() == 0) {
+    throw std::runtime_error(
+        "Path length cost is not defined for a set of order 0.");
+  }
+
+  MatrixXd A(num_positions(), 2 * num_positions());
+  A << weight_matrix, -weight_matrix;
+  const auto path_length_cost =
+      std::make_shared<L2NormCost>(A, VectorXd::Zero(num_positions()));
+
+  for (Vertex* v : vertices_) {
+    auto control_points = GetControlPoints(*v);
+    for (int i = 0; i < control_points.cols() - 1; ++i) {
+      v->AddCost(Binding<L2NormCost>(
+          path_length_cost,
+          {control_points.col(i + 1), control_points.col(i)}));
     }
+  }
+}
 
-    MatrixXd A(num_positions(), 2 * num_positions());
-    A << weight_matrix, -weight_matrix;
-    const auto path_length_cost =
-        std::make_shared<L2NormCost>(A, VectorXd::Zero(num_positions()));
+void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
+  /*
+  Add a cost to the control points of the trajectory that is of the form ∑
+  (rᵢ₊₁ * weight_matrix * rᵢ)
+  */
 
-    for (Vertex* v : vertices_) {
-      auto control_points = GetControlPoints(*v);
-      for (int i = 0; i < control_points.cols() - 1; ++i) {
-        v->AddCost(Binding<L2NormCost>(
-            path_length_cost,
-            {control_points.col(i + 1), control_points.col(i)}));
-      }
+  Eigen::MatrixXd b = Eigen::VectorXd::Zero(2);
+
+  for (int i = 0; i < b.rows(); i++) {
+    for (int j = 0; j < b.cols(); j++) {
+      b(i, j) = 0;
     }
-  } else if (path_type == PathLengthType::SQUARED_L2Norm) {
-    /*
-    Add a cost to the control points of the trajectory that is of the form ∑
-    (rᵢ₊₁ * weight_matrix * rᵢ)
-    */
+  }
 
-    Eigen::MatrixXd b = Eigen::VectorXd::Zero(2);
+  double constTerm = 0;
+  const auto path_squared_cost =
+      std::make_shared<QuadraticCost>(weight_matrix, b, constTerm);
 
-    for (int i = 0; i < b.rows(); i++) {
-      for (int j = 0; j < b.cols(); j++) {
-        b(i, j) = 0;
-      }
-    }
-
-    double constTerm = 0;
-    const auto path_squared_cost =
-        std::make_shared<QuadraticCost>(weight_matrix, b, constTerm);
-
-    for (Vertex* v : vertices_) {
-      auto control_points = GetControlPoints(*v);
-      for (int i = 0; i < control_points.cols() - 1; ++i) {
-        for (int j = 0; j < num_positions(); j++) {
-          auto vars_vec = {control_points.col(i + 1)(j),
-                           control_points.col(i)(j)};
-          v->AddCost(Binding<QuadraticCost>(path_squared_cost,
-                                            {control_points.col(i + 1).row(j),
-                                             control_points.col(i).row(j)}));
-        }
+  for (Vertex* v : vertices_) {
+    auto control_points = GetControlPoints(*v);
+    for (int i = 0; i < control_points.cols() - 1; ++i) {
+      for (int j = 0; j < num_positions(); j++) {
+        auto vars_vec = {control_points.col(i + 1)(j),
+                         control_points.col(i)(j)};
+        v->AddCost(Binding<QuadraticCost>(
+            path_squared_cost,
+            {control_points.col(i + 1).row(j), control_points.col(i).row(j)}));
       }
     }
   }
 }
 
-void Subgraph::AddPathLengthCost(double weight, PathLengthType path_type) {
-  if (path_type == PathLengthType::L2Norm) {
-    const MatrixXd weight_matrix =
-        weight * MatrixXd::Identity(num_positions(), num_positions());
-    return Subgraph::AddPathLengthCost(weight_matrix, path_type);
-  } else if (path_type == PathLengthType::SQUARED_L2Norm) {
-    Eigen::MatrixXd Q(2, 2);
-    Q << 2, -2, -2, 2;
+void Subgraph::AddPathLengthCost(double weight) {
+  const MatrixXd weight_matrix =
+      weight * MatrixXd::Identity(num_positions(), num_positions());
+  return Subgraph::AddPathLengthCost(weight_matrix);
+}
 
-    return Subgraph::AddPathLengthCost(weight * Q, path_type);
-  }
+void Subgraph::AddPathEnergyCost(double weight) {
+  Eigen::MatrixXd Q(2, 2);
+  Q << 2, -2, -2, 2;
+
+  return Subgraph::AddPathEnergyCost(weight * Q);
 }
 
 void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
@@ -1425,12 +1424,11 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
   if (order > 0) {
     /// These costs and constraints rely on the derivative of the trajectory.
     for (const MatrixXd& weight_matrix : global_path_length_costs_) {
-      subgraph->AddPathLengthCost(weight_matrix, PathLengthType::L2Norm);
+      subgraph->AddPathLengthCost(weight_matrix);
     }
     // These costs and constraints rely on the derivative of the trajectory.
-    for (const MatrixXd& weight_matrix : global_quad_path_length_costs_) {
-      subgraph->AddPathLengthCost(weight_matrix,
-                                  PathLengthType::SQUARED_L2Norm);
+    for (const MatrixXd& weight_matrix : global_path_energy_costs_) {
+      subgraph->AddPathEnergyCost(weight_matrix);
     }
     for (const auto& [lb, ub] : global_velocity_bounds_) {
       subgraph->AddVelocityBounds(lb, ub);
@@ -1563,34 +1561,39 @@ void GcsTrajectoryOptimization::AddTimeCost(double weight) {
   global_time_costs_.push_back(weight);
 }
 
-void GcsTrajectoryOptimization::AddPathLengthCost(const MatrixXd& weight_matrix,
-                                                  PathLengthType path_type) {
+void GcsTrajectoryOptimization::AddPathLengthCost(
+    const MatrixXd& weight_matrix) {
   // Add path length cost to each subgraph.
   for (std::unique_ptr<Subgraph>& subgraph : subgraphs_) {
     if (subgraph->order() > 0) {
-      subgraph->AddPathLengthCost(weight_matrix, path_type);
+      subgraph->AddPathLengthCost(weight_matrix);
     }
   }
-  if (path_type == PathLengthType::L2Norm) {
-    global_path_length_costs_.push_back(weight_matrix);
-  } else if (path_type == PathLengthType::SQUARED_L2Norm) {
-    global_quad_path_length_costs_.push_back(weight_matrix);
-  }
+  global_path_length_costs_.push_back(weight_matrix);
 }
 
-void GcsTrajectoryOptimization::AddPathLengthCost(double weight,
-                                                  PathLengthType path_type) {
-  if (path_type == PathLengthType::L2Norm) {
-    const MatrixXd weight_matrix =
-        weight * MatrixXd::Identity(num_positions(), num_positions());
-    return GcsTrajectoryOptimization::AddPathLengthCost(weight_matrix,
-                                                        path_type);
-  } else if (path_type == PathLengthType::SQUARED_L2Norm) {
-    Eigen::MatrixXd Q(2, 2);
-    Q << 2, -2, -2, 2;
-
-    return GcsTrajectoryOptimization::AddPathLengthCost(weight * Q, path_type);
+void GcsTrajectoryOptimization::AddPathEnergyCost(
+    const MatrixXd& weight_matrix) {
+  // Add path length cost to each subgraph.
+  for (std::unique_ptr<Subgraph>& subgraph : subgraphs_) {
+    if (subgraph->order() > 0) {
+      subgraph->AddPathEnergyCost(weight_matrix);
+    }
   }
+  global_path_energy_costs_.push_back(weight_matrix);
+}
+
+void GcsTrajectoryOptimization::AddPathLengthCost(double weight) {
+  const MatrixXd weight_matrix =
+      weight * MatrixXd::Identity(num_positions(), num_positions());
+  return GcsTrajectoryOptimization::AddPathLengthCost(weight_matrix);
+}
+
+void GcsTrajectoryOptimization::AddPathEnergyCost(double weight) {
+  Eigen::MatrixXd Q(2, 2);
+  Q << 2, -2, -2, 2;
+
+  return GcsTrajectoryOptimization::AddPathEnergyCost(weight * Q);
 }
 
 void GcsTrajectoryOptimization::AddVelocityBounds(

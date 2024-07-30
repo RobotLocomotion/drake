@@ -345,13 +345,6 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
     constexpr auto& cls_doc = doc.GcsTrajectoryOptimization;
     py::class_<Class> gcs_traj_opt(m, "GcsTrajectoryOptimization", cls_doc.doc);
 
-    py::enum_<Class::PathLengthType>(gcs_traj_opt, "PathLengthType",
-        "Describes the type of path length cost to apply.")
-        .value("L2Norm", Class::PathLengthType::L2Norm,
-            "The L2 norm path length cost.")
-        .value("SQUARED_L2Norm", Class::PathLengthType::SQUARED_L2Norm,
-            "The squared L2 norm path length cost.")
-        .export_values();
     // Subgraph
     const auto& subgraph_doc = doc.GcsTrajectoryOptimization.Subgraph;
     py::class_<Class::Subgraph>(gcs_traj_opt, "Subgraph", subgraph_doc.doc)
@@ -363,6 +356,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 geometry::optimization::GraphOfConvexSets::Vertex*>&>(
                 &Class::Subgraph::Vertices),
             py_rvp::reference_internal, subgraph_doc.Vertices.doc)
+        .def("Edges",
+            overload_cast_explicit<const std::vector<
+                geometry::optimization::GraphOfConvexSets::Edge*>&>(
+                &Class::Subgraph::Edges),
+            py_rvp::reference_internal, subgraph_doc.Edges.doc)
         .def(
             "regions",
             [](Class::Subgraph* self) {
@@ -379,21 +377,23 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddTimeCost", &Class::Subgraph::AddTimeCost,
             py::arg("weight") = 1.0, subgraph_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",
-            py::overload_cast<const Eigen::MatrixXd&,
-                drake::planning::trajectory_optimization::
-                    GcsTrajectoryOptimization::PathLengthType>(
+            py::overload_cast<const Eigen::MatrixXd&>(
                 &Class::Subgraph::AddPathLengthCost),
             py::arg("weight_matrix"),
-            py::arg("path_type") = Class::PathLengthType::L2Norm,
-            subgraph_doc.AddPathLengthCost.doc_2args_weight_matrix_path_type)
+            subgraph_doc.AddPathLengthCost.doc_1args_weight_matrix)
+        .def("AddPathEnergyCost",
+            py::overload_cast<const Eigen::MatrixXd&>(
+                &Class::Subgraph::AddPathEnergyCost),
+            py::arg("weight_matrix"),
+            subgraph_doc.AddPathEnergyCost.doc_1args_weight_matrix)
         .def("AddPathLengthCost",
-            py::overload_cast<double,
-                drake::planning::trajectory_optimization::
-                    GcsTrajectoryOptimization::PathLengthType>(
-                &Class::Subgraph::AddPathLengthCost),
+            py::overload_cast<double>(&Class::Subgraph::AddPathLengthCost),
             py::arg("weight") = 1.0,
-            py::arg("path_type") = Class::PathLengthType::L2Norm,
-            subgraph_doc.AddPathLengthCost.doc_2args_weight_path_type)
+            subgraph_doc.AddPathLengthCost.doc_1args_weight)
+        .def("AddPathEnergyCost",
+            py::overload_cast<double>(&Class::Subgraph::AddPathEnergyCost),
+            py::arg("weight") = 1.0,
+            subgraph_doc.AddPathEnergyCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::Subgraph::AddVelocityBounds,
             py::arg("lb"), py::arg("ub"), subgraph_doc.AddVelocityBounds.doc)
         .def("AddNonlinearDerivativeBounds",
@@ -510,21 +510,21 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddTimeCost", &Class::AddTimeCost, py::arg("weight") = 1.0,
             cls_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",
-            py::overload_cast<const Eigen::MatrixXd&,
-                drake::planning::trajectory_optimization::
-                    GcsTrajectoryOptimization::PathLengthType>(
+            py::overload_cast<const Eigen::MatrixXd&>(
                 &Class::AddPathLengthCost),
             py::arg("weight_matrix"),
-            py::arg("path_type") = Class::PathLengthType::L2Norm,
-            cls_doc.AddPathLengthCost.doc_2args_weight_matrix_path_type)
+            cls_doc.AddPathLengthCost.doc_1args_weight_matrix)
+        .def("AddPathEnergyCost",
+            py::overload_cast<const Eigen::MatrixXd&>(
+                &Class::AddPathEnergyCost),
+            py::arg("weight_matrix"),
+            cls_doc.AddPathEnergyCost.doc_1args_weight_matrix)
         .def("AddPathLengthCost",
-            py::overload_cast<double,
-                drake::planning::trajectory_optimization::
-                    GcsTrajectoryOptimization::PathLengthType>(
-                &Class::AddPathLengthCost),
-            py::arg("weight") = 1.0,
-            py::arg("path_type") = Class::PathLengthType::L2Norm,
-            cls_doc.AddPathLengthCost.doc_2args_weight_path_type)
+            py::overload_cast<double>(&Class::AddPathLengthCost),
+            py::arg("weight") = 1.0, cls_doc.AddPathLengthCost.doc_1args_weight)
+        .def("AddPathEnergyCost",
+            py::overload_cast<double>(&Class::AddPathEnergyCost),
+            py::arg("weight") = 1.0, cls_doc.AddPathEnergyCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), cls_doc.AddVelocityBounds.doc)
         .def("AddNonlinearDerivativeBounds",

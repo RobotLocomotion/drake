@@ -173,7 +173,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, QuadPathLengthCost) {
   const int kOrder = 2;
   auto& regions = trajopt.AddRegions(
       MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), kOrder);
-  regions.AddPathLengthCost(1, drake::planning::trajectory_optimization::GcsTrajectoryOptimization::PathLengthType::SQUARED_L2Norm);
+  regions.AddPathEnergyCost();
 
   const GraphOfConvexSets& gcs = trajopt.graph_of_convex_sets();
   EXPECT_EQ(gcs.Vertices().size(), 1);
@@ -214,7 +214,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, QuadraticPathLengthSpacing) {
   gcs.AddEdges(source, regions);
   gcs.AddEdges(regions, target);
 
-  gcs.AddPathLengthCost(1, drake::planning::trajectory_optimization::GcsTrajectoryOptimization::PathLengthType::SQUARED_L2Norm);
+  gcs.AddPathEnergyCost();
 
   auto verts = regions.Vertices();
 
