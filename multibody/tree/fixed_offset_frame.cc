@@ -28,6 +28,25 @@ FixedOffsetFrame<T>::FixedOffsetFrame(const std::string& name,
 template <typename T>
 FixedOffsetFrame<T>::~FixedOffsetFrame() = default;
 
+
+template <typename T>
+void FixedOffsetFrame<T>::SetPoseInParentFrame(
+    systems::Context<T>* context, const math::RigidTransform<T>& X_PF) const {
+  systems::BasicVector<T>& X_PF_parameter =
+      context->get_mutable_numeric_parameter(X_PF_parameter_index_);
+  X_PF_parameter.set_value(
+      Eigen::Map<const VectorX<T>>(X_PF.GetAsMatrix34().data(), 12, 1));
+}
+
+template <typename T>
+math::RigidTransform<T> FixedOffsetFrame<T>::GetPoseInParentFrame(
+    const systems::Context<T>& context) const {
+  const systems::BasicVector<T>& X_PF_parameter =
+      context.get_numeric_parameter(X_PF_parameter_index_);
+  return math::RigidTransform<T>(Eigen::Map<const Eigen::Matrix<T, 3, 4>>(
+      X_PF_parameter.get_value().data()));
+}
+
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> FixedOffsetFrame<T>::TemplatedDoCloneToScalar(
@@ -55,6 +74,31 @@ std::unique_ptr<Frame<symbolic::Expression>>
 FixedOffsetFrame<T>::DoCloneToScalar(
     const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+math::RigidTransform<T> FixedOffsetFrame<T>::DoCalcPoseInBodyFrame(
+    const systems::Parameters<T>& parameters) const {
+  // X_BF = X_BP * X_PF
+  const systems::BasicVector<T>& X_PF_parameter =
+      parameters.get_numeric_parameter(X_PF_parameter_index_);
+  const math::RigidTransform<T> X_PF =
+      math::RigidTransform<T>(Eigen::Map<const Eigen::Matrix<T, 3, 4>>(
+          X_PF_parameter.get_value().data()));
+  return parent_frame_.CalcOffsetPoseInBody(parameters, X_PF);
+}
+
+template <typename T>
+math::RotationMatrix<T> FixedOffsetFrame<T>::DoCalcRotationMatrixInBodyFrame(
+    const systems::Parameters<T>& parameters) const {
+  // R_BF = R_BP * R_PF
+  const systems::BasicVector<T>& X_PF_parameter =
+      parameters.get_numeric_parameter(X_PF_parameter_index_);
+  return parent_frame_.CalcOffsetRotationMatrixInBody(
+      parameters,
+      math::RotationMatrix<T>(Eigen::Map<const Eigen::Matrix<T, 3, 4>>(
+                                  X_PF_parameter.get_value().data())
+                                  .template block<3, 3>(0, 0)));
 }
 
 }  // namespace multibody
