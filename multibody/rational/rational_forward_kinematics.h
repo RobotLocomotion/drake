@@ -285,7 +285,7 @@ class RationalForwardKinematics {
   // indeterminates in the rational functions.
   std::vector<symbolic::Variable> s_;
   // Each s(i) is associated with a mobilizer.
-  std::unordered_map<symbolic::Variable::Id, internal::MobilizerIndex>
+  std::unordered_map<symbolic::Variable::Id, internal::MobodIndex>
       map_s_to_mobilizer_;
   // map_mobilizer_to_s_index_[mobilizer_index] returns the starting index of
   // the mobilizer's variable in s_ (the variable will be contiguous in s for

@@ -704,6 +704,149 @@ bool LinkJointGraph::link_is_static(const Link& link) const {
       ForestBuildingOptions::kStatic);
 }
 
+/* Runs through the Mobods in the model but records the (active) Link
+indexes rather than the Mobod indexes. */
+std::vector<BodyIndex> LinkJointGraph::FindPathFromWorld(
+    BodyIndex link_index) const {
+  ThrowIfForestNotBuiltYet(__func__);
+  const SpanningForest::Mobod* mobod =
+      &forest().mobods()[link_to_mobod(link_index)];
+  std::vector<BodyIndex> path(mobod->level() + 1);
+  while (mobod->inboard().is_valid()) {
+    const Link& link = links(mobod->link_ordinal());
+    path[mobod->level()] = link.index();  // Active Link if composite.
+    mobod = &forest().mobods(mobod->inboard());
+  }
+  DRAKE_DEMAND(mobod->is_world());
+  path[0] = BodyIndex(0);
+  return path;
+}
+
+BodyIndex LinkJointGraph::FindFirstCommonAncestor(BodyIndex link1_index,
+                                                  BodyIndex link2_index) const {
+  ThrowIfForestNotBuiltYet(__func__);
+  const MobodIndex mobod_ancestor = forest().FindFirstCommonAncestor(
+      link_to_mobod(link1_index), link_to_mobod(link2_index));
+  const Link& ancestor_link =
+      links(forest().mobod_to_link_ordinal(mobod_ancestor));
+  return ancestor_link.index();
+}
+
+std::vector<BodyIndex> LinkJointGraph::FindSubtreeLinks(
+    BodyIndex link_index) const {
+  ThrowIfForestNotBuiltYet(__func__);
+  const MobodIndex root_mobod_index = link_to_mobod(link_index);
+  return forest().FindSubtreeLinks(root_mobod_index);
+}
+
+// Our link_composites collection doesn't include lone Links that aren't welded
+// to anything. The return from this function must include every Link, with
+// the World link in the first set (even if nothing is welded to it).
+std::vector<std::set<BodyIndex>> LinkJointGraph::GetSubgraphsOfWeldedLinks()
+    const {
+  ThrowIfForestNotBuiltYet(__func__);
+
+  std::vector<std::set<BodyIndex>> subgraphs;
+
+  // First, collect all the precomputed Link Composites. World is always
+  // the first one, even if nothing is welded to it.
+  for (const LinkComposite& composite : link_composites()) {
+    subgraphs.emplace_back(
+        std::set<BodyIndex>(composite.links.cbegin(), composite.links.cend()));
+  }
+
+  // Finally, make one-Link subgraphs for Links that aren't in any composite.
+  for (const Link& link : links()) {
+    if (link.composite().has_value()) continue;
+    subgraphs.emplace_back(std::set<BodyIndex>{link.index()});
+  }
+
+  return subgraphs;
+}
+
+// Strategy here is to make repeated use of CalcLinksWeldedTo(), separating
+// the singleton sets from the actually-welded sets, and then move the
+// singletons to the end to match what GetSubgraphsOfWeldedLinks() does.
+std::vector<std::set<BodyIndex>> LinkJointGraph::CalcSubgraphsOfWeldedLinks()
+    const {
+  std::vector<bool> visited(num_user_links(), false);
+
+  // World always comes first, even if it is alone.
+  std::vector<std::set<BodyIndex>> subgraphs{CalcLinksWeldedTo(BodyIndex(0))};
+  for (BodyIndex index : subgraphs.back()) visited[index] = true;
+
+  std::vector<std::set<BodyIndex>> singletons;
+  // If a Forest was already built, there may be shadow links added to
+  // the graph -- don't process those here.
+  for (BodyIndex link_index(1); link_index < num_user_links(); ++link_index) {
+    if (visited[link_index]) continue;
+    std::set<BodyIndex> welded_links = CalcLinksWeldedTo(link_index);
+    for (BodyIndex index : welded_links) visited[index] = true;
+    auto* which_list = ssize(welded_links) == 1 ? &singletons : &subgraphs;
+    which_list->emplace_back(std::move(welded_links));
+  }
+
+  // Now move all the singletons onto the end of the subgraphs list.
+  for (auto& singleton : singletons)
+    subgraphs.emplace_back(std::move(singleton));
+
+  return subgraphs;
+}
+
+// If the Link isn't part of a LinkComposite just return the Link. Otherwise,
+// return all the Links in its LinkComposite.
+std::set<BodyIndex> LinkJointGraph::GetLinksWeldedTo(
+    BodyIndex link_index) const {
+  ThrowIfForestNotBuiltYet(__func__);
+  DRAKE_DEMAND(link_index.is_valid());
+  DRAKE_THROW_UNLESS(has_link(link_index));
+  const Link& link = link_by_index(link_index);
+  const std::optional<LinkCompositeIndex> composite_index = link.composite();
+  if (!composite_index.has_value()) return std::set<BodyIndex>{link_index};
+  const std::vector<BodyIndex>& welded_links =
+      link_composites(*composite_index).links;
+  return std::set<BodyIndex>(welded_links.cbegin(), welded_links.cend());
+}
+
+// Without a Forest we don't have LinkComposites available so recursively
+// chase Weld joints instead.
+std::set<BodyIndex> LinkJointGraph::CalcLinksWeldedTo(
+    BodyIndex link_index) const {
+  std::set<BodyIndex> result;
+  AppendLinksWeldedTo(link_index, &result);
+  return result;
+}
+
+void LinkJointGraph::AppendLinksWeldedTo(BodyIndex link_index,
+                                         std::set<BodyIndex>* result) const {
+  DRAKE_DEMAND(result != nullptr);
+  DRAKE_DEMAND(link_index.is_valid());
+  DRAKE_THROW_UNLESS(has_link(link_index));
+  DRAKE_DEMAND(result->count(link_index) == 0);
+
+  const Link& link = link_by_index(link_index);
+
+  // A Link is always considered welded to itself.
+  result->insert(link_index);
+  for (auto joint_index : link.joints()) {
+    const Joint& joint = joint_by_index(joint_index);
+    if (joint.traits_index() != weld_joint_traits_index()) continue;
+    const BodyIndex welded_link_index = joint.other_link_index(link_index);
+    // Don't reprocess if we already did the other end.
+    if (result->count(welded_link_index) == 0)
+      AppendLinksWeldedTo(welded_link_index, &*result);
+  }
+}
+
+void LinkJointGraph::ThrowIfForestNotBuiltYet(const char* func) const {
+  if (!forest_is_valid()) {
+    throw std::logic_error(
+        fmt::format("{}(): no SpanningForest available. Call BuildForest() "
+                    "before calling this function.",
+                    func));
+  }
+}
+
 void LinkJointGraph::ThrowLinkWasRemoved(const char* func,
                                          BodyIndex link_index) const {
   throw std::logic_error(fmt::format(
