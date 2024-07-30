@@ -3,6 +3,7 @@ import typing
 
 import numpy as np
 import scipy.sparse
+import copy
 
 import pydrake.solvers as mp
 import pydrake.symbolic as sym
@@ -95,6 +96,24 @@ class TestCost(unittest.TestCase):
                          "(y + \\sin{x})")
         binding = mp.Binding[mp.ExpressionCost](cost, cost.vars())
         self.assertEqual(binding.ToLatex(precision=1), "(y + \\sin{x})")
+
+    def test_eq(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = np.sin(x) + y
+        cost = mp.ExpressionCost(e=e)
+        cost2 = cost
+        self.assertTrue(cost == cost)
+        self.assertTrue(cost == cost2)
+        self.assertEqual(cost, cost2)
+
+    def test_hash(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = np.log(2*x) + y**2
+        cost = mp.ExpressionCost(e=e)
+        cost2 = cost
+        self.assertEqual(hash(cost), hash(cost2))
 
 
 class TestConstraints(unittest.TestCase):
@@ -235,6 +254,28 @@ class TestConstraints(unittest.TestCase):
         ]
         for cls in cls_list:
             mp.Binding[cls]
+
+    def test_eq(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = np.sin(x) + y
+        constraint = mp.ExpressionConstraint(v=np.array([e]),
+                                             lb=np.array([1.0]),
+                                             ub=np.array([2.0]))
+        constraint2 = constraint
+        self.assertTrue(constraint == constraint)
+        self.assertTrue(constraint == constraint2)
+        self.assertEqual(constraint, constraint2)
+
+    def test_hash(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = np.log(2*x) + y**2
+        constraint = mp.ExpressionConstraint(v=np.array([e]),
+                                             lb=np.array([1.0]),
+                                             ub=np.array([2.0]))
+        constraint2 = constraint
+        self.assertEqual(hash(constraint), hash(constraint2))
 
 
 # A dummy value function for MinimumValue{Lower,Upper}BoundConstraint.

@@ -36,6 +36,10 @@ void DefineSolversGurobi(py::module m);
 /* Defines the IPOPT bindings. See solvers_py_ipopt.cc. */
 void DefineSolversIpopt(py::module m);
 
+/* Defines the ProgramAttributes bindings. See solvers_py_program_attributes.cc.
+ */
+void DefineProgramAttribute(py::module m);
+
 /* Defines the cost, constraint, mathematical program, etc. bindings.
 See solvers_py_mathematicalprogram.cc.
 TODO(jwnimmer-tri) Split this into smaller pieces.

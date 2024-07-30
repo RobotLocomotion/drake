@@ -70,7 +70,11 @@ auto RegisterBinding(py::handle* scope) {
       .def("variables", &B::variables, cls_doc.variables.doc)
       .def(
           "ToLatex", &B::ToLatex, py::arg("precision") = 3, cls_doc.ToLatex.doc)
-      .def("__str__", &B::to_string, cls_doc.to_string.doc);
+      .def("__str__", &B::to_string, cls_doc.to_string.doc)
+      .def("__hash__", [](const B& self) { return std::hash<B>{}(self); })
+      .def(
+          "__eq__", [](const B& self, const B& other) { return self == other; },
+          py::is_operator());
   if (!std::is_same_v<C, EvaluatorBase>) {
     // This is required for implicit argument conversion. See below for
     // `EvaluatorBase`'s generic constructor for attempting downcasting.
