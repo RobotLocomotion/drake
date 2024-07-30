@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
+#include "drake/common/file_contents.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/temp_directory.h"
@@ -550,14 +551,17 @@ GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
 
-/* Confirm parsing from a data stream. We've already tested most of the logic
- via the MakeConvexHull() API. We just need indicators that the stream version
+/* Confirm parsing from file contents. We've already tested most of the logic
+ via the MakeConvexHull() API. We just need indicators that the contents version
  uses all of the parameter as expected. */
-GTEST_TEST(MakeConvexHullMeshTest, MakeFromStream) {
+GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   const std::string box_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
   std::ifstream box_file(box_path);
   DRAKE_DEMAND(box_file.good());
+  std::stringstream contents;
+  contents << box_file.rdbuf();
+  const common::FileContents obj_data(std::move(contents).str(), "box.obj");
   // The box in box.obj has edge length of 2 m. We'll scale it by s = kScale and
   // then inflate it δ = kMargin. The effective size will be 2s + 2δ. The cube
   // is a scaled unit cube; so we need to scale by (2s + 2δ) / 2 = s + δ.
@@ -570,7 +574,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromStream) {
     SCOPED_TRACE("Valid obj stream");
     box_file.seekg(0);
     const PolyMesh dut =
-        MakeConvexHullFromStream(&box_file, ".obj", "box.obj", kScale, kMargin);
+        MakeConvexHullFromContents(obj_data, ".obj", kScale, kMargin);
     MeshesAreEquivalent(dut, expected, 1e-14);
   }
 
@@ -580,7 +584,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromStream) {
       SCOPED_TRACE(fmt::format("Unimplemented {} stream", ext));
       box_file.seekg(0);
       DRAKE_EXPECT_THROWS_MESSAGE(
-          MakeConvexHullFromStream(&box_file, ext, "box.obj", kScale, kMargin),
+          MakeConvexHullFromContents(obj_data, ext, kScale, kMargin),
           ".*can't be used with stream.*");
     }
   }
@@ -590,7 +594,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromStream) {
     SCOPED_TRACE("Unsupported extension");
     box_file.seekg(0);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeConvexHullFromStream(&box_file, ".txt", "box.obj", kScale, kMargin),
+        MakeConvexHullFromContents(obj_data, ".txt", kScale, kMargin),
         ".*only applies to .obj.*; unsupported extension '.txt'.*");
   }
 }
