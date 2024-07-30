@@ -35,16 +35,24 @@ std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
     const math::RigidTransform<T>& X_WG, GeometryId id1,
     HydroelasticContactRepresentation representation);
 
+/* Enumerate the various results of attempting to make a contact surface. */
+// clang-format off
 enum class ContactSurfaceResult {
   kCalculated,  //< Computation was successful; a contact surface is
-  //< only produced if the objects were in contact.
+                //< only produced if the objects were in contact.
   kUnsupported,  //< Contact surface can't be computed for the geometry
-  //< pair.
+                 //< pair.
   kHalfSpaceHalfSpace,  //< Contact between two half spaces; not allowed.
   kRigidRigid,          //< Contact between two rigid geometries; not allowed.
   kCompliantHalfSpaceCompliantMesh,  //< Contact between a compliant mesh and a
-  //< compliant half space; not allowed.
+                                     //< compliant half space; not allowed.
 };
+// clang-format on
+
+/* @returns true iff the result indicates a failure. */
+bool inline ContactSurfaceFailed(ContactSurfaceResult result) {
+  return result != ContactSurfaceResult::kCalculated;
+}
 
 /* Calculator for the shape-to-shape hydroelastic contact results. It needs:
 
@@ -89,18 +97,17 @@ class ContactCalculator {
   /* Makes the contact surface (if it exists) between two potentially
      colliding geometries.
 
-     @param id0       Id of the first object in the pair (order insignificant).
-     @param id1       Id of the second object in the pair (order insignificant).
+     @param id_A     Id of the first object in the pair (order insignificant).
+     @param id_B     Id of the second object in the pair (order insignificant).
      @param[out] callback_data   Supporting data to compute the contact surface.
      @returns both the result code, and the new surface, if any.
      @tparam T  The scalar type for the query.  */
-  MaybeMakeContactSurfaceResult MaybeMakeContactSurface(GeometryId id0,
-                                                        GeometryId id1) const;
+  MaybeMakeContactSurfaceResult MaybeMakeContactSurface(GeometryId id_A,
+                                                        GeometryId id_B) const;
 
   /* @throws a std::exception with an appropriate error message for the various
      result codes that indicate failure.
-     @pre result != kCalculated
-  */
+     @pre ContactSurfaceFailed(result) == true */
   [[noreturn]] void RejectResult(ContactSurfaceResult result,
                                  fcl::CollisionObjectd* object_A_ptr,
                                  fcl::CollisionObjectd* object_B_ptr) const;

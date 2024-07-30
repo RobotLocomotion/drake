@@ -15,9 +15,6 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
-/* Computes ContactSurface using the algorithm appropriate to the Shape types
- represented by the given `soft` and `rigid` geometries.
- @pre The geometries are not *both* half spaces.  */
 template <typename T>
 std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     const SoftGeometry& soft, const math::RigidTransform<T>& X_WS,
@@ -54,9 +51,6 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
   }
 }
 
-/* Computes ContactSurface using the algorithm appropriate to the Shape types
- represented by the given `compliant` geometries.
- @pre None of the geometries are half spaces. */
 template <typename T>
 std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
     const SoftGeometry& compliant0_F, const math::RigidTransform<T>& X_WF,
@@ -78,16 +72,16 @@ std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
 
 template <typename T>
 typename ContactCalculator<T>::MaybeMakeContactSurfaceResult
-ContactCalculator<T>::MaybeMakeContactSurface(GeometryId id0,
-                                              GeometryId id1) const {
+ContactCalculator<T>::MaybeMakeContactSurface(GeometryId id_A,
+                                              GeometryId id_B) const {
   // One or two objects have vanished. We can report that we're done
   // calculating the contact (no contact).
-  if (geometries_.is_vanished(id0) || geometries_.is_vanished(id1)) {
+  if (geometries_.is_vanished(id_A) || geometries_.is_vanished(id_B)) {
     return {ContactSurfaceResult::kCalculated, nullptr};
   }
 
-  const HydroelasticType type_A = geometries_.hydroelastic_type(id0);
-  const HydroelasticType type_B = geometries_.hydroelastic_type(id1);
+  const HydroelasticType type_A = geometries_.hydroelastic_type(id_A);
+  const HydroelasticType type_B = geometries_.hydroelastic_type(id_B);
 
   // One or two objects have no hydroelastic type.
   if (type_A == HydroelasticType::kUndefined ||
@@ -107,11 +101,11 @@ ContactCalculator<T>::MaybeMakeContactSurface(GeometryId id0,
     // Enforce consistent ordering for reproducibility/repeatability of
     // simulation since the same pair of geometries (A,B) may be called
     // either as (A,B) or (B,A).
-    if (id0.get_value() > id1.get_value()) {
-      std::swap(id0, id1);
+    if (id_A.get_value() > id_B.get_value()) {
+      std::swap(id_A, id_B);
     }
-    const SoftGeometry& soft0 = geometries_.soft_geometry(id0);
-    const SoftGeometry& soft1 = geometries_.soft_geometry(id1);
+    const SoftGeometry& soft0 = geometries_.soft_geometry(id_A);
+    const SoftGeometry& soft1 = geometries_.soft_geometry(id_B);
 
     // Halfspace vs. halfspace is not supported.
     if (soft0.is_half_space() && soft1.is_half_space()) {
@@ -126,8 +120,8 @@ ContactCalculator<T>::MaybeMakeContactSurface(GeometryId id0,
     // Compliant mesh vs. compliant mesh.
     DRAKE_DEMAND(!soft0.is_half_space() && !soft1.is_half_space());
     std::unique_ptr<ContactSurface<T>> surface =
-        DispatchCompliantCompliantCalculation(soft0, X_WGs_.at(id0), id0, soft1,
-                                              X_WGs_.at(id1), id1,
+        DispatchCompliantCompliantCalculation(soft0, X_WGs_.at(id_A), id_A,
+                                              soft1, X_WGs_.at(id_B), id_B,
                                               representation_);
     return {ContactSurfaceResult::kCalculated, std::move(surface)};
   }
@@ -139,8 +133,8 @@ ContactCalculator<T>::MaybeMakeContactSurface(GeometryId id0,
                 type_B == HydroelasticType::kRigid));
 
   bool A_is_rigid = type_A == HydroelasticType::kRigid;
-  const GeometryId id_S = A_is_rigid ? id1 : id0;
-  const GeometryId id_R = A_is_rigid ? id0 : id1;
+  const GeometryId id_S = A_is_rigid ? id_B : id_A;
+  const GeometryId id_R = A_is_rigid ? id_A : id_B;
 
   const SoftGeometry& soft = geometries_.soft_geometry(id_S);
   const RigidGeometry& rigid = geometries_.rigid_geometry(id_R);
@@ -209,6 +203,10 @@ template <typename T>
   }
   DRAKE_UNREACHABLE();
 }
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&DispatchRigidSoftCalculation<T>,
+     &DispatchCompliantCompliantCalculation<T>));
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ContactCalculator);

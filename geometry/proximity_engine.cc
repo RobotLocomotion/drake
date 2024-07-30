@@ -191,7 +191,7 @@ void FclDistance(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
                  data, callback);
 }
 
-// Compare function to use with ordering PenetrationAsPointPairs.
+// Compare functions to use with ordering PenetrationAsPointPairs.
 template <typename T>
 bool OrderPointPair(const PenetrationAsPointPair<T>& p1,
                     const PenetrationAsPointPair<T>& p2) {
@@ -199,16 +199,16 @@ bool OrderPointPair(const PenetrationAsPointPair<T>& p1,
   return p1.id_B < p2.id_B;
 }
 template <typename T>
-bool OrderPointPairPtr(const std::unique_ptr<PenetrationAsPointPair<T>>& p1,
-                       const std::unique_ptr<PenetrationAsPointPair<T>>& p2) {
+bool OrderPtr(const std::unique_ptr<PenetrationAsPointPair<T>>& p1,
+              const std::unique_ptr<PenetrationAsPointPair<T>>& p2) {
   if (p1 == nullptr || p2 == nullptr) return p1 < p2;
   return OrderPointPair(*p1, *p2);
 }
 
 // Compare function to use with ordering ContactSurfaces.
 template <typename T>
-bool OrderContactSurfacePtr(const std::unique_ptr<ContactSurface<T>>& s1,
-                            const std::unique_ptr<ContactSurface<T>>& s2) {
+bool OrderPtr(const std::unique_ptr<ContactSurface<T>>& s1,
+              const std::unique_ptr<ContactSurface<T>>& s2) {
   if (s1 == nullptr || s2 == nullptr) return s1 < s2;
   if (s1->id_M() != s2->id_M()) return s1->id_M() < s2->id_M();
   return s1->id_N() < s2->id_N();
@@ -230,15 +230,16 @@ bool OrderSignedDistanceToPoint(const SignedDistanceToPoint<T>& p1,
   return p1.id_G < p2.id_G;
 }
 
-// Sort the vector of `ptrs`, (per `less_than_op`), then move the sorted objects
-// to `objects`, ignoring any nullptr entries.
+// Sort the vector of `ptrs`, then move the sorted objects to `objects`,
+// ignoring any nullptr entries.
 template <typename R>
 void SortCullFlatten(
     std::vector<std::unique_ptr<R>>* ptrs,
-    std::vector<R>* objects,
-    std::function<bool(const std::unique_ptr<R>&, const std::unique_ptr<R>&)>
-        less_than_op) {
-  std::sort(ptrs->begin(), ptrs->end(), less_than_op);
+    std::vector<R>* objects) {
+  std::sort(ptrs->begin(), ptrs->end(),
+            [](const std::unique_ptr<R>& a, const std::unique_ptr<R>& b) {
+              return OrderPtr(a, b);
+            });
 
   // While flattening, filter out any nullptr results.
   objects->reserve(ptrs->size());
@@ -715,13 +716,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
       }
-      if (result != hydroelastic::ContactSurfaceResult::kCalculated) {
+      if (ContactSurfaceFailed(result)) {
         // This will certainly throw.
         calculator.RejectResult(result, GetFclPtr(id0), GetFclPtr(id1));
       }
     }
-    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, &surfaces,
-                                       OrderContactSurfacePtr<T>);
+    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, &surfaces);
     return surfaces;
   }
 
@@ -755,7 +755,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
       }
-      if (result != hydroelastic::ContactSurfaceResult::kCalculated) {
+      if (ContactSurfaceFailed(result)) {
         auto penetration = penetration_as_point_pair::MaybeMakePointPair(
             GetFclPtr(id0), GetFclPtr(id1), point_data);
         if (penetration != nullptr) {
@@ -763,10 +763,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         }
       }
     }
-    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, surfaces,
-                                       OrderContactSurfacePtr<T>);
-    SortCullFlatten<PenetrationAsPointPair<T>>(&point_pair_ptrs, point_pairs,
-                                               OrderPointPairPtr<T>);
+    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, surfaces);
+    SortCullFlatten<PenetrationAsPointPair<T>>(&point_pair_ptrs, point_pairs);
   }
 
   void ComputeDeformableContact(
