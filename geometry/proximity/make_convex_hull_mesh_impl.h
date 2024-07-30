@@ -4,6 +4,7 @@
 #include <istream>
 #include <string>
 
+#include "drake/common/file_contents.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 
 namespace drake {
@@ -52,12 +53,11 @@ namespace internal {
 
 // TODO(SeanCurtis-TRI): Before merging this for real, either support all mesh
 // file types, or document that it's .obj only.
-/* The mesh data is specified by an input stream interpreted according to the
- provided `extension` with an associated label that will be used in the event of
- errors/warnings. */
-PolygonSurfaceMesh<double> MakeConvexHullFromStream(
-    std::istream* mesh_stream, std::string_view extension,
-    std::string_view stream_label, double scale, double margin = 0);
+/* The mesh data is specified by the contents of a mesh file interpreted
+ according to the provided `extension`. */
+PolygonSurfaceMesh<double> MakeConvexHullFromContents(
+    const common::FileContents& file_data, std::string_view extension,
+    double scale, double margin = 0);
 
 /* The mesh data is specified by a path to an on-disk file of supported type. */
 PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
