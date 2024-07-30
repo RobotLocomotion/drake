@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/hydroelastic_callback.h"
+#include "drake/geometry/proximity/hydroelastic_calculator.h"
 
 #include <memory>
 #include <unordered_map>
