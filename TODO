@@ -1,5 +1,0 @@
-Bind required_capabilities for mathematical program (see branch conic_standard)
-Bind ProgramType for mathematical program (see branch conic_standard)
-Bind __eq__, __hash__, __copy__ for constraint in evaluators (see branch conic standard)
-Bind prog.AddConstraint(constraint). Currently this requires prog.AddConstraint(constraint.evaluator(), constraint.variables())
-

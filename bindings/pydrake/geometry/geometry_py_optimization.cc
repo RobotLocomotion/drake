@@ -719,6 +719,17 @@ void DefineGeometryOptimization(py::module m) {
         cls_doc.preprocessing_solver.doc);
   }
 
+  // GcsGraphvizOptions
+  {
+    using Class = GcsGraphvizOptions;
+    constexpr auto& cls_doc = doc.GcsGraphvizOptions;
+    py::class_<Class> cls(m, "GcsGraphvizOptions", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
   // GraphOfConvexSets
   {
     const std::unordered_set<GraphOfConvexSets::Transcription>
@@ -911,8 +922,32 @@ void DefineGeometryOptimization(py::module m) {
             &GraphOfConvexSets::ClearAllPhiConstraints,
             cls_doc.ClearAllPhiConstraints.doc)
         .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
-            py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
-            py::arg("precision") = 3, py::arg("scientific") = false,
+            py::arg("result") = std::nullopt,
+            py::arg("options") = GcsGraphvizOptions(),
+            py::arg("active_path") = std::nullopt,
+            cls_doc.GetGraphvizString.doc)
+        .def(
+            "GetGraphvizString",
+            [](const GraphOfConvexSets& self,
+                const std::optional<solvers::MathematicalProgramResult>& result,
+                bool show_slacks, bool show_vars, bool show_flows,
+                bool show_costs, bool scientific, int precision,
+                const std::optional<
+                    std::vector<const GraphOfConvexSets::Edge*>>& active_path) {
+              const GcsGraphvizOptions options{.show_slacks = show_slacks,
+                  .show_vars = show_vars,
+                  .show_flows = show_flows,
+                  .show_costs = show_costs,
+                  .scientific = scientific,
+                  .precision = precision};
+              return self.GetGraphvizString(result, options, active_path);
+            },
+            py::arg("result") =
+                std::optional<solvers::MathematicalProgramResult>(std::nullopt),
+            py::arg("show_slacks") = true, py::arg("show_vars") = true,
+            py::arg("show_flows") = true, py::arg("show_costs") = true,
+            py::arg("scientific") = false, py::arg("precision") = 3,
+            py::arg("active_path") = std::nullopt,
             cls_doc.GetGraphvizString.doc)
         .def("SolveShortestPath",
             overload_cast_explicit<solvers::MathematicalProgramResult,
@@ -927,6 +962,29 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("source"), py::arg("target"), py::arg("result"),
             py::arg("tolerance") = 1e-3, py_rvp::reference_internal,
             cls_doc.GetSolutionPath.doc)
+        .def("SamplePaths",
+            overload_cast_explicit<
+                std::vector<std::vector<const GraphOfConvexSets::Edge*>>,
+                const GraphOfConvexSets::Vertex&,
+                const GraphOfConvexSets::Vertex&,
+                const std::unordered_map<const GraphOfConvexSets::Edge*,
+                    double>&,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SamplePaths),
+            py::arg("source"), py::arg("target"), py::arg("flows"),
+            py::arg("options"), py::return_value_policy::reference_internal,
+            cls_doc.SamplePaths.doc_flows)
+        .def("SamplePaths",
+            overload_cast_explicit<
+                std::vector<std::vector<const GraphOfConvexSets::Edge*>>,
+                const GraphOfConvexSets::Vertex&,
+                const GraphOfConvexSets::Vertex&,
+                const solvers::MathematicalProgramResult&,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SamplePaths),
+            py::arg("source"), py::arg("target"), py::arg("result"),
+            py::arg("options"), py::return_value_policy::reference_internal,
+            cls_doc.SamplePaths.doc_result)
         .def("SolveConvexRestriction",
             &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),
             py::arg("options") = GraphOfConvexSetsOptions(),

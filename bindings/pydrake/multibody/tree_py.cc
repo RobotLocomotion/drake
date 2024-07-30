@@ -221,12 +221,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetFixedRotationMatrixInBodyFrame",
             &Class::GetFixedRotationMatrixInBodyFrame,
             cls_doc.GetFixedRotationMatrixInBodyFrame.doc)
-        .def("CalcOffsetPoseInBody", &Class::CalcOffsetPoseInBody,
+        .def("CalcOffsetPoseInBody",
+            overload_cast_explicit<RigidTransform<T>,
+                const systems::Context<T>&, const RigidTransform<T>&>(
+                &Class::CalcOffsetPoseInBody),
             py::arg("context"), py::arg("X_FQ"),
             cls_doc.CalcOffsetPoseInBody.doc)
         .def("CalcOffsetRotationMatrixInBody",
-            &Class::CalcOffsetRotationMatrixInBody, py::arg("context"),
-            py::arg("R_FQ"), cls_doc.CalcOffsetRotationMatrixInBody.doc)
+            overload_cast_explicit<math::RotationMatrix<T>,
+                const systems::Context<T>&, const math::RotationMatrix<T>&>(
+                &Class::CalcOffsetRotationMatrixInBody),
+            py::arg("context"), py::arg("R_FQ"),
+            cls_doc.CalcOffsetRotationMatrixInBody.doc)
         .def("GetFixedOffsetPoseInBody", &Class::GetFixedOffsetPoseInBody,
             py::arg("X_FQ"), cls_doc.GetFixedOffsetPoseInBody.doc)
         .def("GetFixedRotationMatrixInBody",

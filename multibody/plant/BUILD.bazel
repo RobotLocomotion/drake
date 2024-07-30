@@ -191,8 +191,10 @@ drake_cc_library(
         "contact_results.h",
         "deformable_contact_info.h",
         "hydroelastic_contact_info.h",
-        "hydroelastic_quadrature_point_data.h",
         "point_pair_contact_info.h",
+        # Upon 2024-12-01 deprecation removal, this next header can possibly
+        # move to a better home, e.g., the traction_calculator?
+        "hydroelastic_quadrature_point_data.h",
     ],
     deps = [
         "//common:default_scalars",

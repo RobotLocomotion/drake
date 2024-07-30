@@ -13,6 +13,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/timer.h"
 #include "drake/geometry/meshcat_types_internal.h"
 
 namespace drake {
@@ -1351,6 +1352,82 @@ GTEST_TEST(MeshcatTest, ShowStatsPlot) {
     })""");
 }
 
+// Tests the logic of time advancement.
+//
+// We don't test for the realtime rate message broadcast directly. As part of
+// the broadcast, the stored realtime rate gets updated and can be read from
+// Meshcat::GetRealtimeRate(). We'll assume if the expected value is available
+// there, then it got broadcast correctly.
+//
+// Most of the compuation logic is contained (and tested) in
+// realtime_rate_calculator.*. This test just needs to confirm that things are
+// correct:
+//
+//   1. Initialization doesn't broadcast a rate.
+//      - In fact, initialization clears previously broadcast rate.
+//   2. One message is broadcast for each period boundary passed.
+//      Without explicitly consuming the messages, this is impossible to test.
+//      Instead, we rely on inspection of behavior during code review to
+//      validate. To test it, try running a simulation with a significantly
+//      slowed realtime rate such that the visualizer's publish period is
+//      longer than Meshcat's realtime_rate_period.
+GTEST_TEST(MeshcatTest, SetSimulationTime) {
+  // Arbitrary, non-default parameter value to confirm that it's getting used.
+  const double wall_period = 0.625;
+  MeshcatParams params{.realtime_rate_period = wall_period};
+  Meshcat meshcat(params);
+
+  // Initial realtime rate is always zero.
+  ASSERT_EQ(meshcat.GetRealtimeRate(), 0.0);
+
+  // Replace the wall clock timer with one we explicitly control.
+  auto timer_ptr = std::make_unique<ManualTimer>();
+  ManualTimer& timer = *timer_ptr;
+  meshcat.InjectMockTimer(std::move(timer_ptr));
+
+  // Initialize meshcat's simulation with the first invocation where sim and
+  // wall times are both zero.
+  meshcat.SetSimulationTime(0);
+
+  // A list of test triples (wall_timer, sim_time, expected_realtime_rate) to
+  // step through.
+  const std::vector<std::array<double, 3>> tests{
+      // Rate remains at zero prior to the wall clock reaching the first period.
+      {wall_period * 0.7, 1.0, 0.0},
+      {wall_period * 0.8, 1.2, 0.0},
+      {wall_period * 0.9, 1.4, 0.0},
+      // After completing the first period, we have a non-zero value.
+      {wall_period * 1.5, 2.0, 2.0 / (wall_period * 1.5)},
+      // Wall time advances but sim time backtracks => re-initialize.
+      // This should (internally) tare the timer back to zero by calling
+      // Start().
+      {wall_period * 999, 0.5, 0.0},
+      // Sim time advances.
+      {wall_period * 1.5, 0.7, (0.7 - 0.5) / (wall_period * 1.5)},
+  };
+
+  // Step through the tests.
+  for (int i = 0; i < ssize(tests); ++i) {
+    const double wall_timer = tests[i][0];
+    const double sim_time = tests[i][1];
+    const double expected_realtime_rate = tests[i][2];
+    SCOPED_TRACE(
+        fmt::format("tests[{}] with wall_timer={}, sim_time={}, rtr={}", i,
+                    wall_timer, sim_time, expected_realtime_rate));
+
+    timer.set_tick(wall_timer);
+    EXPECT_NO_THROW(meshcat.SetSimulationTime(sim_time));
+    EXPECT_EQ(meshcat.GetRealtimeRate(), expected_realtime_rate);
+    // Repeat calls are always a no-op.
+    EXPECT_NO_THROW(meshcat.SetSimulationTime(sim_time));
+    EXPECT_EQ(meshcat.GetRealtimeRate(), expected_realtime_rate);
+  }
+}
+
+// Tests that the call to immediately broadcast a provided realtime rate value
+// works. We're not actually testing that the message got sent (we'll rely on
+// reviewer inspection). When we broadcast the rate, we also store the rate.
+// We look at the stored value as proxy.
 GTEST_TEST(MeshcatTest, RealtimeRate) {
   Meshcat meshcat;
   meshcat.SetRealtimeRate(2.2);

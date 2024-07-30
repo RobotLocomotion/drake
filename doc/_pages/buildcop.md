@@ -5,8 +5,7 @@ title: Build Cop
 # Overview
 
 The Drake build cop monitors [continuous](https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/),
-[nightly](https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/), and
-[weekly](https://drake-jenkins.csail.mit.edu/view/Weekly%20Production/)
+and [nightly](https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/)
 production continuous integration failures in the
 [RobotLocomotion/drake](https://github.com/RobotLocomotion/drake) GitHub
 repo.
@@ -27,7 +26,7 @@ is maintained on the
 Two build cops are expected to be on duty Monday through Thursday, holidays excepted. At
 least one build cop should be on duty during normal business hours Eastern Time,
 approximately 9am to 5pm. Developers are encouraged, but not required, to merge
-pull requests during times when the build cop is on duty. Nightly and weekly
+pull requests during times when the build cop is on duty. Nightly
 build failures will be addressed the following weekday morning.
 
 When a CI build failure occurs, the build cop will be notified by email.
@@ -150,12 +149,10 @@ Check the [Continuous Production](https://drake-jenkins.csail.mit.edu/view/Conti
 build dashboard in Jenkins at least once an hour during on-call hours. These
 builds run after every merge to Drake. Also check the
 [Nightly Production](https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/)
-build dashboard every morning and
-[Weekly Production](https://drake-jenkins.csail.mit.edu/view/Weekly%20Production/)
-build dashboard on Monday morning. These builds are unusually
+build dashboard every morning. These builds are unusually
 resource-intensive, and therefore run at most once per day.
 
-If any Continuous, Nightly, or Weekly Production builds turn yellow or red, you
+If any Continuous or Nightly Production builds turn yellow or red, you
 need to act.
 
 In Jenkins, builds that are in progress (blinking on and off) will show the

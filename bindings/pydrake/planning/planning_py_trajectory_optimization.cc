@@ -438,8 +438,29 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("continuous_revolute_joints", &Class::continuous_revolute_joints,
             cls_doc.continuous_revolute_joints.doc)
         .def("GetGraphvizString", &Class::GetGraphvizString,
-            py::arg("result") = std::nullopt, py::arg("show_slack") = true,
-            py::arg("precision") = 3, py::arg("scientific") = false,
+            py::arg("result") = std::nullopt,
+            py::arg("options") = geometry::optimization::GcsGraphvizOptions(),
+            cls_doc.GetGraphvizString.doc)
+        .def(
+            "GetGraphvizString",
+            [](const GcsTrajectoryOptimization& self,
+                const std::optional<solvers::MathematicalProgramResult>& result,
+                bool show_slacks, bool show_vars, bool show_flows,
+                bool show_costs, bool scientific, int precision) {
+              geometry::optimization::GcsGraphvizOptions options;
+              options.show_slacks = show_slacks;
+              options.show_vars = show_vars;
+              options.show_flows = show_flows;
+              options.show_costs = show_costs;
+              options.scientific = scientific;
+              options.precision = precision;
+              return self.GetGraphvizString(result, options);
+            },
+            py::arg("result") =
+                std::optional<solvers::MathematicalProgramResult>(std::nullopt),
+            py::arg("show_slacks") = true, py::arg("show_vars") = true,
+            py::arg("show_flows") = true, py::arg("show_costs") = true,
+            py::arg("scientific") = false, py::arg("precision") = 3,
             cls_doc.GetGraphvizString.doc)
         .def(
             "AddRegions",
@@ -474,7 +495,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             cls_doc.RemoveSubgraph.doc)
         .def("AddEdges", &Class::AddEdges, py_rvp::reference_internal,
             py::arg("from_subgraph"), py::arg("to_subgraph"),
-            py::arg("subspace") = py::none(), cls_doc.AddEdges.doc)
+            py::arg("subspace") = py::none(),
+            py::arg("edges_between_regions") = py::none(),
+            py::arg("edge_offsets") = py::none(), cls_doc.AddEdges.doc)
         .def("AddTimeCost", &Class::AddTimeCost, py::arg("weight") = 1.0,
             cls_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",

@@ -78,20 +78,30 @@ std::vector<Eigen::Vector3d> TinyObjToFclVertices(
 // The actual number of faces returned will be equal to:
 // mesh.num_face_vertices.size() which *cannot* be easily inferred from the
 // *size* of the returned vector.
-std::vector<int> TinyObjToFclFaces(const tinyobj::mesh_t& mesh) {
-  std::vector<int> faces;
-  faces.reserve(mesh.indices.size() + mesh.num_face_vertices.size());
-  auto iter = mesh.indices.begin();
-  for (int num : mesh.num_face_vertices) {
-    faces.push_back(num);
-    std::for_each(iter, iter + num, [&faces](const tinyobj::index_t& index) {
-      faces.push_back(index.vertex_index);
-    });
-    iter += num;
+std::vector<int> TinyObjToFclFaces(
+    const std::vector<tinyobj::shape_t>& shapes) {
+  // Estimate (to an order of magnitude) how much space we need for face data.
+  int estimated_face_data_size = 0;
+  for (const auto& shape : shapes) {
+    estimated_face_data_size +=
+        shape.mesh.num_face_vertices.size() + shape.mesh.indices.size();
   }
-
+  std::vector<int> faces;
+  faces.reserve(estimated_face_data_size);
+  for (const auto& shape : shapes) {
+    const tinyobj::mesh_t& mesh = shape.mesh;
+    auto iter = mesh.indices.begin();
+    for (int num : mesh.num_face_vertices) {
+      faces.push_back(num);
+      std::for_each(iter, iter + num, [&faces](const tinyobj::index_t& index) {
+        faces.push_back(index.vertex_index);
+      });
+      iter += num;
+    }
+  }
   return faces;
 }
+
 }  // namespace
 
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
@@ -121,14 +131,8 @@ ReadObjFile(const std::string& filename, double scale, bool triangulate) {
 
   if (shapes.size() == 0) {
     throw std::runtime_error(
-        fmt::format("The file parsed contains no objects; only OBJs with "
-                    "a single object are supported. The file could be "
+        fmt::format("The file parsed contains no objects;. The file could be "
                     "corrupt, empty, or not an OBJ file. File name: '{}'",
-                    filename));
-  } else if (shapes.size() > 1) {
-    throw std::runtime_error(
-        fmt::format("The OBJ file contains multiple objects; only OBJs with "
-                    "a single object are supported: File name: '{}'",
                     filename));
   }
 
@@ -143,10 +147,12 @@ ReadObjFile(const std::string& filename, double scale, bool triangulate) {
   //               n2, v2_0,v2_1,...,v2_n2-1,
   //               ...}
   // where n_i is the number of vertices of face_i.
-  //
-  int num_faces = static_cast<int>(shapes[0].mesh.num_face_vertices.size());
+  int num_faces = 0;
+  for (const tinyobj::shape_t& shape : shapes) {
+    num_faces += shape.mesh.num_face_vertices.size();
+  }
   auto faces =
-      std::make_shared<std::vector<int>>(TinyObjToFclFaces(shapes[0].mesh));
+      std::make_shared<std::vector<int>>(TinyObjToFclFaces(shapes));
   return {vertices, faces, num_faces};
 }
 }  // namespace internal

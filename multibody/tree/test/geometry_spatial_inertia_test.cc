@@ -200,7 +200,7 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
     EXPECT_NO_THROW(CalcSpatialInertia(unit_scale_vtk, kDensity));
     if constexpr (std::is_same_v<MeshType, geometry::Mesh>) {
       // For MeshType = Convex, we won't achieve *this* error message in
-      // CalcSpatialInertia; we'll fail in the underlying computation of the
+      // CalcSpatialInertia(); we'll fail in the underlying computation of the
       // convex hull for an unsupported file type (which is tested elsewhere).
       // So, we'll skip *this* test for Convex.
       DRAKE_EXPECT_THROWS_MESSAGE(

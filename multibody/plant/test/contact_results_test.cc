@@ -33,13 +33,8 @@ class ContactResultsTest : public ::testing::Test {
             contact_surface_.get(), F_);
     id_A_ = GeometryId::get_new_id();
     id_B_ = GeometryId::get_new_id();
-    std::vector<DeformableContactPointData<double>>
-        deformable_contact_point_data;
-    deformable_contact_point_data.emplace_back(
-        Vector3d(11, 22, 33), 42, Vector3d(44, 55, 66), Vector3d(77, 88, 99));
     deformable_contact_info_ = std::make_unique<DeformableContactInfo<double>>(
-        id_A_, id_B_, PolygonSurfaceMesh<double>(), F_,
-        std::move(deformable_contact_point_data));
+        id_A_, id_B_, PolygonSurfaceMesh<double>(), F_);
   }
 
   std::vector<PointPairContactInfo<double>> MakePointPair() const {
@@ -152,8 +147,6 @@ TEST_F(ContactResultsTest, Accessors) {
             deformable_contact_info_->F_Ac_W().translational());
   EXPECT_EQ(contact_results.deformable_contact_info(0).F_Ac_W().rotational(),
             deformable_contact_info_->F_Ac_W().rotational());
-  EXPECT_EQ(contact_results.deformable_contact_info(0).contact_point_data(),
-            deformable_contact_info_->contact_point_data());
 
   // Quick sanity check after a copy, too.
   ContactResults<double> copy(contact_results);
