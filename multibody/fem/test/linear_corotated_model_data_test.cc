@@ -12,38 +12,27 @@ namespace fem {
 namespace internal {
 namespace {
 
-constexpr int kNumLocations = 1;
 constexpr double kTol = 1e-14;
-
-void VerifySizes(const LinearCorotatedModelData<double, kNumLocations>& data) {
-  ASSERT_EQ(data.deformation_gradient().size(), kNumLocations);
-  ASSERT_EQ(data.previous_step_deformation_gradient().size(), kNumLocations);
-  ASSERT_EQ(data.R0().size(), kNumLocations);
-  ASSERT_EQ(data.strain().size(), kNumLocations);
-  ASSERT_EQ(data.trace_strain().size(), kNumLocations);
-}
 
 /* Tests that the deformation gradient is initialized to the identity matrix and
  the deformation gradient dependent data are initialized to be consistent with
  the initial deformation gradient. */
 GTEST_TEST(LinearCorotatedModelDataTest, Initialization) {
-  const LinearCorotatedModelData<double, kNumLocations>
-      linear_corotated_model_data;
-  VerifySizes(linear_corotated_model_data);
+  const LinearCorotatedModelData<double> linear_corotated_model_data;
   EXPECT_TRUE(
-      CompareMatrices(linear_corotated_model_data.deformation_gradient()[0],
+      CompareMatrices(linear_corotated_model_data.deformation_gradient(),
                       Matrix3<double>::Identity()));
-  EXPECT_EQ(linear_corotated_model_data.previous_step_deformation_gradient()[0],
+  EXPECT_EQ(linear_corotated_model_data.previous_step_deformation_gradient(),
             Matrix3<double>::Identity());
-  EXPECT_TRUE(CompareMatrices(linear_corotated_model_data.R0()[0],
+  EXPECT_TRUE(CompareMatrices(linear_corotated_model_data.R0(),
                               Matrix3<double>::Identity()));
-  EXPECT_TRUE(CompareMatrices(linear_corotated_model_data.strain()[0],
+  EXPECT_TRUE(CompareMatrices(linear_corotated_model_data.strain(),
                               Matrix3<double>::Zero()));
-  EXPECT_EQ(linear_corotated_model_data.trace_strain()[0], 0.0);
+  EXPECT_EQ(linear_corotated_model_data.trace_strain(), 0.0);
 }
 
 GTEST_TEST(LinearCorotatedModelDataTest, UpdateData) {
-  LinearCorotatedModelData<double, kNumLocations> linear_corotated_model_data;
+  LinearCorotatedModelData<double> linear_corotated_model_data;
   /* We set deformation gradient as F0 = R0*S0 where R0 is an arbitrary rotation
    matrix and S0 is an arbitrary symmetric positive definite matrix. */
   const Matrix3<double> R0 =
@@ -63,16 +52,16 @@ GTEST_TEST(LinearCorotatedModelDataTest, UpdateData) {
   // clang-format on
   const Matrix3<double> F0 = R0 * S0;
 
-  linear_corotated_model_data.UpdateData({F}, {F0});
-  EXPECT_TRUE(CompareMatrices(
-      linear_corotated_model_data.deformation_gradient()[0], F));
-  EXPECT_EQ(linear_corotated_model_data.previous_step_deformation_gradient()[0],
+  linear_corotated_model_data.UpdateData(F, F0);
+  EXPECT_TRUE(
+      CompareMatrices(linear_corotated_model_data.deformation_gradient(), F));
+  EXPECT_EQ(linear_corotated_model_data.previous_step_deformation_gradient(),
             F0);
-  EXPECT_TRUE(CompareMatrices(linear_corotated_model_data.R0()[0], R0, kTol));
+  EXPECT_TRUE(CompareMatrices(linear_corotated_model_data.R0(), R0, kTol));
   const Matrix3<double> expected_strain =
       0.5 * (R0.transpose() * F + F.transpose() * R0) -
       Matrix3<double>::Identity();
-  EXPECT_NEAR(linear_corotated_model_data.trace_strain()[0],
+  EXPECT_NEAR(linear_corotated_model_data.trace_strain(),
               expected_strain.trace(), kTol);
 }
 

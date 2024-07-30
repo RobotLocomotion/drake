@@ -11,32 +11,28 @@ namespace fem {
 namespace internal {
 
 /* Traits for LinearCorotatedModel. */
-template <typename T, int num_locations>
+template <typename T>
 struct LinearCorotatedModelTraits {
   using Scalar = T;
-  using Data = LinearCorotatedModelData<T, num_locations>;
+  using Data = LinearCorotatedModelData<T>;
   static constexpr bool is_linear = true;
 };
 
 /* Implements the linear corotated constitutive model as described in
  [Han et al., 2023].
  @tparam_nonsymbolic_scalar
- @tparam num_locations Number of locations at which the constitutive
- relationship is evaluated. We currently only provide one instantiation of this
- template with `num_locations = 1`, but more instantiations can easily be added
- when needed.
 
  [Han et al., 2023] Han, Xuchen, Joseph Masterjohn, and Alejandro Castro. "A
  Convex Formulation of Frictional Contact between Rigid and Deformable Bodies."
  arXiv preprint arXiv:2303.08912 (2023). */
-template <typename T, int num_locations>
+template <typename T>
 class LinearCorotatedModel final
-    : public ConstitutiveModel<LinearCorotatedModel<T, num_locations>,
-                               LinearCorotatedModelTraits<T, num_locations>> {
+    : public ConstitutiveModel<LinearCorotatedModel<T>,
+                               LinearCorotatedModelTraits<T>> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearCorotatedModel);
 
-  using Traits = LinearCorotatedModelTraits<T, num_locations>;
+  using Traits = LinearCorotatedModelTraits<T>;
   using Data = typename Traits::Data;
 
   /* Constructs a LinearCorotatedModel constitutive model with the
@@ -62,24 +58,21 @@ class LinearCorotatedModel final
   const T& lame_first_parameter() const { return lambda_; }
 
  private:
-  friend ConstitutiveModel<LinearCorotatedModel<T, num_locations>,
-                           LinearCorotatedModelTraits<T, num_locations>>;
+  friend ConstitutiveModel<LinearCorotatedModel<T>,
+                           LinearCorotatedModelTraits<T>>;
 
   /* Shadows ConstitutiveModel::CalcElasticEnergyDensityImpl() as required by
    the CRTP base class. */
-  void CalcElasticEnergyDensityImpl(const Data& data,
-                                    std::array<T, num_locations>* Psi) const;
+  void CalcElasticEnergyDensityImpl(const Data& data, T* Psi) const;
 
   /* Shadows ConstitutiveModel::CalcFirstPiolaStressImpl() as required by the
    CRTP base class. */
-  void CalcFirstPiolaStressImpl(const Data& data,
-                                std::array<Matrix3<T>, num_locations>* P) const;
+  void CalcFirstPiolaStressImpl(const Data& data, Matrix3<T>* P) const;
 
   /* Shadows ConstitutiveModel::CalcFirstPiolaStressDerivativeImpl() as required
    by the CRTP base class. */
-  void CalcFirstPiolaStressDerivativeImpl(
-      const Data& data,
-      std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const;
+  void CalcFirstPiolaStressDerivativeImpl(const Data& data,
+                                          Eigen::Matrix<T, 9, 9>* dPdF) const;
 
   T E_;       // Young's modulus, N/m².
   T nu_;      // Poisson's ratio.
