@@ -237,8 +237,8 @@ TEST_F(MeshParserTest, CorrectMass) {
       SpatialInertia<double>::SolidBoxWithDensity(density, 2, 2, 2);
   const SpatialInertia<double> I_BBo_B =
       body.CalcSpatialInertiaInBodyFrame(*context);
-  // For unit scale, we'd expect tolerance to be satisifed around 1e-15; with
-  // a mass of 1e3 kg/m³, we have to scale the tolerance accordingly.
+  // For unit scale, we'd expect tolerance to be satisfied around 1e-15; with
+  // a mass of 1000 kg/m³, we have to scale the tolerance accordingly.
   EXPECT_TRUE(CompareMatrices(I_BBo_B.CopyToFullMatrix6(),
                               I_BBo_B_expected.CopyToFullMatrix6(), 1e-12));
 }

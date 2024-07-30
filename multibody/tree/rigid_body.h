@@ -61,28 +61,6 @@ class RigidBodyFrame final : public Frame<T> {
 
   ~RigidBodyFrame() override;
 
-  math::RigidTransform<T> CalcPoseInBodyFrame(
-      const systems::Context<T>&) const override {
-    return math::RigidTransform<T>::Identity();
-  }
-
-  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
-      const systems::Context<T>&) const override {
-    return math::RotationMatrix<T>::Identity();
-  }
-
-  math::RigidTransform<T> CalcOffsetPoseInBody(
-      const systems::Context<T>&,
-      const math::RigidTransform<T>& X_FQ) const override {
-    return X_FQ;
-  }
-
-  math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
-      const systems::Context<T>&,
-      const math::RotationMatrix<T>& R_FQ) const override {
-    return R_FQ;
-  }
-
   math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
     return math::RigidTransform<T>::Identity();
   }
@@ -111,6 +89,28 @@ class RigidBodyFrame final : public Frame<T> {
 
   std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
+
+  math::RigidTransform<T> DoCalcPoseInBodyFrame(
+      const systems::Parameters<T>&) const override {
+    return math::RigidTransform<T>::Identity();
+  }
+
+  math::RotationMatrix<T> DoCalcRotationMatrixInBodyFrame(
+      const systems::Parameters<T>&) const override {
+    return math::RotationMatrix<T>::Identity();
+  }
+
+  math::RigidTransform<T> DoCalcOffsetPoseInBody(
+      const systems::Parameters<T>&,
+      const math::RigidTransform<T>& X_FQ) const override {
+    return X_FQ;
+  }
+
+  math::RotationMatrix<T> DoCalcOffsetRotationMatrixInBody(
+      const systems::Parameters<T>&,
+      const math::RotationMatrix<T>& R_FQ) const override {
+    return R_FQ;
+  }
 
  private:
   // RigidBody<T> and RigidBodyFrame<T> are natural allies. A RigidBodyFrame
