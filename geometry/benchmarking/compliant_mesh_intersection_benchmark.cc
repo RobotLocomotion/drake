@@ -1,7 +1,7 @@
 #include <benchmark/benchmark.h>
 #include <fmt/format.h>
 
-#include "drake/geometry/proximity/hydroelastic_callback.h"
+#include "drake/geometry/proximity/hydroelastic_calculator.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/make_ellipsoid_field.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
