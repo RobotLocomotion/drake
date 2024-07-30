@@ -47,6 +47,7 @@ void SpanningForest::Mobod::FixupAfterReordering(
 
 void SpanningForest::Mobod::Swap(Mobod& other) {
   std::swap(follower_link_ordinals_, other.follower_link_ordinals_);
+  std::swap(has_massful_follower_link_, other.has_massful_follower_link_);
   std::swap(joint_ordinal_, other.joint_ordinal_);
   std::swap(use_reverse_mobilizer_, other.use_reverse_mobilizer_);
   std::swap(level_, other.level_);
