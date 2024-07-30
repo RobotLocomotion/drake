@@ -95,14 +95,14 @@ GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
 
   // Repeat for Modeling Options.
   const auto use_fixed_base = ForestBuildingOptions::kUseFixedBase;
-  const auto combine_links = ForestBuildingOptions::kCombineLinkComposites;
+  const auto combine_links = ForestBuildingOptions::kMergeLinkComposites;
   auto forest_building_options = use_fixed_base | combine_links;
   static_assert(
       std::is_same_v<decltype(forest_building_options), ForestBuildingOptions>);
   EXPECT_EQ(forest_building_options & use_fixed_base,
             ForestBuildingOptions::kUseFixedBase);
   EXPECT_EQ(forest_building_options & combine_links,
-            ForestBuildingOptions::kCombineLinkComposites);
+            ForestBuildingOptions::kMergeLinkComposites);
   EXPECT_FALSE(static_cast<bool>(forest_building_options &
                                  ForestBuildingOptions::kUseRpyFloatingJoints));
   EXPECT_EQ(
@@ -126,7 +126,7 @@ GTEST_TEST(LinkJointGraph, SpecifyForestBuildingOptions) {
 
   const ForestBuildingOptions default_options = ForestBuildingOptions::kDefault;
   const ForestBuildingOptions two_options =
-      ForestBuildingOptions::kCombineLinkComposites |
+      ForestBuildingOptions::kMergeLinkComposites |
       ForestBuildingOptions::kUseRpyFloatingJoints;
 
   // If we haven't said anything, global and all ModelInstance options are
@@ -286,6 +286,7 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_EQ(ssize(graph.link_composites()), 1);
   EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0))), 1);
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0], world_link_index);
+  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
 
   // Check that Clear() puts the graph back to default-constructed condition.
   // First add some junk to the graph.
