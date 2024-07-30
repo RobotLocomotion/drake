@@ -71,8 +71,8 @@ class TestScene {
         id_B_{GeometryId::get_new_id()},
         shape_A_type_(A_shape_type),
         shape_B_type_(B_shape_type),
-        data_{&collision_filter_, &X_WGs_, &hydroelastic_geometries_,
-              HydroelasticContactRepresentation::kTriangle, &surfaces_} {
+        data_{&X_WGs_, &hydroelastic_geometries_,
+              HydroelasticContactRepresentation::kTriangle} {
     X_WGs_[id_A_] = RigidTransform<T>();
     X_WGs_[id_B_] = RigidTransform<T>();
   }

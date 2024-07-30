@@ -11,7 +11,6 @@
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/field_intersection.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/mesh_half_space_intersection.h"
@@ -32,14 +31,11 @@ namespace hydroelastic DRAKE_NO_EXPORT {
 /* Supporting data for the shape-to-shape hydroelastic contact callback (see
  Callback below). It includes:
 
-    - A collision filter instance.
     - The T-valued poses of _all_ geometries in the corresponding SceneGraph,
       each indexed by its corresponding geometry's GeometryId.
     - The representation of all geometries that have been prepped for computing
       contact surfaces.
     - The choice of how to represent contact polygons.
-    - A vector of contact surfaces -- one instance of ContactSurface for
-      every supported, unfiltered penetrating pair.
 
  @tparam T The computation scalar.  */
 template <typename T>
@@ -48,7 +44,6 @@ struct CallbackData {
    in the class documentation. All parameters are aliased in the data and must
    remain valid at least as long as the CallbackData instance.
 
-   @param collision_filter_in     The collision filter system. Aliased.
    @param X_WGs_in                The T-valued poses. Aliased.
    @param geometries_in           The set of all hydroelastic geometric
                                   representations. Aliased.
@@ -56,27 +51,17 @@ struct CallbackData {
                                   the contact surface. See
                                   @ref contact_surface_discrete_representation
                                   "contact surface representation" for more
-                                  details.
-   @param surfaces_in             The output results. Aliased.  */
+                                  details. */
   CallbackData(
-      const CollisionFilter* collision_filter_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
       const Geometries* geometries_in,
-      HydroelasticContactRepresentation representation_in,
-      std::vector<ContactSurface<T>>* surfaces_in)
-      : collision_filter(*collision_filter_in),
-        X_WGs(*X_WGs_in),
+      HydroelasticContactRepresentation representation_in)
+      : X_WGs(*X_WGs_in),
         geometries(*geometries_in),
-        representation(representation_in),
-        surfaces(*surfaces_in) {
-    DRAKE_DEMAND(collision_filter_in != nullptr);
+        representation(representation_in) {
     DRAKE_DEMAND(X_WGs_in != nullptr);
     DRAKE_DEMAND(geometries_in != nullptr);
-    DRAKE_DEMAND(surfaces_in != nullptr);
   }
-
-  /* The collision filter system.  */
-  const CollisionFilter& collision_filter;
 
   /* The T-valued poses of all geometries.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
@@ -86,9 +71,6 @@ struct CallbackData {
 
   /* The requested mesh representation type. */
   const HydroelasticContactRepresentation representation;
-
-  /* The results of the distance query.  */
-  std::vector<ContactSurface<T>>& surfaces;
 };
 
 enum class CalcContactSurfaceResult {
@@ -162,38 +144,6 @@ std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
   return ComputeContactSurfaceFromCompliantVolumes(
       id0, field0_F, bvh0_F, X_WF, id1, field1_G, bvh1_G, X_WG, representation);
 }
-
-#if 0
-// This function is slated for demolition.
-/* Calculates the contact surface (if it exists) between two potentially
- colliding geometries.
-
- @param object_A_ptr         Pointer to the first object in the pair (the order
-                             has no significance).
- @param object_B_ptr         Pointer to the second object in the pair (the order
-                             has no significance).
- @param[out] callback_data   Supporting data to compute the contact surface. If
-                             the objects collide, a ContactSurface instance will
-                             be added to the data.
- @returns The result from attempting to perform the calculation (indicating if
-          it was supported or not -- and in what way).
- @tparam T  The scalar type for the query.  */
-template <typename T>
-CalcContactSurfaceResult MaybeCalcContactSurface(
-    fcl::CollisionObjectd* object_A_ptr, fcl::CollisionObjectd* object_B_ptr,
-    CallbackData<T>* data) {
-  const EncodedData encoding_a(*object_A_ptr);
-  const EncodedData encoding_b(*object_B_ptr);
-
-  auto [result, surface] =
-      MaybeMakeContactSurface(encoding_a.id(), encoding_b.id(), *data);
-  if (surface != nullptr) {
-    DRAKE_DEMAND(surface->id_M() < surface->id_N());
-    data->surfaces.emplace_back(std::move(*surface));
-  }
-  return result;
-}
-#endif
 
 template <typename T>
 struct MaybeMakeContactSurfaceResult {
@@ -291,41 +241,6 @@ MaybeMakeContactSurfaceResult<T> MaybeMakeContactSurface(
   return {CalcContactSurfaceResult::kCalculated, std::move(surface)};
 }
 
-#if 0
-// This function is slated for demolition.
-/* Assess contact between two objects -- if it can't be determined with
- hydroelastic contact, it throws an exception. All parameters are as documented
- in MaybeCalcContactSurface().
- @returns `false`; the broad phase should _not_ terminate its process.
- @pre `callback_data` must be an instance of CallbackData.  */
-template <typename T>
-bool Callback(fcl::CollisionObjectd* object_A_ptr,
-              fcl::CollisionObjectd* object_B_ptr,
-              // NOLINTNEXTLINE
-              void* callback_data) {
-  auto& data = *static_cast<CallbackData<T>*>(callback_data);
-
-  const EncodedData encoding_a(*object_A_ptr);
-  const EncodedData encoding_b(*object_B_ptr);
-
-  const bool can_collide =
-      data.collision_filter.CanCollideWith(encoding_a.id(), encoding_b.id());
-
-  if (can_collide) {
-    CalcContactSurfaceResult result =
-        MaybeCalcContactSurface(object_A_ptr, object_B_ptr, &data);
-
-    // Surface calculated; we're done.
-    if (result == CalcContactSurfaceResult::kCalculated) return false;
-
-    RejectContactSurfaceResult(result, object_A_ptr, object_B_ptr, data);
-  }
-
-  // Tell the broadphase to keep searching.
-  return false;
-}
-#endif
-
 /* @throws a std::exception with an appropriate error message for the various
  result codes that indicate failure.
  @pre result != kCalculated
@@ -381,61 +296,6 @@ template <typename T>
   }
   DRAKE_UNREACHABLE();
 }
-
-/* Supporting data for the shape-to-shape hydroelastic contact callback with
- fallback (see CallbackWithFallback below). It includes:
-
-    - CallbackData for strict hydroelastic contact (see above).
-    - A vector of contacts represented as point pairs -- comprising of those
-      contacts which could not be evaluated with hydroelastic models.
-
- @tparam T The computation scalar.  */
-template <typename T>
-struct CallbackWithFallbackData {
-  CallbackData<T> data;
-  std::vector<PenetrationAsPointPair<T>>* point_pairs;
-};
-
-#if 0
-// This function is slated for demolition.
-/* Assess contact between two objects -- if it can't be determined with
- hydroelastic contact, it assess the contact using point-contact. All parameters
- are as documented in MaybeCalcContactSurface(). However, both ContactSurface
- and PenetrationAsPointPair instances are written to the `callback_data`.
-
- @returns `false`; the broad phase should _not_ terminate its process.
- @pre `callback_data` must be an instance of CallbackWithFallbackData.  */
-template <typename T>
-bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
-                          fcl::CollisionObjectd* object_B_ptr,
-                          // NOLINTNEXTLINE
-                          void* callback_data) {
-  // DRAKE_DEMAND(false);  // There are some tests.
-  auto& data = *static_cast<CallbackWithFallbackData<T>*>(callback_data);
-
-  const EncodedData encoding_a(*object_A_ptr);
-  const EncodedData encoding_b(*object_B_ptr);
-
-  const bool can_collide = data.data.collision_filter.CanCollideWith(
-      encoding_a.id(), encoding_b.id());
-
-  if (can_collide) {
-    CalcContactSurfaceResult result =
-        MaybeCalcContactSurface(object_A_ptr, object_B_ptr, &data.data);
-
-    // Surface calculated; we're done.
-    if (result == CalcContactSurfaceResult::kCalculated) return false;
-
-    // Fall back to point pair.
-    penetration_as_point_pair::CallbackData<T> point_data{
-        &data.data.collision_filter, &(data.data.X_WGs), data.point_pairs};
-    penetration_as_point_pair::Callback<T>(object_A_ptr, object_B_ptr,
-                                           &point_data);
-  }
-  // Tell the broadphase to keep searching.
-  return false;
-}
-#endif
 
 // clang-format off
 }  // namespace hydroelastic

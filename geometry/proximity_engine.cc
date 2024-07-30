@@ -702,9 +702,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     vector<ContactSurface<T>> surfaces;
     // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs,
+    hydroelastic::CallbackData<T> data{&X_WGs,
                                        &hydroelastic_geometries_,
-                                       representation, &surfaces};
+                                       representation};
 
     // As a suggestion to future thread parallelizers, make available a fully
     // allocated and prepared vector for results of the parallelizable step.
@@ -740,9 +740,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     auto candidates = FindCollisionCandidates();
 
     // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackData<T> hydro_data{&collision_filter_, &X_WGs,
-      &hydroelastic_geometries_, representation,
-      surfaces};
+    hydroelastic::CallbackData<T> hydro_data{&X_WGs,
+      &hydroelastic_geometries_, representation};
     penetration_as_point_pair::CallbackData<T> point_data{&collision_filter_,
       &X_WGs, point_pairs};
 
