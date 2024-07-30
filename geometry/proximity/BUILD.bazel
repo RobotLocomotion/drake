@@ -361,6 +361,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "hydroelastic_callback",
+    srcs = ["hydroelastic_callback.cc"],
     hdrs = ["hydroelastic_callback.h"],
     internal = True,
     visibility = [

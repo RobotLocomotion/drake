@@ -701,10 +701,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     auto candidates = FindCollisionCandidates();
 
     vector<ContactSurface<T>> surfaces;
-    // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackData<T> data{&X_WGs,
-                                       &hydroelastic_geometries_,
-                                       representation};
+    // All these quantities are aliased in the calculator.
+    hydroelastic::ContactCalculator<T> calculator{
+        &X_WGs, &hydroelastic_geometries_, representation};
 
     // As a suggestion to future thread parallelizers, make available a fully
     // allocated and prepared vector for results of the parallelizable step.
@@ -712,14 +711,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // TODO(rpoyner-tri): try some thread parallelism here.
     for (int k = 0; k < ssize(candidates); ++k) {
       const auto& [id0, id1] = candidates[k];
-      auto [result, surface] = MaybeMakeContactSurface(id0, id1, data);
+      auto [result, surface] = calculator.MaybeMakeContactSurface(id0, id1);
       if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
       }
-      if (result != hydroelastic::CalcContactSurfaceResult::kCalculated) {
+      if (result != hydroelastic::ContactSurfaceResult::kCalculated) {
         // This will certainly throw.
-        RejectContactSurfaceResult(result, GetFclPtr(id0), GetFclPtr(id1),
-                                   data);
+        calculator.RejectResult(result, GetFclPtr(id0), GetFclPtr(id1));
       }
     }
     SortCullFlatten<ContactSurface<T>>(&surface_ptrs, &surfaces,
@@ -739,12 +737,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     auto candidates = FindCollisionCandidates();
 
-    // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackData<T> hydro_data{&X_WGs,
-      &hydroelastic_geometries_, representation};
+    // All these quantities are aliased.
+    hydroelastic::ContactCalculator<T> calculator{
+        &X_WGs, &hydroelastic_geometries_, representation};
     penetration_as_point_pair::CallbackData<T> point_data{&collision_filter_,
-      &X_WGs, point_pairs};
-
+                                                          &X_WGs, point_pairs};
 
     // As a suggestion to future thread parallelizers, make available fully
     // allocated and prepared vectors for results of the parallelizable steps.
@@ -754,11 +751,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // TODO(rpoyner-tri): try some thread parallelism here.
     for (int k = 0; k < ssize(candidates); ++k) {
       const auto& [id0, id1] = candidates[k];
-      auto [result, surface] = MaybeMakeContactSurface(id0, id1, hydro_data);
+      auto [result, surface] = calculator.MaybeMakeContactSurface(id0, id1);
       if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
       }
-      if (result != hydroelastic::CalcContactSurfaceResult::kCalculated) {
+      if (result != hydroelastic::ContactSurfaceResult::kCalculated) {
         auto penetration = penetration_as_point_pair::MaybeMakePointPair(
             GetFclPtr(id0), GetFclPtr(id1), point_data);
         if (penetration != nullptr) {
