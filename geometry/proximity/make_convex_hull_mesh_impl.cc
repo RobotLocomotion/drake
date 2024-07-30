@@ -33,6 +33,7 @@ namespace geometry {
 namespace internal {
 namespace {
 
+using common::FileContents;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
@@ -114,14 +115,14 @@ struct VertexCloud {
 };
 
 /* Returns the scaled vertices from the stream containing obj file data.
- @pre `data_stream` contains obj geometry data. */
-void ReadObjVertices(std::istream* data_stream, double scale,
-                     std::vector<Vector3d>* vertices,
-                     std::string_view description) {
-  const auto [tinyobj_vertices, _1, _2] = geometry::internal::ReadObjStream(
-      data_stream, scale, /* triangulate = */ false, description,
-      /* only_vertices = */ true);
-  *vertices = std::move(*tinyobj_vertices);
+ @pre `obj_data` contains obj geometry data. */
+std::vector<Vector3d> ReadObjVertices(const FileContents& obj_data,
+                                      double scale) {
+  const auto [tinyobj_vertices_ptr, _1, _2] =
+      geometry::internal::ReadObjContents(obj_data, scale,
+                                          /* triangulate = */ false,
+                                          /* only_vertices = */ true);
+  return std::move(*tinyobj_vertices_ptr);
 }
 
 /* Returns the scaled vertices from the named vtk file.
@@ -232,11 +233,11 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
   return n_candidate.normalized();
 }
 
-VertexCloud ReadVertices(std::istream* data_stream, std::string_view extension,
-                         double scale, std::string_view description) {
+VertexCloud ReadVertices(const FileContents& file_data,
+                         std::string_view extension, double scale) {
   VertexCloud cloud;
   if (extension == ".obj") {
-    ReadObjVertices(data_stream, scale, &cloud.vertices, description);
+    cloud.vertices = ReadObjVertices(file_data, scale);
   } else if (extension == ".vtk") {
     throw std::runtime_error(".vtk can't be used with stream.");
     // ReadVtkVertices(data_stream, scale, &cloud.vertices, description);
@@ -247,18 +248,18 @@ VertexCloud ReadVertices(std::istream* data_stream, std::string_view extension,
     throw std::runtime_error(
         fmt::format("MakeConvexHull only applies to .obj, .vtk, and .gltf "
                     "meshes; unsupported extension '{}' for geometry data: {}.",
-                    extension, description));
+                    extension, file_data.filename_hint()));
   }
 
   if (cloud.vertices.size() < 3) {
     throw std::runtime_error(fmt::format(
         "MakeConvexHull() cannot be used on a mesh with fewer "
         "than three vertices; found {} vertices in geometry data: {}.",
-        cloud.vertices.size(), description));
+        cloud.vertices.size(), file_data.filename_hint()));
   }
 
   /* Characterizes planarity. */
-  cloud.n = FindNormal(cloud.vertices, description);
+  cloud.n = FindNormal(cloud.vertices, file_data.filename_hint());
   double d = cloud.n.dot(cloud.vertices[0]);
   cloud.interior_point = cloud.vertices[0];
   /* Assume planarity and look for evidence to the contrary. */
@@ -279,9 +280,7 @@ VertexCloud ReadVertices(std::istream* data_stream, std::string_view extension,
 }
 
 // TODO(SeanCurtis-TRI): Once we have support for reading all mesh types from
-// a stream, remove this function and replace its single invocation with opening
-// the file into a std::ifstream which gets passed to the *other*
-// ReadVertices().
+// file contents, remove this function.
 /* Simply reads the vertices from an OBJ, VTK or glTF file referred to by name.
  */
 VertexCloud ReadVertices(const fs::path filename, double scale) {
@@ -300,7 +299,11 @@ VertexCloud ReadVertices(const fs::path filename, double scale) {
           "isn't accessible. '{}'.",
           filename.string()));
     }
-    ReadObjVertices(&f, scale, &cloud.vertices, filename.string());
+    std::stringstream contents;
+    contents << f.rdbuf();
+    const common::FileContents obj_data(std::move(contents).str(),
+                                        filename.string());
+    cloud.vertices = ReadObjVertices(obj_data, scale);
   } else if (extension == ".vtk") {
     ReadVtkVertices(filename, scale, &cloud.vertices);
   } else if (extension == ".gltf") {
@@ -555,12 +558,12 @@ class ConvexHull {
 
 }  // namespace
 
-PolygonSurfaceMesh<double> MakeConvexHullFromStream(
-    std::istream* mesh_stream, std::string_view extension,
-    std::string_view stream_label, double scale, double margin) {
+PolygonSurfaceMesh<double> MakeConvexHullFromContents(
+    const common::FileContents& file_data, std::string_view extension,
+    double scale, double margin) {
   DRAKE_THROW_UNLESS(scale > 0);
   DRAKE_THROW_UNLESS(margin >= 0);
-  VertexCloud cloud = ReadVertices(mesh_stream, extension, scale, stream_label);
+  VertexCloud cloud = ReadVertices(file_data, extension, scale);
 
   // Hull of the input cloud of vertices.
   const ConvexHull hull(std::move(cloud));
@@ -578,9 +581,9 @@ PolygonSurfaceMesh<double> MakeConvexHullFromStream(
 
 PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
                                           double scale, double margin) {
-  // TODO(SeanCurtis-TRI): When ReadVertices(istream, ...) works for all
-  // supported mesh file types, change this to simply opening an ifstream and
-  // delegating to MakeConvexHullFromStream().
+  // TODO(SeanCurtis-TRI): When ReadVertices(FileContents, ...) works for all
+  // supported mesh file types, change this to simply reading the contents and
+  // delegating to MakeConvexHullFromContents().
   DRAKE_THROW_UNLESS(scale > 0);
   DRAKE_THROW_UNLESS(margin >= 0);
   VertexCloud cloud = ReadVertices(mesh_file, scale);
