@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -28,9 +29,6 @@ namespace internal {
 //  final PR in this train to satisfy the styleguide.
 
 using WeldedMobodsIndex = TypeSafeIndex<class WeldedMobodsTag>;
-
-// TODO(sherm1) The following describes the aspirational SpanningForest but
-//  some functionality is missing. See PR #20225 for the full implementation.
 
 /** SpanningForest models a LinkJointGraph via a set of spanning trees and
 loop-closing constraints. This is a directed forest, with edges ordered from
@@ -419,14 +417,47 @@ class SpanningForest {
                    int* num_unprocessed_links);
 
   // Grows the trees containing each of the given Joints by one level. The
-  // output parameter `joints_to_model_next` (cleared on entry) on return
+  // output parameter `J_out` (cleared on entry) on return
   // contains the set of Joints that should be modeled at the next level.
-  // @pre the pointers are non-null and joints_to_model is not empty. On return,
+  // @pre the pointers are non-null and `J_in` is not empty. On return,
   // num_unprocessed_links will have been decremented by the number of Links
   // that were modeled.
-  void ExtendTreesOneLevel(const std::vector<JointIndex>& joints_to_model,
-                           int* num_unprocessed_links,
-                           std::vector<JointIndex>* joints_to_model_next);
+  void ExtendTreesOneLevel(const std::vector<JointIndex>& J_in,
+                           std::vector<JointIndex>* J_out,
+                           int* num_unprocessed_links);
+
+  // Helper for ExtendTreesOneLevel(). We're given a joint that has at least
+  // one link already in the forest. That's the "inboard link" I and we want
+  // to know the inboard Mobod it follows. The other (usually unmodeled)
+  // link is the "outboard link" O. If both links are already in the forest
+  // we'll arbitrarily consider the parent link as I and child as O.
+  // Return tuple is: [I's mobod, I, O, is_reversed].
+  std::tuple<MobodIndex, LinkOrdinal, LinkOrdinal, bool> FindInboardMobod(
+      const Joint& open_joint) const;
+
+  // Helper for ExtendTreesOneLevel(). We're given a set of as-yet-unmodeled,
+  // "open" joints, each of which has one end already following the given Mobod.
+  // Returns a list of joints that represent the "next level" in the forest
+  // outboard of the given Mobod. For any joint that doesn't have to be a
+  // merged joint in a merged composite, that joint goes directly on the
+  // "next level" list. Otherwise, we have to extend the composite and find all
+  // the open joints where one end is part of the composite; those are the
+  // "next level".
+  void FindNextLevelJoints(MobodIndex inboard_mobod_index,
+                           const std::vector<JointIndex>& J_in,
+                           std::vector<JointIndex>* J_level,
+                           int* num_unprocessed_links);
+
+  // Given a Mobod and a Joint known to have one of its links already following
+  // that Mobod, find the other (outboard) link. */
+  BodyIndex FindOutboardLink(MobodIndex inboard_mobod_index,
+                             const Joint& joint) const;
+
+  // Helper for ExtendTreesOneLevel(). Given a Mobod and a set of joints known
+  // to have one of their links already following that Mobod, look at the other
+  // (outboard) link and return true if we find one that has mass.
+  bool HasMassfulOutboardLink(MobodIndex inboard_mobod_index,
+                              const std::vector<JointIndex>& joints) const;
 
   // After dealing with everything that had some path to World, deals with
   // remaining disconnected subgraphs and lone free bodies. On return,
@@ -506,6 +537,49 @@ class SpanningForest {
     DRAKE_ASSERT(data_.graph != nullptr);
     return *data_.graph;
   }
+
+  // Returns true if this model instance requests optimization (link merging)
+  // of composites, either explicitly or via inheritance from the global
+  // settings.
+  bool should_merge_link_composites(ModelInstanceIndex index) const {
+    return static_cast<bool>(options(index) &
+                             ForestBuildingOptions::kMergeLinkComposites);
+  }
+
+  // This implements our policy for when to optimize LinkComposites by merging
+  // their constituent Links onto a single Mobod. We're given a Joint
+  // connecting parent and child Links and need to decide whether the parent
+  // and child will follow a single Mobod or two different Mobods. If we
+  // decide to merge them, the Joint won't be modeled at all since it will be
+  // interior to the composite.
+  //
+  // To return true (merge), the following must all be true:
+  //   - The joint must be a weld, and
+  //   - the joint's model instance must request merging composites, and
+  //   - the joint has _not_ demanded that it be modeled.
+  bool should_merge_parent_and_child(const Joint& joint) {
+    return joint.is_weld() && !joint.must_be_modeled() &&
+           should_merge_link_composites(joint.model_instance());
+  }
+
+  // Adds the follower Link to the LinkComposite that inboard_mobod is
+  // mobilizing and notes that the Joint is internal to that LinkComposite
+  // so is not modeled. Will create the LinkComposite if there was only one
+  // Link mobilized before.
+  const Mobod& JoinExistingMobod(Mobod* inboard_mobod,
+                                 LinkOrdinal follower_link_ordinal,
+                                 JointOrdinal weld_joint_ordinal);
+
+  // We're given an existing Mobod and a to-be-merged weld joint where that
+  // joint's inboard link is already following the Mobod. Greedily extend this
+  // Mobod recursively to merge all links that are merge-welded to the inboard
+  // link. As we encounter non-merge joints attached to this composite we append
+  // them to `open_joint_indexes` for processing next. Those constitute the
+  // "next level" outboard of this merged composite.
+  void GrowCompositeMobod(Mobod* inboard_mobod, BodyIndex outboard_link_index,
+                          JointOrdinal weld_joint_ordinal,
+                          std::vector<JointIndex>* open_joint_indexes,
+                          int* num_unprocessed_links);
 
   struct Data {
     // These are all default but definitions deferred to .cc file so
