@@ -163,6 +163,8 @@ std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
       id0, field0_F, bvh0_F, X_WF, id1, field1_G, bvh1_G, X_WG, representation);
 }
 
+#if 0
+// This function is slated for demolition.
 /* Calculates the contact surface (if it exists) between two potentially
  colliding geometries.
 
@@ -191,6 +193,7 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   }
   return result;
 }
+#endif
 
 template <typename T>
 struct MaybeMakeContactSurfaceResult {
@@ -288,6 +291,8 @@ MaybeMakeContactSurfaceResult<T> MaybeMakeContactSurface(
   return {CalcContactSurfaceResult::kCalculated, std::move(surface)};
 }
 
+#if 0
+// This function is slated for demolition.
 /* Assess contact between two objects -- if it can't be determined with
  hydroelastic contact, it throws an exception. All parameters are as documented
  in MaybeCalcContactSurface().
@@ -319,6 +324,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   // Tell the broadphase to keep searching.
   return false;
 }
+#endif
 
 /* @throws a std::exception with an appropriate error message for the various
  result codes that indicate failure.
@@ -390,6 +396,8 @@ struct CallbackWithFallbackData {
   std::vector<PenetrationAsPointPair<T>>* point_pairs;
 };
 
+#if 0
+// This function is slated for demolition.
 /* Assess contact between two objects -- if it can't be determined with
  hydroelastic contact, it assess the contact using point-contact. All parameters
  are as documented in MaybeCalcContactSurface(). However, both ContactSurface
@@ -402,6 +410,7 @@ bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
                           fcl::CollisionObjectd* object_B_ptr,
                           // NOLINTNEXTLINE
                           void* callback_data) {
+  // DRAKE_DEMAND(false);  // There are some tests.
   auto& data = *static_cast<CallbackWithFallbackData<T>*>(callback_data);
 
   const EncodedData encoding_a(*object_A_ptr);
@@ -426,6 +435,7 @@ bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
   // Tell the broadphase to keep searching.
   return false;
 }
+#endif
 
 // clang-format off
 }  // namespace hydroelastic
