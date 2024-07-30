@@ -715,7 +715,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
       }
-      if (result != hydroelastic::ContactSurfaceResult::kCalculated) {
+      if (ContactSurfaceFailed(result)) {
         // This will certainly throw.
         calculator.RejectResult(result, GetFclPtr(id0), GetFclPtr(id1));
       }
@@ -755,7 +755,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
       }
-      if (result != hydroelastic::ContactSurfaceResult::kCalculated) {
+      if (ContactSurfaceFailed(result)) {
         auto penetration = penetration_as_point_pair::MaybeMakePointPair(
             GetFclPtr(id0), GetFclPtr(id1), point_data);
         if (penetration != nullptr) {
