@@ -16,10 +16,10 @@ namespace internal {
 namespace hydroelastic {
 
 /* Computes ContactSurface using the algorithm appropriate to the Shape types
- represented by the given `soft` and `rigid` geometries.
+ represented by the given `compliant` and `rigid` geometries.
  @pre The geometries are not *both* half spaces.  */
 template <typename T>
-std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
+std::unique_ptr<ContactSurface<T>> CalcRigidCompliant(
     const SoftGeometry& soft, const math::RigidTransform<T>& X_WS,
     GeometryId id_S, const RigidGeometry& rigid,
     const math::RigidTransform<T>& X_WR, GeometryId id_R,
@@ -29,22 +29,38 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
  represented by the given `compliant` geometries.
  @pre None of the geometries are half spaces. */
 template <typename T>
-std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
-    const SoftGeometry& compliant0_F, const math::RigidTransform<T>& X_WF,
-    GeometryId id0, const SoftGeometry& compliant1_G,
-    const math::RigidTransform<T>& X_WG, GeometryId id1,
+std::unique_ptr<ContactSurface<T>> CalcCompliantCompliant(
+    const SoftGeometry& compliant_F, const math::RigidTransform<T>& X_WF,
+    GeometryId id_F, const SoftGeometry& compliant_G,
+    const math::RigidTransform<T>& X_WG, GeometryId id_G,
     HydroelasticContactRepresentation representation);
 
+/* Enumerate the various results of attempting to make a contact surface. */
 enum class ContactSurfaceResult {
-  kCalculated,  //< Computation was successful; a contact surface is
-  //< only produced if the objects were in contact.
-  kUnsupported,  //< Contact surface can't be computed for the geometry
-  //< pair.
-  kHalfSpaceHalfSpace,  //< Contact between two half spaces; not allowed.
-  kRigidRigid,          //< Contact between two rigid geometries; not allowed.
-  kCompliantHalfSpaceCompliantMesh,  //< Contact between a compliant mesh and a
-  //< compliant half space; not allowed.
+  /* Computation was successful; either there was no contact (at least one
+   geometry was considered vanished), or else the contact surface is guaranteed
+   to have at least one face. See also
+   `geometry::internal::hydroelastic::Geometries::is_vanished()`. */
+  kCalculated,
+
+  /* Contact surface can't be computed for the geometry pair. */
+  kUnsupported,
+
+  /* Contact between two half spaces; not allowed. */
+  kHalfSpaceHalfSpace,
+
+  /* Contact between two rigid geometries; not allowed. */
+  kRigidRigid,
+
+  /* Contact between compliant mesh and compliant half space; not allowed. */
+  kCompliantHalfSpaceCompliantMesh,
 };
+
+/* @returns true iff the result indicates a failure. Note: If this predicate
+ returns false, there might still not be a contact surface. */
+bool inline ContactSurfaceFailed(ContactSurfaceResult result) {
+  return result != ContactSurfaceResult::kCalculated;
+}
 
 /* Calculator for the shape-to-shape hydroelastic contact results. It needs:
 
@@ -58,9 +74,10 @@ enum class ContactSurfaceResult {
 template <typename T>
 class ContactCalculator {
  public:
-  /* Constructs the fully-specified callback data. The values are as described
-   in the class documentation. All parameters are aliased in the data and must
-   remain valid at least as long as the CallbackData instance.
+  /* Constructs the fully-specified calculator. The values are as described in
+   the class documentation. Some parameters (noted below) are aliased in the
+   data and must remain valid at least as long as the ContactCalculator
+   instance.
 
    @param X_WGs                   The T-valued poses. Aliased.
    @param geometries              The set of all hydroelastic geometric
@@ -83,27 +100,19 @@ class ContactCalculator {
 
   struct MaybeMakeContactSurfaceResult {
     ContactSurfaceResult result;
+    /* Note: `surface` can always be `nullptr`, even when the `result` is
+     `kCalculated`. */
     std::unique_ptr<ContactSurface<T>> surface;
   };
 
   /* Makes the contact surface (if it exists) between two potentially
      colliding geometries.
 
-     @param id0       Id of the first object in the pair (order insignificant).
-     @param id1       Id of the second object in the pair (order insignificant).
-     @param[out] callback_data   Supporting data to compute the contact surface.
-     @returns both the result code, and the new surface, if any.
-     @tparam T  The scalar type for the query.  */
-  MaybeMakeContactSurfaceResult MaybeMakeContactSurface(GeometryId id0,
-                                                        GeometryId id1) const;
-
-  /* @throws a std::exception with an appropriate error message for the various
-     result codes that indicate failure.
-     @pre result != kCalculated
-  */
-  [[noreturn]] void RejectResult(ContactSurfaceResult result,
-                                 fcl::CollisionObjectd* object_A_ptr,
-                                 fcl::CollisionObjectd* object_B_ptr) const;
+     @param id_A     Id of the first object in the pair (order insignificant).
+     @param id_B     Id of the second object in the pair (order insignificant).
+     @returns both the result code, and the new surface, if any. */
+  MaybeMakeContactSurfaceResult MaybeMakeContactSurface(GeometryId id_A,
+                                                        GeometryId id_B) const;
 
  private:
   /* The T-valued poses of all geometries.  */

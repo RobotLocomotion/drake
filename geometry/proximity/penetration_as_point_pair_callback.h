@@ -1,6 +1,6 @@
 #pragma once
 
-#include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -68,11 +68,11 @@ template <typename T>
 bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
               fcl::CollisionObjectd* fcl_object_B_ptr, void* callback_data);
 
-/* Given two objects that are candidates for a collision, construct and return
- the point-pair contact result. If the penetration depth turns out to be
- negative (no collision), return nullptr. */
+/* Given two objects that are candidates for a collision, returns the
+ point-pair contact result. If the penetration depth turns out to be negative
+ (no collision), returns nullopt. */
 template <typename T>
-std::unique_ptr<PenetrationAsPointPair<T>> MaybeMakePointPair(
+std::optional<PenetrationAsPointPair<T>> MaybeMakePointPair(
     fcl::CollisionObjectd* fcl_object_A_ptr,
     fcl::CollisionObjectd* fcl_object_B_ptr, const CallbackData<T>& data);
 

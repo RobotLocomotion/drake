@@ -170,7 +170,7 @@ BENCHMARK_DEFINE_F(CompliantMeshIntersectionBenchmark, CompliantCompliantMesh)
 
   std::unique_ptr<ContactSurface<double>> surface_SR;
   for (auto _ : state) {
-    surface_SR = DispatchCompliantCompliantCalculation(
+    surface_SR = CalcCompliantCompliant(
         geo_S, RigidTransformd::Identity(), id_S, geo_R, X_SR_, id_R,
         HydroelasticContactRepresentation::kPolygon);
   }

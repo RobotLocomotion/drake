@@ -393,7 +393,7 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   if (!can_collide) return false;
 
   auto result = MaybeMakePointPair(fcl_object_A_ptr, fcl_object_B_ptr, data);
-  if (result != nullptr) {
+  if (result.has_value()) {
     data.point_pairs.push_back(std::move(*result));
   }
 
@@ -401,7 +401,7 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
 }
 
 template <typename T>
-std::unique_ptr<PenetrationAsPointPair<T>> MaybeMakePointPair(
+std::optional<PenetrationAsPointPair<T>> MaybeMakePointPair(
     fcl::CollisionObjectd* fcl_object_A_ptr,
     fcl::CollisionObjectd* fcl_object_B_ptr, const CallbackData<T>& data) {
   // Extract the collision filter keys from the fcl collision objects. These
@@ -439,8 +439,7 @@ std::unique_ptr<PenetrationAsPointPair<T>> MaybeMakePointPair(
                                   *fcl_object_B_ptr, data.X_WGs.at(id_B),
                                   data.request, &penetration);
     if (ExtractDoubleOrThrow(penetration.depth) >= 0) {
-      return std::make_unique<PenetrationAsPointPair<T>>(
-          std::move(penetration));
+      return penetration;
     }
   } else {
     throw std::logic_error(fmt::format(

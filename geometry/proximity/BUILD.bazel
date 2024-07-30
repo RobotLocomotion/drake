@@ -368,7 +368,6 @@ drake_cc_library(
         "//geometry/benchmarking:__pkg__",
     ],
     deps = [
-        ":collision_filter",
         ":field_intersection",
         ":hydroelastic_internal",
         ":mesh_half_space_intersection",
@@ -383,8 +382,6 @@ drake_cc_library(
         "//geometry:proximity_properties",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
-        "@fcl_internal//:fcl",
-        "@fmt",
     ],
 )
 
