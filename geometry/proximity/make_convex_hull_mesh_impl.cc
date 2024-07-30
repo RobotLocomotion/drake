@@ -125,15 +125,15 @@ std::vector<Vector3d> ReadObjVertices(const FileContents& obj_data,
   return std::move(*tinyobj_vertices_ptr);
 }
 
-/* Returns the scaled vertices from the named vtk file.
- @pre `filename` references a vtk file (with a volume mesh). */
-void ReadVtkVertices(const fs::path filename, double scale,
-                     std::vector<Vector3d>* vertices) {
+/* Returns the scaled vertices from the contents of a vtk file.
+ @pre `vtk_data` contains vtk geometry data. */
+std::vector<Vector3d> ReadVtkVertices(const FileContents& vtk_data,
+                                      double scale) {
   const VolumeMesh<double> volume_mesh =
-      ReadVtkToVolumeMesh(std::string(filename), scale);
+      ReadVtkContentsToVolumeMesh(vtk_data, scale);
 
   // It would be nice if we could simply steal the vertices rather than copy.
-  *vertices = volume_mesh.vertices();
+  return volume_mesh.vertices();
 }
 
 /* Multiplies the position vector p_AQ by the transform T_BA, returning p_BQ. */
@@ -239,8 +239,7 @@ VertexCloud ReadVertices(const FileContents& file_data,
   if (extension == ".obj") {
     cloud.vertices = ReadObjVertices(file_data, scale);
   } else if (extension == ".vtk") {
-    throw std::runtime_error(".vtk can't be used with stream.");
-    // ReadVtkVertices(data_stream, scale, &cloud.vertices, description);
+    cloud.vertices = ReadVtkVertices(file_data, scale);
   } else if (extension == ".gltf") {
     throw std::runtime_error(".gltf can't be used with stream.");
     // ReadGltfVertices(data_stream, scale, &cloud.vertices, description);
@@ -291,7 +290,9 @@ VertexCloud ReadVertices(const fs::path filename, double scale) {
                  });
 
   VertexCloud cloud;
-  if (extension == ".obj") {
+  // Read the file contents in preparation for parsing.
+  std::string file_contents;
+  {
     std::ifstream f(filename);
     if (!f.good()) {
       throw std::runtime_error(fmt::format(
@@ -301,11 +302,14 @@ VertexCloud ReadVertices(const fs::path filename, double scale) {
     }
     std::stringstream contents;
     contents << f.rdbuf();
-    const common::FileContents obj_data(std::move(contents).str(),
-                                        filename.string());
-    cloud.vertices = ReadObjVertices(obj_data, scale);
+    file_contents = std::move(contents).str();
+  }
+  const common::FileContents mesh_data(std::move(file_contents),
+                                       filename.string());
+  if (extension == ".obj") {
+    cloud.vertices = ReadObjVertices(mesh_data, scale);
   } else if (extension == ".vtk") {
-    ReadVtkVertices(filename, scale, &cloud.vertices);
+    cloud.vertices = ReadVtkVertices(mesh_data, scale);
   } else if (extension == ".gltf") {
     ReadGltfVertices(filename, scale, &cloud.vertices);
   } else {
