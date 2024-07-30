@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <limits>
 #include <memory>
-#include <sstream>
 #include <utility>
 
 #include <fmt/format.h>
@@ -55,10 +54,9 @@ void ComputeConvexHullAsNecessary(
     } else {
       const MemoryMesh& memory_mesh = std::get<MemoryMesh>(source);
       const FileContents& mesh_contents = memory_mesh.data.at(memory_mesh.name);
-      std::istringstream data_stream(mesh_contents.contents());
       new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
-          internal::MakeConvexHullFromStream(
-              &data_stream, extension, mesh_contents.filename_hint(), scale));
+          internal::MakeConvexHullFromContents(mesh_contents, extension,
+                                               scale));
     }
     std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
   }
