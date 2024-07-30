@@ -191,27 +191,18 @@ void FclDistance(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
                  data, callback);
 }
 
-// Compare function to use with ordering PenetrationAsPointPairs.
+// Compare functions to use with ordering PenetrationAsPointPairs.
 template <typename T>
-bool OrderPointPair(const PenetrationAsPointPair<T>& p1,
-                    const PenetrationAsPointPair<T>& p2) {
-  if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
-  return p1.id_B < p2.id_B;
-}
-template <typename T>
-bool OrderPointPairPtr(const std::unique_ptr<PenetrationAsPointPair<T>>& p1,
-                       const std::unique_ptr<PenetrationAsPointPair<T>>& p2) {
-  if (p1 == nullptr || p2 == nullptr) return p1 < p2;
-  return OrderPointPair(*p1, *p2);
+bool Order(const PenetrationAsPointPair<T>& p1,
+           const PenetrationAsPointPair<T>& p2) {
+  return std::tie(p1.id_A, p1.id_B) < std::tie(p2.id_A, p2.id_B);
 }
 
 // Compare function to use with ordering ContactSurfaces.
 template <typename T>
-bool OrderContactSurfacePtr(const std::unique_ptr<ContactSurface<T>>& s1,
-                            const std::unique_ptr<ContactSurface<T>>& s2) {
-  if (s1 == nullptr || s2 == nullptr) return s1 < s2;
-  if (s1->id_M() != s2->id_M()) return s1->id_M() < s2->id_M();
-  return s1->id_N() < s2->id_N();
+bool Order(const ContactSurface<T>& s1, const ContactSurface<T>& s2) {
+  return std::forward_as_tuple(s1.id_M(), s1.id_N()) <
+         std::forward_as_tuple(s2.id_M(), s2.id_N());
 }
 
 // Compare function to use when ordering
@@ -219,8 +210,7 @@ bool OrderContactSurfacePtr(const std::unique_ptr<ContactSurface<T>>& s1,
 template <typename T>
 bool OrderSignedDistancePair(const SignedDistancePair<T>& p1,
                              const SignedDistancePair<T>& p2) {
-  if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
-  return p1.id_B < p2.id_B;
+  return std::tie(p1.id_A, p1.id_B) < std::tie(p2.id_A, p2.id_B);
 }
 
 // Compare function to use when ordering ComputeSignedDistanceToPoint.
@@ -230,24 +220,35 @@ bool OrderSignedDistanceToPoint(const SignedDistanceToPoint<T>& p1,
   return p1.id_G < p2.id_G;
 }
 
-// Sort the vector of `ptrs`, (per `less_than_op`), then move the sorted objects
-// to `objects`, ignoring any nullptr entries.
+// Sort the vector of `ptrs`, then move the sorted objects to `objects`,
+// ignoring any nullptr entries.  Type R must provide a comparison free
+// function:
+//   bool Order(const R&, const R&)
 template <typename R>
 void SortCullFlatten(
     std::vector<std::unique_ptr<R>>* ptrs,
-    std::vector<R>* objects,
-    std::function<bool(const std::unique_ptr<R>&, const std::unique_ptr<R>&)>
-        less_than_op) {
-  std::sort(ptrs->begin(), ptrs->end(), less_than_op);
+    std::vector<R>* objects) {
+  std::sort(ptrs->begin(), ptrs->end(),
+            [](const std::unique_ptr<R>& a, const std::unique_ptr<R>& b) {
+              if (a == nullptr || b == nullptr) {
+                // Note reversed comparison here forces nulls to the end of the
+                // sequence.
+                return a > b;
+              }
+              return Order(*a, *b);
+            });
 
   // While flattening, filter out any nullptr results.
   objects->reserve(ptrs->size());
   for (const auto& ptr : *ptrs) {
-    if (ptr != nullptr) {
-      objects->emplace_back(std::move(*ptr));
+    if (ptr == nullptr) {
+      // Thanks to comparison trick above, we can quit on first null.
+      break;
     }
+    objects->push_back(std::move(*ptr));
   }
 }
+
 
 }  // namespace
 
@@ -656,7 +657,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     FclCollide(dynamic_tree_, anchored_tree_, &data,
                penetration_as_point_pair::Callback<T>);
 
-    std::sort(contacts.begin(), contacts.end(), OrderPointPair<T>);
+    std::sort(contacts.begin(), contacts.end(),
+              [](const auto& a, const auto& b) {
+                return Order<T>(a, b);
+              });
 
     return contacts;
   }
@@ -698,7 +702,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   ComputeContactSurfaces(
       HydroelasticContactRepresentation representation,
       const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-    auto candidates = FindCollisionCandidates();
+    std::vector<SortedPair<GeometryId>> candidates = FindCollisionCandidates();
 
     vector<ContactSurface<T>> surfaces;
     // All these quantities are aliased in the calculator.
@@ -712,16 +716,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     for (int k = 0; k < ssize(candidates); ++k) {
       const auto& [id0, id1] = candidates[k];
       auto [result, surface] = calculator.MaybeMakeContactSurface(id0, id1);
-      if (surface != nullptr) {
+      if (ContactSurfaceFailed(result)) {
+        ThrowOnFailedResult(result, GetFclPtr(id0), GetFclPtr(id1));
+      } else if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
       }
-      if (result != hydroelastic::ContactSurfaceResult::kCalculated) {
-        // This will certainly throw.
-        calculator.RejectResult(result, GetFclPtr(id0), GetFclPtr(id1));
-      }
     }
-    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, &surfaces,
-                                       OrderContactSurfacePtr<T>);
+    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, &surfaces);
     return surfaces;
   }
 
@@ -735,7 +736,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_DEMAND(surfaces != nullptr);
     DRAKE_DEMAND(point_pairs != nullptr);
 
-    auto candidates = FindCollisionCandidates();
+    std::vector<SortedPair<GeometryId>> candidates = FindCollisionCandidates();
 
     // All these quantities are aliased.
     hydroelastic::ContactCalculator<T> calculator{
@@ -752,21 +753,18 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     for (int k = 0; k < ssize(candidates); ++k) {
       const auto& [id0, id1] = candidates[k];
       auto [result, surface] = calculator.MaybeMakeContactSurface(id0, id1);
-      if (surface != nullptr) {
-        surface_ptrs[k] = std::move(surface);
-      }
-      if (result != hydroelastic::ContactSurfaceResult::kCalculated) {
+      if (ContactSurfaceFailed(result)) {
         auto penetration = penetration_as_point_pair::MaybeMakePointPair(
             GetFclPtr(id0), GetFclPtr(id1), point_data);
         if (penetration != nullptr) {
           point_pair_ptrs[k] = std::move(penetration);
         }
+      } else if (surface != nullptr) {
+        surface_ptrs[k] = std::move(surface);
       }
     }
-    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, surfaces,
-                                       OrderContactSurfacePtr<T>);
-    SortCullFlatten<PenetrationAsPointPair<T>>(&point_pair_ptrs, point_pairs,
-                                               OrderPointPairPtr<T>);
+    SortCullFlatten<ContactSurface<T>>(&surface_ptrs, surfaces);
+    SortCullFlatten<PenetrationAsPointPair<T>>(&point_pair_ptrs, point_pairs);
   }
 
   void ComputeDeformableContact(
@@ -954,6 +952,62 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     //  (kHydroGroup, kRezHint). We should make exception for Mesh and Convex
     //  since they don't need resolution hint.
     ProcessGeometriesForDeformableContact(mesh, user_data);
+  }
+
+  /* @throws a std::exception with an appropriate error message for the various
+     result codes that indicate failure.
+     @pre ContactSurfaceFailed(result) == true */
+  [[noreturn]] void ThrowOnFailedResult(
+      hydroelastic::ContactSurfaceResult result,
+      fcl::CollisionObjectd* object_A_ptr,
+      fcl::CollisionObjectd* object_B_ptr) const {
+    // Give a slightly better diagnostic for a misplaced happy result code.
+    DRAKE_DEMAND(hydroelastic::ContactSurfaceFailed(result));
+    const EncodedData encoding_a(*object_A_ptr);
+    const EncodedData encoding_b(*object_B_ptr);
+
+    const HydroelasticType type_A =
+        hydroelastic_geometries_.hydroelastic_type(encoding_a.id());
+    const HydroelasticType type_B =
+        hydroelastic_geometries_.hydroelastic_type(encoding_b.id());
+
+    using enum hydroelastic::ContactSurfaceResult;
+    switch (result) {
+      case kUnsupported:
+        throw std::logic_error(fmt::format(
+            "Requested a contact surface between a pair of geometries without "
+            "hydroelastic representation for at least one shape: a {} {} with "
+            "id {} and a {} {} with id {}",
+            type_A, GetGeometryName(*object_A_ptr), encoding_a.id(), type_B,
+            GetGeometryName(*object_B_ptr), encoding_b.id()));
+      case kRigidRigid:
+        throw std::logic_error(fmt::format(
+            "Requested contact between two rigid objects ({} with id "
+            "{}, {} with id {}); that is not allowed in hydroelastic-only "
+            "contact. Please consider using hydroelastics with point-contact "
+            "fallback, e.g., QueryObject::ComputeContactSurfacesWithFallback() "
+            "or MultibodyPlant::set_contact_model("
+            "ContactModel::kHydroelasticWithFallback)",
+            GetGeometryName(*object_A_ptr), encoding_a.id(),
+            GetGeometryName(*object_B_ptr), encoding_b.id()));
+      case kCompliantHalfSpaceCompliantMesh:
+        throw std::logic_error(fmt::format(
+            "Requested hydroelastic contact between two compliant geometries, "
+            "one of which is a half space ({} with id {}, {} with id {}); "
+            "that is not allowed",
+            GetGeometryName(*object_A_ptr), encoding_a.id(),
+            GetGeometryName(*object_B_ptr), encoding_b.id()));
+      case kHalfSpaceHalfSpace:
+        throw std::logic_error(fmt::format(
+            "Requested contact between two half spaces with ids {} and {}; "
+            "that is not allowed",
+            encoding_a.id(), encoding_b.id()));
+      case kCalculated:
+        // This should never happen (see DRAKE_DEMAND()) above), but is here
+        // for compiler switch code completeness checking.
+        DRAKE_UNREACHABLE();
+    }
+    DRAKE_UNREACHABLE();
   }
 
   // The BVH of all dynamic geometries; this depends on *all* inputs.
