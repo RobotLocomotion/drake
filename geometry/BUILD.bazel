@@ -752,6 +752,7 @@ filegroup(
     srcs = [
         "test/cube_with_hole.bin",
         "test/cube_with_hole.gltf",
+        "test/embedded_cube.gltf",
     ],
 )
 
