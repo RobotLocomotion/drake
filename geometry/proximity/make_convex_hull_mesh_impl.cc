@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <map>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,16 +13,21 @@
 #include <libqhullcpp/Qhull.h>
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullVertexSet.h>
-#include <vtkGLTFImporter.h>  // vtkIOImport
-#include <vtkMapper.h>        // vtkCommonCore
-#include <vtkMatrix4x4.h>     // vtkCommonMath
-#include <vtkPolyData.h>      // vtkCommonDataModel
-#include <vtkRenderer.h>      // vtkRenderingCore
+#include <vtkGLTFDocumentLoader.h>    // vtkIOGeometry
+#include <vtkGLTFImporter.h>          // vtkIOImport
+#include <vtkMapper.h>                // vtkCommonCore
+#include <vtkMatrix4x4.h>             // vtkCommonMath
+#include <vtkMemoryResourceStream.h>  // vtkIOCore
+#include <vtkPolyData.h>              // vtkCommonDataModel
+#include <vtkRenderer.h>              // vtkRenderingCore
+#include <vtkURI.h>                   // vtkIOCore
+#include <vtkURILoader.h>             // vtkIOCore
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/ssize.h"
+#include "drake/common/string_map.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 #include "drake/geometry/read_obj.h"
@@ -144,6 +150,143 @@ Vector3d VtkMultiply(vtkMatrix4x4* T_BA, const Vector3d& p_AQ) {
   return Vector3d(p_out);
 }
 
+/* This helps serve the family of glTF files (.bin, .png, etc.) to VTK's
+ document loader, turning file URIs in the main glTF file into resource streams.
+ */
+class MeshMemoryLoader final : public vtkURILoader {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshMemoryLoader);
+
+  /* Constructs the loader for a family of related mesh files.
+   @param data  The map of related files. The key for each file will be a file
+                URL referred to by other files -- typically the glTF file.
+                The data will be aliased and must stay alive longer than this.
+   */
+  explicit MeshMemoryLoader(const string_map<FileContents>* data)
+      : mesh_data_(*data) {
+    DRAKE_DEMAND(data != nullptr);
+    base_uri_ = vtkURI::Make("file", vtkURIComponent(), "/convex_hull/");
+    SetBaseURI(base_uri_);
+  }
+
+ private:
+  vtkSmartPointer<vtkResourceStream> DoLoad(const vtkURI& uri) final {
+    // Case insensitive
+    std::string scheme = uri.GetScheme().GetValue();
+    std::transform(scheme.begin(), scheme.end(), scheme.begin(),
+                   [](unsigned char c) {
+                     return std::tolower(c);
+                   });
+    if (scheme == "file") {
+      // Populate the stream with the data.
+      const std::string& path = uri.GetPath().GetValue();
+      auto pos = path.find("/convex_hull/");
+      if (pos == std::string::npos) {
+        throw std::runtime_error(fmt::format(
+            "Can't compute convex hull for in-memory glTF file. The glTF file "
+            "has an unrecognizable resource URI: '{}'.",
+            uri.ToString()));
+      }
+      const std::string name = path.substr(pos + 13);
+      if (!mesh_data_.contains(name)) {
+        throw std::runtime_error(fmt::format(
+            "Can't compute convex hull for in-memory glTF file. The glTF file "
+            "referenced a name that wasn't in the memory mesh data: '{}'.",
+            name));
+      }
+      const FileContents& file_data = mesh_data_.at(name);
+      vtkSmartPointer<vtkMemoryResourceStream> stream;
+      stream->SetBuffer(file_data.contents().c_str(),
+                        file_data.contents().size(),
+                        /* copy= */ false);
+      return stream;
+    } else if (scheme == "data") {
+      // For data URIs, we'll let VTK's infrastructure handle it.
+      return this->LoadData(uri);
+    }
+
+    vtkErrorMacro("Unknown URI scheme for \"" << uri.ToString() << "\"");
+    return nullptr;
+  }
+
+  const std::string name_;
+  const string_map<FileContents>& mesh_data_;
+  vtkSmartPointer<vtkURI> base_uri_;
+};
+
+std::vector<Vector3d> ReadGltfVertices(const std::string& gltf_name,
+                                       const string_map<FileContents>& files,
+                                       double scale) {
+  MeshMemoryLoader uri_loader(&files);
+  // TODO(SeanCurtis-TRI): I need to use Drake' VTK observer on loader
+  // loader->AddObserver(...);
+  vtkNew<vtkGLTFDocumentLoader> loader;
+  if (!files.contains(gltf_name)) {
+    std::vector<std::string> keys;
+    for (const auto& [key, _] : files) {
+      keys.push_back(key);
+    }
+    throw std::runtime_error(fmt::format(
+        "Can't compute convex hull for in-memory glTF file. The file data "
+        "referenced as '{}' is not in the in-memory file set: {{{}}}",
+        gltf_name, fmt::join(keys, ", ")));
+  }
+  const std::string& gltf_contents = files.at(gltf_name).contents();
+  vtkNew<vtkMemoryResourceStream> gltf_stream;
+  gltf_stream->SetBuffer(gltf_contents.c_str(), gltf_contents.size(),
+                         /* copy= */ false);
+
+  if (!loader->LoadModelMetaDataFromStream(gltf_stream, &uri_loader) ||
+      !loader->LoadModelData({}) || !loader->BuildModelVTKGeometry()) {
+    // TODO(SeanCurtis-TRI) Can I do better with error messages?
+    throw std::runtime_error(fmt::format(
+        "Can't compute convex hull for in-memory glTF file. Unknown error for "
+        "data referenced as '{}'.",
+        gltf_name));
+  }
+  // TODO: Get the vertex data!
+  auto model = loader->GetInternalModel();
+  DRAKE_DEMAND(model != nullptr);
+
+  std::stack<int> nodes;
+  for (int node_id : model->Scenes[model->DefaultScene].Nodes) {
+    nodes.push(node_id);
+  }
+
+  // The relative transform from the file's frame F to the geometry's frame G.
+  // (rotation from y-up to z-up). The scale is handled separately.
+  const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
+
+  std::vector<Vector3d> vertices;
+  while (!nodes.empty()) {
+    const int node_id = nodes.top();
+    nodes.pop();
+    const auto& node = model->Nodes[node_id];
+
+    // Transform of the node in the file.
+    vtkMatrix4x4* T_FN = node.GlobalTransform;
+    if (node.Mesh >= 0) {
+      const auto& mesh = model->Meshes[node.Mesh];
+      for (const auto& primitive : mesh.Primitives) {
+        vtkSmartPointer<vtkPolyData> point_data = primitive.Geometry;
+        if (point_data == nullptr) {
+          continue;
+        }
+        for (vtkIdType vi = 0; vi < point_data->GetNumberOfPoints(); ++vi) {
+          const Vector3d p_NV(point_data->GetPoint(vi));
+          const Vector3d p_FV = VtkMultiply(T_FN, p_NV);
+          vertices.emplace_back((X_GF * p_FV) * scale);
+        }
+      }
+    }
+    for (int child_node_id : node.Children) {
+      // This is a *tree* not a graph, so we won't be revisiting nodes.
+      nodes.push(child_node_id);
+    }
+  }
+  return vertices;
+}
+
 /* Returns the scaled vertices from the named glTF file.
  @pre `filename` references a glTF file. */
 void ReadGltfVertices(const fs::path filename, double scale,
@@ -241,8 +384,9 @@ VertexCloud ReadVertices(const FileContents& file_data,
   } else if (extension == ".vtk") {
     cloud.vertices = ReadVtkVertices(file_data, scale);
   } else if (extension == ".gltf") {
-    throw std::runtime_error(".gltf can't be used with stream.");
-    // ReadGltfVertices(data_stream, scale, &cloud.vertices, description);
+    string_map<FileContents> files;
+    files["gltf"] = file_data;
+    cloud.vertices = ReadGltfVertices("gltf", files, scale);
   } else {
     throw std::runtime_error(
         fmt::format("MakeConvexHull only applies to .obj, .vtk, and .gltf "
