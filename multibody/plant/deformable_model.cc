@@ -340,7 +340,7 @@ DeformableModel<T>::BuildLinearVolumetricModel(
 }
 
 template <typename T>
-template <template <typename, int> class Model, typename T1>
+template <template <typename> class Model, typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
 DeformableModel<T>::BuildLinearVolumetricModelHelper(
     DeformableBodyId id, const geometry::VolumeMesh<double>& mesh,
@@ -355,7 +355,7 @@ DeformableModel<T>::BuildLinearVolumetricModelHelper(
   using IsoparametricElementType =
       fem::internal::LinearSimplexElement<T, kNaturalDimension,
                                           kSpatialDimension, kNumQuads>;
-  using ConstitutiveModelType = Model<T, kNumQuads>;
+  using ConstitutiveModelType = Model<T>;
   static_assert(
       std::is_base_of_v<
           fem::internal::ConstitutiveModel<

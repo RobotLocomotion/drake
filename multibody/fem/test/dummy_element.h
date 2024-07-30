@@ -40,9 +40,8 @@ struct FemElementTraits<DummyElement<is_linear>> {
   static constexpr int num_dofs = Data::num_dofs;
 
   using ConstitutiveModel =
-      std::conditional_t<is_linear,
-                         LinearConstitutiveModel<T, num_quadrature_points>,
-                         CorotatedModel<T, num_quadrature_points>>;
+      std::conditional_t<is_linear, LinearConstitutiveModel<T>,
+                         CorotatedModel<T>>;
 };
 
 /* A simple FemElement implementation. The calculation methods are implemented
