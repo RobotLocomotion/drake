@@ -81,7 +81,7 @@ namespace {
 // Verify that the enums in link_joint_graph_defs.h work properly as bitmaps.
 GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
   const auto is_static = LinkFlags::kStatic;
-  const auto massless = LinkFlags::kTreatAsMassless;
+  const auto massless = LinkFlags::kMassless;
 
   // Or-ed flags still have LinkFlags type.
   auto link_flags = is_static | massless;
@@ -89,20 +89,20 @@ GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
 
   // And is bitwise but still returns LinkFlags, convertible to bool.
   EXPECT_EQ(link_flags & is_static, LinkFlags::kStatic);
-  EXPECT_EQ(link_flags & massless, LinkFlags::kTreatAsMassless);
+  EXPECT_EQ(link_flags & massless, LinkFlags::kMassless);
   EXPECT_FALSE(static_cast<bool>(link_flags & LinkFlags::kMustBeBaseBody));
   EXPECT_EQ(link_flags & LinkFlags::kMustBeBaseBody, LinkFlags::kDefault);
 
   // Repeat for Modeling Options.
   const auto use_fixed_base = ForestBuildingOptions::kUseFixedBase;
-  const auto combine_links = ForestBuildingOptions::kCombineLinkComposites;
+  const auto combine_links = ForestBuildingOptions::kMergeLinkComposites;
   auto forest_building_options = use_fixed_base | combine_links;
   static_assert(
       std::is_same_v<decltype(forest_building_options), ForestBuildingOptions>);
   EXPECT_EQ(forest_building_options & use_fixed_base,
             ForestBuildingOptions::kUseFixedBase);
   EXPECT_EQ(forest_building_options & combine_links,
-            ForestBuildingOptions::kCombineLinkComposites);
+            ForestBuildingOptions::kMergeLinkComposites);
   EXPECT_FALSE(static_cast<bool>(forest_building_options &
                                  ForestBuildingOptions::kUseRpyFloatingJoints));
   EXPECT_EQ(
@@ -126,7 +126,7 @@ GTEST_TEST(LinkJointGraph, SpecifyForestBuildingOptions) {
 
   const ForestBuildingOptions default_options = ForestBuildingOptions::kDefault;
   const ForestBuildingOptions two_options =
-      ForestBuildingOptions::kCombineLinkComposites |
+      ForestBuildingOptions::kMergeLinkComposites |
       ForestBuildingOptions::kUseRpyFloatingJoints;
 
   // If we haven't said anything, global and all ModelInstance options are
@@ -284,8 +284,9 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_TRUE(graph.world_link().is_anchored());
   EXPECT_EQ(graph.link_to_mobod(world_link_index), MobodIndex(0));
   EXPECT_EQ(ssize(graph.link_composites()), 1);
-  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0))), 1);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0], world_link_index);
+  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
+            world_link_index);
 
   // Check that Clear() puts the graph back to default-constructed condition.
   // First add some junk to the graph.
@@ -332,9 +333,9 @@ GTEST_TEST(LinkJointGraph, AddLinkErrors) {
   // Addlink accepts flags, but not Shadow which is set internally only.
   const BodyIndex link2_index =
       graph.AddLink("link2", ModelInstanceIndex(3),
-                    LinkFlags::kTreatAsMassless | LinkFlags::kMustBeBaseBody);
+                    LinkFlags::kMassless | LinkFlags::kMustBeBaseBody);
   const LinkJointGraph::Link& link2 = graph.link_by_index(link2_index);
-  EXPECT_TRUE(link2.treat_as_massless() && link2.must_be_base_body());
+  EXPECT_TRUE(link2.is_massless() && link2.must_be_base_body());
   EXPECT_FALSE(link2.is_static_flag_set() || link2.is_shadow());
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -377,14 +378,14 @@ GTEST_TEST(LinkJoinGraph, LinkAPITest) {
   EXPECT_FALSE(link5.is_world());
   EXPECT_FALSE(link5.is_anchored());
   EXPECT_FALSE(link5.is_static_flag_set());
-  EXPECT_FALSE(link5.treat_as_massless());
+  EXPECT_FALSE(link5.is_massless());
   EXPECT_FALSE(link5.is_shadow());
   EXPECT_TRUE(link5.must_be_base_body());
   LinkJointGraphTester::set_link_flags(LinkFlags::kStatic, &link5);
   EXPECT_TRUE(link5.is_static_flag_set());
   EXPECT_TRUE(link5.is_anchored());  // Static links are anchored to World.
-  EXPECT_TRUE(link5.must_be_base_body());   // Unchanged.
-  EXPECT_FALSE(link5.treat_as_massless());  // Unchanged.
+  EXPECT_TRUE(link5.must_be_base_body());  // Unchanged.
+  EXPECT_FALSE(link5.is_massless());       // Unchanged.
 
   // Only LinkJointGraph sets these; no public interface.
   EXPECT_TRUE(link5.joints().empty());
