@@ -480,10 +480,12 @@ bool LinkJointGraph::IsJointTypeRegistered(
 }
 
 void LinkJointGraph::CreateWorldLinkComposite() {
-  DRAKE_DEMAND(link_composites().empty() && !links().empty());
+  DRAKE_DEMAND(!links().empty());  // Better be at least World!
+  DRAKE_DEMAND(data_.link_composites.empty());
   Link& world_link = data_.links[LinkOrdinal(0)];
   DRAKE_DEMAND(!world_link.link_composite_index_.has_value());
-  data_.link_composites.emplace_back(std::vector{world_link.index()});
+  data_.link_composites.emplace_back(LinkComposite{
+      .links = std::vector{world_link.index()}, .is_massless = false});
   world_link.link_composite_index_ = LinkCompositeIndex(0);
 }
 
@@ -602,20 +604,34 @@ LinkCompositeIndex LinkJointGraph::AddToLinkComposite(
   Link& new_link = mutable_link(new_link_ordinal);
   DRAKE_DEMAND(!new_link.is_world());
 
-  std::optional<LinkCompositeIndex> existing_composite =
+  std::optional<LinkCompositeIndex> existing_composite_index =
       maybe_composite_link.link_composite_index_;
-  if (!existing_composite.has_value()) {
+  if (!existing_composite_index.has_value()) {
     // We're starting a new LinkComposite. This must be the "active link"
     // for this Composite because we saw it first while building the Forest.
-    existing_composite = maybe_composite_link.link_composite_index_ =
+    existing_composite_index = maybe_composite_link.link_composite_index_ =
         LinkCompositeIndex(ssize(data_.link_composites));
-    data_.link_composites.emplace_back(
-        std::vector<BodyIndex>{maybe_composite_link.index()});
+    data_.link_composites.emplace_back(LinkComposite{
+        .links = std::vector<BodyIndex>{maybe_composite_link.index()},
+        .is_massless = maybe_composite_link.is_massless()});
   }
-  data_.link_composites[*existing_composite].push_back(new_link.index());
-  new_link.link_composite_index_ = existing_composite;
 
-  return *existing_composite;
+  LinkComposite& existing_composite =
+      data_.link_composites[*existing_composite_index];
+  existing_composite.links.push_back(new_link.index());
+  // For the composite to be massless, _all_ its links must be massless.
+  if (!new_link.is_massless()) existing_composite.is_massless = false;
+  new_link.link_composite_index_ = existing_composite_index;
+
+  return *existing_composite_index;
+}
+
+void LinkJointGraph::AddUnmodeledJointToComposite(
+    JointOrdinal unmodeled_joint_ordinal,
+    LinkCompositeIndex link_composite_index) {
+  Joint& joint = mutable_joint(unmodeled_joint_ordinal);
+  DRAKE_DEMAND(joint.traits_index() == weld_joint_traits_index());
+  joint.how_modeled_ = link_composite_index;
 }
 
 LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,
