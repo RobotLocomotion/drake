@@ -24,6 +24,8 @@ problem introduced in the paper ["Motion Planning around Obstacles with Convex
 Optimization"](https://arxiv.org/abs/2205.04422) by Tobia Marcucci, Mark
 Petersen, David von Wrangel, Russ Tedrake.
 
+@experimental
+
 Instead of using the full time-scaling curve, this problem uses a single
 time-scaling variable for each region. This formulation yields continuous
 trajectories, which are not differentiable at the transition times between the
