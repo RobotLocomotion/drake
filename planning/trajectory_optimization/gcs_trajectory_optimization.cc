@@ -387,6 +387,8 @@ void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
 
   Eigen::MatrixXd b = Eigen::VectorXd::Zero(2);
 
+  // Occasionally numerical variation results in very small values that are not
+  // exactly zero. This ensures that the members of b are actually 0
   for (int i = 0; i < b.rows(); i++) {
     for (int j = 0; j < b.cols(); j++) {
       b(i, j) = 0;
@@ -1574,7 +1576,7 @@ void GcsTrajectoryOptimization::AddPathLengthCost(
 
 void GcsTrajectoryOptimization::AddPathEnergyCost(
     const MatrixXd& weight_matrix) {
-  // Add path length cost to each subgraph.
+  // Add path energy cost to each subgraph.
   for (std::unique_ptr<Subgraph>& subgraph : subgraphs_) {
     if (subgraph->order() > 0) {
       subgraph->AddPathEnergyCost(weight_matrix);
