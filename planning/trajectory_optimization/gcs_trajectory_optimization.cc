@@ -403,8 +403,6 @@ void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
     auto control_points = GetControlPoints(*v);
     for (int i = 0; i < control_points.cols() - 1; ++i) {
       for (int j = 0; j < num_positions(); j++) {
-        auto vars_vec = {control_points.col(i + 1)(j),
-                         control_points.col(i)(j)};
         v->AddCost(Binding<QuadraticCost>(
             path_squared_cost,
             {control_points.col(i + 1).row(j), control_points.col(i).row(j)}));

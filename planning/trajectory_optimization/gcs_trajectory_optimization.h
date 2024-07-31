@@ -697,7 +697,7 @@ class GcsTrajectoryOptimization final {
   */
   void AddPathLengthCost(double weight = 1.0);
 
-  /**Adds multiple Quadratic Costs on the path length. Since we cannot directly
+  /** Adds multiple Quadratic Costs on the path length. Since we cannot directly
   compute the path length of a Bézier curve, we minimize the upper bound of the
   path integral by minimizing the sum of (weighted) distances between control
   points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂². This cost yields simpler gradients
