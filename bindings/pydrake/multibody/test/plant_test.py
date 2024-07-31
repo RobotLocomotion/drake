@@ -2258,56 +2258,25 @@ class TestPlant(unittest.TestCase):
                                  damping)
                 joint.get_quaternion(context=context)
                 joint.get_translation(context=context)
-                # Warn on deprecated QuaternionFloatingJoint.get_position().
-                with catch_drake_warnings(expected_count=1):
-                    joint.get_position(context=context)
                 joint.GetPose(context=context)
-                # Warn on deprecated QuaternionFloatingJoint.get_pose().
-                with catch_drake_warnings(expected_count=1):
-                    joint.get_pose(context=context)
                 joint.get_angular_velocity(context=context)
                 joint.get_translational_velocity(context=context)
                 joint.SetQuaternion(context=context, q_FM=Quaternion_[T]())
-                # Deprecate QuaternionFloatingJoint.set_quaternion().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_quaternion(context=context,
-                                         q_FM=Quaternion_[T]())
                 joint.SetOrientation(context=context, R=RotationMatrix_[T]())
-                # Deprecate QuaternionFloatingJoint.SetFromRotationMatrix().
-                with catch_drake_warnings(expected_count=1):
-                    joint.SetFromRotationMatrix(context=context,
-                                                R_FM=RotationMatrix_[T]())
                 joint.SetTranslation(context=context, p_FM=[0, 0, 0])
-                # Warn deprecated QuaternionFloatingJoint.set_position().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_position(context=context, p_FM=[0, 0, 0])
                 joint.SetPose(context=context, X_FM=RigidTransform_[T]())
-                # Warn deprecated QuaternionFloatingJoint.set_pose().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_pose(context=context, X_FM=RigidTransform_[T]())
                 joint.set_angular_velocity(context=context, w_FM=[0, 0, 0])
                 joint.set_translational_velocity(context=context,
                                                  v_FM=[0, 0, 0])
                 joint.set_random_translation_distribution(
                     translation=[0, 0, 0])
-                # Deprecate set_random_position_distribution().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_random_position_distribution(p_FM=[0, 0, 0])
                 joint.set_random_quaternion_distribution(
                     q_FM=Quaternion_[Expression]())
                 joint.set_random_quaternion_distribution_to_uniform()
                 joint.get_default_quaternion()
                 joint.get_default_translation()
-                # Deprecated QuaternionFloatingJoint.get_default_position().
-                with catch_drake_warnings(expected_count=1):
-                    joint.get_default_position()
-                # Deprecated QuaternionFloatingJoint.get_default_pose().
-                joint.get_default_pose()
                 joint.set_default_quaternion(q_FM=Quaternion_[float]())
                 joint.set_default_translation(translation=[0, 0, 0])
-                # Deprecated QuaternionFloatingJoint.set_default_position().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_default_position(p_FM=[0, 0, 0])
                 # Check that the base class supports these for this joint.
                 joint.SetDefaultPose(X_FM=RigidTransform_[float]())
                 joint.SetDefaultPosePair(q_FM=Quaternion_[float](),
@@ -2357,9 +2326,6 @@ class TestPlant(unittest.TestCase):
                                      R_FM=RotationMatrix_[T]())
                 joint.get_translation(context=context)
                 joint.SetTranslation(context=context, p_FM=[0, 0, 0])
-                # Deprecated RpyFloatingJoint.set_translationposition().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_translation(context=context, p_FM=[0, 0, 0])
                 joint.GetPose(context=context)
                 joint.SetPose(context=context, X_FM=RigidTransform_[T]())
                 joint.get_angular_velocity(context=context)

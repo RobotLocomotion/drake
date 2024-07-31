@@ -204,13 +204,6 @@ class RpyFloatingJoint final : public Joint<T> {
     return *this;
   }
 
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use RpyFloatingJoint::SetTranslation()")
-  const RpyFloatingJoint<T>& set_translation(systems::Context<T>* context,
-                                             const Vector3<T>& p_FM) const {
-    return SetTranslation(context, p_FM);
-  }
-
   /** Returns the pose `X_FM` of the outboard frame M as measured and expressed
   in the inboard frame F. Refer to the documentation for this class for
   details.

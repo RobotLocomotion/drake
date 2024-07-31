@@ -504,10 +504,6 @@ GTEST_TEST(TestL2NormCost, UpdateCoefficients) {
   cost.UpdateCoefficients(new_A.sparseView(), Vector4d::Zero());
   EXPECT_TRUE(CompareMatrices(cost.get_sparse_A().toDense(), new_A));
   EXPECT_TRUE(CompareMatrices(cost.GetDenseA(), new_A));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(CompareMatrices(cost.A(), new_A));
-#pragma GCC diagnostic pop
   EXPECT_EQ(cost.b().rows(), 4);
 
   // Can't change the number of variables.

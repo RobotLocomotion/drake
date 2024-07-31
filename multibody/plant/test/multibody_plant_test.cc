@@ -3792,11 +3792,6 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
                                     2.0 + uniform(generator),
                                     3.0 + uniform(generator));
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  plant.SetFreeBodyRandomPositionDistribution(body, xyz);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
   plant.SetFreeBodyRandomTranslationDistribution(body, xyz);
   plant.SetFreeBodyRandomRotationDistributionToUniform(body);
 
