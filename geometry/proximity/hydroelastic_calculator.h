@@ -105,13 +105,6 @@ class ContactCalculator {
   MaybeMakeContactSurfaceResult MaybeMakeContactSurface(GeometryId id_A,
                                                         GeometryId id_B) const;
 
-  /* @throws a std::exception with an appropriate error message for the various
-     result codes that indicate failure.
-     @pre ContactSurfaceFailed(result) == true */
-  [[noreturn]] void RejectResult(ContactSurfaceResult result,
-                                 fcl::CollisionObjectd* object_A_ptr,
-                                 fcl::CollisionObjectd* object_B_ptr) const;
-
  private:
   /* The T-valued poses of all geometries.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs_;

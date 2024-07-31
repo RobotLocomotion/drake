@@ -152,58 +152,6 @@ ContactCalculator<T>::MaybeMakeContactSurface(GeometryId id_A,
   return {ContactSurfaceResult::kCalculated, std::move(surface)};
 }
 
-template <typename T>
-[[noreturn]] void ContactCalculator<T>::RejectResult(
-    ContactSurfaceResult result, fcl::CollisionObjectd* object_A_ptr,
-    fcl::CollisionObjectd* object_B_ptr) const {
-  // Give a slightly better diagnostic for a misplaced happy result code.
-  DRAKE_DEMAND(result != ContactSurfaceResult::kCalculated);
-  const EncodedData encoding_a(*object_A_ptr);
-  const EncodedData encoding_b(*object_B_ptr);
-
-  const HydroelasticType type_A =
-      geometries_.hydroelastic_type(encoding_a.id());
-  const HydroelasticType type_B =
-      geometries_.hydroelastic_type(encoding_b.id());
-
-  switch (result) {
-    case ContactSurfaceResult::kUnsupported:
-      throw std::logic_error(fmt::format(
-          "Requested a contact surface between a pair of geometries without "
-          "hydroelastic representation for at least one shape: a {} {} with "
-          "id {} and a {} {} with id {}",
-          type_A, GetGeometryName(*object_A_ptr), encoding_a.id(), type_B,
-          GetGeometryName(*object_B_ptr), encoding_b.id()));
-    case ContactSurfaceResult::kRigidRigid:
-      throw std::logic_error(fmt::format(
-          "Requested contact between two rigid objects ({} with id "
-          "{}, {} with id {}); that is not allowed in hydroelastic-only "
-          "contact. Please consider using hydroelastics with point-contact "
-          "fallback, e.g., QueryObject::ComputeContactSurfacesWithFallback() "
-          "or MultibodyPlant::set_contact_model("
-          "ContactModel::kHydroelasticWithFallback)",
-          GetGeometryName(*object_A_ptr), encoding_a.id(),
-          GetGeometryName(*object_B_ptr), encoding_b.id()));
-    case ContactSurfaceResult::kCompliantHalfSpaceCompliantMesh:
-      throw std::logic_error(fmt::format(
-          "Requested hydroelastic contact between two compliant geometries, "
-          "one of which is a half space ({} with id {}, {} with id {}); "
-          "that is not allowed",
-          GetGeometryName(*object_A_ptr), encoding_a.id(),
-          GetGeometryName(*object_B_ptr), encoding_b.id()));
-    case ContactSurfaceResult::kHalfSpaceHalfSpace:
-      throw std::logic_error(fmt::format(
-          "Requested contact between two half spaces with ids {} and {}; "
-          "that is not allowed",
-          encoding_a.id(), encoding_b.id()));
-    case ContactSurfaceResult::kCalculated:
-      // This should never happen (see DRAKE_DEMAND()) above), but is here for
-      // compiler switch code completeness checking.
-      break;
-  }
-  DRAKE_UNREACHABLE();
-}
-
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&DispatchRigidSoftCalculation<T>,
      &DispatchCompliantCompliantCalculation<T>));
