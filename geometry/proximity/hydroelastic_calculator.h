@@ -38,8 +38,8 @@ std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
 /* Enumerate the various results of attempting to make a contact surface. */
 // clang-format off
 enum class ContactSurfaceResult {
-  kCalculated,  //< Computation was successful; a contact surface is
-                //< only produced if the objects were in contact.
+  kCalculated,  //< Computation was successful; the contact surface is
+                //< guaranteed to have at least one face.
   kUnsupported,  //< Contact surface can't be computed for the geometry
                  //< pair.
   kHalfSpaceHalfSpace,  //< Contact between two half spaces; not allowed.
@@ -66,9 +66,10 @@ bool inline ContactSurfaceFailed(ContactSurfaceResult result) {
 template <typename T>
 class ContactCalculator {
  public:
-  /* Constructs the fully-specified callback data. The values are as described
-   in the class documentation. All parameters are aliased in the data and must
-   remain valid at least as long as the CallbackData instance.
+  /* Constructs the fully-specified calculator. The values are as described in
+   the class documentation. Some parameters (noted below) are aliased in the
+   data and must remain valid at least as long as the ContactCalculator
+   instance.
 
    @param X_WGs                   The T-valued poses. Aliased.
    @param geometries              The set of all hydroelastic geometric
@@ -99,9 +100,7 @@ class ContactCalculator {
 
      @param id_A     Id of the first object in the pair (order insignificant).
      @param id_B     Id of the second object in the pair (order insignificant).
-     @param[out] callback_data   Supporting data to compute the contact surface.
-     @returns both the result code, and the new surface, if any.
-     @tparam T  The scalar type for the query.  */
+     @returns both the result code, and the new surface, if any. */
   MaybeMakeContactSurfaceResult MaybeMakeContactSurface(GeometryId id_A,
                                                         GeometryId id_B) const;
 
