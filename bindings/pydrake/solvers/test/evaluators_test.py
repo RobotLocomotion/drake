@@ -97,7 +97,7 @@ class TestCost(unittest.TestCase):
         binding = mp.Binding[mp.ExpressionCost](cost, cost.vars())
         self.assertEqual(binding.ToLatex(precision=1), "(y + \\sin{x})")
 
-    def test_eq(self):
+    def test_binding_eq(self):
         x = sym.Variable("x")
         y = sym.Variable("y")
         z = sym.Variable("z")
@@ -105,34 +105,40 @@ class TestCost(unittest.TestCase):
         e2 = np.cos(x) + y
         e3 = np.sin(z) + y
 
-        cost11 = mp.ExpressionCost(e=e1)
-        cost12 = mp.ExpressionCost(e=e1)
+        cost1 = mp.ExpressionCost(e=e1)
+        cost1_binding1 = mp.Binding[mp.ExpressionCost](cost1, cost1.vars())
+        cost1_binding2 = mp.Binding[mp.ExpressionCost](cost1, cost1.vars())
 
         cost2 = mp.ExpressionCost(e=e2)
-        cost3 = mp.ExpressionCost(e=e3)
+        cost2_binding = mp.Binding[mp.ExpressionCost](cost2, cost2.vars())
 
-        self.assertTrue(cost11 == cost11)
-        self.assertTrue(cost11 == cost12)
-        self.assertEqual(cost11, cost12)
+        cost3 = mp.ExpressionCost(e=e3)
+        cost3_binding = mp.Binding[mp.ExpressionCost](cost3, cost3.vars())
+
+        self.assertTrue(cost1_binding1 == cost1_binding1)
+        self.assertTrue(cost1_binding1 == cost1_binding2)
+        self.assertEqual(cost1_binding1, cost1_binding2)
 
         # The bindings have the same variables but different expressions.
-        self.assertNotEqual(cost11, cost2)
+        self.assertNotEqual(cost1_binding1, cost2_binding)
         # The bindings have the same expression but different variables.
-        self.assertNotEqual(cost11, cost3)
+        self.assertNotEqual(cost1_binding1, cost3_binding)
 
-
-
-    def test_hash(self):
+    def test_binding_hash(self):
         x = sym.Variable("x")
         y = sym.Variable("y")
         e = np.log(2*x) + y**2
-        e3 = y
+        e2 = y
 
-        cost = mp.ExpressionCost(e=e)
-        cost2 = mp.ExpressionCost(e=e)
-        cost3 = mp.ExpressionCost(e=e3)
-        self.assertEqual(hash(cost), hash(cost2))
-        self.assertNotEqual(hash(cost), hash(cost3))
+        cost1 = mp.ExpressionCost(e=e)
+        cost1_binding1 = mp.Binding[mp.ExpressionCost](cost1, cost1.vars())
+        cost1_binding2 = mp.Binding[mp.ExpressionCost](cost1, cost1.vars())
+
+        cost2 = mp.ExpressionCost(e=e2)
+        cost2_binding = mp.Binding[mp.ExpressionCost](cost2, cost2.vars())
+
+        self.assertEqual(hash(cost1_binding1), hash(cost1_binding2))
+        self.assertNotEqual(hash(cost1_binding1), hash(cost2_binding))
 
 
 class TestConstraints(unittest.TestCase):
@@ -274,51 +280,69 @@ class TestConstraints(unittest.TestCase):
         for cls in cls_list:
             mp.Binding[cls]
 
-    def test_eq(self):
+    def test_binding_eq(self):
         x = sym.Variable("x")
         y = sym.Variable("y")
         z = sym.Variable("z")
         e1 = np.sin(x) + y
         e2 = np.cos(x) + y
         e3 = np.sin(z) + y
-        constraint11 = mp.ExpressionConstraint(v=np.array([e1]),
-                                             lb=np.array([1.0]),
-                                             ub=np.array([2.0]))
-        constraint12 = mp.ExpressionConstraint(v=np.array([e1]),
-                                             lb=np.array([1.0]),
-                                             ub=np.array([2.0]))
-
+        constraint1 = mp.ExpressionConstraint(v=np.array([e1]),
+                                              lb=np.array([1.0]),
+                                              ub=np.array([2.0]))
+        constraint1_binding1 = mp.Binding[mp.ExpressionConstraint](
+            constraint1, constraint1.vars()
+        )
+        constraint1_binding2 = mp.Binding[mp.ExpressionConstraint](
+            constraint1, constraint1.vars()
+        )
 
         constraint2 = mp.ExpressionConstraint(v=np.array([e2]),
                                               lb=np.array([1.0]),
                                               ub=np.array([2.0]))
+        constraint2_binding = mp.Binding[mp.ExpressionConstraint](
+            constraint2, constraint2.vars()
+        )
+
         constraint3 = mp.ExpressionConstraint(v=np.array([e3]),
                                               lb=np.array([1.0]),
                                               ub=np.array([2.0]))
+        constraint3_binding = mp.Binding[mp.ExpressionConstraint](
+            constraint3, constraint3.vars()
+        )
 
-
-        self.assertTrue(constraint11 == constraint12)
-        self.assertTrue(constraint11 == constraint12)
-        self.assertEqual(constraint11, constraint12)
+        self.assertTrue(constraint1_binding1 == constraint1_binding1)
+        self.assertTrue(constraint1_binding1 == constraint1_binding2)
+        self.assertEqual(constraint1_binding1, constraint1_binding2)
 
         # The bindings have the same variables but different expressions.
-        self.assertNotEqual(constraint11, constraint2)
+        self.assertNotEqual(constraint1_binding1, constraint2_binding)
         # The bindings have the same expression but different variables.
-        self.assertNotEqual(constraint11, constraint3)
+        self.assertNotEqual(constraint1_binding1, constraint3_binding)
 
-    def test_hash(self):
+    def test_binding_hash(self):
         x = sym.Variable("x")
         y = sym.Variable("y")
         e = np.log(2*x) + y**2
         e2 = y
-        constraint = mp.ExpressionConstraint(v=np.array([e]),
-                                             lb=np.array([1.0]),
-                                             ub=np.array([2.0]))
-        constraint2 = mp.ExpressionConstraint(v=np.array([e2]),
-                                              lb=np.array([0.0]),
+        constraint1 = mp.ExpressionConstraint(v=np.array([e]),
+                                              lb=np.array([1.0]),
                                               ub=np.array([2.0]))
-        self.assertEqual(hash(constraint), hash(constraint))
-        self.assertNotEqual(hash(constraint), hash(constraint2))
+        constraint1_binding1 = mp.Binding[mp.ExpressionConstraint](
+            constraint1, constraint1.vars()
+        )
+        constraint1_binding2 = mp.Binding[mp.ExpressionConstraint](
+            constraint1, constraint1.vars()
+        )
+        constraint2 = mp.ExpressionConstraint(v=np.array([e2]),
+                                              lb=np.array([1.0]),
+                                              ub=np.array([2.0]))
+        constraint2_binding = mp.Binding[mp.ExpressionConstraint](
+            constraint2, constraint2.vars()
+        )
+        self.assertEqual(hash(constraint1_binding1),
+                         hash(constraint1_binding2))
+        self.assertNotEqual(hash(constraint1_binding1), hash(constraint2))
 
 
 # A dummy value function for MinimumValue{Lower,Upper}BoundConstraint.
