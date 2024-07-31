@@ -7,6 +7,8 @@ from pydrake.solvers import (
 
 class TestProgramAttribute(unittest.TestCase):
     def test_program_attribute_enum(self):
+        # This list checks that all the enums exist to ensure that none are
+        # deleted by accident.
         enum_expected = [ProgramAttribute.kGenericCost,
                          ProgramAttribute.kGenericConstraint,
                          ProgramAttribute.kQuadraticCost,
@@ -27,6 +29,8 @@ class TestProgramAttribute(unittest.TestCase):
 
 class TestProgramType(unittest.TestCase):
     def test_program_attribute_enum(self):
+        # This list checks that all the enums exist to ensure that none are
+        # deleted by accident.
         enum_expected = [ProgramType.kLP,
                          ProgramType.kQP,
                          ProgramType.kSOCP,

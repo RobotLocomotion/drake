@@ -881,7 +881,7 @@ void BindMathematicalProgram(py::module m) {
             return self->AddConstraint(binding);
           },
           py::arg("binding"),
-          doc.MathematicalProgram.AddConstraint.doc_1args_constEigenDenseBase)
+          doc.MathematicalProgram.AddConstraint.doc_1args_binding)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
