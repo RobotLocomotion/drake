@@ -326,7 +326,8 @@ GTEST_TEST(ProximityEngineTests, ProcessVtkConvexUndefHydro) {
 // configuration and compliant type.
 std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
                                                 const Shape& shape,
-                                                bool is_anchored, bool is_soft,
+                                                bool is_anchored,
+                                                HydroelasticType hydro_type,
                                                 const Vector3d& p_S1S2_W) {
   RigidTransformd X_WS = RigidTransformd(p_S1S2_W);
   const GeometryId id_S = GeometryId::get_new_id();
@@ -334,10 +335,17 @@ std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
   // it.
   const double edge_length = 0.5;
   ProximityProperties properties;
-  if (is_soft) {
-    AddCompliantHydroelasticProperties(edge_length, 1e8, &properties);
-  } else {
-    AddRigidHydroelasticProperties(edge_length, &properties);
+  using enum HydroelasticType;
+  switch (hydro_type) {
+    case kUndefined:
+      // Do nothing.
+      break;
+    case kRigid:
+      AddRigidHydroelasticProperties(edge_length, &properties);
+      break;
+    case kCompliant:
+      AddCompliantHydroelasticProperties(edge_length, 1e8, &properties);
+      break;
   }
   if (is_anchored) {
     engine->AddAnchoredGeometry(shape, X_WS, id_S, properties);
@@ -349,18 +357,30 @@ std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
 
 unordered_map<GeometryId, RigidTransformd> PopulateEngine(
     ProximityEngine<double>* engine, const Shape& shape1, bool anchored1,
-    bool soft1, const Shape& shape2, bool anchored2, bool soft2,
-    const Vector3d& p_S1S2_W = Vector3d(0, 0, 0)) {
+    HydroelasticType type1, const Shape& shape2, bool anchored2,
+    HydroelasticType type2, const Vector3d& p_S1S2_W = Vector3d(0, 0, 0)) {
   unordered_map<GeometryId, RigidTransformd> X_WGs;
   RigidTransformd X_WG;
   GeometryId id1, id2;
   std::tie(id1, X_WG) =
-      AddShape(engine, shape1, anchored1, soft1, Vector3d::Zero());
+      AddShape(engine, shape1, anchored1, type1, Vector3d::Zero());
   X_WGs.insert({id1, X_WG});
-  std::tie(id2, X_WG) = AddShape(engine, shape2, anchored2, soft2, p_S1S2_W);
+  std::tie(id2, X_WG) = AddShape(engine, shape2, anchored2, type2, p_S1S2_W);
   X_WGs.insert({id2, X_WG});
   engine->UpdateWorldPoses(X_WGs);
   return X_WGs;
+}
+
+unordered_map<GeometryId, RigidTransformd> PopulateEngine(
+    ProximityEngine<double>* engine, const Shape& shape1, bool anchored1,
+    bool soft1, const Shape& shape2, bool anchored2,
+    bool soft2, const Vector3d& p_S1S2_W = Vector3d(0, 0, 0)) {
+  auto flag_to_type = [](bool flag) -> HydroelasticType {
+    using enum HydroelasticType;
+    return flag ? kCompliant : kRigid;
+  };
+  return PopulateEngine(engine, shape1, anchored1, flag_to_type(soft1),
+                        shape2, anchored2, flag_to_type(soft2), p_S1S2_W);
 }
 
 // The autodiff support is independent of what the contact surface mesh
@@ -415,6 +435,28 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     EXPECT_EQ(surfaces[0].tri_mesh_W().vertex(0).x().derivatives().size(), 3);
   }
 
+  // Case: Rigid sphere and hydro-undefined mesh with AutoDiffXd -- contact
+  // would be a point pair.
+  {
+    ProximityEngine<double> engine_d;
+    using enum HydroelasticType;
+    const auto X_WGs_d = PopulateEngine(&engine_d, sphere, false, kRigid,
+                                        sphere, false, kUndefined);
+    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
+    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+    for (const auto& [id, X_WG_d] : X_WGs_d) {
+      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
+    }
+
+    std::vector<ContactSurface<AutoDiffXd>> surfaces;
+    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
+    engine_ad->ComputeContactSurfacesWithFallback(
+        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
+        &point_pairs);
+    EXPECT_EQ(surfaces.size(), 0);
+    EXPECT_EQ(point_pairs.size(), 1);
+  }
+
   // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be a point
   // pair.
   {
@@ -434,6 +476,39 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
         &point_pairs);
     EXPECT_EQ(surfaces.size(), 0);
     EXPECT_EQ(point_pairs.size(), 1);
+  }
+
+  // Case: Rigid sphere and mesh, mutually collision filtered, with AutoDiffXd
+  // -- result should be neither contact surface nor contact pair.
+  {
+    ProximityEngine<double> engine_d;
+    const auto X_WGs_d =
+        PopulateEngine(&engine_d, sphere, false, !soft, sphere, false, !soft);
+    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
+    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+    GeometrySet geom_set;
+    std::vector<GeometryId> ids;
+    for (const auto& [id, X_WG_d] : X_WGs_d) {
+      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
+      geom_set.Add(id);
+      ids.push_back(id);
+    }
+    ASSERT_EQ(ids.size(), 2);
+    engine_ad->collision_filter().Apply(
+        CollisionFilterDeclaration().ExcludeWithin(geom_set),
+        [&ids](const GeometrySet&, CollisionFilterScope) {
+          return std::unordered_set<GeometryId>(ids.begin(), ids.end());
+        },
+        false);
+    ASSERT_FALSE(engine_ad->collision_filter().CanCollideWith(ids[0], ids[1]));
+
+    std::vector<ContactSurface<AutoDiffXd>> surfaces;
+    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
+    engine_ad->ComputeContactSurfacesWithFallback(
+        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
+        &point_pairs);
+    EXPECT_EQ(surfaces.size(), 0);
+    EXPECT_EQ(point_pairs.size(), 0);
   }
 }
 
