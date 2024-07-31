@@ -493,16 +493,8 @@ class GcsTrajectoryOptimization final {
       "2024-10-01",
       "result should be of type const solvers::MathematicalProgramResult*.");
   std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result) const {
-    return GetGraphvizString(result ? std::addressof(result.value()) : nullptr);
-  }
-
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "result should be of type const solvers::MathematicalProgramResult*.");
-  std::string GetGraphvizString(
       const std::optional<solvers::MathematicalProgramResult>& result,
-      const geometry::optimization::GcsGraphvizOptions& options) const {
+      const geometry::optimization::GcsGraphvizOptions& options = {}) const {
     return GetGraphvizString(result ? std::addressof(result.value()) : nullptr,
                              options);
   }
@@ -631,20 +623,6 @@ class GcsTrajectoryOptimization final {
 
   DRAKE_DEPRECATED("2024-10-01",
                    "edges_between_regions should be of type const "
-                   "std::vector<std::pair<int, int>>*.");
-  EdgesBetweenSubgraphs& AddEdges(
-      const Subgraph& from_subgraph, const Subgraph& to_subgraph,
-      const geometry::optimization::ConvexSet* subspace,
-      const std::optional<std::vector<std::pair<int, int>>>&
-          edges_between_regions) {
-    return AddEdges(from_subgraph, to_subgraph, subspace,
-                    edges_between_regions
-                        ? std::addressof(edges_between_regions.value())
-                        : nullptr);
-  }
-
-  DRAKE_DEPRECATED("2024-10-01",
-                   "edges_between_regions should be of type const "
                    "std::vector<std::pair<int, int>>*, and edge_offsets should "
                    "be of type const std::vector<Eigen::VectorXd>*.");
   EdgesBetweenSubgraphs& AddEdges(
@@ -652,7 +630,8 @@ class GcsTrajectoryOptimization final {
       const geometry::optimization::ConvexSet* subspace,
       const std::optional<std::vector<std::pair<int, int>>>&
           edges_between_regions,
-      const std::optional<std::vector<Eigen::VectorXd>>& edge_offsets) {
+      const std::optional<std::vector<Eigen::VectorXd>>& edge_offsets =
+          std::nullopt) {
     return AddEdges(
         from_subgraph, to_subgraph, subspace,
         edges_between_regions ? std::addressof(edges_between_regions.value())

@@ -694,27 +694,10 @@ class GraphOfConvexSets {
       "2024-10-01",
       "result should be of type const solvers::MathematicalProgramResult*.");
   std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result) const {
-    return GetGraphvizString(result ? std::addressof(result.value()) : nullptr);
-  }
-
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "result should be of type const solvers::MathematicalProgramResult*.");
-  std::string GetGraphvizString(
       const std::optional<solvers::MathematicalProgramResult>& result,
-      const geometry::optimization::GcsGraphvizOptions& options) const {
-    return GetGraphvizString(result ? std::addressof(result.value()) : nullptr,
-                             options);
-  }
-
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "result should be of type const solvers::MathematicalProgramResult*.");
-  std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result,
-      const geometry::optimization::GcsGraphvizOptions& options,
-      const std::optional<std::vector<const Edge*>>& active_path) const {
+      const geometry::optimization::GcsGraphvizOptions& options =
+          GcsGraphvizOptions(),
+      const std::optional<std::vector<const Edge*>>& active_path = {}) const {
     return GetGraphvizString(
         result ? std::addressof(result.value()) : nullptr, options,
         active_path ? std::addressof(active_path.value()) : nullptr);
