@@ -4058,7 +4058,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether the translational
-  /// acceleration bias is with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// acceleration bias is with respect to 𝑠 = q̇ or 𝑠 = v. Currently, an
+  /// exception is thrown if with_respect_to is JacobianWrtVariable::kQDot.
   /// @param[in] frame_B The frame on which points Bi are affixed/welded.
   /// @param[in] p_BoBi_B A position vector or list of p position vectors from
   /// Bo (frame_B's origin) to points Bi (regarded as affixed to B), where each
@@ -4077,7 +4078,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see CalcJacobianTranslationalVelocity() to compute J𝑠_v_ABi, point Bi's
   /// translational velocity Jacobian in frame A with respect to 𝑠.
   /// @pre p_BoBi_B must have 3 rows.
-  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
   Matrix3X<T> CalcBiasTranslationalAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
@@ -4102,7 +4103,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether the spatial accceleration bias
-  /// is with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// is with respect to 𝑠 = q̇ or 𝑠 = v. Currently, an exception is thrown if
+  /// with_respect_to is JacobianWrtVariable::kQDot.
   /// @param[in] frame_B The frame on which point Bp is affixed/welded.
   /// @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to point Bp
   /// (regarded as affixed/welded to B), expressed in frame_B.
@@ -4117,7 +4119,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// </pre>
   /// @see CalcJacobianSpatialVelocity() to compute J𝑠_V_ABp, point Bp's
   /// translational velocity Jacobian in frame A with respect to 𝑠.
-  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
   SpatialAcceleration<T> CalcBiasSpatialAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
@@ -4424,14 +4426,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] context Contains the state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether the accceleration bias is
-  /// with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// with respect to 𝑠 = q̇ or 𝑠 = v. Currently, an exception is thrown if
+  /// with_respect_to is JacobianWrtVariable::kQDot.
   /// @param[in] frame_A The frame in which a𝑠Bias_AScm is measured.
   /// @param[in] frame_E The frame in which a𝑠Bias_AScm is expressed on output.
   /// @returns a𝑠Bias_AScm_E Point Scm's translational acceleration bias in
   /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
   /// @throws std::exception if `this` has no body except world_body().
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
-  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
   /// @see CalcJacobianCenterOfMassTranslationalVelocity() to compute J𝑠_v_Scm,
   /// point Scm's translational velocity Jacobian in frame A with respect to 𝑠.
   /// @note The world_body() is ignored. asBias_AScm_E = ∑ (mᵢ aᵢ) / mₛ, where
@@ -4458,14 +4461,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// instance is repeated in the vector (unusual), it is only counted once.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether the accceleration bias is
-  /// with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// with respect to 𝑠 = q̇ or 𝑠 = v. Currently, an exception is thrown if
+  /// with_respect_to is JacobianWrtVariable::kQDot.
   /// @param[in] frame_A The frame in which a𝑠Bias_AScm is measured.
   /// @param[in] frame_E The frame in which a𝑠Bias_AScm is expressed on output.
   /// @returns a𝑠Bias_AScm_E Point Scm's translational acceleration bias in
   /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
   /// @throws std::exception if `this` has no body except world_body().
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
-  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
   /// @see CalcJacobianCenterOfMassTranslationalVelocity() to compute J𝑠_v_Scm,
   /// point Scm's translational velocity Jacobian in frame A with respect to 𝑠.
   /// @note The world_body() is ignored. asBias_AScm_E = ∑ (mᵢ aᵢ) / mₛ, where
@@ -4479,6 +4483,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::vector<ModelInstanceIndex>& model_instances,
       JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
     this->ValidateContext(context);
     return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
         context, model_instances, with_respect_to, frame_A, frame_E);
