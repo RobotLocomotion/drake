@@ -135,6 +135,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
                               kTolerance));
   EXPECT_TRUE(CompareMatrices(new_traj.value(new_traj.end_time()), new_goal,
                               kTolerance));
+
+  EXPECT_NO_THROW(gcs.GetGraphvizString(
+      &new_result, geometry::optimization::GcsGraphvizOptions()));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_NO_THROW(gcs.GetGraphvizString(
+      new_result, geometry::optimization::GcsGraphvizOptions()));
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, PathLengthCost) {
@@ -2345,18 +2353,15 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
   auto sets2 = MakeConvexSets(
       Hyperrectangle(Vector1d(0.5), Vector1d(1.5)),
       Hyperrectangle(Vector1d(1.25 + 2 * M_PI), Vector1d(2.5 + 2 * M_PI)));
-  auto& subgraph1 = gcs.AddRegions(sets1, 1, 1e-6);
-  auto& subgraph2 = gcs.AddRegions(sets2, 1, 1e-6);
-
-  auto& start = gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0);
-  auto& goal = gcs.AddRegions(MakeConvexSets(Point(Vector1d(2))), 0);
 
   // sets1 is the intervals [0, 1] and [1.25, 3]
   // sets2 is the intervals [0.5, 1.5] and [1.25 + 2π, 2.5 + 2π]
   // So there's an edge (0, 0) with a zero offset, an edge (1, 0) with a zero
   // offset, and an edge (1, 1) with a 2π offset.
-  std::vector<std::pair<int, int>> edges_start_1, edges_1_2, edges_2_goal;
-  std::vector<VectorXd> offsets_start_1, offsets_1_2, offsets_2_goal;
+  std::vector<std::pair<int, int>> edges_start_1, edges_1, edges_1_2, edges_2,
+      edges_2_goal;
+  std::vector<VectorXd> offsets_start_1, offsets_1, offsets_1_2, offsets_2,
+      offsets_2_goal;
   edges_start_1.emplace_back(0, 0);
   offsets_start_1.emplace_back(Vector1d(0));
 
@@ -2367,8 +2372,21 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
   edges_1_2.emplace_back(1, 1);
   offsets_1_2.emplace_back(Vector1d(2 * M_PI));
 
+  edges_2.emplace_back(0, 1);
+  edges_2.emplace_back(1, 0);
+  offsets_2.emplace_back(Vector1d(2 * M_PI));
+  offsets_2.emplace_back(Vector1d(-2 * M_PI));
+
   edges_2_goal.emplace_back(1, 0);
   offsets_2_goal.emplace_back(Vector1d(-2 * M_PI));
+
+  auto& subgraph1 =
+      gcs.AddRegions(sets1, edges_1, 1, 1e-6, 20, "sets1", &offsets_1);
+  auto& subgraph2 =
+      gcs.AddRegions(sets2, edges_2, 1, 1e-6, 20, "sets2", &offsets_2);
+
+  auto& start = gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0);
+  auto& goal = gcs.AddRegions(MakeConvexSets(Point(Vector1d(2))), 0);
 
   // We consider edges start -> subgraph1 -> subgraph2 -> goal, plus the edges
   // within subgraph2. (Subgraph1 is disconnected.) There's one edge from the
@@ -2412,6 +2430,18 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
   EXPECT_THROW(gcs.AddEdges(new_subgraph2, goal, nullptr, &edges_2_goal,
                             &offsets_2_goal),
                std::exception);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_NO_THROW(gcs.AddEdges(start, new_subgraph1, nullptr, edges_start_1,
+                               offsets_start_1));
+#pragma GCC diagnostic pop
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_NO_THROW(gcs.AddRegions(sets1, edges_1, 1, 1e-6, 20,
+                                 "sets1_deprecation", offsets_1));
+#pragma GCC diagnostic pop
 }
 
 }  // namespace

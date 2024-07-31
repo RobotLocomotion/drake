@@ -3292,6 +3292,11 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   std::vector<const Edge*> active_edges{edge};
   EXPECT_THAT(g.GetGraphvizString(&result, viz_options, &active_edges),
               AllOf(HasSubstr("color=\"#ff0000\"")));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options, active_edges),
+              AllOf(HasSubstr("color=\"#ff0000\"")));
+#pragma GCC diagnostic pop
 }
 
 }  // namespace optimization
