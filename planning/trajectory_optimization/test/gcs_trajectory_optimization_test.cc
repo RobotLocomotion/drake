@@ -220,6 +220,11 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, QuadraticPathLengthSpacing) {
   // Use the path energy cost
   gcs.AddPathEnergyCost();
 
+  const Vector2d lb(-1, -1);
+  const Vector2d ub(1, 1);
+
+  gcs.AddVelocityBounds(lb, ub);
+
   // Construct a list of vertices for path energy cost
   auto verts = regions.Vertices();
   verts.insert(verts.begin(), source.Vertices().begin(),
