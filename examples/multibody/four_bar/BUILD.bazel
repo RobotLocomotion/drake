@@ -1,15 +1,20 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
 
 filegroup(
     name = "models",
     srcs = glob([
         "**/*.sdf",
     ]),
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//:__pkg__",
+        "//bindings/pydrake/multibody:__pkg__",
+    ],
 )
 
 drake_cc_binary(

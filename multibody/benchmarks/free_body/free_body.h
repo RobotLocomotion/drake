@@ -34,7 +34,7 @@ namespace free_body {
 ///   https://ecommons.cornell.edu/handle/1813/637
 class FreeBody {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FreeBody)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FreeBody);
 
   /// Constructs a class that can be queried for exact values of orientation,
   /// position, and motion of a torque-free rigid body at time t.

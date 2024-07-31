@@ -205,6 +205,15 @@ ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
  * Assist MathematicalProgram::AddLorentzConeConstraint(...).
  */
 [[nodiscard]] Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
+    const symbolic::Formula& f,
+    LorentzConeConstraint::EvalType eval_type =
+        LorentzConeConstraint::EvalType::kConvexSmooth,
+    double psd_tol = 1e-8, double coefficient_tol = 1e-8);
+
+/*
+ * Assist MathematicalProgram::AddLorentzConeConstraint(...).
+ */
+[[nodiscard]] Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     LorentzConeConstraint::EvalType eval_type =
         LorentzConeConstraint::EvalType::kConvexSmooth);

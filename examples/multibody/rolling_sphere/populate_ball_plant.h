@@ -29,12 +29,12 @@ namespace bouncing_ball {
 ///   The mass of the ball.
 /// @param[in] hydroelastic_modulus
 ///   The modulus of elasticity for the ball. Only used when modeled with the
-///   hydroelastic model. See @ref mbp_hydroelastic_materials_properties
-///   "Hydroelastic contact" documentation for details.
+///   hydroelastic model. See @ref hydro_model_parameters
+///   "hydroelastic contact parameters" documentation for details.
 /// @param[in] dissipation
 ///   The Hunt & Crossley dissipation constant for the ball. Only used with the
-///   hydroelastic model.  See @ref mbp_hydroelastic_materials_properties
-///   "Hydroelastic contact" documentation for details.
+///   hydroelastic model.  See @ref hydro_model_parameters
+///   "hydroelastic contact parameters" documentation for details.
 /// @param[in] surface_friction
 ///   The Coulomb's law coefficients of friction.
 /// @param[in] gravity_W

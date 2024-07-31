@@ -23,7 +23,7 @@ namespace multibody {
  */
 class ManipulatorEquationConstraint final : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulatorEquationConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulatorEquationConstraint);
 
   /**
    * This constraint depends on the decision variable vector:

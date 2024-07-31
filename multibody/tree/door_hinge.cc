@@ -45,6 +45,9 @@ DoorHinge<T>::DoorHinge(ModelInstanceIndex model_instance,
 }
 
 template <typename T>
+DoorHinge<T>::~DoorHinge() = default;
+
+template <typename T>
 const RevoluteJoint<T>& DoorHinge<T>::joint() const {
   const RevoluteJoint<T>* joint = dynamic_cast<const RevoluteJoint<T>*>(
       &this->get_parent_tree().get_joint(joint_index_));
@@ -213,4 +216,4 @@ std::unique_ptr<ForceElement<Expression>> DoorHinge<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::DoorHinge)
+    class ::drake::multibody::DoorHinge);

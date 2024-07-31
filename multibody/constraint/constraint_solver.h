@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
@@ -15,6 +16,7 @@
 namespace drake {
 namespace multibody {
 namespace constraint {
+namespace internal {
 
 /// Solves constraint problems for constraint forces. Specifically, given
 /// problem data corresponding to a rigid or multi-body system constrained
@@ -70,7 +72,7 @@ template <typename T>
 class ConstraintSolver {
  public:
   ConstraintSolver() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver);
 
   /// Structure used to convert a mixed linear complementarity problem to a
   /// pure linear complementarity problem (by solving for free variables).
@@ -2551,6 +2553,13 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
     contact_force_i = contact_frames[i].transpose() * j0;
   }
 }
+
+}  // namespace internal
+
+template <typename T>
+using ConstraintSolver
+    DRAKE_DEPRECATED("2024-09-01", "This class is being removed from Drake.")
+    = internal::ConstraintSolver<T>;
 
 }  // namespace constraint
 }  // namespace multibody

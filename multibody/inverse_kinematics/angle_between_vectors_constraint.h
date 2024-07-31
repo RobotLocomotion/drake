@@ -20,7 +20,7 @@ namespace multibody {
  */
 class AngleBetweenVectorsConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AngleBetweenVectorsConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AngleBetweenVectorsConstraint);
 
   /**
    * Constructs an AngleBetweenVectorsConstraint.

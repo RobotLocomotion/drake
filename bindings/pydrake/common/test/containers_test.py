@@ -107,20 +107,21 @@ class TestNamedView(unittest.TestCase):
         self.assertTrue(issubclass(MyView, NamedViewBase))
         self.assertEqual(MyView.__name__, "MyView")
         self.assertEqual(MyView.get_fields(), ("a", "b"))
-        value = np.array([1, 2])
+        value = np.array([1.0, 2.0])
         view = MyView(value)
-        self.assertEqual(view.a, 1)
-        self.assertEqual(view.b, 2)
+        self.assertEqual(view.a, 1.0)
+        self.assertEqual(view.b, 2.0)
         self.assertTrue(is_same_array(value, np.asarray(view)))
         self.assertTrue(is_same_array(value, view[:]))
-        view.a = 10
-        self.assertEqual(value[0], 10)
-        value[1] = 100
-        self.assertEqual(view.b, 100)
-        view[:] = 3
-        np.testing.assert_equal(value, [3, 3])
-        self.assertEqual(repr(view), "MyView(a=3, b=3)")
-        self.assertEqual(str(view), repr(view))
+        view.a = 10.0
+        self.assertEqual(value[0], 10.0)
+        value[1] = 100.0
+        self.assertEqual(view.b, 100.0)
+        view[:] = 3.0
+        np.testing.assert_equal(value, [3.0, 3.0])
+        self.assertEqual(str(view), "MyView(a=3.0, b=3.0)")
+        self.assertEqual(repr(view),
+                         f"<MyView(a={repr(view.a)}, b={repr(view.b)})>")
         with self.assertRaisesRegex(AttributeError, ".*('a', 'b').*"):
             view.c = 42
 

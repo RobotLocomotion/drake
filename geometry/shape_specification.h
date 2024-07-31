@@ -5,7 +5,6 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
@@ -151,7 +150,7 @@ class Shape {
  is given by three sizes. */
 class Box final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Box)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Box);
 
   /** Constructs a box with the given `width`, `depth`, and `height`, which
    specify the box's dimension along the canonical x-, y-, and z-axes,
@@ -202,7 +201,7 @@ class Box final : public Shape {
  length of the capsule parallel with the frame's z-axis. */
 class Capsule final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule);
 
   /** Constructs a capsule with the given `radius` and `length`.
    @throws std::exception if `radius` or `length` are not strictly positive.
@@ -245,7 +244,7 @@ class Capsule final : public Shape {
  `scale` amount. */
 class Convex final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex);
 
   /** Constructs a convex shape specification from the file located at the
    given file path. Optionally uniformly scaled by the given scale factor.
@@ -303,7 +302,7 @@ class Convex final : public Shape {
  length of the cylinder parallel with the frame's z-axis. */
 class Cylinder final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder);
 
   /** Constructs a cylinder with the given `radius` and `length`.
    @throws std::exception if `radius` or `length` are not strictly positive.
@@ -341,7 +340,7 @@ class Cylinder final : public Shape {
 */
 class Ellipsoid final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid);
 
   /** Constructs an ellipsoid with the given lengths of its principal
    semi-axes, with a, b, and c measured along the x-, y-, and z- axes of the
@@ -380,7 +379,7 @@ class Ellipsoid final : public Shape {
  normal. */
 class HalfSpace final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace);
 
   HalfSpace();
 
@@ -441,7 +440,7 @@ class HalfSpace final : public Shape {
  `scale` amount. */
 class Mesh final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh);
 
   /** Constructs a mesh shape specification from the mesh file located at the
    given file path. Optionally uniformly scaled by the given scale factor.
@@ -514,7 +513,7 @@ class Mesh final : public Shape {
 */
 class MeshcatCone final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshcatCone)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshcatCone);
 
   /** Constructs the parameterized cone.
    @throws std::exception if `height`, `a`, or `b` are not strictly positive.
@@ -548,7 +547,7 @@ class MeshcatCone final : public Shape {
  given radius. */
 class Sphere final : public Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere);
 
   /** Constructs a sphere with the given `radius`.
    @throws std::exception if `radius` is negative. Note that a zero radius is
@@ -633,7 +632,7 @@ class ShapeReifier {
   virtual void ImplementGeometry(const Sphere& sphere, void* user_data);
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier);
   ShapeReifier() = default;
 
   /** The default implementation of ImplementGeometry(): it throws an exception
@@ -648,35 +647,6 @@ class ShapeReifier {
   virtual void ThrowUnsupportedGeometry(const std::string& shape_name);
 };
 
-class DRAKE_DEPRECATED("2024-06-01",
-                       "Use the Shape::type_name() member function instead")
-    ShapeName final : public ShapeReifier {
- public:
-  ShapeName() = default;
-
-  /** Constructs a %ShapeName from the given `shape` such that `string()`
-   already contains the string representation of `shape`.  */
-  explicit ShapeName(const Shape& shape);
-
-  ~ShapeName() final;
-
-  /** Returns the name of the last shape reified. Empty if no shape has been
-   reified yet.  */
-  std::string name() const { return string_; }
-
- private:
-  void DefaultImplementGeometry(const Shape& shape) final;
-
-  std::string string_;
-};
-
-#ifndef DRAKE_DOXYGEN_CXX
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-std::ostream& operator<<(std::ostream& out, const ShapeName& name);
-#pragma GCC diagnostic pop
-#endif
-
 /** Calculates the volume (in meters^3) for the Shape. For convex and mesh
  geometries, the algorithm only supports ".obj" files and only produces
  meaningful results for "closed" shapes.
@@ -689,16 +659,6 @@ double CalcVolume(const Shape& shape);
 
 }  // namespace geometry
 }  // namespace drake
-
-#ifndef DRAKE_DOXYGEN_CXX
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-namespace fmt {
-template <>
-struct formatter<drake::geometry::ShapeName> : drake::ostream_formatter {};
-}  // namespace fmt
-#pragma GCC diagnostic pop
-#endif
 
 DRAKE_FORMATTER_AS(, drake::geometry, Box, x, x.to_string())
 DRAKE_FORMATTER_AS(, drake::geometry, Capsule, x, x.to_string())

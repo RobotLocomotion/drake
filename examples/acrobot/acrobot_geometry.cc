@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/examples/acrobot/gen/acrobot_params.h"
+#include "drake/examples/acrobot/acrobot_params.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"

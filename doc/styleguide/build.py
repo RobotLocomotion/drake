@@ -7,7 +7,7 @@ import os
 from os.path import join
 import textwrap
 
-from drake.doc.defs import check_call, main, symlink_input
+from doc.defs import check_call, main, symlink_input
 
 
 def _add_title(*, temp_dir, filename, title):

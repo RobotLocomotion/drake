@@ -51,7 +51,7 @@ using std::make_shared;
 template <typename Shape>
 class PointShapeAutoDiffSignedDistanceTester {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointShapeAutoDiffSignedDistanceTester)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointShapeAutoDiffSignedDistanceTester);
 
   // Constructs a tester for a given shape G, pose in world X_WG, and tolerance.
   // The shape must be non-null and must persist beyond the life of the tester
@@ -123,7 +123,7 @@ class PointShapeAutoDiffSignedDistanceTester {
     if (grad_W_squared_norm.derivatives().size() > 0) {
       auto grad_W_unit_length_derivative_compare =
           CompareMatrices(grad_W_squared_norm.derivatives(),
-                          Eigen::VectorXd::Zero(grad_size), tolerance_);
+                          Eigen::VectorXd::Zero(grad_size), 1.4 * tolerance_);
       if (!grad_W_unit_length_derivative_compare) {
         if (error) failure << "\n";
         error = true;
@@ -168,7 +168,7 @@ class PointShapeAutoDiffSignedDistanceTester {
  private:
   const Shape& shape_;
   const RigidTransformd X_WG_;
-  const double tolerance_{std::numeric_limits<double>::epsilon()};
+  const double tolerance_{1.4 * std::numeric_limits<double>::epsilon()};
 };
 
 // Simple smoke test for signed distance to Box. It does the following:

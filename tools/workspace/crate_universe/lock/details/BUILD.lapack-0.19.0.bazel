@@ -6,9 +6,9 @@
 #     tools/workspace/crate_universe/upgrade.sh
 ###############################################################################
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@rules_license//rules:license.bzl", "license")
 load("@rules_license//rules:package_info.bzl", "package_info")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
 package(
     default_package_metadata = [
@@ -104,7 +104,7 @@ rust_library(
     version = "0.19.0",
     deps = [
         "@crate__lapack-sys-0.14.0//:lapack_sys",
-        "@crate__libc-0.2.153//:libc",
-        "@crate__num-complex-0.4.5//:num_complex",
+        "@crate__libc-0.2.155//:libc",
+        "@crate__num-complex-0.4.6//:num_complex",
     ],
 )

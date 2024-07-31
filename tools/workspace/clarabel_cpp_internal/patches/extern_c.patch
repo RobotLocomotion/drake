@@ -9,7 +9,7 @@ than trying to upstream this patch).
 
 --- include/cpp/DefaultSettings.h
 +++ include/cpp/DefaultSettings.h
-@@ -300,10 +300,10 @@ class DefaultSettingsBuilder
+@@ -300,11 +300,11 @@ class DefaultSettingsBuilder
      }
  };
  
@@ -25,7 +25,7 @@ than trying to upstream this patch).
 
 --- include/cpp/DefaultSolver.h
 +++ include/cpp/DefaultSolver.h
-@@ -130,7 +130,7 @@ struct DefaultSolver<T>::ConvertedCscMatrix
+@@ -166,7 +166,7 @@
      }
  };
  
@@ -34,7 +34,7 @@ than trying to upstream this patch).
  RustDefaultSolverHandle_f64 clarabel_DefaultSolver_f64_new(const CscMatrix<double> *P,
                                                             const double *q,
                                                             const CscMatrix<double> *A,
-@@ -139,6 +139,7 @@ RustDefaultSolverHandle_f64 clarabel_DefaultSolver_f64_new(const CscMatrix<doubl
+@@ -175,6 +175,7 @@
                                                             const SupportedConeT<double> *cones,
                                                             const DefaultSettings<double> *settings);
  
@@ -42,26 +42,23 @@ than trying to upstream this patch).
  RustDefaultSolverHandle_f32 clarabel_DefaultSolver_f32_new(const CscMatrix<float> *P,
                                                             const float *q,
                                                             const CscMatrix<float> *A,
-@@ -147,23 +148,30 @@ RustDefaultSolverHandle_f32 clarabel_DefaultSolver_f32_new(const CscMatrix<float
+@@ -183,52 +184,83 @@
                                                             const SupportedConeT<float> *cones,
                                                             const DefaultSettings<float> *settings);
  
 +extern "C"
  void clarabel_DefaultSolver_f64_solve(RustDefaultSolverHandle_f64 solver);
- 
 +extern "C"
  void clarabel_DefaultSolver_f32_solve(RustDefaultSolverHandle_f32 solver);
  
 +extern "C"
  void clarabel_DefaultSolver_f64_free(RustDefaultSolverHandle_f64 solver);
- 
 +extern "C"
  void clarabel_DefaultSolver_f32_free(RustDefaultSolverHandle_f32 solver);
  
 +extern "C"
  DefaultSolution<double>::ClarabelDefaultSolution
  clarabel_DefaultSolver_f64_solution(RustDefaultSolverHandle_f64 solver);
- 
 +extern "C"
  DefaultSolution<float>::ClarabelDefaultSolution clarabel_DefaultSolver_f32_solution(RustDefaultSolverHandle_f32 solver);
  
@@ -70,7 +67,63 @@ than trying to upstream this patch).
  
 +extern "C"
  DefaultInfo<float> clarabel_DefaultSolver_f32_info(RustDefaultSolverHandle_f32 solver);
+ 
++extern "C"
+ void clarabel_DefaultSolver_f64_update_P_csc(RustDefaultSolverHandle_f64 solver, const CscMatrix<double> *P);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_P_csc(RustDefaultSolverHandle_f32 solver, const CscMatrix<float> *P);
++extern "C"
+ void clarabel_DefaultSolver_f64_update_P(RustDefaultSolverHandle_f64 solver, const double *Pnzval, uintptr_t nnzP);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_P(RustDefaultSolverHandle_f32 solver, const float  *Pnzval, uintptr_t nnzP);
++extern "C"
+ void clarabel_DefaultSolver_f64_update_P_partial(RustDefaultSolverHandle_f64 solver, const uintptr_t* index, const double *values, uintptr_t nvals);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_P_partial(RustDefaultSolverHandle_f32 solver, const uintptr_t* index, const float *values, uintptr_t nvals);
+ 
++extern "C"
+ void clarabel_DefaultSolver_f64_update_A_csc(RustDefaultSolverHandle_f64 solver, const CscMatrix<double> *A);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_A_csc(RustDefaultSolverHandle_f32 solver, const CscMatrix<float> *A);
++extern "C"
+ void clarabel_DefaultSolver_f64_update_A(RustDefaultSolverHandle_f64 solver, const double *Anzval, uintptr_t nnzA);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_A(RustDefaultSolverHandle_f32 solver, const float  *Anzval, uintptr_t nnzA);
++extern "C"
+ void clarabel_DefaultSolver_f64_update_A_partial(RustDefaultSolverHandle_f64 solver, const uintptr_t* index, const double *values, uintptr_t nvals);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_A_partial(RustDefaultSolverHandle_f32 solver, const uintptr_t* index, const float *values, uintptr_t nvals);
+ 
++extern "C"
+ void clarabel_DefaultSolver_f64_update_q(RustDefaultSolverHandle_f64 solver, const double *values, uintptr_t n);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_q(RustDefaultSolverHandle_f32 solver, const float  *values, uintptr_t n);
++extern "C"
+ void clarabel_DefaultSolver_f64_update_q_partial(RustDefaultSolverHandle_f64 solver, const uintptr_t* index, const double *values, uintptr_t nvals);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_q_partial(RustDefaultSolverHandle_f32 solver, const uintptr_t* index, const float *values, uintptr_t nvals);
+ 
++extern "C"
+ void clarabel_DefaultSolver_f64_update_b(RustDefaultSolverHandle_f64 solver, const double *values, uintptr_t n);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_b(RustDefaultSolverHandle_f32 solver, const float  *values, uintptr_t n);
++extern "C"
+ void clarabel_DefaultSolver_f64_update_b_partial(RustDefaultSolverHandle_f64 solver, const uintptr_t* index, const double *values, uintptr_t nvals);
++extern "C"
+ void clarabel_DefaultSolver_f32_update_b_partial(RustDefaultSolverHandle_f32 solver, const uintptr_t* index, const float *values, uintptr_t nvals);
+ 
+ #ifdef FEATURE_SERDE
++extern "C"
+ void clarabel_DefaultSolver_f64_write_to_file(RustDefaultSolverHandle_f64 solver, const char *filename);
++extern "C"
+ void clarabel_DefaultSolver_f32_write_to_file(RustDefaultSolverHandle_f32 solver, const char *filename);
++extern "C"
+ RustDefaultSolverHandle_f64 clarabel_DefaultSolver_f64_read_from_file( const char *filename);
++extern "C"
+ RustDefaultSolverHandle_f32 clarabel_DefaultSolver_f32_read_from_file( const char *filename);
+ #endif
+ 
+ 
 -}
  
  // Convert unique_ptr P, A to CscMatrix objects, then init the solver
- // The CscMatrix objects are only used to pass the information needed to Rust.

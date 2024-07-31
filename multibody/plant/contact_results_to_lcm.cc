@@ -67,6 +67,9 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     : ContactResultsToLcmSystem<T>(plant, nullptr) {}
 
 template <typename T>
+ContactResultsToLcmSystem<T>::~ContactResultsToLcmSystem() = default;
+
+template <typename T>
 const systems::InputPort<T>&
 ContactResultsToLcmSystem<T>::get_contact_result_input_port() const {
   return this->get_input_port(contact_result_input_port_index_);
@@ -183,105 +186,96 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
   message.num_hydroelastic_contacts =
       contact_results.num_hydroelastic_contacts();
-  message.hydroelastic_contacts.resize(message.num_hydroelastic_contacts);
+  // When T = Expression, we skip this because HydroelasticContactInfo is
+  // empty.
+  if constexpr (scalar_predicate<T>::is_bool) {
+    message.hydroelastic_contacts.resize(message.num_hydroelastic_contacts);
+    for (int i = 0; i < contact_results.num_hydroelastic_contacts(); ++i) {
+      const HydroelasticContactInfo<T>& hydroelastic_contact_info =
+          contact_results.hydroelastic_contact_info(i);
+      const geometry::ContactSurface<T>& contact_surface =
+          hydroelastic_contact_info.contact_surface();
 
-  for (int i = 0; i < contact_results.num_hydroelastic_contacts(); ++i) {
-    const HydroelasticContactInfo<T>& hydroelastic_contact_info =
-        contact_results.hydroelastic_contact_info(i);
-    const geometry::ContactSurface<T>& contact_surface =
-        hydroelastic_contact_info.contact_surface();
+      lcmt_hydroelastic_contact_surface_for_viz& surface_message =
+          message.hydroelastic_contacts[i];
 
-    lcmt_hydroelastic_contact_surface_for_viz& surface_message =
-        message.hydroelastic_contacts[i];
+      // Get the two body names.
+      const FullBodyName& name1 =
+          geometry_id_to_body_name_map_.at(contact_surface.id_M());
+      surface_message.body1_name = name1.body;
+      surface_message.model1_name = name1.model;
+      surface_message.geometry1_name = name1.geometry;
+      surface_message.body1_unique = name1.body_name_is_unique;
+      surface_message.collision_count1 = name1.geometry_count;
 
-    // Get the two body names.
-    const FullBodyName& name1 =
-        geometry_id_to_body_name_map_.at(contact_surface.id_M());
-    surface_message.body1_name = name1.body;
-    surface_message.model1_name = name1.model;
-    surface_message.geometry1_name = name1.geometry;
-    surface_message.body1_unique = name1.body_name_is_unique;
-    surface_message.collision_count1 = name1.geometry_count;
+      const FullBodyName& name2 =
+          geometry_id_to_body_name_map_.at(contact_surface.id_N());
+      surface_message.body2_name = name2.body;
+      surface_message.model2_name = name2.model;
+      surface_message.geometry2_name = name2.geometry;
+      surface_message.body2_unique = name2.body_name_is_unique;
+      surface_message.collision_count2 = name2.geometry_count;
 
-    const FullBodyName& name2 =
-        geometry_id_to_body_name_map_.at(contact_surface.id_N());
-    surface_message.body2_name = name2.body;
-    surface_message.model2_name = name2.model;
-    surface_message.geometry2_name = name2.geometry;
-    surface_message.body2_unique = name2.body_name_is_unique;
-    surface_message.collision_count2 = name2.geometry_count;
+      // Resultant force quantities.
+      assign_double(surface_message.centroid_W, contact_surface.centroid());
+      assign_double(surface_message.force_C_W,
+                    hydroelastic_contact_info.F_Ac_W().translational());
+      assign_double(surface_message.moment_C_W,
+                    hydroelastic_contact_info.F_Ac_W().rotational());
 
-    // Resultant force quantities.
-    assign_double(surface_message.centroid_W, contact_surface.centroid());
-    assign_double(surface_message.force_C_W,
-                  hydroelastic_contact_info.F_Ac_W().translational());
-    assign_double(surface_message.moment_C_W,
-                  hydroelastic_contact_info.F_Ac_W().rotational());
+      // We no longer transmit quadrature points.
+      surface_message.num_quadrature_points = 0;
+      surface_message.quadrature_point_data.clear();
 
-    // Write all quadrature points on the contact surface.
-    const std::vector<HydroelasticQuadraturePointData<T>>&
-        quadrature_point_data =
-            hydroelastic_contact_info.quadrature_point_data();
-    surface_message.num_quadrature_points = quadrature_point_data.size();
-    surface_message.quadrature_point_data.resize(
-        surface_message.num_quadrature_points);
+      // Now build the mesh.
+      const int num_vertices = contact_surface.num_vertices();
+      surface_message.num_vertices = num_vertices;
+      surface_message.p_WV.resize(num_vertices);
+      surface_message.pressure.resize(num_vertices);
 
-    for (int j = 0; j < surface_message.num_quadrature_points; ++j) {
-      lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_data_message =
-          surface_message.quadrature_point_data[j];
-      assign_double(quad_data_message.p_WQ, quadrature_point_data[j].p_WQ);
-      assign_double(quad_data_message.vt_BqAq_W,
-                    quadrature_point_data[j].vt_BqAq_W);
-      assign_double(quad_data_message.traction_Aq_W,
-                    quadrature_point_data[j].traction_Aq_W);
+      if (contact_surface.is_triangle()) {
+        const auto& mesh_W = contact_surface.tri_mesh_W();
+        const auto& e_MN_W = contact_surface.tri_e_MN();
+
+        // Write vertices and per vertex pressure values.
+        for (int v = 0; v < num_vertices; ++v) {
+          const Vector3d p_WV = ExtractDoubleOrThrow(mesh_W.vertex(v));
+          surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+          surface_message.pressure[v] =
+              ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+        }
+
+        // Write faces.
+        surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
+        surface_message.poly_data.resize(surface_message.poly_data_int_count);
+        int index = -1;
+        for (int t = 0; t < mesh_W.num_triangles(); ++t) {
+          const geometry::SurfaceTriangle& tri = mesh_W.element(t);
+          surface_message.poly_data[++index] = 3;
+          surface_message.poly_data[++index] = tri.vertex(0);
+          surface_message.poly_data[++index] = tri.vertex(1);
+          surface_message.poly_data[++index] = tri.vertex(2);
+        }
+      } else {
+        // TODO(DamrongGuoy) Make sure the unit tests cover this specific code
+        //  path. It is currently uncovered.
+        const auto& mesh_W = contact_surface.poly_mesh_W();
+        const auto& e_MN_W = contact_surface.poly_e_MN();
+
+        // Write vertices and per vertex pressure values.
+        for (int v = 0; v < num_vertices; ++v) {
+          const Vector3d p_WV = ExtractDoubleOrThrow(mesh_W.vertex(v));
+          surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+          surface_message.pressure[v] =
+              ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+        }
+
+        surface_message.poly_data_int_count = mesh_W.face_data().size();
+        surface_message.poly_data = mesh_W.face_data();
+      }
     }
-
-    // Now build the mesh.
-    const int num_vertices = contact_surface.num_vertices();
-    surface_message.num_vertices = num_vertices;
-    surface_message.p_WV.resize(num_vertices);
-    surface_message.pressure.resize(num_vertices);
-
-    if (contact_surface.is_triangle()) {
-      const auto& mesh_W = contact_surface.tri_mesh_W();
-      const auto& e_MN_W = contact_surface.tri_e_MN();
-
-      // Write vertices and per vertex pressure values.
-      for (int v = 0; v < num_vertices; ++v) {
-        const Vector3d p_WV = ExtractDoubleOrThrow(mesh_W.vertex(v));
-        surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
-        surface_message.pressure[v] =
-            ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
-      }
-
-      // Write faces.
-      surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
-      surface_message.poly_data.resize(surface_message.poly_data_int_count);
-      int index = -1;
-      for (int t = 0; t < mesh_W.num_triangles(); ++t) {
-        const geometry::SurfaceTriangle& tri = mesh_W.element(t);
-        surface_message.poly_data[++index] = 3;
-        surface_message.poly_data[++index] = tri.vertex(0);
-        surface_message.poly_data[++index] = tri.vertex(1);
-        surface_message.poly_data[++index] = tri.vertex(2);
-      }
-    } else {
-      // TODO(DamrongGuoy) Make sure the unit tests cover this specific code
-      //  path. It is currently uncovered.
-      const auto& mesh_W = contact_surface.poly_mesh_W();
-      const auto& e_MN_W = contact_surface.poly_e_MN();
-
-      // Write vertices and per vertex pressure values.
-      for (int v = 0; v < num_vertices; ++v) {
-        const Vector3d p_WV = ExtractDoubleOrThrow(mesh_W.vertex(v));
-        surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
-        surface_message.pressure[v] =
-            ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
-      }
-
-      surface_message.poly_data_int_count = mesh_W.face_data().size();
-      surface_message.poly_data = mesh_W.face_data();
-    }
+  } else {
+    DRAKE_DEMAND(contact_results.num_hydroelastic_contacts() == 0);
   }
 }
 
@@ -346,4 +340,4 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::ContactResultsToLcmSystem)
+    class drake::multibody::ContactResultsToLcmSystem);

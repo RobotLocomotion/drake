@@ -14,7 +14,7 @@ namespace internal {
 model_value. */
 class AbstractValueCloner final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AbstractValueCloner)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AbstractValueCloner);
 
   /* Creates a clone functor for the given model value. */
   template <typename SomeOutput>

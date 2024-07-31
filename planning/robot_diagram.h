@@ -49,7 +49,7 @@ by default. In that case, you can use the builder to export any desired ports.
 template <typename T>
 class RobotDiagram final : public systems::Diagram<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotDiagram)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotDiagram);
 
   // There are no user-serviceable constructors for this class. To make an
   // instance of this class, use RobotDiagramBuilder.
@@ -127,4 +127,4 @@ class RobotDiagram final : public systems::Diagram<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::planning::RobotDiagram)
+    class ::drake::planning::RobotDiagram);

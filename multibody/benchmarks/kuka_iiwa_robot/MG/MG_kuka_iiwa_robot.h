@@ -47,7 +47,7 @@ namespace MG {
 template<typename T>
 class MGKukaIIwaRobot {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MGKukaIIwaRobot)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MGKukaIIwaRobot);
 
   /// Constructs an object that serves as Drake's interface to a Motion Genesis
   /// model of the aforementioned KUKA robot.  All model parameters are from:

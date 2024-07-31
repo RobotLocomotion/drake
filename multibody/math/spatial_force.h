@@ -51,7 +51,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   typedef SpatialVector<::drake::multibody::SpatialForce, T> Base;
 
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForce)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForce);
 
   /// Default constructor. In Release builds, all 6 elements of a newly
   /// constructed spatial force are uninitialized (for speed). In Debug
@@ -75,24 +75,21 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// another fixed on frame B. On entry, `this` is F_Bp_E (spatial force on
   /// point Bp of frame B, expressed in a frame E). On return `this` is modified
   /// to F_Bq_E (spatial force on point Bq of frame B, expressed in frame E).
-  /// @param[in] offset which is the position vector p_BpBq_E from point Bp
-  /// (fixed on frame B) to point Bq (fixed on frame B), expressed in frame E.
-  /// p_BpBq_E must have the same expressed-in frame E as `this` spatial force.
-  /// @retval F_Bq_E reference to `this` spatial force which has been modified
-  /// to be the spatial force on point Bq of B, expressed in frame E.
   /// The components of F_Bq_E are calculated as: <pre>
   ///    τ_B  = τ_B -  p_BpBq x f_Bp    (the torque 𝛕 stored in `this` changes).
   ///  f_Bq_E = f_Bp_E              (the force 𝐟 stored in `this` is unchanged).
   /// </pre>
-  /// Note: There are related functions that shift spatial momentum and spatial
+  /// @param[in] offset which is the position vector p_BpBq_E from point Bp
+  /// (fixed on frame B) to point Bq (fixed on frame B), expressed in frame E.
+  /// p_BpBq_E must have the same expressed-in frame E as `this` spatial force.
+  /// @note There are related functions that shift spatial momentum and spatial
   /// velocity (see SpatialMomentum::Shift() and SpatialVelocity:Shift()).
   /// @see Member function Shift() to shift one spatial force without modifying
   /// `this` and static functions ShiftInPlace() and Shift() to shift multiple
   /// spatial forces (with or without modifying the input parameter
   /// spatial_forces).
-  SpatialForce<T>& ShiftInPlace(const Vector3<T>& offset) {
+  void ShiftInPlace(const Vector3<T>& offset) {
     this->rotational() -= offset.cross(this->translational());
-    return *this;
     // Note: this operation is linear. [Jain 2010], (§1.5, page 15) uses the
     // "rigid body transformation operator" to write this as:
     //   F_Bq = Φ(-p_BpBq) F_Bp
@@ -152,7 +149,9 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// spatial forces (with or without modifying the input parameter
   /// spatial_forces).
   SpatialForce<T> Shift(const Vector3<T>& offset) const {
-    return SpatialForce<T>(*this).ShiftInPlace(offset);  // offset = p_BpBq_E
+    SpatialForce<T> result(*this);
+    result.ShiftInPlace(offset);  // offset = p_BpBq_E
+    return result;
   }
 
   /// Shifts a matrix of spatial forces from one point fixed on frame B to
@@ -217,9 +216,9 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
 template <typename T>
 inline SpatialForce<T> operator+(const SpatialForce<T>& F1_E,
                                  const SpatialForce<T>& F2_E) {
-  // Although this operator+() function simply calls an associated
-  // SpatialVector operator+=() function, it is needed for documentation.
-  return SpatialForce<T>(F1_E) += F2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialForce, T>::operator+(F1_E, F2_E);
 }
 
 /// Subtracts spatial forces by simply subtracting their 6 underlying elements.
@@ -233,13 +232,13 @@ inline SpatialForce<T> operator+(const SpatialForce<T>& F1_E,
 template <typename T>
 inline SpatialForce<T> operator-(const SpatialForce<T>& F1_E,
                                  const SpatialForce<T>& F2_E) {
-  // Although this operator-() function simply calls an associated
-  // SpatialVector operator-=() function, it is needed for documentation.
-  return SpatialForce<T>(F1_E) -= F2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialForce, T>::operator-(F1_E, F2_E);
 }
 
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::SpatialForce)
+    class ::drake::multibody::SpatialForce);

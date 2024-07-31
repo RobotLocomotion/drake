@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -8,7 +9,6 @@ load(
     "//tools/skylark:test_tags.bzl",
     "mosek_test_tags",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -35,11 +35,11 @@ drake_cc_library(
     name = "geodesic_convexity",
     srcs = ["geodesic_convexity.cc"],
     hdrs = ["geodesic_convexity.h"],
-    interface_deps = [
+    deps = [
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
     ],
-    deps = [
+    implementation_deps = [
         "//geometry/optimization:convex_set",
         "//solvers:solve",
     ],
@@ -75,12 +75,13 @@ drake_cc_library(
         "spectrahedron.h",
         "vpolytope.h",
     ],
-    interface_deps = [
+    deps = [
         "//geometry:scene_graph",
+        "//math:matrix_util",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
     ],
-    deps = [
+    implementation_deps = [
         "//geometry:read_obj",
         "//solvers:aggregate_costs_constraints",
         "//solvers:choose_best_solver",
@@ -278,6 +279,7 @@ drake_cc_googletest(
     name = "convex_set_test",
     deps = [
         ":convex_set",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -413,6 +415,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "c_iris_collision_geometry_test",
+    tags = ["no_kcov"],
     deps = [
         ":c_iris_collision_geometry",
         ":c_iris_test_utilities",
@@ -456,6 +459,8 @@ drake_cc_googletest(
         "//solvers:ipopt_solver",
         "//solvers:linear_system_solver",
         "//solvers:mosek_solver",
+        "//solvers:osqp_solver",
+        "//solvers:scs_solver",
     ],
 )
 
@@ -518,6 +523,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_test",
+    tags = ["no_kcov"],
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",

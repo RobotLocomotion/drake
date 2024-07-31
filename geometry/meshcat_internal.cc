@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 #include <uuid.h>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
@@ -166,6 +167,20 @@ std::vector<std::shared_ptr<const FileStorage::Handle>> UnbundleGltfAssets(
   }
   return assets;
 }
+
+template <typename T>
+std::string TransformGeometryName(
+    GeometryId geom_id, const SceneGraphInspector<T>& inspector) {
+  std::string geometry_name = inspector.GetName(geom_id);
+  size_t pos = 0;
+  while ((pos = geometry_name.find("::", pos)) != std::string::npos) {
+    geometry_name.replace(pos++, 2, "/");
+  }
+  return geometry_name;
+}
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&TransformGeometryName<T>));
 
 }  // namespace internal
 }  // namespace geometry

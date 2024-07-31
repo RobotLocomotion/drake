@@ -18,7 +18,7 @@ namespace optimization {
  * bounds as {x| lb ≤ x ≤ ub} */
 class Hyperrectangle final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperrectangle)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperrectangle);
 
   /** Constructs a default (zero-dimensional, nonempty) hyperrectangle. */
   Hyperrectangle();
@@ -81,8 +81,8 @@ class Hyperrectangle final : public ConvexSet {
 
   std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;
 
-  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final;
+  std::optional<bool> DoPointInSetShortcut(
+      const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>
@@ -108,6 +108,8 @@ class Hyperrectangle final : public ConvexSet {
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
+
+  // TODO(Alexandre.Amice) Implement DoProjectionShortcut.
 
   double DoCalcVolume() const final;
 

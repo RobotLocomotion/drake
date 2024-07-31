@@ -75,6 +75,20 @@ GCC_CC_TEST_FLAGS = [
     "-Wno-unused-parameter",
 ]
 
+GCC_VERSION_SPECIFIC_FLAGS = {
+    13: [
+        "-Werror=pessimizing-move",
+        # TODO(#21337) Investigate and resolve what to do about these warnings
+        # long-term. Some seem like true positives (i.e., bugs in Drake).
+        "-Wno-array-bounds",
+        "-Wno-dangling-reference",
+        "-Wno-maybe-uninitialized",
+        "-Wno-stringop-overflow",
+        "-Wno-stringop-overread",
+        "-Wno-uninitialized",
+    ],
+}
+
 def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     """Returns both the rule_copts (plus rule_{cc}_copts iff under the
     specified compiler), and platform-specific copts.
@@ -93,6 +107,8 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     elif COMPILER_ID == "GNU":
         extra_gcc_flags = GCC_CC_TEST_FLAGS if cc_test else []
         result = GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
+        if COMPILER_VERSION_MAJOR in GCC_VERSION_SPECIFIC_FLAGS:
+            result += GCC_VERSION_SPECIFIC_FLAGS[COMPILER_VERSION_MAJOR]
     else:
         result = rule_copts
 
@@ -365,7 +381,7 @@ def _raw_drake_cc_library(
         copts = None,
         defines = None,
         data = None,
-        interface_deps = None,
+        deps = None,
         implementation_deps = None,
         linkstatic = None,
         linkopts = None,
@@ -381,7 +397,7 @@ def _raw_drake_cc_library(
     adds a drake_installed_headers() target.  (This should be set if and only
     if the caller is drake_cc_library.)
     """
-    _check_library_deps_blacklist(name, interface_deps)
+    _check_library_deps_blacklist(name, deps)
     _check_library_deps_blacklist(name, implementation_deps)
     _, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
@@ -399,7 +415,7 @@ def _raw_drake_cc_library(
             name = name + ".installed_headers",
             hdrs = hdrs,
             hdrs_exclude = install_hdrs_exclude,
-            deps = installed_headers_for_drake_deps(interface_deps),
+            deps = installed_headers_for_drake_deps(deps),
             tags = ["nolint"],
             visibility = ["//visibility:public"],
         )
@@ -408,8 +424,8 @@ def _raw_drake_cc_library(
     # needs to use an intermediate label name. The actual `name` label will be
     # used for the "implementation sandwich", below.
     # TODO(jwnimmer-tri) Once https://github.com/bazelbuild/bazel/issues/12350
-    # is fixed and Bazel offers interface_deps natively, then we can switch to
-    # that implementation instead of making our own sandwich.
+    # is fixed and Bazel offers implementation_deps natively, then we can
+    # switch to that implementation instead of making our own sandwich.
     compiled_name = name
     compiled_visibility = visibility
     compiled_deprecation = deprecation
@@ -427,7 +443,7 @@ def _raw_drake_cc_library(
         copts = copts,
         defines = defines,
         data = data,
-        deps = interface_deps + implementation_deps,
+        deps = (deps or []) + (implementation_deps or []),
         linkstatic = linkstatic,
         linkopts = linkopts,
         alwayslink = alwayslink,
@@ -448,7 +464,7 @@ def _raw_drake_cc_library(
             strip_include_prefix = strip_include_prefix,
             include_prefix = include_prefix,
             defines = defines,
-            deps = interface_deps,  # N.B. No implementation_deps!
+            deps = deps,  # N.B. No implementation_deps!
             linkstatic = 1,
             tags = tags,
             testonly = testonly,
@@ -498,8 +514,7 @@ def _maybe_add_pruned_private_hdrs_dep(
             name = name,
             hdrs = private_hdrs,
             srcs = [],
-            interface_deps = deps,
-            implementation_deps = [],
+            deps = deps,
             linkstatic = 1,
             visibility = ["//visibility:private"],
             **kwargs
@@ -513,8 +528,8 @@ def drake_cc_library(
         name,
         hdrs = [],
         srcs = [],
-        interface_deps = None,
         deps = [],
+        implementation_deps = None,
         copts = [],
         clang_copts = [],
         gcc_copts = [],
@@ -539,14 +554,6 @@ def drake_cc_library(
     implementation deps's header files, nor will any preprocessor definitions
     for the implementation deps propagate past this firewall.
 
-    For backwards compatibility, when the `interface_deps=` argument is None,
-    we treat `deps=` as the list of "interface deps", with no "implementation
-    deps". This means that simply listing out everything as `deps=` will build
-    successfully, even if only the cc file needed it.
-
-    When `interface_deps=` is non-None, then it describes the "interface deps"
-    and the `deps=` argument is interpreted as the "implementation deps".
-
     The dependencies of a drake_cc_library must be another drake_cc_library, or
     else be named like "@something//etc..." (i.e., come from the workspace, not
     part of Drake).  In other words, all of Drake's C++ libraries must be
@@ -568,11 +575,6 @@ def drake_cc_library(
     (see paragraphs above) of non-internal libraries.
     """
     new_copts = _platform_copts(copts, gcc_copts, clang_copts)
-    if interface_deps != None:
-        implementation_deps = (deps or [])
-    else:
-        interface_deps = deps
-        implementation_deps = []
     new_tags = kwargs.pop("tags", None) or []
     if internal:
         if install_hdrs_exclude != []:
@@ -601,7 +603,7 @@ def drake_cc_library(
     new_srcs, add_deps = _maybe_add_pruned_private_hdrs_dep(
         base_name = name,
         srcs = srcs,
-        deps = interface_deps + implementation_deps,
+        deps = deps,
         copts = new_copts,
         declare_installed_headers = declare_installed_headers,
         tags = new_tags,
@@ -611,7 +613,7 @@ def drake_cc_library(
         name = name,
         hdrs = hdrs,
         srcs = new_srcs,
-        interface_deps = interface_deps + add_deps,
+        deps = deps + add_deps,
         implementation_deps = implementation_deps,
         copts = new_copts,
         linkstatic = linkstatic,
@@ -878,6 +880,12 @@ def drake_cc_googletest(
             "no_tsan",
             "no_ubsan",
         ]
+    else:
+        # kcov is only appropriate for small-sized unit tests. If a test needs
+        # a shard_count or a special timeout, we assume it is not small.
+        if "shard_count" in kwargs or "timeout" in kwargs:
+            new_tags = new_tags + ["no_kcov"]
+
     drake_cc_test(
         name = name,
         args = new_args,
@@ -889,16 +897,16 @@ def drake_cc_googletest(
 def drake_cc_library_linux_only(
         name,
         srcs = [],
-        interface_deps = None,
         deps = [],
+        implementation_deps = None,
         linkopts = [],
         tags = [],
         visibility = ["//visibility:private"],
         **kwargs):
     """Declares a platform-specific drake_cc_library.
 
-    When building on non-Linux, the interface_deps and deps and linkopts are
-    nulled out. Note that we do NOT null out srcs; using a select() on srcs
+    When building on non-Linux, the deps and implementation_deps and linkopts
+    are nulled out. Note that we do NOT null out srcs; using a select() on srcs
     would cause the linter to skip them, even on Linux builds.
 
     The tags will be forced to have "manual" set so that the library compile is
@@ -914,12 +922,12 @@ def drake_cc_library_linux_only(
     drake_cc_library(
         name = name,
         srcs = srcs,
-        interface_deps = None if interface_deps == None else select({
-            "@drake//tools/skylark:linux": interface_deps,
-            "//conditions:default": [],
-        }),
         deps = select({
             "@drake//tools/skylark:linux": deps,
+            "//conditions:default": [],
+        }),
+        implementation_deps = None if implementation_deps == None else select({
+            "@drake//tools/skylark:linux": implementation_deps,
             "//conditions:default": [],
         }),
         linkopts = select({
@@ -938,9 +946,12 @@ def drake_cc_googletest_linux_only(
         deps = [],
         linkopts = [],
         tags = [],
-        visibility = ["//visibility:private"]):
+        timeout = None,
+        visibility = ["//visibility:private"],
+        enable_condition = "@drake//tools/skylark:linux"):
     """Declares a platform-specific drake_cc_googletest. When not building on
-    Linux, the deps and linkopts are nulled out.
+    Linux, the deps and linkopts are nulled out. When only a subset of linuxen
+    are supported, the enable_condition can be used to narrow even further.
 
     Because this test is not cross-platform, the visibility defaults to
     private.
@@ -955,13 +966,13 @@ def drake_cc_googletest_linux_only(
         testonly = True,
         tags = ["manual"],
         deps = select({
-            "@drake//tools/skylark:linux": deps + [
+            enable_condition: deps + [
                 "@gtest//:without_main",
             ],
             "//conditions:default": [],
         }),
         linkopts = select({
-            "@drake//tools/skylark:linux": linkopts,
+            enable_condition: linkopts,
             "//conditions:default": [],
         }),
         alwayslink = True,
@@ -972,17 +983,18 @@ def drake_cc_googletest_linux_only(
     # We need to use a dummy header file to disable the default 'srcs = ...'
     # inference from drake_cc_googletest.
     generate_file(
-        name = "_{}_empty.h".format(name),
+        name = "_{}_empty.cc".format(name),
         content = "",
         visibility = ["//visibility:private"],
     )
     drake_cc_googletest(
         name = name,
-        srcs = ["_{}_empty.h".format(name)],
+        srcs = ["_{}_empty.cc".format(name)],
         tags = tags + ["nolint"],
+        timeout = timeout,
         data = data,
         deps = select({
-            "@drake//tools/skylark:linux": [":_{}_compile".format(name)],
+            enable_condition: [":_{}_compile".format(name)],
             "//conditions:default": [],
         }),
         visibility = visibility,

@@ -1,9 +1,10 @@
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load(
-    "//tools/skylark:pybind.bzl",
-    "drake_pybind_library",
-    "get_drake_py_installs",
-    "get_pybind_package_info",
+    "//tools/skylark:alias.bzl",
+    "drake_py_library_aliases",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -12,12 +13,11 @@ load(
     "drake_py_unittest",
 )
 load(
-    "//tools/skylark:alias.bzl",
-    "drake_py_library_aliases",
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+    "get_drake_py_installs",
+    "get_pybind_package_info",
 )
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
-load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
-load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 load(
     "//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
@@ -155,6 +155,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
+        "//bindings/pydrake/common:sorted_pair_pybind",
     ],
     cc_srcs = ["parsing_py.cc"],
     package_info = PACKAGE_INFO,

@@ -15,7 +15,7 @@ namespace analysis_test {
 template <typename T>
 class StationarySystem final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StationarySystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StationarySystem);
 
   StationarySystem();
 
@@ -33,4 +33,4 @@ class StationarySystem final : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::systems::analysis_test::StationarySystem)
+    class drake::systems::analysis_test::StationarySystem);

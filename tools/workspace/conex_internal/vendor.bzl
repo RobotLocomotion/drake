@@ -50,6 +50,11 @@ def conex_cc_library(
     ]
     strip_include_prefix = "drake_vendor"
 
+    # Mac clang is angry about this.
+    copts = copts or []
+    if "-Wno-unused-but-set-variable" not in copts:
+        copts.append("-Wno-unused-but-set-variable")
+
     # Compile the static library.
     cc_library_vendored(
         name = name,

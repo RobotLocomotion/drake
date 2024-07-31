@@ -30,7 +30,7 @@ Eigen::Quaterniond Vector4ToQuaternion(
 
 class TwoFreeBodiesTest : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeBodiesTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeBodiesTest);
 
   TwoFreeBodiesTest()
       : two_bodies_plant_(ConstructTwoFreeBodiesPlant<double>()),
@@ -183,7 +183,7 @@ GTEST_TEST(InverseKinematicsTest, ConstructorLockedJoints) {
   // Leave joint1 unlocked.
 
   // Lock body2's floating joint to an un-normalized initial value.
-  joint2.set_quaternion(&*context, Eigen::Quaternion<double>(0, 3.0, 0, 0));
+  joint2.SetQuaternion(&*context, Eigen::Quaternion<double>(0, 3.0, 0, 0));
   joint2.Lock(&*context);
 
   // Set limits on joint3, but do not lock it.

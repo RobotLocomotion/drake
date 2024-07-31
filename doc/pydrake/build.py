@@ -7,16 +7,16 @@ import os
 from os.path import join
 import sys
 
-from drake.doc.defs import (
+import pydrake._all_everything
+from pydrake.common import _MangledName
+
+from doc.defs import (
     check_call,
     main,
     perl_cleanup_html_output,
     symlink_input,
     verbose,
 )
-
-import pydrake._all_everything
-from pydrake.common import _MangledName
 
 
 def _get_submodules(name):

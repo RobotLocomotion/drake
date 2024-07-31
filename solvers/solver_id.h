@@ -18,7 +18,7 @@ A moved-from instance is guaranteed to be empty and will not compare equal to
 any non-empty ID. */
 class SolverId {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverId)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverId);
   ~SolverId() = default;
 
   /** Constructs a specific, known solver type. Internally, a hidden integer is

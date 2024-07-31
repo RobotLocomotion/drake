@@ -93,6 +93,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  SnoptSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
+  }
+}
+
 GTEST_TEST(SnoptTest, NameTest) {
   EXPECT_EQ(SnoptSolver::id().name(), "SNOPT");
 }
@@ -387,7 +394,7 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
 
 class AutoDiffOnlyCost final : public drake::solvers::Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutoDiffOnlyCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutoDiffOnlyCost);
 
   AutoDiffOnlyCost() : drake::solvers::Cost(1) {}
 

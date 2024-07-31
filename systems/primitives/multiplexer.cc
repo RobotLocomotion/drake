@@ -68,4 +68,4 @@ void Multiplexer<T>::CombineInputsToOutput(const Context<T>& context,
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Multiplexer)
+    class ::drake::systems::Multiplexer);

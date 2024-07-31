@@ -1,5 +1,6 @@
 #include <limits>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -32,9 +33,9 @@ class MultibodyPlantTester {
  public:
   MultibodyPlantTester() = delete;
 
-  static const internal::JointLockingCacheData<double>& EvalJointLockingCache(
+  static const internal::JointLockingCacheData<double>& EvalJointLocking(
       const MultibodyPlant<double>& plant, const Context<double>& context) {
-    return plant.EvalJointLockingCache(context);
+    return plant.EvalJointLocking(context);
   }
 
   template <typename T>
@@ -131,7 +132,7 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
   // No joints/bodies are locked, all joint/body velocity indices should exist.
   {
     const internal::JointLockingCacheData<double>& cache =
-        MultibodyPlantTester::EvalJointLockingCache(*plant_, *context_);
+        MultibodyPlantTester::EvalJointLocking(*plant_, *context_);
     const std::vector<int>& unlocked_velocity_indices =
         cache.unlocked_velocity_indices;
     const std::vector<int>& locked_velocity_indices =
@@ -187,7 +188,7 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
   {
     body3_body4.Lock(context_.get());
     const internal::JointLockingCacheData<double>& cache =
-        MultibodyPlantTester::EvalJointLockingCache(*plant_, *context_);
+        MultibodyPlantTester::EvalJointLocking(*plant_, *context_);
     const std::vector<int>& unlocked_velocity_indices =
         cache.unlocked_velocity_indices;
     const std::vector<int>& locked_velocity_indices =
@@ -243,7 +244,7 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
     body1.Lock(context_.get());
 
     const internal::JointLockingCacheData<double>& cache =
-        MultibodyPlantTester::EvalJointLockingCache(*plant_, *context_);
+        MultibodyPlantTester::EvalJointLocking(*plant_, *context_);
     const std::vector<int>& unlocked_velocity_indices =
         cache.unlocked_velocity_indices;
     const std::vector<int>& locked_velocity_indices =
@@ -477,13 +478,15 @@ INSTANTIATE_TEST_SUITE_P(JointLockingTests, TrajectoryTest,
 
 struct FilteredContactResultsConfig {
   ContactModel contact_model{ContactModel::kPoint};
-  DiscreteContactSolver solver{DiscreteContactSolver::kTamsi};
+  std::optional<DiscreteContactSolver> solver{DiscreteContactSolver::kTamsi};
 };
 
 std::ostream& operator<<(std::ostream& out,
                          const FilteredContactResultsConfig& c) {
   return out << internal::GetStringFromContactModel(c.contact_model) << "_"
-             << internal::GetStringFromDiscreteContactSolver(c.solver);
+             << (c.solver.has_value()
+                     ? internal::GetStringFromDiscreteContactSolver(*c.solver)
+                     : std::string{"continuous"});
 }
 
 // Utility testing class to construct a plant with three stacked spheres in
@@ -493,21 +496,25 @@ class FilteredContactResultsTest
  public:
   void SetUp() {
     FilteredContactResultsConfig config = GetParam();
+    const double time_step = config.solver.has_value() ? kTimestep : 0.0;
 
     systems::DiagramBuilder<double> builder;
-    plant_ = &AddMultibodyPlantSceneGraph(&builder, 0.01 /* time_step */).plant;
+    plant_ = &AddMultibodyPlantSceneGraph(&builder, time_step).plant;
     plant_->set_contact_model(config.contact_model);
-    // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-    // arbitrarily choose two model approximations to accomplish this.
-    switch (config.solver) {
-      case DiscreteContactSolver::kTamsi:
-        plant_->set_discrete_contact_approximation(
-            DiscreteContactApproximation::kTamsi);
-        break;
-      case DiscreteContactSolver::kSap:
-        plant_->set_discrete_contact_approximation(
-            DiscreteContactApproximation::kSap);
-        break;
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
+    if (time_step > 0) {
+      // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+      // arbitrarily choose two model approximations to accomplish this.
+      switch (*config.solver) {
+        case DiscreteContactSolver::kTamsi:
+          plant_->set_discrete_contact_approximation(
+              DiscreteContactApproximation::kTamsi);
+          break;
+        case DiscreteContactSolver::kSap:
+          plant_->set_discrete_contact_approximation(
+              DiscreteContactApproximation::kSap);
+          break;
+      }
     }
 
     const RigidBody<double>& ball_A = AddBall("ball_A");
@@ -567,7 +574,7 @@ class FilteredContactResultsTest
 // Test that contact results are properly reported. MultibodyPlant will not
 // report contact results between bodies that are either anchored or with all of
 // their dofs locked. However, geometry query data from SceneGraph (e.g
-// data from MbP::EvalPointPairPenetrations() and MbP::EvalContactSurfaces())
+// data from MbP::CalcGeometryContactData())
 // are not automatically filtered. Thus contact results must store a reference
 // of either the point pair or hydroelastic contact surface that corresponds to
 // that result. We verify that contact results for point contact contain correct
@@ -678,6 +685,8 @@ TEST_P(FilteredContactResultsTest, VerifyLockedResults) {
 std::vector<FilteredContactResultsConfig>
 MakeFilteredContactResultsTestCases() {
   return std::vector<FilteredContactResultsConfig>{
+      {.contact_model = ContactModel::kPoint, .solver = std::nullopt},
+      {.contact_model = ContactModel::kHydroelastic, .solver = std::nullopt},
       {.contact_model = ContactModel::kPoint,
        .solver = DiscreteContactSolver::kTamsi},
       {.contact_model = ContactModel::kHydroelastic,

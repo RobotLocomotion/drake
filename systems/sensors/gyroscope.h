@@ -49,7 +49,7 @@ namespace sensors {
 template <typename T>
 class Gyroscope final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gyroscope)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gyroscope);
 
   /// Constructor for %Gyroscope using full transform.
   /// @param body the body B to which the sensor is affixed

@@ -53,7 +53,7 @@ hydroelastic-contact-specific unit test.
 */
 class HydroelasticContactVisualizer {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticContactVisualizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticContactVisualizer);
 
   /* Creates an instance of HydroelasticContactVisualizer.
   Note that not all fields of `params` are relevant nor used.

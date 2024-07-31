@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import numpy
+import platform
 import pydrake.all
 
 # Basic sanity checks.
@@ -18,4 +19,7 @@ prog.AddLinearConstraint(x[0] >= 1)
 prog.AddLinearConstraint(x[1] >= 1)
 prog.AddQuadraticCost(numpy.eye(2), numpy.zeros(2), x)
 solver = pydrake.all.IpoptSolver()
-assert solver.Solve(prog, None, None).is_success(), 'IPOPT is not usable'
+if platform.system() == 'Darwin' and platform.machine() == 'x86_64':
+    assert not solver.available(), 'IPOPT is supposed to be disabled'
+else:
+    assert solver.Solve(prog, None, None).is_success(), 'IPOPT is not usable'

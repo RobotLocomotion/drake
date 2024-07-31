@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -45,14 +45,14 @@ drake_cc_library(
         "variable.h",
         "variables.h",
     ],
-    interface_deps = [
+    deps = [
         "//common:drake_bool",
         "//common:essential",
         "//common:hash",
         "//common:random",
         "//common:reset_after_move",
     ],
-    deps = [
+    implementation_deps = [
         "@abseil_cpp_internal//absl/container:flat_hash_set",
         "@abseil_cpp_internal//absl/container:inlined_vector",
         "@fmt",

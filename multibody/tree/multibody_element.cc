@@ -7,7 +7,12 @@ using internal::MultibodyTreeSystem;
 using systems::Parameters;
 
 template <typename T>
-MultibodyElement<T>::~MultibodyElement() {}
+MultibodyElement<T>::~MultibodyElement() {
+  // Clear the tree to help fail-fast in case of accidental use-after-free of
+  // this MultibodyElement by end users who accidentally kept around a stale
+  // point to us.
+  parent_tree_ = nullptr;
+}
 
 template <typename T>
 void MultibodyElement<T>::DeclareParameters(
@@ -81,4 +86,4 @@ void MultibodyElement<T>::HasThisParentTreeOrThrow(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MultibodyElement)
+    class ::drake::multibody::MultibodyElement);

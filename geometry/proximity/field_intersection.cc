@@ -330,7 +330,7 @@ template class VolumeIntersector<PolyMeshBuilder<double>, Aabb>;
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&CalcEquilibriumPlane<T>, &IntersectTetrahedra<T>,
      &IsPlaneNormalAlongPressureGradient<T>,
-     &ComputeContactSurfaceFromCompliantVolumes<T>))
+     &ComputeContactSurfaceFromCompliantVolumes<T>));
 
 }  // namespace internal
 }  // namespace geometry

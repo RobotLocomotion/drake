@@ -7,7 +7,7 @@
 namespace drake {
 namespace systems {
 
-/// An integrator for a continuous vector input.
+/// A continuous-time integrator for a vector input.
 ///
 /// @system
 /// name: Integrator
@@ -22,7 +22,7 @@ namespace systems {
 template <typename T>
 class Integrator final : public VectorSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator);
 
   /// Constructs an %Integrator system.
   /// @param size number of elements in the signal to be processed.
@@ -56,3 +56,6 @@ class Integrator final : public VectorSystem<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Integrator);

@@ -33,7 +33,7 @@ class VectorLog {
    */
   static constexpr int64_t kDefaultCapacity = 1000;
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VectorLog)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VectorLog);
 
   /** Constructs the vector log.
    @param input_size                Dimension of the per-time step data set.

@@ -1154,13 +1154,14 @@ class MathematicalProgram {
    */
   Binding<L2NormCost> AddCost(const Binding<L2NormCost>& binding);
 
+  // TODO(hongkai.dai): support L2NormCost in each solver.
   /**
    * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
    * don't take the square of the L2 norm).
-   * @note Currently only the SnoptSolver and IpoptSolver support kL2NormCost.
+   * @note Currently kL2NormCost is supported by SnoptSolver, IpoptSolver,
+   * GurobiSolver, MosekSolver, ClarabelSolver, and SCSSolver.
    * @pydrake_mkdoc_identifier{3args_A_b_vars}
    */
-  // TODO(hongkai.dai): support L2NormCost in each solver.
   Binding<L2NormCost> AddL2NormCost(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b,
@@ -1177,6 +1178,19 @@ class MathematicalProgram {
     return AddL2NormCost(A, b, ConcatenateVariableRefList(vars));
   }
 
+  /**
+   * Adds an L2 norm cost |Ax+b|₂ from a symbolic expression which can be
+   * decomposed into sqrt((Ax+b)'(Ax+b)). See
+   * symbolic::DecomposeL2NormExpression for details on the tolerance
+   * parameters.
+   * @throws std::exception if @p e cannot be decomposed into an L2 norm.
+   * @pydrake_mkdoc_identifier{expression}
+   */
+  Binding<L2NormCost> AddL2NormCost(const symbolic::Expression& e,
+                                    double psd_tol = 1e-8,
+                                    double coefficient_tol = 1e-8);
+
+  // TODO(hongkai.dai) Decide whether to deprecate this.
   /**
    * Adds an L2 norm cost min |Ax+b|₂ as a linear cost min s
    * on the slack variable s, together with a Lorentz cone constraint
@@ -2071,6 +2085,27 @@ class MathematicalProgram {
    */
   Binding<LorentzConeConstraint> AddConstraint(
       const Binding<LorentzConeConstraint>& binding);
+
+  /**
+   * Adds a Lorentz cone constraint of the form Ax+b >= |Cx+d|₂ from a symbolic
+   * formula with one side which can be decomposed into sqrt((Cx+d)'(Cx+d)).
+   *
+   * @param eval_type The evaluation type when evaluating the lorentz cone
+   * constraint in generic optimization. Refer to
+   * LorentzConeConstraint::EvalType for more details.
+   *
+   * See symbolic::DecomposeL2NormExpression for details on the tolerance
+   * parameters, @p psd_tol and @p coefficient_tol. Consider using the overload
+   * which takes a vector of expressions to avoid the numerical decomposition.
+   *
+   * @throws std::exception if @p f cannot be decomposed into a Lorentz cone.
+   * @pydrake_mkdoc_identifier{formula}
+   */
+  Binding<LorentzConeConstraint> AddLorentzConeConstraint(
+      const symbolic::Formula& f,
+      LorentzConeConstraint::EvalType eval_type =
+          LorentzConeConstraint::EvalType::kConvexSmooth, double psd_tol = 1e-8,
+                                    double coefficient_tol = 1e-8);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
@@ -3617,17 +3652,29 @@ class MathematicalProgram {
   //@}
 
   /**
+   * Remove `var` from this program's decision variable.
+   * @note after removing the variable, the indices of some remaining variables
+   * inside this MathematicalProgram will change.
+   * @return the index of `var` in this optimization program. return -1 if `var`
+   * is not a decision variable.
+   * @throw exception if `var` is bound with any cost or constraint.
+   * @throw exception if `var` is not a decision variable of the program.
+   */
+  int RemoveDecisionVariable(const symbolic::Variable& var);
+
+  /**
    * @anchor remove_cost_constraint
-   * @name    Remove costs or constraints
-   * Removes costs or constraints from this program. If this program contains
-   * multiple costs/constraints objects matching the given argument, then all of
-   * these costs/constraints are removed. If this program doesn't contain the
-   * specified cost/constraint, then the code does nothing. We regard two
-   * costs/constraints being equal, if their evaluators point to the same
-   * object, and the associated variables are also the same.
-   * @note If two costs/constraints represent the same expression, but their
-   * evaluators point to different objects, then they are NOT regarded the same.
-   * For example, if we have
+   * @name    Remove costs, constraints or callbacks.
+   * Removes costs, constraints or visualization callbacks from this program. If
+   * this program contains multiple costs/constraints/callbacks objects matching
+   * the given argument, then all of these costs/constraints/callbacks are
+   * removed. If this program doesn't contain the specified
+   * cost/constraint/callback, then the code does nothing. We regard two
+   * costs/constraints/callbacks being equal, if their evaluators point to the
+   * same object, and the associated variables are also the same.
+   * @note If two costs/constraints/callbacks represent the same expression, but
+   * their evaluators point to different objects, then they are NOT regarded the
+   * same. For example, if we have
    * @code{.cc}
    * auto cost1 = prog.AddLinearCost(x[0] + x[1]);
    * auto cost2 = prog.AddLinearCost(x[0] + x[1]);
@@ -3642,8 +3689,8 @@ class MathematicalProgram {
 
   // @{
   /** Removes @p cost from this mathematical program.
-   * See @ref remove_cost_constraint "Remove costs or constraints" for more
-   * details.
+   * See @ref remove_cost_constraint "Remove costs, constraints or callbacks"
+   * for more details.
    * @return number of cost objects removed from this program. If this program
    * doesn't contain @p cost, then returns 0. If this program contains multiple
    * @p cost objects, then returns the repetition of @p cost in this program.
@@ -3651,8 +3698,8 @@ class MathematicalProgram {
   int RemoveCost(const Binding<Cost>& cost);
 
   /** Removes @p constraint from this mathematical program.
-   * See @ref remove_cost_constraint "Remove costs or constraints" for more
-   * details.
+   * See @ref remove_cost_constraint "Remove costs, constraints or callbacks"
+   * for more details.
    * @return number of constraint objects removed from this program. If this
    * program doesn't contain @p constraint, then returns 0. If this program
    * contains multiple
@@ -3660,6 +3707,18 @@ class MathematicalProgram {
    * program.
    */
   int RemoveConstraint(const Binding<Constraint>& constraint);
+
+  /** Removes @p callback from this mathematical program.
+   * See @ref remove_cost_constraint "Remove costs, constraints or callbacks"
+   * for more details.
+   * @return number of callback objects removed from this program. If this
+   * program doesn't contain @p callback, then returns 0. If this program
+   * contains multiple
+   * @p callback objects, then returns the repetition of @p callback in this
+   * program.
+   */
+  int RemoveVisualizationCallback(
+      const Binding<VisualizationCallback>& callback);
   //@}
 
  private:

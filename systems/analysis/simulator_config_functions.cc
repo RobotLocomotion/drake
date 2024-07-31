@@ -224,6 +224,6 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
       &ResetIntegratorFromFlags<T>,
       &ApplySimulatorConfig<T>,
       &ExtractSimulatorConfig<T>
-))
+));
 }  // namespace systems
 }  // namespace drake

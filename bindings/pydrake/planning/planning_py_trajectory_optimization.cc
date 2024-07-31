@@ -335,7 +335,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("weight") = 1.0, cls_doc.AddDurationCost.doc)
         .def("AddPathLengthCost", &Class::AddPathLengthCost,
             py::arg("weight") = 1.0, py::arg("use_conic_constraint") = false,
-            cls_doc.AddPathLengthCost.doc);
+            cls_doc.AddPathLengthCost.doc)
+        .def("AddPathEnergyCost", &Class::AddPathEnergyCost,
+            py::arg("weight") = 1.0, cls_doc.AddPathEnergyCost.doc);
   }
 
   {
@@ -354,6 +356,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 geometry::optimization::GraphOfConvexSets::Vertex*>&>(
                 &Class::Subgraph::Vertices),
             py_rvp::reference_internal, subgraph_doc.Vertices.doc)
+        .def("Edges",
+            overload_cast_explicit<const std::vector<
+                geometry::optimization::GraphOfConvexSets::Edge*>&>(
+                &Class::Subgraph::Edges),
+            py_rvp::reference_internal, subgraph_doc.Edges.doc)
         .def(
             "regions",
             [](Class::Subgraph* self) {
@@ -380,10 +387,18 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             subgraph_doc.AddPathLengthCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::Subgraph::AddVelocityBounds,
             py::arg("lb"), py::arg("ub"), subgraph_doc.AddVelocityBounds.doc)
+        .def("AddNonlinearDerivativeBounds",
+            &Class::Subgraph::AddNonlinearDerivativeBounds, py::arg("lb"),
+            py::arg("ub"), py::arg("derivative_order"),
+            subgraph_doc.AddNonlinearDerivativeBounds.doc)
         .def("AddPathContinuityConstraints",
             &Class::Subgraph::AddPathContinuityConstraints,
             py::arg("continuity_order"),
-            subgraph_doc.AddPathContinuityConstraints.doc);
+            subgraph_doc.AddPathContinuityConstraints.doc)
+        .def("AddContinuityConstraints",
+            &Class::Subgraph::AddContinuityConstraints,
+            py::arg("continuity_order"),
+            subgraph_doc.AddContinuityConstraints.doc);
 
     // EdgesBetweenSubgraphs
     const auto& subgraph_edges_doc =
@@ -393,6 +408,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddVelocityBounds",
             &Class::EdgesBetweenSubgraphs::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), subgraph_edges_doc.AddVelocityBounds.doc)
+        .def("AddNonlinearDerivativeBounds",
+            &Class::EdgesBetweenSubgraphs::AddNonlinearDerivativeBounds,
+            py::arg("lb"), py::arg("ub"), py::arg("derivative_order"),
+            subgraph_edges_doc.AddNonlinearDerivativeBounds.doc)
         .def("AddZeroDerivativeConstraints",
             &Class::EdgesBetweenSubgraphs::AddZeroDerivativeConstraints,
             py::arg("derivative_order"),
@@ -400,7 +419,16 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddPathContinuityConstraints",
             &Class::EdgesBetweenSubgraphs::AddPathContinuityConstraints,
             py::arg("continuity_order"),
-            subgraph_edges_doc.AddPathContinuityConstraints.doc);
+            subgraph_edges_doc.AddPathContinuityConstraints.doc)
+        .def("AddContinuityConstraints",
+            &Class::EdgesBetweenSubgraphs::AddContinuityConstraints,
+            py::arg("continuity_order"),
+            subgraph_edges_doc.AddContinuityConstraints.doc)
+        .def("Edges",
+            overload_cast_explicit<const std::vector<
+                geometry::optimization::GraphOfConvexSets::Edge*>&>(
+                &Class::EdgesBetweenSubgraphs::Edges),
+            py_rvp::reference_internal, subgraph_edges_doc.Edges.doc);
 
     gcs_traj_opt  // BR
         .def(py::init<int, const std::vector<int>&>(), py::arg("num_positions"),
@@ -410,8 +438,29 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("continuous_revolute_joints", &Class::continuous_revolute_joints,
             cls_doc.continuous_revolute_joints.doc)
         .def("GetGraphvizString", &Class::GetGraphvizString,
-            py::arg("result") = std::nullopt, py::arg("show_slack") = true,
-            py::arg("precision") = 3, py::arg("scientific") = false,
+            py::arg("result") = std::nullopt,
+            py::arg("options") = geometry::optimization::GcsGraphvizOptions(),
+            cls_doc.GetGraphvizString.doc)
+        .def(
+            "GetGraphvizString",
+            [](const GcsTrajectoryOptimization& self,
+                const std::optional<solvers::MathematicalProgramResult>& result,
+                bool show_slacks, bool show_vars, bool show_flows,
+                bool show_costs, bool scientific, int precision) {
+              geometry::optimization::GcsGraphvizOptions options;
+              options.show_slacks = show_slacks;
+              options.show_vars = show_vars;
+              options.show_flows = show_flows;
+              options.show_costs = show_costs;
+              options.scientific = scientific;
+              options.precision = precision;
+              return self.GetGraphvizString(result, options);
+            },
+            py::arg("result") =
+                std::optional<solvers::MathematicalProgramResult>(std::nullopt),
+            py::arg("show_slacks") = true, py::arg("show_vars") = true,
+            py::arg("show_flows") = true, py::arg("show_costs") = true,
+            py::arg("scientific") = false, py::arg("precision") = 3,
             cls_doc.GetGraphvizString.doc)
         .def(
             "AddRegions",
@@ -446,7 +495,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             cls_doc.RemoveSubgraph.doc)
         .def("AddEdges", &Class::AddEdges, py_rvp::reference_internal,
             py::arg("from_subgraph"), py::arg("to_subgraph"),
-            py::arg("subspace") = py::none(), cls_doc.AddEdges.doc)
+            py::arg("subspace") = py::none(),
+            py::arg("edges_between_regions") = py::none(),
+            py::arg("edge_offsets") = py::none(), cls_doc.AddEdges.doc)
         .def("AddTimeCost", &Class::AddTimeCost, py::arg("weight") = 1.0,
             cls_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",
@@ -459,9 +510,15 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("weight") = 1.0, cls_doc.AddPathLengthCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), cls_doc.AddVelocityBounds.doc)
+        .def("AddNonlinearDerivativeBounds",
+            &Class::AddNonlinearDerivativeBounds, py::arg("lb"), py::arg("ub"),
+            py::arg("derivative_order"),
+            cls_doc.AddNonlinearDerivativeBounds.doc)
         .def("AddPathContinuityConstraints",
             &Class::AddPathContinuityConstraints, py::arg("continuity_order"),
             cls_doc.AddPathContinuityConstraints.doc)
+        .def("AddContinuityConstraints", &Class::AddContinuityConstraints,
+            py::arg("continuity_order"), cls_doc.AddContinuityConstraints.doc)
         .def("SolvePath", &Class::SolvePath, py::arg("source"),
             py::arg("target"),
             py::arg("options") =
@@ -479,7 +536,12 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("graph_of_convex_sets", &Class::graph_of_convex_sets,
             py_rvp::reference_internal, cls_doc.graph_of_convex_sets.doc)
         .def_static("NormalizeSegmentTimes", &Class::NormalizeSegmentTimes,
-            py::arg("trajectory"), cls_doc.NormalizeSegmentTimes.doc);
+            py::arg("trajectory"), cls_doc.NormalizeSegmentTimes.doc)
+        .def_static("UnwrapToContinousTrajectory",
+            &Class::UnwrapToContinousTrajectory, py::arg("gcs_trajectory"),
+            py::arg("continuous_revolute_joints"),
+            py::arg("starting_rounds") = std::nullopt, py::arg("tol") = 1e-8,
+            cls_doc.UnwrapToContinousTrajectory.doc);
   }
 
   m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,

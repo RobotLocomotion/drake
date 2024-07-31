@@ -14,6 +14,7 @@ namespace {
 
 GTEST_TEST(MaybePauseForUserTest, Test) {
   MaybePauseForUser();
+  MaybePauseForUser("With message");
 }
 
 }  // namespace

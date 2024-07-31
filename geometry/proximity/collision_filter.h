@@ -23,7 +23,7 @@ namespace internal {
  added to this filter system (via AddGeometry()). */
 class CollisionFilter {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilter)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilter);
 
   CollisionFilter();
 

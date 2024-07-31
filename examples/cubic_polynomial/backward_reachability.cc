@@ -40,8 +40,9 @@ using BoundingBox = std::pair<Bound, Bound>;
 template <typename T>
 class CubicSystem : public systems::VectorSystem<T> {
  public:
-  CubicSystem() : systems::VectorSystem<T>(0, 0) {
-    // 0 inputs, 0 outputs, 1 continuous state.
+  CubicSystem()
+      // Zero inputs, zero outputs, no feedthrough, 1 continuous state.
+      : systems::VectorSystem<T>(0, 0, false) {
     this->DeclareContinuousState(1);
   }
 

@@ -31,11 +31,11 @@ class DeformableDriverTest : public ::testing::Test {
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
-    auto deformable_model = make_unique<DeformableModel<double>>(plant_);
+    DeformableModel<double>& deformable_model =
+        plant_->mutable_deformable_model();
     constexpr double kRezHint = 0.5;
-    body_id_ = RegisterSphere(deformable_model.get(), kRezHint);
-    model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    body_id_ = RegisterSphere(&deformable_model, kRezHint);
+    model_ = &deformable_model;
     const RigidBody<double>& body = plant_->AddRigidBody(
         "rigid_body", SpatialInertia<double>::SolidSphereWithMass(1.0, 1.0));
     // N.B. Deformables are only supported with the SAP solver.
@@ -49,10 +49,6 @@ class DeformableDriverTest : public ::testing::Test {
     plant_->SetDiscreteUpdateManager(std::move(contact_manager));
     driver_ = manager_->deformable_driver();
     DRAKE_DEMAND(driver_ != nullptr);
-
-    builder.Connect(model_->vertex_positions_port(),
-                    scene_graph_->get_source_configuration_port(
-                        plant_->get_source_id().value()));
     diagram_ = builder.Build();
     diagram_context_ = diagram_->CreateDefaultContext();
     plant_context_ =

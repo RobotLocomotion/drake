@@ -67,4 +67,4 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::CompositeTrajectory)
+    class drake::trajectories::CompositeTrajectory);

@@ -47,7 +47,7 @@ erasure and Context<T> downcasting. Refer to the
 @ref ValueProducer_constructors "Constructor overloads" for details. */
 class ValueProducer final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ValueProducer)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ValueProducer);
 
   /** Signature of a function suitable for allocating an object that can hold
   a value compatible with our Calc function. The result is always returned as

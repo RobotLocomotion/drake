@@ -3,8 +3,8 @@
 #include <memory>
 #include <vector>
 
-#include "drake/examples/compass_gait/gen/compass_gait_continuous_state.h"
-#include "drake/examples/compass_gait/gen/compass_gait_params.h"
+#include "drake/examples/compass_gait/compass_gait_continuous_state.h"
+#include "drake/examples/compass_gait/compass_gait_params.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"

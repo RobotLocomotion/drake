@@ -1,3 +1,5 @@
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load("//bindings/pydrake:stubgen.bzl", "generate_python_stubs")
 load("//tools/install:install.bzl", "install")
 load(
     "//tools/skylark:drake_cc.bzl",
@@ -18,8 +20,6 @@ load(
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
-load("//bindings/pydrake:stubgen.bzl", "generate_python_stubs")
 load("//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = [
@@ -47,7 +47,6 @@ drake_py_library(
         "__init__.py",
     ],
     deps = [
-        "//bindings:bazel_workaround_4594_libdrake_py",
         "//bindings/pydrake/common:_init_py",
     ],
 )
@@ -438,6 +437,7 @@ PYI_FILES = [
     "pydrake/symbolic.pyi",
     "pydrake/systems/analysis.pyi",
     "pydrake/systems/controllers.pyi",
+    "pydrake/systems/estimators.pyi",
     "pydrake/systems/framework.pyi",
     "pydrake/systems/lcm.pyi",
     "pydrake/systems/primitives.pyi",
@@ -478,8 +478,8 @@ drake_py_unittest(
         ":pydrake_typed",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
         "@mypy_internal//:mypy",
+        "@rules_python//python/runfiles",
     ],
 )
 

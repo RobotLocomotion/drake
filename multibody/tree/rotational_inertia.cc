@@ -244,10 +244,10 @@ std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const RotationalInertia<T>&)>(
         &operator<< )
-))
+));
 
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::RotationalInertia)
+    class drake::multibody::RotationalInertia);

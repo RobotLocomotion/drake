@@ -4,7 +4,7 @@ import os
 from os.path import isdir, join
 import unittest
 
-from drake.tools.install.installer import Installer
+from tools.install.installer import Installer
 
 
 class TestInstall(unittest.TestCase):

@@ -38,7 +38,7 @@ This class does not treat a single colon (":") specially. Those can appear
 in either namespace names or element names. */
 class ScopedName final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ScopedName)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ScopedName);
 
   /** Creates an empty name. */
   ScopedName() = default;
@@ -90,7 +90,7 @@ class ScopedName final {
   @throws std::exception if `namespace_name` starts or ends with "::". */
   void set_namespace(std::string_view namespace_name);
 
-  /** Replaces the namespace name of this object, leaving the namespace name
+  /** Replaces the element name of this object, leaving the namespace name
   unchanged.
   @throws std::exception if `element_name` contains "::" or is empty. */
   void set_element(std::string_view element_name);

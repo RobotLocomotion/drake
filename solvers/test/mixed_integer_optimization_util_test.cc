@@ -340,7 +340,7 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
 
 class BilinearProductMcCormickEnvelopeTest {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeTest);
 
   BilinearProductMcCormickEnvelopeTest(int num_interval_x, int num_interval_y)
       : prog_{},
@@ -490,7 +490,7 @@ class BilinearProductMcCormickEnvelopeSos2Test
     : public ::testing::TestWithParam<std::tuple<int, int, IntervalBinning>>,
       public BilinearProductMcCormickEnvelopeTest {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeSos2Test)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeSos2Test);
 
   BilinearProductMcCormickEnvelopeSos2Test()
       : BilinearProductMcCormickEnvelopeTest(std::get<0>(GetParam()),
@@ -585,7 +585,7 @@ class BilinearProductMcCormickEnvelopeMultipleChoiceTest
       public BilinearProductMcCormickEnvelopeTest {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
-      BilinearProductMcCormickEnvelopeMultipleChoiceTest)
+      BilinearProductMcCormickEnvelopeMultipleChoiceTest);
 
   BilinearProductMcCormickEnvelopeMultipleChoiceTest()
       : BilinearProductMcCormickEnvelopeTest(std::get<0>(GetParam()),

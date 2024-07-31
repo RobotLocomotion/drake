@@ -48,7 +48,7 @@ class SapDriverTest {
 template <typename T>
 class MultiDofJointWithLimits final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultiDofJointWithLimits)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultiDofJointWithLimits);
 
   // Arbitrary number of DOFs, though larger than one for these tests.
   static constexpr int kNumDofs = 3;

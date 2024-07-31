@@ -8,6 +8,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/contact_solvers/sap/expect_equal.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
 using Eigen::MatrixXd;
@@ -22,6 +23,14 @@ namespace {
 
 constexpr double kEps = std::numeric_limits<double>::epsilon();
 
+void ExpectEqual(const SapHolonomicConstraint<double>& c1,
+                 const SapHolonomicConstraint<double>& c2) {
+  ExpectBaseIsEqual(c1, c2);
+  EXPECT_EQ(c1.parameters(), c2.parameters());
+  EXPECT_EQ(c1.constraint_function(), c2.constraint_function());
+  EXPECT_EQ(c1.bias(), c2.bias());
+}
+
 class SapHolonomicConstraintTests : public ::testing::Test {
  public:
   void SetUp() override {
@@ -32,13 +41,14 @@ class SapHolonomicConstraintTests : public ::testing::Test {
         std::move(parameters));
   }
 
-  static SapHolonomicConstraint<double>::Parameters MakeArbitraryParameters(
+  template <typename T = double>
+  static typename SapHolonomicConstraint<T>::Parameters MakeArbitraryParameters(
       double beta = 0) {
-    VectorXd impulse_lower_limits = -Vector3d(1.0, 2.0, 3.0);
-    VectorXd impulse_upper_limits = Vector3d(1.0, 2.0, 3.0);
-    VectorXd stiffnesses = 1.0e4 * Vector3d(1.0, 2.0, 3.0);
-    VectorXd relaxation_times = 0.01 * Vector3d(1.0, 2.0, 3.0);
-    return SapHolonomicConstraint<double>::Parameters(
+    VectorX<T> impulse_lower_limits = -Vector3<T>(1.0, 2.0, 3.0);
+    VectorX<T> impulse_upper_limits = Vector3<T>(1.0, 2.0, 3.0);
+    VectorX<T> stiffnesses = 1.0e4 * Vector3<T>(1.0, 2.0, 3.0);
+    VectorX<T> relaxation_times = 0.01 * Vector3<T>(1.0, 2.0, 3.0);
+    return typename SapHolonomicConstraint<T>::Parameters(
         std::move(impulse_lower_limits), std::move(impulse_upper_limits),
         std::move(stiffnesses), std::move(relaxation_times), beta);
   }
@@ -334,26 +344,16 @@ TEST_F(SapHolonomicConstraintTests, Clone) {
   auto clone =
       dynamic_pointer_cast<SapHolonomicConstraint<double>>(dut_->Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_constraint_equations(),
-            dut_->num_constraint_equations());
-  EXPECT_EQ(clone->num_cliques(), 1);
-  EXPECT_EQ(clone->first_clique(), clique1_);
-  EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->constraint_function(), dut_->constraint_function());
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(),
-            dut_->first_clique_jacobian().MakeDenseMatrix());
-  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
-  EXPECT_EQ(clone->bias(), dut_->bias());
-  const SapHolonomicConstraint<double>::Parameters& p = dut_->parameters();
-  EXPECT_EQ(clone->parameters().num_constraint_equations(),
-            p.num_constraint_equations());
-  EXPECT_EQ(clone->parameters().impulse_lower_limits(),
-            p.impulse_lower_limits());
-  EXPECT_EQ(clone->parameters().impulse_upper_limits(),
-            p.impulse_upper_limits());
-  EXPECT_EQ(clone->parameters().stiffnesses(), p.stiffnesses());
-  EXPECT_EQ(clone->parameters().relaxation_times(), p.relaxation_times());
-  EXPECT_EQ(clone->parameters().beta(), p.beta());
+  ExpectEqual(*dut_, *clone);
+
+  // Test ToDouble.
+  SapHolonomicConstraint<AutoDiffXd> c_ad(
+      g_, SapConstraintJacobian<AutoDiffXd>(clique1_, J_), b_,
+      MakeArbitraryParameters<AutoDiffXd>());
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapHolonomicConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(*dut_, *clone_from_ad);
 }
 
 }  // namespace

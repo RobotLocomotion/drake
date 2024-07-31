@@ -1,6 +1,5 @@
-load("//tools/skylark:drake_py.bzl", "drake_py_binary")
-load("//tools/skylark:py.bzl", "py_binary", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_library")
 load(
     "//tools/skylark:drake_runfiles_binary.bzl",
     "drake_runfiles_binary",
@@ -8,11 +7,10 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
-py_library(
+drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     visibility = [":__subpackages__"],
-    deps = ["//:module_py"],
 )
 
 alias(
@@ -155,6 +153,16 @@ config_setting(
 config_setting(
     name = "with_usd",
     values = {"define": "WITH_USD=ON"},
+)
+
+config_setting(
+    name = "ubuntu_jammy",
+    values = {"define": "UBUNTU_VERSION=22.04"},
+)
+
+config_setting(
+    name = "ubuntu_noble",
+    values = {"define": "UBUNTU_VERSION=24.04"},
 )
 
 add_lint_tests()

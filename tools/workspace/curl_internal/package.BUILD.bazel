@@ -1,14 +1,14 @@
 # -*- bazel -*-
 
-load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
-    "cmake_configure_file",
-)
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
 )
-load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
 load(
     "@drake//tools/workspace/curl_internal:cmakedefines.bzl",
     "CMAKE_DEFINES",
@@ -57,6 +57,7 @@ _SRCS = [
     "lib/curl_get_line.c",
     "lib/curl_memrchr.c",
     "lib/curl_trc.c",
+    "lib/cw-out.c",
     "lib/doh.c",
     "lib/dynbuf.c",
     "lib/dynhds.c",
@@ -100,6 +101,7 @@ _SRCS = [
     "lib/progress.c",
     "lib/rand.c",
     "lib/rename.c",
+    "lib/request.c",
     "lib/rtsp.c",
     "lib/select.c",
     "lib/sendf.c",
@@ -176,9 +178,11 @@ check_lists_consistency(
         "lib/curl_range.c",
         "lib/curl_rtmp.c",
         "lib/curl_sasl.c",
+        "lib/curl_sha512_256.c",
         "lib/curl_sspi.c",
         "lib/curl_threads.c",
         "lib/dict.c",
+        "lib/dllmain.c",
         "lib/file.c",
         "lib/fileinfo.c",
         "lib/ftp.c",

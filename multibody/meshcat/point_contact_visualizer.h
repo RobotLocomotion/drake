@@ -39,7 +39,7 @@ point-contact-specific unit test.
 */
 class PointContactVisualizer {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointContactVisualizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointContactVisualizer);
 
   /* Creates an instance of PointContactVisualizer.
   Note that not all fields of `params` are relevant nor used. */

@@ -35,7 +35,7 @@ namespace internal {
 // where Rx(θ), Ry(θ) and Rz(θ) correspond to the elemental rotations in amount
 // of θ about the Fx, Fy and Fz axes respectively. Zero θ₀, θ₁, θ₂ angles define
 // the "zero configuration" which corresponds to frames F and M being
-// coincident, see set_zero_state(). Angles θ₀, θ₁, θ₂ are defined to be
+// coincident, see SetZeroState(). Angles θ₀, θ₁, θ₂ are defined to be
 // positive according to the right-hand-rule with the thumb aligned in the
 // direction of their respective axes.
 //
@@ -61,7 +61,7 @@ namespace internal {
 template <typename T>
 class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyBallMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyBallMobilizer);
 
   // Constructor for an RpyBallMobilizer between an inboard frame F
   // inboard_frame_F and an outboard frame M outboard_frame_M granting
@@ -71,7 +71,9 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                    const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
-  bool has_quaternion_dofs() const override { return false; }
+  ~RpyBallMobilizer() final;
+
+  bool has_quaternion_dofs() const final { return false; }
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -105,7 +107,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   //   θ₂, described in this class's documentation, at entries angles(0),
   //   angles(1) and angles(2), respectively.
   // @returns a constant reference to this mobilizer.
-  const RpyBallMobilizer<T>& set_angles(
+  const RpyBallMobilizer<T>& SetAngles(
       systems::Context<T>* context,
       const Vector3<T>& angles) const;
 
@@ -141,7 +143,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   //   A vector in ℝ³ with the desired angular velocity of the outboard frame M
   //   in the inboard frame F, expressed in F.
   // @returns a constant reference to this mobilizer.
-  const RpyBallMobilizer<T>& set_angular_velocity(
+  const RpyBallMobilizer<T>& SetAngularVelocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const;
 
   // Stores in state the angular velocity w_FM of the outboard frame
@@ -156,7 +158,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   //   A vector in ℝ³ with the desired angular velocity of the outboard frame M
   //   in the inboard frame F, expressed in F.
   // @returns a constant reference to this mobilizer.
-  const RpyBallMobilizer<T>& set_angular_velocity(
+  const RpyBallMobilizer<T>& SetAngularVelocity(
       const systems::Context<T>& context, const Vector3<T>& w_FM,
       systems::State<T>* state) const;
 
@@ -275,4 +277,4 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::RpyBallMobilizer)
+    class ::drake::multibody::internal::RpyBallMobilizer);

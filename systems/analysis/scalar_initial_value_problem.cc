@@ -40,4 +40,4 @@ std::unique_ptr<ScalarDenseOutput<T>> ScalarInitialValueProblem<T>::DenseSolve(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::ScalarInitialValueProblem)
+    class drake::systems::ScalarInitialValueProblem);

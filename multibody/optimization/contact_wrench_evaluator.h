@@ -18,7 +18,7 @@ namespace multibody {
 // point of geometry B from geometry A, expressed in the world frame.
 class ContactWrenchEvaluator : public solvers::EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchEvaluator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchEvaluator);
 
   /**
    * @anchor ComposeVariableValues
@@ -150,7 +150,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
 class ContactWrenchFromForceInWorldFrameEvaluator final
     : public ContactWrenchEvaluator {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchFromForceInWorldFrameEvaluator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchFromForceInWorldFrameEvaluator);
 
   /**
    * @param plant The MultibodyPlant on which the contact wrench is computed.

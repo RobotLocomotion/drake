@@ -57,7 +57,7 @@ struct CalcLayersData;
 template <typename T>
 class MultilayerPerceptron final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultilayerPerceptron)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultilayerPerceptron);
 
   /** Constructs the MLP with the same activation type for every layer (except
    the output).
@@ -306,4 +306,4 @@ class MultilayerPerceptron final : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::MultilayerPerceptron)
+    class ::drake::systems::MultilayerPerceptron);

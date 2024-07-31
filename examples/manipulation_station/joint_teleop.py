@@ -11,8 +11,6 @@ import webbrowser
 
 import numpy as np
 
-from drake.examples.manipulation_station.schunk_wsg_buttons import \
-    SchunkWsgButtons
 from pydrake.examples import (
     CreateClutterClearingYcbObjectList, ManipulationStation,
     ManipulationStationHardwareInterface)
@@ -23,6 +21,8 @@ from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.geometry import Meshcat, MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
+
+from examples.manipulation_station.schunk_wsg_buttons import SchunkWsgButtons
 
 
 def main():

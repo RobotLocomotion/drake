@@ -43,7 +43,7 @@ namespace internal {
  contact point, marked with "X". */
 class ContactParticipation {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactParticipation)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactParticipation);
 
   /* Constructs a ContactParticipation for a deformable geometry with the
    given number of vertices in its mesh representation.
@@ -130,7 +130,7 @@ class ContactParticipation {
 template <typename T>
 class DeformableContactSurface {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableContactSurface)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableContactSurface);
 
   /* Constructs a deformable contact surface with the given data.
    @param[in] id_A
@@ -277,7 +277,7 @@ class DeformableContactSurface {
 template <typename T>
 class DeformableContact {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableContact)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableContact);
 
   DeformableContact() = default;
 

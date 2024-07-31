@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -10,9 +11,8 @@ load(
     "drake_py_library",
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
-load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_library(
     name = "manipulation_station",
@@ -152,7 +152,6 @@ drake_cc_googletest(
 drake_py_library(
     name = "schunk_wsg_buttons",
     srcs = ["schunk_wsg_buttons.py"],
-    visibility = ["//visibility:private"],
     deps = [
         "//bindings/pydrake",
     ],

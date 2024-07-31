@@ -5,21 +5,12 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/parallelism.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace systems {
 namespace analysis {
-
-DRAKE_DEPRECATED("2024-05-01",
-                 "Use either `drake::Parallelism::None()` or `false` instead.")
-constexpr int kNoConcurrency = 1;
-
-DRAKE_DEPRECATED("2024-05-01",
-                 "Use either `drake::Parallelism::Max()` or `true` instead.")
-constexpr int kUseHardwareConcurrency = -1;
 
 /***
  * Defines a factory method that constructs a Simulator (with an owned System)
@@ -110,7 +101,7 @@ double RandomSimulation(const SimulatorFactory& make_simulator,
  * reproducing the simulation.
  */
 struct RandomSimulationResult {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomSimulationResult)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomSimulationResult);
 
   explicit RandomSimulationResult(const RandomGenerator& generator,
                                   double value = 0.0)
@@ -175,14 +166,6 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     double final_time, int num_samples, RandomGenerator* generator = nullptr,
     Parallelism parallelism = false);
-
-DRAKE_DEPRECATED("2024-05-01",
-                 "The `num_parallel_executions` argument is deprecated. "
-                 "Use the `parallelism` argument, instead.")
-std::vector<RandomSimulationResult> MonteCarloSimulation(
-    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    double final_time, int num_samples, RandomGenerator* generator = nullptr,
-    int num_parallel_executions = 1);
 
 // The below functions are exposed for unit testing only.
 namespace internal {

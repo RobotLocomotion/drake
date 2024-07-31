@@ -1,8 +1,12 @@
 # This file is licensed under the MIT-0 License.
 # See LICENSE-MIT-0.txt in the current directory.
 
-# This demo simulation shows an IIWA arm with an attached WSG gripper.
+# This demo simulation shows an IIWA arm with an attached WSG gripper,
+# nearby a table with a pepper atop it.
 Demo:
+  scene_graph_config:
+    default_proximity_properties:
+      compliance_type: "compliant"
   directives:
   - add_model:
       name: amazon_table
@@ -45,6 +49,16 @@ Demo:
   - add_weld:
       parent: wsg_on_iiwa
       child: wsg::body
+  - add_model:
+      name: bell_pepper
+      file: package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf
+      default_free_body_pose:
+        flush_bottom_center__z_up:
+          base_frame: amazon_table::amazon_table
+          # We pose the pepper in the air above the table so that it won't start
+          # in penetration. After the simulation starts, it will fall and come
+          # to rest on the table.
+          translation: [0, 0.10, 0.20]
   lcm_buses:
     driver_traffic:
       # Use a non-default LCM url to communicate with the robot.

@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/contact_solvers/sap/expect_equal.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
 using drake::math::RotationMatrix;
@@ -61,6 +62,13 @@ typename SapDistanceConstraint<T>::Kinematics MakeArbitraryKinematics(
                     : SapConstraintJacobian<T>(clique0, J32, clique1, J34);
   return typename SapDistanceConstraint<T>::Kinematics{
       objectA, p_WP, p_AP_W, objectB, p_WQ, p_BQ_W, length, J_PQ_W};
+}
+
+void ExpectEqual(const SapDistanceConstraint<double>& c1,
+                 const SapDistanceConstraint<double>& c2) {
+  ExpectBaseIsEqual(c1, c2);
+  EXPECT_EQ(c1.kinematics(), c2.kinematics());
+  EXPECT_EQ(c1.compliance_parameters(), c2.compliance_parameters());
 }
 
 GTEST_TEST(SapDistanceConstraint, SingleCliqueConstraint) {
@@ -159,24 +167,20 @@ GTEST_TEST(SapDistanceConstraint, SingleCliqueConstraintClone) {
       MakeArbitraryKinematics(num_cliques);
   SapDistanceConstraint<double> c(kinematics, parameters);
 
-  const Vector3d p = kinematics.p_WQ() - kinematics.p_WP();
-  const Vector3d p_hat = p.normalized();
-
   // N.B. Here we dynamic cast to the derived type so that we can test that the
   // clone is a deep-copy of the original constraint.
   auto clone = dynamic_pointer_cast<SapDistanceConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), 2);
-  EXPECT_EQ(clone->num_constraint_equations(), 1);
-  EXPECT_EQ(clone->num_cliques(), 1);
-  EXPECT_EQ(clone->first_clique(), kinematics.jacobian().clique(0));
-  EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(),
-            p_hat.transpose() * J32);
-  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
-  EXPECT_EQ(clone->length(), kinematics.length());
-  EXPECT_EQ(clone->compliance_parameters().stiffness(), parameters.stiffness());
-  EXPECT_EQ(clone->compliance_parameters().damping(), parameters.damping());
+  ExpectEqual(c, *clone);
+
+  // Test ToDouble.
+  SapDistanceConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryKinematics<AutoDiffXd>(num_cliques),
+      MakeArbitraryParameters<AutoDiffXd>());
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapDistanceConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapDistanceConstraint, TwoCliquesConstraintClone) {
@@ -187,23 +191,18 @@ GTEST_TEST(SapDistanceConstraint, TwoCliquesConstraintClone) {
       MakeArbitraryKinematics(num_cliques);
   SapDistanceConstraint<double> c(kinematics, parameters);
 
-  const Vector3d p = kinematics.p_WQ() - kinematics.p_WP();
-  const Vector3d p_hat = p.normalized();
-
   auto clone = dynamic_pointer_cast<SapDistanceConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), 2);
-  EXPECT_EQ(clone->num_constraint_equations(), 1);
-  EXPECT_EQ(clone->num_cliques(), 2);
-  EXPECT_EQ(clone->first_clique(), kinematics.jacobian().clique(0));
-  EXPECT_EQ(clone->second_clique(), kinematics.jacobian().clique(1));
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(),
-            p_hat.transpose() * J32);
-  EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(),
-            p_hat.transpose() * J34);
-  EXPECT_EQ(clone->length(), kinematics.length());
-  EXPECT_EQ(clone->compliance_parameters().stiffness(), parameters.stiffness());
-  EXPECT_EQ(clone->compliance_parameters().damping(), parameters.damping());
+  ExpectEqual(c, *clone);
+
+  // Test ToDouble.
+  SapDistanceConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryKinematics<AutoDiffXd>(num_cliques),
+      MakeArbitraryParameters<AutoDiffXd>());
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapDistanceConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapDistanceConstraint, AccumulateSpatialImpulses) {

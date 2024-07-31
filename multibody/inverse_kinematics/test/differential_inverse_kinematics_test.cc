@@ -15,6 +15,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/osqp_solver.h"
 
 namespace drake {
 namespace multibody {
@@ -175,6 +176,14 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
   result = DoDiffIKForSpatialVelocity(V_WE_W);
   drake::log()->info("result.status = {}", result.status);
   CheckPositiveResult(V_WE_W, result);
+
+  // Setting an impossibly tight solver option nixes the solution. This proves
+  // that we're passing through the custom solver options correctly.
+  params_->get_mutable_solver_options().SetOption(solvers::OsqpSolver::id(),
+                                                  "max_iter", 0);
+  result = DoDiffIKForSpatialVelocity(V_WE_W);
+  EXPECT_EQ(result.status,
+            DifferentialInverseKinematicsStatus::kNoSolutionFound);
 }
 
 TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {

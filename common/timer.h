@@ -26,14 +26,14 @@ class Timer {
   virtual double Tick() = 0;
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Timer)  // protected from slicing
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Timer);  // protected from slicing
 };
 
 /// Implementation of timing utility that uses monotonic
 /// std::chrono::steady_clock.
 class SteadyTimer final : public Timer {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SteadyTimer)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SteadyTimer);
   SteadyTimer();
   void Start() final;
   double Tick() final;
@@ -42,5 +42,21 @@ class SteadyTimer final : public Timer {
   using clock = std::chrono::steady_clock;
   clock::time_point start_time_;
 };
+
+/// Implementation of timing for use with unit tests that control time manually.
+class ManualTimer final : public Timer {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ManualTimer);
+  ManualTimer();
+  void Start() final;
+  double Tick() final;
+
+  /// Sets the return value of Tick().
+  void set_tick(double tick) { tick_ = tick; }
+
+ private:
+  double tick_{};
+};
+
 
 }  // namespace drake

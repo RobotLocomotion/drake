@@ -8,55 +8,23 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 namespace {
 void ParseQuadraticCosts(const MathematicalProgram& prog,
-                         Eigen::SparseMatrix<c_float>* P,
+                         Eigen::SparseMatrix<c_float>* P_upper,
                          std::vector<c_float>* q, double* constant_cost_term) {
   DRAKE_ASSERT(static_cast<int>(q->size()) == prog.num_vars());
-
-  // Loop through each quadratic costs in prog, and compute the Hessian matrix
-  // P, the linear cost q, and the constant cost term.
-  std::vector<Eigen::Triplet<c_float>> P_triplets;
-  for (const auto& quadratic_cost : prog.quadratic_costs()) {
-    const VectorXDecisionVariable& x = quadratic_cost.variables();
-    // x_indices are the indices of the variables x (the variables bound with
-    // this quadratic cost) in the program decision variables.
-    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
-
-    // Add quadratic_cost.Q to the Hessian P.
-    // Since OSQP 0.6.0 the P matrix is required to be upper triangular, so
-    // we only add upper triangular entries to P_triplets.
-    const Eigen::MatrixXd& Q = quadratic_cost.evaluator()->Q();
-    for (int col = 0; col < Q.cols(); ++col) {
-      for (int row = 0; (row <= col) && (row < Q.rows()); ++row) {
-        const double value = Q(row, col);
-        if (value == 0.0) {
-          continue;
-        }
-        const int x_row = x_indices[row];
-        const int x_col = x_indices[col];
-        P_triplets.emplace_back(x_row, x_col, static_cast<c_float>(value));
-      }
-    }
-
-    // Add quadratic_cost.b to the linear cost term q.
-    for (int i = 0; i < x.rows(); ++i) {
-      q->at(x_indices[i]) += quadratic_cost.evaluator()->b()(i);
-    }
-
-    // Add quadratic_cost.c to constant term
-    *constant_cost_term += quadratic_cost.evaluator()->c();
-  }
-
+  std::vector<Eigen::Triplet<c_float>> P_upper_triplets;
+  internal::ParseQuadraticCosts(prog, &P_upper_triplets, q, constant_cost_term);
   // Scale the matrix P in the cost.
   // Note that the linear term is scaled in ParseLinearCosts().
   const auto& scale_map = prog.GetVariableScaling();
   if (!scale_map.empty()) {
-    for (auto& triplet : P_triplets) {
+    for (auto& triplet : P_upper_triplets) {
       // Column
       const auto column = scale_map.find(triplet.col());
       if (column != scale_map.end()) {
@@ -72,28 +40,15 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
     }
   }
 
-  P->resize(prog.num_vars(), prog.num_vars());
-  P->setFromTriplets(P_triplets.begin(), P_triplets.end());
+  P_upper->resize(prog.num_vars(), prog.num_vars());
+  P_upper->setFromTriplets(P_upper_triplets.begin(), P_upper_triplets.end());
 }
 
 void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
                       double* constant_cost_term) {
   // Add the linear costs to the osqp cost.
   DRAKE_ASSERT(static_cast<int>(q->size()) == prog.num_vars());
-
-  // Loop over the linear costs stored inside prog.
-  for (const auto& linear_cost : prog.linear_costs()) {
-    for (int i = 0; i < static_cast<int>(linear_cost.GetNumElements()); ++i) {
-      // Append the linear cost term to q.
-      if (linear_cost.evaluator()->a()(i) != 0) {
-        const int x_index =
-            prog.FindDecisionVariableIndex(linear_cost.variables()(i));
-        q->at(x_index) += linear_cost.evaluator()->a()(i);
-      }
-    }
-    // Add the constant cost term to constant_cost_term.
-    *constant_cost_term += linear_cost.evaluator()->b();
-  }
+  internal::ParseLinearCosts(prog, q, constant_cost_term);
 
   // Scale the vector q in the cost.
   const auto& scale_map = prog.GetVariableScaling();
@@ -292,8 +247,9 @@ void SetOsqpSolverSettings(const SolverOptions& solver_options,
   SetOsqpSolverSetting(options_int, "warm_start", &(settings->warm_start));
   SetOsqpSolverSetting(options_int, "scaling", &(settings->scaling));
   SetOsqpSolverSetting(options_int, "adaptive_rho", &(settings->adaptive_rho));
-  SetOsqpSolverSetting(options_double, "adaptive_rho_interval",
-                       &(settings->adaptive_rho_interval));
+  SetOsqpSolverSettingWithDefaultValue(options_int, "adaptive_rho_interval",
+                                       &(settings->adaptive_rho_interval),
+                                       ADAPTIVE_RHO_FIXED);
   SetOsqpSolverSetting(options_double, "adaptive_rho_tolerance",
                        &(settings->adaptive_rho_tolerance));
   SetOsqpSolverSetting(options_double, "adaptive_rho_fraction",
@@ -338,11 +294,12 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
   // OSQP is written in C, so this function will be in C style.
 
   // Get the cost for the QP.
-  Eigen::SparseMatrix<c_float> P_sparse;
+  // Since OSQP 0.6.0 the P matrix is required to be upper triangular.
+  Eigen::SparseMatrix<c_float> P_upper_sparse;
   std::vector<c_float> q(prog.num_vars(), 0);
   double constant_cost_term{0};
 
-  ParseQuadraticCosts(prog, &P_sparse, &q, &constant_cost_term);
+  ParseQuadraticCosts(prog, &P_upper_sparse, &q, &constant_cost_term);
   ParseLinearCosts(prog, &q, &constant_cost_term);
 
   // linear_constraint_start_row[binding] stores the starting row index in A
@@ -362,7 +319,7 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
 
   data->n = prog.num_vars();
   data->m = A_sparse.rows();
-  data->P = EigenSparseToCSC(P_sparse);
+  data->P = EigenSparseToCSC(P_upper_sparse);
   data->q = q.data();
   data->A = EigenSparseToCSC(A_sparse);
   data->l = l.data();
@@ -389,8 +346,7 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   if (!solution_result && initial_guess.array().isFinite().all()) {
-    const c_int osqp_warm_err = osqp_warm_start_x(
-        work, initial_guess.data());
+    const c_int osqp_warm_err = osqp_warm_start_x(work, initial_guess.data());
     if (osqp_warm_err != 0) {
       solution_result = SolutionResult::kInvalidInput;
     }
@@ -417,6 +373,7 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
     solver_details.solve_time = work->info->solve_time;
     solver_details.polish_time = work->info->polish_time;
     solver_details.run_time = work->info->run_time;
+    solver_details.rho_updates = work->info->rho_updates;
 
     switch (work->info->status_val) {
       case OSQP_SOLVED:

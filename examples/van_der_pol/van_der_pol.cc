@@ -90,4 +90,4 @@ void VanDerPolOscillator<T>::CopyPositionToOutput(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::examples::van_der_pol::VanDerPolOscillator)
+    class ::drake::examples::van_der_pol::VanDerPolOscillator);

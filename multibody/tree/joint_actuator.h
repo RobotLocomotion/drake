@@ -39,7 +39,7 @@ struct PdControllerGains {
 template <typename T>
 class JointActuator final : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator);
 
   /// Creates an actuator for `joint` with the given `name`.
   /// The name must be unique within the given multibody model. This is
@@ -57,6 +57,8 @@ class JointActuator final : public MultibodyElement<T> {
   ///   for prismatic joints.
   JointActuator(const std::string& name, const Joint<T>& joint,
                 double effort_limit = std::numeric_limits<double>::infinity());
+
+  ~JointActuator() final;
 
   /// Returns this element's unique index.
   JointActuatorIndex index() const {
@@ -122,8 +124,9 @@ class JointActuator final : public MultibodyElement<T> {
   ///   sub-class documentation.
   /// @param[in,out] u
   ///   Actuation values for the entire plant model to which `this` actuator
-  ///   belongs to, indexed by JointActuatorIndex. Only values corresponding to
-  ///   this actuator are changed.
+  ///   belongs to. The actuation value in `u` for `this` actuator must be found
+  ///   at offset input_start(). Only values corresponding to this actuator are
+  ///   changed.
   /// @throws std::exception if
   ///   `u_actuator.size() != this->num_inputs()`.
   /// @throws std::exception if u is nullptr.
@@ -226,6 +229,8 @@ class JointActuator final : public MultibodyElement<T> {
   /// Returns the associated rotor inertia value for this actuator, stored in
   /// `context`.
   /// See @ref reflected_inertia.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   const T& rotor_inertia(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(rotor_inertia_parameter_index_)[0];
   }
@@ -233,6 +238,8 @@ class JointActuator final : public MultibodyElement<T> {
   /// Returns the associated gear ratio value for this actuator, stored in
   /// `context`.
   /// See @ref reflected_inertia.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   const T& gear_ratio(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(gear_ratio_parameter_index_)[0];
   }
@@ -254,6 +261,8 @@ class JointActuator final : public MultibodyElement<T> {
 
   /// Calculates the reflected inertia value for this actuator in `context`.
   /// See @ref reflected_inertia.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   T calc_reflected_inertia(const systems::Context<T>& context) const {
     const T& rho = gear_ratio(context);
     const T& Ir = rotor_inertia(context);
@@ -268,8 +277,7 @@ class JointActuator final : public MultibodyElement<T> {
   /// modeling of PD controlled actuators.
   ///@{
 
-  // TODO(amcastro-tri): Place gains in the context as parameters to allow
-  // changing them post-finalize.
+  // TODO(amcastro-tri): Place gains in the context as parameters.
   /// Set controller gains for this joint actuator.
   /// This enables the modeling of a simple PD controller of the form:
   ///   ũ = -Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff
@@ -283,10 +291,15 @@ class JointActuator final : public MultibodyElement<T> {
   /// velocity are specified through
   /// MultibodyPlant::get_desired_state_input_port().
   ///
+  /// @pre The MultibodyPlant associated with this actuator has not yet
+  /// allocated a Context. In other words, although gains can be changed
+  /// post-Finalize, they cannot be changed during simulation.
+  ///
   /// @throws iff the proportional gain is not strictly positive or if the
   /// derivative gain is negative.
-  /// @throws iff the owning MultibodyPlant is finalized. See
-  /// MultibodyPlant::Finalize().
+  /// @throws iff the owning MultibodyPlant is finalized and no gains were set
+  /// pre-finalize. In other words, *editing* gains post-finalize is fine, but
+  /// *adding* gains post-finalize is an error. See MultibodyPlant::Finalize().
   void set_controller_gains(PdControllerGains gains);
 
   /// Returns `true` if controller gains have been specified with a call to
@@ -405,4 +418,4 @@ class JointActuator final : public MultibodyElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::JointActuator)
+    class ::drake::multibody::JointActuator);

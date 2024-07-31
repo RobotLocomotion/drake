@@ -138,7 +138,7 @@ class ShaderProgram {
   void SetProjectionMatrix(const Eigen::Matrix4f& T_DC) const;
 
   /* Sets the OpenGl model view matrix (and allows the shader to do any other
-   (instance, camera)-dependent configuration). The model view matrix X_CM
+   (instance, camera)-dependent configuration). The model view matrix T_CM
    transforms a vertex from the model frame M to the camera frame C.
 
    This method invokes DoSetModelViewMatrix() with many of the component
@@ -152,12 +152,13 @@ class ShaderProgram {
    z-scale values along the diagonal).
 
    @param X_CW   The transform relating the world frame and the camera frame.
-   @param X_WG   The pose of the geometry frame relative to the world frame.
-   @param scale  The per-axis scale of the geometry (applied to the axes of the
-                 geometry frame).  */
+   @param T_WM   The transform to map the model's vertex positions into the
+                 world frame. Not necessarily a rigid transform.
+   @param N_WM   The transform to map the model's vertex normals into the
+                 world frame.  */
   void SetModelViewMatrix(const Eigen::Matrix4f& X_CW,
-                          const math::RigidTransformd& X_WG,
-                          const Eigen::Vector3d& scale) const;
+                          const Eigen::Matrix4f& T_WM,
+                          const Eigen::Matrix3f& N_WM) const;
 
   /* Provides the location of the named shader uniform parameter.
    @throws std::exception if the named uniform isn't part of the program. */
@@ -219,7 +220,7 @@ class ShaderProgram {
 
   /* The copy and move semantics are only made available for sub-classes so
    they can easily implement DoClone.  */
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShaderProgram)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShaderProgram);
 
   /* Derived classes should clone themselves.  */
   virtual std::unique_ptr<ShaderProgram> DoClone() const = 0;
@@ -232,22 +233,21 @@ class ShaderProgram {
     return std::nullopt;
   }
 
-  /* Derived classes can set additional state based on a camera-instance pair.
-   See SetModelViewMatrix() docs for the explanation of the difference between
-   geometry frame G, model frame M, and input parameter `scale`.
+  /* Derived classes can set additional state based on model instance
+   transforms.
 
    @param X_CW     The relative transform between camera and world frames. This
                    camera frame is different than the Cgl frame used in the
                    actual model view matrix, C is the physical frame and Cgl
                    accounts for OpenGL conventions.
    @param T_WM     The transform relating the model and world frames. For a
-                   geometry with identity scale, it should be equal to X_WG.
-   @param X_WG     The pose of the geometry in the world frame.
-   @param scale    The per-axis scale of the geometry.  */
+                   model with no scale (and no poses of its constituent parts),
+                   this would be equal to the X_WG pose provided by SceneGraph.
+   @param N_WM     Derived from T_WM, it transforms the model's normals into the
+                   world frame.  */
   virtual void DoSetModelViewMatrix(const Eigen::Matrix4f& /* X_CW */,
                                     const Eigen::Matrix4f& /* T_WM */,
-                                    const Eigen::Matrix4f& /* X_WG */,
-                                    const Eigen::Vector3d& /* scale */) const {}
+                                    const Eigen::Matrix3f& /* N_WM */) const {}
 
  private:
   friend class ShaderProgramTest;

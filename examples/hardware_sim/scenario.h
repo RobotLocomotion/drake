@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "drake/common/name_value.h"
+#include "drake/geometry/scene_graph_config.h"
 #include "drake/lcm/drake_lcm_params.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_driver.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver.h"
@@ -35,6 +36,7 @@ struct Scenario {
     a->Visit(DRAKE_NVP(simulation_duration));
     a->Visit(DRAKE_NVP(simulator_config));
     a->Visit(DRAKE_NVP(plant_config));
+    a->Visit(DRAKE_NVP(scene_graph_config));
     a->Visit(DRAKE_NVP(directives));
     a->Visit(DRAKE_NVP(lcm_buses));
     a->Visit(DRAKE_NVP(model_drivers));
@@ -60,6 +62,9 @@ struct Scenario {
 
   /* Plant configuration (time step and contact parameters). */
   multibody::MultibodyPlantConfig plant_config;
+
+  /* SceneGraph configuration. */
+  geometry::SceneGraphConfig scene_graph_config;
 
   /* All of the fully deterministic elements of the simulation. */
   std::vector<multibody::parsing::ModelDirective> directives;

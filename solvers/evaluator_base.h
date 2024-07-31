@@ -31,7 +31,7 @@ namespace solvers {
  */
 class EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorBase);
 
   virtual ~EvaluatorBase() {}
 
@@ -237,7 +237,7 @@ std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e);
  */
 class PolynomialEvaluator : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialEvaluator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialEvaluator);
 
   /**
    * Constructs a polynomial evaluator given a set of polynomials and the
@@ -289,7 +289,7 @@ class PolynomialEvaluator : public EvaluatorBase {
 template <typename F>
 class FunctionEvaluator : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FunctionEvaluator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FunctionEvaluator);
 
   /**
    * Constructs an instance by copying from an lvalue or rvalue of `F`.
@@ -355,7 +355,7 @@ std::shared_ptr<EvaluatorBase> MakeFunctionEvaluator(FF&& f) {
  */
 class VisualizationCallback : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VisualizationCallback)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VisualizationCallback);
 
   typedef std::function<void(const Eigen::Ref<const Eigen::VectorXd>&)>
       CallbackFunction;

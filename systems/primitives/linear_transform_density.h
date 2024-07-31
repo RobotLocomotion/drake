@@ -46,7 +46,7 @@ namespace systems {
 template <typename T>
 class LinearTransformDensity final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearTransformDensity)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearTransformDensity);
 
   /**
    * @param distribution The random input w_in should satisfy this distribution.

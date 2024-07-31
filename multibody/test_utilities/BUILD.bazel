@@ -1,9 +1,9 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -14,7 +14,7 @@ drake_cc_library(
     hdrs = ["add_fixed_objects_to_plant.h"],
     data = [
         "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/simple_gripper:models",
     ],
     deps = [
         "//common:find_resource",
@@ -33,6 +33,24 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_model",
+    testonly = 1,
+    srcs = ["robot_model.cc"],
+    hdrs = ["robot_model.h"],
+    data = [
+        "@drake_models//:dishes",
+        "@drake_models//:iiwa_description",
+    ],
+    deps = [
+        "//common/test_utilities:maybe_pause_for_user",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/plant:compliant_contact_manager_tester",
+        "//visualization:visualization_config_functions",
     ],
 )
 

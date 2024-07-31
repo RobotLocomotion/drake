@@ -113,7 +113,7 @@ Drake for readability.
 */
 class Formula {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Formula)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Formula);
 
   /** Default constructor.  Sets the value to Formula::False, to be consistent
    * with value-initialized `bool`s.

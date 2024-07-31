@@ -93,7 +93,7 @@ Refer to https://yaml.org/spec/1.2.2/#tags for details.
 */
 class Node final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Node)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Node);
 
   /* Returns a Scalar node with the given value.
   Note that even though Drake most often uses "scalar" to refer to a

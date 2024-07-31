@@ -413,7 +413,7 @@ namespace {
 template <typename T>
 class Controller final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Controller)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Controller);
 
   // Constructs the controller, and assumes ownership of the required components
   // of the FiniteHorizonLinearQuadraticRegulatorResult.  This is appropriate,

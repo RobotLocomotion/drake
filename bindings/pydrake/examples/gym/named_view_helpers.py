@@ -4,15 +4,14 @@ to print and access vectors by state or actuator name.
 """
 from pydrake.common.containers import namedview
 from pydrake.multibody.tree import (
-    JointActuatorIndex,
     JointIndex,
     )
 
 
 def MakeNamedViewActuation(plant, view_name):
     names = [None] * plant.get_actuation_input_port().size()
-    for ind in range(plant.num_actuators()):
-        actuator = plant.get_joint_actuator(JointActuatorIndex(ind))
+    for ind in plant.GetJointActuatorIndices():
+        actuator = plant.get_joint_actuator(ind)
         assert actuator.num_inputs() == 1
         names[actuator.input_start()] = actuator.name()
     return namedview(view_name, names)
@@ -24,7 +23,7 @@ def MakeNamedViewPositions(plant,
                            view_name,
                            add_suffix_if_single_position=False):
     names = [None] * plant.num_positions()
-    for ind in range(plant.num_joints()):
+    for ind in plant.GetJointIndices():
         joint = plant.get_joint(JointIndex(ind))
         if joint.num_positions() == 1 and not add_suffix_if_single_position:
             names[joint.position_start()] = joint.name()
@@ -45,7 +44,7 @@ def MakeNamedViewVelocities(plant,
                             view_name,
                             add_suffix_if_single_velocity=False):
     names = [None] * plant.num_velocities()
-    for ind in range(plant.num_joints()):
+    for ind in plant.GetJointIndices():
         joint = plant.get_joint(JointIndex(ind))
         if joint.num_velocities() == 1 and not add_suffix_if_single_velocity:
             names[joint.velocity_start()] = joint.name()

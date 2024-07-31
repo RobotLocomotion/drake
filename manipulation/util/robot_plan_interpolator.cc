@@ -47,7 +47,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(const std::string& model_path,
   // Search for any bodies with no parent.  We'll weld those to the world.
   std::set<BodyIndex> parent_bodies;
   std::set<BodyIndex> child_bodies;
-  for (JointIndex i(0); i < plant_.num_joints(); ++i) {
+  for (JointIndex i : plant_.GetJointIndices()) {
     const multibody::Joint<double>& joint = plant_.get_joint(i);
     if (joint.parent_body().index() == plant_.world_body().index()) {
       // Nothing to weld, we're connected to the world.

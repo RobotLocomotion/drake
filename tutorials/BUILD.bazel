@@ -1,7 +1,7 @@
-load("//tools/skylark:drake_py.bzl", "drake_py_test")
-load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_test")
 
 drake_jupyter_py_binary(
     name = "index",
@@ -115,6 +115,9 @@ drake_jupyter_py_binary(
         "@drake_models//:dishes",
         "@drake_models//:veggies",
     ],
+    # TODO(#21380) Revisit timeout value when deferred reification is
+    # implemented.
+    test_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
@@ -168,6 +171,14 @@ drake_jupyter_py_binary(
     ],
 )
 
+drake_jupyter_py_binary(
+    name = "custom_gradients",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 _NOTEBOOKS = glob(
     ["*.ipynb"],
     allow_empty = False,
@@ -179,7 +190,7 @@ drake_py_test(
     data = _NOTEBOOKS,
     tags = ["lint"],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

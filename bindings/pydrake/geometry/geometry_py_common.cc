@@ -517,8 +517,7 @@ void DoScalarIndependentDefinitions(py::module m) {
       doc.MakePhongIllustrationProperties.doc);
 
   m.def("AddContactMaterial",
-      py::overload_cast<const std::optional<double>&,
-          const std::optional<double>&,
+      py::overload_cast<std::optional<double>, std::optional<double>,
           const std::optional<multibody::CoulombFriction<double>>&,
           ProximityProperties*>(&AddContactMaterial),
       py::arg("dissipation"), py::arg("point_stiffness"), py::arg("friction"),
@@ -528,9 +527,8 @@ void DoScalarIndependentDefinitions(py::module m) {
   // named arguments to disambiguate which arguments get which values.
   m.def(
       "AddContactMaterial",
-      [](ProximityProperties* properties,
-          const std::optional<double>& dissipation,
-          const std::optional<double>& point_stiffness,
+      [](ProximityProperties* properties, std::optional<double> dissipation,
+          std::optional<double> point_stiffness,
           const std::optional<multibody::CoulombFriction<double>>& friction) {
         AddContactMaterial(dissipation, point_stiffness, friction, properties);
       },

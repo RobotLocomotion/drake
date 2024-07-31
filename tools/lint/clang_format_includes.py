@@ -8,8 +8,8 @@ import argparse
 import os
 import sys
 
-from drake.tools.lint.formatter import IncludeFormatter
-from drake.tools.lint.util import find_all_sources
+from tools.lint.formatter import IncludeFormatter
+from tools.lint.util import find_all_sources
 
 
 def main(workspace_name="drake"):

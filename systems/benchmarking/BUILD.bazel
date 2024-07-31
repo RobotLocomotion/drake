@@ -1,9 +1,9 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/performance:defs.bzl",
     "drake_cc_googlebench_binary",
     "drake_py_experiment_binary",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 

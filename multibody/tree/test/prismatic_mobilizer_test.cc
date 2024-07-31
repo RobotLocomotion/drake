@@ -59,16 +59,16 @@ TEST_F(PrismaticMobilizerTest, StateAccess) {
   const double some_value1 = 1.5;
   const double some_value2 = std::sqrt(2);
   // Verify we can set a prismatic mobilizer position given the model's context.
-  slider_->set_translation(context_.get(), some_value1);
+  slider_->SetTranslation(context_.get(), some_value1);
   EXPECT_EQ(slider_->get_translation(*context_), some_value1);
-  slider_->set_translation(context_.get(), some_value2);
+  slider_->SetTranslation(context_.get(), some_value2);
   EXPECT_EQ(slider_->get_translation(*context_), some_value2);
 
   // Verify we can set a prismatic mobilizer position rate given the model's
   // context.
-  slider_->set_translation_rate(context_.get(), some_value1);
+  slider_->SetTranslationRate(context_.get(), some_value1);
   EXPECT_EQ(slider_->get_translation_rate(*context_), some_value1);
-  slider_->set_translation_rate(context_.get(), some_value2);
+  slider_->SetTranslationRate(context_.get(), some_value2);
   EXPECT_EQ(slider_->get_translation_rate(*context_), some_value2);
 }
 
@@ -76,21 +76,21 @@ TEST_F(PrismaticMobilizerTest, ZeroState) {
   const double some_value1 = 1.5;
   const double some_value2 = std::sqrt(2);
   // Set the state to some arbitrary non-zero value.
-  slider_->set_translation(context_.get(), some_value1);
+  slider_->SetTranslation(context_.get(), some_value1);
   EXPECT_EQ(slider_->get_translation(*context_), some_value1);
-  slider_->set_translation_rate(context_.get(), some_value2);
+  slider_->SetTranslationRate(context_.get(), some_value2);
   EXPECT_EQ(slider_->get_translation_rate(*context_), some_value2);
 
   // Set the "zero state" for this mobilizer, which does happen to be that of
   // zero position and velocity.
-  slider_->set_zero_state(*context_, &context_->get_mutable_state());
+  slider_->SetZeroState(*context_, &context_->get_mutable_state());
   EXPECT_EQ(slider_->get_translation(*context_), 0);
   EXPECT_EQ(slider_->get_translation_rate(*context_), 0);
 }
 
 TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
   const double translation = 1.5;
-  slider_->set_translation(context_.get(), translation);
+  slider_->SetTranslation(context_.get(), translation);
   const math::RigidTransformd X_FM(
       slider_->CalcAcrossMobilizerTransform(*context_));
 
@@ -179,7 +179,7 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
 
 TEST_F(PrismaticMobilizerTest, MapUsesN) {
   // Set an arbitrary "non-zero" state.
-  slider_->set_translation(context_.get(), 1.5);
+  slider_->SetTranslation(context_.get(), 1.5);
 
   // Set arbitrary v and MapVelocityToQDot.
   Vector1d v(1.5);
@@ -196,7 +196,7 @@ TEST_F(PrismaticMobilizerTest, MapUsesN) {
 
 TEST_F(PrismaticMobilizerTest, MapUsesNplus) {
   // Set an arbitrary "non-zero" state.
-  slider_->set_translation(context_.get(), 1.5);
+  slider_->SetTranslation(context_.get(), 1.5);
 
   // Set arbitrary qdot and MapQDotToVelocity.
   Vector1d qdot(1.5);

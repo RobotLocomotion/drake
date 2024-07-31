@@ -38,7 +38,7 @@ namespace sensors {
 /// @note The output message's header field `seq` is always zero.
 class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageToLcmImageArrayT)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageToLcmImageArrayT);
 
   /// Constructs an empty system with no input ports.
   /// After construction, use DeclareImageInputPort() to add inputs.

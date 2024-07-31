@@ -8,6 +8,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+BodyNode<T>::~BodyNode() = default;
+
+template <typename T>
 void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
     const MatrixUpTo6<T>& D_B,
     math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>* llt_D_B) const {
@@ -79,4 +82,4 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::BodyNode)
+    class ::drake::multibody::internal::BodyNode);

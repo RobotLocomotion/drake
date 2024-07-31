@@ -11,8 +11,8 @@ def ipopt_internal_fromsource_repository(
         tools/wheel/image/dependencies/projects.cmake
         must also be updated.
         """,
-        commit = "releases/3.14.14",
-        sha256 = "264d2d3291cd1cd2d0fa0ad583e0a18199e3b1378c3cb015b6c5600083f1e036",  # noqa
+        commit = "releases/3.14.16",
+        sha256 = "cc8c217991240db7eb14189eee0dff88f20a89bac11958b48625fa512fe8d104",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

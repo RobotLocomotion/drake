@@ -512,11 +512,13 @@ term exactly as needed in Eq. (16).
 template <typename T>
 class TamsiSolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TamsiSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TamsiSolver);
 
   /// Instantiates a solver for a problem with `nv` generalized velocities.
   /// @throws std::exception if nv is non-positive.
   explicit TamsiSolver(int nv);
+
+  ~TamsiSolver();
 
   /// Change the working size of the solver to use `nv` generalized
   /// velocities. This can be used to either shrink or grow the workspaces.
@@ -1202,7 +1204,7 @@ class TamsiSolver {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::TalsLimiter)
+    struct ::drake::multibody::internal::TalsLimiter);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::TamsiSolver)
+    class ::drake::multibody::TamsiSolver);

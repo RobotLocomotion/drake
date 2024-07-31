@@ -8,6 +8,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 
 namespace drake {
 namespace multibody {
@@ -391,6 +392,53 @@ GTEST_TEST(FileParserTest, AutoRenaming) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       parser.AddModelsFromString(model, "urdf"),
       ".*names must be unique.*");
+}
+
+// This is a regression test for issue #21316. The code is adapted from that
+// where the problem was originally found.
+GTEST_TEST(FileParserTest, InterleavedRenaming) {
+  drake::systems::DiagramBuilder<double> builder;
+  drake::multibody::MultibodyPlantConfig plant_config;
+  auto [plant, scene_graph] =
+      drake::multibody::AddMultibodyPlant(plant_config, &builder);
+
+  // Choose a robot model with collision filters specified.
+  auto model_file_url =
+      "package://drake_models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf";
+  const std::string model_name = "my_kuka_iiwa";
+
+  // Load the same model multiple times.
+  int kNumLoads = 2;
+  // For the bug to manifest, the parser lifetime must encompass multiple parse
+  // and rename steps.
+  auto parser = drake::multibody::Parser(&plant);
+  for (int k = 0; k < kNumLoads; ++k) {
+    // Load the model and give it a name based on its index in the array.
+    const std::string model_instance_name = fmt::format("{}{}", model_name, k);
+    parser.SetAutoRenaming(true);
+    // In the original symptom, the second parse attempt would trigger an
+    // assertion.
+    auto model_instance = parser.AddModelsFromUrl(model_file_url)[0];
+    plant.RenameModelInstance(model_instance, model_instance_name);
+  }
+
+  // Expect filter groups from both models, using the model names in force
+  // after renaming.
+  CollisionFilterGroups expected;
+  expected.AddGroup("my_kuka_iiwa0::iiwa_wrist",
+                    {"my_kuka_iiwa0::iiwa_link_5",
+                     "my_kuka_iiwa0::iiwa_link_6",
+                     "my_kuka_iiwa0::iiwa_link_7"});
+  expected.AddGroup("my_kuka_iiwa1::iiwa_wrist",
+                    {"my_kuka_iiwa1::iiwa_link_5",
+                     "my_kuka_iiwa1::iiwa_link_6",
+                     "my_kuka_iiwa1::iiwa_link_7"});
+  expected.AddExclusionPair(
+      {"my_kuka_iiwa0::iiwa_wrist", "my_kuka_iiwa0::iiwa_wrist"});
+  expected.AddExclusionPair(
+      {"my_kuka_iiwa1::iiwa_wrist", "my_kuka_iiwa1::iiwa_wrist"});
+  EXPECT_EQ(parser.GetCollisionFilterGroups(), expected);
 }
 
 }  // namespace

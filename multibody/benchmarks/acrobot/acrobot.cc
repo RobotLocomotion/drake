@@ -253,4 +253,4 @@ T Acrobot<T>::CalcPotentialEnergy(const T& theta1, const T& theta2) const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::benchmarks::Acrobot)
+    class drake::multibody::benchmarks::Acrobot);

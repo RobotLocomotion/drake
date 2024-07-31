@@ -1270,5 +1270,13 @@ GTEST_TEST(SdpaFreeFormatTest,
   infile.close();
 }
 
+GTEST_TEST(SdpaFreeFormatTest, EnumToString) {
+  // We just spot-check one item to make sure the function exists. The
+  // implementation is obvious enough that we don't need to cover every
+  // single item.
+  EXPECT_EQ(fmt::to_string(RemoveFreeVariableMethod::kTwoSlackVariables),
+            "kTwoSlackVariables");
+}
+
 }  // namespace solvers
 }  // namespace drake

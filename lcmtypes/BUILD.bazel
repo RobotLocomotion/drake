@@ -1,6 +1,5 @@
-package(default_visibility = ["//visibility:public"])
-
 load("//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -12,19 +11,20 @@ load(
     "drake_java_binary",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
-    "drake_py_library",
-    "drake_py_test",
-)
-load(
     "//tools/skylark:drake_lcm.bzl",
     "drake_lcm_cc_library",
     "drake_lcm_java_library",
     "drake_lcm_py_library",
 )
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_test",
+)
 load("//tools/workspace:generate_file.bzl", "generate_file")
 load(":defs.bzl", "ALL_LCM_SRCS")
-load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
 
 # Search for all *.lcm files.
 _GLOB_ALL_LCM_SRCS = sorted(glob(["*.lcm"]))

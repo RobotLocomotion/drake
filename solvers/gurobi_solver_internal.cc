@@ -9,6 +9,10 @@ namespace solvers {
 namespace internal {
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
+
+// Gurobi will throw a warning if the coeffient is less than 1E-13, so we filter
+// out these small entries.
+const double kGurobiZeroTol = 1E-13;
 }  // namespace
 
 int AddLinearConstraintNoDuplication(
@@ -16,7 +20,10 @@ int AddLinearConstraintNoDuplication(
     const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& lb,
     const Eigen::VectorXd& ub, const VectorXDecisionVariable& vars,
     bool is_equality, int* num_gurobi_linear_constraints) {
-  Eigen::SparseMatrix<double, Eigen::RowMajor> A_row_major = A;
+  // Gurobi add the linear constraint row by row, so we will need a row-major
+  // sparse matrix.
+  Eigen::SparseMatrix<double, Eigen::RowMajor> A_row_major =
+      A.pruned(1, kGurobiZeroTol);
 
   const std::vector<int> var_index = prog.FindDecisionVariableIndices(vars);
 
@@ -26,7 +33,7 @@ int AddLinearConstraintNoDuplication(
     std::vector<int> nonzero_col_index;
     nonzero_col_index.reserve(A_row_major.nonZeros());
     std::vector<char> sense(A.rows(), GRB_EQUAL);
-    for (int i = 0; i < A.nonZeros(); ++i) {
+    for (int i = 0; i < A_row_major.nonZeros(); ++i) {
       nonzero_col_index.push_back(
           var_index[*(A_row_major.innerIndexPtr() + i)]);
     }
@@ -71,9 +78,9 @@ int AddLinearConstraintNoDuplication(
   cbeg.reserve(A.rows() * 2 + 1);
   cbeg.push_back(0);
   std::vector<int> cind;
-  cind.reserve(A.nonZeros() * 2);
+  cind.reserve(A_row_major.nonZeros() * 2);
   std::vector<double> cval;
-  cval.reserve(A.nonZeros() * 2);
+  cval.reserve(A_row_major.nonZeros() * 2);
 
   int A_gurobi_rows = 0;
 
@@ -145,7 +152,9 @@ void ConvertSecondOrderConeLinearConstraint(
   M_triplets->reserve(A.nonZeros() + A.rows());
   for (int i = 0; i < A.outerSize(); ++i) {
     for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
-      M_triplets->emplace_back(it.row(), xz_indices[it.col()], -it.value());
+      if (std::abs(it.value()) > kGurobiZeroTol) {
+        M_triplets->emplace_back(it.row(), xz_indices[it.col()], -it.value());
+      }
     }
   }
   for (int i = 0; i < A.rows(); ++i) {

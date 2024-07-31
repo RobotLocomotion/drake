@@ -49,14 +49,26 @@ GTEST_TEST(AffineSubspaceTest, DefaultCtor) {
   EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
   EXPECT_TRUE(dut.IntersectsWith(dut));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_NO_THROW(dut.Project(Eigen::VectorXd::Zero(0)));
+#pragma GCC diagnostic pop
   EXPECT_EQ(dut.AffineDimension(), 0);
   Eigen::VectorXd test_point(0);
   EXPECT_EQ(dut.ToLocalCoordinates(test_point).size(), 0);
   EXPECT_TRUE(CompareMatrices(dut.ToLocalCoordinates(test_point), test_point));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(
       dut.ToGlobalCoordinates(dut.ToLocalCoordinates(test_point)),
       dut.Project(test_point)));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  const auto projection_result = dut.Projection(test_point);
+  const auto& [distances, projections] = projection_result.value();
+  EXPECT_TRUE(CompareMatrices(
+      dut.ToGlobalCoordinates(dut.ToLocalCoordinates(test_point)),
+      projections));
   EXPECT_TRUE(dut.ContainedIn(AffineSubspace()));
   EXPECT_TRUE(dut.IsNearlyEqualTo(AffineSubspace()));
   CheckOrthogonalComplementBasis(dut);
@@ -83,12 +95,23 @@ GTEST_TEST(AffineSubspaceTest, Point) {
   EXPECT_TRUE(as.PointInSet(translation));
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3)));
   EXPECT_TRUE(as.IntersectsWith(as));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  auto projection_result = as.Projection(Eigen::VectorXd::Zero(3));
+  EXPECT_TRUE(as.PointInSet(std::get<1>(projection_result.value())));
   CheckOrthogonalComplementBasis(as);
   EXPECT_EQ(as.CalcVolume(), 0);
 
-  // Should throw because the ambient dimension is wrong.
+// Should throw because the ambient dimension is wrong.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_THROW(as.Project(Eigen::VectorXd::Zero(1)), std::exception);
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  EXPECT_THROW(as.Projection(Eigen::VectorXd::Zero(1)), std::exception);
 
   // Test local coordinates
   EXPECT_EQ(as.AffineDimension(), 0);
@@ -97,9 +120,17 @@ GTEST_TEST(AffineSubspaceTest, Point) {
   EXPECT_EQ(as.ToLocalCoordinates(test_point).size(), 0);
   EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point),
                               Eigen::VectorXd::Zero(0)));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(
       CompareMatrices(as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point)),
                       as.Project(test_point)));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  projection_result = as.Projection(test_point);
+  const auto& [distances, projections] = projection_result.value();
+  EXPECT_TRUE(CompareMatrices(
+      as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point)), projections));
   EXPECT_TRUE(CompareMatrices(
       as.ToLocalCoordinates(as.ToGlobalCoordinates(Eigen::VectorXd::Zero(0))),
       Eigen::VectorXd::Zero(0)));
@@ -130,7 +161,15 @@ GTEST_TEST(AffineSubspaceTest, Line) {
   EXPECT_TRUE(as.PointInSet(test_point, kTol));
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3), kTol));
   EXPECT_TRUE(as.IntersectsWith(as));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3)), kTol));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  const auto projection_result = as.Projection(Eigen::VectorXd::Zero(3));
+  ASSERT_TRUE(projection_result.has_value());
+  const auto& [distances, projections] = projection_result.value();
+  EXPECT_TRUE(as.PointInSet(projections, kTol));
   CheckOrthogonalComplementBasis(as);
   EXPECT_EQ(as.CalcVolume(), 0);
 
@@ -145,12 +184,28 @@ GTEST_TEST(AffineSubspaceTest, Line) {
   EXPECT_EQ(as.ToLocalCoordinates(test_point2).size(), 1);
   EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point2),
                               expected_local_coords, kTol));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(
       as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)),
       as.Project(test_point2), kTol));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  const auto projection_result2 = as.Projection(test_point2);
+  ASSERT_TRUE(projection_result2.has_value());
+  const auto& [distances2, projections2] = projection_result2.value();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE(CompareMatrices(as.Project(test_point2), projections2, kTol));
+#pragma GCC diagnostic pop
+  EXPECT_TRUE(CompareMatrices(
+      as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)), projections2,
+      kTol));
   EXPECT_TRUE(CompareMatrices(
       as.ToLocalCoordinates(as.ToGlobalCoordinates(expected_local_coords)),
       expected_local_coords, kTol));
+  EXPECT_TRUE(as.PointInSet(projections, kTol));
+  EXPECT_TRUE(as.PointInSet(projections2, kTol));
 }
 
 GTEST_TEST(AffineSubspaceTest, Plane) {
@@ -182,7 +237,15 @@ GTEST_TEST(AffineSubspaceTest, Plane) {
   EXPECT_TRUE(as.PointInSet(test_point));
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3)));
   EXPECT_TRUE(as.IntersectsWith(as));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+
+  const auto projection_result = as.Projection(Eigen::VectorXd::Zero(3));
+  ASSERT_TRUE(projection_result.has_value());
+  EXPECT_TRUE(as.PointInSet(std::get<1>(projection_result.value())));
   CheckOrthogonalComplementBasis(as);
   EXPECT_EQ(as.CalcVolume(), 0);
 
@@ -197,9 +260,19 @@ GTEST_TEST(AffineSubspaceTest, Plane) {
   EXPECT_EQ(as.ToLocalCoordinates(test_point2).size(), 2);
   EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point2),
                               expected_local_coords, kTol));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(
       as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)),
       as.Project(test_point2), kTol));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  const auto projection_result2 = as.Projection(test_point2);
+  ASSERT_TRUE(projection_result.has_value());
+  const auto& [distances2, projections2] = projection_result2.value();
+  EXPECT_TRUE(CompareMatrices(
+      as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)), projections2,
+      kTol));
   EXPECT_TRUE(CompareMatrices(
       as.ToLocalCoordinates(as.ToGlobalCoordinates(expected_local_coords)),
       expected_local_coords, kTol));
@@ -234,7 +307,14 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR3) {
   EXPECT_TRUE(as.PointInSet(test_point));
   EXPECT_TRUE(as.PointInSet(Eigen::VectorXd::Zero(3)));
   EXPECT_TRUE(as.IntersectsWith(as));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  const auto projection_result = as.Projection(Eigen::VectorXd::Zero(3));
+  ASSERT_TRUE(projection_result.has_value());
+  EXPECT_TRUE(as.PointInSet(std::get<1>(projection_result.value())));
   CheckOrthogonalComplementBasis(as);
   EXPECT_EQ(as.CalcVolume(), std::numeric_limits<double>::infinity());
 
@@ -249,9 +329,20 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR3) {
   EXPECT_EQ(as.ToLocalCoordinates(test_point2).size(), 3);
   EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point2),
                               expected_local_coords, kTol));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(
       as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)),
       as.Project(test_point2), kTol));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  const auto projection_result2 = as.Projection(test_point2);
+  ASSERT_TRUE(projection_result2.has_value());
+  const auto& [distances2, projections2] = projection_result2.value();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE(CompareMatrices(as.Project(test_point2), projections2, kTol));
+#pragma GCC diagnostic pop
   EXPECT_TRUE(CompareMatrices(
       as.ToLocalCoordinates(as.ToGlobalCoordinates(expected_local_coords)),
       expected_local_coords, kTol));
@@ -287,7 +378,14 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR4) {
   EXPECT_TRUE(as.PointInSet(test_point));
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(4)));
   EXPECT_TRUE(as.IntersectsWith(as));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(4))));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  const auto projection_result = as.Projection(Eigen::VectorXd::Zero(4));
+  ASSERT_TRUE(projection_result.has_value());
+  EXPECT_TRUE(as.PointInSet(std::get<1>(projection_result.value())));
   CheckOrthogonalComplementBasis(as);
   EXPECT_EQ(as.CalcVolume(), 0);
 
@@ -302,9 +400,20 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR4) {
   EXPECT_EQ(as.ToLocalCoordinates(test_point2).size(), 3);
   EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point2),
                               expected_local_coords, kTol));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(
       as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)),
       as.Project(test_point2), kTol));
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  const auto projection_result2 = as.Projection(test_point2);
+  ASSERT_TRUE(projection_result2.has_value());
+  const auto& [distances2, projections2] = projection_result2.value();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE(CompareMatrices(as.Project(test_point2), projections2, kTol));
+#pragma GCC diagnostic pop
   EXPECT_TRUE(CompareMatrices(
       as.ToLocalCoordinates(as.ToGlobalCoordinates(expected_local_coords)),
       expected_local_coords, kTol));
@@ -1009,13 +1118,26 @@ GTEST_TEST(AffineSubspaceTest, BatchChangeOfCoordinates) {
   points << 1, 2, 3, 4, 5,
             0, 0, 0, 0, 0,
             0, 0, 0, 0, 0;
-  // clang-format on
-
+// clang-format on
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   Eigen::MatrixXd projected = as.Project(points);
+#pragma GCC diagnostic pop
   EXPECT_EQ(projected.rows(), 3);
   EXPECT_EQ(projected.cols(), 5);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   for (int i = 0; i < points.cols(); ++i) {
     EXPECT_TRUE(CompareMatrices(projected.col(i), as.Project(points.col(i))));
+  }
+#pragma GCC diagnostic pop
+  // Repeat the test with the new projection spelling to make deprecation easy.
+  const auto projection_result = as.Projection(points);
+  ASSERT_TRUE(projection_result.has_value());
+  const auto& [distances, projections] = projection_result.value();
+  for (int i = 0; i < points.cols(); ++i) {
+    EXPECT_TRUE(CompareMatrices(
+        projections.col(i), std::get<1>(as.Projection(points.col(i)).value())));
   }
 
   Eigen::MatrixXd local = as.ToLocalCoordinates(points);
@@ -1117,7 +1239,7 @@ GTEST_TEST(AffineSubspaceTest, EqualityTest) {
   const AffineSubspace as4(basis2, translation1);
   const AffineSubspace as5(basis2, translation2);
 
-  const double kTol = 1e-15;
+  const double kTol = 1e-14;
 
   EXPECT_TRUE(as1.IsNearlyEqualTo(as2, kTol));
   EXPECT_TRUE(as2.IsNearlyEqualTo(as3, kTol));

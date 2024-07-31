@@ -8,6 +8,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+ScrewMobilizer<T>::~ScrewMobilizer() = default;
+
+template <typename T>
 std::string ScrewMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   if (position_index_in_mobilizer == 0) {
@@ -38,7 +41,7 @@ T ScrewMobilizer<T>::get_translation(const systems::Context<T>& context) const {
 }
 
 template <typename T>
-const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation(
+const ScrewMobilizer<T>& ScrewMobilizer<T>::SetTranslation(
     systems::Context<T>* context,
     const T& translation) const {
   const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
@@ -60,7 +63,7 @@ const T& ScrewMobilizer<T>::get_angle(
 }
 
 template <typename T>
-const ScrewMobilizer<T>& ScrewMobilizer<T>::set_angle(
+const ScrewMobilizer<T>& ScrewMobilizer<T>::SetAngle(
     systems::Context<T>* context, const T& angle) const {
   auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
@@ -77,7 +80,7 @@ T ScrewMobilizer<T>::get_translation_rate(
 }
 
 template <typename T>
-const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation_rate(
+const ScrewMobilizer<T>& ScrewMobilizer<T>::SetTranslationRate(
     systems::Context<T>* context,
     const T& vz) const {
   const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
@@ -99,7 +102,7 @@ const T& ScrewMobilizer<T>::get_angular_rate(
 }
 
 template <typename T>
-const ScrewMobilizer<T>& ScrewMobilizer<T>::set_angular_rate(
+const ScrewMobilizer<T>& ScrewMobilizer<T>::SetAngularRate(
     systems::Context<T>* context, const T& theta_dot) const {
   auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);
@@ -221,4 +224,4 @@ ScrewMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::ScrewMobilizer)
+    class ::drake::multibody::internal::ScrewMobilizer);

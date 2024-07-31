@@ -17,7 +17,7 @@ namespace multibody {
  */
 class PolyhedronConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolyhedronConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolyhedronConstraint);
 
   /**
    * Construct the constraint that the position of P1, ..., Pn satisfy A *

@@ -623,16 +623,6 @@ GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
 GTEST_TEST(ProximityEngineTests, FailedParsing) {
   ProximityEngine<double> engine;
 
-  // The obj contains multiple objects.
-  {
-    Convex convex{drake::FindResourceOrThrow(
-                      "drake/geometry/test/forbidden_two_cubes.obj"),
-                  1.0};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        ".*only OBJs with a single object.*");
-  }
-
   const std::filesystem::path temp_dir = temp_directory();
   // An empty file.
   {
@@ -892,7 +882,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
 // a tolerance of penetration depth + epsilon likewise returns two results, and
 // depth - epsilon omits everything.
 GTEST_TEST(ProximityEngineTests, SignedDistanceToPointNonPositiveThreshold) {
-  ProximityEngine<double> engine;
   const double kRadius = 0.5;
   const double kPenetration = kRadius * 0.1;
 
@@ -905,30 +894,47 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointNonPositiveThreshold) {
        RigidTransformd{Translation3d{kRadius - 0.5 * kPenetration, 0, 0}}}};
 
   Sphere sphere{kRadius};
-  engine.AddDynamicGeometry(sphere, {}, id_A);
-  engine.AddDynamicGeometry(sphere, {}, id_B);
-  engine.UpdateWorldPoses(X_WGs);
 
-  const Vector3d p_WQ{0, 0, 0};
-  std::vector<SignedDistanceToPoint<double>> results_all =
-      engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, kInf);
-  EXPECT_EQ(results_all.size(), 2u);
+  for (bool flip_order : {true, false}) {
+    ProximityEngine<double> engine;
+    // Confirm the results are sorted, regardless of the order the spheres are
+    // added to the engine.
+    const GeometryId first_id = flip_order ? id_B : id_A;
+    const GeometryId second_id = flip_order ? id_A : id_B;
+    engine.AddDynamicGeometry(sphere, {}, first_id);
+    engine.AddDynamicGeometry(sphere, {}, second_id);
+    engine.UpdateWorldPoses(X_WGs);
 
-  std::vector<SignedDistanceToPoint<double>> results_zero =
-      engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, 0);
-  EXPECT_EQ(results_zero.size(), 2u);
+    const Vector3d p_WQ{0, 0, 0};
+    std::vector<SignedDistanceToPoint<double>> results_all =
+        engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, kInf);
+    ASSERT_EQ(results_all.size(), 2u);
+    // Make sure the result is sorted.
+    auto parameters_in_order = [](const SignedDistanceToPoint<double>& p1,
+                                  const SignedDistanceToPoint<double>& p2) {
+      return p1.id_G < p2.id_G;
+    };
+    EXPECT_TRUE(parameters_in_order(results_all[0], results_all[1]));
 
-  const double kEps = std::numeric_limits<double>::epsilon();
+    std::vector<SignedDistanceToPoint<double>> results_zero =
+        engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, 0);
+    ASSERT_EQ(results_zero.size(), 2u);
+    EXPECT_TRUE(parameters_in_order(results_zero[0], results_zero[1]));
 
-  std::vector<SignedDistanceToPoint<double>> results_barely_in =
-      engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs,
-                                          -kPenetration * 0.5 + kEps);
-  EXPECT_EQ(results_barely_in.size(), 2u);
+    const double kEps = std::numeric_limits<double>::epsilon();
 
-  std::vector<SignedDistanceToPoint<double>> results_barely_out =
-      engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs,
-                                          -kPenetration * 0.5 - kEps);
-  EXPECT_EQ(results_barely_out.size(), 0u);
+    std::vector<SignedDistanceToPoint<double>> results_barely_in =
+        engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs,
+                                            -kPenetration * 0.5 + kEps);
+    ASSERT_EQ(results_barely_in.size(), 2u);
+    EXPECT_TRUE(
+        parameters_in_order(results_barely_in[0], results_barely_in[1]));
+
+    std::vector<SignedDistanceToPoint<double>> results_barely_out =
+        engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs,
+                                            -kPenetration * 0.5 - kEps);
+    EXPECT_EQ(results_barely_out.size(), 0u);
+  }
 }
 
 // We put two small spheres with radius 0.1 centered at (1,1,1) and
@@ -2477,7 +2483,15 @@ GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
   engine.UpdateWorldPoses(X_WGs);
   std::vector<SignedDistancePair<double>> results_all =
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
-  EXPECT_EQ(results_all.size(), 3u);
+  ASSERT_EQ(results_all.size(), 3u);
+  // Make sure the result is sorted
+  auto parameters_in_order = [](const SignedDistancePair<double>& p1,
+                                const SignedDistancePair<double>& p2) {
+    if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
+    return p1.id_B < p2.id_B;
+  };
+  EXPECT_TRUE(parameters_in_order(results_all[0], results_all[1]));
+  EXPECT_TRUE(parameters_in_order(results_all[1], results_all[2]));
 
   std::vector<SignedDistancePair<double>> results_zero =
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, 0);

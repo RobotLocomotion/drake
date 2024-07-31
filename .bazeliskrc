@@ -1,3 +1,7 @@
-# Keep this version number in sync with the Ubuntu deb installed by
-# drake/setup/ubuntu/source_distribution/install_bazel.sh.
-USE_BAZEL_VERSION=7.0.2
+# When bazelisk in use (as is typical, per Drake install_prereqs), this dotfile
+# specifies which version of Bazel should be used to build and test Drake.
+USE_BAZEL_VERSION=7.2.1
+
+# For some reason the google mirrors are very flaky in Drake CI in EC2, so
+# we'll point to the GitHub mirrors instead.
+BAZELISK_BASE_URL=https://github.com/bazelbuild/bazel/releases/download

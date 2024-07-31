@@ -1,4 +1,12 @@
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install", "install_files")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_unittest",
+)
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
@@ -6,17 +14,9 @@ load(
     "get_pybind_package_info",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-    "drake_py_library",
-    "drake_py_unittest",
-)
-load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
-load(
     "//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -173,6 +173,8 @@ drake_py_unittest(
         ":model_visualizer",
         "//manipulation/util:test_models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/parsing:test_models",
+        "//planning/test_utilities:collision_ground_plane.sdf",
     ],
     deps = [
         ":model_visualizer",

@@ -42,4 +42,4 @@ void WrapToSystem<T>::CalcWrappedOutput(const Context<T>& context,
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::WrapToSystem)
+    class ::drake::systems::WrapToSystem);

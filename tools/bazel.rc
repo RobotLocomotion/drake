@@ -12,6 +12,11 @@ build --strict_system_includes
 build --cxxopt=-std=c++20
 build --host_cxxopt=-std=c++20
 
+# The legacy __init__.py causes runfiles test flakes with Bazel >= 7, and
+# in any case we don't want this feature in the first place. We should
+# create all __init__.py files ourselves by hand anywhere we need them.
+build --incompatible_default_to_explicit_init_py
+
 # Default test options.
 build --test_output=errors
 build --test_summary=terse
@@ -22,8 +27,10 @@ build --test_summary=terse
 # config_setting rules for proprietary software are provided in //tools.
 build --test_tag_filters=-gurobi,-mosek,-snopt
 
-# Inject DISPLAY into test runner environment for tests that use X.
+# Allow user environment variables relating to host graphics configuration to
+# flow through to tests that use X.
 build --test_env=DISPLAY
+build --test_env=XAUTHORITY
 
 # Location of the Gurobi license key file, typically named "gurobi.lic".
 # Setting this --test_env for all configurations is deliberate to improve

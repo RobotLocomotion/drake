@@ -269,6 +269,9 @@ TamsiSolver<T>::TamsiSolver(int nv)
 }
 
 template <typename T>
+TamsiSolver<T>::~TamsiSolver() = default;
+
+template <typename T>
 void TamsiSolver<T>::SetOneWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
     EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
@@ -793,7 +796,7 @@ T TamsiSolver<T>::RegularizedFrictionDerivative(const T& s, const T& mu) {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::TalsLimiter)
+    struct ::drake::multibody::internal::TalsLimiter);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::TamsiSolver)
+    class ::drake::multibody::TamsiSolver);

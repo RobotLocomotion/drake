@@ -95,8 +95,8 @@ std::optional<Eigen::VectorXd> Hyperrectangle::DoMaybeGetFeasiblePoint() const {
   return (ub_ + lb_) / 2.0;
 }
 
-bool Hyperrectangle::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                  double tol) const {
+std::optional<bool> Hyperrectangle::DoPointInSetShortcut(
+    const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const {
   return (x.array() >= lb_.array() - tol).all() &&
          (x.array() <= ub_.array() + tol).all();
 }

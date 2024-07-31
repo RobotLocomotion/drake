@@ -178,7 +178,7 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
      &AddScaledRotationalDerivative<T>,          // BR
      &CalcCofactorMatrix<T>,                     // BR
      &AddScaledCofactorMatrixDerivative<T>,      // BR
-     &PermuteBlockVector<T>))
+     &PermuteBlockVector<T>));
 
 }  // namespace internal
 }  // namespace fem

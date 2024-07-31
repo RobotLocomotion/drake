@@ -1,10 +1,14 @@
-load("//tools/skylark:py.bzl", "py_library")
 load("//tools/install:check_licenses.bzl", "check_licenses")
 load("//tools/install:install.bzl", "install")
-load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+)
 
-py_library(
+drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     visibility = [":__subpackages__"],
@@ -51,6 +55,7 @@ drake_py_binary(
         "@nlopt_internal//:__subpackages__",
         "@qhull_internal//:__subpackages__",
         "@sdformat_internal//:__subpackages__",
+        "@tinygltf_internal//:__subpackages__",
         "@tinyobjloader_internal//:__subpackages__",
         "@yaml_cpp_internal//:__subpackages__",
     ],
@@ -104,6 +109,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "statsjs",
     "stduuid_internal",
     "suitesparse_internal",
+    "tinygltf_internal",
     "tinyobjloader_internal",
     "tinyxml2_internal",
     "usockets_internal",
@@ -114,6 +120,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "abseil_cpp_internal",
     "conex_internal",
     "gflags",
+    "highway_internal",
     "libjpeg_turbo_internal",
 ]] + select({
     "//conditions:default": ["@csdp_internal//:install"],

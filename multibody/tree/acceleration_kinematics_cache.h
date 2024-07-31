@@ -28,7 +28,7 @@ namespace internal {
 template <typename T>
 class AccelerationKinematicsCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache);
 
   // Constructs an acceleration kinematics cache entry for the given
   // MultibodyTreeTopology.
@@ -127,4 +127,4 @@ class AccelerationKinematicsCache {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::AccelerationKinematicsCache)
+    class ::drake::multibody::internal::AccelerationKinematicsCache);

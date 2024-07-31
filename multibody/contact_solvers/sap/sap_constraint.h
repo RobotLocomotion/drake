@@ -78,7 +78,7 @@ class SapConstraint {
    @throws if J.rows() equals zero. */
   SapConstraint(SapConstraintJacobian<T> J, std::vector<int> objects);
 
-  virtual ~SapConstraint() = default;
+  virtual ~SapConstraint();
 
   /* Number of constraint equations. */
   int num_constraint_equations() const { return J_.rows(); }
@@ -253,6 +253,13 @@ class SapConstraint {
   /* Polymorphic deep-copy into a new instance. */
   std::unique_ptr<SapConstraint<T>> Clone() const { return DoClone(); }
 
+  /* When T = double, this method is equivalent to Clone() and returns a
+   deep-copy of `this` jacobian. When T = AutoDiffXd this method returns a copy
+   where gradients were discarded. */
+  std::unique_ptr<SapConstraint<double>> ToDouble() const {
+    return DoToDouble();
+  }
+
   /* Creates a "reduced" clone of this constraint by removing known DoFs from
    the constraint's Jacobian. That is, the newly reduced constraint will have
    this constraint's Jacobian excluding columns for known DoFs. The following
@@ -332,6 +339,10 @@ class SapConstraint {
   /* Clone() implementation. Derived classes must override to provide
    polymorphic deep-copy into a new instance. */
   virtual std::unique_ptr<SapConstraint<T>> DoClone() const = 0;
+
+  /* ToDouble() implementation. Derived classes must override to provide
+   polymorphic scalar conversion. */
+  virtual std::unique_ptr<SapConstraint<double>> DoToDouble() const = 0;
   // @}
 
  private:

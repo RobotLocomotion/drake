@@ -5,7 +5,7 @@ title: Installation via APT (Ubuntu)
 # APT Packages
 
 Drake publishes pre-compiled binaries as APT packages (``*.deb``) for the
-Ubuntu 22.04 (Jammy) operating system.
+Ubuntu 22.04 (Jammy) and Ubuntu 24.04 (Noble) operating systems.
 Refer to
 [Supported Configurations](/installation.html#supported-configurations)
 for additional compatibility details.
@@ -72,15 +72,17 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Unsigned nightly apt packages of Drake for
-Ubuntu 22.04 (Jammy) are available to download at:
+Unsigned nightly apt packages of Drake for Ubuntu 22.04 (Jammy) and
+Ubuntu 24.04 (Noble) are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb)
 
 Older packages for specific dates are available by replacing ``latest`` with an
 8-digit date, e.g., ``20220721`` for July 21st, 2022.
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-jammy.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-noble.deb)
 
 Nightly packages are retained for 56 days from their date of creation.
 

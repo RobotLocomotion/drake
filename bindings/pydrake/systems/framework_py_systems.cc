@@ -398,6 +398,9 @@ struct Impl {
         .def("ExecuteInitializationEvents",
             &System<T>::ExecuteInitializationEvents, py::arg("context"),
             doc.System.ExecuteInitializationEvents.doc)
+        .def("ExecuteForcedEvents", &System<T>::ExecuteForcedEvents,
+            py::arg("context"), py::arg("publish") = true,
+            doc.System.ExecuteForcedEvents.doc)
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
@@ -457,10 +460,11 @@ Note: The above is for the C++ documentation. For Python, use
             py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
         // Utility methods.
         .def("get_input_port",
-            overload_cast_explicit<const InputPort<T>&, int>(
+            overload_cast_explicit<const InputPort<T>&, int, bool>(
                 &System<T>::get_input_port),
             py_rvp::reference_internal, py::arg("port_index"),
-            doc.System.get_input_port.doc_1args)
+            py::arg("warn_deprecated") = true,
+            doc.System.get_input_port.doc_2args)
         .def("get_input_port",
             overload_cast_explicit<const InputPort<T>&>(
                 &System<T>::get_input_port),
@@ -471,10 +475,11 @@ Note: The above is for the C++ documentation. For Python, use
         .def("HasInputPort", &System<T>::HasInputPort, py::arg("port_name"),
             doc.System.HasInputPort.doc)
         .def("get_output_port",
-            overload_cast_explicit<const OutputPort<T>&, int>(
+            overload_cast_explicit<const OutputPort<T>&, int, bool>(
                 &System<T>::get_output_port),
             py_rvp::reference_internal, py::arg("port_index"),
-            doc.System.get_output_port.doc_1args)
+            py::arg("warn_deprecated") = true,
+            doc.System.get_output_port.doc_2args)
         .def("get_output_port",
             overload_cast_explicit<const OutputPort<T>&>(
                 &System<T>::get_output_port),
@@ -603,7 +608,7 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
-                .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
+                .doc_4args_name_alloc_calc_prerequisites_of_calc)
         .def(
             "DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
@@ -1027,20 +1032,32 @@ Note: The above is for the C++ documentation. For Python, use
         .def("GetSystems", &Diagram<T>::GetSystems, py_rvp::reference_internal,
             doc.Diagram.GetSystems.doc);
 
-    // N.B. This will effectively allow derived classes of `VectorSystem` to
-    // override `LeafSystem` methods, disrespecting `final`-ity.
-    // This could be changed (see https://stackoverflow.com/a/2425785), but meh,
-    // we're already abusing Python and C++ enough.
-    DefineTemplateClassWithDefault<VectorSystem<T>, PyVectorSystem,
-        LeafSystem<T>>(m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc)
-        .def(py::init([](int input_size, int output_size,
-                          std::optional<bool> direct_feedthrough) {
-          return new PyVectorSystem(
-              input_size, output_size, direct_feedthrough);
-        }),
-            py::arg("input_size"), py::arg("output_size"),
-            py::arg("direct_feedthrough") = std::nullopt,
-            doc.VectorSystem.ctor.doc_3args);
+    {
+      // N.B. This will effectively allow derived classes of `VectorSystem` to
+      // override `LeafSystem` methods, disrespecting `final`-ity.
+      // This could be changed (see https://stackoverflow.com/a/2425785), but
+      // meh, we're already abusing Python and C++ enough.
+      auto cls = DefineTemplateClassWithDefault<VectorSystem<T>, PyVectorSystem,
+          LeafSystem<T>>(
+          m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc);
+      cls  // BR
+          .def(py::init([](int input_size, int output_size,
+                            std::optional<bool> direct_feedthrough) {
+            return new PyVectorSystem(
+                input_size, output_size, direct_feedthrough);
+          }),
+              py::arg("input_size"), py::arg("output_size"),
+              py::arg("direct_feedthrough"), doc.VectorSystem.ctor.doc_3args);
+      cls  // Deprecated 2024-11-01.
+          .def(py_init_deprecated(doc.VectorSystem.ctor.doc_deprecated_2args,
+                   [](int input_size, int output_size) {
+                     return std::make_unique<PyVectorSystem>(
+                         input_size, output_size, std::nullopt);
+                   }),
+              py::arg("input_size"), py::arg("output_size"),
+              doc.VectorSystem.ctor.doc_deprecated_2args);
+    }
+
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in

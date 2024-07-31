@@ -16,8 +16,10 @@ namespace internal {
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
     const Cylinder& cylinder, const VolumeMesh<T>* mesh_C,
-    const T hydroelastic_modulus) {
+    const T hydroelastic_modulus, double margin) {
   DRAKE_DEMAND(hydroelastic_modulus > T(0));
+  DRAKE_DEMAND(cylinder.radius() > margin);
+  DRAKE_DEMAND(cylinder.length() > 2 * margin);
   const double radius = cylinder.radius();
   const double length = cylinder.length();
   const double min_half_size = std::min(radius, length / 2.0);
@@ -54,20 +56,22 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
     const T signed_distance = signed_distance_functor(fcl_cylinder).distance;
     // Map signed_distance ∈ [-min_half_size, 0] to extent e ∈ [0, 1],
     // -min_half_size ⇝ 1, 0 ⇝ 0.
-    const T extent = -signed_distance / T(min_half_size);
+    const T extent = (-signed_distance - margin) / T(min_half_size - margin);
     using std::min;
-    // Bound the pressure values in [0, E], where E is the elastic modulus.
+    // Bound the pressure values in [-margin, E], where E is the elastic
+    // modulus.
     pressure_values.push_back(
         min(hydroelastic_modulus * extent, hydroelastic_modulus));
   }
 
-  // Make sure the boundary vertices have zero pressure. Numerical rounding
-  // can cause the boundary vertices to be slightly off the boundary surface
-  // of the cylinder.
+  const T min_pressure =
+      -hydroelastic_modulus * margin / (min_half_size - margin);
+
+  // Enforce the exact minimum value at the boundary.
   std::vector<int> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh_C->tetrahedra()));
   for (int bv : boundary_vertices) {
-    pressure_values[bv] = T(0.);
+    pressure_values[bv] = min_pressure;
   }
 
   return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_C,
@@ -75,7 +79,7 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeCylinderPressureField<T>))
+    (&MakeCylinderPressureField<T>));
 
 }  // namespace internal
 }  // namespace geometry

@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -56,7 +56,7 @@ drake_cc_library(
         "collision_checker.h",
         "edge_measure.h",
     ],
-    interface_deps = [
+    deps = [
         ":body_shape_description",
         ":collision_checker_context",
         ":collision_checker_params",
@@ -69,7 +69,7 @@ drake_cc_library(
         "//geometry",
         "//multibody/plant",
     ],
-    deps = [
+    implementation_deps = [
         ":linear_distance_and_interpolation_provider",
         "@common_robotics_utilities",
     ],
@@ -109,11 +109,11 @@ drake_cc_library(
     name = "linear_distance_and_interpolation_provider",
     srcs = ["linear_distance_and_interpolation_provider.cc"],
     hdrs = ["linear_distance_and_interpolation_provider.h"],
-    interface_deps = [
+    deps = [
         ":distance_and_interpolation_provider",
         "//multibody/plant",
     ],
-    deps = [
+    implementation_deps = [
         "//common:essential",
         "@common_robotics_utilities",
     ],
@@ -166,11 +166,11 @@ drake_cc_library(
     name = "scene_graph_collision_checker",
     srcs = ["scene_graph_collision_checker.cc"],
     hdrs = ["scene_graph_collision_checker.h"],
-    interface_deps = [
+    deps = [
         ":collision_checker",
         ":collision_checker_params",
     ],
-    deps = [
+    implementation_deps = [
         ":robot_diagram",
         "//geometry",
         "//multibody/plant",
@@ -204,14 +204,16 @@ drake_cc_library(
     name = "visibility_graph",
     srcs = ["visibility_graph.cc"],
     hdrs = ["visibility_graph.h"],
-    interface_deps = [
+    deps = [
         ":collision_checker",
         "//common:parallelism",
     ],
-    deps = [
+    implementation_deps = [
         "@common_robotics_utilities",
     ],
 )
+
+# === test/ ===
 
 drake_cc_googletest(
     name = "body_shape_description_test",
@@ -271,6 +273,7 @@ drake_cc_googletest(
         "//planning/test_utilities:collision_ground_plane.sdf",
         "//planning/test_utilities:flying_robot_base.sdf",
         "@drake_models//:iiwa_description",
+        "@drake_models//:ycb",
     ],
     deps = [
         ":linear_distance_and_interpolation_provider",

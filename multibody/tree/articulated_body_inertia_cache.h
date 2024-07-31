@@ -33,7 +33,7 @@ namespace internal {
 template<typename T>
 class ArticulatedBodyInertiaCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache);
 
   // Constructs an articulated body cache entry for the given
   // MultibodyTreeTopology.
@@ -137,4 +137,4 @@ class ArticulatedBodyInertiaCache {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::internal::ArticulatedBodyInertiaCache)
+    class drake::multibody::internal::ArticulatedBodyInertiaCache);

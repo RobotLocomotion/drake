@@ -37,6 +37,9 @@ PrismaticJoint<T>::PrismaticJoint(
 }
 
 template <typename T>
+PrismaticJoint<T>::~PrismaticJoint() = default;
+
+template <typename T>
 const std::string& PrismaticJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();
@@ -87,4 +90,4 @@ std::unique_ptr<Joint<symbolic::Expression>> PrismaticJoint<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::PrismaticJoint)
+    class ::drake::multibody::PrismaticJoint);

@@ -57,7 +57,7 @@ namespace systems {
 template <typename T>
 class VectorLogSink final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorLogSink)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorLogSink);
 
   /// Constructs the vector log sink.
   ///

@@ -144,7 +144,7 @@ GTEST_TEST(TriMeshBuilderTest, AddingFeatures) {
             static_cast<int>(expected_pressures.size()));
   for (int v = 0; v < mesh_M->num_vertices(); ++v) {
     ASSERT_NEAR(surf_field_M->EvaluateAtVertex(v), expected_pressures[v],
-                10 * std::numeric_limits<double>::epsilon());
+                16 * std::numeric_limits<double>::epsilon());
     // NOTE: The TriMeshBuilder doesn't currently build a field with gradients,
     // so we won't test them.
   }
@@ -258,7 +258,7 @@ class LinearFunction {
 // domain of the polygon) for the EquivalentForceIntegration test below.
 class Polygon {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polygon)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polygon);
 
   Polygon(vector<Vector3d> vertices_P, const LinearFunction& func_P)
       : vertices_P_(std::move(vertices_P)), func_P_(func_P) {}

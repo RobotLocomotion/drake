@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
@@ -79,6 +80,14 @@ TEST_F(FirstOrderLowPassFilterTest, Output) {
   continuous_state().get_mutable_vector().SetAtIndex(1, 42.0);
   expected << 0.0, 42.0, 0.0;
   EXPECT_EQ(expected, filter_->get_output_port().Eval(*context_));
+}
+
+// Computing the output doesn't thrash the heap.
+TEST_F(FirstOrderLowPassFilterTest, OutputPerformance) {
+  SetUpSingleTimeConstantFilter();
+
+  drake::test::LimitMalloc guard({.max_num_allocations = 0});
+  filter_->get_output_port().Eval(*context_);
 }
 
 // Verifies the correctness of the time derivatives implementation.

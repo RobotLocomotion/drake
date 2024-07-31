@@ -11,8 +11,8 @@ However, since Drake's ultimate "application" is to ship our own
 shared library, we must not allow Rust to govern which libraries to
 link. Thus, we need to delete the lines that perform the linking.
 
---- src/algebra/dense/blas.rs
-+++ src/algebra/dense/blas.rs
+--- src/algebra/dense/blas/traits.rs
++++ src/algebra/dense/blas/traits.rs
 @@ -8,8 +8,6 @@ cfg_if::cfg_if! {
      }
          else {   

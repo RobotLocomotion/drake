@@ -16,7 +16,7 @@ namespace internal {
 // Supernodal Cholesky solver implemented by the SuperNodalKKTSolver in Conex.
 class ConexSuperNodalSolver final : public SuperNodalSolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConexSuperNodalSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConexSuperNodalSolver);
 
   // @param num_jacobian_row_blocks
   //   Number of row blocks in the matrix J.

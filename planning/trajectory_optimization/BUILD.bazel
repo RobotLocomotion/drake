@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -166,12 +166,16 @@ drake_cc_googletest(
         "//solvers:solve",
         "//systems/primitives:symbolic_vector_system",
         "//systems/primitives:trajectory_linear_system",
+        "//systems/primitives:zero_order_hold",
     ],
 )
 
 drake_cc_googletest(
     name = "gcs_trajectory_optimization_test",
-    shard_count = 8,
+    shard_count = 12,
+    # Even with many shards, the SimpleEnv2D suite has a couple of test cases
+    # that routinely time out under coverage tests, all by themselves.
+    tags = ["no_kcov"],
     deps = [
         ":gcs_trajectory_optimization",
         "//common/test_utilities:eigen_matrix_compare",
@@ -180,6 +184,7 @@ drake_cc_googletest(
         "//common/trajectories:piecewise_polynomial",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
+        "//solvers:snopt_solver",
     ],
 )
 

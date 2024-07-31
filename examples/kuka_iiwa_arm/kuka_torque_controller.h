@@ -38,7 +38,7 @@ class KukaTorqueController
     : public systems::Diagram<T>,
       public systems::controllers::StateFeedbackControllerInterface<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(KukaTorqueController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(KukaTorqueController);
 
   /// @p plant is aliased and must remain valid for the lifetime of the
   /// controller.

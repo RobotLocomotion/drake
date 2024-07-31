@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
-load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 
 licenses(["notice"])  # BSD-3-Clause
 

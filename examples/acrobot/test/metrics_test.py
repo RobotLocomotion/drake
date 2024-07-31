@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from drake.examples.acrobot.metrics import (
+from examples.acrobot.metrics import (
     deviation_from_upright_equilibrium,
     ensemble_cost,
     final_state_cost,

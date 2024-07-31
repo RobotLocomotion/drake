@@ -25,7 +25,7 @@ namespace symbolic {
  */
 class MonomialBasisElement : public PolynomialBasisElement {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MonomialBasisElement)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MonomialBasisElement);
 
   /** Constructs a monomial equal to 1. Namely the toal degree is zero. */
   MonomialBasisElement();

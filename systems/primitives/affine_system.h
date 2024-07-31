@@ -45,7 +45,7 @@ namespace systems {
 template <typename T>
 class TimeVaryingAffineSystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeVaryingAffineSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeVaryingAffineSystem);
 
   /// Returns the input port containing the externally applied input.
   const InputPort<T>& get_input_port() const;
@@ -187,7 +187,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 template <typename T>
 class AffineSystem : public TimeVaryingAffineSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineSystem);
 
   /// Constructs an Affine system with a fixed set of coefficient matrices `A`,
   /// `B`,`C`, and `D` as well as fixed initial velocity offset `xDot0` and

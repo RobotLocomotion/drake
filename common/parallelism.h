@@ -54,7 +54,7 @@ unit test requires actual parallelism, use the `num_threads = N` attribute in
 the `BUILD.bazel` file to declare a different value. */
 class Parallelism {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Parallelism)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Parallelism);
 
   /** Constructs a %Parallelism with no parallelism (i.e., num_threads=1).
   Python note: This function is not bound in pydrake (due to its name); instead,

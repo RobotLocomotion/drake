@@ -26,23 +26,23 @@ Gurobi, you will need to build Drake from source following the instructions in
 
 ## Stable Releases
 
-Binary packages of Drake for Ubuntu 22.04 (Jammy) and
+Binary packages of Drake for Ubuntu 22.04 (Jammy), Ubuntu 24.04 (Noble), and
 Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.27.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.27.0):
+[v1.31.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.31.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.27.0/drake-1.27.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.27.0/drake-1.27.0-jammy.tar.gz)
-* https://github.com/RobotLocomotion/drake/releases/download/v1.27.0/drake-1.27.0-mac.tar.gz (for x86_64)
-* https://github.com/RobotLocomotion/drake/releases/download/v1.27.0/drake-1.27.0-mac-arm64.tar.gz (for arm64)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.31.0/drake-1.31.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.31.0/drake-1.31.0-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.31.0/drake-1.31.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.31.0/drake-1.31.0-noble.tar.gz)
+* https://github.com/RobotLocomotion/drake/releases/download/v1.31.0/drake-1.31.0-mac-arm64.tar.gz (for arm64)
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious
 software. For example:
 
 ```
-curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.27.0/drake-1.27.0-mac-arm64.tar.gz
+curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.31.0/drake-1.31.0-mac-arm64.tar.gz
 ```
 
 ### Use as a C++ library
@@ -55,8 +55,7 @@ example.
 ### Use as a Python library
 
 In most cases we suggest [installation via pip](/pip.html) because that
-will be more convenient than manually downloading.  However, if you are running
-on macOS arm64 or if you need both
+will be more convenient than manually downloading.  However, if you need both
 C++ and Python API support, then pip will not work.  This section shows
 how to incorporate a manual download into a
 [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
@@ -92,14 +91,16 @@ Binary packages of Drake for Ubuntu 22.04 (Jammy) and
 Mac are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz (for x86_64)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz (for arm64)
 
 Older packages for specific dates are available by replacing ``latest`` with an
-8-digit date, e.g., ``20230112`` for January 12th, 2023.
+8-digit date preceded by ``0.0.``, e.g., ``0.0.20240408`` for April 8th, 2024.
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20230112-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20230112-jammy.tar.gz)
-* https://drake-packages.csail.mit.edu/drake/nightly/drake-20230112-mac-arm64.tar.gz (for arm64)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-jammy.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-noble.tar.gz)
+* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-mac-arm64.tar.gz (for arm64)
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious

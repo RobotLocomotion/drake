@@ -11,6 +11,7 @@
 #include "drake/common/extract_double.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/meshcat_graphviz.h"
+#include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/utilities.h"
@@ -144,11 +145,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
       SetAlphas(/* initializing = */ false);
     }
   }
-  std::optional<double> rate = realtime_rate_calculator_.UpdateAndRecalculate(
-      ExtractDoubleOrThrow(context.get_time()));
-  if (rate) {
-    meshcat_->SetRealtimeRate(rate.value());
-  }
+  meshcat_->SetSimulationTime(ExtractDoubleOrThrow(context.get_time()));
 
   return systems::EventStatus::Succeeded();
 }
@@ -194,12 +191,10 @@ void MeshcatVisualizer<T>::SetObjects(
         continue;
       }
 
-      // Note: We use the frame_path/id instead of instance.GetName(geom_id),
-      // which is a garbled mess of :: and _ and a memory address by default
-      // when coming from MultibodyPlant.
-      // TODO(russt): Use the geometry names if/when they are cleaned up.
-      const std::string path =
-          fmt::format("{}/{}", frame_path, geom_id.get_value());
+      // We'll turn scoped names into meshcat paths.
+      const std::string geometry_name =
+          internal::TransformGeometryName(geom_id, inspector);
+      const std::string path = fmt::format("{}/{}", frame_path, geometry_name);
       const Rgba rgba = properties.GetPropertyOrDefault("phong", "diffuse",
                                                         params_.default_color);
 
@@ -319,4 +314,4 @@ MeshcatVisualizer<T>::DoGetGraphvizFragment(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::MeshcatVisualizer)
+    class ::drake::geometry::MeshcatVisualizer);

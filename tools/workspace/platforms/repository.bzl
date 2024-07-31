@@ -10,7 +10,7 @@ def platforms_repository(
     github_archive(
         name = name,
         repository = "bazelbuild/platforms",  # License: Apache-2.0
-        commit = "0.0.8",
-        sha256 = "58ca5559d562def65cf1aeae9cd994d2776f7273eab9f48779ad043c3ffb3ce3",  # noqa
+        commit = "0.0.10",
+        sha256 = "3df33228654e56b09f17613613767b052581b822d57cb9cfd5e7b19a8e617b42",  # noqa
         mirrors = mirrors,
     )

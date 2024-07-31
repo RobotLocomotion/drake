@@ -64,7 +64,7 @@ namespace planning {
  @ingroup planning_collision_checker */
 class RobotClearance {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RobotClearance)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RobotClearance);
 
   /** Creates an empty clearance with size() == 0 and num_positions as given. */
   explicit RobotClearance(int num_positions) : nq_(num_positions) {

@@ -15,7 +15,7 @@ namespace internal {
 class SpanningForest::LoopConstraint {
  public:
   /** (Internal use only) Copy/Move constructor & assignment. */
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LoopConstraint)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LoopConstraint);
 
   /** (Internal use only) Created in SpanningForest::BuildForest() when loops
   are cut. */

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/examples/scene_graph/gen/bouncing_ball_vector.h"
+#include "drake/examples/scene_graph/bouncing_ball_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
@@ -35,7 +35,7 @@ geometry pose, respectively.
 template <typename T>
 class BouncingBallPlant : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BouncingBallPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BouncingBallPlant);
 
   /** Constructor
    @param source_id             The source id for this plant to interact with

@@ -34,7 +34,7 @@ namespace internal {
 template <typename T>
 class VelocityKinematicsCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCache);
 
   // Constructs a velocity kinematics cache entry for the given
   // MultibodyTreeTopology.
@@ -146,4 +146,4 @@ class VelocityKinematicsCache {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::VelocityKinematicsCache)
+    class ::drake::multibody::internal::VelocityKinematicsCache);

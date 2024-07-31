@@ -2,11 +2,14 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/is_approx_equal_abstol.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/point.h"
+#include "drake/geometry/optimization/vpolytope.h"
 
 namespace drake {
 namespace geometry {
@@ -231,6 +234,117 @@ GTEST_TEST(ConvexSetTest, CalcVolumeViaSampling) {
   EXPECT_EQ(bad_result.num_samples, max_num_samples_low);
   EXPECT_LT(good_result.num_samples, max_num_samples_high);
 };
+
+// Compute the projection of a point onto a set that has no point in set
+// shortcut and no projection shortcut.
+GTEST_TEST(ConvexSetTest, GenericProjection) {
+  const VPolytope vpolytope = VPolytope::MakeUnitBox(2);
+  // Each column is a test point.
+  // clang-format off
+  const Eigen::Matrix2Xd test_points{{0.5, 2, -1.1, 2},
+                                     {0.5, 0, -3.0,   2}};
+  const Eigen::Matrix2Xd expected_projection{{0.5, 1, -1, 1},
+                                             {0.5, 0, -1, 1}};
+  // clang-format on
+
+  const std::vector<double> expected_distances{0, 1, sqrt(4.01), sqrt(2)};
+  const auto projection_result = vpolytope.Projection(test_points);
+  ASSERT_TRUE(projection_result.has_value());
+  const auto& [distances, projections] = projection_result.value();
+  const double kTol = 1e-6;
+  for (int i = 0; i < test_points.cols(); ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(projections.col(i), expected_projection.col(i), kTol));
+    EXPECT_NEAR(distances.at(i), expected_distances.at(i), kTol);
+  }
+}
+
+// Compute the projection of a point onto a set that does have point in set
+// shortcut, but no projection shortcut.
+GTEST_TEST(ConvexSetTest, ProjectionWithShortcutPoint) {
+  const HPolyhedron polytope = HPolyhedron::MakeUnitBox(2);
+  // Each column is a test point.
+  // clang-format off
+  const Eigen::Matrix2Xd test_points{{0.5, 2, -1.1, 2},
+                                     {0.5, 0, -3.0,   2}};
+  const Eigen::Matrix2Xd expected_projection{{0.5, 1, -1, 1},
+                                             {0.5, 0, -1, 1}};
+  // clang-format on
+
+  const std::vector<double> expected_distances{0, 1, sqrt(4.01), sqrt(2)};
+  const auto projection_result = polytope.Projection(test_points);
+  ASSERT_TRUE(projection_result.has_value());
+  const auto& [distances, projections] = projection_result.value();
+  const double kTol = 1e-7;
+  for (int i = 0; i < test_points.cols(); ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(projections.col(i), expected_projection.col(i), kTol));
+    EXPECT_NEAR(distances.at(i), expected_distances.at(i), kTol);
+  }
+}
+
+// Compute the projection of a point onto a set that has a projection shortcut.
+GTEST_TEST(ConvexSetTest, ShortcutProjection) {
+  Eigen::Matrix<double, 2, 1> basis;
+  basis << 1, 1;
+  Eigen::VectorXd translation(2);
+  translation << 1, 0;
+  const AffineSubspace as(basis, translation);
+
+  // Each column is a test point.
+  // clang-format off
+  const Eigen::Matrix2Xd test_points{{0.5, 2, -1.1, 1},
+                                     {0.5, 0, -3.0, 0}};
+  const Eigen::Matrix2Xd expected_projection{{1, 1.5, -1.55, 1},
+                                             {0, 0.5, -2.55,   0}};
+  // clang-format on
+
+  const std::vector<double> expected_distances{sqrt(2) / 2, sqrt(2) / 2,
+                                               9 / (10 * sqrt(2)), 0.0};
+  const auto projection_result = as.Projection(test_points);
+  ASSERT_TRUE(projection_result.has_value());
+  const auto& [distances, projections] = projection_result.value();
+  const double kTol = 1e-7;
+  for (int i = 0; i < test_points.cols(); ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(projections.col(i), expected_projection.col(i), kTol));
+    EXPECT_NEAR(distances.at(i), expected_distances.at(i), kTol);
+  }
+}
+
+GTEST_TEST(ConvexSetTest, Projection0Dim) {
+  const HPolyhedron polytope = HPolyhedron::MakeUnitBox(0);
+  const Eigen::VectorXd test_point(0);
+  const auto projection_result = polytope.Projection(test_point);
+  ASSERT_TRUE(projection_result.has_value());
+  const auto& [distances, projections] = projection_result.value();
+  EXPECT_EQ(distances.at(0), 0);
+  EXPECT_EQ(projections, test_point);
+}
+
+GTEST_TEST(ConvexSetTest, Projection0DimEmpty) {
+  const VPolytope polytope{};
+  const Eigen::VectorXd test_point(0);
+  const auto projection_result = polytope.Projection(test_point);
+  EXPECT_FALSE(projection_result.has_value());
+}
+
+GTEST_TEST(ConvexSetTest, ProjectionEmptySet) {
+  const Eigen::Matrix<double, 2, 1> A{{1}, {-1}};
+  const Eigen::Vector<double, 2> b{-1, -1};
+  // The polytope encoding that x ≤ -1, x ≥ 1 is empty.
+  const HPolyhedron polytope(A, b);
+  EXPECT_TRUE(polytope.IsEmpty());
+  const Eigen::Matrix<double, 1, 2> test_point{{0.5, 2}};
+  EXPECT_FALSE(polytope.Projection(test_point).has_value());
+}
+
+GTEST_TEST(ConvexSetTest, ProjectionError) {
+  const HPolyhedron polytope = HPolyhedron::MakeUnitBox(2);
+  const Eigen::Vector3d test_point{0.5, 2, -1.1};
+  // Wrong dimension of the test point.
+  EXPECT_THROW(polytope.Projection(test_point), std::exception);
+}
 
 }  // namespace
 }  // namespace optimization

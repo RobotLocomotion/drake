@@ -9,6 +9,7 @@ import umsgpack
 
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform
@@ -231,8 +232,9 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIsNone(gamepad.index)
         self.assertEqual(len(gamepad.button_values), 0)
         self.assertEqual(len(gamepad.axes), 0)
-        meshcat.SetRealtimeRate(1.0)
+        meshcat.SetRealtimeRate(rate=1.0)
         meshcat.GetRealtimeRate()
+        meshcat.SetSimulationTime(sim_time=1.0)
         meshcat.Flush()
 
         meshcat.StartRecording(frames_per_second=64.0,
@@ -341,7 +343,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIn("publish_period", repr(params))
         copy.copy(params)
         vis = mut.MeshcatVisualizer_[T](meshcat=meshcat, params=params)
-        vis.ResetRealtimeRateCalculator()
+        with catch_drake_warnings(expected_count=1) as w:
+            vis.ResetRealtimeRateCalculator()
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
         animation = vis.StartRecording(set_transforms_while_recording=True)

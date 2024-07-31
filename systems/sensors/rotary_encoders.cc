@@ -42,7 +42,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
                                   const std::vector<int>& input_vector_indices,
                                   const std::vector<int>& ticks_per_revolution)
     : VectorSystem<T>(SystemTypeTag<RotaryEncoders>{}, input_port_size,
-                      input_vector_indices.size() /* output_port_size */),
+                      /* output_port_size = */ input_vector_indices.size(),
+                      /* direct_feedthrough = */ true),
       num_encoders_(input_vector_indices.size()),
       indices_(input_vector_indices),
       ticks_per_revolution_(ticks_per_revolution) {
@@ -99,7 +100,7 @@ void RotaryEncoders<T>::DoCalcVectorOutput(
 template <typename T>
 void RotaryEncoders<T>::set_calibration_offsets(
     Context<T>* context,
-    const Eigen::Ref<VectorX<T>>& calibration_offsets) const {
+    const Eigen::Ref<const VectorX<T>>& calibration_offsets) const {
   DRAKE_DEMAND(calibration_offsets.rows() == num_encoders_);
   context->get_mutable_numeric_parameter(0).set_value(calibration_offsets);
 }
@@ -115,4 +116,4 @@ const VectorX<T>& RotaryEncoders<T>::get_calibration_offsets(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::sensors::RotaryEncoders)
+    class ::drake::systems::sensors::RotaryEncoders);

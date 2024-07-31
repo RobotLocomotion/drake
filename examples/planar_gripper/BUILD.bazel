@@ -1,4 +1,5 @@
 load("//tools/install:install.bzl", "install")
+load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
@@ -7,11 +8,8 @@ load(
     "drake_cc_library",
 )
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
+
+package(default_visibility = ["//visibility:private"])
 
 models_filegroup(
     name = "models",
@@ -78,7 +76,6 @@ drake_cc_library(
     data = [
         ":models",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//examples/planar_gripper:planar_gripper_common",
         "//geometry:drake_visualizer",

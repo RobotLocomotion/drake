@@ -34,7 +34,7 @@ the **hstack** of the the trajectories in the order they were added.
 template <typename T>
 class StackedTrajectory final : public Trajectory<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StackedTrajectory)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StackedTrajectory);
 
   /** Creates an empty trajectory.
   @param rowwise governs the stacking order */
@@ -77,4 +77,4 @@ class StackedTrajectory final : public Trajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::StackedTrajectory)
+    class drake::trajectories::StackedTrajectory);

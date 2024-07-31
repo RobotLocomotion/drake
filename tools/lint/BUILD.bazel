@@ -1,5 +1,3 @@
-package(default_visibility = ["//visibility:public"])
-
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/lint:python_lint.bzl",
@@ -13,7 +11,9 @@ load(
     "drake_py_unittest",
 )
 
-py_library(
+package(default_visibility = ["//visibility:public"])
+
+drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     deps = ["//tools:module_py"],

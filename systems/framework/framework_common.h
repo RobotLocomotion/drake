@@ -118,7 +118,7 @@ using SystemId = drake::Identifier<class SystemIdTag>;
 // A utility to call the package-private constructor of some framework classes.
 class FrameworkFactory {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FrameworkFactory)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FrameworkFactory);
   FrameworkFactory() = delete;
   ~FrameworkFactory() = delete;
 

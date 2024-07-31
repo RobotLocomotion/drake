@@ -1,0 +1,50 @@
+# -*- bazel -*-
+
+package(default_visibility = ["//visibility:public"])
+
+# We maintain a different filegroup for each subdirectory of the repository,
+# and only once we have vetted the license (in the main LICENSE file).
+#
+# DO NOT ADD new subdirectories here unless and until you vet their LICENSE.
+
+filegroup(
+    name = "google_robot",
+    srcs = [
+        "google_robot/robot.xml",
+        "google_robot/LICENSE",
+    ] + glob([
+        "google_robot/assets/*.obj",
+        "google_robot/assets/*.png",
+        "google_robot/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "hello_robot_stretch",
+    srcs = [
+        "hello_robot_stretch/stretch.xml",
+        "hello_robot_stretch/LICENSE",
+    ] + glob([
+        "hello_robot_stretch/assets/*.obj",
+        "hello_robot_stretch/assets/*.png",
+        "hello_robot_stretch/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "kuka_iiwa_14",
+    srcs = [
+        "kuka_iiwa_14/iiwa14.xml",
+        "kuka_iiwa_14/LICENSE",
+    ] + glob(["kuka_iiwa_14/assets/*.obj"]),
+)
+
+filegroup(
+    name = "rethink_robotics_sawyer",
+    srcs = [
+        "rethink_robotics_sawyer/sawyer.xml",
+        "rethink_robotics_sawyer/LICENSE",
+    ] + glob([
+        "rethink_robotics_sawyer/assets/*.obj",
+    ]),
+)

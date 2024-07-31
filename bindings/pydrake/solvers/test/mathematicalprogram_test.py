@@ -1059,9 +1059,15 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_add_l2norm_cost(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 'x')
-        prog.AddL2NormCost(
-            A=np.array([[1, 2.], [3., 4]]), b=np.array([1., 2.]), vars=x)
+        A = np.array([[1, 2.], [3., 4]])
+        b = np.array([1., 2.])
+        prog.AddL2NormCost(A=A, b=b, vars=x)
         self.assertEqual(len(prog.l2norm_costs()), 1)
+        prog.AddL2NormCost(
+            e=np.linalg.norm(A@x+b), psd_tol=1e-8, coefficient_tol=1e-8)
+        self.assertEqual(len(prog.l2norm_costs()), 2)
+        prog.AddCost(e=np.linalg.norm(A@x+b))
+        self.assertEqual(len(prog.l2norm_costs()), 3)
 
     def test_add_l2norm_cost_using_conic_constraint(self):
         prog = mp.MathematicalProgram()
@@ -1181,9 +1187,14 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddCost(z[0])
 
         # Add LorentzConeConstraints
+        prog.AddLorentzConeConstraint(
+            f=(z[0] >= np.linalg.norm(x)),
+            eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth,
+            psd_tol=1e-7,
+            coefficient_tol=1e-7)
         prog.AddLorentzConeConstraint(np.array([0*x[0]+1, x[0]-1, x[1]-1]))
         prog.AddLorentzConeConstraint(np.array([z[0], x[0], x[1]]))
-        self.assertEqual(len(prog.lorentz_cone_constraints()), 2)
+        self.assertEqual(len(prog.lorentz_cone_constraints()), 3)
 
         # Test result
         # The default initial guess is [0, 0, 0]. This initial guess is bad
@@ -1294,11 +1305,17 @@ class TestMathematicalProgram(unittest.TestCase):
         options_object.SetOption(mp.CommonSolverOption.kPrintToConsole, 1)
         options_object.SetOption(
             mp.CommonSolverOption.kPrintFileName, "foo.txt")
+        options_object.SetOption(
+            mp.CommonSolverOption.kStandaloneReproductionFileName,
+            "reproduction.py")
         options = options_object.GetOptions(solver_id)
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
         self.assertEqual(options_object.get_print_to_console(), True)
         self.assertEqual(options_object.get_print_file_name(), "foo.txt")
+        self.assertEqual(
+            options_object.get_standalone_reproduction_file_name(),
+            "reproduction.py")
 
         prog.SetSolverOptions(options_object)
         prog_options = prog.GetSolverOptions(solver_id)
@@ -1362,6 +1379,14 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.ClearVariableScaling()
         scaling = prog.GetVariableScaling()
         self.assertEqual(len(scaling), 0)
+
+    def test_remove_decision_variable(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        x1_index = prog.FindDecisionVariableIndex(x[1])
+        x1_index_removed = prog.RemoveDecisionVariable(x[1])
+        self.assertEqual(x1_index, x1_index_removed)
+        self.assertEqual(prog.num_vars(), 2)
 
     def test_remove_cost(self):
         prog = mp.MathematicalProgram()
@@ -1450,6 +1475,15 @@ class TestMathematicalProgram(unittest.TestCase):
             np.eye(3), np.ones((3,)), x)
         prog.RemoveConstraint(constraint=lcp_con)
         self.assertEqual(len(prog.linear_complementarity_constraints()), 0)
+
+    def test_remove_visualization_callback(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        callback = prog.AddVisualizationCallback(
+            lambda x_val: print(x_val[0]), x)
+        count = prog.RemoveVisualizationCallback(callback=callback)
+        self.assertEqual(count, 1)
+        self.assertEqual(len(prog.visualization_callbacks()), 0)
 
     def test_get_program_type(self):
         prog = mp.MathematicalProgram()

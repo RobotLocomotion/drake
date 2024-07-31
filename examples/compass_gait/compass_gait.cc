@@ -321,4 +321,4 @@ void CompassGait<T>::DoGetWitnessFunctions(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::examples::compass_gait::CompassGait)
+    class ::drake::examples::compass_gait::CompassGait);

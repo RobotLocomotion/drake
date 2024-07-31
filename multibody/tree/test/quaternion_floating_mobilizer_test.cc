@@ -50,12 +50,12 @@ TEST_F(QuaternionFloatingMobilizerTest, CanRotateOrTranslate) {
 TEST_F(QuaternionFloatingMobilizerTest, StateAccess) {
   const Quaterniond quaternion_value(
       RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
-  mobilizer_->set_quaternion(context_.get(), quaternion_value);
+  mobilizer_->SetQuaternion(context_.get(), quaternion_value);
   EXPECT_EQ(mobilizer_->get_quaternion(*context_).coeffs(),
             quaternion_value.coeffs());
 
   const Vector3d translation_value(1.0, 2.0, 3.0);
-  mobilizer_->set_translation(context_.get(), translation_value);
+  mobilizer_->SetTranslation(context_.get(), translation_value);
   EXPECT_EQ(mobilizer_->get_translation(*context_), translation_value);
 
   // Set mobilizer orientation using a rotation matrix.
@@ -71,13 +71,13 @@ TEST_F(QuaternionFloatingMobilizerTest, ZeroState) {
   // Set an arbitrary "non-zero" state.
   const Quaterniond quaternion_value(
       RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
-  mobilizer_->set_quaternion(context_.get(), quaternion_value);
+  mobilizer_->SetQuaternion(context_.get(), quaternion_value);
   EXPECT_EQ(mobilizer_->get_quaternion(*context_).coeffs(),
             quaternion_value.coeffs());
 
   // Set the "zero state" for this mobilizer, which does happen to be that of
   // an identity rigid transform.
-  mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
+  mobilizer_->SetZeroState(*context_, &context_->get_mutable_state());
   const RigidTransformd X_WB(
       mobilizer_->CalcAcrossMobilizerTransform(*context_));
   EXPECT_TRUE(X_WB.IsExactlyIdentity());
@@ -141,10 +141,10 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
 TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   const Quaterniond Q_WB(
       RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
-  mobilizer_->set_quaternion(context_.get(), Q_WB);
+  mobilizer_->SetQuaternion(context_.get(), Q_WB);
 
   const Vector3d p_WB(1.0, 2.0, 3.0);
-  mobilizer_->set_translation(context_.get(), p_WB);
+  mobilizer_->SetTranslation(context_.get(), p_WB);
 
   ASSERT_EQ(mobilizer_->num_positions(), 7);
   ASSERT_EQ(mobilizer_->num_velocities(), 6);
@@ -167,10 +167,10 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
 
 TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
   const Quaterniond quaternion(0, 0, 0, 0);
-  mobilizer_->set_quaternion(context_.get(), quaternion);
+  mobilizer_->SetQuaternion(context_.get(), quaternion);
 
   const Vector3d translation(0, 0, 0);
-  mobilizer_->set_translation(context_.get(), translation);
+  mobilizer_->SetTranslation(context_.get(), translation);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       mobilizer_->CalcAcrossMobilizerTransform(*context_),
@@ -182,10 +182,10 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
   // Set an arbitrary "non-zero" state.
   const Quaterniond Q_WB(
       RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
-  mobilizer_->set_quaternion(context_.get(), Q_WB);
+  mobilizer_->SetQuaternion(context_.get(), Q_WB);
 
   const Vector3d p_WB(1.0, 2.0, 3.0);
-  mobilizer_->set_translation(context_.get(), p_WB);
+  mobilizer_->SetTranslation(context_.get(), p_WB);
 
   EXPECT_FALSE(mobilizer_->is_velocity_equal_to_qdot());
 
@@ -208,10 +208,10 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
   // Set an arbitrary "non-zero" state.
   const Quaterniond Q_WB(
       RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
-  mobilizer_->set_quaternion(context_.get(), Q_WB);
+  mobilizer_->SetQuaternion(context_.get(), Q_WB);
 
   const Vector3d p_WB(1.0, 2.0, 3.0);
-  mobilizer_->set_translation(context_.get(), p_WB);
+  mobilizer_->SetTranslation(context_.get(), p_WB);
 
   // Set arbitrary qdot and MapQDotToVelocity
   VectorX<double> qdot(7);

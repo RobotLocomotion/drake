@@ -23,7 +23,7 @@ namespace {
 /* A no-op implementation of lcm::DrakeSubscriptionInterface. */
 class NoopDrakeSubscription final : public DrakeSubscriptionInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NoopDrakeSubscription)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NoopDrakeSubscription);
   NoopDrakeSubscription() = default;
   void set_unsubscribe_on_delete(bool) final {}
   void set_queue_capacity(int) final {}
@@ -32,7 +32,7 @@ class NoopDrakeSubscription final : public DrakeSubscriptionInterface {
 /* A no-op implementation of lcm::DrakeLcmInterface. */
 class NoopDrakeLcm final : public DrakeLcmInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NoopDrakeLcm)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NoopDrakeLcm);
   NoopDrakeLcm() = default;
   std::string get_lcm_url() const { return LcmBuses::kLcmUrlMemqNull; }
   void Publish(const std::string&, const void*, int,

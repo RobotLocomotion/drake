@@ -8,6 +8,7 @@
 #include "drake/common/overloaded.h"
 #include "drake/geometry/proximity/make_mesh_from_vtk.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/unit_inertia.h"
@@ -17,11 +18,11 @@ namespace multibody {
 namespace {
 
 using Eigen::Vector3d;
+using geometry::Mesh;
 using geometry::Shape;
 
 // @tparam MeshType must be either geometry::Mesh or geometry::Convex
-template <typename MeshType>
-SpatialInertia<double> CalcMeshSpatialInertia(const MeshType& mesh,
+SpatialInertia<double> CalcMeshSpatialInertia(const Mesh& mesh,
                                               double density) {
   const auto& extension = mesh.extension();
   if (extension == ".obj") {
@@ -37,7 +38,7 @@ SpatialInertia<double> CalcMeshSpatialInertia(const MeshType& mesh,
   }
   throw std::runtime_error(fmt::format(
       "CalcSpatialInertia currently only supports .obj or tetrahedral-mesh"
-      " .vtk files for mesh geometries but was given '{}'.",
+      " .vtk files for Mesh shapes but was given '{}'.",
       mesh.filename()));
 }
 
@@ -55,7 +56,13 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
             density, capsule.radius(), capsule.length(), Vector3d::UnitZ());
       },
       [density](const geometry::Convex& convex) {
-        return CalcMeshSpatialInertia(convex, density);
+        // Note: if converting from poly to tri proves to be an unbearable cost,
+        // we can skip the explicit conversion, and tessellate polygonal faces
+        // implicitly as we compute spatial inertia.
+        return CalcSpatialInertia(
+            geometry::internal::MakeTriangleFromPolygonMesh(
+                convex.GetConvexHull()),
+            density);
       },
       [density](const geometry::Cylinder& cylinder) {
         return SpatialInertia<double>::SolidCylinderWithDensity(

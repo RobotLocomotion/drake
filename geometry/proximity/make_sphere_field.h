@@ -14,16 +14,20 @@ namespace internal {
 
 /*
  Generates a piecewise-linear pressure field inside the given sphere as
- represented by the given volume mesh. The pressure at a point is defined
- as E * e(x) where e ∈ [0,1] is the extent -- a measure of penetration into
- the volume, and E is the given `hydroelastic_modulus`. The pressure is zero on
- the boundary with maximum E in the interior.
+ represented by the given volume mesh. The pressure at a point with distance r
+ from the origin is defined as E * e(r) where e is the extent -- a measure of
+ penetration into the volume, and E is the given `hydroelastic_modulus`. The
+ extent is defined as e(r) = 1 - r/ (R-δ), with R the radius of the sphere and δ
+ the `margin`. Therefore the zero pressure level set of this field defines
+ sphere of radius R-δ. Pressure is maximum at the center, with value E.
+
  @param sphere           The sphere with its canonical frame S.
  @param mesh_S           A pointer to a tetrahedral mesh of the sphere. It is
                          aliased in the returned pressure field and must remain
                          alive as long as the field. The position vectors of
                          mesh vertices are expressed in the sphere's frame S.
  @param hydroelastic_modulus  Scale extent to pressure.
+ @param margin           The magnitude of the margin δ.
  @return                 The pressure field defined on the tetrahedral mesh.
  @pre                    `hydroelastic_modulus` is strictly positive.
                          `mesh_S` represents the sphere and has enough
@@ -34,7 +38,7 @@ namespace internal {
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeSpherePressureField(
     const Sphere& sphere, const VolumeMesh<T>* mesh_S,
-    const T hydroelastic_modulus) {
+    const T hydroelastic_modulus, double margin = 0.0) {
   // TODO(DamrongGuoy): Switch to a better implementation in the future. The
   //  current implementation has a number of limitations:
   //  1. For simplicity, we use a scaling of distance to boundary, which is
@@ -47,6 +51,8 @@ VolumeMeshFieldLinear<T, T> MakeSpherePressureField(
   //     layers, and define linear pressure fields in each offset with
   //     different elastic modulus.
   DRAKE_DEMAND(hydroelastic_modulus > T(0));
+  DRAKE_DEMAND(sphere.radius() > margin);
+  using std::abs;
   const T radius = sphere.radius();
   std::vector<T> pressure_values;
   pressure_values.reserve(mesh_S->num_vertices());
@@ -54,10 +60,12 @@ VolumeMeshFieldLinear<T, T> MakeSpherePressureField(
   // vertices do not lie exactly on the surface of the sphere due to rounding
   // errors. We will treat their near-zero extent as exactly zero extent.
   const T kExtentEpsilon = 1e-14;
+  const T min_extent = -margin / (radius - margin);
   for (const Vector3<T>& r_SV : mesh_S->vertices()) {
-    T extent = T(1.0) - r_SV.norm() / radius;
-    if (extent < kExtentEpsilon) {
-      extent = T(0.0);
+    const T distance = radius - r_SV.norm();
+    T extent = (distance - margin) / (radius - margin);
+    if (abs(distance / radius) < kExtentEpsilon) {
+      extent = min_extent;
     }
     pressure_values.push_back(hydroelastic_modulus * extent);
   }

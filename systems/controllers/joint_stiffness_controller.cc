@@ -162,4 +162,4 @@ void JointStiffnessController<T>::CalcOutputForce(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::controllers::JointStiffnessController)
+    class ::drake::systems::controllers::JointStiffnessController);

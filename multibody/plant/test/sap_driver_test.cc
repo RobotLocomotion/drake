@@ -9,12 +9,15 @@
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_pd_controller_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/multibody/plant/test/spheres_stack.h"
+#include "drake/multibody/plant/test_utilities/multibody_plant_remodeling.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 
@@ -25,19 +28,37 @@ using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MergeNormalAndTangent;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapPdControllerConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
+using drake::multibody::internal::CompliantContactManager;
 using drake::multibody::internal::DiscreteContactPair;
 using drake::systems::Context;
 using Eigen::MatrixXd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::Vector4d;
 using Eigen::VectorXd;
 
 // TODO(amcastro-tri): Implement AutoDiffXd testing.
 
 namespace drake {
 namespace multibody {
+
+class MultibodyPlantTester {
+ public:
+  // Returns the manager for the given plant.
+  // @pre The plant must be discrete time and already finalized.
+  static CompliantContactManager<double>& manager(
+      const MultibodyPlant<double>& plant) {
+    auto* manager = dynamic_cast<CompliantContactManager<double>*>(
+        plant.discrete_update_manager_.get());
+    DRAKE_DEMAND(manager != nullptr);
+    return *manager;
+  }
+};
+
 namespace internal {
 
 constexpr double kEps = std::numeric_limits<double>::epsilon();
@@ -487,6 +508,61 @@ GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
     EXPECT_EQ(problem.get_constraint(1).num_constraint_equations(), 1);
     EXPECT_EQ(problem.get_constraint(2).num_constraint_equations(), 3);
     EXPECT_EQ(problem.get_constraint(3).num_constraint_equations(), 6);
+  }
+}
+
+TEST_F(MultibodyPlantRemodeling, AddPdControllerConstraints) {
+  BuildModel();
+  DoRemoval(true /* remove actuator */, false /* do not remove joint */);
+  // Set up actuators with pd controllers.
+  for (JointActuatorIndex actuator_index : plant_->GetJointActuatorIndices()) {
+    JointActuator<double>& actuator =
+        plant_->get_mutable_joint_actuator(actuator_index);
+    actuator.set_controller_gains({100, 10});
+  }
+
+  FinalizeAndBuild();
+
+  // Actuator with index 1 has been removed, so these are the feed forward
+  // torques and desired state for the 2 remaining actuators.
+  const Vector2d u_feed_forward(1.0, 2.0);
+  const Vector4d x_desired(3.0, 4.0, 5.0, 6.0);
+
+  // This is hardcoded based on internal knowledge of the model.
+  // -1 signifies the actuator at that index has been removed.
+  const std::vector<int> dof_to_actuator_input_start{0, -1, 1};
+
+  const systems::InputPort<double>& u_input =
+      plant_->get_actuation_input_port();
+  u_input.FixValue(plant_context_, u_feed_forward);
+
+  const systems::InputPort<double>& x_desired_input =
+      plant_->get_desired_state_input_port(default_model_instance());
+  x_desired_input.FixValue(plant_context_, x_desired);
+
+  // Test that AddPdControllerConstraints uses the correct indices into 'u'
+  // using JointActuator::input_start().
+  const SapDriver<double>& sap_driver =
+      CompliantContactManagerTester::sap_driver(
+          MultibodyPlantTester::manager(*plant_));
+  const ContactProblemCache<double>& problem_cache =
+      SapDriverTest::EvalContactProblemCache(sap_driver, *plant_context_);
+  const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+  EXPECT_EQ(problem_cache.num_pd_controller_constraints, 2);
+
+  for (int i = 0; i < problem_cache.num_pd_controller_constraints; ++i) {
+    const int constraint_id = problem_cache.pd_controller_constraints_start + i;
+    const SapPdControllerConstraint<double>& pd_constraint =
+        dynamic_cast<const SapPdControllerConstraint<double>&>(
+            problem.get_constraint(constraint_id));
+    const auto configuration = pd_constraint.configuration();
+    const int actuator_input_start =
+        dof_to_actuator_input_start[configuration.clique_dof];
+    EXPECT_EQ(configuration.qd, x_desired(actuator_input_start));
+    EXPECT_EQ(configuration.vd,
+              x_desired(actuator_input_start + plant_->num_actuated_dofs()));
+    EXPECT_EQ(configuration.u0, u_feed_forward(actuator_input_start));
   }
 }
 

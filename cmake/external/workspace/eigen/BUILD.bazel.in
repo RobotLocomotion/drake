@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
-load("@drake//tools/install:install.bzl", "install")
 load("@drake//:cmake/external/workspace/conversion.bzl", "split_cmake_list")
+load("@drake//tools/install:install.bzl", "install")
 
 EIGEN_DEFINES = split_cmake_list(
     "$<TARGET_PROPERTY:Eigen3::Eigen,INTERFACE_COMPILE_DEFINITIONS>",

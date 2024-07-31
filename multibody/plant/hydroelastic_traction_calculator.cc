@@ -24,10 +24,7 @@ template <class T>
 void HydroelasticTractionCalculator<T>::
     ComputeSpatialForcesAtCentroidFromHydroelasticModel(
         const Data& data, double dissipation, double mu_coulomb,
-        std::vector<HydroelasticQuadraturePointData<T>>*
-            traction_at_quadrature_points,
         SpatialForce<T>* F_Ac_W) const {
-  DRAKE_DEMAND(traction_at_quadrature_points != nullptr);
   DRAKE_DEMAND(F_Ac_W != nullptr);
 
   // Use a second-order Gaussian quadrature rule. For linear pressure fields,
@@ -44,11 +41,6 @@ void HydroelasticTractionCalculator<T>::
   // triangle-by-triangle.
   F_Ac_W->SetZero();
 
-  // Reserve enough memory to keep from doing repeated heap allocations in the
-  // quadrature process.
-  traction_at_quadrature_points->clear();
-  traction_at_quadrature_points->reserve(data.surface.num_faces());
-
   // Integrate the tractions over all triangles in the contact surface.
   for (int i = 0; i < data.surface.num_faces(); ++i) {
     // Construct the function to be integrated over triangle i.
@@ -56,12 +48,11 @@ void HydroelasticTractionCalculator<T>::
     //              create a new functor for every i).
     if (data.surface.is_triangle()) {
       std::function<SpatialForce<T>(const Vector3<T>&)> traction_Ac_W =
-          [this, &data, i, dissipation, mu_coulomb,
-           traction_at_quadrature_points](const Vector3<T>& Q_barycentric) {
-            traction_at_quadrature_points->emplace_back(CalcTractionAtPoint(
-                data, i, Q_barycentric, dissipation, mu_coulomb));
-            const HydroelasticQuadraturePointData<T>& traction_output =
-                traction_at_quadrature_points->back();
+          [this, &data, i, dissipation,
+           mu_coulomb](const Vector3<T>& Q_barycentric) {
+            const HydroelasticQuadraturePointData<T> traction_output =
+                CalcTractionAtPoint(data, i, Q_barycentric, dissipation,
+                                    mu_coulomb);
             return ComputeSpatialTractionAtAcFromTractionAtAq(
                 data, traction_output.p_WQ, traction_output.traction_Aq_W);
           };
@@ -74,10 +65,8 @@ void HydroelasticTractionCalculator<T>::
       // Update the spatial force at the centroid.
       (*F_Ac_W) += Fi_Ac_W;
     } else {
-      traction_at_quadrature_points->emplace_back(
-          CalcTractionAtCentroid(data, i, dissipation, mu_coulomb));
-      const HydroelasticQuadraturePointData<T>& traction_output =
-          traction_at_quadrature_points->back();
+      const HydroelasticQuadraturePointData<T> traction_output =
+          CalcTractionAtCentroid(data, i, dissipation, mu_coulomb);
       const SpatialForce<T> traction_Ac_W =
           ComputeSpatialTractionAtAcFromTractionAtAq(
               data, traction_output.p_WQ, traction_output.traction_Aq_W);
@@ -327,4 +316,4 @@ T HydroelasticTractionCalculator<T>::CalcAtanXOverXFromXSquared(const T& x2) {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::internal::HydroelasticTractionCalculator)
+    class drake::multibody::internal::HydroelasticTractionCalculator);

@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":contact_problem_graph",
+        ":dense_supernodal_solver",
         ":partial_permutation",
         ":sap_ball_constraint",
         ":sap_constraint",
@@ -44,6 +45,29 @@ drake_cc_library(
         ":partial_permutation",
         "//common:essential",
         "//common:sorted_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_supernodal_solver",
+    srcs = ["dense_supernodal_solver.cc"],
+    hdrs = ["dense_supernodal_solver.h"],
+    deps = [
+        "//common:essential",
+        "//multibody/contact_solvers:supernodal_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "expect_equal",
+    testonly = 1,
+    srcs = ["expect_equal.cc"],
+    hdrs = ["expect_equal.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":sap_constraint",
+        "//common:essential",
+        "@gtest//:without_main",
     ],
 )
 
@@ -93,6 +117,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+        "//math:autodiff",
         "//multibody/contact_solvers:matrix_block",
     ],
 )
@@ -173,6 +198,7 @@ drake_cc_library(
         ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
+        "//math:autodiff",
     ],
 )
 
@@ -245,6 +271,7 @@ drake_cc_library(
     hdrs = ["sap_model.h"],
     deps = [
         ":contact_problem_graph",
+        ":dense_supernodal_solver",
         ":partial_permutation",
         ":sap_constraint_bundle",
         ":sap_contact_problem",
@@ -252,6 +279,8 @@ drake_cc_library(
         "//common:essential",
         "//math:linear_solve",
         "//multibody/contact_solvers:block_sparse_matrix",
+        "//multibody/contact_solvers:block_sparse_supernodal_solver",
+        "//multibody/contact_solvers:conex_supernodal_solver",
         "//systems/framework:context",
         "//systems/framework:leaf_system",
     ],
@@ -284,6 +313,15 @@ drake_cc_library(
     deps = ["//common:default_scalars"],
 )
 
+drake_cc_googletest(
+    name = "dense_supernodal_solver_test",
+    deps = [
+        ":dense_supernodal_solver",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
 drake_cc_library(
     name = "validate_constraint_gradients",
     testonly = 1,
@@ -308,6 +346,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_constraint",
     ],
 )
@@ -337,6 +376,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_ball_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_ball_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -347,6 +387,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_coupler_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_coupler_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -357,6 +398,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_distance_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_distance_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -367,16 +409,19 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_fixed_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_fixed_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
 drake_cc_googletest(
     name = "sap_holonomic_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_holonomic_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -387,6 +432,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_hunt_crossley_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_hunt_crossley_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -399,6 +445,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_limit_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_limit_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -409,6 +456,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_pd_controller_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_pd_controller_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -419,6 +467,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_friction_cone_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_friction_cone_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -434,6 +483,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_weld_constraint_test",
     deps = [
+        ":expect_equal",
         ":sap_weld_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
@@ -461,11 +511,21 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "sap_solver_autodiff_test",
+    data = [
+        "@drake_models//:dishes",
+        "@drake_models//:iiwa_description",
+    ],
     deps = [
-        ":sap_friction_cone_constraint",
         ":sap_solver",
         ":sap_solver_results",
-        "//common/test_utilities:expect_throws_message",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:maybe_pause_for_user",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/plant:compliant_contact_manager_tester",
+        "//multibody/test_utilities:robot_model",
+        "//visualization:visualization_config_functions",
     ],
 )
 

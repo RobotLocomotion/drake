@@ -19,14 +19,10 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-// TODO(russt): Remove the experimental caveat once we've given this a proper
-// spin.
 /** @defgroup geometry_optimization Geometry Optimization
 @ingroup geometry
 @brief Provides an abstraction for reasoning about geometry in optimization
 problems, and using optimization problems to solve geometry problems.
-
-@experimental
 
 ### Relationship to other components in Drake.
 
@@ -163,6 +159,10 @@ class ConvexSet {
     if (ambient_dimension() == 0) {
       return !IsEmpty();
     }
+    const auto shortcut_result = DoPointInSetShortcut(x, tol);
+    if (shortcut_result.has_value()) {
+      return shortcut_result.value();
+    }
     return DoPointInSet(x, tol);
   }
 
@@ -276,6 +276,13 @@ class ConvexSet {
                                       const double desired_rel_accuracy = 1e-2,
                                       const int max_num_samples = 1e4) const;
 
+  /** Computes in the L₂ norm the distance and the nearest point in this convex
+   set to every column of @p points. If this set is empty, we return nullopt.
+   @pre points.rows() == ambient_dimension().
+   @throws if the internal convex optimization solver fails. */
+  std::optional<std::pair<std::vector<double>, Eigen::MatrixXd>> Projection(
+      const Eigen::Ref<const Eigen::MatrixXd>& points) const;
+
   /** Returns true if the exact volume can be computed for this convex set
   instance.
   @note This value reasons about to the generic case of the convex set class
@@ -285,7 +292,7 @@ class ConvexSet {
   bool has_exact_volume() const { return has_exact_volume_; }
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet);
 
   /** For use by derived classes to construct a %ConvexSet.
   @param has_exact_volume Derived classes should pass `true` if they've
@@ -311,6 +318,34 @@ class ConvexSet {
     return std::nullopt;
   }
 
+  /** Non-virtual interface implementation for DoProjectionShortcut().
+
+  This allows a derived class to implement a method which computes the
+  projection of some, but not necessarily all, of the @p points more efficiently
+  than the generic implementation.
+
+  The default implementation checks whether each column of @p points is in the
+  set using DoPointInSetShortcut. Points in the set are given a distance of 0
+  and are projected to themselves.
+
+  @param[in] points are the points which we wish to project to the convex set.
+  @param[in/out] projected_points are the projection of @p points onto the
+  convex set.
+  @return A vector `distances` which is the same size as @p points.cols().These
+  are the distances from @p points to the convex set. If distances[i] has a
+  value, then projected_points->col(i) is the projection of points.col(i) onto
+  the set. If distances[i] is nullopt, then the projection of points.col(i) has
+  not yet been computed, and so the value at projected_points->col(i) is
+  meaningless.
+
+  @pre ambient_dimension() >= 0
+  @pre distances.size() == points.cols()
+   */
+
+  virtual std::vector<std::optional<double>> DoProjectionShortcut(
+      const Eigen::Ref<const Eigen::MatrixXd>& points,
+      EigenPtr<Eigen::MatrixXd> projected_points) const;
+
   /** Non-virtual interface implementation for IsEmpty(). The default
   implementation solves a feasibility optimization problem, but derived
   classes can override with a custom (more efficient) implementation.
@@ -322,7 +357,7 @@ class ConvexSet {
   /** Non-virtual interface implementation for MaybeGetPoint(). The default
   implementation returns nullopt. Sets that can model a single point should
   override with a custom implementation.
-  @pre ambient_dimension() >= 0 */
+  @pre ambient_dimension() >= 0. */
   virtual std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
 
   /** Non-virtual interface implementation for MaybeGetFeasiblePoint(). The
@@ -334,7 +369,28 @@ class ConvexSet {
   @pre x.size() == ambient_dimension()
   @pre ambient_dimension() >= 0 */
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                            double tol) const = 0;
+                            double tol) const;
+
+  /** A non-virtual interface implementation for PointInSet() that should be
+   used when the PointInSet() can be computed more efficiently than solving a
+   convex program.
+
+   @returns Returns true if and only if x is known to be in the set. Returns
+   false if and only if x is known to not be in the set. Returns std::nullopt
+   if a shortcut implementation is not provided (i.e. the method has not
+   elected to decide whether the point x is in the set).
+
+   For example, membership in a VPolytope cannot be verified without solving a
+   linear program and so no shortcut implementation should be provided. On the
+   other hand, membership in an HPolyhedron can be checked by checking the
+   inequality Ax ≤ b and so a shortcut is possible.
+   */
+  virtual std::optional<bool> DoPointInSetShortcut(
+      const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const {
+    unused(x);
+    unused(tol);
+    return std::nullopt;
+  }
 
   /** Non-virtual interface implementation for AddPointInSetConstraints().
   @pre vars.size() == ambient_dimension()
@@ -401,6 +457,17 @@ class ConvexSet {
   /** Generic implementation for IsBounded() -- applicable for all convex sets.
   @pre ambient_dimension() >= 0 */
   bool GenericDoIsBounded() const;
+
+  /** Generic implementation for PointInSet() -- applicable for all convex sets.
+  @pre ambient_dimension() >= 0 */
+  bool GenericDoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+                           double tol) const;
+
+  /** Generic implementation for Projection() -- applicable for all convex sets.
+   @pre ambient_dimension() >= 0
+   */
+  std::optional<std::pair<std::vector<double>, Eigen::MatrixXd>>
+  GenericDoProjection(const Eigen::Ref<const Eigen::MatrixXd>& point) const;
 
   // The reset_after_move wrapper adjusts ConvexSet's default move constructor
   // and move assignment operator to set the ambient dimension of a moved-from

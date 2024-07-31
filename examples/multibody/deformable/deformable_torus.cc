@@ -44,9 +44,9 @@ DEFINE_double(
     "Hunt and Crossley damping for the deformable body, only used when "
     "'contact_approximation' is set to 'lagged' or 'similar' [s/m].");
 
-using drake::examples::deformable_torus::ParallelGripperController;
-using drake::examples::deformable_torus::PointSourceForceField;
-using drake::examples::deformable_torus::SuctionCupController;
+using drake::examples::deformable::ParallelGripperController;
+using drake::examples::deformable::PointSourceForceField;
+using drake::examples::deformable::SuctionCupController;
 using drake::geometry::AddContactMaterial;
 using drake::geometry::Box;
 using drake::geometry::Capsule;
@@ -132,7 +132,8 @@ ModelInstanceIndex AddParallelGripper(
   // station instead.
   Parser parser(plant);
   ModelInstanceIndex model_instance = parser.AddModelsFromUrl(
-      "package://drake/examples/multibody/deformable/simple_gripper.sdf")[0];
+      "package://drake/examples/multibody/deformable/models/simple_gripper.sdf")
+                                          [0];
   /* Add collision geometries. */
   const RigidTransformd X_BG =
       RigidTransformd(math::RollPitchYawd(M_PI_2, 0, 0), Vector3d::Zero());
@@ -198,17 +199,14 @@ int do_main() {
                   : AddParallelGripper(&plant, rigid_proximity_props);
 
   /* Set up a deformable torus. */
-  auto owned_deformable_model =
-      std::make_unique<DeformableModel<double>>(&plant);
-
   DeformableBodyConfig<double> deformable_config;
   deformable_config.set_youngs_modulus(FLAGS_E);
   deformable_config.set_poissons_ratio(FLAGS_nu);
   deformable_config.set_mass_density(FLAGS_density);
   deformable_config.set_stiffness_damping_coefficient(FLAGS_beta);
 
-  const std::string torus_vtk =
-      FindResourceOrThrow("drake/examples/multibody/deformable/torus.vtk");
+  const std::string torus_vtk = FindResourceOrThrow(
+      "drake/examples/multibody/deformable/models/torus.vtk");
   /* Load the geometry and scale it down to 65% (to showcase the scaling
    capability and to make the torus suitable for grasping by the gripper). */
   const double scale = 0.65;
@@ -221,7 +219,7 @@ int do_main() {
   auto torus_instance = std::make_unique<GeometryInstance>(
       X_WB, std::move(torus_mesh), "deformable_torus");
 
-  /* Minimumly required proximity properties for deformable bodies: A valid
+  /* Minimally required proximity properties for deformable bodies: A valid
    Coulomb friction coefficient. */
   ProximityProperties deformable_proximity_props;
   AddContactMaterial(FLAGS_contact_damping, {}, surface_friction,
@@ -235,7 +233,8 @@ int do_main() {
   // TODO(xuchenhan-tri): Though unused, we still asserts the resolution hint is
   // positive. Remove the requirement of a resolution hint for meshed shapes.
   const double unused_resolution_hint = 1.0;
-  owned_deformable_model->RegisterDeformableBody(
+  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
+  deformable_model.RegisterDeformableBody(
       std::move(torus_instance), deformable_config, unused_resolution_hint);
 
   /* Add an external suction force if using a suction gripper. */
@@ -244,22 +243,11 @@ int do_main() {
     auto suction_force = std::make_unique<PointSourceForceField>(
         plant, plant.GetBodyByName("cup_body"), Vector3d(0, 0, -0.07), 0.1);
     suction_force_ptr = suction_force.get();
-    owned_deformable_model->AddExternalForce(std::move(suction_force));
+    deformable_model.AddExternalForce(std::move(suction_force));
   }
-
-  const DeformableModel<double>* deformable_model =
-      owned_deformable_model.get();
-  plant.AddPhysicalModel(std::move(owned_deformable_model));
 
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();
-
-  /* It's essential to connect the vertex position port in DeformableModel to
-   the source configuration port in SceneGraph when deformable bodies are
-   present in the plant. */
-  builder.Connect(
-      deformable_model->vertex_positions_port(),
-      scene_graph.get_source_configuration_port(plant.get_source_id().value()));
 
   /* Add a visualizer that emits LCM messages for visualization. */
   geometry::DrakeVisualizerParams params;

@@ -21,7 +21,7 @@ namespace drake {
 template <typename T>
 class NameValue {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NameValue)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NameValue);
 
   /// Type of the referenced value.
   typedef T value_type;

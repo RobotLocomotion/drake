@@ -45,7 +45,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   typedef SpatialVector<::drake::multibody::SpatialVelocity, T> Base;
 
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity);
 
   /// Default constructor. In Release builds, all 6 elements of a newly
   /// constructed spatial velocity are uninitialized (for speed).  In Debug
@@ -71,19 +71,16 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// is V_MB_E (frame B's spatial velocity measured in a frame M and expressed
   /// in a frame E). On return `this` is modified to V_MC_E (frame C's spatial
   /// velocity measured in frame M and expressed in frame E).
-  /// @param[in] offset which is the position vector p_BoCo_E from frame B's
-  /// origin to frame C's origin, expressed in frame E. p_BoCo_E must have
-  /// the same expressed-in frame E as `this` spatial velocity.
-  /// @retval V_MC_E reference to `this` spatial velocity which has been
-  /// modified to be frame C's spatial velocity measured in frame M and
-  /// expressed in frame E. The components of V_MC_E are calculated as: <pre>
+  /// The components of V_MC_E are calculated as: <pre>
   ///  ω_MC_E = ω_MB_E                (angular velocity of `this` is unchanged).
   ///  v_MC_E = v_MB_E + ω_MB_E x p_BoCo_E     (translational velocity changes).
   /// </pre>
+  /// @param[in] offset which is the position vector p_BoCo_E from frame B's
+  /// origin to frame C's origin, expressed in frame E. p_BoCo_E must have
+  /// the same expressed-in frame E as `this` spatial velocity.
   /// @see Shift() to shift spatial velocity without modifying `this`.
-  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& offset) {
+  void ShiftInPlace(const Vector3<T>& offset) {
     this->translational() += this->rotational().cross(offset);
-    return *this;
     // Note: this operation is linear. [Jain 2010], (§1.4, page 12) uses the
     // "rigid body transformation operator" to write this as:
     //    V_MC = Φᵀ(p_BoCo) V_MB    where Φᵀ(p) is the linear operator:
@@ -109,7 +106,9 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// `this` whereas ShiftInPlace() does modify `this`.
   /// @see ShiftInPlace() for more information and how V_MC_E is calculated.
   SpatialVelocity<T> Shift(const Vector3<T>& offset) const {
-    return SpatialVelocity<T>(*this).ShiftInPlace(offset);
+    SpatialVelocity<T> result(*this);
+    result.ShiftInPlace(offset);
+    return result;
   }
 
   /// Compose `this` spatial velocity (measured in some frame M) with the
@@ -204,9 +203,9 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 template <typename T>
 inline SpatialVelocity<T> operator+(
     const SpatialVelocity<T>& V1_E, const SpatialVelocity<T>& V2_E) {
-  // Although this operator+() function simply calls an associated
-  // SpatialVector operator+=() function, it is needed for documentation.
-  return SpatialVelocity<T>(V1_E) += V2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialVelocity, T>::operator+(V1_E, V2_E);
 }
 
 /// Subtracts spatial velocities by simply subtracting their 6 underlying
@@ -236,9 +235,9 @@ inline SpatialVelocity<T> operator+(
 template <typename T>
 inline SpatialVelocity<T> operator-(
     const SpatialVelocity<T>& V1_E, const SpatialVelocity<T>& V2_E) {
-  // Although this operator-() function simply calls an associated
-  // SpatialVector operator-=() function, it is needed for documentation.
-  return SpatialVelocity<T>(V1_E) -= V2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialVelocity, T>::operator-(V1_E, V2_E);
 }
 
 template <typename T>
@@ -269,4 +268,4 @@ T SpatialVelocity<T>::dot(const SpatialMomentum<T>& momentum) const {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::SpatialVelocity)
+    class ::drake::multibody::SpatialVelocity);

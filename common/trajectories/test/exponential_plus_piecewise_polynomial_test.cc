@@ -19,19 +19,23 @@ namespace {
 template <typename T>
 void testSimpleCase() {
   int num_coefficients = 5;
-  int num_segments = 1;
 
   MatrixX<T> K = MatrixX<T>::Random(1, 1);
   MatrixX<T> A = MatrixX<T>::Random(1, 1);
   MatrixX<T> alpha = MatrixX<T>::Random(1, 1);
 
+  std::vector<double> breaks = {1.2, 3.4};
   default_random_engine generator;
-  auto segment_times =
-      PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
-  auto polynomial_part = test::MakeRandomPiecewisePolynomial<T>(
-      1, 1, num_coefficients, segment_times);
+  auto polynomial_part =
+      test::MakeRandomPiecewisePolynomial<T>(1, 1, num_coefficients, breaks);
 
   ExponentialPlusPiecewisePolynomial<T> expPlusPp(K, A, alpha, polynomial_part);
+  EXPECT_EQ(expPlusPp.rows(), 1);
+  EXPECT_EQ(expPlusPp.cols(), 1);
+  EXPECT_EQ(expPlusPp.get_number_of_segments(), 1);
+  EXPECT_EQ(expPlusPp.start_time(), breaks[0]);
+  EXPECT_EQ(expPlusPp.end_time(), breaks[1]);
+
   ExponentialPlusPiecewisePolynomial<T> derivative = expPlusPp.derivative();
 
   uniform_real_distribution<T> uniform(expPlusPp.start_time(),
@@ -45,6 +49,11 @@ void testSimpleCase() {
 
   EXPECT_NEAR(check, expPlusPp.value(t)(0), 1e-8);
   EXPECT_NEAR(derivative_check, derivative.value(t)(0), 1e-8);
+
+  const double kShift = 5.6;
+  expPlusPp.shiftRight(kShift);
+  EXPECT_EQ(expPlusPp.start_time(), breaks[0] + kShift);
+  EXPECT_EQ(expPlusPp.end_time(), breaks[1] + kShift);
 }
 
 GTEST_TEST(testExponentialPlusPiecewisePolynomial, BasicTest) {

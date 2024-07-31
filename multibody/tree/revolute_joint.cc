@@ -37,6 +37,9 @@ RevoluteJoint<T>::RevoluteJoint(const std::string& name,
 }
 
 template <typename T>
+RevoluteJoint<T>::~RevoluteJoint() = default;
+
+template <typename T>
 const std::string& RevoluteJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();
@@ -101,4 +104,4 @@ RevoluteJoint<T>::MakeImplementationBlueprint() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RevoluteJoint)
+    class ::drake::multibody::RevoluteJoint);

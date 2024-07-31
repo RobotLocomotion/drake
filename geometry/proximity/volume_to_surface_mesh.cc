@@ -152,7 +152,7 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&ConvertVolumeToSurfaceMeshWithBoundaryVertices<T>))
+    (&ConvertVolumeToSurfaceMeshWithBoundaryVertices<T>));
 
 }  // namespace internal
 }  // namespace geometry

@@ -16,4 +16,4 @@ State<T>::~State() {}
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::State)
+    class ::drake::systems::State);

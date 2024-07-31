@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -5,24 +6,9 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load(
-    "//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-    "drake_py_library",
-    "drake_py_unittest",
-)
-load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
 
 package(default_visibility = ["//visibility:public"])
-
-drake_py_library(
-    name = "module_py",
-    srcs = ["__init__.py"],
-    visibility = [":__pkg__"],
-    deps = [
-        "//manipulation:module_py",
-    ],
-)
 
 drake_cc_package_library(
     name = "util",
@@ -96,14 +82,14 @@ drake_cc_library(
     name = "zero_force_driver_functions",
     srcs = ["zero_force_driver_functions.cc"],
     hdrs = ["zero_force_driver_functions.h"],
-    interface_deps = [
+    deps = [
         ":zero_force_driver",
         "//multibody/parsing:model_instance_info",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_buses",
     ],
-    deps = [
+    implementation_deps = [
         "//systems/primitives:constant_vector_source",
     ],
 )
@@ -134,7 +120,6 @@ drake_cc_library(
 drake_py_binary(
     name = "show_model",
     srcs = ["show_model.py"],
-    data = ["@drake_models//:jaco_description"],
     deps = ["//bindings/pydrake"],
 )
 
@@ -264,15 +249,4 @@ filegroup(
     ],
 )
 
-drake_py_unittest(
-    name = "meshlab_to_sdf_test",
-    data = [
-        "meshlab_to_sdf.py",
-    ],
-)
-
-add_lint_tests(
-    python_lint_extra_srcs = [
-        "convert_to_visualize_collisions.py",
-    ],
-)
+add_lint_tests()

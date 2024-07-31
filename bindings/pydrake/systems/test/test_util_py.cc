@@ -46,7 +46,7 @@ class DeleteListenerVector : public BasicVector<T> {
 template <typename T>
 class MyVector2 : public BasicVector<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyVector2)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyVector2);
 
   explicit MyVector2(const Vector2<T>& data) : BasicVector<T>(data) {}
 

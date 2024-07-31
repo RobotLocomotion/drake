@@ -77,7 +77,7 @@ DEFINE_bool(with_constraints, true,
 template <typename T>
 class DesiredVelocityMotor final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DesiredVelocityMotor)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DesiredVelocityMotor);
 
   DesiredVelocityMotor(const MultibodyPlant<T>& plant, const Joint<T>& joint,
                        double omega_desired, double proportional)

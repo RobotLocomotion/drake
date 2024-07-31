@@ -51,7 +51,7 @@ namespace sensors {
 template <typename T>
 class Accelerometer final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Accelerometer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Accelerometer);
 
   /// @param body the body B to which the sensor is affixed
   /// @param X_BS the pose of sensor frame S in body B

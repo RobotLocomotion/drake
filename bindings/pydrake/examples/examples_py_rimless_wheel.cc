@@ -1,10 +1,10 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/examples/rimless_wheel/gen/rimless_wheel_continuous_state.h"
-#include "drake/examples/rimless_wheel/gen/rimless_wheel_params.h"
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
+#include "drake/examples/rimless_wheel/rimless_wheel_continuous_state.h"
 #include "drake/examples/rimless_wheel/rimless_wheel_geometry.h"
+#include "drake/examples/rimless_wheel/rimless_wheel_params.h"
 
 namespace drake {
 namespace pydrake {
@@ -36,7 +36,6 @@ void DefineExamplesRimlessWheel(py::module m) {
       .def_static("calc_alpha", &RimlessWheel<T>::calc_alpha, py::arg("params"),
           doc.RimlessWheel.calc_alpha.doc);
 
-  // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<RimlessWheelParams<T>, BasicVector<T>>(
       m, "RimlessWheelParams", doc.RimlessWheelParams.doc)
       .def(py::init<>(), doc.RimlessWheelParams.ctor.doc)

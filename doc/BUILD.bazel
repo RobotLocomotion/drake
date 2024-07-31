@@ -1,5 +1,4 @@
-package(default_visibility = ["//visibility:private"])
-
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
@@ -10,7 +9,8 @@ load(
     "DEFAULT_TEST_TAGS",
     "enumerate_filegroup",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
 
 exports_files([
     # For use by @drake//geometry:meshcat.
@@ -26,7 +26,7 @@ drake_py_library(
     ],
     visibility = ["//doc:__subpackages__"],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -147,7 +147,7 @@ drake_py_binary(
     test_rule_tags = DEFAULT_TEST_TAGS,
     deps = [
         ":defs",
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

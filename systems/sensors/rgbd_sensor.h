@@ -90,7 +90,7 @@ namespace sensors {
  @ingroup sensor_systems  */
 class RgbdSensor final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdSensor)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdSensor);
 
   /** Constructs an %RgbdSensor with fully specified render camera models for
    both color/label and depth cameras.

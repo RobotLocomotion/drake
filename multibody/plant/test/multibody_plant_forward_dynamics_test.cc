@@ -127,7 +127,7 @@ class KukaIiwaModelForwardDynamicsTests : public test::KukaIiwaModelTests {
 // the computation for an arbitrary set of robot states.
 TEST_F(KukaIiwaModelForwardDynamicsTests, ForwardDynamicsTest) {
   // Joint angles and velocities.
-  VectorX<double> q(kNumJoints - 1), qdot(kNumJoints - 1);
+  VectorX<double> q(kNumRevoluteJoints), qdot(kNumRevoluteJoints);
   double q30 = M_PI / 6, q45 = M_PI / 4, q60 = M_PI / 3;
 
   // Test 1: Static configuration.
@@ -171,8 +171,7 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
 
   // Create a context and store an arbitrary configuration.
   std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
-  for (JointIndex joint_index(0); joint_index < plant.num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant.GetJointIndices()) {
     const Joint<double>& joint = plant.get_joint(joint_index);
     // This model only has weld, revolute, and floating joints. Set the revolute
     // joints to an arbitrary angle.
@@ -243,6 +242,7 @@ GTEST_TEST(WeldedBoxesTest, ForwardDynamicsViaArticulatedBodyAlgorithm) {
 std::unique_ptr<systems::LinearSystem<double>> MakeLinearizedCartPole(
     double time_step) {
   MultibodyPlant<double> plant(time_step);
+  plant.SetUseSampledOutputPorts(false);  // Not compatible with linearization.
   Parser(&plant).AddModelsFromUrl(
       "package://drake/examples/multibody/cart_pole/cart_pole.sdf");
   plant.Finalize();

@@ -1,7 +1,8 @@
 load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
 
-py_binary(
+drake_py_binary(
     name = "upgrade",
     srcs = ["upgrade.py"],
     data = [
@@ -12,7 +13,7 @@ py_binary(
         "manual",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

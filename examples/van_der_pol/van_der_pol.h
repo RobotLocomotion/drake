@@ -31,7 +31,7 @@ namespace van_der_pol {
 template <typename T>
 class VanDerPolOscillator final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VanDerPolOscillator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VanDerPolOscillator);
 
   /// Constructs a default oscillator.
   VanDerPolOscillator();

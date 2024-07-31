@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -99,7 +99,7 @@ drake_cc_library(
     name = "iiwa_driver_functions",
     srcs = ["iiwa_driver_functions.cc"],
     hdrs = ["iiwa_driver_functions.h"],
-    interface_deps = [
+    deps = [
         ":iiwa_driver",
         "//common:essential",
         "//multibody/parsing:model_instance_info",
@@ -107,7 +107,7 @@ drake_cc_library(
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_buses",
     ],
-    deps = [
+    implementation_deps = [
         ":build_iiwa_control",
         "//manipulation/util:make_arm_controller_model",
         "//systems/primitives:shared_pointer_system",

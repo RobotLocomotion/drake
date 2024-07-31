@@ -42,7 +42,7 @@ namespace kuka_iiwa {
 /// @see `lcmt_iiwa_status.lcm` for additional documentation.
 class IiwaStatusReceiver final : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStatusReceiver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStatusReceiver);
 
   explicit IiwaStatusReceiver(int num_joints = kIiwaArmNumJoints);
   ~IiwaStatusReceiver() final;

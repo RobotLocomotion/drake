@@ -74,4 +74,4 @@ class VelocityNewmarkScheme final : public DiscreteTimeIntegrator<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fem::internal::VelocityNewmarkScheme)
+    class ::drake::multibody::fem::internal::VelocityNewmarkScheme);

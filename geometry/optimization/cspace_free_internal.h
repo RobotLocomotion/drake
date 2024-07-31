@@ -140,7 +140,7 @@ int GetGramVarSize(
 // where Zᵢ is a Gram matrix, i = 0, ..., num_y-1.  `grams` is a vector of
 // length `num_y`, and grams[i] = Zᵢ
 struct GramAndMonomialBasis {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GramAndMonomialBasis)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GramAndMonomialBasis);
 
   GramAndMonomialBasis(
       const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array,

@@ -24,7 +24,7 @@ import boto3
 import botocore
 import requests
 
-from drake.tools.workspace.metadata import read_repository_metadata
+from tools.workspace.metadata import read_repository_metadata
 
 
 BUCKET_NAME = 'drake-mirror'

@@ -93,7 +93,7 @@ namespace geometry {
 template <class Id, class KinematicsValue>
 class KinematicsVector {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KinematicsVector)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KinematicsVector);
 
   /** Initializes the vector with no data .*/
   KinematicsVector();

@@ -16,7 +16,7 @@ namespace test_utilities {
 template <typename T>
 class SpatialKinematicsPVA {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialKinematicsPVA)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialKinematicsPVA);
 
   /// Constructor that populates the members of this class.
   /// @param[in] X_NB transform relating the orientation/position of N to B.

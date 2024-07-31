@@ -19,7 +19,7 @@ namespace analysis_test {
 template <class T>
 class LogisticSystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LogisticSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LogisticSystem);
 
   LogisticSystem(double k, double alpha, double nu)
       : k_(k), alpha_(alpha), nu_(nu) {

@@ -75,7 +75,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
 class SdfParserWrapper final : public ParserInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdfParserWrapper)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdfParserWrapper);
   SdfParserWrapper();
   ~SdfParserWrapper() final;
   std::optional<ModelInstanceIndex> AddModel(

@@ -33,7 +33,7 @@ namespace internal {
 // data from a YAML file into a C++ structure.
 class YamlReadArchive final {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive);
 
   YamlReadArchive(internal::Node root, const LoadYamlOptions& options);
 

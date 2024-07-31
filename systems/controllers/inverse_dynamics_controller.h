@@ -67,7 +67,7 @@ class InverseDynamicsController final
     : public Diagram<T>,
       public StateFeedbackControllerInterface<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController);
 
   /**
    * Constructs an inverse dynamics controller for the given `plant` model.
@@ -81,9 +81,14 @@ class InverseDynamicsController final
    * @param has_reference_acceleration If true, there is an extra BasicVector
    * input port for `vd_d`. If false, `vd_d` is treated as zero, and no extra
    * input port is declared.
+   * @param plant_context The context of the `plant` that can be used to
+   * override the plant's default parameters. Note that this will be copied at
+   * time of construction, so there are no lifetime constraints.
    * @pre `plant` has been finalized (plant.is_finalized() returns `true`).
+   * Also, `plant` and `plant_context` must be compatible.
    * @throws std::exception if
    *  - The plant is not finalized (see MultibodyPlant::Finalize()).
+   *  - The plant is not compatible with the plant context.
    *  - The number of generalized velocities is not equal to the number of
    *    generalized positions.
    *  - The model is not fully actuated.
@@ -95,7 +100,8 @@ class InverseDynamicsController final
       const VectorX<double>& kp,
       const VectorX<double>& ki,
       const VectorX<double>& kd,
-      bool has_reference_acceleration);
+      bool has_reference_acceleration,
+      const Context<T>* plant_context = nullptr);
 
   /**
    * Constructs an inverse dynamics controller and takes the ownership of the
@@ -107,7 +113,8 @@ class InverseDynamicsController final
                             const VectorX<double>& kp,
                             const VectorX<double>& ki,
                             const VectorX<double>& kd,
-                            bool has_reference_acceleration);
+                            bool has_reference_acceleration,
+                            const Context<T>* plant_context = nullptr);
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -162,7 +169,8 @@ class InverseDynamicsController final
  private:
   void SetUp(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
              const VectorX<double>& kp, const VectorX<double>& ki,
-             const VectorX<double>& kd);
+             const VectorX<double>& kd,
+             const Context<T>* plant_context);
 
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
@@ -178,4 +186,4 @@ class InverseDynamicsController final
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::controllers::InverseDynamicsController)
+    class ::drake::systems::controllers::InverseDynamicsController);

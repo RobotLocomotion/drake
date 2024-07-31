@@ -24,7 +24,8 @@ GTEST_TEST(RotationMatrix, DefaultRotationMatrixIsIdentity) {
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
-// Test constructing a RotationMatrix from a Matrix3.
+// Test constructing a RotationMatrix from a Matrix3, both via the constructor
+// and the MakeUnchecked factory function.
 GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
@@ -39,17 +40,26 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
   Matrix3d zero_matrix = m - R1.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 
+  // Prepare a really poor non-orthogonal matrix.
+  // clang-format off
+  m << 1, 2, 3,
+       4, 5, 6,
+       7, 8, -10;
+  // clang-format on
+
   if (kDrakeAssertIsArmed) {
-    // Really poor non-orthogonal matrix should throw an exception.
-    // clang-format off
-    m << 1, 2, 3,
-         4, 5, 6,
-         7, 8, -10;
-    // clang-format on
+    // Should throw an exception in debug builds.
     DRAKE_EXPECT_THROWS_MESSAGE(
         RotationMatrix<double>{m},
         "Error: Rotation matrix is not orthonormal[\\s\\S]*");
+  }
 
+  // The corrupt matrix survives MakeUnchecked() without error.
+  const auto R2 = RotationMatrix<double>::MakeUnchecked(m);
+  EXPECT_TRUE(CompareMatrices(R2.matrix(), m));
+
+  // The remainder of this test case is some more debug-only checks.
+  if (kDrakeAssertIsArmed) {
     // Barely non-orthogonal matrix should throw an exception.
     // clang-format off
     m << 1, 9000 * kEpsilon, 9000 * kEpsilon,

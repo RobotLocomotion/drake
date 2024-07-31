@@ -13,6 +13,9 @@ std::ostream& operator<<(std::ostream& os,
     case CommonSolverOption::kPrintToConsole:
       os << "kPrintToConsole";
       return os;
+    case CommonSolverOption::kStandaloneReproductionFileName:
+      os << "kStandaloneReproductionFileName";
+      return os;
     default:
       DRAKE_UNREACHABLE();
   }

@@ -26,7 +26,7 @@ namespace internal {
 //           construction.
 template <class T>
 struct SortedTriplet {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SortedTriplet)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SortedTriplet);
   static_assert(is_less_than_comparable<T>::value,
                 "SortedTriplet can only be used with types that can be "
                 "compared using the less-than operator (operator<).");

@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/fmt_eigen.h"
+#include "drake/math/quadratic_form.h"
 
 namespace drake {
 namespace symbolic {
@@ -312,7 +313,7 @@ int DecomposeAffineExpression(
   *constant_term = 0;
   if (!e.is_polynomial()) {
     std::ostringstream oss;
-    oss << "Expression " << e << "is not a polynomial.\n";
+    oss << "Expression " << e << " is not a polynomial.\n";
     throw std::runtime_error(oss.str());
   }
   const symbolic::Polynomial poly{e};
@@ -341,6 +342,53 @@ int DecomposeAffineExpression(
     }
   }
   return num_variable;
+}
+
+std::tuple<bool, Eigen::MatrixXd, Eigen::VectorXd, VectorX<Variable>>
+DecomposeL2NormExpression(const symbolic::Expression& e, double psd_tol,
+                          double coefficient_tol) {
+  DRAKE_THROW_UNLESS(psd_tol >= 0);
+  DRAKE_THROW_UNLESS(coefficient_tol >= 0);
+  Eigen::MatrixXd A;
+  Eigen::VectorXd b;
+  VectorX<Variable> vars;
+  if (e.get_kind() != ExpressionKind::Sqrt) {
+    return {false, A, b, vars};
+  }
+  const Expression& arg = get_argument(e);
+  if (!arg.is_polynomial()) {
+    return {false, A, b, vars};
+  }
+  const symbolic::Polynomial poly{arg};
+  const int total_degree{poly.TotalDegree()};
+  if (total_degree != 2) {
+    return {false, A, b, vars};
+  }
+  auto e_extracted = ExtractVariablesFromExpression(e);
+  vars = std::move(e_extracted.first);
+  const auto& map_var_to_index = e_extracted.second;
+
+  // First decompose into the form 0.5 * x' * Q * x + r' * x + s.
+  Eigen::MatrixXd Q(vars.size(), vars.size());
+  Eigen::VectorXd r(vars.size());
+  double s;
+  DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &r, &s);
+  Q *= 0.5;
+
+  A = math::DecomposePSDmatrixIntoXtransposeTimesX(
+      Q, psd_tol, true /* return empty if not psd */);
+  if (A.rows() == 0) {
+    return {false, A, b, vars};
+  }
+  b = A.transpose().colPivHouseholderQr().solve(0.5 * r);
+  if ((A.transpose() * b - 0.5 * r).array().abs().maxCoeff() >
+      coefficient_tol) {
+    return {false, A, b, vars};
+  }
+  if (std::abs(s - b.dot(b)) > coefficient_tol) {
+    return {false, A, b, vars};
+  }
+  return {true, A, b, vars};
 }
 
 namespace {

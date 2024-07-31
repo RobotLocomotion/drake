@@ -12,7 +12,7 @@ namespace {
 // This is a test fixture.
 class LcmtDrakeSignalUtilsTest : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmtDrakeSignalUtilsTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmtDrakeSignalUtilsTest);
   LcmtDrakeSignalUtilsTest() = default;
 
  protected:

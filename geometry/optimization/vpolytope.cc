@@ -113,7 +113,7 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
   vertices_ = X_EG * vertices;
 }
 
-VPolytope::VPolytope(const HPolyhedron& hpoly, const double tol)
+VPolytope::VPolytope(const HPolyhedron& hpoly, double tol)
     : ConvexSet(hpoly.ambient_dimension(), true) {
   // First, assert that the HPolyhedron is bounded (since a VPolytope cannot
   // be used to represent an unbounded set).
@@ -310,10 +310,7 @@ VPolytope::VPolytope(const HPolyhedron& hpoly, const double tol)
   int ii = 0;
   for (const auto& facet : qhull.facetList()) {
     auto incident_hyperplanes = facet.vertices();
-    // A temporary fix that makes sure that vertex_A is a square matrix, as
-    // otherwise partialPivLu can segfault. This randomly occurs when Gurobi
-    // is used as a solver, see bug issue #21055 for details.
-    DRAKE_THROW_UNLESS(incident_hyperplanes.count() ==
+    DRAKE_THROW_UNLESS(incident_hyperplanes.count() >=
                        hpoly.ambient_dimension());
     MatrixXd vertex_A(incident_hyperplanes.count(), hpoly.ambient_dimension());
     for (int jj = 0; jj < incident_hyperplanes.count(); jj++) {
@@ -322,9 +319,11 @@ VPolytope::VPolytope(const HPolyhedron& hpoly, const double tol)
       vertex_A.row(jj) = Eigen::Map<Eigen::RowVectorXd, Eigen::Unaligned>(
           hyperplane.data(), hyperplane.size());
     }
-    vertices_.col(ii) = vertex_A.partialPivLu().solve(
-                            VectorXd::Ones(incident_hyperplanes.count())) +
-                        eigen_center;
+    // The matrix vertex_A is guaranteed to be full column rank and therefore
+    // the ColPivHouseholderQR factorization should be stable.
+    const Eigen::ColPivHouseholderQR<MatrixXd> QR(vertex_A);
+    vertices_.col(ii) =
+        QR.solve(VectorXd::Ones(incident_hyperplanes.count())) + eigen_center;
     ii++;
   }
 }

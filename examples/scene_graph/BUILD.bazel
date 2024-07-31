@@ -1,19 +1,25 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
-drake_cc_vector_gen_library(
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_library(
     name = "bouncing_ball_vector",
-    srcs = ["bouncing_ball_vector_named_vector.yaml"],
+    srcs = ["bouncing_ball_vector.cc"],
+    hdrs = ["bouncing_ball_vector.h"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_cc_library(
@@ -84,7 +90,12 @@ filegroup(
         "**/*.urdf",
         "**/*.xml",
     ]),
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//:__pkg__",
+        "//geometry:__pkg__",
+        "//geometry/render_gl:__pkg__",
+        "//geometry/render_vtk:__pkg__",
+    ],
 )
 
 drake_cc_library(

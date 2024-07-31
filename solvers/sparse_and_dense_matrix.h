@@ -18,7 +18,7 @@ namespace internal {
 class SparseAndDenseMatrix {
  public:
   // Delete these constructors for thread safety.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SparseAndDenseMatrix)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SparseAndDenseMatrix);
   explicit SparseAndDenseMatrix(const Eigen::SparseMatrix<double>& sparse);
 
   explicit SparseAndDenseMatrix(Eigen::MatrixXd dense);

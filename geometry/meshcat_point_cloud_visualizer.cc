@@ -87,4 +87,4 @@ MeshcatPointCloudVisualizer<T>::DoGetGraphvizFragment(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::MeshcatPointCloudVisualizer)
+    class ::drake::geometry::MeshcatPointCloudVisualizer);

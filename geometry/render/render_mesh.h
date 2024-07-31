@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -37,8 +38,12 @@ struct RenderMesh {
    meaningful. */
   UvState uv_state{UvState::kNone};
 
-  /* The specification of the material associated with this mesh data. */
-  RenderMaterial material;
+  /* The specification of the material associated with this mesh data.
+   `material` may be undefined (`std::nullopt`). Why it is undefined depends on
+   the origin of the `RenderMesh`. The consumer of the mesh is free to define
+   the material as they see fit by defining an arbitrary bespoke material or
+   using a utility like MakeDiffuseMaterial(). */
+  std::optional<RenderMaterial> material;
 };
 
 // TODO(SeanCurtis-TRI): All of this explanation, and general guidance for what
@@ -58,6 +63,16 @@ struct RenderMesh {
    - Failing to specify *any* material properties at all beyond its name.
    - Specifying a texture but failing to provide texture coordinates.
    - etc.
+
+ For faces with no material referenced in the obj file, this function creates a
+ RenderMesh that may or may not have a material by using the fallback logic. If
+ a `default_diffuse` value is provided, then a RenderMaterial is guaranteed to
+ be created. If no `default_diffuse` is provided, then the RenderMesh _may_ have
+ no material assigned. See MaybeMakeMeshFallbackMaterial() for more details. In
+ particular, if no material is assigned, then all heuristics in
+ MaybeMakeMeshFallbackMaterial() have already been attempted, and the only way
+ for the consumer of the RenderMesh to obtain a material is through
+ MakeDiffuseMaterial().
 
  Note: This API is similar to ReadObjToTriangleSurfaceMesh, but it differs in
  several ways:
@@ -90,10 +105,10 @@ struct RenderMesh {
                            they are present. */
 std::vector<RenderMesh> LoadRenderMeshesFromObj(
     const std::filesystem::path& obj_path, const GeometryProperties& properties,
-    const Rgba& default_diffuse,
+    const std::optional<Rgba>& default_diffuse,
     const drake::internal::DiagnosticPolicy& policy = {});
 
-/* Constructs a render mesh from a triangle surface mesh.
+/* Constructs a render mesh (without material) from a triangle surface mesh.
 
  The normal of a vertex v is computed using area-weighted normals of the
  triangles containing vertex v. In particular, for a watertight mesh, this will
@@ -103,13 +118,13 @@ std::vector<RenderMesh> LoadRenderMeshesFromObj(
 
  UvState will be set to UvState::kNone and all uv coordinates are set to zero.
  The material of the resulting render mesh is created using the protocol in
- MakeMeshFallbackMaterial() with the given `properties` and `default_diffuse`.
+ MaybeMakeMeshFallbackMaterial() with the given `properties`.
 
  The returned RenderMesh has the same number of positions, vertex normals, and
  uv coordinates as `mesh.num_vertices()`. */
 RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
     const TriangleSurfaceMesh<double>& mesh,
-    const GeometryProperties& properties, const Rgba& default_diffuse,
+    const GeometryProperties& properties,
     const drake::internal::DiagnosticPolicy& policy = {});
 
 /* A variant of MakeRenderMeshFromTriangleSurfaceMesh(). In this case, the
@@ -117,7 +132,7 @@ RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
  as a faceted mesh. */
 RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
     const TriangleSurfaceMesh<double>& mesh,
-    const GeometryProperties& properties, const Rgba& default_diffuse,
+    const GeometryProperties& properties,
     const drake::internal::DiagnosticPolicy& policy = {});
 
 /* Converts from RenderMesh to TriangleSurfaceMesh. Only connectivity and

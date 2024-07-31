@@ -50,7 +50,7 @@ namespace systems {
 template <typename T>
 class Saturation final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Saturation)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Saturation);
 
   /// Constructs a variable %Saturation system where the upper and lower values
   /// are represented by vectors of identical size and can be supplied via the

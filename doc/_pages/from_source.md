@@ -14,9 +14,10 @@ officially supports:
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java                          |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|-------------------------------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 7.0   | 3.22  | GCC 11 (default) or Clang 14 | OpenJDK 11                    |
-| macOS Ventura (13)                 | arm64        | 3.12       | 7.0   | 3.26  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
-| macOS Sonoma (14)                  | arm64        | 3.12       | 7.0   | 3.28  | Apple LLVM 15 (Xcode 15)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 7.2   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11                    |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 7.2   | 3.28  | GCC 13 (default) or Clang 15 | OpenJDK 21                    |
+| macOS Ventura (13)                 | arm64        | 3.12       | 7.2   | 3.26  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Sonoma (14)                  | arm64        | 3.12       | 7.2   | 3.28  | Apple LLVM 15 (Xcode 15)     | AdoptOpenJDK 16 (HotSpot JVM) |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -151,6 +152,13 @@ You will also need to have your ``PYTHONPATH`` configured correctly.
 ```bash
 cd drake-build
 export PYTHONPATH=${PWD}/install/lib/python3.10/site-packages:${PYTHONPATH}
+```
+
+*Ubuntu 24.04 (Jammy):*
+
+```bash
+cd drake-build
+export PYTHONPATH=${PWD}/install/lib/python3.12/site-packages:${PYTHONPATH}
 ```
 
 *macOS:*

@@ -37,11 +37,13 @@ namespace multibody {
 template <typename T>
 class ForceElement : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ForceElement)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ForceElement);
 
   /// Default constructor for a generic force element.
   explicit ForceElement(ModelInstanceIndex model_instance)
       : MultibodyElement<T>(model_instance) {}
+
+  ~ForceElement() override;
 
   /// Returns this element's unique index.
   ForceElementIndex index() const {

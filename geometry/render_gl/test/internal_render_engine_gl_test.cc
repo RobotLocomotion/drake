@@ -7,6 +7,8 @@
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
+#include <tiny_gltf.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkImageData.h>  // vtkCommonDataModel
@@ -15,6 +17,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
@@ -23,6 +26,8 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/image_io.h"
+#include "drake/systems/sensors/test_utilities/image_compare.h"
 
 DEFINE_bool(show_window, false, "Display render windows locally for debugging");
 
@@ -60,6 +65,14 @@ class RenderEngineGlTester {
     return engine_.visuals_.at(id);
   }
 
+  const TextureLibrary& texture_library() const {
+    return *engine_.texture_library_;
+  }
+
+  const std::vector<internal::OpenGlGeometry>& opengl_geometries() const {
+    return engine_.geometries_;
+  }
+
  private:
   const RenderEngineGl& engine_;
 };
@@ -67,6 +80,8 @@ class RenderEngineGlTester {
 namespace {
 
 using Eigen::AngleAxisd;
+using Eigen::DiagonalMatrix;
+using Eigen::Matrix4d;
 using Eigen::Translation3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -83,6 +98,8 @@ using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
+
+namespace fs = std::filesystem;
 
 // Default camera properties.
 const int kWidth = 640;
@@ -213,7 +230,11 @@ class RenderEngineGlTest : public ::testing::Test {
         // Looking straight down from 3m above the ground.
         X_WR_(RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitY()) *
                               AngleAxisd(-M_PI_2, Vector3d::UnitZ())},
-              {0, 0, kDefaultDistance}) {}
+              {0, 0, kDefaultDistance}) {
+    // Tests of glTF support work by creating a family of related files. We'll
+    // work in this directory.
+    temp_dir_ = temp_directory();
+  }
 
  protected:
   // Method to allow the normal case (render with the built-in renderer against
@@ -484,6 +505,78 @@ class RenderEngineGlTest : public ::testing::Test {
         << "Label at: " << inlier;
   }
 
+  // Copies some supporting files for the glTF tests into this test's temp
+  // directory.
+  void SetupGltfTest() {
+    // Note: we're only copying the files associated with
+    // fully_textured_pyramid.gltf that we actually need. As we support more of
+    // glTF functionality, we'll have to include more of the textures.
+    for (const char* resource : {"fully_textured_pyramid.bin",
+                                 "fully_textured_pyramid_base_color.png"}) {
+      const fs::path source_path = FindResourceOrThrow(
+          fmt::format("drake/geometry/render/test/meshes/{}", resource));
+      fs::copy_file(source_path, temp_dir_ / resource);
+    }
+  }
+
+  // Returns the path to the fully textured pyramid gltf file.
+  static fs::path gltf_pyramid_path() {
+    static never_destroyed<fs::path> path(FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf"));
+    return path.access();
+  }
+
+  void InitAndRegisterMesh(const fs::path& file_path) {
+    Init(RigidTransformd::Identity());
+    PerceptionProperties material;
+    material.AddProperty("label", "id", RenderLabel(1));
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(id, Mesh(file_path.string()), material,
+                              RigidTransformd::Identity(),
+                              false /* needs update */);
+  }
+
+  // Renders the built-in renderer with specific camera and rendering settings.
+  // Compares the resultant image with a reference image.
+  // @pre The renderer has been properly initialized.
+  void RenderAndCompareAgainstRef(std::string_view image_file_name,
+                                  RenderEngine* renderer_in = nullptr) {
+    RenderEngine* renderer =
+        renderer_in == nullptr ? renderer_.get() : renderer_in;
+    const RotationMatrixd R_WC(math::RollPitchYawd(-M_PI / 2.5, 0, M_PI / 4));
+    const RigidTransformd X_WC(
+        R_WC, R_WC * Vector3d(0, 0, -6) + Vector3d(0, 0, -0.15));
+    renderer->UpdateViewpoint(X_WC);
+
+    ImageRgba8U image(64, 64);
+    const ColorRenderCamera camera(
+        {"unused", {64, 64, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
+    renderer->RenderColorImage(camera, &image);
+
+    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+      const fs::path out_dir(dir);
+      systems::sensors::ImageIo{}.Save(
+          image, out_dir / fmt::format("{}.png", image_file_name));
+    }
+
+    ImageRgba8U expected_image;
+    const std::string ref_filename = FindResourceOrThrow(
+        "drake/geometry/render_gl/test/gl_fully_textured_pyramid_rendered.png");
+    systems::sensors::LoadImage(ref_filename, &expected_image);
+    // We're testing to see if the images are *mostly* equal. This accounts
+    // for the differences in CI's rendering technology from a local GPU. The
+    // images are deemed equivalent if 99% of the channel values are within 2
+    // of the reference color.
+    ASSERT_EQ(expected_image.size(), image.size());
+    Eigen::Map<VectorX<uint8_t>> data_expected(expected_image.at(0, 0),
+                                               expected_image.size());
+    Eigen::Map<VectorX<uint8_t>> data2(image.at(0, 0), image.size());
+    const auto differences =
+        (data_expected.cast<float>() - data2.cast<float>()).array().abs();
+    const int num_acceptable = (differences <= 2).count();
+    EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()), 0.99);
+  }
+
   RgbaColor expected_color_{kDefaultVisualColor};
   RgbaColor expected_outlier_color_{kTerrainColor};
   float expected_outlier_depth_{kDefaultDistance};
@@ -509,6 +602,8 @@ class RenderEngineGlTest : public ::testing::Test {
   unordered_map<GeometryId, RigidTransformd> X_WV_;
 
   unique_ptr<RenderEngineGl> renderer_;
+
+  fs::path temp_dir_;
 };
 
 // Tests an empty image -- confirms that it clears to the "empty" color -- no
@@ -1127,6 +1222,519 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   }
 }
 
+// A note on testing the glTF support.
+//
+// These tests are *not* exhaustive. These cover major features and general
+// regression tests. Some aspects have actively been left untested. If these
+// cause problems in the future, more tests can be added. Such untested features
+// include:
+//
+//  - Support for different numerical types (for both indices and vertex
+//    attributes).
+//  - Various kinds of primitives (triangle strips, points, lines, etc).
+//  - The requirement that all vertex attribute data for a single primitive be
+//    contained in a single buffer. The probability of this not being the case
+//    is quite small and if Drake encounters such a case, it should throw.
+//  - Correct handling of normals with anisotropic scale factors (computation of
+//    N_WN). We'll wait to see if people complain about the appearance. But as
+//    it is unlikely this will happen and it is difficult to articulate a unit
+//    test to verify the correctness, we'll defer it.
+//  - There are a number of throwing conditions. Most of them should be
+//    considered adversarially bad glTF files. These are conditions in which
+//    the glTF is syntactically "legal" but either meaningless or unsupported
+//    by Drake. (For this latter case, such cases are deemed to be unlikely.)
+//    For example, an index that is larger than the collection it indexes into.
+//    Such a glTF is syntactically valid, but meaningless. We're not going to
+//    put those throwing conditions under test.
+
+using GltfTweaker = std::function<void(nlohmann::json*)>;
+
+// Loads the json of the input glTF file, applies the `tweaker` operator to it
+// and writes it to the output glTF file.
+void TweakGltf(const fs::path& gltf_in, const fs::path& gltf_out,
+               GltfTweaker tweaker) {
+  std::ifstream in(gltf_in);
+  DRAKE_DEMAND(in.good());
+  nlohmann::json json = nlohmann::json::parse(in);
+  tweaker(&json);
+  std::ofstream out(gltf_out);
+  DRAKE_DEMAND(out.good());
+  out << std::setw(2) << json << "\n";
+  // TODO(SeanCurtis-TRI): Consider also dumping the modified file to the
+  // test output directory.
+}
+
+#define DoCompareTest(name)            \
+  {                                    \
+    SCOPED_TRACE(#name);               \
+    InitAndRegisterMesh(name);         \
+    RenderAndCompareAgainstRef(#name); \
+  }
+
+// Errors detected by tinygltf are forwarded.
+TEST_F(RenderEngineGlTest, GltfTinygltfErrors) {
+  SetupGltfTest();
+
+  // Malformed gltf file - removed a required field. This error is caught by
+  // tinygltf and represents all errors that tinygltf catches (including bad
+  // json and the like).
+  const fs::path malformed_gltf = temp_dir_ / "malformed_gltf.gltf";
+  TweakGltf(gltf_pyramid_path(), malformed_gltf, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+    model["accessors"][0].erase("count");
+  });
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      InitAndRegisterMesh(malformed_gltf),
+      ".*Failed parsing the glTF file.*property is missing[^]*");
+}
+
+// The error conditions for GltfMeshExtractor::FindTargetRootNodes().
+TEST_F(RenderEngineGlTest, GltfFindTargetRootNodesErrors) {
+  SetupGltfTest();
+
+  // Out of range default scene index.
+  const fs::path default_scene_oor = temp_dir_ / "default_scene_oor.gltf";
+  TweakGltf(gltf_pyramid_path(), default_scene_oor,
+            [](nlohmann::json* model_ptr) {
+              nlohmann::json& model = *model_ptr;
+              model["scene"] = 10;
+            });
+  DRAKE_EXPECT_THROWS_MESSAGE(InitAndRegisterMesh(default_scene_oor),
+                              ".*has an invalid value for the .glTF.scene..*");
+
+  // Scene references no nodes.
+  const fs::path empty_scene = temp_dir_ / "empty_scene.gltf";
+  TweakGltf(gltf_pyramid_path(), empty_scene, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+    model["scenes"][0]["nodes"] = {};
+  });
+  DRAKE_EXPECT_THROWS_MESSAGE(InitAndRegisterMesh(empty_scene),
+                              ".*scene 0 has no root nodes.*");
+
+  // No nodes or scenes.
+  const fs::path no_nodes_scenes = temp_dir_ / "no_nodes_scenes.gltf";
+  TweakGltf(gltf_pyramid_path(), no_nodes_scenes,
+            [](nlohmann::json* model_ptr) {
+              nlohmann::json& model = *model_ptr;
+              model.erase("nodes");
+              model.erase("scenes");
+              model.erase("scene");
+            });
+  DRAKE_EXPECT_THROWS_MESSAGE(InitAndRegisterMesh(no_nodes_scenes),
+                              ".*no scenes and no nodes.*");
+
+  // Node cycle (no scenes) --> there are no roots.
+  const fs::path node_cycle = temp_dir_ / "node_cycle.gltf";
+  TweakGltf(gltf_pyramid_path(), node_cycle, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+    // Node is its own parent.
+    model["nodes"][0]["children"].push_back(0);
+    model.erase("scenes");
+    model.erase("scene");
+  });
+  DRAKE_EXPECT_THROWS_MESSAGE(InitAndRegisterMesh(node_cycle),
+                              ".*none of its 1 nodes are root nodes.*");
+}
+
+// The error conditions for GltfMeshExtractor::InstantiateMesh().
+TEST_F(RenderEngineGlTest, GltfInstantiateMeshErrors) {
+  SetupGltfTest();
+
+  // All attributes reference the same buffer.
+  const fs::path cross_buffer_attribs = temp_dir_ / "cross_buffer_attribs.gltf";
+  TweakGltf(gltf_pyramid_path(), cross_buffer_attribs,
+            [](nlohmann::json* model_ptr) {
+              nlohmann::json& model = *model_ptr;
+              DRAKE_DEMAND(model["bufferViews"][0]["buffer"].get<int>() == 0);
+              model["bufferViews"][0]["buffer"] = 2;
+            });
+  DRAKE_EXPECT_THROWS_MESSAGE(InitAndRegisterMesh(cross_buffer_attribs),
+                              ".*All attributes.*same buffer.*");
+}
+
+// The error conditions for GltfMeshExtractor::ConfigureIndexBuffer().
+TEST_F(RenderEngineGlTest, GltfConfigureIndexBufferErrors) {
+  SetupGltfTest();
+
+  // Primitives must be indexed.
+  const fs::path non_indexed_prim = temp_dir_ / "non_indexed_prim.gltf";
+  TweakGltf(gltf_pyramid_path(), non_indexed_prim,
+            [](nlohmann::json* model_ptr) {
+              nlohmann::json& model = *model_ptr;
+              model["meshes"][0]["primitives"][0].erase("indices");
+            });
+  DRAKE_EXPECT_THROWS_MESSAGE(InitAndRegisterMesh(non_indexed_prim),
+                              ".*All meshes must be indexed.*");
+
+  // Accessors for index arrays must have "SCALAR" type.
+  const fs::path bad_index_type = temp_dir_ / "bad_index_type.gltf";
+  TweakGltf(gltf_pyramid_path(), bad_index_type, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+    const int a = model["meshes"][0]["primitives"][0]["indices"].get<int>();
+    model["accessors"][a]["type"] = "VEC2";
+  });
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      InitAndRegisterMesh(bad_index_type),
+      ".*type of an accessor for mesh indices to be 'SCALAR'.*");
+
+  // Index buffer_view byteStride is 0.
+  const fs::path bad_index_stride = temp_dir_ / "bad_index_stride.gltf";
+  TweakGltf(gltf_pyramid_path(), bad_index_stride,
+            [](nlohmann::json* model_ptr) {
+              nlohmann::json& model = *model_ptr;
+              const int accessor_index =
+                  model["meshes"][0]["primitives"][0]["indices"].get<int>();
+              const int bufferView_index =
+                  model["accessors"][accessor_index]["bufferView"].get<int>();
+              model["bufferViews"][bufferView_index]["byteStride"] = 4;
+            });
+  DRAKE_EXPECT_THROWS_MESSAGE(InitAndRegisterMesh(bad_index_stride),
+                              ".*indices must be compactly stored.*");
+}
+
+// Tests RenderEngineGl's handling of embedded textures:
+//
+//  - An embedded texture for baseColorTexture gets used.
+//  - Unused textures don't get handled at all.
+//
+// We'll replace the reference to an external base color texture with an
+// embedded texture representation of the same image and then confirm a) that we
+// get the same rendered image and b) the only image included in the engine's
+// texture library is the embedded image.
+//
+// Note: external images are implicitly tested in every other glTF test as the
+// renderings require the external image and its correct application.
+TEST_F(RenderEngineGlTest, GltfEmbeddedTextures) {
+  SetupGltfTest();
+
+  const fs::path embedded_path = temp_dir_ / "embedded_texture.gltf";
+  TweakGltf(gltf_pyramid_path(), embedded_path, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+
+    // Reads the base64 encoding of the pyramid's color texture.
+    std::ifstream data_file(
+        FindResourceOrThrow("drake/geometry/render/test/meshes/"
+                            "fully_textured_pyramid_base_color.base64"));
+    DRAKE_DEMAND(data_file.good());
+    std::stringstream data_contents;
+    data_contents << data_file.rdbuf();
+    // We know the decoded bytes from the .base64 file has this byte length.
+    const int byte_length = 10501;
+
+    // Adds a buffer with the embedded texture.
+    const int buffer_index = ssize(model["buffers"]);
+    model["buffers"].push_back(
+        {{"byteLength", byte_length},
+         {"uri", fmt::format("data:application/octet-stream;base64,{}",
+                             std::move(data_contents).str())}});
+
+    const int buffer_view_index = ssize(model["bufferViews"]);
+    model["bufferViews"].push_back({{"buffer", buffer_index},
+                                    {"byteLength", byte_length},
+                                    {"byteOffset", 0}});
+
+    // Creates an image based on the added buffer.
+    const int image_index = ssize(model["images"]);
+    model["images"].push_back({{"bufferView", buffer_view_index},
+                               {"byteLength", byte_length},
+                               {"mimeType", "image/png"},
+                               {"name", "embedded_base_color.png"}});
+
+    const int texture_index = ssize(model["textures"]);
+    // Confirms that the glTF already had textures and the resulting glTF will
+    // have multiple textures.
+    DRAKE_DEMAND(texture_index > 0);
+    model["textures"].push_back({{"sampler", 0}, {"source", image_index}});
+
+    // Replaces all baseColorTextures with the new texture.
+    bool replaced = false;
+    for (auto& material : model["materials"]) {
+      if (material.contains("pbrMetallicRoughness")) {
+        auto& pbr = material["pbrMetallicRoughness"];
+        if (pbr.contains("baseColorTexture")) {
+          pbr["baseColorTexture"]["index"] = texture_index;
+          replaced = true;
+        }
+      }
+    }
+    DRAKE_DEMAND(replaced);
+  });
+
+  DoCompareTest(embedded_path);
+
+  RenderEngineGlTester tester(renderer_.get());
+  const TextureLibrary& library = tester.texture_library();
+  // We only have a single texture in the library. The embedded image we expect.
+  // Also, we didn't copy any of the external textures to the temp directory;
+  // if we'd tried using them, we would've had a file access violation.
+  ASSERT_EQ(ssize(library.textures()), 1);
+  ASSERT_TRUE(library.textures().begin()->first.starts_with(
+      TextureLibrary::InMemoryPrefix()));
+}
+
+// Tests RenderEngineGl's node selection heuristics.
+//
+//  - If gltf.scene is not defined, use scene 0.
+//  - If gltf.scenes is not defined, use all nodes.
+TEST_F(RenderEngineGlTest, GltfIncludedNodes) {
+  SetupGltfTest();
+
+  // Remove the gltf.scene value.
+  const fs::path no_default_scene = temp_dir_ / "no_default_scene.gltf";
+  TweakGltf(gltf_pyramid_path(), no_default_scene,
+            [](nlohmann::json* model_ptr) {
+              nlohmann::json& model = *model_ptr;
+              DRAKE_DEMAND(model.contains("scene"));
+              model.erase("scene");
+            });
+  DoCompareTest(no_default_scene);
+
+  // Remove the gltf.scene and gltf.scenes.
+  const fs::path no_scenes = temp_dir_ / "no_scenes.gltf";
+  TweakGltf(gltf_pyramid_path(), no_scenes, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+    DRAKE_DEMAND(model.contains("scene"));
+    model.erase("scene");
+    DRAKE_DEMAND(model.contains("scenes"));
+    model.erase("scenes");
+  });
+  DoCompareTest(no_scenes);
+}
+
+// Tests the composition of transforms in the node hierarchy. We'll take the
+// pyramid model (which has a single node with no transforms). We'll inject a
+// new node into the hierarchy above it and apply a novel transform and define
+// the pyramid node's transform to be its inverse. The rendered result should
+// be the same as the original.
+//
+// Specifically, we want to show:
+//
+//    1. When defined, translation, scale, and rotation all contribute to the
+//       transform.
+//    2. Scale can be anisotropic.
+//    3. The transform can be given as a 4x4 homogeneous matrix.
+//
+// Note: by removing the gltf.scene and gltf.scenes, we are implicitly
+// confirming that the correct root nodes are identified (in
+// GltfMeshExtractor::FindAllRootNodes()).
+TEST_F(RenderEngineGlTest, GltfNodeTransforms) {
+  SetupGltfTest();
+
+  // First show that translation, scale, and rotation all combine. Note:
+  // we're using a *uniform* scale here because for a non-identity rotation and
+  // non-uniform scale, there may be no transform between pyramid and injected
+  // node that can undo the injected node's transformation.
+  const fs::path from_xform_elements = temp_dir_ / "from_xform_elements.gltf";
+  TweakGltf(
+      gltf_pyramid_path(), from_xform_elements, [](nlohmann::json* model_ptr) {
+        nlohmann::json& model = *model_ptr;
+        DRAKE_DEMAND(model["nodes"].size() == 1);
+        // Remove gltf.scene and gltf.scenes.
+        model.erase("scene");
+        model.erase("scenes");
+        const double scale = 2;
+        const double inv_scale = 1.0 / scale;
+        const Eigen::Quaterniond q_F1{0.5, 0.5, 0.5, 0.5};
+        const Eigen::Quaterniond q_10 = q_F1.inverse();
+        const Vector3d p_F1{1, 2, 3};
+        const Vector3d p_10 = inv_scale * (RotationMatrixd(q_10) * -p_F1);
+        model["nodes"].push_back(
+            {{"name", "injected"},
+             {"children", {0}},
+             {"translation", std::vector<double>(p_F1.data(), p_F1.data() + 3)},
+             {"rotation", {q_F1.x(), q_F1.y(), q_F1.z(), q_F1.w()}},
+             {"scale", {scale, scale, scale}}});
+        auto& pyramid = model["nodes"][0];
+        pyramid["translation"] =
+            std::vector<double>(p_10.data(), p_10.data() + 3);
+        pyramid["rotation"] = {q_10.x(), q_10.y(), q_10.z(), q_10.w()};
+        pyramid["scale"] = {inv_scale, inv_scale, inv_scale};
+        model["scenes"][0]["nodes"] = {1};
+      });
+  DoCompareTest(from_xform_elements);
+
+  // Test against non-uniform scale.
+  const fs::path non_uniform_scale = temp_dir_ / "non_uniform_scale.gltf";
+  TweakGltf(
+      gltf_pyramid_path(), non_uniform_scale, [](nlohmann::json* model_ptr) {
+        nlohmann::json& model = *model_ptr;
+        DRAKE_DEMAND(model["nodes"].size() == 1);
+        model["nodes"].push_back(
+            {{"name", "injected"}, {"children", {0}}, {"scale", {4, 2, 5}}});
+        auto& pyramid = model["nodes"][0];
+        pyramid["scale"] = {1.0 / 4.0, 1.0 / 2.0, 1.0 / 5.0};
+        model["scenes"][0]["nodes"] = {1};
+      });
+  DoCompareTest(non_uniform_scale);
+
+  // Test a general matrix. We can use non-uniform scale here because we don't
+  // need to decompose T_10 into scale, rotation, and translation. A weird
+  // skew matrix is fine, as long as it is equal to T_F1⁻¹.
+  const fs::path transform_matrix = temp_dir_ / "transform_matrix.gltf";
+  TweakGltf(
+      gltf_pyramid_path(), transform_matrix, [](nlohmann::json* model_ptr) {
+        nlohmann::json& model = *model_ptr;
+        RigidTransformd X_F1(RotationMatrixd(), Vector3d(1, 2, 3));
+        const Matrix4d T_F1 =
+            DiagonalMatrix<double, 4>(4, 2, 5, 1) * X_F1.GetAsMatrix4();
+        const Matrix4d T_10 = X_F1.inverse().GetAsMatrix4() *
+                              DiagonalMatrix<double, 4>(0.25, 0.5, 0.2, 1);
+        auto matrix_vector = [](const Matrix4d& T) {
+          std::vector<double> result;
+          for (int c = 0; c < 4; ++c) {
+            for (int r = 0; r < 4; ++r) {
+              // glTF uses column-major ordering.
+              result.push_back(T(r, c));
+            }
+          }
+          return result;
+        };
+        DRAKE_DEMAND(model["nodes"].size() == 1);
+        model["nodes"].push_back({{"name", "injected"},
+                                  {"children", {0}},
+                                  {"matrix", matrix_vector(T_F1)}});
+        auto& pyramid = model["nodes"][0];
+        pyramid["matrix"] = matrix_vector(T_10);
+        model["scenes"][0]["nodes"] = {1};
+      });
+  DoCompareTest(transform_matrix);
+}
+
+// Tests various requirements and behaviors relating to vertex attributes:
+//
+//   1. Missing normals throw.
+//   2. Missing texture coordinates won't apply textures.
+//   3. Textures that reference any uv set other than 0 are ignored.
+TEST_F(RenderEngineGlTest, GltfVertexAttributes) {
+  SetupGltfTest();
+
+  // Missing normals are an error.
+  const fs::path missing_normals = temp_dir_ / "missing_normals.gltf";
+  TweakGltf(gltf_pyramid_path(), missing_normals,
+            [](nlohmann::json* model_ptr) {
+              nlohmann::json& model = *model_ptr;
+              for (auto& mesh : model["meshes"]) {
+                for (auto& primitive : mesh["primitives"]) {
+                  primitive["attributes"].erase("NORMAL");
+                }
+              }
+            });
+  DRAKE_EXPECT_THROWS_MESSAGE(InitAndRegisterMesh(missing_normals),
+                              ".* missing the attribute 'NORMAL'.*");
+
+  // Missing uvs merely mean no texture gets applied.
+  const fs::path missing_uvs = temp_dir_ / "missing_uvs.gltf";
+  TweakGltf(gltf_pyramid_path(), missing_uvs, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+    for (auto& mesh : model["meshes"]) {
+      for (auto& primitive : mesh["primitives"]) {
+        primitive["attributes"].erase("TEXCOORD_0");
+      }
+    }
+  });
+  // Registering it is not a problem. But no textures got registered.
+  EXPECT_NO_THROW(InitAndRegisterMesh(missing_uvs));
+  ASSERT_EQ(
+      ssize(RenderEngineGlTester(renderer_.get()).texture_library().textures()),
+      0);
+
+  // A texture referencing the wrong uv set (non-zero) is ignored.
+  const fs::path wrong_uv_set = temp_dir_ / "wrong_uv_set.gltf";
+  TweakGltf(gltf_pyramid_path(), wrong_uv_set, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+    for (auto& mat : model["materials"]) {
+      auto& color_info = mat["pbrMetallicRoughness"]["baseColorTexture"];
+      color_info["texCoord"] = 1;
+    }
+  });
+  // Registering it is not a problem. But no textures got registered.
+  EXPECT_NO_THROW(InitAndRegisterMesh(wrong_uv_set));
+  ASSERT_EQ(
+      ssize(RenderEngineGlTester(renderer_.get()).texture_library().textures()),
+      0);
+}
+
+// Tests that the material heuristic is applied if the glTF mesh doesn't
+// apply one explicitly.
+//
+// In this case, we'll simply set a diffuse texture in the perception properties
+// and confirm its (sole) presence in the texture library as evidence that the
+// fallback material logic has been engaged.
+TEST_F(RenderEngineGlTest, GltfMaterialHeuristic) {
+  SetupGltfTest();
+
+  const fs::path no_material = temp_dir_ / "no_material.gltf";
+  TweakGltf(gltf_pyramid_path(), no_material, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+    for (auto& mesh : model["meshes"]) {
+      for (auto& primitive : mesh["primitives"]) {
+        primitive.erase("material");
+      }
+    }
+  });
+
+  // Register with diffuse map specified as perception properties.
+  const std::string diffuse_map = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/rainbow_stripes.png");
+  Init(RigidTransformd::Identity());
+  PerceptionProperties material;
+  material.AddProperty("label", "id", RenderLabel(1));
+  material.AddProperty("phong", "diffuse_map", diffuse_map);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, Mesh(no_material.string()), material,
+                            RigidTransformd::Identity(),
+                            false /* needs update */);
+
+  RenderEngineGlTester tester(renderer_.get());
+  const TextureLibrary& library = tester.texture_library();
+  // We only have a single texture in the library: the embedded image we expect.
+  // Also, we didn't copy any of the external textures to the temp directory;
+  // if we'd tried using them, we would've had a file access violation.
+  ASSERT_EQ(ssize(library.textures()), 1);
+  ASSERT_TRUE(
+      library.textures().begin()->first.ends_with("rainbow_stripes.png"));
+}
+
+// The baseline regression test against a typical Drake-compatible glTF file.
+// Also confirm that the functionality still works in the cloned engine.
+TEST_F(RenderEngineGlTest, GltfBaseline) {
+  InitAndRegisterMesh(gltf_pyramid_path());
+  {
+    SCOPED_TRACE("baseline");
+    RenderAndCompareAgainstRef("gltf_baseline");
+    // The only texture type currently supported is the base color.
+    RenderEngineGlTester tester(renderer_.get());
+    const TextureLibrary& library = tester.texture_library();
+    ASSERT_EQ(ssize(library.textures()), 1);
+    ASSERT_TRUE(library.textures().begin()->first.ends_with("base_color.png"));
+  }
+
+  {
+    SCOPED_TRACE("from_clone");
+    auto base_engine = renderer_->Clone();
+    RenderAndCompareAgainstRef("from_clone", base_engine.get());
+  }
+}
+
+// Confirm that a glTF buffer gets registered once and reused. We'll duplicate
+// the primitive and confirm they both reference the same vertex buffer.
+TEST_F(RenderEngineGlTest, GltfOpenGlBufferReuse) {
+  SetupGltfTest();
+
+  const fs::path multi_prim = temp_dir_ / "multi_prim.gltf";
+  TweakGltf(gltf_pyramid_path(), multi_prim, [](nlohmann::json* model_ptr) {
+    nlohmann::json& model = *model_ptr;
+    auto& primitives = model["meshes"][0]["primitives"];
+    primitives.push_back(primitives[0]);
+  });
+  InitAndRegisterMesh(multi_prim);
+
+  RenderEngineGlTester tester(renderer_.get());
+  const auto& geometries = tester.opengl_geometries();
+  ASSERT_EQ(geometries.size(), 2);
+  EXPECT_EQ(geometries[0].vertex_buffer, geometries[1].vertex_buffer);
+}
+
 // A variant of MeshTest. Confirms the support for mesh files which contain
 // multiple materials/parts. Conceptually, the mesh file is a cube with
 // different colors on each side. We'll render the cube six times with different
@@ -1141,6 +1749,11 @@ TEST_F(RenderEngineGlTest, MeshTest) {
 //
 // If all of that is processed correctly, we should get a cube with a different
 // color on each face. We'll test for those colors.
+//
+// This test renders against an original engine and its clone (to confirm that
+// the render artifacts survive cloning). This has a secondary benefit of
+// detecting if anything happens to corrupt the relationship between original
+// and cloned context (see, e.g., #21326).
 TEST_F(RenderEngineGlTest, MultiMaterialObj) {
   struct Face {
     // The expected *illuminated* material color. The simple illumination model
@@ -1756,11 +2369,11 @@ TEST_F(RenderEngineGlTest, ConvexGeometryReuse) {
   const RenderEngineGlTester::Prop& prop1 = tester.GetVisual(id1);
   const RenderEngineGlTester::Prop& prop2 = tester.GetVisual(id2);
 
-  EXPECT_EQ(prop1.parts.size(), 1);
-  EXPECT_EQ(prop1.parts.size(), prop2.parts.size());
+  EXPECT_EQ(prop1.instances.size(), 1);
+  EXPECT_EQ(prop1.instances.size(), prop2.instances.size());
   // Different instances nevertheless share the same geometry.
-  EXPECT_NE(&prop1.parts[0].instance, &prop2.parts[0].instance);
-  EXPECT_EQ(prop1.parts[0].instance.geometry, prop2.parts[0].instance.geometry);
+  EXPECT_NE(&prop1.instances[0], &prop2.instances[0]);
+  EXPECT_EQ(prop1.instances[0].geometry, prop2.instances[0].geometry);
 }
 
 // Confirms that when requesting the same mesh multiple times, only a single
@@ -1787,11 +2400,11 @@ TEST_F(RenderEngineGlTest, MeshGeometryReuse) {
   const RenderEngineGlTester::Prop& prop1 = tester.GetVisual(id1);
   const RenderEngineGlTester::Prop& prop2 = tester.GetVisual(id2);
 
-  EXPECT_EQ(prop1.parts.size(), 1);
-  EXPECT_EQ(prop1.parts.size(), prop2.parts.size());
+  EXPECT_EQ(prop1.instances.size(), 1);
+  EXPECT_EQ(prop1.instances.size(), prop2.instances.size());
   // Different instances nevertheless share the same geometry.
-  EXPECT_NE(&prop1.parts[0].instance, &prop2.parts[0].instance);
-  EXPECT_EQ(prop1.parts[0].instance.geometry, prop2.parts[0].instance.geometry);
+  EXPECT_NE(&prop1.instances[0], &prop2.instances[0]);
+  EXPECT_EQ(prop1.instances[0].geometry, prop2.instances[0].geometry);
 }
 
 // Confirm the properties of the fallback camera using the following

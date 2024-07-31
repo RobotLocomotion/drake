@@ -1,6 +1,5 @@
-load("//tools/skylark:py.bzl", "py_binary")
-load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -14,7 +13,7 @@ config_setting(
     constraint_values = ["@platforms//os:osx"],
 )
 
-py_binary(
+drake_py_binary(
     name = "rewrite_osx_ar_hidden",
     srcs = ["rewrite_osx_ar_hidden.py"],
 )
@@ -29,7 +28,7 @@ drake_py_unittest(
         ":pathutils.bzl",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

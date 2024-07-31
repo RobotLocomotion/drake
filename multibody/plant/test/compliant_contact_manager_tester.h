@@ -15,41 +15,46 @@ namespace internal {
 // of helper methods.
 class CompliantContactManagerTester {
  public:
+  template <typename T>
   static const internal::MultibodyTreeTopology& topology(
-      const CompliantContactManager<double>& manager) {
+      const CompliantContactManager<T>& manager) {
     return manager.tree_topology();
   }
 
+  template <typename T>
   static BodyIndex FindBodyByGeometryId(
-      const CompliantContactManager<double>& manager, geometry::GeometryId id) {
+      const CompliantContactManager<T>& manager, geometry::GeometryId id) {
     return manager.FindBodyByGeometryId(id);
   }
 
-  static const std::vector<geometry::ContactSurface<double>>&
-  EvalContactSurfaces(const CompliantContactManager<double>& manager,
-                      const drake::systems::Context<double>& context) {
-    return manager.EvalContactSurfaces(context);
+  template <typename T>
+  static const GeometryContactData<T>& EvalGeometryContactData(
+      const CompliantContactManager<T>& manager,
+      const systems::Context<T>& context) {
+    return manager.EvalGeometryContactData(context);
   }
 
   // N.B. Actuation input is always included, regardless of solver choice.
-  static void CalcNonContactForces(
-      const CompliantContactManager<double>& manager,
-      const drake::systems::Context<double>& context,
-      bool include_joint_limit_penalty_forces,
-      MultibodyForces<double>* forces) {
+  template <typename T>
+  static void CalcNonContactForces(const CompliantContactManager<T>& manager,
+                                   const drake::systems::Context<T>& context,
+                                   bool include_joint_limit_penalty_forces,
+                                   MultibodyForces<T>* forces) {
     const bool include_pd_controlled_input = true;
     manager.CalcNonContactForces(context, include_joint_limit_penalty_forces,
                                  include_pd_controlled_input, forces);
   }
 
-  static const SapDriver<double>& sap_driver(
-      const CompliantContactManager<double>& manager) {
+  template <typename T>
+  static const SapDriver<T>& sap_driver(
+      const CompliantContactManager<T>& manager) {
     DRAKE_DEMAND(manager.sap_driver_ != nullptr);
     return *manager.sap_driver_;
   }
 
-  static const TamsiDriver<double>& tamsi_driver(
-      const CompliantContactManager<double>& manager) {
+  template <typename T>
+  static const TamsiDriver<T>& tamsi_driver(
+      const CompliantContactManager<T>& manager) {
     DRAKE_DEMAND(manager.tamsi_driver_ != nullptr);
     return *manager.tamsi_driver_;
   }
@@ -57,18 +62,19 @@ class CompliantContactManagerTester {
   // Returns the Jacobian J_AcBc_C. This method takes the Jacobian blocks
   // evaluated with EvalContactJacobianCache() and assembles them into a dense
   // Jacobian matrix.
-  static Eigen::MatrixXd CalcDenseJacobianMatrixInContactFrame(
-      const CompliantContactManager<double>& manager,
-      const DiscreteContactData<DiscreteContactPair<double>>& contact_pairs) {
+  template <typename T>
+  static Eigen::MatrixX<T> CalcDenseJacobianMatrixInContactFrame(
+      const CompliantContactManager<T>& manager,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs) {
     const int nc = contact_pairs.size();
-    Eigen::MatrixXd J_AcBc_C(3 * nc, manager.plant().num_velocities());
+    Eigen::MatrixX<T> J_AcBc_C(3 * nc, manager.plant().num_velocities());
     J_AcBc_C.setZero();
     const auto& topology = CompliantContactManagerTester::topology(manager);
     for (int i = 0; i < nc; ++i) {
       const int row_offset = 3 * i;
-      const DiscreteContactPair<double>& contact_pair = contact_pairs[i];
-      for (const DiscreteContactPair<double>::JacobianTreeBlock& tree_jacobian :
-           contact_pair.jacobian) {
+      const DiscreteContactPair<T>& contact_pair = contact_pairs[i];
+      for (const typename DiscreteContactPair<T>::JacobianTreeBlock&
+               tree_jacobian : contact_pair.jacobian) {
         // If added to the Jacobian, it must have a valid index.
         EXPECT_TRUE(tree_jacobian.tree.is_valid());
         const int col_offset =

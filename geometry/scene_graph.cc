@@ -42,7 +42,7 @@ namespace {
 template <typename T>
 class GeometryStateValue final : public Value<GeometryState<T>> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryStateValue)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryStateValue);
 
   GeometryStateValue() = default;
   explicit GeometryStateValue(const GeometryState<T>& state)
@@ -79,19 +79,108 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
   template <typename>
   friend class GeometryStateValue;
 };
+
 }  // namespace
+
+
+/* Hub: Helps minimize the work needed to allocate multiple identical contexts.
+
+ Scene graph's "model" contains whatever geometry and properties were specified
+ by model file parsing and explicit method calls. When a context is created,
+ the default values from SceneGraphConfig::DefaultProximityProperties are
+ applied to all geometry. Call the resulting GeometryState object the
+ "augmented model".
+
+ Creating the augmented model can be expensive; users that allocate multiple
+ contexts from an identical underlying model and configuration should not have
+ to pay those costs multiple times. To minimize this, Hub maintains an internal
+ cache of the last augmented model, and conservatively invalidates that cache.
+
+ Note that this cache operates at context allocation time, within SceneGraph
+ only. It is distinct from the notion of caching in the systems framework.
+
+ The cache invariant is as follows:
+
+ * The augmented model cache is either:
+    * empty, or
+    * up-to-date with the current model and configuration.
+
+ To enforce the cache invariant:
+
+ * whenever we wish to mutate the model or configuration, invalidate any
+   previously cached augmented model.
+ * whenever we request a augmented model:
+   * if the cache is empty, make a new augmented model and cache it.
+   * if the cache is populated, return the cache value.
+*/
+template <typename T>
+class SceneGraph<T>::Hub {
+ public:
+  Hub() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Hub);
+
+  const SceneGraphConfig& config() const { return config_; }
+
+  SceneGraphConfig& mutable_config() {
+    // This doesn't need a lock_guard. Users should already know that non-const
+    // methods of an instance should never be called simultaneously with any
+    // other method on that same instance.
+    augmented_model_cache_.reset();
+    return config_;
+  }
+
+  const GeometryState<T>& model() const { return model_; }
+
+  GeometryState<T>& mutable_model() {
+    // No lock guard necessary for the reason defined in mutable_config().
+    augmented_model_cache_.reset();
+    return model_;
+  }
+
+  std::unique_ptr<GeometryState<T>> MakeAugmentedModel() const {
+    std::lock_guard<std::mutex> guard(augmented_model_cache_mutex_);
+    if (augmented_model_cache_ != nullptr) {
+      // Our cache was up-to-date, so we can simply clone it.
+      return std::make_unique<GeometryState<T>>(*augmented_model_cache_);
+    } else {
+      // Our cache was out-of-date, so we need to refresh it.
+      auto result = std::make_unique<GeometryState<T>>(model_);
+      result->ApplyProximityDefaults(config_.default_proximity_properties);
+      augmented_model_cache_ =
+          std::make_unique<const GeometryState<T>>(*result);
+      return result;
+    }
+  }
+
+ private:
+  SceneGraphConfig config_;
+  GeometryState<T> model_;
+
+  // The cached augmented model, maybe. It is created on demand and invalidated
+  // by mutable access to either `model_` or `config_`. Access from const
+  // methods is exclusive, so that construction of new contexts remains
+  // thread-safe.
+  mutable std::mutex augmented_model_cache_mutex_;
+  mutable std::unique_ptr<const GeometryState<T>> augmented_model_cache_;
+};
 
 template <typename T>
 SceneGraph<T>::SceneGraph()
     : LeafSystem<T>(SystemTypeTag<SceneGraph>{}),
-      owned_model_(std::make_unique<GeometryState<T>>()),
-      model_(*owned_model_) {
-  model_inspector_.set(&model_);
+      owned_hub_(std::make_unique<Hub>()),
+      hub_(*owned_hub_) {
+  model_inspector_.set(&hub_.model());
   geometry_state_index_ =
       this->DeclareAbstractParameter(GeometryStateValue<T>());
+  scene_graph_config_index_ =
+      this->DeclareAbstractParameter(Value<SceneGraphConfig>());
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
+      this->DeclareAbstractOutputPort(
+              "query", &SceneGraph::CalcQueryObject,
+              {this->all_input_ports_ticket(),
+               this->abstract_parameter_ticket(
+                   systems::AbstractParameterIndex(geometry_state_index_))})
           .get_index();
 
   auto& pose_update_cache_entry = this->DeclareCacheEntry(
@@ -106,9 +195,23 @@ SceneGraph<T>::SceneGraph()
 }
 
 template <typename T>
+SceneGraph<T>::SceneGraph(const SceneGraphConfig& config)
+    : SceneGraph() {
+  config.ValidateOrThrow();
+  hub_.mutable_config() = config;
+}
+
+template <typename T>
+int64_t SceneGraph<T>::scalar_conversion_count_{0};
+
+template <typename T>
 template <typename U>
-SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
-  model_ = GeometryState<T>(other.model_);
+SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
+    : SceneGraph() {
+  ++scalar_conversion_count_;
+  hub_.mutable_config() = other.hub_.config();
+  hub_.mutable_model() =
+      GeometryState<T>(other.hub_.model());
 
   // We need to guarantee that the same source ids map to the same port indices.
   // We'll do this by processing the source ids in monotonically increasing
@@ -142,9 +245,20 @@ SceneGraph<T>::~SceneGraph() = default;
 
 template <typename T>
 SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
-  SourceId source_id = model_.RegisterNewSource(name);
+  SourceId source_id = hub_.mutable_model().RegisterNewSource(name);
   MakeSourcePorts(source_id);
   return source_id;
+}
+
+template <typename T>
+void SceneGraph<T>::set_config(const SceneGraphConfig& config) {
+  config.ValidateOrThrow();
+  hub_.mutable_config() = config;
+}
+
+template <typename T>
+const SceneGraphConfig& SceneGraph<T>::get_config() const {
+  return hub_.config();
 }
 
 template <typename T>
@@ -169,25 +283,27 @@ const InputPort<T>& SceneGraph<T>::get_source_configuration_port(
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id,
                                      const GeometryFrame& frame) {
-  return model_.RegisterFrame(source_id, frame);
+  return hub_.mutable_model().RegisterFrame(source_id, frame);
 }
 
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
                                      const GeometryFrame& frame) {
-  return model_.RegisterFrame(source_id, parent_id, frame);
+  return hub_.mutable_model().RegisterFrame(
+      source_id, parent_id, frame);
 }
 
 template <typename T>
 void SceneGraph<T>::RenameFrame(FrameId frame_id, const std::string& name) {
-  return model_.RenameFrame(frame_id, name);
+  return hub_.mutable_model().RenameFrame(frame_id, name);
 }
 
 template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
-  return model_.RegisterGeometry(source_id, frame_id, std::move(geometry));
+  return hub_.mutable_model().RegisterGeometry(
+      source_id, frame_id, std::move(geometry));
 }
 
 template <typename T>
@@ -195,20 +311,29 @@ GeometryId SceneGraph<T>::RegisterGeometry(
     Context<T>* context, SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) const {
   auto& g_state = mutable_geometry_state(context);
-  return g_state.RegisterGeometry(source_id, frame_id, std::move(geometry));
+  bool has_proximity = (geometry->proximity_properties() != nullptr);
+  auto geometry_id =
+      g_state.RegisterGeometry(source_id, frame_id, std::move(geometry));
+  if (has_proximity) {
+    const auto& config = get_config(*context);
+    g_state.ApplyProximityDefaults(config.default_proximity_properties,
+                                   geometry_id);
+  }
+  return geometry_id;
 }
 
 template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
     SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
-  return model_.RegisterAnchoredGeometry(source_id, std::move(geometry));
+  return hub_.mutable_model().RegisterAnchoredGeometry(
+      source_id, std::move(geometry));
 }
 
 template <typename T>
 GeometryId SceneGraph<T>::RegisterDeformableGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry, double resolution_hint) {
-  return model_.RegisterDeformableGeometry(
+  return hub_.mutable_model().RegisterDeformableGeometry(
       source_id, frame_id, std::move(geometry), resolution_hint);
 }
 
@@ -224,14 +349,14 @@ GeometryId SceneGraph<T>::RegisterDeformableGeometry(
 template <typename T>
 void SceneGraph<T>::RenameGeometry(GeometryId geometry_id,
                                    const std::string& name) {
-  return model_.RenameGeometry(geometry_id, name);
+  return hub_.mutable_model().RenameGeometry(geometry_id, name);
 }
 
 template <typename T>
 void SceneGraph<T>::ChangeShape(
     SourceId source_id, GeometryId geometry_id, const Shape& shape,
     std::optional<math::RigidTransform<double>> X_FG) {
-  return model_.ChangeShape(source_id, geometry_id, shape, X_FG);
+  return hub_.mutable_model().ChangeShape(source_id, geometry_id, shape, X_FG);
 }
 
 template <typename T>
@@ -239,12 +364,12 @@ void SceneGraph<T>::ChangeShape(
     Context<T>* context, SourceId source_id, GeometryId geometry_id,
     const Shape& shape, std::optional<math::RigidTransform<double>> X_FG) {
   auto& g_state = mutable_geometry_state(context);
-  return g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
+  g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
 }
 
 template <typename T>
 void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
-  model_.RemoveGeometry(source_id, geometry_id);
+  hub_.mutable_model().RemoveGeometry(source_id, geometry_id);
 }
 
 template <typename T>
@@ -257,7 +382,8 @@ void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
 template <typename T>
 void SceneGraph<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
-  return model_.AddRenderer(std::move(name), std::move(renderer));
+  return hub_.mutable_model().AddRenderer(
+      std::move(name), std::move(renderer));
 }
 
 template <typename T>
@@ -270,7 +396,7 @@ void SceneGraph<T>::AddRenderer(
 
 template <typename T>
 void SceneGraph<T>::RemoveRenderer(const std::string& name) {
-  return model_.RemoveRenderer(name);
+  return hub_.mutable_model().RemoveRenderer(name);
 }
 
 template <typename T>
@@ -282,7 +408,7 @@ void SceneGraph<T>::RemoveRenderer(Context<T>* context,
 
 template <typename T>
 bool SceneGraph<T>::HasRenderer(const std::string& name) const {
-  return model_.HasRenderer(name);
+  return hub_.model().HasRenderer(name);
 }
 
 template <typename T>
@@ -294,7 +420,8 @@ bool SceneGraph<T>::HasRenderer(const Context<T>& context,
 
 template <typename T>
 std::string SceneGraph<T>::GetRendererTypeName(const std::string& name) const {
-  const render::RenderEngine* engine = model_.GetRenderEngineByName(name);
+  const render::RenderEngine* engine =
+      hub_.model().GetRenderEngineByName(name);
   if (engine == nullptr) {
     return {};
   }
@@ -316,7 +443,7 @@ std::string SceneGraph<T>::GetRendererTypeName(const Context<T>& context,
 
 template <typename T>
 int SceneGraph<T>::RendererCount() const {
-  return model_.RendererCount();
+  return hub_.model().RendererCount();
 }
 
 template <typename T>
@@ -327,7 +454,7 @@ int SceneGraph<T>::RendererCount(const Context<T>& context) const {
 
 template <typename T>
 vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
-  return model_.RegisteredRendererNames();
+  return hub_.model().RegisteredRendererNames();
 }
 
 template <typename T>
@@ -341,7 +468,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                ProximityProperties properties,
                                RoleAssign assign) {
-  model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(
+      source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
@@ -351,13 +479,17 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
                                RoleAssign assign) const {
   auto& g_state = mutable_geometry_state(context);
   g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
+  const auto& config = get_config(*context);
+  g_state.ApplyProximityDefaults(config.default_proximity_properties,
+                                 geometry_id);
 }
 
 template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                PerceptionProperties properties,
                                RoleAssign assign) {
-  model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(
+      source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
@@ -373,7 +505,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                IllustrationProperties properties,
                                RoleAssign assign) {
-  model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(
+      source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
@@ -394,7 +527,7 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
 
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, FrameId frame_id, Role role) {
-  return model_.RemoveRole(source_id, frame_id, role);
+  return hub_.mutable_model().RemoveRole(source_id, frame_id, role);
 }
 
 template <typename T>
@@ -407,7 +540,8 @@ int SceneGraph<T>::RemoveRole(Context<T>* context, SourceId source_id,
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
                               Role role) {
-  return model_.RemoveRole(source_id, geometry_id, role);
+  return hub_.mutable_model().RemoveRole(
+      source_id, geometry_id, role);
 }
 
 template <typename T>
@@ -424,7 +558,7 @@ const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
 
 template <typename T>
 CollisionFilterManager SceneGraph<T>::collision_filter_manager() {
-  return model_.collision_filter_manager();
+  return hub_.mutable_model().collision_filter_manager();
 }
 
 template <typename T>
@@ -437,8 +571,11 @@ template <typename T>
 void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
                                          Parameters<T>* parameters) const {
   LeafSystem<T>::SetDefaultParameters(context, parameters);
+  std::unique_ptr<GeometryState<T>> state = hub_.MakeAugmentedModel();
   parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
-      geometry_state_index_) = model_;
+      geometry_state_index_) = std::move(*state);
+  parameters->template get_mutable_abstract_parameter<SceneGraphConfig>(
+      scene_graph_config_index_) = hub_.config();
 }
 
 template <typename T>
@@ -448,14 +585,15 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
   source_ports.pose_port =
-      this->DeclareAbstractInputPort(model_.GetName(source_id) + "_pose",
-                                     Value<FramePoseVector<T>>())
-          .get_index();
+      this->DeclareAbstractInputPort(
+          hub_.model().GetName(source_id) + "_pose",
+          Value<FramePoseVector<T>>())
+      .get_index();
   source_ports.configuration_port =
       this->DeclareAbstractInputPort(
-              model_.GetName(source_id) + "_configuration",
-              Value<GeometryConfigurationVector<T>>())
-          .get_index();
+          hub_.model().GetName(source_id) + "_configuration",
+          Value<GeometryConfigurationVector<T>>())
+      .get_index();
 }
 
 template <typename T>
@@ -540,8 +678,6 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
   // needed and is correct.
   internal::KinematicsData<T>& kinematics_data =
       state.mutable_kinematics_data();
-  internal::DrivenMeshData& driven_perception_meshes =
-      state.mutable_driven_perception_meshes();
   // Process all sources *except*:
   //   - the internal source and
   //   - sources with no deformable geometries.
@@ -568,11 +704,14 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
     }
   }
 
-  driven_perception_meshes.SetControlMeshPositions(kinematics_data.q_WGs);
-  state.FinalizeConfigurationUpdate(kinematics_data,
-                                    driven_perception_meshes,
-                                    &state.mutable_proximity_engine(),
-                                    state.GetMutableRenderEngines());
+  for (const auto role : std::vector<Role>{
+           Role::kIllustration, Role::kPerception, Role::kProximity}) {
+    state.mutable_driven_mesh_data(role).SetControlMeshPositions(
+        kinematics_data.q_WGs);
+  }
+  state.FinalizeConfigurationUpdate(
+      kinematics_data, state.mutable_driven_mesh_data(Role::kPerception),
+      &state.mutable_proximity_engine(), state.GetMutableRenderEngines());
 }
 
 template <typename T>
@@ -600,8 +739,16 @@ const GeometryState<T>& SceneGraph<T>::geometry_state(
       .template get_abstract_parameter<GeometryState<T>>(geometry_state_index_);
 }
 
+template <typename T>
+const SceneGraphConfig& SceneGraph<T>::get_config(
+    const systems::Context<T>& context) const {
+  return context.get_parameters()
+      .template get_abstract_parameter<SceneGraphConfig>(
+          scene_graph_config_index_);
+}
+
 }  // namespace geometry
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::SceneGraph)
+    class ::drake::geometry::SceneGraph);

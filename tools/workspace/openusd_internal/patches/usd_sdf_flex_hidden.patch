@@ -1,0 +1,56 @@
+[openusd_internal] Hide symbols from GNU flex output
+
+index 7e7234d21..e923daff2 100644
+--- pxr/usd/sdf/textFileFormat.lex.cpp
++++ pxr/usd/sdf/textFileFormat.lex.cpp
+@@ -302,6 +302,8 @@ struct yy_buffer_state
+  */
+ #define YY_CURRENT_BUFFER_LVALUE yyg->yy_buffer_stack[yyg->yy_buffer_stack_top]
+ 
++#pragma GCC visibility push(hidden)
++
+ void textFileFormatYyrestart (FILE *input_file ,yyscan_t yyscanner );
+ void textFileFormatYy_switch_to_buffer (YY_BUFFER_STATE new_buffer ,yyscan_t yyscanner );
+ YY_BUFFER_STATE textFileFormatYy_create_buffer (FILE *file,int size ,yyscan_t yyscanner );
+@@ -324,6 +326,8 @@ void *textFileFormatYyalloc (yy_size_t ,yyscan_t yyscanner );
+ void *textFileFormatYyrealloc (void *,yy_size_t ,yyscan_t yyscanner );
+ void textFileFormatYyfree (void * ,yyscan_t yyscanner );
+ 
++#pragma GCC visibility pop
++
+ #define yy_new_buffer textFileFormatYy_create_buffer
+ 
+ #define yy_set_interactive(is_interactive) \
+@@ -4925,7 +4929,9 @@ static int yy_init_globals (yyscan_t yyscanner );
+     /* This must go here because YYSTYPE and YYLTYPE are included
+      * from bison output in section 1.*/
+     #    define yylval yyg->yylval_r
+-    
++
++#pragma GCC visibility push(hidden)
++
+ int textFileFormatYylex_init (yyscan_t* scanner);
+ 
+ int textFileFormatYylex_init_extra (YY_EXTRA_TYPE user_defined,yyscan_t* scanner);
+@@ -4967,6 +4973,8 @@ YYSTYPE * textFileFormatYyget_lval (yyscan_t yyscanner );
+ 
+ void textFileFormatYyset_lval (YYSTYPE * yylval_param ,yyscan_t yyscanner );
+ 
++#pragma GCC visibility pop
++
+ /* Macros after this point can all be overridden by user definitions in
+  * section 1.
+  */
+
+index 29879c74e..feb7e7ebe 100644
+--- pxr/usd/sdf/textFileFormat.tab.cpp
++++ pxr/usd/sdf/textFileFormat.tab.cpp
+@@ -6447,7 +6447,7 @@ static void _ReportParseError(Sdf_TextParserContext *context,
+ // blocks of 8KB, which leads to O(n^2) behavior when trying to match strings
+ // that are over this size. Giving flex a pre-filled buffer avoids this
+ // behavior.
+-struct Sdf_MemoryFlexBuffer
++struct __attribute__((visibility("hidden"))) Sdf_MemoryFlexBuffer
+ {
+     Sdf_MemoryFlexBuffer(const Sdf_MemoryFlexBuffer&) = delete;
+     Sdf_MemoryFlexBuffer& operator=(const Sdf_MemoryFlexBuffer&) = delete;

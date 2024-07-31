@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
@@ -13,22 +13,12 @@ drake_cc_package_library(
     name = "render",
     visibility = ["//visibility:public"],
     deps = [
-        ":color_deprecated",
         ":light_parameter",
         ":render_camera",
         ":render_engine",
         ":render_label",
         ":render_material",
         ":render_mesh",
-    ],
-)
-
-drake_cc_library(
-    name = "color_deprecated",
-    hdrs = ["color_deprecated.h"],
-    deps = [
-        "//common:essential",
-        "//common:hash",
     ],
 )
 
@@ -71,7 +61,6 @@ drake_cc_library(
         "//geometry:utilities",
         "//math:geometric_transform",
         "//systems/sensors:camera_info",
-        "//systems/sensors:color_palette",
         "//systems/sensors:image",
     ],
 )
@@ -91,13 +80,13 @@ drake_cc_library(
     name = "render_material",
     srcs = ["render_material.cc"],
     hdrs = ["render_material.h"],
-    interface_deps = [
+    deps = [
         "//common:diagnostic_policy",
         "//common:essential",
         "//geometry:geometry_properties",
         "//geometry:rgba",
     ],
-    deps = [
+    implementation_deps = [
         "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
@@ -106,7 +95,7 @@ drake_cc_library(
     name = "render_mesh",
     srcs = ["render_mesh.cc"],
     hdrs = ["render_mesh.h"],
-    interface_deps = [
+    deps = [
         ":render_material",
         "//common:diagnostic_policy",
         "//common:essential",
@@ -114,7 +103,7 @@ drake_cc_library(
         "//geometry:rgba",
         "//geometry/proximity:triangle_surface_mesh",
     ],
-    deps = [
+    implementation_deps = [
         "@tinyobjloader_internal//:tinyobjloader",
     ],
 )

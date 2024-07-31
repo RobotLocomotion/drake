@@ -186,7 +186,7 @@ GTEST_TEST(DirectCollocation, TestCollocationConstraint) {
 
 class EvaluationCounterSystem : public systems::LeafSystem<AutoDiffXd> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluationCounterSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluationCounterSystem);
 
   EvaluationCounterSystem() {
     DeclareContinuousState(1);

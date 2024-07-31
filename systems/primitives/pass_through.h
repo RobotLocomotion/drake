@@ -37,11 +37,12 @@ namespace systems {
 /// - y
 /// @endsystem
 ///
-/// @tparam_default_scalar @ingroup primitive_systems
+/// @tparam_default_scalar
+/// @ingroup primitive_systems
 template <typename T>
 class PassThrough final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PassThrough)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PassThrough);
 
   /// Constructs a pass-through system.
   /// @param vector_size number of elements in the signal to be processed.
@@ -108,4 +109,4 @@ class PassThrough final : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::PassThrough)
+    class ::drake::systems::PassThrough);

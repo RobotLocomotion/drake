@@ -80,7 +80,7 @@ void ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&NormalizeOrThrow<T>, &ThrowIfNotUnitVector<T>))
+    (&NormalizeOrThrow<T>, &ThrowIfNotUnitVector<T>));
 
 }  // namespace internal
 }  // namespace math

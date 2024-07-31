@@ -20,6 +20,9 @@ SapConstraint<T>::SapConstraint(SapConstraintJacobian<T> J,
 }
 
 template <typename T>
+SapConstraint<T>::~SapConstraint() = default;
+
+template <typename T>
 std::unique_ptr<AbstractValue> SapConstraint<T>::MakeData(
     const T& time_step,
     const Eigen::Ref<const VectorX<T>>& delassus_estimation) const {
@@ -145,4 +148,4 @@ std::unique_ptr<SapConstraint<T>> SapConstraint<T>::MakeReduced(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapConstraint)
+    class ::drake::multibody::contact_solvers::internal::SapConstraint);

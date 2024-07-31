@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -86,6 +87,10 @@ class MultibodyGraph {
                       const std::string& type, BodyIndex parent_body_index,
                       BodyIndex child_body_index);
 
+  // Removes the Joint with index `joint_index` from the graph.
+  // @throws std::exception if has_joint(joint_index) == false.
+  void RemoveJoint(JointIndex joint_index);
+
   /* Returns the body that corresponds to the world. This body added via the
   first call to AddRigidBody().
   @throws std::exception iff AddRigidBody() was not called even once yet. */
@@ -128,13 +133,16 @@ class MultibodyGraph {
   @see AddRigidBody(), world_index(), world_body_name(). */
   int num_bodies() const;
 
-  /** Returns the number joints added with AddJoint(). */
+  /** Returns the number joints. */
   int num_joints() const;
 
   /* Gets a RigidBody by index. The world body has index world_index().
   @throws std::exception iff `index` does not correspond to a body in this
   graph. */
   const RigidBody& get_body(BodyIndex index) const;
+
+  /* Returns whether this graph contains a joint with index `joint_index`. */
+  bool has_joint(JointIndex joint_index) const;
 
   /* Gets a Joint by index.
   @throws std::exception iff `index` does not correspond to a joint in this
@@ -209,7 +217,12 @@ class MultibodyGraph {
   // bodies_ includes the world body at world_index() with name
   // world_body_name().
   std::vector<RigidBody> bodies_;
-  std::vector<Joint> joints_;
+  // Stores the joints in the graph at their JointIndex. If a nullopt value is
+  // found at index i, then the joint with index i was removed from the graph.
+  std::vector<std::optional<Joint>> joints_;
+
+  // Keeps track of the number of non-nullopt entries in `joints_`
+  int num_joints_{0};
 
   std::unordered_map<std::string, JointTypeIndex> joint_type_name_to_index_;
 
@@ -226,7 +239,7 @@ class MultibodyGraph {
 
 class MultibodyGraph::RigidBody {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidBody)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidBody);
 
   /* @returns its unique index in the graph. */
   BodyIndex index() const { return index_; }
@@ -236,10 +249,6 @@ class MultibodyGraph::RigidBody {
 
   /* @returns its name, unique within model_instance(). */
   const std::string& name() const { return name_; }
-
-  /* Returns the total number of joints that have `this` body as either the
-  parent or child body in a Joint. */
-  int num_joints() const;
 
   /* @returns all the joints that connect to `this` body. */
   const std::vector<JointIndex>& joints() const { return joints_; }
@@ -255,6 +264,8 @@ class MultibodyGraph::RigidBody {
   // Notes that this body is connected by `joint`.
   void add_joint(JointIndex joint) { joints_.push_back(joint); }
 
+  void RemoveJoint(JointIndex joint) { std::erase(joints_, joint); }
+
   BodyIndex index_;
   std::string name_;
   ModelInstanceIndex model_instance_;
@@ -266,7 +277,7 @@ class MultibodyGraph::RigidBody {
 
 class MultibodyGraph::Joint {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Joint)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Joint);
 
   ModelInstanceIndex model_instance() const { return model_instance_; }
 

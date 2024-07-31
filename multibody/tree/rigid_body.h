@@ -57,29 +57,9 @@ template<typename T> class RigidBody;
 template <typename T>
 class RigidBodyFrame final : public Frame<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyFrame)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyFrame);
 
-  math::RigidTransform<T> CalcPoseInBodyFrame(
-      const systems::Context<T>&) const override {
-    return math::RigidTransform<T>::Identity();
-  }
-
-  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
-      const systems::Context<T>&) const override {
-    return math::RotationMatrix<T>::Identity();
-  }
-
-  math::RigidTransform<T> CalcOffsetPoseInBody(
-      const systems::Context<T>&,
-      const math::RigidTransform<T>& X_FQ) const override {
-    return X_FQ;
-  }
-
-  math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
-      const systems::Context<T>&,
-      const math::RotationMatrix<T>& R_FQ) const override {
-    return R_FQ;
-  }
+  ~RigidBodyFrame() override;
 
   math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
     return math::RigidTransform<T>::Identity();
@@ -109,6 +89,28 @@ class RigidBodyFrame final : public Frame<T> {
 
   std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
+
+  math::RigidTransform<T> DoCalcPoseInBodyFrame(
+      const systems::Parameters<T>&) const override {
+    return math::RigidTransform<T>::Identity();
+  }
+
+  math::RotationMatrix<T> DoCalcRotationMatrixInBodyFrame(
+      const systems::Parameters<T>&) const override {
+    return math::RotationMatrix<T>::Identity();
+  }
+
+  math::RigidTransform<T> DoCalcOffsetPoseInBody(
+      const systems::Parameters<T>&,
+      const math::RigidTransform<T>& X_FQ) const override {
+    return X_FQ;
+  }
+
+  math::RotationMatrix<T> DoCalcOffsetRotationMatrixInBody(
+      const systems::Parameters<T>&,
+      const math::RotationMatrix<T>& R_FQ) const override {
+    return R_FQ;
+  }
 
  private:
   // RigidBody<T> and RigidBodyFrame<T> are natural allies. A RigidBodyFrame
@@ -184,7 +186,7 @@ class RigidBodyAttorney {
 template <typename T>
 class RigidBody : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody);
 
   /// Constructs a %RigidBody named `body_name` with the given default
   /// SpatialInertia.
@@ -215,6 +217,8 @@ class RigidBody : public MultibodyElement<T> {
   RigidBody(
       const std::string& body_name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B = SpatialInertia<double>::Zero());
+
+  ~RigidBody() override;
 
   /// Returns this element's unique index.
   BodyIndex index() const { return this->template index_impl<BodyIndex>(); }
@@ -484,16 +488,8 @@ class RigidBody : public MultibodyElement<T> {
   void AddInForce(
       const systems::Context<T>& context,
       const Vector3<T>& p_BP_E, const SpatialForce<T>& F_Bp_E,
-      const Frame<T>& frame_E, MultibodyForces<T>* forces) const {
-    DRAKE_THROW_UNLESS(forces != nullptr);
-    DRAKE_THROW_UNLESS(
-        forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    const math::RotationMatrix<T> R_WE =
-        frame_E.CalcRotationMatrixInWorld(context);
-    const Vector3<T> p_PB_W = -(R_WE * p_BP_E);
-    const SpatialForce<T> F_Bo_W = (R_WE * F_Bp_E).Shift(p_PB_W);
-    AddInForceInWorld(context, F_Bo_W, forces);
-  }
+      const Frame<T>& frame_E, MultibodyForces<T>* forces) const;
+
   /// Gets this body's center of mass position from the given context.
   /// @param[in] context contains the state of the multibody system.
   /// @returns p_BoBcm_B position vector from Bo (this rigid body B's origin)
@@ -512,25 +508,17 @@ class RigidBody : public MultibodyElement<T> {
   /// @retval v_WBcm_W The translational velocity of Bcm (this rigid body's
   /// center of mass) in the world frame W, expressed in W.
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
-      const systems::Context<T>& context) const {
-    const RigidBody<T>& body_B = *this;
-    const Frame<T>& frame_B = body_B.body_frame();
+      const systems::Context<T>& context) const;
 
-    // Form frame_B's spatial velocity in the world frame W, expressed in W.
-    const SpatialVelocity<T>& V_WBo_W =
-        body_B.EvalSpatialVelocityInWorld(context);
-
-    // Form v_WBcm_W, Bcm's translational velocity in frame W, expressed in W.
-    const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context);
-    const math::RotationMatrix<T> R_WB =
-        frame_B.CalcRotationMatrixInWorld(context);
-    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
-    const Vector3<T> v_WBcm_W = V_WBo_W.Shift(p_BoBcm_W).translational();
-    return v_WBcm_W;
-  }
-
-  // TODO(joemasterjohn): Speed this up when we can store a reference to a
-  //  SpatialInertia<T> as an abstract parameter.
+  /// Calculates Bcm's translational acceleration in the world frame W.
+  /// @param[in] context The context contains the state of the model.
+  /// @retval a_WBcm_W The translational acceleration of Bcm (this rigid body's
+  /// center of mass) in the world frame W, expressed in W.
+  /// @note When cached values are out of sync with the state stored in context,
+  /// this method performs an expensive forward dynamics computation, whereas
+  /// once evaluated, successive calls to this method are inexpensive.
+  Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
+      const systems::Context<T>& context) const;
 
   /// Gets this body's spatial inertia about its origin from the given context.
   /// @param[in] context contains the state of the multibody system.
@@ -541,6 +529,8 @@ class RigidBody : public MultibodyElement<T> {
   /// @pre the context makes sense for use by this RigidBody.
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const {
+    // TODO(joemasterjohn): Speed this up when we can store a reference to a
+    //  SpatialInertia<T> as an abstract parameter.
     const systems::BasicVector<T>& spatial_inertia_parameter =
         context.get_numeric_parameter(spatial_inertia_parameter_index_);
     return internal::parameter_conversion::ToSpatialInertia(
@@ -854,7 +844,7 @@ using Body = RigidBody<T>;
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RigidBodyFrame)
+    class ::drake::multibody::RigidBodyFrame);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RigidBody)
+    class ::drake::multibody::RigidBody);

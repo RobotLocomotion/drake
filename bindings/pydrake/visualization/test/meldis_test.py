@@ -14,9 +14,9 @@ import pydrake.visualization as mut
 
 import functools
 import hashlib
+import json
 import os
 from pathlib import Path
-import sys
 import tempfile
 import unittest
 
@@ -302,24 +302,24 @@ class TestMeldis(unittest.TestCase):
         message.num_links = len(message.link)
         self.assertEqual(dut(message), empty_hash)
 
-        # Switch to a valid mesh filename => non-empty hash.
+        # Switch to a valid .obj mesh filename => non-empty hash.
         test_tmpdir = Path(os.environ["TEST_TMPDIR"])
-        mesh_filename = test_tmpdir / "mesh_checksum_test.obj"
-        with open(mesh_filename, "w") as f:
+        obj_filename = test_tmpdir / "mesh_checksum_test.obj"
+        with open(obj_filename, "w") as f:
             f.write("foobar")
-        mesh.string_data = str(mesh_filename)
+        mesh.string_data = str(obj_filename)
         mesh_hash_1 = dut(message)
         self.assertNotEqual(mesh_hash_1, empty_hash)
 
-        # Changing the mesh content changes the checksum.
+        # Changing the .obj mesh content changes the checksum.
         # Invalid mtl filenames are not an error.
-        with open(mesh_filename, "w") as f:
+        with open(obj_filename, "w") as f:
             f.write("foo\n mtllib mesh_checksum_test.mtl \nbar\n")
         mesh_hash_2 = dut(message)
         self.assertNotEqual(mesh_hash_2, empty_hash)
         self.assertNotEqual(mesh_hash_2, mesh_hash_1)
 
-        # The appearance of the mtl file changes the checksum.
+        # The appearance of the .obj's mtl file changes the checksum.
         with open(test_tmpdir / "mesh_checksum_test.mtl", "w") as f:
             f.write("quux")
         mesh_hash_3 = dut(message)
@@ -339,6 +339,54 @@ class TestMeldis(unittest.TestCase):
         self.assertSetEqual(hashed_names, {"mesh_checksum_test.obj",
                                            "mesh_checksum_test.mtl",
                                            "mesh_checksum_test.png"})
+
+        # Message with .gltf mesh that can't be parsed => non-empty hash.
+        # (Invalid glTF content is not an error.)
+        gltf_filename = test_tmpdir / "mesh_checksum_test.gltf"
+        with open(gltf_filename, "w") as f:
+            f.write("I'm adversarially not json. {")
+        mesh.string_data = str(gltf_filename)
+        gltf_hash_1 = dut(message)
+        self.assertNotEqual(gltf_hash_1, empty_hash)
+
+        # Valid glTF file, but with no external files; the glTF's contents
+        # matter.
+        with open(gltf_filename, "w") as f:
+            f.write("{}")
+        gltf_hash_2 = dut(message)
+        self.assertNotEqual(gltf_hash_2, empty_hash)
+        self.assertNotEqual(gltf_hash_2, gltf_hash_1)
+
+        # Valid glTF file reference an external image.
+        with open(gltf_filename, "w") as f:
+            f.write(json.dumps({"images": [{"uri": str(png_filename)}]}))
+        gltf_hash_3 = dut(message)
+        self.assertNotEqual(gltf_hash_3, empty_hash)
+        self.assertNotEqual(gltf_hash_3, gltf_hash_2)
+
+        # Now finally, the glTF file has a .bin. This time, as a cross-check,
+        # inspect the filenames that were hashed instead of the hash itself.
+        bin_filename = test_tmpdir / "mesh_checksum_test.bin"
+        bin_filename.touch()
+        with open(gltf_filename, "w") as f:
+            f.write(json.dumps({
+                "images": [{"uri": str(png_filename)}],
+                "buffers": [{"uri": str(bin_filename)}]
+            }))
+        hasher = mut._meldis._GeometryFileHasher()
+        hasher.on_viewer_load_robot(message)
+        hashed_names = set([x.name for x in hasher._paths])
+        self.assertSetEqual(hashed_names, {"mesh_checksum_test.gltf",
+                                           "mesh_checksum_test.bin",
+                                           "mesh_checksum_test.png"})
+
+        # A message with an unsupported extension => non-empty hash.
+        unsupported_filename = test_tmpdir / "mesh_checksum_test.ply"
+        with open(unsupported_filename, "w") as f:
+            f.write("Non-empty content will not matter.")
+        mesh.string_data = str(unsupported_filename)
+        unsupported_hash = dut(message)
+        self.assertNotEqual(unsupported_hash, empty_hash)
 
     def test_viewer_applet_alpha_slider(self):
         # Create the device under test.
@@ -448,6 +496,7 @@ class TestMeldis(unittest.TestCase):
         url = "package://drake_models/manipulation_station/sphere.sdf"
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
+        plant.SetUseSampledOutputPorts(False)  # We're not stepping time.
         sphere1_model, = Parser(plant, "sphere1").AddModels(url=url)
         sphere2_model, = Parser(plant, "sphere2").AddModels(url=url)
         body1 = plant.GetBodyByName("base_link", sphere1_model)
@@ -490,6 +539,7 @@ class TestMeldis(unittest.TestCase):
         url = "package://drake/multibody/meshcat/test/hydroelastic.sdf"
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
+        plant.SetUseSampledOutputPorts(False)  # We're not stepping time.
         parser = Parser(plant=plant)
         parser.AddModels(url=url)
         body1 = plant.GetBodyByName("body1")

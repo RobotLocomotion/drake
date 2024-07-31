@@ -23,7 +23,7 @@ namespace multibody {
 template <typename T>
 class RevoluteSpring final : public ForceElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteSpring)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteSpring);
 
   /// Constructor for a spring attached to the given joint
   /// @param[in] nominal_angle
@@ -34,6 +34,8 @@ class RevoluteSpring final : public ForceElement<T> {
   /// @throws std::exception if `stiffness` is negative.
   RevoluteSpring(const RevoluteJoint<T>& joint, double nominal_angle,
                  double stiffness);
+
+  ~RevoluteSpring() override;
 
   const RevoluteJoint<T>& joint() const;
 
@@ -93,4 +95,4 @@ class RevoluteSpring final : public ForceElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RevoluteSpring)
+    class ::drake::multibody::RevoluteSpring);

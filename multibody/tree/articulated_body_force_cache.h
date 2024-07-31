@@ -25,7 +25,7 @@ namespace internal {
 template<typename T>
 class ArticulatedBodyForceCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyForceCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyForceCache);
 
   // Constructs an %ArticulatedBodyForceCache object properly sized to
   // store the force bias terms for a model with the given `topology`.
@@ -81,4 +81,4 @@ class ArticulatedBodyForceCache {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::ArticulatedBodyForceCache)
+    class ::drake::multibody::internal::ArticulatedBodyForceCache);

@@ -4,6 +4,7 @@
 #error Do not include this file. Use "drake/multibody/topology/graph.h".
 #endif
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -16,14 +17,19 @@ namespace internal {
 /** Represents a %Link in the LinkJointGraph. This includes Links provided via
 user input and also those added during forest building as Shadow links created
 when we cut a user %Link in order to break a kinematic loop. Links may be
-modeled individually or can be combined into Composite Links comprising groups
+modeled individually or can be combined into LinkComposites comprising groups
 of Links that were connected by weld joints. */
 class LinkJointGraph::Link {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link);
 
-  /** Returns this %Link's unique index in the graph. */
+  /** Returns this %Link's unique index in the graph. This is persistent after
+  the %Link has been allocated. */
   BodyIndex index() const { return index_; }
+
+  /** Returns the current value of this %Link's ordinal (position in the
+  links() vector). This can change as %Links are removed. */
+  LinkOrdinal ordinal() const { return ordinal_; }
 
   /** Returns this %Link's model instance. */
   ModelInstanceIndex model_instance() const { return model_instance_; }
@@ -62,12 +68,12 @@ class LinkJointGraph::Link {
   of the World Composite (that is, it is directly or indirectly welded to
   World). */
   bool is_anchored() const {
-    return is_world() || is_static() ||
-           (composite().is_valid() && composite() == LinkCompositeIndex(0));
+    return is_world() || is_static_flag_set() ||
+           (composite() == LinkCompositeIndex(0));
   }
 
   /** Returns `true` if this %Link was added with LinkFlags::kStatic. */
-  bool is_static() const {
+  bool is_static_flag_set() const {
     return static_cast<bool>(flags_ & LinkFlags::kStatic);
   }
 
@@ -110,16 +116,19 @@ class LinkJointGraph::Link {
   modeled by the Mobod returned by mobod_index(). */
   JointIndex inboard_joint_index() const { return joint_; }
 
-  /** Returns the index of the Composite this %Link is part of, if any.
-  Otherwise returns an invalid index. */
-  LinkCompositeIndex composite() const { return link_composite_index_; }
+  /** Returns the index of the LinkComposite this %Link is part of, if any.
+  World is always in LinkComposite 0; any other link is in a Composite only if
+  it is connected by a weld joint to another link. */
+  std::optional<LinkCompositeIndex> composite() const {
+    return link_composite_index_;
+  }
 
  private:
   friend class LinkJointGraph;
   friend class LinkJointGraphTester;
 
-  Link(BodyIndex index, std::string name, ModelInstanceIndex model_instance,
-       LinkFlags flags);
+  Link(BodyIndex index, LinkOrdinal ordinal, std::string name,
+       ModelInstanceIndex model_instance, LinkFlags flags);
 
   // (For testing) If `to_set` is LinkFlags::kDefault sets the flags to
   // Default. Otherwise or's in the given flags to the current set. Returns
@@ -133,44 +142,41 @@ class LinkJointGraph::Link {
     if (mobod_.is_valid()) mobod_ = old_to_new[mobod_];
   }
 
-  // Notes that this Link is connected by `joint`.
-  void add_joint_as_parent(JointIndex joint) {
-    joints_as_parent_.push_back(joint);
-    joints_.push_back(joint);
+  // Notes that this Link is connected by the given joint.
+  void add_joint_as_parent(JointIndex joint_index) {
+    joints_as_parent_.push_back(joint_index);
+    joints_.push_back(joint_index);
   }
 
-  void add_joint_as_child(JointIndex joint) {
-    joints_as_child_.push_back(joint);
-    joints_.push_back(joint);
+  void add_joint_as_child(JointIndex joint_index) {
+    joints_as_child_.push_back(joint_index);
+    joints_.push_back(joint_index);
   }
 
-  void add_loop_constraint(LoopConstraintIndex constraint) {
-    loop_constraints_.push_back(constraint);
+  void add_loop_constraint(LoopConstraintIndex constraint_index) {
+    loop_constraints_.push_back(constraint_index);
   }
 
-  void clear_model(int num_user_joints) {
-    loop_constraints_.clear();
-    mobod_ = {};
-    joint_ = {};
-    primary_link_ = {};
-    shadow_links_.clear();
-    link_composite_index_ = {};
-
-    auto remove_model_joints =
-        [num_user_joints](std::vector<JointIndex>& joints) {
-          while (!joints.empty() && joints.back() >= num_user_joints)
-            joints.pop_back();
-        };
-
-    remove_model_joints(joints_as_parent_);
-    remove_model_joints(joints_as_child_);
-    remove_model_joints(joints_);
+  // This is used when a Joint is removed.
+  void RemoveJointReferences(JointIndex joint_index) {
+    std::erase(joints_as_parent_, joint_index);
+    std::erase(joints_as_child_, joint_index);
+    std::erase(joints_, joint_index);
   }
 
-  BodyIndex index_;
+  // Removes any as-modeled information added to this user link during forest
+  // building. Forgets any connections with ephemeral links, joints, and
+  // constraints. Preserves only the as-constructed information: index, name,
+  // model instance, flags, and primary_link (= index for a user link).
+  // @pre this is a user link, not a shadow.
+  void ClearModel(JointIndex max_user_joint_index);
+
+  BodyIndex index_;      // persistent
+  LinkOrdinal ordinal_;  // can change
   std::string name_;
   ModelInstanceIndex model_instance_;
   LinkFlags flags_{LinkFlags::kDefault};
+  BodyIndex primary_link_;  // Same as index_ unless this is a shadow link.
 
   // Members below here may contain as-modeled information that has to be
   // removed when the SpanningForest is cleared or rebuilt. The joint
@@ -183,13 +189,14 @@ class LinkJointGraph::Link {
 
   std::vector<LoopConstraintIndex> loop_constraints_;
 
-  MobodIndex mobod_;  // Which Mobod mobilizes this Link?
-  JointIndex joint_;  // Which Joint connected us to the Mobod?
+  MobodIndex mobod_;  // Mobod that mobilizes this Link.
+  JointIndex joint_;  // Joint that connects us to the Mobod (invalid if World).
 
-  BodyIndex primary_link_;  // Same as index_ if this is a primary link.
   std::vector<BodyIndex> shadow_links_;
 
-  LinkCompositeIndex link_composite_index_;  // Invalid if not in composite.
+  // World is always in a composite; other links are in a composite only
+  // if they are welded to another link.
+  std::optional<LinkCompositeIndex> link_composite_index_;
 };
 
 }  // namespace internal

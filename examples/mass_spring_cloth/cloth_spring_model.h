@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/mass_spring_cloth/gen/cloth_spring_model_params.h"
+#include "drake/examples/mass_spring_cloth/cloth_spring_model_params.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -82,7 +82,7 @@ namespace mass_spring_cloth {
 template <typename T>
 class ClothSpringModel final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClothSpringModel)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClothSpringModel);
 
   /** Creates a rectangular cloth with a grid of nx by ny particles.
 

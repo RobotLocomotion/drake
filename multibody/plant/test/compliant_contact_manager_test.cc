@@ -15,6 +15,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/multibody/plant/test/spheres_stack.h"
@@ -75,18 +76,26 @@ class SapDriverTest {
   }
 };
 
-// Tests that in SetDiscreteUpdateManager, a registered DeformableModel will
+// Tests that in SetDiscreteUpdateManager, a non-empty DeformableModel will
 // cause a DeformableDriver to be instantiated in the manager.
 GTEST_TEST(CompliantContactManagerTest, ExtractModelInfo) {
   CompliantContactManager<double> manager;
   EXPECT_EQ(manager.deformable_driver(), nullptr);
-  MultibodyPlant<double> plant(0.01);
-  auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
-  plant.AddPhysicalModel(std::move(deformable_model));
+
+  systems::DiagramBuilder<double> builder;
+  MultibodyPlantConfig plant_config;
+  plant_config.time_step = 0.01;
   // N.B. Deformables are only supported with the SAP solver.
-  // Thus for testing we choose one arbitrary contact approximation that uses
-  // the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  // Thus for testing we choose one arbitrary contact approximation that
+  // uses the SAP solver.
+  plant_config.discrete_contact_approximation = "sap";
+  auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
+
+  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
+  auto geometry_instance = std::make_unique<geometry::GeometryInstance>(
+      math::RigidTransformd::Identity(), geometry::Sphere(1.0), "sphere");
+  deformable_model.RegisterDeformableBody(
+      std::move(geometry_instance), fem::DeformableBodyConfig<double>{}, 10.0);
   plant.Finalize();
   auto contact_manager = std::make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* contact_manager_ptr =
@@ -136,11 +145,13 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
     // Soft sphere/hard ground.
     MakeModel(hard_hydro_contact, sphere1_params, sphere2_params);
 
-    const std::vector<PenetrationAsPointPair<double>>& point_pair_penetrations =
-        plant_->EvalPointPairPenetrations(*plant_context_);
-    const int num_point_pairs = point_pair_penetrations.size();
+    const GeometryContactData<double>& geometry_contact_data =
+        EvalGeometryContactData(*plant_context_);
+    const std::vector<PenetrationAsPointPair<double>>& point_pairs =
+        geometry_contact_data.get().point_pairs;
     const std::vector<geometry::ContactSurface<double>>& surfaces =
-        EvalContactSurfaces(*plant_context_);
+        geometry_contact_data.get().surfaces;
+    const int num_point_pairs = point_pairs.size();
     ASSERT_EQ(surfaces.size(), 1u);
     const int num_hydro_pairs = surfaces[0].num_faces();
 
@@ -202,8 +213,7 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
         EXPECT_NEAR(point_pair.p_WC.z(), pz_WC, 1.0e-14);
 
         // Check the optional parameters are set correctly for point contact.
-        // The index into `point_pair_penetrations` should match the index into
-        // `pairs`.
+        // The index into `point_pairs` should match the index into `pairs`.
         EXPECT_TRUE(point_pair.point_pair_index.has_value());
         EXPECT_EQ(point_pair.point_pair_index.value(), i);
         EXPECT_FALSE(point_pair.surface_index.has_value());
@@ -264,10 +274,10 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
     return CompliantContactManagerTester::topology(*contact_manager_);
   }
 
-  const std::vector<geometry::ContactSurface<double>>& EvalContactSurfaces(
+  const GeometryContactData<double>& EvalGeometryContactData(
       const Context<double>& context) const {
-    return CompliantContactManagerTester::EvalContactSurfaces(*contact_manager_,
-                                                              context);
+    return CompliantContactManagerTester::EvalGeometryContactData(
+        *contact_manager_, context);
   }
 
   const SapContactProblem<double>& EvalSapContactProblem(
@@ -432,14 +442,14 @@ TEST_F(SpheresStackTest,
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
 
   const std::vector<PenetrationAsPointPair<double>>& point_pairs =
-      plant_->EvalPointPairPenetrations(*plant_context_);
+      EvalGeometryContactData(*plant_context_).get().point_pairs;
   const int num_point_pairs = point_pairs.size();
   EXPECT_EQ(num_point_pairs, 1);
   const DiscreteContactData<DiscreteContactPair<double>>& pairs =
       contact_manager_->EvalDiscreteContactPairs(*plant_context_);
 
   const std::vector<geometry::ContactSurface<double>>& surfaces =
-      EvalContactSurfaces(*plant_context_);
+      EvalGeometryContactData(*plant_context_).get().surfaces;
   ASSERT_EQ(surfaces.size(), 1);
   EXPECT_EQ(pairs.size(), surfaces[0].num_faces() + num_point_pairs);
 }
@@ -554,8 +564,8 @@ TEST_F(SpheresStackTest, DoCalcDiscreteValues) {
 TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
   const double kTolerance = 1e-15;
 
-  const ContactResults<double>& contact_results =
-      manager_->EvalContactResults(*plant_context_);
+  ContactResults<double> contact_results;
+  manager_->CalcContactResults(*plant_context_, &contact_results);
   const ContactTestConfig& config = GetParam();
 
   // Body should be in equilibrium so we expect the contact force to oppose
@@ -602,29 +612,6 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
     EXPECT_TRUE(F_Ac_W.IsApprox(
         SpatialForce<double>(Vector3d::Zero(), expected_contact_force),
         kTolerance));
-
-    const Vector3d f_Ac_W = F_Ac_W.translational();
-
-    const std::vector<HydroelasticQuadraturePointData<double>>&
-        quadrature_point_data = contact_info.quadrature_point_data();
-
-    // Sanity check the face indices.
-    EXPECT_EQ(quadrature_point_data.size(), 2);
-    EXPECT_NE(quadrature_point_data[0].face_index,
-              quadrature_point_data[1].face_index);
-
-    for (const HydroelasticQuadraturePointData<double>& data :
-         quadrature_point_data) {
-      // Sanity check the face indices.
-      EXPECT_THAT(std::vector<int>{data.face_index},
-                  testing::IsSubsetOf({0, 1}));
-      EXPECT_TRUE(CompareMatrices(data.vt_BqAq_W, Vector3d::Zero(), kEps));
-      // Each of the 2 faces have area kArea_ / 2 and exist in a plane of
-      // constant pressure within the compliant halfspace, thus they each
-      // contribute half of the total force.
-      // Therefore traction = (f_Ac_W/2) / (kArea_/2) = f_Ac_W / kArea_
-      EXPECT_TRUE(CompareMatrices(data.traction_Aq_W, f_Ac_W / kArea_, kEps));
-    }
   }
 }
 
@@ -637,8 +624,8 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
   // Simulate the plant for 50 time steps, long enough to reach steady state.
   Simulate(50);
 
-  const ContactResults<double>& contact_results =
-      manager_->EvalContactResults(*plant_context_);
+  ContactResults<double> contact_results;
+  manager_->CalcContactResults(*plant_context_, &contact_results);
 
   // Body should be in stiction so we expect the contact force to oppose both
   // gravity and the externally applied tangential force.
@@ -692,8 +679,8 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
   // Simulate the plant for 10 time steps, long enough to reach steady state.
   Simulate(10);
 
-  const ContactResults<double>& contact_results =
-      manager_->EvalContactResults(*plant_context_);
+  ContactResults<double> contact_results;
+  manager_->CalcContactResults(*plant_context_, &contact_results);
 
   // For this case the friction force must be on the friction cone. For TAMSI
   // accuracy of this prediction depends on the accuracy of the slip speed,
@@ -747,12 +734,6 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
         kRelativeSlipTolerance * kMu_ * F_Ac_W.translational().z();
     EXPECT_NEAR(-F_Ac_W.translational().x(), kMu_ * F_Ac_W.translational().z(),
                 tolerance);
-
-    for (const HydroelasticQuadraturePointData<double>& data :
-         contact_info.quadrature_point_data()) {
-      // Check that the slip velocity has the correct sign.
-      EXPECT_LT(data.vt_BqAq_W.dot(F_Ac_W.translational()), 0);
-    }
   }
 }
 

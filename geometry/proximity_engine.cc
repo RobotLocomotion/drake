@@ -207,6 +207,22 @@ bool OrderContactSurface(const ContactSurface<T>& s1,
   return s1.id_N() < s2.id_N();
 }
 
+// Compare function to use when ordering
+// ComputeSignedDistancePairwiseClosestPoints.
+template <typename T>
+bool OrderSignedDistancePair(const SignedDistancePair<T>& p1,
+                             const SignedDistancePair<T>& p2) {
+  if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
+  return p1.id_B < p2.id_B;
+}
+
+// Compare function to use when ordering ComputeSignedDistanceToPoint.
+template <typename T>
+bool OrderSignedDistanceToPoint(const SignedDistanceToPoint<T>& p1,
+                                const SignedDistanceToPoint<T>& p2) {
+  return p1.id_G < p2.id_G;
+}
+
 }  // namespace
 
 // The implementation class for the fcl engine. Each of these functions
@@ -529,6 +545,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // anchored against anchored because those pairs are implicitly filtered.
     FclDistance(dynamic_tree_, anchored_tree_, &data,
                 shape_distance::Callback<T>);
+    std::sort(witness_pairs.begin(), witness_pairs.end(),
+              OrderSignedDistancePair<T>);
     return witness_pairs;
   }
 
@@ -593,6 +611,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Perform query of point vs anchored objects.
     anchored_tree_.distance(&query_point, &data, point_distance::Callback<T>);
 
+    std::sort(distances.begin(), distances.end(),
+              OrderSignedDistanceToPoint<T>);
     return distances;
   }
 
@@ -1161,11 +1181,11 @@ void* ProximityEngine<T>::GetCollisionObject(GeometryId id) const {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&ProximityEngine<T>::template ToScalarType<U>))
+    (&ProximityEngine<T>::template ToScalarType<U>));
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&ProximityEngine<T>::template ComputeContactSurfaces<T>,
-     &ProximityEngine<T>::template ComputeContactSurfacesWithFallback<T>))
+     &ProximityEngine<T>::template ComputeContactSurfacesWithFallback<T>));
 
 template void ProximityEngine<double>::ComputeDeformableContact<double>(
     DeformableContact<double>*) const;
@@ -1175,4 +1195,4 @@ template void ProximityEngine<double>::ComputeDeformableContact<double>(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::internal::ProximityEngine)
+    class ::drake::geometry::internal::ProximityEngine);

@@ -234,6 +234,29 @@ TEST_F(VolumetricModelTest, ElasticEnergy) {
   EXPECT_DOUBLE_EQ(energy, expected_energy);
 }
 
+TEST_F(VolumetricModelTest, Clone) {
+  using DoubleModel = VolumetricModel<DoubleElement>;
+  DoubleModel double_model;
+  AddBoxToModel(&double_model);
+
+  std::unique_ptr<FemModel<double>> clone = double_model.Clone();
+  const DoubleModel* double_clone =
+      dynamic_cast<const DoubleModel*>(clone.get());
+  ASSERT_NE(double_clone, nullptr);
+
+  std::unique_ptr<FemState<double>> state = MakeDeformedFemState(double_model);
+  std::unique_ptr<FemState<double>> clone_state =
+      MakeDeformedFemState(*double_clone);
+
+  EXPECT_EQ(state->GetPositions(), clone_state->GetPositions());
+  EXPECT_EQ(state->GetPreviousStepPositions(),
+            clone_state->GetPreviousStepPositions());
+  EXPECT_EQ(state->GetVelocities(), clone_state->GetVelocities());
+  EXPECT_EQ(state->GetAccelerations(), clone_state->GetAccelerations());
+  EXPECT_EQ(state->num_dofs(), clone_state->num_dofs());
+  EXPECT_EQ(state->num_nodes(), clone_state->num_nodes());
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace fem

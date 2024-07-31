@@ -1,0 +1,25 @@
+[openusd_internal] Put PXR_WORK_THREAD_LIMITS globals in namespace
+
+This patch repairs some global symbol leaks. This patch could be
+upstreamed.
+
+--- pxr/base/work/threadLimits.cpp
++++ pxr/base/work/threadLimits.cpp
+@@ -37,6 +37,8 @@
+
+ PXR_NAMESPACE_USING_DIRECTIVE
+
++PXR_NAMESPACE_OPEN_SCOPE
++
+ // The environment variable used to limit the number of threads the application
+ // may spawn:
+ //           0 - no change, i.e. defaults to maximum physical concurrency
+@@ -56,8 +58,6 @@ TF_DEFINE_ENV_SETTING(
+     "the environment variable (if set to a non-zero value) will override any "
+     "value passed to Work thread-limiting API calls.");
+
+-PXR_NAMESPACE_OPEN_SCOPE
+-
+ // We create a task_scheduler_init instance at static initialization time if
+ // PXR_WORK_THREAD_LIMIT is set to a nonzero value.  Otherwise this stays NULL.
+ static tbb::task_scheduler_init *_tbbTaskSchedInit;

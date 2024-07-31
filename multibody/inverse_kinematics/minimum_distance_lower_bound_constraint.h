@@ -35,7 +35,7 @@ gradient.
 */
 class MinimumDistanceLowerBoundConstraint final : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimumDistanceLowerBoundConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimumDistanceLowerBoundConstraint);
 
   /** Constructs a MinimumDistanceLowerBoundConstraint.
   @param plant The multibody system on which the constraint will be evaluated.

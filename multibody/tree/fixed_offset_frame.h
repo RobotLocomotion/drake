@@ -33,7 +33,7 @@ template <class T> class RigidBody;
 template <typename T>
 class FixedOffsetFrame final : public Frame<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FixedOffsetFrame)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FixedOffsetFrame);
 
   /// Creates a material Frame F whose pose is fixed with respect to its
   /// parent material Frame P. The pose is given by a spatial transform `X_PF`;
@@ -67,49 +67,20 @@ class FixedOffsetFrame final : public Frame<T> {
       const std::string& name, const RigidBody<T>& bodyB,
       const math::RigidTransform<double>& X_BF);
 
-  math::RigidTransform<T> CalcPoseInBodyFrame(
-      const systems::Context<T>& context) const override {
-    // X_BF = X_BP * X_PF
-    const math::RigidTransform<T> X_PF = GetPoseInParentFrame(context);
-    return parent_frame_.CalcOffsetPoseInBody(context, X_PF);
-  }
-
-  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
-      const systems::Context<T>& context) const override {
-    // R_BF = R_BP * R_PF
-    const systems::BasicVector<T>& X_PF_parameter =
-        context.get_numeric_parameter(X_PF_parameter_index_);
-    return parent_frame_.CalcOffsetRotationMatrixInBody(
-        context,
-        math::RotationMatrix<T>(Eigen::Map<const Eigen::Matrix<T, 3, 4>>(
-                                    X_PF_parameter.get_value().data())
-                                    .template block<3, 3>(0, 0)));
-  }
+  ~FixedOffsetFrame() override;
 
   /// Sets the pose of `this` frame F in its parent frame P.
-  /// @param[in] context contains the state of the multibody plant.
+  /// @param[in,out] context of the multibody plant associated with this frame.
   /// @param[in] X_PF Rigid transform that characterizes `this` frame F's pose
   ///   (orientation and position) in its parent frame P.
-  /// @pre `this` frame has been registered in the given `context`.
   void SetPoseInParentFrame(systems::Context<T>* context,
-                            const math::RigidTransform<T>& X_PF) const {
-    systems::BasicVector<T>& X_PF_parameter =
-        context->get_mutable_numeric_parameter(X_PF_parameter_index_);
-    X_PF_parameter.set_value(
-        Eigen::Map<const VectorX<T>>(X_PF.GetAsMatrix34().data(), 12, 1));
-  }
+                            const math::RigidTransform<T>& X_PF) const;
 
   /// Returns the rigid transform X_PF that characterizes `this` frame F's pose
   /// in its parent frame P.
-  /// @param[in] context contains the state of the multibody plant.
-  /// @pre `this` frame has been registered in the given `context`.
+  /// @param[in] context of the multibody plant associated with this frame.
   math::RigidTransform<T> GetPoseInParentFrame(
-      const systems::Context<T>& context) const {
-    const systems::BasicVector<T>& X_PF_parameter =
-        context.get_numeric_parameter(X_PF_parameter_index_);
-    return math::RigidTransform<T>(Eigen::Map<const Eigen::Matrix<T, 3, 4>>(
-            X_PF_parameter.get_value().data()));
-  }
+      const systems::Context<T>& context) const;
 
   /// @returns The default fixed pose in the body frame.
   math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
@@ -145,6 +116,12 @@ class FixedOffsetFrame final : public Frame<T> {
   std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
   /// @}
+
+  math::RigidTransform<T> DoCalcPoseInBodyFrame(
+      const systems::Parameters<T>& parameters) const override;
+
+  math::RotationMatrix<T> DoCalcRotationMatrixInBodyFrame(
+      const systems::Parameters<T>& parameters) const override;
 
  private:
   // Implementation for Frame::DoDeclareFrameParameters().
@@ -190,4 +167,4 @@ class FixedOffsetFrame final : public Frame<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::FixedOffsetFrame)
+    class drake::multibody::FixedOffsetFrame);

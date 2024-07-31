@@ -26,7 +26,7 @@ namespace multibody {
 template <typename T>
 class BallRpyJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BallRpyJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BallRpyJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -71,6 +71,8 @@ class BallRpyJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS(damping >= 0);
   }
 
+  ~BallRpyJoint() override;
+
   const std::string& type_name() const override;
 
   /// Returns `this` joint's default damping constant in N⋅m⋅s. The damping
@@ -78,12 +80,6 @@ class BallRpyJoint final : public Joint<T> {
   /// ω the angular velocity of frame M in F (see get_angular_velocity()) and τ
   /// the torque on child body B (to which M is rigidly attached).
   double default_damping() const {
-    // N.B. All damping coefficients are set to the same value for this joint.
-    return this->default_damping_vector()[0];
-  }
-
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
-  double damping() const {
     // N.B. All damping coefficients are set to the same value for this joint.
     return this->default_damping_vector()[0];
   }
@@ -134,7 +130,7 @@ class BallRpyJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const BallRpyJoint<T>& set_angles(Context<T>* context,
                                     const Vector3<T>& angles) const {
-    get_mobilizer()->set_angles(context, angles);
+    get_mobilizer()->SetAngles(context, angles);
     return *this;
   }
 
@@ -170,7 +166,7 @@ class BallRpyJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const BallRpyJoint<T>& set_angular_velocity(systems::Context<T>* context,
                                               const Vector3<T>& w_FM) const {
-    get_mobilizer()->set_angular_velocity(context, w_FM);
+    get_mobilizer()->SetAngularVelocity(context, w_FM);
     return *this;
   }
 
@@ -295,4 +291,4 @@ const char BallRpyJoint<T>::kTypeName[] = "ball_rpy";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::BallRpyJoint)
+    class ::drake::multibody::BallRpyJoint);

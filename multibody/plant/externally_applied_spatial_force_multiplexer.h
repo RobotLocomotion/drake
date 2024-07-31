@@ -28,7 +28,7 @@ template <typename T>
 class ExternallyAppliedSpatialForceMultiplexer final
     : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternallyAppliedSpatialForceMultiplexer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternallyAppliedSpatialForceMultiplexer);
 
   /**
   Constructor.
@@ -42,6 +42,8 @@ class ExternallyAppliedSpatialForceMultiplexer final
   template <typename U>
   explicit ExternallyAppliedSpatialForceMultiplexer(
       const ExternallyAppliedSpatialForceMultiplexer<U>& other);
+
+  ~ExternallyAppliedSpatialForceMultiplexer() final;
 
  private:
   using ValueType = ExternallyAppliedSpatialForce<T>;

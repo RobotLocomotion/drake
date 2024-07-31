@@ -55,7 +55,7 @@ namespace systems {
 template <class T>
 class DiscreteDerivative final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteDerivative)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteDerivative);
 
   /// Constructor taking @p num_inputs, the size of the vector to be
   /// differentiated, and @p time_step, the sampling interval. If @p
@@ -150,7 +150,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
 template <typename T>
 class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateInterpolatorWithDiscreteDerivative)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateInterpolatorWithDiscreteDerivative);
 
   /// Constructor taking @p num_positions, the size of the position vector to
   /// be differentiated, and @p time_step, the sampling interval. If @p

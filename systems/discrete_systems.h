@@ -43,7 +43,7 @@ which should generate the sequence `S = 0 10 20 30 ...` (that is, `S_n = 10*n`).
 @code{.cpp}
 class ExampleDiscreteSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiscreteSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiscreteSystem);
 
   ExampleDiscreteSystem() {
     DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.

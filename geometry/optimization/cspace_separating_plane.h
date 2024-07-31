@@ -44,7 +44,7 @@ enum class SeparatingPlaneOrder {
 template <typename T>
 struct CSpaceSeparatingPlane {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CSpaceSeparatingPlane)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CSpaceSeparatingPlane);
 
   CSpaceSeparatingPlane(
       Vector3<symbolic::Polynomial> m_a, symbolic::Polynomial m_b,

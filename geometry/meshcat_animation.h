@@ -3,9 +3,11 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
+#include "drake/common/string_map.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -25,12 +27,12 @@ disappear at a particular frame.
 */
 class MeshcatAnimation {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatAnimation)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatAnimation);
 
   /** Constructs the animation object.
   @param frames_per_second a positive integer specifying the timing at which the
   frames are played back. */
-  explicit MeshcatAnimation(double frames_per_second = 32.0);
+  explicit MeshcatAnimation(double frames_per_second = 64.0);
 
   ~MeshcatAnimation();
 
@@ -114,7 +116,7 @@ class MeshcatAnimation {
                          path have already been set to an incorrect type.
 
   */
-  void SetTransform(int frame, const std::string& path,
+  void SetTransform(int frame, std::string_view path,
                     const math::RigidTransformd& X_ParentPath);
 
   /** Sets a single named property of the object at the given `path` at the
@@ -130,8 +132,8 @@ class MeshcatAnimation {
 
   @pydrake_mkdoc_identifier{bool}
   */
-  void SetProperty(int frame, const std::string& path,
-                   const std::string& property, bool value);
+  void SetProperty(int frame, std::string_view path, std::string_view property,
+                   bool value);
 
   /** Sets a single named property of the object at the given `path` at the
   specified `frame` in the animation. @see Meshcat::SetProperty.
@@ -146,8 +148,8 @@ class MeshcatAnimation {
 
   @pydrake_mkdoc_identifier{double}
   */
-  void SetProperty(int frame, const std::string& path,
-                   const std::string& property, double value);
+  void SetProperty(int frame, std::string_view path, std::string_view property,
+                   double value);
 
   /** Sets a single named property of the object at the given `path` at the
   specified `frame` in the animation. @see Meshcat::SetProperty.
@@ -162,8 +164,7 @@ class MeshcatAnimation {
 
   @pydrake_mkdoc_identifier{vector_double}
   */
-  void SetProperty(int frame, const std::string& path,
-                   const std::string& property,
+  void SetProperty(int frame, std::string_view path, std::string_view property,
                    const std::vector<double>& value);
 
   // TODO(russt): Consider ColorKeyframeTrack.js and/or StringKeyframeTrack.js
@@ -179,39 +180,19 @@ class MeshcatAnimation {
 
   /** Returns the value information for a particular path/property at a
   particular frame if a value of type T has been set, otherwise returns
-  std::nullopt. This method is intended primarily for testing. */
+  std::nullopt. This method is intended primarily for testing.
+  @tparam T One of `bool`, `double`, or `vector<double>` */
   template <typename T>
-  std::optional<T> get_key_frame(int frame, const std::string& path,
-                                 const std::string& property) const {
-    if (path_tracks_.find(path) == path_tracks_.end() ||
-        path_tracks_.at(path).find(property) == path_tracks_.at(path).end()) {
-      return std::nullopt;
-    }
-    const TypedTrack& tt = path_tracks_.at(path).at(property);
-    if (!std::holds_alternative<Track<T>>(tt.track)) {
-      return std::nullopt;
-    }
-    const Track<T>& t = std::get<Track<T>>(tt.track);
-    if (t.find(frame) == t.end()) {
-      return std::nullopt;
-    }
-    return t.at(frame);
-  }
+  std::optional<T> get_key_frame(int frame, std::string_view path,
+                                 std::string_view property) const;
 
   /** Returns the javascript type for a particular path/property, or the empty
   string if nothing has been set. This method is intended primarily for
   testing. */
-  std::string get_javascript_type(const std::string& path,
-                                  const std::string& property) const;
+  std::string get_javascript_type(std::string_view path,
+                                  std::string_view property) const;
 
  private:
-  // Implements the SetProperty methods.
-  // js_type must match three.js getTrackTypeForValueTypeName implementation.
-  template <typename T>
-  void SetProperty(int frame, const std::string& path,
-                   const std::string& property, const std::string& js_type,
-                   const T& value);
-
   // A map of frame => value.
   template <typename T>
   using Track = std::map<int, T>;
@@ -225,13 +206,24 @@ class MeshcatAnimation {
   };
 
   // A map of property name => tracks.
-  using PropertyTracks = std::map<std::string, TypedTrack>;
+  using PropertyTracks = string_map<TypedTrack>;
 
   // A map of path => property tracks.
-  using PathTracks = std::map<std::string, PropertyTracks>;
+  using PathTracks = string_map<PropertyTracks>;
 
   // TODO(russt): Narrow this access to restore encapsulation.
   friend class Meshcat;
+
+  const TypedTrack* GetTypedTrack(std::string_view path,
+                                  std::string_view property) const;
+  TypedTrack& GetOrCreateTypedTrack(std::string_view path,
+                                    std::string_view property);
+
+  // Implements the SetProperty methods.
+  // js_type must match three.js getTrackTypeForValueTypeName implementation.
+  template <typename T>
+  void SetProperty(int frame, std::string_view path, std::string_view property,
+                   std::string_view js_type, const T& value);
 
   // A map of path name => property tracks.
   PathTracks path_tracks_{};

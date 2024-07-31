@@ -53,7 +53,7 @@ namespace drake {
 /// <pre>
 /// class Foo {
 ///  public:
-///   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo)
+///   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo);
 ///   Foo() = default;
 ///
 ///  private:

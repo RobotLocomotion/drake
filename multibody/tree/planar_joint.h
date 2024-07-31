@@ -32,7 +32,7 @@ namespace multibody {
 template <typename T>
 class PlanarJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -74,6 +74,8 @@ class PlanarJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
   }
 
+  ~PlanarJoint() final;
+
   const std::string& type_name() const final;
 
   /// Returns `this` joint's default damping constant in N⋅s/m for the
@@ -89,9 +91,6 @@ class PlanarJoint final : public Joint<T> {
   Vector3<double> default_damping() const {
     return this->default_damping_vector();
   }
-
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
-  Vector3<double> damping() const { return this->default_damping_vector(); }
 
   /// @name Context-dependent value access
   /// @{
@@ -135,7 +134,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_rotation(systems::Context<T>* context,
                                      const T& theta) const {
-    get_mobilizer()->set_angle(context, theta);
+    get_mobilizer()->SetAngle(context, theta);
     return *this;
   }
 
@@ -153,7 +152,7 @@ class PlanarJoint final : public Joint<T> {
                                  const Vector2<T>& p_FoMo_F,
                                  const T& theta) const {
     get_mobilizer()->set_translations(context, p_FoMo_F);
-    get_mobilizer()->set_angle(context, theta);
+    get_mobilizer()->SetAngle(context, theta);
     return *this;
   }
 
@@ -176,7 +175,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const Vector2<T>& v_FoMo_F) const {
-    get_mobilizer()->set_translation_rates(context, v_FoMo_F);
+    get_mobilizer()->SetTranslationRates(context, v_FoMo_F);
     return *this;
   }
 
@@ -201,7 +200,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_angular_velocity(systems::Context<T>* context,
                                              const T& theta_dot) const {
-    get_mobilizer()->set_angular_rate(context, theta_dot);
+    get_mobilizer()->SetAngularRate(context, theta_dot);
     return *this;
   }
 
@@ -370,4 +369,4 @@ class PlanarJoint final : public Joint<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::PlanarJoint)
+    class ::drake::multibody::PlanarJoint);

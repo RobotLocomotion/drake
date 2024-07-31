@@ -18,6 +18,7 @@ from pydrake.trajectories import (
     BsplineTrajectory_,
     CompositeTrajectory_,
     DerivativeTrajectory_,
+    ExponentialPlusPiecewisePolynomial,
     PathParameterizedTrajectory_,
     PiecewisePolynomial_,
     PiecewisePose_,
@@ -102,7 +103,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(curve.rows(), 0)
         self.assertEqual(curve.cols(), 1)
 
-        points = np.mat("4.0, 5.0; 6.0, 7.0")
+        points = np.array([[4.0, 5.0], [6.0, 7.0]])
         curve = BezierCurve_[T](start_time=1,
                                 end_time=2,
                                 control_points=points)
@@ -184,6 +185,28 @@ class TestTrajectories(unittest.TestCase):
         dut = DerivativeTrajectory_[T](nominal=foh, derivative_order=1)
         self.assertEqual(dut.rows(), 1)
         self.assertEqual(dut.cols(), 1)
+        dut.Clone()
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_exponential_plus_piecewise_polynomial(self):
+        K = np.array([1.23])
+        A = np.array([3.45])
+        alpha = np.array([6.78])
+        breaks = np.array([0.0, 0.5])
+        samples = np.array([[1.0, 2.0]])
+        polynomial_part = PiecewisePolynomial_[float].FirstOrderHold(
+            breaks, samples)
+        dut = ExponentialPlusPiecewisePolynomial(
+            K=K, A=A, alpha=alpha, piecewise_polynomial_part=polynomial_part)
+        self.assertEqual(dut.rows(), 1)
+        self.assertEqual(dut.cols(), 1)
+        self.assertEqual(dut.value(0.25).shape, (1, 1))
+        self.assertEqual(dut.start_time(), 0.0)
+        self.assertEqual(dut.end_time(), 0.5)
+        dut.shiftRight(1.0)
+        self.assertEqual(dut.start_time(), 1.0)
+        self.assertEqual(dut.end_time(), 1.5)
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)

@@ -22,7 +22,7 @@ namespace multibody {
  */
 class ComInPolyhedronConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComInPolyhedronConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComInPolyhedronConstraint);
 
   /**
    * Constructs a %ComInPolyhedronConstraint object.

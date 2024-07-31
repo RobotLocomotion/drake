@@ -1,16 +1,15 @@
-load("@python//:version.bzl", "PYTHON_VERSION")
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install")
-load(
-    "//tools/skylark:pybind.bzl",
-    "get_pybind_package_info",
-)
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
 )
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load(
+    "//tools/skylark:pybind.bzl",
+    "get_pybind_package_info",
+)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -98,11 +97,6 @@ drake_py_test(
     srcs = ["train_cart_pole.py"],
     args = ["--test"],
     main = "train_cart_pole.py",
-    # DrakeGym is only supported for Python >= 3.10.
-    tags = ["manual"] if PYTHON_VERSION in [
-        "3.8",
-        "3.9",
-    ] else [],
     deps = [
         ":cart_pole_binaries",
         "@gymnasium_py",
@@ -115,11 +109,6 @@ drake_py_test(
     srcs = ["play_cart_pole.py"],
     args = ["--test"],
     main = "play_cart_pole.py",
-    # DrakeGym is only supported for Python >= 3.10.
-    tags = ["manual"] if PYTHON_VERSION in [
-        "3.8",
-        "3.9",
-    ] else [],
     deps = [
         ":cart_pole_binaries",
         "@gymnasium_py",

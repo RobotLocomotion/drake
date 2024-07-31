@@ -33,6 +33,7 @@ namespace estimators {
 ///
 /// @throws std::exception if V is not positive definite.
 /// @ingroup estimator_systems
+/// @pydrake_mkdoc_identifier{ACWV}
 ///
 Eigen::MatrixXd SteadyStateKalmanFilter(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -53,6 +54,7 @@ Eigen::MatrixXd SteadyStateKalmanFilter(
 ///
 /// @throws std::exception if V is not positive definite.
 /// @ingroup estimator_systems
+/// @pydrake_mkdoc_identifier{linear_system}
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     std::unique_ptr<LinearSystem<double>> system,
     const Eigen::Ref<const Eigen::MatrixXd>& W,
@@ -85,6 +87,7 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
 ///
 /// @throws std::exception if V is not positive definite.
 /// @ingroup estimator_systems
+/// @pydrake_mkdoc_identifier{system}
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     std::unique_ptr<System<double>> system,
     std::unique_ptr<Context<double>> context,

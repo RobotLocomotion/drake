@@ -55,6 +55,7 @@ using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
 using drake::multibody::contact_solvers::internal::SapWeldConstraint;
+using drake::systems::DependencyTicket;
 
 namespace drake {
 namespace multibody {
@@ -69,6 +70,9 @@ SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager,
 }
 
 template <typename T>
+SapDriver<T>::~SapDriver() = default;
+
+template <typename T>
 void SapDriver<T>::set_sap_solver_parameters(
     const contact_solvers::internal::SapSolverParameters& parameters) {
   sap_parameters_ = parameters;
@@ -79,26 +83,33 @@ void SapDriver<T>::DeclareCacheEntries(
     CompliantContactManager<T>* mutable_manager) {
   DRAKE_DEMAND(mutable_manager == manager_);
 
-  const systems::DependencyTicket xd_ticket = systems::System<T>::xd_ticket();
-  const systems::DependencyTicket inputs_ticket =
-      plant().all_input_ports_ticket();
-  const systems::DependencyTicket parameters_ticket =
-      plant().all_parameters_ticket();
-  const std::set<systems::DependencyTicket> state_input_and_parameters = {
-      xd_ticket, inputs_ticket, parameters_ticket};
+  const DependencyTicket xd_ticket = systems::System<T>::xd_ticket();
+  const DependencyTicket inputs_ticket = plant().all_input_ports_ticket();
+  const DependencyTicket parameters_ticket = plant().all_parameters_ticket();
 
   const auto& contact_problem_cache_entry = mutable_manager->DeclareCacheEntry(
       "contact problem",
       systems::ValueProducer(this, ContactProblemCache<T>(plant().time_step()),
                              &SapDriver<T>::CalcContactProblemCache),
-      state_input_and_parameters);
+      // The ContactProblemCache includes free motion velocities which include
+      // contribution from force elements, which could involve user-injected
+      // dependencies. So we need to include all possible tickets that users can
+      // choose to depend on.
+      {xd_ticket, inputs_ticket, parameters_ticket,
+       systems::System<T>::time_ticket(),
+       systems::System<T>::accuracy_ticket()});
   contact_problem_ = contact_problem_cache_entry.cache_index();
 
   const auto& sap_solver_results_cache_entry =
       mutable_manager->DeclareCacheEntry(
           "SAP solver results",
           systems::ValueProducer(this, &SapDriver<T>::CalcSapSolverResults),
-          state_input_and_parameters);
+          // The SapSolverResults includes contribution from force elements,
+          // which could involve user-injected dependencies. So we need to
+          // include all possible tickets that users can choose to depend on.
+          {xd_ticket, inputs_ticket, parameters_ticket,
+           systems::System<T>::time_ticket(),
+           systems::System<T>::accuracy_ticket()});
   sap_results_ = sap_solver_results_cache_entry.cache_index();
 }
 
@@ -251,16 +262,8 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
             MakeContactConfiguration(pair), std::move(J),
             make_sap_parameters()));
       } else {
-        ContactConfiguration<T> contact_configuration =
-            MakeContactConfiguration(pair);
-        DRAKE_DEMAND(
-            !std::isnan(ExtractDoubleOrThrow(contact_configuration.vn)));
-        DRAKE_DEMAND(
-            !std::isnan(ExtractDoubleOrThrow(contact_configuration.fe)));
-        DRAKE_DEMAND(
-            !std::isnan(ExtractDoubleOrThrow(contact_configuration.phi)));
         problem->AddConstraint(std::make_unique<SapHuntCrossleyConstraint<T>>(
-            std::move(contact_configuration), std::move(J),
+            MakeContactConfiguration(pair), std::move(J),
             make_hunt_crossley_parameters()));
       }
     } else {
@@ -317,8 +320,7 @@ void SapDriver<T>::AddLimitConstraints(const systems::Context<T>& context,
   const double stiffness = 1.0e12;
   const double dissipation_time_scale = dt;
 
-  for (JointIndex joint_index(0); joint_index < plant().num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
     // We only support limits for 1 DOF joints for which we know that q̇ = v.
     if (joint.num_positions() == 1 && joint.num_velocities() == 1) {
@@ -719,15 +721,15 @@ void SapDriver<T>::AddPdControllerConstraints(
   if (plant().num_actuators() == 0) return;
 
   // Desired positions & velocities.
-  const int num_actuators = plant().num_actuators();
+  const int num_actuated_dofs = plant().num_actuated_dofs();
+
   // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
   // allocations.
   const VectorX<T> desired_state = manager_->AssembleDesiredStateInput(context);
   const VectorX<T> feed_forward_actuation =
       manager_->AssembleActuationInput(context);
 
-  for (JointActuatorIndex actuator_index(0);
-       actuator_index < plant().num_actuators(); ++actuator_index) {
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
     const JointActuator<T>& actuator =
         plant().get_joint_actuator(actuator_index);
     if (actuator.has_controller()) {
@@ -737,9 +739,9 @@ void SapDriver<T>::AddPdControllerConstraints(
       // controllers on locked joints is considered to be zero.
       if (!joint.is_locked(context)) {
         const double effort_limit = actuator.effort_limit();
-        const T& qd = desired_state[actuator.index()];
-        const T& vd = desired_state[num_actuators + actuator.index()];
-        const T& u0 = feed_forward_actuation[actuator.index()];
+        const T& qd = desired_state[actuator.input_start()];
+        const T& vd = desired_state[num_actuated_dofs + actuator.input_start()];
+        const T& u0 = feed_forward_actuation[actuator.input_start()];
 
         const T& q0 = joint.GetOnePosition(context);
         const int dof = joint.velocity_start();
@@ -825,7 +827,7 @@ void SapDriver<T>::CalcContactProblemCache(
   // Make a reduced version of the original contact problem using joint locking
   // data.
   const internal::JointLockingCacheData<T>& joint_locking_data =
-      manager().EvalJointLockingCache(context);
+      manager().EvalJointLocking(context);
   const std::vector<int>& locked_indices =
       joint_locking_data.locked_velocity_indices;
   const std::vector<std::vector<int>>& locked_indices_per_tree =
@@ -942,7 +944,7 @@ void SapDriver<T>::CalcSapSolverResults(
   // Eliminate known DoFs.
   if (has_locked_dofs) {
     const auto& unlocked_indices =
-        manager().EvalJointLockingCache(context).unlocked_velocity_indices;
+        manager().EvalJointLocking(context).unlocked_velocity_indices;
     v0 = SelectRows(v0, unlocked_indices);
   }
 
@@ -988,12 +990,12 @@ void SapDriver<T>::CalcSapSolverResults(
         "  3. Numerical ill conditioning of the model caused by, for instance, "
         "     extremely large mass ratios. Revise your model and consider "
         "     whether very small objects can be removed or welded to larger "
-        "     objects in the model."
+        "     objects in the model.\n"
         "  4. Ill-conditioning could be alleviated via SAP's near rigid "
         "     parameter. Refer to "
-        "     MultibodyPlant::set_sap_near_rigid_threshold() for details."
+        "     MultibodyPlant::set_sap_near_rigid_threshold() for details.\n"
         "  5. Some other cause. You may want to use Stack Overflow (#drake "
-        "     tag) to request some assistance.",
+        "     tag) to request some assistance.\n",
         context.get_time());
     throw std::runtime_error(msg);
   }
@@ -1096,14 +1098,15 @@ void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
 
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
   const VectorX<T>& gamma = sap_results.gamma;
-  VectorX<T> tau_pd = VectorX<T>::Zero(plant().num_velocities());
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
+  VectorX<T> tau_pd = VectorX<T>::Zero(sap_problem.num_velocities());
   sap_problem.CalcConstraintGeneralizedForces(gamma, start, end, &tau_pd);
+  // Discard the deformable velocities (keeping only the MbT velocities).
+  tau_pd.conservativeResize(plant().num_velocities());
 
   // Map generalized forces to actuation indexing.
   int constraint_index = start;
-  for (JointActuatorIndex actuator_index(0);
-       actuator_index < plant().num_actuators(); ++actuator_index) {
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
     const JointActuator<T>& actuator =
         plant().get_joint_actuator(actuator_index);
     const Joint<T>& joint = actuator.joint();
@@ -1119,7 +1122,7 @@ void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
       DRAKE_DEMAND(c.num_constraint_equations() == 1);
 
       // Each actuator defines a single PD controller.
-      actuation->coeffRef(actuator_index) = tau_pd(dof);
+      actuation->coeffRef(actuator.input_start()) = tau_pd(dof);
     }
   }
   // Sanity check consistency with the code that added the constraints,

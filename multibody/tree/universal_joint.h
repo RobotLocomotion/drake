@@ -44,7 +44,7 @@ namespace multibody {
 template <typename T>
 class UniversalJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniversalJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniversalJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -87,6 +87,8 @@ class UniversalJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS(damping >= 0);
   }
 
+  ~UniversalJoint() override;
+
   const std::string& type_name() const override;
 
   /// Returns `this` joint's default damping constant in N⋅m⋅s. The damping
@@ -95,12 +97,6 @@ class UniversalJoint final : public Joint<T> {
   /// (see get_angular_rates())and τᵢ the torque on child body B about the same
   /// i-th axis.
   double default_damping() const {
-    // N.B. Both damping coefficients are set to the same value for this joint.
-    return this->default_damping_vector()[0];
-  }
-
-  DRAKE_DEPRECATED("2024-06-01", "Use `default_damping()` instead.")
-  double damping() const {
     // N.B. Both damping coefficients are set to the same value for this joint.
     return this->default_damping_vector()[0];
   }
@@ -127,7 +123,7 @@ class UniversalJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const UniversalJoint<T>& set_angles(Context<T>* context,
                                       const Vector2<T>& angles) const {
-    get_mobilizer()->set_angles(context, angles);
+    get_mobilizer()->SetAngles(context, angles);
     return *this;
   }
 
@@ -149,7 +145,7 @@ class UniversalJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const UniversalJoint<T>& set_angular_rates(
       systems::Context<T>* context, const Vector2<T>& theta_dot) const {
-    get_mobilizer()->set_angular_rates(context, theta_dot);
+    get_mobilizer()->SetAngularRates(context, theta_dot);
     return *this;
   }
 
@@ -295,4 +291,4 @@ const char UniversalJoint<T>::kTypeName[] = "universal";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::UniversalJoint)
+    class ::drake::multibody::UniversalJoint);

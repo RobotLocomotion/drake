@@ -18,7 +18,7 @@ namespace {
 // This is what DoClone should look like.
 class GoodVector : public BasicVector<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GoodVector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GoodVector);
   GoodVector() : BasicVector<double>(2) {}
   [[nodiscard]] GoodVector* DoClone() const override {
     return new GoodVector;
@@ -28,7 +28,7 @@ class GoodVector : public BasicVector<double> {
 // This one forgot the DoClone override entirely.
 class MissingCloneVector : public BasicVector<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MissingCloneVector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MissingCloneVector);
   MissingCloneVector() : BasicVector<double>(2) {}
 };
 
@@ -36,14 +36,14 @@ class MissingCloneVector : public BasicVector<double> {
 // superclass implementation is not good enough.
 class NotSoGoodVector : public GoodVector {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotSoGoodVector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotSoGoodVector);
   NotSoGoodVector() {}
 };
 
 // This one remembers to DoClone in the subclass, but does it wrong.
 class NotQuiteGoodVector : public GoodVector {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotQuiteGoodVector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotQuiteGoodVector);
   NotQuiteGoodVector() {}
   [[nodiscard]] GoodVector* DoClone() const override {
     return new GoodVector;

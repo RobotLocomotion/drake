@@ -223,14 +223,14 @@ UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutPoint(
   const Vector3<T> p_B0B1 = p1 - p0;  // Position from vertex B0 to vertex B1.
   const Vector3<T> p_B0B2 = p2 - p0;  // Position from vertex B0 to vertex B2.
   const Vector3<T> p_B0B3 = p3 - p0;  // Position from vertex B0 to vertex B3.
-  UnitInertia<T> G_BB0 =
+  const UnitInertia<T> G_BB0 =
       UnitInertia<T>::SolidTetrahedronAboutVertex(p_B0B1, p_B0B2, p_B0B3);
 
   // Shift unit inertia from about point B0 to about point A.
   const Vector3<T> p_B0Bcm = 0.25 * (p_B0B1 + p_B0B2 + p_B0B3);
   const Vector3<T>& p_AB0 = p0;  // Alias with monogram notation to clarify.
   const Vector3<T> p_ABcm = p_AB0 + p_B0Bcm;
-  RotationalInertia<T>& I_BA = G_BB0.ShiftToThenAwayFromCenterOfMassInPlace(
+  const RotationalInertia<T> I_BA = G_BB0.ShiftToThenAwayFromCenterOfMass(
       /* mass = */ 1, p_B0Bcm, p_ABcm);
   return UnitInertia<T>(I_BA);  // Returns G_BA (B's unit inertia about A).
 }
@@ -312,4 +312,4 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::UnitInertia)
+    class drake::multibody::UnitInertia);

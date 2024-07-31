@@ -48,7 +48,7 @@ namespace multibody {
 template <typename T>
 class UnitInertia : public RotationalInertia<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia);
 
   /// Default %UnitInertia constructor sets all entries to NaN for quick
   /// detection of uninitialized values.
@@ -104,9 +104,8 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Re-express a unit inertia in a different frame, performing the operation
   /// in place and modifying the original object. @see ReExpress() for details.
-  UnitInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
+  void ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
     RotationalInertia<T>::ReExpressInPlace(R_AE);
-    return *this;
   }
 
   /// Given `this` unit inertia `G_BP_E` of a body B about a point P and
@@ -123,15 +122,13 @@ class UnitInertia : public RotationalInertia<T> {
   /// mass (or centroid) `Bcm` and expressed in a frame E, this method shifts
   /// this inertia using the parallel axis theorem to be computed about a
   /// point Q. This operation is performed in place, modifying the original
-  /// object which is no longer a central inertia.
+  /// object which is no longer a central inertia. On return, `this` is
+  /// modified to be taken about point Q so can be written as `G_BQ_E`.
   /// @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point Q
   ///                     expressed in the same frame E in which `this`
   ///                     inertia is expressed.
-  /// @returns A reference to `this` unit inertia, which has now been taken
-  ///          about point Q so can be written as `G_BQ_E`.
-  UnitInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcmQ_E) {
+  void ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcmQ_E) {
     RotationalInertia<T>::operator+=(PointMass(p_BcmQ_E));
-    return *this;
   }
 
   /// Shifts this central unit inertia to a different point, and returns the
@@ -143,20 +140,21 @@ class UnitInertia : public RotationalInertia<T> {
   ///                the centroid `Bcm`.
   [[nodiscard]] UnitInertia<T> ShiftFromCenterOfMass(
       const Vector3<T>& p_BcmQ_E) const {
-    return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcmQ_E);
+    UnitInertia<T> result(*this);
+    result.ShiftFromCenterOfMassInPlace(p_BcmQ_E);
+    return result;
   }
 
   /// For the unit inertia `G_BQ_E` of a body or composite body B computed about
   /// a point Q and expressed in a frame E, this method shifts this inertia
   /// using the parallel axis theorem to be computed about the center of mass
   /// `Bcm` of B. This operation is performed in place, modifying the original
-  /// object.
+  /// object. On return, `this` is modified to be taken about point `Bcm` so can
+  /// be written as `G_BBcm_E`, or `G_Bcm_E`.
   ///
   /// @param[in] p_QBcm_E A position vector from the about point Q to the body's
   ///                     centroid `Bcm` expressed in the same frame E in which
   ///                     `this` inertia is expressed.
-  /// @returns A reference to `this` unit inertia, which has now been taken
-  ///          about point `Bcm` so can be written as `G_BBcm_E`, or `G_Bcm_E`.
   ///
   /// @warning This operation could result in a non-physical rotational inertia.
   /// The shifted inertia is obtained by subtracting the point mass unit inertia
@@ -166,9 +164,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// the unit inertia of the unit mass at point `Bcm` is larger than `G_BQ_E`.
   /// Use with care.
   // TODO(mitiguy) Issue #6147.  If invalid inertia, should throw exception.
-  UnitInertia<T>& ShiftToCenterOfMassInPlace(const Vector3<T>& p_QBcm_E) {
+  void ShiftToCenterOfMassInPlace(const Vector3<T>& p_QBcm_E) {
     RotationalInertia<T>::MinusEqualsUnchecked(PointMass(p_QBcm_E));
-    return *this;
   }
 
   /// For the unit inertia `G_BQ_E` of a body or composite body B computed about
@@ -185,7 +182,9 @@ class UnitInertia : public RotationalInertia<T> {
   /// Use with care. See ShiftToCenterOfMassInPlace() for details.
   [[nodiscard]] UnitInertia<T> ShiftToCenterOfMass(
       const Vector3<T>& p_QBcm_E) const {
-    return UnitInertia<T>(*this).ShiftToCenterOfMassInPlace(p_QBcm_E);
+    UnitInertia<T> result(*this);
+    result.ShiftToCenterOfMassInPlace(p_QBcm_E);
+    return result;
   }
 
   /// @name            Unit inertia for common 3D objects
@@ -461,4 +460,4 @@ class UnitInertia : public RotationalInertia<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::UnitInertia)
+    class drake::multibody::UnitInertia);

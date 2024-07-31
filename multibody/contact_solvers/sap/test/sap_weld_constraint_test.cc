@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/contact_solvers/sap/expect_equal.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
 using drake::math::RigidTransform;
@@ -65,6 +66,17 @@ typename SapWeldConstraint<T>::Kinematics MakeArbitraryKinematics(
                                                                 clique1, J64_W);
   return typename SapWeldConstraint<T>::Kinematics{
       objectA, X_WP, p_AP_W, objectB, X_WQ, p_BQ_W, J_AmBm_W};
+}
+
+void ExpectEqual(const SapWeldConstraint<double>& c1,
+                 const SapWeldConstraint<double>& c2) {
+  ExpectBaseIsEqual(c1, c2);
+  // Holonomic constraint members.
+  EXPECT_EQ(c1.parameters(), c2.parameters());
+  EXPECT_EQ(c1.constraint_function(), c2.constraint_function());
+  EXPECT_EQ(c1.bias(), c2.bias());
+  // Weld constraint members.
+  EXPECT_EQ(c1.kinematics(), c2.kinematics());
 }
 
 GTEST_TEST(SapWeldConstraint, SingleCliqueConstraint) {
@@ -164,25 +176,7 @@ GTEST_TEST(SapWeldConstraint, SingleCliqueConstraintClone) {
   // clone is a deep-copy of the original constraint.
   auto clone = dynamic_pointer_cast<SapWeldConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), c.num_objects());
-  EXPECT_EQ(clone->num_constraint_equations(), c.num_constraint_equations());
-  EXPECT_EQ(clone->num_cliques(), c.num_cliques());
-  EXPECT_EQ(clone->first_clique(), c.kinematics().jacobian().clique(0));
-  EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_TRUE(CompareMatrices(clone->first_clique_jacobian().MakeDenseMatrix(),
-                              c.first_clique_jacobian().MakeDenseMatrix(), kEps,
-                              MatrixCompareType::relative));
-  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
-  EXPECT_EQ(clone->parameters().impulse_lower_limits(),
-            c.parameters().impulse_lower_limits());
-  EXPECT_EQ(clone->parameters().impulse_upper_limits(),
-            c.parameters().impulse_upper_limits());
-  EXPECT_EQ(clone->parameters().stiffnesses(), c.parameters().stiffnesses());
-  EXPECT_EQ(clone->parameters().relaxation_times(),
-            c.parameters().relaxation_times());
-  EXPECT_EQ(clone->parameters().beta(), c.parameters().beta());
-  EXPECT_EQ(clone->parameters().num_constraint_equations(),
-            c.parameters().num_constraint_equations());
+  ExpectEqual(c, *clone);
 }
 
 GTEST_TEST(SapWeldConstraint, TwoCliquesConstraintClone) {
@@ -193,27 +187,15 @@ GTEST_TEST(SapWeldConstraint, TwoCliquesConstraintClone) {
 
   auto clone = dynamic_pointer_cast<SapWeldConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), c.num_objects());
-  EXPECT_EQ(clone->num_constraint_equations(), c.num_constraint_equations());
-  EXPECT_EQ(clone->num_cliques(), c.num_cliques());
-  EXPECT_EQ(clone->first_clique(), c.kinematics().jacobian().clique(0));
-  EXPECT_EQ(clone->second_clique(), c.kinematics().jacobian().clique(1));
-  EXPECT_TRUE(CompareMatrices(clone->first_clique_jacobian().MakeDenseMatrix(),
-                              c.first_clique_jacobian().MakeDenseMatrix(), kEps,
-                              MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(clone->second_clique_jacobian().MakeDenseMatrix(),
-                              c.second_clique_jacobian().MakeDenseMatrix(),
-                              kEps, MatrixCompareType::relative));
-  EXPECT_EQ(clone->parameters().impulse_lower_limits(),
-            c.parameters().impulse_lower_limits());
-  EXPECT_EQ(clone->parameters().impulse_upper_limits(),
-            c.parameters().impulse_upper_limits());
-  EXPECT_EQ(clone->parameters().stiffnesses(), c.parameters().stiffnesses());
-  EXPECT_EQ(clone->parameters().relaxation_times(),
-            c.parameters().relaxation_times());
-  EXPECT_EQ(clone->parameters().beta(), c.parameters().beta());
-  EXPECT_EQ(clone->parameters().num_constraint_equations(),
-            c.parameters().num_constraint_equations());
+  ExpectEqual(c, *clone);
+
+  // Test ToDouble.
+  SapWeldConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryKinematics<AutoDiffXd>(num_cliques));
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapWeldConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapWeldConstraint, AccumulateSpatialImpulses) {

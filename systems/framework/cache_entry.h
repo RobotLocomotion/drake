@@ -42,7 +42,7 @@ cache entry is declared. That is typically done in a System constructor, in
 a manner very similar to the declaration of output ports. */
 class CacheEntry {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CacheEntry)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CacheEntry);
 
   // All the nontrivial parameters here are moved to the CacheEntry which is
   // why they aren't references.

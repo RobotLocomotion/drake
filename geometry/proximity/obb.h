@@ -36,7 +36,7 @@ class Aabb;
  */
 class Obb {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Obb)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Obb);
 
   /** The class used for various creation operations on this bounding volume. */
   template <typename MeshType>

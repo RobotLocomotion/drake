@@ -68,4 +68,4 @@ void ZeroOrderHold<T>::LatchInputAbstractValueToState(const Context<T>& context,
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::ZeroOrderHold)
+    class ::drake::systems::ZeroOrderHold);

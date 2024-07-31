@@ -64,7 +64,7 @@ to be determined at runtime.
 template <typename T>
 class OutputPort : public OutputPortBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort);
 
   ~OutputPort() override = default;
 
@@ -249,4 +249,4 @@ class OutputPort : public OutputPortBase {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::OutputPort)
+    class ::drake::systems::OutputPort);

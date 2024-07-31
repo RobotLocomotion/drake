@@ -22,6 +22,7 @@
 /// ASSERT_PRED2(ExprEqual, e1, e2);
 /// @endcode
 #include <algorithm>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -37,6 +38,11 @@ namespace test {
 
 [[nodiscard]] inline bool VarEqual(const Variable& v1, const Variable& v2) {
   return v1.equal_to(v2);
+}
+
+[[nodiscard]] inline bool TupleVarEqual(
+    const std::tuple<Variable, Variable>& vars) {
+  return VarEqual(std::get<0>(vars), std::get<1>(vars));
 }
 
 [[nodiscard]] inline bool VarNotEqual(const Variable& v1,

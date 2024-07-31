@@ -36,7 +36,7 @@ namespace systems {
 template <typename T>
 class TrajectorySource final : public SingleOutputVectorSource<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectorySource)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectorySource);
 
   /// @param trajectory Trajectory used by the system.
   /// @param output_derivative_order The number of times to take the derivative.
@@ -107,4 +107,4 @@ struct Traits<TrajectorySource> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::TrajectorySource)
+    class ::drake::systems::TrajectorySource);

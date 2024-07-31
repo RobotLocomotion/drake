@@ -69,7 +69,7 @@ at MultibodyPlant for an example. */
 template <typename T>
 class MultibodyTreeSystem : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeSystem);
 
   /* Takes ownership of the given `tree`, finalizes it if it hasn't already
   been finalized, and then allocates the resources it needs. You cannot modify
@@ -334,16 +334,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   }
   //@}
 
-  // TODO(sherm1) Shouldn't require overriding the default method; need
-  // a DoLeafSetDefaultState().
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
-
   // Override of LeafSystem::SetDefaultParameters. For all parameters declared
   // by various MultibodyElement subclasses, sets numeric and abstract
   // parameters to default values stored in their class members.
   void SetDefaultParameters(const systems::Context<T>& context,
                             systems::Parameters<T>* parameters) const final;
+
+  // TODO(sherm1) Shouldn't require overriding the default method; need
+  // a DoLeafSetDefaultState().
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 
  private:
   // This is only meaningful in continuous mode.
@@ -625,7 +625,7 @@ class MultibodyTreeSystemElementAttorney {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::internal::MultibodyTreeSystem)
+    class drake::multibody::internal::MultibodyTreeSystem);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::internal::MultibodyTreeSystemElementAttorney)
+    class drake::multibody::internal::MultibodyTreeSystemElementAttorney);

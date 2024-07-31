@@ -62,7 +62,7 @@ namespace controllers {
 template <typename T>
 class JointStiffnessController final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointStiffnessController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointStiffnessController);
 
   /**
    * Constructs the JointStiffnessController system.
@@ -187,4 +187,4 @@ class JointImpedanceController {};
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::controllers::JointStiffnessController)
+    class ::drake::systems::controllers::JointStiffnessController);

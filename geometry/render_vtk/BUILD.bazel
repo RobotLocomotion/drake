@@ -1,11 +1,11 @@
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
@@ -38,11 +38,11 @@ drake_cc_library(
     srcs = ["factory.cc"],
     hdrs = ["factory.h"],
     visibility = ["//visibility:public"],
-    interface_deps = [
-        "//geometry/render:render_engine",
-        ":render_engine_vtk_params",
-    ],
     deps = [
+        ":render_engine_vtk_params",
+        "//geometry/render:render_engine",
+    ],
+    implementation_deps = [
         ":internal_render_engine_vtk",
     ],
 )
@@ -65,7 +65,6 @@ drake_cc_library(
         "//geometry/render:render_mesh",
         "//geometry/render/shaders:depth_shaders",
         "//geometry/render_vtk:render_engine_vtk_params",
-        "//systems/sensors:color_palette",
         "//systems/sensors:vtk_diagnostic_event_observer",
         "@eigen",
         "@vtk_internal//:vtkCommonCore",

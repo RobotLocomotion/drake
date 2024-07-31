@@ -52,7 +52,7 @@ std::optional<ModelInstanceIndex> AddModelFromUrdf(
 
 class UrdfParserWrapper final : public ParserInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UrdfParserWrapper)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UrdfParserWrapper);
   UrdfParserWrapper();
   ~UrdfParserWrapper() final;
   std::optional<ModelInstanceIndex> AddModel(

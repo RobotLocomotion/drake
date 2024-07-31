@@ -16,9 +16,8 @@ std::vector<std::string> GetJointNames(
     const multibody::MultibodyPlant<T>& plant) {
   std::map<int, std::string> position_names;
   const int num_positions = plant.num_positions();
-  for (int i = 0; i < plant.num_joints(); ++i) {
-    const multibody::Joint<T>& joint =
-        plant.get_joint(multibody::JointIndex(i));
+  for (multibody::JointIndex i : plant.GetJointIndices()) {
+    const multibody::Joint<T>& joint = plant.get_joint(i);
     if (joint.num_positions() == 0) {
       continue;
     }
@@ -107,7 +106,7 @@ lcmt_robot_plan EncodeKeyFrames(const std::vector<std::string>& joint_names,
 // clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &GetJointNames<T>
-))
+));
 // clang-format on
 
 }  // namespace util

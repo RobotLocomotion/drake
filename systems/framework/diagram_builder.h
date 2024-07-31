@@ -64,7 +64,7 @@ template <typename T>
 class DiagramBuilder {
  public:
   // DiagramBuilder objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramBuilder)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramBuilder);
 
   /// A designator for a "system + input port" pair, to uniquely refer to
   /// some input port on one of this builder's subsystems.
@@ -539,4 +539,4 @@ class DiagramBuilder {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::DiagramBuilder)
+    class ::drake::systems::DiagramBuilder);

@@ -335,6 +335,41 @@ class TestGeometrySceneGraph(unittest.TestCase):
                     frame_id=global_frame, role=role),
                 1 if i == 0 else 0)
 
+    def test_scene_graph_config(self):
+        mut.DefaultProximityProperties()
+        scene_graph_config = mut.SceneGraphConfig()
+        scene_graph = mut.SceneGraph(config=scene_graph_config)
+        got_config = scene_graph.get_config()
+        self.assertEqual(
+            got_config.default_proximity_properties.compliance_type,
+            "undefined")
+        scene_graph_config.default_proximity_properties.compliance_type = \
+            "compliant"
+        scene_graph.set_config(config=scene_graph_config)
+        got_config = scene_graph.get_config()
+        self.assertEqual(
+            got_config.default_proximity_properties.compliance_type,
+            "compliant")
+
+        # ParamInit.
+        param_init_props = mut.DefaultProximityProperties(
+            compliance_type="compliant",
+            hydroelastic_modulus=2,
+            resolution_hint=3,
+            slab_thickness=4,
+            dynamic_friction=5,
+            static_friction=6,
+            hunt_crossley_dissipation=7,
+            relaxation_time=None,  # Test optionality.
+            point_stiffness=9,
+        )
+        param_init_scene_graph = mut.SceneGraphConfig(
+            default_proximity_properties=param_init_props)
+        # Spot-check that at least some value got passed through.
+        got_props = param_init_scene_graph.default_proximity_properties
+        self.assertEqual(got_props.relaxation_time, None)
+        self.assertEqual(got_props.point_stiffness, 9)
+
     @numpy_compare.check_all_types
     def test_scene_graph_renderer_with_context(self, T):
         SceneGraph = mut.SceneGraph_[T]

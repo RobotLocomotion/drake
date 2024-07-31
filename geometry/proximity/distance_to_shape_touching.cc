@@ -5,8 +5,6 @@
 #include <optional>
 #include <vector>
 
-#include "drake/common/drake_throw.h"
-
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -55,23 +53,23 @@ Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
 
 Vector3d PointOnBoxSurfaceHelper(const Vector3d& p_BQ, const fcl::Boxd& box_B) {
   const Vector3d half_size = box_B.side / 2.0;
-  const double kEps = 1e-14;
-  // Throw if p_BQ is outside the box.
-  for (int i = 0; i < 3; ++i) {
-    DRAKE_THROW_UNLESS(abs(p_BQ(i)) <= half_size(i) + kEps);
-  }
-
   Vector3d n{0.0, 0.0, 0.0};
+  // Our classification is sensitive to the precision of p_BQ and this
+  // internal tolerance. We assume that the caller always passes p_BQ on the
+  // surface of the box with appropriate precisions. See the unit test
+  // GTEST_TEST(PointOnBoxSurfaceHelper, CornerCases) for examples of how the
+  // precision of p_BQ can affect the classification.
+  constexpr double kEps = 1e-14;
   using std::abs;
   // Mark the vector `n` with a 1 at index `i` if the point lies approximately
   // on either the positive or negative face of the box on dimension `i`.
   for (int i = 0; i < 3; ++i) {
     double diff = abs(half_size(i) - abs(p_BQ(i)));
-    if (diff <= kEps) n(i) = 1.0;
+    // We found this threshold empirically.
+    if (diff <= 8 * kEps) {
+      n(i) = 1.0;
+    }
   }
-  // Throw if p_BQ is strictly inside the box.
-  DRAKE_THROW_UNLESS(n != Vector3d::Zero());
-
   return n;
 }
 
@@ -88,7 +86,7 @@ std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
 std::optional<Vector3d> MaybeMakeSeparatingVector(
     const fcl::Boxd& box_A, const fcl::Boxd& box_B, const RigidTransformd& X_WA,
     const RigidTransformd& X_WB, const std::vector<Vector3d>& v_Ws) {
-  const double kEps = 1e-14;
+  constexpr double kEps = 1e-14;
   for (const Vector3d& v_W : v_Ws) {
     double v_W_norm = v_W.norm();
     if (v_W_norm < kEps) {
@@ -99,10 +97,15 @@ std::optional<Vector3d> MaybeMakeSeparatingVector(
     const auto [min_A, max_A] = ProjectedMinMax(box_A, X_WA, unit_vector_W);
     const auto [min_B, max_B] = ProjectedMinMax(box_B, X_WB, unit_vector_W);
 
-    if (max_A < min_B + kEps) {
+    // The caller (BoxBoxGradient()) already tested that the two witness points
+    // are closer than kEps, so the two touching boxes should numerically
+    // overlap within that order of precision along the separating vector.
+    // Empirically we found that we lost three more bits of precisions from
+    // the projection procedures, so we use the 8 * kEps threshold.
+    if (max_A < min_B + 8 * kEps) {
       return -unit_vector_W;
     }
-    if (max_B < min_A + kEps) {
+    if (max_B < min_A + 8 * kEps) {
       return unit_vector_W;
     }
   }
@@ -122,9 +125,6 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   const Vector3d v_B = PointOnBoxSurfaceHelper(p_BCb, box_B);
   double s_A = v_A.sum();
   double s_B = v_B.sum();
-
-  DRAKE_ASSERT(s_A > 0 && s_A <= 3);
-  DRAKE_ASSERT(s_B > 0 && s_B <= 3);
 
   // Face-to-*. Use the face normal if a witness point is strictly inside
   // a face (but neither edge nor vertex).
@@ -159,8 +159,9 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
       // The two edges are not parallel.
       const std::optional<Vector3d> nhat_BA_W = MaybeMakeSeparatingVector(
           box_A, box_B, X_WA, X_WB, {cross_product_W});
-      DRAKE_DEMAND(nhat_BA_W.has_value());
-      return nhat_BA_W.value();
+      if (nhat_BA_W.has_value()) {
+        return nhat_BA_W.value();
+      }
     } else {
       // Parallel edge-to-edge. A separating plane passes through at least
       // one of the two faces sharing the edge in Box A.
@@ -168,8 +169,9 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
           box_A, box_B, X_WA, X_WB,
           {X_WA.rotation().col((axis_index_A + 1) % 3),
            X_WA.rotation().col((axis_index_A + 2) % 3)});
-      DRAKE_DEMAND(nhat_BA_W.has_value());
-      return nhat_BA_W.value();
+      if (nhat_BA_W.has_value()) {
+        return nhat_BA_W.value();
+      }
     }
   }
 
@@ -184,8 +186,9 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
         {edge_vector_A_W.cross(X_WB.rotation().col(0)),
          edge_vector_A_W.cross(X_WB.rotation().col(1)),
          edge_vector_A_W.cross(X_WB.rotation().col(2))});
-    DRAKE_DEMAND(nhat_BA_W.has_value());
-    return nhat_BA_W.value();
+    if (nhat_BA_W.has_value()) {
+      return nhat_BA_W.value();
+    }
   }
   // Vertex-edge. This is the symmetric case of the above case.
   // Ca is strictly on a vertex and Cb is strictly on an edge.
@@ -196,15 +199,15 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
         {edge_vector_B_W.cross(X_WA.rotation().col(0)),
          edge_vector_B_W.cross(X_WA.rotation().col(1)),
          edge_vector_B_W.cross(X_WA.rotation().col(2))});
-    DRAKE_DEMAND(nhat_BA_W.has_value());
-    return nhat_BA_W.value();
+    if (nhat_BA_W.has_value()) {
+      return nhat_BA_W.value();
+    }
   }
 
-  // Vertex-vertex.
+  // Vertex-vertex and catch-all cases.
   // Unlike other cases above, first we search for a separating vector from
   // the three axes of each box. If the search fail, we search from their
   // cross products.
-  DRAKE_ASSERT(s_A == 3 && s_B == 3);
   std::optional<Vector3d> nhat_BA_W = MaybeMakeSeparatingVector(
       box_A, box_B, X_WA, X_WB,
       {X_WA.rotation().col(0), X_WA.rotation().col(1), X_WA.rotation().col(2),

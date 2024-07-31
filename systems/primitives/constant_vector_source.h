@@ -24,7 +24,7 @@ namespace systems {
 template <typename T>
 class ConstantVectorSource final : public SingleOutputVectorSource<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantVectorSource)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantVectorSource);
 
   /// Constructs a system with a vector output that is constant and equals the
   /// supplied @p source_value at all times.

@@ -21,7 +21,7 @@ namespace solvers {
  */
 class EqualityConstrainedQPSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EqualityConstrainedQPSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EqualityConstrainedQPSolver);
 
   EqualityConstrainedQPSolver();
   ~EqualityConstrainedQPSolver() final;

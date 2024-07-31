@@ -225,4 +225,4 @@ MatrixX<T> Block3x3SparseMatrix<T>::MakeDenseMatrix() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::Block3x3SparseMatrix)
+    class ::drake::multibody::contact_solvers::internal::Block3x3SparseMatrix);

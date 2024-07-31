@@ -38,21 +38,6 @@ def pxr_library(
     ]
     deps = attrs["LIBRARIES"] + [
         ":pxr_h",
-        "@boost_internal//:any",
-        "@boost_internal//:functional",
-        "@boost_internal//:function",
-        "@boost_internal//:intrusive_ptr",
-        "@boost_internal//:mpl",
-        "@boost_internal//:multi_index",
-        "@boost_internal//:noncopyable",
-        "@boost_internal//:none",
-        "@boost_internal//:numeric_conversion",
-        "@boost_internal//:optional",
-        "@boost_internal//:preprocessor",
-        "@boost_internal//:ptr_container",
-        "@boost_internal//:smart_ptr",
-        "@boost_internal//:variant",
-        "@boost_internal//:vmd",
         "@onetbb_internal//:tbb",
     ]
 

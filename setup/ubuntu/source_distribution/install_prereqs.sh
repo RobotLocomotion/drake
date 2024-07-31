@@ -25,11 +25,11 @@ while [ "${1:-}" != "" ]; do
     --with-doc-only)
       with_doc_only=1
       ;;
-    # Install Bazel from a deb package.
+    # Install bazelisk from a deb package.
     --with-bazel)
       with_bazel=1
       ;;
-    # Do NOT install Bazel.
+    # Do NOT install bazelisk.
     --without-bazel)
       with_bazel=0
       ;;
@@ -113,7 +113,7 @@ if [[ "${with_doc_only}" -eq 1 ]]; then
 fi
 
 if [[ "${with_bazel}" -eq 1 ]]; then
-  source "${BASH_SOURCE%/*}/install_bazel.sh"
+  source "${BASH_SOURCE%/*}/install_bazelisk.sh"
 fi
 
 if [[ "${with_clang}" -eq 1 ]]; then

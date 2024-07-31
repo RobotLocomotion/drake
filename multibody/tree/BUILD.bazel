@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -41,7 +41,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "multibody_tree_topology",
-    srcs = [],
+    srcs = [
+        "multibody_tree_topology.cc",
+    ],
     hdrs = [
         "multibody_tree_topology.h",
     ],
@@ -84,11 +86,14 @@ drake_cc_library(
         "door_hinge.cc",
         "element_collection.cc",
         "fixed_offset_frame.cc",
+        "force_element.cc",
         "frame.cc",
+        "frame_base.cc",
         "joint.cc",
         "joint_actuator.cc",
         "linear_bushing_roll_pitch_yaw.cc",
         "linear_spring_damper.cc",
+        "mobilizer.cc",
         "mobilizer_impl.cc",
         "model_instance.cc",
         "multibody_element.cc",
@@ -260,6 +265,7 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/proximity:obj_to_surface_mesh",
+        "//geometry/proximity:polygon_to_triangle_mesh",
         "//geometry/proximity:triangle_surface_mesh",
         "//geometry/proximity:volume_to_surface_mesh",
     ],
@@ -682,6 +688,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "geometry_spatial_inertia_test",
     data = [
+        "//geometry:test_obj_files",
         "//geometry:test_vtk_files",
         "//multibody/parsing:test_models",
     ],

@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/contact_solvers/sap/expect_equal.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 #include "drake/solvers/constraint.h"
 
@@ -24,28 +25,13 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-bool operator==(const ContactConfiguration<double>& c1,
-                const ContactConfiguration<double>& c2) {
-  if (c1.objectA != c2.objectA) return false;
-  if (c1.p_ApC_W != c2.p_ApC_W) return false;
-  if (c1.objectB != c2.objectB) return false;
-  if (c1.p_BqC_W != c2.p_BqC_W) return false;
-  if (c1.phi != c2.phi) return false;
-  if (c1.fe != c2.fe) return false;
-  if (c1.vn != c2.vn) return false;
-  if (!c1.R_WC.IsExactlyEqualTo(c2.R_WC)) return false;
-  return true;
-}
+void ExpectEqual(const SapHuntCrossleyConstraint<double>& c1,
+                 const SapHuntCrossleyConstraint<double>& c2) {
+  ExpectBaseIsEqual(c1, c2);
 
-bool operator==(const SapHuntCrossleyConstraint<double>::Parameters& p1,
-                const SapHuntCrossleyConstraint<double>::Parameters& p2) {
-  if (p1.friction != p2.friction) return false;
-  if (p1.stiffness != p2.stiffness) return false;
-  if (p1.dissipation != p2.dissipation) return false;
-  if (p1.sigma != p2.sigma) return false;
-  if (p1.stiction_tolerance != p2.stiction_tolerance) return false;
-  if (p1.model != p2.model) return false;
-  return true;
+  // SapHuntCrossleyConstraint specific.
+  EXPECT_EQ(c1.parameters(), c2.parameters());
+  EXPECT_EQ(c1.configuration(), c2.configuration());
 }
 
 namespace {
@@ -412,14 +398,17 @@ GTEST_TEST(SapHuntCrossleyConstraint, SingleCliqueConstraintClone) {
   auto clone =
       dynamic_pointer_cast<SapHuntCrossleyConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_constraint_equations(), 3);
-  EXPECT_EQ(clone->num_cliques(), 1);
-  EXPECT_EQ(clone->first_clique(), clique);
-  EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
-  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
-  EXPECT_EQ(clone->parameters(), parameters);
-  EXPECT_EQ(clone->configuration(), configuration);
+  ExpectEqual(c, *clone);
+
+  // Test ToDouble.
+  SapHuntCrossleyConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryConfiguration<AutoDiffXd>(),
+      SapConstraintJacobian<AutoDiffXd>(clique, J32),
+      MakeArbitraryParameters<AutoDiffXd>());
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapHuntCrossleyConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapHuntCrossleyConstraint, TwoCliquesConstraintClone) {
@@ -434,14 +423,18 @@ GTEST_TEST(SapHuntCrossleyConstraint, TwoCliquesConstraintClone) {
 
   auto clone =
       dynamic_pointer_cast<SapHuntCrossleyConstraint<double>>(c.Clone());
-  EXPECT_EQ(clone->num_constraint_equations(), 3);
-  EXPECT_EQ(clone->num_cliques(), 2);
-  EXPECT_EQ(clone->first_clique(), clique0);
-  EXPECT_EQ(clone->second_clique(), clique1);
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
-  EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(), J34);
-  EXPECT_EQ(clone->parameters(), parameters);
-  EXPECT_EQ(clone->configuration(), configuration);
+  ASSERT_NE(clone, nullptr);
+  ExpectEqual(c, *clone);
+
+  // Test ToDouble.
+  SapHuntCrossleyConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryConfiguration<AutoDiffXd>(),
+      SapConstraintJacobian<AutoDiffXd>(clique0, J32, clique1, J34),
+      MakeArbitraryParameters<AutoDiffXd>());
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapHuntCrossleyConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapHuntCrossleyConstraint, AccumulateSpatialImpulses) {

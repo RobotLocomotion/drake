@@ -1,4 +1,4 @@
-clang-format-12
+clang-format-15
 curl
 kcov
 libstdc++6-10-dbg

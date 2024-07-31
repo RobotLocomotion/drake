@@ -152,4 +152,4 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::RungeKutta3Integrator)
+    class drake::systems::RungeKutta3Integrator);

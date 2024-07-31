@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
-load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 
 licenses(["notice"])  # MIT, ISC
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/examples/rimless_wheel/gen/rimless_wheel_params.h"
+#include "drake/examples/rimless_wheel/rimless_wheel_params.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"

@@ -115,4 +115,4 @@ void RobotDiagramBuilder<T>::ExportDefaultPorts() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::planning::RobotDiagramBuilder)
+    class ::drake::planning::RobotDiagramBuilder);

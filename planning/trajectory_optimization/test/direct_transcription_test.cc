@@ -19,6 +19,7 @@
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
 #include "drake/systems/primitives/trajectory_linear_system.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
 namespace planning {
@@ -124,7 +125,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
   CubicPolynomialSystem<double> system(kTimeStep);
 
   const auto context = system.CreateDefaultContext();
-  int kNumSampleTimes = 3;
+  const int kNumSampleTimes = 3;
 
   // The continuous-time constructor throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -169,7 +170,7 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeConstraintTest) {
       Vector1<Expression>{sin(x)}, Vector0<Expression>{});
 
   const auto context = system.CreateDefaultContext();
-  int kNumSampleTimes = 3;
+  const int kNumSampleTimes = 3;
 
   // The discrete-time constructor throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -211,7 +212,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   std::unique_ptr<AffineSystem<double>> system = MakeAffineSystem(kTimeStep);
 
   const auto context = system->CreateDefaultContext();
-  int kNumSampleTimes = 3;
+  const int kNumSampleTimes = 3;
   DirectTranscription dirtran(system.get(), *context, kNumSampleTimes);
   auto& prog = dirtran.prog();
 
@@ -252,7 +253,7 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeSymbolicConstraintTest) {
   std::unique_ptr<AffineSystem<double>> system = MakeAffineSystem(0.0);
 
   const auto context = system->CreateDefaultContext();
-  int kNumSampleTimes = 3;
+  const int kNumSampleTimes = 3;
   const double kTimeStep = 0.1;
   DirectTranscription dirtran(system.get(), *context, kNumSampleTimes,
                               TimeStep{kTimeStep});
@@ -314,6 +315,7 @@ void SolvePendulumTrajectory(bool continuous_time) {
 
   auto pendulum =
       std::make_unique<multibody::MultibodyPlant<double>>(kTimeStep);
+  pendulum->SetUseSampledOutputPorts(false);  // Avoid abstract state.
   multibody::Parser parser(pendulum.get());
   parser.AddModels(FindResourceOrThrow(urdf_path));
   pendulum->Finalize();
@@ -390,7 +392,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
   LinearSystem<double> system(A, B, C, D, kTimeStep);
 
   const auto context = system.CreateDefaultContext();
-  int kNumSampleTimes = 3;
+  const int kNumSampleTimes = 3;
   DirectTranscription dirtran(&system, *context, kNumSampleTimes);
   auto& prog = dirtran.prog();
 
@@ -452,7 +454,7 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
     // system is continuous time.
     TrajectoryLinearSystem<double> system(A, B, C, D);
     const auto context = system.CreateDefaultContext();
-    int kNumSampleTimes = 3;
+    const int kNumSampleTimes = 3;
     DRAKE_EXPECT_THROWS_MESSAGE(
         DirectTranscription(&system, *context, kNumSampleTimes),
         ".*is for discrete-time systems.*");
@@ -462,7 +464,7 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
   TrajectoryLinearSystem<double> system(A, B, C, D, kTimeStep);
 
   const auto context = system.CreateDefaultContext();
-  int kNumSampleTimes = 3;
+  const int kNumSampleTimes = 3;
   DirectTranscription dirtran(&system, *context, kNumSampleTimes);
   auto& prog = dirtran.prog();
 
@@ -553,6 +555,26 @@ GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
               prog.GetInitialGuess(dirtran.state(i + 1)[0]) -
                   kGain * prog.GetInitialGuess(dirtran.state(i)[0]));
   }
+}
+
+GTEST_TEST(DirectTranscriptionTest, RejectAbstractState) {
+  const double kTimeStep = 1.0;
+  const int kNumSampleTimes = 3;
+
+  // A trivial system, but with abstract state.
+  const systems::ZeroOrderHold<double> system(kTimeStep, Value<int>(0));
+  const auto context = system.CreateDefaultContext();
+
+  // The discrete-time constructor throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DirectTranscription(&system, *context, kNumSampleTimes),
+      ".*abstract.*state.*");
+
+  // The continuous-time constructor throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DirectTranscription(&system, *context, kNumSampleTimes,
+                          TimeStep(kTimeStep)),
+      ".*abstract.*state.*");
 }
 
 // TODO(russt): Add tests for ReconstructTrajectory methods once their output is

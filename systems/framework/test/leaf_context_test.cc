@@ -36,7 +36,7 @@ constexpr double kTime = 12.0;
 // Defines a simple class for evaluating abstract types.
 class TestAbstractType {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestAbstractType)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestAbstractType);
   TestAbstractType() = default;
 };
 

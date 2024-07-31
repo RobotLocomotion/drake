@@ -31,7 +31,7 @@ namespace systems {
 template <typename T>
 class MatrixGain final : public LinearSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MatrixGain)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MatrixGain);
 
   /// A constructor where the gain matrix `D` is a square identity matrix of
   /// size @p size.

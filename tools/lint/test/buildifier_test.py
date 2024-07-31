@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import subprocess
 import unittest
 
@@ -18,14 +19,14 @@ class BuildifierTest(unittest.TestCase):
         return "\n\n".join(result) + "\n"
 
     def _call_buildifier(self, testdata_contents, args):
-        testdata_filename = "tmp/BUILD.bazel"
-        if not os.path.exists("tmp"):
-            os.mkdir("tmp")
-        with open(testdata_filename, "w") as testdata_file:
-            testdata_file.write(testdata_contents)
-        command = ["tools/lint/buildifier"] + args + [testdata_filename]
+        tmpdir = Path(os.environ["TEST_TMPDIR"])
+        build_path = tmpdir / "BUILD.bazel"
+        build_path.write_text(testdata_contents, encoding="utf-8")
+        buildifier = Path("tools/lint/buildifier").absolute()
+        command = [buildifier] + args + ["BUILD.bazel"]
         process = subprocess.Popen(
-            command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            cwd=tmpdir)
         stdout, _ = process.communicate()
         return process.returncode, stdout.decode('utf8')
 
@@ -42,22 +43,13 @@ class BuildifierTest(unittest.TestCase):
         self.assertEqual(returncode, 1, output)
         self.assertListEqual(output.splitlines(), [
             "ERROR: buildifier: the required formatting is incorrect",
-            ("ERROR: tmp/BUILD.bazel:1: "
+            ("ERROR: BUILD.bazel:1: "
              "error: the required formatting is incorrect"),
-            ("ERROR: tmp/BUILD.bazel:1: note: "
-             "fix via bazel-bin/tools/lint/buildifier tmp/BUILD.bazel"),
-            ("ERROR: tmp/BUILD.bazel:1: note: "
+            ("ERROR: BUILD.bazel:1: note: "
+             "fix via bazel-bin/tools/lint/buildifier BUILD.bazel"),
+            ("ERROR: BUILD.bazel:1: note: "
              "if that program does not exist, "
              "you might need to compile it first: "
              "bazel build //tools/lint/..."),
             "NOTE: see https://drake.mit.edu/bazel.html#buildifier"
         ])
-
-    def test_mode_fix(self):
-        returncode, output = self._call_buildifier(
-            self._make_build_testdata(add_error=False),
-            ["-mode=fix"])
-        self.assertEqual(returncode, 1, output)
-        self.assertIn(
-            "do not use 'bazel run' for buildifier in fix mode",
-            output)

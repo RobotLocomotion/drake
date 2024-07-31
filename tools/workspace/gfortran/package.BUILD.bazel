@@ -28,6 +28,8 @@ cc_library(
         "-lgfortran",
     ] + select({
         ":x86_64": [
+            # TODO(jwnimmer-tri) Possibly this is unnecessary on Ubuntu 24.04?
+            # The libgfortran5 no longer depends on libquadmath0.
             "-lquadmath",
         ],
         "//conditions:default": [],

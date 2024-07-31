@@ -36,7 +36,7 @@ value set in a Context.
 template <typename T>
 class InputPort final : public InputPortBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPort)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPort);
 
   /** Returns a reference to the up-to-date value of this input port contained
   in the given Context. This is the preferred way to obtain an input port's
@@ -209,4 +209,4 @@ class InputPort final : public InputPortBase {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::InputPort)
+    class ::drake::systems::InputPort);

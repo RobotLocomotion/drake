@@ -12,7 +12,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/render/color_deprecated.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_mesh.h"
@@ -293,7 +292,7 @@ class RenderEngine {
 
  protected:
   // Allow derived classes to implement Cloning via copy-construction.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine);
 
   /** The NVI-function for sub-classes to implement actual rigid geometry
    registration. If the derived class chooses not to register this particular
@@ -421,25 +420,6 @@ class RenderEngine {
     const uint8_t r = label.value_ & 0xFF;
     const uint8_t g = (label.value_ >> 8) & 0xFF;
     return Rgba{r / 255.0, g / 255.0, /* b = */ 0.0};
-  }
-
-  DRAKE_DEPRECATED("2024-05-01", "Use MakeLabelFromRgb instead")
-  static RenderLabel LabelFromColor(
-      const deprecated::internal::Color<int>& color) {
-    return RenderLabel(color.r | (color.g << 8), false);
-  }
-
-  DRAKE_DEPRECATED("2024-05-01", "Use MakeLabelFromRgb instead")
-  static deprecated::internal::Color<int> GetColorIFromLabel(
-      const RenderLabel& label) {
-    return {label.value_ & 0xFF, (label.value_ >> 8) & 0xFF, 0};
-  }
-
-  DRAKE_DEPRECATED("2024-05-01", "Use MakeRgbFromLabel instead")
-  static deprecated::internal::Color<double> GetColorDFromLabel(
-      const RenderLabel& label) {
-    auto rgba = MakeRgbFromLabel(label);
-    return {rgba.r(), rgba.g(), rgba.b()};
   }
 
   //@}

@@ -18,6 +18,7 @@ PYBIND11_MODULE(sensors, m) {
   internal::DefineSensorsRgbd(m);
   internal::DefineSensorsCameraConfig(m);
   internal::DefineSensorsLcm(m);
+  internal::DefineSensorsRotaryEncoders(m);
 }
 
 }  // namespace pydrake

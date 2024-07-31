@@ -1,10 +1,11 @@
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -149,28 +150,25 @@ drake_cc_library(
     ],
 )
 
+# We use a copy_file to de-clutter the deprecation stub.
+# TODO(2024-08-01) Remove along with deprecation (also the load statement).
+copy_file(
+    name = "_copy_zmp",
+    src = "stub/zmp_planner.h",
+    out = "zmp_planner.h",
+    allow_symlink = True,
+)
+
+# TODO(2024-08-01) Remove along with deprecation.
 drake_cc_library(
     name = "zmp_planner",
-    srcs = ["zmp_planner.cc"],
     hdrs = ["zmp_planner.h"],
     deps = [
-        ":linear_quadratic_regulator",
-        "//common:essential",
-        "//common/trajectories:piecewise_polynomial",
+        "//planning/locomotion:zmp_planner",
     ],
 )
 
 # === test/ ===
-
-drake_cc_library(
-    name = "zmp_test_util",
-    testonly = 1,
-    srcs = ["test/zmp_test_util.cc"],
-    hdrs = ["test/zmp_test_util.h"],
-    deps = [
-        ":zmp_planner",
-    ],
-)
 
 drake_cc_googletest(
     name = "dynamic_programming_test",
@@ -290,10 +288,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "zmp_planner_test",
+    name = "deprecated_zmp_planner_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
-        ":zmp_test_util",
-        "//common/test_utilities:eigen_matrix_compare",
+        ":zmp_planner",
     ],
 )
 

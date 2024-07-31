@@ -21,7 +21,7 @@ namespace systems {
  */
 class SystemConstraintAdapter {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraintAdapter)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraintAdapter);
 
   explicit SystemConstraintAdapter(const System<double>* system);
 

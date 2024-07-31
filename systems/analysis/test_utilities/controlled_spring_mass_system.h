@@ -21,7 +21,7 @@ namespace systems {
 template <typename T>
 class PidControlledSpringMassSystem : public Diagram<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidControlledSpringMassSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidControlledSpringMassSystem);
 
   /// Constructs a spring-mass system with a fixed spring constant and given
   /// mass controlled by a PID controller to achieve a specified target
@@ -64,4 +64,4 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::PidControlledSpringMassSystem)
+    class drake::systems::PidControlledSpringMassSystem);

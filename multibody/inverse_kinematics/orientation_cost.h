@@ -16,7 +16,7 @@ namespace multibody {
  */
 class OrientationCost : public solvers::Cost {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OrientationCost)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OrientationCost);
 
   /**
    * Constructs OrientationCost object.

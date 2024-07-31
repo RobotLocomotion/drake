@@ -27,7 +27,7 @@ std::shared_ptr<T> GetScopedSingleton() {
   // Confine implementation to a class.
   class Singleton {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Singleton)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Singleton);
 
     Singleton() {}
 

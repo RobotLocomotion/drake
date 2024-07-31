@@ -30,7 +30,7 @@ namespace optimization {
  */
 class CspaceFreePolytopeBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytopeBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytopeBase);
 
   using IgnoredCollisionPairs =
       std::unordered_set<SortedPair<geometry::GeometryId>>;

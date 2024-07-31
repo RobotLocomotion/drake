@@ -7,6 +7,7 @@ from pydrake.multibody.parsing import (
     AddModel,
     AddModelInstance,
     AddWeld,
+    CollisionFilterGroups,
     FlattenModelDirectives,
     GetScopedFrameByName,
     GetScopedFrameByNameMaybe,
@@ -36,6 +37,18 @@ from pydrake.multibody.plant import (
 
 
 class TestParsing(unittest.TestCase):
+
+    def test_collision_filter_groups(self):
+        dut = CollisionFilterGroups()
+        dut.AddGroup(name="a", members={"b", "c"})
+        dut.AddExclusionPair(pair=("d", "e"))
+        self.assertFalse(dut.empty())
+        groups = dut.groups()
+        self.assertEqual(len(groups), 1)
+        pairs = dut.exclusion_pairs()
+        self.assertEqual(len(pairs), 1)
+        report = str(dut)
+        self.assertNotEqual(len(report), 0)
 
     def test_package_map(self):
         # Simple coverage test for constructors.
@@ -203,6 +216,12 @@ class TestParsing(unittest.TestCase):
         parser.SetAutoRenaming(value=True)
         results = parser.AddModelsFromString(model, 'urdf')
         self.assertTrue(plant.HasModelInstanceNamed('robot_1'))
+
+    def test_get_collision_filter_groups(self):
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        groups = parser.GetCollisionFilterGroups()
+        self.assertTrue(groups.empty())
 
     def test_model_instance_info(self):
         """Checks that ModelInstanceInfo bindings exist."""

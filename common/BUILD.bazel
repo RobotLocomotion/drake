@@ -1,3 +1,5 @@
+load("//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -11,8 +13,6 @@ load(
     "drake_py_binary",
     "drake_py_unittest",
 )
-load("//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -287,8 +287,7 @@ drake_cc_library(
     hdrs = ["find_cache.h"],
     internal = True,
     visibility = ["//:__subpackages__"],
-    interface_deps = [],
-    deps = [
+    implementation_deps = [
         ":essential",
     ],
 )
@@ -297,8 +296,7 @@ drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
     hdrs = ["find_runfiles.h"],
-    interface_deps = [],
-    deps = [
+    implementation_deps = [
         ":essential",
         "@bazel_tools//tools/cpp/runfiles",
     ],
@@ -322,10 +320,10 @@ drake_cc_library(
         "//tools/cc_toolchain:linux": ["-ldl"],
         "//conditions:default": [],
     }),
-    interface_deps = [
+    deps = [
         ":essential",
     ],
-    deps = [
+    implementation_deps = [
         ":drake_marker_shared_library",
         ":find_runfiles",
     ],
@@ -339,9 +337,59 @@ drake_cc_library(
         DRAKE_RESOURCE_SENTINEL,
     ],
     visibility = ["//tools/install/libdrake:__pkg__"],
-    interface_deps = [],
-    deps = [
+    implementation_deps = [
         ":find_resource",
+    ],
+)
+
+drake_cc_library(
+    name = "hwy_dynamic",
+    srcs = ["hwy_dynamic.cc"],
+    hdrs = [
+        "hwy_dynamic.h",
+        "hwy_dynamic_impl.h",
+    ],
+    defines = [
+        # Highway automatically compiles our code that uses it for multiple CPU
+        # targets, so that the code is tuned as best as possible for the user's
+        # CPU that it will run on.
+        #
+        # By default Highway compiles to a ~dozen different CPU targets, but
+        # in practice Drake only cares about a few of them. We'll disable the
+        # default list of targets and write down the CPUs we care about one by
+        # one so that the test / support burden is better matched to our needs.
+        #
+        # Highway represents target sets using a bitmask. Each target is given
+        # a single bit (e.g., '#define HWY_AVX2 (1LL << 9)'). To express a set
+        # of targets (e.g., to set HWY_DISABLED_TARGETS) we must binary-or the
+        # per-target constants together.
+        #
+        # Highway only offers a deny-list for targets, so we'll need to deny
+        # everything and then un-deny what we want to allow. Per De Morgan's
+        # law, an ENABLE list folded over OR is the same as the negation of the
+        # same list folded over NAND; to end up with a DISABLE list, we can
+        # just drop the outermost negation, i.e., ENABLE list folded over NAND.
+        "HWY_DISABLED_TARGETS=(" + "&".join([
+            "(~({}))".format(name)
+            for name in [
+                # We must always provide a portable fallback.
+                "HWY_BASELINE_SCALAR",
+                # x86: SIMD with 256-bit lanes and FMA.
+                "HWY_AVX2",
+                # x86: SIMD with the improved 512VL encodings.
+                # TODO(jwnimmer-tri) Enable this once we support opt-out of CPU
+                # targets via NPY_DISABLE_CPU_FEATURES environment variable.
+                # "HWY_AVX3",
+                # arm: SIMD that has fixed 256-bit lanes.
+                # TODO(jwnimmer-tri) Enable this once we can test it.
+                # "HWY_SVE_256",
+            ]
+        ]) + ")",
+    ],
+    internal = True,
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":essential",
     ],
 )
 
@@ -391,10 +439,10 @@ drake_cc_library(
     hdrs = [
         "nice_type_name.h",
     ],
-    interface_deps = [
+    deps = [
         ":essential",
     ],
-    deps = [
+    implementation_deps = [
         ":nice_type_name_override_header",
     ],
 )
@@ -428,12 +476,12 @@ drake_cc_library(
     name = "random",
     srcs = ["random.cc"],
     hdrs = ["random.h"],
-    interface_deps = [
+    deps = [
         ":copyable_unique_ptr",
         ":essential",
         ":extract_double",
     ],
-    deps = [
+    implementation_deps = [
         ":autodiff",
     ],
 )
@@ -452,10 +500,10 @@ drake_cc_library(
     name = "sha256",
     srcs = ["sha256.cc"],
     hdrs = ["sha256.h"],
-    interface_deps = [
+    deps = [
         ":essential",
     ],
-    deps = [
+    implementation_deps = [
         "@picosha2_internal//:picosha2",
     ],
 )
@@ -473,10 +521,9 @@ drake_cc_library(
     name = "temp_directory",
     srcs = ["temp_directory.cc"],
     hdrs = ["temp_directory.h"],
-    interface_deps = [
+    deps = [
         ":essential",
     ],
-    deps = [],
 )
 
 # This is a Drake-internal utility for use only as a direct dependency
@@ -841,6 +888,29 @@ drake_cc_googletest(
     name = "hash_test",
     deps = [
         ":hash",
+    ],
+)
+
+drake_cc_library(
+    name = "hwy_dynamic_test_array_mul",
+    testonly = True,
+    srcs = ["test/hwy_dynamic_test_array_mul.cc"],
+    hdrs = ["test/hwy_dynamic_test_array_mul.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":hwy_dynamic",
+        ":string_container",
+        "@highway_internal//:hwy",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hwy_dynamic_test",
+    deps = [
+        ":hwy_dynamic",
+        ":hwy_dynamic_test_array_mul",
+        "//common/test_utilities:eigen_matrix_compare",
+        "@highway_internal//:hwy_test_util",
     ],
 )
 

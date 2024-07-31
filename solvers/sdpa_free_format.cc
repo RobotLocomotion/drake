@@ -955,6 +955,18 @@ bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
 
 }  // namespace internal
 
+std::string to_string(const RemoveFreeVariableMethod& x) {
+  switch (x) {
+    case RemoveFreeVariableMethod::kTwoSlackVariables:
+      return "kTwoSlackVariables";
+    case RemoveFreeVariableMethod::kNullspace:
+      return "kNullspace";
+    case RemoveFreeVariableMethod::kLorentzConeSlack:
+      return "kLorentzConeSlack";
+  }
+  DRAKE_UNREACHABLE();
+}
+
 bool GenerateSDPA(const MathematicalProgram& prog, const std::string& file_name,
                   RemoveFreeVariableMethod method) {
   const internal::SdpaFreeFormat sdpa_free_format(prog);

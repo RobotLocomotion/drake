@@ -1,16 +1,16 @@
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
-load(
-    "//tools/skylark:drake_py.bzl",
-    "drake_py_library",
-    "drake_py_unittest",
-)
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",

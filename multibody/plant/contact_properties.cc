@@ -181,7 +181,7 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
      static_cast<T (*)(const T&, const T&)>(
          &GetCombinedPointContactStiffness<T>),
      &GetCombinedDissipationTimeConstant<T>,
-     &GetCombinedDynamicCoulombFriction<T>))
+     &GetCombinedDynamicCoulombFriction<T>));
 
 }  // namespace internal
 }  // namespace multibody

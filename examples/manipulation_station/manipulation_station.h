@@ -13,6 +13,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace examples {
@@ -143,7 +144,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 template <typename T>
 class ManipulationStation : public systems::Diagram<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStation)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStation);
 
   /// Construct the EMPTY station model.
   ///
@@ -510,9 +511,8 @@ class ManipulationStation : public systems::Diagram<T> {
   void AddDefaultIiwa(const IiwaCollisionModel collision_model);
   void AddDefaultWsg(const SchunkCollisionModel schunk_model);
 
-  // These are only valid until Finalize() is called.
-  std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_;
-  std::unique_ptr<geometry::SceneGraph<T>> owned_scene_graph_;
+  // This is only valid until Finalize() is called.
+  std::unique_ptr<systems::DiagramBuilder<T>> builder_;
 
   // These are valid for the lifetime of this system.
   std::unique_ptr<multibody::MultibodyPlant<T>> owned_controller_plant_;

@@ -383,8 +383,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorOnly) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, Rgba(0.5, 1, 1));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(0.5, 1, 1));
+  EXPECT_EQ(mesh.material->diffuse_map, "");
 }
 
 /* The OBJ has a single intrinsic material which only defines diffuse texture.
@@ -406,8 +407,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureOnly) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 1));
-  EXPECT_THAT(mesh.material.diffuse_map,
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 1));
+  EXPECT_THAT(mesh.material->diffuse_map,
               testing::EndsWith("diag_gradient.png"));
 }
 
@@ -429,8 +431,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorAndTexture) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 0));
-  EXPECT_THAT(mesh.material.diffuse_map,
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 0));
+  EXPECT_THAT(mesh.material->diffuse_map,
               testing::EndsWith("diag_gradient.png"));
 }
 
@@ -462,8 +465,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryDislocatedTexture) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 1));
-  EXPECT_EQ(mesh.material.diffuse_map, (temp_dir() / "diag_gradient.png"));
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 1));
+  EXPECT_EQ(mesh.material->diffuse_map, (temp_dir() / "diag_gradient.png"));
 }
 
 /* The OBJ has multiple intrinsic materials *defined* in the .mtl file. But only
@@ -484,8 +488,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryMultipleDefinedIntrinsic) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 0, 1));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(1, 0, 1));
+  EXPECT_EQ(mesh.material->diffuse_map, "");
 }
 
 /* The OBJ has a single intrinsic material which defines a bad texture. The
@@ -507,8 +512,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorAndBadTexture) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 0.5, 1));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(1, 0.5, 1));
+  EXPECT_EQ(mesh.material->diffuse_map, "");
   EXPECT_THAT(
       TakeWarning(),
       testing::HasSubstr("requested an unavailable diffuse texture image"));
@@ -534,8 +540,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureButNoUvs) {
   EXPECT_THAT(TakeWarning(),
               testing::MatchesRegex(".*requested a diffuse texture.*doesn't "
                                     "define any texture coordinates.*"));
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 0));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 0));
+  EXPECT_EQ(mesh.material->diffuse_map, "");
 }
 
 /* The OBJ has a single intrinsic material with a texture but no uvs. The
@@ -560,8 +567,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureButPartialUvs) {
       TakeWarning(),
       testing::MatchesRegex(".*requested a diffuse texture.*doesn't define a "
                             "complete set of texture coordinates.*"));
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 0));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 0));
+  EXPECT_EQ(mesh.material->diffuse_map, "");
 }
 
 /* This test merely exposes a known flaw in the code. Images are defined
@@ -588,8 +596,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryObjMtlDislocation) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 0));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 0));
+  EXPECT_EQ(mesh.material->diffuse_map, "");
   // Because of our limited access to parsing information, this will look like
   // the image is unavailable.
   EXPECT_THAT(
@@ -620,14 +629,15 @@ TEST_F(LoadRenderMeshFromObjTest, MultipleValidIntrinsicMaterials) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(meshes.size(), 2);
   for (const auto& mesh : meshes) {
+    ASSERT_TRUE(mesh.material.has_value());
     if (mesh.indices.rows() == 1) {
       // test_material_1 applied to a single triangle.
-      EXPECT_EQ(mesh.material.diffuse, Rgba(1, 0, 1));
-      EXPECT_EQ(mesh.material.diffuse_map, "");
+      EXPECT_EQ(mesh.material->diffuse, Rgba(1, 0, 1));
+      EXPECT_EQ(mesh.material->diffuse_map, "");
     } else if (mesh.indices.rows() == 2) {
       // test_material_2 applied to two triangles.
-      EXPECT_EQ(mesh.material.diffuse, Rgba(1, 0, 0));
-      EXPECT_EQ(mesh.material.diffuse_map, "");
+      EXPECT_EQ(mesh.material->diffuse, Rgba(1, 0, 0));
+      EXPECT_EQ(mesh.material->diffuse_map, "");
     } else {
       DRAKE_UNREACHABLE();
     }
@@ -657,8 +667,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackObjMtlDislocationAbsolute) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
+  EXPECT_EQ(mesh.material->diffuse_map, "");
   // The tinyobj warning that the material library can't be found.
   EXPECT_THAT(TakeWarning(), testing::HasSubstr("not found in a path"));
 }
@@ -683,14 +694,15 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackDefaultedFaces) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(meshes.size(), 2);
   for (const auto& mesh : meshes) {
+    ASSERT_TRUE(mesh.material.has_value());
     if (mesh.indices.rows() == 1) {
       // default material applied to a single triangle.
-      EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
-      EXPECT_EQ(mesh.material.diffuse_map, "");
+      EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
+      EXPECT_EQ(mesh.material->diffuse_map, "");
     } else if (mesh.indices.rows() == 2) {
       // test_material applied to two triangles.
-      EXPECT_EQ(mesh.material.diffuse, Rgba(0.5, 1, 1));
-      EXPECT_EQ(mesh.material.diffuse_map, "");
+      EXPECT_EQ(mesh.material->diffuse, Rgba(0.5, 1, 1));
+      EXPECT_EQ(mesh.material->diffuse_map, "");
     } else {
       DRAKE_UNREACHABLE();
     }
@@ -714,8 +726,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackBadMaterialName) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
+  EXPECT_EQ(mesh.material->diffuse_map, "");
   EXPECT_THAT(TakeWarning(),
               testing::HasSubstr("material [ 'bad_material' ] not found"));
 }
@@ -736,8 +749,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackMissingMtl) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
+  EXPECT_EQ(mesh.material->diffuse_map, "");
   EXPECT_THAT(
       TakeWarning(),
       testing::HasSubstr("Material file [ not_really_a.mtl ] not found"));
@@ -759,8 +773,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackNoAppliedMaterial) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
+  EXPECT_EQ(mesh.material->diffuse_map, "");
 }
 
 /* The OBJ references no material library. The material should be the fallback
@@ -777,8 +792,35 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackNoMaterialLibrary) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
-  EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
+  EXPECT_EQ(mesh.material->diffuse_map, "");
+}
+
+/* The OBJ references no material library. The material should be the fallback
+ material. If a diffuse color is specified through the properties, then it is
+ used to make a material. However, with no property specified *and* no default
+ diffuse value, the parsed RenderMesh doesn't have any material. */
+TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackWithNoDefaultDiffuse) {
+  const fs::path obj_path = WriteFile(R"""(
+        v 0 0 0
+        v 1 1 1
+        v 2 2 2
+        vn 0 1 0
+        f 1//1 2//1 3//1)""",
+                                      "no_mtllib.obj");
+  Rgba diffuse(0.1, 0.2, 0.3, 0.4);
+  PerceptionProperties props;
+  props.AddProperty("phong", "diffuse", diffuse);
+  vector<RenderMesh> result_with_material = LoadRenderMeshesFromObj(
+      obj_path, props, std::nullopt, diagnostic_policy_);
+  ASSERT_EQ(result_with_material.size(), 1);
+  EXPECT_TRUE(result_with_material[0].material.has_value());
+
+  vector<RenderMesh> result_without_material = LoadRenderMeshesFromObj(
+      obj_path, empty_props(), std::nullopt, diagnostic_policy_);
+  ASSERT_EQ(result_without_material.size(), 1);
+  EXPECT_FALSE(result_without_material[0].material.has_value());
 }
 
 /* If the mesh has a material library and material properties are *also*
@@ -806,8 +848,9 @@ TEST_F(LoadRenderMeshFromObjTest, RedundantMaterialWarnings) {
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
   // We still get the intrinsic material.
-  EXPECT_EQ(mesh.material.diffuse, Rgba(0.5, 1, 1));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(0.5, 1, 1));
+  EXPECT_EQ(mesh.material->diffuse_map, "");
   EXPECT_THAT(
       TakeWarning(),
       testing::MatchesRegex(".*has its own materials.*'phong', 'diffuse'.*"));
@@ -836,8 +879,9 @@ TEST_F(LoadRenderMeshFromObjTest, UvStatePassedToFallback) {
   ASSERT_EQ(result.size(), 1);
   const RenderMesh& mesh = result[0];
   // Inability to apply a valid texture leaves the material flat white.
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 1));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
+  ASSERT_TRUE(mesh.material.has_value());
+  EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 1));
+  EXPECT_EQ(mesh.material->diffuse_map, "");
   EXPECT_THAT(TakeWarning(),
               testing::MatchesRegex(
                   ".*'diffuse_map'.* doesn't define a complete set of.*"));
@@ -856,8 +900,8 @@ TEST_F(LoadRenderMeshFromObjTest, PropagateFromMeshFileFlag) {
 
     const RenderMesh mesh_data = LoadRenderMeshesFromObj(
         filename, empty_props(), kDefaultDiffuse, diagnostic_policy_)[0];
-    const RenderMaterial material = mesh_data.material;
-    EXPECT_EQ(from_mesh_file, material.from_mesh_file);
+    ASSERT_TRUE(mesh_data.material.has_value());
+    EXPECT_EQ(from_mesh_file, mesh_data.material->from_mesh_file);
   }
 }
 
@@ -870,10 +914,8 @@ GTEST_TEST(MakeRenderMeshFromTriangleSurfaceMeshTest, SingleTriangle) {
   triangles.emplace_back(0, 1, 2);
   const TriangleSurfaceMesh tri_mesh(std::move(triangles), std::move(vertices));
   const PerceptionProperties empty_props;
-  const Rgba default_diffuse(0.1, 0.2, 0.3, 0.4);
-
-  RenderMesh render_mesh = MakeRenderMeshFromTriangleSurfaceMesh(
-      tri_mesh, empty_props, default_diffuse);
+  RenderMesh render_mesh =
+      MakeRenderMeshFromTriangleSurfaceMesh(tri_mesh, empty_props);
 
   // Check geometry.
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> expected_positions(
@@ -909,19 +951,7 @@ GTEST_TEST(MakeRenderMeshFromTriangleSurfaceMeshTest, SingleTriangle) {
   EXPECT_EQ(render_mesh.uv_state, UvState::kNone);
 
   // Check material
-  EXPECT_EQ(render_mesh.material.diffuse, default_diffuse);
-  EXPECT_EQ(render_mesh.material.diffuse_map, std::filesystem::path{});
-  EXPECT_FALSE(render_mesh.material.from_mesh_file);
-
-  // Make render mesh with diffuse properties set.
-  PerceptionProperties props_with_diffuse;
-  Rgba expected_diffuse(0.1, 0.1, 0.7, 0.9);
-  props_with_diffuse.AddProperty("phong", "diffuse", expected_diffuse);
-  render_mesh = MakeRenderMeshFromTriangleSurfaceMesh(
-      tri_mesh, props_with_diffuse, default_diffuse);
-  EXPECT_EQ(render_mesh.material.diffuse, expected_diffuse);
-  EXPECT_EQ(render_mesh.material.diffuse_map, std::filesystem::path{});
-  EXPECT_FALSE(render_mesh.material.from_mesh_file);
+  EXPECT_FALSE(render_mesh.material.has_value());
 }
 
 // Tests that the vertex normals are indeed computed using area weighted average
@@ -954,9 +984,8 @@ GTEST_TEST(MakeRenderMeshFromTriangleSurfaceMeshTest, AreaWeightedNormals) {
                          3);  // Area sqrt(3)/2, normal (1, 1, 1)/sqrt(3)
   const TriangleSurfaceMesh tri_mesh(std::move(triangles), std::move(vertices));
   const PerceptionProperties empty_props;
-  Rgba default_diffuse(0.1, 0.2, 0.3, 0.4);
-  const RenderMesh render_mesh = MakeRenderMeshFromTriangleSurfaceMesh(
-      tri_mesh, empty_props, default_diffuse);
+  const RenderMesh render_mesh =
+      MakeRenderMeshFromTriangleSurfaceMesh(tri_mesh, empty_props);
 
   // Compare the computed normals with the pen-and-paper result. Note that this
   // tetrahedron has been selected so that the weighted normal for v0 points in
@@ -980,8 +1009,7 @@ GTEST_TEST(MakeRenderMeshFromTriangleSurfaceMeshTest, RoundTrip) {
       LoadRenderMeshesFromObj(filename, empty_props, kDefaultDiffuse)[0];
   const TriangleSurfaceMesh tri_mesh = MakeTriangleSurfaceMesh(render_mesh);
   const RenderMesh roundtrip_render_mesh =
-      MakeRenderMeshFromTriangleSurfaceMesh(tri_mesh, empty_props,
-                                            kDefaultDiffuse);
+      MakeRenderMeshFromTriangleSurfaceMesh(tri_mesh, empty_props);
   EXPECT_EQ(render_mesh.positions, roundtrip_render_mesh.positions);
   EXPECT_EQ(render_mesh.normals, roundtrip_render_mesh.normals);
   EXPECT_EQ(render_mesh.indices, roundtrip_render_mesh.indices);
@@ -1021,7 +1049,7 @@ GTEST_TEST(MakeFacetedRenderMeshFromTriangleSurfaceMeshTest, Simple) {
   const TriangleSurfaceMesh tri_mesh(std::move(triangles), std::move(vertices));
 
   const RenderMesh render_mesh = MakeFacetedRenderMeshFromTriangleSurfaceMesh(
-      tri_mesh, PerceptionProperties(), Rgba(0.1, 0.2, 0.3, 0.4));
+      tri_mesh, PerceptionProperties());
 
   ASSERT_EQ(render_mesh.indices.rows(), 2);
   // Three unique vertices per triangle.

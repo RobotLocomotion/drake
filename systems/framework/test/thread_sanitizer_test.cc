@@ -20,7 +20,7 @@ namespace {
 // Simple system to use in thread-safety testing.
 class TestVectorSystem : public VectorSystem<double> {
  public:
-  TestVectorSystem() : VectorSystem(0, 1) {
+  TestVectorSystem() : VectorSystem(0, 1, /* direct_feedthrough = */ false) {
     // Discrete state is initialized to zero.
     this->DeclareDiscreteState(1);
   }

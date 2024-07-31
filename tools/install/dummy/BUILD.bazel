@@ -1,6 +1,5 @@
-load("//tools/skylark:py.bzl", "py_library")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -9,6 +8,7 @@ load(
 )
 load(
     "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
     "drake_py_unittest",
 )
 
@@ -35,7 +35,7 @@ drake_transitive_installed_hdrs_filegroup(
     deps = [":dummy_private"],
 )
 
-py_library(
+drake_py_library(
     name = "dummy_py",
     testonly = 1,
     srcs = ["dummy.py"],

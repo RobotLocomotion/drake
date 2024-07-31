@@ -1,0 +1,60 @@
+[openusd_internal] Change dlopen and dlclose to be no-ops
+
+By policy, Drake forbids dlopen (and thus dlclose). We'll change those
+functions in OpenUSD to be no-ops. Any symbol names that we need to
+look up using dlsym should already be loaded by the time we need them.
+
+--- pxr/base/arch/library.cpp
++++ pxr/base/arch/library.cpp
+@@ -40,6 +40,8 @@ DWORD arch_lastLibraryError = 0;
+ }
+ #endif
+ 
++static int drake_dummy_handle = 0;
++
+ void* ArchLibraryOpen(const std::string &filename, int flag)
+ {
+ #if defined(ARCH_OS_WINDOWS)
+@@ -52,9 +54,8 @@ void* ArchLibraryOpen(const std::string &filename, int flag)
+         return nullptr;
+     }
+ #else
+-    // Clear any unchecked error first.
+-    (void)dlerror();
+-    return dlopen(filename.c_str(), flag);
++    // This is nerfed. Drake forbids dlopen as a policy.
++    return &drake_dummy_handle;
+ #endif
+ }
+ 
+@@ -64,8 +65,8 @@ std::string ArchLibraryError()
+     const DWORD error = arch_lastLibraryError;
+     return error ? ArchStrSysError(error) : std::string();
+ #else
+-    const char* const error = dlerror();
+-    return error ? std::string(error) : std::string();
++    // This is nerfed. Drake forbids dlopen as a policy.
++    return std::string();
+ #endif
+ }
+ 
+@@ -80,7 +81,8 @@ int ArchLibraryClose(void* handle)
+         arch_lastLibraryError = GetLastError();
+     }
+ #else
+-    int status = dlclose(handle);
++    // This is nerfed. Drake forbids dlopen as a policy.
++    int status = 0;
+ #endif
+     return status;
+ }
+@@ -90,7 +92,8 @@ void* ArchLibraryGetSymbolAddress(void* handle, const char* name)
+ #if defined(ARCH_OS_WINDOWS)
+     return GetProcAddress(reinterpret_cast<HMODULE>(handle), name);
+ #else
+-    return dlsym(handle, name);
++    // This is nerfed. Drake forbids dlopen as a policy.
++    return dlsym(RTLD_DEFAULT, name);
+ #endif
+ }
+ 

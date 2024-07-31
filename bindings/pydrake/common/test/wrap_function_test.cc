@@ -398,7 +398,7 @@ GTEST_TEST(WrapFunction, ChangeCallbackOnly) {
 
 // Testing for #15505.
 struct ArgNoCopyNoMove {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ArgNoCopyNoMove)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ArgNoCopyNoMove);
   ArgNoCopyNoMove() {}
 };
 

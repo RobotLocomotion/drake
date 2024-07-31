@@ -426,6 +426,9 @@ void BindSolverInterfaceAndFlags(py::module m) {
           doc.SolverOptions.get_print_file_name.doc)
       .def("get_print_to_console", &SolverOptions::get_print_to_console,
           doc.SolverOptions.get_print_to_console.doc)
+      .def("get_standalone_reproduction_file_name",
+          &SolverOptions::get_standalone_reproduction_file_name,
+          doc.SolverOptions.get_standalone_reproduction_file_name.doc)
       .def("__repr__", [](const SolverOptions&) -> std::string {
         // This is a minimal implementation that serves to avoid displaying
         // memory addresses in pydrake docs and help strings. In the future,
@@ -438,7 +441,10 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kPrintFileName", CommonSolverOption::kPrintFileName,
           doc.CommonSolverOption.kPrintFileName.doc)
       .value("kPrintToConsole", CommonSolverOption::kPrintToConsole,
-          doc.CommonSolverOption.kPrintToConsole.doc);
+          doc.CommonSolverOption.kPrintToConsole.doc)
+      .value("kStandaloneReproductionFileName",
+          CommonSolverOption::kStandaloneReproductionFileName,
+          doc.CommonSolverOption.kStandaloneReproductionFileName.doc);
 }
 
 void BindMathematicalProgram(py::module m) {
@@ -812,6 +818,13 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddL2NormCost),
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCost.doc_3args_A_b_vars)
+      .def("AddL2NormCost",
+          overload_cast_explicit<Binding<L2NormCost>,
+              const symbolic::Expression&, double, double>(
+              &MathematicalProgram::AddL2NormCost),
+          py::arg("e"), py::arg("psd_tol") = 1e-8,
+          py::arg("coefficient_tol") = 1e-8,
+          doc.MathematicalProgram.AddL2NormCost.doc_expression)
       .def("AddL2NormCostUsingConicConstraint",
           &MathematicalProgram::AddL2NormCostUsingConicConstraint, py::arg("A"),
           py::arg("b"), py::arg("vars"),
@@ -1018,6 +1031,14 @@ void BindMathematicalProgram(py::module m) {
           py::arg("e"), py::arg("lb"), py::arg("ub"),
           py::arg("hessian_type") = std::nullopt,
           doc.MathematicalProgram.AddQuadraticConstraint.doc_4args)
+      .def("AddLorentzConeConstraint",
+          static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
+              const symbolic::Formula&, LorentzConeConstraint::EvalType, double,
+              double)>(&MathematicalProgram::AddLorentzConeConstraint),
+          py::arg("f"),
+          py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
+          py::arg("psd_tol") = 1e-8, py::arg("coefficient_tol") = 1e-8,
+          doc.MathematicalProgram.AddLorentzConeConstraint.doc_formula)
       .def("AddLorentzConeConstraint",
           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&,
@@ -1440,6 +1461,9 @@ void BindMathematicalProgram(py::module m) {
       .def("linear_complementarity_constraints",
           &MathematicalProgram::linear_complementarity_constraints,
           doc.MathematicalProgram.linear_complementarity_constraints.doc)
+      .def("visualization_callbacks",
+          &MathematicalProgram::visualization_callbacks,
+          doc.MathematicalProgram.visualization_callbacks.doc)
       .def("GetAllCosts", &MathematicalProgram::GetAllCosts,
           doc.MathematicalProgram.GetAllCosts.doc)
       .def("GetLinearConstraints",
@@ -1581,10 +1605,17 @@ for every column of ``prog_var_vals``. )""")
           doc.MathematicalProgram.SetVariableScaling.doc)
       .def("ClearVariableScaling", &MathematicalProgram::ClearVariableScaling,
           doc.MathematicalProgram.ClearVariableScaling.doc)
+      .def("RemoveDecisionVariable",
+          &MathematicalProgram::RemoveDecisionVariable, py::arg("var"),
+          doc.MathematicalProgram.RemoveDecisionVariable.doc)
       .def("RemoveCost", &MathematicalProgram::RemoveCost, py::arg("cost"),
           doc.MathematicalProgram.RemoveCost.doc)
       .def("RemoveConstraint", &MathematicalProgram::RemoveConstraint,
-          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc);
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def("RemoveVisualizationCallback",
+          &MathematicalProgram::RemoveVisualizationCallback,
+          py::arg("callback"),
+          doc.MathematicalProgram.RemoveVisualizationCallback.doc);
 
   py::enum_<SolutionResult> solution_result_enum(
       m, "SolutionResult", doc.SolutionResult.doc);

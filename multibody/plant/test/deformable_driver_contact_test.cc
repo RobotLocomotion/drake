@@ -51,19 +51,19 @@ class DeformableDriverContactTest : public ::testing::Test {
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
-    auto deformable_model = make_unique<DeformableModel<double>>(plant_);
+    DeformableModel<double>& deformable_model =
+        plant_->mutable_deformable_model();
     /* Move the first deformable up so that the bottom half of it intersects the
-     * rigid box. */
+     rigid box. */
     const RigidTransformd X_WD0(Vector3d(0, 0, 1.25));
-    body_id0_ = RegisterDeformableOctahedron(X_WD0, deformable_model.get(),
-                                             "deformable0");
+    body_id0_ =
+        RegisterDeformableOctahedron(X_WD0, &deformable_model, "deformable0");
     /* Move the second deformable down so that the top half of it intersects the
-     * rigid box. */
+     rigid box. */
     const RigidTransformd X_WD1(Vector3d(0, 0, -1.25));
-    body_id1_ = RegisterDeformableOctahedron(X_WD1, deformable_model.get(),
-                                             "deformable1");
-    model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    body_id1_ =
+        RegisterDeformableOctahedron(X_WD1, &deformable_model, "deformable1");
+    model_ = &plant_->deformable_model();
     // N.B. Deformables are only supported with the SAP solver.
     // Thus for testing we choose one arbitrary contact approximation that uses
     // the SAP solver.
@@ -90,9 +90,6 @@ class DeformableDriverContactTest : public ::testing::Test {
     driver_ = manager_->deformable_driver();
     DRAKE_DEMAND(driver_ != nullptr);
 
-    builder.Connect(model_->vertex_positions_port(),
-                    scene_graph_->get_source_configuration_port(
-                        plant_->get_source_id().value()));
     diagram_ = builder.Build();
     context_ = diagram_->CreateDefaultContext();
   }
@@ -180,7 +177,7 @@ class DeformableDriverContactTest : public ::testing::Test {
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
   std::unique_ptr<systems::Diagram<double>> diagram_;
-  DeformableModel<double>* model_{nullptr};
+  const DeformableModel<double>* model_{nullptr};
   const CompliantContactManager<double>* manager_{nullptr};
   const DeformableDriver<double>* driver_{nullptr};
   std::unique_ptr<Context<double>> context_;

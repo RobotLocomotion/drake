@@ -150,4 +150,4 @@ bool BsplineBasis<T>::CheckInvariants() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::math::BsplineBasis)
+    class ::drake::math::BsplineBasis);

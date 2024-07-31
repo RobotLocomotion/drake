@@ -93,7 +93,7 @@ enum class WitnessFunctionDirection {
 template <class T>
 class WitnessFunction final {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WitnessFunction)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WitnessFunction);
 
   /** Signature of a function suitable for calculating a value of a particular
   witness function. */
@@ -233,4 +233,4 @@ class WitnessFunction final {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::WitnessFunction)
+    class ::drake::systems::WitnessFunction);

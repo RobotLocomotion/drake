@@ -32,7 +32,7 @@ struct TimeStep {
 /// @ingroup planning_trajectory
 class DirectTranscription : public MultipleShooting {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTranscription)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTranscription);
 
   /// Constructs the MathematicalProgram and adds the dynamic constraints.
   /// This version of the constructor is only for simple discrete-time systems

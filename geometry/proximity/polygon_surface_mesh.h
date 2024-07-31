@@ -30,7 +30,7 @@ class SurfacePolygon {
  public:
   // TODO(SeanCurtis-TRI): Consider making this copy-constructible, in which
   // case we can remove copy_to_unique() function, below.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SurfacePolygon)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SurfacePolygon);
 
   /** Returns the number of vertices in this face. */
   int num_vertices() const { return mesh_face_data_.at(index_); }
@@ -81,7 +81,7 @@ class SurfacePolygon {
 template <class T>
 class PolygonSurfaceMesh {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolygonSurfaceMesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolygonSurfaceMesh);
 
   /** @name Mesh type traits
 
@@ -191,34 +191,8 @@ class PolygonSurfaceMesh {
    initial frame M to the new frame N. */
   void TransformVertices(const math::RigidTransform<T>& X_NM);
 
-  // TODO(SeanCurtis-TRI): ContactResultsToLcm and HydroelasticContactInfo
-  //  ostensibly support symbolic::Expression. However, the ContactSurface that
-  //  they both interact with *doesn't*. Their unit tests blindly assume that
-  //  there is full scalar support. ContactSurface calls ReverseFaceWinding so,
-  //  for the offending unit tests to maintain the illusion of support, this
-  //  must be defined in the header so they can compile and link -- although,
-  //  the resulting ContactSurface<symbolic::Expression> is only a partial
-  //  implementation and can't do any interesting math, this allows the tests
-  //  to create the type they need. Ideally, the tests wouldn't be expressed
-  //  in a way that suggests non-existent support is otherwise possible.
-  //  Alternatively, there's a question about whether ContactSurface should be
-  //  calling this method *at all*. Choosing that it's not necessary would
-  //  likewise enable this implementation to move to the .cc file.
   /** (Internal use only) Reverses the ordering of all the faces' indices. */
-  void ReverseFaceWinding() {
-    for (const int f_index : poly_indices_) {
-      const int v_count = face_data_[f_index];
-      /* The indices before and after the first and last entries.  */
-      int f_0 = f_index;
-      int f_n = f_index + v_count + 1;
-      for (int i = 0; i < v_count / 2; ++i) {
-        std::swap(face_data_[++f_0], face_data_[--f_n]);
-      }
-    }
-    for (auto& n : face_normals_) {
-      n = -n;
-    }
-  }
+  void ReverseFaceWinding();
 
   /** Returns the number of polygonal elements in the mesh. */
   int num_faces() const { return static_cast<int>(poly_indices_.size()); }
@@ -392,7 +366,7 @@ class PolygonSurfaceMesh {
 };
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class PolygonSurfaceMesh)
+    class PolygonSurfaceMesh);
 
 }  // namespace geometry
 }  // namespace drake

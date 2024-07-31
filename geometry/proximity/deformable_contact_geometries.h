@@ -81,7 +81,7 @@ class DeformableGeometry {
  aren't relying on FCL's broadphase. */
 class RigidGeometry {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry);
 
   explicit RigidGeometry(
       std::unique_ptr<internal::hydroelastic::RigidMesh> rigid_mesh)

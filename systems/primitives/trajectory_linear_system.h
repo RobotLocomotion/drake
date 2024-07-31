@@ -27,7 +27,7 @@ namespace systems {
 template <typename T>
 class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryLinearSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryLinearSystem);
 
   /// Constructs a PiecewisePolynomialLinearSystem from a LinearTimeVaryingData
   /// structure.
@@ -83,4 +83,4 @@ struct Traits<TrajectoryLinearSystem> : public NonSymbolicTraits {};
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::systems::TrajectoryLinearSystem)
+    class ::drake::systems::TrajectoryLinearSystem);

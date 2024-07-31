@@ -68,7 +68,7 @@ Gyroscope<T>::Gyroscope(const Gyroscope<U>& other)
     : Gyroscope(other.body_index(), other.pose()) {}
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::sensors::Gyroscope)
+    class ::drake::systems::sensors::Gyroscope);
 
 }  // namespace sensors
 }  // namespace systems

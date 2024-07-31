@@ -113,7 +113,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
   /* A force field where the magnitude of the force density depends on time. */
   class TimeScaledForceDensityField final : public ForceDensityField<double> {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TimeScaledForceDensityField)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TimeScaledForceDensityField);
 
     /* Constructs a force field that implements the test force f = time *
      unit_vector`,· where `time` is the time currently stored in the MbP's
@@ -389,6 +389,67 @@ GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
     dense_tangent_matrix1 = tangent_matrix1->MakeDenseMatrix();
     EXPECT_TRUE(CompareMatrices(dense_tangent_matrix0, dense_tangent_matrix1));
   }
+}
+
+GTEST_TEST(FemModelTest, Clone) {
+  /* Build a model with two elements and make a compatible state. */
+  LinearDummyModel model;
+  LinearDummyModel::DummyBuilder builder(&model);
+  builder.AddTwoElementsWithSharedNodes();
+  builder.Build();
+
+  /* Create a DirichletBoundaryCondition and add it to the model. */
+  DirichletBoundaryCondition<double> bc;
+  bc.AddBoundaryCondition(FemNodeIndex(0),
+                          {Vector3<double>(1, 1, 1), Vector3<double>(2, 2, 2),
+                           Vector3<double>(3, 3, 3)});
+  model.SetDirichletBoundaryCondition(bc);
+
+  std::unique_ptr<FemModel<double>> clone = model.Clone();
+  EXPECT_EQ(clone->num_elements(), model.num_elements());
+  EXPECT_EQ(clone->num_nodes(), model.num_nodes());
+  EXPECT_EQ(clone->num_dofs(), model.num_dofs());
+  EXPECT_EQ(clone->is_linear(), model.is_linear());
+
+  /* Verify that the default states are the same. */
+  auto state = model.MakeFemState();
+  auto clone_state = clone->MakeFemState();
+  EXPECT_EQ(state->GetPositions(), clone_state->GetPositions());
+  EXPECT_EQ(state->GetPreviousStepPositions(),
+            clone_state->GetPreviousStepPositions());
+  EXPECT_EQ(state->GetVelocities(), clone_state->GetVelocities());
+  EXPECT_EQ(state->GetAccelerations(), clone_state->GetAccelerations());
+  EXPECT_EQ(state->num_dofs(), clone_state->num_dofs());
+  EXPECT_EQ(state->num_nodes(), clone_state->num_nodes());
+
+  /* Verify that boundary conditions are the same. */
+  model.ApplyBoundaryCondition(state.get());
+  clone->ApplyBoundaryCondition(clone_state.get());
+  EXPECT_EQ(state->GetPositions(), clone_state->GetPositions());
+  EXPECT_EQ(state->GetPreviousStepPositions(),
+            clone_state->GetPreviousStepPositions());
+  EXPECT_EQ(state->GetVelocities(), clone_state->GetVelocities());
+  EXPECT_EQ(state->GetAccelerations(), clone_state->GetAccelerations());
+
+  /* Verify that the computation of residuals and tangent matrices are the same.
+   */
+  const systems::LeafContext<double> dummy_context;
+  const FemPlantData<double> dummy_data{dummy_context, {}};
+  VectorXd residual(model.num_dofs());
+  VectorXd clone_residual(clone->num_dofs());
+  model.CalcResidual(*state, dummy_data, &residual);
+  clone->CalcResidual(*clone_state, dummy_data, &clone_residual);
+  EXPECT_EQ(residual, clone_residual);
+
+  auto tangent_matrix = model.MakeTangentMatrix();
+  auto clone_tangent_matrix = clone->MakeTangentMatrix();
+  EXPECT_EQ(tangent_matrix->MakeDenseMatrix(),
+            clone_tangent_matrix->MakeDenseMatrix());
+  const Vector3<double> weights(0.1, 0.2, 0.3);
+  model.CalcTangentMatrix(*state, weights, tangent_matrix.get());
+  clone->CalcTangentMatrix(*clone_state, weights, clone_tangent_matrix.get());
+  EXPECT_EQ(tangent_matrix->MakeDenseMatrix(),
+            clone_tangent_matrix->MakeDenseMatrix());
 }
 
 }  // namespace

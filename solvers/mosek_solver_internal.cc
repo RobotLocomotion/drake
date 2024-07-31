@@ -1006,7 +1006,7 @@ MSKrescodee MosekSolverProgram::AddQuadraticCostAsLinearCost(
   }
   const MSKint32t s_index = num_mosek_vars;
   // Put bound on s as s >= 0.
-  rescode = MSK_putvarbound(task_, s_index, MSK_BK_FR, 0, MSK_INFINITY);
+  rescode = MSK_putvarbound(task_, s_index, MSK_BK_LO, 0, MSK_INFINITY);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -1069,8 +1069,9 @@ MSKrescodee MosekSolverProgram::AddQuadraticCost(
   for (int j = 0; j < Q_quadratic_vars.outerSize(); ++j) {
     for (Eigen::SparseMatrix<double>::InnerIterator it(Q_quadratic_vars, j); it;
          ++it) {
-      Q_lower_triplets.emplace_back(var_indices[it.row()],
-                                    var_indices[it.col()], it.value());
+      int row = std::max(var_indices[it.row()], var_indices[it.col()]);
+      int col = std::min(var_indices[it.row()], var_indices[it.col()]);
+      Q_lower_triplets.emplace_back(row, col, it.value());
     }
   }
   std::vector<MSKint32t> qrow, qcol;
@@ -1079,6 +1080,71 @@ MSKrescodee MosekSolverProgram::AddQuadraticCost(
   ConvertTripletsToVectors(Q_lower_triplets, xDim, xDim, &qrow, &qcol, &qval);
   const int Q_nnz = static_cast<int>(qrow.size());
   rescode = MSK_putqobj(task_, Q_nnz, qrow.data(), qcol.data(), qval.data());
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  return rescode;
+}
+
+MSKrescodee MosekSolverProgram::AddL2NormCost(
+    const Eigen::SparseMatrix<double>& C, const Eigen::VectorXd& d,
+    const VectorX<symbolic::Variable>& x, const MathematicalProgram& prog) {
+  // We will take the following steps:
+  // 1. Add a slack variable t.
+  // 2. Add the affine cone constraint
+  //    [0  1] * [x] + [0] is in Lorentz cone.
+  //    [C  0]   [t]   [d]
+  // 3. Add the cost min t.
+  MSKrescodee rescode = MSK_RES_OK;
+  // Add a slack variable t.
+  MSKint32t num_mosek_vars = 0;
+  rescode = MSK_getnumvar(task_, &num_mosek_vars);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  rescode = MSK_appendvars(task_, 1);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  const MSKint32t t_index = num_mosek_vars;
+  // Put the bound on t as t >= 0.
+  rescode = MSK_putvarbound(task_, t_index, MSK_BK_LO, 0, MSK_INFINITY);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // Add the constraint that
+  // [0  1] * [x] + [0]
+  // [C  0]   [t]   [d]
+  // is in Lorentz cone.
+  //
+  // We use A = [0]  and B = [1]
+  //            [C]          [0]
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  A_triplets.reserve(C.nonZeros());
+  for (int i = 0; i < C.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(C, i); it; ++it) {
+      A_triplets.emplace_back(it.row() + 1, it.col(), it.value());
+    }
+  }
+  Eigen::SparseMatrix<double> A(C.rows() + 1, C.cols());
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+
+  std::array<Eigen::Triplet<double>, 1> B_triplets;
+  B_triplets[0] = Eigen::Triplet<double>(0, 0, 1);
+  Eigen::SparseMatrix<double> B(C.rows() + 1, 1);
+  B.setFromTriplets(B_triplets.begin(), B_triplets.end());
+  MSKint64t acc_index;
+  Eigen::VectorXd offset(1 + C.rows());
+  offset(0) = 0;
+  offset.tail(C.rows()) = d;
+  rescode = this->AddAffineConeConstraint(
+      prog, A, B, x, std::vector<MSKint32t>{{t_index}}, offset,
+      MSK_DOMAIN_QUADRATIC_CONE, &acc_index);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // Add the linear cost min t.
+  rescode = MSK_putcj(task_, t_index, 1.0);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -1111,7 +1177,8 @@ MSKrescodee MosekSolverProgram::AddCosts(const MathematicalProgram& prog) {
         prog.rotated_lorentz_cone_constraints().empty() &&
         prog.linear_matrix_inequality_constraints().empty() &&
         prog.positive_semidefinite_constraints().empty() &&
-        prog.exponential_cone_constraints().empty()) {
+        prog.exponential_cone_constraints().empty() &&
+        prog.l2norm_costs().empty()) {
       // This is a QP, add the quadratic cost.
       rescode = AddQuadraticCost(Q_lower, quadratic_vars, prog);
 
@@ -1125,6 +1192,16 @@ MSKrescodee MosekSolverProgram::AddCosts(const MathematicalProgram& prog) {
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
+    }
+  }
+
+  // Now add all the L2NormCost.
+  for (const auto& l2norm_cost : prog.l2norm_costs()) {
+    rescode = this->AddL2NormCost(l2norm_cost.evaluator()->get_sparse_A(),
+                                  l2norm_cost.evaluator()->b(),
+                                  l2norm_cost.variables(), prog);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
     }
   }
 

@@ -770,16 +770,16 @@ class UnrestrictedUpdateEvent final : public Event<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::WitnessTriggeredEventData)
+    class ::drake::systems::WitnessTriggeredEventData);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Event)
+    class ::drake::systems::Event);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::PublishEvent)
+    class ::drake::systems::PublishEvent);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::DiscreteUpdateEvent)
+    class ::drake::systems::DiscreteUpdateEvent);
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::UnrestrictedUpdateEvent)
+    class ::drake::systems::UnrestrictedUpdateEvent);

@@ -32,7 +32,7 @@ namespace internal {
 template <typename T>
 class Plane {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Plane)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Plane);
 
   /* Constructs a %Plane in frame F which is normal to `n_F` and passes
    through the point `p_FP`.

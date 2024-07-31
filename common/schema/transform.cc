@@ -5,7 +5,6 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -99,12 +98,10 @@ Transform Transform::SampleAsTransform(RandomGenerator* generator) const {
 
 math::RigidTransformd Transform::Sample(RandomGenerator* generator) const {
   if (base_frame.has_value() && (*base_frame != "world")) {
-    static const drake::internal::WarnDeprecated warn_once(
-        "2024-05-01",
+    throw std::logic_error(
         fmt::format(
             "Transform::Sample() would discard non-trivial base frame \"{}\"; "
-            "use Transform::SampleAsTransform() instead. This will become an "
-            "exception after the deprecation period ends.",
+            "use Transform::SampleAsTransform() instead.",
             *base_frame));
   }
   return SampleInternal(*this, generator);

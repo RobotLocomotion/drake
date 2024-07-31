@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -81,10 +81,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "transform_test",
-    env = {
-        # On deprecation completion 2024-05-01 the next line should be removed.
-        "_DRAKE_DEPRECATION_IS_ERROR": "1",
-    },
     deps = [
         ":transform",
         "//common/test_utilities:eigen_matrix_compare",

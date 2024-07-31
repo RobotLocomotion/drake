@@ -19,7 +19,7 @@ namespace geometry {
  */
 class SurfaceTriangle {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceTriangle)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceTriangle);
 
   /** Constructs SurfaceTriangle.
    @param v0 Index of the first vertex in TriangleSurfaceMesh.
@@ -71,7 +71,7 @@ class TriangleSurfaceMeshTester;
 template <class T>
 class TriangleSurfaceMesh {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TriangleSurfaceMesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TriangleSurfaceMesh);
 
   /**
    @name Mesh type traits
@@ -203,14 +203,7 @@ class TriangleSurfaceMesh {
   /** (Internal use only) Reverses the ordering of all the triangles' indices
    -- see SurfaceTriangle::ReverseWinding().
    */
-  void ReverseFaceWinding() {
-    for (auto& f : triangles_) {
-      f.ReverseWinding();
-    }
-    for (auto& n : face_normals_) {
-      n = -n;
-    }
-  }
+  void ReverseFaceWinding();
 
   /** Returns the number of triangles in the mesh.
    */
@@ -596,7 +589,7 @@ std::optional<Vector3<T>> TriangleSurfaceMesh<T>::MaybeCalcGradBarycentric(
 }
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class TriangleSurfaceMesh)
+    class TriangleSurfaceMesh);
 
 }  // namespace geometry
 }  // namespace drake

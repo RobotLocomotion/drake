@@ -9,7 +9,8 @@ namespace systems {
 
 template <typename T>
 Integrator<T>::Integrator(int size)
-    : VectorSystem<T>(SystemTypeTag<Integrator>{}, size, size) {
+    : VectorSystem<T>(SystemTypeTag<Integrator>{}, size, size,
+                      /* direct_feedthrough = */ false) {
   this->DeclareContinuousState(size);
 }
 
@@ -55,4 +56,4 @@ void Integrator<T>::DoCalcVectorOutput(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Integrator)
+    class ::drake::systems::Integrator);

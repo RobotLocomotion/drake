@@ -27,30 +27,6 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-// Friend struct to grant access to SapSolver's private functions for testing.
-class SapSolverTester {
- public:
-  static std::unique_ptr<SuperNodalSolver> MakeSuperNodalSolver(
-      const SapSolver<double>& sap) {
-    return sap.MakeSuperNodalSolver();
-  }
-
-  static void UpdateSuperNodalSolver(const SapSolver<double>& sap,
-                                     const Context<double>& context,
-                                     SuperNodalSolver* supernodal_solver) {
-    sap.UpdateSuperNodalSolver(context, supernodal_solver);
-  }
-
-  static const SapModel<double>& model(const SapSolver<double>& sap) {
-    return *sap.model_;
-  }
-
-  static MatrixX<double> CalcDenseHessian(
-      const SapSolver<double>& sap, const systems::Context<double>& context) {
-    return sap.CalcDenseHessian(context);
-  }
-};
-
 constexpr double kEps = std::numeric_limits<double>::epsilon();
 // Suggested value for the dimensionless parameter used in the regularization of
 // friction, see [Castro et al. 2022].
@@ -284,7 +260,7 @@ class PizzaSaverTest
       q += problem.time_step() * v;
 
       // Verify the number of times cache entries were updated.
-      const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+      const SapStatistics& stats = sap.get_statistics();
 
       if (cost_criterion_reached) {
         EXPECT_TRUE(stats.cost_criterion_reached);
@@ -439,7 +415,7 @@ TEST_P(PizzaSaverTest, ConvergenceWithExactGuess) {
   EXPECT_EQ(status, SapSolverStatus::kSuccess);
 
   // Verify no iterations were performed.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapStatistics& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 0);
 
   // The guess was not even touched but directly copied into the results.
@@ -665,7 +641,7 @@ TEST_P(PizzaSaverTest, NoConstraints) {
   EXPECT_EQ(status, SapSolverStatus::kSuccess);
 
   // Verify no iterations were performed.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapStatistics& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 0);
 
   // The solution is trivial since constraint impulses are zero and v = v*.
@@ -786,6 +762,9 @@ class LimitConstraint final : public SapConstraint<T> {
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<LimitConstraint<T>>(new LimitConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error("DoToDouble() not used in these unit tests.");
+  }
 
   VectorX<T> R_;     // Regularization.
   VectorX<T> vhat_;  // Bias.
@@ -847,6 +826,10 @@ class SapNewtonIterationTest
     VectorXd R = VectorXd::Constant(num_limit_constraint_equations, 1.0e-3);
     sap_problem_->AddConstraint(
         std::make_unique<LimitConstraint<double>>(1, vl_, vu_, std::move(R)));
+    // Model and context to test solver internals.
+    model_ = std::make_unique<SapModel<double>>(
+        sap_problem_.get(), SapHessianFactorizationType::kBlockSparseCholesky);
+    context_ = model_->MakeContext();
   }
 
   // We verify our supernodal algebra by comparing the Hessian reconstructed
@@ -854,17 +837,33 @@ class SapNewtonIterationTest
   void VerifySupernodalHessian(const SapSolver<double>& sap,
                                const VectorXd& v_guess) const {
     // Verify Hessian obtained with sparse supernodal algebra.
-    std::unique_ptr<SuperNodalSolver> supernodal_solver =
-        SapSolverTester::MakeSuperNodalSolver(sap);
-    const SapModel<double>& model = SapSolverTester::model(sap);
-    const auto context = model.MakeContext();
-    auto v = model.GetMutableVelocities(context.get());
-    model.velocities_permutation().Apply(v_guess, &v);
-    SapSolverTester::UpdateSuperNodalSolver(sap, *context,
-                                            supernodal_solver.get());
-    const MatrixXd H = supernodal_solver->MakeFullMatrix();
-    const MatrixXd H_expected =
-        SapSolverTester::CalcDenseHessian(sap, *context);
+    auto v = model_->GetMutableVelocities(context_.get());
+    model_->velocities_permutation().Apply(v_guess, &v);
+
+    // Sanity check the default is not dense, since we'll use a dense
+    // factorization to construct an expected value.
+    ASSERT_NE(model_->hessian_type(), SapHessianFactorizationType::kDense);
+
+    // To reconstruct a dense Hessian from its factorization we do:
+    //  1. Apply factorization to the identity matrix to get its inverse, Hinv.
+    //  2. Explicitly compute the inverse of Hinv to get H.
+    const HessianFactorizationCache& factorization =
+        model_->EvalHessianFactorizationCache(*context_);
+    MatrixXd Hinv = MatrixXd::Identity(v.size(), v.size());
+    factorization.SolveInPlace(&Hinv);
+    const MatrixXd H = Hinv.inverse();
+
+    // Compute Hessian using dense algebra.
+    HessianFactorizationCache dense_factorization(
+        SapHessianFactorizationType::kDense, &model_->dynamics_matrix(),
+        &model_->constraints_bundle().J());
+    dense_factorization.UpdateWeightMatrixAndFactor(
+        model_->EvalConstraintsHessian(*context_));
+    MatrixXd Hinv_expected = MatrixXd::Identity(v.size(), v.size());
+    dense_factorization.SolveInPlace(&Hinv_expected);
+    const MatrixXd H_expected = Hinv.inverse();
+
+    // Verify dense and sparse hessians match.
     EXPECT_TRUE(CompareMatrices(H, H_expected, 3.0 * kEps,
                                 MatrixCompareType::relative));
   }
@@ -895,8 +894,7 @@ class SapNewtonIterationTest
 
     // Perform computation with dense algebra.
     SapSolverParameters params_dense;  // Default set of parameters.
-    params_dense.linear_solver_type =
-        SapSolverParameters::LinearSolverType::kDense;
+    params_dense.linear_solver_type = SapHessianFactorizationType::kDense;
     params_dense.abs_tolerance = 0;
     params_dense.rel_tolerance = relative_tolerance;
     params_dense.line_search_type = GetParam();
@@ -913,6 +911,8 @@ class SapNewtonIterationTest
   VectorXd vu_;
   VectorXd v_star_;
   std::unique_ptr<SapContactProblem<double>> sap_problem_;
+  std::unique_ptr<SapModel<double>> model_;
+  std::unique_ptr<Context<double>> context_;
 };
 
 // Unit test that SAP performs no computation when provided with an initial
@@ -929,7 +929,7 @@ TEST_P(SapNewtonIterationTest, GuessIsTheSolution) {
   EXPECT_EQ(status, SapSolverStatus::kSuccess);
 
   // Verify optimality is satisfied but no iterations were performed.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapStatistics& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 0);
   EXPECT_TRUE(stats.optimality_criterion_reached);
 
@@ -976,7 +976,7 @@ TEST_P(SapNewtonIterationTest, GuessWithinLimits) {
   // Since we provide the guess to be within the limits, and we know the
   // solution is v = v*, we expect the solver achieve convergence in a single
   // Newton iteration.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapStatistics& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 1);
   // We expect two backtracking line search iterations given alpha_max != 1.
   // Since the problem is quadratic, we expect the exact line search to
@@ -1037,7 +1037,7 @@ TEST_P(SapNewtonIterationTest, GuessOutsideLimits) {
   // Since the initial guess is outside the constraint's bounds, and we know the
   // solution is v = v* inside the bounds, we expect several Newton iterations
   // to achieve convergence.
-  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  const SapStatistics& stats = sap.get_statistics();
   EXPECT_GT(stats.num_iters, 1);
   EXPECT_GT(stats.num_line_search_iters, 1);
   // This problem is very well conditioned, we expect convergence on the
@@ -1107,6 +1107,9 @@ class ConstantForceConstraint final : public SapConstraint<double> {
     return std::unique_ptr<ConstantForceConstraint>(
         new ConstantForceConstraint(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error("DoToDouble() not used in these unit tests.");
+  }
 
   const VectorXd g_;  // Constant impulse.
 };
@@ -1144,7 +1147,7 @@ GTEST_TEST(SapSolver, ConstraintWithNegativeCost) {
   // Since the cost is a combination of a quadratic term (from A) and a linear
   // term (from the constant impulse constraint), we expect the solver to
   // achieve convergence in a single Newton iteration.
-  const SapSolver<double>::SolverStats& stats = solver.get_statistics();
+  const SapStatistics& stats = solver.get_statistics();
   EXPECT_EQ(stats.num_iters, 1);
 
   // The whole purpose of this test is to verify the behavior of SAP when the

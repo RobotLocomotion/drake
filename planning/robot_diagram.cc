@@ -62,4 +62,4 @@ RobotDiagram<T>::RobotDiagram(const RobotDiagram<U>& other)
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::planning::RobotDiagram)
+    class ::drake::planning::RobotDiagram);

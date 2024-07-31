@@ -714,13 +714,13 @@ Sphere CharacterizeResultTest<T>::sphere(bool) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&AlignPlanes<T>))
+    (&AlignPlanes<T>));
 
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::internal::CharacterizeResultTest)
+    class ::drake::geometry::internal::CharacterizeResultTest);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::geometry::internal::ShapeConfigurations)
+    class ::drake::geometry::internal::ShapeConfigurations);

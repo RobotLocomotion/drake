@@ -17,7 +17,7 @@ namespace systems {
 template <typename T, int N>
 class MyVector : public BasicVector<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyVector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyVector);
 
   /// Constructs an uninitialized N-vector.
   MyVector() : BasicVector<T>(N) {}

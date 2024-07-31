@@ -73,7 +73,7 @@ namespace systems {
 template <typename T>
 class RandomSource final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource);
 
   /// An integer type for a random seed.
   using Seed = RandomGenerator::result_type;

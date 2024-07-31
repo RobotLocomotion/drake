@@ -206,11 +206,32 @@ template<typename T> class BodyNode;
 // - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
 //                       algorithms. Springer.
 //
+// <h3>Interaction with the Context</h3>
+//
+// Some member functions of a Mobilizer take a `const Context& context` as an
+// input argument. To ensure correctness of the MultibodyTreeSystem's cache
+// entry dependencies, it is essential that such functions only access an
+// appropriate subset the Context.
+//
+// A mobilizer's generalized positions q and generalized velocities v exist as
+// State in the context. The mobilizer is FORBIDDEN from using any State from
+// the context other than its own q and v data. Some functions are documented
+// to be only a function of q (not v); those functions must not access v.
+//
+// A mobilizer is allowed to access any Parameters in the context that it has
+// declared, from any method that takes a Context, without any further comment.
+// We always conservatively assume that all Mobilizer methods depend on all of a
+// Mobilizer's Parameters.
+//
+// A mobilizer is FORBIDDEN from being time- or input-dependent. (The context
+// provides access to the current simulation time and input port values, but
+// the mobilizer must not use that information.)
+//
 // @tparam_default_scalar
 template <typename T>
 class Mobilizer : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer);
 
   // The minimum amount of information that we need to define a %Mobilizer is
   // the knowledge of the inboard and outboard frames it connects.
@@ -227,6 +248,8 @@ class Mobilizer : public MultibodyElement<T> {
           "The provided inboard and outboard frames reference the same object");
     }
   }
+
+  ~Mobilizer() override;
 
   /// Returns this element's unique index.
   MobilizerIndex index() const {
@@ -348,7 +371,7 @@ class Mobilizer : public MultibodyElement<T> {
   // generally be different from the identity transformation.
   // In other words, `X_FM_ref = CalcAcrossMobilizerTransform(ref_context)`
   // where `ref_context` is a Context storing a State set to the zero
-  // configuration with set_zero_state().
+  // configuration with SetZeroState().
   // In addition, all generalized velocities are set to zero in the _zero_
   // state.
   //
@@ -363,8 +386,8 @@ class Mobilizer : public MultibodyElement<T> {
   // Note that the zero state may fall outside of the limits for any joints
   // associated with this mobilizer.
   // @see set_default_state().
-  virtual void set_zero_state(const systems::Context<T>& context,
-                              systems::State<T>* state) const = 0;
+  virtual void SetZeroState(const systems::Context<T>& context,
+                            systems::State<T>* state) const = 0;
 
   // Sets the `state` to the _default_ state (position and velocity) for
   // `this` mobilizer.  For example, the zero state for our standard IIWA

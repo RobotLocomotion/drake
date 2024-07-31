@@ -75,6 +75,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc_1args_pose)
         .def(py::init<const MatrixX<T>&>(), py::arg("pose"),
             cls_doc.ctor.doc_1args_constEigenMatrixBase)
+        .def_static("MakeUnchecked", &Class::MakeUnchecked, py::arg("pose"),
+            cls_doc.MakeUnchecked.doc)
         .def("set", &Class::set, py::arg("R"), py::arg("p"), cls_doc.set.doc)
         .def("SetFromIsometry3", &Class::SetFromIsometry3, py::arg("pose"),
             cls_doc.SetFromIsometry3.doc)
@@ -146,7 +148,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
         .def(py::pickle([](const Class& self) { return self.GetAsMatrix34(); },
             [](const Eigen::Matrix<T, 3, 4>& matrix) {
-              return Class(matrix);
+              return Class::MakeUnchecked(matrix);
             }));
     cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
@@ -174,6 +176,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc_1args_theta_lambda)
         .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
             cls_doc.ctor.doc_1args_rpy)
+        .def_static("MakeUnchecked", &Class::MakeUnchecked, py::arg("R"),
+            cls_doc.MakeUnchecked.doc)
         .def_static("MakeXRotation", &Class::MakeXRotation, py::arg("theta"),
             cls_doc.MakeXRotation.doc)
         .def_static("MakeYRotation", &Class::MakeYRotation, py::arg("theta"),
@@ -228,7 +232,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ToQuaternion.doc_0args)
         .def("ToAngleAxis", &Class::ToAngleAxis, cls_doc.ToAngleAxis.doc)
         .def(py::pickle([](const Class& self) { return self.matrix(); },
-            [](const Matrix3<T>& matrix) { return Class(matrix); }));
+            [](const Matrix3<T>& matrix) {
+              return Class::MakeUnchecked(matrix);
+            }));
     cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
@@ -523,7 +529,8 @@ void DoScalarIndependentDefinitions(py::module m) {
   m  // BR
       .def("DecomposePSDmatrixIntoXtransposeTimesX",
           &DecomposePSDmatrixIntoXtransposeTimesX, py::arg("Y"),
-          py::arg("zero_tol"), doc.DecomposePSDmatrixIntoXtransposeTimesX.doc)
+          py::arg("zero_tol"), py::arg("return_empty_if_not_psd") = false,
+          doc.DecomposePSDmatrixIntoXtransposeTimesX.doc)
       .def("DecomposePositiveQuadraticForm", &DecomposePositiveQuadraticForm,
           py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("tol") = 0,
           doc.DecomposePositiveQuadraticForm.doc)

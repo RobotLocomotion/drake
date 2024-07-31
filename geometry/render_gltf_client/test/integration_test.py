@@ -28,7 +28,7 @@ import subprocess
 import sys
 import unittest
 
-from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
+from python.runfiles import Create as CreateRunfiles
 import numpy as np
 from PIL import Image
 

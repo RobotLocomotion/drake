@@ -70,7 +70,7 @@ InverseKinematics::InverseKinematics(
   // Obey joint locking. Joint locking trumps joint limits.
   const Eigen::VectorXd current_positions = plant.GetPositions(context());
   VectorX<bool> is_locked = VectorX<bool>::Constant(nq, false);
-  for (JointIndex i{0}; i < plant.num_joints(); ++i) {
+  for (JointIndex i : plant.GetJointIndices()) {
     const Joint<double>& joint = plant.get_joint(i);
     if (joint.is_locked(context())) {
       const int start = joint.position_start();

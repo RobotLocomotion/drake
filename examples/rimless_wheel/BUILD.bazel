@@ -1,24 +1,33 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
 
 package(default_visibility = ["//visibility:private"])
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "rimless_wheel_vector_types",
     srcs = [
-        "rimless_wheel_continuous_state_named_vector.yaml",
-        "rimless_wheel_params_named_vector.yaml",
+        "rimless_wheel_continuous_state.cc",
+        "rimless_wheel_params.cc",
+    ],
+    hdrs = [
+        "gen/rimless_wheel_continuous_state.h",
+        "gen/rimless_wheel_params.h",
+        "rimless_wheel_continuous_state.h",
+        "rimless_wheel_params.h",
     ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_cc_library(

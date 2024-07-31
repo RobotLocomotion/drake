@@ -37,8 +37,8 @@ def add_library_paths(parameters=None):
                 parameters.append('-isysroot')
                 parameters.append(sdkroot)
     elif platform.system() == 'Linux':
-        # We expect Clang 14 to be installed.
-        version = 14
+        # We expect Clang 15 to be installed.
+        version = 15
         arch = platform.machine()
         library_file = f'/usr/lib/{arch}-linux-gnu/libclang-{version}.so'
     if not os.path.exists(library_file):

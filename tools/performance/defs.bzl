@@ -55,7 +55,7 @@ def drake_cc_googlebench_binary(
                 # runtime errors.)
                 "--benchmark_min_time=0s",
             ] + (test_args or []),
-            tags = (test_tags or []) + ["nolint"],
+            tags = (test_tags or []) + ["nolint", "no_kcov"],
         )
 
 def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):
@@ -67,7 +67,7 @@ def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):
     dut = "drake/{}/{}".format(native.package_name(), googlebench_binary[1:])
     template = """
     import os, sys
-    from bazel_tools.tools.python.runfiles.runfiles import Create
+    from python.runfiles import Create
     runfiles = Create()
     tool = runfiles.Rlocation("drake/tools/performance/benchmark_tool")
     dut = runfiles.Rlocation({dut})
@@ -90,6 +90,6 @@ def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):
             "//tools/performance:benchmark_tool",
         ],
         deps = [
-            "@bazel_tools//tools/python/runfiles",
+            "@rules_python//python/runfiles",
         ],
     )

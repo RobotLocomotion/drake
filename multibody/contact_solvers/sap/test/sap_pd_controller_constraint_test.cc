@@ -8,6 +8,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/contact_solvers/sap/expect_equal.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
 using Eigen::MatrixXd;
@@ -20,24 +21,6 @@ namespace internal {
 
 using Parameters = SapPdControllerConstraint<double>::Parameters;
 using Configuration = SapPdControllerConstraint<double>::Configuration;
-
-bool operator==(const Parameters& a, const Parameters& b) {
-  if (a.Kp() != b.Kp()) return false;
-  if (a.Kd() != b.Kd()) return false;
-  if (a.effort_limit() != b.effort_limit()) return false;
-  return true;
-}
-
-bool operator==(const Configuration& a, const Configuration& b) {
-  if (a.clique != b.clique) return false;
-  if (a.clique_dof != b.clique_dof) return false;
-  if (a.clique_nv != b.clique_nv) return false;
-  if (a.q0 != b.q0) return false;
-  if (a.qd != b.qd) return false;
-  if (a.vd != b.vd) return false;
-  if (a.u0 != b.u0) return false;
-  return true;
-}
 
 namespace {
 
@@ -64,6 +47,13 @@ MakeArbitraryConfiguration() {
   const T u0 = 0.4;
   return typename SapPdControllerConstraint<T>::Configuration{
       clique, clique_dof, clique_nv, q0, qd, vd, u0};
+}
+
+void ExpectEqual(const SapPdControllerConstraint<double>& c1,
+                 const SapPdControllerConstraint<double>& c2) {
+  ExpectBaseIsEqual(c1, c2);
+  EXPECT_EQ(c1.parameters(), c2.parameters());
+  EXPECT_EQ(c1.configuration(), c2.configuration());
 }
 
 /* SapPdControllerConstraint models (without considering effort limits) the
@@ -268,18 +258,16 @@ GTEST_TEST(SapPdControllerConstraint, Clone) {
   auto clone =
       dynamic_pointer_cast<SapPdControllerConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), 0);
-  EXPECT_EQ(clone->num_constraint_equations(), 1);
-  EXPECT_EQ(clone->num_cliques(), 1);
-  EXPECT_EQ(clone->first_clique(), configuration.clique);
-  EXPECT_EQ(clone->num_velocities(0), configuration.clique_nv);
-  EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(),
-            c.first_clique_jacobian().MakeDenseMatrix());
+  ExpectEqual(c, *clone);
 
-  EXPECT_EQ(clone->configuration(), configuration);
-  EXPECT_EQ(clone->parameters(), parameters);
+  // Test ToDouble.
+  SapPdControllerConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryConfiguration<AutoDiffXd>(),
+      MakeArbitraryParameters<AutoDiffXd>());
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapPdControllerConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapPdControllerConstraint, AccumulateGeneralizedImpulses) {

@@ -20,7 +20,7 @@ namespace pendulum {
 /// details on the parameters stored by this class and their default values.
 class PendulumParameters {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PendulumParameters)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PendulumParameters);
 
   /// Constructor used to initialize the physical parameters for a simple
   /// pendulum model.

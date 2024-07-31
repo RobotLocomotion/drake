@@ -22,7 +22,7 @@ case, which we treat as being {0}, the unique zero-dimensional vector space.
 @ingroup geometry_optimization */
 class Intersection final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Intersection)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Intersection);
 
   /** Constructs a default (zero-dimensional, nonempty) set. */
   Intersection();

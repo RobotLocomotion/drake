@@ -29,7 +29,7 @@ integer exponents. Note that it does not include the coefficient part of a
 monomial. */
 class Monomial {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Monomial)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Monomial);
 
   /** Constructs a monomial equal to 1. Namely the total degree is zero. */
   Monomial() = default;

@@ -56,7 +56,7 @@ int do_main(int argc, char* argv[]) {
     ::exit(EXIT_FAILURE);
   }
 
-  const auto& filters = parser.collision_filter_groups();
+  const auto filters = parser.GetCollisionFilterGroups();
   drake::log()->info("{}", filters);
   drake::log()->info("Parsed {} models.", models.size());
   return models.empty();

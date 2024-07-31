@@ -49,7 +49,7 @@ namespace kinova_jaco {
 /// @see `lcmt_jaco_status.lcm` for additional documentation.
 class JacoStatusSender : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JacoStatusSender)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JacoStatusSender);
 
   JacoStatusSender(int num_joints = kJacoDefaultArmNumJoints,
                    int num_fingers = kJacoDefaultArmNumFingers);

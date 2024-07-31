@@ -2,15 +2,11 @@
 
 --- rust_wrapper/Cargo.toml
 +++ rust_wrapper/Cargo.toml
-@@ -14,9 +14,10 @@ opt-level = 3
- lto = true
- codegen-units = 1
+@@ -14,6 +14,7 @@ opt-level = 3
  
  [features]
-+default = ["sdp"]
  # Define features for SDP support in Clarabel.rs
--sdp = []
-+sdp = ["clarabel/sdp"]
- sdp-accelerate = ["sdp", "clarabel/sdp", "clarabel/sdp-accelerate"]
- sdp-netlib     = ["sdp", "clarabel/sdp", "clarabel/sdp-netlib"]
- sdp-openblas   = ["sdp", "clarabel/sdp", "clarabel/sdp-openblas"]
++default = ["sdp"]
+ sdp = ["clarabel/sdp"]
+ sdp-accelerate = ["sdp", "clarabel/sdp-accelerate"]
+ sdp-netlib     = ["sdp", "clarabel/sdp-netlib"]

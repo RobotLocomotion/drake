@@ -1,6 +1,6 @@
 import unittest
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 
 class TestPathUtils(unittest.TestCase):

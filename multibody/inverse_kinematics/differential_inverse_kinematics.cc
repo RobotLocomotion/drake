@@ -233,10 +233,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
   if (quadratic_cost) {
     solvers::OsqpSolver solver;
-    result = solver.Solve(prog, {}, {});
+    result = solver.Solve(prog, {}, parameters.get_solver_options());
   } else {
     solvers::ClpSolver solver;
-    result = solver.Solve(prog, {}, {});
+    result = solver.Solve(prog, {}, parameters.get_solver_options());
   }
 
   if (!result.is_success()) {

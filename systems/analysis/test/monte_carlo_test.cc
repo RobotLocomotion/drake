@@ -17,33 +17,6 @@ namespace systems {
 namespace analysis {
 namespace {
 
-// Remove this on 2024-05-01 along with the other deprecations.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(MonteCarloDeprecatedTest, SelectNumberOfThreadsToUse) {
-  const int hardware_concurrency =
-      static_cast<int>(std::thread::hardware_concurrency());
-
-  // When kNoConcurrency is selected, only one thread should be used.
-  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(kNoConcurrency), 1);
-
-  // If kUseHardwareConcurrency is specified, the number of threads should
-  // match std::thread::hardware_concurrency().
-  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(kUseHardwareConcurrency),
-            hardware_concurrency);
-
-  // If a value greater than zero is specified, it selects the number of threads
-  // to use.
-  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(1), 1);
-  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(10), 10);
-  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(100), 100);
-
-  // Zero and negative values (that are not kUseHardwareConcurrency) throw.
-  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(0), std::exception);
-  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(-10), std::exception);
-}
-#pragma GCC diagnostic pop
-
 // Checks that RandomSimulation repeatedly produces the same output sample
 // when given the same RandomGenerator, but produces different output samples
 // when given different generators.
@@ -113,7 +86,11 @@ GTEST_TEST(RandomSimulationTest, WithRandomSimulator) {
 // SetRandomState().
 class RandomContextSystem : public VectorSystem<double> {
  public:
-  RandomContextSystem() : VectorSystem(0, 1) { this->DeclareDiscreteState(1); }
+  RandomContextSystem()
+      : VectorSystem(0, 1,
+                     /* direct_feedthrough = */ false) {
+    this->DeclareDiscreteState(1);
+  }
 
  private:
   void SetRandomState(const Context<double>& context, State<double>* state,
@@ -226,7 +203,9 @@ GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
 // throws.
 class ThrowingRandomContextSystem : public VectorSystem<double> {
  public:
-  ThrowingRandomContextSystem() : VectorSystem(0, 1) {
+  ThrowingRandomContextSystem()
+      : VectorSystem(0, 1,
+                     /* direct_feedthrough = */ false) {
     this->DeclareDiscreteState(1);
   }
 
@@ -272,23 +251,6 @@ GTEST_TEST(MonteCarloSimulationExceptionTest, BasicTest) {
       &parallel_generator, Parallelism::Max()),
       std::exception);
 }
-
-// Remove this on 2024-05-01 along with the other deprecations.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Smoke test that the deprecated signature compiles and doesn't crash.
-GTEST_TEST(MonteCarloDeprecatedTest, DeprecationSignature) {
-  const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
-    auto system = std::make_unique<RandomContextSystem>();
-    return std::make_unique<Simulator<double>>(std::move(system));
-  };
-  const double final_time = 0.1;
-  const int num_samples = 10;
-  RandomGenerator generator;
-  MonteCarloSimulation(make_simulator, &GetScalarOutput, final_time,
-                       num_samples, &generator, kNoConcurrency);
-}
-#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace analysis

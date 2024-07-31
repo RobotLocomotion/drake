@@ -24,7 +24,7 @@ namespace schema {
 /// details, especially the unusually public member fields.
 class Rotation {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation);
 
   /// Constructs the Identity rotation.
   Rotation() = default;
@@ -37,7 +37,7 @@ class Rotation {
 
   /// No-op rotation.
   struct Identity {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Identity)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Identity);
     Identity() = default;
 
     template <typename Archive>
@@ -47,7 +47,7 @@ class Rotation {
   /// A roll-pitch-yaw rotation, using the angle conventions of Drake's
   /// RollPitchYaw.
   struct Rpy {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rpy)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rpy);
     Rpy() = default;
 
     template <typename Archive>
@@ -60,7 +60,7 @@ class Rotation {
 
   /// Rotation constructed from a fixed axis and an angle.
   struct AngleAxis {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AngleAxis)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AngleAxis);
     AngleAxis() = default;
 
     template <typename Archive>
@@ -75,7 +75,7 @@ class Rotation {
 
   /// Rotation sampled from a uniform distribution over SO(3).
   struct Uniform {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Uniform)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Uniform);
     Uniform() = default;
 
     template <typename Archive>

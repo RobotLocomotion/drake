@@ -38,7 +38,7 @@ class BlockSparseMatrix;
 template <typename T>
 class LinearOperator {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearOperator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearOperator);
 
   // Creates an operator with a given `name`.
   explicit LinearOperator(const std::string& name) : name_(name) {}
@@ -171,4 +171,4 @@ class LinearOperator {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::LinearOperator)
+    class ::drake::multibody::contact_solvers::internal::LinearOperator);

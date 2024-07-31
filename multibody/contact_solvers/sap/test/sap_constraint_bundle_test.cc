@@ -91,6 +91,10 @@ class TestConstraint final : public SapConstraint<T> {
     return std::unique_ptr<TestConstraint<T>>(new TestConstraint<T>(*this));
   }
 
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error("DoToDouble() not needed for these unit tests.");
+  }
+
   T param_{0.0};
 };
 

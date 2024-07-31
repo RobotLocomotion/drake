@@ -2,9 +2,9 @@
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/compass_gait/compass_gait.h"
+#include "drake/examples/compass_gait/compass_gait_continuous_state.h"
 #include "drake/examples/compass_gait/compass_gait_geometry.h"
-#include "drake/examples/compass_gait/gen/compass_gait_continuous_state.h"
-#include "drake/examples/compass_gait/gen/compass_gait_params.h"
+#include "drake/examples/compass_gait/compass_gait_params.h"
 
 namespace drake {
 namespace pydrake {
@@ -34,7 +34,6 @@ void DefineExamplesCompassGait(py::module m) {
           py_rvp::reference_internal,
           doc.CompassGait.get_floating_base_state_output_port.doc);
 
-  // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<CompassGaitParams<T>, BasicVector<T>>(
       m, "CompassGaitParams", doc.CompassGaitParams.doc)
       .def(py::init<>(), doc.CompassGaitParams.ctor.doc)

@@ -11,10 +11,10 @@ filegroup(
     srcs = glob(
         [
             "bin/*.dylib",
-            "lib/*.dylib",
+            "lib/*.dylib*",
             "lib/rustlib/x86_64-apple-darwin/codegen-backends/*.dylib",
             "lib/rustlib/x86_64-apple-darwin/bin/rust-lld",
-            "lib/rustlib/x86_64-apple-darwin/lib/*.dylib",
+            "lib/rustlib/x86_64-apple-darwin/lib/*.dylib*",
         ],
         allow_empty = True,
     ),
@@ -69,7 +69,7 @@ rust_stdlib_filegroup(
     srcs = glob(
         [
             "lib/rustlib/x86_64-apple-darwin/lib/*.rlib",
-            "lib/rustlib/x86_64-apple-darwin/lib/*.dylib",
+            "lib/rustlib/x86_64-apple-darwin/lib/*.dylib*",
             "lib/rustlib/x86_64-apple-darwin/lib/*.a",
             "lib/rustlib/x86_64-apple-darwin/lib/self-contained/**",
         ],

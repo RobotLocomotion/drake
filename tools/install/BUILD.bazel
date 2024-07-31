@@ -1,28 +1,28 @@
-package(default_visibility = ["//visibility:public"])
-
-load("//tools/skylark:py.bzl", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
+    "drake_py_library",
     "drake_py_unittest",
 )
 
-py_library(
+package(default_visibility = ["//visibility:public"])
+
+drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     visibility = [":__subpackages__"],
     deps = ["//tools:module_py"],
 )
 
-py_library(
+drake_py_library(
     name = "otool",
     srcs = ["otool.py"],
     visibility = ["//:__subpackages__"],
     deps = [":module_py"],
 )
 
-py_library(
+drake_py_library(
     name = "install_test_helper",
     testonly = 1,
     srcs = ["install_test_helper.py"],

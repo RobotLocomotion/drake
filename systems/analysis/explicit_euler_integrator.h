@@ -22,7 +22,7 @@ namespace systems {
 template <class T>
 class ExplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExplicitEulerIntegrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExplicitEulerIntegrator);
 
   ~ExplicitEulerIntegrator() override = default;
 
@@ -94,4 +94,4 @@ bool ExplicitEulerIntegrator<T>::DoStep(const T& h) {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::systems::ExplicitEulerIntegrator)
+    class drake::systems::ExplicitEulerIntegrator);

@@ -29,7 +29,7 @@ namespace multibody {
 template <typename T>
 class RevoluteJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteJoint);
 
   template <typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -105,6 +105,8 @@ class RevoluteJoint final : public Joint<T> {
                 double pos_lower_limit, double pos_upper_limit,
                 double damping = 0);
 
+  ~RevoluteJoint() override;
+
   const std::string& type_name() const override;
 
   /// Returns the axis of revolution of `this` joint as a unit vector.
@@ -117,9 +119,6 @@ class RevoluteJoint final : public Joint<T> {
 
   /// Returns `this` joint's default damping constant in N⋅m⋅s.
   double default_damping() const { return this->default_damping_vector()[0]; }
-
-  DRAKE_DEPRECATED("2024-06-01", "Use default_damping() instead.")
-  double damping() const { return this->default_damping_vector()[0]; }
 
   /// Sets the default value of viscous damping for this joint, in N⋅m⋅s.
   /// @throws std::exception if damping is negative.
@@ -180,7 +179,7 @@ class RevoluteJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angle(
       Context<T>* context, const T& angle) const {
-    get_mobilizer()->set_angle(context, angle);
+    get_mobilizer()->SetAngle(context, angle);
     return *this;
   }
 
@@ -210,7 +209,7 @@ class RevoluteJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angular_rate(
       Context<T>* context, const T& angle) const {
-    get_mobilizer()->set_angular_rate(context, angle);
+    get_mobilizer()->SetAngularRate(context, angle);
     return *this;
   }
 
@@ -400,4 +399,4 @@ template <typename T> const char RevoluteJoint<T>::kTypeName[] = "revolute";
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RevoluteJoint)
+    class ::drake::multibody::RevoluteJoint);

@@ -13,6 +13,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/timer.h"
 #include "drake/geometry/meshcat_types_internal.h"
 
 namespace drake {
@@ -79,6 +80,43 @@ void CheckWebsocketCommand(const Meshcat& meshcat,
   if (expect_success) {
     EXPECT_EQ(exit_code, 0);
   }
+}
+
+/* Decodes the most recent SetTransform message for Meshcat on the given path
+and returns the message's decoded path and transform data. If no message has
+ever been sent, returns a default-constructed value. */
+std::pair<std::string, Eigen::Matrix4d> GetDecodedTransform(
+    const Meshcat& meshcat, std::string_view path) {
+  std::string message = meshcat.GetPackedTransform(path);
+  if (message.empty()) {
+    return {};
+  }
+
+  msgpack::object_handle oh = msgpack::unpack(message.data(), message.size());
+  internal::SetTransformData decoded;
+  EXPECT_NO_THROW(decoded = oh.get().as<internal::SetTransformData>());
+  EXPECT_EQ(decoded.type, "set_transform");
+  Eigen::Map<Eigen::Matrix4d> matrix(decoded.matrix);
+  return {decoded.path, Eigen::Matrix4d{matrix}};
+}
+
+/* Decodes the most recent SetProperty message for Meshcat on the given path
+and returns the message's decoded path and property value. If no message has
+ever been sent, returns a default-constructed value. */
+template <typename T>
+std::pair<std::string, T> GetDecodedProperty(const Meshcat& meshcat,
+                                             std::string_view path,
+                                             std::string_view property) {
+  std::string message = meshcat.GetPackedProperty(path, std::string{property});
+  if (message.empty()) {
+    return {};
+  }
+  msgpack::object_handle oh = msgpack::unpack(message.data(), message.size());
+  internal::SetPropertyData<T> decoded;
+  EXPECT_NO_THROW(decoded = oh.get().as<internal::SetPropertyData<T>>());
+  EXPECT_EQ(decoded.type, "set_property");
+  EXPECT_EQ(decoded.property, property);
+  return {decoded.path, decoded.value};
 }
 
 GTEST_TEST(MeshcatTest, TestHttp) {
@@ -469,14 +507,10 @@ GTEST_TEST(MeshcatTest, SetTransform) {
                                      Vector3d{0.9, -2.0, 0.12}};
   meshcat.SetTransform("frame", X_ParentPath);
 
-  std::string transform = meshcat.GetPackedTransform("frame");
-  msgpack::object_handle oh =
-      msgpack::unpack(transform.data(), transform.size());
-  auto data = oh.get().as<internal::SetTransformData>();
-  EXPECT_EQ(data.type, "set_transform");
-  EXPECT_EQ(data.path, "/drake/frame");
-  Eigen::Map<Eigen::Matrix4d> matrix(data.matrix);
-  EXPECT_TRUE(CompareMatrices(matrix, X_ParentPath.GetAsMatrix4()));
+  const auto [actual_path, actual_value] =
+      GetDecodedTransform(meshcat, "frame");
+  EXPECT_EQ(actual_path, "/drake/frame");
+  EXPECT_TRUE(CompareMatrices(actual_value, X_ParentPath.GetAsMatrix4()));
 }
 
 GTEST_TEST(MeshcatTest, SetTransformWithMatrix) {
@@ -492,14 +526,10 @@ GTEST_TEST(MeshcatTest, SetTransformWithMatrix) {
   // clang-format on
   meshcat.SetTransform("frame", matrix);
 
-  std::string transform = meshcat.GetPackedTransform("frame");
-  msgpack::object_handle oh =
-      msgpack::unpack(transform.data(), transform.size());
-  auto data = oh.get().as<internal::SetTransformData>();
-  EXPECT_EQ(data.type, "set_transform");
-  EXPECT_EQ(data.path, "/drake/frame");
-  Eigen::Map<Eigen::Matrix4d> actual(data.matrix);
-  EXPECT_TRUE(CompareMatrices(matrix, actual));
+  const auto [actual_path, actual_value] =
+      GetDecodedTransform(meshcat, "frame");
+  EXPECT_EQ(actual_path, "/drake/frame");
+  EXPECT_TRUE(CompareMatrices(actual_value, matrix));
 }
 
 GTEST_TEST(MeshcatTest, Delete) {
@@ -583,73 +613,61 @@ GTEST_TEST(MeshcatTest, Paths) {
 
 GTEST_TEST(MeshcatTest, SetPropertyBool) {
   Meshcat meshcat;
-  EXPECT_FALSE(meshcat.HasPath("/Grid"));
-  EXPECT_TRUE(meshcat.GetPackedProperty("/Grid", "visible").empty());
-  meshcat.SetProperty("/Grid", "visible", false);
-  EXPECT_TRUE(meshcat.HasPath("/Grid"));
+  const std::string path{"/Grid"};
+  const std::string property{"visible"};
+  EXPECT_FALSE(meshcat.HasPath(path));
+  EXPECT_TRUE(meshcat.GetPackedProperty(path, property).empty());
 
-  std::string property = meshcat.GetPackedProperty("/Grid", "visible");
-  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
-  auto data = oh.get().as<internal::SetPropertyData<bool>>();
-  EXPECT_EQ(data.type, "set_property");
-  EXPECT_EQ(data.path, "/Grid");
-  EXPECT_EQ(data.property, "visible");
-  EXPECT_FALSE(data.value);
+  meshcat.SetProperty(path, property, false);
+  EXPECT_TRUE(meshcat.HasPath(path));
+  const auto [actual_path, actual_value] =
+      GetDecodedProperty<bool>(meshcat, path, property);
+  EXPECT_EQ(actual_path, path);
+  EXPECT_FALSE(actual_value);
 }
 
 GTEST_TEST(MeshcatTest, SetPropertyDouble) {
   Meshcat meshcat;
-  EXPECT_FALSE(meshcat.HasPath("/Cameras/default/rotated/<object>"));
-  EXPECT_TRUE(
-      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "zoom")
-          .empty());
-  meshcat.SetProperty("/Cameras/default/rotated/<object>", "zoom", 2.0);
-  EXPECT_TRUE(meshcat.HasPath("/Cameras/default/rotated/<object>"));
+  const std::string path{"/Cameras/default/rotated/<object>"};
+  const std::string property{"zoom"};
+  EXPECT_FALSE(meshcat.HasPath(path));
+  EXPECT_TRUE(meshcat.GetPackedProperty(path, property).empty());
 
-  std::string property =
-      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "zoom");
-  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
-  auto data = oh.get().as<internal::SetPropertyData<double>>();
-  EXPECT_EQ(data.type, "set_property");
-  EXPECT_EQ(data.path, "/Cameras/default/rotated/<object>");
-  EXPECT_EQ(data.property, "zoom");
-  EXPECT_EQ(data.value, 2.0);
+  meshcat.SetProperty(path, property, 2.0);
+  EXPECT_TRUE(meshcat.HasPath(path));
+  const auto [actual_path, actual_value] =
+      GetDecodedProperty<double>(meshcat, path, property);
+  EXPECT_EQ(actual_path, path);
+  EXPECT_EQ(actual_value, 2.0);
 }
 
 GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
   Meshcat meshcat;
-  EXPECT_FALSE(meshcat.HasPath("/Background/<object>"));
-  EXPECT_TRUE(
-      meshcat.GetPackedProperty("/Background/<object>", "environment_map")
-          .empty());
+  const std::string path{"/Background/<object>"};
+  const std::string property{"environment_map"};
+  EXPECT_FALSE(meshcat.HasPath(path));
+  auto [actual_path, actual_value] =
+      GetDecodedProperty<std::string>(meshcat, path, property);
+  EXPECT_EQ(actual_path, "");
+  EXPECT_EQ(actual_value, "");
 
   // Set the map to a valid image.
   const std::filesystem::path env_map(
       FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.png"));
   EXPECT_NO_THROW(meshcat.SetEnvironmentMap(env_map));
-  EXPECT_TRUE(meshcat.HasPath("/Background/<object>"));
-
-  std::string property =
-      meshcat.GetPackedProperty("/Background/<object>", "environment_map");
-  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
-  auto data = oh.get().as<internal::SetPropertyData<std::string>>();
-  EXPECT_EQ(data.type, "set_property");
-  EXPECT_EQ(data.path, "/Background/<object>");
-  EXPECT_EQ(data.property, "environment_map");
-  EXPECT_THAT(data.value, testing::StartsWith("cas-"));
+  EXPECT_TRUE(meshcat.HasPath(path));
+  std::tie(actual_path, actual_value) =
+      GetDecodedProperty<std::string>(meshcat, path, property);
+  EXPECT_EQ(actual_path, path);
+  EXPECT_THAT(actual_value, testing::StartsWith("cas-"));
 
   // Clear the map with an empty string.
   EXPECT_NO_THROW(meshcat.SetEnvironmentMap(""));
-  EXPECT_TRUE(meshcat.HasPath("/Background/<object>"));
-
-  property =
-      meshcat.GetPackedProperty("/Background/<object>", "environment_map");
-  oh = msgpack::unpack(property.data(), property.size());
-  data = oh.get().as<internal::SetPropertyData<std::string>>();
-  EXPECT_EQ(data.type, "set_property");
-  EXPECT_EQ(data.path, "/Background/<object>");
-  EXPECT_EQ(data.property, "environment_map");
-  EXPECT_EQ(data.value, "");
+  EXPECT_TRUE(meshcat.HasPath(path));
+  std::tie(actual_path, actual_value) =
+      GetDecodedProperty<std::string>(meshcat, path, property);
+  EXPECT_EQ(actual_path, path);
+  EXPECT_EQ(actual_value, "");
 
   // An invalid map throws.
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.SetEnvironmentMap("invalid_file.png"),
@@ -675,13 +693,10 @@ GTEST_TEST(MeshcatTest, InitialPropeties) {
   auto check_property = [&meshcat](auto path, auto property, auto value) {
     SCOPED_TRACE(fmt::format("property = {}", property));
     using T = decltype(value);
-    std::string packed = meshcat.GetPackedProperty(path, property);
-    msgpack::object_handle oh = msgpack::unpack(packed.data(), packed.size());
-    internal::SetPropertyData<T> message;
-    ASSERT_NO_THROW(message = oh.get().as<internal::SetPropertyData<T>>());
-    EXPECT_EQ(message.path, path);
-    EXPECT_EQ(message.property, property);
-    EXPECT_EQ(message.value, value);
+    const auto [actual_path, actual_value] =
+        GetDecodedProperty<T>(meshcat, path, property);
+    EXPECT_EQ(actual_path, path);
+    EXPECT_EQ(actual_value, value);
   };
   check_property("/a", "p1", some_vector);
   check_property("/b", "p2", some_string);
@@ -964,7 +979,7 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
       "animations": [{
           "path": "/drake/cylinder",
           "clip": {
-              "fps": 32.0,
+              "fps": 64.0,
               "name": "default",
               "tracks": [{
                   "name": ".visible",
@@ -984,7 +999,7 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
       }, {
           "path": "/drake/ellipsoid/<object>",
           "clip": {
-              "fps": 32.0,
+              "fps": 64.0,
               "name": "default",
               "tracks": [{
                   "name": ".material.opacity",
@@ -1004,7 +1019,7 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
       }, {
           "path": "/drake/sphere",
           "clip": {
-              "fps": 32.0,
+              "fps": 64.0,
               "name": "default",
               "tracks": [{
                   "name": ".position",
@@ -1044,120 +1059,124 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
   })""");
 }
 
-bool has_frame(const MeshcatAnimation& animation, int frame) {
-  return animation.get_key_frame<std::vector<double>>(0, "frame", "position")
+GTEST_TEST(MeshcatTest, RecordingFps) {
+  // The hard-coded default values for Meshcat's default recording and a newly-
+  // started recording should match the MeshcatAnimation constructor's default,
+  // and retain that value throughout the whole lifecycle.
+  const double default_fps = MeshcatAnimation().frames_per_second();
+  Meshcat meshcat;
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+  meshcat.StartRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+  meshcat.StopRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+  meshcat.PublishRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+  meshcat.DeleteRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), default_fps);
+
+  // When the user provides a specific fps, it's likewise retained.
+  const double new_fps = 22.22;
+  meshcat.StartRecording(new_fps);
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), new_fps);
+  meshcat.StopRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), new_fps);
+  meshcat.PublishRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), new_fps);
+  meshcat.DeleteRecording();
+  EXPECT_EQ(meshcat.get_recording().frames_per_second(), new_fps);
+}
+
+GTEST_TEST(MeshcatTest, RecordingSafety) {
+  // It's safe to call recording-related functions without starting recording.
+  Meshcat meshcat;
+  EXPECT_NO_THROW(meshcat.get_recording());
+  EXPECT_NO_THROW(meshcat.get_mutable_recording());
+  EXPECT_NO_THROW(meshcat.DeleteRecording());
+  EXPECT_NO_THROW(meshcat.PublishRecording());
+  EXPECT_NO_THROW(meshcat.StopRecording());
+}
+
+template <typename T>
+bool has_animation_property(const Meshcat& meshcat, std::string_view property,
+                            int frame) {
+  return meshcat.get_recording()
+      .get_key_frame<T>(frame, "foo", property)
       .has_value();
 }
 
+// The unit test for MeshcatRecording covers the details of recording logic, so
+// we can rely on it for most of the test coverage. Here, we only need to cover
+// the few implementation details that sit within meshcat.cc using some basic
+// acceptance tests.
 GTEST_TEST(MeshcatTest, Recording) {
-  Meshcat meshcat;
-  DRAKE_EXPECT_THROWS_MESSAGE(meshcat.get_mutable_recording(),
-                              ".*You must create a recording.*");
+  // We'll use two devices under test, with set_visualizations_while_recording
+  // configured differently in each. This helps us highlight & verify what's the
+  // same vs different under that setting.
+  Meshcat dut_live;  // Will use `true` for set_visualizations_while_recording.
+  Meshcat dut_mute;  // Will use `false` for set_visualizations_while_recording.
 
-  const RigidTransformd X_ParentPath{RollPitchYawd(0.5, 0.26, -3),
-                                     Vector3d{0.9, -2.0, 0.12}};
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  meshcat.StartRecording();
-  MeshcatAnimation* animation = &meshcat.get_mutable_recording();
-  // No transforms have been published since recording started.
-  EXPECT_FALSE(has_frame(*animation, 0));
+  // Cycle through various Meshcat operations while in a sequence of different
+  // recording states, to see what happens in each. We'll stop testing when we
+  // hit the first error, because they tend to cascade so future errors aren't
+  // that interesting.
+  for (auto* dut : {&dut_live, &dut_mute}) {
+    const bool is_live = dut == &dut_live;
+    for (int sequence = 0; sequence <= 5; ++sequence) {
+      SCOPED_TRACE(fmt::format("live = {}, sequence = {}", is_live, sequence));
+      const double kFps = 64.0;
+      if (sequence == 0) {
+        // Prior to starting a recording.
+      } else if (sequence == 1) {
+        dut->StartRecording(kFps, is_live);
+      } else if (sequence == 2) {
+        // No change; keep recording.
+      } else if (sequence == 3) {
+        dut->StopRecording();
+      } else if (sequence == 4) {
+        dut->PublishRecording();
+      } else if (sequence == 5) {
+        dut->DeleteRecording();
+      }
 
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  EXPECT_TRUE(has_frame(*animation, 0));
+      // Set one of each type of property on the current frame.
+      const double time = sequence / kFps;
+      using Vec = std::vector<double>;
+      dut->SetProperty("foo", "bravo", (sequence % 2) == 1, time);
+      dut->SetProperty("foo", "delta", time, time);
+      dut->SetProperty("foo", "victor", Vec{time, time, time}, time);
+      dut->SetTransform("foo", RigidTransformd{Vector3d::Constant(time)}, time);
 
-  // Deleting the recording removes that frame.
-  meshcat.DeleteRecording();
-  animation = &meshcat.get_mutable_recording();
-  EXPECT_FALSE(has_frame(*animation, 0));
+      // Check exactly which properties and frames have been recorded. (Note
+      // that nothing here is affected by `is_live`; the recording should be the
+      // same whether live or not.)
+      for (int i = 0; i <= 5; ++i) {
+        SCOPED_TRACE(fmt::format("i = {}", i));
+        const bool has_reached = (sequence >= i);
+        const bool should_record = (i >= 1) && (i <= 2);
+        const bool not_deleted = (sequence < 5);
+        const bool expected = has_reached && should_record && not_deleted;
+        ASSERT_EQ(has_animation_property<bool>(*dut, "bravo", i), expected);
+        ASSERT_EQ(has_animation_property<double>(*dut, "delta", i), expected);
+        ASSERT_EQ(has_animation_property<Vec>(*dut, "victor", i), expected);
+        ASSERT_EQ(has_animation_property<Vec>(*dut, "position", i), expected);
+      }
 
-  // We are still recording, so SetTransform *will* add it.
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  EXPECT_TRUE(has_frame(*animation, 0));
-
-  // But if we stop recording, then it's not added.
-  meshcat.StopRecording();
-  meshcat.DeleteRecording();
-  animation = &meshcat.get_mutable_recording();
-  EXPECT_FALSE(has_frame(*animation, 0));
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  EXPECT_FALSE(has_frame(*animation, 0));
-
-  // Now publish a time 0.0 and time = 1.0 and confirm we have the frames.
-  const double kFrameRate = 64.0;
-  meshcat.StartRecording(kFrameRate);
-  animation = &meshcat.get_mutable_recording();
-  meshcat.SetTransform("frame", X_ParentPath, 0);
-  meshcat.SetTransform("frame", X_ParentPath, 1);
-  EXPECT_TRUE(has_frame(*animation, 0));
-  EXPECT_TRUE(has_frame(*animation, std::floor(kFrameRate)));
-
-  const double kTime = 0.5;
-  const int kFrame = std::floor(kFrameRate * kTime);
-  EXPECT_FALSE(
-      animation->get_key_frame<bool>(kFrame, "bool_property", "visible")
-          .has_value());
-  meshcat.SetProperty("bool_property", "visible", false, kTime);
-  EXPECT_TRUE(animation->get_key_frame<bool>(kFrame, "bool_property", "visible")
-                  .has_value());
-
-  EXPECT_FALSE(
-      animation
-          ->get_key_frame<double>(kFrame, "double_property", "material.opacity")
-          .has_value());
-  meshcat.SetProperty("double_property", "material.opacity", 0.5, kTime);
-  EXPECT_TRUE(
-      animation
-          ->get_key_frame<double>(kFrame, "double_property", "material.opacity")
-          .has_value());
-
-  EXPECT_FALSE(animation
-                   ->get_key_frame<std::vector<double>>(
-                       kFrame, "vector_double_property", "position")
-                   .has_value());
-  meshcat.SetProperty("vector_double_property", "position", {0.1, 0.2, 0.3},
-                      kTime);
-  EXPECT_TRUE(animation
-                  ->get_key_frame<std::vector<double>>(
-                      kFrame, "vector_double_property", "position")
-                  .has_value());
-
-  // Confirm that PublishRecording runs.  Its correctness is established by
-  // meshcat_manual_test.
-  meshcat.PublishRecording();
-}
-
-GTEST_TEST(MeshcatTest, RecordingWithoutSetTransform) {
-  Meshcat meshcat;
-
-  const RigidTransformd X_0{RollPitchYawd(0.5, 0.26, -3),
-                            Vector3d{0.9, -2.0, 0.12}};
-  const RigidTransformd X_1{RollPitchYawd(0.75, 0.21, 2.4),
-                            Vector3d{6.9, -2.2, 1.12}};
-
-  const double kFrameRate = 64.0;
-  bool set_visualizations_while_recording = false;
-  meshcat.SetTransform("frame", X_0);
-  std::string X_0_message = meshcat.GetPackedTransform("frame");
-
-  meshcat.StartRecording(kFrameRate, set_visualizations_while_recording);
-  // This SetTransform should *not* change the transform in the Meshcat scene
-  // tree.
-  meshcat.SetTransform("frame", X_1, 0);
-  EXPECT_EQ(meshcat.GetPackedTransform("frame"), X_0_message);
-
-  // This SetTransform *should* change the transform in the Meshcat scene tree,
-  // because it doesn't pass the time_in_recording argument.
-  meshcat.SetTransform("frame", X_1);
-  EXPECT_NE(meshcat.GetPackedTransform("frame"), X_0_message);
-
-  set_visualizations_while_recording = true;
-  // This publish *should* change the transform in the Meshcat scene tree.
-  meshcat.SetTransform("frame", X_0);
-  EXPECT_EQ(meshcat.GetPackedTransform("frame"), X_0_message);
-  meshcat.StartRecording(kFrameRate, set_visualizations_while_recording);
-  // This publish *should* change the transform in the Meshcat scene tree.
-  meshcat.SetTransform("frame", X_1, 0);
-  EXPECT_NE(meshcat.GetPackedTransform("frame"), X_0_message);
+      // Check the live property values. The dut_live will update all the time,
+      // but the dut_mute will not update when the sequence number is 1 or 2.
+      const bool bravo = GetDecodedProperty<bool>(*dut, "foo", "bravo").second;
+      const double delta =
+          GetDecodedProperty<double>(*dut, "foo", "delta").second;
+      const Vec victor = GetDecodedProperty<Vec>(*dut, "foo", "victor").second;
+      const Eigen::Matrix4d transform = GetDecodedTransform(*dut, "foo").second;
+      const int live_sequence = (is_live || sequence >= 3) ? sequence : 0;
+      const double live_time = live_sequence / kFps;
+      EXPECT_EQ(bravo, (live_sequence % 2) == 1);
+      EXPECT_EQ(delta, live_time);
+      EXPECT_EQ(victor.at(0), live_time);
+      EXPECT_EQ(transform(0, 3), live_time);
+    }
+  }
 }
 
 GTEST_TEST(MeshcatTest, Set2dRenderMode) {
@@ -1214,28 +1233,20 @@ GTEST_TEST(MeshcatTest, SetCameraPose) {
 
   // /Cameras/default should have an identity transform.
   {
-    std::string transform = meshcat.GetPackedTransform("/Cameras/default");
-    msgpack::object_handle oh =
-        msgpack::unpack(transform.data(), transform.size());
-    auto data = oh.get().as<internal::SetTransformData>();
-    EXPECT_EQ(data.type, "set_transform");
-    EXPECT_EQ(data.path, "/Cameras/default");
-    Eigen::Map<Eigen::Matrix4d> matrix(data.matrix);
-    EXPECT_TRUE(CompareMatrices(matrix, Eigen::Matrix4d::Identity()));
+    const auto [actual_path, actual_value] =
+        GetDecodedTransform(meshcat, "/Cameras/default");
+    EXPECT_EQ(actual_path, "/Cameras/default");
+    EXPECT_TRUE(CompareMatrices(actual_value, Eigen::Matrix4d::Identity()));
   }
 
   // /Cameras/default/rotated/<object> should have a position value equal to
   // <1, 3, -2>.
   {
-    std::string property = meshcat.GetPackedProperty(
-        "/Cameras/default/rotated/<object>", "position");
-    msgpack::object_handle oh =
-        msgpack::unpack(property.data(), property.size());
-    auto data = oh.get().as<internal::SetPropertyData<std::vector<double>>>();
-    EXPECT_EQ(data.type, "set_property");
-    EXPECT_EQ(data.path, "/Cameras/default/rotated/<object>");
-    EXPECT_EQ(data.property, "position");
-    EXPECT_EQ(data.value, std::vector({1.0, 3.0, -2.0}));
+    const auto [actual_path, actual_value] =
+        GetDecodedProperty<std::vector<double>>(
+            meshcat, "/Cameras/default/rotated/<object>", "position");
+    EXPECT_EQ(actual_path, "/Cameras/default/rotated/<object>");
+    EXPECT_EQ(actual_value, std::vector({1.0, 3.0, -2.0}));
   }
 }
 
@@ -1341,6 +1352,82 @@ GTEST_TEST(MeshcatTest, ShowStatsPlot) {
     })""");
 }
 
+// Tests the logic of time advancement.
+//
+// We don't test for the realtime rate message broadcast directly. As part of
+// the broadcast, the stored realtime rate gets updated and can be read from
+// Meshcat::GetRealtimeRate(). We'll assume if the expected value is available
+// there, then it got broadcast correctly.
+//
+// Most of the compuation logic is contained (and tested) in
+// realtime_rate_calculator.*. This test just needs to confirm that things are
+// correct:
+//
+//   1. Initialization doesn't broadcast a rate.
+//      - In fact, initialization clears previously broadcast rate.
+//   2. One message is broadcast for each period boundary passed.
+//      Without explicitly consuming the messages, this is impossible to test.
+//      Instead, we rely on inspection of behavior during code review to
+//      validate. To test it, try running a simulation with a significantly
+//      slowed realtime rate such that the visualizer's publish period is
+//      longer than Meshcat's realtime_rate_period.
+GTEST_TEST(MeshcatTest, SetSimulationTime) {
+  // Arbitrary, non-default parameter value to confirm that it's getting used.
+  const double wall_period = 0.625;
+  MeshcatParams params{.realtime_rate_period = wall_period};
+  Meshcat meshcat(params);
+
+  // Initial realtime rate is always zero.
+  ASSERT_EQ(meshcat.GetRealtimeRate(), 0.0);
+
+  // Replace the wall clock timer with one we explicitly control.
+  auto timer_ptr = std::make_unique<ManualTimer>();
+  ManualTimer& timer = *timer_ptr;
+  meshcat.InjectMockTimer(std::move(timer_ptr));
+
+  // Initialize meshcat's simulation with the first invocation where sim and
+  // wall times are both zero.
+  meshcat.SetSimulationTime(0);
+
+  // A list of test triples (wall_timer, sim_time, expected_realtime_rate) to
+  // step through.
+  const std::vector<std::array<double, 3>> tests{
+      // Rate remains at zero prior to the wall clock reaching the first period.
+      {wall_period * 0.7, 1.0, 0.0},
+      {wall_period * 0.8, 1.2, 0.0},
+      {wall_period * 0.9, 1.4, 0.0},
+      // After completing the first period, we have a non-zero value.
+      {wall_period * 1.5, 2.0, 2.0 / (wall_period * 1.5)},
+      // Wall time advances but sim time backtracks => re-initialize.
+      // This should (internally) tare the timer back to zero by calling
+      // Start().
+      {wall_period * 999, 0.5, 0.0},
+      // Sim time advances.
+      {wall_period * 1.5, 0.7, (0.7 - 0.5) / (wall_period * 1.5)},
+  };
+
+  // Step through the tests.
+  for (int i = 0; i < ssize(tests); ++i) {
+    const double wall_timer = tests[i][0];
+    const double sim_time = tests[i][1];
+    const double expected_realtime_rate = tests[i][2];
+    SCOPED_TRACE(
+        fmt::format("tests[{}] with wall_timer={}, sim_time={}, rtr={}", i,
+                    wall_timer, sim_time, expected_realtime_rate));
+
+    timer.set_tick(wall_timer);
+    EXPECT_NO_THROW(meshcat.SetSimulationTime(sim_time));
+    EXPECT_EQ(meshcat.GetRealtimeRate(), expected_realtime_rate);
+    // Repeat calls are always a no-op.
+    EXPECT_NO_THROW(meshcat.SetSimulationTime(sim_time));
+    EXPECT_EQ(meshcat.GetRealtimeRate(), expected_realtime_rate);
+  }
+}
+
+// Tests that the call to immediately broadcast a provided realtime rate value
+// works. We're not actually testing that the message got sent (we'll rely on
+// reviewer inspection). When we broadcast the rate, we also store the rate.
+// We look at the stored value as proxy.
 GTEST_TEST(MeshcatTest, RealtimeRate) {
   Meshcat meshcat;
   meshcat.SetRealtimeRate(2.2);

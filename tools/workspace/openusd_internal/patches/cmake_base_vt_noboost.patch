@@ -1,0 +1,21 @@
+[openusd_internal] Drop base/vt/functions from the build
+
+Per https://github.com/PixarAnimationStudios/OpenUSD/pull/3028 this
+file is only necessary for Python bindings, and so Drake doesn't need
+it. This is important because the file uses Boost, which Drake doesn't
+support.
+
+We do not plan to upstream this patch. We assume there will be probably
+be a smarter version landed there, eventually (e.g., conditioned on
+Python build flags).
+
+--- pxr/base/vt/CMakeLists.txt
++++ pxr/base/vt/CMakeLists.txt
+@@ -17,7 +17,6 @@ pxr_library(vt
+     PUBLIC_CLASSES
+         array
+         dictionary
+-        functions
+         hash
+         streamOut
+         types

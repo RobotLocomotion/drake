@@ -29,6 +29,9 @@ void DefineSensorsLcm(py::module m);
 /* Defines bindings per sensors_py_rgbd.cc. */
 void DefineSensorsRgbd(py::module m);
 
+/* Defines bindings per sensors_py_rotary_encoders.cc. */
+void DefineSensorsRotaryEncoders(py::module m);
+
 /* PixelTypeList provides all of the enumerated PixelType values. */
 template <typename T, T kPixelType>
 using PixelTypeConstant = std::integral_constant<T, kPixelType>;

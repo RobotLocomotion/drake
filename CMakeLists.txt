@@ -101,7 +101,7 @@ endif()
 # The minimum compiler versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
 set(MINIMUM_APPLE_CLANG_VERSION 14)
-set(MINIMUM_CLANG_VERSION 14)
+set(MINIMUM_CLANG_VERSION 15)
 set(MINIMUM_GNU_VERSION 11)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
@@ -201,7 +201,7 @@ if(APPLE)
   set(SUPPORTED_PYTHON_VERSION 3.12)
 else()
   if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)
-    set(SUPPORTED_PYTHON_VERSION 3.11)
+    set(SUPPORTED_PYTHON_VERSION 3.12)
   else()  # UNIX_DISTRIBUTION_CODENAME := jammy
     set(SUPPORTED_PYTHON_VERSION 3.10)
   endif()
@@ -594,6 +594,7 @@ add_custom_target(drake_version ALL
 
 add_custom_target(drake_cxx_python ALL
   COMMAND "${Bazel_EXECUTABLE}" build ${BAZEL_INSTALL_TARGET}
+  DEPENDS "${PROJECT_BINARY_DIR}/VERSION.TXT"
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
   USES_TERMINAL
 )

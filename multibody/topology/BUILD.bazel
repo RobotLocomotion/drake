@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -56,7 +56,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:copyable_unique_ptr",
-        "//common:unused",
+        "//common:string_container",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )

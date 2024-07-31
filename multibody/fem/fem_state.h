@@ -22,7 +22,7 @@ namespace fem {
  "shared" FemState is cheap to construct and should never persist. It is
  advisable to acquire it for evaluation in a limited scope (e.g., in a calc
  method of a cache entry) and then discard it.
- @tparam_nonsymbolic_scalar */
+ @tparam_default_scalar */
 template <typename T>
 class FemState {
  public:

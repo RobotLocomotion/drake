@@ -202,8 +202,31 @@ namespace geometry {
       environment map (see Meshcat::SetEnvironmentMap()).
 
  - Perception roles
-    - RenderEngineGl does not support .gltf files. A Mesh or Convex which
-      references such a file will be silently ignored.
+    - RenderEngineGl has partial support for .gltf files. It doesn't support the
+      full set of valid glTF files. We're not going to attempt to fully
+      characterize what is/isn't supported and, instead, emphasize what will
+      make the glTF file work best.
+        - Limitations
+          - RenderEngineGl uses simple Phong-based shaders. The PBR
+            materials defined in the glTF will be automatically converted into
+            an approximation. This approximation may change with time as the
+            shaders mature. The appearance of PBR materials in RenderEngineGl is
+            not part of Drake's API stability.
+          - Drake requires the glTF to define vertex normals.
+        - Supported features
+          - Both embedded and external images.
+          - Your glTF should indicate a
+            <a href="https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_gltf_scene">
+            default scene</a>. It is *not* required and if absent,
+            RenderEngineGl will use an arbitrary protocol for deciding which
+            nodes in the glTF file will be rendered. This protocol is not part
+            of the stable API. Making sure the `glTF.scene` value is well
+            defined will provide long-term guarantees about what renders.
+          - A single set of texture coordinates (the vertex attribute called
+            "TEXCOORD_0").
+          - glTF does not require specification of a material. If a mesh
+            primitive doesn't indicate a material, the @ref geometry_materials
+            "heuristic outlined below" will be applied.
     - RenderEngineVtk does support .gltf files.
         - The glTF extensions supported are whatever VTK's glTF loader
           implements, which at the time of this writing are KHR_lights_punctual
@@ -253,7 +276,7 @@ namespace geometry {
  @subsection vtk_support VTK file (.vtk)
 
  Drake uses tetrahedral meshes a couple of different ways: as compliant
- hydroelastic geometries (see @ref hug_title "here" for more details) and
+ hydroelastic geometries (see @ref hug_introduction "here" for more details) and
  deformable bodies (see, e.g., multibody::DeformableModel). For some of the
  Shape types (the mathematical primitives), Drake will provide a
  tetrahedralization of the shape at run time. However, Drake cannot yet do so

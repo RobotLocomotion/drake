@@ -51,7 +51,7 @@ instance is not yet supported. We may generalize this in the future.
 template <typename T>
 class ContactVisualizer final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactVisualizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactVisualizer);
 
   /** Creates an instance of %ContactVisualizer */
   explicit ContactVisualizer(std::shared_ptr<geometry::Meshcat> meshcat,
@@ -199,4 +199,4 @@ template <> struct Traits<drake::multibody::meshcat::ContactVisualizer>
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::meshcat::ContactVisualizer)
+    class ::drake::multibody::meshcat::ContactVisualizer);

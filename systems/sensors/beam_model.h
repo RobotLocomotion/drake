@@ -2,7 +2,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/sensors/gen/beam_model_params.h"
+#include "drake/systems/sensors/beam_model_params.h"
 
 namespace drake {
 namespace systems {
@@ -69,7 +69,7 @@ namespace sensors {
 template <typename T>
 class BeamModel final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BeamModel)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BeamModel);
 
   BeamModel(int num_depth_readings, double max_range);
 

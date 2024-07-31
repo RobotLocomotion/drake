@@ -43,7 +43,7 @@ class GenericPolynomial {
   /** Constructs a zero polynomial. */
   GenericPolynomial() = default;
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericPolynomial)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericPolynomial);
 
   /** Constructs a default value. This overload is used by Eigen when
    * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.

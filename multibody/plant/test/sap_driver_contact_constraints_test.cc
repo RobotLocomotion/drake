@@ -32,23 +32,6 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace multibody {
-namespace contact_solvers {
-namespace internal {
-bool operator==(const ContactConfiguration<double>& c1,
-                const ContactConfiguration<double>& c2) {
-  if (c1.objectA != c2.objectA) return false;
-  if (c1.p_ApC_W != c2.p_ApC_W) return false;
-  if (c1.objectB != c2.objectB) return false;
-  if (c1.p_BqC_W != c2.p_BqC_W) return false;
-  if (c1.phi != c2.phi) return false;
-  if (c1.fe != c2.fe) return false;
-  if (c1.vn != c2.vn) return false;
-  if (!c1.R_WC.IsExactlyEqualTo(c2.R_WC)) return false;
-  return true;
-}
-}  // namespace internal
-}  // namespace contact_solvers
-
 namespace internal {
 
 // Friend class used to provide access to a selection of private functions in

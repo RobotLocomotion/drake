@@ -8,6 +8,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+PlanarJoint<T>::~PlanarJoint() = default;
+
+template <typename T>
 const std::string& PlanarJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();
@@ -73,4 +76,4 @@ PlanarJoint<T>::MakeImplementationBlueprint() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::PlanarJoint)
+    class ::drake::multibody::PlanarJoint);

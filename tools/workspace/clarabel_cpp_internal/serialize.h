@@ -51,6 +51,10 @@ void Serialize(Archive* a, DefaultSettings<double>& settings) {
   DRAKE_VISIT(iterative_refinement_max_iter);
   DRAKE_VISIT(iterative_refinement_stop_ratio);
   DRAKE_VISIT(presolve_enable);
+  DRAKE_VISIT(chordal_decomposition_enable);
+  DRAKE_VISIT(chordal_decomposition_merge_method);
+  DRAKE_VISIT(chordal_decomposition_compact);
+  DRAKE_VISIT(chordal_decomposition_complete_dual);
 #undef DRAKE_VISIT
 }
 

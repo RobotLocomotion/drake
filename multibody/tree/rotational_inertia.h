@@ -171,7 +171,7 @@ namespace multibody {
 template <typename T>
 class RotationalInertia {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia);
 
   /// Constructs a rotational inertia that has all its moments/products of
   /// inertia equal to NaN (helps quickly detect uninitialized values).
@@ -618,12 +618,10 @@ class RotationalInertia {
   /// concisely, we compute `I_BP_A = R_AE * I_BP_E * (R_AE)ᵀ`.
   ///
   /// @param[in] R_AE RotationMatrix relating frames A and E.
-  /// @return A reference to `this` rotational inertia about-point P, but
-  ///         with `this` now expressed in frame A (instead of frame E).
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpress().
-  RotationalInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE);
+  void ReExpressInPlace(const math::RotationMatrix<T>& R_AE);
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
@@ -634,7 +632,9 @@ class RotationalInertia {
   /// @see ReExpressInPlace()
   [[nodiscard]] RotationalInertia<T> ReExpress(
       const math::RotationMatrix<T>& R_AE) const {
-    return RotationalInertia(*this).ReExpressInPlace(R_AE);
+    RotationalInertia result(*this);
+    result.ReExpressInPlace(R_AE);
+    return result;
   }
 
   /// @name Shift methods
@@ -651,20 +651,15 @@ class RotationalInertia {
   /// Shifts `this` rotational inertia for a body (or composite body) B
   /// from about-point Bcm (B's center of mass) to about-point Q.
   /// I.e., shifts `I_BBcm_E` to `I_BQ_E` (both are expressed-in frame E).
+  /// On return, `this` is modified to be shifted from about-point Bcm to
+  /// about-point Q.
   /// @param mass The mass of body (or composite body) B.
   /// @param p_BcmQ_E Position vector from Bcm to Q, expressed-in frame E.
-  /// @return A reference to `this` rotational inertia expressed-in frame E,
-  ///         but with `this` shifted from about-point Bcm to about-point Q.
-  ///         i.e., returns I_BQ_E,  B's rotational inertia about-point Bcm
-  ///         expressed-in frame E.
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
-  RotationalInertia<T>& ShiftFromCenterOfMassInPlace(
-      const T& mass,
-      const Vector3<T>& p_BcmQ_E) {
+  void ShiftFromCenterOfMassInPlace(const T& mass, const Vector3<T>& p_BcmQ_E) {
     *this += RotationalInertia(mass, p_BcmQ_E);
-    return *this;
   }
 
   /// Calculates the rotational inertia that results from shifting `this`
@@ -679,27 +674,23 @@ class RotationalInertia {
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
   [[nodiscard]] RotationalInertia<T> ShiftFromCenterOfMass(
       const T& mass, const Vector3<T>& p_BcmQ_E) const {
-    return RotationalInertia(*this).
-           ShiftFromCenterOfMassInPlace(mass, p_BcmQ_E);
+    RotationalInertia result(*this);
+    result.ShiftFromCenterOfMassInPlace(mass, p_BcmQ_E);
+    return result;
   }
 
   /// Shifts `this` rotational inertia for a body (or composite body) B
   /// from about-point Q to about-point `Bcm` (B's center of mass).
   /// I.e., shifts `I_BQ_E` to `I_BBcm_E` (both are expressed-in frame E).
+  /// On return, `this` is shifted from about-point Q to about-point `Bcm`.
   /// @param mass The mass of body (or composite body) B.
   /// @param p_QBcm_E Position vector from Q to `Bcm`, expressed-in frame E.
-  /// @return A reference to `this` rotational inertia expressed-in frame E,
-  ///         but with `this` shifted from about-point Q to about-point `Bcm`,
-  ///         i.e., returns `I_BBcm_E`, B's rotational inertia about-point `Bcm`
-  ///         expressed-in frame E.
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point `Bcm` violates CouldBePhysicallyValid().
   /// @remark Negating the position vector `p_QBcm_E` has no affect on the
   /// result.
-  RotationalInertia<T>& ShiftToCenterOfMassInPlace(const T& mass,
-                                                   const Vector3<T>& p_QBcm_E) {
+  void ShiftToCenterOfMassInPlace(const T& mass, const Vector3<T>& p_QBcm_E) {
     *this -= RotationalInertia(mass, p_QBcm_E);
-    return *this;
   }
 
   /// Calculates the rotational inertia that results from shifting `this`
@@ -716,19 +707,19 @@ class RotationalInertia {
   /// result.
   [[nodiscard]] RotationalInertia<T> ShiftToCenterOfMass(
       const T& mass, const Vector3<T>& p_QBcm_E) const {
-    return RotationalInertia(*this).ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
+    RotationalInertia result(*this);
+    result.ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
+    return result;
   }
 
   /// Shifts `this` rotational inertia for a body (or composite body) B
   /// from about-point P to about-point Q via Bcm (B's center of mass).
   /// I.e., shifts `I_BP_E` to `I_BQ_E` (both are expressed-in frame E).
+  /// On return, `this` is modified to be shifted from about-point P to
+  /// about-point Q.
   /// @param mass The mass of body (or composite body) B.
   /// @param p_PBcm_E Position vector from P to Bcm, expressed-in frame E.
   /// @param p_QBcm_E Position vector from Q to Bcm, expressed-in frame E.
-  /// @return A reference to `this` rotational inertia expressed-in frame E,
-  ///         but with `this` shifted from about-point P to about-point Q,
-  ///         i.e., returns I_BQ_E, B's rotational inertia about-point Q
-  ///         expressed-in frame E.
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating either (or both) position vectors p_PBcm_E and p_QBcm_E
@@ -736,13 +727,11 @@ class RotationalInertia {
   /// @remark This method is more efficient (by 6 multiplications) than first
   ///         shifting to the center of mass, then shifting away, e.g., as
   ///         (ShiftToCenterOfMassInPlace()).ShiftFromCenterOfMassInPlace();
-  RotationalInertia<T>& ShiftToThenAwayFromCenterOfMassInPlace(
-      const T& mass,
-      const Vector3<T>& p_PBcm_E,
-      const Vector3<T>& p_QBcm_E) {
+  void ShiftToThenAwayFromCenterOfMassInPlace(const T& mass,
+                                              const Vector3<T>& p_PBcm_E,
+                                              const Vector3<T>& p_QBcm_E) {
     *this += mass * ShiftUnitMassBodyToThenAwayFromCenterOfMass(p_PBcm_E,
                                                                 p_QBcm_E);
-    return *this;
   }
 
   /// Calculates the rotational inertia that results from shifting `this`
@@ -760,8 +749,9 @@ class RotationalInertia {
   [[nodiscard]] RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
       const T& mass, const Vector3<T>& p_PBcm_E,
       const Vector3<T>& p_QBcm_E) const {
-    return RotationalInertia(*this).ShiftToThenAwayFromCenterOfMassInPlace(
-        mass, p_PBcm_E, p_QBcm_E);
+    RotationalInertia result(*this);
+    result.ShiftToThenAwayFromCenterOfMassInPlace(mass, p_PBcm_E, p_QBcm_E);
+    return result;
   }
   ///@}
 
@@ -1147,7 +1137,7 @@ std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I);
 // instructions. Both compilers were fully able to inline the Eigen methods here
 // so there are no loops or function calls.)
 template <typename T>
-RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
+void RotationalInertia<T>::ReExpressInPlace(
     const math::RotationMatrix<T>& R_AE) {
   const Matrix3<T>& R = R_AE.matrix();
 
@@ -1191,7 +1181,6 @@ RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
   // If both `this` and `R_AE` were valid upon entry to this method, the
   // returned rotational inertia should be valid.  Otherwise, it may not be.
   DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
-  return *this;
 }
 
 }  // namespace multibody
@@ -1205,4 +1194,4 @@ struct formatter<drake::multibody::RotationalInertia<T>>
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::RotationalInertia)
+    class drake::multibody::RotationalInertia);

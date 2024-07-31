@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -9,7 +10,6 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,11 +26,11 @@ drake_cc_package_library(
         ":implicit_euler_integrator",
         ":implicit_integrator",
         ":initial_value_problem",
-        ":instantaneous_realtime_rate_calculator",
         ":integrator_base",
         ":lyapunov",
         ":monte_carlo",
         ":radau_integrator",
+        ":realtime_rate_calculator",
         ":region_of_attraction",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
@@ -301,10 +301,10 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "instantaneous_realtime_rate_calculator",
-    srcs = ["instantaneous_realtime_rate_calculator.cc"],
+    name = "realtime_rate_calculator",
+    srcs = ["realtime_rate_calculator.cc"],
     hdrs = [
-        "instantaneous_realtime_rate_calculator.h",
+        "realtime_rate_calculator.h",
     ],
     deps = [
         "//common:timer",
@@ -398,12 +398,12 @@ drake_cc_library(
     hdrs = [
         "batch_eval.h",
     ],
-    interface_deps = [
+    deps = [
         "//common:essential",
         "//common:parallelism",
         "//systems/framework:system",
     ],
-    deps = [
+    implementation_deps = [
         "@common_robotics_utilities",
     ],
 )
@@ -446,7 +446,7 @@ drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
-    interface_deps = [
+    deps = [
         ":integrator_base",
         ":simulator_config",
         ":simulator_status",
@@ -455,7 +455,7 @@ drake_cc_library(
         "//systems/framework:context",
         "//systems/framework:system",
     ],
-    deps = [
+    implementation_deps = [
         ":runge_kutta3_integrator",
         ":simulator_python_internal_header",
     ],
@@ -558,7 +558,7 @@ drake_py_unittest(
         ":simulator_gflags_main",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -636,9 +636,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "instantaneous_realtime_rate_calculator_test",
+    name = "realtime_rate_calculator_test",
     deps = [
-        ":instantaneous_realtime_rate_calculator",
+        ":realtime_rate_calculator",
     ],
 )
 

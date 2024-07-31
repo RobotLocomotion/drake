@@ -32,7 +32,7 @@ namespace multibody {
  */
 class OrientationConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OrientationConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OrientationConstraint);
 
   /**
    * Constructs an OrientationConstraint object.

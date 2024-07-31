@@ -2,7 +2,7 @@ import os
 import subprocess
 import unittest
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 
 class TestSimulatorGflags(unittest.TestCase):

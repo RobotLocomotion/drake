@@ -42,7 +42,7 @@ namespace {
 // and the decision variable representing the next state.
 class DirectTranscriptionConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTranscriptionConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTranscriptionConstraint);
 
   // @param system The system describing the dynamics of the constraint.
   // The reference must remain valid for the lifetime of this constraint.
@@ -151,11 +151,20 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
   const double fixed_time_step_{0};
 };
 
-double get_period(const System<double>* system, std::string message) {
+double get_period(const System<double>* system) {
+  if (system->num_abstract_states() > 0) {
+    throw std::logic_error(
+        "DirectTranscription cannot operate on systems with abstract state. "
+        "(For a MultibodyPlant, set its use_sampled_output_ports config option "
+        "to false to remove the unwanted abstract state.)");
+  }
   std::optional<PeriodicEventData> periodic_data =
       system->GetUniquePeriodicDiscreteUpdateAttribute();
   if (!periodic_data.has_value()) {
-    throw std::invalid_argument(message);
+    throw std::logic_error(
+        "This constructor is for discrete-time systems with a single unique "
+        "update period. For continuous-time systems, you must use a different "
+        "constructor that specifies the time steps.");
   }
   DRAKE_DEMAND(periodic_data->offset_sec() == 0.0);
   return periodic_data->period_sec();
@@ -164,6 +173,7 @@ double get_period(const System<double>* system, std::string message) {
 int get_input_port_size(
     const System<double>* system,
     std::variant<InputPortSelection, InputPortIndex> input_port_index) {
+  DRAKE_THROW_UNLESS(system != nullptr);
   if (system->get_input_port_selection(input_port_index)) {
     return system->get_input_port_selection(input_port_index)->size();
   } else {
@@ -179,12 +189,7 @@ DirectTranscription::DirectTranscription(
     const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
-                       get_period(system,
-                                  "This constructor is for discrete-time "
-                                  "systems.  For continuous-time "
-                                  "systems, you must use a different "
-                                  "constructor that specifies the "
-                                  "time steps.")),
+                       get_period(system)),
       discrete_time_system_(true) {
   ValidateSystem(*system, context, input_port_index);
 

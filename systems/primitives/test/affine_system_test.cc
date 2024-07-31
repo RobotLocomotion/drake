@@ -492,7 +492,7 @@ GTEST_TEST(IllegalTimeVaryingAffineSystemTest, BadSizeTest) {
 class AffineSystemSymbolicTest : public ::testing::Test {
  public:
   AffineSystemSymbolicTest() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineSystemSymbolicTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineSystemSymbolicTest);
 
  protected:
   void SetUp() override {

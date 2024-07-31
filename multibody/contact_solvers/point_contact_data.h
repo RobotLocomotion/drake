@@ -17,7 +17,7 @@ namespace internal {
 template <typename T>
 class PointContactData {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointContactData)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointContactData);
 
   // Specifies the set of possible discrete contacts characterized by:
   //  1. Signed distance phi0, negative when objects interpenetrate.
@@ -97,4 +97,4 @@ class PointContactData {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::PointContactData)
+    class ::drake::multibody::contact_solvers::internal::PointContactData);

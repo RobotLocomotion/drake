@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -6,7 +7,6 @@ load(
     "drake_cc_library_linux_only",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 # This render_gl package is only implemented on Linux.  For macOS, only the
@@ -80,6 +80,7 @@ drake_cc_library_linux_only(
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
         "//systems/sensors:image",
+        "@tinygltf_internal//:tinygltf",
     ],
 )
 
@@ -95,11 +96,11 @@ drake_cc_library(
         "factory.h",
     ],
     visibility = ["//visibility:public"],
-    interface_deps = [
+    deps = [
         ":render_engine_gl_params",
         "//geometry/render:render_engine",
     ],
-    deps = select({
+    implementation_deps = select({
         "//tools/cc_toolchain:apple": [
             ":apple_only_no_factory",
         ],
@@ -171,11 +172,11 @@ drake_cc_library_linux_only(
     name = "internal_shape_meshes",
     srcs = ["internal_shape_meshes.cc"],
     hdrs = ["internal_shape_meshes.h"],
-    interface_deps = [
+    deps = [
         ":internal_opengl_context",
         "//geometry/render:render_mesh",
     ],
-    deps = [
+    implementation_deps = [
         "//common:essential",
         "@tinyobjloader_internal//:tinyobjloader",
     ],
@@ -185,11 +186,12 @@ drake_cc_library_linux_only(
     name = "internal_texture_library",
     srcs = ["internal_texture_library.cc"],
     hdrs = ["internal_texture_library.h"],
-    interface_deps = [
-        "//common:essential",
-        ":internal_opengl_context",
-    ],
     deps = [
+        ":internal_opengl_context",
+        "//common:essential",
+    ],
+    implementation_deps = [
+        "//systems/sensors:image_io",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
         "@vtk_internal//:vtkIOImage",
@@ -232,16 +234,20 @@ drake_cc_googletest_linux_only(
     data = [
         "//examples/scene_graph:models",
         "//geometry/render:test_models",
-    ],
+    ] + glob(["test/*.png"]),
     tags = vtk_test_tags(),
     deps = [
         ":internal_render_engine_gl",
         "//common:find_resource",
+        "//common:temp_directory",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
-        "//systems/sensors:color_palette",
+        "//systems/sensors:image_io",
+        "//systems/sensors/test_utilities:image_compare",
         "@gflags",
+        "@nlohmann_internal//:nlohmann",
+        "@tinygltf_internal//:tinygltf",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
         "@vtk_internal//:vtkIOImage",
@@ -311,6 +317,8 @@ drake_cc_googletest_linux_only(
     data = [
         "//geometry/render:test_models",
     ],
+    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
+    enable_condition = "//tools:ubuntu_jammy",
     tags = vtk_test_tags() + [
         # We launch up to 3 child tasks.
         "cpu:4",

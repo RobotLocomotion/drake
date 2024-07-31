@@ -44,7 +44,7 @@ using UpdateContextFromDecisionVariablesFunction = std::function<void(
  */
 class SystemConstraintWrapper : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraintWrapper)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraintWrapper);
 
   /**
    * Wraps a single SystemConstraint of the given system into a

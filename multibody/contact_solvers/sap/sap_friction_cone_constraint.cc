@@ -231,6 +231,18 @@ void SapFrictionConeConstraint<T>::DoAccumulateSpatialImpulses(
   }
 }
 
+template <typename T>
+std::unique_ptr<SapConstraint<double>>
+SapFrictionConeConstraint<T>::DoToDouble() const {
+  const typename SapFrictionConeConstraint<T>::Parameters& p = parameters_;
+  SapFrictionConeConstraint<double>::Parameters p_to_double{
+      ExtractDoubleOrThrow(p.mu), ExtractDoubleOrThrow(p.stiffness),
+      ExtractDoubleOrThrow(p.dissipation_time_scale), p.beta, p.sigma};
+  return std::make_unique<SapFrictionConeConstraint<double>>(
+      configuration().ToDouble(), this->jacobian().ToDouble(),
+      std::move(p_to_double));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
@@ -238,4 +250,4 @@ void SapFrictionConeConstraint<T>::DoAccumulateSpatialImpulses(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::contact_solvers::internal::
-        SapFrictionConeConstraint)
+        SapFrictionConeConstraint);

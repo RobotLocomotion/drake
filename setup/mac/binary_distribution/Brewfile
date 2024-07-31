@@ -1,11 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-tap 'robotlocomotion/director'
-
 cask 'adoptopenjdk' unless system '/usr/libexec/java_home --version 1.8+ --failfast &> /dev/null'
 
-brew 'cmake'
 brew 'eigen'
 brew 'gcc'
 brew 'fmt'
@@ -13,12 +10,8 @@ brew 'glib'
 brew 'graphviz'
 brew 'ipopt'
 brew 'numpy'
-brew 'openblas'
 brew 'pkg-config'
 brew 'python@3.12'
 brew 'spdlog'
-brew 'xz'
-brew 'yaml-cpp'
-brew 'zeromq'
 
 mas 'Xcode', id: 497799835 unless File.exist? '/Applications/Xcode.app'

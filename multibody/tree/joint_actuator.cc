@@ -19,11 +19,16 @@ JointActuator<T>::JointActuator(const std::string& name, const Joint<T>& joint,
 }
 
 template <typename T>
+JointActuator<T>::~JointActuator() = default;
+
+template <typename T>
 void JointActuator<T>::set_controller_gains(PdControllerGains gains) {
-  if (topology_.actuator_index_start >= 0) {
-    throw std::runtime_error(
-        "JointActuator::set_controller_gains() must be called before "
-        "MultibodyPlant::Finalize(). ");
+  if (!pd_controller_gains_ && topology_.actuator_index_start >= 0) {
+    throw std::runtime_error(fmt::format(
+        "Cannot add PD gains on the actuator named '{}'. "
+        "The first call to JointActuator::set_controller_gains() must happen "
+        "before MultibodyPlant::Finalize().",
+        name()));
   }
   DRAKE_THROW_UNLESS(gains.p > 0);
   DRAKE_THROW_UNLESS(gains.d >= 0);
@@ -116,4 +121,4 @@ JointActuator<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::JointActuator)
+    class ::drake::multibody::JointActuator);

@@ -21,8 +21,9 @@ using symbolic::Expression;
 class CubicPolynomialSystem : public systems::VectorSystem<double> {
  public:
   CubicPolynomialSystem()
-      : systems::VectorSystem<double>(0, 0) {  // Zero inputs, zero outputs.
-    this->DeclareContinuousState(1);           // One state variable.
+      // Zero inputs, zero outputs, no feedthrough, one state variable.
+      : systems::VectorSystem<double>(0, 0, false) {
+    this->DeclareContinuousState(1);
   }
 
  private:

@@ -39,7 +39,7 @@ std::optional<string> multiple_of_famous_constant(
 // Visitor class for code generation.
 class LatexVisitor {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LatexVisitor)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LatexVisitor);
 
   explicit LatexVisitor(int precision) : precision_{precision} {};
 

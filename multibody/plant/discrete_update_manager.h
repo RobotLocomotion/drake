@@ -7,7 +7,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "drake/common/scope_exit.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -20,6 +19,8 @@
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/discrete_step_memory.h"
+#include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -28,13 +29,12 @@
 namespace drake {
 namespace multibody {
 
+#ifndef DRAKE_DOXYGEN_CXX
 template <typename T>
 class MultibodyPlant;
+#endif
 
 namespace internal {
-
-template <typename T>
-class AccelerationKinematicsCache;
 
 template <typename T>
 struct JointLockingCacheData;
@@ -83,7 +83,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   DiscreteUpdateManager() = default;
 
-  ~DiscreteUpdateManager() override = default;
+  ~DiscreteUpdateManager() override;
 
   /* (Internal) Creates a clone of the concrete DiscreteUpdateManager object
    with the scalar type `ScalarType`. This method is meant to be called only by
@@ -161,14 +161,21 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   }
 
   /* MultibodyPlant invokes this method to perform the discrete variables
-   update. */
+   update. The optional `memory` output argument is used to save a snapshot of
+   expensive-to-recompute quantities. These can then be used to provide values
+   for output ports without recomputation. */
   void CalcDiscreteValues(const systems::Context<T>& context,
-                          systems::DiscreteValues<T>* updates) const;
+                          systems::DiscreteValues<T>* updates,
+                          DiscreteStepMemory::Data<T>* memory = nullptr) const;
 
-  /* Evaluates the contact results used in CalcDiscreteValues() to advance the
-   discrete update from the state stored in `context`. */
-  const ContactResults<T>& EvalContactResults(
-      const systems::Context<T>& context) const;
+  /* Computes the "contact_results" output port on MbP. Those results can be
+   computed from the current instantaneous `context`, or the discrete step
+   sampled `memory`. Both functions are thin wrappers that delegate to the
+   private helper function CalcContactResultsImpl(). */
+  void CalcContactResults(const systems::Context<T>& context,
+                          ContactResults<T>* contact_results) const;
+  void CalcContactResults(const DiscreteStepMemory::Data<T>& memory,
+                          ContactResults<T>* contact_results) const;
 
   /* Computes all non-contact applied forces including:
      - Force elements.
@@ -195,7 +202,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* Evaluate the actuation applied through actuators during the discrete
    update. This will include actuation input as well as controller models.
-   The returned vector is indexed by JointActuatorIndex. */
+   The actuation value for a particular actuator can be found at offset
+   JointActuator::input_start() in the returned vector. */
   const VectorX<T>& EvalActuation(const systems::Context<T>& context) const;
 
   /* Evaluates discrete contact pairs from all types of contact (point contact,
@@ -233,6 +241,10 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const DeformableDriver<double>* deformable_driver() const {
     return deformable_driver_.get();
   }
+
+  /* Private MultibodyPlant method, made public here. */
+  const GeometryContactData<T>& EvalGeometryContactData(
+      const systems::Context<T>& context) const;
 
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
@@ -283,24 +295,13 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
                                 VectorX<T>* actuation_w_pd,
                                 VectorX<T>* actuation_wo_pd) const;
 
-  /* Evaluates the discretely sampled MultibodyPlant input port force values.
-   This includes forces from externally applied spatial forces, externally
-   applied generalized forces, and joint actuation forces.  */
-  const InputPortForces<T>& EvalInputPortForces(
-      const drake::systems::Context<T>& context) const {
-    return plant()
-        .get_cache_entry(cache_indexes_.discrete_input_port_forces)
-        .template Eval<InputPortForces<T>>(context);
-  }
-
   /* Exposed MultibodyPlant private/protected methods.
    @{ */
 
   /* N.B. Keep the spelling and order of declarations here identical to the
    MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
-  const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
-      const systems::Context<T>& context) const;
+  // Note that EvalGeometryContactData is in our public section, above.
 
   void AddJointLimitsPenaltyForces(const systems::Context<T>& context,
                                    MultibodyForces<T>* forces) const;
@@ -308,7 +309,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
 
-  const internal::JointLockingCacheData<T>& EvalJointLockingCache(
+  const internal::JointLockingCacheData<T>& EvalJointLocking(
       const systems::Context<T>& context) const;
 
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
@@ -399,39 +400,17 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
      happened. Evaluating this cache entry when caching is disabled throws an
      exception. */
     systems::CacheIndex discrete_contact_pairs;
-    systems::CacheIndex discrete_input_port_forces;
     systems::CacheIndex contact_solver_results;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
-    systems::CacheIndex contact_results;
     systems::CacheIndex discrete_update_multibody_forces;
-    systems::CacheIndex hydroelastic_contact_info;
     systems::CacheIndex actuation;
   };
 
-  /* Exposes indices for the cache entries declared by this class for derived
-   classes to depend on. */
+  /* Exposes indices for the cache entries declared by this class for other
+   cache entries to depend on. */
   CacheIndexes cache_indexes() const { return cache_indexes_; }
 
  private:
-  /* Due to issue #12786, we cannot mark the calculation of non-contact forces
-   (and the acceleration it induces) dependent on the discrete
-   MultibodyPlant's inputs, as it should. However, by removing this
-   dependency, we run the risk of an undetected algebraic loop. We use this
-   function to guard against such algebraic loop. In particular, calling this
-   function immediately upon entering the calculation of non-contact forces
-   sets a flag indicating the calculation of non-contact forces is in
-   progress. Then, this function returns a ScopeExit which turns off the flag
-   when going out of scope at the end of the non-contact forces calculation.
-   If this function is called again while the flag is on, it means that an
-   algebraic loop exists and an exception is thrown. */
-  [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
-      const systems::Context<T>& context) const;
-
-  /* Updates the discrete_input_forces cache entry. This should only be called
-   at the beginning of each discrete update.
-   @throws std::exception if caching is disabled for the given `context`. */
-  void SampleDiscreteInputPortForces(const systems::Context<T>& context) const;
-
   /* Collects the sum of all forces added to the owning MultibodyPlant and store
    them in given `forces`. The existing values in `forces` is cleared. */
   void CalcInputPortForces(const systems::Context<T>& context,
@@ -440,9 +419,12 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* NVI to DoDeclareCacheEntries(). */
   void DeclareCacheEntries();
 
-  /* Calc version of EvalContactResults(). */
-  void CalcContactResults(const systems::Context<T>& context,
-                          ContactResults<T>* contact_results) const;
+  /* Common implementation for both overloads of CalcContactResults(). */
+  void CalcContactResultsImpl(
+      const GeometryContactData<T>& geometry_contact_data,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+      const contact_solvers::internal::ContactSolverResults<T>& solver_results,
+      ContactResults<T>* contact_results) const;
 
   /* Calc version of EvalDiscreteUpdateMultibodyForces, NVI to
    DoCalcDiscreteUpdateMultibodyForces. */
@@ -458,15 +440,12 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* result) const;
 
-  int CalcNumberOfPointContacts(const systems::Context<T>& context) const;
-
-  int CalcNumberOfHydroContactPoints(const systems::Context<T>& context) const;
-
   /* Helper function for CalcDiscreteContactPairs() that computes all contact
    pairs from hydroelastic contact, if any. */
   void AppendDiscreteContactPairsForHydroelasticContact(
       const systems::Context<T>& context,
-      DiscreteContactData<DiscreteContactPair<T>>* contact_kinematics) const;
+      DiscreteContactData<DiscreteContactPair<T>>* contact_kinematics) const
+    requires scalar_predicate<T>::is_bool;
 
   /* Helper function for CalcDiscreteContactPairs() that computes all contact
    pairs from point contact, if any. */
@@ -476,35 +455,37 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* Helper method to fill in contact_results with point contact information
    for the given state stored in `context`.
-   @param[in,out] contact_results is appended to. */
-  void AppendContactResultsForPointContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
+   @param[out] contact_results_point_pair is cleared then appended to. */
+  void CalcContactResultsForPointContact(
+      const GeometryContactData<T>& geometry_contact_data,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+      const contact_solvers::internal::ContactSolverResults<T>& solver_results,
+      std::vector<PointPairContactInfo<T>>* contact_results_point_pair) const;
 
   /* Helper method to fill in `contact_results` with hydroelastic contact
    information for the given state stored in `context`.
-   @param[in,out] contact_results is appended to. */
-  void AppendContactResultsForHydroelasticContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
+
+   Note that items inside of the `geometry_contact_data.get().surfaces` vector
+   will be aliased by `contact_results_hydroelastic` result, so the geometry
+   contact must remain alive longer than the output. See the implementation
+   comments about "backing store" for details.
+
+   @param[out] contact_results_hydroelastic is cleared then appended to. */
+  void CalcContactResultsForHydroelasticContact(
+      const GeometryContactData<T>& geometry_contact_data,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+      const contact_solvers::internal::ContactSolverResults<T>& solver_results,
+      std::vector<HydroelasticContactInfo<T>>* contact_results_hydroelastic)
+      const;
 
   /* Helper method to fill in `contact_results` with deformable contact
-   information for the given state stored in `context`.
-   @param[in,out] contact_results is appended to. */
-  void AppendContactResultsForDeformableContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
-
-  /* Computes per-face contact information for the hydroelastic model (slip
-   velocity, traction, etc). On return contact_info->size() will equal the
-   number of faces discretizing the contact surface. */
-  void CalcHydroelasticContactInfo(
-      const systems::Context<T>& context,
-      std::vector<HydroelasticContactInfo<T>>* contact_info) const;
-
-  /* Eval version of CalcHydroelasticContactInfo() . */
-  const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
-      const systems::Context<T>& context) const;
+   information.
+   @param[out] contact_results_deformable is cleared then appended to. */
+  void CalcContactResultsForDeformableContact(
+      const GeometryContactData<T>& geometry_contact_data,
+      const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs,
+      const contact_solvers::internal::ContactSolverResults<T>& solver_results,
+      std::vector<DeformableContactInfo<T>>* contact_results_deformable) const;
 
   const MultibodyPlant<T>* plant_{nullptr};
   MultibodyPlant<T>* mutable_plant_{nullptr};
@@ -514,14 +495,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    to advance the discrete states. */
   std::unique_ptr<DeformableDriver<double>> deformable_driver_;
 };
-
-/* N.B. These geometry queries are not supported when T =
- symbolic::Expression */
-template <>
-void DiscreteUpdateManager<symbolic::Expression>::
-    AppendDiscreteContactPairsForHydroelasticContact(
-        const drake::systems::Context<symbolic::Expression>&,
-        DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
 
 }  // namespace internal
 }  // namespace multibody

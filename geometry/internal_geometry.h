@@ -35,7 +35,7 @@ namespace internal {
  the registered geometry), its name, and its *declared* geometry.  */
 class InternalGeometry {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalGeometry)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalGeometry);
 
   // TODO(SeanCurtis-TRI): Is this strictly required? Typically, I have this to
   // be compatible with STL structures that need to default construct. Confirm
@@ -187,6 +187,11 @@ class InternalGeometry {
 
   /* Reports if the geometry has a perception role. */
   bool has_perception_role() const { return perception_props_ != std::nullopt; }
+
+  /* Returns a pointer to the geometry's properties associated with the given
+   `role` (if they are defined). Nullptr otherwise. Always returns the nullptr
+   for Role::kUnassigned. */
+  const GeometryProperties* properties(Role role) const;
 
   /* Returns a pointer to the geometry's proximity properties (if they are
    defined. Nullptr otherwise.  */

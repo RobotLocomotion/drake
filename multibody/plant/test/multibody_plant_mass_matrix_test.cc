@@ -62,8 +62,11 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
   void VerifyMassMatrixComputation(const Context<double>& context) {
     // Compute mass matrix via the Composite Body Algorithm.
     MatrixX<double> Mcba(plant_.num_velocities(), plant_.num_velocities());
+    plant_.CalcMassMatrix(context, &Mcba);
+
+    // After a first warm-up call, subsequent calls to CalcMassMatrix<double>()
+    // should never allocate.
     {
-      // CalcMassMatrix on `double` should never allocate.
       LimitMalloc guard;
       plant_.CalcMassMatrix(context, &Mcba);
     }
@@ -108,8 +111,7 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobot) {
 
   // Create a context and store an arbitrary configuration.
   std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();
-  for (JointIndex joint_index(0); joint_index < plant_.num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant_.GetJointIndices()) {
     const Joint<double>& joint = plant_.get_joint(joint_index);
     // This model has weld, revolute, and floating joints. Set the revolute
     // joints to an arbitrary angle.
@@ -133,8 +135,7 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobotWithFixedJoints) {
 
   // Create a context and store an arbitrary configuration.
   std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();
-  for (JointIndex joint_index(0); joint_index < plant_.num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant_.GetJointIndices()) {
     const Joint<double>& joint = plant_.get_joint(joint_index);
     // This model has weld, revolute, and floating joints. Set the revolute
     // joints to an arbitrary angle.
@@ -155,8 +156,7 @@ TEST_F(MultibodyPlantMassMatrixTests, IiwaWithWeldedGripper) {
 
   // Create a context and store an arbitrary configuration.
   std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();
-  for (JointIndex joint_index(0); joint_index < plant_.num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant_.GetJointIndices()) {
     const Joint<double>& joint = plant_.get_joint(joint_index);
     // This model only has weld, prismatic, and revolute joints.
     if (joint.type_name() == RevoluteJoint<double>::kTypeName) {

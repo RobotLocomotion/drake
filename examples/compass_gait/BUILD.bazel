@@ -1,24 +1,33 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
 
 package(default_visibility = ["//visibility:private"])
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "compass_gait_vector_types",
     srcs = [
-        "compass_gait_continuous_state_named_vector.yaml",
-        "compass_gait_params_named_vector.yaml",
+        "compass_gait_continuous_state.cc",
+        "compass_gait_params.cc",
+    ],
+    hdrs = [
+        "compass_gait_continuous_state.h",
+        "compass_gait_params.h",
+        "gen/compass_gait_continuous_state.h",
+        "gen/compass_gait_params.h",
     ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_cc_library(

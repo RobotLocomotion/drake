@@ -9,6 +9,7 @@
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
+#include "drake/multibody/parsing/detail_usd_parser.h"
 
 namespace drake {
 namespace multibody {
@@ -18,7 +19,7 @@ using drake::internal::DiagnosticPolicy;
 
 namespace {
 
-enum class FileType { kUnknown, kSdf, kUrdf, kMjcf, kDmd, kMesh };
+enum class FileType { kUnknown, kSdf, kUrdf, kMjcf, kDmd, kMesh, kUsd };
 FileType DetermineFileType(const DiagnosticPolicy& policy,
                            const std::string& filename) {
   if (EndsWithCaseInsensitive(filename, ".urdf")) {
@@ -36,6 +37,10 @@ FileType DetermineFileType(const DiagnosticPolicy& policy,
   if (EndsWithCaseInsensitive(filename, ".obj")) {
     return FileType::kMesh;
   }
+  if (EndsWithCaseInsensitive(filename, ".usda") ||
+      EndsWithCaseInsensitive(filename, ".usd")) {
+    return FileType::kUsd;
+  }
   policy.Error(fmt::format(
       "The file '{}' is not a recognized type."
       " Known types are: .urdf, .sdf, .xml (Mujoco), .dmd.yaml, .obj",
@@ -46,7 +51,7 @@ FileType DetermineFileType(const DiagnosticPolicy& policy,
 // This stub allows continued partial operation when Error() does not throw.
 class UnknownParserWrapper final : public ParserInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnknownParserWrapper)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnknownParserWrapper);
   UnknownParserWrapper() {}
   ~UnknownParserWrapper() final {}
   std::optional<ModelInstanceIndex> AddModel(
@@ -70,6 +75,7 @@ ParserInterface& SelectParser(const DiagnosticPolicy& policy,
   static never_destroyed<internal::UnknownParserWrapper> unknown;
   static never_destroyed<internal::DmdParserWrapper> dmd;
   static never_destroyed<internal::MeshParserWrapper> mesh;
+  static never_destroyed<internal::UsdParserWrapper> usd;
   const FileType type = DetermineFileType(policy, filename);
   switch (type) {
     case FileType::kUrdf:
@@ -82,6 +88,8 @@ ParserInterface& SelectParser(const DiagnosticPolicy& policy,
       return dmd.access();
     case FileType::kMesh:
       return mesh.access();
+    case FileType::kUsd:
+      return usd.access();
     case FileType::kUnknown:
       return unknown.access();
   }

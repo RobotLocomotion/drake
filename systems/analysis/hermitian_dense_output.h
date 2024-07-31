@@ -83,7 +83,7 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
 template <typename T>
 class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HermitianDenseOutput)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HermitianDenseOutput);
 
   /// An integration step representation class, holding just enough
   /// for Hermitian interpolation: three (3) related sets containing
@@ -100,7 +100,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   ///       output leverages a PiecewisePolynomial instance that takes matrices.
   class IntegrationStep {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IntegrationStep)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IntegrationStep);
     /// Constructs an empty step.
     IntegrationStep() = default;
 
@@ -421,4 +421,4 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::systems::HermitianDenseOutput)
+    class drake::systems::HermitianDenseOutput);

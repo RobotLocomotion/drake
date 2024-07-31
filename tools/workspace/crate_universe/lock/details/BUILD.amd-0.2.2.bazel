@@ -6,9 +6,9 @@
 #     tools/workspace/crate_universe/upgrade.sh
 ###############################################################################
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@rules_license//rules:license.bzl", "license")
 load("@rules_license//rules:package_info.bzl", "package_info")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
 package(
     default_package_metadata = [
@@ -100,6 +100,6 @@ rust_library(
     }),
     version = "0.2.2",
     deps = [
-        "@crate__num-traits-0.2.18//:num_traits",
+        "@crate__num-traits-0.2.19//:num_traits",
     ],
 )

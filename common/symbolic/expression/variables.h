@@ -28,7 +28,7 @@ namespace symbolic {
  */
 class Variables {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variables)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variables);
 
   typedef typename std::set<Variable>::size_type size_type;
   typedef typename std::set<Variable>::iterator iterator;

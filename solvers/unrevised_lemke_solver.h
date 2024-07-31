@@ -36,7 +36,7 @@ class UnrevisedLemkeSolverId {
 template <class T>
 class UnrevisedLemkeSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolver);
 
   UnrevisedLemkeSolver();
   ~UnrevisedLemkeSolver() final;
@@ -46,7 +46,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
   template <class U>
   static U ComputeZeroTolerance(const MatrixX<U>& M) {
     return M.rows() * M.template lpNorm<Eigen::Infinity>() *
-           (2 * std::numeric_limits<double>::epsilon());
+           (2.2 * std::numeric_limits<double>::epsilon());
   }
 
   /// Checks whether a given candidate solution to the LCP Mz + q = w, z ≥ 0,
@@ -123,7 +123,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
   // A structure for holding a linear complementarity problem variable.
   class LCPVariable {
    public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LCPVariable)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LCPVariable);
     LCPVariable() {}
     LCPVariable(bool z, int index) : index_{index}, z_{z} {}
 

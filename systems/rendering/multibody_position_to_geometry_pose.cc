@@ -58,7 +58,7 @@ void MultibodyPositionToGeometryPose<T>::Configure(bool input_multibody_state) {
   this->DeclareAbstractOutputPort(
       "geometry_pose",
       [this]() {
-        return this->plant_.get_geometry_poses_output_port().Allocate();
+        return this->plant_.get_geometry_pose_output_port().Allocate();
       },
       [this](const Context<T>& context, AbstractValue* output) {
         return this->CalcGeometryPose(context, output);
@@ -81,7 +81,7 @@ void MultibodyPositionToGeometryPose<T>::CalcGeometryPose(
       this->get_input_port().Eval(context).head(plant_.num_positions()));
 
   // Evaluate the plant's output port.
-  plant_.get_geometry_poses_output_port().Calc(*plant_context_, output);
+  plant_.get_geometry_pose_output_port().Calc(*plant_context_, output);
 }
 
 template class MultibodyPositionToGeometryPose<double>;

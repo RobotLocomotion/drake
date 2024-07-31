@@ -27,7 +27,7 @@ This is intended for internal use in implementing Diagram.
 template <typename T>
 class DiagramOutputPort final : public OutputPort<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramOutputPort)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramOutputPort);
 
   ~DiagramOutputPort() final = default;
 
@@ -145,4 +145,4 @@ class DiagramOutputPort final : public OutputPort<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::DiagramOutputPort)
+    class ::drake::systems::DiagramOutputPort);

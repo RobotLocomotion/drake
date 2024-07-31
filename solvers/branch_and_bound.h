@@ -37,7 +37,7 @@ namespace solvers {
  */
 class MixedIntegerBranchAndBoundNode {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundNode)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundNode);
 
   /** Construct the root node from an optimization program.
    * For the mixed-integer optimization program

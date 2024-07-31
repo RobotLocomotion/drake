@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace examples {
-namespace deformable_torus {
+namespace deformable {
 
 /* We create a leaf system that outputs the desired state of a parallel jaw
  gripper to follow a close-lift-open motion sequence. The desired position is
@@ -51,6 +51,6 @@ class ParallelGripperController : public systems::LeafSystem<double> {
   Eigen::Vector2d open_configuration_;
 };
 
-}  // namespace deformable_torus
+}  // namespace deformable
 }  // namespace examples
 }  // namespace drake

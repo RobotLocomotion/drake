@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -97,7 +97,7 @@ drake_cc_library(
     name = "visualization_config_functions",
     srcs = ["visualization_config_functions.cc"],
     hdrs = ["visualization_config_functions.h"],
-    interface_deps = [
+    deps = [
         ":visualization_config",
         "//geometry:drake_visualizer_params",
         "//geometry:scene_graph",
@@ -106,7 +106,7 @@ drake_cc_library(
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_buses",
     ],
-    deps = [
+    implementation_deps = [
         ":inertia_visualizer",
         "//geometry:drake_visualizer",
         "//multibody/meshcat:contact_visualizer",

@@ -47,7 +47,7 @@ namespace perception {
 /// @ingroup perception_systems
 class DepthImageToPointCloud final : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthImageToPointCloud)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthImageToPointCloud);
 
   /// Constructs the converter.
   ///

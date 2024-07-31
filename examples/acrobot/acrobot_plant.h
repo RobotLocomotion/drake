@@ -2,9 +2,9 @@
 
 #include <memory>
 
-#include "drake/examples/acrobot/gen/acrobot_input.h"
-#include "drake/examples/acrobot/gen/acrobot_params.h"
-#include "drake/examples/acrobot/gen/acrobot_state.h"
+#include "drake/examples/acrobot/acrobot_input.h"
+#include "drake/examples/acrobot/acrobot_params.h"
+#include "drake/examples/acrobot/acrobot_state.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -40,10 +40,10 @@ namespace acrobot {
 template <typename T>
 class AcrobotPlant : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotPlant);
 
   /// Constructs the plant.  The parameters of the system are stored as
-  /// Parameters in the Context (see acrobot_params_named_vector.yaml).
+  /// Parameters in the Context (see acrobot_params.h).
   AcrobotPlant();
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

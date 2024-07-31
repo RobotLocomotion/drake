@@ -14,7 +14,7 @@ namespace {
 // ImplicitIntegrator class.
 class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyImplicitIntegrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyImplicitIntegrator);
   DummyImplicitIntegrator(const System<double>& system,
                           Context<double>* context)
       : ImplicitIntegrator(system, context) {}

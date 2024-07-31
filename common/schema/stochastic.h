@@ -209,14 +209,14 @@ class Distribution {
   virtual drake::symbolic::Expression ToSymbolic() const = 0;
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Distribution)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Distribution);
   Distribution();
 };
 
 /// A single deterministic `value`.
 class Deterministic final : public Distribution {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Deterministic)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Deterministic);
 
   Deterministic();
   explicit Deterministic(double value);
@@ -238,7 +238,7 @@ class Deterministic final : public Distribution {
 /// A gaussian distribution with `mean` and `stddev`.
 class Gaussian final : public Distribution {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Gaussian)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Gaussian);
 
   Gaussian();
   Gaussian(double mean, double stddev);
@@ -261,7 +261,7 @@ class Gaussian final : public Distribution {
 /// A uniform distribution with `min` inclusive and `max` exclusive.
 class Uniform final : public Distribution {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Uniform)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Uniform);
 
   Uniform();
   Uniform(double min, double max);
@@ -284,7 +284,7 @@ class Uniform final : public Distribution {
 /// Chooses from among discrete `values` with equal probability.
 class UniformDiscrete final : public Distribution {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformDiscrete)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformDiscrete);
 
   UniformDiscrete();
   explicit UniformDiscrete(std::vector<double> values);
@@ -357,7 +357,7 @@ class DistributionVector {
   virtual drake::VectorX<drake::symbolic::Expression> ToSymbolic() const = 0;
 
  protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DistributionVector)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DistributionVector);
   DistributionVector();
 };
 
@@ -366,7 +366,7 @@ class DistributionVector {
 template <int Size>
 class DeterministicVector final : public DistributionVector {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeterministicVector)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeterministicVector);
 
   DeterministicVector();
   explicit DeterministicVector(const drake::Vector<double, Size>& value);
@@ -398,7 +398,7 @@ class DeterministicVector final : public DistributionVector {
 template <int Size>
 class GaussianVector final : public DistributionVector {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GaussianVector)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GaussianVector);
 
   GaussianVector();
   GaussianVector(const drake::Vector<double, Size>& mean,
@@ -425,7 +425,7 @@ class GaussianVector final : public DistributionVector {
 template <int Size>
 class UniformVector final : public DistributionVector {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformVector)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformVector);
 
   UniformVector();
   UniformVector(const drake::Vector<double, Size>& min,

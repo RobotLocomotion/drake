@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -79,6 +79,7 @@ drake_cc_library(
     hdrs = ["contact_configuration.h"],
     deps = [
         "//common:essential",
+        "//math:autodiff",
         "//math:geometric_transform",
         "//multibody/plant:discrete_contact_pair",
     ],
@@ -234,11 +235,11 @@ drake_cc_library(
     name = "conex_supernodal_solver",
     srcs = ["conex_supernodal_solver.cc"],
     hdrs = ["conex_supernodal_solver.h"],
-    interface_deps = [
+    deps = [
         ":supernodal_solver",
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         "//common:drake_export",
         "@conex_internal//conex:supernodal_solver",
     ],

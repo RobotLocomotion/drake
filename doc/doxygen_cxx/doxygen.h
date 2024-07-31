@@ -53,6 +53,28 @@ only updated nightly.</p>
   @ingroup terminology_and_notation
 */
 
+// Define the order of groups within group "multibody".
+/** @addtogroup multibody
+ @{
+   @defgroup drake_contacts Contact Modeling in Drake
+   @defgroup multibody_solvers Simulation of Multibody Systems
+   @defgroup multibody_parsing Parsing Models for Multibody Dynamics
+   @defgroup hydroelastic_user_guide Hydroelastic Contact User Guide   
+ @}
+
+ @addtogroup drake_contacts
+ @{
+   @defgroup compliant_contact Modeling Compliant Contact
+   @defgroup friction_model Modeling of Dry Friction
+ @}
+
+ @addtogroup multibody_solvers
+ @{
+   @defgroup mbp_discrete Discrete Models for Simulation
+   @defgroup mbp_continuous Continuous Models for Simulation
+ @}
+ */
+
 /** @addtogroup accuracy_and_tolerance
  @{
  Most numerical methods are approximate, and many can trade speed for quality
@@ -166,11 +188,6 @@ namespace solvers {
   @}
 */
 } // namespace solvers
-
-/**
-  @defgroup constraint_overview Multibody Dynamics Constraints
-  @ingroup multibody
-*/
 
 // TODO(russt): Take a thorough pass through the algorithms group
 // documentation, adding brief descriptions of each and tagging the relevant

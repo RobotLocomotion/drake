@@ -52,7 +52,7 @@ class LcmSystemGraphviz;
  */
 class LcmSubscriberSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem);
 
   /**
    * Factory method that returns a subscriber System that provides

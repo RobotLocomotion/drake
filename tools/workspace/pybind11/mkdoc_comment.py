@@ -38,7 +38,7 @@
 import re
 import textwrap
 
-from drake.doc.doxygen_cxx.system_doxygen import process_doxygen_to_sphinx
+from doc.doxygen_cxx.system_doxygen import process_doxygen_to_sphinx
 
 
 def process_comment(comment):

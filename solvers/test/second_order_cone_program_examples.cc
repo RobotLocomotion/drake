@@ -653,6 +653,48 @@ void TestSocpDuplicatedVariable2(
   }
 }
 
+void TestSocpDuplicatedVariable3(
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol) {
+  MathematicalProgram prog;
+  // Intentionally create dummy variable to test that the constraint doesn't
+  // take all variables in `prog`.
+  auto dummy = prog.NewContinuousVariables<2>();
+  auto x = prog.NewContinuousVariables<2>();
+  // [1 0 1 0] * [x0] + [0]
+  // [0 0 1 0]   [x1]   [0]
+  // [0 1 0 0]   [x0]   [0]
+  // [0 0 0 1]   [x1]   [0]
+  // [0 0 0 0]          [1]
+  // [0 0 0 0]          [1]
+  // is in the Lorentz cone.
+  Eigen::Matrix<double, 6, 4> A;
+  // clang-format off
+  A << 1, 0, 1, 0,
+       0, 0, 1, 0,
+       0, 1, 0, 0,
+       0, 0, 0, 1,
+       0, 0, 0, 0,
+       0, 0, 0, 0;
+  // clang-format on
+  Vector6<double> b;
+  b << 0, 0, 0, 0, 1, 1;
+  prog.AddLorentzConeConstraint(
+      A, b, Vector4<symbolic::Variable>(x(0), x(1), x(0), x(1)));
+  prog.AddLinearCost(Eigen::Vector3d(1, 1, 1),
+                     Vector3<symbolic::Variable>(x(0), x(0), x(1)));
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, solver_options, &result);
+  EXPECT_TRUE(result.is_success());
+  // At the optimal solution, the gradient of the curve 2x₀ = √(x₀²+2x₁²+2)
+  // should be parallel to the cost gradient (2, 1). Solving this equation
+  // gives the analytical solution.
+  Eigen::Vector2d x_expected(4 / std::sqrt(15), -std::sqrt(0.6));
+  const Eigen::Vector2d x_sol = result.GetSolution(x);
+  EXPECT_TRUE(CompareMatrices(x_sol, x_expected, tol));
+  EXPECT_NEAR(2 * x_sol(0) + x_sol(1), result.get_optimal_cost(), tol);
+}
+
 void TestDegenerateSOCP(const SolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();

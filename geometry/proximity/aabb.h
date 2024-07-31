@@ -37,7 +37,7 @@ class Obb;
  */
 class Aabb {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Aabb)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Aabb);
 
   /* The class used for various creation operations on this bounding volume. */
   template <typename MeshType>
@@ -163,7 +163,7 @@ class Aabb {
 template <class MeshType>
 class AabbMaker {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AabbMaker)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AabbMaker);
 
   /* Constructs the maker with the reference mesh and the subset of vertices to
    fit (indicated by corresponding index).

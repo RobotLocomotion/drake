@@ -4,7 +4,7 @@ import os
 import subprocess
 import unittest
 
-from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
+from python.runfiles import Create as CreateRunfiles
 
 # A minimal glTF file contains zero meshes.
 # The `buffers` entry is required for vtkGLTFImporter and taken from:

@@ -42,7 +42,7 @@ namespace optimization {
  */
 class CspaceFreePolytope : public CspaceFreePolytopeBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytope)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytope);
 
   using CspaceFreePolytopeBase::IgnoredCollisionPairs;
 
@@ -121,7 +121,7 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
    separating_planes()[plane_index] in the C-space polytope.
    */
   struct SeparationCertificateResult final : SeparationCertificateResultBase {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult);
     SeparationCertificateResult() {}
     ~SeparationCertificateResult() override = default;
 
@@ -172,7 +172,7 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   };
 
   struct SeparationCertificateProgram final : SeparationCertificateProgramBase {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgram)
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgram);
     SeparationCertificateProgram() = default;
     virtual ~SeparationCertificateProgram() = default;
 

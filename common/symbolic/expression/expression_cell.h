@@ -42,7 +42,7 @@ bool is_non_negative_integer(double v);
  */
 class ExpressionCell {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionCell)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionCell);
 
   virtual ~ExpressionCell();
 
@@ -263,7 +263,7 @@ class ExpressionAdd : public ExpressionCell {
 /** Factory class to help build ExpressionAdd expressions. */
 class ExpressionAddFactory {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExpressionAddFactory)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExpressionAddFactory);
 
   /** Default constructor. */
   ExpressionAddFactory() = default;
@@ -369,7 +369,7 @@ class ExpressionMul : public ExpressionCell {
 /** Factory class to help build ExpressionMul expressions. */
 class ExpressionMulFactory {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExpressionMulFactory)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExpressionMulFactory);
 
   /** Default constructor. */
   ExpressionMulFactory() = default;

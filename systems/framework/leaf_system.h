@@ -42,7 +42,7 @@ template <typename T>
 class LeafSystem : public System<T> {
  public:
   // LeafSystem objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystem);
 
   ~LeafSystem() override;
 
@@ -68,13 +68,6 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<ContextBase> DoAllocateContext() const final;
 
-  /** Default implementation: sets all continuous state to the model vector
-  given in DeclareContinuousState (or zero if no model vector was given) and
-  discrete states to zero. Overrides must not change the number of state
-  variables. */
-  void SetDefaultState(const Context<T>& context,
-                       State<T>* state) const override;
-
   /** Default implementation: sets all numeric parameters to the model vector
   given to DeclareNumericParameter, or else if no model was provided sets
   the numeric parameter to one.  It sets all abstract parameters to the
@@ -82,6 +75,13 @@ class LeafSystem : public System<T> {
   the number of parameters. */
   void SetDefaultParameters(const Context<T>& context,
                             Parameters<T>* parameters) const override;
+
+  /** Default implementation: sets all continuous state to the model vector
+  given in DeclareContinuousState (or zero if no model vector was given) and
+  discrete states to zero. Overrides must not change the number of state
+  variables. */
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override;
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const final;
 
@@ -1460,8 +1460,8 @@ class LeafSystem : public System<T> {
   @see LeafOutputPort::AllocCallback, LeafOutputPort::CalcCallback */
   LeafOutputPort<T>& DeclareAbstractOutputPort(
       std::variant<std::string, UseDefaultName> name,
-      typename LeafOutputPort<T>::AllocCallback alloc_function,
-      typename LeafOutputPort<T>::CalcCallback calc_function,
+      typename LeafOutputPort<T>::AllocCallback alloc,
+      typename LeafOutputPort<T>::CalcCallback calc,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
@@ -1910,4 +1910,4 @@ class LeafSystem : public System<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::LeafSystem)
+    class ::drake::systems::LeafSystem);

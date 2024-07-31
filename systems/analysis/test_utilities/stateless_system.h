@@ -16,7 +16,7 @@ namespace analysis_test {
 template <class T>
 class StatelessSystem final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem);
 
   StatelessSystem(double offset, const WitnessFunctionDirection& dir_type)
       : LeafSystem<T>(SystemTypeTag<StatelessSystem>{}),

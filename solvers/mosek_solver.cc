@@ -219,7 +219,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   MSKsoltypee solution_type;
   if (with_integer_or_binary_variable) {
     solution_type = MSK_SOL_ITG;
-  } else if (prog.quadratic_costs().empty() &&
+  } else if (prog.quadratic_costs().empty() && prog.l2norm_costs().empty() &&
              prog.quadratic_constraints().empty() &&
              prog.lorentz_cone_constraints().empty() &&
              prog.rotated_lorentz_cone_constraints().empty() &&

@@ -1,0 +1,37 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
+
+licenses(["notice"])  # MIT
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library_vendored(
+    name = "tinygltf",
+    srcs = ["tiny_gltf.cc"],
+    srcs_vendored = ["drake_vendor/tiny_gltf.cc"],
+    hdrs = ["tiny_gltf.h"],
+    hdrs_vendored = ["drake_vendor/tiny_gltf.h"],
+    defines = [
+        # Don't bother reading external images during glTF parsing; we'll
+        # handle while processing the resulting RenderMaterial.
+        "TINYGLTF_NO_EXTERNAL_IMAGE",
+        # We also won't use tinygltf to decode embedded images; we'll process
+        # the bytes in Drake.
+        "TINYGLTF_NO_STB_IMAGE",
+        "TINYGLTF_NO_STB_IMAGE_WRITE",
+    ],
+    includes = ["drake_vendor"],
+    linkstatic = 1,
+    deps = [
+        "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

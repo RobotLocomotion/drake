@@ -6,6 +6,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/contact_solvers/sap/expect_equal.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
 using Eigen::MatrixXd;
@@ -34,6 +35,12 @@ typename SapCouplerConstraint<T>::Kinematics MakeArbitraryKinematics(
   return typename SapCouplerConstraint<T>::Kinematics{
       clique0,     clique_dof0, clique_nv0, q0,         clique1,
       clique_dof1, clique_nv1,  q1,         gear_ratio, offset};
+}
+
+void ExpectEqual(const SapCouplerConstraint<double>& c1,
+                 const SapCouplerConstraint<double>& c2) {
+  ExpectBaseIsEqual(c1, c2);
+  EXPECT_EQ(c1.kinematics(), c2.kinematics());
 }
 
 GTEST_TEST(SapCouplerConstraint, SingleCliqueConstraint) {
@@ -126,22 +133,15 @@ GTEST_TEST(SapCouplerConstraint, SingleCliqueConstraintClone) {
   // clone is a deep-copy of the original constraint.
   auto clone = dynamic_pointer_cast<SapCouplerConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), 0);
-  EXPECT_EQ(clone->num_constraint_equations(), 1);
-  EXPECT_EQ(clone->num_cliques(), 1);
-  EXPECT_EQ(clone->first_clique(), kinematics.clique0);
-  EXPECT_EQ(clone->num_velocities(0), kinematics.clique_nv0);
-  EXPECT_THROW(clone->second_clique(), std::exception);
+  ExpectEqual(c, *clone);
 
-  const MatrixX<double> J0 = clone->first_clique_jacobian().MakeDenseMatrix();
-
-  // The Jacobian should contain only two entries corresponding to the
-  // constraints two dofs.
-  EXPECT_EQ(J0(kinematics.clique_dof0), 1.0);
-  EXPECT_EQ(J0(kinematics.clique_dof1), -kinematics.gear_ratio);
-  EXPECT_EQ(J0.sum(), 1.0 - kinematics.gear_ratio);
-
-  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
+  // Test ToDouble.
+  SapCouplerConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryKinematics<AutoDiffXd>(num_cliques));
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapCouplerConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapCouplerConstraint, TwoCliquesConstraintClone) {
@@ -152,23 +152,15 @@ GTEST_TEST(SapCouplerConstraint, TwoCliquesConstraintClone) {
 
   auto clone = dynamic_pointer_cast<SapCouplerConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), 0);
-  EXPECT_EQ(clone->num_constraint_equations(), 1);
-  EXPECT_EQ(clone->num_cliques(), 2);
-  EXPECT_EQ(clone->first_clique(), kinematics.clique0);
-  EXPECT_EQ(clone->second_clique(), kinematics.clique1);
-  EXPECT_EQ(clone->num_velocities(0), kinematics.clique_nv0);
-  EXPECT_EQ(clone->num_velocities(1), kinematics.clique_nv1);
+  ExpectEqual(c, *clone);
 
-  const MatrixX<double> J0 = clone->first_clique_jacobian().MakeDenseMatrix();
-  const MatrixX<double> J1 = clone->second_clique_jacobian().MakeDenseMatrix();
-
-  // J0 and J1 should each contain exactly one entry corresponding to dof 0 or
-  // dof 1, respectively.
-  EXPECT_EQ(J0(kinematics.clique_dof0), 1.0);
-  EXPECT_EQ(J0.sum(), 1.0);
-  EXPECT_EQ(J1(kinematics.clique_dof1), -kinematics.gear_ratio);
-  EXPECT_EQ(J1.sum(), -kinematics.gear_ratio);
+  // Test ToDouble.
+  SapCouplerConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryKinematics<AutoDiffXd>(num_cliques));
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapCouplerConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapCouplerConstraint, SingleCliqueAccumulateGeneralizedImpulses) {

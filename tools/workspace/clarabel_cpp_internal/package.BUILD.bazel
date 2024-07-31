@@ -3,8 +3,8 @@
 load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/skylark:cc_hidden.bzl", "cc_wrap_static_archive_hidden")
-load("@drake//tools/workspace/crate_universe:defs.bzl", "all_crate_deps")
 load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
+load("@drake//tools/workspace/crate_universe:defs.bzl", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_static_library")
 
 package(default_visibility = ["//visibility:private"])
@@ -39,6 +39,7 @@ rust_static_library(
     srcs = glob(["rust_wrapper/src/**/*.rs"], allow_empty = False),
     crate_features = ["sdp"],
     deps = all_crate_deps(),
+    proc_macro_deps = all_crate_deps(proc_macro = True),
 )
 
 cc_wrap_static_archive_hidden(

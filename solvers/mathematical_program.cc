@@ -536,6 +536,11 @@ Binding<L2NormCost> MathematicalProgram::AddL2NormCost(
   return AddCost(std::make_shared<L2NormCost>(A, b), vars);
 }
 
+Binding<L2NormCost> MathematicalProgram::AddL2NormCost(
+    const symbolic::Expression& e, double psd_tol, double coefficient_tol) {
+  return AddCost(internal::ParseL2NormCost(e, psd_tol, coefficient_tol));
+}
+
 std::tuple<symbolic::Variable, Binding<LinearCost>,
            Binding<LorentzConeConstraint>>
 MathematicalProgram::AddL2NormCostUsingConicConstraint(
@@ -966,6 +971,13 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
   required_capabilities_.insert(ProgramAttribute::kLorentzConeConstraint);
   lorentz_cone_constraint_.push_back(binding);
   return lorentz_cone_constraint_.back();
+}
+
+Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
+    const symbolic::Formula& f, LorentzConeConstraint::EvalType eval_type,
+    double psd_tol, double coefficient_tol) {
+  return AddConstraint(internal::ParseLorentzConeConstraint(
+      f, eval_type, psd_tol, coefficient_tol));
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
@@ -1842,6 +1854,82 @@ void MathematicalProgram::SetVariableScaling(const symbolic::Variable& var,
   }
 }
 
+namespace {
+template <typename C>
+[[nodiscard]] bool IsVariableBound(const symbolic::Variable& var,
+                                   const std::vector<Binding<C>>& bindings,
+                                   std::string* binding_description) {
+  for (const auto& binding : bindings) {
+    if (binding.ContainsVariable(var)) {
+      *binding_description = binding.to_string();
+      return true;
+    }
+  }
+  return false;
+}
+
+// Return true if the variable is bound with a cost or constraint (except for a
+// bounding box constraint); false otherwise.
+[[nodiscard]] bool IsVariableBound(const symbolic::Variable& var,
+                                   const MathematicalProgram& prog,
+                                   std::string* binding_description) {
+  if (IsVariableBound(var, prog.GetAllCosts(), binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.GetAllConstraints(), binding_description)) {
+    return true;
+  }
+  if (IsVariableBound(var, prog.visualization_callbacks(),
+                      binding_description)) {
+    return true;
+  }
+  return false;
+}
+}  // namespace
+
+int MathematicalProgram::RemoveDecisionVariable(const symbolic::Variable& var) {
+  if (decision_variable_index_.count(var.get_id()) == 0) {
+    throw std::invalid_argument(
+        fmt::format("RemoveDecisionVariable: {} is not a decision variable of "
+                    "this MathematicalProgram.",
+                    var.get_name()));
+  }
+  std::string binding_description;
+  if (IsVariableBound(var, *this, &binding_description)) {
+    throw std::invalid_argument(
+        fmt::format("RemoveDecisionVariable: {} is associated with a {}.",
+                    var.get_name(), binding_description));
+  }
+  const auto var_it = decision_variable_index_.find(var.get_id());
+  const int var_index = var_it->second;
+  // Update decision_variable_index_.
+  decision_variable_index_.erase(var_it);
+  for (auto& [variable_id, variable_index] : decision_variable_index_) {
+    // Decrement the index of the variable after `var`.
+    if (variable_index > var_index) {
+      --variable_index;
+    }
+  }
+  // Remove the variable from decision_variables_.
+  decision_variables_.erase(decision_variables_.begin() + var_index);
+  // Remove from var_scaling_map_.
+  std::unordered_map<int, double> new_var_scaling_map;
+  for (const auto& [variable_index, scale] : var_scaling_map_) {
+    if (variable_index < var_index) {
+      new_var_scaling_map.emplace(variable_index, scale);
+    } else if (variable_index > var_index) {
+      new_var_scaling_map.emplace(variable_index - 1, scale);
+    }
+  }
+  var_scaling_map_ = std::move(new_var_scaling_map);
+  // Update x_initial_guess_;
+  for (int i = var_index; i < x_initial_guess_.rows() - 1; ++i) {
+    x_initial_guess_(i) = x_initial_guess_(i + 1);
+  }
+  x_initial_guess_.conservativeResize(x_initial_guess_.rows() - 1);
+  return var_index;
+}
+
 template <typename C>
 int MathematicalProgram::RemoveCostOrConstraintImpl(
     const Binding<C>& removal, ProgramAttribute affected_capability,
@@ -2073,6 +2161,12 @@ int MathematicalProgram::RemoveConstraint(
                                       &generic_constraints_);
   }
   DRAKE_UNREACHABLE();
+}
+
+int MathematicalProgram::RemoveVisualizationCallback(
+    const Binding<VisualizationCallback>& callback) {
+  return RemoveCostOrConstraintImpl(callback, ProgramAttribute::kCallback,
+                                    &visualization_callbacks_);
 }
 
 void MathematicalProgram::CheckVariableType(VarType var_type) {

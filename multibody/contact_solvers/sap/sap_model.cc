@@ -6,7 +6,10 @@
 #include "drake/common/default_scalars.h"
 #include "drake/math/linear_solve.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
+#include "drake/multibody/contact_solvers/block_sparse_supernodal_solver.h"
+#include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
+#include "drake/multibody/contact_solvers/sap/dense_supernodal_solver.h"
 
 namespace drake {
 namespace multibody {
@@ -15,9 +18,60 @@ namespace internal {
 
 using systems::Context;
 
+HessianFactorizationCache::HessianFactorizationCache(
+    SapHessianFactorizationType type, const std::vector<MatrixX<double>>* A,
+    const BlockSparseMatrix<double>* J) {
+  DRAKE_DEMAND(A != nullptr);
+  DRAKE_DEMAND(J != nullptr);
+  switch (type) {
+    case SapHessianFactorizationType::kConex:
+      factorization_ = std::make_unique<ConexSuperNodalSolver>(
+          J->block_rows(), J->get_blocks(), *A);
+      break;
+    case SapHessianFactorizationType::kBlockSparseCholesky:
+      factorization_ = std::make_unique<BlockSparseSuperNodalSolver>(
+          J->block_rows(), J->get_blocks(), *A);
+      break;
+    case SapHessianFactorizationType::kDense:
+      factorization_ = std::make_unique<DenseSuperNodalSolver>(A, J);
+      break;
+  }
+}
+
+std::unique_ptr<HessianFactorizationCache> HessianFactorizationCache::Clone()
+    const {
+  throw std::runtime_error(
+      "Attempting to clone an expensive Hessian factorization.");
+}
+
+void HessianFactorizationCache::UpdateWeightMatrixAndFactor(
+    const std::vector<MatrixX<double>>& G) {
+  DRAKE_DEMAND(!is_empty());
+  mutable_factorization()->SetWeightMatrix(G);
+  mutable_factorization()->Factor();
+}
+
+void HessianFactorizationCache::SolveInPlace(
+    EigenPtr<MatrixX<double>> rhs) const {
+  DRAKE_DEMAND(!is_empty());
+  // TODO(amcastro-tri): SuperNodalSolver should provide this in-place signature
+  // for multiple RHSs.
+  const int num_rhs = rhs->cols();
+  for (int i = 0; i < num_rhs; ++i) {
+    auto rhs_i = rhs->col(i);
+    // N.B. Unfortunately SolveInPlace() only accepts VectorXd*, while here the
+    // return of col() is a block object. Therefore, we are forced to make a
+    // copy.
+    // TODO(amcastro-tri): Update SuperNodalSolver::SolveInPlace() to accept
+    // EigenPtr instead.
+    rhs_i = factorization()->Solve(rhs_i);
+  }
+}
+
 template <typename T>
-SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
-    : problem_(problem_ptr) {
+SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr,
+                      SapHessianFactorizationType hessian_type)
+    : problem_(problem_ptr), hessian_type_(hessian_type) {
   // Graph to the original contact problem, including all cliques
   // (participating and non-participating).
   const ContactProblemGraph& graph = problem().graph();
@@ -137,6 +191,17 @@ void SapModel<T>::DeclareCacheEntries() {
       {system_->cache_entry_ticket(
           system_->cache_indexes().constraint_velocities)});
   system_->mutable_cache_indexes().hessian = hessian_cache_entry.cache_index();
+
+  // N.B. The default constructible SapHessianFactorizationCache is empty. Since
+  // the computation of the factorization is costly, we delay its construction
+  // to the very first time it is computed.
+  const auto& hessian_factorization_cache_entry = system_->DeclareCacheEntry(
+      "Hessian factorization cache.",
+      systems::ValueProducer(this, &SapModel<T>::CalcHessianFactorizationCache),
+      {system_->cache_entry_ticket(
+          system_->cache_indexes().constraint_velocities)});
+  system_->mutable_cache_indexes().hessian_factorization =
+      hessian_factorization_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -254,6 +319,27 @@ void SapModel<T>::CalcHessianCache(const systems::Context<T>& context,
       EvalSapConstraintBundleData(context);
   constraints_bundle().CalcImpulsesAndConstraintsHessian(
       bundle_data, &cache->impulses.gamma, &cache->G);
+}
+
+template <typename T>
+void SapModel<T>::CalcHessianFactorizationCache(
+    const systems::Context<T>&, HessianFactorizationCache*) const {
+  throw std::runtime_error(
+      "Hessian computation is only supported for T = double");
+}
+
+template <>
+void SapModel<double>::CalcHessianFactorizationCache(
+    const systems::Context<double>& context,
+    HessianFactorizationCache* hessian) const {
+  // Make only for the very first time. This can be an expensive computation for
+  // sparse Hessians even when the factorization is not yet computed.
+  if (hessian->is_empty()) {
+    *hessian = HessianFactorizationCache(hessian_type_, &dynamics_matrix(),
+                                         &constraints_bundle().J());
+  }
+  const std::vector<MatrixX<double>>& G = EvalConstraintsHessian(context);
+  hessian->UpdateWeightMatrixAndFactor(G);
 }
 
 template <typename T>
@@ -468,4 +554,4 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapModel)
+    class ::drake::multibody::contact_solvers::internal::SapModel);

@@ -86,10 +86,27 @@ void SapCouplerConstraint<T>::DoAccumulateGeneralizedImpulses(
   }
 }
 
+template <typename T>
+std::unique_ptr<SapConstraint<double>> SapCouplerConstraint<T>::DoToDouble()
+    const {
+  SapCouplerConstraint<double>::Kinematics k{
+      kinematics_.clique0,
+      kinematics_.clique_dof0,
+      kinematics_.clique_nv0,
+      ExtractDoubleOrThrow(kinematics_.q0),
+      kinematics_.clique1,
+      kinematics_.clique_dof1,
+      kinematics_.clique_nv1,
+      ExtractDoubleOrThrow(kinematics_.q1),
+      ExtractDoubleOrThrow(kinematics_.gear_ratio),
+      ExtractDoubleOrThrow(kinematics_.offset)};
+  return std::make_unique<SapCouplerConstraint<double>>(std::move(k));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapCouplerConstraint)
+    class ::drake::multibody::contact_solvers::internal::SapCouplerConstraint);

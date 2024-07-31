@@ -1,6 +1,6 @@
 import unittest
 
-import bazel_tools.tools.python.runfiles.runfiles
+from python.runfiles import Create as CreateRunfiles
 import numpy as np
 import os
 
@@ -154,7 +154,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
             return scene_graph
 
         # This mesh should load correctly.
-        runfiles = bazel_tools.tools.python.runfiles.runfiles.Create()
+        runfiles = CreateRunfiles()
         mesh_name = runfiles.Rlocation(
             "drake_models/iiwa_description/meshes/iiwa14/visual/"
             "link_0.gltf")

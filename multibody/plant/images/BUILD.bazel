@@ -1,5 +1,5 @@
-load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
 PYTHON_SCRIPTS = [
     "ideal_stiction.py",

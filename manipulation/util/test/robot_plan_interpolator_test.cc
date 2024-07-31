@@ -87,9 +87,8 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   plan.plan.resize(num_time_steps, default_robot_state);
 
   std::vector<std::string> joint_names;
-  for (int i = 0; i < dut.plant().num_joints(); ++i) {
-    const multibody::Joint<double>& joint =
-        dut.plant().get_joint(multibody::JointIndex(i));
+  for (multibody::JointIndex i : dut.plant().GetJointIndices()) {
+    const multibody::Joint<double>& joint = dut.plant().get_joint(i);
     if (joint.num_positions() != 1) {
       continue;
     }

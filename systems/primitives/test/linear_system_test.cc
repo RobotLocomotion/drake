@@ -612,7 +612,7 @@ GTEST_TEST(Detectable, test) {
 class LinearSystemSymbolicTest : public ::testing::Test {
  public:
   LinearSystemSymbolicTest() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSymbolicTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSymbolicTest);
 
  protected:
   void SetUp() override {

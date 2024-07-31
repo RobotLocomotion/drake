@@ -5,8 +5,7 @@ title: Build Cop
 # Overview
 
 The Drake build cop monitors [continuous](https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/),
-[nightly](https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/), and
-[weekly](https://drake-jenkins.csail.mit.edu/view/Weekly%20Production/)
+and [nightly](https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/)
 production continuous integration failures in the
 [RobotLocomotion/drake](https://github.com/RobotLocomotion/drake) GitHub
 repo.
@@ -27,7 +26,7 @@ is maintained on the
 Two build cops are expected to be on duty Monday through Thursday, holidays excepted. At
 least one build cop should be on duty during normal business hours Eastern Time,
 approximately 9am to 5pm. Developers are encouraged, but not required, to merge
-pull requests during times when the build cop is on duty. Nightly and weekly
+pull requests during times when the build cop is on duty. Nightly
 build failures will be addressed the following weekday morning.
 
 When a CI build failure occurs, the build cop will be notified by email.
@@ -150,12 +149,10 @@ Check the [Continuous Production](https://drake-jenkins.csail.mit.edu/view/Conti
 build dashboard in Jenkins at least once an hour during on-call hours. These
 builds run after every merge to Drake. Also check the
 [Nightly Production](https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/)
-build dashboard every morning and
-[Weekly Production](https://drake-jenkins.csail.mit.edu/view/Weekly%20Production/)
-build dashboard on Monday morning. These builds are unusually
+build dashboard every morning. These builds are unusually
 resource-intensive, and therefore run at most once per day.
 
-If any Continuous, Nightly, or Weekly Production builds turn yellow or red, you
+If any Continuous or Nightly Production builds turn yellow or red, you
 need to act.
 
 In Jenkins, builds that are in progress (blinking on and off) will show the
@@ -172,7 +169,7 @@ Check once per week that caching is still enabled, there are currently two cache
 servers that need to be confirmed.  Open each of the following jobs and search
 for ``REMOTE_CACHE_KEY`` and confirm it has a value:
 
-- [https://drake-jenkins.csail.mit.edu/job/linux-jammy-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/linux-jammy-clang-bazel-continuous-release/lastBuild/consoleFull)
+- [https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-release/lastBuild/consoleFull)
 - [https://drake-jenkins.csail.mit.edu/job/mac-arm-ventura-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/mac-arm-ventura-clang-bazel-continuous-release/lastBuild/consoleFull)
 
 Message indicating a problem:
@@ -188,6 +185,17 @@ The exact key hash is not important, it's just important that it's non-empty.
 If there is an issue with either cache server, post the details on the
 [#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
 channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
+
+## Monitor the Build Queue
+
+Check once per week that jobs are not stuck on the Build Queue. Occasionally,
+jobs are added to the queue but never start. This is likely due to
+infrastructure issues that prevent nodes from launching. In this case, as the
+jobs never fail, build cops are not notified via email.
+
+If jobs seems to be stuck, report the issue by tagging `@betsymcphail` on the
+[#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+channel on Slack.
 
 ## Respond to Breakage
 

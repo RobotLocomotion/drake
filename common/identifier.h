@@ -141,7 +141,7 @@ int64_t get_new_identifier();
 template <class Tag>
 class Identifier {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Identifier)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Identifier);
 
   /** Default constructor; the result is an _invalid_ identifier. This only
    exists to satisfy demands of working with various container classes. */

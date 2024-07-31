@@ -131,12 +131,19 @@ class NamedViewBase:
         """Proxy for use with NumPy."""
         return np.asarray(self._value)
 
-    def __repr__(self):
+    def _str_like(self, *, per_field_op):
         """Provides human-readable breakout of each field and value."""
         value_strs = []
         for i, field in enumerate(self._fields):
-            value_strs.append("{}={}".format(field, repr(self[i])))
+            value_strs.append("{}={}".format(field, per_field_op(self[i])))
         return "{}({})".format(self.__class__.__name__, ", ".join(value_strs))
+
+    def __str__(self):
+        return self._str_like(per_field_op=str)
+
+    def __repr__(self):
+        inner_text = self._str_like(per_field_op=repr)
+        return f"<{inner_text}>"
 
     @staticmethod
     def _item_property(i):

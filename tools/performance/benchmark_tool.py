@@ -70,6 +70,20 @@ def sudo(*args, quiet=False):
         subprocess.run(new_args, stderr=subprocess.STDOUT, check=True)
 
 
+class NoBoost:
+    def is_supported(self):
+        return True
+
+    def get_boost(self):
+        """Return the current boost state; True means boost is enabled."""
+        return False
+
+    def set_boost(self, boost_value):
+        """Set the boost state; True means boost is enabled."""
+        say("No method of cpu boost control was found;"
+            " nothing is changed. Benchmark results may be noisy.")
+
+
 class IntelBoost:
     # This is the Linux kernel configuration file for Intel's "turbo boost".
     # https://www.kernel.org/doc/html/v4.12/admin-guide/pm/intel_pstate.html#no-turbo-attr
@@ -114,7 +128,7 @@ class CpuSpeedSettings:
     """Routines for controlling CPU speed."""
     def __init__(self):
         self._boost = None
-        for boost in [LinuxKernelBoost, IntelBoost]:
+        for boost in [LinuxKernelBoost, IntelBoost, NoBoost]:
             if boost().is_supported():
                 self._boost = boost()
 

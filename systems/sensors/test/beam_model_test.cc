@@ -10,7 +10,7 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/vector_log_sink.h"
-#include "drake/systems/sensors/gen/beam_model_params.h"
+#include "drake/systems/sensors/beam_model_params.h"
 
 namespace drake {
 namespace systems {

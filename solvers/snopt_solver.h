@@ -54,7 +54,7 @@ struct SnoptSolverDetails {
  */
 class SnoptSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptSolver);
 
   /// Type of details stored in MathematicalProgramResult.
   using Details = SnoptSolverDetails;

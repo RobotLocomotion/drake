@@ -20,7 +20,7 @@ namespace multibody {
  */
 class CentroidalMomentumConstraint final : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CentroidalMomentumConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CentroidalMomentumConstraint);
 
   /**
    * Construct centroidal momentum constraint

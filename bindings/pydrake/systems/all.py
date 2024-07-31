@@ -1,6 +1,7 @@
 from .analysis import *
 from .controllers import *
 from .drawing import *
+from .estimators import *
 from .framework import *
 from .lcm import *
 from .perception import *

@@ -1,3 +1,4 @@
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install")
 load(
     "//tools/skylark:drake_cc.bzl",
@@ -14,7 +15,6 @@ load(
     "EXTRA_PYBIND_COPTS",
     "get_pybind_package_info",
 )
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = ["//visibility:private"])
 

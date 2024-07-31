@@ -86,6 +86,13 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, negativeY) {
       DecomposePSDmatrixIntoXtransposeTimesX(-Eigen::Matrix3d::Identity(), 0),
       "Y is not positive semidefinite. It has an eigenvalue -1.* that is less"
       " than the tolerance -0.*.");
+
+  // If return_empty_if_not_psd is true, the function should return an empty
+  // matrix.
+  Eigen::MatrixXd X = DecomposePSDmatrixIntoXtransposeTimesX(
+      -Eigen::Matrix3d::Identity(), 0, true /* return_empty_if_not_psd */);
+  EXPECT_EQ(X.rows(), 0);
+  EXPECT_EQ(X.cols(), 3);
 }
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, indefiniteY) {
@@ -99,6 +106,13 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, indefiniteY) {
   // clang-format on
   EXPECT_THROW(DecomposePSDmatrixIntoXtransposeTimesX(Y, 0),
                std::runtime_error);
+
+  // If return_empty_if_not_psd is true, the function should return an empty
+  // matrix.
+  Eigen::MatrixXd X = DecomposePSDmatrixIntoXtransposeTimesX(
+      Y, 0, true /* return_empty_if_not_psd */);
+  EXPECT_EQ(X.rows(), 0);
+  EXPECT_EQ(X.cols(), 4);
 }
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, almost_psd_Y) {
@@ -111,6 +125,14 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, almost_psd_Y) {
   // detect Y is not PSD.
   EXPECT_THROW(DecomposePSDmatrixIntoXtransposeTimesX(Y, 0),
                std::runtime_error);
+
+  // If return_empty_if_not_psd is true, the function should return an empty
+  // matrix.
+  Eigen::MatrixXd X = DecomposePSDmatrixIntoXtransposeTimesX(
+      Y, 0, true /* return_empty_if_not_psd */);
+  EXPECT_EQ(X.rows(), 0);
+  EXPECT_EQ(X.cols(), 3);
+
   // With tolerance being 1E-10, it should regard Y as a PSD matrix.
   CheckDecomposePSDmatrixIntoXtransposeTimesX(Y, 2E-10, 1E-9);
 }

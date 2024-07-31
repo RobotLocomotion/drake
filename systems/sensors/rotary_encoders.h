@@ -26,11 +26,12 @@ namespace sensors {
 /// - y0
 /// @endsystem
 ///
+/// @tparam_default_scalar
 /// @ingroup sensor_systems
 template <typename T>
 class RotaryEncoders final : public VectorSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotaryEncoders)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotaryEncoders);
 
   /// Quantization-only constructor.  Specifies one ticks_per_revolution count
   /// for every element of the input port.
@@ -56,7 +57,7 @@ class RotaryEncoders final : public VectorSystem<T> {
   /// Set the calibration offset parameters.
   void set_calibration_offsets(
       Context<T>* context,
-      const Eigen::Ref<VectorX<T>>& calibration_offsets) const;
+      const Eigen::Ref<const VectorX<T>>& calibration_offsets) const;
 
   /// Retrieve the calibration offset parameters.
   const VectorX<T>& get_calibration_offsets(const Context<T>& context) const;
@@ -81,3 +82,6 @@ class RotaryEncoders final : public VectorSystem<T> {
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::sensors::RotaryEncoders);

@@ -82,8 +82,8 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
 }  // namespace internal
 
 void AddContactMaterial(
-    const std::optional<double>& dissipation,
-    const std::optional<double>& point_stiffness,
+    std::optional<double> dissipation,
+    std::optional<double> point_stiffness,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);

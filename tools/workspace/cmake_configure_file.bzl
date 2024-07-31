@@ -24,6 +24,8 @@ def _cmake_configure_file_impl(ctx):
         arguments += ["--autoconf"]
     if ctx.attr.strict:
         arguments += ["--strict"]
+    if ctx.attr.atonly:
+        arguments += ["--atonly"]
     ctx.actions.run(
         inputs = ctx.files.srcs + ctx.files.cmakelists,
         outputs = ctx.outputs.outs,
@@ -43,6 +45,7 @@ _cmake_configure_file_gen = rule(
         "cmakelists": attr.label_list(allow_files = True),
         "autoconf": attr.bool(default = False),
         "strict": attr.bool(default = False),
+        "atonly": attr.bool(default = False),
         "cmake_configure_file_py": attr.label(
             cfg = "host",
             executable = True,
@@ -65,6 +68,7 @@ def cmake_configure_file(
         undefines = None,
         cmakelists = None,
         strict = None,
+        atonly = None,
         **kwargs):
     """Creates a rule to generate an out= file from a src= file, using CMake's
     configure_file substitution semantics.  This implementation is incomplete,
@@ -84,6 +88,9 @@ def cmake_configure_file(
     either defines, undefines, or cmakelists is an error. When False, anything
     not mentioned is silently presumed to be undefined.
 
+    When atonly is True, only substitutions like '@var@' will be made; '${var}'
+    will be left as-is. When False, both types of substitutions will be made.
+
     See cmake_configure_file.py for our implementation of the configure_file
     substitution rules.
 
@@ -99,6 +106,7 @@ def cmake_configure_file(
         undefines = undefines,
         cmakelists = cmakelists,
         strict = strict,
+        atonly = atonly,
         env = hermetic_python_env(),
         **kwargs
     )
@@ -111,6 +119,7 @@ def cmake_configure_files(
         undefines = None,
         cmakelists = None,
         strict = None,
+        atonly = None,
         **kwargs):
     """Like cmake_configure_file(), but with itemwise pairs of srcs => outs,
     instead of just one pair of src => out.
@@ -126,6 +135,7 @@ def cmake_configure_files(
         undefines = undefines,
         cmakelists = cmakelists,
         strict = strict,
+        atonly = atonly,
         env = hermetic_python_env(),
         **kwargs
     )

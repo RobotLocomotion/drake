@@ -14,7 +14,7 @@ namespace systems {
 // Base class for the tests on Affine and Linear Systems.
 class AffineLinearSystemTest : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineLinearSystemTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineLinearSystemTest);
 
   // Setup an arbitrary AffineSystem.
   AffineLinearSystemTest(double f0_0, double f0_1, double y0_0, double y0_1)

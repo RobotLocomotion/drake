@@ -25,7 +25,7 @@ namespace test {
 template<typename T>
 class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AxiallySymmetricFreeBodyPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AxiallySymmetricFreeBodyPlant);
 
   /// Constructor from known rotational inertia values.
   /// Rotational inertia values have units of kg⋅m².

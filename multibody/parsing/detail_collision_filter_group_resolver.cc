@@ -15,9 +15,8 @@ using drake::internal::DiagnosticPolicy;
 using geometry::GeometrySet;
 
 CollisionFilterGroupResolver::CollisionFilterGroupResolver(
-    MultibodyPlant<double>* plant,
-    CollisionFilterGroups* group_output)
-    : plant_(plant), group_output_(group_output) {
+    MultibodyPlant<double>* plant)
+    : plant_(plant) {
   DRAKE_DEMAND(plant != nullptr);
   minimum_model_instance_index_ =
       ModelInstanceIndex(plant->num_model_instances());
@@ -129,7 +128,8 @@ void CollisionFilterGroupResolver::AddPair(
   pairs_.insert({name_a, name_b});
 }
 
-void CollisionFilterGroupResolver::Resolve(const DiagnosticPolicy& diagnostic) {
+CollisionFilterGroupsImpl<InstancedName> CollisionFilterGroupResolver::Resolve(
+    const DiagnosticPolicy& diagnostic) {
   DRAKE_DEMAND(!is_resolved_);
   is_resolved_ = true;
 
@@ -204,24 +204,47 @@ void CollisionFilterGroupResolver::Resolve(const DiagnosticPolicy& diagnostic) {
     }
   }
 
-  // Save the groups to report at API level.
-  for (const auto& [name, members] : groups_) {
-    group_output_->AddGroup(name, members.body_names);
-  }
-
-  // Now that the groups are complete, evaluate the pairs into plant rules, and
-  // save them for later reporting.
+  // Now that the groups are complete, evaluate the pairs into plant
+  // rules. Remove any pairs with broken names.
+  std::set<SortedPair<std::string>> bad_pairs;
   for (const auto& pair : pairs_) {
     const auto& [name_a, name_b] = pair;
     const GroupData* set_a = FindGroup(diagnostic, name_a);
     const GroupData* set_b = FindGroup(diagnostic, name_b);
     if (set_a == nullptr || set_b == nullptr) {
+      bad_pairs.insert(pair);
       continue;
     }
     plant_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
         {name_a, set_a->geometries}, {name_b, set_b->geometries});
-    group_output_->AddExclusionPair(pair);
   }
+  for (const auto& pair : bad_pairs) {
+    pairs_.erase(pair);
+  }
+
+  // Return the info, so the Parser can report back to users.
+  CollisionFilterGroupsImpl<std::string> result;
+  for (const auto& [name, members] : groups_) {
+    result.AddGroup(name, members.body_names);
+  }
+  for (const auto& pair : pairs_) {
+    result.AddExclusionPair(pair);
+  }
+  return result.template Convert<InstancedName>(
+      [this](const std::string& input) {
+        InstancedName instanced_name;
+        auto scoped = ScopedName::Parse(input);
+        if (plant_->HasModelInstanceNamed(scoped.get_namespace())) {
+          instanced_name.index =
+              plant_->GetModelInstanceByName(scoped.get_namespace());
+        } else {
+          // If we fail this demand, we forgot to remove bad data before
+          // building the `result`.
+          DRAKE_DEMAND(scoped.get_namespace().empty());
+        }
+        instanced_name.name = scoped.get_element();
+        return instanced_name;
+      });
 }
 
 std::string CollisionFilterGroupResolver::FullyQualify(

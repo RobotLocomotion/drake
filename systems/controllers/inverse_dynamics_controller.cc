@@ -19,7 +19,7 @@ template <typename T>
 void InverseDynamicsController<T>::SetUp(
     std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
     const VectorX<double>& kp, const VectorX<double>& ki,
-    const VectorX<double>& kd) {
+    const VectorX<double>& kd, const Context<T>* plant_context) {
   DRAKE_DEMAND(multibody_plant_for_control_->is_finalized());
 
   DiagramBuilder<T> builder;
@@ -27,11 +27,11 @@ void InverseDynamicsController<T>::SetUp(
   if (owned_plant) {
     inverse_dynamics = builder.template AddNamedSystem<InverseDynamics<T>>(
         "InverseDynamics", std::move(owned_plant),
-        InverseDynamics<T>::kInverseDynamics);
+        InverseDynamics<T>::kInverseDynamics, plant_context);
   } else {
     inverse_dynamics = builder.template AddNamedSystem<InverseDynamics<T>>(
         "InverseDynamics", multibody_plant_for_control_,
-        InverseDynamics<T>::kInverseDynamics);
+        InverseDynamics<T>::kInverseDynamics, plant_context);
   }
 
   const int num_positions = multibody_plant_for_control_->num_positions();
@@ -135,20 +135,22 @@ template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     const MultibodyPlant<T>& plant, const VectorX<double>& kp,
     const VectorX<double>& ki, const VectorX<double>& kd,
-    bool has_reference_acceleration)
+    bool has_reference_acceleration,
+    const Context<T>* plant_context)
     : multibody_plant_for_control_(&plant),
       has_reference_acceleration_(has_reference_acceleration) {
-  SetUp(nullptr, kp, ki, kd);
+  SetUp(nullptr, kp, ki, kd, plant_context);
 }
 
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     std::unique_ptr<multibody::MultibodyPlant<T>> plant,
     const VectorX<double>& kp, const VectorX<double>& ki,
-    const VectorX<double>& kd, bool has_reference_acceleration)
+    const VectorX<double>& kd, bool has_reference_acceleration,
+    const Context<T>* plant_context)
     : multibody_plant_for_control_(plant.get()),
       has_reference_acceleration_(has_reference_acceleration) {
-  SetUp(std::move(plant), kp, ki, kd);
+  SetUp(std::move(plant), kp, ki, kd, plant_context);
 }
 
 template <typename T>
@@ -159,4 +161,4 @@ InverseDynamicsController<T>::~InverseDynamicsController() = default;
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::controllers::InverseDynamicsController)
+    class ::drake::systems::controllers::InverseDynamicsController);

@@ -3,8 +3,8 @@
 #include <memory>
 #include <vector>
 
-#include "drake/examples/rimless_wheel/gen/rimless_wheel_continuous_state.h"
-#include "drake/examples/rimless_wheel/gen/rimless_wheel_params.h"
+#include "drake/examples/rimless_wheel/rimless_wheel_continuous_state.h"
+#include "drake/examples/rimless_wheel/rimless_wheel_params.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"

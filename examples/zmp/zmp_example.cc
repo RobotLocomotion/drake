@@ -2,14 +2,14 @@
 #include <thread>
 
 #include "drake/common/proto/call_python.h"
-#include "drake/systems/controllers/test/zmp_test_util.h"
+#include "drake/planning/locomotion/test_utilities/zmp_test_util.h"
 
 namespace drake {
 namespace examples {
 namespace zmp {
 namespace {
 
-void PlotResults(const systems::controllers::ZmpTestTraj& traj) {
+void PlotResults(const planning::ZmpTestTraj& traj) {
   using common::CallPython;
   using common::ToPythonTuple;
 
@@ -88,20 +88,20 @@ void do_main() {
       Eigen::Vector2d(2, -0.1), Eigen::Vector2d(2.5, 0)};
 
   std::vector<trajectories::PiecewisePolynomial<double>> zmp_trajs =
-      systems::controllers::GenerateDesiredZmpTrajs(footsteps, 0.5, 1);
+      planning::GenerateDesiredZmpTrajs(footsteps, 0.5, 1);
 
   Eigen::Vector4d x0(0, 0, 0, 0);
   double z = 1;
 
-  systems::controllers::ZmpPlanner zmp_planner;
+  planning::ZmpPlanner zmp_planner;
   zmp_planner.Plan(zmp_trajs[0], x0, z);
 
   double sample_dt = 0.01;
 
   // Perturb the initial state a bit.
   x0 << 0, 0, 0.2, -0.1;
-  systems::controllers::ZmpTestTraj result =
-      systems::controllers::SimulateZmpPolicy(zmp_planner, x0, sample_dt, 2);
+  planning::ZmpTestTraj result =
+      planning::SimulateZmpPolicy(zmp_planner, x0, sample_dt, 2);
 
   PlotResults(result);
 }

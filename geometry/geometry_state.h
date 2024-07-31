@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <optional>
 #include <set>
@@ -24,6 +25,7 @@
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/scene_graph_config.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
@@ -88,7 +90,9 @@ class DrivenMeshData {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DrivenMeshData);
 
-  DrivenMeshData() = default;
+  DrivenMeshData();
+
+  ~DrivenMeshData();
 
   // Updates the control mesh vertex positions for all driven meshes.
   // @param[in] q_WGs  q_WGs.at(id) contains control mesh vertex positions as a
@@ -214,6 +218,10 @@ class GeometryState {
 
   /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
   int NumGeometriesWithRole(Role role) const;
+
+  /** Implementation of
+   SceneGraphInspector::NumDeformableGeometriesWithRole().  */
+  int NumDeformableGeometriesWithRole(Role role) const;
 
   /** Implementation of SceneGraphInspector::NumDynamicGeometries().  */
   int NumDynamicGeometries() const;
@@ -345,6 +353,11 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetReferenceMesh().  */
   const VolumeMesh<double>* GetReferenceMesh(GeometryId id) const;
 
+  /** Implementation of
+   SceneGraphInspector::GetDrivenRenderMeshes().  */
+  const std::vector<internal::RenderMesh>& GetDrivenRenderMeshes(
+      GeometryId id, Role role) const;
+
   /** Implementation of SceneGraphInspector::IsDeformableGeometry(). */
   bool IsDeformableGeometry(GeometryId id) const;
 
@@ -378,6 +391,10 @@ class GeometryState {
 
   /** Implementation of QueryObject::GetConfigurationsInWorld().  */
   const VectorX<T>& get_configurations_in_world(GeometryId geometry_id) const;
+
+  /** Implementation of QueryObject::GetDrivenMeshConfigurationsInWorld().  */
+  std::vector<VectorX<T>> GetDrivenMeshConfigurationsInWorld(
+      GeometryId geometry_id, Role role) const;
   //@}
 
   /** @name        State management
@@ -667,6 +684,27 @@ class GeometryState {
 
   //@}
 
+  /** @name Default proximity properties */
+  //@{
+
+  /** Applies the default proximity values in `defaults` to the proximity
+   properties of every currently registered geometry that has a proximity
+   role. For detailed semantics, see the 2-argument overload.
+  */
+  void ApplyProximityDefaults(const DefaultProximityProperties& defaults);
+
+  /** Applies the default proximity values in `defaults` to the proximity
+   properties of the geometry with the given geometry_id as appropriate. For a
+   given property, no value will be written if (a) `defaults` contains no value
+   for it, or (b) a value has previously been set for that property.
+
+   @pre geometry_id indicates a geometry with an assigned proximity role.
+  */
+  void ApplyProximityDefaults(const DefaultProximityProperties& defaults,
+                              GeometryId geometry_id);
+
+  //@}
+
  private:
   // GeometryState of one scalar type is friends with all other scalar types.
   template <typename>
@@ -845,18 +883,23 @@ class GeometryState {
       const internal::InternalGeometry& geometry,
       std::vector<render::RenderEngine*>* candidate_renderers);
 
-  // Adds the driven mesh used for rendering the deformable geometry with the
-  // given `geometry_id`. The driven mesh is the surface triangle mesh of the
-  // control volume mesh unless the geometry's PerceptionProperties contain the
-  // ("deformable", "embedded_mesh") property containing a valid path to a
-  // surface mesh. In that case, that user-prescribed mesh will be the driven
-  // mesh.
-  // @throws std::exception if the ("deformable", "embedded_mesh") property is
-  // present and does not contain a path to a surface mesh that's completely
-  // contained within the control volume mesh.
+  // Adds the driven mesh for the deformable geometry with the given
+  // `geometry_id` for the given role. The nature of the driven mesh depends on
+  // the role and the geometry's properties for that role. Generally, it is
+  // simply the surface triangle mesh of the control volume mesh. However,
+  // the perception properties can define the ("deformable", "embedded_mesh")
+  // property containing a valid path to a surface mesh. In that case, that
+  // user-prescribed mesh will be the driven mesh.
+  // @throws std::exception if role is kPerception and the
+  // ("deformable", "embedded_mesh") property is present with a non-empty string
+  // value and that value does not contain a path to a surface mesh that's
+  // completely contained within the control volume mesh.
   // @pre The geometry associated with `geometry_id` is a deformable geometry
-  // registered with `this` GeometryState.
-  void RegisterDrivenPerceptionMesh(GeometryId geometry_id);
+  // registered with `this` GeometryState with the given `role`.
+  // @pre `role` is not Role::kUnassigned.
+  // @note if driven meshes are already registered for the given `geometry_id`,
+  // they will be replaced with the new driven mesh.
+  void RegisterDrivenMesh(GeometryId geometry_id, Role role);
 
   // Attempts to remove the geometry with the given id from *all* render
   // engines. The only GeometryState-level data structure modified is the
@@ -918,11 +961,13 @@ class GeometryState {
     return mutable_state->kinematics_data_;
   }
 
-  // Returns a mutable reference to the driven perception meshes in this
-  // GeometryState.
-  internal::DrivenMeshData& mutable_driven_perception_meshes() const {
+  // Returns a mutable reference to the driven meshes with the given role in
+  // this GeometryState.
+  // @pre role is not Role::kUnassigned.
+  internal::DrivenMeshData& mutable_driven_mesh_data(Role role) const {
+    DRAKE_DEMAND(role != Role::kUnassigned);
     GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
-    return mutable_state->driven_perception_meshes_;
+    return mutable_state->driven_mesh_data_[role];
   }
 
   // Returns a mutable reference to the proximity engine in this GeometryState.
@@ -1009,9 +1054,9 @@ class GeometryState {
   // are two invariants.
   internal::KinematicsData<T> kinematics_data_;
 
-  // Mesh representations for deformable geometries with perception roles that
-  // move passively with the simulated control mesh.
-  internal::DrivenMeshData driven_perception_meshes_;
+  // Mesh representations for deformable geometries that move passively with the
+  // simulated control mesh, keyed by roles.
+  std::map<Role, internal::DrivenMeshData> driven_mesh_data_;
 
   // The underlying geometry engine. The topology of the engine does _not_
   // change with respect to time. But its values do. This straddles the two

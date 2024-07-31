@@ -75,7 +75,7 @@ class ContinuousState {
  public:
   // ContinuousState is not copyable or moveable, but can be cloned with some
   // caveats.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContinuousState)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContinuousState);
 
   /// Constructs a ContinuousState for a system that does not have second-order
   /// structure. The `q` and `v` partitions are empty; all of the state `xc` is
@@ -261,4 +261,4 @@ class ContinuousState {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::ContinuousState)
+    class ::drake::systems::ContinuousState);

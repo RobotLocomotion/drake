@@ -125,7 +125,7 @@ class SchunkWsgPlainController
     : public systems::Diagram<double>,
       public systems::controllers::StateFeedbackControllerInterface<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPlainController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPlainController);
   /** Specify control gains and mode. Mode defaults to position control. */
   explicit SchunkWsgPlainController(
       ControlMode control_mode = ControlMode::kPosition, double kp = 2000,

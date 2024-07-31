@@ -14,13 +14,16 @@ std::unique_ptr<CompositeParse> CompositeParse::MakeCompositeParse(
 }
 
 CompositeParse::CompositeParse(Parser* parser)
-    : resolver_(&parser->plant(), &parser->collision_filter_groups_),
+    : parser_(parser),
+      resolver_(&parser->plant()),
       options_({parser->GetAutoRenaming()}),
       workspace_(options_, parser->package_map(), parser->diagnostic_policy_,
                  &parser->plant(), &resolver_, SelectParser) {}
 
-CompositeParse::~CompositeParse() {
-  resolver_.Resolve(workspace_.diagnostic);
+CompositeParse::~CompositeParse() = default;
+
+void CompositeParse::Finish() {
+  parser_->ResolveCollisionFilterGroupsFromCompositeParse(&resolver_);
 }
 
 }  // namespace internal

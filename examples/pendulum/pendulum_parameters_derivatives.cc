@@ -1,10 +1,10 @@
 #include <fmt/format.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/examples/pendulum/gen/pendulum_input.h"
-#include "drake/examples/pendulum/gen/pendulum_params.h"
-#include "drake/examples/pendulum/gen/pendulum_state.h"
+#include "drake/examples/pendulum/pendulum_input.h"
+#include "drake/examples/pendulum/pendulum_params.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
+#include "drake/examples/pendulum/pendulum_state.h"
 
 // A simple example on how to take derivatives of the forward dynamics for a
 // simple pendulum with respect to the mass parameter.

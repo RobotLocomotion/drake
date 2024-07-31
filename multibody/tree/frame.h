@@ -52,7 +52,9 @@ template<typename T> class RigidBody;
 template <typename T>
 class Frame : public FrameBase<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame);
+
+  ~Frame() override;
 
   /// Returns a const reference to the body associated to this %Frame.
   const RigidBody<T>& body() const {
@@ -82,14 +84,22 @@ class Frame : public FrameBase<T> {
   /// with this frame.
   /// In particular, if `this` **is** the body frame B, this method directly
   /// returns the identity transformation.
-  virtual math::RigidTransform<T> CalcPoseInBodyFrame(
-      const systems::Context<T>& context) const = 0;
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
+  math::RigidTransform<T> CalcPoseInBodyFrame(
+      const systems::Context<T>& context) const {
+    return DoCalcPoseInBodyFrame(context.get_parameters());
+  }
 
   /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
   /// frame F (B is the body frame to which `this` frame F is attached).
   /// @note If `this` is B, this method returns the identity RotationMatrix.
-  virtual math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
-      const systems::Context<T>& context) const = 0;
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
+  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
+      const systems::Context<T>& context) const {
+    return DoCalcRotationMatrixInBodyFrame(context.get_parameters());
+  }
 
   /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
   /// `this` frame F in the body frame B associated with this frame.
@@ -122,6 +132,11 @@ class Frame : public FrameBase<T> {
             "', which does not support this method.");
   }
 
+  // TODO(jwnimmer-tri) These next four functions only exist so that BodyFrame
+  // can override their NVI body to be a simple copy instead of ComposeXX or
+  // ComposeRR against an identity. It is not at all clear to me that this
+  // implementation complexity is buying us any measurable speedup at runtime.
+
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
   /// computes the pose `X_BQ` of frame Q in the body frame B to which this
   /// frame is attached.
@@ -132,21 +147,39 @@ class Frame : public FrameBase<T> {
   /// identity transformation, this method directly returns `X_FQ`.
   /// Specific frame subclasses can override this method to provide faster
   /// implementations if needed.
-  virtual math::RigidTransform<T> CalcOffsetPoseInBody(
+  math::RigidTransform<T> CalcOffsetPoseInBody(
       const systems::Context<T>& context,
       const math::RigidTransform<T>& X_FQ) const {
-    return CalcPoseInBodyFrame(context) * X_FQ;
+    return DoCalcOffsetPoseInBody(context.get_parameters(), X_FQ);
   }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Overload on Parameters instead of Context.
+  math::RigidTransform<T> CalcOffsetPoseInBody(
+      const systems::Parameters<T>& parameters,
+      const math::RigidTransform<T>& X_FQ) const {
+    return DoCalcOffsetPoseInBody(parameters, X_FQ);
+  }
+#endif
 
   /// Calculates and returns the rotation matrix `R_BQ` that relates body frame
   /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
   /// (B is the body frame to which `this` frame F is attached).
   /// @param[in] R_FQ rotation matrix that relates frame F to frame Q.
-  virtual math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
+  math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
       const systems::Context<T>& context,
       const math::RotationMatrix<T>& R_FQ) const {
-    return CalcRotationMatrixInBodyFrame(context) * R_FQ;
+    return DoCalcOffsetRotationMatrixInBody(context.get_parameters(), R_FQ);
   }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Overload on Parameters instead of Context.
+  math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
+      const systems::Parameters<T>& parameters,
+      const math::RotationMatrix<T>& R_FQ) const {
+    return DoCalcOffsetRotationMatrixInBody(parameters, R_FQ);
+  }
+#endif
 
   /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
   /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
@@ -232,26 +265,9 @@ class Frame : public FrameBase<T> {
   /// @see EvalAngularVelocityInWorld() to evaluate ω_WF_W (`this` frame F's
   /// angular velocity ω measured and expressed in the world frame W).
   Vector3<T> CalcAngularVelocity(
-    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
-    //  rigid body (not a soft body). Modify if soft bodies are possible.
       const systems::Context<T>& context,
       const Frame<T>& measured_in_frame,
-      const Frame<T>& expressed_in_frame) const {
-    const Frame<T>& frame_M = measured_in_frame;
-    const Frame<T>& frame_E = expressed_in_frame;
-    const Vector3<T>& w_WF_W = EvalAngularVelocityInWorld(context);
-    const Vector3<T>& w_WM_W = frame_M.EvalAngularVelocityInWorld(context);
-    const Vector3<T> w_MF_W = w_WF_W - w_WM_W;
-
-    // If the expressed-in frame E is the world, no need to re-express results.
-    if (frame_E.is_world_frame()) return w_MF_W;
-
-    const math::RotationMatrix<T> R_WE =
-        frame_E.CalcRotationMatrixInWorld(context);
-    const math::RotationMatrix<T> R_EW = R_WE.inverse();
-    const Vector3<T> w_MF_E = R_EW * w_MF_W;
-    return w_MF_E;
-  }
+      const Frame<T>& expressed_in_frame) const;
 
   /// Calculates `this` frame F's spatial velocity measured and expressed in
   /// the world frame W.
@@ -266,17 +282,7 @@ class Frame : public FrameBase<T> {
   /// @see CalcSpatialVelocity(), CalcRelativeSpatialVelocityInWorld(), and
   /// CalcSpatialAccelerationInWorld().
   SpatialVelocity<T> CalcSpatialVelocityInWorld(
-      const systems::Context<T>& context) const {
-    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
-    //  rigid body (not a soft body). Modify if soft bodies are possible.
-    const math::RotationMatrix<T>& R_WB =
-        body().EvalPoseInWorld(context).rotation();
-    const Vector3<T> p_BF_B = GetFixedPoseInBodyFrame().translation();
-    const Vector3<T> p_BF_W = R_WB * p_BF_B;
-    const SpatialVelocity<T>& V_WB = body().EvalSpatialVelocityInWorld(context);
-    const SpatialVelocity<T> V_WF = V_WB.Shift(p_BF_W);
-    return V_WF;
-  }
+      const systems::Context<T>& context) const;
 
   /// Calculates `this` frame F's spatial velocity measured in a frame M,
   /// expressed in a frame E.
@@ -293,30 +299,7 @@ class Frame : public FrameBase<T> {
   SpatialVelocity<T> CalcSpatialVelocity(
       const systems::Context<T>& context,
       const Frame<T>& frame_M,
-      const Frame<T>& frame_E) const {
-    const math::RotationMatrix<T> R_WM =
-        frame_M.CalcRotationMatrixInWorld(context);
-    const Vector3<T> p_MF_M = this->CalcPose(context, frame_M).translation();
-    const Vector3<T> p_MF_W = R_WM * p_MF_M;
-    const SpatialVelocity<T> V_WM_W =
-        frame_M.CalcSpatialVelocityInWorld(context);
-    const SpatialVelocity<T> V_WF_W = this->CalcSpatialVelocityInWorld(context);
-    // V_MF is calculated from a rearranged "composition" of spatial velocities.
-    // The angular velocity addition theorem  ω_WF = ω_WM + ω_MF
-    // rearranges to                          ω_MF = ω_WF - ω_WM
-    // The translational velocity formula for a point Fo moving on frame M is
-    // v_WFo = v_WMo + ω_WM x p_MoFo + v_MFo   which rearranges to
-    // v_MFo = V_WFo - (v_WMo + ω_WM x p_MoFo).
-    const SpatialVelocity<T> V_MF_W = V_WF_W - V_WM_W.Shift(p_MF_W);
-
-    // If the expressed-in frame E is the world, no need to re-express results.
-    if (frame_E.is_world_frame()) return V_MF_W;
-
-    // Otherwise re-express results from world frame W to frame E.
-    const math::RotationMatrix<T> R_WE =
-        frame_E.CalcRotationMatrixInWorld(context);
-    return R_WE.inverse() * V_MF_W;
-  }
+      const Frame<T>& frame_E) const;
 
   /// Calculates `this` frame C's spatial velocity relative to another frame B,
   /// measured and expressed in the world frame W.
@@ -403,27 +386,7 @@ class Frame : public FrameBase<T> {
   /// once evaluated, successive calls to this method are inexpensive.
   /// @see CalcSpatialAcceleration() and CalcSpatialVelocityInWorld().
   SpatialAcceleration<T> CalcSpatialAccelerationInWorld(
-      const systems::Context<T>& context) const {
-    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
-    //  rigid body (not a soft body). Modify if soft bodies are possible.
-
-    // `this` frame_F is fixed to a body B.  Calculate A_WB_W, body B's spatial
-    // acceleration in the world frame W, expressed in W.
-    const SpatialAcceleration<T>& A_WB_W =
-        body().EvalSpatialAccelerationInWorld(context);
-
-    // Optimize for the common case that `this` is body B's frame.
-    if (is_body_frame()) return A_WB_W;
-
-    // Shift spatial acceleration A_WB_W from Bo to Fp.
-    const math::RotationMatrix<T>& R_WB =
-        body().EvalPoseInWorld(context).rotation();
-    const Vector3<T> p_BoFo_B = GetFixedPoseInBodyFrame().translation();
-    const Vector3<T> p_BoFo_W = R_WB * p_BoFo_B;
-    const Vector3<T>& w_WB_W = EvalAngularVelocityInWorld(context);
-    const SpatialAcceleration<T> A_WF_W = A_WB_W.Shift(p_BoFo_W, w_WB_W);
-    return A_WF_W;
-  }
+      const systems::Context<T>& context) const;
 
   /// Calculates `this` frame F's spatial acceleration measured in a frame M,
   /// expressed in a frame E.
@@ -445,65 +408,7 @@ class Frame : public FrameBase<T> {
   SpatialAcceleration<T> CalcSpatialAcceleration(
       const systems::Context<T>& context,
       const Frame<T>& measured_in_frame,
-      const Frame<T>& expressed_in_frame) const {
-    const Frame<T> &frame_M = measured_in_frame;
-    const Frame<T> &frame_E = expressed_in_frame;
-
-    // A_MF is calculated from a rearranged composition of spatial acceleration.
-    // Angular acceleration addition theorem: α_WF = α_WM + α_MF + ω_WM x ω_MF
-    // rearranges to                          α_MF = α_WF - α_WM - ω_WM x ω_MF
-    // The translational acceleration formula for point Fo moving on frame M is
-    // a_WFo = a_WCoincidentPoint + 2 ω_WM x v_MFo + a_MFo   which rearranges to
-    // a_MFo = a_WFo - a_WCoincidentPoint - 2 ω_WM x v_MFo,  where
-    // a_WCoincidentPoint = a_WMo + α_WM x p_MoFo + ω_WM x (ω_WM x p_MoFo).
-
-    // The first term in the calculated quantity A_MF_W is always A_WF_W (frame
-    // F's spatial acceleration measured and expressed in the world frame W).
-    const SpatialAcceleration<T> A_WF_W =
-        this->CalcSpatialAccelerationInWorld(context);
-
-    // Helper function to calculate A_MF_W when frame M ≠ frame W.
-    auto calc_A_MF_W = [this, &context, &frame_M, &A_WF_W]() {
-      // Form additional terms for the rotational part of A_MF_W.
-      const SpatialAcceleration<T> A_WM_W =
-          frame_M.CalcSpatialAccelerationInWorld(context);
-      const Vector3<T>& alpha_WM_W = A_WM_W.rotational();
-      const Vector3<T>& w_WM_W = frame_M.EvalAngularVelocityInWorld(context);
-      const Frame<T>& frame_W = this->get_parent_tree().world_frame();
-      const SpatialVelocity<T> V_MF_W =
-          CalcSpatialVelocity(context, frame_M, frame_W);
-      const Vector3<T>& w_MF_W = V_MF_W.rotational();
-      const Vector3<T> alpha_MF_W =  // α_MF = α_WF - α_WM - ω_WM x ω_MF
-          A_WF_W.rotational() - alpha_WM_W - w_WM_W.cross(w_MF_W);
-
-      // Form additional terms for the translational part of A_MF_W.
-      const math::RotationMatrix<T> R_WM =
-          frame_M.CalcRotationMatrixInWorld(context);
-      const Vector3<T> p_MoFo_M = CalcPose(context, frame_M).translation();
-      const Vector3<T> p_MoFo_W = R_WM * p_MoFo_M;
-      const Vector3<T> a_WcoincidentPoint_W =
-          A_WM_W.Shift(p_MoFo_W, w_WM_W).translational();
-      const Vector3<T>& v_MFo_W = V_MF_W.translational();
-      const Vector3<T> coriolis_W = 2 * w_WM_W.cross(v_MFo_W);
-      const Vector3<T> a_MFo =  // a_WFo - a_WCoincidentPoint - 2 ω_WM x v_MFo
-          A_WF_W.translational() - a_WcoincidentPoint_W - coriolis_W;
-
-      // Form A_MF_W (frame F's spatial acceleration in frame M, measured in W).
-      return SpatialAcceleration<T>(alpha_MF_W, a_MFo);
-    };
-
-    // Avoid inefficient unnecessary calculations if frame M is the world frame.
-    const SpatialAcceleration<T> A_MF_W =
-        frame_M.is_world_frame() ? A_WF_W : calc_A_MF_W();
-
-    // If expressed-in frame E is the world, no need to re-express results.
-    if (frame_E.is_world_frame()) return A_MF_W;
-
-    // Otherwise re-express results from world frame W to frame E.
-    const math::RotationMatrix<T> R_WE =
-        frame_E.CalcRotationMatrixInWorld(context);
-    return R_WE.inverse() * A_MF_W;  // returns A_MF_E.
-  }
+      const Frame<T>& expressed_in_frame) const;
 
   /// Calculates `this` frame C's spatial acceleration relative to another
   /// frame B, measured and expressed in the world frame W.
@@ -632,6 +537,28 @@ class Frame : public FrameBase<T> {
   virtual std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
   /// @}
+
+  // NVI for CalcPoseInBodyFrame.
+  virtual math::RigidTransform<T> DoCalcPoseInBodyFrame(
+      const systems::Parameters<T>& parameters) const = 0;
+
+  // NVI for CalcRotationMatrixInBodyFrame.
+  virtual math::RotationMatrix<T> DoCalcRotationMatrixInBodyFrame(
+      const systems::Parameters<T>& parameters) const = 0;
+
+  // NVI for CalcOffsetPoseInBody.
+  virtual math::RigidTransform<T> DoCalcOffsetPoseInBody(
+      const systems::Parameters<T>& parameters,
+      const math::RigidTransform<T>& X_FQ) const {
+    return DoCalcPoseInBodyFrame(parameters) * X_FQ;
+  }
+
+  // NVI for CalcOffsetRotationMatrixInBody.
+  virtual math::RotationMatrix<T> DoCalcOffsetRotationMatrixInBody(
+      const systems::Parameters<T>& parameters,
+      const math::RotationMatrix<T>& R_FQ) const {
+    return DoCalcRotationMatrixInBodyFrame(parameters) * R_FQ;
+  }
 
  private:
   // Implementation for MultibodyElement::DoSetTopology().

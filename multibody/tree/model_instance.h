@@ -58,7 +58,7 @@ namespace internal {
 template <typename T>
 class ModelInstance final : public MultibodyElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelInstance)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelInstance);
 
   // Creates a new instance with the given values. The name must not be empty.
   ModelInstance(ModelInstanceIndex index, std::string name);
@@ -109,8 +109,9 @@ class ModelInstance final : public MultibodyElement<T> {
   std::vector<JointIndex> GetActuatedJointIndices() const;
 
   // Returns the actuation for `this` model instance extracted from `u`.
-  // @param[in] u Actuation for the full plant model, indexed by
-  // JointActuatorIndex.
+  // @param[in] u Actuation for the full plant model, ordered by monotonically
+  // increasing JointActuatorIndex (see
+  // MultibodyPlant::get_actuation_input_port()).
   // @returns the per model instance actuation, order by monotonically
   // increasing JointActuatorIndex within this model instance.
   // @throws std::exception if `u` is not of size
@@ -124,12 +125,13 @@ class ModelInstance final : public MultibodyElement<T> {
   // @param[in] u_instance Actuation values for this model instance. It must be
   //   of size equal to the number of degrees of freedom of all of the actuated
   //   joints in this model instance. It is ordered by monotonically increasing
-  //   JointActuatorIndex within this model instance.
+  //   JointActuatorIndex within this model instance (see
+  //   MultibodyPlant::get_actuation_input_port()).
   // @param[in,out] u Actuation values for the entire plant model to which
-  //   `this` actuator belongs, indexed by JointActuatorIndex. It must be of
-  //   size equal to the number of degrees of freedom of all of the actuated
-  //   joints in the entire MultibodyTree model. Only values corresponding to
-  //   this model instance are updated.
+  //   `this` actuator belongs (ordered by monotonically increasing
+  //   JointActuatorIndex). It must be of size equal to the number of degrees of
+  //   freedom of all of the actuated joints in the entire MultibodyTree model.
+  //   Only values corresponding to this model instance are updated.
   // @throws std::exception if `u_instance` is not of size equal to the number
   //   of degrees of freedom of all of the actuated joints in this model or `u`
   //   is not of size equal to the number of degrees of freedom of all of the
@@ -217,4 +219,4 @@ class ModelInstance final : public MultibodyElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::ModelInstance)
+    class ::drake::multibody::internal::ModelInstance);

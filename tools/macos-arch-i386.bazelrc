@@ -1,4 +1,7 @@
 # Options for macOS when running on i386 as reported by `arch` (i.e., x86_64).
 
 # N.B. Ensure this is consistent with `execute.bzl`.
-build --action_env=PATH=/usr/local/bin:/usr/bin:/bin
+build --action_env=PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+# Releases on macOS x86_64 no longer contain IPOPT.
+build:packaging --define=NO_IPOPT=ON

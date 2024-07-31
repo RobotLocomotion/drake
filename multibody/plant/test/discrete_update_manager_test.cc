@@ -4,18 +4,38 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
-#include "drake/multibody/plant/test/dummy_model.h"
+#include "drake/multibody/plant/test_utilities/multibody_plant_remodeling.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 namespace drake {
 namespace multibody {
+
+class MultibodyPlantTester {
+ public:
+  MultibodyPlantTester() = delete;
+
+  // Returns the manager for the given plant.
+  // @pre The plant must be discrete time and already finalized.
+  template <typename T>
+  static internal::DiscreteUpdateManager<T>& discrete_update_manager(
+      const MultibodyPlant<T>& plant) {
+    auto* manager = plant.discrete_update_manager_.get();
+    DRAKE_DEMAND(manager != nullptr);
+    return *manager;
+  }
+};
+
 namespace internal {
 namespace test {
 using contact_solvers::internal::ContactSolverResults;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
 using systems::BasicVector;
 using systems::Context;
@@ -23,6 +43,7 @@ using systems::ContextBase;
 using systems::DiscreteStateIndex;
 using systems::DiscreteValues;
 using systems::OutputPortIndex;
+
 // Dummy state data.
 constexpr int kNumRigidDofs = 6;
 constexpr int kNumAdditionalDofs = 9;
@@ -37,6 +58,19 @@ constexpr double kDummyVt = 5.0;
 constexpr double kDummyTau = 6.0;
 constexpr double kDummyVdot = 7.0;
 constexpr double kDt = 0.1;
+
+/* Returns a pointer to the DummyPhysicalModel owned by the given
+ MultibodyPlant. Returns the nullptr if no DummyPhysicalModel exists. */
+template <typename T>
+const DummyPhysicalModel<T>* GetDummyModel(const MultibodyPlant<T>& plant) {
+  for (const auto* model : plant.physical_models()) {
+    const auto* dummy_model = dynamic_cast<const DummyPhysicalModel<T>*>(model);
+    if (dummy_model != nullptr) {
+      return dummy_model;
+    }
+  }
+  return nullptr;
+}
 
 /* A dummy manager class derived from DiscreteUpdateManager for testing
  purpose. It implements the interface in DiscreteUpdateManager by filling in
@@ -89,13 +123,9 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
   }
 
   /* Extracts information about the additional discrete state that
-   DummyModel declares if one exists in the owning MultibodyPlant. */
+   DummyPhysicalModel declares if one exists in the owning MultibodyPlant. */
   void DoExtractModelInfo() final {
-    /* For unit testing we verify there is a single physical model of type
-     DummyModel. */
-    DRAKE_DEMAND(this->plant().physical_models().size() == 1);
-    const auto* dummy_model =
-        dynamic_cast<const DummyModel<T>*>(this->plant().physical_models()[0]);
+    const DummyPhysicalModel<T>* dummy_model = GetDummyModel(this->plant());
     DRAKE_DEMAND(dummy_model != nullptr);
     additional_state_index_ = dummy_model->discrete_state_index();
   }
@@ -155,14 +185,16 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     }
   }
 
-  // Not used in these tests.
-  void DoCalcDiscreteUpdateMultibodyForces(const systems::Context<T>&,
-                                           MultibodyForces<T>*) const final {
-    throw std::logic_error("Must implement if needed for these tests.");
+  void DoCalcDiscreteUpdateMultibodyForces(
+      const systems::Context<T>&, MultibodyForces<T>* forces) const final {
+    DRAKE_DEMAND(forces != nullptr);
+    forces->SetZero();
   }
 
-  void DoCalcActuation(const systems::Context<T>&, VectorX<T>*) const final {
-    throw std::logic_error("Must implement if needed for these tests.");
+  void DoCalcActuation(const systems::Context<T>&,
+                       VectorX<T>* tau) const final {
+    DRAKE_DEMAND(tau != nullptr);
+    tau->setZero();
   }
 
  private:
@@ -178,9 +210,9 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
   void SetUp() override {
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     plant_.AddRigidBody("rigid body", SpatialInertia<double>::MakeUnitary());
-    auto dummy_model = std::make_unique<DummyModel<double>>();
+    auto dummy_model = std::make_unique<DummyPhysicalModel<double>>(&plant_);
     dummy_model_ = dummy_model.get();
-    plant_.AddPhysicalModel(std::move(dummy_model));
+    plant_.AddDummyModel(std::move(dummy_model));
     dummy_model_->AppendDiscreteState(dummy_discrete_state());
     plant_.Finalize();
     // MultibodyPlant::num_velocities() only reports the number of rigid
@@ -199,7 +231,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
   MultibodyPlant<double> plant_{kDt};
   // A PhysicalModel to illustrate how physical models and discrete update
   // managers interact.
-  DummyModel<double>* dummy_model_{nullptr};
+  DummyPhysicalModel<double>* dummy_model_{nullptr};
   // The discrete update manager under test.
   DummyDiscreteUpdateManager<double>* dummy_manager_{nullptr};
 };
@@ -230,12 +262,7 @@ TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
  MultibodyPlant. */
 TEST_F(DiscreteUpdateManagerTest, CalcContactSolverResults) {
   auto context = plant_.CreateDefaultContext();
-  context->DisableCaching();
-  // Evaluates an output port whose Calc function invokes
-  // CalcContactSolverResults().
-  const auto& port = plant_.get_generalized_contact_forces_output_port(
-      default_model_instance());
-  port.Eval(*context);
+  plant_.ExecuteForcedEvents(context.get());  // Force a time step.
   EXPECT_EQ(dummy_manager_->num_calls_to_calc_contact_solver_results(), 1);
 }
 
@@ -243,6 +270,7 @@ TEST_F(DiscreteUpdateManagerTest, CalcContactSolverResults) {
  to MultibodyPlant. */
 TEST_F(DiscreteUpdateManagerTest, CalcAccelerationKinematicsCache) {
   auto context = plant_.CreateDefaultContext();
+  plant_.ExecuteForcedEvents(context.get());  // Force a time step.
   const auto generalized_acceleration =
       plant_.get_generalized_acceleration_output_port().Eval(*context);
   EXPECT_TRUE(CompareMatrices(generalized_acceleration,
@@ -256,10 +284,7 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
   auto context = autodiff_plant->CreateDefaultContext();
   auto simulator =
       systems::Simulator<AutoDiffXd>(*autodiff_plant, std::move(context));
-  ASSERT_EQ(autodiff_plant->physical_models().size(), 1);
-  const DummyModel<AutoDiffXd>* model =
-      dynamic_cast<const DummyModel<AutoDiffXd>*>(
-          autodiff_plant->physical_models()[0]);
+  const DummyPhysicalModel<AutoDiffXd>* model = GetDummyModel(*autodiff_plant);
   ASSERT_NE(model, nullptr);
 
   const int time_steps = 2;
@@ -279,141 +304,12 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
                       std::numeric_limits<double>::epsilon()));
 }
 
-// DiscreteUpdateManager implements a workaround for issue #12786 which might
-// lead to undetected algebraic loops in the systems framework. Therefore
-// DiscreteUpdateManager implements an internal algebraic loop detection to
-// properly warn users. This should go away as issue #12786 is resolved. This
-// test verifies the algebraic loop detection logic.
-class AlgebraicLoopDetection
-    : public ::testing::TestWithParam<std::tuple<bool, std::string_view>> {
- public:
-  // Makes a system containing a multibody plant. When with_algebraic_loop =
-  // true the model includes a feedback system that creates an algebraic loop.
-  void MakeDiagram(bool with_algebraic_loop,
-                   std::string_view contact_approximation) {
-    systems::DiagramBuilder<double> builder;
-
-    MultibodyPlantConfig plant_config;
-    plant_config.time_step = 1.0e-3;
-    plant_config.discrete_contact_approximation = contact_approximation;
-    std::tie(plant_, scene_graph_) =
-        multibody::AddMultibodyPlant(plant_config, &builder);
-    plant_->Finalize();
-
-    systems::System<double>* feedback{nullptr};
-    if (with_algebraic_loop) {
-      // We intentionally create an algebraic loop by placing a pass through
-      // system between the contact forces output and the input forces. This
-      // test is based on a typical user story: a user wants to write a
-      // controller that uses the estimated forces as input to the controller.
-      // For instance, the controller could implement force feedback for
-      // grasping. To simplify the model, a user might choose to emulate a real
-      // sensor or force estimator by connecting the output forces from the
-      // plant straight into the controller, creating an algebraic loop.
-      feedback =
-          builder.AddSystem<systems::PassThrough>(plant_->num_velocities());
-    } else {
-      // A more realistic model would include a force estimator, that most
-      // likely would introduce state and break the algebraic loop. Another
-      // option would be to introduce a delay between the force output and the
-      // controller, effectively modeling a delay in the measured signal. Here
-      // we emulate one of these strategies using a zero-order-hold (ZOH) system
-      // to add feedback. This will not create an algebraic loop.
-      // N.B. The discrete period of the ZOH does not necessarily need to match
-      // that of the plant. This example makes them different to illustrate this
-      // point.
-      feedback = builder.AddSystem<systems::ZeroOrderHold>(
-          2.0e-4, plant_->num_velocities());
-    }
-    builder.Connect(plant_->get_generalized_contact_forces_output_port(
-                        default_model_instance()),
-                    feedback->get_input_port(0));
-    builder.Connect(feedback->get_output_port(0),
-                    plant_->get_applied_generalized_force_input_port());
-    diagram_ = builder.Build();
-    diagram_context_ = diagram_->CreateDefaultContext();
-    plant_context_ =
-        &plant_->GetMyMutableContextFromRoot(diagram_context_.get());
-  }
-
-  void VerifyLoopIsDetected() const {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_
-            ->get_generalized_contact_forces_output_port(
-                default_model_instance())
-            .Eval(*plant_context_),
-        "Algebraic loop detected.*");
-  }
-
-  void VerifyNoLoopIsDetected() const {
-    EXPECT_NO_THROW(plant_
-                        ->get_generalized_contact_forces_output_port(
-                            default_model_instance())
-                        .Eval(*plant_context_));
-  }
-
- protected:
-  std::unique_ptr<systems::Diagram<double>> diagram_;
-  MultibodyPlant<double>* plant_{nullptr};
-  geometry::SceneGraph<double>* scene_graph_{nullptr};
-  std::unique_ptr<Context<double>> diagram_context_;
-  Context<double>* plant_context_{nullptr};
-};
-
-INSTANTIATE_TEST_SUITE_P(AlgebraicLoopTests, AlgebraicLoopDetection,
-                         ::testing::Combine(::testing::Bool(),
-                                            ::testing::Values("tamsi", "sap")));
-
-// N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-// arbitrarily choose two model approximations to accomplish this.
-TEST_P(AlgebraicLoopDetection, LoopDetectionTest) {
-  const auto& [with_algebraic_loop, contact_approximation] = GetParam();
-
-  MakeDiagram(with_algebraic_loop, contact_approximation);
-  if (with_algebraic_loop) {
-    VerifyLoopIsDetected();
-  } else {
-    {
-      SCOPED_TRACE("Pulling on the output port for the first time.");
-      VerifyNoLoopIsDetected();
-    }
-    {
-      // Since the computation is cached, we can evaluate it multiple times
-      // without triggering the loop detection, as desired.
-      SCOPED_TRACE("Pulling on the output port for the second time.");
-      VerifyNoLoopIsDetected();
-    }
-  }
-}
-
-TEST_P(AlgebraicLoopDetection, LoopDetectionTestWhenCachingIsDisabled) {
-  const auto& [with_algebraic_loop, contact_approximation] = GetParam();
-
-  MakeDiagram(with_algebraic_loop, contact_approximation);
-  diagram_context_->DisableCaching();
-
-  if (with_algebraic_loop) {
-    VerifyLoopIsDetected();
-  } else {
-    {
-      SCOPED_TRACE("Pulling on the output port for the first time.");
-      VerifyNoLoopIsDetected();
-    }
-    {
-      SCOPED_TRACE("Pulling on the output port for the second time.");
-      // Even if the computation is not cached, the loop detection is not
-      // triggered, as desired
-      VerifyNoLoopIsDetected();
-    }
-  }
-}
-
 /* Tests that the contact solver results correctly depends on the actuation
  inputs. Guards against regression in #18682. */
 GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
   double dt = 0.25;
   systems::DiagramBuilder<double> builder;
-  MultibodyPlantConfig config = {.time_step = dt};
+  MultibodyPlantConfig config{.time_step = dt};
   auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
   const std::string sdf_model = R"""(
 <?xml version="1.0"?>
@@ -474,6 +370,44 @@ GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
   /* The velocity update in this time step should reflect the change in
    actuation. */
   EXPECT_TRUE(CompareMatrices(v, Vector1<double>(nonzero_actuation * dt)));
+}
+
+/* Tests that actuation forces are accumulated using the correct indexing from
+ JointActuaton::input_start() */
+TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
+  BuildModel();
+  DoRemoval(true /* remove actuator */, false /* do not remove joint */);
+  // Set gravity vector to zero so there is no force element contribution.
+  plant_->mutable_gravity_field().set_gravity_vector(Vector3d::Zero());
+
+  FinalizeAndBuild();
+
+  const systems::InputPort<double>& u_input =
+      plant_->get_actuation_input_port();
+  u_input.FixValue(plant_context_, Vector2d(1.0, 3.0));
+
+  DiscreteUpdateManager<double>& manager =
+      MultibodyPlantTester::discrete_update_manager(*plant_);
+
+  // CalcNonContactForces includes:
+  //   - Force elements
+  //   - Externally applied general/spatial forces
+  //   - Feed forward actuation
+  //   - PD controlled actuation
+  //   - Joint limits penalty forces
+  // By construction of the model above, all of these are zero except for the
+  // feed forward actuation. Thus
+  // DiscreteUpdateManager::CalcJointActuationForces() is the only function that
+  // contributes to the accumulated forces. This tests that the indexing in
+  // CalcJointActuationForces() correctly uses JointActuaton::input_start().
+  MultibodyForces<double> forces(*plant_);
+  manager.CalcNonContactForces(
+      *plant_context_, false /* no joint limit penalty forces */,
+      false /* no pd controlled actuator forces */, &forces);
+
+  const Vector3d expected_actuation_wo_pd(1.0, 0.0, 3.0);
+  EXPECT_TRUE(
+      CompareMatrices(forces.generalized_forces(), expected_actuation_wo_pd));
 }
 
 }  // namespace

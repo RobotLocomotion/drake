@@ -1,5 +1,5 @@
-load("//tools/workspace/rust_toolchain:lock/archives.bzl", "ARCHIVES")
 load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
+load("//tools/workspace/rust_toolchain:lock/archives.bzl", "ARCHIVES")
 
 def _rust_toolchain_downloads_impl(repo_ctx):
     # TODO(jwnimmer-tri) It's not clear to me yet whether we really need to

@@ -21,6 +21,8 @@
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/osqp_solver.h"
+#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/solver_options.h"
 
 namespace drake {
@@ -50,6 +52,7 @@ using symbolic::Variables;
 
 using Edge = GraphOfConvexSets::Edge;
 using EdgeId = GraphOfConvexSets::EdgeId;
+using Transcription = GraphOfConvexSets::Transcription;
 using Vertex = GraphOfConvexSets::Vertex;
 using VertexId = GraphOfConvexSets::VertexId;
 
@@ -79,7 +82,11 @@ GTEST_TEST(GraphOfConvexSetsOptionsTest, Serialize) {
   solvers::MosekSolver mosek_solver;
   options.solver = &mosek_solver;
   options.solver_options = solvers::SolverOptions();
-  options.rounding_solver_options = solvers::SolverOptions();
+  solvers::IpoptSolver ipopt_solver;
+  options.restriction_solver = &ipopt_solver;
+  options.restriction_solver_options = solvers::SolverOptions();
+  options.preprocessing_solver = &mosek_solver;
+  options.preprocessing_solver_options = solvers::SolverOptions();
   const std::string serialized = yaml::SaveYamlString(options);
   const auto deserialized =
       yaml::LoadYamlString<GraphOfConvexSetsOptions>(serialized);
@@ -91,8 +98,11 @@ GTEST_TEST(GraphOfConvexSetsOptionsTest, Serialize) {
   EXPECT_EQ(deserialized.rounding_seed, options.rounding_seed);
   // The non-built-in types are not serialized.
   EXPECT_EQ(deserialized.solver, nullptr);
+  EXPECT_EQ(deserialized.restriction_solver, nullptr);
+  EXPECT_EQ(deserialized.preprocessing_solver, nullptr);
   EXPECT_EQ(deserialized.solver_options, solvers::SolverOptions());
-  EXPECT_FALSE(deserialized.rounding_solver_options.has_value());
+  EXPECT_FALSE(deserialized.restriction_solver_options.has_value());
+  EXPECT_FALSE(deserialized.preprocessing_solver_options.has_value());
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
@@ -298,6 +308,32 @@ TEST_F(TwoPoints, AddCost) {
   symbolic::Variable other_var("x");
   DRAKE_EXPECT_THROWS_MESSAGE(e_->AddCost(other_var), ".*IsSubsetOf.*");
   DRAKE_EXPECT_THROWS_MESSAGE(v_->AddCost(other_var), ".*IsSubsetOf.*");
+
+  // If no transcription is specified, the constraint won't be added.
+  EXPECT_THROW(e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm(), {}),
+               std::exception);
+  EXPECT_THROW(e_->AddCost(Binding(cost, e_->xu()), {}), std::exception);
+  EXPECT_THROW(u_->AddCost((v_->x() + Vector3d::Ones()).squaredNorm(), {}),
+               std::exception);
+  EXPECT_THROW(u_->AddCost(Binding(cost, u_->x()), {}), std::exception);
+
+  // By default Edge::AddCost or Vertex::AddCost is adding the binding to all
+  // transcriptions.
+  for (const auto& transcription :
+       {Transcription::kMIP, Transcription::kRelaxation,
+        Transcription::kRestriction}) {
+    const auto transcription_edge_costs = e_->GetCosts({transcription});
+    EXPECT_EQ(transcription_edge_costs.size(), 2);
+    EXPECT_EQ(transcription_edge_costs[0], b0);
+    EXPECT_EQ(transcription_edge_costs[1], b1);
+    const auto transcription_vertex_costs = v_->GetCosts({transcription});
+    EXPECT_EQ(transcription_vertex_costs.size(), 2);
+    EXPECT_EQ(transcription_vertex_costs[0], v_b0);
+    EXPECT_EQ(transcription_vertex_costs[1], v_b1);
+  }
+  // If no transcription is specified, nothing will be returned.
+  EXPECT_THROW(e_->GetCosts({}), std::exception);
+  EXPECT_THROW(v_->GetCosts({}), std::exception);
 }
 
 // Confirms that we can add constraints (both ways).
@@ -310,6 +346,14 @@ TEST_F(TwoPoints, AddConstraint) {
   auto b1 = e_->AddConstraint(Binding(constraint, e_->xu()));
   auto u_b0 = u_->AddConstraint(u_->x() == pu_.x());
   auto u_b1 = u_->AddConstraint(Binding(constraint, u_->x()));
+  // If no transcription is specified, the constraint won't be added.
+  EXPECT_THROW(e_->AddConstraint(e_->xv().head<2>() == e_->xu(), {}),
+               std::exception);
+  EXPECT_THROW(e_->AddConstraint(Binding(constraint, e_->xu()), {}),
+               std::exception);
+  EXPECT_THROW(u_->AddConstraint(u_->x() == pu_.x(), {}), std::exception);
+  EXPECT_THROW(u_->AddConstraint(Binding(constraint, u_->x()), {}),
+               std::exception);
 
   // Confirm that they are down-castable.
   auto linear_equality =
@@ -324,18 +368,324 @@ TEST_F(TwoPoints, AddConstraint) {
   EXPECT_TRUE(linear != nullptr);
 
   // Confirm that they are all accessible.
-  const auto& edge_constraints = e_->GetConstraints();
-  EXPECT_EQ(edge_constraints[0], b0);
-  EXPECT_EQ(edge_constraints[1], b1);
-  const auto& vertex_constraints = u_->GetConstraints();
-  EXPECT_EQ(vertex_constraints[0], u_b0);
-  EXPECT_EQ(vertex_constraints[1], u_b1);
+  const auto& all_edge_constraints = e_->GetConstraints();
+  EXPECT_EQ(all_edge_constraints.size(), 2);
+  EXPECT_EQ(all_edge_constraints[0], b0);
+  EXPECT_EQ(all_edge_constraints[1], b1);
+  const auto& all_vertex_constraints = u_->GetConstraints();
+  EXPECT_EQ(all_vertex_constraints.size(), 2);
+  EXPECT_EQ(all_vertex_constraints[0], u_b0);
+  EXPECT_EQ(all_vertex_constraints[1], u_b1);
+
+  // By default Edge::AddConstraint or Vertex::AddConstraint is adding the
+  // binding to all transcriptions.
+  for (const auto& transcription :
+       {Transcription::kMIP, Transcription::kRelaxation,
+        Transcription::kRestriction}) {
+    const auto edge_constraints = e_->GetConstraints({transcription});
+    EXPECT_EQ(edge_constraints.size(), 2);
+    EXPECT_EQ(edge_constraints[0], b0);
+    EXPECT_EQ(edge_constraints[1], b1);
+    const auto vertex_constraints = u_->GetConstraints({transcription});
+    EXPECT_EQ(vertex_constraints.size(), 2);
+    EXPECT_EQ(vertex_constraints[0], u_b0);
+    EXPECT_EQ(vertex_constraints[1], u_b1);
+  }
+  // If no transcription is specified, nothing will be returned.
+  EXPECT_THROW(e_->GetConstraints({}), std::exception);
+  EXPECT_THROW(u_->GetConstraints({}), std::exception);
 
   symbolic::Variable other_var("x");
   DRAKE_EXPECT_THROWS_MESSAGE(e_->AddConstraint(other_var == 1),
                               ".*IsSubsetOf.*");
   DRAKE_EXPECT_THROWS_MESSAGE(u_->AddConstraint(other_var == 1),
                               ".*IsSubsetOf.*");
+}
+
+// Verifies that the correct solver is used for the MIP, relaxation,
+// preprocessing, and restriction.
+TEST_F(TwoPoints, ReportCorrectSolverId) {
+  e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
+  GraphOfConvexSetsOptions options;
+  // Define a different solver for the restriction.
+  solvers::ClarabelSolver clarabel;
+  options.solver = &clarabel;
+  solvers::ClpSolver clp;
+  options.restriction_solver = &clp;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+
+  // When solving the convex relaxation with no rounded paths, we expect the
+  // options.solver to be used.
+  options.max_rounded_paths = 0;
+  auto result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_EQ(result.get_solver_id(), options.solver->solver_id());
+
+  // The convex restriction should use the restriction solver.
+  result = g_.SolveConvexRestriction({e_}, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_EQ(result.get_solver_id(), options.restriction_solver->solver_id());
+
+  // With the rounding on, the reported solver should be the restriction solver
+  options.max_rounded_paths = 1;
+  result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_EQ(result.get_solver_id(), options.restriction_solver->solver_id());
+
+  // Even if we add a constraint that makes only the rounding fail, the
+  // reported solver should still be the restriction solver.
+  u_->AddConstraint(u_->x()[0] == 0.0, {Transcription::kRestriction});
+  result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solver_id(), options.restriction_solver->solver_id());
+
+  // Adding infeasible constraints to the relaxation should fail the relaxation,
+  // hence solving the restriction will never be reached and the reported solver
+  // should be the solver used in the relaxation.
+  e_->AddConstraint(e_->xv()[0] == 0.0, {Transcription::kRelaxation});
+  result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solver_id(), options.solver->solver_id());
+
+  // Since we haven't added any infeasible constraints to the MIP transcription,
+  // we expect the solve to be successful and the reported solver to be the MIP
+  // solver.
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    solvers::MosekSolver mosek;
+    options.solver = &mosek;
+    options.convex_relaxation = false;
+    result = g_.SolveShortestPath(*u_, *v_, options);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_EQ(result.get_solver_id(), options.solver->solver_id());
+  }
+
+  // Test the preprocessing solver. Since the results of these solves are not
+  // reported, we call the OSQP solver and expect an error -- this solver cannot
+  // handle LPs, the preprocessing problems are LPs.
+  solvers::OsqpSolver osqp;
+  options.preprocessing = true;
+  options.preprocessing_solver = &osqp;
+  EXPECT_THROW(g_.SolveShortestPath(*u_, *v_, options), std::exception);
+}
+
+// Verify that assigning a transcription to a cost adds it to the correct
+// problem.
+TEST_F(TwoPoints, VerifyCostTranscriptionAssignment) {
+  const double kCostRelaxation = 1.23;
+  const double kCostRestriction = 4.56;
+  const double kCostMIP = 7.89;
+  // We add each cost four times, once for each AddCost entry point.
+  for (const auto& [transcription, cost] :
+       {std::pair<Transcription, double>{Transcription::kMIP, kCostMIP},
+        std::pair<Transcription, double>{Transcription::kRelaxation,
+                                         kCostRelaxation},
+        std::pair<Transcription, double>{Transcription::kRestriction,
+                                         kCostRestriction}}) {
+    auto [ell, e_b] = e_->AddCost(cost, {transcription});
+    e_->AddCost(e_b, {transcription});
+    auto [v_ell, v_b] = v_->AddCost(cost, {transcription});
+    v_->AddCost(v_b, {transcription});
+  }
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  // The convex relaxation should be successful.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 0;
+  auto result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostRelaxation, 1e-6);
+
+  // The restriction, also in the rounding, should be successful.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 1;
+  result = g_.SolveConvexRestriction({e_}, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostRestriction, 1e-6);
+  result = g_.SolveShortestPath(*u_, *v_, options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostRestriction, 1e-6);
+
+  // The MIP should be successful as well.
+  options.convex_relaxation = false;
+  if (MixedIntegerSolverAvailable()) {
+    result = g_.SolveShortestPath(*u_, *v_, options);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), 4 * kCostMIP, 1e-6);
+  }
+}
+
+// Verify that assigning a transcription to a constraint adds it to the correct
+// problem. This test will be split into multiple cases.
+TEST_F(TwoPoints, VerifyTranscriptionAssignmentBaseline) {
+  // We will be adding a few feasible constraints to all transcriptions, even
+  // though there are redundant with the set constraint. It is expected that
+  // solving the individual problems will be successful.
+  e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
+  e_->AddConstraint(e_->xv()[0] == 3.0,
+                    {Transcription::kMIP, Transcription::kRelaxation,
+                     Transcription::kRestriction});
+  u_->AddConstraint(u_->x()[0] == 1.0,
+                    {Transcription::kMIP, Transcription::kRelaxation,
+                     Transcription::kRestriction});
+
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  // The convex relaxation should be successful.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 0;
+  EXPECT_TRUE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+
+  // The restriction, also in the rounding, should be successful.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 1;
+  EXPECT_TRUE(g_.SolveConvexRestriction({e_}, options).is_success());
+  EXPECT_TRUE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+
+  // The MIP should be successful as well.
+  options.convex_relaxation = false;
+  if (MixedIntegerSolverAvailable()) {
+    EXPECT_TRUE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+  }
+}
+
+TEST_F(TwoPoints, VerifyTranscriptionAssignmentkMIP) {
+  // We will be adding a few feasible constraints to all transcriptions, even
+  // though there are redundant with the set constraint.
+  // Further, we will add an infeasible constraint to the relaxation and the
+  // restriction, but not the MIP.
+  e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
+  e_->AddConstraint(e_->xv()[0] == 3.0,
+                    {Transcription::kMIP, Transcription::kRelaxation,
+                     Transcription::kRestriction});
+  u_->AddConstraint(u_->x()[0] == 1.0,
+                    {Transcription::kMIP, Transcription::kRelaxation,
+                     Transcription::kRestriction});
+
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  // The MIP should be successful.
+  e_->AddConstraint(e_->xv()[0] == 0.0,
+                    {Transcription::kRelaxation, Transcription::kRestriction});
+  u_->AddConstraint(u_->x()[0] == 0.0,
+                    {Transcription::kRelaxation, Transcription::kRestriction});
+  if (MixedIntegerSolverAvailable()) {
+    options.convex_relaxation = false;
+    EXPECT_TRUE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+  }
+  // Ensure the relaxation fails.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 0;
+  EXPECT_FALSE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+
+  // Ensure the restriction fails.
+  EXPECT_FALSE(g_.SolveConvexRestriction({e_}, options).is_success());
+}
+
+TEST_F(TwoPoints, VerifyTranscriptionAssignmentkRelaxation) {
+  // We will be adding a few feasible constraints to all transcriptions, even
+  // though there are redundant with the set constraint.
+  // Further, we will add an infeasible constraint to the MIP and the
+  // restriction, but not the relaxation.
+  e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
+  e_->AddConstraint(e_->xv()[0] == 3.0,
+                    {Transcription::kMIP, Transcription::kRelaxation,
+                     Transcription::kRestriction});
+  u_->AddConstraint(u_->x()[0] == 1.0,
+                    {Transcription::kMIP, Transcription::kRelaxation,
+                     Transcription::kRestriction});
+
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  // The relaxation should be successful.
+  e_->AddConstraint(e_->xv()[0] == 0.0,
+                    {Transcription::kMIP, Transcription::kRestriction});
+  u_->AddConstraint(u_->x()[0] == 0.0,
+                    {Transcription::kMIP, Transcription::kRestriction});
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 0;
+  EXPECT_TRUE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+
+  // Ensure the mip fails.
+  if (MixedIntegerSolverAvailable()) {
+    options.convex_relaxation = false;
+    EXPECT_FALSE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+  }
+
+  // Ensure the restriction fails.
+  EXPECT_FALSE(g_.SolveConvexRestriction({e_}, options).is_success());
+
+  // Ensure the restriction called in the rounding fails.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 1;
+  EXPECT_FALSE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+}
+
+TEST_F(TwoPoints, VerifyTranscriptionAssignmentkRestriction) {
+  // We will be adding a few feasible constraints to all transcriptions, even
+  // though there are redundant with the set constraint.
+  // Further, we will add an infeasible constraint to the MIP and the
+  // relaxation, but not the restriction.
+  e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
+  e_->AddConstraint(e_->xv()[0] == 3.0,
+                    {Transcription::kMIP, Transcription::kRelaxation,
+                     Transcription::kRestriction});
+  u_->AddConstraint(u_->x()[0] == 1.0,
+                    {Transcription::kMIP, Transcription::kRelaxation,
+                     Transcription::kRestriction});
+
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  // The restriction should be successful.
+  e_->AddConstraint(e_->xv()[0] == 0.0,
+                    {Transcription::kMIP, Transcription::kRelaxation});
+  u_->AddConstraint(u_->x()[0] == 0.0,
+                    {Transcription::kMIP, Transcription::kRelaxation});
+  EXPECT_TRUE(g_.SolveConvexRestriction({e_}, options).is_success());
+
+  // Ensure the mip fails.
+  if (MixedIntegerSolverAvailable()) {
+    options.convex_relaxation = false;
+    EXPECT_FALSE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+  }
+
+  // Ensure the and relaxation fails.
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 0;
+  EXPECT_FALSE(g_.SolveShortestPath(*u_, *v_, options).is_success());
+}
+
+GTEST_TEST(GraphOfConvexSetsTest, InitialGuess) {
+  GraphOfConvexSets gcs;
+
+  // A source (with 1 free variable) and a target (a fixed point), with an edge
+  // between them.
+  Vertex* s = gcs.AddVertex(HPolyhedron::MakeUnitBox(1));
+  Vertex* t = gcs.AddVertex(Point(Vector1d(1.0)));
+  Edge* e = gcs.AddEdge(s, t);
+
+  using std::pow;
+  const double kMinima = 0.8;
+  // A quartic cost function w/ minima at 0 and kMinima.
+  s->AddCost(pow(s->x()[0], 2) * pow(s->x()[0] - kMinima, 2));
+
+  // Solving with no initial guess is like using an initial guess of zero.
+  auto result = gcs.SolveConvexRestriction({e});
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(s->x())[0], 0.0, 1e-6);
+
+  GraphOfConvexSetsOptions options;
+  MathematicalProgramResult initial_guess = result;
+  initial_guess.SetSolution(s->x()[0], kMinima);
+  result = gcs.SolveConvexRestriction({e}, options, &initial_guess);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(s->x())[0], kMinima, 1e-6);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, TwoNullPointsConstraint) {
@@ -1013,6 +1363,232 @@ TEST_F(ThreeBoxes, IpoptTest) {
   ASSERT_TRUE(result.is_success());
 }
 
+TEST_F(ThreeBoxes, NonConvexRounding) {
+  /* Consider the following problem:
+  - Each of the sets source, target and sink are unit boxes in 2D.
+  - They further constrain the feasible set to be in between the border of the
+    unit box and the exterior of the unit circle.
+  - In addition, the point in the source region must be in the upper left
+    quadrant, the point in the target region must be in the upper right quadrant
+    and the point in the sink region must be in the lower left quadrant.
+    The quadrants are padded by 0.1 to exclude 0.0 from the feasible set.
+  - We wish to minimize the squared L2 norm of the difference between the
+    points. We expect that source to target will be the shortest path since the
+    optimal difference is zero, while the distance between source and sink will
+    be greater than one.
+
+        Source                            Target
+  ┌────────────┐                     ┌────────────┐
+  │xxxxx___    │                     │    ___xxxxx│
+  │xxx/    \   │        e_on         │   /    \xxx│
+  │xx|      |  │  ────────────────►  │  |      |xx│
+  │  |      |  │                     │  |      |  │
+  │   \____/   │                     │   \____/   │
+  │            │                     │            │
+  └────────────┘                     └────────────┘
+
+        │
+        │  e_off
+        │
+        │
+        │
+        ▼
+      Sink
+  ┌────────────┐
+  │    ____    │
+  │   /    \   │
+  │  |      |  │
+  │  |      |xx│
+  │   \____/xxx│
+  │       xxxxx│
+  └────────────┘
+
+  We will approach this by formulating a convex surrogate of the problem and
+  solving the non-convex problem in the rounding stage.
+  */
+
+  // Add minimum distance cost.
+  e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
+  e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
+
+  /* Source: The relaxation of the problem simply requires the point to be
+  strictly in the top left corner.
+
+    Relaxation        Rounding
+  ┌────────────┐   ┌────────────┐
+  │xxx         │   │xxxxx___    │
+  │xxx         │   │xxx/    \   │
+  │            │   │xx|      |  │
+  │            │   │  |      |  │
+  │            │   │   \____/   │
+  │            │   │            │
+  └────────────┘   └────────────┘
+  */
+  std::vector<solvers::Binding<solvers::Constraint>> constraints_relaxation;
+  std::vector<solvers::Binding<solvers::Constraint>> constraints_restriction;
+
+  constraints_relaxation.push_back(source_->AddConstraint(
+      source_->x()[0] <= -0.5, {Transcription::kRelaxation}));
+  constraints_relaxation.push_back(source_->AddConstraint(
+      source_->x()[1] >= 0.5, {Transcription::kRelaxation}));
+
+  constraints_restriction.push_back(source_->AddConstraint(
+      pow(source_->x()[0], 2) + pow(source_->x()[1], 2) >= 1.0,
+      {Transcription::kRestriction}));
+  constraints_restriction.push_back(source_->AddConstraint(
+      source_->x()[0] <= -0.1, {Transcription::kRestriction}));
+  constraints_restriction.push_back(source_->AddConstraint(
+      source_->x()[1] >= 0.1, {Transcription::kRestriction}));
+
+  // Verify the constraints in the relaxation only contain the relaxed
+  // constraints, but not the resctriction constraints.
+  for (const auto& constraint :
+       source_->GetConstraints({Transcription::kRelaxation})) {
+    EXPECT_TRUE(std::find(constraints_relaxation.begin(),
+                          constraints_relaxation.end(),
+                          constraint) != constraints_relaxation.end());
+    EXPECT_FALSE(std::find(constraints_restriction.begin(),
+                           constraints_restriction.end(),
+                           constraint) != constraints_restriction.end());
+  }
+
+  // Verify the constraints in the restriction only contain the appropiate
+  // constraints, but not the relaxed constraints.
+  for (const auto& constraint :
+       source_->GetConstraints({Transcription::kRestriction})) {
+    EXPECT_FALSE(std::find(constraints_relaxation.begin(),
+                           constraints_relaxation.end(),
+                           constraint) != constraints_relaxation.end());
+    EXPECT_TRUE(std::find(constraints_restriction.begin(),
+                          constraints_restriction.end(),
+                          constraint) != constraints_restriction.end());
+  }
+
+  /* Target: The relaxation of the problem simply requires the point to be
+  strictly in the top right corner.
+
+    Relaxation        Rounding
+  ┌────────────┐   ┌────────────┐
+  │         xxx│   │    ___xxxxx│
+  │         xxx│   │   /    \xxx│
+  │            │   │  |      |xx│
+  │            │   │  |      |  │
+  │            │   │   \____/   │
+  │            │   │            │
+  └────────────┘   └────────────┘
+  */
+  constraints_relaxation.push_back(target_->AddConstraint(
+      target_->x()[0] >= 0.5, {Transcription::kRelaxation}));
+  constraints_relaxation.push_back(target_->AddConstraint(
+      target_->x()[1] >= 0.5, {Transcription::kRelaxation}));
+
+  constraints_restriction.push_back(target_->AddConstraint(
+      pow(target_->x()[0], 2) + pow(target_->x()[1], 2) >= 1.0,
+      {Transcription::kRestriction}));
+  constraints_restriction.push_back(target_->AddConstraint(
+      target_->x()[0] >= 0.1, {Transcription::kRestriction}));
+  constraints_restriction.push_back(target_->AddConstraint(
+      target_->x()[1] >= 0.1, {Transcription::kRestriction}));
+
+  // Verify the constraints in the relaxation only contain the relaxed
+  // constraints, but not the restriction constraints.
+  for (const auto& constraint :
+       target_->GetConstraints({Transcription::kRelaxation})) {
+    EXPECT_TRUE(std::find(constraints_relaxation.begin(),
+                          constraints_relaxation.end(),
+                          constraint) != constraints_relaxation.end());
+    EXPECT_FALSE(std::find(constraints_restriction.begin(),
+                           constraints_restriction.end(),
+                           constraint) != constraints_restriction.end());
+  }
+
+  // Verify the constraints in the restriction only contain the appropiate
+  // constraints, but not the relaxed constraints.
+  for (const auto& constraint :
+       target_->GetConstraints({Transcription::kRestriction})) {
+    EXPECT_FALSE(std::find(constraints_relaxation.begin(),
+                           constraints_relaxation.end(),
+                           constraint) != constraints_relaxation.end());
+    EXPECT_TRUE(std::find(constraints_restriction.begin(),
+                          constraints_restriction.end(),
+                          constraint) != constraints_restriction.end());
+  }
+
+  /* Sink: The relaxation of the problem simply requires the point to be
+  strictly in the bottom right corner.
+
+    Relaxation        Rounding
+  ┌────────────┐   ┌────────────┐
+  │            │   │    ____    │
+  │            │   │   /    \   │
+  │            │   │  |      |  │
+  │            │   │  |      |xx│
+  │         xxx│   │   \____/xxx│
+  │         xxx│   │       xxxxx│
+  └────────────┘   └────────────┘
+  */
+
+  constraints_relaxation.push_back(
+      sink_->AddConstraint(sink_->x()[0] >= 0.5, {Transcription::kRelaxation}));
+  constraints_relaxation.push_back(sink_->AddConstraint(
+      sink_->x()[1] <= -0.5, {Transcription::kRelaxation}));
+
+  constraints_restriction.push_back(
+      sink_->AddConstraint(pow(sink_->x()[0], 2) + pow(sink_->x()[1], 2) >= 1.0,
+                           {Transcription::kRestriction}));
+  constraints_restriction.push_back(sink_->AddConstraint(
+      sink_->x()[0] >= 0.1, {Transcription::kRestriction}));
+  constraints_restriction.push_back(sink_->AddConstraint(
+      sink_->x()[1] <= -0.1, {Transcription::kRestriction}));
+
+  // Verify the constraints in the relaxation only contain the relaxed
+  // constraints, but not the restriction constraints.
+  for (const auto& constraint :
+       sink_->GetConstraints({Transcription::kRelaxation})) {
+    EXPECT_TRUE(std::find(constraints_relaxation.begin(),
+                          constraints_relaxation.end(),
+                          constraint) != constraints_relaxation.end());
+    EXPECT_FALSE(std::find(constraints_restriction.begin(),
+                           constraints_restriction.end(),
+                           constraint) != constraints_restriction.end());
+  }
+
+  // Verify the constraints in the restriction only contain the appropiate
+  // constraints, but not the relaxed constraints.
+  for (const auto& constraint :
+       sink_->GetConstraints({Transcription::kRestriction})) {
+    EXPECT_FALSE(std::find(constraints_relaxation.begin(),
+                           constraints_relaxation.end(),
+                           constraint) != constraints_relaxation.end());
+    EXPECT_TRUE(std::find(constraints_restriction.begin(),
+                          constraints_restriction.end(),
+                          constraint) != constraints_restriction.end());
+  }
+
+  // Since all constraints were added to the relaxation and restriction
+  // transcription, we expect kMIP to be empty.
+  EXPECT_EQ(source_->GetConstraints({Transcription::kMIP}).size(), 0);
+  EXPECT_EQ(target_->GetConstraints({Transcription::kMIP}).size(), 0);
+  EXPECT_EQ(sink_->GetConstraints({Transcription::kMIP}).size(), 0);
+
+  solvers::IpoptSolver ipopt;
+  options_.restriction_solver = &ipopt;
+  options_.convex_relaxation = true;
+  options_.max_rounded_paths = 2;
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+  // Make sure it used the correct solver.
+  EXPECT_EQ(result.get_solver_id(), solvers::IpoptSolver::id());
+
+  const double kExpectedDistance = 0.2;
+  const double distance =
+      (source_->GetSolution(result) - target_->GetSolution(result)).norm();
+  EXPECT_NEAR(distance, kExpectedDistance, 1e-6);
+
+  // Verify that the solution includes source to target.
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+}
+
 TEST_F(ThreeBoxes, LinearEqualityConstraint) {
   const Vector2d b{.5, .3};
   e_on_->AddConstraint(e_on_->xv() == b);
@@ -1065,7 +1641,7 @@ TEST_F(ThreeBoxes, LinearConstraint) {
   e_off_->AddConstraint(e_off_->xv() >= b);
   source_->AddConstraint(CreateBinding(
       std::make_shared<LinearConstraint>(A, Vector2d::Constant(-kInf), -b),
-      source_->x()));  // -∞ ≤ source->() ≤ -b.
+      source_->x()));  // -∞ ≤ source->x() ≤ -b.
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(
@@ -1141,6 +1717,32 @@ TEST_F(ThreeBoxes, LinearConstraint3) {
   CheckConvexRestriction(result);
 }
 
+// Test linear constraints with an upper bound of -inf.
+TEST_F(ThreeBoxes, InvalidLinearConstraintUpper) {
+  const Matrix2d A = Matrix2d::Identity();
+  const Vector2d b{.5, .3};
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b, Vector2d::Constant(-kInf)),
+      e_on_->xv()));
+  // b ≤ e_on_->xv() ≤ -∞. We can't take the perspective of such a constraint,
+  // so solving should throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+}
+
+// Test linear constraints with a lower bound of +inf.
+TEST_F(ThreeBoxes, InvalidLinearConstraintLower) {
+  const Matrix2d A = Matrix2d::Identity();
+  const Vector2d b{.5, .3};
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, Vector2d::Constant(kInf), b),
+      e_on_->xv()));
+  // ∞ ≤ e_on_->xv() ≤ b. We can't take the perspective of such a constraint, so
+  // solving should throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+}
+
 TEST_F(ThreeBoxes, LorentzConeConstraint) {
   Eigen::MatrixXd A(5, 4);
   // clang-format off
@@ -1168,6 +1770,159 @@ TEST_F(ThreeBoxes, LorentzConeConstraint) {
   EXPECT_GE(z[0], std::sqrt(std::pow(z[1], 2) + std::pow(z[2], 2) +
                             std::pow(z[3], 2) + std::pow(z[4], 2)));
   EXPECT_GE(z[0], 0);
+}
+
+TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint1) {
+  auto constraint =
+      std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
+  solvers::VectorXDecisionVariable psd_x_on(4);
+  // [ xᵤ[0], xᵤ[1]; xᵤ[1], xᵥ[0]] ≽ 0.
+  psd_x_on << e_on_->xu()[0], e_on_->xu()[1], e_on_->xu()[1], e_on_->xv()[0];
+  e_on_->AddConstraint(solvers::Binding(constraint, psd_x_on));
+  // Prevent the matrix from collapsing to zero.
+  e_on_->AddConstraint(psd_x_on[0] + psd_x_on[3] == 1);
+
+  // Make sure the PSD constraint is inactive for the off edge.
+  solvers::VectorXDecisionVariable psd_x_off(4);
+  psd_x_off << e_off_->xu()[0], e_off_->xu()[1], e_off_->xu()[1],
+      e_off_->xv()[0];
+  e_off_->AddConstraint(solvers::Binding(constraint, psd_x_off));
+  e_off_->AddConstraint(psd_x_off[0] + psd_x_off[3] == 1);
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  Eigen::Matrix2d mat;
+  mat << source_->GetSolution(result)[0], source_->GetSolution(result)[1],
+      source_->GetSolution(result)[1], target_->GetSolution(result)[0];
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver(mat);
+  EXPECT_GE(solver.eigenvalues()[0], 0);
+  EXPECT_GE(solver.eigenvalues()[1], 0);
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+}
+
+// This test has linear constraints to prevent the matrix from being positive
+// semidefinite. The solver should fail.
+TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint2) {
+  auto constraint =
+      std::make_shared<solvers::PositiveSemidefiniteConstraint>(2);
+  solvers::VectorXDecisionVariable psd_x_on(4);
+  // [ xᵤ[0], xᵤ[1]; xᵤ[1], xᵥ[0]] ≽ 0.
+  psd_x_on << e_on_->xu()[0], e_on_->xu()[1], e_on_->xu()[1], e_on_->xv()[0];
+  e_on_->AddConstraint(solvers::Binding(constraint, psd_x_on));
+  e_on_->AddConstraint(psd_x_on[0] + psd_x_on[3] == -1);
+
+  solvers::VectorXDecisionVariable psd_x_off(4);
+  psd_x_off << e_off_->xu()[0], e_off_->xu()[1], e_off_->xu()[1],
+      e_off_->xv()[0];
+  e_off_->AddConstraint(solvers::Binding(constraint, psd_x_off));
+  e_off_->AddConstraint(psd_x_off[0] + psd_x_off[3] == -1);
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_FALSE(result.is_success());
+
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+}
+
+TEST_F(ThreeBoxes, NewSlackVariablesConstruction) {
+  auto s = e_on_->NewSlackVariables(3, "s");
+  ASSERT_EQ(s.size(), 3);
+
+  auto t = e_off_->NewSlackVariables(6, "t");
+  ASSERT_EQ(t.size(), 6);
+}
+
+TEST_F(ThreeBoxes, NewSlackVariablesCost) {
+  // We minimize the cost 1/x for each coordinate x, y in the source
+  // vertex, which we formulate with a slack variable and a
+  // RotatedLorentzConeConstraint as:
+  // min 1/x
+  // ⇔ min s st. s ≥ 1/x
+  // ⇔ min s st. s * x ≥ 1
+  // ⇔ min s st. [s; x; 1] ∈ RotatedLorentzCone
+  auto x = e_on_->xu()[0];
+  auto s = e_on_->NewSlackVariables(1, "s")[0];
+  e_on_->AddCost(s);
+  Eigen::MatrixXd A(3, 2);
+  // clang-format off
+  A << 1, 0,
+       0, 1,
+       0, 0;
+  // clang-format on
+  Eigen::VectorXd b(3);
+  b << 0, 0, 1;
+  auto constraint =
+      std::make_shared<solvers::RotatedLorentzConeConstraint>(A, b);
+
+  solvers::VectorXDecisionVariable z_1(2);
+  z_1 << s, x;
+  e_on_->AddConstraint(solvers::Binding(constraint, z_1));
+
+  auto y = e_on_->xu()[1];
+  auto t = e_on_->NewSlackVariables(1, "t")[0];
+  e_on_->AddCost(t);
+  solvers::VectorXDecisionVariable z_2(2);
+  z_2 << t, y;
+  e_on_->AddConstraint(solvers::Binding(constraint, z_2));
+
+  // We minimize the cost max(1/x, 1/y) for the x and y coordinate in the
+  // target vertex, which we formulate with a slack variable and two
+  // RotatedLorentzConeConstraints as:
+  // min max(1/x, 1/y)
+  // ⇔ min k st. k ≥ 1/x, k ≥ 1/y
+  // ⇔ min k st. k * x ≥ 1, k * y ≥ 1
+  // ⇔ min k st. [k; x; 1] ∈ RotatedLorentzCone, [k; y; 1] ∈ RotatedLorentzCone,
+  auto k = e_on_->NewSlackVariables(1, "k")[0];
+  e_on_->AddCost(k);
+
+  auto target_x = e_on_->xv()[0];
+  auto target_y = e_on_->xv()[1];
+
+  // Add a small cost on the point in the target, so that these are kept
+  // at -1 unless another cost affects them.
+  e_on_->AddCost(1e-4 * target_x + 1e-4 * target_y);
+
+  solvers::VectorXDecisionVariable target_z_1(2);
+  target_z_1 << k, target_x;
+  e_on_->AddConstraint(solvers::Binding(constraint, target_z_1));
+
+  solvers::VectorXDecisionVariable target_z_2(2);
+  target_z_2 << k, target_y;
+  e_on_->AddConstraint(solvers::Binding(constraint, target_z_1));
+
+  // First we solve the convex relaxation
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  auto source_res = source_->GetSolution(result);
+  // Both coordinates should be pushed towards 1
+  ASSERT_TRUE(source_res.isApproxToConstant(1.0, 1e-5));
+
+  auto target_res = target_->GetSolution(result);
+  // We expect that the cost will only push one of the coordinates to the
+  // positive side of the set.
+  ASSERT_NEAR(target_res.maxCoeff(), 1, 1e-5);
+
+  // The other one should still be kept at -1 due to the linear cost added
+  // above.
+  ASSERT_NEAR(target_res.minCoeff(), -1, 1e-5);
+
+  // Next we solve a ConvexRestriction.
+  auto restriction_result = g_.SolveConvexRestriction({e_on_});
+  ASSERT_TRUE(restriction_result.is_success());
+
+  auto restriction_source_res = source_->GetSolution(restriction_result);
+  // Both coordinates should be pushed towards 1
+  ASSERT_TRUE(restriction_source_res.isApproxToConstant(1.0, 1e-4));
+
+  auto restriction_target_res = target_->GetSolution(restriction_result);
+  // We expect that the cost will only push one of the coordinates to the
+  // positive side of the set.
+  ASSERT_NEAR(restriction_target_res.maxCoeff(), 1, 1e-4);
+
+  // The other one should still be kept at -1 due to the linear cost added
+  // above.
+  ASSERT_NEAR(restriction_target_res.minCoeff(), -1, 1e-4);
 }
 
 TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
@@ -1391,6 +2146,17 @@ GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
 
 // Tests that all optimization variables are properly set, even when constrained
 // to be on or off.
+//            ┌──┐
+//   ┌───────►│v2├──────┐
+//   │        └──┘      │
+//   │                  ▼
+// ┌─┴┐                ┌──┐
+// │v0│                │v3│
+// └─┬┘                └──┘
+//   │                  ▲
+//   │        ┌──┐      │
+//   └───────►│v1├──────┘
+//            └──┘
 GTEST_TEST(ShortestPathTest, PhiConstraint) {
   GraphOfConvexSets spp;
 
@@ -1401,21 +2167,20 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
 
   auto v = spp.Vertices();
 
-  Edge* edge_01 = spp.AddEdge(v[0], v[1]);
-  Edge* edge_02 = spp.AddEdge(v[0], v[2]);
+  spp.AddEdge(v[0], v[1]);
+  spp.AddEdge(v[0], v[2]);
   Edge* edge_13 = spp.AddEdge(v[1], v[3]);
-  Edge* edge_23 = spp.AddEdge(v[2], v[3]);
+  spp.AddEdge(v[2], v[3]);
 
-  // |xu - xv|₂
+  // |xu - xv|₂²
   Matrix<double, 4, 4> A = Matrix<double, 4, 4>::Identity();
   A.block(0, 2, 2, 2) = -Matrix2d::Identity();
   A.block(2, 0, 2, 2) = -Matrix2d::Identity();
-  auto cost = std::make_shared<solvers::QuadraticCost>(A, Vector4d::Zero());
-
-  edge_01->AddCost(solvers::Binding(cost, {v[0]->x(), v[1]->x()}));
-  edge_02->AddCost(solvers::Binding(cost, {v[0]->x(), v[2]->x()}));
-  edge_13->AddCost(solvers::Binding(cost, {v[1]->x(), v[3]->x()}));
-  edge_23->AddCost(solvers::Binding(cost, {v[2]->x(), v[3]->x()}));
+  auto cost =
+      std::make_shared<solvers::QuadraticCost>(2.0 * A, Vector4d::Zero());
+  for (auto e : spp.Edges()) {
+    e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
+  }
 
   GraphOfConvexSetsOptions options;
   options.preprocessing = false;
@@ -1433,7 +2198,9 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
                                 0.5 * Vector2d(1, -1), 1e-6));
     EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
                                 0.5 * Vector2d(2, 0), 1e-6));
-    EXPECT_NEAR(edge_13->GetSolutionCost(result), 0.5 * 1, 1e-6);
+    // Gurobi's error is *slightly* larger than 1e-6. This puts in a healthy
+    // margin to account for it.
+    EXPECT_NEAR(edge_13->GetSolutionCost(result), 1.0, 1.1e-6);
     EXPECT_NEAR(result.GetSolution(edge_13->phi()), 0.5, 1e-6);
     EXPECT_TRUE(
         CompareMatrices(v[1]->GetSolution(result), Vector2d(1, -1), 1e-6));
@@ -1466,8 +2233,8 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
                                 Vector2d(1, -1), 1e-6));
     EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
                                 Vector2d(2, 0), 1e-6));
-    EXPECT_NEAR(edge_13->GetSolutionCost(result), 1, 1e-6);
-    EXPECT_NEAR(result.GetSolution(edge_13->phi()), 1, 1e-6);
+    EXPECT_NEAR(edge_13->GetSolutionCost(result), 2.0, 1e-4);
+    EXPECT_NEAR(result.GetSolution(edge_13->phi()), 1.0, 1e-6);
   }
 }
 
@@ -1692,7 +2459,7 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
 
   if (solvers::MosekSolver::is_available() &&
       solvers::MosekSolver::is_enabled()) {
-    // Test rounding_solver_options by setting the maximum iterations to 0,
+    // Test restriction_solver_options by setting the maximum iterations to 0,
     // which is equivalent to not solving the rounding problem. Thus it should
     // fail.
     solvers::MosekSolver mosek_solver;
@@ -1701,19 +2468,231 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     options.preprocessing = false;
     options.max_rounded_paths = 10;
 
-    options.rounding_solver_options = SolverOptions();
-    options.rounding_solver_options->SetOption(
+    options.restriction_solver_options = SolverOptions();
+    options.restriction_solver_options->SetOption(
         solvers::MosekSolver::id(), "MSK_IPAR_INTPNT_MAX_ITERATIONS", 0);
 
     auto failed_result = spp.SolveShortestPath(*source, *target, options);
     EXPECT_FALSE(failed_result.is_success());
 
     // Without the convex relaxation, the solver should ignore the
-    // rounding_solver_options and succeed.
+    // restriction_solver_options and succeed.
     options.convex_relaxation = false;
     auto successful_result = spp.SolveShortestPath(*source, *target, options);
     EXPECT_TRUE(successful_result.is_success());
+
+    // Test preprocessing_solver_options by setting the time limit to 0. This
+    // will cause the preprocessing to fail on every edge, tagging those edges
+    // as unusable, and thus causing the solve to fail.
+    options.preprocessing = true;
+    options.convex_relaxation = true;
+    options.restriction_solver_options = solvers::SolverOptions();
+    solvers::MosekSolver mosek_solver2;
+    options.preprocessing_solver = &mosek_solver2;
+    options.preprocessing_solver_options = solvers::SolverOptions();
+    options.preprocessing_solver_options->SetOption(
+        solvers::MosekSolver::id(), "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
+
+    auto failed_result_2 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_FALSE(failed_result_2.is_success());
+
+    // If preprocessing_solver is unspecified, preprocessing_solver_options
+    // should be ignored, so the optimization should succeed.
+    options.preprocessing_solver = nullptr;
+    auto successful_result_2 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_TRUE(successful_result_2.is_success());
   }
+}
+
+/*
+┌──────┐     ┌────┐     ┌────┐
+|source├────►│ p1 │◄───►│ p3 │─────────┐
+└───┬──┘     └─▲──┘     └─▲──┘         |
+    │          |          |            |
+    │        ┌─▼──┐     ┌─▼──┐     ┌───▼────┐
+    └───────►│ p2 │◄───►│ p4 │────►│ target │
+             └────┘     └────┘     └────────┘
+
+*/
+GTEST_TEST(ShortestPathTest, SamplePaths) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* target = spp.AddVertex(Point(Vector2d(1.5, 1.5)));
+  Vertex* p1 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(2, -1)));
+  Vertex* p2 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(-1, 2)));
+  Vertex* p3 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(1, -2), Vector2d(2, 2)));
+  Vertex* p4 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, 1), Vector2d(2, 2)));
+
+  // Edges pointing towards target
+  const auto e_s1 = spp.AddEdge(source, p1);
+  spp.AddEdge(source, p2);
+  const auto e_13 = spp.AddEdge(p1, p3);
+  spp.AddEdge(p2, p4);
+  const auto e_3t = spp.AddEdge(p3, target);
+  spp.AddEdge(p4, target);
+
+  // Edges between parallel vertices
+  spp.AddEdge(p1, p2);
+  spp.AddEdge(p2, p1);
+  spp.AddEdge(p3, p4);
+  spp.AddEdge(p4, p3);
+
+  // Edges pointing towards source
+  spp.AddEdge(p3, p1);
+  spp.AddEdge(p4, p2);
+
+  // The maximum number of distinct paths without revisits in this graph is 8,
+  // hence given enough samples (and high probabilities of traversing all
+  // edges) we should find all of them.
+  const int kNumPaths = 8;
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  // Set max_rounded_paths to 0 to we only solve the convex relaxation.
+  options.max_rounded_paths = 0;
+  // We won't care about this result, but we solve to obtain a result we can
+  // later modify.
+  auto relaxed_result = spp.SolveShortestPath(*source, *target, options);
+  ASSERT_TRUE(relaxed_result.is_success());
+
+  // Set a high number of rounding trials so we find at least kNumPaths paths.
+  options.max_rounded_paths = kNumPaths;
+  options.max_rounding_trials = 100;
+
+  // Set all the flow variables to 0.5 so we will sample multiple random paths.
+  for (const auto& e : spp.Edges()) {
+    relaxed_result.SetSolution(e->phi(), 0.5);
+  }
+
+  auto check_paths = [&](const auto& paths, const auto& source_vertex,
+                         const auto& target_vertex, int expected_num_paths) {
+    ASSERT_EQ(paths.size(), expected_num_paths);
+
+    // Check that all the paths start at the source and end at the target
+    for (const auto& p : paths) {
+      ASSERT_GE(p.size(), 0);
+      ASSERT_EQ(p.front()->u().id(), source_vertex->id());
+      ASSERT_EQ(p.back()->v().id(), target_vertex->id());
+    }
+
+    // Make sure no paths are equal.
+    for (const std::vector<const Edge*>& path : paths) {
+      for (const std::vector<const Edge*>& other : paths) {
+        if (&path == &other) {
+          continue;
+        }
+        // Compare `path` with `other`.
+        std::vector<EdgeId> path_ids;
+        for (const auto& edge : path) path_ids.push_back(edge->id());
+
+        std::vector<EdgeId> other_ids;
+        for (const auto& edge : other) other_ids.push_back(edge->id());
+
+        bool paths_equal = path_ids == other_ids;
+        ASSERT_FALSE(paths_equal);
+      }
+    }
+  };
+
+  auto paths = spp.SamplePaths(*source, *target, relaxed_result, options);
+  check_paths(paths, source, target, kNumPaths);
+
+  // Now sample the paths using flows.
+  std::unordered_map<const Edge*, double> flows;
+  for (const auto& e : spp.Edges()) {
+    flows.emplace(e, 0.5);
+  }
+  auto paths_from_flows = spp.SamplePaths(*source, *target, flows, options);
+  check_paths(paths_from_flows, source, target, kNumPaths);
+
+  // Now sample the paths using a subset of the flows (all flows not included
+  // should be assumed identical to 0).
+  std::unordered_map<const Edge*, double> flows_subset;
+  flows_subset.emplace(e_s1, 0.5);
+  flows_subset.emplace(e_13, 0.5);
+  flows_subset.emplace(e_3t, 0.5);
+  // Because all other flows are assumed 0, there should only be one found path.
+  auto paths_from_flows_subset =
+      spp.SamplePaths(*source, *target, flows_subset, options);
+  check_paths(paths_from_flows_subset, source, target, 1);
+
+  // Check the case where there are no possible paths.
+  // Set all the flow variables to 0.0 so there are no candidate paths.
+  for (const auto& e : spp.Edges()) {
+    relaxed_result.SetSolution(e->phi(), 0.0);
+  }
+
+  auto paths_empty = spp.SamplePaths(*source, *target, relaxed_result, options);
+  // There should be no candidate paths.
+  ASSERT_EQ(paths_empty.size(), 0);
+}
+
+GTEST_TEST(ShortestPathTest, SamplePathsInvalidEdgeInFlows) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* target = spp.AddVertex(Point(Vector2d(1.5, 1.5)));
+  spp.AddEdge(source, target);
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 5;
+  options.max_rounding_trials = 10;
+
+  // Create an edge that does not belong to the graph.
+  GraphOfConvexSets other_gcs;
+  Vertex* other_source = other_gcs.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* other_target = other_gcs.AddVertex(Point(Vector2d(1.5, 1.5)));
+  Edge* invalid_edge = other_gcs.AddEdge(other_source, other_target);
+
+  // Create flows with an invalid edge.
+  std::unordered_map<const Edge*, double> flows;
+  for (const auto& e : spp.Edges()) {
+    flows.emplace(e, 0.5);
+  }
+  flows.emplace(invalid_edge, 0.5);  // Add invalid edge.
+
+  // Ensure that the invalid argument exception is thrown.
+  EXPECT_THROW(spp.SamplePaths(*source, *target, flows, options),
+               std::invalid_argument);
+}
+
+GTEST_TEST(ShortestPathTest, InaccurateRelaxationSolve) {
+  // If the convex relaxation is solved inaccurately, infeasibility may go
+  // undetected. Previously, this could lead the randomized rounding process to
+  // fail quietly, eventually leading to a segmentation fault or other memory
+  // error.
+  Point p1(Vector1d(0.0));
+  Point p2(Vector1d(1.0));
+
+  GraphOfConvexSets g;
+
+  auto v1 = g.AddVertex(p1);
+  auto v2 = g.AddVertex(p1);
+  auto v3 = g.AddVertex(p2);
+  auto v4 = g.AddVertex(p2);
+
+  g.AddEdge(v1, v2);
+  g.AddEdge(v3, v4);
+
+  // Prevent the solver from detecting infeasibility.
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.max_rounded_paths = 100;
+
+  options.solver_options.SetOption(solvers::ScsSolver::id(), "max_iters", 1);
+  solvers::ScsSolver scs;
+  options.solver = &scs;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(g.SolveShortestPath(*v1, *v4, options),
+                              ".*no path from the source to the target.*");
 }
 
 // In some cases, the depth first search performed in rounding will lead to a
@@ -2215,11 +3194,33 @@ GTEST_TEST(ShortestPathTest, SavvaBoxExample) {
   }
 }
 
+GTEST_TEST(GcsGraphvizOptionsTest, Serialize) {
+  GcsGraphvizOptions options;
+  options.show_slacks = false;
+  options.show_vars = false;
+  options.show_flows = false;
+  options.show_costs = false;
+  options.scientific = true;
+  options.precision = 5;
+
+  const std::string serialized = yaml::SaveYamlString(options);
+  const auto deserialized =
+      yaml::LoadYamlString<GcsGraphvizOptions>(serialized);
+
+  EXPECT_EQ(deserialized.show_slacks, options.show_slacks);
+  EXPECT_EQ(deserialized.show_vars, options.show_vars);
+  EXPECT_EQ(deserialized.show_flows, options.show_flows);
+  EXPECT_EQ(deserialized.show_costs, options.show_costs);
+  EXPECT_EQ(deserialized.scientific, options.scientific);
+  EXPECT_EQ(deserialized.precision, options.precision);
+}
+
 GTEST_TEST(ShortestPathTest, Graphviz) {
   GraphOfConvexSets g;
   auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
   auto target = g.AddVertex(Point(Vector1d{1e-5}), "target");
-  g.AddEdge(source, target, "source_to_target")->AddCost(1.23);
+  Edge* edge = g.AddEdge(source, target, "source_to_target");
+  edge->AddCost(1.23);
   auto other = g.AddVertex(Point(Vector1d{4.0}), "other");
   g.AddEdge(source, other, "source_to_other")->AddCost(3.45);
   g.AddEdge(other, target, "other_to_target");  // No cost from other to target.
@@ -2228,15 +3229,20 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   options.preprocessing = true;
   options.convex_relaxation = true;
 
+  GcsGraphvizOptions viz_options;
+
   // Note: Testing the entire string against a const string is too fragile,
   // since the VertexIds are Identifier<> and increment on a global counter.
   EXPECT_THAT(g.GetGraphvizString(),
               AllOf(HasSubstr("source"), HasSubstr("target"),
                     HasSubstr("source_to_target")));
+
   auto result = g.SolveShortestPath(*source, *target, options);
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
-                    HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ =")));
+                    HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ ="),
+                    Not(HasSubstr("color=\"#ff0000\"")),
+                    HasSubstr("color=\"#00000020\"]")));
 
   // With a rounded result.
   options.max_rounded_paths = 1;
@@ -2244,18 +3250,48 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   // Note: The cost here only comes from the cost=0 on other_to_target until
   // SolveConvexRestriction provides the rewritten costs.
   EXPECT_THAT(g.GetGraphvizString(result),
-              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ =")));
+              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
+                    HasSubstr("color=\"#00000020\"]")));
 
   // No slack variables.
-  EXPECT_THAT(
-      g.GetGraphvizString(result, false),
-      AllOf(HasSubstr("x ="), HasSubstr("cost ="), Not(HasSubstr("ϕ =")),
-            Not(HasSubstr("ϕ xᵤ =")), Not(HasSubstr("ϕ xᵥ ="))));
+  viz_options.show_slacks = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
+                    Not(HasSubstr("ϕ xᵤ =")), Not(HasSubstr("ϕ xᵥ ="))));
+
   // Precision and scientific.
-  EXPECT_THAT(g.GetGraphvizString(result, false, 2, false),
+  viz_options.precision = 2;
+  viz_options.scientific = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
               AllOf(HasSubstr("x = [1.00 2.00]"), HasSubstr("x = [0.00]")));
-  EXPECT_THAT(g.GetGraphvizString(result, false, 2, true),
+
+  viz_options.scientific = true;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
               AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-05]")));
+
+  // No vertex vars
+  viz_options.show_vars = false;
+  viz_options.scientific = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(Not(HasSubstr("x ="))));
+
+  // No cost
+  viz_options.show_costs = false;
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+              AllOf(Not(HasSubstr("cost ="))));
+
+  // No flows
+  viz_options.show_flows = false;
+  EXPECT_THAT(
+      g.GetGraphvizString(result, viz_options),
+      AllOf(Not(HasSubstr("ϕ =")), Not(HasSubstr("color=\"#00000020\"]"))));
+
+  // Show active path
+  viz_options.show_flows = false;
+  viz_options.show_costs = false;
+  EXPECT_THAT(
+      g.GetGraphvizString(result, viz_options, std::vector<const Edge*>{edge}),
+      AllOf(HasSubstr("color=\"#ff0000\"")));
 }
 
 }  // namespace optimization

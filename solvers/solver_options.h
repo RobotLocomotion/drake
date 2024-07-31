@@ -66,7 +66,7 @@ class SolverOptions {
  public:
   SolverOptions() = default;
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverOptions)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverOptions);
 
   /** The values stored in SolverOptions can be double, int, or string.
    * In the future, we might re-order or add more allowed types without any
@@ -123,6 +123,10 @@ class SolverOptions {
   /** Returns the kPrintToConsole set via CommonSolverOption, or else false if
    * the option has not been set. */
   bool get_print_to_console() const;
+
+  /** Returns the kStandaloneReproductionFileName set via CommonSolverOption, or
+   * else an empty string if the option has not been set. */
+  std::string get_standalone_reproduction_file_name() const;
 
   template <typename T>
   const std::unordered_map<std::string, T>& GetOptions(

@@ -19,7 +19,7 @@ namespace drake {
 /// https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine
 class RandomGenerator {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomGenerator)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomGenerator);
 
   using result_type = std::mt19937::result_type;
 

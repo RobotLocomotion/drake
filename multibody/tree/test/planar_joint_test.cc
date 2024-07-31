@@ -119,13 +119,6 @@ TEST_F(PlanarJointTest, GetJointLimits) {
 TEST_F(PlanarJointTest, Damping) {
   EXPECT_EQ(joint_->default_damping(), Vector3d::Constant(kDamping));
   EXPECT_EQ(joint_->default_damping_vector(), Vector3d::Constant(kDamping));
-
-  // Ensure the deprecated versions are correct until removal.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(joint_->damping(), Vector3d::Constant(kDamping));
-  EXPECT_EQ(joint_->damping_vector(), Vector3d::Constant(kDamping));
-#pragma GCC diagnostic pop
 }
 
 // Context-dependent value access.

@@ -20,7 +20,7 @@ namespace {
 
 class NotCopyableOrCloneable {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotCopyableOrCloneable)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotCopyableOrCloneable);
   explicit NotCopyableOrCloneable(double value) : value_{value} {}
   double value() const { return value_; }
 
@@ -30,7 +30,7 @@ class NotCopyableOrCloneable {
 
 class CopyConstructible {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CopyConstructible)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CopyConstructible);
   explicit CopyConstructible(double value) : value_{value} {}
   double value() const { return value_; }
 
@@ -63,7 +63,7 @@ class CopyableAndCloneable {
 
 class JustCloneable {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JustCloneable)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JustCloneable);
   virtual ~JustCloneable() = default;
   explicit JustCloneable(double value) : value_{value} {}
   std::unique_ptr<JustCloneable> Clone() const { return DoClone(); }
@@ -81,7 +81,7 @@ class JustCloneable {
 // base class type for T.
 class BaseClassCloneable : public JustCloneable {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BaseClassCloneable)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BaseClassCloneable);
   BaseClassCloneable(std::string name, double value)
       : JustCloneable(value), name_(std::move(name)) {}
   std::string name() const { return name_; }
@@ -98,7 +98,7 @@ class BaseClassCloneable : public JustCloneable {
 // Value<T> we create for it should use the derived class type for T.
 class DerivedClassCloneable : public JustCloneable {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DerivedClassCloneable)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DerivedClassCloneable);
   DerivedClassCloneable(std::string name, double value)
       : JustCloneable(value), name_(std::move(name)) {}
   std::unique_ptr<DerivedClassCloneable> Clone() const {

@@ -34,7 +34,7 @@ namespace internal {
 template <typename T>
 class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticMobilizer);
 
   // Constructor for a %PrismaticMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M` granting a single translational degree of freedom along
@@ -52,6 +52,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
     DRAKE_DEMAND(!axis_F.isZero(kEpsilon));
     axis_F_.normalize();
   }
+
+  ~PrismaticMobilizer() final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -78,7 +80,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   //                    belongs to.
   // @param[in] translation The desired translation in meters.
   // @returns a constant reference to `this` mobilizer.
-  const PrismaticMobilizer<T>& set_translation(
+  const PrismaticMobilizer<T>& SetTranslation(
       systems::Context<T>* context, const T& translation) const;
 
   // Gets the rate of change, in meters per second, of `this` mobilizer's
@@ -99,7 +101,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // @param[in] translation_dot The desired rate of change of `this`
   // mobilizer's translation in meters per second.
   // @returns a constant reference to `this` mobilizer.
-  const PrismaticMobilizer<T>& set_translation_rate(
+  const PrismaticMobilizer<T>& SetTranslationRate(
       systems::Context<T> *context, const T& translation_dot) const;
 
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
@@ -204,4 +206,4 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::PrismaticMobilizer)
+    class ::drake::multibody::internal::PrismaticMobilizer);

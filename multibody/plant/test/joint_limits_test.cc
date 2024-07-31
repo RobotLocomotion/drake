@@ -195,7 +195,7 @@ VectorX<double> KukaPositionUpperLimits() {
 
 void SetReflectedInertiaToZero(MultibodyPlant<double>* plant) {
   DRAKE_DEMAND(plant != nullptr);
-  for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
+  for (JointActuatorIndex index : plant->GetJointActuatorIndices()) {
     JointActuator<double>& joint_actuator =
         plant->get_mutable_joint_actuator(index);
     joint_actuator.set_default_rotor_inertia(0.0);

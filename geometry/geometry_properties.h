@@ -443,7 +443,7 @@ class GeometryProperties {
   GeometryProperties() { values_.emplace(default_group_name(), Group{}); }
 
   // Final subclasses are allowed to make copy/move/assign public.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryProperties)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryProperties);
 
  private:
   // Conditionally writes the property (group_name, name) with the given value.

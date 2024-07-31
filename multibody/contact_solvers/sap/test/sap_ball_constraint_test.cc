@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/contact_solvers/sap/expect_equal.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
 using drake::math::RotationMatrix;
@@ -51,6 +52,12 @@ typename SapBallConstraint<T>::Kinematics MakeArbitraryKinematics(
                     : SapConstraintJacobian<T>(clique0, J32, clique1, J34);
   return typename SapBallConstraint<T>::Kinematics{
       objectA, p_WP, p_AP_W, objectB, p_WQ, p_BQ_W, J_PQ_W};
+}
+
+void ExpectEqual(const SapBallConstraint<double>& c1,
+                 const SapBallConstraint<double>& c2) {
+  ExpectBaseIsEqual(c1, c2);
+  EXPECT_EQ(c1.kinematics(), c2.kinematics());
 }
 
 GTEST_TEST(SapBallConstraint, SingleCliqueConstraint) {
@@ -124,13 +131,15 @@ GTEST_TEST(SapBallConstraint, SingleCliqueConstraintClone) {
   // clone is a deep-copy of the original constraint.
   auto clone = dynamic_pointer_cast<SapBallConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), 2);
-  EXPECT_EQ(clone->num_constraint_equations(), 3);
-  EXPECT_EQ(clone->num_cliques(), 1);
-  EXPECT_EQ(clone->first_clique(), kinematics.jacobian().clique(0));
-  EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
-  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
+  ExpectEqual(c, *clone);
+
+  // Test ToDouble.
+  SapBallConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryKinematics<AutoDiffXd>(num_cliques));
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapBallConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapBallConstraint, TwoCliquesConstraintClone) {
@@ -141,13 +150,15 @@ GTEST_TEST(SapBallConstraint, TwoCliquesConstraintClone) {
 
   auto clone = dynamic_pointer_cast<SapBallConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), 2);
-  EXPECT_EQ(clone->num_constraint_equations(), 3);
-  EXPECT_EQ(clone->num_cliques(), 2);
-  EXPECT_EQ(clone->first_clique(), kinematics.jacobian().clique(0));
-  EXPECT_EQ(clone->second_clique(), kinematics.jacobian().clique(1));
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
-  EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(), J34);
+  ExpectEqual(c, *clone);
+
+  // Test ToDouble.
+  SapBallConstraint<AutoDiffXd> c_ad(
+      MakeArbitraryKinematics<AutoDiffXd>(num_cliques));
+  auto clone_from_ad =
+      dynamic_pointer_cast<SapBallConstraint<double>>(c_ad.ToDouble());
+  ASSERT_NE(clone_from_ad, nullptr);
+  ExpectEqual(c, *clone_from_ad);
 }
 
 GTEST_TEST(SapBallConstraint, AccumulateSpatialImpulses) {
@@ -168,12 +179,12 @@ GTEST_TEST(SapBallConstraint, AccumulateSpatialImpulses) {
   // Expected spatial impulse on B.
   const SpatialForce<double> F_Bo_W =
       (SpatialForce<double>(Vector3d::Zero(), gamma))
-          .ShiftInPlace(-kinematics.p_BQ_W());
+          .Shift(-kinematics.p_BQ_W());
 
   // Expected spatial impulse on A.
   const SpatialForce<double> F_Ao_W =
       (SpatialForce<double>(Vector3d::Zero(), -gamma))
-          .ShiftInPlace(-kinematics.p_AP_W());
+          .Shift(-kinematics.p_AP_W());
 
   const SpatialForce<double> F0(Vector3d(1., 2., 3), Vector3d(4., 5., 6));
   SpatialForce<double> Faccumulated = F0;  // Initialize to non-zero value.

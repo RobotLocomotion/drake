@@ -180,7 +180,7 @@ VolumeMesh<T> MakeCapsuleVolumeMesh(const Capsule& capsule,
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeCapsuleVolumeMesh<T>))
+    (&MakeCapsuleVolumeMesh<T>));
 
 }  // namespace internal
 }  // namespace geometry

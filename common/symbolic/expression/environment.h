@@ -40,7 +40,7 @@ namespace symbolic {
  */
 class Environment {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Environment)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Environment);
 
   typedef Variable key_type;
   typedef double mapped_type;

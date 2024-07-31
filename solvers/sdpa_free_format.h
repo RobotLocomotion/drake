@@ -9,6 +9,7 @@
 #include <Eigen/Sparse>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -110,7 +111,7 @@ struct DecisionVariableInSdpaX {
  */
 class SdpaFreeFormat {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdpaFreeFormat)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdpaFreeFormat);
 
   explicit SdpaFreeFormat(const MathematicalProgram& prog);
 
@@ -474,6 +475,8 @@ enum class RemoveFreeVariableMethod {
                           ///< lorentz cone constraint t ≥ sqrt(sᵀs).
 };
 
+std::string to_string(const RemoveFreeVariableMethod&);
+
 /**
  * SDPA is a format to record an SDP problem
  *
@@ -510,3 +513,6 @@ bool GenerateSDPA(
     RemoveFreeVariableMethod method = RemoveFreeVariableMethod::kNullspace);
 }  // namespace solvers
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(, drake::solvers, RemoveFreeVariableMethod, x,
+                   drake::solvers::to_string(x))

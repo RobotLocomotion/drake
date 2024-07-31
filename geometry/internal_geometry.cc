@@ -54,6 +54,23 @@ bool InternalGeometry::has_role(Role role) const {
   DRAKE_UNREACHABLE();
 }
 
+const GeometryProperties* InternalGeometry::properties(Role role) const {
+  switch (role) {
+    case Role::kUnassigned:
+      return nullptr;
+    case Role::kProximity:
+      return proximity_properties();
+      break;
+    case Role::kIllustration:
+      return illustration_properties();
+      break;
+    case Role::kPerception:
+      return perception_properties();
+      break;
+  }
+  DRAKE_UNREACHABLE();
+}
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

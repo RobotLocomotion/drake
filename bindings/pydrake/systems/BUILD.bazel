@@ -1,10 +1,6 @@
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install")
-load(
-    "//tools/skylark:pybind.bzl",
-    "drake_pybind_library",
-    "get_drake_py_installs",
-    "get_pybind_package_info",
-)
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
@@ -15,8 +11,12 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
-load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+    "get_drake_py_installs",
+    "get_pybind_package_info",
+)
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = [
@@ -130,6 +130,20 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "estimators_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
+    ],
+    cc_srcs = ["estimators_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
     name = "rendering_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -149,6 +163,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -163,6 +178,7 @@ drake_pybind_library(
         "sensors_py_image_io.cc",
         "sensors_py_lcm.cc",
         "sensors_py_rgbd.cc",
+        "sensors_py_rotary_encoders.cc",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -255,7 +271,7 @@ drake_py_library(
         ":pyplot_visualizer_py",
         ":rendering_py",
         "//bindings/pydrake:lcm_py",
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -281,6 +297,7 @@ drake_py_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
+    ":estimators_py",
     ":framework_py",
     ":lcm_py",
     ":primitives_py",
@@ -335,7 +352,7 @@ drake_py_binary(
     srcs = ["drawing_graphviz_example.py"],
     add_test_rule = 1,
     data = [
-        "//examples/multibody/cart_pole:cart_pole.sdf",
+        "//examples/multibody/cart_pole:models",
     ],
     test_rule_timeout = "moderate",
     deps = [
@@ -444,6 +461,15 @@ drake_py_unittest(
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/multibody:tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "estimators_test",
+    deps = [
+        ":estimators_py",
+        ":primitives_py",
+        "//bindings/pydrake/examples",
     ],
 )
 

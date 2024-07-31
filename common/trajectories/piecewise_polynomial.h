@@ -81,7 +81,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   PiecewisePolynomial() = default;
 
   // We are final, so this is okay.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial);
 
   typedef MatrixX<Polynomial<T>> PolynomialMatrix;
 
@@ -875,4 +875,4 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::PiecewisePolynomial)
+    class drake::trajectories::PiecewisePolynomial);

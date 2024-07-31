@@ -13,7 +13,9 @@ Gain<T>::Gain(double k, int size) : Gain(Eigen::VectorXd::Ones(size) * k) {}
 
 template <typename T>
 Gain<T>::Gain(const Eigen::VectorXd& k)
-    : VectorSystem<T>(SystemTypeTag<Gain>{}, k.size(), k.size()), k_(k) {}
+    : VectorSystem<T>(SystemTypeTag<Gain>{}, k.size(), k.size(),
+                      /* direct_feedthrough = */ true),
+      k_(k) {}
 
 template <typename T>
 template <typename U>
@@ -48,4 +50,4 @@ void Gain<T>::DoCalcVectorOutput(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Gain)
+    class ::drake::systems::Gain);

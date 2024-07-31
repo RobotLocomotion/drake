@@ -16,7 +16,7 @@ namespace multibody {
  */
 class PointToLineDistanceConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointToLineDistanceConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointToLineDistanceConstraint);
 
   /**
    Constrain the distance between a point P attached to frame_point (denoted as

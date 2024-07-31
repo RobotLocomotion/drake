@@ -1,11 +1,12 @@
-load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
+
+package(default_visibility = ["//visibility:private"])
 
 models_filegroup(
     name = "glob_models",
     glob_exclude = ["images/**/*"],
-    visibility = ["//visibility:private"],
 )
 
 filegroup(
@@ -13,7 +14,10 @@ filegroup(
     srcs = [
         ":glob_models",
     ],
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//:__pkg__",
+        "//bindings/pydrake/visualization:__pkg__",
+    ],
 )
 
 drake_cc_binary(

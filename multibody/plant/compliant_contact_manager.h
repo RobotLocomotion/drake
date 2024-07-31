@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -34,7 +35,7 @@ class TamsiDriver;
 template <typename T>
 struct AccelerationsDueNonConstraintForcesCache {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
-      AccelerationsDueNonConstraintForcesCache)
+      AccelerationsDueNonConstraintForcesCache);
   explicit AccelerationsDueNonConstraintForcesCache(
       const MultibodyTreeTopology& topology);
   MultibodyForces<T> forces;  // The external forces causing accelerations.
@@ -51,13 +52,13 @@ struct AccelerationsDueNonConstraintForcesCache {
 // in the MultibodyPlant model is compliant without introducing state. Supported
 // models include point contact with a linear model of compliance, see
 // GetPointContactStiffness() and the hydroelastic contact model, see @ref
-// mbp_hydroelastic_materials_properties in MultibodyPlant's Doxygen
-// documentation. Dynamics of deformable bodies (if any exists) are calculated
-// in DeformableDriver. Deformable body contacts are modeled as near-rigid point
-// contacts where compliance is added as a means of stabilization without
-// introducing additional states (i.e. the penetration distance x and its time
-// derivative ẋ are not states). Dissipation is modeled using a linear model.
-// For point contact, the normal contact force (in Newtons) is modeled as:
+// hydro_model_parameters. Dynamics of deformable bodies (if any exists) are
+// calculated in DeformableDriver. Deformable body contacts are modeled as
+// near-rigid point contacts where compliance is added as a means of
+// stabilization without introducing additional states (i.e. the penetration
+// distance x and its time derivative ẋ are not states). Dissipation is modeled
+// using a linear model. For point contact, the normal contact force (in
+// Newtons) is modeled as:
 //   fₙ = k⋅(x + τ⋅ẋ)₊
 // where k is the point contact stiffness, see GetPointContactStiffness(), τ is
 // the dissipation timescale, and ()₊ corresponds to the "positive part"
@@ -82,7 +83,7 @@ struct AccelerationsDueNonConstraintForcesCache {
 template <typename T>
 class CompliantContactManager final : public DiscreteUpdateManager<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager);
 
   using DiscreteUpdateManager<T>::plant;
 
@@ -180,7 +181,11 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   // Specific contact solver drivers are created at ExtractModelInfo() time,
   // when the manager retrieves modeling information from MultibodyPlant.
   // Only one of these drivers will be non-nullptr.
-  std::unique_ptr<SapDriver<T>> sap_driver_;
+  // When T=Expression, the sap_driver_ is always nullptr, because the driver
+  // doesn't even compile for T=Expression.
+  std::conditional_t<std::is_same_v<T, symbolic::Expression>, void*,
+                     std::unique_ptr<SapDriver<T>>>
+      sap_driver_{};
   std::unique_ptr<TamsiDriver<T>> tamsi_driver_;
 };
 

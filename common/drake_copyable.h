@@ -24,7 +24,7 @@ declaration, e.g.:
 <pre>
 class Foo {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Foo)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Foo);
 
   // ...
 };
@@ -48,7 +48,7 @@ should invoke this macro in the public section of the class declaration, e.g.:
 <pre>
 class Foo {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo);
 
   // ...
 };
@@ -88,3 +88,27 @@ that in a unit test.
       "This assertion is never false; its only purpose is to "  \
       "generate 'use of deleted function: operator=' errors "   \
       "when Classname is a template.");
+
+/** DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN declares the special member functions
+for copy-construction, copy-assignment, move-construction, and move-assignment.
+Use this macro when these functions are available, but require non-default
+implementations. (Use DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN instead if you can
+use the compiler-generated default implementations.) Drake's Doxygen is
+customized to render the declarations in detail, with appropriate comments
+assuming _unsurprising_ behavior of your hand-written functions. Invoke this
+macro in the public section of the class declaration, e.g.:
+<pre>
+class Foo {
+ public:
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Foo);
+
+  // ...
+};
+</pre>
+Then the matching definitions should be placed in the associated .cc file.
+*/
+#define DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Classname) \
+  Classname(const Classname&);                            \
+  Classname& operator=(const Classname&);                 \
+  Classname(Classname&&);                                 \
+  Classname& operator=(Classname&&);

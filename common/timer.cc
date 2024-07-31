@@ -14,4 +14,16 @@ double SteadyTimer::Tick() {
   return std::chrono::duration<double>(clock::now() - start_time_).count();
 }
 
+ManualTimer::ManualTimer() {
+  Start();
+}
+
+void ManualTimer::Start() {
+  tick_ = 0.0;
+}
+
+double ManualTimer::Tick() {
+  return tick_;
+}
+
 }  // namespace drake

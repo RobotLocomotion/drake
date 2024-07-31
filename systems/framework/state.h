@@ -29,7 +29,7 @@ template <typename T>
 class State {
  public:
   // State is not copyable or moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(State)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(State);
 
   State();
   virtual ~State();
@@ -156,4 +156,4 @@ class State {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::State)
+    class ::drake::systems::State);

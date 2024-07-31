@@ -284,24 +284,6 @@ void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {
                                        NiceTypeName::Get(*this), shape_name));
 }
 
-ShapeName::ShapeName(const Shape& shape) {
-  shape.Reify(this);
-}
-
-ShapeName::~ShapeName() = default;
-
-void ShapeName::DefaultImplementGeometry(const Shape& shape) {
-  string_ = shape.type_name();
-}
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-std::ostream& operator<<(std::ostream& out, const ShapeName& name) {
-  out << name.name();
-  return out;
-}
-#pragma GCC diagnostic pop
-
 namespace {
 
 template <class MeshType>

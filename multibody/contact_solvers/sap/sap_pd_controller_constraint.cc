@@ -149,6 +149,27 @@ SapConstraintJacobian<T> SapPdControllerConstraint<T>::MakeConstraintJacobian(
   return SapConstraintJacobian<T>(c.clique, std::move(J));
 }
 
+template <typename T>
+std::unique_ptr<SapConstraint<double>>
+SapPdControllerConstraint<T>::DoToDouble() const {
+  const typename SapPdControllerConstraint<T>::Parameters& p = parameters_;
+  const typename SapPdControllerConstraint<T>::Configuration& c =
+      configuration_;
+  SapPdControllerConstraint<double>::Parameters p_to_double(
+      ExtractDoubleOrThrow(p.Kp()), ExtractDoubleOrThrow(p.Kd()),
+      ExtractDoubleOrThrow(p.effort_limit()));
+  SapPdControllerConstraint<double>::Configuration c_to_double{
+      c.clique,
+      c.clique_dof,
+      c.clique_nv,
+      ExtractDoubleOrThrow(c.q0),
+      ExtractDoubleOrThrow(c.qd),
+      ExtractDoubleOrThrow(c.vd),
+      ExtractDoubleOrThrow(c.u0)};
+  return std::make_unique<SapPdControllerConstraint<double>>(
+      std::move(c_to_double), std::move(p_to_double));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
@@ -156,4 +177,4 @@ SapConstraintJacobian<T> SapPdControllerConstraint<T>::MakeConstraintJacobian(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::contact_solvers::internal::
-        SapPdControllerConstraint)
+        SapPdControllerConstraint);

@@ -7,7 +7,7 @@
 namespace drake {
 namespace common {
 
-void MaybePauseForUser() {
+void MaybePauseForUser(std::string_view message) {
   bool is_test = (std::getenv("TEST_TMPDIR") != nullptr);
   bool is_invoked_by_bazel_run =
       (std::getenv("BUILD_WORKSPACE_DIRECTORY") != nullptr);
@@ -15,6 +15,9 @@ void MaybePauseForUser() {
     // Nothing good will happen here. The prompt may not appear, and the
     // program will hang, failing to notice user keyboard input.
     return;
+  }
+  if (!message.empty()) {
+    std::cout << message << std::endl;
   }
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

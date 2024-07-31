@@ -43,7 +43,7 @@ template <typename T>
 class System : public SystemBase {
  public:
   // System objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System);
 
   /// The scalar type with which this %System was instantiated.
   using Scalar = T;
@@ -163,15 +163,22 @@ class System : public SystemBase {
   sets its default values using SetDefaultContext(). */
   std::unique_ptr<Context<T>> CreateDefaultContext() const;
 
-  /** Assigns default values to all elements of the state. Overrides must not
-  change the number of state variables. */
-  virtual void SetDefaultState(const Context<T>& context,
-                               State<T>* state) const = 0;
-
   /** Assigns default values to all parameters. Overrides must not
-  change the number of parameters. */
+  change the number of parameters.
+
+  @warning `parameters` *may be* a mutable view into `context`. Don't assume
+  that evaluating `context` will be independent of writing to `parameters`. */
   virtual void SetDefaultParameters(const Context<T>& context,
                                     Parameters<T>* parameters) const = 0;
+
+  /** Assigns default values to all elements of the state. Overrides must not
+  change the number of state variables. The context's default parameters will
+  have already been set.
+
+  @warning `state` *may be* a mutable view into `context`. Don't assume that
+  evaluating `context` will be independent of writing to `state`. */
+  virtual void SetDefaultState(const Context<T>& context,
+                               State<T>* state) const = 0;
 
   /** Sets Context fields to their default values.  User code should not
   override. */
@@ -749,9 +756,29 @@ class System : public SystemBase {
   also processes other events associated with time zero. Also, "reached
   termination" returns are ignored here.
 
+  @param[in,out] context The Context supplied to the handlers and modified
+                         in place on return.
+
   @throws std::exception if it invokes an event handler that returns status
                          indicating failure. */
   void ExecuteInitializationEvents(Context<T>* context) const;
+
+  /** This method triggers all of the forced events registered with this
+  %System (which might be a Diagram). Ordering and status return handling
+  mimic the Simulator: unrestricted events are processed first, then
+  discrete update events, then publish events. "Reached termination" status
+  returns are ignored.
+
+  An option is provided to suppress publish events. This can be useful, for
+  example, to update state in a Diagram without triggering a visualization.
+
+  @param[in,out] context The Context supplied to the handlers and modified
+                         in place on return.
+
+  @throws std::exception if it invokes an event handler that returns status
+                         indicating failure. */
+  void ExecuteForcedEvents(Context<T>* context,
+                           bool publish = true) const;
 
   /** Determines whether there exists a unique periodic timing (offset and
   period) that triggers one or more discrete update events (and, if so, returns
@@ -1109,8 +1136,11 @@ class System : public SystemBase {
   using SystemBase::num_output_ports;
 
   // TODO(sherm1) Make this an InputPortIndex.
-  /** Returns the typed input port at index @p port_index. */
-  const InputPort<T>& get_input_port(int port_index) const {
+  /** Returns the typed input port at index `port_index`.
+  @param warn_deprecated Whether or not to print a warning in case the port was
+  marked as deprecated. */
+  const InputPort<T>& get_input_port(int port_index,
+                                     bool warn_deprecated = true) const {
     // Profiling revealed that it is too expensive to do a dynamic_cast here.
     // A static_cast is safe as long as GetInputPortBaseOrThrow always returns
     // a satisfactory type. As of this writing, it only ever returns values
@@ -1118,8 +1148,7 @@ class System : public SystemBase {
     // has a check that port.get_system_interface() matches `this` which is a
     // System<T>, so we are safe.
     return static_cast<const InputPort<T>&>(
-        this->GetInputPortBaseOrThrow(__func__, port_index,
-                                      /* warn_deprecated = */ true));
+        this->GetInputPortBaseOrThrow(__func__, port_index, warn_deprecated));
   }
 
   /** Convenience method for the case of exactly one input port.
@@ -1152,8 +1181,11 @@ class System : public SystemBase {
   bool HasInputPort(const std::string& port_name) const;
 
   // TODO(sherm1) Make this an OutputPortIndex.
-  /** Returns the typed output port at index @p port_index. */
-  const OutputPort<T>& get_output_port(int port_index) const {
+  /** Returns the typed output port at index `port_index`.
+  @param warn_deprecated Whether or not to print a warning in case the port was
+  marked as deprecated. */
+  const OutputPort<T>& get_output_port(int port_index,
+                                       bool warn_deprecated = true) const {
     // Profiling revealed that it is too expensive to do a dynamic_cast here.
     // A static_cast is safe as long as GetInputPortBaseOrThrow always returns
     // a satisfactory type. As of this writing, it only ever returns values
@@ -1161,8 +1193,7 @@ class System : public SystemBase {
     // has a check that port.get_system_interface() matches `this` which is a
     // System<T>, so we are safe.
     return static_cast<const OutputPort<T>&>(
-        this->GetOutputPortBaseOrThrow(__func__, port_index,
-                                       /* warn_deprecated = */ true));
+        this->GetOutputPortBaseOrThrow(__func__, port_index, warn_deprecated));
   }
 
   /** Convenience method for the case of exactly one output port.
@@ -2038,4 +2069,4 @@ class System : public SystemBase {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::System)
+    class ::drake::systems::System);

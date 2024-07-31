@@ -104,7 +104,7 @@ void SaveToPng(const ImageGrey8U& image, const std::string& file_path);
  */
 class ImageWriter : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageWriter)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageWriter);
 
   /** Constructs default instance with no image ports.  */
   ImageWriter();

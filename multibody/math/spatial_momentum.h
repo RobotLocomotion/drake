@@ -66,7 +66,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   typedef SpatialVector<::drake::multibody::SpatialMomentum, T> Base;
 
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialMomentum)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialMomentum);
 
   /// Default constructor. In Release builds, all 6 elements of a newly
   /// constructed spatial momentum are uninitialized (for speed). In Debug
@@ -88,25 +88,22 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   explicit SpatialMomentum(const Eigen::MatrixBase<Derived>& L) : Base(L) {}
 
   /// In-place shift of a %SpatialMomentum from an about-point P to an
-  /// about-point Q, On entry, `this` is L_MSP_E (system S's spatial momentum
+  /// about-point Q. On entry, `this` is L_MSP_E (system S's spatial momentum
   /// about point P, measured in a frame M and expressed in a frame E). On
   /// return `this` is modified to L_MSQ_E (S's spatial momentum about point Q,
   /// measured in frame M and expressed in frame E).
-  /// @param[in] offset which is the position vector p_PQ_E from point P to
-  /// point Q, with the same expressed-in frame E as `this` spatial momentum.
-  /// @retval L_MSQ_E reference to `this` spatial momentum which has been
-  /// modified to be system S's spatial momentum about point Q, measured in
-  /// frame M and expressed in frame E. The components of L_MSQ_E are: <pre>
+  /// The components of L_MSQ_E are: <pre>
   ///   l_MS_E = l_MS_E         (translational momentum of `this` is unchanged).
   ///  h_MSQ_E = h_MSP_E + p_QP_E x l_MS_E
   ///          = h_MSP_E - p_PQ_E x l_MS_E
   /// </pre>
-  /// Note: Spatial momenta shift similar to spatial force (see SpatialForce)
+  /// @param[in] offset which is the position vector p_PQ_E from point P to
+  /// point Q, with the same expressed-in frame E as `this` spatial momentum.
+  /// @note Spatial momenta shift similar to spatial force (see SpatialForce)
   /// and in a related/different way for spatial velocity (see SpatialVelocity).
   /// @see Shift() to shift spatial momentum without modifying `this`.
-  SpatialMomentum<T>& ShiftInPlace(const Vector3<T>& offset) {
+  void ShiftInPlace(const Vector3<T>& offset) {
     this->rotational() -= offset.cross(this->translational());
-    return *this;
     // Note: this operation is linear. [Jain 2010], (§2.1, page 22) uses the
     // "rigid body transformation operator" to write this as:
     //  L_MSQ = Φ(-p_PQ) L_MSP
@@ -134,7 +131,9 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// `this` whereas ShiftInPlace() does modify `this`.
   /// @see ShiftInPlace() for more information and how L_MSQ_E is calculated.
   SpatialMomentum<T> Shift(const Vector3<T>& offset) const {
-    return SpatialMomentum<T>(*this).ShiftInPlace(offset);
+    SpatialMomentum<T> result(*this);
+    result.ShiftInPlace(offset);
+    return result;
   }
 
   /// Calculates twice (2x) a body B's kinetic energy measured in a frame M.
@@ -173,9 +172,9 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
 template <typename T>
 inline SpatialMomentum<T> operator+(const SpatialMomentum<T>& L1_E,
                                     const SpatialMomentum<T>& L2_E) {
-  // Although this operator+() function simply calls an associated
-  // SpatialVector operator+=() function, it is needed for documentation.
-  return SpatialMomentum<T>(L1_E) += L2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialMomentum, T>::operator+(L1_E, L2_E);
 }
 
 /// Subtracts spatial momenta by simply subtracting their 6 underlying elements.
@@ -187,13 +186,13 @@ inline SpatialMomentum<T> operator+(const SpatialMomentum<T>& L1_E,
 template <typename T>
 inline SpatialMomentum<T> operator-(const SpatialMomentum<T>& L1_E,
                                     const SpatialMomentum<T>& L2_E) {
-  // Although this operator-() function simply calls an associated
-  // SpatialVector operator-=() function, it is needed for documentation.
-  return SpatialMomentum<T>(L1_E) -= L2_E;
+  // Although this implementation calls the base class operator, it is needed
+  // for documentation.
+  return SpatialVector<SpatialMomentum, T>::operator+(L1_E, L2_E);
 }
 
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::SpatialMomentum)
+    class ::drake::multibody::SpatialMomentum);

@@ -17,7 +17,7 @@ convention for the constraint multipliers. Added welds between a primary %Link
 and one of its shadow Links always make the primary %Link the parent. */
 class LinkJointGraph::LoopConstraint {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LoopConstraint)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LoopConstraint);
 
   LoopConstraint(LoopConstraintIndex index, std::string name,
                  ModelInstanceIndex model_instance,

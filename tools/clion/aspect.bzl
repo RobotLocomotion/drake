@@ -1,18 +1,18 @@
-# Load the relevant upstream methods.
+# Load the magic.
 load(
-    "@intellij_aspect//:intellij_info_impl.bzl",
-    "intellij_info_aspect_impl",
-    "make_intellij_info_aspect",
+    "@drake_clion_environment//:path.bzl",
+    "additional_transitive_quote_include_directory",
 )
 load(
     "@intellij_aspect//:intellij_info_bundled.bzl",
     "tool_label",
 )
 
-# Load the magic.
+# Load the relevant upstream methods.
 load(
-    "@drake_clion_environment//:path.bzl",
-    "additional_transitive_quote_include_directory",
+    "@intellij_aspect//:intellij_info_impl.bzl",
+    "intellij_info_aspect_impl",
+    "make_intellij_info_aspect",
 )
 
 # This is part of the `semantics` hooks provided by intellij_aspect's aspect.

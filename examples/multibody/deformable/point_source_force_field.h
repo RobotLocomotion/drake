@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace examples {
-namespace deformable_torus {
+namespace deformable {
 
 /* A custom external force density field that applies external force to
  deformable bodies. The force density points towards a point C affixed to a
@@ -18,7 +18,7 @@ namespace deformable_torus {
 class PointSourceForceField final
     : public multibody::ForceDensityField<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointSourceForceField)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointSourceForceField);
 
   /* Constructs a new PointSourceForceField object
    @param plant             The MultibodyPlant that owns this force field.
@@ -75,6 +75,6 @@ class PointSourceForceField final
   systems::InputPortIndex maximum_force_density_port_index_;
 };
 
-}  // namespace deformable_torus
+}  // namespace deformable
 }  // namespace examples
 }  // namespace drake

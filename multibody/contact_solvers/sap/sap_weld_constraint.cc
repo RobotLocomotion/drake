@@ -43,6 +43,21 @@ SapWeldConstraint<T>::Kinematics::Kinematics(int objectA,
 }
 
 template <typename T>
+bool SapWeldConstraint<T>::Kinematics::operator==(
+    const Kinematics& other) const {
+  if (objectA() != other.objectA()) return false;
+  if (!X_WP().IsExactlyEqualTo(other.X_WP())) return false;
+  if (p_AP_W() != other.p_AP_W()) return false;
+  if (objectB() != other.objectB()) return false;
+  if (!X_WQ().IsExactlyEqualTo(other.X_WQ())) return false;
+  if (p_BQ_W() != other.p_BQ_W()) return false;
+  if (jacobian() != other.jacobian()) return false;
+  if (p_PoQo_W() != other.p_PoQo_W()) return false;
+  if (a_PQ_W() != other.a_PQ_W()) return false;
+  return true;
+}
+
+template <typename T>
 SapWeldConstraint<T>::SapWeldConstraint(Kinematics kinematics)
     : SapHolonomicConstraint<T>(
           MakeSapHolonomicConstraintKinematics(kinematics),
@@ -224,10 +239,27 @@ void SapWeldConstraint<T>::DoAccumulateSpatialImpulses(
   }
 }
 
+template <typename T>
+std::unique_ptr<SapConstraint<double>> SapWeldConstraint<T>::DoToDouble()
+    const {
+  const typename SapWeldConstraint<T>::Kinematics& k = kinematics_;
+  auto discard_gradient = [](const RigidTransform<T>& X) {
+    return RigidTransform<double>(
+        RotationMatrix<double>(math::DiscardGradient(X.rotation().matrix())),
+        math::DiscardGradient(X.translation()));
+  };
+  SapWeldConstraint<double>::Kinematics k_to_double(
+      k.objectA(), discard_gradient(k.X_WP()),
+      math::DiscardGradient(k.p_AP_W()), k.objectB(),
+      discard_gradient(k.X_WQ()), math::DiscardGradient(k.p_BQ_W()),
+      k.jacobian().ToDouble());
+  return std::make_unique<SapWeldConstraint<double>>(std::move(k_to_double));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapWeldConstraint)
+    class ::drake::multibody::contact_solvers::internal::SapWeldConstraint);

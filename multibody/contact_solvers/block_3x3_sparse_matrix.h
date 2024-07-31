@@ -100,6 +100,8 @@ class Block3x3SparseMatrix {
   /* Returns the matrix as an Eigen dense matrix. Useful for debugging. */
   MatrixX<T> MakeDenseMatrix() const;
 
+  bool operator==(const Block3x3SparseMatrix<T>&) const = default;
+
  private:
   /* We store the non-zero blocks in the matrix in a row-major fashion. Within
    each row, the blocks are sorted in increasing column indices.
@@ -114,6 +116,7 @@ class Block3x3SparseMatrix {
   /* Index into `row_data_`. For a given `index`,
    row_data_[index.row][index.flat] retrieves the corresponding triplet. */
   struct Index {
+    bool operator==(const Index&) const = default;
     int row;
     int flat;
   };

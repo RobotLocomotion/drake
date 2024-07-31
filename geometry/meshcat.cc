@@ -32,8 +32,10 @@
 #include "drake/common/text_logging.h"
 #include "drake/geometry/meshcat_file_storage_internal.h"
 #include "drake/geometry/meshcat_internal.h"
+#include "drake/geometry/meshcat_recording_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
+#include "drake/systems/analysis/realtime_rate_calculator.h"
 
 #ifdef BOOST_VERSION
 #error Drake should be using the non-boost flavor of msgpack.
@@ -684,7 +686,8 @@ class Meshcat::Impl {
   explicit Impl(const MeshcatParams& params)
       : prefix_("/drake"),
         main_thread_id_(std::this_thread::get_id()),
-        params_(params) {
+        params_(params),
+        rate_calculator_(params_.realtime_rate_period) {
     DRAKE_THROW_UNLESS(!params.port.has_value() || *params.port == 0 ||
                        *params.port >= 1024);
     if (!drake::internal::IsNetworkingAllowed("meshcat")) {
@@ -781,6 +784,33 @@ class Meshcat::Impl {
   int port() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     return port_;
+  }
+
+  // This function is public via the PIMPL.
+  void SetSimulationTime(double sim_time) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    sim_time_ = sim_time;
+    const auto report = rate_calculator_.UpdateAndRecalculate(sim_time);
+    if (report.initialized) {
+      // We won't broadcast it, but we do return to the initialized state.
+      realtime_rate_ = 0.0;
+      return;
+    }
+    // This last invocation may have spanned zero or more report periods;
+    // dispatch one realtime rate message for each period.
+    for (int i = 0; i < report.period_count; ++i) {
+      // Note: report.rate may be infinity. The javascript chart will draw a
+      // saturated column for that rate value (which will eventually be pushed
+      // off the screen) -- but the record of the (smallest, largest) values in
+      // the chart will persist in showing infinity, even when the column is no
+      // longer visible.
+      SetRealtimeRate(report.rate);
+    }
+  }
+
+  double GetSimulationTime() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    return sim_time_;
   }
 
   // This function is public via the PIMPL.
@@ -1874,6 +1904,11 @@ class Meshcat::Impl {
     DRAKE_UNREACHABLE();
   }
 
+  void InjectMockTimer(std::unique_ptr<Timer> timer) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    rate_calculator_.InjectMockTimer(std::move(timer));
+  }
+
  private:
   bool IsThread(std::thread::id thread_id) const {
     return (std::this_thread::get_id() == thread_id);
@@ -2280,6 +2315,8 @@ class Meshcat::Impl {
   const MeshcatParams params_;
   int port_{};
   internal::UuidGenerator uuid_generator_{};
+  double sim_time_{};
+  systems::internal::RealtimeRateCalculator rate_calculator_;
   double realtime_rate_{0.0};
   bool is_orthographic_{false};
 
@@ -2385,8 +2422,9 @@ Meshcat::Meshcat(std::optional<int> port)
     : Meshcat(MeshcatParams{.port = port}) {}
 
 Meshcat::Meshcat(const MeshcatParams& params)
-    // Creates the server thread, bind to the port, etc.
-    : impl_{new Impl(params)} {
+    // The Impl constructor creates the server thread, binds to the port, etc.
+    : impl_{new Impl(params)},
+      recording_{std::make_unique<internal::MeshcatRecording>()} {
   drake::log()->info("Meshcat listening for connections at {}", web_url());
 }
 
@@ -2549,12 +2587,10 @@ void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
 
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath,
-                           const std::optional<double>& time) {
-  if (recording_ && time) {
-    animation_->SetTransform(animation_->frame(*time), std::string(path),
-                             X_ParentPath);
-  }
-  if (!recording_ || !time || set_visualizations_while_recording_) {
+                           std::optional<double> time_in_recording) {
+  const bool show_live =
+      recording_->SetTransform(path, X_ParentPath, time_in_recording);
+  if (show_live) {
     impl().SetTransform(path, X_ParentPath);
   }
 }
@@ -2568,6 +2604,14 @@ void Meshcat::Delete(std::string_view path) {
   impl().Delete(path);
 }
 
+void Meshcat::SetSimulationTime(double sim_time) {
+  impl().SetSimulationTime(sim_time);
+}
+
+double Meshcat::GetSimulationTime() const {
+  return impl().GetSimulationTime();
+}
+
 void Meshcat::SetRealtimeRate(double rate) {
   impl().SetRealtimeRate(rate);
 }
@@ -2577,35 +2621,30 @@ double Meshcat::GetRealtimeRate() const {
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
-                          bool value, const std::optional<double>& time) {
-  if (recording_ && time) {
-    animation_->SetProperty(animation_->frame(*time), std::string(path),
-                            property, value);
-  }
-  if (!recording_ || !time || set_visualizations_while_recording_) {
+                          bool value, std::optional<double> time_in_recording) {
+  const bool show_live =
+      recording_->SetProperty(path, property, value, time_in_recording);
+  if (show_live) {
     impl().SetProperty(path, std::move(property), value);
   }
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
-                          double value, const std::optional<double>& time) {
-  if (recording_ && time) {
-    animation_->SetProperty(animation_->frame(*time), std::string(path),
-                            property, value);
-  }
-  if (!recording_ || set_visualizations_while_recording_) {
+                          double value,
+                          std::optional<double> time_in_recording) {
+  const bool show_live =
+      recording_->SetProperty(path, property, value, time_in_recording);
+  if (show_live) {
     impl().SetProperty(path, std::move(property), value);
   }
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           const std::vector<double>& value,
-                          const std::optional<double>& time) {
-  if (recording_ && time) {
-    animation_->SetProperty(animation_->frame(*time), std::string(path),
-                            property, value);
-  }
-  if (!recording_ || set_visualizations_while_recording_) {
+                          std::optional<double> time_in_recording) {
+  const bool show_live =
+      recording_->SetProperty(path, property, value, time_in_recording);
+  if (show_live) {
     impl().SetProperty(path, std::move(property), value);
   }
 }
@@ -2695,30 +2734,28 @@ std::string Meshcat::StaticHtml() {
 
 void Meshcat::StartRecording(double frames_per_second,
                              bool set_visualizations_while_recording) {
-  animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
-  recording_ = true;
-  set_visualizations_while_recording_ = set_visualizations_while_recording;
+  recording_->StartRecording(frames_per_second,
+                             set_visualizations_while_recording);
+}
+
+void Meshcat::StopRecording() {
+  recording_->StopRecording();
 }
 
 void Meshcat::PublishRecording() {
-  impl().SetAnimation(*animation_);
+  impl().SetAnimation(recording_->get_animation());
 }
 
 void Meshcat::DeleteRecording() {
-  if (animation_) {
-    // Reset the recording.
-    double frames_per_second = animation_->frames_per_second();
-    animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
-  }
+  recording_->DeleteRecording();
+}
+
+const MeshcatAnimation& Meshcat::get_recording() const {
+  return recording_->get_animation();
 }
 
 MeshcatAnimation& Meshcat::get_mutable_recording() {
-  if (!animation_) {
-    throw std::runtime_error(
-        "You must create a recording (via StartRecording) before calling "
-        "get_mutable_recording");
-  }
-  return *animation_;
+  return recording_->get_mutable_animation();
 }
 
 bool Meshcat::HasPath(std::string_view path) const {
@@ -2744,6 +2781,10 @@ void Meshcat::InjectWebsocketMessage(std::string_view message) {
 
 void Meshcat::InjectWebsocketThreadFault(int fault_number) {
   impl().InjectWebsocketThreadFault(fault_number);
+}
+
+void Meshcat::InjectMockTimer(std::unique_ptr<Timer> timer) {
+  impl().InjectMockTimer(std::move(timer));
 }
 
 }  // namespace geometry

@@ -1,28 +1,27 @@
-load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "//tools/skylark:drake_py.bzl",
-    "drake_py_library",
-    "drake_py_unittest",
-)
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load("//tools/skylark:py.bzl", "py_library")
 
-drake_py_library(
-    name = "module_py",
-    srcs = ["__init__.py"],
-    deps = ["//tools:module_py"],
-)
+package(default_visibility = ["//visibility:private"])
 
-drake_py_library(
+# Note that we do NOT use drake_py_library here, so that our codegen via the
+# JUPYTER_PY_TEMPLATE file is as simple and portable as possible. Instead,
+# we'll use an `imports = ["."]` to establish a helpful `sys.path`.
+py_library(
     name = "jupyter_bazel_py",
     srcs = ["jupyter_bazel.py"],
+    imports = ["."],
     visibility = ["//visibility:public"],
-    deps = [":module_py"],
 )
 
-drake_py_library(
+# Note that we do NOT use drake_py_library here, so that this program is a
+# more representative demo of what and end user would experience. Instead,
+# we'll use an `imports = ["."]` to establish a helpful `sys.path`.
+py_library(
     name = "example_library",
     srcs = ["example_library.py"],
-    imports = [":module_py"],
+    imports = ["."],
 )
 
 drake_jupyter_py_binary(

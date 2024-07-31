@@ -275,4 +275,4 @@ void MeshcatPoseSliders<T>::SetPose(const RigidTransformd& pose) const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::visualization::MeshcatPoseSliders)
+    class ::drake::visualization::MeshcatPoseSliders);

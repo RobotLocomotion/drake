@@ -99,7 +99,7 @@ using systems::Context;
 template<typename T>
 class DoublePendulumModel {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoublePendulumModel)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoublePendulumModel);
 
   DoublePendulumModel() {
     auto model = std::make_unique<internal::MultibodyTree<double>>();

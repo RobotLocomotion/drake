@@ -107,16 +107,11 @@ std::vector<double> MultibodySimDriver::GetDynamicFrictionCoefficients(
 
 const geometry::SceneGraphInspector<double>& MultibodySimDriver::GetInspector()
     const {
-  const geometry::SceneGraphInspector<double>* inspector{nullptr};
   if (initialized_) {
-    const auto& query_object =
-        plant_->get_geometry_query_input_port()
-            .Eval<geometry::QueryObject<double>>(*plant_context_);
-    inspector = &query_object.inspector();
+    return plant_->EvalSceneGraphInspector(*plant_context_);
   } else {
-    inspector = &scene_graph_->model_inspector();
+    return scene_graph_->model_inspector();
   }
-  return *inspector;
 }
 
 }  // namespace test

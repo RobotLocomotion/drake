@@ -16,6 +16,9 @@ using std::cos;
 using std::sin;
 
 template <typename T>
+UniversalMobilizer<T>::~UniversalMobilizer() = default;
+
+template <typename T>
 std::string UniversalMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {
@@ -49,7 +52,7 @@ Vector2<T> UniversalMobilizer<T>::get_angles(
 }
 
 template <typename T>
-const UniversalMobilizer<T>& UniversalMobilizer<T>::set_angles(
+const UniversalMobilizer<T>& UniversalMobilizer<T>::SetAngles(
     systems::Context<T>* context, const Vector2<T>& angles) const {
   auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
@@ -66,7 +69,7 @@ Vector2<T> UniversalMobilizer<T>::get_angular_rates(
 }
 
 template <typename T>
-const UniversalMobilizer<T>& UniversalMobilizer<T>::set_angular_rates(
+const UniversalMobilizer<T>& UniversalMobilizer<T>::SetAngularRates(
     systems::Context<T>* context, const Vector2<T>& angles_dot) const {
   auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);
@@ -218,4 +221,4 @@ UniversalMobilizer<T>::DoCloneToScalar(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::UniversalMobilizer)
+    class ::drake::multibody::internal::UniversalMobilizer);

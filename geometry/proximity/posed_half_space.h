@@ -35,7 +35,7 @@ namespace internal {
 template <typename T>
 class PosedHalfSpace {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PosedHalfSpace)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PosedHalfSpace);
 
   /* Constructs a half space in frame F in terms of its boundary plane. The
    parameters define the boundary plane (see Plane for details). The boundary

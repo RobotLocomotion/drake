@@ -67,7 +67,7 @@ GTEST_TEST(ShapeSpecificationThreadTest, VolumeVtk) {
   // We want to use a heavyweight mesh file to extend the time to compute the
   // convex hull.
   const Mesh mesh(FindResourceOrThrow(
-      "drake/examples/multibody/deformable/torus.vtk"));
+      "drake/examples/multibody/deformable/models/torus.vtk"));
 
   EvaluateConvexHullInParallel(mesh);
 }

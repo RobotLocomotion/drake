@@ -19,7 +19,7 @@ namespace multibody {
  */
 class SpatialVelocityConstraint final : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpatialVelocityConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpatialVelocityConstraint);
 
   /** Parametrizes bounds on the magnitude and direction of the angular
    * velocity vector. */

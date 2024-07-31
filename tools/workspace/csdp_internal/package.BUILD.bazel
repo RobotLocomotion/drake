@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
-load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 
 licenses(["notice"])  # EPL-2.0
 
@@ -55,9 +55,8 @@ cc_library(
         "includes/csdp/parameters.h",
     ],
     copts = [
-        "-Wno-unknown-pragmas",
-        "-Wno-unused-variable",
         "-fvisibility=hidden",
+        "-w",
         # CSDP calls exit() for error handling. That doesn't suit our needs for
         # embedding it within Drake, so we'll redirect calls to exit() to our
         # own setjmp/longjmp handler instead.

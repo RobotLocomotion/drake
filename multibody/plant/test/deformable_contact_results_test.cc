@@ -25,6 +25,7 @@ GTEST_TEST(CompliantContactManagerTest, ContactResultsWithDeformable) {
   MultibodyPlantConfig plant_config;
   plant_config.time_step = 1.0e-3;
   plant_config.discrete_contact_approximation = "sap";
+  plant_config.use_sampled_output_ports = false;  // We're not stepping time.
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 
   /* Add a hydro ground weld to the world*/
@@ -53,9 +54,7 @@ GTEST_TEST(CompliantContactManagerTest, ContactResultsWithDeformable) {
   plant.RegisterCollisionGeometry(body2, RigidTransformd(Vector3d(-5, -5, 5)),
                                   geometry::Box(1, 1, 1), "point contact box",
                                   point_proximity_properties);
-
-  auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
-  const DeformableModel<double>* model = deformable_model.get();
+  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
   /* Add a deformable sphere that collides with the ground but not with any
    other rigid bodies. */
   auto deformable_geometry = std::make_unique<GeometryInstance>(
@@ -68,13 +67,9 @@ GTEST_TEST(CompliantContactManagerTest, ContactResultsWithDeformable) {
       std::move(deformable_proximity_props));
   multibody::fem::DeformableBodyConfig<double> body_config;
   constexpr double kRezHint = 10.0;
-  deformable_model->RegisterDeformableBody(std::move(deformable_geometry),
-                                           body_config, kRezHint);
-  plant.AddPhysicalModel(std::move(deformable_model));
+  deformable_model.RegisterDeformableBody(std::move(deformable_geometry),
+                                          body_config, kRezHint);
   plant.Finalize();
-  builder.Connect(
-      model->vertex_positions_port(),
-      scene_graph.get_source_configuration_port(plant.get_source_id().value()));
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();

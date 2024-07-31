@@ -42,7 +42,7 @@ struct PlaneSeparatesGeometries {
 };
 
 struct FindSeparationCertificateOptions {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FindSeparationCertificateOptions)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FindSeparationCertificateOptions);
   FindSeparationCertificateOptions() = default;
 
   virtual ~FindSeparationCertificateOptions() = default;
@@ -92,7 +92,7 @@ struct SeparationCertificateResultBase {
   // We put the copy/move/assignment constructors as protected to avoid copy
   // slicing. The inherited final subclasses should put them in public
   // functions.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResultBase)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResultBase);
 };
 
 struct SeparationCertificateProgramBase {
@@ -109,7 +109,7 @@ struct SeparationCertificateProgramBase {
   // We put the copy/move/assignment constructors as protected to avoid copy
   // slicing. The inherited final subclasses should put them in public
   // functions.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgramBase)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgramBase);
 };
 
 }  // namespace optimization

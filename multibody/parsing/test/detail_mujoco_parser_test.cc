@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/find_runfiles.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -13,6 +14,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/geometry_spatial_inertia.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
@@ -51,7 +53,7 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromFile(
       const std::string& file_name,
       const std::string& model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = wrapper_.AddModel(
@@ -63,7 +65,7 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromString(
       const std::string& file_contents,
       const std::string& model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = wrapper_.AddModel(
@@ -75,7 +77,7 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name,
       const std::optional<std::string>& parent_model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_, &group_output_};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = wrapper_.AddAllModels(
@@ -87,7 +89,7 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   std::vector<ModelInstanceIndex> AddAllModelsFromString(
       const std::string& file_contents,
       const std::optional<std::string>& parent_model_name) {
-    internal::CollisionFilterGroupResolver resolver{&plant_, & group_output_};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = wrapper_.AddAllModels(
@@ -107,21 +109,20 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
   PackageMap package_map_;
   MultibodyPlant<double> plant_{0.1};
   SceneGraph<double> scene_graph_;
-  CollisionFilterGroups group_output_;
   MujocoParserWrapper wrapper_;
 
   std::string box_obj_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/meshes/box.obj"))};
-  std::string non_convex_obj_{std::filesystem::canonical(FindResourceOrThrow(
-      "drake/geometry/test/non_convex_mesh.obj"))};
+  std::string non_convex_obj_{std::filesystem::canonical(
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"))};
   std::string box_urdf_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))};
 };
 
-class GymModelTest : public MujocoParserTest,
-                     public testing::WithParamInterface<const char*> {};
+class DeepMindControlTest : public MujocoParserTest,
+                            public testing::WithParamInterface<const char*> {};
 
-TEST_P(GymModelTest, GymModel) {
+TEST_P(DeepMindControlTest, DeepMindControl) {
   // Confirm successful parsing of the MuJoCo models in the DeepMind control
   // suite.
   std::string model{GetParam()};
@@ -135,13 +136,40 @@ TEST_P(GymModelTest, GymModel) {
   warning_records_.clear();
 }
 
-const char* gym_models[] = {
+const char* dm_control_models[] = {
     "acrobot",  "cartpole",   "cheetah",      "finger",  "fish",
     "hopper",   "humanoid",   "humanoid_CMU", "lqr",     "manipulator",
     "pendulum", "point_mass", "quadruped",    "reacher", "stacker",
     "swimmer",  "walker"};
-INSTANTIATE_TEST_SUITE_P(GymModels, GymModelTest,
-                         testing::ValuesIn(gym_models));
+INSTANTIATE_TEST_SUITE_P(DeepMindControl, DeepMindControlTest,
+                         testing::ValuesIn(dm_control_models));
+
+class MujocoMenagerieTest : public MujocoParserTest,
+                            public testing::WithParamInterface<const char*> {};
+
+TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
+  // Confirm successful parsing of the MuJoCo models in the DeepMind control
+  // suite.
+  std::string model{GetParam()};
+  const RlocationOrError rlocation = FindRunfile(
+      fmt::format("mujoco_menagerie_internal/{}.xml", model));
+  ASSERT_EQ(rlocation.error, "");
+  AddModelFromFile(rlocation.abspath, model);
+
+  EXPECT_TRUE(plant_.HasModelInstanceNamed(model));
+
+  // For this test, ignore all warnings.
+  warning_records_.clear();
+}
+
+const char* mujoco_menagerie_models[] = {"google_robot/robot",
+                                         "kuka_iiwa_14/iiwa14",
+                                         "rethink_robotics_sawyer/sawyer"};
+// TODO(russt): Add the remaining models, once they can be parsed correctly, as
+// tracked in #20444.
+
+INSTANTIATE_TEST_SUITE_P(MujocoMenagerie, MujocoMenagerieTest,
+                         testing::ValuesIn(mujoco_menagerie_models));
 
 // In addition to confirming that the parser can successfully parse the model,
 // this test can be used to manually inspect the resulting visualization.
@@ -154,8 +182,7 @@ GTEST_TEST(MujocoParserExtraTest, Visualize) {
   ParsingOptions options;
   PackageMap package_map;
   MujocoParserWrapper wrapper;
-  CollisionFilterGroups group_output_;
-  internal::CollisionFilterGroupResolver resolver{&plant, &group_output_};
+  internal::CollisionFilterGroupResolver resolver{&plant};
   internal::DiagnosticPolicy diagnostic_policy;
   ParsingWorkspace w{
       options,
@@ -756,6 +783,44 @@ TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
       fmt::format(R"""(<mesh name="box" file="{}"/>)""", box_obj_);
   std::string defaults = R"""(<default><mesh scale="2 2 2"/></default>)""";
   TestBoxMesh(box_obj_, mesh_asset, defaults, 2.0);
+}
+
+// CalcSpatialInertia() cannot necessarily compute a physical spatial inertia
+// for meshes which don't adhere to its requirements. The parser detects this
+// and provides a fallback so that it doesn't choke.
+// Per #21666 the failure is reported by throwing, in the future it will be
+// via some non-throwing protocol.
+TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
+  // This obj is known to produce a non-physical spatial inertia in
+  // CalcSpatialInertia().
+  const RlocationOrError rlocation = FindRunfile(
+      "mujoco_menagerie_internal/hello_robot_stretch/assets/base_link_0.obj");
+  ASSERT_EQ(rlocation.error, "");
+  const geometry::Mesh bad_mesh(rlocation.abspath, 1.0);
+
+  // For now, we know the spatial inertia is bad because it throws. When #21666
+  // is fixed, it will be some other mechanism. Evolve *this* test to match
+  // that API, but otherwise keep this confirmation that the mesh in question
+  // truly is "bad".
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(bad_mesh, 1.0),
+          ".*IsPhysicallyValid[\\s\\S]*");
+
+  std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}"/>  </asset>
+  <worldbody>
+    <body name="body1">
+      <geom name="box_geom" type="mesh" mesh="box"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""",  rlocation.abspath);
+
+  EXPECT_NO_THROW(AddModelFromString(xml, "test"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*fallback.*"));
+  // Note: This test doesn't cover the properties of the fallback; just the fact
+  // that we're using it (and not choking).
 }
 
 TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {

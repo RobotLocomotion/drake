@@ -5,6 +5,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
 
 namespace drake {
 namespace multibody {
@@ -84,10 +85,30 @@ void SapDistanceConstraint<T>::DoAccumulateSpatialImpulses(
   }
 }
 
+template <typename T>
+std::unique_ptr<SapConstraint<double>> SapDistanceConstraint<T>::DoToDouble()
+    const {
+  const typename SapDistanceConstraint<T>::Kinematics& k = kinematics_;
+  const typename SapDistanceConstraint<T>::ComplianceParameters& p =
+      parameters_;
+
+  SapDistanceConstraint<double>::Kinematics k_to_double(
+      k.objectA(), math::DiscardGradient(k.p_WP()),
+      math::DiscardGradient(k.p_AP_W()), k.objectB(),
+      math::DiscardGradient(k.p_WQ()), math::DiscardGradient(k.p_BQ_W()),
+      ExtractDoubleOrThrow(k.length()), k.jacobian().ToDouble());
+
+  SapDistanceConstraint<double>::ComplianceParameters p_to_double(
+      ExtractDoubleOrThrow(p.stiffness()), ExtractDoubleOrThrow(p.damping()));
+
+  return std::make_unique<SapDistanceConstraint<double>>(
+      std::move(k_to_double), std::move(p_to_double));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapDistanceConstraint)
+    class ::drake::multibody::contact_solvers::internal::SapDistanceConstraint);

@@ -29,7 +29,7 @@ LinearSystem.
 */
 class TransferFunction {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TransferFunction)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TransferFunction);
 
   /** Constructs a zero-input, zero-output (continuous-time) transfer function.
    */

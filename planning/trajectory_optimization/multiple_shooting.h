@@ -43,7 +43,7 @@ namespace trajectory_optimization {
 /// @ingroup planning_trajectory
 class MultipleShooting {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultipleShooting)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultipleShooting);
 
   virtual ~MultipleShooting() {}
 

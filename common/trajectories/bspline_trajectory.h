@@ -152,4 +152,4 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::BsplineTrajectory)
+    class drake::trajectories::BsplineTrajectory);

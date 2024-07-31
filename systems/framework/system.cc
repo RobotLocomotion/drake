@@ -105,6 +105,12 @@ template <typename T>
 void System<T>::SetDefaultContext(Context<T>* context) const {
   this->ValidateContext(context);
 
+  // Set the default parameters, checking that the number of parameters does
+  // not change.
+  const int num_params = context->num_numeric_parameter_groups();
+  SetDefaultParameters(*context, &context->get_mutable_parameters());
+  DRAKE_DEMAND(num_params == context->num_numeric_parameter_groups());
+
   // Set the default state, checking that the number of state variables does
   // not change.
   const int n_xc = context->num_continuous_states();
@@ -116,12 +122,6 @@ void System<T>::SetDefaultContext(Context<T>* context) const {
   DRAKE_DEMAND(n_xc == context->num_continuous_states());
   DRAKE_DEMAND(n_xd == context->num_discrete_state_groups());
   DRAKE_DEMAND(n_xa == context->num_abstract_states());
-
-  // Set the default parameters, checking that the number of parameters does
-  // not change.
-  const int num_params = context->num_numeric_parameter_groups();
-  SetDefaultParameters(*context, &context->get_mutable_parameters());
-  DRAKE_DEMAND(num_params == context->num_numeric_parameter_groups());
 }
 
 template <typename T>
@@ -483,16 +483,15 @@ void System<T>::GetInitializationEvents(
 
 template <typename T>
 void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
-  auto discrete_updates = AllocateDiscreteVariables();
-  auto state = context->CloneState();
   auto init_events = AllocateCompositeEventCollection();
+  GetInitializationEvents(*context, init_events.get());
 
   // NOTE: The execution order here must match the code in
   // Simulator::Initialize().
-  GetInitializationEvents(*context, init_events.get());
 
   // Do unrestricted updates first.
   if (init_events->get_unrestricted_update_events().HasEvents()) {
+    auto state = context->CloneState();
     const EventStatus status = CalcUnrestrictedUpdate(
         *context, init_events->get_unrestricted_update_events(), state.get());
     status.ThrowOnFailure(__func__);
@@ -501,6 +500,7 @@ void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
   }
   // Do restricted (discrete variable) updates next.
   if (init_events->get_discrete_update_events().HasEvents()) {
+    auto discrete_updates = AllocateDiscreteVariables();
     const EventStatus status = CalcDiscreteVariableUpdate(
         *context, init_events->get_discrete_update_events(),
         discrete_updates.get());
@@ -512,6 +512,39 @@ void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
   if (init_events->get_publish_events().HasEvents()) {
     const EventStatus status =
         Publish(*context, init_events->get_publish_events());
+    status.ThrowOnFailure(__func__);
+  }
+}
+
+template <typename T>
+void System<T>::ExecuteForcedEvents(Context<T>* context,
+                                    bool publish) const {
+  // NOTE: The execution order here must match the code in
+  // Simulator::Initialize().
+
+  // Do unrestricted updates first.
+  if (get_forced_unrestricted_update_events().HasEvents()) {
+    auto state = context->CloneState();
+    const EventStatus status = CalcUnrestrictedUpdate(
+        *context, get_forced_unrestricted_update_events(), state.get());
+    status.ThrowOnFailure(__func__);
+    ApplyUnrestrictedUpdate(get_forced_unrestricted_update_events(),
+                            state.get(), context);
+  }
+  // Do restricted (discrete variable) updates next.
+  if (get_forced_discrete_update_events().HasEvents()) {
+    auto discrete_updates = AllocateDiscreteVariables();
+    const EventStatus status = CalcDiscreteVariableUpdate(
+        *context, get_forced_discrete_update_events(),
+        discrete_updates.get());
+    status.ThrowOnFailure(__func__);
+    ApplyDiscreteVariableUpdate(get_forced_discrete_update_events(),
+                                discrete_updates.get(), context);
+  }
+  // Do any publishes last.
+  if (publish && get_forced_publish_events().HasEvents()) {
+    const EventStatus status =
+        Publish(*context, get_forced_publish_events());
     status.ThrowOnFailure(__func__);
   }
 }
@@ -1415,4 +1448,4 @@ void System<T>::AddExternalConstraints(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::System)
+    class ::drake::systems::System);

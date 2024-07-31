@@ -48,7 +48,7 @@ from typing import Optional, Set
 import git
 import github3
 
-from drake.tools.workspace.metadata import read_repository_metadata
+from tools.workspace.metadata import read_repository_metadata
 
 logger = logging.getLogger('new_release')
 logger.setLevel(logging.INFO)
@@ -74,9 +74,18 @@ _IGNORED_REPOSITORIES = [
     "uwebsockets_internal",  # Pinned due to upstream regression.
 ]
 
+# These repositories cannot be auto-upgraded. When checking for new releases,
+# print a reminder to manually check for upgrades.
+_OTHER_REPOSITORIES = [
+    "bazel",
+]
+
 # For these repositories, ignore any tags that match the specified regex.
 _IGNORED_TAGS = {
+    "gymnasium_py": r"v[0-9.]+a[0-9]+",
     "libpng_internal": r"v[0-9.]+(alpha|beta)[0-9]+",
+    "msgpack_internal": r"c-[0-9.]+",
+    "ros_xacro_internal": r"xacro-[0-9.]+",
     "sdformat_internal": r"sdformat-prerelease_[0-9.]+",
 }
 
@@ -170,7 +179,7 @@ def _is_ignored_tag(commit, workspace):
         # we don't spam the user.
         return True
 
-    development_stages = ["alpha", "beta", "rc", "pre"]
+    development_stages = ["alpha", "beta", "pre", "rc", "unstable"]
     prerelease = any(stage in commit for stage in development_stages)
     if prerelease:
         # Heuristically looks like a pre-release; ignore it, but log it for the
@@ -443,7 +452,9 @@ def _do_upgrade_scripted(
 
 def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     """Returns an `UpgradeResult` describing what (if anything) was done."""
-    if workspace_name not in metadata:
+    if workspace_name in _OTHER_REPOSITORIES:
+        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
+    elif workspace_name not in metadata:
         raise RuntimeError(f"Unknown repository {workspace_name}")
 
     data = metadata[workspace_name]
@@ -552,8 +563,18 @@ def _do_upgrades(temp_dir, gh, local_drake_checkout,
             modified_paths += result.modified_paths
             commit_messages.append(result.commit_message)
             modified_workspace_names.append(workspace_name)
-        elif len(workspace_names) == 1:
-            raise RuntimeError(f"No upgrade needed for {workspace_name}")
+        else:
+            info(f"No updates for {workspace_name}")
+
+    if not modified_workspace_names:
+        # Nothing was updated
+        names = ", ".join(workspace_names)
+        info("")
+        info("*" * 72)
+        info(f"Done. No updates for {names}")
+        info("*" * 72)
+        info("")
+        return
 
     # Determine if we should and can commit the changes made.
     if len(modified_workspace_names) == 1:
@@ -677,6 +698,9 @@ def main():
         # Run our report of what's available.
         info("Checking for new releases...")
         _check_for_upgrades(gh, args, metadata)
+
+        for repo in _OTHER_REPOSITORIES:
+            info(f"{repo} may need upgrade but cannot be auto-upgraded.")
 
     if args.lint:
         subprocess.check_call(["bazel", "test", "--config=lint", "//..."])

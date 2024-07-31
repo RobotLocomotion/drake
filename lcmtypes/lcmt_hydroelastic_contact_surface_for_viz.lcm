@@ -41,13 +41,10 @@ struct lcmt_hydroelastic_contact_surface_for_viz {
   // at the centroid of the contact surface.
   double moment_C_W[3];
 
-  // The *total* number of quadrature points. The number of per-face quadrature
-  // points are typically 1 or 3 (in the future, some arbitrary number may be
-  // permitted). There is no guaranteed pattern of correspondence between the
-  // ith quadrature point and the jth mesh face.
+  // Vestigial. Always zero.
   int32_t num_quadrature_points;
 
-  // The quadrature point data.
+  // Vestigial. Always empty.
   lcmt_hydroelastic_quadrature_per_point_data_for_viz
       quadrature_point_data[num_quadrature_points];
 

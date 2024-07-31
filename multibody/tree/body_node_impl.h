@@ -44,6 +44,8 @@ class BodyNodeImpl : public BodyNode<T> {
                const RigidBody<T>* body, const Mobilizer<T>* mobilizer) :
       BodyNode<T>(parent_node, body, mobilizer) {}
 
+  ~BodyNodeImpl() override;
+
   // TODO(amcastro-tri): Implement methods for computing velocity kinematics
   //  using fixed-size Eigen matrices.
 };

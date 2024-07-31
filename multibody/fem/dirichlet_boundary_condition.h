@@ -14,7 +14,7 @@ namespace fem {
 namespace internal {
 
 /* The position, velocity, and acceleration of an FEM node.
- @tparam_nonsymbolic_scalar */
+ @tparam_default_scalar */
 template <typename T>
 struct NodeState {
   Vector3<T> q;
@@ -39,7 +39,7 @@ struct NodeState {
  Zienkiewicz, Olek C., Robert L. Taylor, and Jian Z. Zhu. The finite element
  method: its basis and fundamentals. Elsevier, 2005.
 
- @tparam_nonsymbolic_scalar */
+ @tparam_default_scalar */
 template <typename T>
 class DirichletBoundaryCondition {
  public:
@@ -106,5 +106,5 @@ class DirichletBoundaryCondition {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::fem::internal::DirichletBoundaryCondition);

@@ -142,6 +142,27 @@ std::unique_ptr<ContextBase> LeafSystem<T>::DoAllocateContext() const {
 }
 
 template <typename T>
+void LeafSystem<T>::SetDefaultParameters(
+    const Context<T>& context, Parameters<T>* parameters) const {
+  this->ValidateContext(context);
+  this->ValidateCreatedForThisSystem(parameters);
+  for (int i = 0; i < parameters->num_numeric_parameter_groups(); i++) {
+    BasicVector<T>& p = parameters->get_mutable_numeric_parameter(i);
+    auto model_vector = model_numeric_parameters_.CloneVectorModel<T>(i);
+    if (model_vector != nullptr) {
+      p.SetFrom(*model_vector);
+    } else {
+      p.SetFromVector(VectorX<T>::Constant(p.size(), 1.0));
+    }
+  }
+  for (int i = 0; i < parameters->num_abstract_parameters(); i++) {
+    AbstractValue& p = parameters->get_mutable_abstract_parameter(i);
+    auto model_value = model_abstract_parameters_.CloneModel(i);
+    p.SetFrom(*model_value);
+  }
+}
+
+template <typename T>
 void LeafSystem<T>::SetDefaultState(
     const Context<T>& context, State<T>* state) const {
   this->ValidateContext(context);
@@ -168,27 +189,6 @@ void LeafSystem<T>::SetDefaultState(
 
   AbstractValues& xa = state->get_mutable_abstract_state();
   xa.SetFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
-}
-
-template <typename T>
-void LeafSystem<T>::SetDefaultParameters(
-    const Context<T>& context, Parameters<T>* parameters) const {
-  this->ValidateContext(context);
-  this->ValidateCreatedForThisSystem(parameters);
-  for (int i = 0; i < parameters->num_numeric_parameter_groups(); i++) {
-    BasicVector<T>& p = parameters->get_mutable_numeric_parameter(i);
-    auto model_vector = model_numeric_parameters_.CloneVectorModel<T>(i);
-    if (model_vector != nullptr) {
-      p.SetFrom(*model_vector);
-    } else {
-      p.SetFromVector(VectorX<T>::Constant(p.size(), 1.0));
-    }
-  }
-  for (int i = 0; i < parameters->num_abstract_parameters(); i++) {
-    AbstractValue& p = parameters->get_mutable_abstract_parameter(i);
-    auto model_value = model_abstract_parameters_.CloneModel(i);
-    p.SetFrom(*model_value);
-  }
 }
 
 template <typename T>
@@ -613,17 +613,17 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
     std::variant<std::string, UseDefaultName> name,
-    typename LeafOutputPort<T>::AllocCallback alloc_function,
-    typename LeafOutputPort<T>::CalcCallback calc_function,
+    typename LeafOutputPort<T>::AllocCallback alloc,
+    typename LeafOutputPort<T>::CalcCallback calc,
     std::set<DependencyTicket> prerequisites_of_calc) {
-  auto calc = [captured_calc = std::move(calc_function)](
+  auto calc_function = [captured_calc = std::move(calc)](
       const ContextBase& context_base, AbstractValue* result) {
     const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
     return captured_calc(context, result);
   };
   auto& port = CreateAbstractLeafOutputPort(
       NextOutputPortName(std::move(name)),
-      ValueProducer(std::move(alloc_function), std::move(calc)),
+      ValueProducer(std::move(alloc), std::move(calc_function)),
       std::move(prerequisites_of_calc));
   return port;
 }
@@ -1051,4 +1051,4 @@ void LeafSystem<T>::MaybeDeclareVectorBaseInequalityConstraint(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::LeafSystem)
+    class ::drake::systems::LeafSystem);

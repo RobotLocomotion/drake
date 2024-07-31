@@ -106,7 +106,7 @@ bool operator==(const FullBodyName& n1, const FullBodyName& n2);
 template <typename T>
 class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultsToLcmSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultsToLcmSystem);
 
   /** Constructs an instance with *default* geometry names (e.g., "Id(7)").
 
@@ -123,6 +123,8 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
     geometry_id_to_body_name_map_ = other.geometry_id_to_body_name_map_;
     body_names_ = other.body_names_;
   }
+
+  ~ContactResultsToLcmSystem() final;
 
   const systems::InputPort<T>& get_contact_result_input_port() const;
   const systems::OutputPort<T>& get_lcm_message_output_port() const;
@@ -265,4 +267,4 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::ContactResultsToLcmSystem)
+    class drake::multibody::ContactResultsToLcmSystem);

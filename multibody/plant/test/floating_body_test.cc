@@ -85,16 +85,16 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
           internal::GetInternalTree(free_body_plant), free_body_plant.body());
 
   // Unit test QuaternionFloatingMobilizer context dependent setters/getters.
-  mobilizer.set_angular_velocity(&context, 2.0 * w0_WB_expected);
+  mobilizer.SetAngularVelocity(&context, 2.0 * w0_WB_expected);
   EXPECT_TRUE(CompareMatrices(mobilizer.get_angular_velocity(context),
                               2.0 * w0_WB_expected, kEpsilon,
                               MatrixCompareType::relative));
-  mobilizer.set_translational_velocity(&context, -3.5 * v0_WB_expected);
+  mobilizer.SetTranslationalVelocity(&context, -3.5 * v0_WB_expected);
   EXPECT_TRUE(CompareMatrices(mobilizer.get_translational_velocity(context),
                               -3.5 * v0_WB_expected, kEpsilon,
                               MatrixCompareType::relative));
 
-  // Unit test QuaternionFloatingMobilizer::SetFromRotationMatrix().
+  // Unit test QuaternionFloatingMobilizer::SetOrientation().
   const Vector3d axis = (1.5 * Vector3d::UnitX() + 2.0 * Vector3d::UnitY() +
                          3.0 * Vector3d::UnitZ())
                             .normalized();
@@ -109,12 +109,12 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // Unit test QuaternionFloatingMobilizer quaternion setters/getters.
   const math::RotationMatrixd R_WB_test2(AngleAxisd(M_PI / 5.0, axis));
   const Quaterniond q_WB_test2 = R_WB_test2.ToQuaternion();
-  mobilizer.set_quaternion(&context, q_WB_test2);
+  mobilizer.SetQuaternion(&context, q_WB_test2);
   EXPECT_TRUE(CompareMatrices(mobilizer.get_quaternion(context).coeffs(),
                               q_WB_test2.coeffs(), kEpsilon,
                               MatrixCompareType::relative));
   const Vector3d p_WB_test(1, 2, 3);
-  mobilizer.set_translation(&context, p_WB_test);
+  mobilizer.SetTranslation(&context, p_WB_test);
   EXPECT_TRUE(CompareMatrices(mobilizer.get_translation(context), p_WB_test,
                               kEpsilon, MatrixCompareType::relative));
 

@@ -22,7 +22,7 @@ namespace geometry {
  */
 template <typename T>
 struct SignedDistanceToPoint {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistanceToPoint)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistanceToPoint);
   SignedDistanceToPoint() = default;
 
   /** Constructs SignedDistanceToPoint struct from calculated results.

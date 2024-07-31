@@ -66,7 +66,7 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
       "Only 1-stage and 2-stage Radau are supported.");
 
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RadauIntegrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RadauIntegrator);
 
   explicit RadauIntegrator(const System<T>& system,
       Context<T>* context = nullptr);

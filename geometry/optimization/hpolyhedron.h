@@ -24,7 +24,7 @@ By convention, we treat a zero-dimensional HPolyhedron as nonempty.
 @ingroup geometry_optimization */
 class HPolyhedron final : public ConvexSet, private ShapeReifier {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron);
 
   /** Constructs a default (zero-dimensional, nonempty) polyhedron. */
   HPolyhedron();
@@ -120,6 +120,70 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   negative tol means it is less likely to remote a constraint.  */
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
+  /** Returns an inner approximation of `this`, aiming to use fewer
+  faces.  Proceeds by incrementally translating faces inward and removing other
+  faces that become redundant upon doing so.
+  @param min_volume_ratio is a lower bound for the ratio of the volume of the
+  returned inbody and the volume of `this`.
+  @param do_affine_transformation specifies whether to call
+  MaximumVolumeInscribedAffineTransformation(), to take an affine transformation
+  of the inner approximation to maximize its volume.  The affine transformation
+  is reverted if the resulting inner approximation violates conditions related
+  to `points_to_contain` or `intersecting_polytopes`.
+  @param max_iterations is the maximum number of times to loop through all
+  faces.
+  @param points_to_contain is an optional matrix whose columns are points that
+  must be contained in the returned inbody.
+  @param intersecting_polytopes is an optional list of HPolyhedrons that must
+  intersect with the returned inbody.
+  @param keep_whole_intersection specifies whether the face translation
+  step of the algorithm is prohibited from reducing the intersections with the
+  HPolyhedrons in `intersecting_polytopes`.  Regardless of the value of this
+  parameter, the intersections may be reduced by the affine transformation step
+  if `do_affine_transformation` is true.
+  @param intersection_padding is a distance by which each hyperplane is
+  translated back outward after satisfing intersection constraints, subject to
+  not surpassing the original hyperplane position.  In the case where
+  `keep_whole_intersection` is false, using a non-zero value for this parameter
+  prevents intersections from being single points.
+  @param random_seed is a seed for a random number generator used to shuffle
+  the ordering of hyperplanes in between iterations.
+  @pre `min_volume_ratio` > 0.
+  @pre `max_iterations` > 0.
+  @pre `intersection_padding` >= 0.
+  @pre All columns of `points_to_contain` are points contained within `this`.
+  @pre All elements of `intersecting_polytopes` intersect with `this`.
+  */
+  [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(
+      double min_volume_ratio = 0.1, bool do_affine_transformation = true,
+      int max_iterations = 10,
+      const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
+      const std::vector<drake::geometry::optimization::HPolyhedron>&
+          intersecting_polytopes = std::vector<HPolyhedron>(),
+      bool keep_whole_intersection = false, double intersection_padding = 1e-4,
+      int random_seed = 0) const;
+
+  /**
+  Solves a semi-definite program to compute the maximum-volume affine
+  transformation of `this`, subject to being a subset of `circumbody`,
+  and subject to the transformation matrix being positive
+  semi-definite.  The latter condition is necessary for convexity of the
+  program.  We use the containment condition stated in Lemma 1 of "Linear
+  Encodings for Polytope Containment Problems" by Sadra Sadraddini and Russ
+  Tedrake, extended to apply to the affine transformation of `this`.  We solve
+  @verbatim
+  max_{T,t} log det (T)
+        s.t. T ≽ 0
+        t + TX ⊆ Y
+  @endverbatim
+  where X is `this`, and Y is `circumbody`.
+  @returns the transformed polyhedron, t + TX.
+
+  @param circumbody is an HPolyhedron that must contain the returned inbody.
+  @throws std::exception if the solver fails to solve the problem.*/
+  [[nodiscard]] HPolyhedron MaximumVolumeInscribedAffineTransformation(
+      const HPolyhedron& circumbody) const;
+
   /** Solves a semi-definite program to compute the inscribed ellipsoid. This is
   also known as the inner Löwner-John ellipsoid. From Section 8.4.2 in Boyd and
   Vandenberghe, 2004, we solve
@@ -203,16 +267,32 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   point. The distribution of samples will converge to the true uniform
   distribution at a geometric rate in the total number of hit-and-run steps
   which is `mixing_steps` * the number of times this function is called.
+  If a `subspace` is provided, the random samples are constrained to lie in the
+  affine subspace through `previous_sample`, spanned by the columns of
+  `subspace`. To obtain uniform samples, subspace should have orthonormal,
+  columns. This enables drawing uniform samples from an HPolyhedron which is not
+  full-dimensional -- one can pass the basis of the affine hull of the
+  HPolyhedron, which can be computed with the AffineSubspace class. `tol` is a
+  numerical tolerance for checking if any halfspaces in the given HPolyhedron
+  are implied by the `subspace` definition (and therefore can be ignored by the
+  hit-and-run sampler).
+  @pre subspace.rows() == ambient_dimension().
   @throws std::exception if previous_sample is not in the set. */
   Eigen::VectorXd UniformSample(
       RandomGenerator* generator,
       const Eigen::Ref<const Eigen::VectorXd>& previous_sample,
-      int mixing_steps = 10) const;
+      int mixing_steps = 10,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& subspace =
+          std::nullopt,
+      double tol = 1e-8) const;
 
   /** Variant of UniformSample that uses the ChebyshevCenter() as the
   previous_sample as a feasible point to start the Markov chain sampling. */
-  Eigen::VectorXd UniformSample(RandomGenerator* generator,
-                                int mixing_steps = 10) const;
+  Eigen::VectorXd UniformSample(
+      RandomGenerator* generator, int mixing_steps = 10,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& subspace =
+          std::nullopt,
+      double tol = 1e-8) const;
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
   corners. */
@@ -258,8 +338,8 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
 
   // N.B. No need to override DoMaybeGetPoint here.
 
-  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final;
+  std::optional<bool> DoPointInSetShortcut(
+      const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>

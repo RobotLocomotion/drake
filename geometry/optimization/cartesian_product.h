@@ -31,7 +31,7 @@ is empty.
 @ingroup geometry_optimization */
 class CartesianProduct final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct);
 
   /** Constructs a default (zero-dimensional, nonempty) set. */
   CartesianProduct();

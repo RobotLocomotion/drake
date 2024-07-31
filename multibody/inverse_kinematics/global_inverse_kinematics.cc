@@ -30,8 +30,7 @@ std::map<BodyIndex, JointIndex> GetBodyToJointMap(
   // First loop through each joint, stores the map from the child body to the
   // joint.
   std::map<BodyIndex, JointIndex> body_to_joint_map;
-  for (JointIndex joint_index{0}; joint_index < plant.num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant.GetJointIndices()) {
     body_to_joint_map.emplace(plant.get_joint(joint_index).child_body().index(),
                               joint_index);
   }
@@ -626,8 +625,7 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
         "the bounds on R_WB and p_WB directly.");
   }
   const Joint<double>* joint{nullptr};
-  for (JointIndex joint_index{0}; joint_index < plant_.num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant_.GetJointIndices()) {
     if (plant_.get_joint(joint_index).child_body().index() == body_index) {
       joint = &(plant_.get_joint(joint_index));
       break;

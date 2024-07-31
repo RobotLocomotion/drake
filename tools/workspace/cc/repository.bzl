@@ -113,7 +113,7 @@ def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
         supported_compilers = {"AppleClang": (14, 0)}
     else:
-        supported_compilers = {"Clang": (14, 0), "GNU": (11, 0)}
+        supported_compilers = {"Clang": (15, 0), "GNU": (11, 0)}
 
     if compiler_id in supported_compilers:
         _check_compiler_version(

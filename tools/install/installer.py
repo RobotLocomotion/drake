@@ -22,7 +22,7 @@ import sys
 
 from subprocess import check_output, check_call
 
-from drake.tools.install import otool
+from tools.install import otool
 
 # Used for matching against libraries and extracting useful components.
 # N.B. On linux, dynamic libraries may have their version number as a suffix

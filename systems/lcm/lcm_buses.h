@@ -21,7 +21,7 @@ pointer and then "modify" the object it points to by subscribing to a
 channel. */
 class LcmBuses final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LcmBuses)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LcmBuses);
 
   /** A magic LCM URL sentinel value for the "null" LCM interface. In some
   cases, LCM messages are unwanted but we need to pass around a well-formed

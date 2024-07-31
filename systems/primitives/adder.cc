@@ -38,4 +38,4 @@ void Adder<T>::CalcSum(const Context<T>& context, BasicVector<T>* sum) const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Adder)
+    class ::drake::systems::Adder);

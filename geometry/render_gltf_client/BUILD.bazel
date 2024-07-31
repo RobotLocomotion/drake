@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -10,7 +11,6 @@ load(
     "drake_py_binary",
     "drake_py_unittest",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
@@ -29,11 +29,11 @@ drake_cc_library(
     srcs = ["factory.cc"],
     hdrs = ["factory.h"],
     visibility = ["//visibility:public"],
-    interface_deps = [
+    deps = [
         ":render_engine_gltf_client_params",
         "//geometry/render:render_engine",
     ],
-    deps = [
+    implementation_deps = [
         ":internal_render_engine_gltf_client",
         "//common:network_policy",
     ],
@@ -56,10 +56,10 @@ drake_cc_library(
     hdrs = ["internal_http_service.h"],
     internal = True,
     visibility = ["//visibility:private"],
-    interface_deps = [
+    deps = [
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         "@fmt",
     ],
 )
@@ -70,10 +70,10 @@ drake_cc_library(
     hdrs = ["internal_http_service_curl.h"],
     internal = True,
     visibility = ["//visibility:private"],
-    interface_deps = [
+    deps = [
         ":internal_http_service",
     ],
-    deps = [
+    implementation_deps = [
         "//common:unused",
         "@curl_internal//:libcurl",
         "@fmt",
@@ -257,7 +257,7 @@ drake_py_binary(
     srcs = ["test/server_demo.py"],
     data = [":server_vtk_backend"],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -270,7 +270,6 @@ drake_cc_binary(
         "//geometry/render_vtk:factory",
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//math:geometric_transform",
-        "//systems/sensors:color_palette",
         "//systems/sensors:image",
         "@gflags",
         "@vtk_internal//:vtkCommonCore",
@@ -338,7 +337,7 @@ drake_py_unittest(
         ":server_vtk_backend",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -360,7 +359,7 @@ drake_py_unittest(
         "cpu:2",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -404,7 +403,7 @@ drake_py_unittest(
         ":all_gltfs_and_images",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

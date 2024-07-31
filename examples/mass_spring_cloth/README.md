@@ -55,8 +55,7 @@ The discrete mode is run by default. Since the discrete solver uses a
 conditionally stable time integration scheme. Using too large a `dt`
 may lead to instability. Usually, you will need to decrease `dt` when you:
 
- 1. increase the elastic stiffness (accessible via the parameter file 
- `drake/examples/mass_spring_cloth/cloth_spring_model_params_named_vector.yaml`),
+ 1. increase the elastic stiffness, or
  2. decrease `h`, or
  3. decrease the mass of the particles.
 

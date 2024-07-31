@@ -22,7 +22,7 @@ namespace systems {
 template <typename T>
 class ConstantValueSource final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantValueSource)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantValueSource);
 
   /// @param value The constant value to emit, which is copied by this system.
   explicit ConstantValueSource(const AbstractValue& value);
@@ -43,4 +43,4 @@ class ConstantValueSource final : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::ConstantValueSource)
+    class ::drake::systems::ConstantValueSource);

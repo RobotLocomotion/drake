@@ -31,7 +31,7 @@ the zero-dimensional case.
 @ingroup geometry_optimization */
 class AffineBall final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AffineBall)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AffineBall);
 
   /** Constructs a default (zero-dimensional, nonempty) set. */
   AffineBall();
@@ -135,8 +135,8 @@ class AffineBall final : public ConvexSet {
     return center_;
   };
 
-  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final;
+  std::optional<bool> DoPointInSetShortcut(
+      const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>

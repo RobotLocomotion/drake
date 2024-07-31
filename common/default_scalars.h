@@ -59,7 +59,7 @@
 /// }  // namespace sample
 ///
 /// DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-///     class ::sample::MySystem)
+///     class ::sample::MySystem);
 /// @endcode
 ///
 /// Example `my_system.cc`:
@@ -67,7 +67,7 @@
 /// #include "my_system.h"
 ///
 /// DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-///     class ::sample::MySystem)
+///     class ::sample::MySystem);
 /// @endcode
 ///
 /// See also @ref system_scalar_conversion.
@@ -168,7 +168,7 @@ extern template SomeType<::drake::AutoDiffXd>;
 ///     &Func1<T>,
 ///     &Func2<T, U>,
 ///     &SomeClass<T>::template cast<U>
-/// ))
+/// ));
 ///
 /// }  // namespace sample
 /// @endcode
@@ -223,6 +223,7 @@ template<typename... Ts> \
 constexpr auto Make_Function_Pointers_Nonsym_Pack1() { \
   return std::tuple_cat(Make_Function_Pointers_Nonsym_Pack2<Ts, Ts...>()...); \
 } \
+/* NOLINTNEXTLINE(readability/fn_size) */ \
 static constexpr auto Function_Templates_Nonsym __attribute__((used)) = \
     Make_Function_Pointers_Nonsym_Pack1< \
         double, \

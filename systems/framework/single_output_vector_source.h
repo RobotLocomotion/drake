@@ -30,7 +30,7 @@ namespace systems {
 template <typename T>
 class SingleOutputVectorSource : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingleOutputVectorSource)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingleOutputVectorSource);
 
   /// Deleted default constructor.  Child classes must either supply the
   /// vector size to the single-argument constructor of `int`, or supply a model
@@ -117,4 +117,4 @@ class SingleOutputVectorSource : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::SingleOutputVectorSource)
+    class ::drake::systems::SingleOutputVectorSource);

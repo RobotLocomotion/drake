@@ -15,11 +15,43 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/systems/sensors/image_io.h"
 
 namespace drake {
 namespace geometry {
 namespace render_gl {
 namespace internal {
+namespace {
+
+using systems::sensors::ImageAny;
+using systems::sensors::ImageIo;
+using systems::sensors::PixelFormat;
+using systems::sensors::PixelScalar;
+
+// Instantiates an OpenGL texture from image data.
+GLuint MakeGlTexture(void* pixel_data, int width, int height,
+                     GLint internal_format, GLenum type) {
+  GLuint texture_id;
+  glGenTextures(1, &texture_id);
+  // This will catch the problem that an OpenGl context is not bound; we have no
+  // way to tell if the *wrong* context is bound and we create the texture in
+  // the wrong place.
+  DRAKE_ASSERT(glGetError() == GL_NO_ERROR);
+  glBindTexture(GL_TEXTURE_2D, texture_id);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0,
+               internal_format, type, pixel_data);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  return texture_id;
+}
+
+}  // namespace
 
 namespace fs = std::filesystem;
 
@@ -43,6 +75,17 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
     return iter->second;
   }
 
+  // We'll only automatically load the image if it's *not* named as an
+  // in-memory texture. Those must be explicitly added prior to access.
+  if (file_name_in.starts_with(InMemoryPrefix())) {
+    log()->warn(
+        "Trying to access a texture with an in-memory name, but the texture "
+        "hasn't been added to RenderEngineGl's texture library: '{}'. It may "
+        "be an unsupported file format.",
+        file_name_in);
+    return std::nullopt;
+  }
+
   // Technically, if this fails, file_name won't be a valid key, so this test
   // could be outside the lock. But as it touches the filesystem, we'll defer
   // the test until we know we have to do it.
@@ -53,6 +96,9 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
   vtkNew<vtkPNGReader> png_reader;
   png_reader->SetFileName(file_name.c_str());
   png_reader->Update();
+  // TODO(SeanCurtis-TRI): Rather than changing scalar type, modify the
+  // hard-coded texture "type" from GL_UNSIGNED_BYTE to whatever accommodates
+  // the parsed type.
   if (png_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
     log()->warn(
         "Texture map '{}' has an unsupported bit depth, casting it to uchar "
@@ -83,31 +129,105 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
     return std::nullopt;
   }
 
-  GLuint texture_id;
-  glGenTextures(1, &texture_id);
-  // This will catch the problem that an OpenGl context is not bound; we have no
-  // way to tell if the *wrong* context is bound and we create the texture in
-  // the wrong place.
-  DRAKE_ASSERT(glGetError() == GL_NO_ERROR);
-  glBindTexture(GL_TEXTURE_2D, texture_id);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   unsigned char* pixel = static_cast<unsigned char*>(image->GetScalarPointer());
-  glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0,
-               internal_format, GL_UNSIGNED_BYTE, pixel);
-  glGenerateMipmap(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, 0);
-
+  GLuint texture_id =
+      MakeGlTexture(pixel, width, height, internal_format, GL_UNSIGNED_BYTE);
   textures_[file_name] = texture_id;
 
   return texture_id;
 }
 
-std::string TextureLibrary::GetTextureKey(const std::string& file_name) {
-  const fs::path path_in(file_name);
+namespace {
+
+// Maps Drake's Image pixel format to the OpenGl enumeration for textures.
+// Unsupported pixel formats throw.
+GLint GetOpenGlInternalFormat(PixelFormat format) {
+  switch (format) {
+    case PixelFormat::kRgb:
+      return GL_RGB;
+    case PixelFormat::kBgr:
+      return GL_BGR;
+    case PixelFormat::kRgba:
+      return GL_RGBA;
+    case PixelFormat::kBgra:
+      return GL_BGRA;
+    case PixelFormat::kGrey:
+      [[fallthrough]];
+    case PixelFormat::kDepth:
+      [[fallthrough]];
+    case PixelFormat::kLabel:
+      throw std::runtime_error(
+          "RenderEngineGl's texture library should not be attempting to use "
+          "depth or label images as textures.");
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Maps Drake's Image scalar to the OpenGl enumeration for textures.
+GLenum GetOpenGlTextureType(PixelScalar scalar) {
+  switch (scalar) {
+    case PixelScalar::k8U:
+      return GL_UNSIGNED_BYTE;
+    case PixelScalar::k16I:
+      return GL_SHORT;
+    case PixelScalar::k16U:
+      return GL_UNSIGNED_SHORT;
+    case PixelScalar::k32F:
+      return GL_FLOAT;
+  }
+  DRAKE_UNREACHABLE();
+}
+
+}  // namespace
+
+void TextureLibrary::AddInMemoryImages(
+    const std::map<std::string, std::vector<unsigned char>>& images) {
+  for (const auto& [name, texture] : images) {
+    DRAKE_DEMAND(name.starts_with(InMemoryPrefix()));
+
+    const std::string key = GetTextureKey(name);
+
+    if (textures_.contains(key)) {
+      continue;
+    }
+
+    ImageIo::ByteSpan texture_bytes{.data = texture.data(),
+                                    .size = texture.size()};
+    ImageIo image_io;
+    auto maybe_metadata = image_io.LoadMetadata(texture_bytes);
+    if (!maybe_metadata.has_value()) {
+      // We weren't able to infer the image type from the bytes. Rather than
+      // register an error now, we'll wait until the user actually attempts to
+      // access it so that we don't complain about bad, but unused data.
+      //
+      // When referenced in GetTextureId(), we'll report that the texture isn't
+      // loaded and indicate it *may* be due to incompatible file type (although
+      // it could be because it was never registered, period). It is unlikely
+      // that this deferred error message would lead to confusion.
+      continue;
+    }
+
+    ImageAny image_any = image_io.Load(texture_bytes, maybe_metadata->format);
+
+    std::visit(
+        [this, &key]<typename SomeImage>(SomeImage& image) {
+          const GLint format = GetOpenGlInternalFormat(SomeImage::kPixelFormat);
+          const GLenum type =
+              GetOpenGlTextureType(SomeImage::Traits::kPixelScalar);
+          const GLuint texture_id = MakeGlTexture(image.at(0, 0), image.width(),
+                                                  image.height(), format, type);
+          textures_[key] = texture_id;
+        },
+        image_any);
+  }
+}
+
+std::string TextureLibrary::GetTextureKey(const std::string& file_uri) {
+  if (file_uri.starts_with("data://")) {
+    return file_uri;
+  }
+
+  const fs::path path_in(file_uri);
   const fs::path file_path =
       fs::is_symlink(path_in) ? fs::read_symlink(path_in) : path_in;
   return file_path.string();

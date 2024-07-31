@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -9,7 +10,6 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -17,6 +17,7 @@ drake_cc_package_library(
     name = "proximity",
     visibility = ["//visibility:public"],
     deps = [
+        ":boxes_overlap",
         ":bv",
         ":bvh",
         ":bvh_updater",
@@ -29,6 +30,7 @@ drake_cc_package_library(
         ":detect_zero_simplex",
         ":field_intersection",
         ":hydroelastic_internal",
+        ":inflate_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
@@ -67,18 +69,37 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "boxes_overlap",
+    srcs = ["boxes_overlap.cc"],
+    hdrs = ["boxes_overlap.h"],
+    copts = [
+        # Hard coding optimization keeps performance high in debug.  If you are
+        # a developer trying to debug these files, you might want to comment
+        # this out temporarily.
+        "-O2",
+    ],
+    deps = [
+        "//math:geometric_transform",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//common:hwy_dynamic",
+        "@highway_internal//:hwy",
+    ],
+)
+
+drake_cc_library(
     name = "bv",
     srcs = [
         "aabb.cc",
-        "boxes_overlap.cc",
         "obb.cc",
     ],
     hdrs = [
         "aabb.h",
-        "boxes_overlap.h",
         "obb.h",
     ],
     deps = [
+        ":boxes_overlap",
         ":posed_half_space",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -121,13 +142,13 @@ drake_cc_library(
     hdrs = ["calc_distance_to_surface_mesh.h"],
     internal = True,
     visibility = ["//visibility:private"],
-    interface_deps = [
+    deps = [
         ":bv",
         ":bvh",
         ":triangle_surface_mesh",
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         ":distance_to_point_callback",
         "//math:geometric_transform",
     ],
@@ -343,6 +364,7 @@ drake_cc_library(
     internal = True,
     visibility = [
         "//geometry:__pkg__",
+        "//geometry/benchmarking:__pkg__",
     ],
     deps = [
         ":collision_filter",
@@ -401,14 +423,30 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "inflate_mesh",
+    srcs = ["inflate_mesh.cc"],
+    hdrs = ["inflate_mesh.h"],
+    deps = [
+        ":volume_mesh",
+    ],
+    implementation_deps = [
+        ":volume_to_surface_mesh",
+        "//common:essential",
+        "//solvers:clarabel_solver",
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+    ],
+)
+
+drake_cc_library(
     name = "make_box_field",
     srcs = ["make_box_field.cc"],
     hdrs = ["make_box_field.h"],
-    interface_deps = [
+    deps = [
         ":mesh_field",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":distance_to_point_callback",
         "//common:default_scalars",
         "//common:essential",
@@ -420,13 +458,13 @@ drake_cc_library(
     name = "make_box_mesh",
     srcs = ["make_box_mesh.cc"],
     hdrs = ["make_box_mesh.h"],
-    interface_deps = [
+    deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":proximity_utilities",
         "//common:default_scalars",
     ],
@@ -447,14 +485,14 @@ drake_cc_library(
     name = "make_capsule_mesh",
     srcs = ["make_capsule_mesh.cc"],
     hdrs = ["make_capsule_mesh.h"],
-    interface_deps = [
+    deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common:essential",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":meshing_utilities",
         ":proximity_utilities",
         "//common:default_scalars",
@@ -475,10 +513,10 @@ drake_cc_library(
     hdrs = ["make_convex_hull_mesh_impl.h"],
     internal = True,
     visibility = ["//geometry:__subpackages__"],
-    interface_deps = [
+    deps = [
         "//geometry/proximity:polygon_surface_mesh",
     ],
-    deps = [
+    implementation_deps = [
         ":volume_mesh",
         ":vtk_to_volume_mesh",
         "//common:essential",
@@ -497,11 +535,11 @@ drake_cc_library(
     name = "make_convex_hull_mesh",
     srcs = ["make_convex_hull_mesh.cc"],
     hdrs = ["make_convex_hull_mesh.h"],
-    interface_deps = [
-        "//geometry/proximity:polygon_surface_mesh",
-        "//geometry:shape_specification",
-    ],
     deps = [
+        "//geometry:shape_specification",
+        "//geometry/proximity:polygon_surface_mesh",
+    ],
+    implementation_deps = [
         ":make_convex_hull_mesh_impl",
     ],
 )
@@ -510,11 +548,11 @@ drake_cc_library(
     name = "make_convex_mesh",
     srcs = ["make_convex_mesh.cc"],
     hdrs = ["make_convex_mesh.h"],
-    interface_deps = [
+    deps = [
         ":volume_mesh",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":obj_to_surface_mesh",
         ":triangle_surface_mesh",
         "//common:default_scalars",
@@ -526,11 +564,11 @@ drake_cc_library(
     name = "make_cylinder_field",
     srcs = ["make_cylinder_field.cc"],
     hdrs = ["make_cylinder_field.h"],
-    interface_deps = [
+    deps = [
         ":mesh_field",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":distance_to_point_callback",
         ":volume_to_surface_mesh",
         "//common:default_scalars",
@@ -543,14 +581,14 @@ drake_cc_library(
     name = "make_cylinder_mesh",
     srcs = ["make_cylinder_mesh.cc"],
     hdrs = ["make_cylinder_mesh.h"],
-    interface_deps = [
+    deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common:essential",
         "//geometry:shape_specification",
     ],
-    deps = [
+    implementation_deps = [
         ":meshing_utilities",
         ":proximity_utilities",
         "//common:default_scalars",
@@ -734,11 +772,11 @@ drake_cc_library(
     name = "obj_to_surface_mesh",
     srcs = ["obj_to_surface_mesh.cc"],
     hdrs = ["obj_to_surface_mesh.h"],
-    interface_deps = [
+    deps = [
         ":triangle_surface_mesh",
         "//common:diagnostic_policy",
     ],
-    deps = [
+    implementation_deps = [
         "//common:essential",
         "@fmt",
         "@tinyobjloader_internal//:tinyobjloader",
@@ -829,6 +867,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "pressure_field_invariants",
+    testonly = 1,
+    srcs = ["test/pressure_field_invariants.cc"],
+    hdrs = ["test/pressure_field_invariants.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":mesh_field",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
+        "//common:essential",
+        "//math:geometric_transform",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
     name = "sorted_triplet",
     srcs = ["sorted_triplet.cc"],
     hdrs = ["sorted_triplet.h"],
@@ -906,11 +961,11 @@ drake_cc_library(
     hdrs = [
         "vtk_to_volume_mesh.h",
     ],
-    interface_deps = [
+    deps = [
         ":volume_mesh",
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         "@fmt",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
@@ -955,6 +1010,18 @@ drake_cc_googletest(
     deps = [
         ":bv",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "boxes_overlap_test",
+    deps = [
+        ":boxes_overlap",
+        "//common/test_utilities:maybe_pause_for_user",
+        "//geometry:meshcat",
+        "//geometry:rgba",
+        "//geometry:shape_specification",
+        "//geometry/test_utilities:boxes_overlap_transforms",
     ],
 )
 
@@ -1148,7 +1215,7 @@ drake_cc_googletest(
     deps = [
         ":distance_to_shape_touching",
         "//common:essential",
-        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities",
         "//math:geometric_transform",
     ],
 )
@@ -1206,10 +1273,25 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "inflate_mesh_test",
+    data = [
+        "//geometry:test_vtk_files",
+    ],
+    deps = [
+        ":inflate_mesh",
+        ":make_mesh_from_vtk",
+        ":volume_to_surface_mesh",
+        "//common:find_resource",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_googletest(
     name = "make_box_field_test",
     deps = [
         ":make_box_field",
         ":make_box_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1228,6 +1310,7 @@ drake_cc_googletest(
     deps = [
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1303,6 +1386,7 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_field",
         ":make_cylinder_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1320,6 +1404,7 @@ drake_cc_googletest(
     deps = [
         ":make_ellipsoid_field",
         ":make_ellipsoid_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1339,6 +1424,7 @@ drake_cc_googletest(
     deps = [
         ":make_mesh_field",
         ":make_mesh_from_vtk",
+        ":pressure_field_invariants",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -1361,6 +1447,7 @@ drake_cc_googletest(
     deps = [
         ":make_sphere_field",
         ":make_sphere_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1623,7 +1710,7 @@ drake_py_unittest(
         "//geometry:test_vtk_files",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

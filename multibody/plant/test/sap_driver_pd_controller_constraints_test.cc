@@ -31,23 +31,6 @@ using Configuration = SapPdControllerConstraint<double>::Configuration;
 
 namespace drake {
 namespace multibody {
-
-namespace contact_solvers {
-namespace internal {
-// N.B. What namespace this operator is in is important for ADL.
-bool operator==(const Configuration& a, const Configuration& b) {
-  if (a.clique != b.clique) return false;
-  if (a.clique_dof != b.clique_dof) return false;
-  if (a.clique_nv != b.clique_nv) return false;
-  if (a.q0 != b.q0) return false;
-  if (a.qd != b.qd) return false;
-  if (a.vd != b.vd) return false;
-  if (a.u0 != b.u0) return false;
-  return true;
-}
-}  // namespace internal
-}  // namespace contact_solvers
-
 namespace internal {
 
 // Friend class used to provide access to a selection of private functions in
@@ -110,8 +93,8 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
   }
 
   void SetGripperModel() {
-    for (JointActuatorIndex actuator_index(0);
-         actuator_index < plant_->num_actuators(); ++actuator_index) {
+    for (JointActuatorIndex actuator_index :
+         plant_->GetJointActuatorIndices()) {
       JointActuator<double>& actuator =
           plant_->get_mutable_joint_actuator(actuator_index);
       if (actuator.model_instance() == gripper_model_) {
@@ -145,7 +128,7 @@ TEST_F(ActuatedIiiwaArmTest, VerifyConstraints) {
 
   // Sanity check we only defined PD controllers for the grippers DOFs.
   int num_controlled_actuators = 0;
-  for (JointActuatorIndex a(0); a < plant_->num_actuators(); ++a) {
+  for (JointActuatorIndex a : plant_->GetJointActuatorIndices()) {
     const JointActuator<double>& actuator = plant_->get_joint_actuator(a);
     if (actuator.has_controller()) ++num_controlled_actuators;
   }

@@ -8,7 +8,7 @@ import unittest
 from subprocess import STDOUT, check_output
 import sys
 
-import drake.tools.install.installer as installer
+import tools.install.installer as installer
 
 # TODO(eric.cousineau): Expand on these tests, especially for nuanced things
 # like Python C extensions.

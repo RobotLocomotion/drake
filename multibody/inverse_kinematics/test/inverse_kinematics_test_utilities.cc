@@ -273,7 +273,7 @@ T BoxSphereSignedDistance(const Eigen::Ref<const Eigen::Vector3d>& box_size,
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&ConstructTwoFreeBodiesPlant<T>, &BoxSphereSignedDistance<T>))
+    (&ConstructTwoFreeBodiesPlant<T>, &BoxSphereSignedDistance<T>));
 
 }  // namespace multibody
 }  // namespace drake

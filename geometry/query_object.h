@@ -172,13 +172,25 @@ class QueryObject {
   const math::RigidTransform<T>& GetPoseInWorld(GeometryId geometry_id) const;
 
   /** Reports the configuration of the deformable geometry indicated by
-   `geometry_id` relative to the world frame.
+   `deformable_geometry_id` relative to the world frame.
    @sa GetPoseInWorld().
-   @throws std::exception if the geometry `geometry_id` is not valid or is not
-   a deformable geometry.  */
+   @throws std::exception if the geometry `deformable_geometry_id` is not valid
+   or is not a deformable geometry.  */
   const VectorX<T>& GetConfigurationsInWorld(
       GeometryId deformable_geometry_id) const;
 
+  // TODO(xuchenhan-tri): This should cross reference the concept of driven
+  // meshes when it is nicely written up somewhere (e.g., in the SceneGraph
+  // documentation).
+  /** Reports the configurations of the driven meshes associated with the given
+   role for the deformable geometry indicated by `deformable_geometry_id`
+   relative to the world frame if the deformable geometry has that role.
+   @throws std::exception if the geometry associated with
+   `deformable_geometry_id` is not a registered deformable geometry with
+   the given role.
+   @experimental */
+  std::vector<VectorX<T>> GetDrivenMeshConfigurationsInWorld(
+      GeometryId deformable_geometry_id, Role role) const;
   //@}
 
   /**
@@ -645,7 +657,9 @@ class QueryObject {
 
    @returns The signed distance (and supporting data) for all unfiltered
             geometry pairs whose distance is less than or equal to
-            `max_distance`.
+            `max_distance`. The ordering of the results is guaranteed to be
+            consistent -- for fixed geometry poses, the results will remain the
+            same.
    @throws std::exception as indicated in the table above.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.  */
@@ -771,7 +785,10 @@ class QueryObject {
    @retval signed_distances   A vector populated with per-object signed distance
                               values (and supporting data) for every supported
                               geometry as shown in the table. See
-                              SignedDistanceToPoint. */
+                              SignedDistanceToPoint. The ordering of the
+                              results is guaranteed to be consistent -- for
+                              fixed geometry poses, the results will remain the
+                              same. */
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
       const double threshold = std::numeric_limits<double>::infinity()) const;

@@ -12,7 +12,8 @@ hood.
 
 Follow Drake's
 [platform-specific setup instructions](/from_source.html#mandatory-platform-specific-instructions)
-to install Bazel.
+to install bazelisk at ``/usr/bin/bazel``, which will then automatically
+download the correct version of Bazel necessary for the build.
 
 # Drake clone and platform setup
 
@@ -326,3 +327,23 @@ misleading. As of Ubuntu 22.04 and kcov 38, Python reports do not render
 coverage for multi-line statements properly. Statements that use delimiter
 pairs to span more than two lines, or statements that use string token pasting
 across multiple lines may be mistakenly shown as only partially executed.
+
+### Drake bazel rules and kcov
+
+Some Drake-specific bazel rules (e.g. `drake_cc_google_test`) use various
+heuristics to skip certain tests in `kcov` builds. This may hinder developers
+trying to use `kcov` locally on specific tests. For example:
+
+```
+bazel test --config=kcov //common:temp_directory_test
+```
+
+results in:
+```
+ERROR: No test targets were found, yet testing was requested
+```
+
+To force execution with kcov, add an empty `test_tag_filters` option:
+```
+bazel test --config=kcov --test_tag_filters= //common:temp_directory_test
+```

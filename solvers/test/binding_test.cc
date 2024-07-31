@@ -164,7 +164,7 @@ TEST_F(TestBinding, TestCost) {
 
 class DummyEvaluator : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyEvaluator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyEvaluator);
 
   DummyEvaluator() : EvaluatorBase(2, 3) {}
 

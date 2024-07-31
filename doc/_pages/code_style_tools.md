@@ -48,7 +48,7 @@ install Drake's required version of ``clang-format``, depending on the platform
 To run ``clang-format``:
 
 ```
-clang-format-12 -i -style=file [file name]
+clang-format-15 -i -style=file [file name]
 ```
 
 Using ``clang-format`` will modify the entire file that is specified. As an
@@ -57,11 +57,16 @@ portions of a file that you have modified. To run ``git clang-format``:
 
 ```
 # For development on Ubuntu: format a file that has been staged in git
-git clang-format-12 --binary=/usr/bin/clang-format-12 -- [file name]
+git clang-format-15 --binary=/usr/bin/clang-format-15 -- [file name]
 
 # For development on Ubuntu: format a file that has been modified but not staged
-git clang-format-12 --binary=/usr/bin/clang-format-12 -f -- [file name]
+git clang-format-15 --binary=/usr/bin/clang-format-15 -f -- [file name]
 ```
+
+On macOS, the command to use is
+``/opt/homebrew/opt/llvm@15/bin/clang-format``.
+Note in particular that ``15`` is part of the directory name, not a suffix on
+the program name.
 
 ### IDE integration
 

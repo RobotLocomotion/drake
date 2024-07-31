@@ -117,4 +117,4 @@ T DiscreteTimeTrajectory<T>::end_time() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::trajectories::DiscreteTimeTrajectory)
+    class drake::trajectories::DiscreteTimeTrajectory);

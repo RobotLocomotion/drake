@@ -138,12 +138,14 @@ struct DoorHingeConfig {
 template <typename T>
 class DoorHinge final : public ForceElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoorHinge)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoorHinge);
 
   /// Constructs a hinge force element with parameters @p config applied to the
   /// specified @p joint. It will throw an exception if the DoorHingeConfig is
   /// invalid.
   DoorHinge(const RevoluteJoint<T>& joint, const DoorHingeConfig& config);
+
+  ~DoorHinge() override;
 
   const RevoluteJoint<T>& joint() const;
 
@@ -234,4 +236,4 @@ class DoorHinge final : public ForceElement<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::DoorHinge)
+    class ::drake::multibody::DoorHinge);

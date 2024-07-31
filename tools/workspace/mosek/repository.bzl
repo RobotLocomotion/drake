@@ -1,15 +1,8 @@
 load("//tools/workspace/mosek:repository_impl.bzl", "repository_impl")
 
-# TODO(jwnimmer-tri) Remove on 2024-07-01 upon completion of deprecation.
-load("//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
-
 def mosek_repository(
         name,
         mirrors = None):
-    # TODO(jwnimmer-tri) Remove on 2024-07-01 upon completion of deprecation.
-    if mirrors == None:
-        print("mosek_repository() now requires a mirrors= argument; passing None is deprecated and will become an error on our after 2024-07-01")  # noqa
-        mirrors = DEFAULT_MIRRORS
     repository_impl(
         name = name,
         # When the version is updated:

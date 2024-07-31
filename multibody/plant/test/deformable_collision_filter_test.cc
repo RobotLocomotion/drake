@@ -32,13 +32,12 @@ class DeformableCollisionFilterTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, 0.01);
-    auto deformable_model = std::make_unique<DeformableModel<double>>(plant_);
+    DeformableModel<double>& deformable_model =
+        plant_->mutable_deformable_model();
     DeformableBodyId deformable_body_id =
-        RegisterDeformableOctahedron(deformable_model.get(), "deformable");
+        RegisterDeformableOctahedron(&deformable_model, "deformable");
     deformable_geometry_id_ =
-        deformable_model->GetGeometryId(deformable_body_id);
-    model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+        deformable_model.GetGeometryId(deformable_body_id);
     // N.B. Deformables are only supported with the SAP solver.
     // Thus for testing we choose one arbitrary contact approximation that uses
     // the SAP solver.
@@ -95,10 +94,6 @@ class DeformableCollisionFilterTest : public ::testing::Test {
 
     plant_->Finalize();
 
-    builder.Connect(model_->vertex_positions_port(),
-                    scene_graph_->get_source_configuration_port(
-                        plant_->get_source_id().value()));
-
     diagram_ = builder.Build();
   }
 
@@ -141,7 +136,6 @@ class DeformableCollisionFilterTest : public ::testing::Test {
 
   SceneGraph<double>* scene_graph_{nullptr};
   MultibodyPlant<double>* plant_{nullptr};
-  DeformableModel<double>* model_{nullptr};
   GeometryId deformable_geometry_id_;
   GeometryId welded_geometry_id_;
   GeometryId free_geometry_id_;

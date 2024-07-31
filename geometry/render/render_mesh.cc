@@ -70,14 +70,14 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
       policy.Warning(fmt::format(
           "The OBJ file's material requested an unavailable diffuse texture "
           "image: {}. The image will be omitted.",
-          result.diffuse_map.string()));
+          result.diffuse_map));
       result.diffuse_map.clear();
     } else if (uv_state != UvState::kFull) {
       policy.Warning(fmt::format(
           "The OBJ file's material requested a diffuse texture image: {}. "
           "However the mesh doesn't define {} texture coordinates. The image "
           "will be omitted.",
-          result.diffuse_map.string(),
+          result.diffuse_map,
           uv_state == UvState::kNone ? "any" : "a complete set of"));
       result.diffuse_map.clear();
     }
@@ -94,7 +94,8 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
 
 vector<RenderMesh> LoadRenderMeshesFromObj(
     const std::filesystem::path& obj_path, const GeometryProperties& properties,
-    const Rgba& default_diffuse, const DiagnosticPolicy& policy) {
+    const std::optional<Rgba>& default_diffuse,
+    const DiagnosticPolicy& policy) {
   tinyobj::ObjReaderConfig config;
   config.triangulate = true;
   config.vertex_color = false;
@@ -264,8 +265,8 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
   DRAKE_DEMAND(positions.size() == uvs.size());
 
   /* Now we need to partition the prepped geometry data. Each material used
-   will lead to a unique `RenderMesh` and `RenderMaterial`. Note: the obj may
-   have declared distinct *objects*. We are erasing that distinction as
+   will lead to a unique `RenderMesh` and possibly a `RenderMaterial`. Note: the
+   obj may have declared distinct *objects*. We are erasing that distinction as
    irrelevant for rendering the mesh as a rigid structure. */
   vector<RenderMesh> meshes;
   for (const auto& [mat_index, tri_indices] : material_triangles) {
@@ -279,7 +280,7 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
     if (mat_index == -1) {
       /* This is the default material. No material was assigned to the faces.
        We'll apply the fallback logic. */
-      mesh_data.material = MakeMeshFallbackMaterial(
+      mesh_data.material = MaybeMakeMeshFallbackMaterial(
           properties, obj_path, default_diffuse, policy, mesh_data.uv_state);
     } else {
       mesh_data.material =
@@ -332,11 +333,10 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
 
 RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
     const TriangleSurfaceMesh<double>& mesh,
-    const GeometryProperties& properties, const Rgba& default_diffuse,
-    const DiagnosticPolicy& policy) {
+    const GeometryProperties& properties, const DiagnosticPolicy& policy) {
   RenderMesh result;
-  result.material = MakeMeshFallbackMaterial(properties, "", default_diffuse,
-                                             policy, UvState::kNone);
+  result.material =
+      MaybeMakeMeshFallbackMaterial(properties, "", {}, policy, UvState::kNone);
   const int vertex_count = mesh.num_vertices();
   const int triangle_count = mesh.num_triangles();
   result.positions.resize(vertex_count, 3);
@@ -367,8 +367,7 @@ RenderMesh MakeRenderMeshFromTriangleSurfaceMesh(
 
 RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
     const TriangleSurfaceMesh<double>& mesh,
-    const GeometryProperties& properties, const Rgba& default_diffuse,
-    const DiagnosticPolicy& policy) {
+    const GeometryProperties& properties, const DiagnosticPolicy& policy) {
   // The simple solution is to create a *new* mesh where every triangle has its
   // own vertices and then pass to MakeRenderMeshFromTriangleSurfaceMesh().
   // If this ever becomes an onerous burden, we can do that directly into the
@@ -386,8 +385,7 @@ RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
   }
   const TriangleSurfaceMesh<double> faceted(std::move(triangles),
                                             std::move(vertices));
-  return MakeRenderMeshFromTriangleSurfaceMesh(faceted, properties,
-                                               default_diffuse, policy);
+  return MakeRenderMeshFromTriangleSurfaceMesh(faceted, properties, policy);
 }
 
 TriangleSurfaceMesh<double> MakeTriangleSurfaceMesh(

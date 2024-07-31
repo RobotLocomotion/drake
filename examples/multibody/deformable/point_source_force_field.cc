@@ -2,7 +2,7 @@
 
 namespace drake {
 namespace examples {
-namespace deformable_torus {
+namespace deformable {
 
 using multibody::ForceDensityField;
 using multibody::MultibodyPlant;
@@ -65,6 +65,6 @@ void PointSourceForceField::DoDeclareInputPorts(MultibodyPlant<double>* plant) {
           .get_index();
 }
 
-}  // namespace deformable_torus
+}  // namespace deformable
 }  // namespace examples
 }  // namespace drake

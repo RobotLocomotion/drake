@@ -24,12 +24,4 @@ EOF
 
 # Prefetch the bazelisk download of bazel.
 # This is especially helpful for the "Provisioned" images in CI.
-if [[ $(arch) = "aarch64" ]]; then
-  # Per ./install_bazel.sh, on arm we use bazelisk as our bazel so we should
-  # prefetch using that spelling.
-  cd "${workspace_dir}" && bazel version
-else
-  # Per ./install_bazel.sh, on non-arm there is no system-wide bazelisk so we
-  # need to use a local copy.
-  cd "${workspace_dir}" && ./third_party/com_github_bazelbuild_bazelisk/bazelisk.py version
-fi
+(cd "${workspace_dir}" && bazel version)

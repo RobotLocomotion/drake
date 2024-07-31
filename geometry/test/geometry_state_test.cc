@@ -41,8 +41,19 @@ using Eigen::VectorXd;
 using internal::DrivenTriangleMesh;
 using internal::DummyRenderEngine;
 using internal::FrameNameSet;
+using internal::HydroelasticType;
 using internal::InternalFrame;
 using internal::InternalGeometry;
+using internal::kComplianceType;
+using internal::kElastic;
+using internal::kFriction;
+using internal::kHcDissipation;
+using internal::kHydroGroup;
+using internal::kMaterialGroup;
+using internal::kPointStiffness;
+using internal::kRelaxationTime;
+using internal::kRezHint;
+using internal::kSlabThickness;
 using internal::ProximityEngine;
 using math::RigidTransform;
 using math::RigidTransformd;
@@ -130,9 +141,8 @@ class GeometryStateTester {
     return state_->mutable_kinematics_data();
   }
 
-  const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
-  driven_perception_meshes() const {
-    return state_->driven_perception_meshes_.driven_meshes();
+  const internal::DrivenMeshData& driven_mesh_data(Role role) const {
+    return state_->driven_mesh_data_.at(role);
   }
 
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
@@ -153,10 +163,13 @@ class GeometryStateTester {
   }
 
   void FinalizeConfigurationUpdate() {
-    state_->driven_perception_meshes_.SetControlMeshPositions(
-        state_->kinematics_data_.q_WGs);
+    for (const auto role : std::vector<Role>{
+             Role::kPerception, Role::kIllustration, Role::kProximity}) {
+      state_->driven_mesh_data_[role].SetControlMeshPositions(
+          state_->kinematics_data_.q_WGs);
+    }
     state_->FinalizeConfigurationUpdate(
-        state_->kinematics_data_, state_->driven_perception_meshes_,
+        state_->kinematics_data_, state_->driven_mesh_data_[Role::kPerception],
         &state_->mutable_proximity_engine(), state_->GetMutableRenderEngines());
   }
 
@@ -1377,10 +1390,10 @@ TEST_F(GeometryStateTest, GetGeometryIds) {
 
 // Tests the GetNum*Geometry*Methods.
 TEST_F(GeometryStateTest, GetNumGeometryTests) {
-  SetUpSingleSourceTree(Assign::kProximity);
-  EXPECT_EQ(single_tree_rigid_geometry_count(),
+  SetUpWithRigidAndDeformableGeometries(Assign::kProximity);
+  EXPECT_EQ(total_geometry_count(),
             geometry_state_.get_num_geometries());
-  EXPECT_EQ(single_tree_rigid_geometry_count(),
+  EXPECT_EQ(total_geometry_count(),
             geometry_state_.NumGeometriesWithRole(Role::kProximity));
   EXPECT_EQ(0, geometry_state_.NumGeometriesWithRole(Role::kPerception));
   EXPECT_EQ(0, geometry_state_.NumGeometriesWithRole(Role::kIllustration));
@@ -1395,6 +1408,13 @@ TEST_F(GeometryStateTest, GetNumGeometryTests) {
     EXPECT_EQ(0, geometry_state_.NumGeometriesForFrameWithRole(
                      frames_[i], Role::kIllustration));
   }
+
+  EXPECT_EQ(1,
+            geometry_state_.NumDeformableGeometriesWithRole(Role::kProximity));
+  EXPECT_EQ(0,
+            geometry_state_.NumDeformableGeometriesWithRole(Role::kPerception));
+  EXPECT_EQ(
+      0, geometry_state_.NumDeformableGeometriesWithRole(Role::kIllustration));
 }
 
 // Tests GetGeometries(FrameId, Role).
@@ -2091,6 +2111,85 @@ TEST_F(GeometryStateTest, SetGeometryConfiguration) {
   gs_tester_.FinalizeConfigurationUpdate();
   geometry_state_.ComputeDeformableContact(&contacts);
   ASSERT_EQ(contacts.contact_surfaces().size(), 0);
+}
+
+// Tests GetDrivenMeshConfigurationsInWorld and GetDrivenRenderMeshes.
+// We register the coarsest possible sphere mesh for a deformable geometry, use
+// the fact that the mesh is an octahedron, and confirm the driven meshes are
+// correctly registered and retrieved.
+TEST_F(GeometryStateTest, DrivenMeshes) {
+  const SourceId s_id = NewSource("new source");
+  auto deformable_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(1.0),
+      "deformable sphere");
+  deformable_instance->set_proximity_properties(ProximityProperties());
+  deformable_instance->set_perception_properties(PerceptionProperties());
+  // Specify the diffuse color for illustration properties only. This diffuse
+  // color should be captured by the material of the corresponding driven
+  // RenderMesh. The RenderMeshes for the other roles will not have a material.
+  IllustrationProperties illustration_properties;
+  illustration_properties.AddProperty("phong", "diffuse",
+                                      Rgba(0.1, 0.2, 0.3, 0.4));
+  deformable_instance->set_illustration_properties(illustration_properties);
+  // Make sure the resolution hint is large enough so we end up with an
+  // octahedron.
+  const auto deformable_id = geometry_state_.RegisterDeformableGeometry(
+      s_id, InternalFrame::world_frame_id(), std::move(deformable_instance),
+      /* resolution_hint */ 2.0);
+
+  // Confirm that the driven mesh with each role is the surface of the
+  // octahedron.
+  for (const auto role : std::vector<Role>{
+           Role::kIllustration, Role::kPerception, Role::kProximity}) {
+    const std::vector<internal::RenderMesh>& render_meshes =
+        geometry_state_.GetDrivenRenderMeshes(deformable_id, role);
+    ASSERT_EQ(ssize(render_meshes), 1);
+    const auto& mesh = render_meshes[0];
+    // The octahedron has 6 vertices and 8 faces.
+    EXPECT_EQ(mesh.positions.rows(), 6);
+    EXPECT_EQ(mesh.indices.rows(), 8);
+    if (role == Role::kIllustration) {
+      // The illustration mesh should have the illustration properties.
+      EXPECT_EQ(mesh.material->diffuse, Rgba(0.1, 0.2, 0.3, 0.4));
+    } else {
+      EXPECT_FALSE(mesh.material.has_value());
+    }
+  }
+
+  const std::vector<VectorX<double>> reference_proximity_configuration =
+      geometry_state_.GetDrivenMeshConfigurationsInWorld(deformable_id,
+                                                         Role::kProximity);
+  ASSERT_EQ(reference_proximity_configuration.size(), 1);
+  for (const auto role : std::vector<Role>{
+           Role::kIllustration, Role::kPerception, Role::kProximity}) {
+    const std::vector<VectorX<double>> configuration =
+        geometry_state_.GetDrivenMeshConfigurationsInWorld(deformable_id, role);
+    EXPECT_EQ(configuration, reference_proximity_configuration);
+  }
+  // Scale the geometry by a factor of 2.0 and confirm that the driven meshes
+  // are also scaled.
+  const VectorX<double> reference_q_WG =
+      geometry_state_.get_configurations_in_world(deformable_id);
+  GeometryConfigurationVector<double> new_configurations;
+  new_configurations.set_value(deformable_id, 2.0 * reference_q_WG);
+  gs_tester_.SetGeometryConfiguration(s_id, new_configurations,
+                                      &gs_tester_.mutable_kinematics_data());
+  for (const auto role : std::vector<Role>{
+           Role::kIllustration, Role::kPerception, Role::kProximity}) {
+    const std::vector<VectorX<double>> configuration =
+        geometry_state_.GetDrivenMeshConfigurationsInWorld(deformable_id, role);
+    EXPECT_TRUE(CompareMatrices(configuration[0],
+                                reference_proximity_configuration[0]));
+  }
+
+  // Trying to get driven meshes for a non-existent role should throw.
+  geometry_state_.RemoveRole(s_id, deformable_id, Role::kIllustration);
+  EXPECT_THROW(
+      geometry_state_.GetDrivenRenderMeshes(deformable_id, Role::kIllustration),
+      std::exception);
+  EXPECT_THROW(geometry_state_.GetDrivenMeshConfigurationsInWorld(
+                   deformable_id, Role::kIllustration),
+               std::exception);
 }
 
 // Tests the RemoveGeometry() functionality. This action will have several
@@ -4050,38 +4149,44 @@ TEST_F(GeometryStateTest, DrivenMeshData) {
       RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
   GeometryId g_id = geometry_state_.RegisterDeformableGeometry(
       s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
-  PerceptionProperties perception_properties;
-  geometry_state_.AssignRole(s_id, g_id, perception_properties);
-  // We expect one driven geometry that's the surface mesh of the control mesh.
-  EXPECT_TRUE(gs_tester_.driven_perception_meshes().contains(g_id));
-  EXPECT_EQ(gs_tester_.driven_perception_meshes().at(g_id).size(), 1);
-  EXPECT_EQ(
-      gs_tester_.driven_perception_meshes().at(g_id)[0].num_control_vertices(),
-      7);
-  EXPECT_EQ(gs_tester_.driven_perception_meshes()
-                .at(g_id)[0]
-                .triangle_surface_mesh()
-                .num_triangles(),
-            8);
+  geometry_state_.AssignRole(s_id, g_id, PerceptionProperties());
+  geometry_state_.AssignRole(s_id, g_id, IllustrationProperties());
+  geometry_state_.AssignRole(s_id, g_id, ProximityProperties());
 
-  // Remove the perception role and the driven mesh is removed along with it.
-  geometry_state_.RemoveRole(s_id, g_id, Role::kPerception);
-  EXPECT_FALSE(gs_tester_.driven_perception_meshes().contains(g_id));
+  {
+    // We expect one driven geometry that's the surface mesh of the control
+    // mesh.
+    for (const auto role : std::vector<Role>{
+             Role::kProximity, Role::kIllustration, Role::kPerception}) {
+      const internal::DrivenMeshData& data = gs_tester_.driven_mesh_data(role);
+      EXPECT_TRUE(data.driven_meshes().contains(g_id));
+      EXPECT_EQ(data.driven_meshes().at(g_id).size(), 1);
+      const auto& driven_mesh = data.driven_meshes().at(g_id)[0];
+      EXPECT_EQ(driven_mesh.num_control_vertices(), 7);
+      EXPECT_EQ(driven_mesh.triangle_surface_mesh().num_triangles(), 8);
+    }
 
-  // Add the perception role back with a specified render geometry consisting of
-  // two distinct meshes.
-  // Note that distinct RenderMesh instances are made if there are more than one
-  // material when loading the obj file.
-  const char mtl_file[] = "multi.mtl";
-  WriteFile(R"""(
+    // Remove the perception role and the driven mesh is removed along with it.
+    geometry_state_.RemoveRole(s_id, g_id, Role::kPerception);
+    const internal::DrivenMeshData& data =
+        gs_tester_.driven_mesh_data(Role::kPerception);
+    EXPECT_FALSE(data.driven_meshes().contains(g_id));
+  }
+
+  {
+    // Add the perception role back with a specified render geometry consisting
+    // of two distinct meshes. Note that distinct RenderMesh instances are made
+    // if there are more than one material when loading the obj file.
+    const char mtl_file[] = "multi.mtl";
+    WriteFile(R"""(
     newmtl test_material_1
     Kd 1.0 0.0 1.0
 
     newmtl test_material_2
     Kd 1.0 0.0 0.0
   )""",
-            mtl_file);
-  const std::string obj_path = WriteFile(fmt::format(R"""(
+              mtl_file);
+    const std::string obj_path = WriteFile(fmt::format(R"""(
         mtllib {}
         v 0 0 0
         v 0.1 0.1 0.1
@@ -4092,12 +4197,16 @@ TEST_F(GeometryStateTest, DrivenMeshData) {
         usemtl test_material_2
         f 2//1 3//1 1//1
         f 3//1 1//1 2//1)""",
-                                                     mtl_file),
-                                         "multi_mtl.obj");
-  perception_properties.AddProperty("deformable", "embedded_mesh", obj_path);
-  geometry_state_.AssignRole(s_id, g_id, perception_properties);
-  EXPECT_TRUE(gs_tester_.driven_perception_meshes().contains(g_id));
-  EXPECT_EQ(gs_tester_.driven_perception_meshes().at(g_id).size(), 2);
+                                                       mtl_file),
+                                           "multi_mtl.obj");
+    PerceptionProperties perception_properties;
+    perception_properties.AddProperty("deformable", "embedded_mesh", obj_path);
+    geometry_state_.AssignRole(s_id, g_id, perception_properties);
+    const internal::DrivenMeshData& data =
+        gs_tester_.driven_mesh_data(Role::kPerception);
+    EXPECT_TRUE(data.driven_meshes().contains(g_id));
+    EXPECT_EQ(data.driven_meshes().at(g_id).size(), 2);
+  }
 }
 
 // Confirms that an accepting renderer
@@ -4409,6 +4518,167 @@ TEST_F(GeometryStateTest, ComputeSignedDistancePairClosestPointsError) {
       geometry_state_.ComputeSignedDistancePairClosestPoints(percep,
                                                              proximity1),
       ".*has the perception role.");
+}
+
+// This is the base for testing the ApplyProximityDefaults() overloaded
+// methods. Note that only the resulting proximity properties contents are
+// tested.  Since we know (glass-box knowledge) that ApplyProximityDefaults
+// calls GeometryState::AssignRole, we don't bother testing whether the
+// proximity engine gets appropriately updated.
+class ApplyProximityDefaultsTests : public testing::Test {
+ protected:
+  std::unique_ptr<ProximityProperties> MakeFullProperties() {
+    // Fill the properties with identifiably stupid values.
+    auto props = std::make_unique<ProximityProperties>();
+    props->AddProperty(kHydroGroup, kComplianceType,
+                       HydroelasticType::kRigid);
+    props->AddProperty(kHydroGroup, kElastic, 123.0);
+    props->AddProperty(kHydroGroup, kRezHint, 456.0);
+    props->AddProperty(kHydroGroup, kSlabThickness, 789.0);
+    multibody::CoulombFriction<double> friction{2.2, 2.2};
+    props->AddProperty(kMaterialGroup, kFriction, friction);
+    props->AddProperty(kMaterialGroup, kHcDissipation, 987.0);
+    props->AddProperty(kMaterialGroup, kRelaxationTime, 654.0);
+    props->AddProperty(kMaterialGroup, kPointStiffness, 321.0);
+    return props;
+  }
+
+  GeometryId AddSphere(const std::string name,
+                       const ProximityProperties* props) {
+    auto instance = std::make_unique<GeometryInstance>(math::RigidTransformd{},
+                                                       Sphere(0.1), name);
+    if (props != nullptr) {
+      instance->set_proximity_properties(*props);
+    }
+    return geometry_state_.RegisterGeometry(source_id_, frame_id_,
+                                            std::move(instance));
+  }
+
+  DefaultProximityProperties empty_defaults_{
+    "undefined", {}, {}, {}, {}, {}, {}, {}, {}};
+  // Use stupid values distinct from those in MakeFullProperties().
+  DefaultProximityProperties full_defaults_{
+    "compliant", 0.1, 0.2, 0.3, 0.4, 0.4, 0.5, 0.6, 0.7};
+  GeometryState<double> geometry_state_;
+  SourceId source_id_{geometry_state_.RegisterNewSource("test")};
+  FrameId frame_id_{
+    geometry_state_.RegisterFrame(source_id_, GeometryFrame("frame"))};
+};
+
+TEST_F(ApplyProximityDefaultsTests, TrivialApplyProximityDefaults) {
+  // Feeding in an empty geometry state does not crash.
+  EXPECT_NO_THROW(geometry_state_.ApplyProximityDefaults({}));
+}
+
+TEST_F(ApplyProximityDefaultsTests, NoRole) {
+  // Geometries without a proximity role are unaffected.
+  auto geometry_id = AddSphere("no_prox_role", nullptr);
+  geometry_state_.ApplyProximityDefaults(full_defaults_);
+  EXPECT_EQ(geometry_state_.GetProximityProperties(geometry_id), nullptr);
+}
+
+TEST_F(ApplyProximityDefaultsTests, EmptyPropsEmptyDefaults) {
+  // Given empty properties and minimal defaults, only compliance type is
+  // populated.
+  ProximityProperties empty_props;
+  auto geometry_id = AddSphere("empty_props", &empty_props);
+  geometry_state_.ApplyProximityDefaults(empty_defaults_, geometry_id);
+  auto* props = geometry_state_.GetProximityProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  EXPECT_EQ(
+      props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+      HydroelasticType::kUndefined);
+  EXPECT_FALSE(props->HasProperty(kHydroGroup, kElastic));
+  EXPECT_FALSE(props->HasProperty(kHydroGroup, kRezHint));
+  EXPECT_FALSE(props->HasProperty(kHydroGroup, kSlabThickness));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kFriction));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kHcDissipation));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kRelaxationTime));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kPointStiffness));
+}
+
+TEST_F(ApplyProximityDefaultsTests, EmptyPropsFullDefaults) {
+  // Given empty properties and full defaults, the default struct values are
+  // written into the properties.
+  ProximityProperties empty_props;
+  auto geometry_id = AddSphere("empty_props", &empty_props);
+  geometry_state_.ApplyProximityDefaults(full_defaults_, geometry_id);
+  auto* props = geometry_state_.GetProximityProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+            internal::GetHydroelasticTypeFromString(
+                full_defaults_.compliance_type));
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kElastic),
+            *full_defaults_.hydroelastic_modulus);
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kRezHint),
+            *full_defaults_.resolution_hint);
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kSlabThickness),
+            *full_defaults_.slab_thickness);
+
+  auto friction = props->GetProperty<multibody::CoulombFriction<double>>(
+      kMaterialGroup, kFriction);
+  EXPECT_EQ(friction.static_friction(), *full_defaults_.static_friction);
+  EXPECT_EQ(friction.dynamic_friction(), *full_defaults_.dynamic_friction);
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kHcDissipation),
+            *full_defaults_.hunt_crossley_dissipation);
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kRelaxationTime),
+            *full_defaults_.relaxation_time);
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kPointStiffness),
+            *full_defaults_.point_stiffness);
+}
+
+TEST_F(ApplyProximityDefaultsTests, FullPropsFullDefaults) {
+  // Given full properties and full defaults, the property values remain
+  // unchanged.
+  std::unique_ptr<ProximityProperties> full_props = MakeFullProperties();
+  auto geometry_id = AddSphere("full_props", full_props.get());
+  geometry_state_.ApplyProximityDefaults(full_defaults_, geometry_id);
+  auto* props = geometry_state_.GetProximityProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+            full_props->GetProperty<HydroelasticType>(kHydroGroup,
+                                                      kComplianceType));
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kElastic),
+            full_props->GetProperty<double>(kHydroGroup, kElastic));
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kRezHint),
+            full_props->GetProperty<double>(kHydroGroup, kRezHint));
+  EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kSlabThickness),
+            full_props->GetProperty<double>(kHydroGroup, kSlabThickness));
+
+  auto friction = props->GetProperty<multibody::CoulombFriction<double>>(
+      kMaterialGroup, kFriction);
+  auto full_props_friction =
+      full_props->GetProperty<multibody::CoulombFriction<double>>(
+          kMaterialGroup, kFriction);
+  EXPECT_EQ(friction.static_friction(), full_props_friction.static_friction());
+  EXPECT_EQ(friction.dynamic_friction(),
+            full_props_friction.dynamic_friction());
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kHcDissipation),
+            full_props->GetProperty<double>(kMaterialGroup, kHcDissipation));
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kRelaxationTime),
+            full_props->GetProperty<double>(kMaterialGroup, kRelaxationTime));
+  EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kPointStiffness),
+            full_props->GetProperty<double>(kMaterialGroup, kPointStiffness));
+}
+
+TEST_F(ApplyProximityDefaultsTests, MultipleGeometries) {
+  // The one-argument overload modifies multiple geometries, consistent with
+  // the detailed behavior tested above.
+  ProximityProperties empty_props;
+  const int kNumTestGeoms = 10;
+  std::vector<GeometryId> geometry_ids;
+  geometry_ids.reserve(kNumTestGeoms);
+  for (int k = 0; k < kNumTestGeoms; ++k) {
+    geometry_ids.push_back(AddSphere(fmt::to_string(k), &empty_props));
+  }
+  geometry_state_.ApplyProximityDefaults(full_defaults_);
+  // Spot-check that values got written into the properties.
+  for (const auto& id : geometry_ids) {
+    auto* props = geometry_state_.GetProximityProperties(id);
+    ASSERT_NE(props, nullptr);
+    EXPECT_EQ(props->GetProperty<double>(kMaterialGroup, kPointStiffness),
+              *full_defaults_.point_stiffness);
+  }
 }
 
 // Test the ability of GeometryState to successfully report geometries with

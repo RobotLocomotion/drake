@@ -379,39 +379,40 @@ SpatialInertia<T>& SpatialInertia<T>::operator+=(
 }
 
 template <typename T>
-SpatialInertia<T>& SpatialInertia<T>::ShiftFromCenterOfMassInPlace(
+void SpatialInertia<T>::ShiftFromCenterOfMassInPlace(
     const Vector3<T>& p_ScmP_E) {
   DRAKE_ASSERT(p_PScm_E_ == Vector3<T>::Zero());
   G_SP_E_.ShiftFromCenterOfMassInPlace(p_ScmP_E);
   p_PScm_E_ = -p_ScmP_E;
-  return *this;  // On entry, `this` is M_SScm_E. On return, `this` is M_SP_E.
+  // On entry, `this` is M_SScm_E. On return, `this` is M_SP_E.
 }
 
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::ShiftFromCenterOfMass(
     const Vector3<T>& p_ScmP_E) const {
-  return SpatialInertia(*this).ShiftFromCenterOfMassInPlace(p_ScmP_E);
+  SpatialInertia result(*this);
+  result.ShiftFromCenterOfMassInPlace(p_ScmP_E);
+  return result;
 }
 
 template <typename T>
-SpatialInertia<T>& SpatialInertia<T>::ShiftToCenterOfMassInPlace() {
+void SpatialInertia<T>::ShiftToCenterOfMassInPlace() {
   G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
   p_PScm_E_ = Vector3<T>::Zero();
-  return *this;  // On entry, `this` is M_SP_E. On return, `this` is M_SScm_E.
+  // On entry, `this` is M_SP_E. On return, `this` is M_SScm_E.
 }
 
 template <typename T>
-SpatialInertia<T>& SpatialInertia<T>::ShiftInPlace(const Vector3<T>& p_PQ_E) {
+void SpatialInertia<T>::ShiftInPlace(const Vector3<T>& p_PQ_E) {
   const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
   // The following two lines apply the parallel axis theorem (in place) so that:
   //  G_SQ = G_SP + px_QScm² - px_PScm²
   G_SP_E_.ShiftFromCenterOfMassInPlace(p_QScm_E);
   G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
   p_PScm_E_ = p_QScm_E;
-  // Note: It would be a implementation bug if a shift starts with a valid
+  // Note: It would be an implementation bug if a shift starts with a valid
   // spatial inertia and the shift produces an invalid spatial inertia.
   // Hence, no need to use DRAKE_ASSERT_VOID(CheckInvariants()).
-  return *this;
 }
 
 template <typename T>
@@ -584,10 +585,10 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const SpatialInertia<T>&)>(
         &operator<< )
-))
+));
 
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class drake::multibody::SpatialInertia)
+    class drake::multibody::SpatialInertia);

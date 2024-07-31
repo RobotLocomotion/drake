@@ -60,17 +60,20 @@ GTEST_TEST(SpatialInertia, ZeroFactory) {
   EXPECT_EQ(I.get_com(), Vector3d::Zero());
   EXPECT_EQ(I.get_unit_inertia().get_moments(), Vector3d::Zero());
   EXPECT_EQ(I.get_unit_inertia().get_products(), Vector3d::Zero());
+  EXPECT_TRUE(I.IsZero());
 }
 
 GTEST_TEST(SpatialInertia, NaNFactory) {
   auto I = SpatialInertia<double>::NaN();
-  ASSERT_TRUE(I.IsNaN());
+  EXPECT_TRUE(I.IsNaN());
+  EXPECT_FALSE(I.IsZero());
 }
 
 GTEST_TEST(SpatialInertia, MakeUnitary) {
   const double expected_mass = 1;
   const SpatialInertia<double> M = SpatialInertia<double>::MakeUnitary();
   EXPECT_TRUE(M.IsPhysicallyValid());
+  EXPECT_FALSE(M.IsZero());
   EXPECT_EQ(M.get_mass(), expected_mass);
   EXPECT_EQ(M.get_com(), Vector3<double>::Zero());
   const Vector3<double> M_unit_moments = M.get_unit_inertia().get_moments();

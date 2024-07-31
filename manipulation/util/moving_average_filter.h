@@ -32,7 +32,7 @@ namespace util {
 template <typename T>
 class MovingAverageFilter {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MovingAverageFilter)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MovingAverageFilter);
   /**
    * Constructs the filter with the specified `window_size`.
    * @param window_size The size of the window.

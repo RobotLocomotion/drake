@@ -1,0 +1,16 @@
+[openusd_internal] Adjust top-level namespace
+
+This mitigates Drake build settings, so we don't plan to upstream this patch.
+
+--- pxr/pxr.h.in
++++ pxr/pxr.h.in
+@@ -51,6 +51,9 @@ namespace PXR_NS {
+ #define PXR_NAMESPACE_CLOSE_SCOPE  }  
+ #define PXR_NAMESPACE_USING_DIRECTIVE using namespace PXR_NS;
+ 
++// Drake addition to paper over the custom namespace.
++namespace pxr = PXR_NS;
++
+ #else
+ 
+ #define PXR_NS 

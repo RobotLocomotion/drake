@@ -2,7 +2,7 @@
 <sdf version="1.7">
   <model name="CartPole">
     <!-- This sdf file produces a model with the default parameters as
-         documented in cart_pole_params_named_vector.yaml.
+         documented in cart_pole_params.h.
          They MUST be kept in sync. -->
     <link name="Cart">
       <inertial>

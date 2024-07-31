@@ -46,7 +46,7 @@ namespace systems {
 template <typename T>
 class RungeKutta5Integrator final : public IntegratorBase<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta5Integrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta5Integrator);
 
   ~RungeKutta5Integrator() override = default;
 
@@ -92,4 +92,4 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::RungeKutta5Integrator)
+    class drake::systems::RungeKutta5Integrator);

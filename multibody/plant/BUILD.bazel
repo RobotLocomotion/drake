@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -20,21 +20,17 @@ drake_cc_package_library(
         ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
-        ":deformable_contact_info",
         ":deformable_ids",
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
         ":force_density_field",
-        ":hydroelastic_contact_info",
-        ":hydroelastic_quadrature_point_data",
-        ":hydroelastic_traction",
+        ":hydroelastic_traction_calculator",
         ":internal_geometry_names",
         ":multibody_plant_config",
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
-        ":point_pair_contact_info",
         ":propeller",
         ":slicing_and_indexing",
         ":tamsi_solver",
@@ -88,26 +84,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "dummy_model",
-    testonly = 1,
-    hdrs = ["test/dummy_model.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":multibody_plant_core",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
         "compliant_contact_manager.cc",
         "deformable_driver.cc",
         "deformable_model.cc",
+        "discrete_step_memory.cc",
         "discrete_update_manager.cc",
+        "dummy_physical_model.cc",
+        "geometry_contact_data.cc",
         "make_discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
+        "physical_model_collection.cc",
         "sap_driver.cc",
+        "scalar_convertible_component.cc",
         "tamsi_driver.cc",
     ],
     hdrs = [
@@ -115,12 +106,17 @@ drake_cc_library(
         "deformable_driver.h",
         "deformable_ids.h",
         "deformable_model.h",
+        "discrete_step_memory.h",
         "discrete_update_manager.h",
+        "dummy_physical_model.h",
+        "geometry_contact_data.h",
+        "hydroelastic_contact_forces_continuous_cache_data.h",
         "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
+        "physical_model_collection.h",
         "sap_driver.h",
         "scalar_convertible_component.h",
         "tamsi_driver.h",
@@ -136,7 +132,7 @@ drake_cc_library(
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
-        ":hydroelastic_traction",
+        ":hydroelastic_traction_calculator",
         ":multibody_plant_config",
         ":slicing_and_indexing",
         ":tamsi_solver",
@@ -154,21 +150,6 @@ drake_cc_library(
         "//multibody/tree",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "point_pair_contact_info",
-    srcs = [
-        "point_pair_contact_info.cc",
-    ],
-    hdrs = [
-        "point_pair_contact_info.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//geometry/query_results:penetration_as_point_pair",
-        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -199,63 +180,69 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "deformable_contact_info",
-    srcs = [
-        "deformable_contact_info.cc",
-    ],
-    hdrs = [
-        "deformable_contact_info.h",
-    ],
-    deps = [
-        ":hydroelastic_quadrature_point_data",
-        "//common:default_scalars",
-        "//geometry:geometry_ids",
-        "//geometry/proximity:polygon_surface_mesh",
-        "//multibody/math",
-    ],
-)
-
-drake_cc_library(
-    name = "hydroelastic_contact_info",
-    srcs = [
-        "hydroelastic_contact_info.cc",
-    ],
-    hdrs = [
-        "hydroelastic_contact_info.h",
-    ],
-    deps = [
-        ":hydroelastic_quadrature_point_data",
-        "//common:default_scalars",
-        "//geometry/query_results:contact_surface",
-        "//multibody/math",
-    ],
-)
-
-drake_cc_library(
-    name = "hydroelastic_quadrature_point_data",
-    srcs = [],
-    hdrs = [
-        "hydroelastic_quadrature_point_data.h",
-    ],
-    deps = [
-        "//geometry/proximity:triangle_surface_mesh",
-    ],
-)
-
-drake_cc_library(
     name = "contact_results",
     srcs = [
         "contact_results.cc",
+        "deformable_contact_info.cc",
+        "hydroelastic_contact_info.cc",
+        "point_pair_contact_info.cc",
     ],
     hdrs = [
         "contact_results.h",
+        "deformable_contact_info.h",
+        "hydroelastic_contact_info.h",
+        "point_pair_contact_info.h",
+        # Upon 2024-12-01 deprecation removal, this next header can possibly
+        # move to a better home, e.g., the traction_calculator?
+        "hydroelastic_quadrature_point_data.h",
     ],
     deps = [
-        ":deformable_contact_info",
-        ":hydroelastic_contact_info",
-        ":point_pair_contact_info",
         "//common:default_scalars",
+        "//geometry:geometry_ids",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
+        "//geometry/query_results:contact_surface",
+        "//geometry/query_results:penetration_as_point_pair",
+        "//multibody/math",
+        "//multibody/tree:multibody_tree_indexes",
     ],
+)
+
+_CONTACT_INFO_LABEL_DEPRECATION = """
+To access this header file, change your deps to
+ @drake//multibody/plant:contact_results
+or
+ @drake//multibody/plant
+instead, to avoid this warning.
+This target will be removed from Drake on or after 2024-11-01.
+""".strip()
+
+alias(
+    name = "deformable_contact_info",
+    actual = ":contact_results",
+    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
+    tags = ["manual"],
+)
+
+alias(
+    name = "hydroelastic_contact_info",
+    actual = ":contact_results",
+    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
+    tags = ["manual"],
+)
+
+alias(
+    name = "hydroelastic_quadrature_point_data",
+    actual = ":contact_results",
+    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
+    tags = ["manual"],
+)
+
+alias(
+    name = "point_pair_contact_info",
+    actual = ":contact_results",
+    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
+    tags = ["manual"],
 )
 
 drake_cc_library(
@@ -335,7 +322,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "hydroelastic_traction",
+    name = "hydroelastic_traction_calculator",
     srcs = [
         "hydroelastic_traction_calculator.cc",
     ],
@@ -343,14 +330,25 @@ drake_cc_library(
         "hydroelastic_traction_calculator.h",
     ],
     deps = [
-        ":hydroelastic_contact_info",
-        ":hydroelastic_quadrature_point_data",
+        ":contact_results",
         "//geometry/proximity:mesh_field",
         "//geometry/query_results:contact_surface",
         "//math",
         "//multibody/math",
         "//multibody/triangle_quadrature",
     ],
+)
+
+alias(
+    name = "hydroelastic_traction",
+    actual = ":hydroelastic_traction_calculator",
+    deprecation = """
+To access this header file, change your deps to
+ @drake//multibody/plant:hydroelastic_traction_calculator
+to avoid this warning.
+This target will be removed from Drake on or after 2024-11-01.
+""".strip(),
+    tags = ["manual"],
 )
 
 drake_cc_library(
@@ -510,6 +508,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "discrete_step_memory_test",
+    deps = [
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_googletest(
     name = "sap_driver_test",
     deps = [
         ":compliant_contact_manager_tester",
@@ -517,6 +522,7 @@ drake_cc_googletest(
         ":spheres_stack",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//multibody/plant/test_utilities:multibody_plant_remodeling",
     ],
 )
 
@@ -591,12 +597,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "hydroelastic_traction_test",
+    name = "hydroelastic_contact_info_test",
+    deps = [
+        ":contact_results",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hydroelastic_traction_calculator_test",
     data = [
         "test/block_on_halfspace.sdf",
     ],
     deps = [
-        ":hydroelastic_traction",
+        ":hydroelastic_traction_calculator",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:gradient",
@@ -672,7 +686,7 @@ drake_cc_googletest(
     data = [
         "test/split_pendulum.sdf",
         "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/simple_gripper:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/benchmarks/free_body:models",
         "//multibody/parsing:test_models",
@@ -690,6 +704,7 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/pendulum",
         "//multibody/parsing",
+        "//multibody/plant/test_utilities:multibody_plant_remodeling",
         "//multibody/test_utilities:add_fixed_objects_to_plant",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:linear_system",
@@ -701,7 +716,7 @@ drake_cc_googletest(
     name = "multibody_plant_introspection_test",
     data = [
         "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/simple_gripper:models",
         "@drake_models//:atlas",
     ],
     deps = [
@@ -735,7 +750,7 @@ drake_cc_googletest(
     name = "multibody_plant_tamsi_test",
     data = [
         "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/simple_gripper:models",
     ],
     deps = [
         ":plant",
@@ -931,6 +946,7 @@ drake_cc_googletest(
     deps = [
         ":contact_results",
         ":multibody_plant_core",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
@@ -973,7 +989,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "deformable_contact_info_test",
     deps = [
-        ":deformable_contact_info",
+        ":contact_results",
         "//common:essential",
     ],
 )
@@ -1050,6 +1066,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "deformable_model_test",
     deps = [
+        ":multibody_plant_config_functions",
         ":multibody_plant_core",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework:diagram_builder",
@@ -1169,9 +1186,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multibody_plant_scalar_conversion_test",
+    shard_count = 4,
     deps = [
-        ":dummy_model",
         ":plant",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/test_utilities:robot_model",
     ],
 )
 
@@ -1195,6 +1215,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "physical_model_collection_test",
+    deps = [
+        ":multibody_plant_config_functions",
+        ":multibody_plant_core",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "wing_test",
     data = ["//multibody:models"],
     deps = [
@@ -1209,12 +1238,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "discrete_update_manager_test",
     deps = [
-        ":dummy_model",
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
+        "//multibody/plant/test_utilities:multibody_plant_remodeling",
         "//systems/analysis:simulator",
         "//systems/framework:abstract_value_cloner",
         "//systems/primitives:pass_through",
@@ -1225,7 +1254,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "physical_model_test",
     deps = [
-        ":dummy_model",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",

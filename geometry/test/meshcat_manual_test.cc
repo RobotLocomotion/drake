@@ -53,14 +53,21 @@ int do_main() {
   double x = start_x;
 
   Vector3d sphere_home{++x, 0, 0};
-  meshcat->SetObject("sphere", Sphere(0.25), Rgba(1.0, 0, 0, 1));
-  meshcat->SetTransform("sphere", RigidTransformd(sphere_home));
+  // The weird name for the sphere is to confirm that meshcat collapses
+  // redundant slashes. We'll subsequently refer to it without the slash to
+  // make sure they're equivalent.
+  meshcat->SetObject("sphere//scoped_name", Sphere(0.25), Rgba(1.0, 0, 0, 1));
+  meshcat->SetTransform("sphere/scoped_name", RigidTransformd(sphere_home));
   // Note: this isn't the preferred means for setting opacity, but it is the
   // simplest way to exercise chained property names.
-  meshcat->SetProperty("sphere/<object>", "material.opacity", 0.5);
-  meshcat->SetProperty("sphere/<object>", "material.transparent", true);
+  meshcat->SetProperty("sphere/scoped_name/<object>", "material.opacity", 0.5);
+  meshcat->SetProperty("sphere/scoped_name/<object>", "material.transparent",
+                       true);
 
-  meshcat->SetObject("cylinder", Cylinder(0.25, 0.5), Rgba(0.0, 1.0, 0, 1));
+  // The weird name for the cylinder is to confirm that meshcat elides terminal
+  // slashes. We'll subsequently refer to it without the slash to make sure
+  // they're equivalent.
+  meshcat->SetObject("cylinder/", Cylinder(0.25, 0.5), Rgba(0.0, 1.0, 0, 1));
   meshcat->SetTransform("cylinder", RigidTransformd(Vector3d{++x, 0, 0}));
 
   // For animation, we'll aim the camera between the cylinder and ellipsoid.
@@ -250,7 +257,7 @@ Ignore those for now; we'll need to circle back and fix them later.
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
-  - an orange polytopes (with a similary shaped textured polytope behind it).
+  - an orange polytope (with a similary shaped textured polytope behind it).
     The textured shape has a hole through. The orange polytope is its convex
     hull.
   - a teal capsule (long axis in z)
@@ -279,10 +286,12 @@ Ignore those for now; we'll need to circle back and fix them later.
                "geometries:\n";
   MeshcatAnimation animation;
   std::cout << "- the red sphere should move up and down in z.\n";
-  animation.SetTransform(0, "sphere", RigidTransformd(sphere_home));
-  animation.SetTransform(20, "sphere",
+  animation.SetTransform(0, "sphere/scoped_name",
+                         RigidTransformd(sphere_home));
+  animation.SetTransform(20, "sphere/scoped_name",
                          RigidTransformd(sphere_home + Vector3d::UnitZ()));
-  animation.SetTransform(40, "sphere", RigidTransformd(sphere_home));
+  animation.SetTransform(40, "sphere/scoped_name",
+                         RigidTransformd(sphere_home));
 
   std::cout << "- the blue box should spin clockwise about the +z axis.\n";
   animation.SetTransform(
@@ -450,6 +459,11 @@ Ignore those for now; we'll need to circle back and fix them later.
     const double table_height = 0.7645;
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("link"),
                      RigidTransformd(Vector3d{0, 0, -table_height - 0.01}));
+    parser.AddModelsFromUrl(
+        "package://drake_models/ycb/006_mustard_bottle.sdf");
+    plant.WeldFrames(plant.world_frame(),
+                     plant.GetFrameByName("base_link_mustard"),
+                     RigidTransformd(Vector3d{0, -0.3, 0.01}));
     plant.Finalize();
 
     builder.ExportInput(plant.get_actuation_input_port(), "actuation_input");
@@ -469,7 +483,8 @@ Ignore those for now; we'll need to circle back and fix them later.
 
     diagram->ForcedPublish(*context);
     std::cout
-        << "- Now you should see a kuka model (from MultibodyPlant/SceneGraph)"
+        << "- Now you should see a kuka model (from MultibodyPlant/SceneGraph) "
+           "and a mustard bottle lying on its side, with the label facing up."
         << std::endl;
 
     MaybePauseForUser();
@@ -508,6 +523,7 @@ Ignore those for now; we'll need to circle back and fix them later.
          "- the camera is focused on the contact point between the robot and "
          "table,\n"
          "- the iiwa is visible,\n"
+         "- the mustard bottle visible including its texture (front label),\n"
          "- the animation plays,\n"
          "- the environment map is present, and\n"
          "- the browser Console has no warnings nor errors\n"

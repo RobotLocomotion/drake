@@ -2,8 +2,7 @@
  Doxygen-only documentation for @ref multibody_parsing. */
 
 /**
-@defgroup multibody_parsing Parsing Models for Multibody Dynamics
-@ingroup multibody
+@addtogroup multibody_parsing
 
 Drake's drake::multibody::Parser accepts model files written in a variety of
 input formats. Drake's parsing of URDF, SDFormat, and MJCF (Mujoco XML) has
@@ -571,7 +570,7 @@ i.e. s/m) for the Hunt-Crossley dissipation model. It is stored in a
 ProximityProperties object under `(material, hunt_crossley_dissipation)`.
 
 @see drake::geometry::ProximityProperties,
-@ref mbp_hydroelastic_materials_properties "Hydroelastic contact",
+@ref hydro_model_parameters "Hydroelastic contact parameters",
 @ref mbp_dissipation_model "Modeling Dissipation"
 
 @subsection tag_drake_hydroelastic_modulus drake:hydroelastic_modulus
@@ -587,7 +586,7 @@ for the hydroelastic modulus. It is stored in a ProximityProperties object
 under `(hydroelastic, hydroelastic_modulus)`.
 
 @see drake::geometry::ProximityProperties,
-@ref mbp_hydroelastic_materials_properties "Hydroelastic contact",
+@ref hydro_model_parameters "Hydroelastic contact parameters",
 @ref hug_properties
 
 @subsection tag_drake_ignored_collision_filter_group drake:ignored_collision_filter_group
@@ -770,7 +769,8 @@ If present, this element provides a stiffness value (units of N/m) for point
 contact calculations for this specific geometry. It is stored in a
 ProximityProperties object under `(material, point_contact_stiffness)`.
 
-@see @ref accessing_contact_properties, @ref mbp_compliant_point_contact,
+@see @ref accessing_contact_properties "Accessing point contact parameters",
+@ref point_forces_modeling "Point Contact Forces", and
 drake::geometry::ProximityProperties
 
 @subsection tag_drake_proximity_properties drake:proximity_properties

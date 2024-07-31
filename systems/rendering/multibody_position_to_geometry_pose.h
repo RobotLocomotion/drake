@@ -40,7 +40,7 @@ namespace rendering {
 template <typename T>
 class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPositionToGeometryPose)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPositionToGeometryPose);
 
   /**
    * The %MultibodyPositionToGeometryPose holds an internal, non-owned

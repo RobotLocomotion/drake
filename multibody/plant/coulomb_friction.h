@@ -61,7 +61,7 @@ namespace multibody {
 template <typename T>
 class CoulombFriction {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction);
 
   /// Default constructor for a frictionless surface, i.e. with zero static and
   /// dynamic coefficients of friction.

@@ -1,9 +1,12 @@
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
@@ -11,13 +14,6 @@ load(
     "drake_py_test",
     "drake_py_unittest",
 )
-load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -32,10 +28,21 @@ install_data(
     visibility = ["//visibility:public"],
 )
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "acrobot_input",
-    srcs = ["acrobot_input_named_vector.yaml"],
+    srcs = ["acrobot_input.cc"],
+    hdrs = [
+        "acrobot_input.h",
+        "gen/acrobot_input.h",
+    ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_py_library(
@@ -46,22 +53,55 @@ drake_py_library(
     ],
 )
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "acrobot_params",
-    srcs = ["acrobot_params_named_vector.yaml"],
+    srcs = ["acrobot_params.cc"],
+    hdrs = [
+        "acrobot_params.h",
+        "gen/acrobot_params.h",
+    ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "acrobot_state",
-    srcs = ["acrobot_state_named_vector.yaml"],
+    srcs = ["acrobot_state.cc"],
+    hdrs = [
+        "acrobot_state.h",
+        "gen/acrobot_state.h",
+    ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "spong_controller_params",
-    srcs = ["spong_controller_params_named_vector.yaml"],
+    srcs = ["spong_controller_params.cc"],
+    hdrs = [
+        "gen/spong_controller_params.h",
+        "spong_controller_params.h",
+    ],
     visibility = ["//visibility:public"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_cc_library(
@@ -184,9 +224,14 @@ drake_cc_binary(
 drake_py_binary(
     name = "optimizer_demo",
     srcs = ["optimizer_demo.py"],
+    add_test_rule = True,
     data = [
         ":spong_sim_main_cc",
         ":test/example_stochastic_scenario.yaml",
+    ],
+    test_rule_args = [
+        "--ensemble_size=3",
+        "--num_evaluations=3",
     ],
     deps = [
         ":acrobot_io",
@@ -381,17 +426,6 @@ drake_cc_googletest(
         ":acrobot_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
-    ],
-)
-
-sh_test(
-    name = "optimizer_demo_smoke_test",
-    srcs = ["test/optimizer_demo_smoke_test.sh"],
-    data = [
-        ":optimizer_demo",
-    ],
-    tags = [
-        "no_memcheck",  # This wraps python; python is memcheck-exempt.
     ],
 )
 

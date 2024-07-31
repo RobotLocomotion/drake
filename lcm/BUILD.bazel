@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -10,7 +11,6 @@ load(
     "drake_py_test",
     "drake_py_unittest",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -70,12 +70,12 @@ drake_cc_library(
     name = "drake_lcm",
     srcs = ["drake_lcm.cc"],
     hdrs = ["drake_lcm.h"],
-    interface_deps = [
+    deps = [
         ":drake_lcm_params",
         ":interface",
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         "//common:network_policy",
         "@glib",
         "@lcm",
@@ -86,11 +86,11 @@ drake_cc_library(
     name = "lcm_log",
     srcs = ["drake_lcm_log.cc"],
     hdrs = ["drake_lcm_log.h"],
-    interface_deps = [
+    deps = [
         ":interface",
         "//common:essential",
     ],
-    deps = [
+    implementation_deps = [
         "//common:string_container",
         "@lcm",
     ],
@@ -186,7 +186,7 @@ drake_py_unittest(
         ":initialization_sequence_test_stub",
     ],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

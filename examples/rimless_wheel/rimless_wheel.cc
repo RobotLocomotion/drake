@@ -259,4 +259,4 @@ void RimlessWheel<T>::DoGetWitnessFunctions(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::examples::rimless_wheel::RimlessWheel)
+    class ::drake::examples::rimless_wheel::RimlessWheel);

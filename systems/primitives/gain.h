@@ -25,7 +25,7 @@ namespace systems {
 template <typename T>
 class Gain final : public VectorSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gain)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gain);
 
   /// Constructs a %Gain system where the same gain is applied to every input
   /// value.
@@ -67,4 +67,4 @@ class Gain final : public VectorSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Gain)
+    class ::drake::systems::Gain);

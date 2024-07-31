@@ -49,7 +49,7 @@ namespace manipulation_station {
 ///
 class ManipulationStationHardwareInterface : public systems::Diagram<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStationHardwareInterface)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStationHardwareInterface);
 
   /// Subscribes to an incoming camera message on the channel
   ///   DRAKE_RGBD_CAMERA_IMAGES_<camera_id>

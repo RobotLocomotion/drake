@@ -9,7 +9,6 @@
 #include <variant>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
@@ -18,6 +17,7 @@
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -68,7 +68,7 @@ class SceneGraph;
 template <typename T>
 class SceneGraphInspector {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraphInspector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraphInspector);
 
   // NOTE: An inspector should never be released into the wild without having
   // set the state variable. Every query should start by demanding that state_
@@ -137,6 +137,10 @@ class SceneGraphInspector {
   /** Reports the _total_ number of geometries in the scene graph with the
    indicated role.  */
   int NumGeometriesWithRole(Role role) const;
+
+  /** Reports the _total_ number of _deformable_ geometries in the scene graph
+   with the indicated role.  */
+  int NumDeformableGeometriesWithRole(Role role) const;
 
   /** Reports the total number of _dynamic_ geometries in the scene graph. This
    include all deformable geometries.  */
@@ -392,6 +396,22 @@ class SceneGraphInspector {
            geometry.  */
   const VolumeMesh<double>* GetReferenceMesh(GeometryId geometry_id) const;
 
+  // TODO(xuchenhan-tri): This should cross reference the concept of driven
+  // meshes when it is nicely written up somewhere (e.g., in the SceneGraph
+  // documentation).
+  /** Returns the render mesh representation of the driven meshes associated
+   with the given `role` of the geometry with the given `geometry_id`.
+
+   @param geometry_id      The identifier for the queried geometry.
+   @param role             The role whose driven mesh representations are
+                           acquired.
+   @throws std::exception  if `geometry_id` does not map to a registered
+                           deformable geometry with the given `role` or if
+                           `role` is Role::kUnassigned.
+   @experimental */
+  const std::vector<internal::RenderMesh>& GetDrivenRenderMeshes(
+      GeometryId geometry_id, Role role) const;
+
   /** Returns true if the geometry with the given `geometry_id` is deformable.
    @param geometry_id   The identifier for the queried geometry.
    @throws std::exception if `geometry_id` does not map to a registered
@@ -416,12 +436,6 @@ class SceneGraphInspector {
                           role.  */
   bool CollisionFiltered(GeometryId geometry_id1,
                          GeometryId geometry_id2) const;
-
-  DRAKE_DEPRECATED(
-      "2024-06-01",
-      "This shortcut function is being removed. "
-      "Instead, call inspector.GetShape(geometry_id).Reify(reifier)")
-  void Reify(GeometryId geometry_id, ShapeReifier* reifier) const;
 
   /** Obtains a new GeometryInstance that copies the geometry indicated by the
    given `geometry_id`.

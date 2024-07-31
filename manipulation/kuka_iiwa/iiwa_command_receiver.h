@@ -44,7 +44,7 @@ namespace kuka_iiwa {
 /// vector of a single zero.
 class IiwaCommandReceiver final : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver);
 
   explicit IiwaCommandReceiver(
       int num_joints = kIiwaArmNumJoints,

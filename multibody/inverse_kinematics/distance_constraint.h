@@ -17,7 +17,7 @@ namespace multibody {
  */
 class DistanceConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceConstraint);
 
   /**
    * @param plant The plant to which the pair of geometries belong. @p plant

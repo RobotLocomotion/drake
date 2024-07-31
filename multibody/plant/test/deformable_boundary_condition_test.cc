@@ -54,11 +54,11 @@ class DeformableIntegrationTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
 
-    auto deformable_model = make_unique<DeformableModel<double>>(plant_);
-    body_id_ = RegisterDeformableBall(deformable_model.get(), "deformable");
-    deformable_model->SetWallBoundaryCondition(body_id_, p_WQ_, n_W_);
-    model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    DeformableModel<double>& deformable_model =
+        plant_->mutable_deformable_model();
+    body_id_ = RegisterDeformableBall(&deformable_model, "deformable");
+    deformable_model.SetWallBoundaryCondition(body_id_, p_WQ_, n_W_);
+    model_ = &plant_->deformable_model();
     // N.B. Deformables are only supported with the SAP solver.
     // Thus for testing we choose one arbitrary contact approximation that uses
     // the SAP solver.
@@ -84,10 +84,6 @@ class DeformableIntegrationTest : public ::testing::Test {
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
 
-    builder.Connect(model_->vertex_positions_port(),
-                    scene_graph_->get_source_configuration_port(
-                        plant_->get_source_id().value()));
-
     diagram_ = builder.Build();
   }
 
@@ -99,7 +95,7 @@ class DeformableIntegrationTest : public ::testing::Test {
 
   SceneGraph<double>* scene_graph_{nullptr};
   MultibodyPlant<double>* plant_{nullptr};
-  DeformableModel<double>* model_{nullptr};
+  const DeformableModel<double>* model_{nullptr};
   const CompliantContactManager<double>* manager_{nullptr};
   const DeformableDriver<double>* driver_{nullptr};
   unique_ptr<systems::Diagram<double>> diagram_{nullptr};

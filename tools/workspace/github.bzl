@@ -399,6 +399,7 @@ def github_release_attachments(
         name,
         repository = None,
         commit = None,
+        commit_pin = None,
         attachments = None,
         extract = None,
         strip_prefix = None,
@@ -418,6 +419,9 @@ def github_release_attachments(
         repository: required GitHub repository name in the form
             organization/project.
         commit: required commit is the tag name to download.
+        commit_pin: optional boolean, set to True iff the release should remain
+            at the same version indefinitely, eschewing automated upgrades to
+            newer versions.
         attachments: required dict whose keys are the filenames (attachment
             names) to download and values are the expected SHA-256 checksums.
         extract: optional list of the filenames (attachment names) that should
@@ -458,6 +462,7 @@ def github_release_attachments(
         name = name,
         repository = repository,
         commit = commit,
+        commit_pin = commit_pin,
         attachments = attachments,
         extract = extract,
         strip_prefix = strip_prefix,
@@ -486,6 +491,7 @@ _github_release_attachments_real = repository_rule(
         "commit": attr.string(
             mandatory = True,
         ),
+        "commit_pin": attr.bool(),
         "attachments": attr.string_dict(
             mandatory = True,
         ),
@@ -514,6 +520,7 @@ def setup_github_release_attachments(repository_ctx):
 
     repository = repository_ctx.attr.repository
     commit = repository_ctx.attr.commit
+    commit_pin = repository_ctx.attr.commit_pin
     attachments = repository_ctx.attr.attachments
     extract = getattr(repository_ctx.attr, "extract", list())
     strip_prefix = getattr(repository_ctx.attr, "strip_prefix", dict())
@@ -565,6 +572,7 @@ def setup_github_release_attachments(repository_ctx):
         repository_rule_type = "github_release_attachments",
         repository = repository,
         commit = commit,
+        version_pin = commit_pin,
         attachments = attachments,
         strip_prefix = strip_prefix,
         downloads = downloads,

@@ -7,12 +7,15 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
 #include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/geometry/proximity/obb.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -400,8 +403,11 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
   }
 
-  // Computes the spatial inertia for a shape given the assumption of unit
-  // density.
+  // Computes a shape's volume, centroid, and unit inertia. This calculator is
+  // used in a context where the calculation of mass needs to be deferred (e.g.,
+  // density is not yet determined or mass has been explicitly specified). The
+  // caller is responsible for defining the final value for mass, e.g., using a
+  // parser-specified mass or density (or a fallback default density).
   class InertiaCalculator final : public geometry::ShapeReifier {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InertiaCalculator);
@@ -409,37 +415,71 @@ class MujocoParser {
     // up mesh inertias, it uses the mujoco geometry _name_ and not the
     // mesh filename.
     InertiaCalculator(
-        const std::map<std::string, SpatialInertia<double>>* mesh_inertia,
-        std::string name)
-        : mesh_inertia_(*mesh_inertia),
-          name_(std::move(name)) {
+        std::string name,
+        std::map<std::string, SpatialInertia<double>>* mesh_inertia)
+        : name_(std::move(name)), mesh_inertia_(mesh_inertia) {
       DRAKE_DEMAND(mesh_inertia != nullptr);
     }
 
-    SpatialInertia<double> Calc(const geometry::Shape& shape) {
+    // Returns the tuple [volume, p_GoGcm_G, G_GGo_G], where for a geometry G,
+    // volume is G's volume, p_GoGcm_G is the position from G's origin point Go
+    // to its centroid Gcm expressed in the G frame, and G_GGo_G is G's unit
+    // inertia about Go expressed in the G frame.
+    // Note: if G has uniform density, Gcm is G's center of mass.
+    std::tuple<double, Vector3d, UnitInertia<double>> Calc(
+        const geometry::Shape& shape) {
       shape.Reify(this);
-      return M_GG_G_;
+      // For unit density (1 kg/m³), the value of mass is equal to the value of
+      // volume.
+      const double& volume = M_GGo_G_unitDensity.get_mass();
+      const Vector3<double>& p_GoGcm_G = M_GGo_G_unitDensity.get_com();
+      const UnitInertia<double>& G_GGo_G =
+          M_GGo_G_unitDensity.get_unit_inertia();
+      return {volume, p_GoGcm_G, G_GGo_G};
+    }
+
+    bool used_convex_hull_fallback() const {
+      return used_convex_hull_fallback_;
     }
 
     using geometry::ShapeReifier::ImplementGeometry;
 
-    void ImplementGeometry(const geometry::Mesh&, void*) final {
-      DRAKE_DEMAND(mesh_inertia_.contains(name_));
-      M_GG_G_ = mesh_inertia_.at(name_);
+    void ImplementGeometry(const geometry::Mesh& mesh, void*) final {
+      if (mesh_inertia_->contains(name_)) {
+        M_GGo_G_unitDensity = mesh_inertia_->at(name_);
+      } else {
+        try {  // TODO(21666), remove the try-catch.
+          M_GGo_G_unitDensity = CalcSpatialInertia(mesh, 1.0 /* density */);
+        } catch (const std::exception& e) {
+          // As with mujoco, failure leads to using the convex hull.
+          // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
+          M_GGo_G_unitDensity = CalcSpatialInertia(
+              geometry::Convex(mesh.filename(), mesh.scale()),
+              1.0 /* density */);
+          used_convex_hull_fallback_ = true;
+        }
+        mesh_inertia_->insert_or_assign(name_, M_GGo_G_unitDensity);
+      }
     }
 
     void ImplementGeometry(const geometry::HalfSpace&, void*) final {
-      // Do nothing; leave M_GG_G_ default initialized.
+      // Do nothing; leave M_GGo_G_unitDensity default initialized.
     }
 
     void DefaultImplementGeometry(const geometry::Shape& shape) final {
-      M_GG_G_ = CalcSpatialInertia(shape, 1.0 /* density */);
+      M_GGo_G_unitDensity = CalcSpatialInertia(shape, 1.0 /* density */);
     }
 
    private:
-    const std::map<std::string, SpatialInertia<double>>& mesh_inertia_;
     std::string name_;
-    SpatialInertia<double> M_GG_G_{SpatialInertia<double>::NaN()};
+    std::map<std::string, SpatialInertia<double>>* mesh_inertia_{nullptr};
+    bool used_convex_hull_fallback_{false};
+    // Note: The spatial inertia below uses unit density so that the shape's
+    // volume value is equal to its mass value. To be clear, unit density is a
+    // mathematical trick to use CalcSpatialInertia() to report volume and not
+    // a reasonable *physical* default value; 1 kg/m³ is approximately air's
+    // density.
+    SpatialInertia<double> M_GGo_G_unitDensity{SpatialInertia<double>::NaN()};
   };
 
   SpatialInertia<double> ParseInertial(XMLElement* node) {
@@ -547,7 +587,6 @@ class MujocoParser {
       geom.X_BG = ParseTransform(node);
     }
 
-    multibody::UnitInertia<double> unit_M_GG_G;
     std::string mesh;
     if (type == "plane") {
       // We interpret the MuJoCo infinite plane as a half-space.
@@ -772,21 +811,37 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
 
     if (compute_inertia) {
-      SpatialInertia<double> M_GG_G_one =
-          InertiaCalculator(&mesh_inertia_, mesh).Calc(*geom.shape);
+      InertiaCalculator calculator(mesh, &mesh_inertia_);
+      const auto [volume, p_GoGcm_G, G_GGo_G] = calculator.Calc(*geom.shape);
+      if (calculator.used_convex_hull_fallback()) {
+        // When the Mujoco parser falls back to using a convex hull, it prints
+        // a warning. We ape that behavior to provide a similar experience.
+        //
+        // N.B. Mujoco falls back only if the mesh reported a negative volume.
+        // SpatialInertia::IsPhysicallyValid() will also fail in that case. But
+        // fails in other cases (e.g., positive mass but negative inertia) where
+        // Drake will fallback and Mujoco won't. Such a mesh would be rare.
+        // Generally, we expect Drake and Mujoco to agree on real world meshes.
+        Warning(
+            *node,
+            fmt::format("CalcSpatialInertia() failed to compute a physically "
+                        "valid inertia for mesh {} (probably the mesh is not "
+                        "watertight). The spatial inertia was computed using "
+                        "its convex hull as a fallback.",
+                        mesh));
+      }
       double mass{};
       if (!ParseScalarAttribute(node, "mass", &mass)) {
-        double density{1000};
+        double density{1000};  /* fallback default ≈ water density */
         ParseScalarAttribute(node, "density", &density);
-        // M_GG_G_one was calculated with ρ₁ = 1 which produced mass m₁. Actual
-        // density is ρₐ. We have the following ratio: mₐ / m₁ = ρₐ / ρ₁.
-        // So, mₐ = m₁⋅(ρₐ / ρ₁) = m₁⋅(ρₐ / 1) = m₁⋅ρₐ.
-        mass = M_GG_G_one.get_mass() * density;
+        mass = volume * density;
       }
-      SpatialInertia<double> M_GG_G(mass, M_GG_G_one.get_com(),
-                                    M_GG_G_one.get_unit_inertia());
-      geom.M_GBo_B = M_GG_G.ReExpress(geom.X_BG.rotation())
-                         .Shift(-geom.X_BG.translation());
+      SpatialInertia<double> M_GGo_G(mass, p_GoGcm_G, G_GGo_G);
+
+      // Shift spatial inertia from Go to Bo and express it in the B frame.
+      const math::RotationMatrix<double>& R_BG = geom.X_BG.rotation();
+      const Vector3<double>& p_BoGo_B = geom.X_BG.translation();
+      geom.M_GBo_B = M_GGo_G.ReExpress(R_BG).Shift(-p_BoGo_B);
     }
     return geom;
   }
@@ -1110,8 +1165,6 @@ class MujocoParser {
 
         if (std::filesystem::exists(filename)) {
           mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale[0]);
-          mesh_inertia_.insert_or_assign(name,
-                                         CalcSpatialInertia(*mesh_[name], 1));
         } else if (std::filesystem::exists(original_filename)) {
           Warning(
               *node,

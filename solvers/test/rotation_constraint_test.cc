@@ -44,7 +44,7 @@ void AddObjective(MathematicalProgram* prog,
 // still feasible after the RPY limits constraints have been applied.
 class TestRpyLimitsFixture : public ::testing::TestWithParam<int> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestRpyLimitsFixture)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestRpyLimitsFixture);
   TestRpyLimitsFixture() = default;
 };
 

@@ -34,7 +34,7 @@ class LinearConstitutiveModel final
           LinearConstitutiveModel<T, num_locations>,
           LinearConstitutiveModelTraits<T, num_locations>> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearConstitutiveModel)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearConstitutiveModel);
 
   using Base =
       ConstitutiveModel<LinearConstitutiveModel<T, num_locations>,

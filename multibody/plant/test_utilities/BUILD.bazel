@@ -1,9 +1,9 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -14,6 +14,7 @@ drake_cc_package_library(
     testonly = 1,
     visibility = ["//visibility:public"],
     deps = [
+        ":multibody_plant_remodeling",
         ":rigid_body_on_compliant_ground",
     ],
 )
@@ -28,6 +29,19 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/plant:compliant_contact_manager_tester",
         "//systems/analysis:simulator",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_remodeling",
+    testonly = 1,
+    srcs = ["multibody_plant_remodeling.cc"],
+    hdrs = ["multibody_plant_remodeling.h"],
+    deps = [
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
         "@gtest//:without_main",
     ],
 )

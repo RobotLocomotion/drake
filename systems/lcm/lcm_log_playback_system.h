@@ -18,7 +18,7 @@ namespace lcm {
  */
 class LcmLogPlaybackSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmLogPlaybackSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmLogPlaybackSystem);
 
   /**
    * Constructs a playback system that advances the given @p log.

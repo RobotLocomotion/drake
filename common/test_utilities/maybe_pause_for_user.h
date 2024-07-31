@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace drake {
 namespace common {
 
@@ -7,6 +9,9 @@ namespace common {
  within bazel unit tests. This function will not pause execution when running
  as a bazel test, but when running as a command-line executable, it will enable
  users to see the visualization outputs.
+
+ The caller can provide additional user instructions in `message`. The message
+ will only be written to the console if the pause is actually enabled.
 
  The complete behavior is somewhat more subtle, depending on the bazel rules
  used to build the program, and the way it is invoked:
@@ -19,7 +24,7 @@ namespace common {
    - invoked with "bazel run" -- does pause
    - invoked directly ("bazel/bin/[PROGRAM]") -- does pause
 */
-void MaybePauseForUser();
+void MaybePauseForUser(std::string_view message = {});
 
 }  // namespace common
 }  // namespace drake

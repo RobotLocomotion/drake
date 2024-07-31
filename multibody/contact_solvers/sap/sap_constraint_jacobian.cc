@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 
+#include "drake/math/autodiff.h"
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -64,10 +66,27 @@ SapConstraintJacobian<T> SapConstraintJacobian<T>::LeftMultiplyByTranspose(
                                   clique(1), std::move(ATJ_second_clique));
 }
 
+template <typename T>
+SapConstraintJacobian<double> SapConstraintJacobian<T>::ToDouble() const {
+  const MatrixBlock<T>& first_block = clique_jacobian(0);
+  DRAKE_THROW_UNLESS(first_block.is_dense());
+  MatrixX<double> J_first_clique =
+      math::DiscardGradient(first_block.MakeDenseMatrix());
+  if (num_cliques() == 1) {
+    return SapConstraintJacobian<double>(clique(0), std::move(J_first_clique));
+  }
+  const MatrixBlock<T>& second_block = clique_jacobian(1);
+  DRAKE_THROW_UNLESS(second_block.is_dense());
+  MatrixX<double> J_second_clique =
+      math::DiscardGradient(second_block.MakeDenseMatrix());
+  return SapConstraintJacobian<double>(clique(0), std::move(J_first_clique),
+                                       clique(1), std::move(J_second_clique));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapConstraintJacobian)
+    class ::drake::multibody::contact_solvers::internal::SapConstraintJacobian);

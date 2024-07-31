@@ -1,19 +1,16 @@
-load(
-    "//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
-    "drake_cc_googletest",
-    "drake_cc_library",
-    "drake_cc_package_library",
-)
-load(
-    "//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:alias.bzl",
     "drake_cc_library_aliases",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_googletest_linux_only",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
@@ -28,7 +25,6 @@ drake_cc_package_library(
         ":camera_config",
         ":camera_config_functions",
         ":camera_info",
-        ":color_palette",
         ":gyroscope",
         ":image",
         ":image_file_format",
@@ -57,9 +53,22 @@ drake_cc_library(
     ],
 )
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "beam_model_params",
-    srcs = ["beam_model_params_named_vector.yaml"],
+    srcs = [
+        "beam_model_params.cc",
+    ],
+    hdrs = [
+        "beam_model_params.h",
+        "gen/beam_model_params.h",
+    ],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:name_value",
+        "//common/symbolic:expression",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_cc_library(
@@ -93,7 +102,7 @@ drake_cc_library(
     name = "camera_config_functions",
     srcs = ["camera_config_functions.cc"],
     hdrs = ["camera_config_functions.h"],
-    interface_deps = [
+    deps = [
         ":camera_config",
         "//geometry:scene_graph",
         "//lcm:interface",
@@ -101,7 +110,7 @@ drake_cc_library(
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_buses",
     ],
-    deps = [
+    implementation_deps = [
         ":camera_info",
         ":rgbd_sensor",
         ":rgbd_sensor_async",
@@ -182,14 +191,14 @@ drake_cc_library(
     install_hdrs_exclude = [
         "image_io_internal.h",
     ],
-    interface_deps = [
+    deps = [
         ":image",
         ":image_file_format",
         "//common:diagnostic_policy",
         "//common:essential",
         "//common:name_value",
     ],
-    deps = [
+    implementation_deps = [
         ":vtk_diagnostic_event_observer",
         ":vtk_image_reader_writer",
         "//common:drake_export",
@@ -238,12 +247,12 @@ drake_cc_library(
     hdrs = [
         "lcm_image_array_to_images.h",
     ],
-    interface_deps = [
+    deps = [
         ":image",
         "//common:essential",
         "//systems/framework:leaf_system",
     ],
-    deps = [
+    implementation_deps = [
         ":lcm_image_traits",
         ":vtk_image_reader_writer",
         "//lcmtypes:image_array",
@@ -265,15 +274,6 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/lcm:lcm_pubsub_system",
         "@gflags",
-    ],
-)
-
-drake_cc_library(
-    name = "color_palette",
-    hdrs = ["color_palette.h"],
-    deps = [
-        "//common",
-        "//geometry/render:color_deprecated",
     ],
 )
 
@@ -326,12 +326,12 @@ drake_cc_library(
     name = "image_writer",
     srcs = ["image_writer.cc"],
     hdrs = ["image_writer.h"],
-    interface_deps = [
+    deps = [
         ":image",
         "//common:essential",
         "//systems/framework:leaf_system",
     ],
-    deps = [
+    implementation_deps = [
         ":image_io",
     ],
 )
@@ -576,20 +576,15 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_googletest_linux_only(
     name = "rgbd_sensor_async_gl_test",
     timeout = "moderate",
-    args = select({
-        "//tools/cc_toolchain:apple": [
-            # The GL render engine is not available on macOS.
-            "--gtest_filter=-*",
-        ],
-        "//conditions:default": [],
-    }),
     data = [
         ":test/rgbd_sensor_async_gl_test.dmd.yaml",
         "@drake_models//:manipulation_station",
     ],
+    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
+    enable_condition = "//tools:ubuntu_jammy",
     tags = vtk_test_tags() + [
         # Similar to #7520, the GL vendor's libraries are not sufficiently
         # instrumented for compatibility with TSan.

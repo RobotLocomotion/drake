@@ -2,12 +2,12 @@
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/acrobot/acrobot_geometry.h"
+#include "drake/examples/acrobot/acrobot_input.h"
+#include "drake/examples/acrobot/acrobot_params.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/gen/acrobot_input.h"
-#include "drake/examples/acrobot/gen/acrobot_params.h"
-#include "drake/examples/acrobot/gen/acrobot_state.h"
-#include "drake/examples/acrobot/gen/spong_controller_params.h"
+#include "drake/examples/acrobot/acrobot_state.h"
 #include "drake/examples/acrobot/spong_controller.h"
+#include "drake/examples/acrobot/spong_controller_params.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -55,6 +55,19 @@ void DefineExamplesAcrobot(py::module m) {
           py_rvp::reference_internal, py::arg("context"),
           doc.AcrobotPlant.get_mutable_parameters.doc);
 
+  py::class_<AcrobotWEncoder<T>, Diagram<T>>(
+      m, "AcrobotWEncoder", doc.AcrobotWEncoder.doc)
+      .def(py::init<bool>(), py::arg("acrobot_state_as_second_output") = false,
+          doc.AcrobotWEncoder.ctor.doc)
+      .def("acrobot_plant", &AcrobotWEncoder<T>::acrobot_plant,
+          py_rvp::reference_internal, doc.AcrobotWEncoder.acrobot_plant.doc)
+      .def("get_mutable_acrobot_state",
+          &AcrobotWEncoder<T>::get_mutable_acrobot_state,
+          py_rvp::reference_internal, py::arg("context"),
+          // Keep alive, ownership: `return` keeps `context` alive.
+          py::keep_alive<0, 1>(),
+          doc.AcrobotWEncoder.get_mutable_acrobot_state.doc);
+
   py::class_<AcrobotSpongController<T>, LeafSystem<T>>(
       m, "AcrobotSpongController", doc.AcrobotSpongController.doc)
       .def(py::init<>(), doc.AcrobotSpongController.ctor.doc)
@@ -69,7 +82,6 @@ void DefineExamplesAcrobot(py::module m) {
           py::keep_alive<0, 2>(),
           doc.AcrobotSpongController.get_mutable_parameters.doc);
 
-  // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<AcrobotInput<T>, BasicVector<T>>(
       m, "AcrobotInput", doc.AcrobotInput.doc)
       .def(py::init<>(), doc.AcrobotInput.ctor.doc)

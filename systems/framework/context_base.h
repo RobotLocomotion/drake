@@ -682,7 +682,7 @@ namespace internal {
 // certain specific ContextBase private methods, and nothing else.
 class SystemBaseContextBaseAttorney {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextBaseAttorney)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextBaseAttorney);
   SystemBaseContextBaseAttorney() = delete;
 
  private:

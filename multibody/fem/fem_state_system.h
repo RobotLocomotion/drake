@@ -8,7 +8,7 @@ namespace fem {
 namespace internal {
 
 /* A leaf system that manages state and element data in a FEM model.
- @tparam_nonsymbolic_scalar */
+ @tparam_default_scalar */
 template <typename T>
 class FemStateSystem : public systems::LeafSystem<T> {
  public:

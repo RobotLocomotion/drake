@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -7,7 +8,6 @@ load(
     "drake_cc_test",
 )
 load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -173,6 +173,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//manipulation/kuka_iiwa:iiwa_constants",
         "//multibody/parsing",
+        "//solvers:osqp_solver",
     ],
 )
 

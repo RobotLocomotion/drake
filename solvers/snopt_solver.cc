@@ -40,7 +40,7 @@ namespace {
 // See also http://fortranwiki.org/fortran/show/newunit.
 class FortranUnitFactory {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FortranUnitFactory)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FortranUnitFactory);
 
   static FortranUnitFactory& singleton() {
     static drake::never_destroyed<FortranUnitFactory> result;
@@ -226,7 +226,7 @@ namespace {
 // are disabled." Therefore, we use the integer user data (`int iu[]`) instead.
 class SnoptUserFunInfo {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptUserFunInfo)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptUserFunInfo);
 
   // Pointers to the parameters ('prog' and 'nonlinear_cost_gradient_indices')
   // are retained internally, so the supplied objects must have lifetimes longer
@@ -321,7 +321,7 @@ class SnoptUserFunInfo {
 // Storage that we pass in and out of SNOPT APIs.
 class WorkspaceStorage {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WorkspaceStorage)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WorkspaceStorage);
 
   explicit WorkspaceStorage(const SnoptUserFunInfo* user_info)
       : user_info_(user_info) {

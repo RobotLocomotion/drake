@@ -5,6 +5,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
 
 namespace drake {
 namespace multibody {
@@ -93,10 +94,22 @@ void SapBallConstraint<T>::DoAccumulateSpatialImpulses(
   }
 }
 
+template <typename T>
+std::unique_ptr<SapConstraint<double>> SapBallConstraint<T>::DoToDouble()
+    const {
+  SapConstraintJacobian<double> J = this->jacobian().ToDouble();
+  SapBallConstraint<double>::Kinematics k(
+      kinematics_.objectA(), math::DiscardGradient(kinematics_.p_WP()),
+      math::DiscardGradient(kinematics_.p_AP_W()), kinematics_.objectB(),
+      math::DiscardGradient(kinematics_.p_WQ()),
+      math::DiscardGradient(kinematics_.p_BQ_W()), std::move(J));
+  return std::make_unique<SapBallConstraint<double>>(std::move(k));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapBallConstraint)
+    class ::drake::multibody::contact_solvers::internal::SapBallConstraint);

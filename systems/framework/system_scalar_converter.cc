@@ -112,14 +112,14 @@ void AddPydrakeConverterFunction(
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &AddPydrakeConverterFunction<T, U>
-))
+));
 
 }  // namespace system_scalar_converter_internal
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &SystemScalarConverter::IsConvertible<T, U>,
     &SystemScalarConverter::Remove<T, U>
-))
+));
 
 }  // namespace systems
 }  // namespace drake

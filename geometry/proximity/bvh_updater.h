@@ -28,7 +28,7 @@ namespace internal {
 template <typename MeshType>
 class BvhUpdater {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BvhUpdater)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BvhUpdater);
 
   /* Constructs a %BvhUpdater for the given BVH and its corresponding mesh.
    Both the mesh and the bvh must remain alive at least as long as this

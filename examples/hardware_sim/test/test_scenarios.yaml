@@ -10,6 +10,9 @@ OneOfEverything:
     target_realtime_rate: 5.0
   plant_config:
     stiction_tolerance: 1e-2
+  scene_graph_config:
+    default_proximity_properties:
+      compliance_type: "compliant"
   directives:
   - add_model:
       name: alice

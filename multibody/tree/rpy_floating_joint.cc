@@ -9,6 +9,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+RpyFloatingJoint<T>::~RpyFloatingJoint() = default;
+
+template <typename T>
 const std::string& RpyFloatingJoint<T>::type_name() const {
   static const never_destroyed<std::string> name{kTypeName};
   return name.access();
@@ -75,4 +78,4 @@ RpyFloatingJoint<T>::MakeImplementationBlueprint() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::RpyFloatingJoint)
+    class ::drake::multibody::RpyFloatingJoint);

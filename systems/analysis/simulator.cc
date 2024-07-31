@@ -890,6 +890,7 @@ void SimulatorPythonInternal<T>::set_python_monitor(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::Simulator)
+    class drake::systems::Simulator);
+
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::internal::SimulatorPythonInternal)
+    class drake::systems::internal::SimulatorPythonInternal);

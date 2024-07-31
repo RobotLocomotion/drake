@@ -9,6 +9,7 @@
 #include "drake/common/trajectories/bspline_trajectory.h"
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/common/trajectories/derivative_trajectory.h"
+#include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 #include "drake/common/trajectories/path_parameterized_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_pose.h"
@@ -582,6 +583,27 @@ struct Impl {
               py::arg("segments"), cls_doc.ctor.doc)
           .def("segment", &Class::segment, py::arg("segment_index"),
               py_rvp::reference_internal, cls_doc.segment.doc);
+      DefCopyAndDeepCopy(&cls);
+    }
+
+    if constexpr (std::is_same_v<T, double>) {
+      using Class = ExponentialPlusPiecewisePolynomial<T>;
+      constexpr auto& cls_doc = doc.ExponentialPlusPiecewisePolynomial;
+      auto cls = DefineTemplateClassWithDefault<Class, PiecewiseTrajectory<T>>(
+          m, "ExponentialPlusPiecewisePolynomial", param, cls_doc.doc);
+      cls  // BR
+          .def(
+              py::init(
+                  [](const Eigen::MatrixX<T>& K, const Eigen::MatrixX<T>& A,
+                      const Eigen::MatrixX<T>& alpha,
+                      const PiecewisePolynomial<T>& piecewise_polynomial_part) {
+                    return Class(K, A, alpha, piecewise_polynomial_part);
+                  }),
+              py::arg("K"), py::arg("A"), py::arg("alpha"),
+              py::arg("piecewise_polynomial_part"), cls_doc.ctor.doc)
+          .def("Clone", &Class::Clone, cls_doc.Clone.doc)
+          .def("shiftRight", &Class::shiftRight, py::arg("offset"),
+              cls_doc.shiftRight.doc);
       DefCopyAndDeepCopy(&cls);
     }
 

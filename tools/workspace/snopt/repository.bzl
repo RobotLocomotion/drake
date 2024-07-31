@@ -24,13 +24,13 @@ Arguments:
 """
 
 load(
+    "@bazel_tools//tools/build_defs/repo:git_worker.bzl",
+    "git_repo",
+)
+load(
     "@bazel_tools//tools/build_defs/repo:utils.bzl",
     "patch",
     "update_attrs",
-)
-load(
-    "@bazel_tools//tools/build_defs/repo:git_worker.bzl",
-    "git_repo",
 )
 load("//tools/workspace:execute.bzl", "execute_and_return")
 
@@ -200,7 +200,11 @@ _attrs = {
     ),
     "patch_cmds": attr.string_list(),
     "patch_tool": attr.string(default = "patch"),
-    "patch_args": attr.string_list(default = ["-p0"]),
+    "patch_args": attr.string_list(default = [
+        "-p0",
+        # Our wheel-builder logic requires backup files.
+        "-b",
+    ]),
     "build_file": attr.label(
         allow_single_file = True,
         default = "@drake//tools/workspace/snopt:package.BUILD.bazel",

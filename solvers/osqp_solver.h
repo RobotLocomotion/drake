@@ -7,11 +7,9 @@
 
 namespace drake {
 namespace solvers {
-/**
- * The OSQP solver details after calling Solve() function. The user can call
- * MathematicalProgramResult::get_solver_details<OsqpSolver>() to obtain the
- * details.
- */
+/** The OSQP solver details after calling Solve() function. The user can call
+MathematicalProgramResult::get_solver_details<OsqpSolver>() to obtain the
+details. */
 struct OsqpSolverDetails {
   /// Number of iterations taken.
   int iter{};
@@ -30,6 +28,8 @@ struct OsqpSolverDetails {
   double polish_time{};
   /// Total OSQP time (seconds).
   double run_time{};
+  /// Number of rho updates.
+  int rho_updates{};
   /// y contains the solution for the Lagrangian multiplier associated with
   /// l <= Ax <= u. The Lagrangian multiplier is set only when OSQP solves
   /// the problem. Notice that the order of the linear constraints are linear
@@ -37,9 +37,21 @@ struct OsqpSolverDetails {
   Eigen::VectorXd y{};
 };
 
+/** A wrapper to call [OSQP](https://osqp.org/) using Drake's
+MathematicalProgram.
+
+For details about OSQP's available options, refer to the
+[OSQP manual](https://osqp.org/docs/interfaces/solver_settings.html).
+Drake uses OSQP's default values for all options except following:
+- Drake defaults to `polish=true` (upstream default is `false`).
+- Drake defaults to `adaptive_rho_interval=ADAPTIVE_RHO_FIXED` to make the
+  output deterministic (upstream default is `0`, which uses non-deterministic
+  timing measurements to establish the interval). N.B. Generally the interval
+  should be an integer multiple of `check_termination`, so if you choose to
+  override either option you should probably override both at once. */
 class OsqpSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OsqpSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OsqpSolver);
 
   /// Type of details stored in MathematicalProgramResult.
   using Details = OsqpSolverDetails;

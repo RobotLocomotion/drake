@@ -40,7 +40,7 @@ namespace controllers {
 template <typename T>
 class LinearModelPredictiveController : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearModelPredictiveController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearModelPredictiveController);
 
   // TODO(jadecastro) Implement a version that regulates to an arbitrary
   // trajectory.

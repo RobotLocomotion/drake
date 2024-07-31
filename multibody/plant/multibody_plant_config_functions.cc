@@ -27,11 +27,25 @@ AddResult AddMultibodyPlant(const MultibodyPlantConfig& config,
   return result;
 }
 
+AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlant(
+    const MultibodyPlantConfig& plant_config,
+    const geometry::SceneGraphConfig& scene_graph_config,
+    systems::DiagramBuilder<double>* builder) {
+  AddResult result =
+      AddMultibodyPlantSceneGraph(builder, plant_config.time_step);
+  ApplyMultibodyPlantConfig(plant_config, &result.plant);
+  result.scene_graph.set_config(scene_graph_config);
+  return result;
+}
+
 void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
                                MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   // TODO(russt): Add MultibodyPlant.set_time_step() and use it here.
   DRAKE_THROW_UNLESS(plant->time_step() == config.time_step);
+  if (plant->is_discrete()) {
+    plant->SetUseSampledOutputPorts(config.use_sampled_output_ports);
+  }
   plant->set_penetration_allowance(config.penetration_allowance);
   plant->set_stiction_tolerance(config.stiction_tolerance);
   plant->set_contact_model(

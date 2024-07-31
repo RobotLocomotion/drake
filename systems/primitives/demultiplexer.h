@@ -29,7 +29,7 @@ namespace systems {
 template <typename T>
 class Demultiplexer final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Demultiplexer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Demultiplexer);
 
   /// Constructs %Demultiplexer with one vector valued output ports with sizes
   /// specified as the vector @p output_ports_sizes. The number of output ports

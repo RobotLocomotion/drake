@@ -38,7 +38,7 @@ template <typename T,
     int compile_time_num_positions, int compile_time_num_velocities>
 class MobilizerImpl : public Mobilizer<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl);
 
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is
@@ -49,6 +49,8 @@ class MobilizerImpl : public Mobilizer<T> {
                 const Frame<T>& outboard_frame) :
       Mobilizer<T>(inboard_frame, outboard_frame) {}
 
+  ~MobilizerImpl() override;
+
   // Returns the number of generalized coordinates granted by this mobilizer.
   int num_positions() const final { return kNq;}
 
@@ -56,9 +58,9 @@ class MobilizerImpl : public Mobilizer<T> {
   int num_velocities() const final { return kNv;}
 
   // Sets the elements of the `state` associated with this Mobilizer to the
-  // _zero_ state.  See Mobilizer::set_zero_state().
-  void set_zero_state(const systems::Context<T>&,
-                      systems::State<T>* state) const final {
+  // _zero_ state.  See Mobilizer::SetZeroState().
+  void SetZeroState(const systems::Context<T>&,
+                    systems::State<T>* state) const final {
     get_mutable_positions(state) = get_zero_position();
     get_mutable_velocities(state).setZero();
   };

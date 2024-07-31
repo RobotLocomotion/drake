@@ -295,7 +295,8 @@ def aliases(
 _NORMAL_DEPENDENCIES = {
     "": {
         _COMMON_CONDITION: {
-            "clarabel": Label("@crate__clarabel-0.6.0//:clarabel"),
+            "cfg-if": Label("@crate__cfg-if-1.0.0//:cfg_if"),
+            "clarabel": Label("@crate__clarabel-0.9.0//:clarabel"),
         },
     },
 }
@@ -319,6 +320,9 @@ _NORMAL_DEV_ALIASES = {
 
 _PROC_MACRO_DEPENDENCIES = {
     "": {
+        _COMMON_CONDITION: {
+            "paste": Label("@crate__paste-1.0.15//:paste"),
+        },
     },
 }
 

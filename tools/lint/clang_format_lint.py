@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 
-import drake.tools.lint.clang_format as clang_format_lib
+import tools.lint.clang_format as clang_format_lib
 
 
 def _is_cxx(filename):

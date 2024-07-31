@@ -26,7 +26,8 @@ class InverseDynamicsControllerTest : public ::testing::Test {
 
   void ConfigTestAndCheck(InverseDynamicsController<double>* test_sys,
                           const VectorX<double>& kp, const VectorX<double>& ki,
-                          const VectorX<double>& kd) {
+                          const VectorX<double>& kd,
+                          const Context<double>* robot_context = nullptr) {
     EXPECT_EQ(test_sys->get_output_port().get_index(), 0);
 
     auto inverse_dynamics_context = test_sys->CreateDefaultContext();
@@ -76,9 +77,11 @@ class InverseDynamicsControllerTest : public ::testing::Test {
                            (kd.array() * (v_r - v).array()).matrix() +
                            (ki.array() * q_int.array()).matrix() + vd_r;
 
-    auto robot_context = robot_plant.CreateDefaultContext();
+    std::unique_ptr<Context<double>> workspace_context =
+        robot_context == nullptr ? robot_plant.CreateDefaultContext()
+                                 : robot_context->Clone();
     VectorX<double> expected_torque = controllers_test::ComputeTorque(
-        robot_plant, q, v, vd_d, robot_context.get());
+        robot_plant, q, v, vd_d, workspace_context.get());
 
     // Checks the expected and computed gravity torque.
     const BasicVector<double>* output_vector = output->get_vector_data(0);
@@ -94,8 +97,10 @@ class InverseDynamicsControllerTest : public ::testing::Test {
 // the input robot plant.
 TEST_F(InverseDynamicsControllerTest, TestTorqueWithReferencedPlant) {
   auto robot = std::make_unique<MultibodyPlant<double>>(0.0);
-  multibody::Parser(robot.get()).AddModelsFromUrl(
-      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  multibody::Parser(robot.get())
+      .AddModelsFromUrl(
+          "package://drake_models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf");
   robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
 
@@ -106,8 +111,15 @@ TEST_F(InverseDynamicsControllerTest, TestTorqueWithReferencedPlant) {
 
   auto dut = std::make_unique<InverseDynamicsController<double>>(
       *robot, kp, ki, kd, true /* expose reference acceleration port */);
-
   ConfigTestAndCheck(dut.get(), kp, ki, kd);
+
+  // Test with custom context.
+  auto custom_context = robot->CreateDefaultContext();
+  const auto& iiwa_link_7 = robot->GetBodyByName("iiwa_link_7");
+  iiwa_link_7.SetMass(custom_context.get(), 10.0);
+  dut = std::make_unique<InverseDynamicsController<double>>(
+      *robot, kp, ki, kd, true, custom_context.get());
+  ConfigTestAndCheck(dut.get(), kp, ki, kd, custom_context.get());
 }
 
 // Tests the computed torque. This test is similar to the previous test. The
@@ -115,8 +127,10 @@ TEST_F(InverseDynamicsControllerTest, TestTorqueWithReferencedPlant) {
 // input robot plant.
 TEST_F(InverseDynamicsControllerTest, TestTorqueWithOwnedPlant) {
   auto robot = std::make_unique<MultibodyPlant<double>>(0.0);
-  multibody::Parser(robot.get()).AddModelsFromUrl(
-      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  multibody::Parser(robot.get())
+      .AddModelsFromUrl(
+          "package://drake_models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf");
   robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
 
@@ -132,12 +146,39 @@ TEST_F(InverseDynamicsControllerTest, TestTorqueWithOwnedPlant) {
   ConfigTestAndCheck(dut.get(), kp, ki, kd);
 }
 
+// Tests the computed torque. This test is similar to the previous test. The
+// difference is that a custom robot context is used.
+TEST_F(InverseDynamicsControllerTest,
+       TestTorqueWithOwnedPlantAndCustomContext) {
+  auto robot = std::make_unique<MultibodyPlant<double>>(0.0);
+  multibody::Parser(robot.get())
+      .AddModelsFromUrl(
+          "package://drake_models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf");
+  robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
+  robot->Finalize();
+
+  // Sets pid gains.
+  const int dim = robot->num_positions();
+  VectorX<double> kp(dim), ki(dim), kd(dim);
+  SetPidGains(&kp, &ki, &kd);
+
+  // Create custom context.
+  auto custom_context = robot->CreateDefaultContext();
+  const auto& iiwa_link_7 = robot->GetBodyByName("iiwa_link_7");
+  iiwa_link_7.SetMass(custom_context.get(), 10.0);
+
+  auto dut = std::make_unique<InverseDynamicsController<double>>(
+      std::move(robot), kp, ki, kd, true, custom_context.get());
+
+  ConfigTestAndCheck(dut.get(), kp, ki, kd, custom_context.get());
+}
+
 GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
   auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
   multibody::Parser(mbp.get()).AddModelsFromUrl(
       "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  mbp->WeldFrames(mbp->world_frame(),
-                  mbp->GetFrameByName("iiwa_link_0"));
+  mbp->WeldFrames(mbp->world_frame(), mbp->GetFrameByName("iiwa_link_0"));
   mbp->Finalize();
 
   const int num_states = mbp->num_multibody_states();
@@ -193,7 +234,6 @@ GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
   idc_sym = idc_with_ownership.ToSymbolic();
   EXPECT_EQ(idc_sym->get_input_port(0).size(), num_states);
 }
-
 
 }  // namespace
 }  // namespace controllers

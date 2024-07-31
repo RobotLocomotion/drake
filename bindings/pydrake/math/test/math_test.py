@@ -141,6 +141,7 @@ class TestMath(unittest.TestCase):
         check_equality(RigidTransform(pose=p_I), X_I_np)
         check_equality(RigidTransform(pose=X_I_np), X_I_np)
         check_equality(RigidTransform(pose=X_I_np[:3]), X_I_np)
+        check_equality(RigidTransform.MakeUnchecked(pose=X_I_np[:3]), X_I_np)
         # - Cast.
         self.check_cast(mut.RigidTransform_, T)
         # - Accessors, mutators, and general methods.
@@ -227,6 +228,8 @@ class TestMath(unittest.TestCase):
             self.assertIsInstance(roundtrip, RigidTransform)
         # Test pickling.
         assert_pickle(self, X_AB, RigidTransform.GetAsMatrix4, T=T)
+        X_AB = RigidTransform.MakeUnchecked(np.full((3, 4), math.inf))
+        assert_pickle(self, X_AB, RigidTransform.GetAsMatrix4, T=T)
 
     def test_legacy_unpickle(self):
         """Checks that data pickled as RotationMatrix_[float] in Drake v1.12.0
@@ -261,6 +264,8 @@ class TestMath(unittest.TestCase):
         numpy_compare.assert_float_equal(
                 RotationMatrix.Identity().matrix(), np.eye(3))
         R = RotationMatrix(R=np.eye(3))
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        R = RotationMatrix.MakeUnchecked(R=np.eye(3))
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         R = RotationMatrix(quaternion=Quaternion.Identity())
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
@@ -363,6 +368,8 @@ class TestMath(unittest.TestCase):
             self.assertAlmostEqual(roundtrip.pitch_angle(), 1)
             self.assertAlmostEqual(roundtrip.yaw_angle(), 0)
         # Test pickling.
+        assert_pickle(self, R_AB, RotationMatrix.matrix, T=T)
+        R_AB = RotationMatrix.MakeUnchecked(np.full((3, 3), math.inf))
         assert_pickle(self, R_AB, RotationMatrix.matrix, T=T)
 
     @numpy_compare.check_all_types
@@ -544,7 +551,8 @@ class TestMath(unittest.TestCase):
 
     def test_quadratic_form(self):
         Q = np.diag([1., 2., 3.])
-        X = mut.DecomposePSDmatrixIntoXtransposeTimesX(Q, 1e-8)
+        X = mut.DecomposePSDmatrixIntoXtransposeTimesX(
+            Y=Q, zero_tol=1e-8, return_empty_if_not_psd=False)
         np.testing.assert_array_almost_equal(X, np.sqrt(Q))
         b = np.zeros(3)
         c = 4.

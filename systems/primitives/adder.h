@@ -25,7 +25,7 @@ namespace systems {
 template <typename T>
 class Adder final : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Adder)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Adder);
 
   /// Construct an %Adder System.
   /// @param num_inputs is the number of input ports to be added.

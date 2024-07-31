@@ -14,15 +14,33 @@ namespace drake {
 namespace trajectories {
 
 /**
- * y(t) = K * exp(A * (t - t_j)) * alpha.col(j) + piecewise_polynomial_part(t)
- *
- * @tparam_double_only
+ Represents a piecewise-trajectory with piece @f$j@f$ given by:
+ @f[
+ x(t) = K e^{A (t - t_j)} \alpha_j + \sum_{i=0}^k \beta_{j,i}(t-t_j)^i,
+ @f]
+ where @f$k@f$ is the order of the `piecewise_polynomial_part` and @f$t_j@f$ is
+ the start time of the @f$j@f$-th segment.
+
+ This particular form can represent the solution to a linear dynamical system
+ driven by a piecewise-polynomial input:
+ @f[
+ \dot{x}(t) = A x(t) + B u(t),
+ @f]
+ where the input @f$ u(t) @f$ is a piecewise-polynomial function of time. See
+ [1] for details and a motivating use case.
+
+ [1] R. Tedrake, S. Kuindersma, R. Deits and K. Miura, "A closed-form solution
+ for real-time ZMP gait generation and feedback stabilization,"
+ 2015 IEEE-RAS 15th International Conference on Humanoid Robots (Humanoids),
+ Seoul, 2015, pp. 936-940.
+
+ @tparam_double_only
  */
 template <typename T>
 class ExponentialPlusPiecewisePolynomial final : public PiecewiseTrajectory<T> {
  public:
   // We are final, so this is okay.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExponentialPlusPiecewisePolynomial)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExponentialPlusPiecewisePolynomial);
 
   ExponentialPlusPiecewisePolynomial() = default;
 

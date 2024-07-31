@@ -1,14 +1,14 @@
 # -*- bazel -*-
 
-load("@drake//tools/skylark:cc.bzl", "cc_library")
-load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
-    "cmake_configure_file",
-)
 load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
+)
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
 )
 load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 

@@ -4,6 +4,7 @@
 #include <set>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
@@ -92,6 +93,11 @@ class SapContactProblem {
 
   /* Returns a deep-copy of `this` instance. */
   std::unique_ptr<SapContactProblem<T>> Clone() const;
+
+  /* When T = double, this method returns the result of Clone().
+     When T = AutoDiffXd this method returns a deep copy where gradients were
+     discarded. */
+  std::unique_ptr<SapContactProblem<double>> ToDouble() const;
 
   /* Makes a "reduced" contact problem given the DOFs specified in
     `known_free_motion_dofs` are known to equal the free-motion velocities.

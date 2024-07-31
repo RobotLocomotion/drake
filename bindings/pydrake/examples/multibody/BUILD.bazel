@@ -1,15 +1,15 @@
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install")
-load(
-    "//tools/skylark:pybind.bzl",
-    "get_drake_py_installs",
-    "get_pybind_package_info",
-)
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
 )
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load(
+    "//tools/skylark:pybind.bzl",
+    "get_drake_py_installs",
+    "get_pybind_package_info",
+)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -31,7 +31,7 @@ drake_py_library(
     name = "cart_pole_passive_simulation_py",
     srcs = ["cart_pole_passive_simulation.py"],
     data = [
-        "//examples/multibody/cart_pole:cart_pole.sdf",
+        "//examples/multibody/cart_pole:models",
     ],
     deps = [
         ":module_py",

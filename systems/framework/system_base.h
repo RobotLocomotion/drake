@@ -43,7 +43,7 @@ are indexed using a SubsystemIndex; there is no separate SubcontextIndex since
 the numbering must be identical. */
 class SystemBase : public internal::SystemMessageInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBase);
 
   ~SystemBase() override;
 
@@ -1442,7 +1442,7 @@ namespace internal {
 // other than itself.
 class DiagramSystemBaseAttorney {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramSystemBaseAttorney)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramSystemBaseAttorney);
   DiagramSystemBaseAttorney() = delete;
 
  private:

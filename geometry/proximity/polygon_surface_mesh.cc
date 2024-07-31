@@ -37,6 +37,22 @@ void PolygonSurfaceMesh<T>::TransformVertices(const RigidTransform<T>& X_NM) {
 }
 
 template <typename T>
+void PolygonSurfaceMesh<T>::ReverseFaceWinding() {
+  for (const int f_index : poly_indices_) {
+    const int v_count = face_data_[f_index];
+    /* The indices before and after the first and last entries.  */
+    int f_0 = f_index;
+    int f_n = f_index + v_count + 1;
+    for (int i = 0; i < v_count / 2; ++i) {
+      std::swap(face_data_[++f_0], face_data_[--f_n]);
+    }
+  }
+  for (auto& n : face_normals_) {
+    n = -n;
+  }
+}
+
+template <typename T>
 std::pair<Vector3<T>, Vector3<T>> PolygonSurfaceMesh<T>::CalcBoundingBox()
     const {
   Vector3<T> min_extent =
@@ -225,7 +241,7 @@ void PolygonSurfaceMesh<T>::SetAllPositions(
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class PolygonSurfaceMesh)
+    class PolygonSurfaceMesh);
 
 }  // namespace geometry
 }  // namespace drake

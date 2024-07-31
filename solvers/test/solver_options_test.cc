@@ -12,6 +12,7 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
   EXPECT_EQ(to_string(dut), "{SolverOptions empty}");
   EXPECT_EQ(dut.get_print_file_name(), "");
   EXPECT_EQ(dut.get_print_to_console(), false);
+  EXPECT_EQ(dut.get_standalone_reproduction_file_name(), "");
 
   const SolverId id1("id1");
   const SolverId id2("id2");
@@ -25,11 +26,13 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
 
   dut.SetOption(CommonSolverOption::kPrintFileName, "foo.txt");
   dut.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  dut.SetOption(CommonSolverOption::kStandaloneReproductionFileName, "bar.py");
 
   EXPECT_EQ(to_string(dut),
             "{SolverOptions,"
             " CommonSolverOption::kPrintFileName=foo.txt,"
             " CommonSolverOption::kPrintToConsole=1,"
+            " CommonSolverOption::kStandaloneReproductionFileName=bar.py,"
             " id1:some_before=1.2,"
             " id1:some_double=1.1,"
             " id1:some_int=2,"
@@ -37,6 +40,7 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
             " id2:some_string=foo}");
   EXPECT_EQ(dut.get_print_file_name(), "foo.txt");
   EXPECT_EQ(dut.get_print_to_console(), true);
+  EXPECT_EQ(dut.get_standalone_reproduction_file_name(), "bar.py");
 
   const std::unordered_map<CommonSolverOption,
                            std::variant<double, int, std::string>>

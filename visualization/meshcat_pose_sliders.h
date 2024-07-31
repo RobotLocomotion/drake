@@ -43,7 +43,7 @@ calculations.
 template <typename T>
 class MeshcatPoseSliders final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatPoseSliders)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatPoseSliders);
 
   /** Creates MeshCat sliders for a roll-pitch-yaw-x-y-z parameterization of a
   pose (aka RigidTransform).
@@ -180,4 +180,4 @@ class MeshcatPoseSliders final : public systems::LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::visualization::MeshcatPoseSliders)
+    class ::drake::visualization::MeshcatPoseSliders);

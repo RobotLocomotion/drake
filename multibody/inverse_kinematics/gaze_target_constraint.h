@@ -26,7 +26,7 @@ namespace multibody {
  */
 class GazeTargetConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GazeTargetConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GazeTargetConstraint);
 
   /**
    * @param plant The MultibodyPlant on which the constraint is imposed.

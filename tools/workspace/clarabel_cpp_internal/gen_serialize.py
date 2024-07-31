@@ -5,7 +5,7 @@ Generates the serialize.h header file, containing Clarabel's settings names.
 import argparse
 from pathlib import Path
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 _PROLOGUE = """\
 #pragma once
@@ -61,7 +61,11 @@ def _settings_names():
             continue
         if line.startswith("static"):
             continue
-        assert line.endswith(";")
+        if line.startswith("#ifdef"):
+            continue
+        if line.startswith("#endif"):
+            continue
+        assert line.endswith(";"), line
         line = line[:-1]
         assert line.count(" ") == 1
         _, name = line.split()

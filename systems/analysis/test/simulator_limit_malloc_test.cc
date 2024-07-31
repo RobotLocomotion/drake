@@ -12,7 +12,7 @@ namespace {
 
 class EventfulSystem final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventfulSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventfulSystem);
 
   EventfulSystem() {
     // These events were found to cause allocations at AdvanceTo() as

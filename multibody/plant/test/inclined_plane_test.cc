@@ -143,6 +143,14 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   integrator.set_target_accuracy(target_accuracy);
   simulator.set_publish_every_time_step(true);
   simulator.Initialize();
+
+  // Prior to simulating, dynamics output ports should be filled with zeros.
+  const auto& contact_forces_port =
+      plant.get_generalized_contact_forces_output_port(
+          default_model_instance());
+  EXPECT_TRUE(contact_forces_port.Eval(plant_context).isZero());
+
+  // Simulate.
   simulator.AdvanceTo(simulation_time);
 
   // Compute B's kinetic energy ke in W from V_WB (B's spatial velocity in W).
@@ -196,9 +204,6 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   EXPECT_NEAR(wy, wy_expected, wy_expected * relative_tolerance_);
 
   // Verify the value of the contact forces.
-  const auto& contact_forces_port =
-      plant.get_generalized_contact_forces_output_port(
-          default_model_instance());
   // Evaluate the generalized contact forces using the system's API.
   const VectorX<double>& tau_contact = contact_forces_port.Eval(plant_context);
   EXPECT_EQ(tau_contact.size(), 6);

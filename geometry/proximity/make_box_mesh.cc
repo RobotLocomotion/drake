@@ -446,7 +446,7 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double resolution_hint) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeBoxVolumeMesh<T>, &MakeBoxVolumeMeshWithMa<T>))
+    (&MakeBoxVolumeMesh<T>, &MakeBoxVolumeMeshWithMa<T>));
 
 }  // namespace internal
 }  // namespace geometry

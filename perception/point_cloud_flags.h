@@ -46,7 +46,7 @@ constexpr BaseField kMaxBitInUse = kRGBs;
 /// with other fields.
 class DescriptorType final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DescriptorType)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DescriptorType);
 
   constexpr DescriptorType(int size, const char* name)
       : size_(size),
@@ -83,7 +83,7 @@ constexpr DescriptorType kDescriptorFPFH(33, "kDescriptorFPFH");
  */
 class Fields {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Fields)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Fields);
 
   /// @throws std::exception if `base_fields` is not composed of valid
   /// `BaseField`s.

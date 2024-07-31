@@ -24,7 +24,7 @@ namespace acrobot {
 /// `acrobot.sdf` MUST be kept in sync.
 class AcrobotParameters {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AcrobotParameters)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AcrobotParameters);
 
   /// Constructor used to initialize the physical parameters for an acrobot
   /// model. The parameters are defaulted to values in Spong's paper

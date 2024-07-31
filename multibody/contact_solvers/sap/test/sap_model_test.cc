@@ -100,6 +100,10 @@ class SpringConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SpringConstraint<T>>(new SpringConstraint<T>(*this));
   }
 
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error("DoToDouble() not used in these unit tests.");
+  }
+
   VectorX<T> x0_;  // Previous time step configuration.
   T k_{0.0};       // Stiffness, in N/m.
   T tau_d_{0.0};   // Dissipation time scale, in seconds.
@@ -300,6 +304,10 @@ class DummyConstraint final : public SapConstraint<T> {
  private:
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<DummyConstraint<T>>(new DummyConstraint<T>(*this));
+  }
+
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    throw std::runtime_error("DoToDouble() not used in these unit tests.");
   }
 
   VectorX<T> R_;
@@ -839,6 +847,29 @@ TEST_F(DummyModelTest, CostGradients) {
   // Hessian in velocities H = A + Jᵀ⋅G⋅J.
   const MatrixXd cost_hessian = CalcDenseHessian();
   EXPECT_TRUE(CompareMatrices(cost_hessian, gradient_ad_gradient, kEpsilon,
+                              MatrixCompareType::relative));
+}
+
+// Unit test the computation of the Hessian factorization.
+TEST_F(DummyModelTest, EvalHessianFactorization) {
+  const VectorXd v = arbitrary_v();
+  sap_model_->SetVelocities(v, context_.get());
+
+  // Two arbitrary rhs.
+  MatrixXd b(v.size(), 2);
+  b << 2.5 * v, -1.2 * v;
+
+  // Copute x = H⁻¹⋅b using the factorization.
+  const HessianFactorizationCache& H =
+      sap_model_->EvalHessianFactorizationCache(*context_);
+  MatrixXd x = b;
+  H.SolveInPlace(&x);
+
+  // Compute expected solution.
+  const MatrixXd H_expected = CalcDenseHessian();
+  MatrixXd x_expected = H_expected.ldlt().solve(b);
+
+  EXPECT_TRUE(CompareMatrices(x, x_expected, 8 * kEpsilon,
                               MatrixCompareType::relative));
 }
 

@@ -57,7 +57,7 @@ void FreeRotatingBodyPlant<T>::SetDefaultState(
       dynamic_cast<const internal::RpyBallMobilizer<T>*>(&mobilizer);
   DRAKE_DEMAND(xyz_mobilizer != nullptr);
 
-  xyz_mobilizer->set_angular_velocity(
+  xyz_mobilizer->SetAngularVelocity(
       context, get_default_initial_angular_velocity(), state);
 }
 
@@ -92,4 +92,4 @@ SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::test::FreeRotatingBodyPlant)
+    class ::drake::multibody::test::FreeRotatingBodyPlant);

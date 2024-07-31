@@ -1,20 +1,20 @@
 # -*- bazel -*-
 
-load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
-    "cmake_configure_file",
-)
-load(
-    "@drake//tools/workspace:generate_include_header.bzl",
-    "drake_generate_include_header",
-)
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
 )
-load("@drake//tools/install:install.bzl", "install")
-load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
+load(
+    "@drake//tools/workspace:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 
 licenses(["notice"])  # Apache-2.0
 
@@ -58,6 +58,7 @@ _MOST_HDRS = [
     "include/gz/math/Box.hh",
     "include/gz/math/Capsule.hh",
     "include/gz/math/Color.hh",
+    "include/gz/math/Cone.hh",
     "include/gz/math/Cylinder.hh",
     "include/gz/math/DiffDriveOdometry.hh",
     "include/gz/math/Ellipsoid.hh",
@@ -109,6 +110,7 @@ _MOST_HDRS = [
     "include/gz/math/detail/AxisIndex.hh",
     "include/gz/math/detail/Box.hh",
     "include/gz/math/detail/Capsule.hh",
+    "include/gz/math/detail/Cone.hh",
     "include/gz/math/detail/Cylinder.hh",
     "include/gz/math/detail/Ellipsoid.hh",
     "include/gz/math/detail/InterpolationPoint.hh",

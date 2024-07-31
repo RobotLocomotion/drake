@@ -170,7 +170,7 @@ class TestFindSpringEquilibrium
  */
 class MaximizeGeometricMeanTrivialProblem1 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem1);
 
   MaximizeGeometricMeanTrivialProblem1();
 
@@ -197,7 +197,7 @@ class MaximizeGeometricMeanTrivialProblem1 {
  */
 class MaximizeGeometricMeanTrivialProblem2 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem2)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem2);
 
   MaximizeGeometricMeanTrivialProblem2();
 
@@ -353,6 +353,14 @@ void TestSocpDuplicatedVariable1(
 // min x0 + x1
 // s.t 4x0²+9x1² ≤ 1
 void TestSocpDuplicatedVariable2(
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol);
+
+// We intentionally use duplicated variables in the second order cone constraint
+// to test if Drake's solver wrappers can handle duplicated variables.
+// min 2x₀+x₁
+// s.t 2x₀≥ √(x₀²+2x₁²+2)
+void TestSocpDuplicatedVariable3(
     const SolverInterface& solver,
     const std::optional<SolverOptions>& solver_options, double tol);
 

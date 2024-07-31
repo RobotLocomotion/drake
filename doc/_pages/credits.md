@@ -66,3 +66,81 @@ this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.
 * [David von Wrangel](https://www.davidvonwrangel.com/)
 * Matthew Woehlke
 * Huihua Zhao
+
+# Open source
+
+Drake also relies on a wide variety of open-source libraries. We'd like to thank
+all of their maintainers, whose work is essential to Drake's success:
+
+* Developer tools:
+  * [abseil](https://abseil.io)
+  * [bazel](https://bazel.build)
+  * [eigen](https://eigen.tuxfamily.org/)
+  * [fmt](https://fmt.dev/)
+  * [gbench](https://github.com/google/benchmark)
+  * [gflags](https://github.com/gflags/gflags)
+  * [gtest](https://github.com/google/googletest)
+  * [numpy](https://numpy.org/)
+  * [onetbb](https://github.com/oneapi-src/oneTBB)
+  * [pybind11](https://pybind11.readthedocs.io/)
+  * [pycodestyle](https://github.com/PyCQA/pycodestyle)
+  * [spdlog](https://github.com/gabime/spdlog)
+
+* Documentation:
+  * [doxygen](https://doxygen.nl/)
+  * [graphviz](https://graphviz.org/)
+  * [jekyll](https://jekyllrb.com/)
+  * [jupyter](https://jupyter.org/)
+  * [matplotlib](https://matplotlib.org/)
+  * [mypy](https://www.mypy-lang.org/)
+  * [sphinx](https://www.sphinx-doc.org/)
+
+* File formats:
+  * [gazebosim](https://github.com/gazebosim)
+  * [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo)
+  * [libpng](https://github.com/glennrp/libpng)
+  * [libtiff](https://github.com/libsdl-org/libtiff)
+  * [nlohmann/json](https://github.com/nlohmann/json)
+  * [openusd](https://github.com/PixarAnimationStudios/OpenUSD)
+  * [pyyaml](https://pyyaml.org/)
+  * [tinygltf](https://github.com/syoyo/tinygltf)
+  * [tinyjson](https://github.com/rhysd/tinyjson)
+  * [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader)
+  * [tinyxml2](https://github.com/leethomason/tinyxml2)
+  * [xacro](https://github.com/ros/xacro)
+  * [yaml-cpp](https://github.com/jbeder/yaml-cpp)
+
+* Geometry:
+  * [common_robotics_utilities](https://github.com/ToyotaResearchInstitute/common_robotics_utilities)
+  * [fcl](https://github.com/flexible-collision-library/fcl)
+  * [libccd](https://github.com/danfis/libccd)
+  * [nanoflann](https://github.com/jlblancoc/nanoflann)
+  * [qhull](https://github.com/qhull/qhull)
+  * [voxelized_geometry_tools](https://github.com/ToyotaResearchInstitute/voxelized_geometry_tools)
+
+* Graphics
+  * [meshcat](https://github.com/meshcat-dev/meshcat)
+  * [pillow](https://pillow.readthedocs.io/)
+  * [stats.js](https://github.com/mrdoob/stats.js)
+  * [threejs](https://threejs.org/)
+  * [vtk](https://github.com/Kitware/VTK)
+
+* Networking:
+  * [curl](https://github.com/curl/curl)
+  * [lcm](https://github.com/lcm-proj/lcm)
+  * [msgpack](https://github.com/msgpack)
+  * [picosha2](https://github.com/okdshin/PicoSHA2)
+  * [stduuid](https://github.com/mariusbancila/stduuid)
+  * [unetworking](https://github.com/uNetworking)
+
+* Optimization:
+  * [clarabel](https://github.com/oxfordcontrol/Clarabel.cpp)
+  * [clp](https://github.com/coin-or/clp)
+  * [conex](https://github.com/ToyotaResearchInstitute/conex)
+  * [csdp](https://github.com/coin-or/csdp)
+  * [ipopt](https://github.com/coin-or/ipopt)
+  * [nlopt](https://github.com/stevengj/nlopt)
+  * [osqp](https://github.com/osqp)
+  * [scs](https://github.com/cvxgrp/scs)
+  * [suitesparse](https://github.com/DrTimothyAldenDavis/SuiteSparse)
+  * [sympy](https://github.com/sympy/sympy)

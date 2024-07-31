@@ -107,7 +107,9 @@ void DefineIkDifferential(py::module m) {
         .def("set_end_effector_translational_velocity_limits",
             &Class::set_end_effector_translational_velocity_limits,
             py::arg("lower"), py::arg("upper"),
-            cls_doc.set_end_effector_translational_velocity_limits.doc);
+            cls_doc.set_end_effector_translational_velocity_limits.doc)
+        .def("get_mutable_solver_options", &Class::get_mutable_solver_options,
+            py_rvp::reference_internal, cls_doc.get_mutable_solver_options.doc);
   }
 
   m.def(

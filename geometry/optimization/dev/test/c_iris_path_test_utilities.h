@@ -13,7 +13,7 @@ namespace optimization {
 // functions in CspaceFreePath for unit testing.
 class CspaceFreePathTester {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePathTester)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePathTester);
 
   CspaceFreePathTester(const multibody::MultibodyPlant<double>* plant,
                        const geometry::SceneGraph<double>* scene_graph,

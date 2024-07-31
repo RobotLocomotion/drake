@@ -110,12 +110,8 @@ void ShaderProgram::SetProjectionMatrix(const Eigen::Matrix4f& T_DC) const {
 }
 
 void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CW,
-                                       const RigidTransformd& X_WG,
-                                       const Vector3d& scale) const {
-  const Eigen::DiagonalMatrix<float, 4, 4> S_GM(
-      Vector4<float>(scale(0), scale(1), scale(2), 1.0));
-  const Eigen::Matrix4f X_WG_f = X_WG.GetAsMatrix4().cast<float>();
-  const Eigen::Matrix4f T_WM = X_WG_f * S_GM;
+                                       const Eigen::Matrix4f& T_WM,
+                                       const Eigen::Matrix3f& N_WM) const {
   const Eigen::Matrix4f T_CM = X_CW * T_WM;
   // Our camera frame C wrt the OpenGL's camera frame Cgl.
   // clang-format off
@@ -128,7 +124,7 @@ void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CW,
   // clang-format on
   const Eigen::Matrix4f T_CglM = kT_CglC * T_CM;
   glUniformMatrix4fv(model_view_loc_, 1, GL_FALSE, T_CglM.data());
-  DoSetModelViewMatrix(X_CW, T_WM, X_WG_f, scale);
+  DoSetModelViewMatrix(X_CW, T_WM, N_WM);
 }
 
 GLint ShaderProgram::GetUniformLocation(const std::string& uniform_name) const {

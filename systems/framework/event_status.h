@@ -18,7 +18,7 @@ methods below to return status, and optionally a human-readable message, from
 their event handlers. */
 class EventStatus {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EventStatus)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EventStatus);
 
   /** The numerical values are ordered, with
   did_nothing < success < terminate < fatal. */

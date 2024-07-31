@@ -5,9 +5,9 @@ Opt-out of unnecessary default toolchains (Windows and FreeBSD).
 
 --- rust/private/repository_utils.bzl
 +++ rust/private/repository_utils.bzl
-@@ -727,21 +727,33 @@ def load_arbitrary_tool(ctx, tool_name, tool_subdirectories, version, iso_date,
- 
-     sha256 = lookup_tool_sha256(ctx, tool_name, target_triple, version, iso_date, sha256)
+@@ -782,21 +782,33 @@ def load_arbitrary_tool(
+         sha256 = ctx_sha256
+         is_reproducible = bool(ctx_sha256)
  
 +    downloads = []
      for subdirectory in tool_subdirectories:
@@ -37,9 +37,9 @@ Opt-out of unnecessary default toolchains (Windows and FreeBSD).
 +        downloads = json.decode(ctx.read(json_path)) + downloads
 +    ctx.file(json_path, json.encode(downloads))
 +
- def _make_auth_dict(ctx, urls):
-     auth = getattr(ctx.attr, "auth", {})
-     if not auth:
+     # If the artifact is reproducibly downloadable then return an
+     # empty dict to inform consumers no attributes require updating.
+     if is_reproducible:
 --- rust/repositories.bzl
 +++ rust/repositories.bzl
 @@ -37,11 +37,8 @@ load_arbitrary_tool = _load_arbitrary_tool

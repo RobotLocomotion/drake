@@ -338,4 +338,4 @@ ContactVisualizer<T>::DoGetGraphvizFragment(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::meshcat::ContactVisualizer)
+    class ::drake::multibody::meshcat::ContactVisualizer);

@@ -63,11 +63,10 @@ class DeformableIntegrationTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
 
-    auto deformable_model = make_unique<DeformableModel<double>>(plant_);
-    body_id_ =
-        RegisterDeformableOctahedron(deformable_model.get(), "deformable");
-    model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    DeformableModel<double>& deformable_model =
+        plant_->mutable_deformable_model();
+    body_id_ = RegisterDeformableOctahedron(&deformable_model, "deformable");
+    model_ = &deformable_model;
     // N.B. Deformables are only supported with the SAP solver.
     // Thus for testing we choose one arbitrary contact approximation that uses
     // the SAP solver.
@@ -101,10 +100,6 @@ class DeformableIntegrationTest : public ::testing::Test {
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
 
-    builder.Connect(model_->vertex_positions_port(),
-                    scene_graph_->get_source_configuration_port(
-                        plant_->get_source_id().value()));
-
     diagram_ = builder.Build();
   }
 
@@ -126,7 +121,7 @@ class DeformableIntegrationTest : public ::testing::Test {
 
   SceneGraph<double>* scene_graph_{nullptr};
   MultibodyPlant<double>* plant_{nullptr};
-  DeformableModel<double>* model_{nullptr};
+  const DeformableModel<double>* model_{nullptr};
   const CompliantContactManager<double>* manager_{nullptr};
   const DeformableDriver<double>* driver_{nullptr};
   unique_ptr<systems::Diagram<double>> diagram_{nullptr};
@@ -208,8 +203,8 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   EXPECT_TRUE(CompareMatrices(expected_contact_force, f_A_W, kForceThreshold));
 
   /* Verifies the contact results agree with the contact solver results. */
-  const ContactResults<double>& contact_results =
-      manager_->EvalContactResults(plant_context);
+  ContactResults<double> contact_results;
+  manager_->CalcContactResults(plant_context, &contact_results);
   ASSERT_EQ(contact_results.num_deformable_contacts(), 1);
   const DeformableContactInfo<double>& contact_info =
       contact_results.deformable_contact_info(0);
@@ -224,7 +219,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   F_Ac_W_expected.SetZero();
   GeometryId deformable_geometry_id = model_->GetGeometryId(body_id_);
   const VectorXd& vertex_positions =
-      model_->vertex_positions_port()
+      plant_->get_deformable_body_configuration_output_port()
           .template Eval<geometry::GeometryConfigurationVector<double>>(
               plant_context)
           .value(deformable_geometry_id);

@@ -52,6 +52,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.GetAllGeometryIds();
   inspector.GetGeometryIds(GeometrySet{});
   inspector.NumGeometriesWithRole(Role::kUnassigned);
+  inspector.NumDeformableGeometriesWithRole(Role::kUnassigned);
   inspector.NumDynamicGeometries();
   inspector.NumAnchoredGeometries();
   inspector.GetCollisionCandidates();
@@ -81,6 +82,14 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
       source_id, frame_id,
       make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(1.0), "sphere"));
+  // Register a deformable geometry.
+  auto deformable_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(1.0), "sphere");
+  deformable_instance->set_illustration_properties(IllustrationProperties{});
+  const GeometryId deformable_geometry_id =
+      tester.mutable_state().RegisterDeformableGeometry(
+          source_id, internal::InternalFrame::world_frame_id(),
+          std::move(deformable_instance), 0.5);
   inspector.GetGeometryIdByName(frame_id, Role::kUnassigned, "sphere");
 
   // Geometries and their properties.
@@ -95,6 +104,8 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.GetIllustrationProperties(geometry_id);
   inspector.GetPerceptionProperties(geometry_id);
   inspector.GetReferenceMesh(geometry_id);
+  inspector.GetDrivenRenderMeshes(deformable_geometry_id, Role::kIllustration);
+  inspector.IsDeformableGeometry(geometry_id);
   inspector.GetAllDeformableGeometryIds();
   inspector.GetConvexHull(geometry_id);
   inspector.GetReferenceMesh(geometry_id);

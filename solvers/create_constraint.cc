@@ -309,6 +309,74 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
     throw runtime_error{oss.str()};
   }
 }
+
+// ParseLorentzConeConstraint needs to throw on failure, but ParseConstraint
+// needs to gracefully handle cases where the constraint is not a Lorentz cone;
+// this method provides a single decomposition implementation to support both
+// cases. If throw_on_failure is false, and we fail, then this method will
+// return a nullptr.
+std::unique_ptr<Binding<LorentzConeConstraint>> MaybeParseLorentzConeConstraint(
+    const symbolic::Formula& f, bool throw_on_failure = true,
+    LorentzConeConstraint::EvalType eval_type =
+        LorentzConeConstraint::EvalType::kConvexSmooth,
+    double psd_tol = 1e-8, double coefficient_tol = 1e-8) {
+  symbolic::Expression greater, lesser;
+  if (is_greater_than_or_equal_to(f)) {
+    greater = get_lhs_expression(f);
+    lesser = get_rhs_expression(f);
+  } else if (is_less_than_or_equal_to(f)) {
+    greater = get_rhs_expression(f);
+    lesser = get_lhs_expression(f);
+  } else if (throw_on_failure) {
+    throw std::runtime_error(fmt::format(
+        "ParseLorentzConeConstraint is called with a formula {} that is not a "
+        "relational formula using either <= or >= operators.",
+        f.to_string()));
+  } else {
+    return nullptr;
+  }
+
+  Eigen::MatrixXd A;
+  Eigen::VectorXd b;
+  VectorXDecisionVariable greater_vars;
+  if (!throw_on_failure) {
+    // Then we must catch the cases that would cause DecomposeAffineExpressions
+    // to throw. This is unfortunately brittle, but changing
+    // DecomposeAffineExpressions to support throw_on_failure would require
+    // deprecation because of the way it is bound in pydrake.
+    if (!greater.is_polynomial() ||
+        symbolic::Polynomial(greater).TotalDegree() > 1) {
+    return nullptr;
+  }
+  }
+  symbolic::DecomposeAffineExpressions(Vector1<Expression>{greater}, &A, &b,
+                                       &greater_vars);
+  DRAKE_DEMAND(A.rows() == 1);
+  DRAKE_DEMAND(b.size() == 1);
+  auto [is_l2norm, C, d, lesser_vars] =
+      DecomposeL2NormExpression(lesser, psd_tol, coefficient_tol);
+  if (!is_l2norm) {
+    if (throw_on_failure) {
+      throw runtime_error(fmt::format(
+          "Expression {} is not an L2 norm. ParseLorentzCone only supports "
+          "formulas that are greater than or equal to the square root of a "
+          "quadratic.",
+          lesser));
+    }
+    return nullptr;
+  }
+  Eigen::MatrixXd A_lorentz =
+      Eigen::MatrixXd::Zero(1 + C.rows(), A.cols() + C.cols());
+  A_lorentz.topLeftCorner(1, A.cols()) = A;
+  A_lorentz.bottomRightCorner(C.rows(), C.cols()) = C;
+  Eigen::VectorXd b_lorentz(1 + d.size());
+  b_lorentz << b, d;
+  VectorXDecisionVariable vars(greater_vars.size() + lesser_vars.size());
+  vars << greater_vars, lesser_vars;
+  return std::make_unique<Binding<LorentzConeConstraint>>(
+      make_shared<LorentzConeConstraint>(A_lorentz, b_lorentz, eval_type),
+      vars);
+}
 }  // namespace
 
 Binding<Constraint> ParseConstraint(
@@ -432,6 +500,12 @@ Binding<Constraint> ParseConstraint(const Formula& f) {
     const Expression& e2{get_rhs_expression(f)};
     return ParseConstraint(e1 - e2, 0.0, 0.0);
   } else if (is_greater_than_or_equal_to(f)) {
+    auto lorentz_cone_binding =
+        MaybeParseLorentzConeConstraint(f,
+                                        /* throw_on_failure= */ false);
+    if (lorentz_cone_binding != nullptr) {
+      return *lorentz_cone_binding;
+    }
     // e1 >= e2
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
@@ -440,6 +514,12 @@ Binding<Constraint> ParseConstraint(const Formula& f) {
     FindBound(e2, e1, &e, &ub);
     return ParseConstraint(e, -numeric_limits<double>::infinity(), ub);
   } else if (is_less_than_or_equal_to(f)) {
+    auto lorentz_cone_binding =
+        MaybeParseLorentzConeConstraint(f,
+                                        /* throw_on_failure= */ false);
+    if (lorentz_cone_binding != nullptr) {
+      return *lorentz_cone_binding;
+    }
     // e1 <= e2
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
@@ -620,6 +700,17 @@ shared_ptr<Constraint> MakePolynomialConstraint(
   } else {
     return make_shared<PolynomialConstraint>(polynomials, poly_vars, lb, ub);
   }
+}
+
+Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
+    const symbolic::Formula& f,
+    LorentzConeConstraint::EvalType eval_type,
+    double psd_tol, double coefficient_tol) {
+  auto lorentz_cone_binding = MaybeParseLorentzConeConstraint(
+      f,
+      /* throw_on_failure= */ true, eval_type, psd_tol, coefficient_tol);
+  DRAKE_DEMAND(lorentz_cone_binding != nullptr);
+  return *lorentz_cone_binding;
 }
 
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(

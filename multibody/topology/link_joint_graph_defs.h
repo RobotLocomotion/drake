@@ -4,6 +4,8 @@
 #error Do not include this file. Use "drake/multibody/topology/graph.h".
 #endif
 
+#include <cstdint>
+
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -13,13 +15,16 @@ namespace internal {
 
 class SpanningForest;
 
-using JointTypeIndex = TypeSafeIndex<class JointTypeTag>;
+using LinkOrdinal = TypeSafeIndex<class LinkOrdinalTag>;
+using JointOrdinal = TypeSafeIndex<class JointOrdinalTag>;
+
+using JointTraitsIndex = TypeSafeIndex<class JointTraitsTag>;
 using LinkCompositeIndex = TypeSafeIndex<class LinkCompositeTag>;
 using LoopConstraintIndex = TypeSafeIndex<class LoopConstraintTag>;
 
 /** Link properties that can affect how the forest model gets built. Or-ing
 these also produces a LinkFlags object. */
-enum class LinkFlags : unsigned {
+enum class LinkFlags : uint32_t {
   kDefault = 0,
   kStatic = 1 << 0,           ///< Implicitly welded to World.
   kMustBeBaseBody = 1 << 1,   ///< Ensure connection to World if none.
@@ -29,7 +34,7 @@ enum class LinkFlags : unsigned {
 
 /** Joint properties that can affect how the SpanningForest gets built. Or-ing
 these also produces a JointFlags object. */
-enum class JointFlags : unsigned {
+enum class JointFlags : uint32_t {
   kDefault = 0,
   kMustBeModeled = 1 << 0  ///< Model explicitly even if ignorable weld.
 };
@@ -37,7 +42,7 @@ enum class JointFlags : unsigned {
 /** Options for how to build the SpanningForest. Or-ing these also produces a
 ForestBuildingOptions object. These can be provided as per-model instance
 options to locally override global options. */
-enum class ForestBuildingOptions : unsigned {
+enum class ForestBuildingOptions : uint32_t {
   kDefault = 0,
   kStatic = 1 << 0,                ///< Weld all links to World.
   kUseFixedBase = 1 << 1,          ///< Use welds rather than floating joints.

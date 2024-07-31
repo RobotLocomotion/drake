@@ -43,7 +43,7 @@ struct ClpSolverDetails {
  */
 class ClpSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClpSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClpSolver);
 
   using Details = ClpSolverDetails;
 

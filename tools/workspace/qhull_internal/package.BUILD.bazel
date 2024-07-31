@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
-load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(
     "@drake//tools/workspace:vendor_cxx.bzl",
     "cc_library_vendored",
@@ -60,6 +60,7 @@ cc_library(
     hdrs = _HDRS_C,
     copts = [
         "-fvisibility=hidden",
+        "-w",
     ],
     includes = ["src"],
     srcs = _SRCS_C,

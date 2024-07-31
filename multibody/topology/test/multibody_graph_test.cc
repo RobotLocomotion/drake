@@ -109,7 +109,7 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
   DRAKE_EXPECT_THROWS_MESSAGE(graph.get_body(BodyIndex(9)),
                               ".*index < num_bodies\\(\\).*");
   DRAKE_EXPECT_THROWS_MESSAGE(graph.get_joint(JointIndex(9)),
-                              ".*index < num_joints\\(\\).*");
+                              ".*condition 'has_joint\\(index\\)' failed.*");
 
   // Verify we can query if a body/joint is in the graph.
   const ModelInstanceIndex kInvalidModelInstance(666);
@@ -259,6 +259,53 @@ GTEST_TEST(MultibodyGraph, Weldedsubgraphs) {
   EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(13)), expected_subgraphA);
   EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(10)), expected_subgraphB);
   EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(6)), expected_subgraphB);
+}
+
+GTEST_TEST(MultibodyGraph, RemoveJoint) {
+  MultibodyGraph graph;
+  graph.RegisterJointType(kRevoluteType);
+
+  // The first body added defines the world's name and model instance.
+  graph.AddRigidBody(kWorldBodyName, world_model_instance());
+
+  // Create two distinct model instances.
+  const ModelInstanceIndex model_instance5(5);
+  const ModelInstanceIndex model_instance9(9);
+
+  // Add one body to each model instance.
+  BodyIndex body0 = graph.AddRigidBody("body0", model_instance5);
+  BodyIndex body1 = graph.AddRigidBody("body1", model_instance9);
+
+  // Add two joints of the same name to two different model instances.
+  JointIndex joint5 = graph.AddJoint(
+      "joint", model_instance5, graph.weld_type_name(), BodyIndex(0), body0);
+  JointIndex joint9 = graph.AddJoint(
+      "joint", model_instance9, graph.weld_type_name(), BodyIndex(0), body1);
+
+  EXPECT_TRUE(graph.HasJointNamed("joint", model_instance5));
+  EXPECT_TRUE(graph.HasJointNamed("joint", model_instance9));
+  EXPECT_TRUE(graph.has_joint(joint5));
+  EXPECT_TRUE(graph.has_joint(joint9));
+  EXPECT_EQ(ssize(graph.world_body().joints()), 2);
+  EXPECT_EQ(ssize(graph.get_body(body0).joints()), 1);
+  EXPECT_EQ(graph.get_body(body0).joints()[0], joint5);
+  EXPECT_EQ(ssize(graph.get_body(body1).joints()), 1);
+  EXPECT_EQ(graph.get_body(body1).joints()[0], joint9);
+
+  // Remove joint5
+  graph.RemoveJoint(joint5);
+
+  // Check that the joint was removed from the graph and from the body
+  // references. Check that the joint with the same name in a different model
+  // instance still exists.
+  EXPECT_FALSE(graph.HasJointNamed("joint", model_instance5));
+  EXPECT_TRUE(graph.HasJointNamed("joint", model_instance9));
+  EXPECT_FALSE(graph.has_joint(joint5));
+  EXPECT_TRUE(graph.has_joint(joint9));
+  EXPECT_EQ(ssize(graph.world_body().joints()), 1);
+  EXPECT_EQ(ssize(graph.get_body(body0).joints()), 0);
+  EXPECT_EQ(ssize(graph.get_body(body1).joints()), 1);
+  EXPECT_EQ(graph.get_body(body1).joints()[0], joint9);
 }
 
 }  // namespace internal

@@ -283,6 +283,23 @@ void SapHuntCrossleyConstraint<T>::DoAccumulateSpatialImpulses(
   }
 }
 
+template <typename T>
+std::unique_ptr<SapConstraint<double>>
+SapHuntCrossleyConstraint<T>::DoToDouble() const {
+  SapConstraintJacobian<double> J = this->jacobian().ToDouble();
+  const auto& p = parameters();
+  SapHuntCrossleyConstraint<double>::Parameters parameters{
+      p.model,
+      ExtractDoubleOrThrow(p.friction),
+      ExtractDoubleOrThrow(p.stiffness),
+      ExtractDoubleOrThrow(p.dissipation),
+      p.stiction_tolerance,
+      p.sigma};
+  ContactConfiguration<double> configuration = configuration_.ToDouble();
+  return std::make_unique<SapHuntCrossleyConstraint<double>>(
+      std::move(configuration), std::move(J), std::move(parameters));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
@@ -290,4 +307,4 @@ void SapHuntCrossleyConstraint<T>::DoAccumulateSpatialImpulses(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::contact_solvers::internal::
-        SapHuntCrossleyConstraint)
+        SapHuntCrossleyConstraint);

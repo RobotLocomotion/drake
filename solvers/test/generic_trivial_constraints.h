@@ -22,7 +22,7 @@ namespace test {
 // This constraint stores that private_val internally, to detect object slicing.
 class GenericTrivialConstraint1 : public Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialConstraint1)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialConstraint1);
 
   GenericTrivialConstraint1()
       : Constraint(2, 3, Eigen::Vector2d(-1, -2), Eigen::Vector2d(2, 1)),

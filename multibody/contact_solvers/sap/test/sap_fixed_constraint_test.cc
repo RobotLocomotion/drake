@@ -5,6 +5,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
@@ -143,6 +144,10 @@ GTEST_TEST(SapFixedConstraint, SingleCliqueConstraintClone) {
   EXPECT_THROW(clone->second_clique(), std::exception);
   EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J66);
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      c.ToDouble(),
+      "SapFixedConstraint: Scalar conversion to double not supported.");
 }
 
 GTEST_TEST(SapFixedConstraint, TwoCliquesConstraintClone) {
@@ -161,6 +166,10 @@ GTEST_TEST(SapFixedConstraint, TwoCliquesConstraintClone) {
   EXPECT_EQ(clone->second_clique(), kinematics.J.clique(1));
   EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J66);
   EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(), J62);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      c.ToDouble(),
+      "SapFixedConstraint: Scalar conversion to double not supported.");
 }
 
 GTEST_TEST(SapFixedConstraint, AccumulateGeneralizedImpulses) {
@@ -233,16 +242,16 @@ GTEST_TEST(SapFixedConstraint, AccumulateSpatialImpulses) {
   // Expected spatial impulse on B.
   const SpatialForce<double> F_Bo_W =
       SpatialForce<double>(Vector3d::Zero(), gamma0)
-          .ShiftInPlace(Vector3d(0.25, 0, 0)) +
+          .Shift(Vector3d(0.25, 0, 0)) +
       SpatialForce<double>(Vector3d::Zero(), gamma1)
-          .ShiftInPlace(Vector3d(0.5, 0, 0.5));
+          .Shift(Vector3d(0.5, 0, 0.5));
 
   // Expected spatial impulse on A.
   const SpatialForce<double> F_Ao_W =
       SpatialForce<double>(Vector3d::Zero(), -gamma0)
-          .ShiftInPlace(Vector3d(-0.25, 0, 0)) +
+          .Shift(Vector3d(-0.25, 0, 0)) +
       SpatialForce<double>(Vector3d::Zero(), -gamma1)
-          .ShiftInPlace(Vector3d(-0.5, 0, -0.5));
+          .Shift(Vector3d(-0.5, 0, -0.5));
 
   const SpatialForce<double> F0(Vector3d(1, 2, 3), Vector3d(4, 5, 6));
   SpatialForce<double> Faccumulated = F0;  // Initialize to non-zero value.

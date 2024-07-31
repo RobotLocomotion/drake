@@ -1,13 +1,13 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_googletest")
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load("//tools/skylark:py.bzl", "py_library")
 load(
     "//tools/workspace/lcm:lcm.bzl",
     "lcm_cc_library",
     "lcm_java_library",
     "lcm_py_library",
 )
-load("//tools/skylark:py.bzl", "py_library")
-load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
-load("//tools/skylark:drake_cc.bzl", "drake_cc_googletest")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 

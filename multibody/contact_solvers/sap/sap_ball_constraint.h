@@ -90,6 +90,8 @@ class SapBallConstraint final : public SapHolonomicConstraint<T> {
     const Vector3<T>& p_BQ_W() const { return p_BQ_W_; }
     const SapConstraintJacobian<T>& jacobian() const { return J_; }
 
+    bool operator==(const Kinematics&) const = default;
+
    private:
     /* Index to a physical object A. */
     int objectA_;
@@ -159,6 +161,7 @@ class SapBallConstraint final : public SapHolonomicConstraint<T> {
     return std::unique_ptr<SapBallConstraint<T>>(
         new SapBallConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
 
   Kinematics kinematics_;
 };

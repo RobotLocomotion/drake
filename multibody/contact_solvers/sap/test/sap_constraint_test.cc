@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/multibody/contact_solvers/sap/expect_equal.h"
+
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -59,6 +61,9 @@ class TestConstraint final : public SapConstraint<double> {
   std::unique_ptr<SapConstraint<double>> DoClone() const final {
     return std::unique_ptr<TestConstraint>(new TestConstraint(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    return this->Clone();
+  }
 };
 
 GTEST_TEST(SapConstraint, SingleCliqueConstraint) {
@@ -103,23 +108,21 @@ GTEST_TEST(SapConstraint, TwoCliquesConstraintWrongArguments) {
 GTEST_TEST(SapConstraint, SingleCliqueConstraintClone) {
   TestConstraint c(12, J32);
   std::unique_ptr<SapConstraint<double>> clone = c.Clone();
-  EXPECT_EQ(clone->num_constraint_equations(), 3);
-  EXPECT_EQ(clone->num_cliques(), 1);
-  EXPECT_EQ(clone->first_clique(), 12);
-  EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
-  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
+  ASSERT_NE(clone, nullptr);
+  ExpectBaseIsEqual(c, *clone);
+  std::unique_ptr<SapConstraint<double>> c_to_double = c.ToDouble();
+  ASSERT_NE(c_to_double, nullptr);
+  ExpectBaseIsEqual(c, *c_to_double);
 }
 
 GTEST_TEST(SapConstraint, TwoCliquesConstraintClone) {
   TestConstraint c(11, 7, J32, J34);
   std::unique_ptr<SapConstraint<double>> clone = c.Clone();
-  EXPECT_EQ(clone->num_constraint_equations(), 3);
-  EXPECT_EQ(clone->num_cliques(), 2);
-  EXPECT_EQ(clone->first_clique(), 11);
-  EXPECT_EQ(clone->second_clique(), 7);
-  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
-  EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(), J34);
+  ASSERT_NE(clone, nullptr);
+  ExpectBaseIsEqual(c, *clone);
+  std::unique_ptr<SapConstraint<double>> c_to_double = c.ToDouble();
+  ASSERT_NE(c_to_double, nullptr);
+  ExpectBaseIsEqual(c, *c_to_double);
 }
 
 }  // namespace

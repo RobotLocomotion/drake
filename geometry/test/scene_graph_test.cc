@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -15,6 +16,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/make_mesh_for_deformable.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
@@ -34,6 +36,11 @@ namespace drake {
 namespace geometry {
 
 using internal::DummyRenderEngine;
+using internal::HydroelasticType;
+using internal::kComplianceType;
+using internal::kHydroGroup;
+using internal::kPointStiffness;
+using internal::kRezHint;
 using math::RigidTransformd;
 using std::make_unique;
 using std::unique_ptr;
@@ -94,6 +101,11 @@ class SceneGraphTester {
   static GeometryState<T>& GetMutableGeometryState(
       const SceneGraph<T>& scene_graph, systems::Context<T>* context) {
     return scene_graph.mutable_geometry_state(context);
+  }
+
+  template <typename T>
+  static int64_t ScalarConversionCount() {
+    return SceneGraph<T>::scalar_conversion_count_;
   }
 };
 
@@ -267,11 +279,15 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
 }
 
 // Confirms that the direct feedthrough logic is correct -- there is total
-// direct feedthrough.
+// direct feedthrough. Also confirm that feedthrough was calculated without the
+// need to fall back on SystemSymbolicInspector, and hence populate the
+// internal augmented model cache for T=Expression.
 TEST_F(SceneGraphTest, DirectFeedThrough) {
   scene_graph_.RegisterSource();
+  int64_t tare = SceneGraphTester::ScalarConversionCount<Expression>();
   EXPECT_EQ(scene_graph_.GetDirectFeedthroughs().size(),
             scene_graph_.num_input_ports() * scene_graph_.num_output_ports());
+  EXPECT_EQ(SceneGraphTester::ScalarConversionCount<Expression>(), tare);
 }
 
 // Test the functionality that accumulates the values from the input ports.
@@ -346,6 +362,99 @@ TEST_F(SceneGraphTest, RegisterUnsupportedDeformableGeometry) {
           s_id, scene_graph_.world_frame_id(), std::move(geometry_instance),
           kRezHint),
       ".*don't yet generate deformable meshes.+ Cylinder.*");
+}
+
+// Test application of defaults during context allocation.
+TEST_F(SceneGraphTest, ApplyConfig) {
+  EXPECT_EQ(
+      scene_graph_.get_config().default_proximity_properties.compliance_type,
+      "undefined");
+  SourceId s_id = scene_graph_.RegisterSource();
+  auto geometry_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Box>(1.0, 2.0, 3.0), "box");
+  geometry_instance->set_proximity_properties(ProximityProperties());
+  auto g_id = scene_graph_.RegisterGeometry(
+      s_id, scene_graph_.world_frame_id(), std::move(geometry_instance));
+  // Plain context.
+  CreateDefaultContext();
+  // No hydroelastic mesh available.
+  EXPECT_EQ(
+      query_object().inspector().maybe_get_hydroelastic_mesh(g_id).index(), 0);
+
+  SceneGraphConfig config;
+  config.default_proximity_properties.compliance_type = "compliant";
+  scene_graph_.set_config(config);
+  const auto& defaults = scene_graph_.get_config().default_proximity_properties;
+  EXPECT_EQ(defaults.compliance_type, "compliant");
+  // Hydroelastic-compliant configured context.
+  CreateDefaultContext();
+  // Volume hydroelastic mesh available.
+  EXPECT_EQ(
+      query_object().inspector().maybe_get_hydroelastic_mesh(g_id).index(), 2);
+
+  // The tests below demonstrate modifications to geometry directly on the
+  // context are subject to applying the default properties.
+
+  // Add a new shape into the context, with empty proximity role. The resulting
+  // registered geometry has proximity defaults applied.
+  geometry_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Box>(1.0, 3.0, 5.0), "box2");
+  geometry_instance->set_proximity_properties(ProximityProperties());
+  g_id = scene_graph_.RegisterGeometry(
+      context_.get(), s_id, scene_graph_.world_frame_id(),
+      std::move(geometry_instance));
+  // Volume hydroelastic mesh available.
+  EXPECT_EQ(
+      query_object().inspector().maybe_get_hydroelastic_mesh(g_id).index(), 2);
+
+  // Add a new shape into the context, then assign an empty proximity role. The
+  // resulting properties have proximity defaults applied.
+  geometry_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Box>(1.0, 1.0, 1.0), "box3");
+  g_id = scene_graph_.RegisterGeometry(
+      context_.get(), s_id, scene_graph_.world_frame_id(),
+      std::move(geometry_instance));
+  scene_graph_.AssignRole(context_.get(), s_id, g_id, ProximityProperties());
+  // Volume hydroelastic mesh available.
+  EXPECT_EQ(
+      query_object().inspector().maybe_get_hydroelastic_mesh(g_id).index(), 2);
+
+  // Replace the role, with a blank set of properties. The resulting properties
+  // are not empty, but have the defaults applied.
+  ASSERT_TRUE(scene_graph_.get_config(*context_)
+              .default_proximity_properties.resolution_hint.has_value());
+  scene_graph_.AssignRole(context_.get(), s_id, g_id, ProximityProperties(),
+                          RoleAssign::kReplace);
+  auto* props = query_object().inspector().GetProximityProperties(g_id);
+  EXPECT_TRUE(props->HasProperty(kHydroGroup, kRezHint));
+
+  // Replace the role, removing a defaulted property. The property does not
+  // get removed, because it is set in the context's scene graph config, and
+  // those settings get reapplied during AssignRole().
+  ASSERT_TRUE(scene_graph_.get_config(*context_)
+              .default_proximity_properties.resolution_hint.has_value());
+  ProximityProperties edit_props(
+      *query_object().inspector().GetProximityProperties(g_id));
+  edit_props.RemoveProperty(kHydroGroup, kRezHint);
+  scene_graph_.AssignRole(context_.get(), s_id, g_id, edit_props,
+                          RoleAssign::kReplace);
+  props = query_object().inspector().GetProximityProperties(g_id);
+  EXPECT_TRUE(props->HasProperty(kHydroGroup, kRezHint));
+
+  // Replace the role, removing a non-defaulted property. The property gets
+  // removed, because it is not set in the context's scene graph config, and
+  // reapplication during AssignRole() does not affect it.
+  ASSERT_FALSE(scene_graph_.get_config(*context_)
+              .default_proximity_properties.point_stiffness.has_value());
+  edit_props = *query_object().inspector().GetProximityProperties(g_id);
+  edit_props.RemoveProperty(kHydroGroup, kPointStiffness);
+  scene_graph_.AssignRole(context_.get(), s_id, g_id, edit_props,
+                          RoleAssign::kReplace);
+  props = query_object().inspector().GetProximityProperties(g_id);
+  // The whole group was not removed.
+  EXPECT_TRUE(props->HasGroup(kHydroGroup));
+  // The specific non-default property was removed.
+  EXPECT_FALSE(props->HasProperty(kHydroGroup, kPointStiffness));
 }
 
 template <typename T>

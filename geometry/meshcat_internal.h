@@ -7,7 +7,9 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/meshcat_file_storage_internal.h"
+#include "drake/geometry/scene_graph_inspector.h"
 
 namespace drake {
 namespace geometry {
@@ -71,6 +73,28 @@ original file has disappeared in the meantime.
 [[nodiscard]] std::vector<std::shared_ptr<const FileStorage::Handle>>
 UnbundleGltfAssets(const std::filesystem::path& gltf_filename,
                    std::string* gltf_contents, FileStorage* storage);
+
+/* Converts a geometry name into a meshcat path. So, a geometry named
+`my_scope::Mesh` becomes my_scope/Mesh.
+
+Note: This replaces all "::" pairs, even if there are multiple instances in
+sequence, or it is at the beginning or end of a sequence.
+
+We may produce strings of the form: "a//b", "/a", or "b/". We assume these are
+not problematic for the following reasons:
+
+  - "a//b" - meshcat treats multiple '/' in a row as a single '/'.
+  - "b/" - meshcat elides trailing '/'.
+  - "/a" - although this may *look* like an absolute path, our basic assumption
+           is that the transformed geometry name will be concatenated to a
+           longer path (so it will never accidentally be used in a way that
+           would be interpreted as an absolute path).
+
+(Examples of the slash elision can be seen in meshcat_manual_test.cc -- the
+sphere and cylinder shapes.) */
+template <typename T>
+std::string TransformGeometryName(GeometryId geom_id,
+                                  const SceneGraphInspector<T>& inspector);
 
 }  // namespace internal
 }  // namespace geometry

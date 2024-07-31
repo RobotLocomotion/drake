@@ -92,8 +92,8 @@ void Simulation::Setup() {
   DiagramBuilder<double> builder;
 
   // Create the multibody plant and scene graph.
-  auto [sim_plant, scene_graph] =
-      AddMultibodyPlant(scenario_.plant_config, &builder);
+  auto [sim_plant, scene_graph] = AddMultibodyPlant(
+      scenario_.plant_config, scenario_.scene_graph_config, &builder);
 
   // Add model directives.
   std::vector<ModelInstanceInfo> added_models;

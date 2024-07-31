@@ -55,7 +55,7 @@ namespace {
 // Stateless system with a DoCalcTimeDerivatives implementation. This class
 // will serve to confirm that the time derivative calculation is not called.
 class StatelessSystemPlusDerivs : public systems::LeafSystem<double> {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystemPlusDerivs)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystemPlusDerivs);
 
  public:
   StatelessSystemPlusDerivs() {}
@@ -79,7 +79,7 @@ class StatelessSystemPlusDerivs : public systems::LeafSystem<double> {
 // Empty diagram
 class StatelessDiagram : public Diagram<double> {
  public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessDiagram)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessDiagram);
 
   explicit StatelessDiagram(double offset) {
     DiagramBuilder<double> builder;
@@ -103,7 +103,7 @@ class StatelessDiagram : public Diagram<double> {
 // Diagram for testing witness functions.
 class ExampleDiagram : public Diagram<double> {
  public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiagram)
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiagram);
 
   explicit ExampleDiagram(double offset) {
     DiagramBuilder<double> builder;
@@ -192,7 +192,7 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
 // witness function.
 class CompositeSystem : public analysis_test::LogisticSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeSystem);
 
   CompositeSystem(double k, double alpha, double nu, double trigger_time)
       : LogisticSystem(k, alpha, nu), trigger_time_(trigger_time) {
@@ -247,7 +247,7 @@ class CompositeSystem : public analysis_test::LogisticSystem<double> {
 // An empty system using two clock witnesses.
 class TwoWitnessStatelessSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoWitnessStatelessSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoWitnessStatelessSystem);
 
   explicit TwoWitnessStatelessSystem(double off1, double off2)
       : offset1_(off1), offset2_(off2) {
@@ -1047,7 +1047,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 // copy-and-paste.
 class ExampleDiscreteSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiscreteSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiscreteSystem);
 
   ExampleDiscreteSystem() {
     DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
@@ -1120,7 +1120,7 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
 // sample of the periodic function, so that y_n = sin(1.234 * (n-1)*h).
 class SinusoidalDelayHybridSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinusoidalDelayHybridSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinusoidalDelayHybridSystem);
 
   SinusoidalDelayHybridSystem() {
     this->DeclarePeriodicDiscreteUpdateEvent(
@@ -1203,7 +1203,7 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
 // A continuous system that outputs unity plus time.
 class ShiftedTimeOutputter : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShiftedTimeOutputter)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShiftedTimeOutputter);
 
   ShiftedTimeOutputter() {
     this->DeclareVectorOutputPort("time", 1, &ShiftedTimeOutputter::OutputTime);
@@ -1221,7 +1221,7 @@ class ShiftedTimeOutputter : public LeafSystem<double> {
 //   x_0     = 0
 class SimpleHybridSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleHybridSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleHybridSystem);
 
   explicit SimpleHybridSystem(double offset) {
     this->DeclarePeriodicDiscreteUpdateEvent(kPeriod, offset,
@@ -1282,7 +1282,7 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
 // samples at the expected instant in time.
 class DeltaFunction : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeltaFunction)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeltaFunction);
 
   explicit DeltaFunction(double spike_time) : spike_time_(spike_time) {
     this->DeclareVectorOutputPort("spike", 1, &DeltaFunction::Output);
@@ -1310,7 +1310,7 @@ class DeltaFunction : public LeafSystem<double> {
 // sampling the continuous input at the appropriate times.
 class DiscreteInputAccumulator : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteInputAccumulator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteInputAccumulator);
 
   DiscreteInputAccumulator() {
     DeclareDiscreteState(1);  // Just one state variable, x[0].
@@ -1406,7 +1406,7 @@ GTEST_TEST(SimulatorTest, SpikeTest) {
 // A mock System that requests a single update at a prespecified time.
 class UnrestrictedUpdater : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater);
 
   explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {}
 
@@ -1591,7 +1591,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 // integration), then publish.
 class MixedContinuousDiscreteSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedContinuousDiscreteSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedContinuousDiscreteSystem);
 
   MixedContinuousDiscreteSystem() {
     // Deliberately choose a period that is identical to, and therefore courts
@@ -2211,7 +2211,7 @@ GTEST_TEST(SimulatorTest, OwnedSystemTest) {
 // calculation thrown in to test that the derivative counter isn't fooled.
 class WastefulIntegrator final : public IntegratorBase<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WastefulIntegrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WastefulIntegrator);
   ~WastefulIntegrator() override = default;
 
   WastefulIntegrator(const System<double>& system, double max_step_size,

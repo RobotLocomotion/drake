@@ -84,7 +84,7 @@ int do_main() {
   DRAKE_DEMAND(pendulum.get_source_id().has_value());
 
   builder.Connect(
-      pendulum.get_geometry_poses_output_port(),
+      pendulum.get_geometry_pose_output_port(),
       scene_graph.get_source_pose_port(pendulum.get_source_id().value()));
 
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);

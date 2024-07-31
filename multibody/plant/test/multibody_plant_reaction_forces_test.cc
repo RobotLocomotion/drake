@@ -16,6 +16,7 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -47,6 +48,8 @@ namespace multibody {
 
 class MultibodyPlantTester {
  public:
+  // Returns the manager for the given plant.
+  // @pre The plant must be discrete time and already finalized.
   static CompliantContactManager<double>& manager(
       const MultibodyPlant<double>& plant) {
     auto* manager = dynamic_cast<CompliantContactManager<double>*>(
@@ -359,7 +362,7 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
         plant_->get_reaction_forces_output_port()
             .Eval<std::vector<SpatialForce<double>>>(*plant_context);
     ASSERT_EQ(reaction_forces.size(), 2u);
-    const SpatialForce<double>& F_Bl_Bl = reaction_forces[pin_->index()];
+    const SpatialForce<double>& F_Bl_Bl = reaction_forces[pin_->ordinal()];
     const RigidTransformd X_WBl =
         ladder_lower_->EvalPoseInWorld(*plant_context);
     const SpatialForce<double> F_Bl_W = X_WBl.rotation() * F_Bl_Bl;
@@ -459,7 +462,7 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     const Vector3d p_WBucm = X_WBu * p_BuBucm;
     // Reaction forces at X_WBu in W.
     const SpatialForce<double>& F_Bu_W =
-        X_WBu.rotation() * reaction_forces[joint_->index()];
+        X_WBu.rotation() * reaction_forces[joint_->ordinal()];
     // Apart from reaction forces, two forces act on the upper half:
     // Contact force fc_x and gravity.
     const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
@@ -652,6 +655,7 @@ class SpinningRodTest : public ::testing::Test {
  protected:
   void BuildModel(double discrete_update_period) {
     plant_ = std::make_unique<MultibodyPlant<double>>(discrete_update_period);
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
 
     // We define rod B's origin Bo to be located at the rod's center of mass.
     const SpatialInertia<double> M_BBo_B =
@@ -710,7 +714,7 @@ class SpinningRodTest : public ::testing::Test {
         plant_->get_reaction_forces_output_port()
             .Eval<std::vector<SpatialForce<double>>>(*context_);
     ASSERT_EQ(reaction_forces.size(), 1u);
-    const SpatialForce<double>& F_BJb_Jb = reaction_forces[pin_->index()];
+    const SpatialForce<double>& F_BJb_Jb = reaction_forces[pin_->ordinal()];
 
     // Verify that the value of the reaction force includes the centripetal
     // component (along Jb's y axis) and the weight component (along Jb's z
@@ -761,6 +765,7 @@ class WeldedBoxesTest : public ::testing::Test {
  protected:
   void BuildModel(double discrete_update_period) {
     plant_ = std::make_unique<MultibodyPlant<double>>(discrete_update_period);
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
     AddBoxes();
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
@@ -801,7 +806,7 @@ class WeldedBoxesTest : public ::testing::Test {
     //   2. Moreover, A is coincident with the world and its origin is located
     //      at A's center of mass Acm.
     // Therefore the reaction at weld1 corresponds to F_Acm_W.
-    const SpatialForce<double>& F_Acm_W = reaction_forces[weld1_->index()];
+    const SpatialForce<double>& F_Acm_W = reaction_forces[weld1_->ordinal()];
 
     // Verify the reaction force balances the weight of the two boxes.
     const double box_weight = kBoxMass * kGravity;
@@ -819,7 +824,7 @@ class WeldedBoxesTest : public ::testing::Test {
     //   2. There is no rotation between B and the world frame.
     //   3. Frame B's origin is located at B's center of mass Bcm.
     // Therefore the reaction at weld2 corresponds to F_Bcm_W.
-    const SpatialForce<double>& F_Bcm_W = reaction_forces[weld2_->index()];
+    const SpatialForce<double>& F_Bcm_W = reaction_forces[weld2_->ordinal()];
     const Vector3d f_Bcm_W_expected = box_weight * Vector3d::UnitZ();
     const Vector3d t_Bcm_W_expected = Vector3d::Zero();
     EXPECT_EQ(F_Bcm_W.translational(), f_Bcm_W_expected);
@@ -849,6 +854,155 @@ TEST_F(WeldedBoxesTest, ReactionForcesContinuous) {
   ASSERT_FALSE(plant_->is_discrete());
   VerifyBodyReactionForces();
 }
+
+class WeldedAndFloatingTest : public ::testing::TestWithParam<bool> {
+ public:
+  void SetUp() {
+    const bool replace_joints = GetParam();
+
+    plant_ = std::make_unique<MultibodyPlant<double>>(0.01);
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
+
+    // Create four rigid bodies.
+    const RigidBody<double>& sphere0 = plant_->AddRigidBody(
+        "sphere0",
+        SpatialInertia<double>::SolidSphereWithMass(kBodyMasses[0], 1.0));
+    const RigidBody<double>& sphere1 = plant_->AddRigidBody(
+        "sphere1",
+        SpatialInertia<double>::SolidSphereWithMass(kBodyMasses[1], 1.0));
+    const RigidBody<double>& sphere2 = plant_->AddRigidBody(
+        "sphere2",
+        SpatialInertia<double>::SolidSphereWithMass(kBodyMasses[2], 1.0));
+    const RigidBody<double>& sphere3 = plant_->AddRigidBody(
+        "sphere3",
+        SpatialInertia<double>::SolidSphereWithMass(kBodyMasses[3], 1.0));
+
+    // Make sphere0 and sphere1 floating and weld sphere2 and sphere3 to world.
+    floating0_ = &plant_->AddJoint<QuaternionFloatingJoint>(
+        "floating0", plant_->world_body(), {}, sphere0, {});
+    floating1_ = &plant_->AddJoint<QuaternionFloatingJoint>(
+        "floating1", plant_->world_body(), {}, sphere1, {});
+    weld2_ =
+        &plant_->AddJoint<WeldJoint>("weld2", plant_->world_body(), {}, sphere2,
+                                     {}, RigidTransformd::Identity());
+    weld3_ =
+        &plant_->AddJoint<WeldJoint>("weld3", plant_->world_body(), {}, sphere3,
+                                     {}, RigidTransformd::Identity());
+
+    // If specified, replace the floating joints with welds.
+    if (replace_joints) {
+      plant_->RemoveJoint(*floating0_);
+      plant_->RemoveJoint(*floating1_);
+      floating0_ = nullptr;
+      floating1_ = nullptr;
+      weld0_ = &plant_->AddJoint<WeldJoint>("weld0", plant_->world_body(), {},
+                                            sphere0, {},
+                                            RigidTransformd::Identity());
+      weld1_ = &plant_->AddJoint<WeldJoint>("weld1", plant_->world_body(), {},
+                                            sphere1, {},
+                                            RigidTransformd::Identity());
+    }
+    plant_->mutable_gravity_field().set_gravity_vector(
+        Vector3d(0.0, 0.0, -kGravity));
+    plant_->Finalize();
+    plant_context_ = plant_->CreateDefaultContext();
+  }
+
+ protected:
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> plant_context_;
+  const QuaternionFloatingJoint<double>* floating0_{nullptr};
+  const QuaternionFloatingJoint<double>* floating1_{nullptr};
+  const WeldJoint<double>* weld0_{nullptr};
+  const WeldJoint<double>* weld1_{nullptr};
+  const WeldJoint<double>* weld2_{nullptr};
+  const WeldJoint<double>* weld3_{nullptr};
+  // Mass of each body in Kg.
+  const std::array<double, 4> kBodyMasses{1.0, 2.0, 3.0, 4.0};
+  // We round off gravity for simpler numbers.
+  const double kGravity{10.0};  // [m/s²]
+};
+
+TEST_P(WeldedAndFloatingTest, ReactionForcesOrdinalIndexing) {
+  const bool replace_joints = GetParam();
+  const auto& reaction_forces =
+      plant_->get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*plant_context_);
+
+  ASSERT_EQ(reaction_forces.size(), 4);
+  ASSERT_EQ(plant_->num_joints(), 4);
+
+  if (replace_joints) {
+    // Replace the floating joints with welds. This should shift indices around.
+    // We confirm that reaction forces are using the correct indexing from the
+    // joints.
+
+    // Floating joints were replaced with weld joints.
+    EXPECT_FALSE(plant_->HasJointNamed("floating0"));
+    EXPECT_FALSE(plant_->HasJointNamed("floating1"));
+    EXPECT_FALSE(plant_->has_joint(JointIndex(0)));
+    EXPECT_FALSE(plant_->has_joint(JointIndex(1)));
+    EXPECT_TRUE(plant_->HasJointNamed("weld0"));
+    EXPECT_TRUE(plant_->HasJointNamed("weld1"));
+
+    // Because we removed and replaced the floating joints after all four
+    // joints were originally added, they receive joint indices 4 and 5. The
+    // ordinals should have been updated during the removal, so the joints
+    // should be ordered as: ["weld2", "weld3", "weld0", "weld1"] and reaction
+    // forces should correspond to that order.
+    const std::vector<const Joint<double>*> joints{weld0_, weld1_, weld2_,
+                                                   weld3_};
+    const std::vector<JointIndex> expected_indices{
+        JointIndex(4), JointIndex(5), JointIndex(2), JointIndex(3)};
+    const std::vector<int> expected_ordinals{2, 3, 0, 1};
+    for (int i = 0; i < 4; ++i) {
+      EXPECT_EQ(joints[i]->index(), expected_indices[i]);
+      EXPECT_EQ(joints[i]->ordinal(), expected_ordinals[i]);
+
+      // All joints are welded, so we expect the reaction forces to
+      // oppose gravity on the bodies.
+      const SpatialForce<double>& F_Bcm_W =
+          reaction_forces[joints[i]->ordinal()];
+      EXPECT_EQ(F_Bcm_W.translational(),
+                kBodyMasses[i] * kGravity * Vector3d::UnitZ());
+
+      EXPECT_EQ(F_Bcm_W.rotational(), Vector3d::Zero());
+    }
+
+  } else {
+    // Do not replace the floating joints.
+
+    // Joints will have assigned continguous indices and ordinals in the
+    // order they were created.
+    const std::vector<const Joint<double>*> joints{floating0_, floating1_,
+                                                   weld2_, weld3_};
+    const std::vector<JointIndex> expected_indices{
+        JointIndex(0), JointIndex(1), JointIndex(2), JointIndex(3)};
+    const std::vector<int> expected_ordinals{0, 1, 2, 3};
+    for (int i = 0; i < 4; ++i) {
+      EXPECT_EQ(joints[i]->index(), expected_indices[i]);
+      EXPECT_EQ(joints[i]->ordinal(), expected_ordinals[i]);
+
+      const SpatialForce<double>& F_Bcm_W =
+          reaction_forces[joints[i]->ordinal()];
+      if (i < 2) {
+        // Joints for bodies 0 and 1 are floating, so we expect no reaction
+        // forces.
+        EXPECT_EQ(F_Bcm_W.translational(), Vector3d::Zero());
+        EXPECT_EQ(F_Bcm_W.rotational(), Vector3d::Zero());
+      } else {
+        // Joints for bodies 2 and 3 are welded, so we expect the reation
+        // forces to oppose gravity on the bodies.
+        EXPECT_EQ(F_Bcm_W.translational(),
+                  kBodyMasses[i] * kGravity * Vector3d::UnitZ());
+        EXPECT_EQ(F_Bcm_W.rotational(), Vector3d::Zero());
+      }
+    }
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(ReactionForcesTests, WeldedAndFloatingTest,
+                         testing::ValuesIn({false, true}));
 
 }  // namespace
 }  // namespace multibody

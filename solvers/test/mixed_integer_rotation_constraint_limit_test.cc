@@ -24,7 +24,7 @@ class TestMinimumDistance
     : public testing::TestWithParam<
           std::tuple<MixedIntegerRotationConstraintGenerator::Approach, int>> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMinimumDistance)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMinimumDistance);
 
   TestMinimumDistance()
       : prog_(),
@@ -98,7 +98,7 @@ class TestMinimumDistance
 
 class TestMinimumDistanceWOrthonormalSocp : public TestMinimumDistance {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMinimumDistanceWOrthonormalSocp)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMinimumDistanceWOrthonormalSocp);
 
   TestMinimumDistanceWOrthonormalSocp() : TestMinimumDistance() {
     AddRotationMatrixOrthonormalSocpConstraint(&prog_, R_);

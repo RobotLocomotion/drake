@@ -47,7 +47,7 @@ back from that method; typically, this means "return;" should follow its use.
 */
 class DiagnosticPolicy {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DiagnosticPolicy)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DiagnosticPolicy);
   DiagnosticPolicy() = default;
 
   /* Triggers a warning. */

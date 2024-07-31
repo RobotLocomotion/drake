@@ -21,7 +21,7 @@ class SpanningForest::Tree {
  public:
   /** (Internal use only) Copy/Move constructor & assignment. Back pointer
   requires fixup afterwards. */
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Tree)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Tree);
 
   /** (Internal use only) Trees are constructed during BuildForest(). Note
   that we know the base_mobod at construction but can't know the last_mobod

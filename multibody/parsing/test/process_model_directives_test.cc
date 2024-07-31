@@ -360,7 +360,7 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
   expected_report.AddExclusionPair(
       {"nested::across_sub_models", "nested_group"});
   expected_report.AddExclusionPair({"nested_members", "nested_members"});
-  EXPECT_EQ(parser->collision_filter_groups(), expected_report);
+  EXPECT_EQ(parser->GetCollisionFilterGroups(), expected_report);
 }
 
 // Test collision filter groups in ModelDirectives.

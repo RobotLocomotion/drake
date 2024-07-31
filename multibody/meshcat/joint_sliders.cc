@@ -69,7 +69,7 @@ std::map<int, std::string> GetPositionNames(
 
   // Map all joints into the positions-to-name result.
   std::map<int, std::string> result;
-  for (JointIndex i{0}; i < plant->num_joints(); ++i) {
+  for (JointIndex i : plant->GetJointIndices()) {
     const Joint<T>& joint = plant->get_joint(i);
     for (int j = 0; j < joint.num_positions(); ++j) {
       const int position_index = joint.position_start() + j;
@@ -345,4 +345,4 @@ void JointSliders<T>::SetPositions(const Eigen::VectorXd& q) {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::meshcat::JointSliders)
+    class ::drake::multibody::meshcat::JointSliders);

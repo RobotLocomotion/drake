@@ -29,7 +29,7 @@ using render::RenderCameraCore;
  reports if it has been called.  */
 class TestShader final : public ShaderProgram {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestShader)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestShader);
 
   struct Data {
     int i_value{-1};
@@ -70,10 +70,10 @@ class TestShader final : public ShaderProgram {
   // against these values to make sure the right values are passed as expected.
   void SetExpectedModelViewComponents(const Eigen::Matrix4f& X_CW,
                                       const Eigen::Matrix4f& T_WM,
-                                      const Eigen::Matrix4f& X_WG) {
+                                      const Eigen::Matrix3f& N_WM) {
     X_CW_expected_ = X_CW;
     T_WM_expected_ = T_WM;
-    X_WG_expected_ = X_WG;
+    N_WM_expected_ = N_WM;
   }
 
  private:
@@ -99,12 +99,11 @@ class TestShader final : public ShaderProgram {
   // the right value is passed to the right parameter.
   void DoSetModelViewMatrix(const Eigen::Matrix4f& X_CW,
                             const Eigen::Matrix4f& T_WM,
-                            const Eigen::Matrix4f& X_WG,
-                            const Eigen::Vector3d&) const override {
+                            const Eigen::Matrix3f& N_WM) const override {
     do_mv_matrix_called_ = true;
     EXPECT_TRUE(CompareMatrices(X_CW, X_CW_expected_));
     EXPECT_TRUE(CompareMatrices(T_WM, T_WM_expected_));
-    EXPECT_TRUE(CompareMatrices(X_WG, X_WG_expected_));
+    EXPECT_TRUE(CompareMatrices(N_WM, N_WM_expected_));
   }
 
   bool do_configure_uniforms_called_{false};
@@ -114,7 +113,7 @@ class TestShader final : public ShaderProgram {
 
   Eigen::Matrix4f X_CW_expected_;
   Eigen::Matrix4f T_WM_expected_;
-  Eigen::Matrix4f X_WG_expected_;
+  Eigen::Matrix3f N_WM_expected_;
   int magic_number_{};
 };
 
@@ -140,6 +139,7 @@ constexpr char kFragmentSource[] = R"""(
 
 }  // namespace
 
+using Eigen::Matrix3f;
 using Eigen::Matrix4f;
 using Eigen::Vector3d;
 using std::string;
@@ -441,11 +441,12 @@ TEST_F(ShaderProgramTest, SetModelViewMatrix) {
   const Vector3d scale(0.5, 2, 4);
   Matrix4f T_WM = X_WG.GetAsMatrix4().cast<float>();  // Except for the scale.
   for (int i = 0; i < 3; ++i) T_WM.col(i) *= scale(i);
+  Matrix3f N_WM = X_WG.rotation().matrix().cast<float>();
+  for (int i = 0; i < 3; ++i) N_WM.col(i) /= scale(i);
   ASSERT_FALSE(test_shader.DoSetModelViewMatrixCalled());
-  test_shader.SetExpectedModelViewComponents(X_CW, T_WM,
-                                             X_WG.GetAsMatrix4().cast<float>());
+  test_shader.SetExpectedModelViewComponents(X_CW, T_WM, N_WM);
   shader.Use();
-  shader.SetModelViewMatrix(X_CW, X_WG, scale);
+  shader.SetModelViewMatrix(X_CW, T_WM, N_WM);
   shader.Unuse();
   ASSERT_TRUE(test_shader.DoSetModelViewMatrixCalled());
 

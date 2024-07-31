@@ -11,7 +11,7 @@ namespace multibody {
 /// triangular domains.
 class TriangleQuadratureRule {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TriangleQuadratureRule)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TriangleQuadratureRule);
   TriangleQuadratureRule() = default;
   virtual ~TriangleQuadratureRule() {}
 

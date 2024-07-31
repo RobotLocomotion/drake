@@ -1,10 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -184,6 +184,9 @@ drake_cc_library(
     deps = [
         ":expression",
     ],
+    implementation_deps = [
+        "//math:quadratic_form",
+    ],
 )
 
 drake_cc_googletest(
@@ -273,11 +276,11 @@ drake_cc_library(
     name = "replace_bilinear_terms",
     srcs = ["replace_bilinear_terms.cc"],
     hdrs = ["replace_bilinear_terms.h"],
-    interface_deps = [
+    deps = [
         "//common:essential",
         "//common/symbolic:expression",
     ],
-    deps = [
+    implementation_deps = [
         "//common/symbolic:polynomial",
     ],
 )

@@ -9,6 +9,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/value.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
@@ -176,7 +177,7 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
 }
 
 /* Create an lcm message for a deformable mesh representation of the geometry
- described by `deformable_data`.
+ described by the input parameters.
 
  The geometry data message is marked as a MESH, but rather than having a
  path to a parseable file stored in it, the actual mesh data is stored.
@@ -184,13 +185,21 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
  geometry is set to identity because the vertex positions are expressed in the
  world frame.
 
- When the Mesh shape specification supports in-memory mesh definitions, this
- can be rolled into ShapeToLcm and it will more fully share that class's code
- for handling color. */
+ @param[in] name              The name of the geometry.
+ @param[in] vertex_positions  The positions of the mesh vertices in the world
+                              frame.
+ @param[in] render_mesh       Describes the connectivity and the material of the
+                              mesh. Other information from render_mesh (e.g the
+                              uv coordinates and the normals) are unused.
+                              Currently only the diffuse color part of the
+                              material is used. Other information about the
+                              material is discarded.
+ @param[in] default_diffuse   The diffuse color of the geometry if no material
+                              is specified in `render_mesh`. */
 template <typename T>
 lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
-    const VectorX<T>& volume_vertex_positions,
-    const internal::DeformableMeshData& deformable_data, const Rgba& in_color) {
+    const std::string& name, const VectorX<T>& vertex_positions,
+    const internal::RenderMesh& render_mesh, const Rgba& default_diffuse) {
   lcmt_viewer_geometry_data geometry_data;
   // The pose is unused and set to identity.
   geometry_data.quaternion[0] = 1;
@@ -201,9 +210,16 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   geometry_data.position[1] = 0;
   geometry_data.position[2] = 0;
 
-  geometry_data.string_data = deformable_data.name;
+  geometry_data.string_data = name;
 
-  EigenMapView(geometry_data.color) = in_color.rgba().cast<float>();
+  // Right now we only support a single diffuse color as the visualization
+  // material. Textures are not supported. If a material is specified in the
+  // given render mesh, use its diffuse color; otherwise use the default diffuse
+  // color.
+  const Rgba& diffuse_color = render_mesh.material.has_value()
+                                  ? render_mesh.material->diffuse
+                                  : default_diffuse;
+  EigenMapView(geometry_data.color) = diffuse_color.rgba().cast<float>();
 
   // We can define the mesh in the float data as:
   // V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
@@ -213,9 +229,11 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   //   N: 3V, the number of floating point values for the V vertices.
   //   M: 3T, the number of vertex indices for the T triangles.
   geometry_data.type = geometry_data.MESH;
-
-  const int num_tris = deformable_data.surface_triangles.size();
-  const int num_verts = deformable_data.surface_to_volume_vertices.size();
+  const Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor>&
+      triangles = render_mesh.indices;
+  const int num_tris = render_mesh.indices.rows();
+  const int num_verts = render_mesh.positions.rows();
+  DRAKE_DEMAND(3 * num_verts == vertex_positions.size());
   const int header_floats = 2;
   geometry_data.num_float_data = header_floats + 3 * num_tris + 3 * num_verts;
   geometry_data.float_data.resize(geometry_data.num_float_data);
@@ -232,18 +250,12 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   int t_index = t_start_index - 1;
 
   for (int f = 0; f < num_tris; ++f) {
-    const Vector3<int>& face = deformable_data.surface_triangles[f];
     for (int fv = 0; fv < 3; ++fv) {
-      float_data[++t_index] = face[fv];
+      float_data[++t_index] = triangles(f, fv);
     }
   }
-  for (int i = 0; i < num_verts; ++i) {
-    // v_i is the index into the volume mesh
-    const int v_i = deformable_data.surface_to_volume_vertices[i];
-    for (int d = 0; d < 3; ++d) {
-      float_data[++v_index] =
-          ExtractDoubleOrThrow(volume_vertex_positions[3 * v_i + d]);
-    }
+  for (int i = 0; i < 3 * num_verts; ++i) {
+    float_data[++v_index] = ExtractDoubleOrThrow(vertex_positions[i]);
   }
   // v_index and t_index end with the index of the last element added, so one
   // less than the expected number, hence the "+ 1". So, the vertex index should
@@ -254,132 +266,26 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   return geometry_data;
 }
 
-/* Analyzes the tetrahedral mesh topology of the deformble geometry with `g_id`
- to do the following:
-  1. Build a surface mesh from each volume mesh.
-  2. Create a mapping from surface vertex to volume vertex for each mesh.
-  3. Record the expected number of vertices referenced by each tet mesh.
- Store the results in DeformableMeshData.
- @pre g_id corresponds to a deformable geometry. */
-template <typename T>
-internal::DeformableMeshData MakeDeformableMeshData(
-    GeometryId g_id, const SceneGraphInspector<T>& inspector) {
-  /* For each tet mesh, extract all the border triangles. Those are the
-   triangles that are only referenced by a single tet. So, for every tet, we
-   examine its four constituent triangle and determine if any other tet
-   shares it. Any triangle that is only referenced once is a border triangle.
-   Each triangle has a unique key: a SortedTriplet (so the ordering of the
-   triangle vertex indices won't matter). The first time we see a triangle, we
-   add it to a map. The second time we see the triangle, we remove it. When
-   we're done, the keys in the map will be those triangles referenced only once.
-   The values in the map represent the triangle, with the vertex indices
-   ordered so that they point *out* of the tetrahedron. Therefore,
-   they will also point outside of the mesh. A typical tetrahedral element
-   looks like:
-
-       p2 *
-          |
-          |
-       p3 *---* p0
-         /
-        /
-    p1 *
-
-   The index order for a particular tetrahedron has the order [p0, p1, p2,
-   p3]. These local indices enumerate each of the tet triangles with
-   outward-pointing normals with respect to the right-hand rule. */
-  const array<array<int, 3>, 4> local_indices{
-      {{{1, 0, 2}}, {{3, 0, 1}}, {{3, 1, 2}}, {{2, 0, 3}}}};
-
-  const VolumeMesh<double>* mesh = inspector.GetReferenceMesh(g_id);
-  DRAKE_DEMAND(mesh != nullptr);
-
-  std::map<SortedTriplet<int>, array<int, 3>> border_triangles;
-  for (const VolumeElement& tet : mesh->tetrahedra()) {
-    for (const array<int, 3>& tet_triangle : local_indices) {
-      const array<int, 3> tri{tet.vertex(tet_triangle[0]),
-                              tet.vertex(tet_triangle[1]),
-                              tet.vertex(tet_triangle[2])};
-      const SortedTriplet triangle_key(tri[0], tri[1], tri[2]);
-      // Here we rely on the fact that at most two tets would share a common
-      // triangle.
-      if (auto itr = border_triangles.find(triangle_key);
-          itr != border_triangles.end()) {
-        border_triangles.erase(itr);
-      } else {
-        border_triangles[triangle_key] = tri;
-      }
-    }
-  }
-  /* Record the expected minimum number of vertex positions to be received.
-   For simplicity we choose a generous upper bound: the total number of
-   vertices in the tetrahedral mesh, even though we really only need the
-   positions of the vertices on the surface. */
-  // TODO(xuchenhan-tri) It might be worthwhile to make largest_index the
-  //  largest index that lies on the surface. Then, when we create our meshes,
-  //  if we intentionally construct them so that the surface vertices come
-  //  first, we will process a very compact representation.
-  const int volume_vertex_count = mesh->num_vertices();
-
-  /* Using a set because the vertices will be nicely ordered. Ideally, we'll
-   be extracting a subset of the vertex positions from the input port. We
-   optimize cache coherency if we march in a monotonically increasing pattern.
-   So, we'll map triangle vertex indices to volume vertex indices in a
-   strictly monotonically increasing relationship. */
-  set<int> unique_vertices;
-  for (const auto& [triangle_key, triangle] : border_triangles) {
-    unused(triangle_key);
-    for (int j = 0; j < 3; ++j) unique_vertices.insert(triangle[j]);
-  }
-
-  /* This is the *second* documented responsibility of this function: Populate
-   the mapping from surface to volume so that we can efficiently extract the
-   *surface* vertex positions from the *volume* vertex input. */
-  vector<int> surface_to_volume_vertices;
-  surface_to_volume_vertices.insert(surface_to_volume_vertices.begin(),
-                                    unique_vertices.begin(),
-                                    unique_vertices.end());
-
-  /* The border triangles all include indices into the volume vertices. To turn
-   them into surface triangles, they need to include indices into the surface
-   vertices. Create the volume index --> surface map to facilitate the
-   transformation. */
-  const int surface_vertex_count =
-      static_cast<int>(surface_to_volume_vertices.size());
-  map<int, int> volume_to_surface;
-  for (int j = 0; j < surface_vertex_count; ++j) {
-    volume_to_surface[surface_to_volume_vertices[j]] = j;
-  }
-
-  /* This is the *first* documented responsibility: Create the topology of the
-   surface triangle mesh for each volume mesh. Each triangle consists of three
-   indices into the set of *surface* vertex positions. */
-  vector<Vector3<int>> surface_triangles;
-  surface_triangles.reserve(border_triangles.size());
-  for (auto& [triangle_key, face] : border_triangles) {
-    unused(triangle_key);
-    surface_triangles.emplace_back(volume_to_surface[face[0]],
-                                   volume_to_surface[face[1]],
-                                   volume_to_surface[face[2]]);
-  }
-
-  // TODO(xuchenhan-tri): Read the color of the mesh from properties.
-  return {g_id, inspector.GetName(g_id), std::move(surface_to_volume_vertices),
-          std::move(surface_triangles), volume_vertex_count};
-}
-
 // Simple class for converting shape specifications into LCM-compatible shapes.
 class ShapeToLcm : public ShapeReifier {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShapeToLcm)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShapeToLcm);
 
   ShapeToLcm() = default;
   ~ShapeToLcm() override = default;
 
   lcmt_viewer_geometry_data Convert(const Shape& shape,
                                     const RigidTransformd& X_PG,
+                                    const DrakeVisualizerParams& params,
                                     const Rgba& in_color) {
     X_PG_ = X_PG;
+    // We're capturing the provided params so it is available to the
+    // ImplementGeometry() functions. We'll make sure it's cleared upon
+    // completion.
+    ScopeExit clear_params([this]() {
+      this->params_ = nullptr;
+    });
+    params_ = &params;
     // NOTE: Reify *may* change X_PG_ based on the shape. For example, the
     // half-space requires an additional offset to shift the box representing
     // the plane *to* the plane.
@@ -420,14 +326,7 @@ class ShapeToLcm : public ShapeReifier {
   }
 
   void ImplementGeometry(const Convex& convex, void*) override {
-    const TriangleSurfaceMesh<double> tri_mesh =
-        internal::MakeTriangleFromPolygonMesh(convex.GetConvexHull());
-    // Note: the transform X_PG and color are dummy values; ShapeToLcm will set
-    // them when we return from this Convex-specific callback.
-    // We can ignore the convex.scale() because it is already incorporated in
-    // the convex hull.
-    geometry_data_ =
-        MakeFacetedMeshDataForLcm(tri_mesh, RigidTransformd{}, Rgba());
+    geometry_data_ = MakeMeshDataForConvexHull(convex.GetConvexHull());
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void*) override {
@@ -465,6 +364,15 @@ class ShapeToLcm : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void*) override {
+    // ShapeToLcm::Convert() only gets called if we haven't already dealt with
+    // the possibility of needing to display a hydroelastic representation.
+    // So, here, we only need to handle the case of proximity role requiring
+    // the convex hull.
+    if (params_->role == Role::kProximity) {
+      geometry_data_ = MakeMeshDataForConvexHull(mesh.GetConvexHull());
+      return;
+    }
+    // No specific mesh beat out the mesh file, so we'll simply send that.
     geometry_data_.type = geometry_data_.MESH;
     geometry_data_.num_float_data = 3;
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
@@ -480,9 +388,23 @@ class ShapeToLcm : public ShapeReifier {
   }
 
  private:
+  // Prepares the geometry message for a convex hull.
+  lcmt_viewer_geometry_data MakeMeshDataForConvexHull(
+      const PolygonSurfaceMesh<double>& hull) {
+    // Convert polygonal surface mesh to triangle surface mesh.
+    const TriangleSurfaceMesh<double> tri_mesh(
+        internal::MakeTriangleFromPolygonMesh(hull));
+    // Note: the transform X_PG and color are dummy values; ShapeToLcm
+    // will set them when we return from this Mesh-specific callback. We
+    // can ignore the mesh.scale() because it is already incorporated in
+    // the convex hull or the hydroelastic mesh.
+    return MakeFacetedMeshDataForLcm(tri_mesh, RigidTransformd{}, Rgba());
+  }
+
   lcmt_viewer_geometry_data geometry_data_{};
   // The transform from the geometry frame to its parent frame.
   RigidTransformd X_PG_;
+  const DrakeVisualizerParams* params_{};
 };
 
 }  // namespace
@@ -605,11 +527,6 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
                               &DrakeVisualizer<T>::CalcDynamicFrameData,
                               {this->nothing_ticket()})
           .cache_index();
-  deformable_data_cache_index_ =
-      this->DeclareCacheEntry("deformable_data",
-                              &DrakeVisualizer<T>::CalcDeformableMeshData,
-                              {this->nothing_ticket()})
-          .cache_index();
 }
 
 template <typename T>
@@ -632,15 +549,13 @@ EventStatus DrakeVisualizer<T>::SendGeometryMessage(
     SendLoadNonDeformableMessage(
         query_object.inspector(), params_, RefreshDynamicFrameData(context),
         ExtractDoubleOrThrow(context.get_time()), lcm_);
-    RefreshDeformableMeshData(context);
   }
 
   SendDrawNonDeformableMessage(query_object, params_,
                                EvalDynamicFrameData(context),
                                ExtractDoubleOrThrow(context.get_time()), lcm_);
   SendDeformableGeometriesMessage(
-      query_object, params_, EvalDeformableMeshData(context),
-      ExtractDoubleOrThrow(context.get_time()), lcm_);
+      query_object, params_, ExtractDoubleOrThrow(context.get_time()), lcm_);
 
   return EventStatus::Succeeded();
 }
@@ -653,9 +568,11 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
     lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_load_robot message{};
 
-  // Add the world frame if it has geometries with the specified role.
-  const int anchored_count = inspector.NumGeometriesForFrameWithRole(
-      inspector.world_frame_id(), params.role);
+  // Add the world frame if it has rigid geometries with the specified role.
+  const int anchored_count =
+      inspector.NumGeometriesForFrameWithRole(inspector.world_frame_id(),
+                                              params.role) -
+      inspector.NumDeformableGeometriesWithRole(params.role);
   const int frame_count =
       static_cast<int>(dynamic_frames.size()) + (anchored_count > 0 ? 1 : 0);
 
@@ -690,7 +607,8 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
                              color);
       }
     }
-    return ShapeToLcm().Convert(shape, inspector.GetPoseInFrame(g_id), color);
+    return ShapeToLcm().Convert(shape, inspector.GetPoseInFrame(g_id), params,
+                                color);
   };
 
   int link_index = 0;
@@ -775,30 +693,31 @@ void DrakeVisualizer<T>::SendDrawNonDeformableMessage(
 template <typename T>
 void DrakeVisualizer<T>::SendDeformableGeometriesMessage(
     const QueryObject<T>& query_object, const DrakeVisualizerParams& params,
-    const vector<internal::DeformableMeshData>& deformable_data, double time,
-    lcm::DrakeLcmInterface* lcm) {
+    double time, lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_link_data message{};
   message.name = "deformable_geometries";
   message.robot_num = 0;  // robot_num = 0 corresponds to world frame.
-  message.num_geom = deformable_data.size();
-  message.geom.resize(message.num_geom);
-  for (int i = 0; i < message.num_geom; ++i) {
-    const internal::DeformableMeshData& data = deformable_data[i];
-    const GeometryId g_id = data.geometry_id;
-    const VectorX<T>& vertex_positions =
-        query_object.GetConfigurationsInWorld(g_id);
-    if (vertex_positions.size() <= data.volume_vertex_count) {
-      throw std::logic_error(fmt::format(
-          "For mesh named '{}', The number of given vertex positions "
-          "({}) is smaller than the "
-          "minimum expected number of positions ({}).",
-          data.name, vertex_positions.size(), data.volume_vertex_count));
+  const SceneGraphInspector<T>& inspector = query_object.inspector();
+  const std::vector<GeometryId> deformable_geometries =
+      inspector.GetAllDeformableGeometryIds();
+  for (const auto& g_id : deformable_geometries) {
+    // If the geometry doesn't have the role that the visualizer wants to
+    // visualize, skip it.
+    if (inspector.GetProperties(g_id, params.role) == nullptr) {
+      continue;
     }
-    // TODO(xuchenhan-tri): We should use the color from the property of the
-    // geometry when available.
-    message.geom[i] =
-        MakeDeformableSurfaceMesh(vertex_positions, data, params.default_color);
+    const std::vector<internal::RenderMesh>& render_meshes =
+        inspector.GetDrivenRenderMeshes(g_id, params.role);
+    const std::vector<VectorX<T>> vertex_positions =
+        query_object.GetDrivenMeshConfigurationsInWorld(g_id, params.role);
+    DRAKE_DEMAND(ssize(vertex_positions) == ssize(render_meshes));
+    for (int j = 0; j < ssize(vertex_positions); ++j) {
+      message.geom.emplace_back(MakeDeformableSurfaceMesh(
+          inspector.GetName(g_id), vertex_positions[j], render_meshes[j],
+          params.default_color));
+    }
   }
+  message.num_geom = message.geom.size();
   std::string channel =
       MakeLcmChannelNameForRole("DRAKE_VIEWER_DEFORMABLE", params);
   lcm::Publish(lcm, channel, message, time);
@@ -856,40 +775,6 @@ void DrakeVisualizer<T>::PopulateDynamicFrameData(
 }
 
 template <typename T>
-void DrakeVisualizer<T>::CalcDeformableMeshData(
-    const Context<T>& context,
-    vector<internal::DeformableMeshData>* deformable_data) const {
-  DRAKE_DEMAND(deformable_data != nullptr);
-  deformable_data->clear();
-  const auto& query_object =
-      query_object_input_port().template Eval<QueryObject<T>>(context);
-  const auto& inspector = query_object.inspector();
-  const std::vector<GeometryId> deformable_geometries =
-      inspector.GetAllDeformableGeometryIds();
-  for (const auto g_id : deformable_geometries) {
-    deformable_data->emplace_back(MakeDeformableMeshData(g_id, inspector));
-  }
-}
-
-template <typename T>
-const vector<internal::DeformableMeshData>&
-DrakeVisualizer<T>::RefreshDeformableMeshData(const Context<T>& context) const {
-  // We'll need to make sure our knowledge of deformable data can get updated.
-  this->get_cache_entry(deformable_data_cache_index_)
-      .get_mutable_cache_entry_value(context)
-      .mark_out_of_date();
-
-  return EvalDeformableMeshData(context);
-}
-
-template <typename T>
-const vector<internal::DeformableMeshData>&
-DrakeVisualizer<T>::EvalDeformableMeshData(const Context<T>& context) const {
-  return this->get_cache_entry(deformable_data_cache_index_)
-      .template Eval<vector<internal::DeformableMeshData>>(context);
-}
-
-template <typename T>
 typename LeafSystem<T>::GraphvizFragment
 DrakeVisualizer<T>::DoGetGraphvizFragment(
     const typename LeafSystem<T>::GraphvizFragmentParams& params) const {
@@ -908,4 +793,4 @@ DrakeVisualizer<T>::DoGetGraphvizFragment(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::DrakeVisualizer)
+    class ::drake::geometry::DrakeVisualizer);

@@ -12,7 +12,7 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 # The library target for this tool.
-py_library(
+drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     deps = ["//tools:module_py"],
@@ -43,7 +43,7 @@ drake_py_unittest(
     ],
     deps = [
         ":module_py",
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

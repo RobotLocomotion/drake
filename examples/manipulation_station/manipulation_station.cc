@@ -72,7 +72,7 @@ namespace {
 // @endsystem
 class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternalGeneralizedForcesComputer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternalGeneralizedForcesComputer);
 
   ExternalGeneralizedForcesComputer(
       const multibody::MultibodyPlant<double>* plant, int iiwa_num_dofs)
@@ -295,21 +295,13 @@ MakeD415CameraModel(const std::string& renderer_name) {
 
 template <typename T>
 ManipulationStation<T>::ManipulationStation(double time_step)
-    : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
-      owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
+    : builder_(std::make_unique<systems::DiagramBuilder<T>>()),
       // Given the controller does not compute accelerations, it is irrelevant
-      // whether the plant is continuous or discrete. We make it
-      // discrete to avoid warnings about joint limits.
+      // whether the plant is continuous or discrete. We make it discrete to
+      // avoid warnings about joint limits.
       owned_controller_plant_(std::make_unique<MultibodyPlant<T>>(1.0)) {
-  // This class holds the unique_ptrs explicitly for plant and scene_graph
-  // until Finalize() is called (when they are moved into the Diagram). Grab
-  // the raw pointers, which should stay valid for the lifetime of the Diagram.
-  plant_ = owned_plant_.get();
-  scene_graph_ = owned_scene_graph_.get();
-  plant_->RegisterAsSourceForSceneGraph(scene_graph_);
-  scene_graph_->set_name("scene_graph");
-  plant_->set_name("plant");
-
+  std::tie(plant_, scene_graph_) =
+      multibody::AddMultibodyPlantSceneGraph(builder_.get(), time_step);
   this->set_name("manipulation_station");
 }
 
@@ -608,7 +600,7 @@ void ManipulationStation<T>::Finalize(
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto& body_index : object_ids_) {
         const multibody::RigidBody<T>& body = plant_->get_body(body_index);
-        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomTranslationDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
       }
       break;
@@ -623,7 +615,7 @@ void ManipulationStation<T>::Finalize(
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto& body_index : object_ids_) {
         const multibody::RigidBody<T>& body = plant_->get_body(body_index);
-        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomTranslationDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
       }
       break;
@@ -638,7 +630,7 @@ void ManipulationStation<T>::Finalize(
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto& body_index : object_ids_) {
         const multibody::RigidBody<T>& body = plant_->get_body(body_index);
-        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomTranslationDistribution(body, xyz);
       }
       break;
     }
@@ -659,16 +651,8 @@ void ManipulationStation<T>::Finalize(
     }
   }
 
-  systems::DiagramBuilder<T> builder;
-
-  builder.AddSystem(std::move(owned_plant_));
-  builder.AddSystem(std::move(owned_scene_graph_));
-
-  builder.Connect(
-      plant_->get_geometry_poses_output_port(),
-      scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
-  builder.Connect(scene_graph_->get_query_output_port(),
-                  plant_->get_geometry_query_input_port());
+  DRAKE_DEMAND(builder_ != nullptr);
+  systems::DiagramBuilder<T>& builder = *builder_;
 
   const int num_iiwa_positions =
       plant_->num_positions(iiwa_model_.model_instance);
@@ -883,8 +867,9 @@ void ManipulationStation<T>::Finalize(
   // TODO(SeanCurtis-TRI) It seems with the scene graph query object port
   // exported, this output port is superfluous/undesirable. This port
   // contains the FramePoseVector that connects MBP to SG. Definitely better
-  // to simply rely on the query object output port.
-  builder.ExportOutput(plant_->get_geometry_poses_output_port(),
+  // to simply rely on the query object output port. (Also the port name
+  // no longer matches what MbP provides.)
+  builder.ExportOutput(plant_->get_geometry_pose_output_port(),
                        "geometry_poses");
 
   builder.BuildInto(this);

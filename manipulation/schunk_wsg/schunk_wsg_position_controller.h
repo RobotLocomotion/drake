@@ -61,7 +61,7 @@ namespace schunk_wsg {
 /// @ingroup manipulation_systems
 class SchunkWsgPdController : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPdController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPdController);
 
   /// Initialize the controller.  The gain parameters are set based
   /// limited tuning in simulation with a kuka picking up small objects.
@@ -141,7 +141,7 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
 /// @ingroup manipulation_systems
 class SchunkWsgPositionController : public systems::Diagram<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionController);
 
   /// Initialize the controller.  The default @p time_step is set to match
   /// the update rate of the wsg firmware.  The gain parameters are set based

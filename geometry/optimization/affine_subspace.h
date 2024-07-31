@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {
@@ -29,7 +30,7 @@ subspace is bounded if it is a point, which is when the basis has zero columns.
 @ingroup geometry_optimization */
 class AffineSubspace final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AffineSubspace)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AffineSubspace);
 
   /** Constructs a default (zero-dimensional, nonempty) affine subspace. */
   AffineSubspace();
@@ -86,6 +87,9 @@ class AffineSubspace final : public ConvexSet {
   should be a vector in the ambient space, and the corresponding column of the
   output will be its projection onto the affine subspace.
   @pre x.rows() == ambient_dimension() */
+  DRAKE_DEPRECATED(
+      "2024-08-01",
+      "Projection has moved to `ConvexSet`; use `Projection()` instead.")
   Eigen::MatrixXd Project(const Eigen::Ref<const Eigen::MatrixXd>& x) const;
 
   /** Given a point x in the standard basis of the ambient space, returns the
@@ -141,8 +145,8 @@ class AffineSubspace final : public ConvexSet {
 
   std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;
 
-  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final;
+  std::optional<bool> DoPointInSetShortcut(
+      const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>
@@ -169,6 +173,10 @@ class AffineSubspace final : public ConvexSet {
       const final;
 
   double DoCalcVolume() const final;
+
+  std::vector<std::optional<double>> DoProjectionShortcut(
+      const Eigen::Ref<const Eigen::MatrixXd>& points,
+      EigenPtr<Eigen::MatrixXd> projected_points) const final;
 
   // Note, we store the original basis as given, plus the QR decomposition, for
   // later use in many of the associated methods. We do not store this if

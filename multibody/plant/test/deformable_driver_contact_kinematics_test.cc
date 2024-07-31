@@ -103,11 +103,11 @@ class DeformableDriverContactKinematicsTest
     systems::DiagramBuilder<double> builder;
     constexpr double kDt = 0.01;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
-    auto deformable_model = make_unique<DeformableModel<double>>(plant_);
-    deformable_body_id_ = RegisterDeformableOctahedron(deformable_model.get(),
-                                                       "deformable", X_WF_);
-    model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    DeformableModel<double>& deformable_model =
+        plant_->mutable_deformable_model();
+    deformable_body_id_ =
+        RegisterDeformableOctahedron(&deformable_model, "deformable", X_WF_);
+    model_ = &plant_->deformable_model();
 
     /* Define proximity properties for all rigid geometries. */
     geometry::ProximityProperties rigid_proximity_props;
@@ -146,12 +146,13 @@ class DeformableDriverContactKinematicsTest
       /* The pose of the deformable body in the rigid body's frame, X_BF, is
        equal to X_WF because X_WB is identity. */
       const RigidTransformd X_BF = X_WF_;
-      model_->AddFixedConstraint(deformable_body_id_,
-                                 plant_->get_body(rigid_body_index_), X_BF,
-                                 geometry::Box(10, 10, 1), X_BR);
+      deformable_model.AddFixedConstraint(deformable_body_id_,
+                                          plant_->get_body(rigid_body_index_),
+                                          X_BF, geometry::Box(10, 10, 1), X_BR);
     } else {
-      model_->AddFixedConstraint(deformable_body_id_, plant_->world_body(),
-                                 X_WF_, geometry::Box(10, 10, 1), X_BR);
+      deformable_model.AddFixedConstraint(deformable_body_id_,
+                                          plant_->world_body(), X_WF_,
+                                          geometry::Box(10, 10, 1), X_BR);
     }
 
     // N.B. Deformables are only supported with the SAP solver.
@@ -166,9 +167,6 @@ class DeformableDriverContactKinematicsTest
     driver_ = manager_->deformable_driver();
     DRAKE_DEMAND(driver_ != nullptr);
 
-    builder.Connect(model_->vertex_positions_port(),
-                    scene_graph_->get_source_configuration_port(
-                        plant_->get_source_id().value()));
     diagram_ = builder.Build();
     context_ = diagram_->CreateDefaultContext();
 
@@ -220,16 +218,16 @@ class DeformableDriverContactKinematicsTest
     MultibodyPlantConfig config{.time_step = kDt,
                                 .discrete_contact_approximation = "sap"};
     std::tie(plant_, scene_graph_) = AddMultibodyPlant(config, &builder);
-    auto deformable_model = make_unique<DeformableModel<double>>(plant_);
-    deformable_body_id_ = RegisterDeformableOctahedron(deformable_model.get(),
-                                                       "deformable", X_WF_);
+    DeformableModel<double>& deformable_model =
+        plant_->mutable_deformable_model();
+    deformable_body_id_ =
+        RegisterDeformableOctahedron(&deformable_model, "deformable", X_WF_);
     /* Sets up a second deformable body so that its top half intersects the
      bottom half of the first deformable body. */
     deformable_body_id2_ = RegisterDeformableOctahedron(
-        deformable_model.get(), "deformable2",
+        &deformable_model, "deformable2",
         X_WF_ * RigidTransformd(Vector3d(0, 0, -1.25)));
-    model_ = deformable_model.get();
-    plant_->AddPhysicalModel(std::move(deformable_model));
+    model_ = &plant_->deformable_model();
 
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
@@ -238,9 +236,6 @@ class DeformableDriverContactKinematicsTest
     driver_ = manager_->deformable_driver();
     DRAKE_DEMAND(driver_ != nullptr);
 
-    builder.Connect(model_->vertex_positions_port(),
-                    scene_graph_->get_source_configuration_port(
-                        plant_->get_source_id().value()));
     diagram_ = builder.Build();
     context_ = diagram_->CreateDefaultContext();
 
@@ -506,7 +501,7 @@ class DeformableDriverContactKinematicsTest
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
   std::unique_ptr<systems::Diagram<double>> diagram_;
-  DeformableModel<double>* model_{nullptr};
+  const DeformableModel<double>* model_{nullptr};
   const CompliantContactManager<double>* manager_{nullptr};
   const DeformableDriver<double>* driver_{nullptr};
   std::unique_ptr<Context<double>> context_;
@@ -595,14 +590,12 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   systems::DiagramBuilder<double> builder;
   constexpr double kDt = 0.01;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, kDt);
-  auto deformable_model = make_unique<DeformableModel<double>>(&plant);
+  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
   DeformableBodyId body_id = RegisterDeformableOctahedron(
-      deformable_model.get(), "deformable", RigidTransformd::Identity());
-  DeformableModel<double>* model = deformable_model.get();
+      &deformable_model, "deformable", RigidTransformd::Identity());
   /* Put the bottom vertex under bc. */
-  model->SetWallBoundaryCondition(body_id, Vector3d(0, 0, -0.5),
-                                  Vector3d(0, 0, 1));
-  plant.AddPhysicalModel(std::move(deformable_model));
+  deformable_model.SetWallBoundaryCondition(body_id, Vector3d(0, 0, -0.5),
+                                            Vector3d(0, 0, 1));
 
   /* Define proximity properties for all rigid geometries. */
   geometry::ProximityProperties rigid_proximity_props;
@@ -632,9 +625,6 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   const DeformableDriver<double>* driver = manager->deformable_driver();
   ASSERT_NE(driver, nullptr);
 
-  builder.Connect(
-      model->vertex_positions_port(),
-      scene_graph.get_source_configuration_port(plant.get_source_id().value()));
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
 
@@ -645,7 +635,7 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   EXPECT_GT(contact_pairs.size(), 0);
   const PartialPermutation& vertex_permutation =
       DeformableDriverTest::EvalVertexPermutation(
-          *driver, plant_context, model->GetGeometryId(body_id));
+          *driver, plant_context, deformable_model.GetGeometryId(body_id));
   /* We know that the octahedron created as the coarsest sphere indexes the
    bottom vertex as 6 (see RegisterDeformableOctahedron). */
   const int bottom_vertex_permuted_index = vertex_permutation.permuted_index(6);
@@ -668,14 +658,12 @@ GTEST_TEST(DeformableDriverConstraintParticipation, ConstraintWithoutContact) {
   systems::DiagramBuilder<double> builder;
   constexpr double kDt = 0.01;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, kDt);
-  auto deformable_model = make_unique<DeformableModel<double>>(&plant);
+  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
   DeformableBodyId body_id = RegisterDeformableOctahedron(
-      deformable_model.get(), "deformable", RigidTransformd::Identity());
-  DeformableModel<double>* model = deformable_model.get();
-  plant.AddPhysicalModel(std::move(deformable_model));
+      &deformable_model, "deformable", RigidTransformd::Identity());
   /* Use a large box geometry to ensure that all deformable vertices are placed
    under fixed constraints. */
-  model->AddFixedConstraint(
+  deformable_model.AddFixedConstraint(
       body_id, plant.world_body(), RigidTransformd::Identity(),
       geometry::Box(10, 10, 10), RigidTransformd::Identity());
   // N.B. Deformables are only supported with the SAP solver.
@@ -688,11 +676,6 @@ GTEST_TEST(DeformableDriverConstraintParticipation, ConstraintWithoutContact) {
   plant.SetDiscreteUpdateManager(std::move(contact_manager));
   const DeformableDriver<double>* driver = manager->deformable_driver();
   ASSERT_NE(driver, nullptr);
-  // TODO(xuchenhan-tri): AddMultibodyPlant and AddMultibodyPlantSceneGraph
-  // should connect this port automatically.
-  builder.Connect(
-      model->vertex_positions_port(),
-      scene_graph.get_source_configuration_port(plant.get_source_id().value()));
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
 

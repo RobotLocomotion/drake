@@ -61,6 +61,8 @@ namespace controllers {
 template <typename T>
 class InverseDynamics final : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics);
+
   enum InverseDynamicsMode {
     /// Full inverse computation mode.
     kInverseDynamics,
@@ -69,21 +71,26 @@ class InverseDynamics final : public LeafSystem<T> {
     kGravityCompensation
   };
 
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
-
   /**
    * Constructs the InverseDynamics system.
    *
-   * @param plant Pointer to the multibody plant model. The life span of @p
-   * plant must be longer than that of this instance.
+   * @param plant Pointer to the multibody plant model. The life span of
+   * `plant` must be longer than that of this instance.
    * @param mode If set to kGravityCompensation, this instance will only
    * consider the gravity term. It also will NOT have the desired acceleration
    * input port.
+   * @param plant_context A specific context of `plant` to use for computing
+   * inverse dynamics. For example, you can use this to pass in a context with
+   * modified mass parameters.  If `nullptr`, the default context of the given
+   * `plant` is used. Note that this will be copied at time of construction, so
+   * there are no lifetime constraints.
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
-   * `true`).
+   * `true`). Also, `plant_context`, if provided, must be compatible with
+   * `plant`.
    */
   explicit InverseDynamics(const multibody::MultibodyPlant<T>* plant,
-                           InverseDynamicsMode mode = kInverseDynamics);
+                           InverseDynamicsMode mode = kInverseDynamics,
+                           const Context<T>* plant_context = nullptr);
 
   /**
    * Constructs the InverseDynamics system and takes the ownership of the
@@ -92,7 +99,8 @@ class InverseDynamics final : public LeafSystem<T> {
    * @exclude_from_pydrake_mkdoc{This overload is not bound.}
    */
   explicit InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
-                           InverseDynamicsMode mode = kInverseDynamics);
+                           InverseDynamicsMode mode = kInverseDynamics,
+                           const Context<T>* plant_context = nullptr);
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -132,13 +140,29 @@ class InverseDynamics final : public LeafSystem<T> {
   // Other constructors delegate to this private constructor.
   InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
                   const multibody::MultibodyPlant<T>* plant,
-                  InverseDynamicsMode mode);
+                  InverseDynamicsMode mode, const Context<T>* plant_context);
 
-  template <typename> friend class InverseDynamics;
+  // Helper data structure for scalar conversion.
+  struct ScalarConversionData {
+    std::unique_ptr<multibody::MultibodyPlant<T>> plant;
+    InverseDynamicsMode mode{InverseDynamicsMode::kGravityCompensation};
+    std::unique_ptr<Context<T>> plant_context;
+  };
+
+  // Helper function for the scalar conversion constructor that extracts the
+  // plant context from `other` and scalar converts it to this scalar type, T.
+  template <typename U>
+  static ScalarConversionData ScalarConvertHelper(
+      const InverseDynamics<U>& other);
+
+  // Delegate constructor for scalar conversion.
+  explicit InverseDynamics(ScalarConversionData&& data);
+
+  template <typename>
+  friend class InverseDynamics;
 
   // This is the calculator method for the output port.
-  void CalcOutputForce(const Context<T>& context,
-                       BasicVector<T>* force) const;
+  void CalcOutputForce(const Context<T>& context, BasicVector<T>* force) const;
 
   // Methods for updating cache entries.
   void SetMultibodyContext(const Context<T>&, Context<T>*) const;
@@ -169,4 +193,4 @@ class InverseDynamics final : public LeafSystem<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::controllers::InverseDynamics)
+    class ::drake::systems::controllers::InverseDynamics);

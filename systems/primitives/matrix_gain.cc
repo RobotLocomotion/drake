@@ -30,4 +30,4 @@ MatrixGain<T>::MatrixGain(const MatrixGain<U>& other)
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::MatrixGain)
+    class ::drake::systems::MatrixGain);

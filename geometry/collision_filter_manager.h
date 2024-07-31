@@ -166,7 +166,7 @@ class GeometryState;
  transient declarations in the history will throw an exception.   */
 class CollisionFilterManager {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterManager)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterManager);
 
   /** Applies the given `declaration` to the geometry state managed by `this`
    instance.

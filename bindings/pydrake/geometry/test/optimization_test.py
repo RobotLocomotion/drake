@@ -110,7 +110,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(dut.IsBounded())
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
-        self.assertTrue(dut.PointInSet(dut.Project([])))
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(dut.PointInSet(dut.Project([])))
         self.assertEqual(dut.AffineDimension(), 0)
         self.assertTrue(dut.ContainedIn(mut.AffineSubspace()))
         self.assertTrue(dut.IsNearlyEqualTo(mut.AffineSubspace()))
@@ -133,10 +134,12 @@ class TestGeometryOptimization(unittest.TestCase):
 
         test_point = np.array([43, 43, 0])
         self.assertFalse(dut.PointInSet(test_point))
-        self.assertTrue(dut.PointInSet(dut.Project(test_point)))
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(dut.PointInSet(dut.Project(test_point)))
 
-        np.testing.assert_array_equal(dut.ToGlobalCoordinates(
-            dut.ToLocalCoordinates(test_point)), dut.Project(test_point))
+        with catch_drake_warnings(expected_count=1) as w:
+            np.testing.assert_array_equal(dut.ToGlobalCoordinates(
+                dut.ToLocalCoordinates(test_point)), dut.Project(test_point))
         local_coords = np.array([1, -1])
         np.testing.assert_array_equal(dut.ToLocalCoordinates(
             dut.ToGlobalCoordinates(local_coords)),
@@ -148,7 +151,8 @@ class TestGeometryOptimization(unittest.TestCase):
         test_point_batch = np.zeros((3, 5))
         self.assertEqual(dut.ToLocalCoordinates(x=test_point_batch).shape,
                          (2, 5))
-        self.assertEqual(dut.Project(x=test_point_batch).shape, (3, 5))
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertEqual(dut.Project(x=test_point_batch).shape, (3, 5))
         local_coords_batch = np.zeros((2, 5))
         self.assertEqual(dut.ToGlobalCoordinates(y=local_coords_batch).shape,
                          (3, 5))
@@ -271,6 +275,23 @@ class TestGeometryOptimization(unittest.TestCase):
         h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
             tol=1E-9)
 
+        # Check SimplifyByIncrementalFaceTranslation binding with
+        # default input parameters.
+        h6 = h_box.SimplifyByIncrementalFaceTranslation(
+            min_volume_ratio=0.1, do_affine_transformation=True,
+            max_iterations=10, points_to_contain=np.empty((3, 0)),
+            intersecting_polytopes=[], keep_whole_intersection=False,
+            intersection_padding=0.1, random_seed=0)
+        self.assertIsInstance(h6, mut.HPolyhedron)
+        self.assertEqual(h6.ambient_dimension(), 3)
+
+        # Check Simplify MaximumVolumeInscribedAffineTransformation binding
+        # with default input parameters.
+        h7 = h6.MaximumVolumeInscribedAffineTransformation(
+            circumbody=h_box)
+        self.assertIsInstance(h7, mut.HPolyhedron)
+        self.assertEqual(h7.ambient_dimension(), 3)
+
         # This polyhedron is intentionally constructed to be an empty set.
         A_empty = np.vstack([np.eye(3), -np.eye(3)])
         b_empty = -np.ones(6)
@@ -377,6 +398,10 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(isinstance(shape, Box))
         np.testing.assert_array_equal(pose.translation(),
                                       np.zeros_like(self.b))
+        test_point = np.ones_like(self.b)
+        distance, projection = rect.Projection(points=test_point)
+        self.assertEqual(distance[0], 0.0)
+        np.testing.assert_array_equal(projection[:, 0], test_point)
 
         # Methods specific to Hyperrectangle
         np.testing.assert_array_equal(rect.lb(), -self.b)
@@ -470,7 +495,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertAlmostEqual(v_box.CalcVolume(), 8, 1E-10)
         v_unit_box = mut.VPolytope.MakeUnitBox(dim=3)
         self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
-        v_from_h = mut.VPolytope(H=mut.HPolyhedron.MakeUnitBox(dim=3))
+        v_from_h = mut.VPolytope(
+            H=mut.HPolyhedron.MakeUnitBox(dim=3), tol=1e-9)
         self.assertTrue(v_from_h.PointInSet([0, 0, 0]))
         # Test creating a vpolytope from a non-minimal set of vertices
         # 2D: Random points inside a circle
@@ -727,6 +753,9 @@ class TestGeometryOptimization(unittest.TestCase):
 
     def test_graph_of_convex_sets(self):
         options = mut.GraphOfConvexSetsOptions()
+        kMIP = mut.GraphOfConvexSets.Transcription.kMIP
+        kRelaxation = mut.GraphOfConvexSets.Transcription.kRelaxation
+        kRestriction = mut.GraphOfConvexSets.Transcription.kRestriction
         self.assertIsNone(options.convex_relaxation)
         self.assertIsNone(options.preprocessing)
         self.assertIsNone(options.max_rounded_paths)
@@ -737,14 +766,19 @@ class TestGeometryOptimization(unittest.TestCase):
         options.flow_tolerance = 1e-6
         options.rounding_seed = 1
         options.solver = ClpSolver()
+        options.restriction_solver = ClpSolver()
+        options.preprocessing_solver = ClpSolver()
         options.solver_options = SolverOptions()
         options.solver_options.SetOption(ClpSolver.id(), "scaling", 2)
-        options.rounding_solver_options = SolverOptions()
-        options.rounding_solver_options.SetOption(ClpSolver.id(), "dual", 0)
+        options.restriction_solver_options = SolverOptions()
+        options.restriction_solver_options.SetOption(ClpSolver.id(), "dual", 0)
+        options.preprocessing_solver_options = SolverOptions()
+        options.preprocessing_solver_options.SetOption(ClpSolver.id(),
+                                                       "dual", 0)
         self.assertIn("scaling",
                       options.solver_options.GetOptions(ClpSolver.id()))
-        self.assertIn(
-            "dual", options.rounding_solver_options.GetOptions(ClpSolver.id()))
+        self.assertIn("dual", options.restriction_solver_options.GetOptions(
+            ClpSolver.id()))
         self.assertIn("convex_relaxation", repr(options))
 
         spp = mut.GraphOfConvexSets()
@@ -762,7 +796,8 @@ class TestGeometryOptimization(unittest.TestCase):
             MathematicalProgramResult)
         self.assertIsInstance(
             spp.SolveConvexRestriction(active_edges=[edge0, edge1],
-                                       options=options),
+                                       options=options,
+                                       initial_guess=result),
             MathematicalProgramResult)
         self.assertEqual(
             len(
@@ -771,8 +806,58 @@ class TestGeometryOptimization(unittest.TestCase):
                                     result=result,
                                     tolerance=0.1)), 1)
 
-        self.assertIn("source", spp.GetGraphvizString(
-            result=result, show_slacks=True, precision=2, scientific=False))
+        graphviz_options = mut.GcsGraphvizOptions()
+        graphviz_options.show_slacks = True
+        graphviz_options.show_vars = True
+        graphviz_options.show_flows = True
+        graphviz_options.show_costs = True
+        graphviz_options.scientific = False
+        graphviz_options.precision = 3
+        self.assertIn(
+            "source",
+            spp.GetGraphvizString(
+                result=result, options=graphviz_options, active_path=[edge0]
+            ),
+        )
+        self.assertIn(
+            "source",
+            spp.GetGraphvizString(
+                result=result,
+                show_slacks=True,
+                show_vars=True,
+                show_flows=True,
+                show_costs=True,
+                scientific=True,
+                precision=3,
+                active_path=[edge0],
+            ),
+        )
+
+        options.max_rounded_paths = 5
+        self.assertTrue(
+            isinstance(
+                spp.SamplePaths(
+                    source=source,
+                    target=target,
+                    result=result,
+                    options=options
+                ),
+                list,
+            )
+        )
+
+        flows = {e: result.GetSolution(e.phi()) for e in spp.Edges()}
+        self.assertTrue(
+            isinstance(
+                spp.SamplePaths(
+                    source=source,
+                    target=target,
+                    flows=flows,
+                    options=options
+                ),
+                list,
+            )
+        )
 
         # Vertex
         self.assertAlmostEqual(
@@ -784,18 +869,60 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(source.name(), "source")
         self.assertIsInstance(source.x()[0], Variable)
         self.assertIsInstance(source.set(), mut.Point)
-        var, binding = source.AddCost(e=1.0+source.x()[0])
+        var, binding = source.AddCost(
+            e=1.0+source.x()[0],
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        var, binding = source.AddCost(binding=binding)
+        var, binding = source.AddCost(
+            binding=binding,
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        self.assertEqual(len(source.GetCosts()), 2)
+        self.assertEqual(len(source.GetCosts(
+            used_in_transcription={kMIP, kRelaxation, kRestriction})), 2)
         binding = source.AddConstraint(f=(source.x()[0] <= 1.0))
         self.assertIsInstance(binding, Binding[Constraint])
-        binding = source.AddConstraint(binding=binding)
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(binding, Binding[Constraint])
-        self.assertEqual(len(source.GetConstraints()), 2)
+        binding = source.AddConstraint(
+            f=(source.x()[0] <= 1.0),
+            use_in_transcription={kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            f=(source.x()[0] <= 1.0),
+            use_in_transcription={kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            f=(source.x()[0] <= 1.0),
+            use_in_transcription={kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(
+            binding=binding,
+            use_in_transcription={kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        self.assertEqual(
+            len(source.GetConstraints(used_in_transcription={kMIP})),
+            len(source.GetConstraints(used_in_transcription={kRelaxation}))
+        )
+        self.assertEqual(
+            len(source.GetConstraints(used_in_transcription={kRelaxation})),
+            len(source.GetConstraints(used_in_transcription={kRestriction}))
+        )
+        self.assertNotEqual(
+            len(source.GetConstraints(used_in_transcription={kRestriction})),
+            len(source.GetConstraints())
+        )
         self.assertEqual(len(source.incoming_edges()), 0)
         self.assertEqual(len(source.outgoing_edges()), 2)
         self.assertEqual(len(target.incoming_edges()), 2)
@@ -814,18 +941,61 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(edge0.phi(), Variable)
         self.assertIsInstance(edge0.xu()[0], Variable)
         self.assertIsInstance(edge0.xv()[0], Variable)
-        var, binding = edge0.AddCost(e=1.0+edge0.xu()[0])
+        var, binding = edge0.AddCost(
+            e=1.0+edge0.xu()[0],
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        var, binding = edge0.AddCost(binding=binding)
+        var, binding = edge0.AddCost(
+            binding=binding,
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        self.assertEqual(len(edge0.GetCosts()), 2)
+        self.assertEqual(len(edge0.GetCosts(
+            used_in_transcription={kMIP, kRelaxation, kRestriction}
+            )), 2)
         binding = edge0.AddConstraint(f=(edge0.xu()[0] == edge0.xv()[0]))
         self.assertIsInstance(binding, Binding[Constraint])
-        binding = edge0.AddConstraint(binding=binding)
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={kMIP, kRelaxation, kRestriction})
         self.assertIsInstance(binding, Binding[Constraint])
-        self.assertEqual(len(edge0.GetConstraints()), 2)
+        binding = edge0.AddConstraint(
+            f=(edge0.xu()[0] == edge0.xv()[0]),
+            use_in_transcription={kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={kMIP})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            f=(edge0.xu()[0] == edge0.xv()[0]),
+            use_in_transcription={kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={kRelaxation})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            f=(edge0.xu()[0] == edge0.xv()[0]),
+            use_in_transcription={kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = edge0.AddConstraint(
+            binding=binding,
+            use_in_transcription={kRestriction})
+        self.assertIsInstance(binding, Binding[Constraint])
+        self.assertEqual(
+            len(edge0.GetConstraints(used_in_transcription={kMIP})),
+            len(edge0.GetConstraints(used_in_transcription={kRelaxation}))
+        )
+        self.assertEqual(
+            len(edge0.GetConstraints(used_in_transcription={kRelaxation})),
+            len(edge0.GetConstraints(used_in_transcription={kRestriction}))
+        )
+        self.assertNotEqual(
+            len(edge0.GetConstraints(used_in_transcription={kRestriction})),
+            len(edge0.GetConstraints())
+        )
         edge0.AddPhiConstraint(phi_value=False)
         edge0.ClearPhiConstraints()
         edge1.AddPhiConstraint(phi_value=True)
@@ -906,16 +1076,12 @@ class TestCspaceFreePolytope(unittest.TestCase):
 
         # FindSeparationCertificateOptions
         find_separation_options = mut.FindSeparationCertificateOptions()
-        with catch_drake_warnings(expected_count=1):
-            find_separation_options.num_threads = 1
         find_separation_options.parallelism = False
         find_separation_options.verbose = True
         find_separation_options.solver_id = ScsSolver.id()
         find_separation_options.terminate_at_failure = False
         find_separation_options.solver_options = solver_options
 
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(find_separation_options.num_threads, 1)
         self.assertEqual(find_separation_options.parallelism.num_threads(), 1)
         self.assertTrue(find_separation_options.verbose)
         self.assertEqual(find_separation_options.solver_id, ScsSolver.id())
@@ -927,8 +1093,6 @@ class TestCspaceFreePolytope(unittest.TestCase):
         # FindSeparationCertificateGivenPolytopeOptions
         lagrangian_options = \
             dut.FindSeparationCertificateGivenPolytopeOptions()
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(lagrangian_options.num_threads, int)
         self.assertIsInstance(
             lagrangian_options.parallelism.num_threads(), int)
         self.assertFalse(
@@ -942,8 +1106,6 @@ class TestCspaceFreePolytope(unittest.TestCase):
             lagrangian_options.solver_options)
         self.assertFalse(
             lagrangian_options.ignore_redundant_C)
-        with catch_drake_warnings(expected_count=1):
-            lagrangian_options.num_threads = 1
         lagrangian_options.parallelism = False
         lagrangian_options.verbose = True
         lagrangian_options.solver_id = ScsSolver.id()
@@ -1258,12 +1420,14 @@ class TestCspaceFreePolytope(unittest.TestCase):
         sets_B = [mut.VPolytope(np.array([[1, 5]]) - (2 * np.pi))]
         out = mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
                                             convex_sets_B=sets_B,
-                                            continuous_revolute_joints=[0])
+                                            continuous_revolute_joints=[0],
+                                            preprocess_bbox=True)
         self.assertIsInstance(out, list)
         self.assertEqual(len(out), 2)
         self.assertIsInstance(out[0], tuple)
         out2 = mut.CalcPairwiseIntersections(convex_sets=sets_A,
-                                             continuous_revolute_joints=[0])
+                                             continuous_revolute_joints=[0],
+                                             preprocess_bbox=True)
         self.assertIsInstance(out, list)
         self.assertEqual(len(out), 2)
         self.assertIsInstance(out[0], tuple)

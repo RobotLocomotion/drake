@@ -30,7 +30,7 @@ namespace drake {
 /// @code
 /// class Singleton {
 ///  public:
-///   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Singleton)
+///   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Singleton);
 ///   static Singleton& getInstance() {
 ///     static never_destroyed<Singleton> instance;
 ///     return instance.access();
@@ -80,7 +80,7 @@ namespace drake {
 template <typename T>
 class never_destroyed {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(never_destroyed)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(never_destroyed);
 
   /// Passes the constructor arguments along to T using perfect forwarding.
   template <typename... Args>

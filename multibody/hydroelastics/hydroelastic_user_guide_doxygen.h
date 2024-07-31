@@ -3,12 +3,11 @@
  */
 
 /**
-@defgroup hydroelastic_user_guide Hydroelastic Contact User Guide
-@ingroup multibody
+@addtogroup hydroelastic_user_guide
 
-@section hug_title Hydroelastic Contact User Guide
+A guide to using hydroelastic contact in practice.
 
-@subsection hug_introduction Introduction
+@section hug_introduction Introduction
 
 There are many ways to model contact between rigid bodies. Drake uses an
 approach we call “compliant” contact. In compliant contact, nominally rigid
@@ -23,11 +22,53 @@ behavior. For a high-level overview, see [this blog post]
 (https://medium.com/toyotaresearch/rethinking-contact-simulation-for-robot-manipulation-434a56b5ec88).
 
 Drake implements two models for resolving contact to forces: point contact and
-hydroelastic contact. See @ref hydro_appendix_a for a fuller discussion of the
+hydroelastic contact. See @ref compliant_contact for a fuller discussion of the
 theory and practice of contact models. For notes on implementation status, see
-@ref hydro_appendix_b. Also see @ref hydro_appendix_examples_and_tutorials.
+@ref hydro_appendix_a. Also see @ref hydro_appendix_examples_and_tutorials.
 
-@subsection hug_working_with_hydro Working with Hydroelastic Contact
+@subsection hug_quick_hydro Hydroelastic Quick-start
+
+The @ref drake::geometry::DefaultProximityProperties
+"proximity default configuration settings" of SceneGraph offer a quick-start
+path to using hydroelastic contact without the need to fully annotate the
+collision geometries of robot models. (The full annotation process is described
+in @ref creating_hydro_reps.)
+
+While it is unlikely that the homogeneous parameters set by automatic
+hydroelastic configuration will be sufficient to model diverse sets of
+collision geometries, it may be a good starting point for some. It allows an
+incremental approach to adding hydroelastic annotations as needed.
+
+To get very simple and quick hydroelastic configuration, all that is needed is
+to set the configuration for drake::geometry::SceneGraph:
+
+@code
+  geometry::SceneGraphConfig scene_graph_config;
+  scene_graph_config.default_proximity_properties.compliance_type = "compliant";
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlant(plant_config, scene_graph_config, &builder);
+@endcode
+
+For an example of a trivial conversion of an existing simulation, see the <a
+href="https://github.com/RobotLocomotion/drake/tree/master/examples/simple_gripper">examples/simple_gripper</a>
+program in the Drake source code. It offers a `--default_compliance_type`
+command line option, which permits trying various compliance types.
+
+All of the geometries in contexts created for the scene graph will be annotated
+with a default set of proximity properties.
+
+These transformations will allow hydroelastic contact to work, but the values
+of the properties may not be ideal. The default set of properties are
+controlled by drake::geometry::DefaultProximityProperties. They can be changed
+for each application.
+
+Having used scene graph configuration proximity defaults to get up and running,
+it may still be useful to add specific hydroelastic annotations to model
+files. Any explicit properties in model files (or applied by calling Drake
+APIs) will take precedence over the default proximity properties for the
+annotated geometries.
+
+@section hug_working_with_hydro Working with Hydroelastic Contact
 
 It is relatively simple to enable a simulation to use hydroelastic
 contact. However, using it effectively requires some experience and
@@ -65,7 +106,7 @@ rigid-hydroelastic geometry.
 <!-- N.B. This image is also used by hydroelastic_contact_basics.ipynb. -->
 @image html "multibody/hydroelastics/images/HydroelasticTutorialContactSurfaceRigidCompliantBubble.png"
 
-@subsubsection hug_enabling Enabling Hydroelastic contact in your simulation
+@subsection hug_enabling Enabling Hydroelastic contact in your simulation
 
 Because @ref drake::multibody::MultibodyPlant "MultibodyPlant"
 is responsible for computing the dynamics of the
@@ -83,13 +124,14 @@ The default model is
 "kHydroelasticWithFallback".
 
 @ref drake::multibody::ContactModel::kPoint "kPoint" is the implementation of
-the point contact model (see @ref hydro_appendix_a).
+the point contact model (see @ref compliant_contact).
 
 Models @ref drake::multibody::ContactModel::kHydroelastic "kHydroelastic" and
 @ref drake::multibody::ContactModel::kHydroelasticWithFallback
 "kHydroelasticWithFallback" will both enable the hydroelastic contact. For
 forces to be created from hydroelastic contact, geometries need to have
-hydroelastic representations (see @ref creating_hydro_reps).
+hydroelastic representations (see @ref hug_quick_hydro,
+@ref creating_hydro_reps).
 
 @ref drake::multibody::ContactModel::kHydroelastic "kHydroelastic" is a strict
 contact model that will attempt to create a hydroelastic contact surface
@@ -114,12 +156,18 @@ contact forces. As the implementation evolves, more and more contact will be
 captured with hydroelastic contact and the circumstances in which the
 point-contact fallback is applied will decrease.
 
-@subsubsection creating_hydro_reps Creating hydroelastic representations of collision geometries
+@subsection creating_hydro_reps Creating hydroelastic representations of collision geometries
 
-By default no geometry in drake::geometry::SceneGraph has a hydroelastic
-representation. So, enabling hydroelastic contact in `MultibodyPlant`, but
-forgetting to configure the geometries will lead to either simulation crashes
-or point contact-based forces.
+There are three ways to configure hydroelastic representations for collision
+geometries:
+- by using drake::geometry::DefaultProximityProperties (see @ref hug_quick_hydro)
+- by annotating model files (see @ref hug_file_specs)
+- programmatically (see @ref hug_code_properties)
+
+If none of the above are done, no geometry in drake::geometry::SceneGraph has a
+hydroelastic representation. So, enabling hydroelastic contact in
+`MultibodyPlant`, but forgetting to configure the geometries will lead to
+either simulation crashes or point contact-based forces.
 
 In order for a mesh to be given a hydroelastic representation, it must be
 assigned certain properties. The exact properties it needs depends on the Shape
@@ -127,9 +175,9 @@ type and whether it is rigid or compliant. Some properties can be defined, but
 if they are absent they’ll be provided by `MultibodyPlant`. First we’ll discuss
 each of the properties and then discuss how they can be specified.
 
-@paragraph hug_properties Properties for hydroelastic contact
 <!-- TODO(rpoyner-tri): consider restructuring this section to paragraphs,
      rather than a nested list -->
+@subsubsection hug_properties Properties for hydroelastic contact
 - Hydroelastic classification
    - To have a hydroelastic representation, a shape needs to be classified as
      either “compliant” or “rigid”. This must be explicit -- there are no
@@ -239,13 +287,13 @@ each of the properties and then discuss how they can be specified.
       - Fixing the hydroelastic modulus and decreasing the slab thickness.
       - Increasing the hydroelastic modulus and decreasing the slab thickness.
 
-@subsubsection hug_geometry_properties Assigning hydroelastic properties to geometries
+@subsection hug_geometry_properties Assigning hydroelastic properties to geometries
 
 Properties can be assigned to geometries inside a URDF or SDFormat file using
 some custom Drake XML tags. Alternatively, the properties can be assigned
 programmatically.
 
-@paragraph hug_file_specs Assigning hydroelastic properties in file specifications
+@subsubsection hug_file_specs Assigning hydroelastic properties in file specifications
 
 Drake has introduced a number of custom tags to provide a uniform language to
 specify hydroelastic properties in both URDF and SDFormat. The tag names are
@@ -322,7 +370,7 @@ Let’s look at the specific tags:
   - <@ref tag_drake_mu_dynamic> The coefficient for dynamic friction; this
     applies to both point contact and hydroelastic contact.
 
-@paragraph hug_code_properties Assigning hydroelastic properties in code
+@subsubsection hug_code_properties Assigning hydroelastic properties in code
 
 Hydroelastic properties can be set to objects programmatically via the following
 APIs (see their documentation for further details):
@@ -346,7 +394,7 @@ exception.  Note the special case for declaring a compliant half space -- it
 takes the required slab thickness parameter in addition to the hydroelastic
 modulus value.
 
-@subsection hug_visualizing Visualizing hydroelastic contact
+@section hug_visualizing Visualizing hydroelastic contact
 
 Start Meldis by:
 
@@ -380,12 +428,12 @@ When viewing collisions, note that red arrows indicate a hydroelastic contact,
 with an associated contact patch. Green arrows indicate point contact, which
 does not have any contact patch.
 
-@subsection hug_pitfalls Pitfalls/Troubleshooting
+@section hug_pitfalls Pitfalls/Troubleshooting
 
 Here are various ways that hydroelastic contact may surprise you.
-- By default, a rigid body is not a rigid hydroelastic body until users say
-  so. Otherwise, it is ignored by the hydroelastic contact model and might get
-  point contact instead.
+- A rigid body is not a rigid hydroelastic body until users say so (see
+  @ref creating_hydro_reps). Otherwise, it is ignored by the hydroelastic
+  contact model and might get point contact instead.
   - Users need to call AddRigidHydroelasticProperties() or use the URDF or
     SDFormat tag <drake:rigid_hydroelastic/>.
 - Backface culling -- the visualized contact surface is not what you
@@ -414,14 +462,14 @@ Here are various ways that hydroelastic contact may surprise you.
   geometry to the resultant contact surface. The contact surface’s refinement
   will depend on the other geometry’s level of refinement.
 
-@subsubsection hug_tips Tips and Tricks
+@subsection hug_tips Tips and Tricks
 
 This is a random collection of things we can do to maximize the benefits of the
 hydroelastic contact model. Some of these tricks accommodate current
 implementation limitations, and some are to work within the theoretical
 framework.
 
-@paragraph hug_gaming Gaming the model
+@subsubsection hug_gaming Gaming the model
 
 - Rigid meshes need not be closed. You can use this to provide fine grained
   control over where a contact surface can actually exist. Be careful to have a
@@ -432,161 +480,7 @@ framework.
   be tuned in two ways: increasing the hydroelastic modulus and/or scaling the
   geometry up (in essence, increasing the average penetration depth).
 
-
-@section hydro_appendix_a Appendix A: Compliant Contact Models
-
-@subsection hug_point_contact_theory Compliant Point Contact
-
-Before we get into hydroelastic contact, it’s worth describing the compliant
-point contact model as a reference model. The point contact model defines the
-contact force by determining the minimum translational displacement (MTD). The
-minimum translational displacement is the smallest relative displacement
-between two volumes that will take them from intersecting to just
-touching. This quantity need not be unique (if two spheres have coincident
-centers, any direction will serve). Once we have this displacement, we get
-three quantities that we use to define the contact force:
-  - The direction of the displacement vector is the contact normal.
-  - The magnitude is a measure of the amount of penetration (and is correlated
-    with the magnitude of the normal component of the contact force).
-  - Two witness points for the MTD. The witness points comprise one point on
-    the surface of each volume such that when we apply the minimum
-    translational displacement, they are coincident. We use the witness points
-    (and other physical parameters) to define the point at which the contact
-    force is applied.
-
-This model is simple to implement and cheap to compute, but has some drawbacks.
-
-- A single measure of “maximum penetration” cannot distinguish between a large
-  intersecting volume and a small intersecting volume (see Figure 1). The two
-  intersections would produce the same amount of contact force despite the fact
-  that one is clearly compressing more material.
-
-- Contact along a large interface is treated as contact at a single point (see
-  Figure 2). Effects that depend on a contact interface over a domain with
-  non-zero area disappear (e.g., torsional friction).
-
-- The witness points are not necessarily unique. This means,
-  generally, there is no guarantee that the witness points will be consistent
-  from frame to frame, which means that the point at which the force is applied
-  will not be consistent. This can produce non-physical artifacts like sudden
-  changes in force direction.
-
-@image html "multibody/hydroelastics/images/contact-fig-01.png"
-
-Figure 1: Two intersections with significantly different intersecting volumes
-characterized with the same measure: d.
-
-@image html "multibody/hydroelastics/images/contact-fig-02.png"
-
-Figure 2: Modeling contact forces with point contact (considering the blue half
-space as rigid). (a) the actual intersection of the simulated bodies. (b) the
-conceptual deformation of the orange body creating a large area of contact. (c)
-how point contact sees the deformation: contact at a single point.
-
-Hydroelastic contact was created to address some of the short-comings in point
-contact. In fact, one might argue that many of the strategies used to mitigate
-the shortcomings of point contact (such as using lots of points) push it closer
-and closer to hydroelastic contact.
-
-@subsection hug_hydro_theory Hydroelastic Contact
-
-Hydroelastic Contact is another compliant contact formulation. It was
-originally introduced by @ref Elandt2019 "[Elandt 2019]". Modifications and
-further development of the model can be found in
-@ref Masterjohn2022 "[Masterjohn 2022]". In Drake, we refer to this model as
-the “hydroelastic” model. It differs from point contact in how it characterizes
-the contact. Rather than a single point, it imagines an entire contact
-surface. This surface is an approximation of the contact surface as visualized
-in Figure 2(b).
-
-When two objects come into contact, forces are produced due to deformation
-("strain") of the objects at the contact interface. At first touch, there are no
-forces but as the objects are pressed further they deform to produce a region
-over which contact pressure is non-zero, causing equal-and-opposite forces to
-act on the objects. Calculating the actual deformations is expensive.
-Hydroelastic contact is based on the idea that for relatively small deformations
-we can approximate the resulting contact interface and pressure distribution
-without having to compute the actual deformations. We do that by precalculating
-a "pressure field" on the interior of compliant objects (see Figure 3). The
-pressure field approximates the pressure that would result from deforming the
-surface to some point within the field. A point on the surface (that is, no
-deformation) experiences zero pressure, but as it is pressed inward, it
-experiences an increase in pressure (up to a maximum pressure on the interior of
-the body). When two bodies are colliding, we look for a surface in the
-intersecting volume where the pressure on the surface is the same in each
-object; it’s an equilibrium surface (see Figure 4). There is pressure defined
-across the entire contact surface. It is integrated to define the resultant
-contact force and moment.
-
-@image html "multibody/hydroelastics/images/contact-fig-03.png"
-
-Figure 3: Three shapes and possible pressure fields in the interior of the
-object. Pressure is zero at the outer boundary, and maximum on the interior.
-
-@image html "multibody/hydroelastics/images/contact-fig-04.png"
-
-Figure 4: The equilibrium contact surface (pale green) between two bodies where
-the left-hand, yellow body has (a) less compliance, (b) equal compliance, and
-(c) greater compliance.
-
-This equilibrium surface has important properties:
-- The contact surface will always be contained within the intersecting volume.
-- The surface’s edge will always lie on the surface of both objects and have
-  zero pressure.
-- The location of the surface depends on the relative compliance of the two
-  objects. As one object becomes more rigid than the other, the contact surface
-  begins to converge to its surface (see Figure 4). As one surface becomes
-  perfectly rigid, the other object deforms completely to conform to its shape.
-- The contacting bodies need not be convex, nor will the contact surface
-  between two objects necessarily be a single contiguous patch. For non-convex
-  geometries, the contact can be meaningfully represented by multiple disjoint
-  patches. The resultant contact force will still be meaningful.
-- The resultant contact force is continuous with respect to the relative pose
-  between bodies. In fact, the contact surface’s mesh, its area, and the
-  pressures measured on the surface are likewise continuous.
-
-
-@subsection hug_hydro_practice Hydroelastic Contact in practice
-
-The theory operates on arbitrary geometries and pressure fields. In practice,
-we operate on discrete representations of both the geometry and the field.
-
-Compliant objects are represented by tetrahedral meshes. The Drake data
-type is @ref drake::geometry::VolumeMesh "VolumeMesh". The pressure fields on
-those meshes are piecewise linear.
-
-The resulting contact surface is likewise a discrete mesh. This mesh may be
-built of nothing but triangles or polygons. The choice of representation has
-various implications on the computation of contact forces (see below). The
-pressure on the contact surface is likewise a piecewise linear function.
-
-We model perfectly rigid objects (objects with no compliance at all) as
-triangle surface meshes. They have no pressure field associated with them
-because any penetration from the surface instantaneously produces infinite
-pressure. When colliding a rigid object against a compliant object, the contact
-surface always follows the surface of the rigid object. Think of it as the
-compliant object doing 100% of the deformation, so it conforms to the shape of
-the rigid object.
-
-Important points to note:
-- The time cost of resolving contact scales with the complexity of the contact
-  surface (number of faces).
-- The complexity of the contact surface is a function of the complexity of the
-  contacting geometries.
-- The best performance comes from the lowest resolution meshes that produce
-  “acceptable” behaviors.
-- It is not universally true that every geometry is represented discretely. The
-  implementation may represent some shapes differently when it allows
-  performance improvements. The canonical example would be a half space
-  geometry. As a shape with infinite volume, it would be infeasible to create a
-  finite, discrete representation. It is also unnecessary. Intersecting meshes
-  directly with a half space is far more efficient.
-- When an object is very near rigid it is more efficient to model it as rigid
-  than as a very stiff compliant object. Modeling as rigid allows us to take
-  advantage of the fact that the contact surface will lie on the surface of the
-  rigid object.
-
-@section hydro_appendix_b Appendix B: Current state of implementation
+@section hydro_appendix_a Appendix A: Current state of implementation
 
 This section will be updated as the scope and feature set of
 hydroelastic contact is advanced. The main crux of this section is to clearly
@@ -622,8 +516,7 @@ indicate what can and cannot be done with hydroelastic contact.
   The contact surface between rigid geometries is ill defined and will most
   likely never be supported.
   The default drake::multibody::ContactModel::kHydroelasticWithFallback uses
-  point contact model for the rigid-rigid contact.
-  See @ref hug_enabling.
+  compliant point contact as a reliable default. See @ref hug_enabling.
 - Hydroelastics cannot model true deformations given the model does not
   introduce state. Therefore effects such as tangential compliance or
   short time scale waves are not captured by the model.
@@ -649,7 +542,7 @@ indicate what can and cannot be done with hydroelastic contact.
   documentation for that in the [MultibodyPlant documentation.]
   (https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html#:~:text=%E2%81%B4%20We%20allow%20to,will%20be%20ignored.)
 
-@section hydro_appendix_examples_and_tutorials Appendix C: Examples and Tutorials
+@section hydro_appendix_examples_and_tutorials Appendix B: Examples and Tutorials
 - Example
   [Contact between a ball, dinner plate, and floor in C++]
   (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/ball_plate)

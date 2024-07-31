@@ -82,7 +82,7 @@ int do_main() {
   DRAKE_DEMAND(acrobot.get_source_id().has_value());
 
   builder.Connect(
-      acrobot.get_geometry_poses_output_port(),
+      acrobot.get_geometry_pose_output_port(),
       scene_graph.get_source_pose_port(acrobot.get_source_id().value()));
 
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);

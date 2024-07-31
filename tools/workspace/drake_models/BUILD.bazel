@@ -1,6 +1,6 @@
 load("//doc:defs.bzl", "enumerate_filegroup")
-load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
 enumerate_filegroup(
     name = "inventory.txt",
@@ -16,7 +16,7 @@ drake_py_unittest(
     ],
     deps = [
         "//bindings/pydrake",
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

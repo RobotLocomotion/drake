@@ -20,7 +20,7 @@ drake_py_binary(
     ],
     tags = ["manual"],
     deps = [
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",
     ],
 )
 

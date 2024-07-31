@@ -24,7 +24,7 @@ namespace internal {
 template <typename T>
 class HydroelasticEngine  {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticEngine)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticEngine);
 
   HydroelasticEngine() = default;
 
@@ -32,15 +32,14 @@ class HydroelasticEngine  {
 
   // Computes the combined elastic modulus for geometries with ids `id_A` and
   // `id_B`.
-  // Refer to @ref mbp_hydroelastic_materials_properties "Hydroelastic model
-  // material properties" for further details.
+  // Refer to @ref hydro_model_parameters for further details.
   double CalcCombinedElasticModulus(
       geometry::GeometryId id_A, geometry::GeometryId id_B,
       const geometry::SceneGraphInspector<T>& inspector) const;
 
   // Computes the combined Hunt & Crossley dissipation for geometries with ids
-  // `id_A` and `id_B`. Refer to @ref mbp_hydroelastic_materials_properties
-  // "Hydroelastic model material properties" for further details.
+  // `id_A` and `id_B`. Refer to @ref hydro_model_parameters for further
+  // details.
   double CalcCombinedDissipation(
       geometry::GeometryId id_A, geometry::GeometryId id_B,
       const geometry::SceneGraphInspector<T>& inspector) const;

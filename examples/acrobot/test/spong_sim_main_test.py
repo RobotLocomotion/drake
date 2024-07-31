@@ -5,7 +5,7 @@ import unittest
 
 from pydrake.common import FindResourceOrThrow
 
-from drake.examples.acrobot.acrobot_io import load_output, load_scenario
+from examples.acrobot.acrobot_io import load_output, load_scenario
 
 
 _backend = "py"

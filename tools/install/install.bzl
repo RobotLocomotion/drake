@@ -1,4 +1,5 @@
-load("//tools/skylark:py.bzl", "py_binary")
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH", "PYTHON_VERSION")
+load("@rules_license//rules:providers.bzl", "LicenseInfo")
 load("//tools/skylark:drake_java.bzl", "MainClassInfo")
 load("//tools/skylark:drake_py.bzl", "drake_py_test")
 load(
@@ -7,8 +8,7 @@ load(
     "join_paths",
     "output_path",
 )
-load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH", "PYTHON_VERSION")
-load("@rules_license//rules:providers.bzl", "LicenseInfo")
+load("//tools/skylark:py.bzl", "py_binary")
 
 InstallInfo = provider()
 

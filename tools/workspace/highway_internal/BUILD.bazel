@@ -1,0 +1,16 @@
+load("//tools/install:install.bzl", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+install_files(
+    name = "install",
+    dest = "share/doc/highway_internal",
+    files = [
+        "@highway_internal//:LICENSE",
+    ],
+    allowed_externals = [
+        "@highway_internal//:LICENSE",
+    ],
+    visibility = ["//tools/workspace:__pkg__"],
+)
+
+add_lint_tests()

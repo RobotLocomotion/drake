@@ -16,10 +16,15 @@ namespace internal {
 // construction, its lifetime must be shorter than that of the parser.
 class CompositeParse {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeParse)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeParse);
 
   // Build and return a new composite parse object.
   static std::unique_ptr<CompositeParse> MakeCompositeParse(Parser* parser);
+
+  // Prior to destroying this object, users of this class should call Finish()
+  // exactly once, to complete our interaction with the Parser. This operation
+  // can throw an exception, so must NOT be done during stack unwinding.
+  void Finish();
 
   ~CompositeParse();
 
@@ -31,6 +36,7 @@ class CompositeParse {
  private:
   explicit CompositeParse(Parser* parser);
 
+  Parser* const parser_;
   CollisionFilterGroupResolver resolver_;
   const ParsingOptions options_;
   const ParsingWorkspace workspace_;

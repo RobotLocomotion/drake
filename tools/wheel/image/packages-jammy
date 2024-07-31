@@ -13,7 +13,7 @@ libgfortran-11-dev
 nasm
 yasm
 # Clang (for mkdoc).
-libclang-14-dev
+libclang-15-dev
 # Other code tools.
 cmake
 git
@@ -23,7 +23,6 @@ pkg-config
 # Other general tools.
 file
 patch
-ssh
 wget
 unzip
 zip

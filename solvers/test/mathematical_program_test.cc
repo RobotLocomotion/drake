@@ -56,6 +56,7 @@ using drake::symbolic::Variable;
 using drake::symbolic::test::ExprEqual;
 using drake::symbolic::test::PolyEqual;
 using drake::symbolic::test::PolyNotEqual;
+using drake::symbolic::test::TupleVarEqual;
 
 using std::all_of;
 using std::cref;
@@ -2565,6 +2566,35 @@ bool AreTwoPolynomialsNear(
 }  // namespace
 
 void CheckParsedSymbolicLorentzConeConstraint(
+    MathematicalProgram* prog, const Formula& f,
+    LorentzConeConstraint::EvalType eval_type) {
+  const auto& binding1 = prog->AddLorentzConeConstraint(f, eval_type);
+  EXPECT_EQ(binding1.evaluator()->eval_type(), eval_type);
+  const auto& binding2 = prog->lorentz_cone_constraints().back();
+  EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
+  EXPECT_EQ(binding1.variables(), binding2.variables());
+  const Eigen::MatrixXd A = binding1.evaluator()->A();
+  const Eigen::VectorXd b = binding1.evaluator()->b();
+  const VectorX<Expression> z = A * binding1.variables() + b;
+  Expression greater, lesser;
+  if (is_greater_than_or_equal_to(f)) {
+    greater = get_lhs_expression(f);
+    lesser = get_rhs_expression(f);
+  } else {
+    ASSERT_TRUE(is_less_than_or_equal_to(f));
+    greater = get_rhs_expression(f);
+    lesser = get_lhs_expression(f);
+  }
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(z(0)), symbolic::Polynomial(greater),
+      1E-10));
+  ASSERT_TRUE(is_sqrt(lesser));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(z.tail(z.rows() - 1).squaredNorm()),
+      symbolic::Polynomial(get_argument(lesser)), 1E-10));
+}
+
+void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog, const Expression& linear_expr,
     const Expression& quadratic_expr,
     LorentzConeConstraint::EvalType eval_type) {
@@ -2640,6 +2670,22 @@ class SymbolicLorentzConeTest : public ::testing::Test {
   MathematicalProgram prog_;
   VectorDecisionVariable<3> x_;
 };
+
+TEST_F(SymbolicLorentzConeTest, Formula) {
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, 2.0 * x_(2) >= x_.head<2>().cast<Expression>().norm(),
+      LorentzConeConstraint::EvalType::kConvex);
+
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_.head<2>().cast<Expression>().norm() <= 2.0 * x_(2),
+      LorentzConeConstraint::EvalType::kConvex);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog_.AddLorentzConeConstraint(
+          2.0 * x_(2) * x_(1) >= x_.head<2>().cast<Expression>().norm(),
+          LorentzConeConstraint::EvalType::kConvex),
+      ".*non-linear.*");
+}
 
 TEST_F(SymbolicLorentzConeTest, Test1) {
   // Add Lorentz cone constraint:
@@ -3294,8 +3340,18 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
   auto obj2 = prog.AddL2NormCost(A, b, x);
   EXPECT_EQ(prog.l2norm_costs().size(), 2u);
 
+  symbolic::Expression e = (A * x + b).norm();
+  auto obj3 = prog.AddL2NormCost(e, 1e-8, 1e-8);
+  EXPECT_EQ(prog.l2norm_costs().size(), 3u);
+
+  // Test that the AddCost method correctly recognizes the L2norm.
+  auto obj4 = prog.AddCost(e);
+  EXPECT_EQ(prog.l2norm_costs().size(), 4u);
+
   prog.RemoveCost(obj1);
   prog.RemoveCost(obj2);
+  prog.RemoveCost(obj3);
+  prog.RemoveCost(obj4);
   EXPECT_EQ(prog.l2norm_costs().size(), 0u);
   EXPECT_FALSE(prog.required_capabilities().contains(
       ProgramAttribute::kL2NormCost));
@@ -3307,6 +3363,10 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
 
   auto new_prog = prog.Clone();
   EXPECT_EQ(new_prog->l2norm_costs().size(), 1u);
+
+  // AddL2NormCost(Expression) can throw.
+  e = (A*x + b).squaredNorm();
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddL2NormCost(e), ".*is not an L2 norm.*");
 }
 
 GTEST_TEST(TestMathematicalProgram, AddQuadraticConstraint) {
@@ -4378,6 +4438,70 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   EXPECT_THAT(s, testing::HasSubstr("3"));
 }
 
+GTEST_TEST(TestMathematicalProgram, RemoveDecisionVariable) {
+  // A program where x(1) is not associated with any cost/constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  prog.AddLinearCost(x(0) + x(2));
+  prog.AddBoundingBoxConstraint(0, 2, x(0));
+  prog.AddLinearConstraint(x(0) + 2 * x(2) <= 1);
+  prog.SetInitialGuess(x, Eigen::Vector3d(0, 1, 2));
+  prog.SetVariableScaling(x(0), 0.5);
+  prog.SetVariableScaling(x(1), 3.0);
+  prog.SetVariableScaling(x(2), 4.0);
+
+  // Remove x(1) and check that all accessors remain in sync.
+  const int x1_index = prog.FindDecisionVariableIndex(x(1));
+  const int x1_index_removed = prog.RemoveDecisionVariable(x(1));
+  EXPECT_EQ(x1_index, x1_index_removed);
+  EXPECT_EQ(prog.num_vars(), 2);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x(0)), 0);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x(2)), 1);
+  EXPECT_THAT(prog.decision_variables(),
+              testing::Pointwise(testing::Truly(TupleVarEqual), {x(0), x(2)}));
+  EXPECT_TRUE(CompareMatrices(prog.initial_guess(), Eigen::Vector2d(0, 2)));
+  EXPECT_THAT(prog.GetVariableScaling(),
+              testing::WhenSorted(testing::ElementsAre(
+                  std::make_pair(0, 0.5), std::make_pair(1, 4.0))));
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveDecisionVariableError) {
+  // Test RemoveDecisionVariable with erroneous input.
+  // Remove an indeterminate.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  auto y = prog.NewIndeterminates<2>("y");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.RemoveDecisionVariable(y(0)),
+      ".*is not a decision variable of this MathematicalProgram.");
+
+  // Remove a variable not in Mathematical program.
+  const symbolic::Variable dummy("dummy");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.RemoveDecisionVariable(dummy),
+      ".*is not a decision variable of this MathematicalProgram.");
+
+  // Remove a variable associated with a cost.
+  prog.AddLinearCost(x(0));
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.RemoveDecisionVariable(x(0)),
+                              ".* is associated with a LinearCost.*");
+
+  // Remove a variable associated with a constraint.
+  prog.AddLinearConstraint(x(0) + x(1) <= 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.RemoveDecisionVariable(x(1)),
+                              ".* is associated with a LinearConstraint[^]*");
+
+  // Remove a variable associated with a visualization callback.
+  prog.AddVisualizationCallback(
+      [](const Eigen::VectorXd& vars) {
+        drake::log()->info("{}", vars(0));
+      },
+      Vector1<symbolic::Variable>(x(2)));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.RemoveDecisionVariable(x(2)),
+      ".* is associated with a VisualizationCallback[^]*");
+}
+
 GTEST_TEST(TestMathematicalProgram, TestToLatex) {
   MathematicalProgram prog;
   std::string empty_prog = prog.ToLatex();
@@ -4493,6 +4617,24 @@ GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {
   TestRemoveConstraint(&prog, lcp_con,
                        &(prog.linear_complementarity_constraints()),
                        ProgramAttribute::kLinearComplementarityConstraint);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveVisualizationCallback) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto callback = prog.AddVisualizationCallback(
+      [](const Eigen::VectorXd& vars) {
+        drake::log()->info("{}", vars(0) + vars(1));
+      },
+      x);
+  EXPECT_FALSE(prog.visualization_callbacks().empty());
+  EXPECT_TRUE(
+      prog.required_capabilities().contains(ProgramAttribute::kCallback));
+  int count = prog.RemoveVisualizationCallback(callback);
+  EXPECT_EQ(count, 1);
+  EXPECT_TRUE(prog.visualization_callbacks().empty());
+  EXPECT_FALSE(
+      prog.required_capabilities().contains(ProgramAttribute::kCallback));
 }
 
 class ApproximatePSDConstraint : public ::testing::Test {

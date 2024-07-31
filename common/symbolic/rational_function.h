@@ -28,7 +28,7 @@ class RationalFunction {
   /** Constructs a zero rational function 0 / 1. */
   RationalFunction();
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RationalFunction)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RationalFunction);
 
   /**
    * Constructs the rational function: numerator / denominator.

@@ -133,7 +133,7 @@ namespace systems {
 template <class T>
 class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VelocityImplicitEulerIntegrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VelocityImplicitEulerIntegrator);
 
   ~VelocityImplicitEulerIntegrator() override = default;
 
@@ -671,4 +671,4 @@ inline void VelocityImplicitEulerIntegrator<AutoDiffXd>::
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::systems::VelocityImplicitEulerIntegrator)
+    class ::drake::systems::VelocityImplicitEulerIntegrator);

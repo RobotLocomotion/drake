@@ -37,7 +37,7 @@ call Accept on the subsystems.
 template <typename T>
 class SystemVisitor {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemVisitor)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemVisitor);
   virtual ~SystemVisitor() = default;
 
   /** This method will be called by System<T>::accept() if the System *is not* a

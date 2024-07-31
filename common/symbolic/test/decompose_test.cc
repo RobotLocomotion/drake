@@ -20,7 +20,7 @@ constexpr double kEps = std::numeric_limits<double>::epsilon();
 class SymbolicDecomposeTest : public ::testing::Test {
  public:
   SymbolicDecomposeTest() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SymbolicDecomposeTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SymbolicDecomposeTest);
 
  protected:
   void SetUp() override {
@@ -171,6 +171,12 @@ TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsExceptionNonlinear) {
       DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_, x_,
                                  &M_expected_static_, &v_expected_static_),
       runtime_error);
+
+  // Check variant with vars as an output.
+  EXPECT_THROW(DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_,
+                                          &M_expected_dynamic_,
+                                          &v_expected_dynamic_, &x_),
+               runtime_error);
 }
 
 // Adds terms with non-const coefficients to check if we have an exception.
@@ -185,6 +191,12 @@ TEST_F(SymbolicDecomposeTest,
       DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_, x_,
                                  &M_expected_static_, &v_expected_static_),
       runtime_error);
+
+  // Check variant with vars as an output.
+  EXPECT_THROW(DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_,
+                                          &M_expected_dynamic_,
+                                          &v_expected_dynamic_, &x_),
+               runtime_error);
 }
 
 // Adds nonlinear terms to check if we have an exception.
@@ -199,6 +211,12 @@ TEST_F(SymbolicDecomposeTest,
       DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_, x_,
                                  &M_expected_static_, &v_expected_static_),
       runtime_error);
+
+  // Check variant with vars as an output.
+  EXPECT_THROW(DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_,
+                                          &M_expected_dynamic_,
+                                          &v_expected_dynamic_, &x_),
+               runtime_error);
 }
 
 // Check expected invariance
@@ -385,6 +403,40 @@ GTEST_TEST(SymbolicExtraction, DecomposeAffineExpression) {
   }
 }
 
+// Confirm that the documented return values are true.
+GTEST_TEST(SymbolicExtraction, DecomposeAffineExpressionReturnValue) {
+  const Variable x("x");
+  const Variable y("y");
+  Eigen::RowVectorXd coeffs;
+  double c;
+
+  Expression e = 2 * x + 3;
+  auto [vars, map_var_to_index] = ExtractVariablesFromExpression(e);
+  coeffs.resize(1);
+  EXPECT_EQ(DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c), 1);
+
+  e = 2 * x + 3 * y - 2 * x;
+  std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
+  coeffs.resize(1);
+  EXPECT_EQ(DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c), 1);
+
+  // Not affine.
+  e = 2 * x * x;
+  std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
+  coeffs.resize(1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c),
+      ".*non-linear.*");
+
+  // Not even polynomial.
+  e = sin(x);
+  std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
+  coeffs.resize(1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c),
+      ".*not a polynomial.\n");
+}
+
 GTEST_TEST(SymbolicExtraction, DecomposeLumpedParameters) {
   const Variable x("x");
   const Variable y("y");
@@ -494,6 +546,125 @@ GTEST_TEST(SymbolicExtraction, DecomposeLumpedParameters) {
     EXPECT_EQ(alpha.size(), 0);
     EXPECT_EQ(w0, Vector1<Expression>(e));
   }
+}
+
+GTEST_TEST(SymbolicExtraction, DecomposeL2Norm) {
+  auto x = MakeVectorVariable<3>("x");
+  auto xe = x.template cast<Expression>();
+  const Expression e = sqrt(xe.dot(xe));
+  const auto [is_l2norm, A, b, vars] = DecomposeL2NormExpression(e);
+  EXPECT_TRUE(is_l2norm);
+  EXPECT_TRUE(CompareMatrices(A, Eigen::MatrixXd::Identity(3, 3)));
+  EXPECT_TRUE(CompareMatrices(b, Eigen::VectorXd::Zero(3)));
+  EXPECT_EQ(vars, x);
+}
+
+GTEST_TEST(SymbolicExtraction, DecomposeL2Norm2) {
+  auto x = MakeVectorVariable<2>("x");
+  Eigen::Matrix2d A_expected;
+  A_expected << 1, 2, 3, 4;
+  const Eigen::Vector2d b_expected(5, 6);
+  const Expression e = (A_expected * x + b_expected).norm();
+  const auto [is_l2norm, A, b, vars] = DecomposeL2NormExpression(e);
+  EXPECT_TRUE(is_l2norm);
+  // The decomposition is not unique, so we can only check that the resulting
+  // quadratic form is a match.
+  EXPECT_TRUE(CompareMatrices(A.transpose() * A,
+                              A_expected.transpose() * A_expected, 1e-12));
+  EXPECT_TRUE(CompareMatrices(A.transpose() * b,
+                              A_expected.transpose() * b_expected, 1e-12));
+  EXPECT_EQ(vars, x);
+}
+
+GTEST_TEST(SymbolicExtraction, DecomposeL2NormNonSquareMatrix) {
+  auto x = MakeVectorVariable<3>("x");
+  Eigen::MatrixXd A_expected(2, 3);
+  // clang-format off
+  A_expected << 1, 2, 3,
+                4, 5, 6;
+  // clang-format on
+  const Eigen::Vector2d b_expected(7, 8);
+  const Expression e = (A_expected * x + b_expected).norm();
+  const auto [is_l2norm, A, b, vars] = DecomposeL2NormExpression(e);
+  EXPECT_TRUE(is_l2norm);
+  // The decomposition is not unique, so we can only check that the resulting
+  // quadratic form is a match.
+  EXPECT_TRUE(CompareMatrices(A.transpose() * A,
+                              A_expected.transpose() * A_expected, 1e-12));
+  EXPECT_TRUE(CompareMatrices(A.transpose() * b,
+                              A_expected.transpose() * b_expected, 1e-12));
+  EXPECT_EQ(vars, x);
+}
+
+GTEST_TEST(SymbolicExtraction, DecomposeL2NormNonSquareMatrix2) {
+  auto x = MakeVectorVariable<2>("x");
+  Eigen::MatrixXd A_expected(3, 2);
+  // clang-format off
+  A_expected << 1, 2,
+                3, 4,
+                5, 6;
+  // clang-format on
+  const Eigen::Vector3d b_expected(7, 8, 9);
+  const Expression e = (A_expected * x + b_expected).norm();
+  const auto [is_l2norm, A, b, vars] = DecomposeL2NormExpression(e);
+  EXPECT_TRUE(is_l2norm);
+  // The decomposition is not unique, so we can only check that the resulting
+  // quadratic form is a match.
+  EXPECT_TRUE(CompareMatrices(A.transpose() * A,
+                              A_expected.transpose() * A_expected, 1e-12));
+  EXPECT_TRUE(CompareMatrices(A.transpose() * b,
+                              A_expected.transpose() * b_expected, 1e-12));
+  EXPECT_EQ(vars, x);
+}
+
+GTEST_TEST(SymbolicExtraction, DecomposeL2NormFalse) {
+  auto x = MakeVectorVariable<3>("x");
+  auto xe = x.template cast<Expression>();
+
+  // Not a sqrt.
+  Expression e = xe.dot(xe);
+  auto [is_l2norm, A, b, vars] = DecomposeL2NormExpression(e);
+  EXPECT_FALSE(is_l2norm);
+
+  // Not a polynomial inside the sqrt.
+  e = sqrt(sin(x[0]));
+  std::tie(is_l2norm, A, b, vars) = DecomposeL2NormExpression(e);
+  EXPECT_FALSE(is_l2norm);
+
+  // Not a quadratic form inside the sqrt.
+  e = sqrt(x[0] * x[0] * x[0]);
+  std::tie(is_l2norm, A, b, vars) = DecomposeL2NormExpression(e);
+  EXPECT_FALSE(is_l2norm);
+
+  // Not a positive quadratic form inside the sqrt.
+  e = sqrt(-1 * x[0] * x[0]);
+  std::tie(is_l2norm, A, b, vars) = DecomposeL2NormExpression(e);
+  EXPECT_FALSE(is_l2norm);
+
+  // Confirm that psd tolerance controls this threshold.
+  // This passes the psd check but results in an empty A matrix.
+  std::tie(is_l2norm, A, b, vars) = DecomposeL2NormExpression(e, 2.0);
+  EXPECT_FALSE(is_l2norm);
+  // This passes the psd check and results in a smaller A matrix.
+  e = sqrt(-1 * x[0] * x[0] + 4 * x[1] * x[1]);
+  std::tie(is_l2norm, A, b, vars) = DecomposeL2NormExpression(e, 2.0);
+  EXPECT_TRUE(is_l2norm);
+  EXPECT_TRUE(CompareMatrices(A, Eigen::RowVector2d(0, 2), 1e-12));
+
+  // The quadratic form can't be written as (Ax+b)'(Ax+b), because r is not in
+  // the range of A'.
+  e = sqrt(x[0] * x[0] + x[0] + x[1] + 0.25);
+  std::tie(is_l2norm, A, b, vars) = DecomposeL2NormExpression(e);
+  EXPECT_FALSE(is_l2norm);
+
+  // The quadratic form can't be written as (Ax+b)'(Ax+b).
+  e = sqrt(xe.dot(xe) + 1);
+  std::tie(is_l2norm, A, b, vars) = DecomposeL2NormExpression(e);
+  EXPECT_FALSE(is_l2norm);
+
+  // Confirm that constant term tolerance controls this threshold.
+  std::tie(is_l2norm, A, b, vars) = DecomposeL2NormExpression(e, 1e-8, 2.0);
+  EXPECT_TRUE(is_l2norm);
 }
 
 }  // namespace

@@ -58,7 +58,7 @@ enum class CollisionFilterScope {
  CollisionFilterManager::Apply(). */
 class CollisionFilterDeclaration {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterDeclaration)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterDeclaration);
 
   CollisionFilterDeclaration() = default;
 

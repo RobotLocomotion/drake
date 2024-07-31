@@ -24,7 +24,7 @@ namespace fs = std::filesystem;
 // Friend class to get access to ImageWriter private functions for testing.
 class ImageWriterTester {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageWriterTester)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageWriterTester);
 
   explicit ImageWriterTester(const ImageWriter& writer) : writer_(writer) {}
 

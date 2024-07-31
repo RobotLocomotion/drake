@@ -1,5 +1,5 @@
-load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
 # Drake must redistribute any code changes, per Ipopts's EPL-2.0 license.
 # Here we'll glob all of the patch files from their conventional home.

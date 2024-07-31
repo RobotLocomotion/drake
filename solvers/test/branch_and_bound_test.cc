@@ -18,7 +18,7 @@ using VectorUpTo4 = Eigen::Matrix<Scalar, Eigen::Dynamic, 1, 0, 4, 1>;
 //  MixedIntegerBranchAndBound, so that we can test its internal implementation.
 class MixedIntegerBranchAndBoundTester {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundTester)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundTester);
 
   explicit MixedIntegerBranchAndBoundTester(
       const MathematicalProgram& prog, const SolverId& solver_id,

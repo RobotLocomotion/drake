@@ -57,7 +57,7 @@ struct DoNotInitializeMemberFields {};
 template <typename T>
 class RotationMatrix {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationMatrix)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationMatrix);
 
   /// Constructs a 3x3 identity %RotationMatrix -- which corresponds to
   /// aligning two frames (so that unit vectors Ax = Bx, Ay = By, Az = Bz).
@@ -102,13 +102,45 @@ class RotationMatrix {
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
   explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
-    // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
-    // known to be normalized apriori or calling site does not want
-    // normalization.
-    const Vector3<T>& lambda = theta_lambda.axis();
-    const T norm = lambda.norm();
+    using std::cos;
+    using std::sin;
+    // TODO(mitiguy) Consider adding an optional second argument if lambda is
+    // known to be normalized apriori or the caller does not want normalization.
     const T& theta = theta_lambda.angle();
-    set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
+    const Vector3<T>& lambda = theta_lambda.axis();
+    // We won't use AngleAxis<T>::toRotationMatrix because somtimes it is
+    // miscompiled by Clang 15. Instead, we'll follow the derivation here:
+    // https://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/index.htm
+    const T norm = lambda.norm();
+    const T x = lambda.x() / norm;
+    const T y = lambda.y() / norm;
+    const T z = lambda.z() / norm;
+    const T s = sin(theta);
+    const T c = cos(theta);
+    const T t = 1 - c;     // 1 - cos(θ)
+    const T sx = s * x;    // sin(θ) x
+    const T sy = s * y;    // sin(θ) y
+    const T sz = s * z;    // sin(θ) z
+    const T tx = t * x;    // (1 - cos(θ)) x
+    const T ty = t * y;    // (1 - cos(θ)) y
+    const T tz = t * z;    // (1 - cos(θ)) z
+    const T txx = tx * x;  // (1 - cos(θ)) x²
+    const T tyy = ty * y;  // (1 - cos(θ)) y²
+    const T tzz = tz * z;  // (1 - cos(θ)) z²
+    const T txy = tx * y;  // (1 - cos(θ)) x y
+    const T txz = tx * z;  // (1 - cos(θ)) x z
+    const T tyz = ty * z;  // (1 - cos(θ)) y z
+    Matrix3<T> R;
+    R.coeffRef(0, 0) = txx + c;   // (1 - cos(θ)) x² + cos(θ)
+    R.coeffRef(1, 1) = tyy + c;   // (1 - cos(θ)) y² + cos(θ)
+    R.coeffRef(2, 2) = tzz + c;   // (1 - cos(θ)) z² + cos(θ)
+    R.coeffRef(0, 1) = txy - sz;  // (1 - cos(θ)) x y - sin(θ) z
+    R.coeffRef(1, 0) = txy + sz;  // (1 - cos(θ)) x y + sin(θ) z
+    R.coeffRef(0, 2) = txz + sy;  // (1 - cos(θ)) x z + sin(θ) y
+    R.coeffRef(2, 0) = txz - sy;  // (1 - cos(θ)) x z - sin(θ) y
+    R.coeffRef(1, 2) = tyz - sx;  // (1 - cos(θ)) y z - sin(θ) x
+    R.coeffRef(2, 1) = tyz + sx;  // (1 - cos(θ)) y z + sin(θ) x
+    set(R);
   }
 
   /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
@@ -145,6 +177,14 @@ class RotationMatrix {
   /// Vice-versa, there are high-accuracy RollPitchYaw constructor/methods that
   /// form a RollPitchYaw from a rotation matrix.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy);
+
+  /// (Advanced) Makes a %RotationMatrix from a Matrix3. No check is performed
+  /// to test whether or not the parameter R is a valid rotation matrix.
+  static RotationMatrix<T> MakeUnchecked(const Matrix3<T>& R) {
+    RotationMatrix<T> result(internal::DoNotInitializeMemberFields{});
+    result.R_AB_ = R;
+    return result;
+  }
 
   /// (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthogonal
   /// unit vectors `Bx`, `By`, `Bz` so the columns of `R_AB` are `[Bx, By, Bz]`.
@@ -317,8 +357,7 @@ class RotationMatrix {
     //    underlying call to a RotationMatrix constructor. Perhaps create
     //    specialized code to return a reference if casting to the same type,
     //    e.g., casting from `<double>` to `<double>' should be inexpensive.
-    const Matrix3<U> m = R_AB_.template cast<U>();
-    return RotationMatrix<U>(m, true);
+    return RotationMatrix<U>::MakeUnchecked(R_AB_.template cast<U>());
   }
 
   /// Sets `this` %RotationMatrix from a Matrix3.
@@ -326,7 +365,7 @@ class RotationMatrix {
   /// @throws std::exception in debug builds if R fails IsValid(R).
   void set(const Matrix3<T>& R) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
-    SetUnchecked(R);
+    R_AB_ = R;
   }
 
   /// Returns the 3x3 identity %RotationMatrix.
@@ -408,7 +447,12 @@ class RotationMatrix {
     if constexpr (std::is_same_v<T, double>) {
       internal::ComposeRR(*this, other, this);
     } else {
-      SetUnchecked(matrix() * other.matrix());
+      // The result of matrix multiplication is not checked with
+      // ThrowIfNotValid() because the overhead would make this highly-used
+      // function very expensive. However, both arguments to this function and
+      // its result should be valid rotation matrices unless earlier validity
+      // checks are by-passed, e.g., with RotationMatrix::MakeUnchecked().
+      R_AB_ = matrix() * other.matrix();
     }
     return *this;
   }
@@ -610,7 +654,7 @@ class RotationMatrix {
     const Matrix3<T> M_orthonormalized =
         ProjectMatrix3ToOrthonormalMatrix3(M, quality_factor);
     ThrowIfNotValid(M_orthonormalized);
-    return RotationMatrix<T>(M_orthonormalized, true);
+    return RotationMatrix<T>::MakeUnchecked(M_orthonormalized);
   }
 
   /// Returns an internal tolerance that checks rotation matrix orthonormality.
@@ -698,18 +742,6 @@ class RotationMatrix {
   // epsilon) used to check whether or not a rotation matrix is orthonormal.
   static constexpr double kInternalToleranceForOrthonormality{
       128 * std::numeric_limits<double>::epsilon()};
-
-  // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
-  // whether or not the parameter R is a valid rotation matrix.
-  // @param[in] R an allegedly valid rotation matrix.
-  // @note The second parameter is just a dummy to distinguish this constructor
-  // from any of the other constructors.
-  RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
-
-  // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
-  // test whether or not the parameter R is a valid rotation matrix.
-  // @param[in] R an allegedly valid rotation matrix.
-  void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
   // vectors `Bx`, `By`, `Bz` so that the columns of `this` are `[Bx, By, Bz]`.
@@ -994,4 +1026,4 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::math::RotationMatrix)
+    class ::drake::math::RotationMatrix);

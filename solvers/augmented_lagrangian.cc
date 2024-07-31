@@ -281,6 +281,6 @@ T AugmentedLagrangianSmooth::Eval(const Eigen::Ref<const VectorX<T>>& x,
 // Explicit instantiation.
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&AugmentedLagrangianNonsmooth::Eval<T>,
-     &AugmentedLagrangianSmooth::Eval<T>))
+     &AugmentedLagrangianSmooth::Eval<T>));
 }  // namespace solvers
 }  // namespace drake

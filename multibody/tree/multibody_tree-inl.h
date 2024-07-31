@@ -241,6 +241,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   RegisterJointInGraph(*joint);
 
   joint->set_parent_tree(this, joints_.next_index());
+  joint->set_ordinal(joints_.num_elements());
   JointType<T>* result = joint.get();
   joints_.Add(std::move(joint));
   return *result;
@@ -408,6 +409,7 @@ template <typename FromScalar>
 Joint<T>* MultibodyTree<T>::CloneJointAndAdd(const Joint<FromScalar>& joint) {
   auto joint_clone = joint.CloneToScalar(this);
   joint_clone->set_parent_tree(this, joint.index());
+  joint_clone->set_ordinal(joint.ordinal());
   joint_clone->set_model_instance(joint.model_instance());
   return &joints_.Add(std::move(joint_clone));
 }

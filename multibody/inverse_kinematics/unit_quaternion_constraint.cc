@@ -46,7 +46,7 @@ void AddUnitQuaternionConstraintOnPlant(
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &AddUnitQuaternionConstraintOnPlant<T>
-))
+));
 
 }  // namespace multibody
 }  // namespace drake

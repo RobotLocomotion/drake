@@ -428,7 +428,8 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   return false;
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((&Callback<T>))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&Callback<T>));
 
 }  // namespace penetration_as_point_pair
 }  // namespace internal

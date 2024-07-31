@@ -1,12 +1,12 @@
 # -*- bazel -*-
 
-load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/lint:python_lint.bzl", "python_lint")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
 )
-load("@drake//tools/lint:python_lint.bzl", "python_lint")
 
 licenses(["notice"])  # BSD-3-Clause
 
@@ -34,6 +34,7 @@ _HDRS = [
     "include/pybind11/eval.h",
     "include/pybind11/functional.h",
     "include/pybind11/gil.h",
+    "include/pybind11/gil_safe_call_once.h",
     "include/pybind11/iostream.h",
     "include/pybind11/numpy.h",
     "include/pybind11/operators.h",
@@ -44,6 +45,7 @@ _HDRS = [
     "include/pybind11/stl/filesystem.h",
     "include/pybind11/stl_bind.h",
     "include/pybind11/type_caster_pyobject_ptr.h",
+    "include/pybind11/typing.h",
 ]
 
 check_lists_consistency(

@@ -174,10 +174,27 @@ void SapLimitConstraint<T>::DoAccumulateGeneralizedImpulses(
   if (qu < kInf) (*tau)(clique_dof_) -= gamma(i);     // Upper.
 }
 
+template <typename T>
+std::unique_ptr<SapConstraint<double>> SapLimitConstraint<T>::DoToDouble()
+    const {
+  const typename SapLimitConstraint<T>::Parameters& p = parameters_;
+  SapLimitConstraint<double>::Parameters p_to_double(
+      ExtractDoubleOrThrow(p.lower_limit()),
+      ExtractDoubleOrThrow(p.upper_limit()),
+      ExtractDoubleOrThrow(p.stiffness()),
+      ExtractDoubleOrThrow(p.dissipation_time_scale()), p.beta());
+  // N.B. Limit constraints always act on a single clique.
+  const int clique = this->first_clique();
+  const int clique_nv = this->num_velocities(0);
+  return std::make_unique<SapLimitConstraint<double>>(
+      clique, clique_dof(), clique_nv, ExtractDoubleOrThrow(position()),
+      std::move(p_to_double));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapLimitConstraint)
+    class ::drake::multibody::contact_solvers::internal::SapLimitConstraint);

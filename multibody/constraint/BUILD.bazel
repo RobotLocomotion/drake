@@ -1,11 +1,9 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
-    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -37,18 +35,6 @@ drake_cc_library(
     deps = [
         ":constraint_problem_data",
         "//solvers:moby_lcp_solver",
-    ],
-)
-
-# === test/ ===
-
-drake_cc_googletest(
-    name = "constraint_solver_test",
-    deps = [
-        ":constraint_solver",
-        "//examples/rod2d",
-        "//solvers:moby_lcp_solver",
-        "//solvers:unrevised_lemke_solver",
     ],
 )
 

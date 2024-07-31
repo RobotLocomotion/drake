@@ -281,7 +281,7 @@ class PrintInterface {
   virtual std::string print() const = 0;
  protected:
   // Allow our subclasses to make these public.
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PrintInterface)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PrintInterface);
   PrintInterface() = default;
 };
 
@@ -293,7 +293,7 @@ class PrintInterface {
 // checking for weird corner cases, so we can't mark it as such here.
 class Point : public PrintInterface {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Point)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Point);
 
   Point(int x, int y) : x_(x), y_(y) {}
   virtual ~Point() {}
@@ -345,7 +345,7 @@ GTEST_TEST(ValueTest, CannotUneraseToParentClass) {
 template <typename T>
 class PrintableValue : public Value<T>, public PrintInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrintableValue)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrintableValue);
 
   explicit PrintableValue(const T& v) : Value<T>(v) {}
 

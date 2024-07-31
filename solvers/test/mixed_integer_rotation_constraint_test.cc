@@ -40,7 +40,7 @@ bool IsFeasibleCheck(
 
 class TestMixedIntegerRotationConstraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMixedIntegerRotationConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMixedIntegerRotationConstraint);
 
   TestMixedIntegerRotationConstraint(
       MixedIntegerRotationConstraintGenerator::Approach approach,
@@ -171,7 +171,7 @@ class TestMixedIntegerRotationConstraintGenerator
           std::tuple<MixedIntegerRotationConstraintGenerator::Approach, int,
                      IntervalBinning>> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMixedIntegerRotationConstraintGenerator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMixedIntegerRotationConstraintGenerator);
 
   TestMixedIntegerRotationConstraintGenerator()
       : TestMixedIntegerRotationConstraint(std::get<0>(GetParam()),
@@ -278,7 +278,7 @@ class TestRotationMatrixBoxSphereIntersection
     : public TestMixedIntegerRotationConstraint,
       public ::testing::TestWithParam<int> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestRotationMatrixBoxSphereIntersection)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestRotationMatrixBoxSphereIntersection);
 
   TestRotationMatrixBoxSphereIntersection()
       : TestMixedIntegerRotationConstraint(
@@ -310,7 +310,7 @@ class TestOrthant
           std::tuple<int, int, bool, std::pair<int, int>, bool,
                      MixedIntegerRotationConstraintGenerator::Approach>> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestOrthant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestOrthant);
 
   TestOrthant() : prog_(), R_(NewRotationMatrixVars(&prog_)) {
     const int num_bin = std::get<0>(GetParam());

@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Iterator
 import unittest
 
-from bazel_tools.tools.python.runfiles import runfiles
+from python import runfiles
 
 from pydrake.planning import RobotDiagramBuilder
 
@@ -70,7 +70,8 @@ class TestDrakeModels(unittest.TestCase):
             # We don't have any tracking issue for fixing the PR2 models,
             # because we don't use them for anything we care about. If someone
             # wants to fix the warnings, be our guest.
-            "package://drake_models/pr2_description/urdf/pr2_simplified.urdf"
+            "package://drake_models/pr2_description/urdf/pr2_simplified.urdf",
+            "package://drake_models/wsg_50_description/sdf/schunk_wsg_50_deformable_bubble.sdf"  # noqa
         ]
         self.assertFalse(set(models_with_warnings) - set(all_models))
 

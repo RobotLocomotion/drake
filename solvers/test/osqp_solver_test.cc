@@ -112,6 +112,21 @@ GTEST_TEST(QPtest, TestInfeasible) {
     EXPECT_EQ(result.get_optimal_cost(),
               MathematicalProgram::kGlobalInfeasibleCost);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().y.rows(), 0);
+    // In OSQP's default upstream settings, time-based adaptive rho is enabled
+    // by default (i.e., adaptive_rho_interval=0). However, in our OsqpSolver
+    // wrapper, we've changed the default to be non-zero so that solver results
+    // are deterministic. The following check proves that our custom default is
+    // effective: with time-based adaptive rho there would be one rho_update,
+    // but with our custom default value there will be no updates (since the
+    // iteration count never reaches the scheduled iteration step of an update).
+    EXPECT_EQ(result.get_solver_details<OsqpSolver>().rho_updates, 0);
+  }
+}
+
+GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
+  OsqpSolver solver;
+  if (solver.available()) {
+    TestQuadraticCostVariableOrder(solver);
   }
 }
 
@@ -160,6 +175,139 @@ void AddTestProgram(
   prog->AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1) + 5 * x(2) * x(2) +
                          2 * x(1) * x(2));
   prog->AddLinearConstraint(8 * x(0) - x(1) == 2);
+}
+
+// This is a regression test for #18711. To reproduce that issue, we need to
+// solve a sufficiently complicated QP so that OSQP will iterate internally
+// enough to engage its wall-clock timing heuristics. We'll set up some very
+// specific costs and constraints (captured from a real world example) and
+// then repeatedly solve the same program over and over again, checking that
+// the solution is bit-exact each time. Note that this is a probabilistic test:
+// even if we revert the fix for #18711, this only fails ~40% of the time.
+GTEST_TEST(OsqpSolverTest, ComplicatedExampleForAdaptiveRhoTiming) {
+  MathematicalProgram prog;
+
+  const int num_v = 7;
+  const int num_u = 7;
+
+  Eigen::MatrixXd M(num_v, num_v);
+  M << 1.5265000092743219, 1.3567292738062303e-01, 1.0509980442610054,
+      1.0593165893494538e-01, 5.2550137200876458e-02, 1.4695302469350939e-02,
+      -5.6634685479957378e-03,
+      //
+      1.3567292738062303e-01, 2.6582813453131502, 1.8437561004161429e-01,
+      -1.1606165163872926, -6.7115703782523864e-02, -6.8744248816288878e-02,
+      -2.3803654356554906e-03,
+      //
+      1.0509980442610054, 1.8437561004161429e-01, 7.5578462775698307e-01,
+      2.9778874473806963e-02, 4.2191302344065193e-02, 6.9686779847817938e-03,
+      -4.7168273440004261e-03,
+      //
+      1.0593165893494538e-01, -1.1606165163872926, 2.9778874473806963e-02,
+      7.0143698885704575e-01, 4.3907540905320175e-02, 6.0704344118780576e-02,
+      6.2450624459637065e-04,
+      //
+      5.2550137200876458e-02, -6.7115703782523864e-02, 4.2191302344065193e-02,
+      4.3907540905320175e-02, 2.3108956248772367e-02, -4.0027553954531062e-04,
+      -9.6135531130737148e-04,
+      //
+      1.4695302469350939e-02, -6.8744248816288878e-02, 6.9686779847817938e-03,
+      6.0704344118780576e-02, -4.0027553954531062e-04, 1.8750100174003432e-02,
+      -2.3318254131776553e-04,
+      //
+      -5.6634685479957378e-03, -2.3803654356554906e-03, -4.7168273440004261e-03,
+      6.2450624459637065e-04, -9.6135531130737148e-04, -2.3318254131776553e-04,
+      8.4560640585000036e-04;
+
+  Eigen::VectorXd C(num_v);
+  C << 0.12534316615346058, -4.262437098995484, -0.1292406593401465,
+      1.2824026531372175, 0.057990230523857114, -0.11631318722553598,
+      0.008118721429606525;
+
+  Eigen::VectorXd tau_g(num_v);
+  tau_g << 0.0, 3.2520059971872882e+01, 1.1056387788047277,
+      -1.6455090196304102e+01, -1.3129246602609450, -1.2645040362872129,
+      -1.6577819002396472e-02;
+
+  auto vd_star = prog.NewContinuousVariables(num_v, "vd_star");
+  auto u_star = prog.NewContinuousVariables(num_u, "u_star");
+
+  Eigen::MatrixXd Aeq(num_v, num_v + num_v);
+  Aeq.block(0, 0, num_v, num_v) = M;
+  Aeq.block(0, num_v, num_v, num_v) = Eigen::MatrixXd::Identity(num_v, num_v);
+  Eigen::VectorXd beq = -C + tau_g;
+  prog.AddLinearEqualityConstraint(Aeq, beq, {vd_star, u_star});
+
+  Eigen::MatrixXd task_cost_A(6, num_v);
+  task_cost_A << 0.0, 2.6276770346517636e-01, 3.0114875389439555e-01,
+      -4.7285620522256971e-01, 8.7440544000403608e-01, -4.8174857078266453e-01,
+      -1.9618608268142981e-01,
+      //
+      0.0, 9.6485912651310768e-01, -8.2014217710682832e-02,
+      -8.7801906757823511e-01, -4.5720465227404666e-01, -8.5793882676911759e-01,
+      -9.2923842949070412e-02,
+      //
+      1.0, 4.8965888601467475e-12, 9.5004373379395413e-01,
+      7.4091336548597356e-02, 1.6241623204075539e-01, 1.7849169188197500e-01,
+      -9.7615376881600568e-01,
+      //
+      2.8311221691848737e-01, 2.9275947741254926e-01, 2.4408407039656915e-01,
+      -8.6056328493326305e-03, 6.1561854687226442e-02, 1.0864947505835820e-01,
+      -1.2143064331837650e-17,
+      //
+      5.4444702526853128e-01, -7.9729499810435950e-02, 4.2587333018015111e-01,
+      4.1571230146216887e-02, 1.0963458655960948e-01, -4.5887476583813355e-02,
+      -1.3877787807814457e-17,
+      //
+      0.0, -5.9970742829586077e-01, -4.0606494474492376e-02,
+      4.3771792154289879e-01, -2.2809158687563048e-02, 7.2681710645204109e-02,
+      3.6862873864507151e-18;
+  Eigen::VectorXd task_cost_b(6);
+  task_cost_b << -24.566247201232553, -0.3677519895564192, -44.03725978974725,
+      34.38537004440926, 45.39628041050313, -42.53770459411413;
+  Eigen::MatrixXd task_cost_proj(num_v, 6);
+  task_cost_proj << 0.0, 0.0, 1.0, 2.8311221691848737e-01,
+      5.4444702526853128e-01, 0.0,
+      //
+      2.6276770346517636e-01, 9.6485912651310768e-01, 4.8965888601467475e-12,
+      2.9275947741254926e-01, -7.9729499810435950e-02, -5.9970742829586077e-01,
+      //
+      3.0114875389439555e-01, -8.2014217710682832e-02, 9.5004373379395413e-01,
+      2.4408407039656915e-01, 4.2587333018015111e-01, -4.0606494474492376e-02,
+      //
+      -4.7285620522256971e-01, -8.7801906757823511e-01, 7.4091336548597356e-02,
+      -8.6056328493326305e-03, 4.1571230146216887e-02, 4.3771792154289879e-01,
+      //
+      8.7440544000403608e-01, -4.5720465227404666e-01, 1.6241623204075539e-01,
+      6.1561854687226442e-02, 1.0963458655960948e-01, -2.2809158687563048e-02,
+      //
+      -4.8174857078266453e-01, -8.5793882676911759e-01, 1.7849169188197500e-01,
+      1.0864947505835820e-01, -4.5887476583813355e-02, 7.2681710645204109e-02,
+      //
+      -1.9618608268142981e-01, -9.2923842949070412e-02, -9.7615376881600568e-01,
+      -1.2143064331837650e-17, -1.3877787807814457e-17, 3.6862873864507151e-18;
+  prog.Add2NormSquaredCost(task_cost_proj * task_cost_A,
+                           task_cost_proj * task_cost_b, vd_star);
+
+  if (!OsqpSolver::is_available()) {
+    return;
+  }
+
+  // Run one solve to get a specific answer.
+  auto run_one_solve = [&prog, &u_star]() {
+    const OsqpSolver dut;
+    const MathematicalProgramResult result = dut.Solve(prog);
+    EXPECT_TRUE(result.is_success());
+    return result.GetSolution(u_star);
+  };
+  const Eigen::VectorXd first_answer = run_one_solve();
+
+  // Run the same thing over and over again, to "prove" that it's deterministic.
+  for (int i = 0; i < 100; ++i) {
+    SCOPED_TRACE(fmt::format("i = {}", i));
+    const Eigen::VectorXd new_answer = run_one_solve();
+    ASSERT_EQ(new_answer, first_answer);
+  }
 }
 
 GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {

@@ -24,7 +24,7 @@ namespace internal {
 template <typename T>
 class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldMobilizer);
 
   // Constructor for a %WeldMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M`.
@@ -33,6 +33,8 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
                 const Frame<T>& outboard_frame_M,
                 const math::RigidTransform<double>& X_FM) :
       MobilizerBase(inboard_frame_F, outboard_frame_M), X_FM_(X_FM) {}
+
+  ~WeldMobilizer() final;
 
   // @retval X_FM The pose of the outboard frame M in the inboard frame F.
   const math::RigidTransform<double>& get_X_FM() const { return X_FM_; }
@@ -122,4 +124,4 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::WeldMobilizer)
+    class ::drake::multibody::internal::WeldMobilizer);

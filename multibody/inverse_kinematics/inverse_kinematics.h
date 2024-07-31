@@ -23,7 +23,7 @@ namespace multibody {
  */
 class InverseKinematics {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseKinematics)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseKinematics);
 
   ~InverseKinematics() {}
 

@@ -18,7 +18,7 @@ namespace multibody {
  */
 class PositionConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositionConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositionConstraint);
 
   /**
    * Constructs PositionConstraint object.

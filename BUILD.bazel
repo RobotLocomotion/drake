@@ -1,9 +1,9 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("//tools/skylark:py.bzl", "py_library")
 load("//tools/install:install.bzl", "install", "install_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:py.bzl", "py_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -47,12 +47,13 @@ filegroup(
         "//examples/hydroelastic/spatula_slip_control:models",
         "//examples/kuka_iiwa_arm/models",
         "//examples/multibody/cart_pole:models",
+        "//examples/multibody/deformable:models",
         "//examples/multibody/four_bar:models",
         "//examples/pendulum:models",
         "//examples/planar_gripper:models",
         "//examples/quadrotor:models",
         "//examples/scene_graph:models",
-        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/simple_gripper:models",
         "//multibody/benchmarks/acrobot:models",
         "@drake_models",
     ],
@@ -80,15 +81,13 @@ filegroup(
     visibility = ["//tools:__pkg__"],
 )
 
-# To create a manifest of all installed files for use by drake_bazel_installed,
-# we declare an install target that contains almost everything -- but it can't
-# contain the bazel logic that is generated based on the manifest, so we'll add
-# that in below in the final :install target.
+_INSTALL_TEST_COMMANDS = "install_test_commands"
+
 install(
-    name = "all_install_targets_except_bazel",
+    name = "install",
+    install_tests_script = _INSTALL_TEST_COMMANDS,
     data = ["package.xml"],
     docs = ["LICENSE.TXT"],
-    visibility = ["//tools/install/bazel:__pkg__"],
     deps = [
         "//bindings/pydrake:install",
         "//common:install",
@@ -100,17 +99,6 @@ install(
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
         "//tutorials:install",
-    ],
-)
-
-_INSTALL_TEST_COMMANDS = "install_test_commands"
-
-install(
-    name = "install",
-    install_tests_script = _INSTALL_TEST_COMMANDS,
-    deps = [
-        ":all_install_targets_except_bazel",
-        "//tools/install/bazel:install",
     ],
 )
 

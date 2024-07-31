@@ -1,8 +1,10 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_binary(
     name = "zmp_example",
@@ -10,7 +12,7 @@ drake_cc_binary(
     srcs = ["zmp_example.cc"],
     deps = [
         "//common/proto:call_python",
-        "//systems/controllers:zmp_test_util",
+        "//planning/locomotion/test_utilities",
     ],
 )
 

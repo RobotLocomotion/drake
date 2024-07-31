@@ -116,6 +116,8 @@ class SapHuntCrossleyConstraint final : public SapConstraint<T> {
   /* Numerical parameters that define the constraint. Refer to this class's
    documentation for details. */
   struct Parameters {
+    bool operator==(const Parameters& other) const = default;
+
     /* Convex approximation, see [Castro et al., 2023]. */
     SapHuntCrossleyApproximation model{SapHuntCrossleyApproximation::kSimilar};
     /* Coefficient of friction μ, dimensionless. It must be non-negative. */
@@ -192,6 +194,7 @@ class SapHuntCrossleyConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapHuntCrossleyConstraint<T>>(
         new SapHuntCrossleyConstraint<T>(*this));
   }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
 
   // no-op for this constraint.
   void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,

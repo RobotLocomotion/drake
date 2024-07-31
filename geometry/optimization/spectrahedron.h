@@ -21,7 +21,7 @@ By convention, a zero-dimensional spectrahedron is considered nonempty.
 @ingroup geometry_optimization */
 class Spectrahedron final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Spectrahedron)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Spectrahedron);
 
   /** Default constructor (yields the zero-dimensional nonempty set). */
   Spectrahedron();
@@ -50,8 +50,8 @@ class Spectrahedron final : public ConvexSet {
 
   // N.B. No need to override DoMaybeGetPoint here.
 
-  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final;
+  std::optional<bool> DoPointInSetShortcut(
+      const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>

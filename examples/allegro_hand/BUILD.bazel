@@ -1,44 +1,18 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(
-    default_visibility = [":__subpackages__"],
-)
-
-filegroup(
-    name = "models",
-    srcs = [
-        "@drake_models//:allegro_hand_description/meshes/allegro.mtl",
-        "@drake_models//:allegro_hand_description/meshes/base_link.obj",
-        "@drake_models//:allegro_hand_description/meshes/base_link_left.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_0.0.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_1.0.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_12.0_left.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_12.0_right.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_13.0.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_14.0.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_15.0.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_15.0_tip.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_2.0.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_3.0.obj",
-        "@drake_models//:allegro_hand_description/meshes/link_3.0_tip.obj",
-        "@drake_models//:allegro_hand_description/sdf/allegro_hand_description_left.sdf",  # noqa
-        "@drake_models//:allegro_hand_description/sdf/allegro_hand_description_right.sdf",  # noqa
-        "@drake_models//:allegro_hand_description/urdf/allegro_hand_description_left.urdf",  # noqa
-        "@drake_models//:allegro_hand_description/urdf/allegro_hand_description_right.urdf",  # noqa
-    ],
-    visibility = ["//visibility:public"],
-)
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_library(
     name = "allegro_common",
     srcs = ["allegro_common.cc"],
     hdrs = ["allegro_common.h"],
+    visibility = ["//examples/allegro_hand/joint_control:__pkg__"],
     deps = [
         "//lcmtypes:allegro",
         "//multibody/plant",
@@ -49,7 +23,7 @@ drake_cc_library(
     name = "allegro_lcm",
     srcs = ["allegro_lcm.cc"],
     hdrs = ["allegro_lcm.h"],
-    visibility = ["//visibility:public"],
+    visibility = ["//examples/allegro_hand/joint_control:__pkg__"],
     deps = [
         ":allegro_common",
         "//lcmtypes:allegro",
@@ -61,7 +35,7 @@ drake_cc_binary(
     name = "run_allegro_constant_load_demo",
     srcs = ["run_allegro_constant_load_demo.cc"],
     data = [
-        ":models",
+        "@drake_models//:allegro_hand_description",
     ],
     deps = [
         "//common:add_text_logging_gflags",
@@ -90,7 +64,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "parse_test",
     data = [
-        ":models",
+        "@drake_models//:allegro_hand_description",
     ],
     deps = [
         "//common:find_resource",

@@ -42,7 +42,7 @@ class TestVisualizationInstalled(unittest.TestCase):
             join(install_dir, "bin", "model_visualizer"),
             "--loop_once",
             "package://drake_models/"
-            "wsg_50_description/meshes/finger_without_tip.obj"
+            "ycb/meshes/004_sugar_box_textured.obj"
         ])
 
 
