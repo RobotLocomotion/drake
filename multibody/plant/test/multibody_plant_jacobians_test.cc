@@ -638,6 +638,25 @@ TEST_F(TwoDOFPlanarPendulumTest,
           *context_, model_instances, JacobianWrtVariable::kV, frame_A,
           frame_W);
   EXPECT_TRUE(CompareMatrices(aBias_AScm_W, aBias_AScm_W_model2, kTolerance));
+
+  // Test CalcJacobianCenterOfMassTranslationalVelocity() for 3 model instances
+  // (with the 3rd model instance a repeat of the 2nd model instance).
+  // This should produce the same results as the 2 model instance case.
+  model_instances.push_back(bodyB_instance_index);  // Repeated instance.
+  plant_->CalcJacobianCenterOfMassTranslationalVelocity(
+      *context_, model_instances, JacobianWrtVariable::kV, frame_W, frame_W,
+      &Js_v_WScm_W);
+  EXPECT_TRUE(CompareMatrices(Js_v_WAcm_W, Js_v_WAcm_W_expected, kTolerance));
+
+  // Test CalcBiasCenterOfMassTranslationalAcceleration() for 3 model instances
+  // (with the 3rd model instance a repeat of the 2nd model instance).
+  // This should produce the same results as the 2 model instance case.
+  const Vector3d aBias_WScm_W_model3 =
+      plant_->CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, model_instances, JacobianWrtVariable::kV, frame_W,
+          frame_W);
+  EXPECT_TRUE(
+      CompareMatrices(aBias_WScm_W_model2, aBias_WScm_W_model3, kTolerance));
 }
 
 // Fixture for two degree-of-freedom 3D satellite tracker with bodies A and B.

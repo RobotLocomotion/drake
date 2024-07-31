@@ -4039,9 +4039,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// For each point Bi affixed/welded to a frame B, calculates a𝑠Bias_ABi, Bi's
   /// translational acceleration bias in frame A with respect to "speeds" 𝑠,
   /// where 𝑠 is either q̇ (time-derivatives of generalized positions) or v
-  /// (generalized velocities).  a𝑠Bias_ABi is the term in a_ABi (Bi's
-  /// translational acceleration in A) that does not include 𝑠̇, i.e.,
-  /// a𝑠Bias_ABi is Bi's translational acceleration in A when 𝑠̇ = 0. <pre>
+  /// (generalized velocities). a𝑠Bias_ABi includes the terms in a_ABi (Bi's
+  /// translational acceleration in A) that depend on q, q̇, v, but not terms
+  /// that depend on 𝑠̇, i.e., a𝑠Bias_ABi = a_ABi when 𝑠̇ = 0. <pre>
   ///   a_ABi =  J𝑠_v_ABi ⋅ 𝑠̇  +  J̇𝑠_v_ABi ⋅ 𝑠  (𝑠 = q̇ or 𝑠 = v), hence
   ///   a𝑠Bias_ABi = J̇𝑠_v_ABi ⋅ 𝑠
   /// </pre>
@@ -4056,8 +4056,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Bo (frame_B's origin) to points Bi (regarded as affixed to B), where each
   /// position vector is expressed in frame_B.  Each column in the `3 x p`
   /// matrix p_BoBi_B corresponds to a position vector.
-  /// @param[in] frame_A The frame that measures a𝑠Bias_ABi.
-  /// Currently, an exception is thrown if frame_A is not the World frame.
+  /// @param[in] frame_A The frame in which a𝑠Bias_ABi is measured.
   /// @param[in] frame_E The frame in which a𝑠Bias_ABi is expressed on output.
   /// @returns a𝑠Bias_ABi_E Point Bi's translational acceleration bias in
   /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
@@ -4071,7 +4070,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// translational velocity Jacobian in frame A with respect to 𝑠.
   /// @pre p_BoBi_B must have 3 rows.
   /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
-  /// @throws std::exception if frame_A is not the world frame.
   Matrix3X<T> CalcBiasTranslationalAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
@@ -4085,9 +4083,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// For one point Bp affixed/welded to a frame B, calculates A𝑠Bias_ABp, Bp's
   /// spatial acceleration bias in frame A with respect to "speeds" 𝑠,
   /// where 𝑠 is either q̇ (time-derivatives of generalized positions) or v
-  /// (generalized velocities).  A𝑠Bias_ABp is the term in A_ABp (Bp's
-  /// spatial acceleration in A) that does not include 𝑠̇, i.e.,
-  /// A𝑠Bias_ABp is Bi's translational acceleration in A when 𝑠̇ = 0. <pre>
+  /// (generalized velocities). A𝑠Bias_ABp includes the terms in A_ABp (Bp's
+  /// spatial acceleration in A) that depend on q, q̇, v, but not terms that
+  /// depend on 𝑠̇, i.e., A𝑠Bias_ABp = A_ABp when 𝑠̇ = 0. <pre>
   ///   A_ABp =  J𝑠_V_ABp ⋅ 𝑠̇  +  J̇𝑠_V_ABp ⋅ 𝑠   (𝑠 = q̇ or 𝑠 = v), hence
   ///   A𝑠Bias_ABp = J̇𝑠_V_ABp ⋅ 𝑠
   /// </pre>
@@ -4100,8 +4098,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_B The frame on which point Bp is affixed/welded.
   /// @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to point Bp
   /// (regarded as affixed/welded to B), expressed in frame_B.
-  /// @param[in] frame_A The frame that measures A𝑠Bias_ABp.
-  /// Currently, an exception is thrown if frame_A is not the World frame.
+  /// @param[in] frame_A The frame in which A𝑠Bias_ABp is measured.
   /// @param[in] frame_E The frame in which A𝑠Bias_ABp is expressed on output.
   /// @returns A𝑠Bias_ABp_E Point Bp's spatial acceleration bias in frame A
   /// with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
@@ -4113,7 +4110,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see CalcJacobianSpatialVelocity() to compute J𝑠_V_ABp, point Bp's
   /// translational velocity Jacobian in frame A with respect to 𝑠.
   /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
-  /// @throws std::exception if frame_A is not the world frame.
   SpatialAcceleration<T> CalcBiasSpatialAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
@@ -4388,41 +4384,54 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         Js_v_ACcm_E);
   }
 
+  /// @anchor bias_acceleration_functions
+  /// @name Bias acceleration functions
+  /// The name a𝑠Bias_AP denotes a point P's bias translational acceleration
+  /// with respect to "speeds" 𝑠 measured in a frame A, where 𝑠 is either q̇
+  /// (time-derivatives of generalized positions) or v (generalized velocities).
+  /// a𝑠Bias_AP includes the terms in a_AP (P's translational acceleration in A)
+  /// that depend on q, q̇, v, but not terms that depend on 𝑠̇, i.e.,
+  /// a𝑠Bias_AP = a_AP when 𝑠̇ = 0. The proof below starts with v_AP (point P's
+  /// translational velocity in frame A) written in terms of J𝑠_v_AP (point P's
+  /// translational velocity Jacobian in frame A for s).  <pre>
+  ///   v_AP = J𝑠_v_AP ⋅ 𝑠         which upon vector differentiation in A gives
+  ///   a_AP = Ĵ𝑠_v_AP ⋅ 𝑠  +  J𝑠_v_AP ⋅ 𝑠̇                 𝑠etting 𝑠̇ = 0, gives
+  ///   a𝑠Bias_AP = Ĵ𝑠_v_AP ⋅ 𝑠                               is quadratic in s.
+  /// </pre>
+  /// Note: Since Ĵ𝑠_v_AP (the time-derivative of J𝑠_v_AP in frame A) is linear
+  /// in s, a𝑠Bias_AP = Ĵ𝑠_v_AP ⋅ 𝑠  is quadratic in 𝑠.
+  ///
+  /// Similarly, A𝑠Bias_AB denotes a frame B's bias spatial acceleration with
+  /// respect to speeds 𝑠 measured in frame A. It can be written in terms of the
+  /// time-derivative of J𝑠_V_AB (B's spatial velocity Jacobian in frame A for
+  /// speeds 𝑠) as <pre>
+  ///   A𝑠Bias_AB = Ĵ𝑠_V_AB ⋅ 𝑠                       is quadratic in s. </pre>
+  /// @see CalcJacobianSpatialVelocity() for details on J𝑠_V_AB.
+  ///@{
+
   /// For the system S of all bodies other than the world body, calculates
   /// a𝑠Bias_AScm_E, Scm's translational acceleration bias in frame A with
   /// respect to "speeds" 𝑠, expressed in frame E, where Scm is the center of
-  /// mass of S and 𝑠 is either q̇ (time-derivatives of generalized positions)
-  /// or v (generalized velocities). a𝑠Bias_AScm is the term in a_AScm (Scm's
-  /// translational acceleration in A) that does not include 𝑠̇, i.e.,
-  /// a𝑠Bias_AScm is Scm's translational acceleration in A when 𝑠̇ = 0. <pre>
-  ///   a_AScm =  J𝑠_v_AScm ⋅ 𝑠̇  +  J̇𝑠_v_AScm ⋅ 𝑠   (𝑠 = q̇ or 𝑠 = v), hence
-  ///   a𝑠Bias_AScm = J̇𝑠_v_Ascm ⋅ 𝑠
-  /// </pre>
-  /// where J𝑠_v_AScm is Scm's translational velocity Jacobian in frame A for
-  /// speeds s (see CalcJacobianSpatialVelocity() for details on J𝑠_V_ABp).
+  /// mass of S and speeds 𝑠 is either q̇ or v.
   /// @param[in] context Contains the state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the spatial accceleration bias
-  /// is with respect to 𝑠 = q̇ or 𝑠 = v.
-  /// @param[in] frame_A The frame that measures a𝑠Bias_AScm.
-  /// Currently, an exception is thrown if frame_A is not the World frame.
+  /// JacobianWrtVariable::kV, indicating whether the accceleration bias is
+  /// with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// @param[in] frame_A The frame in which a𝑠Bias_AScm is measured.
   /// @param[in] frame_E The frame in which a𝑠Bias_AScm is expressed on output.
   /// @returns a𝑠Bias_AScm_E Point Scm's translational acceleration bias in
   /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
-  /// @note Shown below, a𝑠Bias_AScm = J̇𝑠_v_Ascm ⋅ 𝑠  is quadratic in 𝑠. <pre>
-  ///  v_AScm = J𝑠_v_AScm ⋅ 𝑠      which upon vector differentiation in A gives
-  ///  a_AScm = J𝑠_v_AScm ⋅ 𝑠̇  + J̇𝑠_v_AScm ⋅ 𝑠  Since J̇𝑠_v_Ascm is linear in 𝑠,
-  ///  a𝑠Bias_AScm = J̇𝑠_v_AScm ⋅ 𝑠                           is quadratic in 𝑠.
-  /// </pre>
-  /// @see CalcJacobianCenterOfMassTranslationalVelocity() to compute J𝑠_V_Scm,
-  /// point Scm's translational velocity Jacobian in frame A with respect to 𝑠.
   /// @throws std::exception if `this` has no body except world_body().
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
+  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @see CalcJacobianCenterOfMassTranslationalVelocity() to compute J𝑠_v_Scm,
+  /// point Scm's translational velocity Jacobian in frame A with respect to 𝑠.
   /// @note The world_body() is ignored. asBias_AScm_E = ∑ (mᵢ aᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body, and
   /// aᵢ is the translational bias acceleration of Bᵢcm in frame A expressed in
   /// frame E for speeds 𝑠 (Bᵢcm is the center of mass of the iᵗʰ body).
-  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @note See @ref bias_acceleration_functions "Bias acceleration functions"
+  /// for theory and details.
   Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E) const {
@@ -4435,40 +4444,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// For the system S containing the selected model instances, calculates
   /// a𝑠Bias_AScm_E, Scm's translational acceleration bias in frame A with
   /// respect to "speeds" 𝑠, expressed in frame E, where Scm is the center of
-  /// mass of S and 𝑠 is either q̇ (time-derivatives of generalized positions)
-  /// or v (generalized velocities). a𝑠Bias_AScm is the term in a_AScm (Scm's
-  /// translational acceleration in A) that does not include 𝑠̇, i.e.,
-  /// a𝑠Bias_AScm is Scm's translational acceleration in A when 𝑠̇ = 0. <pre>
-  ///   a_AScm =  J𝑠_v_AScm ⋅ 𝑠̇  +  J̇𝑠_v_AScm ⋅ 𝑠   (𝑠 = q̇ or 𝑠 = v), hence
-  ///   a𝑠Bias_AScm = J̇𝑠_v_Ascm ⋅ 𝑠
-  /// </pre>
-  /// where J𝑠_v_AScm is Scm's translational velocity Jacobian in frame A for
-  /// speeds s (see CalcJacobianSpatialVelocity() for details on J𝑠_V_ABp).
+  /// mass of S and speeds 𝑠 is either q̇ or v.
   /// @param[in] context Contains the state of the multibody system.
   /// @param[in] model_instances Vector of selected model instances.  If a model
   /// instance is repeated in the vector (unusual), it is only counted once.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the spatial accceleration bias
-  /// is with respect to 𝑠 = q̇ or 𝑠 = v.
-  /// @param[in] frame_A The frame that measures a𝑠Bias_AScm.
-  /// Currently, an exception is thrown if frame_A is not the World frame.
+  /// JacobianWrtVariable::kV, indicating whether the accceleration bias is
+  /// with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// @param[in] frame_A The frame in which a𝑠Bias_AScm is measured.
   /// @param[in] frame_E The frame in which a𝑠Bias_AScm is expressed on output.
   /// @returns a𝑠Bias_AScm_E Point Scm's translational acceleration bias in
   /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
-  /// @note Shown below, a𝑠Bias_AScm = J̇𝑠_v_Ascm ⋅ 𝑠  is quadratic in 𝑠. <pre>
-  ///  v_AScm = J𝑠_v_AScm ⋅ 𝑠      which upon vector differentiation in A gives
-  ///  a_AScm = J𝑠_v_AScm ⋅ 𝑠̇  + J̇𝑠_v_AScm ⋅ 𝑠  Since J̇𝑠_v_Ascm is linear in 𝑠,
-  ///  a𝑠Bias_AScm = J̇𝑠_v_AScm ⋅ 𝑠                           is quadratic in 𝑠.
-  /// </pre>
-  /// @see CalcJacobianCenterOfMassTranslationalVelocity() to compute J𝑠_V_Scm,
-  /// point Scm's translational velocity Jacobian in frame A with respect to 𝑠.
   /// @throws std::exception if `this` has no body except world_body().
   /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
+  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @see CalcJacobianCenterOfMassTranslationalVelocity() to compute J𝑠_v_Scm,
+  /// point Scm's translational velocity Jacobian in frame A with respect to 𝑠.
   /// @note The world_body() is ignored. asBias_AScm_E = ∑ (mᵢ aᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body, and
   /// aᵢ is the translational bias acceleration of Bᵢcm in frame A expressed in
   /// frame E for speeds 𝑠 (Bᵢcm is the center of mass of the iᵗʰ body).
-  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @note See @ref bias_acceleration_functions "Bias acceleration functions"
+  /// for theory and details.
   Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
@@ -4478,6 +4475,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
         context, model_instances, with_respect_to, frame_A, frame_E);
   }
+  ///@}
 
   /// This method allows users to map the state of `this` model, x, into a
   /// vector of selected state xₛ with a given preferred ordering.
