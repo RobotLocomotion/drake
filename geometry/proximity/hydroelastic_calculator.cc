@@ -53,21 +53,21 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
 
 template <typename T>
 std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
-    const SoftGeometry& compliant0_F, const math::RigidTransform<T>& X_WF,
-    GeometryId id0, const SoftGeometry& compliant1_G,
+    const SoftGeometry& compliant_F, const math::RigidTransform<T>& X_WF,
+    GeometryId id0, const SoftGeometry& compliant_G,
     const math::RigidTransform<T>& X_WG, GeometryId id1,
     HydroelasticContactRepresentation representation) {
-  DRAKE_DEMAND(!compliant0_F.is_half_space() && !compliant1_G.is_half_space());
+  DRAKE_DEMAND(!compliant_F.is_half_space() && !compliant_G.is_half_space());
 
-  const VolumeMeshFieldLinear<double, double>& field0_F =
-      compliant0_F.pressure_field();
-  const Bvh<Obb, VolumeMesh<double>>& bvh0_F = compliant0_F.bvh();
-  const VolumeMeshFieldLinear<double, double>& field1_G =
-      compliant1_G.pressure_field();
-  const Bvh<Obb, VolumeMesh<double>>& bvh1_G = compliant1_G.bvh();
+  const VolumeMeshFieldLinear<double, double>& field_F =
+      compliant_F.pressure_field();
+  const Bvh<Obb, VolumeMesh<double>>& bvh_F = compliant_F.bvh();
+  const VolumeMeshFieldLinear<double, double>& field_G =
+      compliant_G.pressure_field();
+  const Bvh<Obb, VolumeMesh<double>>& bvh_G = compliant_G.bvh();
 
   return ComputeContactSurfaceFromCompliantVolumes(
-      id0, field0_F, bvh0_F, X_WF, id1, field1_G, bvh1_G, X_WG, representation);
+      id0, field_F, bvh_F, X_WF, id1, field_G, bvh_G, X_WG, representation);
 }
 
 template <typename T>
@@ -104,24 +104,24 @@ ContactCalculator<T>::MaybeMakeContactSurface(GeometryId id_A,
     if (id_A.get_value() > id_B.get_value()) {
       std::swap(id_A, id_B);
     }
-    const SoftGeometry& soft0 = geometries_.soft_geometry(id_A);
-    const SoftGeometry& soft1 = geometries_.soft_geometry(id_B);
+    const SoftGeometry& soft_A = geometries_.soft_geometry(id_A);
+    const SoftGeometry& soft_B = geometries_.soft_geometry(id_B);
 
     // Halfspace vs. halfspace is not supported.
-    if (soft0.is_half_space() && soft1.is_half_space()) {
+    if (soft_A.is_half_space() && soft_B.is_half_space()) {
       return {ContactSurfaceResult::kHalfSpaceHalfSpace, nullptr};
     }
 
     // Compliant-halfspace vs. compliant-mesh is not supported.
-    if (soft0.is_half_space() || soft1.is_half_space()) {
+    if (soft_A.is_half_space() || soft_B.is_half_space()) {
       return {ContactSurfaceResult::kCompliantHalfSpaceCompliantMesh, nullptr};
     }
 
     // Compliant mesh vs. compliant mesh.
-    DRAKE_DEMAND(!soft0.is_half_space() && !soft1.is_half_space());
+    DRAKE_DEMAND(!soft_A.is_half_space() && !soft_B.is_half_space());
     std::unique_ptr<ContactSurface<T>> surface =
-        DispatchCompliantCompliantCalculation(soft0, X_WGs_.at(id_A), id_A,
-                                              soft1, X_WGs_.at(id_B), id_B,
+        DispatchCompliantCompliantCalculation(soft_A, X_WGs_.at(id_A), id_A,
+                                              soft_B, X_WGs_.at(id_B), id_B,
                                               representation_);
     return {ContactSurfaceResult::kCalculated, std::move(surface)};
   }
