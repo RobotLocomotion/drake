@@ -541,7 +541,7 @@ class SpanningForest {
   // Returns true if this model instance requests optimization (link merging)
   // of composites, either explicitly or via inheritance from the global
   // settings.
-  bool merge_link_composites(ModelInstanceIndex index) const {
+  bool should_merge_link_composites(ModelInstanceIndex index) const {
     return static_cast<bool>(options(index) &
                              ForestBuildingOptions::kMergeLinkComposites);
   }
@@ -553,20 +553,16 @@ class SpanningForest {
   // decide to merge them, the Joint won't be modeled at all since it will be
   // interior to the composite. Here is the policy:
   //   - If the joint is not a weld, we're not building a composite;
-  //     return false.
+  //     return false (don't merge).
   //   - If the weld joint has been marked "must be modeled" then both its
   //     parent and child Links must have their own Mobods; return false.
-  //   - Parent, child, and joint are each in a model instance. If any one
-  //     of those three model instances specifies "combine link composites" then
-  //     we will merge parent and child; return true.
+  //   - Look at the joint's model instance's forest building options. If
+  //     they include "merge link composites" then we will merge parent and
+  //     child; return true.
   //   - Otherwise we're not combining; return false;
   bool should_be_unmodeled_weld_in_composite(const Joint& joint) {
-    if (!joint.is_weld() || joint.must_be_modeled()) return false;
-    return merge_link_composites(joint.model_instance()) ||
-           merge_link_composites(
-               link_by_index(joint.parent_link_index()).model_instance()) ||
-           merge_link_composites(
-               link_by_index(joint.child_link_index()).model_instance());
+    return joint.is_weld() && !joint.must_be_modeled() &&
+           should_merge_link_composites(joint.model_instance());
   }
 
   // Adds the follower Link to the LinkComposite that inboard_mobod is

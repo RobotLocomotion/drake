@@ -763,7 +763,8 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   graph.SetGlobalForestBuildingOptions(
       ForestBuildingOptions::kMergeLinkComposites);
   graph.SetForestBuildingOptions(static_model_instance,
-                                 ForestBuildingOptions::kStatic);
+                                 ForestBuildingOptions::kMergeLinkComposites |
+                                     ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
 
   // The graph shouldn't change from SpanningForest 1, but the forest will.
@@ -827,7 +828,8 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
                                  ForestBuildingOptions::kMergeLinkComposites |
                                      ForestBuildingOptions::kUseFixedBase);
   graph.SetForestBuildingOptions(static_model_instance,
-                                 ForestBuildingOptions::kStatic);
+                                 ForestBuildingOptions::kMergeLinkComposites |
+                                     ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
 
   EXPECT_EQ(ssize(forest.mobods()), 6);
@@ -1929,6 +1931,87 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
 
   EXPECT_EQ(forest.trees(TreeIndex(0)).height(), 3);
   EXPECT_EQ(forest.trees(TreeIndex(1)).height(), 4);
+}
+
+/* A joint connects a parent link to a child link. In general, the joint,
+parent, and child can each be in different model instances. Each of those
+model instances can specify whether we should merge link composites onto
+a single Mobod or whether parent and child must each have their own Mobod.
+Our policy is that when a joint is a weld, we look only at that joint's
+model instance to determine whether that joint will merge parent and child
+onto a single Mobod.
+
+A few nuances:
+ - When an ephemeral joint is added, it is assigned the same model instance
+   as its child link. So in that case the choice is effectively determined by
+   the child's model instance. This affects static links since those are
+   attached to World with a weld and will end up in the World LinkComposite.
+ - There is a joint flag that should force the joint to be modeled (rather
+   than merged) regardless of its model instance's setting.
+ - If the joint's model instance has no specified forest building options,
+   it inherits them from the global forest building options. (That's tested
+   elsewhere.)
+
+We'll use this graph:
+
+         I4  I1  I5  I2              Ix model instance index
+   World --> {1} ==> {2}
+                                     I3 is a static model instance
+             {3} I3                     so link {3} will be welded to World
+
+Each link is in the model instance whose index is the same as the link
+number. The joints are in I4 and I5 as shown. We'll fiddle with the forest
+building options and check the behavior.
+*/
+GTEST_TEST(SpanningForest, CheckMergingPolicy) {
+  LinkJointGraph graph;
+  const SpanningForest& forest = graph.forest();
+  graph.RegisterJointType("revolute", 1, 1);
+  for (int i = 1; i <= 3; ++i)
+    graph.AddLink("link" + std::to_string(i), ModelInstanceIndex(i));
+  graph.AddJoint("revolute_0", ModelInstanceIndex(4), "revolute", BodyIndex(0),
+                 BodyIndex(1));
+  graph.AddJoint("weld_1", ModelInstanceIndex(5), "weld", BodyIndex(1),
+                 BodyIndex(2));
+
+  graph.SetForestBuildingOptions(ModelInstanceIndex(3),
+                                 ForestBuildingOptions::kStatic);
+
+  // Baseline -- no merging. Every link gets a Mobod.
+  EXPECT_TRUE(graph.BuildForest());
+  EXPECT_EQ(ssize(forest.mobods()), 4);
+
+  // Only I5 should determin whether we merge {1} and {2}. Set the merge
+  // flag on everything else and verify it makes no difference.
+  graph.SetForestBuildingOptions(ModelInstanceIndex(1),
+                                 ForestBuildingOptions::kMergeLinkComposites);
+  graph.SetForestBuildingOptions(ModelInstanceIndex(2),
+                                 ForestBuildingOptions::kMergeLinkComposites);
+  graph.SetForestBuildingOptions(ModelInstanceIndex(4),
+                                 ForestBuildingOptions::kMergeLinkComposites);
+  EXPECT_TRUE(graph.BuildForest());
+  EXPECT_EQ(ssize(forest.mobods()), 4);
+
+  // If I5 says merge, we should have one fewer Mobods.
+  graph.SetForestBuildingOptions(ModelInstanceIndex(5),
+                                 ForestBuildingOptions::kMergeLinkComposites);
+  EXPECT_TRUE(graph.BuildForest());
+  EXPECT_EQ(ssize(forest.mobods()), 3);
+
+  // We're still getting a Mobod for the static link {3}. Let's merge that
+  // with World now.
+  graph.SetForestBuildingOptions(ModelInstanceIndex(3),
+                                 ForestBuildingOptions::kMergeLinkComposites |
+                                     ForestBuildingOptions::kStatic);
+  EXPECT_TRUE(graph.BuildForest());
+  EXPECT_EQ(ssize(forest.mobods()), 2);
+
+  // Finally, let's insist that the weld joint gets modeled. That should
+  // override the setting in its model instance and give us a separate
+  // Mobod for links 1 and 2.
+  graph.ChangeJointFlags(JointIndex(1), JointFlags::kMustBeModeled);
+  EXPECT_TRUE(graph.BuildForest());
+  EXPECT_EQ(ssize(forest.mobods()), 3);
 }
 
 }  // namespace
