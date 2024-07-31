@@ -193,25 +193,16 @@ void FclDistance(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
 
 // Compare functions to use with ordering PenetrationAsPointPairs.
 template <typename T>
-bool OrderPointPair(const PenetrationAsPointPair<T>& p1,
-                    const PenetrationAsPointPair<T>& p2) {
-  if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
-  return p1.id_B < p2.id_B;
-}
-template <typename T>
-bool OrderPtr(const std::unique_ptr<PenetrationAsPointPair<T>>& p1,
-              const std::unique_ptr<PenetrationAsPointPair<T>>& p2) {
-  if (p1 == nullptr || p2 == nullptr) return p1 < p2;
-  return OrderPointPair(*p1, *p2);
+bool Order(const PenetrationAsPointPair<T>& p1,
+           const PenetrationAsPointPair<T>& p2) {
+  return std::tie(p1.id_A, p1.id_B) < std::tie(p2.id_A, p2.id_B);
 }
 
 // Compare function to use with ordering ContactSurfaces.
 template <typename T>
-bool OrderPtr(const std::unique_ptr<ContactSurface<T>>& s1,
-              const std::unique_ptr<ContactSurface<T>>& s2) {
-  if (s1 == nullptr || s2 == nullptr) return s1 < s2;
-  if (s1->id_M() != s2->id_M()) return s1->id_M() < s2->id_M();
-  return s1->id_N() < s2->id_N();
+bool Order(const ContactSurface<T>& s1, const ContactSurface<T>& s2) {
+  return std::forward_as_tuple(s1.id_M(), s1.id_N()) <
+         std::forward_as_tuple(s2.id_M(), s2.id_N());
 }
 
 // Compare function to use when ordering
@@ -219,8 +210,7 @@ bool OrderPtr(const std::unique_ptr<ContactSurface<T>>& s1,
 template <typename T>
 bool OrderSignedDistancePair(const SignedDistancePair<T>& p1,
                              const SignedDistancePair<T>& p2) {
-  if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
-  return p1.id_B < p2.id_B;
+  return std::tie(p1.id_A, p1.id_B) < std::tie(p2.id_A, p2.id_B);
 }
 
 // Compare function to use when ordering ComputeSignedDistanceToPoint.
@@ -231,22 +221,31 @@ bool OrderSignedDistanceToPoint(const SignedDistanceToPoint<T>& p1,
 }
 
 // Sort the vector of `ptrs`, then move the sorted objects to `objects`,
-// ignoring any nullptr entries.
+// ignoring any nullptr entries.  Type R must provide a comparison free
+// function:
+//   bool Order(const R&, const R&)
 template <typename R>
 void SortCullFlatten(
     std::vector<std::unique_ptr<R>>* ptrs,
     std::vector<R>* objects) {
   std::sort(ptrs->begin(), ptrs->end(),
             [](const std::unique_ptr<R>& a, const std::unique_ptr<R>& b) {
-              return OrderPtr(a, b);
+              if (a == nullptr || b == nullptr) {
+                // Note reversed comparison here forces nulls to the end of the
+                // sequence.
+                return a > b;
+              }
+              return Order(*a, *b);
             });
 
   // While flattening, filter out any nullptr results.
   objects->reserve(ptrs->size());
   for (const auto& ptr : *ptrs) {
-    if (ptr != nullptr) {
-      objects->emplace_back(std::move(*ptr));
+    if (ptr == nullptr) {
+      // Thanks to comparison trick above, we can quit on first null.
+      break;
     }
+    objects->emplace_back(std::move(*ptr));
   }
 }
 
@@ -657,7 +656,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     FclCollide(dynamic_tree_, anchored_tree_, &data,
                penetration_as_point_pair::Callback<T>);
 
-    std::sort(contacts.begin(), contacts.end(), OrderPointPair<T>);
+    std::sort(contacts.begin(), contacts.end(),
+              [](const auto& a, const auto& b) {
+                return Order<T>(a, b);
+              });
 
     return contacts;
   }
