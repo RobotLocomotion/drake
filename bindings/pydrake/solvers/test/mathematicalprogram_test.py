@@ -1114,6 +1114,16 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.GetSolution(x)[0] <= 2)
         self.assertTrue(result.GetSolution(x)[0] >= -2)
 
+    def test_addconstraint_binding(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, 'x')
+        prog.AddConstraint(x[0] <= 2)
+        # This ensures that constraint is of type Binding<Constraint> and not
+        # a more specific type.
+        constraint = prog.GetAllConstraints()[0]
+        constraint2 = prog.AddConstraint(constraint)
+        self.assertEqual(constraint, constraint2)
+
     def test_initial_guess(self):
         prog = mp.MathematicalProgram()
         count = 6
@@ -1357,6 +1367,25 @@ class TestMathematicalProgram(unittest.TestCase):
         numpy_compare.assert_equal(prog.decision_variables()[1], a1)
         numpy_compare.assert_equal(prog.indeterminates()[0], x0)
         numpy_compare.assert_equal(prog.indeterminate(1), x1)
+
+    def test_required_capabilities(self):
+
+        prog = mp.MathematicalProgram()
+        X = prog.NewSymmetricContinuousVariables(3, "X")
+        prog.AddPositiveSemidefiniteConstraint(X)
+
+        prog.AddLinearConstraint(X[0, 0] >= 0)
+        prog.AddLinearEqualityConstraint(X[1, 0] == 1)
+        prog.AddLinearCost(X[0, 0])
+        expected_attributes = [
+            mp.ProgramAttribute.kLinearCost,
+            mp.ProgramAttribute.kLinearEqualityConstraint,
+            mp.ProgramAttribute.kLinearConstraint,
+            mp.ProgramAttribute.kPositiveSemidefiniteConstraint]
+        for attribute in expected_attributes:
+            self.assertIn(attribute, prog.required_capabilities())
+        for attribute in prog.required_capabilities():
+            self.assertIn(attribute, expected_attributes)
 
     def test_make_first_available_solver(self):
         gurobi_solver = GurobiSolver()
