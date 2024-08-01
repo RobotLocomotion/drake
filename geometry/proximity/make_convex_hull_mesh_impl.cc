@@ -23,6 +23,7 @@
 #include <vtkURI.h>                   // vtkIOCore
 #include <vtkURILoader.h>             // vtkIOCore
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/fmt_ostream.h"
@@ -33,6 +34,7 @@
 #include "drake/geometry/read_obj.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/systems/sensors/vtk_diagnostic_event_observer.h"
 
 namespace drake {
 namespace geometry {
@@ -40,10 +42,12 @@ namespace internal {
 namespace {
 
 using common::FileContents;
+using drake::internal::DiagnosticPolicy;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using systems::sensors::internal::VtkDiagnosticEventObserver;
 
 namespace fs = std::filesystem;
 
@@ -184,18 +188,20 @@ class MeshMemoryLoader final : public vtkURILoader {
       if (pos == std::string::npos) {
         throw std::runtime_error(fmt::format(
             "Can't compute convex hull for in-memory glTF file. The glTF file "
-            "has an unrecognizable resource URI: '{}'.",
+            "has an unrecognizable resource URI: '{}'. All URIs should be "
+            "use relative file positions and be included in the in-memory "
+            "mesh's supporting files.",
             uri.ToString()));
       }
       const std::string name = path.substr(pos + 13);
       if (!mesh_data_.contains(name)) {
-        throw std::runtime_error(fmt::format(
-            "Can't compute convex hull for in-memory glTF file. The glTF file "
-            "referenced a name that wasn't in the memory mesh data: '{}'.",
-            name));
+        // If the glTF file refers to a file that isn't in our set of
+        // supporting files, we won't immediately throw. We'll wait to see if
+        // it's an actual parsing problem.
+        return nullptr;
       }
       const FileContents& file_data = mesh_data_.at(name);
-      vtkSmartPointer<vtkMemoryResourceStream> stream;
+      vtkNew<vtkMemoryResourceStream> stream;
       stream->SetBuffer(file_data.contents().c_str(),
                         file_data.contents().size(),
                         /* copy= */ false);
@@ -214,29 +220,27 @@ class MeshMemoryLoader final : public vtkURILoader {
   vtkSmartPointer<vtkURI> base_uri_;
 };
 
-std::vector<Vector3d> ReadGltfVertices(const std::string& gltf_name,
-                                       const string_map<FileContents>& files,
+std::vector<Vector3d> ReadGltfVertices(const InMemoryMesh& mem_mesh,
                                        double scale) {
-  MeshMemoryLoader uri_loader(&files);
-  // TODO(SeanCurtis-TRI): I need to use Drake' VTK observer on loader
-  // loader->AddObserver(...);
+  const std::string& gltf_name = mem_mesh.mesh_file.filename_hint();
+  vtkSmartPointer<MeshMemoryLoader> uri_loader(
+      new MeshMemoryLoader(&mem_mesh.supporting_files));
   vtkNew<vtkGLTFDocumentLoader> loader;
-  if (!files.contains(gltf_name)) {
-    std::vector<std::string> keys;
-    for (const auto& [key, _] : files) {
-      keys.push_back(key);
-    }
-    throw std::runtime_error(fmt::format(
-        "Can't compute convex hull for in-memory glTF file. The file data "
-        "referenced as '{}' is not in the in-memory file set: {{{}}}",
-        gltf_name, fmt::join(keys, ", ")));
-  }
-  const std::string& gltf_contents = files.at(gltf_name).contents();
+  loader->SetConfig({.include_animation = false,
+                     .include_images = false,
+                     .include_skins = false});
+  vtkNew<VtkDiagnosticEventObserver> observer;
+  DiagnosticPolicy diagnostic;
+  observer->set_diagnostic(&diagnostic);
+  loader->AddObserver(vtkCommand::ErrorEvent, observer);
+  loader->AddObserver(vtkCommand::WarningEvent, observer);
+
+  const std::string& gltf_contents = mem_mesh.mesh_file.contents();
   vtkNew<vtkMemoryResourceStream> gltf_stream;
   gltf_stream->SetBuffer(gltf_contents.c_str(), gltf_contents.size(),
                          /* copy= */ false);
 
-  if (!loader->LoadModelMetaDataFromStream(gltf_stream, &uri_loader) ||
+  if (!loader->LoadModelMetaDataFromStream(gltf_stream, uri_loader) ||
       !loader->LoadModelData({}) || !loader->BuildModelVTKGeometry()) {
     // TODO(SeanCurtis-TRI) Can I do better with error messages?
     throw std::runtime_error(fmt::format(
@@ -244,7 +248,8 @@ std::vector<Vector3d> ReadGltfVertices(const std::string& gltf_name,
         "data referenced as '{}'.",
         gltf_name));
   }
-  // TODO: Get the vertex data!
+
+  // Now get the vertex data, transformed to the geometry frame G.
   auto model = loader->GetInternalModel();
   DRAKE_DEMAND(model != nullptr);
 
@@ -376,33 +381,31 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
   return n_candidate.normalized();
 }
 
-VertexCloud ReadVertices(const FileContents& file_data,
-                         std::string_view extension, double scale) {
+VertexCloud ReadVertices(const InMemoryMesh& mesh, std::string_view extension,
+                         double scale) {
   VertexCloud cloud;
   if (extension == ".obj") {
-    cloud.vertices = ReadObjVertices(file_data, scale);
+    cloud.vertices = ReadObjVertices(mesh.mesh_file, scale);
   } else if (extension == ".vtk") {
-    cloud.vertices = ReadVtkVertices(file_data, scale);
+    cloud.vertices = ReadVtkVertices(mesh.mesh_file, scale);
   } else if (extension == ".gltf") {
-    string_map<FileContents> files;
-    files["gltf"] = file_data;
-    cloud.vertices = ReadGltfVertices("gltf", files, scale);
+    cloud.vertices = ReadGltfVertices(mesh, scale);
   } else {
     throw std::runtime_error(
         fmt::format("MakeConvexHull only applies to .obj, .vtk, and .gltf "
                     "meshes; unsupported extension '{}' for geometry data: {}.",
-                    extension, file_data.filename_hint()));
+                    extension, mesh.mesh_file.filename_hint()));
   }
 
   if (cloud.vertices.size() < 3) {
     throw std::runtime_error(fmt::format(
         "MakeConvexHull() cannot be used on a mesh with fewer "
         "than three vertices; found {} vertices in geometry data: {}.",
-        cloud.vertices.size(), file_data.filename_hint()));
+        cloud.vertices.size(), mesh.mesh_file.filename_hint()));
   }
 
   /* Characterizes planarity. */
-  cloud.n = FindNormal(cloud.vertices, file_data.filename_hint());
+  cloud.n = FindNormal(cloud.vertices, mesh.mesh_file.filename_hint());
   double d = cloud.n.dot(cloud.vertices[0]);
   cloud.interior_point = cloud.vertices[0];
   /* Assume planarity and look for evidence to the contrary. */
@@ -707,11 +710,11 @@ class ConvexHull {
 }  // namespace
 
 PolygonSurfaceMesh<double> MakeConvexHullFromContents(
-    const common::FileContents& file_data, std::string_view extension,
-    double scale, double margin) {
+    const InMemoryMesh& mesh, std::string_view extension, double scale,
+    double margin) {
   DRAKE_THROW_UNLESS(scale > 0);
   DRAKE_THROW_UNLESS(margin >= 0);
-  VertexCloud cloud = ReadVertices(file_data, extension, scale);
+  VertexCloud cloud = ReadVertices(mesh, extension, scale);
 
   // Hull of the input cloud of vertices.
   const ConvexHull hull(std::move(cloud));
