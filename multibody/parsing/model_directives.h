@@ -110,7 +110,10 @@ struct AddModel {
   std::map<std::string, Eigen::VectorXd> default_joint_positions;
   /// Map of body_name or frame_name => default free body pose. The name must
   /// be a name within the scope of the model added by this directive. The name
-  /// must not be scoped (i.e., no "foo::link", just "link").
+  /// must not be scoped (i.e., no "foo::link", just "link"). If the name is
+  /// "__model__" and such a name does not exist, then the posed frame will be
+  /// the first body's body frame, i.e., the "canonical frame" in SDFormat
+  /// parlance.
   ///
   /// However, the schema::Transform associated with that named body/frame can
   /// define a `base_frame` referring to any frame that has been added prior to
