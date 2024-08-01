@@ -4,7 +4,7 @@
 #include <istream>
 #include <string>
 
-#include "drake/common/file_contents.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 
 namespace drake {
@@ -56,8 +56,8 @@ namespace internal {
 /* The mesh data is specified by the contents of a mesh file interpreted
  according to the provided `extension`. */
 PolygonSurfaceMesh<double> MakeConvexHullFromContents(
-    const common::FileContents& file_data, std::string_view extension,
-    double scale, double margin = 0);
+    const InMemoryMesh& mesh, std::string_view extension, double scale,
+    double margin = 0);
 
 /* The mesh data is specified by a path to an on-disk file of supported type. */
 PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
