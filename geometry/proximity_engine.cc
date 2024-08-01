@@ -720,7 +720,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         surface_ptrs[k] = std::move(surface);
       }
       if (ContactSurfaceFailed(result)) {
-        // This will certainly throw.
         ThrowOnFailedResult(result, GetFclPtr(id0), GetFclPtr(id1));
       }
     }

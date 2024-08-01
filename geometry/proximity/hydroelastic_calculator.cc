@@ -54,8 +54,8 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
 template <typename T>
 std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
     const SoftGeometry& compliant_F, const math::RigidTransform<T>& X_WF,
-    GeometryId id0, const SoftGeometry& compliant_G,
-    const math::RigidTransform<T>& X_WG, GeometryId id1,
+    GeometryId id_F, const SoftGeometry& compliant_G,
+    const math::RigidTransform<T>& X_WG, GeometryId id_G,
     HydroelasticContactRepresentation representation) {
   DRAKE_DEMAND(!compliant_F.is_half_space() && !compliant_G.is_half_space());
 
@@ -67,7 +67,7 @@ std::unique_ptr<ContactSurface<T>> DispatchCompliantCompliantCalculation(
   const Bvh<Obb, VolumeMesh<double>>& bvh_G = compliant_G.bvh();
 
   return ComputeContactSurfaceFromCompliantVolumes(
-      id0, field_F, bvh_F, X_WF, id1, field_G, bvh_G, X_WG, representation);
+      id_F, field_F, bvh_F, X_WF, id_G, field_G, bvh_G, X_WG, representation);
 }
 
 template <typename T>
