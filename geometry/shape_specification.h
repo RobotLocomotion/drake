@@ -19,11 +19,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
-
-using MeshSource = std::variant<std::string, InMemoryMesh>;
-
-}  // namespace internal
 
 #ifndef DRAKE_DOXYGEN_CXX
 class Box;
@@ -508,11 +503,20 @@ class Mesh final : public Shape {
 
   ~Mesh() final;
 
+  /** Returns the source for this specification's mesh data. */
+  const MeshSource& source() const { return source_; }
+
   /** Returns the filename passed to the constructor.
    @throws std::exception if `this` %Mesh was constructed using in-memory file
                           contents.
    @see is_in_memory(). */
-  const std::string& filename() const;
+  std::string filename() const;
+
+  /** Returns the filepath passed to the constructor.
+   @throws std::exception if `this` %Mesh was constructed using in-memory file
+                          contents.
+   @see is_in_memory(). */
+  const std::filesystem::path filepath() const;
 
   /** Returns the extension of the mesh type -- all lower case and including
    the dot. If `this` is constructed from a file path, the extension is
@@ -522,7 +526,7 @@ class Mesh final : public Shape {
 
    If `this` is constructed using in-memory file contents, it is the extension
    passed to the constructor. */
-  const std::string& extension() const { return extension_; }
+  const std::string& extension() const { return source_.extension(); }
 
   double scale() const { return scale_; }
 
@@ -555,8 +559,7 @@ class Mesh final : public Shape {
   VariantShapeConstPtr get_variant_this() const final;
 
   // NOTE: Cannot be const to support default copy/move semantics.
-  internal::MeshSource source_;
-  std::string extension_;
+  MeshSource source_;
   double scale_{};
   // Allows the deferred computation of the hull on an otherwise const Mesh.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};

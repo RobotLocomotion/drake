@@ -13,9 +13,21 @@ namespace geometry {
 namespace internal {
 
 template <typename T>
-VolumeMesh<T> MakeVolumeMeshFromVtk(const std::filesystem::path& filename,
-                                    double scale) {
-  VolumeMesh<double> read_mesh = ReadVtkToVolumeMesh(filename, scale);
+VolumeMesh<T> MakeVolumeMeshFromVtk(const Mesh& mesh) {
+  const MeshSource& source = mesh.source();
+  const std::string description =
+      source.IsPath() ? source.path().string()
+                      : source.mesh_data().mesh_file.filename_hint();
+  if (mesh.extension() != ".vtk") {
+    throw std::runtime_error(fmt::format(
+        "MakeVolumeMeshFromVtk() Called on a Mesh specification with the wrong "
+        "extension type. Requires '.vtk', got '{}' for mesh data {}.",
+        mesh.extension(), description));
+  }
+
+  const double scale = mesh.scale();
+
+  VolumeMesh<double> read_mesh = ReadVtkToVolumeMesh(source, scale);
 
   for (int e = 0; e < read_mesh.num_elements(); ++e) {
     if (read_mesh.CalcTetrahedronVolume(e) <= 0.) {
@@ -24,7 +36,7 @@ VolumeMesh<T> MakeVolumeMeshFromVtk(const std::filesystem::path& filename,
           "The {}-th tetrahedron (index start at 0) with "
           "vertices {}, {}, {}, {} has non-positive volume, "
           "so you might want to switch two consecutive vertices.",
-          filename.string(), scale, e, read_mesh.element(e).vertex(0),
+          description, scale, e, read_mesh.element(e).vertex(0),
           read_mesh.element(e).vertex(1), read_mesh.element(e).vertex(2),
           read_mesh.element(e).vertex(3)));
     }
