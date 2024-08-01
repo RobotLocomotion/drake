@@ -382,6 +382,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("weight_matrix"),
             subgraph_doc.AddPathLengthCost.doc_1args_weight_matrix)
         .def("AddPathEnergyCost",
+            // Equivalent structure to path length cost
             py::overload_cast<const Eigen::MatrixXd&>(
                 &Class::Subgraph::AddPathEnergyCost),
             py::arg("weight_matrix"),

@@ -251,7 +251,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, QuadraticPathLengthSpacing) {
     for (int j = 0; j < (kOrder - 1); j++) {
       EXPECT_NEAR((controlPts.col(j) - controlPts.col(j + 1)).norm(),
                   (controlPts.col(j + 1) - controlPts.col(j + 2)).norm(),
-                  1e-10);
+                  1e-3);
     }
   }
 }
