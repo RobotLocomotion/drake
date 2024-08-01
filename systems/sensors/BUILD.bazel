@@ -357,6 +357,7 @@ drake_cc_library(
     internal = True,
     visibility = [
         "//geometry/render_vtk:__pkg__",
+        "//geometry/proximity:__pkg__",
     ],
     deps = [
         "//common:diagnostic_policy",
