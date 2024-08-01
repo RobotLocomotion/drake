@@ -293,7 +293,7 @@ void SpanningForest::FixupForestToUseNewNumbering(
     while (current_mobod.index() != new_index) {
       /* Move current_mobod to its final location; replace with whatever was
       there before. */
-      current_mobod.Swap(data_.mobods[current_mobod.index()]);
+      std::swap(current_mobod, data_.mobods[current_mobod.index()]);
     }
   }
 

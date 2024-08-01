@@ -45,28 +45,6 @@ void SpanningForest::Mobod::FixupAfterReordering(
   RenumberMobodIndexVector(old_to_new, &outboard_mobods_);
 }
 
-void SpanningForest::Mobod::Swap(Mobod& other) {
-  std::swap(follower_link_ordinals_, other.follower_link_ordinals_);
-  std::swap(joint_ordinal_, other.joint_ordinal_);
-  std::swap(use_reverse_mobilizer_, other.use_reverse_mobilizer_);
-  std::swap(level_, other.level_);
-  std::swap(index_, other.index_);
-  std::swap(inboard_mobod_, other.inboard_mobod_);
-  std::swap(outboard_mobods_, other.outboard_mobods_);
-  std::swap(tree_index_, other.tree_index_);
-  std::swap(welded_mobods_index_, other.welded_mobods_index_);
-  std::swap(q_start_, other.q_start_);
-  std::swap(nq_, other.nq_);
-  std::swap(v_start_, other.v_start_);
-  std::swap(nv_, other.nv_);
-  std::swap(has_quaternion_, other.has_quaternion_);
-  std::swap(nq_inboard_, other.nq_inboard_);
-  std::swap(nv_inboard_, other.nv_inboard_);
-  std::swap(nq_outboard_, other.nq_outboard_);
-  std::swap(nv_outboard_, other.nv_outboard_);
-  std::swap(num_subtree_mobods_, other.num_subtree_mobods_);
-}
-
 void SpanningForest::Mobod::RenumberMobodIndexVector(
     const std::vector<MobodIndex>& old_to_new,
     std::vector<MobodIndex>* to_be_renumbered) {
