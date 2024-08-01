@@ -62,9 +62,9 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(world_mobod_index, MobodIndex(0));
   EXPECT_EQ(graph.link_to_mobod(world_link_index), MobodIndex(0));
   EXPECT_EQ(ssize(graph.link_composites()), 1);
-  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0))), 1);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0], world_link_index);
-  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
+  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
+            world_link_index);
 
   // Check that the World-only forest makes sense.
   EXPECT_EQ(ssize(forest.mobods()), 1);
@@ -285,8 +285,8 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
 
   // The only LinkComposite is the World composite and it is alone there.
   EXPECT_EQ(ssize(graph.link_composites()), 1);  // just World
-  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0))), 1);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0],
+  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
             graph.world_link().index());
 
   EXPECT_EQ(ssize(forest.trees()), 3);
@@ -448,12 +448,11 @@ GTEST_TEST(SpanningForest, MultipleBranchesBaseJointOptions) {
 
   // There is only the World composite, but now tree1's base link is included.
   EXPECT_EQ(ssize(graph.link_composites()), 1);  // just World
-  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0))), 2);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0],
+  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 2);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
             graph.world_link().index());
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[1],
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[1],
             graph.links(tree1.front().link_ordinal()).index());
-  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
 
   // Similarly, there is only one WeldedMobods group, containing just World
   // and tree1's base
@@ -676,11 +675,13 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   const std::vector<BodyIndex> link_composites0{BodyIndex(0), BodyIndex(7),
                                                 BodyIndex(6), BodyIndex(8)};
   const std::vector<BodyIndex> link_composites1{BodyIndex(11), BodyIndex(10)};
-  const std::vector<std::vector<BodyIndex>> expected_link_composites{
-      link_composites0, link_composites1};
-  EXPECT_EQ(graph.link_composites(), expected_link_composites);
-  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
-  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(1)));
+
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links,
+            link_composites0);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(1)).links,
+            link_composites1);
+  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
+  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(1)).is_massless);
 
   EXPECT_EQ(ssize(forest.mobods()), 12);
   EXPECT_EQ(ssize(forest.trees()), 6);
@@ -769,7 +770,10 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
 
   // The graph shouldn't change from SpanningForest 1, but the forest will.
   EXPECT_EQ(ssize(graph.joints()) - graph.num_user_joints(), 4);
-  EXPECT_EQ(graph.link_composites(), expected_link_composites);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links,
+            link_composites0);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(1)).links,
+            link_composites1);
 
   EXPECT_EQ(ssize(forest.mobods()), 8);
   EXPECT_EQ(ssize(forest.trees()), 3);
@@ -839,7 +843,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
       BodyIndex(0),  BodyIndex(7),  BodyIndex(6), BodyIndex(8),
       BodyIndex(11), BodyIndex(10), BodyIndex(9)};
   EXPECT_EQ(ssize(graph.link_composites()), 1);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)),
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links,
             expected_link_composite);
 }
 
@@ -998,9 +1002,9 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
   const std::vector<std::vector<int>> expected_links{
       {0, 5, 7, 12}, {13, 1, 4, 15}, {10, 6, 8, 16}};
   for (LinkCompositeIndex c(0); c < 3; ++c) {
-    EXPECT_FALSE(graph.link_composite_is_massless(c));
+    EXPECT_FALSE(graph.link_composites(c).is_massless);
     for (int link = 0; link < ssize(expected_links[c]); ++link)
-      EXPECT_EQ(graph.link_composites(c)[link], expected_links[c][link]);
+      EXPECT_EQ(graph.link_composites(c).links[link], expected_links[c][link]);
   }
 
   // Now let's verify that we got the expected SpanningForest. To understand,
@@ -1048,17 +1052,17 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
 
   EXPECT_EQ(ssize(graph.links()), 15);  // Only one added shadow.
   EXPECT_EQ(ssize(graph.link_composites()), 3);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)),
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links,
             (std::vector<BodyIndex>{BodyIndex(0), BodyIndex(5), BodyIndex(7),
                                     BodyIndex(12)}));
   EXPECT_EQ(
-      graph.link_composites(LinkCompositeIndex(1)),
+      graph.link_composites(LinkCompositeIndex(1)).links,
       (std::vector<BodyIndex>{BodyIndex(13), BodyIndex(1), BodyIndex(4)}));
   EXPECT_EQ(
-      graph.link_composites(LinkCompositeIndex(2)),
+      graph.link_composites(LinkCompositeIndex(2)).links,
       (std::vector<BodyIndex>{BodyIndex(10), BodyIndex(6), BodyIndex(8)}));
   for (LinkCompositeIndex i(0); i < 3; ++i) {
-    EXPECT_FALSE(graph.link_composite_is_massless(i));
+    EXPECT_FALSE(graph.link_composites(i).is_massless);
   }
 
   // Now let's verify that we got the expected SpanningForest. To understand,
@@ -1137,9 +1141,9 @@ GTEST_TEST(SpanningForest, SimpleTrees) {
                             "singular.*cannot be used for dynamics.*"));
   EXPECT_EQ(ssize(graph.link_composites()), 2);
   const std::vector<BodyIndex>& composite94 =
-      graph.link_composites(LinkCompositeIndex(1));
+      graph.link_composites(LinkCompositeIndex(1)).links;
   EXPECT_EQ(composite94, (std::vector<BodyIndex>{BodyIndex(9), BodyIndex(4)}));
-  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(1)));
+  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(1)).is_massless);
 
   // Finally if we connect link 2 to a massful link forming a loop, we should
   // get a dynamics-ready forest by splitting the massful link.
@@ -1499,12 +1503,12 @@ GTEST_TEST(SpanningForest, WorldCompositeComesFirst) {
   EXPECT_FALSE(link4.is_anchored());
 
   EXPECT_EQ(ssize(graph.link_composites()), 2);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)),
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links,
             (std::vector<BodyIndex>{BodyIndex(0), BodyIndex(3)}));
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(1)),
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(1)).links,
             (std::vector<BodyIndex>{BodyIndex(1), BodyIndex(2)}));
-  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
-  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(1)));
+  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
+  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(1)).is_massless);
 
   EXPECT_EQ(ssize(forest.welded_mobods()), 2);
   EXPECT_EQ(forest.welded_mobods(WeldedMobodsIndex(0)),
@@ -1732,7 +1736,7 @@ GTEST_TEST(SpanningForest, LoopWithComposites) {
   EXPECT_EQ(ssize(graph.link_composites()), 4);   // World + 3
   std::array<bool, 4> expect_massless{false, false, true, false};
   for (LinkCompositeIndex i{0}; i < 4; ++i) {
-    EXPECT_EQ(graph.link_composite_is_massless(i), expect_massless[i]);
+    EXPECT_EQ(graph.link_composites(i).is_massless, expect_massless[i]);
   }
 
   EXPECT_EQ(ssize(forest.mobods()), 9);
@@ -1892,7 +1896,7 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
 
   ASSERT_EQ(ssize(graph.link_composites()), 1);  // just the world composite
   EXPECT_EQ(
-      graph.link_composites(LinkCompositeIndex(0)),
+      graph.link_composites(LinkCompositeIndex(0)).links,
       (std::vector{BodyIndex(0), BodyIndex(4), BodyIndex(5), BodyIndex(6)}));
 
   /* (Test 2) Change the type of joint 6 (connects {4} to World) from weld
@@ -1914,7 +1918,7 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
     EXPECT_EQ(graph.link_by_index(i).mobod_index(), 5);  // Merged to one Mobod.
 
   ASSERT_EQ(ssize(graph.link_composites()), 2);  // world and {4:5:6}
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(1)),
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(1)).links,
             (std::vector{BodyIndex(4), BodyIndex(5), BodyIndex(6)}));
 
   /* (Test 3) Change links 7 and 8 to be massless so that we have to continue

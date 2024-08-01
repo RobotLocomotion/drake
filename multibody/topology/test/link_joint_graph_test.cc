@@ -284,9 +284,9 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_TRUE(graph.world_link().is_anchored());
   EXPECT_EQ(graph.link_to_mobod(world_link_index), MobodIndex(0));
   EXPECT_EQ(ssize(graph.link_composites()), 1);
-  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0))), 1);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0], world_link_index);
-  EXPECT_FALSE(graph.link_composite_is_massless(LinkCompositeIndex(0)));
+  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
+            world_link_index);
 
   // Check that Clear() puts the graph back to default-constructed condition.
   // First add some junk to the graph.

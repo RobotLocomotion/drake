@@ -117,7 +117,6 @@ void LinkJointGraph::InvalidateForest() {
     DRAKE_DEMAND(data_.ephemeral_link_name_to_index.empty());
     DRAKE_DEMAND(data_.ephemeral_joint_name_to_index.empty());
     DRAKE_DEMAND(data_.link_composites.empty());
-    DRAKE_DEMAND(data_.link_composite_is_massless.empty());
     DRAKE_DEMAND(data_.num_user_links == ssize(data_.links));
     DRAKE_DEMAND(data_.num_user_joints == ssize(data_.joints));
     return;
@@ -157,7 +156,6 @@ void LinkJointGraph::InvalidateForest() {
   for (auto& link : data_.links) link.ClearModel(data_.max_user_joint_index);
   for (auto& joint : data_.joints) joint.ClearModel();
   data_.link_composites.clear();
-  data_.link_composite_is_massless.clear();
 }
 
 const LinkJointGraph::Link& LinkJointGraph::world_link() const {
@@ -483,12 +481,11 @@ bool LinkJointGraph::IsJointTypeRegistered(
 
 void LinkJointGraph::CreateWorldLinkComposite() {
   DRAKE_DEMAND(!links().empty());  // Better be at least World!
-  DRAKE_DEMAND(data_.link_composites.empty() &&
-               data_.link_composite_is_massless.empty());
+  DRAKE_DEMAND(data_.link_composites.empty());
   Link& world_link = data_.links[LinkOrdinal(0)];
   DRAKE_DEMAND(!world_link.link_composite_index_.has_value());
-  data_.link_composites.emplace_back(std::vector{world_link.index()});
-  data_.link_composite_is_massless.push_back(false);  // World is heavy.
+  data_.link_composites.emplace_back(LinkComposite{
+      .links = std::vector{world_link.index()}, .is_massless = false});
   world_link.link_composite_index_ = LinkCompositeIndex(0);
 }
 
@@ -606,28 +603,27 @@ LinkCompositeIndex LinkJointGraph::AddToLinkComposite(
   Link& maybe_composite_link = mutable_link(maybe_composite_link_ordinal);
   Link& new_link = mutable_link(new_link_ordinal);
   DRAKE_DEMAND(!new_link.is_world());
-  DRAKE_DEMAND(ssize(data_.link_composites) ==
-               ssize(data_.link_composite_is_massless));
 
-  std::optional<LinkCompositeIndex> existing_composite =
+  std::optional<LinkCompositeIndex> existing_composite_index =
       maybe_composite_link.link_composite_index_;
-  if (!existing_composite.has_value()) {
+  if (!existing_composite_index.has_value()) {
     // We're starting a new LinkComposite. This must be the "active link"
     // for this Composite because we saw it first while building the Forest.
-    existing_composite = maybe_composite_link.link_composite_index_ =
+    existing_composite_index = maybe_composite_link.link_composite_index_ =
         LinkCompositeIndex(ssize(data_.link_composites));
-    data_.link_composites.emplace_back(
-        std::vector<BodyIndex>{maybe_composite_link.index()});
-    data_.link_composite_is_massless.push_back(
-        maybe_composite_link.treat_as_massless());
+    data_.link_composites.emplace_back(LinkComposite{
+        .links = std::vector<BodyIndex>{maybe_composite_link.index()},
+        .is_massless = maybe_composite_link.treat_as_massless()});
   }
-  data_.link_composites[*existing_composite].push_back(new_link.index());
-  // If any Link in the composite has mass, then the whole thing is massful.
-  if (!new_link.treat_as_massless())
-    data_.link_composite_is_massless[*existing_composite] = false;
-  new_link.link_composite_index_ = existing_composite;
 
-  return *existing_composite;
+  LinkComposite& existing_composite =
+      data_.link_composites[*existing_composite_index];
+  existing_composite.links.push_back(new_link.index());
+  // If any Link in the composite has mass, then the whole thing is massful.
+  if (!new_link.treat_as_massless()) existing_composite.is_massless = false;
+  new_link.link_composite_index_ = existing_composite_index;
+
+  return *existing_composite_index;
 }
 
 void LinkJointGraph::AddUnmodeledJointToComposite(
