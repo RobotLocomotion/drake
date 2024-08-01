@@ -182,6 +182,7 @@ def vtk_internal_repository(
             ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_parser.patch",
             ":patches/gltf_quiet_image_errors.patch",
+            ":patches/gltf_selected_load.patch",
             ":patches/io_image_formats.patch",
             ":patches/mr11117.patch",
             ":patches/nerf_pegtl.patch",
