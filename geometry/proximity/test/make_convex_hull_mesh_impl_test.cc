@@ -584,25 +584,30 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   // is a scaled unit cube; so we need to scale by (2s + 2δ) / 2 = s + δ.
   const std::string box_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  const InMemoryMesh obj_data{
-      .mesh_file = FileContents(file_contents(box_path), "box.obj")};
+  const MeshSource obj_source(
+      InMemoryMesh{.mesh_file =
+                       FileContents(file_contents(box_path), "box.obj")},
+      ".obj");
   const PolyMesh expected_box = MakeCube(kScale + kMargin);
 
   // The tet in one_tetrahedron.vtk has vertices at origin and unit positions
   // along all axes.
   const std::string tet_path =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
-  const InMemoryMesh vtk_data{
-      .mesh_file = FileContents(file_contents(tet_path), "tet.vtk")};
+  const MeshSource vtk_source(
+      InMemoryMesh{.mesh_file =
+                       FileContents(file_contents(tet_path), "tet.vtk")},
+      ".vtk");
   const PolyMesh expected_tet = GetTetrahedronWithMargin(kScale, kMargin);
 
   // The rainbow_box.gltf has embedded data *and* has a non-trivial hierarchy
   // with transformations.
   const std::string embedded_gltf_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf");
-  const InMemoryMesh gltf_embedded_data{
-      .mesh_file =
-          FileContents(file_contents(embedded_gltf_path), "embedded.gltf")};
+  const MeshSource gltf_embedded_source(
+      InMemoryMesh{.mesh_file = FileContents(file_contents(embedded_gltf_path),
+                                             "embedded.gltf")},
+      ".gltf");
 
   // The fully_textured_pyramid.gltf references external files. Specifically,
   // the .bin file is necessary to know vertex positions.
@@ -610,41 +615,43 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
       "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
   const std::string pyramid_bin_path = FindResourceOrThrow(
       "drake/geometry/render/test/meshes/fully_textured_pyramid.bin");
-  const InMemoryMesh gltf_pyramid_data{
-      .mesh_file = FileContents(file_contents(pyramid_path), "pyramid.gltf"),
-      .supporting_files = string_map<FileContents>{
-          {"fully_textured_pyramid.bin",
-           FileContents(file_contents(pyramid_bin_path), "pyramid.bin")}}};
+  const MeshSource gltf_pyramid_source(
+      InMemoryMesh{.mesh_file = FileContents(file_contents(pyramid_path),
+                                             "pyramid.gltf"),
+                   .supporting_files =
+                       string_map<FileContents>{
+                           {"fully_textured_pyramid.bin",
+                            FileContents(file_contents(pyramid_bin_path),
+                                         "pyramid.bin")}}},
+      ".gltf");
   // The convex hull of the in-memory version should match that from disk.
   const PolyMesh expected_pyramid =
       MakeConvexHull(pyramid_path, kScale, kMargin);
 
   struct TestCase {
-    const InMemoryMesh* mesh{};
-    std::string extension;
+    const MeshSource* mesh_source{};
     const PolyMesh* expected_mesh{};
     std::string_view description;
   };
 
-  // TODO(SeanCurtis-TRI): non-embedded obj.
   std::vector<TestCase> test_cases{
-      {&obj_data, ".obj", &expected_box, "Valid obj"},
-      {&vtk_data, ".vtk", &expected_tet, "Valid vtk"},
-      {&gltf_embedded_data, ".gltf", &expected_box, "Valid embedded gltf"},
-      {&gltf_pyramid_data, ".gltf", &expected_pyramid, "Distributed gltf"}};
+      {&obj_source, &expected_box, "Valid obj"},
+      {&vtk_source, &expected_tet, "Valid vtk"},
+      {&gltf_embedded_source, &expected_box, "Valid embedded gltf"},
+      {&gltf_pyramid_source, &expected_pyramid, "Distributed gltf"}};
   for (const TestCase& test_case : test_cases) {
     SCOPED_TRACE(test_case.description);
-    const PolyMesh dut = MakeConvexHullFromContents(
-        *test_case.mesh, test_case.extension, kScale, kMargin);
+    const PolyMesh dut =
+        MakeConvexHull(*test_case.mesh_source, kScale, kMargin);
     MeshesAreEquivalent(dut, *test_case.expected_mesh, 1e-14);
   }
 
   // Unsupported extension.
   {
     SCOPED_TRACE("Unsupported extension");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeConvexHullFromContents(obj_data, ".txt", kScale, kMargin),
-        ".*only applies to .obj.*; unsupported extension '.txt'.*");
+    const MeshSource bad_source(obj_source.mesh_data(), ".txt");
+    DRAKE_EXPECT_THROWS_MESSAGE(MakeConvexHull(bad_source, kScale, kMargin),
+                                ".*unsupported extension '.txt'.*");
   }
 
   // TODO(SeanCurtis-TRI): Error conditions

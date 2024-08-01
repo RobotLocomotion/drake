@@ -32,22 +32,22 @@ void CheckVertices(
 // We want to simply confirm that triangulate is propagating through. We rely
 // on tinyobj to triangulate correctly. We'll just confirm that quads become
 // triangles upon request.
-GTEST_TEST(ReadObjFile, Triangulate) {
+GTEST_TEST(ReadObjTest, Triangulate) {
   for (const bool triangulate : {true, false}) {
     const auto [vertices, faces, num_faces] =
-        ReadObjFile(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
-                    /* scale= */ 1, triangulate);
+        ReadObj(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+                /* scale= */ 1, triangulate);
     EXPECT_EQ(vertices->size(), 8);
     EXPECT_EQ(num_faces, triangulate ? 12 : 6);
   }
 }
 
 // Performs the test over multiple scales to make sure scale is included.
-GTEST_TEST(ReadObjFile, QuadCube) {
+GTEST_TEST(ReadObjTest, QuadCube) {
   for (const double scale : {0.5, 1.5}) {
     const auto [vertices, faces, num_faces] =
-        ReadObjFile(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
-                    scale, /* triangulate= */ false);
+        ReadObj(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"), scale,
+                /* triangulate= */ false);
     EXPECT_EQ(vertices->size(), 8);
     EXPECT_EQ(num_faces, 6);
     Eigen::Matrix<double, 8, 3> vertices_expected;
@@ -89,11 +89,11 @@ GTEST_TEST(ReadObjFile, QuadCube) {
 
 // The octahedron.obj is comprised only of triangles; we should get the same
 // result regardless of whether triangulate is true or false.
-GTEST_TEST(ReadObjFile, TriangulatingTriangles) {
+GTEST_TEST(ReadObjTest, TriangulatingNoop) {
   for (const bool triangulate : {true, false}) {
     const auto [vertices, faces, num_faces] =
-        ReadObjFile(FindResourceOrThrow("drake/geometry/test/octahedron.obj"),
-                    /* scale= */ 1.0, triangulate);
+        ReadObj(FindResourceOrThrow("drake/geometry/test/octahedron.obj"),
+                /* scale= */ 1.0, triangulate);
     EXPECT_EQ(vertices->size(), 6u);
     Eigen::Matrix<double, 6, 3> vertices_expected;
     // clang-format off
@@ -113,8 +113,8 @@ GTEST_TEST(ReadObjFile, TriangulatingTriangles) {
 
 // Simply tests that multiple objects are supported. Scale and triangulate have
 // been tested elsewhere.
-GTEST_TEST(ReadObjFile, MultipleObjects) {
-  const auto [vertices, faces, num_faces] = ReadObjFile(
+GTEST_TEST(ReadObjTest, MultipleObjects) {
+  const auto [vertices, faces, num_faces] = ReadObj(
       FindResourceOrThrow("drake/geometry/test/two_cube_objects.obj"), 1.0,
       /* triangulate= */ false);
   Eigen::Matrix<double, 16, 3> vertices_expected;
@@ -157,45 +157,60 @@ GTEST_TEST(ReadObjFile, MultipleObjects) {
                                                 {13, 9, 12, 16}}};
   for (int i = 0; i < num_faces; ++i) {
     // obj file uses 1-index, so we add 1 for each index stored in `faces`.
-    ASSERT_NE(faces_expected.find(std::set<int>({(*faces)[5 * i + 1] + 1,
-                                                 (*faces)[5 * i + 2] + 1,
-                                                 (*faces)[5 * i + 3] + 1,
-                                                 (*faces)[5 * i + 4] + 1})),
+    ASSERT_NE(faces_expected.find(std::set<int>(
+                  {(*faces)[5 * i + 1] + 1, (*faces)[5 * i + 2] + 1,
+                   (*faces)[5 * i + 3] + 1, (*faces)[5 * i + 4] + 1})),
               faces_expected.end());
   }
 }
 
-// A simple test to exercise ReadObjContents. We know that the file-variant
-// simply delegates to the same implementation, so this test merely serves
-// as a regression test on the content-based API.
-GTEST_TEST(ReadObjContentsTest, Regression) {
-  const common::FileContents obj(R"""(
+// A quick reality check that we can successfully invoke with a MeshSource.
+// Previous tests have relied on implicit conversion from path to source.
+GTEST_TEST(ReadObjTest, MeshSourceRegression) {
+  // In-memory source.
+  {
+    const MeshSource source(
+        InMemoryMesh{.mesh_file = common::FileContents(R"""(
     v 0 0 0
     v 0 1 0
     v 1 0 0
     v 1 1 0
     f 1 2 3 4
   )""",
-                                 "test");
-  const auto [vertices, faces, num_faces] =
-      ReadObjContents(obj, 2.0, /* triangulate= */ true);
-  EXPECT_EQ(vertices->size(), 4);
-  EXPECT_EQ(faces->size(), 8);  // Two encoded triangles, 4 indices per tri.
+                                                       "test")},
+        ".obj");
+    const auto [vertices, faces, num_faces] =
+        ReadObj(source, 2.0, /* triangulate= */ true);
+    EXPECT_EQ(vertices->size(), 4);
+    EXPECT_EQ(faces->size(), 8);  // Two encoded triangles, 4 ints per tri.
+  }
+
+  // File path source.
+  {
+    const MeshSource source(
+        FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
+    const auto [vertices, faces, num_faces] =
+        ReadObj(source, 2.0, /* triangulate= */ false);
+    EXPECT_EQ(vertices->size(), 8);
+    EXPECT_EQ(faces->size(), 30);  // Six encoded quads, 5 ints per quad.
+  }
 }
 
 // When requesting only vertices, we get only vertices. In fact, we can get the
 // vertices from an obj that would ordinarily throw if we asked for the face
 // data (see EmptyObj, below).
-GTEST_TEST(ReadObjContents, VertexOnly) {
-  const common::FileContents obj(R"""(
+GTEST_TEST(ReadObjTest, VertexOnly) {
+  const MeshSource source(
+      InMemoryMesh{.mesh_file = common::FileContents(R"""(
     v 0 0 0
     v 0 1 0
     v 1 0 0
     v 1 1 0
   )""",
-                                 "test");
-  const auto [vertices, faces, num_faces] = ReadObjContents(
-      obj, 2.0, /* triangulate= */ true, /* vertex_only= */ true);
+                                                     "no_faces")},
+      ".obj");
+  const auto [vertices, faces, num_faces] =
+      ReadObj(source, 2.0, /* triangulate= */ true, /* vertex_only= */ true);
   EXPECT_EQ(vertices->size(), 4);
   EXPECT_EQ(faces->size(), 0);
   EXPECT_EQ(num_faces, 0);
@@ -203,18 +218,19 @@ GTEST_TEST(ReadObjContents, VertexOnly) {
 
 // Test the error conditions in which we have no faces (and haven't requested
 // vertex only).
-GTEST_TEST(ReadObjContents, EmptyObj) {
-  const common::FileContents obj(R"""(
+GTEST_TEST(ReadObj, EmptyObj) {
+  const MeshSource source(
+      InMemoryMesh{.mesh_file = common::FileContents(R"""(
     v 0 0 0
     v 0 1 0
     v 1 0 0
     v 1 1 0
   )""",
-                                 "test");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ReadObjContents(obj, 2.0, /* triangulate= */ false,
-                      /* vertex_only= */ false),
-      ".*no objects.*");
+                                                     "no_faces")},
+      ".obj");
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, 2.0, /* triangulate= */ false,
+                                      /* vertex_only= */ false),
+                              ".*no objects.*");
 }
 
 }  // namespace
