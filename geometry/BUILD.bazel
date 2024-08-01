@@ -274,6 +274,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "in_memory_mesh",
+    srcs = ["in_memory_mesh.cc"],
     hdrs = ["in_memory_mesh.h"],
     deps = [
         "//common:file_contents",
@@ -389,6 +390,7 @@ drake_cc_library(
     srcs = ["read_obj.cc"],
     hdrs = ["read_obj.h"],
     deps = [
+        ":in_memory_mesh",
         "//common:file_contents",
         "@eigen",
     ],
@@ -404,8 +406,8 @@ drake_cc_library(
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
     deps = [
+        ":in_memory_mesh",
         "//common:essential",
-        "//geometry:in_memory_mesh",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
     ],
@@ -852,6 +854,14 @@ drake_cc_googletest(
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "in_memory_mesh_test",
+    deps = [
+        ":in_memory_mesh",
+        "//common:unused",
     ],
 )
 

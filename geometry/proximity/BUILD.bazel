@@ -529,6 +529,7 @@ drake_cc_library(
         "//geometry:vtk_opengl_init",
         "//math:geometric_transform",
         "//systems/sensors:vtk_diagnostic_event_observer",
+        "@nlohmann_internal//:nlohmann",
         "@qhull_internal//:qhull",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOCore",
@@ -986,7 +987,7 @@ drake_cc_library(
     deps = [
         ":volume_mesh",
         "//common:essential",
-        "//common:file_contents",
+        "//geometry:in_memory_mesh",
     ],
     implementation_deps = [
         "@fmt",

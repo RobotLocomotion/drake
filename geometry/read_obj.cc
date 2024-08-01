@@ -112,8 +112,6 @@ std::vector<int> TinyObjToFclFaces(
   return faces;
 }
 
-}  // namespace
-
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
 ReadObjContents(const FileContents& file_contents, double scale,
@@ -185,6 +183,26 @@ ReadObjFile(const std::string& filename, double scale, bool triangulate,
   // anew. For now, we are unnecessarily computing the hash for the contents.
   return ReadObjContents(FileContents(std::move(contents).str(), filename),
                          scale, triangulate, vertices_only);
+}
+
+}  // namespace
+
+std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
+           std::shared_ptr<std::vector<int>>, int>
+ReadObj(const MeshSource& source, double scale, bool triangulate,
+        bool vertices_only) {
+  const std::string description =
+      source.IsPath() ? source.path().string()
+                      : source.mesh_data().mesh_file.filename_hint();
+  DRAKE_DEMAND(source.extension() == ".obj");
+  if (source.IsPath()) {
+    return ReadObjFile(source.path().string(), scale, triangulate,
+                       vertices_only);
+  } else {
+    DRAKE_DEMAND(source.IsInMemory());
+    return ReadObjContents(source.mesh_data().mesh_file, scale, triangulate,
+                           vertices_only);
+  }
 }
 
 }  // namespace internal
