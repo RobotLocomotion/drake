@@ -18,7 +18,7 @@ using std::make_unique;
 class MemcpyMovable {
  public:
   explicit MemcpyMovable(string name)
-      : name_{make_unique<string>(move(name))} {}
+      : name_{make_unique<string>(std::move(name))} {}
   MemcpyMovable(const MemcpyMovable& m) : MemcpyMovable(*m.name_) {}
   MemcpyMovable(MemcpyMovable&& m) = default;
   bool operator==(const MemcpyMovable& m) const { return *name_ == *m.name_; }
