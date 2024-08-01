@@ -3201,14 +3201,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         body, translation);
   }
 
-  DRAKE_DEPRECATED(
-      "2024-08-01",
-      "Use MultibodyPlant::SetFreeBodyRandomTranslationDistribution()")
-  void SetFreeBodyRandomPositionDistribution(
-      const RigidBody<T>& body, const Vector3<symbolic::Expression>& position) {
-    return SetFreeBodyRandomTranslationDistribution(body, position);
-  }
-
   /// Sets the distribution used by SetRandomState() to populate the free
   /// body's `rotation` with respect to World.
   /// @throws std::exception if `body` is not a free body in the model.

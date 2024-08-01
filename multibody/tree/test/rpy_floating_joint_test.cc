@@ -152,12 +152,6 @@ TEST_F(RpyFloatingJointTest, ContextDependentAccess) {
   EXPECT_TRUE(
       CompareMatrices(joint_->get_angles(*context_), angles_B, kTolerance));
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  joint_->set_translation(context_.get(), Vector3d(0.3, 0.2, 0.1));
-  EXPECT_EQ(joint_->get_translation(*context_), Vector3d(0.3, 0.2, 0.1));
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
   joint_->SetTranslation(context_.get(), translation);
   EXPECT_EQ(joint_->get_translation(*context_), translation);
 

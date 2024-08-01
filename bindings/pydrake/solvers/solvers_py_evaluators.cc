@@ -3,7 +3,6 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
@@ -698,12 +697,6 @@ void BindEvaluatorsAndBindings(py::module m) {
             },
             py::arg("new_A"), py::arg("new_b") = 0,
             doc.L2NormCost.UpdateCoefficients.doc_sparse_A);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("A",
-        WrapDeprecated(doc.L2NormCost.A.doc_deprecated, &L2NormCost::A),
-        doc.L2NormCost.A.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   py::class_<LInfNormCost, Cost, std::shared_ptr<LInfNormCost>>(

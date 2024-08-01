@@ -23,7 +23,6 @@ drake_cc_package_library(
         ":pid_controlled_system",
         ":pid_controller",
         ":state_feedback_controller_interface",
-        ":zmp_planner",
     ],
 )
 
@@ -150,24 +149,6 @@ drake_cc_library(
     ],
 )
 
-# We use a copy_file to de-clutter the deprecation stub.
-# TODO(2024-08-01) Remove along with deprecation (also the load statement).
-copy_file(
-    name = "_copy_zmp",
-    src = "stub/zmp_planner.h",
-    out = "zmp_planner.h",
-    allow_symlink = True,
-)
-
-# TODO(2024-08-01) Remove along with deprecation.
-drake_cc_library(
-    name = "zmp_planner",
-    hdrs = ["zmp_planner.h"],
-    deps = [
-        "//planning/locomotion:zmp_planner",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
@@ -284,14 +265,6 @@ drake_cc_googletest(
         ":pid_controller",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
-    ],
-)
-
-drake_cc_googletest(
-    name = "deprecated_zmp_planner_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":zmp_planner",
     ],
 )
 

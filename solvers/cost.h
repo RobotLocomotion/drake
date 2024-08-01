@@ -10,7 +10,6 @@
 
 #include <Eigen/SparseCore>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/sparse_and_dense_matrix.h"
@@ -320,9 +319,6 @@ class L2NormCost : public Cost {
              const Eigen::Ref<const Eigen::VectorXd>& b);
 
   ~L2NormCost() override {}
-
-  DRAKE_DEPRECATED("2024-08-01", "Use A_dense function instead.")
-  const Eigen::MatrixXd& A() const { return GetDenseA(); }
 
   const Eigen::SparseMatrix<double>& get_sparse_A() const {
     return A_.get_as_sparse();
