@@ -962,6 +962,12 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
     // It is sufficient to add the original constraint to the program (with the
     // new variables).
     prog->AddConstraint(binding.evaluator(), vars.tail(vars.size() - 1));
+  } else if (dynamic_cast<QuadraticConstraint*>(constraint) != nullptr) {
+    throw std::runtime_error(fmt::format(
+        "ShortestPathProblem::Edge does not support this "
+        "binding type: {}. Please add convex quadratic constraints in conic "
+        "form by using the function AddQuadraticAsRotatedLorentzConeConstraint",
+        binding.to_string()));
   } else {
     throw std::runtime_error(
         fmt::format("ShortestPathProblem::Edge does not support this "
