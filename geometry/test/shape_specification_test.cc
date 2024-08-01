@@ -502,7 +502,7 @@ GTEST_TEST(ShapeTest, Constructors) {
   EXPECT_EQ(mesh.filename(), kFilename);
   EXPECT_EQ(mesh.extension(), ".obj");
   EXPECT_EQ(mesh.scale(), 1.4);
-  EXPECT_THROW(mesh.name(), std::exception);
+  EXPECT_THROW(mesh.in_memory_mesh(), std::exception);
 
   const MeshcatCone cone{1.2, 3.4, 5.6};
   EXPECT_EQ(cone.height(), 1.2);
@@ -604,9 +604,8 @@ GTEST_TEST(ShapeTest, ConvexHull) {
 }
 
 GTEST_TEST(ShapeTest, MeshFromMemory) {
-  const std::string mesh_name = "a_mesh";
   // This will get normalized to ".obj".
-  const std::string extension = ".OBJ";
+  const std::string mesh_name = "a_mesh.OBJ";
   const std::string obj_contents = R"""(
     v 0 0 0
     v 1 0 0
@@ -620,12 +619,19 @@ GTEST_TEST(ShapeTest, MeshFromMemory) {
     f 5 6 7 8
   )""";
   string_map<common::FileContents> mesh_data;
-  mesh_data[mesh_name] = common::FileContents(obj_contents, mesh_name);
-  const Mesh mesh(mesh_name, extension, mesh_data, 2.0);
+  mesh_data["fake.txt"] = common::FileContents("content", "fake.txt");
+  const Mesh mesh(obj_contents, mesh_name, mesh_data, 2.0);
   ASSERT_TRUE(mesh.is_in_memory());
   EXPECT_THROW(mesh.filename(), std::exception);
   EXPECT_EQ(mesh.extension(), ".obj");
-  EXPECT_EQ(mesh.name(), mesh_name);
+  const InMemoryMesh& mem_mesh = mesh.in_memory_mesh();
+  EXPECT_EQ(mem_mesh.mesh_file.filename_hint(), mesh_name);
+  EXPECT_TRUE(mem_mesh.supporting_files.contains("fake.txt"));
+
+  // Also confirm that we can compute the convex hull from the in-memory
+  // representation. We don't test all file formats; we trust that visual
+  // inspection of the code under test shows that it doesn't depend on file
+  // format.
   const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
   EXPECT_EQ(hull.num_vertices(), 8);
   EXPECT_EQ(hull.num_elements(), 6);

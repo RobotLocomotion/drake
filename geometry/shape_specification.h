@@ -6,9 +6,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/file_contents.h"
 #include "drake/common/fmt_ostream.h"
-#include "drake/common/string_map.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 
@@ -22,21 +21,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/* Representation of a mesh file stored in memory. At a minimum it should
- include a single entry in `data` consisting of the contents of a supported
- geometry file format (i.e., .obj, .vtk, .gltf). `name` should be the key
- associated with that file. If there are additional files (e.g., .mtl, .bin,
- .png, etc.) they can also be included in `data` and their keys should match
- how they are referenced in the other files. */
-struct MemoryMesh {
-  /* They key for the actual mesh file data in `data`. */
-  std::string name;
-
-  /* The family of files which define a single geometry. */
-  string_map<common::FileContents> data;
-};
-
-using MeshSource = std::variant<std::string, MemoryMesh>;
+using MeshSource = std::variant<std::string, InMemoryMesh>;
 
 }  // namespace internal
 
@@ -487,34 +472,39 @@ class Mesh final : public Shape {
 
   // TODO(SeanCurtis-TRI) Document that only .obj is currently supported.
 
-  /** Constructs a mesh shape specification from the mesh file data contained in
-   a collection of FileContents instances.
+  /** Constructs a mesh shape specification from the contents of a
+   Drake-supported mesh file type.
 
    The mesh is defined by the contents of a @ref supported_file_types
-   "mesh file format supported by Drake". Those contents are passed in the map
-   `mesh_data`. It should be keyed by the parameter `mesh_name`. Some mesh file
-   formats can comprise multiple files (e.g., .obj and .mtl files, .gltf and
-   .bin files, various texture files, etc.). If the mesh data in
-   `mesh_data[mesh_name]` names another file, we will first look in `mesh_data`
-   for FileContents keyed by that name. If not found, we'll interpret it as
+   "mesh file format supported by Drake". Those contents are passed in as
+   `mesh_contents`. Some mesh file formats can comprise multiple files (e.g.,
+   .obj and .mtl files, .gltf and .bin files, various texture files, etc.). If
+   the mesh data in `mesh_contents` names other files, we will first look in
+   `mesh_data` for FileContents keyed by that name.
+   <!--
+   TODO(SeanCurtis-TRI): This documentation is aspirational; figure out how
+   to make it a reality.
+
+   If not found, we'll interpret it as
    a file path and look in the file system. If still not found, best effort
    will be made in parsing the file. One implication is that an in-memory
-   mesh can reference on-disk resources (but not vice versa). For example,
-   several in-memory meshes could share the same texture.
+   mesh can reference on-disk resources (but not vice versa).
+   -->
 
-   @param mesh_name   The key in `mesh_data` that corresponds to the mesh file
-                      data (and not ancillary data).
-   @param extension   The file extension associated with the type of mesh data.
-                      Currently, only ".obj" is supported.
-   @param mesh_data   A map from file-like names to contents of the putative
-                      files.
-   @param scale       An optional scale to coordinates.
-   @pre `mesh_name` is a valid key in `mesh_data`.
-   @pre The value for `mesh_data` is the data of a Drake-supported mesh file
-        type.
-   @pre `extension` names a supported mesh file type. */
-  Mesh(std::string mesh_name, std::string extension,
-       string_map<common::FileContents> mesh_data, double scale = 1.0);
+   @param mesh_contents      The key in `mesh_data` that corresponds to the mesh
+                             file data (and not ancillary data).
+   @param name               A name to associate with the mesh file. This will
+                             appear in diagnostic messages and should include
+                             the correct extension associated with
+                             `mesh_contents`'s file type.
+   @param supporting_files   An optional map from file-like names to contents of
+                             the putative files.
+   @param scale              An optional scale to coordinates.
+   @pre The extension in `name` matches the data in `mesh_contents`.
+   @pre The extension in `name` names a supported mesh file type. */
+  Mesh(std::string mesh_contents, std::string name,
+       string_map<common::FileContents> supporting_files = {},
+       double scale = 1.0);
 
   ~Mesh() final;
 
@@ -539,10 +529,10 @@ class Mesh final : public Shape {
   /** Reports `true` if `this` was constructed from in-memory mesh data. */
   bool is_in_memory() const;
 
-  /** Returns the mesh name passed to the constructor.
+  /** Returns the in-memory mesh data passed to the constructor.
    @throws std::exception if `this` %Mesh was constructed using a file path.
    @see is_in_memory(). */
-  const std::string& name() const;
+  const InMemoryMesh& in_memory_mesh() const;
 
   // TODO(SeanCurtis-TRI): I need access to the *mesh data*.
 

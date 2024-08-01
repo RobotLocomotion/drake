@@ -22,6 +22,7 @@ namespace geometry {
 namespace internal {
 namespace {
 
+using common::FileContents;
 using Eigen::Vector3d;
 using PolyMesh = PolygonSurfaceMesh<double>;
 using std::vector;
@@ -583,25 +584,43 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   // is a scaled unit cube; so we need to scale by (2s + 2δ) / 2 = s + δ.
   const std::string box_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  const common::FileContents obj_data(file_contents(box_path), "box.obj");
+  const InMemoryMesh obj_data{
+      .mesh_file = FileContents(file_contents(box_path), "box.obj")};
   const PolyMesh expected_box = MakeCube(kScale + kMargin);
 
   // The tet in one_tetrahedron.vtk has vertices at origin and unit positions
   // along all axes.
   const std::string tet_path =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
-  const common::FileContents vtk_data(file_contents(tet_path), "tet.vtk");
+  const InMemoryMesh vtk_data{
+      .mesh_file = FileContents(file_contents(tet_path), "tet.vtk")};
   const PolyMesh expected_tet = GetTetrahedronWithMargin(kScale, kMargin);
 
   // The rainbow_box.gltf has embedded data *and* has a non-trivial hierarchy
   // with transformations.
   const std::string embedded_gltf_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf");
-  const common::FileContents gltf_embedded_data(
-      file_contents(embedded_gltf_path), "embedded.gltf");
+  const InMemoryMesh gltf_embedded_data{
+      .mesh_file =
+          FileContents(file_contents(embedded_gltf_path), "embedded.gltf")};
+
+  // The fully_textured_pyramid.gltf references external files. Specifically,
+  // the .bin file is necessary to know vertex positions.
+  const std::string pyramid_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  const std::string pyramid_bin_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.bin");
+  const InMemoryMesh gltf_pyramid_data{
+      .mesh_file = FileContents(file_contents(pyramid_path), "pyramid.gltf"),
+      .supporting_files = string_map<FileContents>{
+          {"fully_textured_pyramid.bin",
+           FileContents(file_contents(pyramid_bin_path), "pyramid.bin")}}};
+  // The convex hull of the in-memory version should match that from disk.
+  const PolyMesh expected_pyramid =
+      MakeConvexHull(pyramid_path, kScale, kMargin);
 
   struct TestCase {
-    const common::FileContents* mesh_data{};
+    const InMemoryMesh* mesh{};
     std::string extension;
     const PolyMesh* expected_mesh{};
     std::string_view description;
@@ -611,11 +630,12 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   std::vector<TestCase> test_cases{
       {&obj_data, ".obj", &expected_box, "Valid obj"},
       {&vtk_data, ".vtk", &expected_tet, "Valid vtk"},
-      {&gltf_embedded_data, ".gltf", &expected_box, "Valid embedded gltf"}};
+      {&gltf_embedded_data, ".gltf", &expected_box, "Valid embedded gltf"},
+      {&gltf_pyramid_data, ".gltf", &expected_pyramid, "Distributed gltf"}};
   for (const TestCase& test_case : test_cases) {
     SCOPED_TRACE(test_case.description);
     const PolyMesh dut = MakeConvexHullFromContents(
-        *test_case.mesh_data, test_case.extension, kScale, kMargin);
+        *test_case.mesh, test_case.extension, kScale, kMargin);
     MeshesAreEquivalent(dut, *test_case.expected_mesh, 1e-14);
   }
 
