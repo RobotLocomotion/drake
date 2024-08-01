@@ -4859,7 +4859,7 @@ GTEST_TEST(ProximityEngineTest, ThrowForStrictRejectedContacts) {
 
   // Confirms that if the intersecting pair is missing hydroelastic
   // representation that an exception is thrown. This test applies *no*
-  // collision filters to guarantee that the body of the callback gets
+  // collision filters to guarantee that the body of the calculator gets
   // exercised in all cases.
   {
     ProximityEngine<double> engine;
@@ -4878,7 +4878,7 @@ GTEST_TEST(ProximityEngineTest, ThrowForStrictRejectedContacts) {
 
   // Confirms that if the intersecting pair is rigid-rigid, an exception is
   // thrown. This test applies *no* collision filters to guarantee that the
-  // body of the callback gets exercised in all cases.
+  // body of the calculator gets exercised in all cases.
   {
     ProximityEngine<double> engine;
     const auto X_WGs = PopulateEngine(&engine, sphere, anchored, kRigid,
