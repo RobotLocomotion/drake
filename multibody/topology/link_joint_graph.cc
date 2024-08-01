@@ -613,14 +613,14 @@ LinkCompositeIndex LinkJointGraph::AddToLinkComposite(
         LinkCompositeIndex(ssize(data_.link_composites));
     data_.link_composites.emplace_back(LinkComposite{
         .links = std::vector<BodyIndex>{maybe_composite_link.index()},
-        .is_massless = maybe_composite_link.treat_as_massless()});
+        .is_massless = maybe_composite_link.is_massless()});
   }
 
   LinkComposite& existing_composite =
       data_.link_composites[*existing_composite_index];
   existing_composite.links.push_back(new_link.index());
-  // If any Link in the composite has mass, then the whole thing is massful.
-  if (!new_link.treat_as_massless()) existing_composite.is_massless = false;
+  // For the composite to be massless, _all_ its links must be massless.
+  if (!new_link.is_massless()) existing_composite.is_massless = false;
   new_link.link_composite_index_ = existing_composite_index;
 
   return *existing_composite_index;

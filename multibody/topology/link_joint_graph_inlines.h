@@ -52,7 +52,7 @@ inline bool LinkJointGraph::must_treat_as_massless(
   const Link& link = links(link_ordinal);
   // TODO(sherm1) If part of a Composite then this is only massless if the
   //  entire Composite is composed of massless Links.
-  return link.treat_as_massless();
+  return link.is_massless();
 }
 
 // LinkJointGraph definitions deferred until Joint defined.

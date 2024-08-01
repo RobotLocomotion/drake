@@ -419,7 +419,7 @@ class SpanningForest {
   // Grows the trees containing each of the given Joints by one level. The
   // output parameter `J_out` (cleared on entry) on return
   // contains the set of Joints that should be modeled at the next level.
-  // @pre the pointers are non-null and J_in is not empty. On return,
+  // @pre the pointers are non-null and `J_in` is not empty. On return,
   // num_unprocessed_links will have been decremented by the number of Links
   // that were modeled.
   void ExtendTreesOneLevel(const std::vector<JointIndex>& J_in,
@@ -551,16 +551,13 @@ class SpanningForest {
   // connecting parent and child Links and need to decide whether the parent
   // and child will follow a single Mobod or two different Mobods. If we
   // decide to merge them, the Joint won't be modeled at all since it will be
-  // interior to the composite. Here is the policy:
-  //   - If the joint is not a weld, we're not building a composite;
-  //     return false (don't merge).
-  //   - If the weld joint has been marked "must be modeled" then both its
-  //     parent and child Links must have their own Mobods; return false.
-  //   - Look at the joint's model instance's forest building options. If
-  //     they include "merge link composites" then we will merge parent and
-  //     child; return true.
-  //   - Otherwise we're not combining; return false;
-  bool should_be_unmodeled_weld_in_composite(const Joint& joint) {
+  // interior to the composite.
+  //
+  // To return true (merge), the following must all be true:
+  //   - The joint must be a weld, and
+  //   - the joint's model instance must request merging composites, and
+  //   - the joint has _not_ demanded that it be modeled.
+  bool should_merge_parent_and_child(const Joint& joint) {
     return joint.is_weld() && !joint.must_be_modeled() &&
            should_merge_link_composites(joint.model_instance());
   }

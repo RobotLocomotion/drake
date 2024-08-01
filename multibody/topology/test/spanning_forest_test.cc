@@ -1102,9 +1102,9 @@ GTEST_TEST(SpanningForest, SimpleTrees) {
   // Define the graph.
   const std::set<int> massless{2, 4, 8};
   for (int i = 1; i <= 10; ++i) {
-    graph.AddLink("link" + std::to_string(i), model_instance,
-                  massless.contains(i) ? LinkFlags::kTreatAsMassless
-                                       : LinkFlags::kDefault);
+    graph.AddLink(
+        "link" + std::to_string(i), model_instance,
+        massless.contains(i) ? LinkFlags::kMassless : LinkFlags::kDefault);
   }
   const std::vector<std::pair<int, int>> joints{
       {3, 1}, {3, 2}, {8, 3}, {10, 8}, {10, 9}, {9, 4}, {9, 7}};
@@ -1216,7 +1216,7 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
 
   // Changing just 3 to massless results in the same forest.
   // (Tests Case 2 in ExtendTreesOneLevel())
-  graph.ChangeLinkFlags(BodyIndex(3), LinkFlags::kTreatAsMassless);
+  graph.ChangeLinkFlags(BodyIndex(3), LinkFlags::kMassless);
   EXPECT_TRUE(graph.BuildForest());
 
   EXPECT_EQ(ssize(graph.links()), 8);
@@ -1232,7 +1232,7 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
 
   // Changing both 3 and 4 to massless breaks the loop at 6 instead of 4.
   // (Tests Case 3 in ExtendTreesOneLevel())
-  graph.ChangeLinkFlags(BodyIndex(4), LinkFlags::kTreatAsMassless);
+  graph.ChangeLinkFlags(BodyIndex(4), LinkFlags::kMassless);
   EXPECT_TRUE(graph.BuildForest());
 
   EXPECT_EQ(ssize(graph.links()), 8);
@@ -1283,8 +1283,8 @@ GTEST_TEST(SpanningForest, MasslessBodiesShareSplitLink) {
   graph.RegisterJointType("prismatic", 1, 1);
   const ModelInstanceIndex model_instance(19);
 
-  graph.AddLink("massless_1", model_instance, LinkFlags::kTreatAsMassless);
-  graph.AddLink("massless_2", model_instance, LinkFlags::kTreatAsMassless);
+  graph.AddLink("massless_1", model_instance, LinkFlags::kMassless);
+  graph.AddLink("massless_2", model_instance, LinkFlags::kMassless);
   graph.AddLink("link_3", model_instance);
 
   graph.AddJoint("prismatic_0", model_instance, "prismatic", world_index(),
@@ -1469,7 +1469,7 @@ GTEST_TEST(SpanningForest, WorldCompositeComesFirst) {
   graph.RegisterJointType("revolute", 1, 1);
   const ModelInstanceIndex model_instance(5);  // arbitrary
 
-  graph.AddLink("massless_link_1", model_instance, LinkFlags::kTreatAsMassless);
+  graph.AddLink("massless_link_1", model_instance, LinkFlags::kMassless);
   graph.AddLink("link2", model_instance);
   graph.AddLink("link3", model_instance);
   graph.AddLink("link4", model_instance);
@@ -1641,7 +1641,7 @@ GTEST_TEST(SpanningForest, ShadowLinkPreservesJointOrder) {
   }
 
   // Now make link3 massless, rebuild, and check a few things.
-  graph.ChangeLinkFlags(BodyIndex(3), LinkFlags::kTreatAsMassless);
+  graph.ChangeLinkFlags(BodyIndex(3), LinkFlags::kMassless);
   graph.BuildForest();
   const LinkJointGraph::Link& new_primary_link =
       graph.link_by_index(BodyIndex(2));
@@ -1699,9 +1699,9 @@ GTEST_TEST(SpanningForest, LoopWithComposites) {
 
   const std::set<int> massless{3, 4};
   for (int i = 1; i <= 10; ++i) {
-    graph.AddLink("link" + std::to_string(i), model_instance,
-                  massless.contains(i) ? LinkFlags::kTreatAsMassless
-                                       : LinkFlags::kDefault);
+    graph.AddLink(
+        "link" + std::to_string(i), model_instance,
+        massless.contains(i) ? LinkFlags::kMassless : LinkFlags::kDefault);
   }
 
   const std::vector<std::pair<int, int>> weld_joints{{1, 2}, {3, 4}, {5, 6}};
@@ -1846,9 +1846,9 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
 
   const std::set<int> massless{4, 5, 6};
   for (int i = 1; i <= 8; ++i) {
-    graph.AddLink("link" + std::to_string(i), model_instance,
-                  massless.contains(i) ? LinkFlags::kTreatAsMassless
-                                       : LinkFlags::kDefault);
+    graph.AddLink(
+        "link" + std::to_string(i), model_instance,
+        massless.contains(i) ? LinkFlags::kMassless : LinkFlags::kDefault);
   }
 
   const std::vector<std::pair<int, int>> revolute_joints{
@@ -1926,8 +1926,8 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
   massful with which to end the branch in Tree 1. This should affect when we see
   the loop so Tree 0 will have height 3 and Tree 1 height 4, with link 3
   split. */
-  graph.ChangeLinkFlags(BodyIndex(7), LinkFlags::kTreatAsMassless);
-  graph.ChangeLinkFlags(BodyIndex(8), LinkFlags::kTreatAsMassless);
+  graph.ChangeLinkFlags(BodyIndex(7), LinkFlags::kMassless);
+  graph.ChangeLinkFlags(BodyIndex(8), LinkFlags::kMassless);
   EXPECT_TRUE(graph.BuildForest());
   const auto& newer_shadow_link = graph.link_by_index(BodyIndex(9));
   EXPECT_TRUE(newer_shadow_link.is_shadow());

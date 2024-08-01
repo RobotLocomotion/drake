@@ -472,8 +472,8 @@ class LinkJointGraph {
       BodyIndex link1_index, BodyIndex link2_index) const;
 
   /** Returns true if the given Link should be treated as massless. That
-  requires that the Link was marked TreatAsMassless and is not connected by
-  a Weld Joint to a massful Link or Composite. */
+  requires that the Link was flagged kMassless and is not connected by
+  a Weld Joint to a massful Composite. */
   [[nodiscard]] bool must_treat_as_massless(LinkOrdinal link_ordinal) const;
 
   /** (Internal use only) For testing -- invalidates the Forest. */

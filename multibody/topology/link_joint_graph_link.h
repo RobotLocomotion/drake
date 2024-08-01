@@ -82,10 +82,12 @@ class LinkJointGraph::Link {
     return static_cast<bool>(flags_ & LinkFlags::kMustBeBaseBody);
   }
 
-  /** Returns `true` if this %Link was added with
-  LinkFlags::kTreatAsMassless. */
-  bool treat_as_massless() const {
-    return static_cast<bool>(flags_ & LinkFlags::kTreatAsMassless);
+  /** Returns `true` if this %Link was added with LinkFlags::kMassless.
+  However, this %Link may still be _effectively_ massful if it is welded
+  into a massful composite. See LinkJointGraph::must_treat_as_massless()
+  for the full story. */
+  bool is_massless() const {
+    return static_cast<bool>(flags_ & LinkFlags::kMassless);
   }
 
   /** Returns `true` if this is a shadow Link added by BuildForest(). */

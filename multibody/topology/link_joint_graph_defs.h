@@ -26,10 +26,10 @@ using LoopConstraintIndex = TypeSafeIndex<class LoopConstraintTag>;
 these also produces a LinkFlags object. */
 enum class LinkFlags : uint32_t {
   kDefault = 0,
-  kStatic = 1 << 0,           ///< Implicitly welded to World.
-  kMustBeBaseBody = 1 << 1,   ///< Ensure connection to World if none.
-  kTreatAsMassless = 1 << 2,  ///< Can't be a terminal body in a tree.
-  kShadow = 1 << 3            ///< Link is a shadow (internal use only).
+  kStatic = 1 << 0,          ///< Implicitly welded to World.
+  kMustBeBaseBody = 1 << 1,  ///< Ensure connection to World if none.
+  kMassless = 1 << 2,        ///< Can't be a terminal body in a tree.
+  kShadow = 1 << 3           ///< Link is a shadow (internal use only).
 };
 
 /** Joint properties that can affect how the SpanningForest gets built. Or-ing

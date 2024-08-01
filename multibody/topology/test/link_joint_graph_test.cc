@@ -81,7 +81,7 @@ namespace {
 // Verify that the enums in link_joint_graph_defs.h work properly as bitmaps.
 GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
   const auto is_static = LinkFlags::kStatic;
-  const auto massless = LinkFlags::kTreatAsMassless;
+  const auto massless = LinkFlags::kMassless;
 
   // Or-ed flags still have LinkFlags type.
   auto link_flags = is_static | massless;
@@ -89,7 +89,7 @@ GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
 
   // And is bitwise but still returns LinkFlags, convertible to bool.
   EXPECT_EQ(link_flags & is_static, LinkFlags::kStatic);
-  EXPECT_EQ(link_flags & massless, LinkFlags::kTreatAsMassless);
+  EXPECT_EQ(link_flags & massless, LinkFlags::kMassless);
   EXPECT_FALSE(static_cast<bool>(link_flags & LinkFlags::kMustBeBaseBody));
   EXPECT_EQ(link_flags & LinkFlags::kMustBeBaseBody, LinkFlags::kDefault);
 
@@ -333,9 +333,9 @@ GTEST_TEST(LinkJointGraph, AddLinkErrors) {
   // Addlink accepts flags, but not Shadow which is set internally only.
   const BodyIndex link2_index =
       graph.AddLink("link2", ModelInstanceIndex(3),
-                    LinkFlags::kTreatAsMassless | LinkFlags::kMustBeBaseBody);
+                    LinkFlags::kMassless | LinkFlags::kMustBeBaseBody);
   const LinkJointGraph::Link& link2 = graph.link_by_index(link2_index);
-  EXPECT_TRUE(link2.treat_as_massless() && link2.must_be_base_body());
+  EXPECT_TRUE(link2.is_massless() && link2.must_be_base_body());
   EXPECT_FALSE(link2.is_static_flag_set() || link2.is_shadow());
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -378,14 +378,14 @@ GTEST_TEST(LinkJoinGraph, LinkAPITest) {
   EXPECT_FALSE(link5.is_world());
   EXPECT_FALSE(link5.is_anchored());
   EXPECT_FALSE(link5.is_static_flag_set());
-  EXPECT_FALSE(link5.treat_as_massless());
+  EXPECT_FALSE(link5.is_massless());
   EXPECT_FALSE(link5.is_shadow());
   EXPECT_TRUE(link5.must_be_base_body());
   LinkJointGraphTester::set_link_flags(LinkFlags::kStatic, &link5);
   EXPECT_TRUE(link5.is_static_flag_set());
   EXPECT_TRUE(link5.is_anchored());  // Static links are anchored to World.
-  EXPECT_TRUE(link5.must_be_base_body());   // Unchanged.
-  EXPECT_FALSE(link5.treat_as_massless());  // Unchanged.
+  EXPECT_TRUE(link5.must_be_base_body());  // Unchanged.
+  EXPECT_FALSE(link5.is_massless());       // Unchanged.
 
   // Only LinkJointGraph sets these; no public interface.
   EXPECT_TRUE(link5.joints().empty());
