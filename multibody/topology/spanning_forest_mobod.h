@@ -183,17 +183,12 @@ class SpanningForest::Mobod {
   // Update all MobodIndex entries to use the new numbering.
   void FixupAfterReordering(const std::vector<MobodIndex>& old_to_new);
 
-  // Switch the contents of `this` and `other` mobilized bodies.
-  void Swap(Mobod& other);
-
   // Given a mapping from old MobodIndex to new MobodIndex, repair an
   // existing vector of old MobodIndexes to use the new numbering. Any invalid
   // indexes are left untouched.
   static void RenumberMobodIndexVector(
       const std::vector<MobodIndex>& old_to_new,
       std::vector<MobodIndex>* to_be_renumbered);
-
-  // CAREFUL: if you add any members here, update Swap!
 
   // Links represented by this Mobod. The first one is always present and is
   // the active Link if we're mobilizing a LinkComposite.
