@@ -13,6 +13,7 @@
 #include <libqhullcpp/Qhull.h>
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullVertexSet.h>
+#include <nlohmann/json.hpp>
 #include <vtkGLTFDocumentLoader.h>    // vtkIOGeometry
 #include <vtkGLTFImporter.h>          // vtkIOImport
 #include <vtkMapper.h>                // vtkCommonCore
@@ -40,6 +41,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 namespace {
+using nlohmann::json;
 
 using common::FileContents;
 using drake::internal::DiagnosticPolicy;
@@ -126,21 +128,20 @@ struct VertexCloud {
 
 /* Returns the scaled vertices from the stream containing obj file data.
  @pre `obj_data` contains obj geometry data. */
-std::vector<Vector3d> ReadObjVertices(const FileContents& obj_data,
+std::vector<Vector3d> ReadObjVertices(const MeshSource& obj_source,
                                       double scale) {
   const auto [tinyobj_vertices_ptr, _1, _2] =
-      geometry::internal::ReadObjContents(obj_data, scale,
-                                          /* triangulate = */ false,
-                                          /* only_vertices = */ true);
+      geometry::internal::ReadObj(obj_source, scale,
+                                  /* triangulate = */ false,
+                                  /* only_vertices = */ true);
   return std::move(*tinyobj_vertices_ptr);
 }
 
 /* Returns the scaled vertices from the contents of a vtk file.
  @pre `vtk_data` contains vtk geometry data. */
-std::vector<Vector3d> ReadVtkVertices(const FileContents& vtk_data,
+std::vector<Vector3d> ReadVtkVertices(const MeshSource& vtk_source,
                                       double scale) {
-  const VolumeMesh<double> volume_mesh =
-      ReadVtkContentsToVolumeMesh(vtk_data, scale);
+  const VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(vtk_source, scale);
 
   // It would be nice if we could simply steal the vertices rather than copy.
   return volume_mesh.vertices();
@@ -184,6 +185,8 @@ class MeshMemoryLoader final : public vtkURILoader {
     if (scheme == "file") {
       // Populate the stream with the data.
       const std::string& path = uri.GetPath().GetValue();
+      // TODO(SeanCurtis-TRI): IF the glTF file references a file in a *higher*
+      // directory (e.g., ../common.bin), then this trick will not work.
       auto pos = path.find("/convex_hull/");
       if (pos == std::string::npos) {
         throw std::runtime_error(fmt::format(
@@ -220,8 +223,60 @@ class MeshMemoryLoader final : public vtkURILoader {
   vtkSmartPointer<vtkURI> base_uri_;
 };
 
-std::vector<Vector3d> ReadGltfVertices(const InMemoryMesh& mem_mesh,
+std::string ReadFileContents(const fs::path file_path) {
+  std::ifstream f(file_path);
+  if (!f.good()) {
+    throw std::runtime_error(fmt::format(
+        "MakeConvexHull can't create convex hull from geometry file; file "
+        "isn't accessible. '{}'.",
+        file_path.string()));
+  }
+  std::stringstream contents;
+  contents << f.rdbuf();
+  return std::move(contents).str();
+}
+
+/* Given a file path to a .gltf file, loads the .gltf file contents into memory
+ along with any supporting .bin files. Note: because we're only using vertex
+ data, we don't bother tracking image files. */
+InMemoryMesh PreParseGltf(const fs::path gltf_path) {
+  std::string file_contents = ReadFileContents(gltf_path);
+
+  string_map<FileContents> supporting_files;
+  json gltf;
+  try {
+    gltf = json::parse(file_contents);
+  } catch (const json::exception& e) {
+    throw std::runtime_error(
+        fmt::format("Couldn't compute convex hull for glTF file '{}', there "
+                    "is an error in the file: {}.",
+                    gltf_path.string(), e.what()));
+  }
+  auto& buffers = gltf["buffers"];
+  for (size_t i = 0; i < buffers.size(); ++i) {
+    auto& buffer = buffers[i];
+    if (buffer.contains("uri") && buffer["uri"].is_string()) {
+      const std::string_view uri =
+          buffer["uri"].template get<std::string_view>();
+      if (uri.find("data:") != std::string::npos) {
+        continue;
+      }
+      supporting_files.emplace(
+          uri, FileContents(ReadFileContents(gltf_path.parent_path() / uri),
+                            std::string(uri)));
+    }
+  }
+
+  return {FileContents(file_contents, gltf_path.string()),
+          std::move(supporting_files)};
+}
+
+std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
                                        double scale) {
+  const InMemoryMesh& mem_mesh = gltf_source.IsPath()
+                                     ? PreParseGltf(gltf_source.path())
+                                     : gltf_source.mesh_data();
+
   const std::string& gltf_name = mem_mesh.mesh_file.filename_hint();
   vtkSmartPointer<MeshMemoryLoader> uri_loader(
       new MeshMemoryLoader(&mem_mesh.supporting_files));
@@ -292,46 +347,6 @@ std::vector<Vector3d> ReadGltfVertices(const InMemoryMesh& mem_mesh,
   return vertices;
 }
 
-/* Returns the scaled vertices from the named glTF file.
- @pre `filename` references a glTF file. */
-void ReadGltfVertices(const fs::path filename, double scale,
-                      std::vector<Vector3d>* vertices) {
-  vtkNew<vtkGLTFImporter> importer;
-  importer->SetFileName(filename.c_str());
-  importer->Update();
-
-  auto* renderer = importer->GetRenderer();
-  DRAKE_DEMAND(renderer != nullptr);
-
-  if (renderer->VisibleActorCount() == 0) {
-    throw std::runtime_error(
-        fmt::format("MakeConvexHull() found no vertices in the file '{}'.",
-                    filename.string()));
-  }
-
-  // The relative transform from the file's frame F to the geometry's frame G.
-  // (rotation from y-up to z-up). The scale is handled separately.
-  const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
-
-  auto* actors = renderer->GetActors();
-  actors->InitTraversal();
-  while (vtkActor* actor = actors->GetNextActor()) {
-    // 1. Extract PolyData from actor.
-    auto* poly_data =
-        dynamic_cast<vtkPolyData*>(actor->GetMapper()->GetInput());
-    DRAKE_DEMAND(poly_data != nullptr);
-    // 2. For each vertex, transform it to the file frame (based on the actors
-    // user transform), and then into the geometry frame using the scale and
-    // rotation.
-    vtkMatrix4x4* T_FA = actor->GetUserMatrix();
-    for (vtkIdType vi = 0; vi < poly_data->GetNumberOfPoints(); ++vi) {
-      const Vector3d p_AV(poly_data->GetPoint(vi));
-      const Vector3d p_FV = VtkMultiply(T_FA, p_AV);
-      vertices->emplace_back((X_GF * p_FV) * scale);
-    }
-  }
-}
-
 /* Given a set of vertices, attempts to find a plane that reliably spans three
  vertices. The normal is defined as n = a x b / |a x b| where
    a = v[j] - v[0] and
@@ -381,100 +396,33 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
   return n_candidate.normalized();
 }
 
-VertexCloud ReadVertices(const InMemoryMesh& mesh, std::string_view extension,
-                         double scale) {
+VertexCloud ReadVertices(const MeshSource& source, double scale) {
+  const std::string description =
+      source.IsPath() ? source.path().string()
+                      : source.mesh_data().mesh_file.filename_hint();
   VertexCloud cloud;
-  if (extension == ".obj") {
-    cloud.vertices = ReadObjVertices(mesh.mesh_file, scale);
-  } else if (extension == ".vtk") {
-    cloud.vertices = ReadVtkVertices(mesh.mesh_file, scale);
-  } else if (extension == ".gltf") {
-    cloud.vertices = ReadGltfVertices(mesh, scale);
+  if (source.extension() == ".obj") {
+    cloud.vertices = ReadObjVertices(source, scale);
+  } else if (source.extension() == ".vtk") {
+    cloud.vertices = ReadVtkVertices(source, scale);
+  } else if (source.extension() == ".gltf") {
+    cloud.vertices = ReadGltfVertices(source, scale);
   } else {
     throw std::runtime_error(
         fmt::format("MakeConvexHull only applies to .obj, .vtk, and .gltf "
                     "meshes; unsupported extension '{}' for geometry data: {}.",
-                    extension, mesh.mesh_file.filename_hint()));
+                    source.extension(), description));
   }
 
   if (cloud.vertices.size() < 3) {
     throw std::runtime_error(fmt::format(
         "MakeConvexHull() cannot be used on a mesh with fewer "
         "than three vertices; found {} vertices in geometry data: {}.",
-        cloud.vertices.size(), mesh.mesh_file.filename_hint()));
+        cloud.vertices.size(), description));
   }
 
   /* Characterizes planarity. */
-  cloud.n = FindNormal(cloud.vertices, mesh.mesh_file.filename_hint());
-  double d = cloud.n.dot(cloud.vertices[0]);
-  cloud.interior_point = cloud.vertices[0];
-  /* Assume planarity and look for evidence to the contrary. */
-  cloud.is_planar = true;
-  for (int vi = 1; vi < ssize(cloud.vertices); ++vi) {
-    const Vector3d& v = cloud.vertices[vi];
-    cloud.interior_point += v;
-    const double dist = std::abs(cloud.n.dot(v) - d);
-    if (dist > 1e-12) {
-      cloud.is_planar = false;
-    }
-  }
-
-  /* We define the interior point as simply the mean point. */
-  cloud.interior_point /= ssize(cloud.vertices);
-
-  return cloud;
-}
-
-// TODO(SeanCurtis-TRI): Once we have support for reading all mesh types from
-// file contents, remove this function.
-/* Simply reads the vertices from an OBJ, VTK or glTF file referred to by name.
- */
-VertexCloud ReadVertices(const fs::path filename, double scale) {
-  std::string extension = filename.extension();
-  std::transform(extension.begin(), extension.end(), extension.begin(),
-                 [](unsigned char c) {
-                   return std::tolower(c);
-                 });
-
-  VertexCloud cloud;
-  // Read the file contents in preparation for parsing.
-  std::string file_contents;
-  {
-    std::ifstream f(filename);
-    if (!f.good()) {
-      throw std::runtime_error(fmt::format(
-          "MakeConvexHull can't create convex hull from geometry file; file "
-          "isn't accessible. '{}'.",
-          filename.string()));
-    }
-    std::stringstream contents;
-    contents << f.rdbuf();
-    file_contents = std::move(contents).str();
-  }
-  const common::FileContents mesh_data(std::move(file_contents),
-                                       filename.string());
-  if (extension == ".obj") {
-    cloud.vertices = ReadObjVertices(mesh_data, scale);
-  } else if (extension == ".vtk") {
-    cloud.vertices = ReadVtkVertices(mesh_data, scale);
-  } else if (extension == ".gltf") {
-    ReadGltfVertices(filename, scale, &cloud.vertices);
-  } else {
-    throw std::runtime_error(
-        fmt::format("MakeConvexHull only applies to obj, vtk, and gltf "
-                    "meshes; given file: {}.",
-                    filename.string()));
-  }
-
-  if (cloud.vertices.size() < 3) {
-    throw std::runtime_error(
-        fmt::format("MakeConvexHull() cannot be used on a mesh with fewer "
-                    "than three vertices; found {} vertices in file: {}.",
-                    cloud.vertices.size(), filename.string()));
-  }
-
-  /* Characterizes planarity. */
-  cloud.n = FindNormal(cloud.vertices, filename.string());
+  cloud.n = FindNormal(cloud.vertices, description);
   double d = cloud.n.dot(cloud.vertices[0]);
   cloud.interior_point = cloud.vertices[0];
   /* Assume planarity and look for evidence to the contrary. */
@@ -709,35 +657,11 @@ class ConvexHull {
 
 }  // namespace
 
-PolygonSurfaceMesh<double> MakeConvexHullFromContents(
-    const InMemoryMesh& mesh, std::string_view extension, double scale,
-    double margin) {
-  DRAKE_THROW_UNLESS(scale > 0);
-  DRAKE_THROW_UNLESS(margin >= 0);
-  VertexCloud cloud = ReadVertices(mesh, extension, scale);
-
-  // Hull of the input cloud of vertices.
-  const ConvexHull hull(std::move(cloud));
-
-  // We do not apply margin to planar clouds.
-  if (cloud.is_planar || margin == 0) {
-    return hull.MakePolygonSurfaceMesh();
-  }
-
-  // Construct the hull of the half spaces moved by a "margin" amount.
-  const ConvexHull inflated_hull = hull.MakeInflatedConvexHull(margin);
-
-  return inflated_hull.MakePolygonSurfaceMesh();
-}
-
-PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
+PolygonSurfaceMesh<double> MakeConvexHull(const MeshSource& source,
                                           double scale, double margin) {
-  // TODO(SeanCurtis-TRI): When ReadVertices(FileContents, ...) works for all
-  // supported mesh file types, change this to simply reading the contents and
-  // delegating to MakeConvexHullFromContents().
   DRAKE_THROW_UNLESS(scale > 0);
   DRAKE_THROW_UNLESS(margin >= 0);
-  VertexCloud cloud = ReadVertices(mesh_file, scale);
+  VertexCloud cloud = ReadVertices(source, scale);
 
   // Hull of the input cloud of vertices.
   const ConvexHull hull(std::move(cloud));

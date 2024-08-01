@@ -11,11 +11,9 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/* @group Convex Hull for Meshes
-
- These functions create a convex hull (represented by a PolygonSurfaceMesh) for
- mesh data. The functions differ in where the mesh data comes from. Otherwise,
- their parameters and semantics (documented here) are the same.
+/* Creates a convex hull (represented by a PolygonSurfaceMesh) for mesh data.
+ The mesh data can come from on-disk files or in-memory files -- but the
+ content must be that of a supported Drake mesh type.
 
  The convex hull is built upon *all* of the vertex values in the mesh data
  (regardless of how the mesh is organized or even if it includes vertices that
@@ -39,31 +37,23 @@ namespace internal {
  objects, inflation of planar (zero thickness) meshes is not implemented. Margin
  is ignored for planar meshes.
 
- These functions throw an exception if:
-   - the mesh data comes from an unsupported format,
-   - the mesh data is ill formed,
-   - the referenced mesh data is degenerate (insufficient number of vertices,
-     co-linear or coincident vertices, etc.) All of the vertices lying on a
-     plane is *not* degenerate,
-   - there is an unforeseen error in computing the convex hull,
-   - `scale` is not strictly positive, or
-   - `margin` is negative.
- */
-//@{
+ @param source  The source of the mesh data.
+ @param scale   The scale to apply to the vertex data -- the vertex position
+                vectors are scaled relative to the mesh data's canonical frame.
+ @param margin  The optional margin.
 
-// TODO(SeanCurtis-TRI): Before merging this for real, either support all mesh
-// file types, or document that it's .obj only.
-/* The mesh data is specified by the contents of a mesh file interpreted
- according to the provided `extension`. */
-PolygonSurfaceMesh<double> MakeConvexHullFromContents(
-    const InMemoryMesh& mesh, std::string_view extension, double scale,
-    double margin = 0);
-
-/* The mesh data is specified by a path to an on-disk file of supported type. */
-PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
+ @throws std::exception if the mesh data is in an unsupported format.
+ @throws std::exception if the mesh data is ill formed.
+ @throws std::exception if the referenced mesh data is degenerate (insufficient
+                           number of vertices, co-linear or coincident vertices,
+                           etc.) All of the vertices lying on a plane is *not*
+                           degenerate.
+ @throws std::exception if there is an unforeseen error in computing the convex
+                           hull.
+ @throws std::exception if `scale` is not strictly positive.
+ @throws std::exception if `margin` is negative. */
+PolygonSurfaceMesh<double> MakeConvexHull(const MeshSource& source,
                                           double scale, double margin = 0);
-
-//@}
 
 }  // namespace internal
 }  // namespace geometry

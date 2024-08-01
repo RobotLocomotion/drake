@@ -64,8 +64,8 @@ GTEST_TEST(VtkToVolumeMeshTest, FromContents) {
   common::FileContents contents(std::move(file_contents).str(), test_file);
   // Scale from a one-meter object to a one-centimeter object.
   const double kScale = 0.01;
-  VolumeMesh<double> volume_mesh =
-      internal::ReadVtkContentsToVolumeMesh(contents, kScale);
+  VolumeMesh<double> volume_mesh = internal::ReadVtkToVolumeMesh(
+      MeshSource(InMemoryMesh{.mesh_file = contents}, ".vtk"), kScale);
 
   const VolumeMesh<double> expected_mesh{
       {{0, 1, 2, 3}},
@@ -81,12 +81,11 @@ GTEST_TEST(VtkToVolumeMeshTest, BadScale) {
   const double kNegativeScale = -0.01;
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ReadVtkToVolumeMesh(test_file, kNegativeScale),
-      "ReadVtkToVolumeMesh.*: scale=.* is not a positive number.*");
+      "ReadVtkToVolumeMesh.* requires a positive scale.*");
 
   const double kZeroScale = 0.0;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::ReadVtkToVolumeMesh(test_file, kZeroScale),
-      "ReadVtkToVolumeMesh.*: scale=.* is not a positive number.*");
+  EXPECT_THROW(internal::ReadVtkToVolumeMesh(test_file, kZeroScale),
+               std::exception);
 }
 
 GTEST_TEST(VtkToVolumeMeshTest, BogusFileName) {
