@@ -154,6 +154,22 @@ class GcsTrajectoryOptimization final {
     */
     void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix);
 
+    /** Adds multiple Quadratic Costs on the path length. Since we cannot
+    directly compute the path length of a Bézier curve, we minimize the upper
+    bound of the path integral by minimizing the sum of (weighted) distances
+    between control points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂². This cost yields
+    simpler gradients than AddPathLengthCost, and biases the control points
+    towards being evenly spaced. In most cases, solve times for graphs with path
+    energy cost can be expected to solve 30% faster than graphs with path length
+    cost. However, this cost could also yield control points to visit a greater
+    number of regions.
+
+    @param weight_matrix is the Q matrix used in the optimization between pairs
+    of control points.
+    @pre weight_matrix must be of size 2 x 2.
+    */
+    void AddPathEnergyCost(const Eigen::MatrixXd& weight_matrix);
+
     /** Adds multiple L2Norm Costs on the upper bound of the path length.
     We upper bound the trajectory length by the sum of the distances between
     control points. For Bézier curves, this is equivalent to the sum
@@ -163,6 +179,20 @@ class GcsTrajectoryOptimization final {
     @param weight is the relative weight of the cost.
     */
     void AddPathLengthCost(double weight = 1.0);
+
+    /** Adds multiple Quadratic Costs on the path length. Since we cannot
+    directly compute the path length of a Bézier curve, we minimize the upper
+    bound of the path integral by minimizing the sum of (weighted) distances
+    between control points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂². This cost yields
+    simpler gradients than AddPathLengthCost, and biases the control points
+    towards being evenly spaced. In most cases, solve times for graphs with path
+    energy cost can be expected to solve 30% faster than graphs with path length
+    cost. However, this cost could also yield control points to visit a greater
+    number of regions.
+
+    @param weight is the relative weight of the cost.
+    */
+    void AddPathEnergyCost(double weight = 1.0);
 
     /** Adds a linear velocity constraint to the subgraph `lb` ≤ q̇(t) ≤
     `ub`.
@@ -631,6 +661,26 @@ class GcsTrajectoryOptimization final {
   */
   void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix);
 
+  /** Adds multiple Quadratic Costs on the path length. Since we cannot directly
+  compute the path length of a Bézier curve, we minimize the upper bound of the
+  path integral by minimizing the sum of (weighted) distances between control
+  points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂². This cost yields simpler gradients
+  than AddPathLengthCost, and biases the control points towards being evenly
+  spaced. In most cases, solve times for graphs with path energy cost can be
+  expected to solve 30% faster than graphs with path length cost. However, this
+  cost could also yield control points to visit a greater number of regions.
+
+  This cost will be added to the entire graph. Since the path length is only
+  defined for Bézier curves that have two or more control points, this cost will
+  only added to all subgraphs with order greater than zero. Note that this cost
+  will be applied even to subgraphs added in the future.
+
+  @param weight_matrix is the Q matrix used in the optimization between pairs of
+  control points.
+  @pre weight_matrix must be of size 2 x 2.
+  */
+  void AddPathEnergyCost(const Eigen::MatrixXd& weight_matrix);
+
   /** Adds multiple L2Norm Costs on the upper bound of the path length.
   Since we cannot directly compute the path length of a Bézier curve, we
   minimize the upper bound of the path integral by minimizing the sum of
@@ -646,6 +696,24 @@ class GcsTrajectoryOptimization final {
   @param weight is the relative weight of the cost.
   */
   void AddPathLengthCost(double weight = 1.0);
+
+  /** Adds multiple Quadratic Costs on the path length. Since we cannot directly
+  compute the path length of a Bézier curve, we minimize the upper bound of the
+  path integral by minimizing the sum of (weighted) distances between control
+  points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂². This cost yields simpler gradients
+  than AddPathLengthCost, and biases the control points towards being evenly
+  spaced. In most cases, solve times for graphs with path energy cost can be
+  expected to solve 30% faster than graphs with path length cost. However, this
+  could also yield control points to visit a greater number of regions.
+
+  This cost will be added to the entire graph. Since the path length is only
+  defined for Bézier curves that have two or more control points, this cost will
+  only added to all subgraphs with order greater than zero. Note that this cost
+  will be applied even to subgraphs added in the future.
+
+  @param weight is the relative weight of the cost.
+  */
+  void AddPathEnergyCost(double weight = 1.0);
 
   /** Adds a linear velocity constraint to the entire graph `lb` ≤ q̇(t) ≤
   `ub`.
@@ -884,6 +952,7 @@ class GcsTrajectoryOptimization final {
       vertex_to_subgraph_;
   std::vector<double> global_time_costs_;
   std::vector<Eigen::MatrixXd> global_path_length_costs_;
+  std::vector<Eigen::MatrixXd> global_path_energy_costs_;
   std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
       global_velocity_bounds_{};
   std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, int>>

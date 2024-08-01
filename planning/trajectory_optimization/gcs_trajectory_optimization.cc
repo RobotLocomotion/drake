@@ -62,6 +62,7 @@ using solvers::L2NormCost;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
+using solvers::QuadraticCost;
 using symbolic::DecomposeLinearExpressions;
 using symbolic::Expression;
 using symbolic::MakeMatrixContinuousVariable;
@@ -378,10 +379,49 @@ void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix) {
   }
 }
 
+void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
+  /*
+  Add a cost to the control points of the trajectory that is of the form ∑
+  (rᵢ₊₁ * weight_matrix * rᵢ)
+  */
+
+  Eigen::MatrixXd b = Eigen::VectorXd::Zero(2);
+
+  // Occasionally numerical variation results in very small values that are not
+  // exactly zero. This ensures that the members of b are actually 0
+  for (int i = 0; i < b.rows(); i++) {
+    for (int j = 0; j < b.cols(); j++) {
+      b(i, j) = 0;
+    }
+  }
+
+  double constTerm = 0;
+  const auto path_squared_cost =
+      std::make_shared<QuadraticCost>(weight_matrix, b, constTerm);
+
+  for (Vertex* v : vertices_) {
+    auto control_points = GetControlPoints(*v);
+    for (int i = 0; i < control_points.cols() - 1; ++i) {
+      for (int j = 0; j < num_positions(); j++) {
+        v->AddCost(Binding<QuadraticCost>(
+            path_squared_cost,
+            {control_points.col(i + 1).row(j), control_points.col(i).row(j)}));
+      }
+    }
+  }
+}
+
 void Subgraph::AddPathLengthCost(double weight) {
   const MatrixXd weight_matrix =
       weight * MatrixXd::Identity(num_positions(), num_positions());
   return Subgraph::AddPathLengthCost(weight_matrix);
+}
+
+void Subgraph::AddPathEnergyCost(double weight) {
+  Eigen::MatrixXd Q(2, 2);
+  Q << 2, -2, -2, 2;
+
+  return Subgraph::AddPathEnergyCost(weight * Q);
 }
 
 void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
@@ -1382,9 +1422,13 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
   }
 
   if (order > 0) {
-    // These costs and constraints rely on the derivative of the trajectory.
+    /// These costs and constraints rely on the derivative of the trajectory.
     for (const MatrixXd& weight_matrix : global_path_length_costs_) {
       subgraph->AddPathLengthCost(weight_matrix);
+    }
+    // These costs and constraints rely on the derivative of the trajectory.
+    for (const MatrixXd& weight_matrix : global_path_energy_costs_) {
+      subgraph->AddPathEnergyCost(weight_matrix);
     }
     for (const auto& [lb, ub] : global_velocity_bounds_) {
       subgraph->AddVelocityBounds(lb, ub);
@@ -1528,10 +1572,28 @@ void GcsTrajectoryOptimization::AddPathLengthCost(
   global_path_length_costs_.push_back(weight_matrix);
 }
 
+void GcsTrajectoryOptimization::AddPathEnergyCost(
+    const MatrixXd& weight_matrix) {
+  // Add path energy cost to each subgraph.
+  for (std::unique_ptr<Subgraph>& subgraph : subgraphs_) {
+    if (subgraph->order() > 0) {
+      subgraph->AddPathEnergyCost(weight_matrix);
+    }
+  }
+  global_path_energy_costs_.push_back(weight_matrix);
+}
+
 void GcsTrajectoryOptimization::AddPathLengthCost(double weight) {
   const MatrixXd weight_matrix =
       weight * MatrixXd::Identity(num_positions(), num_positions());
   return GcsTrajectoryOptimization::AddPathLengthCost(weight_matrix);
+}
+
+void GcsTrajectoryOptimization::AddPathEnergyCost(double weight) {
+  Eigen::MatrixXd Q(2, 2);
+  Q << 2, -2, -2, 2;
+
+  return GcsTrajectoryOptimization::AddPathEnergyCost(weight * Q);
 }
 
 void GcsTrajectoryOptimization::AddVelocityBounds(

@@ -381,10 +381,20 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 &Class::Subgraph::AddPathLengthCost),
             py::arg("weight_matrix"),
             subgraph_doc.AddPathLengthCost.doc_1args_weight_matrix)
+        .def("AddPathEnergyCost",
+            // Equivalent structure to path length cost
+            py::overload_cast<const Eigen::MatrixXd&>(
+                &Class::Subgraph::AddPathEnergyCost),
+            py::arg("weight_matrix"),
+            subgraph_doc.AddPathEnergyCost.doc_1args_weight_matrix)
         .def("AddPathLengthCost",
             py::overload_cast<double>(&Class::Subgraph::AddPathLengthCost),
             py::arg("weight") = 1.0,
             subgraph_doc.AddPathLengthCost.doc_1args_weight)
+        .def("AddPathEnergyCost",
+            py::overload_cast<double>(&Class::Subgraph::AddPathEnergyCost),
+            py::arg("weight") = 1.0,
+            subgraph_doc.AddPathEnergyCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::Subgraph::AddVelocityBounds,
             py::arg("lb"), py::arg("ub"), subgraph_doc.AddVelocityBounds.doc)
         .def("AddNonlinearDerivativeBounds",
@@ -505,9 +515,17 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 &Class::AddPathLengthCost),
             py::arg("weight_matrix"),
             cls_doc.AddPathLengthCost.doc_1args_weight_matrix)
+        .def("AddPathEnergyCost",
+            py::overload_cast<const Eigen::MatrixXd&>(
+                &Class::AddPathEnergyCost),
+            py::arg("weight_matrix"),
+            cls_doc.AddPathEnergyCost.doc_1args_weight_matrix)
         .def("AddPathLengthCost",
             py::overload_cast<double>(&Class::AddPathLengthCost),
             py::arg("weight") = 1.0, cls_doc.AddPathLengthCost.doc_1args_weight)
+        .def("AddPathEnergyCost",
+            py::overload_cast<double>(&Class::AddPathEnergyCost),
+            py::arg("weight") = 1.0, cls_doc.AddPathEnergyCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), cls_doc.AddVelocityBounds.doc)
         .def("AddNonlinearDerivativeBounds",
@@ -546,6 +564,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
 
   m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,
       py::arg("plant"), doc.GetContinuousRevoluteJointIndices.doc);
+
+  // NOLINTNEXTLINE(readability/fn_size)
 }
 
 }  // namespace internal
