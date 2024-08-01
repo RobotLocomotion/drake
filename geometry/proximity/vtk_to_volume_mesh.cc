@@ -70,36 +70,31 @@ VolumeMesh<double> ReadVtkToVolumeMesh(vtkUnstructuredGridReader* reader,
 
 }  // namespace
 
-VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
-                                       double scale) {
+VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& source, double scale) {
+  const std::string description =
+      source.IsPath() ? source.path().string()
+                      : source.mesh_data().mesh_file.filename_hint();
   if (scale <= 0.0) {
     throw std::runtime_error(fmt::format(
-        "ReadVtkToVolumeMesh('{}', {}): scale={} is not a positive number",
-        filename, scale, scale));
+        "ReadVtkToVolumeMesh() requires a positive scale. Given {} for '{}'.",
+        scale, description));
   }
   vtkNew<vtkUnstructuredGridReader> reader;
-  reader->SetFileName(filename.c_str());
-  return ReadVtkToVolumeMesh(reader, filename, scale);
-}
-
-VolumeMesh<double> ReadVtkContentsToVolumeMesh(
-    const common::FileContents& contents, double scale) {
-  if (scale <= 0.0) {
-    throw std::runtime_error(
-        fmt::format("ReadVtkToVolumeMesh() from vtk file contents: scale={} is "
-                    "not a positive number",
-                    scale));
+  if (source.IsPath()) {
+    reader->SetFileName(source.path().c_str());
+  } else {
+    DRAKE_DEMAND(source.IsInMemory());
+    vtkNew<vtkCharArray> char_array;
+    const common::FileContents& contents = source.mesh_data().mesh_file;
+    const std::string& data = contents.contents();
+    // vtkCharArray requires a non-const pointer. Yuck. But this allows us to
+    // avoid copying the string.
+    char* contents_array = const_cast<char*>(data.c_str());
+    char_array->SetArray(contents_array, data.size(), 1 /* don't delete */);
+    reader->SetInputArray(char_array);
+    reader->SetReadFromInputString(true);
   }
-  vtkNew<vtkUnstructuredGridReader> reader;
-  vtkNew<vtkCharArray> char_array;
-  const std::string& data = contents.contents();
-  // vtkCharArray requires a non-const pointer. Yuck. But this allows us to
-  // avoid copying the string.
-  char* contents_array = const_cast<char*>(data.c_str());
-  char_array->SetArray(contents_array, data.size(), 1 /* don't delete */);
-  reader->SetInputArray(char_array);
-  reader->SetReadFromInputString(true);
-  return ReadVtkToVolumeMesh(reader, contents.filename_hint(), scale);
+  return ReadVtkToVolumeMesh(reader, description, scale);
 }
 
 }  // namespace internal
