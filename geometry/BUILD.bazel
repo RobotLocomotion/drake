@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_version",
+        ":in_memory_mesh",
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
@@ -272,6 +273,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "in_memory_mesh",
+    hdrs = ["in_memory_mesh.h"],
+    deps = [
+        "//common:file_contents",
+        "//common:string_container",
+    ],
+)
+
+drake_cc_library(
     name = "make_mesh_for_deformable",
     srcs = ["make_mesh_for_deformable.cc"],
     hdrs = ["make_mesh_for_deformable.h"],
@@ -395,8 +405,7 @@ drake_cc_library(
     hdrs = ["shape_specification.h"],
     deps = [
         "//common:essential",
-        "//common:file_contents",
-        "//common:string_container",
+        "//geometry:in_memory_mesh",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
     ],
@@ -752,7 +761,6 @@ filegroup(
     srcs = [
         "test/cube_with_hole.bin",
         "test/cube_with_hole.gltf",
-        "test/embedded_cube.gltf",
     ],
 )
 
