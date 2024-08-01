@@ -1118,7 +1118,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(1, 'x')
         prog.AddConstraint(x[0] <= 2)
-        # This ensures that constraint is off time Binding<Constraint> and not
+        # This ensures that constraint is of type Binding<Constraint> and not
         # a more specific type.
         constraint = prog.GetAllConstraints()[0]
         constraint2 = prog.AddConstraint(constraint)
