@@ -22,7 +22,6 @@ namespace geometry {
 namespace {
 
 using common::FileContents;
-using internal::MemoryMesh;
 using internal::MeshSource;
 
 std::string GetExtensionLower(const std::string& filename) {
@@ -52,10 +51,9 @@ void ComputeConvexHullAsNecessary(
       new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
         internal::MakeConvexHull(std::get<std::string>(source), scale));
     } else {
-      const MemoryMesh& memory_mesh = std::get<MemoryMesh>(source);
-      const FileContents& mesh_contents = memory_mesh.data.at(memory_mesh.name);
+      const InMemoryMesh& memory_mesh = std::get<InMemoryMesh>(source);
       new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
-          internal::MakeConvexHullFromContents(mesh_contents, extension,
+          internal::MakeConvexHullFromContents(memory_mesh, extension,
                                                scale));
     }
     std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
@@ -210,22 +208,25 @@ Mesh::Mesh(const std::string& filename, double scale)
     : source_(std::filesystem::absolute(filename).string()),
       extension_(GetExtensionLower(filename)),
       scale_(scale) {
+  // TODO(SeanCurtis-TRI): Validate extensions.
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error(
         fmt::format("Mesh |scale| cannot be < 1e-8, given {}.", scale));
   }
 }
 
-Mesh::Mesh(std::string mesh_name, std::string extension,
+Mesh::Mesh(std::string mesh_contents, std::string name,
            string_map<FileContents> mesh_data, double scale)
-    : source_(MemoryMesh{.name = std::move(mesh_name),
-                         .data = std::move(mesh_data)}),
-      // Make a file-like object to normalize the extension.
-      extension_(GetExtensionLower("foo" + extension)),
+    : source_(InMemoryMesh{
+          .mesh_file = FileContents(std::move(mesh_contents), std::move(name)),
+          .supporting_files = std::move(mesh_data)}),
       scale_(scale) {
-  fmt::print("Mesh extension({}) -> {}\n", extension, extension_);
-  const MemoryMesh& memory_data = std::get<MemoryMesh>(source_);
-  DRAKE_DEMAND(memory_data.data.contains(memory_data.name));
+  // TODO(SeanCurtis-TRI): Validate extensions.
+
+  // We can't do this in the initializer list; we have no guarantees on
+  // the order of evaluation, so we can't know a reliable source of the name.
+  const FileContents& mesh_file = std::get<InMemoryMesh>(source_).mesh_file;
+  extension_ = GetExtensionLower(mesh_file.filename_hint());
   DRAKE_DEMAND(extension_ == ".obj");
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error(
@@ -239,21 +240,21 @@ const std::string& Mesh::filename() const {
   }
   throw std::runtime_error(
       fmt::format("Mesh::filename() cannot be called when constructed on "
-                  "in-memory mesh data: '{}'. Call name() instead.",
-                  std::get<MemoryMesh>(source_).name));
+                  "in-memory mesh data: '{}'. Call in_memory_mesh() instead.",
+                  std::get<InMemoryMesh>(source_).mesh_file.filename_hint()));
 }
 
 bool Mesh::is_in_memory() const {
-  return std::holds_alternative<MemoryMesh>(source_);
+  return std::holds_alternative<InMemoryMesh>(source_);
 }
 
-const std::string& Mesh::name() const {
+const InMemoryMesh& Mesh::in_memory_mesh() const {
   if (is_in_memory()) {
-    return std::get<MemoryMesh>(source_).name;
+    return std::get<InMemoryMesh>(source_);
   }
   throw std::runtime_error(
-      fmt::format("Mesh::name() cannot be called when constructed on a file "
-                  "path: '{}'. Call filename() instead.",
+      fmt::format("Mesh::in_memory_mesh() cannot be called when constructed on "
+                  "a file path: '{}'. Call filename() instead.",
                   std::get<std::string>(source_)));
 }
 
