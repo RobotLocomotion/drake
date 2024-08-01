@@ -345,6 +345,7 @@ std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
       break;
     case kCompliant:
       AddCompliantHydroelasticProperties(edge_length, 1e8, &properties);
+      properties.AddProperty(kHydroGroup, kSlabThickness, 1.0);
       break;
   }
   if (is_anchored) {
@@ -371,23 +372,11 @@ unordered_map<GeometryId, RigidTransformd> PopulateEngine(
   return X_WGs;
 }
 
-unordered_map<GeometryId, RigidTransformd> PopulateEngine(
-    ProximityEngine<double>* engine, const Shape& shape1, bool anchored1,
-    bool soft1, const Shape& shape2, bool anchored2,
-    bool soft2, const Vector3d& p_S1S2_W = Vector3d(0, 0, 0)) {
-  auto flag_to_type = [](bool flag) -> HydroelasticType {
-    using enum HydroelasticType;
-    return flag ? kCompliant : kRigid;
-  };
-  return PopulateEngine(engine, shape1, anchored1, flag_to_type(soft1),
-                        shape2, anchored2, flag_to_type(soft2), p_S1S2_W);
-}
-
 // The autodiff support is independent of what the contact surface mesh
 // representation is; so we'll simply use kTriangle.
 GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
+  using enum HydroelasticType;
   const bool anchored{true};
-  const bool soft{true};
   const Sphere sphere{0.2};
   const Mesh mesh{
       drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
@@ -397,8 +386,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
   // contact surface has derivatives.
   {
     ProximityEngine<double> engine_d;
-    const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, soft, mesh,
-                                        !anchored, !soft);
+    const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, kCompliant,
+                                        mesh, !anchored, kRigid);
 
     const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
@@ -421,8 +410,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
     // We assume that ComputeContactSurfacesWithFallback() exercises the same
     // code as ComputeContactSurfaces(); they both pass through the hydroelastic
-    // callback. So, exercising one is "sufficient". If they ever deviate in
-    // execution (i.e., there were to no longer share the same callback), this
+    // calculator. So, exercising one is "sufficient". If they ever deviate in
+    // execution (i.e., there were to no longer share the same calculator), this
     // test would have to be elaborated.
     engine_ad->ComputeContactSurfacesWithFallback(
         HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
@@ -435,8 +424,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     EXPECT_EQ(surfaces[0].tri_mesh_W().vertex(0).x().derivatives().size(), 3);
   }
 
-  // Case: Rigid sphere and hydro-undefined mesh with AutoDiffXd -- contact
-  // would be a point pair.
+  // Case: Rigid sphere and hydro-undefined mesh with AutoDiffXd --
+  // rigid-undefined contact would result in a point pair.
   {
     ProximityEngine<double> engine_d;
     using enum HydroelasticType;
@@ -457,12 +446,12 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     EXPECT_EQ(point_pairs.size(), 1);
   }
 
-  // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be a point
-  // pair.
+  // Case: Rigid sphere and mesh with AutoDiffXd -- rigid-rigid contact would
+  // result in a point pair.
   {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d =
-        PopulateEngine(&engine_d, sphere, false, !soft, sphere, false, !soft);
+        PopulateEngine(&engine_d, sphere, false, kRigid, sphere, false, kRigid);
     const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
     for (const auto& [id, X_WG_d] : X_WGs_d) {
@@ -483,7 +472,7 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
   {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d =
-        PopulateEngine(&engine_d, sphere, false, !soft, sphere, false, !soft);
+        PopulateEngine(&engine_d, sphere, false, kRigid, sphere, false, kRigid);
     const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
     GeometrySet geom_set;
@@ -4858,6 +4847,63 @@ GTEST_TEST(ProximityEngineTests, ImplementedAsFclConvex) {
     engine.AddAnchoredGeometry(Convex(obj_path), {}, id, {});
 
     expect_fcl_convex_is_cube(id);
+  }
+}
+
+GTEST_TEST(ProximityEngineTest, ThrowForStrictRejectedContacts) {
+  using enum HydroelasticType;
+  using enum HydroelasticContactRepresentation;
+  const bool anchored{true};
+  const Sphere sphere{0.2};
+  const HalfSpace half_space;
+
+  // Confirms that if the intersecting pair is missing hydroelastic
+  // representation that an exception is thrown. This test applies *no*
+  // collision filters to guarantee that the body of the callback gets
+  // exercised in all cases.
+  {
+    ProximityEngine<double> engine;
+    const auto X_WGs = PopulateEngine(&engine, sphere, anchored, kRigid,
+                                      sphere, !anchored, kUndefined);
+
+      // We test only a single "underrepresented" configuration (rigid,
+      // undefined) because we rely on the tests on MaybeCalcContactSurface() to
+      // have explored all the ways that the kUnsupported calculation result is
+      // returned. This configuration is representative of that set.
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          engine.ComputeContactSurfaces(kTriangle, X_WGs),
+          "Requested a contact surface between a pair of geometries without "
+          "hydroelastic representation .+ rigid .+ undefined .+");
+  }
+
+  // Confirms that if the intersecting pair is rigid-rigid, an exception is
+  // thrown. This test applies *no* collision filters to guarantee that the
+  // body of the callback gets exercised in all cases.
+  {
+    ProximityEngine<double> engine;
+    const auto X_WGs = PopulateEngine(&engine, sphere, anchored, kRigid,
+                                      sphere, !anchored, kRigid);
+
+    // We test only a single "same-compliance" configuration (rigid, rigid)
+    // because we rely on the tests on MaybeMakeContactSurface() to have
+    // explored all the ways that the calculation result is returned. This
+    // configuration is representative of that set.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+          engine.ComputeContactSurfaces(kTriangle, X_WGs),
+        "Requested contact between two rigid objects .+");
+  }
+
+  // Confirms that if the intersecting pair consists of two half spaces that an
+  // exception is thrown.
+  {
+    ProximityEngine<double> engine;
+    // They must have different compliance types in order to get past the same
+    // compliance type condition.
+    const auto X_WGs = PopulateEngine(&engine, half_space, anchored, kRigid,
+                                      half_space, !anchored, kCompliant);
+
+    DRAKE_EXPECT_THROWS_MESSAGE(engine.ComputeContactSurfaces(kTriangle, X_WGs),
+                                "Requested contact between two half spaces .+");
   }
 }
 
