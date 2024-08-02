@@ -526,7 +526,7 @@ class GcsTrajectoryOptimization final {
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-      double h_min = 0, double h_max = 20, std::string name = "",
+      double h_min = 1e-6, double h_max = 20, std::string name = "",
       std::optional<const std::vector<Eigen::VectorXd>> edge_offsets =
           std::nullopt);
 
@@ -551,7 +551,7 @@ class GcsTrajectoryOptimization final {
   dimensions corresponding to continuous revolute joints.
   */
   Subgraph& AddRegions(const geometry::optimization::ConvexSets& regions,
-                       int order, double h_min = 0, double h_max = 20,
+                       int order, double h_min = 1e-6, double h_max = 20,
                        std::string name = "");
 
   /** Remove a subgraph and all associated edges found in the subgraph and
