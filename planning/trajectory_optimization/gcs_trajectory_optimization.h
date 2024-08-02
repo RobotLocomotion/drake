@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/trajectories/bezier_curve.h"
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/geometry/optimization/convex_set.h"
