@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/solvers/mathematical_program_result.h"
