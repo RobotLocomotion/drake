@@ -251,8 +251,8 @@ class GcsTrajectoryOptimization final {
     Subgraph(const geometry::optimization::ConvexSets& regions,
              const std::vector<std::pair<int, int>>& regions_to_connect,
              int order, double h_min, double h_max, std::string name,
-             GcsTrajectoryOptimization* traj_opt,
-             const std::vector<Eigen::VectorXd>* edge_offsets);
+             const std::vector<Eigen::VectorXd>* edge_offsets,
+             GcsTrajectoryOptimization* traj_opt);
 
     /* Convenience accessor, for brevity. */
     int num_positions() const { return traj_opt_.num_positions(); }

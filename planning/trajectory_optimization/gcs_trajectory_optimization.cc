@@ -215,8 +215,8 @@ Subgraph::Subgraph(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
     double h_min, double h_max, std::string name,
-    GcsTrajectoryOptimization* traj_opt,
-    const std::vector<VectorXd>* edge_offsets)
+    const std::vector<VectorXd>* edge_offsets,
+    GcsTrajectoryOptimization* traj_opt)
     : regions_(regions),
       order_(order),
       h_min_(h_min),
@@ -1376,7 +1376,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
   }
   Subgraph* subgraph =
       new Subgraph(regions, edges_between_regions, order, h_min, h_max,
-                   std::move(name), this, edge_offsets);
+                   std::move(name), edge_offsets, this);
 
   // Add global costs to the subgraph.
   for (double weight : global_time_costs_) {
