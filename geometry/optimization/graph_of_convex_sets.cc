@@ -566,12 +566,6 @@ std::string GraphOfConvexSets::GetGraphvizString(
 // Implements the preprocessing scheme put forth in Appendix A.2 of
 // "Motion Planning around Obstacles with Convex Optimization":
 // https://arxiv.org/abs/2205.04422
-// Include necessary headers for multithreading
-#include <thread>
-#include <future>
-
-// ...
-
 std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     VertexId source_id, VertexId target_id,
     const GraphOfConvexSetsOptions& options) const {
@@ -748,7 +742,6 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
       unusable_edges.insert(edge_id);
     }
   }
-
   return unusable_edges;
 }
 
