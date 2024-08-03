@@ -10,6 +10,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <thread>
+#include <future>
 
 #include <fmt/format.h>
 
@@ -564,6 +566,12 @@ std::string GraphOfConvexSets::GetGraphvizString(
 // Implements the preprocessing scheme put forth in Appendix A.2 of
 // "Motion Planning around Obstacles with Convex Optimization":
 // https://arxiv.org/abs/2205.04422
+// Include necessary headers for multithreading
+#include <thread>
+#include <future>
+
+// ...
+
 std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     VertexId source_id, VertexId target_id,
     const GraphOfConvexSetsOptions& options) const {
@@ -591,7 +599,6 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
       outgoing_edges[e->u().id()].push_back(edge_count);
       incoming_edges[e->v().id()].push_back(edge_count);
     }
-
     edge_count++;
   }
 
@@ -662,68 +669,86 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     }
   }
 
+  // Vector to hold futures for parallel processing
+  std::vector<std::future<std::pair<EdgeId, bool>>> futures;
+
   for (const auto& [edge_id, e] : edges_) {
     if (unusable_edges.contains(edge_id)) {
       continue;
     }
 
-    // Update bounds of conservation of flow:
-    // ∑ f_in,u - ∑ f_out,u = 1 - δ(is_source).
-    if (e->u().id() == source_id) {
-      f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    } else {
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(1), Vector1d(1));
-    }
-    // ∑ g_in,v - ∑ f_out,v = δ(is_target) - 1.
-    if (e->v().id() == target_id) {
-      g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    } else {
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(-1), Vector1d(-1));
-    }
+    // Launch a new thread to solve the program for each edge
+    futures.push_back(std::async(std::launch::async, [&, edge_id, e]() -> std::pair<EdgeId, bool> {
+      // Local copy of the program for thread safety
+      MathematicalProgram local_prog = prog;
 
-    // Update bounds of degree constraints:
-    // ∑ f_in,v + ∑ g_in,v = 0.
-    degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
+      // Update bounds of conservation of flow:
+      // ∑ f_in,u - ∑ f_out,u = 1 - δ(is_source).
+      if (e->u().id() == source_id) {
+        f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
+        conservation_f.at(e->u().id())
+            .evaluator()
+            ->set_bounds(Vector1d(0), Vector1d(0));
+      } else {
+        conservation_f.at(e->u().id())
+            .evaluator()
+            ->set_bounds(Vector1d(1), Vector1d(1));
+      }
+      // ∑ g_in,v - ∑ f_out,v = δ(is_target) - 1.
+      if (e->v().id() == target_id) {
+        g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
+        conservation_g.at(e->v().id())
+            .evaluator()
+            ->set_bounds(Vector1d(0), Vector1d(0));
+      } else {
+        conservation_g.at(e->v().id())
+            .evaluator()
+            ->set_bounds(Vector1d(-1), Vector1d(-1));
+      }
 
-    // Check if edge e = (u,v) could be on a path from start to goal.
-    auto result = Solve(prog, options, /* preprocessing= */ true);
-    if (!result.is_success()) {
+      // Update bounds of degree constraints:
+      // ∑ f_in,v + ∑ g_in,v = 0.
+      degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
+
+      // Check if edge e = (u,v) could be on a path from start to goal.
+      auto result = Solve(local_prog, options, /* preprocessing= */ true);
+      bool is_unusable = !result.is_success();
+
+      // Reset constraint bounds.
+      if (e->u().id() == source_id) {
+        f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
+        conservation_f.at(e->u().id())
+            .evaluator()
+            ->set_bounds(Vector1d(-1), Vector1d(-1));
+      } else {
+        conservation_f.at(e->u().id())
+            .evaluator()
+            ->set_bounds(Vector1d(0), Vector1d(0));
+      }
+      if (e->v().id() == target_id) {
+        g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
+        conservation_g.at(e->v().id())
+            .evaluator()
+            ->set_bounds(Vector1d(1), Vector1d(1));
+      } else {
+        conservation_g.at(e->v().id())
+            .evaluator()
+            ->set_bounds(Vector1d(0), Vector1d(0));
+      }
+      degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(1));
+
+      return std::make_pair(edge_id, is_unusable);
+    }));
+  }
+
+  // Collect results from all threads
+  for (auto& future : futures) {
+    auto [edge_id, is_unusable] = future.get();
+    if (is_unusable) {
       unusable_edges.insert(edge_id);
     }
-
-    // Reset constraint bounds.
-    if (e->u().id() == source_id) {
-      f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(-1), Vector1d(-1));
-    } else {
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    }
-    if (e->v().id() == target_id) {
-      g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(1), Vector1d(1));
-    } else {
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    }
-    degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(1));
   }
+
   return unusable_edges;
 }
 
