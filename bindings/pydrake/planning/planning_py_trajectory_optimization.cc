@@ -437,14 +437,18 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
         .def("continuous_revolute_joints", &Class::continuous_revolute_joints,
             cls_doc.continuous_revolute_joints.doc)
-        .def("GetGraphvizString", &Class::GetGraphvizString,
-            py::arg("result") = std::nullopt,
+        .def("GetGraphvizString",
+            overload_cast_explicit<std::string,
+                const solvers::MathematicalProgramResult*,
+                const geometry::optimization::GcsGraphvizOptions&>(
+                &Class::GetGraphvizString),
+            py::arg("result") = nullptr,
             py::arg("options") = geometry::optimization::GcsGraphvizOptions(),
             cls_doc.GetGraphvizString.doc)
         .def(
             "GetGraphvizString",
             [](const GcsTrajectoryOptimization& self,
-                const std::optional<solvers::MathematicalProgramResult>& result,
+                const solvers::MathematicalProgramResult* result,
                 bool show_slacks, bool show_vars, bool show_flows,
                 bool show_costs, bool scientific, int precision) {
               geometry::optimization::GcsGraphvizOptions options;
@@ -456,14 +460,15 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
               options.precision = precision;
               return self.GetGraphvizString(result, options);
             },
-            py::arg("result") =
-                std::optional<solvers::MathematicalProgramResult>(std::nullopt),
-            py::arg("show_slacks") = true, py::arg("show_vars") = true,
-            py::arg("show_flows") = true, py::arg("show_costs") = true,
-            py::arg("scientific") = false, py::arg("precision") = 3,
-            cls_doc.GetGraphvizString.doc)
+            py::arg("result") = nullptr, py::arg("show_slacks") = true,
+            py::arg("show_vars") = true, py::arg("show_flows") = true,
+            py::arg("show_costs") = true, py::arg("scientific") = false,
+            py::arg("precision") = 3, cls_doc.GetGraphvizString.doc)
         .def(
             "AddRegions",
+            // Pybind does not support None arguments for pointers to built-in
+            // and STL types, so we must use optional.
+            // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
             [](Class& self,
                 const std::vector<geometry::optimization::ConvexSet*>& regions,
                 const std::vector<std::pair<int, int>>& edges_between_regions,
@@ -472,12 +477,13 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 -> Class::Subgraph& {
               return self.AddRegions(CloneConvexSets(regions),
                   edges_between_regions, order, h_min, h_max, std::move(name),
-                  edge_offsets);
+                  edge_offsets ? std::addressof(edge_offsets.value())
+                               : nullptr);
             },
             py_rvp::reference_internal, py::arg("regions"),
             py::arg("edges_between_regions"), py::arg("order"),
             py::arg("h_min") = 1e-6, py::arg("h_max") = 20,
-            py::arg("name") = "", py::arg("edge_offsets") = std::nullopt,
+            py::arg("name") = "", py::arg("edge_offsets") = py::none(),
             cls_doc.AddRegions.doc_7args)
         .def(
             "AddRegions",
@@ -493,9 +499,27 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("name") = "", cls_doc.AddRegions.doc_5args)
         .def("RemoveSubgraph", &Class::RemoveSubgraph, py::arg("subgraph"),
             cls_doc.RemoveSubgraph.doc)
-        .def("AddEdges", &Class::AddEdges, py_rvp::reference_internal,
-            py::arg("from_subgraph"), py::arg("to_subgraph"),
-            py::arg("subspace") = py::none(),
+        .def(
+            "AddEdges",
+            // Pybind does not support None arguments for pointers to built-in
+            // and STL types, so we must use optional.
+            // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
+            [](Class& self, const Class::Subgraph& from_subgraph,
+                const Class::Subgraph& to_subgraph,
+                const geometry::optimization::ConvexSet* subspace,
+                const std::optional<std::vector<std::pair<int, int>>>
+                    edges_between_regions,
+                const std::optional<std::vector<Eigen::VectorXd>> edge_offsets)
+                -> Class::EdgesBetweenSubgraphs& {
+              return self.AddEdges(from_subgraph, to_subgraph, subspace,
+                  edges_between_regions
+                      ? std::addressof(edges_between_regions.value())
+                      : nullptr,
+                  edge_offsets ? std::addressof(edge_offsets.value())
+                               : nullptr);
+            },
+            py_rvp::reference_internal, py::arg("from_subgraph"),
+            py::arg("to_subgraph"), py::arg("subspace") = py::none(),
             py::arg("edges_between_regions") = py::none(),
             py::arg("edge_offsets") = py::none(), cls_doc.AddEdges.doc)
         .def("AddTimeCost", &Class::AddTimeCost, py::arg("weight") = 1.0,
@@ -546,6 +570,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
 
   m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,
       py::arg("plant"), doc.GetContinuousRevoluteJointIndices.doc);
+  // NOLINTNEXTLINE(readability/fn_size)
 }
 
 }  // namespace internal

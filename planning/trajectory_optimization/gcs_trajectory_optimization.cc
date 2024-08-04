@@ -215,8 +215,8 @@ Subgraph::Subgraph(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
     double h_min, double h_max, std::string name,
-    GcsTrajectoryOptimization* traj_opt,
-    std::optional<const std::vector<VectorXd>> edge_offsets)
+    const std::vector<VectorXd>* edge_offsets,
+    GcsTrajectoryOptimization* traj_opt)
     : regions_(regions),
       order_(order),
       h_min_(h_min),
@@ -225,7 +225,7 @@ Subgraph::Subgraph(
   DRAKE_THROW_UNLESS(order >= 0);
   DRAKE_THROW_UNLESS(!regions_.empty());
 
-  if (edge_offsets.has_value()) {
+  if (edge_offsets) {
     DRAKE_THROW_UNLESS(edge_offsets->size() == edges_between_regions.size());
   }
 
@@ -285,7 +285,7 @@ Subgraph::Subgraph(
     edges_.emplace_back(uv_edge);
 
     // Add path continuity constraints.
-    if (edge_offsets.has_value()) {
+    if (edge_offsets) {
       // In this case, we instead enforce the constraint
       // GetControlPoints(u).col(order) - GetControlPoints(v).col(0) =
       // -tau_uv.value(), via Ax = -edge_offsets.value()[idx], A = [I, -I],
@@ -686,12 +686,17 @@ symbolic::Variable Subgraph::GetTimeScaling(
 EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
     const ConvexSet* subspace, GcsTrajectoryOptimization* traj_opt,
-    std::optional<const std::vector<std::pair<int, int>>> edges_between_regions,
-    std::optional<const std::vector<Eigen::VectorXd>> edge_offsets)
+    const std::vector<std::pair<int, int>>* edges_between_regions,
+    const std::vector<Eigen::VectorXd>* edge_offsets)
     : traj_opt_(*traj_opt),
       from_subgraph_(from_subgraph),
       to_subgraph_(to_subgraph) {
-  if (edge_offsets.has_value()) {
+  if (edge_offsets) {
+    if (!edges_between_regions) {
+      throw std::runtime_error(
+          "If edge_offsets are specified, then edges_between_regions must also "
+          "be specified.");
+    }
     DRAKE_THROW_UNLESS(edge_offsets->size() == edges_between_regions->size());
   }
   // Formulate edge costs and constraints.
@@ -738,18 +743,17 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
   }
 
   std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data;
-  if (edges_between_regions.has_value()) {
-    edge_data.reserve(edges_between_regions.value().size());
-    for (int edge_idx = 0; edge_idx < ssize(edges_between_regions.value());
+  if (edges_between_regions) {
+    edge_data.reserve(edges_between_regions->size());
+    for (int edge_idx = 0; edge_idx < ssize(*edges_between_regions);
          ++edge_idx) {
-      int i = std::get<0>(edges_between_regions.value()[edge_idx]);
-      int j = std::get<1>(edges_between_regions.value()[edge_idx]);
+      int i = std::get<0>((*edges_between_regions)[edge_idx]);
+      int j = std::get<1>((*edges_between_regions)[edge_idx]);
       DRAKE_THROW_UNLESS(0 <= i && 0 <= j && i < from_subgraph_.size() &&
                          j < to_subgraph_.size());
       edge_data.emplace_back(i, j,
-                             edge_offsets.has_value()
-                                 ? edge_offsets->at(edge_idx)
-                                 : VectorXd::Zero(num_positions()));
+                             edge_offsets ? edge_offsets->at(edge_idx)
+                                          : VectorXd::Zero(num_positions()));
     }
   } else {
     // TODO(cohnt): Make the return type of CalcPairwiseIntersections match the
@@ -768,7 +772,7 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
       Eigen::VectorXd subspace_offset = sets_A_subspace_offset[i];
       if (!RegionsConnectThroughSubspace(*from_subgraph.regions()[i],
                                          *to_subgraph.regions()[j], *subspace,
-                                         edge_offset, subspace_offset)) {
+                                         &edge_offset, &subspace_offset)) {
         continue;
       }
     }
@@ -833,37 +837,35 @@ EdgesBetweenSubgraphs::~EdgesBetweenSubgraphs() = default;
 
 bool EdgesBetweenSubgraphs::RegionsConnectThroughSubspace(
     const ConvexSet& A, const ConvexSet& B, const ConvexSet& subspace,
-    std::optional<const VectorXd> maybe_set_B_offset,
-    std::optional<const VectorXd> maybe_subspace_offset) {
+    const VectorXd* maybe_set_B_offset, const VectorXd* maybe_subspace_offset) {
   DRAKE_THROW_UNLESS(A.ambient_dimension() > 0);
   DRAKE_THROW_UNLESS(A.ambient_dimension() == B.ambient_dimension());
   DRAKE_THROW_UNLESS(A.ambient_dimension() == subspace.ambient_dimension());
-  DRAKE_THROW_UNLESS(maybe_set_B_offset.has_value() ==
-                     maybe_subspace_offset.has_value());
-  if (maybe_set_B_offset.has_value()) {
-    DRAKE_THROW_UNLESS(maybe_set_B_offset.value().size() ==
-                       A.ambient_dimension());
-    DRAKE_THROW_UNLESS(maybe_subspace_offset.value().size() ==
-                       A.ambient_dimension());
+  // If the set_B offset is given, the subspace_offset must be given as well.
+  DRAKE_THROW_UNLESS((maybe_set_B_offset && maybe_subspace_offset) ||
+                     (!maybe_set_B_offset && !maybe_subspace_offset));
+  if (maybe_set_B_offset) {
+    DRAKE_THROW_UNLESS(maybe_set_B_offset->size() == A.ambient_dimension());
+    DRAKE_THROW_UNLESS(maybe_subspace_offset->size() == A.ambient_dimension());
   }
   if (std::optional<VectorXd> subspace_point = subspace.MaybeGetPoint()) {
     // If the subspace is a point, then the point must be in both A and B.
-    if (maybe_set_B_offset.has_value()) {
+    if (maybe_set_B_offset) {
       // Compute the value of the point such that it can be directly checked for
       // containment in A. We take its given value, and subtract the offset from
       // the set to the subspace.
       const VectorXd point_in_A_coords =
-          *subspace_point - maybe_subspace_offset.value();
+          *subspace_point - *maybe_subspace_offset;
       // Compute the value of the point such that it can be directly checked for
       // containment in B. We take the value of the point that can be checked
       // for A, and add the offset form A to B.
       const VectorXd point_in_B_coords =
-          point_in_A_coords + maybe_set_B_offset.value();
+          point_in_A_coords + *maybe_set_B_offset;
       return A.PointInSet(point_in_A_coords) && B.PointInSet(point_in_B_coords);
     } else {
       return A.PointInSet(*subspace_point) && B.PointInSet(*subspace_point);
     }
-  } else if (!maybe_set_B_offset.has_value()) {
+  } else if (!maybe_set_B_offset) {
     // Otherwise, we can formulate a problem to check if a point is contained in
     // A, B and the subspace.
     Intersection intersection(MakeConvexSets(A, B, subspace));
@@ -886,10 +888,10 @@ bool EdgesBetweenSubgraphs::RegionsConnectThroughSubspace(
         -MatrixXd::Identity(dimension, dimension);
     // y = x + B_offset as [I, -I][y; x] = [B_offset].
     prog.AddLinearEqualityConstraint(equality_constraint_matrix,
-                                     maybe_set_B_offset.value(), {x, y});
+                                     *maybe_set_B_offset, {x, y});
     // z = x + subspace_offset as [I, -I][z; x] = [subspace_offset]
     prog.AddLinearEqualityConstraint(equality_constraint_matrix,
-                                     maybe_subspace_offset.value(), {x, z});
+                                     *maybe_subspace_offset, {x, z});
 
     const auto result = Solve(prog);
     return result.is_success();
@@ -1365,8 +1367,8 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
     double h_min, double h_max, std::string name,
-    std::optional<const std::vector<VectorXd>> edge_offsets) {
-  if (edge_offsets.has_value()) {
+    const std::vector<VectorXd>* edge_offsets) {
+  if (edge_offsets) {
     DRAKE_THROW_UNLESS(edge_offsets->size() == edges_between_regions.size());
   }
   if (name.empty()) {
@@ -1374,7 +1376,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
   }
   Subgraph* subgraph =
       new Subgraph(regions, edges_between_regions, order, h_min, h_max,
-                   std::move(name), this, edge_offsets);
+                   std::move(name), edge_offsets, this);
 
   // Add global costs to the subgraph.
   for (double weight : global_time_costs_) {
@@ -1435,7 +1437,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
 
   return GcsTrajectoryOptimization::AddRegions(regions, edges_between_regions,
                                                order, h_min, h_max,
-                                               std::move(name), edge_offsets);
+                                               std::move(name), &edge_offsets);
 }
 
 void GcsTrajectoryOptimization::RemoveSubgraph(const Subgraph& subgraph) {
@@ -1485,8 +1487,8 @@ void GcsTrajectoryOptimization::RemoveSubgraph(const Subgraph& subgraph) {
 EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
     const ConvexSet* subspace,
-    std::optional<const std::vector<std::pair<int, int>>> edges_between_regions,
-    std::optional<const std::vector<Eigen::VectorXd>> edge_offsets) {
+    const std::vector<std::pair<int, int>>* edges_between_regions,
+    const std::vector<Eigen::VectorXd>* edge_offsets) {
   EdgesBetweenSubgraphs* subgraph_edge =
       new EdgesBetweenSubgraphs(from_subgraph, to_subgraph, subspace, this,
                                 edges_between_regions, edge_offsets);

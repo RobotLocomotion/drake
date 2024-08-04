@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -677,7 +678,7 @@ class GraphOfConvexSets {
   void ClearAllPhiConstraints();
 
   /** Returns a Graphviz string describing the graph vertices and edges. If
-  `results` is supplied, then the graph will be annotated with the solution
+  `result` is supplied, then the graph will be annotated with the solution
   values, according to `options`.
   @param result the optional result from a solver.
   @param options the struct containing various options for visualization.
@@ -686,11 +687,22 @@ class GraphOfConvexSets {
   graph edges.
   */
   std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result =
-          std::nullopt,
+      const solvers::MathematicalProgramResult* result = nullptr,
       const GcsGraphvizOptions& options = GcsGraphvizOptions(),
-      const std::optional<std::vector<const Edge*>>& active_path =
-          std::nullopt) const;
+      const std::vector<const Edge*>* active_path = nullptr) const;
+
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "result should be of type const solvers::MathematicalProgramResult*.");
+  std::string GetGraphvizString(
+      const std::optional<solvers::MathematicalProgramResult>& result,
+      const geometry::optimization::GcsGraphvizOptions& options =
+          GcsGraphvizOptions(),
+      const std::optional<std::vector<const Edge*>>& active_path = {}) const {
+    return GetGraphvizString(
+        result ? std::addressof(result.value()) : nullptr, options,
+        active_path ? std::addressof(active_path.value()) : nullptr);
+  }
 
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the graph, as discussed in detail in

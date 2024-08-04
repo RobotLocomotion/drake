@@ -472,9 +472,9 @@ void GraphOfConvexSets::ClearAllPhiConstraints() {
 }
 
 std::string GraphOfConvexSets::GetGraphvizString(
-    const std::optional<solvers::MathematicalProgramResult>& result,
+    const solvers::MathematicalProgramResult* result,
     const GcsGraphvizOptions& options,
-    const std::optional<std::vector<const Edge*>>& active_path) const {
+    const std::vector<const Edge*>* active_path) const {
   // This function converts the range (0.0, 1.0) to Hex strings in the range
   // (20, FF).
   const int kMaxHexValue = 255;

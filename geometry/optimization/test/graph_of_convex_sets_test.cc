@@ -3238,7 +3238,7 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
                     HasSubstr("source_to_target")));
 
   auto result = g.SolveShortestPath(*source, *target, options);
-  EXPECT_THAT(g.GetGraphvizString(result),
+  EXPECT_THAT(g.GetGraphvizString(&result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
                     HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ ="),
                     Not(HasSubstr("color=\"#ff0000\"")),
@@ -3249,49 +3249,54 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   result = g.SolveShortestPath(*source, *target, options);
   // Note: The cost here only comes from the cost=0 on other_to_target until
   // SolveConvexRestriction provides the rewritten costs.
-  EXPECT_THAT(g.GetGraphvizString(result),
+  EXPECT_THAT(g.GetGraphvizString(&result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
                     HasSubstr("color=\"#00000020\"]")));
 
   // No slack variables.
   viz_options.show_slacks = false;
-  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+  EXPECT_THAT(g.GetGraphvizString(&result, viz_options),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
                     Not(HasSubstr("ϕ xᵤ =")), Not(HasSubstr("ϕ xᵥ ="))));
 
   // Precision and scientific.
   viz_options.precision = 2;
   viz_options.scientific = false;
-  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+  EXPECT_THAT(g.GetGraphvizString(&result, viz_options),
               AllOf(HasSubstr("x = [1.00 2.00]"), HasSubstr("x = [0.00]")));
 
   viz_options.scientific = true;
-  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+  EXPECT_THAT(g.GetGraphvizString(&result, viz_options),
               AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-05]")));
 
   // No vertex vars
   viz_options.show_vars = false;
   viz_options.scientific = false;
-  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+  EXPECT_THAT(g.GetGraphvizString(&result, viz_options),
               AllOf(Not(HasSubstr("x ="))));
 
   // No cost
   viz_options.show_costs = false;
-  EXPECT_THAT(g.GetGraphvizString(result, viz_options),
+  EXPECT_THAT(g.GetGraphvizString(&result, viz_options),
               AllOf(Not(HasSubstr("cost ="))));
 
   // No flows
   viz_options.show_flows = false;
   EXPECT_THAT(
-      g.GetGraphvizString(result, viz_options),
+      g.GetGraphvizString(&result, viz_options),
       AllOf(Not(HasSubstr("ϕ =")), Not(HasSubstr("color=\"#00000020\"]"))));
 
   // Show active path
   viz_options.show_flows = false;
   viz_options.show_costs = false;
-  EXPECT_THAT(
-      g.GetGraphvizString(result, viz_options, std::vector<const Edge*>{edge}),
-      AllOf(HasSubstr("color=\"#ff0000\"")));
+  std::vector<const Edge*> active_edges{edge};
+  EXPECT_THAT(g.GetGraphvizString(&result, viz_options, &active_edges),
+              AllOf(HasSubstr("color=\"#ff0000\"")));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_THAT(g.GetGraphvizString(result, viz_options, active_edges),
+              AllOf(HasSubstr("color=\"#ff0000\"")));
+#pragma GCC diagnostic pop
 }
 
 }  // namespace optimization
