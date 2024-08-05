@@ -1253,24 +1253,32 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
 }
 
 // Test construction of a compliant (generally non-convex) tetrahedral mesh.
+// Test against both on-disk and in-memory vtk file. All other mesh types simply
+// default to computation of its convex hull which has been tested as part
+// of the Mesh API against in-memory and on-disk data.
 TEST_F(HydroelasticSoftGeometryTest, Mesh) {
-  const Mesh mesh_specification(
-      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
+  std::string path =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk");
+  const std::vector<Mesh> meshes{
+      Mesh(path),
+      Mesh(common::FileContents::Read(path), "in_memory/non_convex_mesh.vtk")};
+  for (const Mesh& mesh_specification : meshes) {
+    ProximityProperties properties = soft_properties();
+    std::optional<SoftGeometry> compliant_geometry =
+        MakeSoftRepresentation(mesh_specification, properties);
 
-  ProximityProperties properties = soft_properties();
-  std::optional<SoftGeometry> compliant_geometry =
-      MakeSoftRepresentation(mesh_specification, properties);
-
-  // Smoke test the mesh and the pressure field. It relies on unit tests for
-  // the generators of the mesh and the pressure field.
-  const int expected_num_vertices = 6;
-  EXPECT_EQ(compliant_geometry->mesh().num_vertices(), expected_num_vertices);
-  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
-  for (int v = 0; v < compliant_geometry->mesh().num_vertices(); ++v) {
-    const double pressure =
-        compliant_geometry->pressure_field().EvaluateAtVertex(v);
-    EXPECT_GE(pressure, 0);
-    EXPECT_LE(pressure, E);
+    // Smoke test the mesh and the pressure field. It relies on unit tests for
+    // the generators of the mesh and the pressure field.
+    const int expected_num_vertices = 6;
+    EXPECT_EQ(compliant_geometry->mesh().num_vertices(), expected_num_vertices);
+    const double E =
+        properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+    for (int v = 0; v < compliant_geometry->mesh().num_vertices(); ++v) {
+      const double pressure =
+          compliant_geometry->pressure_field().EvaluateAtVertex(v);
+      EXPECT_GE(pressure, 0);
+      EXPECT_LE(pressure, E);
+    }
   }
 }
 
