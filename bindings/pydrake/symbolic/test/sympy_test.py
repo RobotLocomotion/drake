@@ -164,7 +164,7 @@ class TestSympy(unittest.TestCase):
         sympy_value = sympy_item.evalf(subs=sympy_env)
 
         # The two evaluations must match.
-        self.assertAlmostEqual(drake_value, sympy_value)
+        self.assertAlmostEqual(drake_value, sympy_value, delta=1e-15)
 
     def test_constant_to_sympy(self):
         converted = mut.to_sympy(Expression(2))
