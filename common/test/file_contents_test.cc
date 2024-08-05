@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
+
 namespace drake {
 namespace common {
 namespace {
@@ -22,6 +24,18 @@ GTEST_TEST(FileContentsTest, BasicApi) {
   EXPECT_EQ(contents.contents(), content_str);
   EXPECT_EQ(contents.filename_hint(), filename);
   EXPECT_EQ(contents.sha256(), Sha256::Checksum(content_str));
+}
+
+GTEST_TEST(FileContentsTest, StaticMethods) {
+  const std::string path =
+      FindResourceOrThrow("drake/common/test/find_resource_test_data.txt");
+  const std::string contents = FileContents::Read(path);
+  const FileContents file_contents = FileContents::Make(path);
+  const FileContents ref(contents, path);
+
+  EXPECT_EQ(contents, file_contents.contents());
+  EXPECT_EQ(file_contents.sha256(), ref.sha256());
+  EXPECT_EQ(path, file_contents.filename_hint());
 }
 
 }  // namespace
