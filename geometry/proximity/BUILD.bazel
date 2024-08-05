@@ -554,6 +554,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":obj_to_surface_mesh",
+        ":polygon_to_triangle_mesh",
         ":triangle_surface_mesh",
         "//common:default_scalars",
         "//common:essential",
@@ -1375,6 +1376,7 @@ drake_cc_googletest(
     deps = [
         ":make_convex_mesh",
         ":obj_to_surface_mesh",
+        ":polygon_to_triangle_mesh",
         ":proximity_utilities",
         ":volume_to_surface_mesh",
         "//common:find_resource",

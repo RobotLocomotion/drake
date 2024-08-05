@@ -403,6 +403,7 @@ drake_cc_library(
         "//geometry/proximity:make_convex_hull_mesh_impl",
         "//geometry/proximity:meshing_utilities",
         "//geometry/proximity:obj_to_surface_mesh",
+        "//geometry/proximity:polygon_to_triangle_mesh",
     ],
 )
 
