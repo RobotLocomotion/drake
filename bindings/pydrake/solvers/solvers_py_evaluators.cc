@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
@@ -138,8 +139,6 @@ void DefTesting(py::module m) {
       .def("AcceptBindingCost", [](const Binding<Cost>&) {})
       .def("AcceptBindingConstraint", [](const Binding<Constraint>&) {});
 }
-
-}  // namespace
 
 void BindEvaluatorsAndBindings(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.solvers;
@@ -769,6 +768,8 @@ void BindEvaluatorsAndBindings(py::module m) {
 
   RegisterBinding<VisualizationCallback>(&m);
 }  // NOLINT(readability/fn_size)
+
+}  // namespace
 
 namespace internal {
 void DefineSolversEvaluators(py::module m) {

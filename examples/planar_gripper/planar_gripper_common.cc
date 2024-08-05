@@ -75,13 +75,14 @@ void WeldGripperFrames(MultibodyPlant<T>* plant) {
 // Explicit instantiations.
 template void WeldGripperFrames(MultibodyPlant<double>* plant);
 
-/// Build a keyframe matrix for joints in joint_ordering by extracting the
-/// appropriate columns from all_keyframes. The interpretation of columns in
-/// joint_keyframes are ordered as in joint_ordering.
-/// @pre There are as many strings in headers as there are columns in
-/// all_keyframes.
-/// @pre Every string in joint_ordering is expected to be unique.
-/// @pre Every string in joint_ordering is expected to be found in headers.
+namespace {
+// Build a keyframe matrix for joints in joint_ordering by extracting the
+// appropriate columns from all_keyframes. The interpretation of columns in
+// joint_keyframes are ordered as in joint_ordering.
+// @pre There are as many strings in headers as there are columns in
+// all_keyframes.
+// @pre Every string in joint_ordering is expected to be unique.
+// @pre Every string in joint_ordering is expected to be found in headers.
 MatrixX<double> MakeKeyframes(MatrixX<double> all_keyframes,
                               std::vector<std::string> joint_ordering,
                               std::vector<std::string> headers) {
@@ -105,6 +106,7 @@ MatrixX<double> MakeKeyframes(MatrixX<double> all_keyframes,
   }
   return joint_keyframes;
 }
+}  // namespace
 
 std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
     const std::string& name, EigenPtr<Vector3<double>> brick_initial_pose) {

@@ -693,7 +693,7 @@ class GraphOfConvexSets {
 
   DRAKE_DEPRECATED(
       "2024-10-01",
-      "result should be of type const solvers::MathematicalProgramResult*.");
+      "result should be of type const solvers::MathematicalProgramResult*.")
   std::string GetGraphvizString(
       const std::optional<solvers::MathematicalProgramResult>& result,
       const geometry::optimization::GcsGraphvizOptions& options =

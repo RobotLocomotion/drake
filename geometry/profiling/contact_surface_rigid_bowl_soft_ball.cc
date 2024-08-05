@@ -45,6 +45,7 @@ namespace drake {
 namespace examples {
 namespace scene_graph {
 namespace contact_surface {
+namespace {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -430,6 +431,7 @@ int do_main() {
   return 0;
 }
 
+}  // namespace
 }  // namespace contact_surface
 }  // namespace scene_graph
 }  // namespace examples

@@ -16,6 +16,7 @@ CXX_FLAGS = [
     "-Werror=deprecated",
     "-Werror=deprecated-declarations",
     "-Werror=ignored-qualifiers",
+    "-Werror=missing-declarations",
     "-Werror=old-style-cast",
     "-Werror=overloaded-virtual",
     "-Werror=shadow",
@@ -73,6 +74,7 @@ GCC_FLAGS = CXX_FLAGS + [
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
 # when building with gcc.
 GCC_CC_TEST_FLAGS = [
+    "-Wno-missing-declarations",
     "-Wno-unused-parameter",
 ]
 

@@ -102,7 +102,8 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
   return intersections;
 }
 
-/**
+namespace {
+/*
  * Compute the outward unit length normal of the triangle, with the three
  * vertices being `pt0`, `pt1` and `pt2`.
  * @param pt0 A vertex of the triangle, in the first orthant (+++).
@@ -133,6 +134,7 @@ void ComputeTriangleOutwardNormal(const Eigen::Vector3d& pt0,
   *d = pt0.dot(*n);
   DRAKE_DEMAND((n->array() >= 0).all());
 }
+}  // namespace
 
 bool AreAllVerticesCoPlanar(const std::vector<Eigen::Vector3d>& pts,
                             Eigen::Vector3d* n, double* d) {

@@ -57,6 +57,8 @@ PointToPointDistanceConstraint::PointToPointDistanceConstraint(
   DRAKE_DEMAND(distance_upper >= distance_lower);
 }
 
+namespace {
+
 template <typename T>
 void EvalPointToPointDistanceConstraintGradient(
     const systems::Context<T>&, const MultibodyPlant<T>&, const Frame<T>&,
@@ -97,6 +99,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   EvalPointToPointDistanceConstraintGradient(*context, plant, frame1, frame2,
                                              p_B2P2, p_P1P2_B1, x, y);
 }
+
+}  // namespace
 
 void PointToPointDistanceConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {

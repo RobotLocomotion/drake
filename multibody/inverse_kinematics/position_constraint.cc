@@ -78,6 +78,8 @@ PositionConstraint::PositionConstraint(
     : PositionConstraint(plant, frameA, std::nullopt, p_AQ_lower, p_AQ_upper,
                          frameB, p_BQ, plant_context) {}
 
+namespace {
+
 void EvalConstraintGradient(
     const systems::Context<double>& context,
     const MultibodyPlant<double>& plant, const Frame<double>& frameAbar,
@@ -113,6 +115,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
                            X_AAbar * p_AbarQ, p_BQ, x, y);
   }
 }
+
+}  // namespace
 
 void PositionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                 Eigen::VectorXd* y) const {

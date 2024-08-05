@@ -18,6 +18,7 @@ using geometry::HalfSpace;
 using geometry::Sphere;
 using math::RigidTransformd;
 
+namespace {
 void AddCylinderWithMultiContact(
     MultibodyPlant<double>* plant, const RigidBody<double>& body,
     double radius, double length, const CoulombFriction<double>& friction,
@@ -54,6 +55,7 @@ void AddCylinderWithMultiContact(
                                   "visual_bottom_" + std::to_string(i), red);
   }
 }
+}  // namespace
 
 void PopulateCylinderPlant(double radius, double length, double mass,
                            const CoulombFriction<double>& surface_friction,

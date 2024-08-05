@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/common_solver_option.h"
@@ -266,7 +267,6 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
         ExplainUnsatisfiedProgramAttributes, prog);
   }
 };
-}  // namespace
 
 void BindSolverInterfaceAndFlags(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.solvers;
@@ -1665,6 +1665,8 @@ void BindFreeFunctions(py::module m) {
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
       .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc);
 }
+
+}  // namespace
 
 namespace internal {
 void DefineSolversMathematicalProgram(py::module m) {
