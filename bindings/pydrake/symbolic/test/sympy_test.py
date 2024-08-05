@@ -149,7 +149,7 @@ class TestSympy(unittest.TestCase):
         drake_env = dict()
         for i, var in enumerate(drake_vars.values()):
             assert var.get_type() == Variable.Type.CONTINUOUS
-            drake_env[var] = sympy.Float((i + 1) * 0.1)
+            drake_env[var] = (i + 1) * 0.1
         drake_value = item.Evaluate(drake_env)
 
         # Convert to SymPy.
@@ -160,7 +160,7 @@ class TestSympy(unittest.TestCase):
         sympy_env = dict()
         for drake_var_id, drake_var in drake_vars.items():
             sympy_var = memo[drake_var_id]
-            sympy_env[sympy_var] = drake_env[drake_var]
+            sympy_env[sympy_var] = sympy.Float(drake_env[drake_var])
         sympy_value = sympy_item.evalf(subs=sympy_env)
 
         # The two evaluations must match.
