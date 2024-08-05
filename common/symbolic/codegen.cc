@@ -229,6 +229,7 @@ void CodeGenDenseMeta(const string& function_name, const int parameter_size,
         << parameter_size << "}, {" << rows << ", " << cols << "}}; }\n";
 }
 
+namespace {
 void CodeGenSparseData(const string& function_name,
                        const vector<Variable>& parameters,
                        const int outer_index_size, const int non_zeros,
@@ -284,6 +285,7 @@ void CodeGenSparseMeta(const string& function_name, const int parameter_size,
       outer_indices, inner_indices);
 }
 
+}  // namespace
 }  // namespace internal
 
 std::string CodeGen(

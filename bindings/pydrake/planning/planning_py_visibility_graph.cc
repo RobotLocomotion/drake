@@ -1,4 +1,5 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/visibility_graph.h"
 

@@ -90,6 +90,7 @@ std::set<CostForm> quadratic_cost_form() {
   return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
 }
 
+namespace {
 double EvaluateSolutionCost(const MathematicalProgram& prog,
                             const MathematicalProgramResult& result) {
   double cost{0};
@@ -98,6 +99,7 @@ double EvaluateSolutionCost(const MathematicalProgram& prog,
   }
   return cost;
 }
+}  // namespace
 
 /*
  * Expect that the optimal cost stored by the solver in the MathematicalProgram

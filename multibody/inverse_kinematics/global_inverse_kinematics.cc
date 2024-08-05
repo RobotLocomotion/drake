@@ -582,6 +582,7 @@ GlobalInverseKinematics::BodySphereInOneOfPolytopes(
   return z;
 }
 
+namespace {
 // Approximate a quadratic constraint (which could be formulated as a Lorentz
 // cone constraint) xᵀx ≤ c² by
 // -c ≤ xᵢ ≤ c
@@ -611,6 +612,7 @@ void ApproximateBoundedNormByLinearConstraints(
   prog->AddLinearConstraint(x(0) - x(1) + x(2), -sqrt3_c, sqrt3_c);
   prog->AddLinearConstraint(x(0) - x(1) - x(2), -sqrt3_c, sqrt3_c);
 }
+}  // namespace
 
 void GlobalInverseKinematics::AddJointLimitConstraint(
     BodyIndex body_index, double joint_lower_bound, double joint_upper_bound,

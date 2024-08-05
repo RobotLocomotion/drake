@@ -1,5 +1,6 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/manipulation/schunk_wsg/build_schunk_wsg_control.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"

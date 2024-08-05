@@ -19,6 +19,7 @@
 #include "drake/systems/framework/vector_system.h"
 
 namespace drake {
+namespace {
 
 using std::cout;
 using std::endl;
@@ -92,6 +93,7 @@ void ComputeRegionOfAttraction() {
   // Check that ρ ≃ 1.0.
   DRAKE_DEMAND(std::abs(result.GetSolution(rho) - 1.0) < 1e-6);
 }
+}  // namespace
 }  // namespace drake
 
 int main(int argc, char* argv[]) {

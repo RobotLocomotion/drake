@@ -535,18 +535,18 @@ std::ostream& LinearEqualityConstraint::DoDisplay(
   return DisplayConstraint(*this, os, "LinearEqualityConstraint", vars, true);
 }
 
-namespace internal {
+namespace {
 Eigen::SparseMatrix<double> ConstructSparseIdentity(int rows) {
   Eigen::SparseMatrix<double> mat(rows, rows);
   mat.setIdentity();
   return mat;
 }
-}  // namespace internal
+}  // namespace
 
 BoundingBoxConstraint::BoundingBoxConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub)
-    : LinearConstraint(internal::ConstructSparseIdentity(lb.rows()), lb, ub) {}
+    : LinearConstraint(ConstructSparseIdentity(lb.rows()), lb, ub) {}
 
 template <typename DerivedX, typename ScalarY>
 void BoundingBoxConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,

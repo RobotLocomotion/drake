@@ -24,6 +24,7 @@
 namespace drake {
 namespace examples {
 namespace allegro_hand {
+namespace {
 
 using drake::multibody::MultibodyPlant;
 
@@ -123,6 +124,7 @@ void DoMain() {
   simulator.AdvanceTo(FLAGS_simulation_time);
 }
 
+}  // namespace
 }  // namespace allegro_hand
 }  // namespace examples
 }  // namespace drake

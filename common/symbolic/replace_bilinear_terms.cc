@@ -15,6 +15,7 @@ using std::unordered_map;
 
 using MapVarToIndex = unordered_map<Variable::Id, int>;
 
+namespace {
 /*
  * Returns the map that maps x(i).get_id() to i.
  */
@@ -32,6 +33,7 @@ MapVarToIndex ConstructVarToIndexMap(
   }
   return map;
 }
+}  // namespace
 
 Expression ReplaceBilinearTerms(
     const Expression& e, const Eigen::Ref<const VectorX<symbolic::Variable>>& x,

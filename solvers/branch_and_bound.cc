@@ -13,9 +13,11 @@
 
 namespace drake {
 namespace solvers {
-/** Determines if the mathematical program has binary variables.
- */
-bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
+
+namespace {
+/* Determines if the mathematical program has binary variables. */
+[[maybe_unused]] bool MathProgHasBinaryVariables(
+    const MathematicalProgram& prog) {
   for (int i = 0; i < prog.num_vars(); ++i) {
     if (prog.decision_variable(i).get_type() ==
         symbolic::Variable::Type::BINARY) {
@@ -24,6 +26,7 @@ bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
   }
   return false;
 }
+}  // namespace
 
 MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
     const MathematicalProgram& prog,
@@ -266,16 +269,6 @@ int MixedIntegerBranchAndBoundNode::NumExploredNodesInSubtree() const {
     ret += right_child_->NumExploredNodesInSubtree();
   }
   return ret;
-}
-
-bool IsVariableInList(const std::list<symbolic::Variable>& variable_list,
-                      const symbolic::Variable& variable) {
-  for (const auto& var : variable_list) {
-    if (var.equal_to(variable)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 void MixedIntegerBranchAndBoundNode::FixBinaryVariable(

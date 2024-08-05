@@ -57,6 +57,8 @@ ComPositionConstraint::ComPositionConstraint(
   // on the generalized positions in model_instances.
 }
 
+namespace {
+
 // We can explicitly evaluate the gradient of the constraint with
 // MultibodyPlant<double>, using the Jacobian function in MBP<double>.
 void EvalConstraintGradient(
@@ -110,6 +112,8 @@ void DoEvalGeneric(
                            plant.get_frame(expressed_frame_index), p_EC, x, y);
   }
 }
+
+}  // namespace
 
 void ComPositionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                    Eigen::VectorXd* y) const {
