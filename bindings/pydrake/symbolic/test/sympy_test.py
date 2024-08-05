@@ -149,7 +149,7 @@ class TestSympy(unittest.TestCase):
         drake_env = dict()
         for i, var in enumerate(drake_vars.values()):
             assert var.get_type() == Variable.Type.CONTINUOUS
-            drake_env[var] = (i + 1) * 0.1
+            drake_env[var] = sympy.Float((i + 1) * 0.1)
         drake_value = item.Evaluate(drake_env)
 
         # Convert to SymPy.
