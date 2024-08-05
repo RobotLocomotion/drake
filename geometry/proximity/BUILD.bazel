@@ -392,11 +392,13 @@ drake_cc_library(
     hdrs = ["hydroelastic_internal.h"],
     deps = [
         ":bvh",
+        ":inflate_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
         ":make_capsule_mesh",
         ":make_convex_field",
+        ":make_convex_hull_mesh_impl",
         ":make_convex_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
@@ -855,6 +857,7 @@ drake_cc_library(
         "//multibody/fixed_fem/dev:__pkg__",
     ],
     deps = [
+        ":mesh_field",
         ":sorted_triplet",
         ":volume_mesh",
         "//common:drake_export",

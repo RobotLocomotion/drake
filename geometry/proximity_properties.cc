@@ -18,6 +18,7 @@ const char* const kElastic = "hydroelastic_modulus";
 const char* const kRezHint = "resolution_hint";
 const char* const kComplianceType = "compliance_type";
 const char* const kSlabThickness = "slab_thickness";
+const char* const kMargin = "margin";
 
 namespace {
 
