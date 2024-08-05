@@ -168,6 +168,7 @@ struct ReifyData {
   const GeometryId id;
   const ProximityProperties& properties;
   const RigidTransformd X_WG;
+  const double margin;
 };
 
 // Helper functions to facilitate exercising FCL's broadphase code. FCL has
@@ -480,6 +481,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void ProcessHydroelastic(const Shape& shape, void* user_data) {
     const ReifyData& data = *static_cast<ReifyData*>(user_data);
     hydroelastic_geometries_.MaybeAddGeometry(shape, data.id, data.properties);
+    if (data.margin > 0 && hydroelastic_geometries_.hydroelastic_type(
+                               data.id) == HydroelasticType::kCompliant) {
+      InflateLocalAabbForHydroelasticTypesOnly(shape, data);
+    }
   }
 
   // Attempts to process the declared geometry into a rigid representation for
@@ -886,12 +891,70 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return static_cast<CollisionObjectd*>(GetCollisionObject(id));
   }
 
+  // Inflates the local AABB (expressed in the g's frame) for compliant
+  // hydroelastic geometries only.
+  //
+  // Each fcl::CollisionGeometryd computes an axis-aligned bounding box in the
+  // geometry's frame (its "local AABB") during construction. The hydroelastic
+  // representations are larger than the specified shapes and we want to make
+  // sure that the bounding volumes associated with those hydro geometries
+  // properly enclose them. So, we'll edit fcl's bounding box definition after
+  // the fact to account for the inflation.
+  //
+  // Inflation for the primitives' bounding boxes is trivial; each grows twice
+  // `margin` along the canonical frames' axes. Meshes (Mesh and Convex) are
+  // trickier because vertices can move a larger distance than margin, so simply
+  // bumping the box by 2 * margin is insufficient, we need to rebound the
+  // set of vertices.
+  //
+  // @pre `data.id` has a compliant hydroelastic representation.
+  // @pre `data.margin` > 0.
+  void InflateLocalAabbForHydroelasticTypesOnly(const Shape& shape,
+                                                const ReifyData& data) {
+    DRAKE_DEMAND(data.margin > 0);
+    DRAKE_DEMAND(hydroelastic_geometries_.hydroelastic_type(data.id) ==
+                 HydroelasticType::kCompliant);
+
+    // To edit the assigned collision geometry, we have to cheat and temporarily
+    // ignore the const-ness. Note: this assumes that the collision object
+    // hasn't been added to a BVH yet; as long as this is part of the
+    // reification process, that will remain true. The collision object only
+    // gets added when reification is complete.
+    auto* g = const_cast<fcl::CollisionGeometryd*>(
+        data.fcl_object->collisionGeometry().get());
+    DRAKE_DEMAND(g != nullptr);
+    std::string_view shape_name = shape.type_name();
+    if (shape_name == "Mesh" || shape_name == "Convex") {
+      // Meshes can have their vertices move an arbitrary amount, we simply need
+      // to recompute the bounding box.
+      const auto& mesh = hydroelastic_geometries_.soft_geometry(data.id).mesh();
+      g->aabb_local.min_ =
+          Vector3d::Constant(std::numeric_limits<double>::infinity());
+      g->aabb_local.max_ = -g->aabb_local.min_;
+      for (const auto& v : mesh.vertices()) {
+        g->aabb_local.min_ = g->aabb_local.min_.cwiseMin(v);
+        g->aabb_local.max_ = g->aabb_local.max_.cwiseMax(v);
+      }
+    } else {
+      // Primitives simply grow by margin in each axis direction.
+      g->aabb_local.max_ += Vector3d::Constant(data.margin);
+      g->aabb_local.min_ -= Vector3d::Constant(data.margin);
+    }
+    // Changes to the local AABB also require updating the radius of its
+    // circumscribing sphere.
+    g->aabb_radius = (g->aabb_local.min_ - g->aabb_center).norm();
+  }
+
   void AddGeometry(
       const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
       const ProximityProperties& props, bool is_dynamic,
       fcl::DynamicAABBTreeCollisionManager<double>* tree,
       unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects) {
-    ReifyData data{nullptr, id, props, X_WG};
+    // TODO(SeanCurtis-TRI): This should be drawing from
+    // DefaultProximityProperties::margin for the default value.
+    const double margin =
+        props.GetPropertyOrDefault<double>(kHydroGroup, kMargin, 0.0);
+    ReifyData data{nullptr, id, props, X_WG, margin};
     shape.Reify(this, &data);
 
     data.fcl_object->setTransform(X_WG.GetAsIsometry3());
