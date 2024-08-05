@@ -21,6 +21,7 @@ namespace {
 // TODO(SeanCurtis-TRI): Run through proximity_engine_test and pull the tests
 // from there that better belong here.
 
+using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RigidTransformd;
@@ -501,6 +502,34 @@ GTEST_TEST(DistanceToPoint, Sphere) {
                           false /* gradient ill defined */));
 }
 
+// Simple smoke test for signed distance to Mesh or Convex. Separately we test
+// the actual calculation in calc_signed_distance_to_surface_mesh_test.
+// The objective of this test is to verify that there is a code path to the
+// right function.
+GTEST_TEST(DistanceToPoint, Mesh) {
+  const GeometryId mesh_geometry_id = GeometryId::get_new_id();
+  const Vector3d p_WQ{10, 10, 10};
+  DistanceToPoint<double> distance_to_point(mesh_geometry_id,
+                                            RigidTransformd::Identity(), p_WQ);
+  // Test a general case with a standard tetrahedron.
+  {
+    auto d = distance_to_point(VolumeMeshBoundary(VolumeMesh<double>(
+        {VolumeElement{0, 1, 2, 3}}, {Vector3d::Zero(), Vector3d::UnitX(),
+                                      Vector3d::UnitY(), Vector3d::UnitZ()})));
+    EXPECT_LT(d.distance, 20);
+  }
+  // Test an exception with a zero-volume mesh with knife edges.
+  {
+    // All vertices of the tetrahedron is on the X-Y plane.
+    const VolumeMesh<double> one_flat_tetrahedron_M(
+        {VolumeElement(0, 1, 2, 3)}, {Vector3d::Zero(), Vector3d::UnitX(),
+                                      Vector3d::UnitY(), Vector3d(1, 1, 0)});
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        distance_to_point(VolumeMeshBoundary(one_flat_tetrahedron_M)),
+        "DistanceToPoint from meshes:.*");
+  }
+}
+
 // TODO(SeanCurtis-TRI): Point-to-cylinder with AutoDiff has been "disabled".
 //  However, this has been done at the callback level and these tests are
 //  structured to exercise DistanceToPoint directly. This is a short-term
@@ -616,7 +645,7 @@ int ExpectedResult() {
     return 1;
   }
   if constexpr (std::is_same_v<T, AutoDiffXd>) {
-    if (std::is_same_v<S, fcl::Cylinderd> ||
+    if (std::is_same_v<S, fcl::Convexd> || std::is_same_v<S, fcl::Cylinderd> ||
         std::is_same_v<S, fcl::Ellipsoidd>) {
       return 0;
     }
@@ -644,7 +673,13 @@ void TestScalarShapeSupport() {
   const GeometryId other_id = GeometryId::get_new_id();
   std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
       {point_id, X_WQ}, {other_id, RigidTransform<T>::Identity()}};
-  CallbackData<T> data{&query_point, threshold, p_WQ, &X_WGs, &distances};
+  std::unordered_map<GeometryId, VolumeMeshBoundary> mesh_data{
+      {other_id, VolumeMeshBoundary(VolumeMesh<double>(
+                     std::vector<VolumeElement>{{0, 1, 2, 3}},
+                     std::vector<Vector3d>{
+                         {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}}))}};
+  CallbackData<T> data{&query_point, threshold,  p_WQ,
+                       &X_WGs,       &mesh_data, &distances};
 
   // The Drake-supported geometries (minus Mesh which isn't supported by
   // ProximityEngine yet).
@@ -697,9 +732,16 @@ void TestScalarShapeSupport() {
     EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Sphered>()));
   }
 
-  // Convex
-  // TODO(SeanCurtis-TRI): Add convex that is *not* supported; create a small
-  // utility test to generate a tetrahedron.
+  // Convex and Mesh. Both drake::geometry::Mesh and Convex use fcl::Convexd.
+  {
+    // This test is independent of the content of the fcl::Convexd because
+    // the mesh data is in the point_distance::CallbackData<T>, not the
+    // fcl::CollisionObjectd's. For simplicity, we use an empty fcl::Convexd.
+    run_callback(make_shared<fcl::Convexd>(
+        make_shared<const std::vector<Vector3d>>(), 0 /* num_faces */,
+        make_shared<const std::vector<int>>(), false /* no throw */));
+    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Convexd>()));
+  }
 }
 
 // This test simply confirms which scalar-shape combinations produce answers
@@ -717,6 +759,142 @@ GTEST_TEST(DistanceToPoint, ScalarShapeSupportAutoDiff) {
 
 GTEST_TEST(DistanceToPoint, ScalarShapeSupportExpression) {
   TestScalarShapeSupport<symbolic::Expression>();
+}
+
+// Test coverage of point_distance::Callback() for meshes (Mesh and Convex).
+// The cases for meshes are slightly more complicated than other primitives,
+// so they deserve their own unit tests.
+GTEST_TEST(Callback, Mesh) {
+  const Vector3d p_WQ{0, 1, 2};
+  const RigidTransformd X_WQ{p_WQ};
+  auto query_point_geometry = make_shared<fcl::Sphered>(0);
+  const GeometryId query_point_id = GeometryId::get_new_id();
+  const EncodedData encoding(query_point_id, true);
+  fcl::CollisionObjectd query_point(
+      query_point_geometry, X_WQ.rotation().matrix(), X_WQ.translation());
+  encoding.write_to(&query_point);
+
+  // Both drake::geometry::Mesh and Convex use fcl::Convexd, whose content
+  // is irrelevant for this test because the mesh data is set in
+  // the CallbackData. For simplicity, here we use an empty fcl::Convexd.
+  auto mesh_fcl_geometry = make_shared<fcl::Convexd>(
+      make_shared<const std::vector<Vector3d>>(), 0 /* num_faces */,
+      make_shared<const std::vector<int>>(), false /* no throw */);
+  const GeometryId mesh_id = GeometryId::get_new_id();
+  const EncodedData mesh_encoding(mesh_id, true);
+  // The pose of the mesh's frame M in World frame.
+  const RigidTransformd X_WM{Vector3d{1, 2, 3}};
+  // For completeness, we set the pose of the mesh in the CollisionObject
+  // even though we don't need it for this test. For calculation in drake, we
+  // use the pose in CallbackData. For calculation in FCL, it uses the pose
+  // in CollisionObject.
+  fcl::CollisionObjectd mesh_collision_object(
+      mesh_fcl_geometry, X_WM.rotation().matrix(), X_WM.translation());
+  mesh_encoding.write_to(&mesh_collision_object);
+
+  auto unsupported_mesh_fcl_geometry = make_shared<fcl::Convexd>(
+      make_shared<const std::vector<Vector3d>>(), 0 /* num_faces */,
+      make_shared<const std::vector<int>>(), false /* no throw */);
+  const GeometryId unsupported_mesh_id = GeometryId::get_new_id();
+  const EncodedData unsupported_mesh_encoding(unsupported_mesh_id, true);
+  const RigidTransformd X_WU = RigidTransformd::Identity();
+  fcl::CollisionObjectd unsupported_mesh_collision_object(
+      unsupported_mesh_fcl_geometry, X_WU.rotation().matrix(),
+      X_WU.translation());
+  unsupported_mesh_encoding.write_to(&unsupported_mesh_collision_object);
+
+  // The current implementation of Callback() supports seven types of
+  // fcl::CollisionGeometry's (fcl::GEOM_BOX, fcl::GEOM_CAPSULE, etc.) and
+  // does not support about ten types (fcl::GEOM_CONE, fcl::GEOM_OCTREE,
+  // fcl::GEOM_PLANE, fcl::GEOM_TRIANGLE, etc.). Here we use fcl::GEOM_CONE
+  // to represent the unsupported types. In the future, if the implementation
+  // changes to support fcl::GEOM_CONE, we will change to another unsupported
+  // shape.
+  auto unsupported_shape = make_shared<fcl::Coned>(0.1, 0.5);  // radius, lz
+  const GeometryId unsupported_shape_id = GeometryId::get_new_id();
+  const EncodedData unsupported_shape_encoding(unsupported_shape_id, true);
+  const RigidTransformd X_WC = RigidTransformd::Identity();
+  fcl::CollisionObjectd unsupported_shape_collision_object(
+      unsupported_shape, X_WC.rotation().matrix(), X_WC.translation());
+  unsupported_shape_encoding.write_to(&unsupported_shape_collision_object);
+
+  const std::unordered_map<GeometryId, RigidTransformd> X_WGs{
+      {mesh_id, X_WM},
+      {unsupported_mesh_id, X_WU},
+      {unsupported_shape_id, X_WC}};
+  const std::unordered_map<GeometryId, VolumeMeshBoundary> mesh_data{
+      {mesh_id,
+       VolumeMeshBoundary(VolumeMesh<double>(
+           std::vector<VolumeElement>{{0, 1, 2, 3}},
+           std::vector<Vector3d>{{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}}))},
+      // No record of the unsupported mesh in mesh_data
+  };
+
+  const double kThreshold100Meters = 100;
+  const double kThresholdZero = 0;
+  std::vector<SignedDistanceToPoint<double>> distances;
+
+  // Supported mesh.
+  {
+    CallbackData<double> callback_data{&query_point, kThreshold100Meters,
+                                       p_WQ,         &X_WGs,
+                                       &mesh_data,   &distances};
+    distances.clear();
+    double threshold_out = 0;
+    // Expect Callback() to return false, so the broad-phase fcl will continue
+    // to other objects.
+    EXPECT_FALSE(Callback<double>(&query_point, &mesh_collision_object,
+                                  &callback_data, threshold_out));
+    EXPECT_EQ(distances.size(), 1);
+    EXPECT_EQ(threshold_out, kThreshold100Meters);
+  }
+
+  // Unsupported mesh.
+  {
+    CallbackData<double> callback_data{&query_point, kThreshold100Meters,
+                                       p_WQ,         &X_WGs,
+                                       &mesh_data,   &distances};
+    distances.clear();
+    double threshold_out = 0;
+    // Expect Callback() to return false, so the broad-phase fcl will continue
+    // to other objects.
+    EXPECT_FALSE(Callback<double>(&query_point,
+                                  &unsupported_mesh_collision_object,
+                                  &callback_data, threshold_out));
+    EXPECT_EQ(distances.size(), 0);
+    EXPECT_EQ(threshold_out, kThreshold100Meters);
+  }
+
+  // Unsupported shape
+  {
+    CallbackData<double> callback_data{&query_point, kThreshold100Meters,
+                                       p_WQ,         &X_WGs,
+                                       &mesh_data,   &distances};
+    distances.clear();
+    double threshold_out = 0;
+    // Expect Callback() to return false, so the broad-phase fcl will continue
+    // to other objects.
+    EXPECT_FALSE(Callback<double>(&query_point,
+                                  &unsupported_shape_collision_object,
+                                  &callback_data, threshold_out));
+    EXPECT_EQ(distances.size(), 0);
+    EXPECT_EQ(threshold_out, kThreshold100Meters);
+  }
+
+  // Zero threshold
+  {
+    CallbackData<double> callback_data{
+        &query_point, kThresholdZero, p_WQ, &X_WGs, &mesh_data, &distances};
+    distances.clear();
+    double threshold_out = 0;
+    // Expect Callback() to return false, so the broad-phase fcl will continue
+    // to other objects.
+    EXPECT_FALSE(Callback<double>(&query_point, &mesh_collision_object,
+                                  &callback_data, threshold_out));
+    const double kEps = std::numeric_limits<double>::epsilon() / 10;
+    EXPECT_EQ(distances.size(), 0);
+    EXPECT_EQ(threshold_out, kEps);
+  }
 }
 
 }  // namespace
