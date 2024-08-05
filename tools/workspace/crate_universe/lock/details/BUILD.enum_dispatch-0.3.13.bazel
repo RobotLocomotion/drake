@@ -106,6 +106,6 @@ rust_proc_macro(
         "@crate__once_cell-1.19.0//:once_cell",
         "@crate__proc-macro2-1.0.86//:proc_macro2",
         "@crate__quote-1.0.36//:quote",
-        "@crate__syn-2.0.68//:syn",
+        "@crate__syn-2.0.72//:syn",
     ],
 )
