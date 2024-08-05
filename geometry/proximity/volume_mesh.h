@@ -57,6 +57,8 @@ class VolumeElement {
    */
   int vertex(int i) const { return vertex_.at(i); }
 
+  void set_vertex(int i, int v) { vertex_[i] = v; }
+
   /** Checks to see whether the given VolumeElement use the same four indices in
    the same order. We check for equality to the last bit consistently with
    VolumeMesh::Equal(). Two permutations of the four vertex indices of a
