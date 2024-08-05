@@ -1,7 +1,6 @@
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 
 #include <algorithm>
-#include <fstream>
 #include <map>
 #include <stack>
 #include <string>
@@ -223,24 +222,11 @@ class MeshMemoryLoader final : public vtkURILoader {
   vtkSmartPointer<vtkURI> base_uri_;
 };
 
-std::string ReadFileContents(const fs::path file_path) {
-  std::ifstream f(file_path);
-  if (!f.good()) {
-    throw std::runtime_error(fmt::format(
-        "MakeConvexHull can't create convex hull from geometry file; file "
-        "isn't accessible. '{}'.",
-        file_path.string()));
-  }
-  std::stringstream contents;
-  contents << f.rdbuf();
-  return std::move(contents).str();
-}
-
 /* Given a file path to a .gltf file, loads the .gltf file contents into memory
  along with any supporting .bin files. Note: because we're only using vertex
  data, we don't bother tracking image files. */
 InMemoryMesh PreParseGltf(const fs::path gltf_path) {
-  std::string file_contents = ReadFileContents(gltf_path);
+  std::string file_contents = FileContents::Read(gltf_path);
 
   string_map<FileContents> supporting_files;
   json gltf;
@@ -262,8 +248,7 @@ InMemoryMesh PreParseGltf(const fs::path gltf_path) {
         continue;
       }
       supporting_files.emplace(
-          uri, FileContents(ReadFileContents(gltf_path.parent_path() / uri),
-                            std::string(uri)));
+          uri, FileContents::Make(gltf_path.parent_path() / uri));
     }
   }
 

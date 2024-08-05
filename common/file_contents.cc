@@ -1,11 +1,30 @@
 #include "drake/common/file_contents.h"
 
+#include <fstream>
+#include <sstream>
 #include <utility>
+
+#include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace common {
+
+FileContents FileContents::Make(const std::filesystem::path& path) {
+    return FileContents(Read(path), path.string());
+}
+
+std::string FileContents::Read(const std::filesystem::path& path) {
+    std::ifstream f(path);
+    if (!f.good()) {
+      throw std::runtime_error(fmt::format(
+          "FileContents::Make() cannot read the file '{}'.", path.string()));
+    }
+    std::stringstream contents;
+    contents << f.rdbuf();
+    return std::move(contents).str();
+}
 
 FileContents::FileContents() = default;
 
