@@ -1,7 +1,9 @@
 #pragma once
 
 #include <limits>
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -61,6 +63,9 @@ class FeatureNormalSet {
   //       computed normals are incorrect.
   explicit FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M);
 
+  static std::variant<FeatureNormalSet, std::string> MaybeCreate(
+      const TriangleSurfaceMesh<double>& mesh_M);
+
   // Returns the normal at a vertex `v` as the angle-weighted average of face
   // normals of triangles sharing the vertex. The weight of a triangle is the
   // angle at vertex `v` in that triangle.
@@ -91,6 +96,12 @@ class FeatureNormalSet {
   }
 
  private:
+  FeatureNormalSet(
+      std::vector<Vector3<double>>&& vertex_normals,
+      std::unordered_map<SortedPair<int>, Vector3<double>>&& edge_normals)
+      : vertex_normals_(std::move(vertex_normals)),
+        edge_normals_(std::move(edge_normals)) {}
+
   std::vector<Vector3<double>> vertex_normals_{};
   std::unordered_map<SortedPair<int>, Vector3<double>> edge_normals_{};
 };

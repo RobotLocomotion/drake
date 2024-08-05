@@ -90,8 +90,19 @@ class BvhVisitor {
 
 }  // namespace
 
-FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M)
-    : vertex_normals_(mesh_M.num_vertices(), Vector3d::Zero()) {
+FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M) {
+  std::variant<FeatureNormalSet, std::string> v = MaybeCreate(mesh_M);
+  DRAKE_THROW_UNLESS(std::holds_alternative<FeatureNormalSet>(v));
+  FeatureNormalSet f = std::get<FeatureNormalSet>(v);
+  vertex_normals_ = f.vertex_normals_;
+  edge_normals_ = f.edge_normals_;
+}
+
+std::variant<FeatureNormalSet, std::string> FeatureNormalSet::MaybeCreate(
+    const TriangleSurfaceMesh<double>& mesh_M) {
+  std::vector<Vector3<double>> vertex_normals(mesh_M.num_vertices(),
+                                              Vector3d::Zero());
+  std::unordered_map<SortedPair<int>, Vector3<double>> edge_normals;
   const std::vector<Vector3d>& vertices = mesh_M.vertices();
   // We can compute a tolerance for a knife edge based on a minimum dihedral
   // angle θ between adjacent faces using the following formula:
@@ -118,33 +129,33 @@ FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M)
     for (int i = 0; i < 3; ++i) {
       const double angle =
           std::acos(unit_edge_vector[i].dot(-unit_edge_vector[(i + 2) % 3]));
-      vertex_normals_[v[i]] += angle * face_normal;
+      vertex_normals[v[i]] += angle * face_normal;
     }
     // Accumulate normal for each edge of the triangle.
     for (int i = 0; i < 3; ++i) {
       const auto edge = MakeSortedPair(v[i], v[(i + 1) % 3]);
-      auto it = edge_normals_.find(edge);
-      if (it == edge_normals_.end()) {
-        edge_normals_[edge] = face_normal;
+      auto it = edge_normals.find(edge);
+      if (it == edge_normals.end()) {
+        edge_normals[edge] = face_normal;
       } else {
         it->second += face_normal;
         if (it->second.squaredNorm() < kToleranceSquaredNorm) {
-          throw std::runtime_error(
-              "FeatureNormalSet: Cannot compute an edge normal because "
-              "the two triangles sharing the edge make a very sharp edge.");
+          return "FeatureNormalSet: Cannot compute an edge normal because "
+                 "the two triangles sharing the edge make a very sharp edge.";
         }
         it->second.normalize();
       }
     }
   }
-  for (auto& v_normal : vertex_normals_) {
+  for (auto& v_normal : vertex_normals) {
     if (v_normal.squaredNorm() < kToleranceSquaredNorm) {
-      throw std::runtime_error(
-          "FeatureNormalSet: Cannot compute a vertex normal because "
-          "the triangles sharing the vertex form a very pointy needle.");
+      return "FeatureNormalSet: Cannot compute a vertex normal because "
+             "the triangles sharing the vertex form a very pointy needle.";
     }
     v_normal.normalize();
   }
+
+  return FeatureNormalSet(std::move(vertex_normals), std::move(edge_normals));
 }
 
 SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
