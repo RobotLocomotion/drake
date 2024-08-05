@@ -25,6 +25,7 @@ struct DefaultProximityProperties {
     a->Visit(DRAKE_NVP(static_friction));
     a->Visit(DRAKE_NVP(hunt_crossley_dissipation));
     a->Visit(DRAKE_NVP(relaxation_time));
+    a->Visit(DRAKE_NVP(margin));
     a->Visit(DRAKE_NVP(point_stiffness));
     ValidateOrThrow();
   }
@@ -64,6 +65,36 @@ struct DefaultProximityProperties {
   /** For a halfspace, the thickness of compliant material to model, in units
   of meters. */
   std::optional<double> slab_thickness;
+
+  // TODO(amcastro-tri): Write Doxygen module on margin for hydroelastic contact
+  // with further details on mesh inflation, field generation, recommended
+  // margin values and limitations.
+  /** (Advanced) Specifies a thin layer of thickness "margin" (in meters) around
+   each geometry. Two bodies with margins δ₁ and δ₂ are considered for contact
+   resolution whenever their distance is within δ₁ + δ₂. That is, (speculative)
+   contact constraints are added for objects at a distance smaller than δ₁+δ₂.
+
+   If _only_ the thin margin layers of two objects overlap, there will be no
+   contact nor contact forces. However, (speculative) contact constraints will
+   be added allowing our discrete contact solvers to predict if a contact "will"
+   occur at the next time step. This leads to additional time coherence and
+   stability. Analytical studies of stability show that a value of 0.1 mm to 1.0
+   mm is more than enough for most robotics applications. This is not an
+   "action-at-a-distance" trick, there is no contact when the thin margin layers
+   of two objects overlap. The margin is simply a "cheap" mechanism to avoid
+   significantly more complex and costly strategies such as Continuous Collision
+   Detection.
+
+   @note Inflating the geometries does not appreciably change the domain of
+   contact. In the original mesh, the contact pressure is zero on the mesh's
+   boundary surface. When inflating the meshes, we redefine the pressure field
+   so that its zero level set field is a good approximation to the surface of
+   the original geometry. When visualizing hydroelastic proximity geometry, the
+   rendered geometry will include the inflation.
+
+   @note Currently margin only applies to _compliant_ hydroelastic contact and
+   it does not affect point contact. */
+  std::optional<double> margin{1.0e-4};
   /// @}
 
   /** @name General Contact Properties

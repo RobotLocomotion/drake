@@ -15,7 +15,8 @@ namespace geometry {
 namespace internal {
 
 std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
-    const std::vector<VolumeElement>& tetrahedra) {
+    const std::vector<VolumeElement>& tetrahedra,
+    std::vector<int>* element_indices) {
   // We want to identify a triangle ABC from all six permutations of A,B,C
   // (i.e., ABC, ACB, BAC, BCA, CAB, CBA), so we use SortedTriplet(A,B,C)
   // as a unique representation of all permutations.
@@ -37,15 +38,17 @@ std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
   // The canonical order of the entries in the map is also useful in
   // debugging. However, `map` is slower, and we may change to
   // `unordered_map` later if `map` is too slow.
-  std::map<SortedTriplet<int>, std::array<int, 3>> face_map;
+  std::map<SortedTriplet<int>, std::pair<std::array<int, 3>, int>> face_map;
 
-  auto insert_or_erase = [&face_map](int v0, int v1, int v2) {
+  auto insert_or_erase = [&face_map](int v0, int v1, int v2,
+                                     int element_index) {
     SortedTriplet<int> sorted(v0, v1, v2);
     auto find = face_map.find(sorted);
     if (find != face_map.end()) {
       face_map.erase(find);
     } else {
-      face_map.emplace(sorted, std::array<int, 3>{v0, v1, v2});
+      face_map.emplace(sorted, std::make_pair(std::array<int, 3>{v0, v1, v2},
+                                              element_index));
     }
   };
 
@@ -82,18 +85,28 @@ std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
       {1, 3, 0}
       // clang-format on
   };
-  for (const VolumeElement& tetrahedron : tetrahedra) {
+
+  for (int element_index = 0; element_index < ssize(tetrahedra);
+       ++element_index) {
+    const VolumeElement& tetrahedron = tetrahedra[element_index];
     for (const auto& face_vertices : tetrahedron_faces) {
       insert_or_erase(tetrahedron.vertex(face_vertices[0]),
                       tetrahedron.vertex(face_vertices[1]),
-                      tetrahedron.vertex(face_vertices[2]));
+                      tetrahedron.vertex(face_vertices[2]), element_index);
     }
   }
 
   std::vector<std::array<int, 3>> boundary;
   boundary.reserve(face_map.size());
-  for (const auto& pair : face_map) {
-    boundary.emplace_back(pair.second);
+  if (element_indices) {
+    element_indices->clear();
+    element_indices->reserve(face_map.size());
+  }
+  for (const auto& [key, pair] : face_map) {
+    boundary.emplace_back(pair.first);
+    if (element_indices) {
+      element_indices->emplace_back(pair.second);
+    }
   }
 
   return boundary;
@@ -117,10 +130,12 @@ std::vector<int> CollectUniqueVertices(
 }
 
 template <class T>
-TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
-    const VolumeMesh<T>& volume, std::vector<int>* boundary_vertices_out) {
+TriangleSurfaceMesh<T>
+ConvertVolumeToSurfaceMeshWithBoundaryVerticesAndElementMap(
+    const VolumeMesh<T>& volume, std::vector<int>* boundary_vertices_out,
+    std::vector<int>* element_indices_out) {
   const std::vector<std::array<int, 3>> boundary_faces =
-      internal::IdentifyBoundaryFaces(volume.tetrahedra());
+      internal::IdentifyBoundaryFaces(volume.tetrahedra(), element_indices_out);
 
   std::vector<int> boundary_vertices =
       internal::CollectUniqueVertices(boundary_faces);
@@ -152,7 +167,7 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&ConvertVolumeToSurfaceMeshWithBoundaryVertices<T>));
+    (&ConvertVolumeToSurfaceMeshWithBoundaryVerticesAndElementMap<T>));
 
 }  // namespace internal
 }  // namespace geometry
