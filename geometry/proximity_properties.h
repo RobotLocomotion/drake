@@ -70,6 +70,7 @@ extern const char* const kRezHint;         ///< Resolution hint property name.
 extern const char* const kComplianceType;  ///< Compliance type property name.
 extern const char* const kSlabThickness;   ///< Slab thickness property name
                                            ///< (for half spaces).
+extern const char* const kMargin;          ///< Margin for hydroelastic contact.
 
 //@}
 

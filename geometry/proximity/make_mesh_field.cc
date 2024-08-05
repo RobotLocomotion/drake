@@ -24,8 +24,8 @@ template <typename T>
 TriangleSurfaceMesh<double> ConvertVolumeToSurfaceMeshDouble(
     const VolumeMesh<T>& volume_mesh, std::vector<int>* boundary_vertices) {
   TriangleSurfaceMesh<T> surface =
-      ConvertVolumeToSurfaceMeshWithBoundaryVertices(volume_mesh,
-                                                     boundary_vertices);
+      ConvertVolumeToSurfaceMeshWithBoundaryVerticesAndElementMap(
+          volume_mesh, boundary_vertices);
   if constexpr (std::is_same_v<T, double>) {
     return surface;
   } else {
@@ -71,8 +71,12 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
     }
     const Vector3<T>& p_MV = mesh_M->vertex(v);
     const Vector3<double> p_MV_d = ExtractDoubleOrThrow(p_MV);
+    // N.B. For small margin values, we can approximate the distance to the
+    // inflated surface as the distance to the original surface plus the margin.
+    // Given the algorithm we use to inflate meshes, this is a lower bound on
+    // the correct distance. This correction only applies to interior vertices.
     const T distance =
-        internal::CalcDistanceToSurfaceMesh(p_MV_d, surface_d, bvh);
+        internal::CalcDistanceToSurfaceMesh(p_MV_d, surface_d, bvh) + margin;
     values.push_back(distance);
     max_value = max(distance, max_value);
   }

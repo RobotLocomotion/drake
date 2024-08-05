@@ -35,9 +35,11 @@ void VerifyInvariants(const VolumeMesh<double>& mesh,
 
   std::vector<int> surface_to_volume;
   const TriangleSurfaceMesh<double> mesh_surface =
-      ConvertVolumeToSurfaceMeshWithBoundaryVertices(mesh, &surface_to_volume);
+      ConvertVolumeToSurfaceMeshWithBoundaryVerticesAndElementMap(
+          mesh, &surface_to_volume);
   const TriangleSurfaceMesh<double> inflated_mesh_surface =
-      ConvertVolumeToSurfaceMeshWithBoundaryVertices(inflated_mesh);
+      ConvertVolumeToSurfaceMeshWithBoundaryVerticesAndElementMap(
+          inflated_mesh);
 
   // There is at least one interior vertex. N.B. Not required for InflateMesh(),
   // but hydroelastic meshes do have this property.
@@ -88,7 +90,10 @@ GTEST_TEST(MakeInflatedMesh, NonConvexMesh) {
   const std::string model = "drake/geometry/test/non_convex_mesh.vtk";
   const VolumeMesh<double> mesh =
       MakeVolumeMeshFromVtk<double>(Mesh(FindResourceOrThrow(model)));
-  const VolumeMesh<double> inflated_mesh = MakeInflatedMesh(mesh, kMargin);
+  std::vector<int> new_vertices;
+  const VolumeMesh<double> inflated_mesh =
+      MakeInflatedMesh(mesh, kMargin, &new_vertices);
+  EXPECT_EQ(new_vertices.size(), 0);
 
   std::vector<double> inflated_volumes = CalcCellVolumes(inflated_mesh);
   double min_vol = std::numeric_limits<double>::max();
