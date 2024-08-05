@@ -961,7 +961,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "file_contents_test",
-    deps = [":file_contents"],
+    data = [
+        "test/find_resource_test_data.txt",
+    ],
+    deps = [
+        ":file_contents",
+        "//common:find_resource",
+    ],
 )
 
 drake_cc_googletest(

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
@@ -12,6 +13,17 @@ namespace common {
 class FileContents {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FileContents);
+
+  /** Creates an instance of %FileContents from the file located at the given
+   `path`. The filename_hint() will be the stringified path. This includes the
+   calculation of the content's hash. To avoid computing the hash, see
+   Read().
+   @throws std::exception if the file at `path` cannot be read. */
+  static FileContents Make(const std::filesystem::path& path);
+
+  /** Returns the contents of the file located at the given `path`.
+   @throws std::exception if the file at `path` cannot be read. */
+  static std::string Read(const std::filesystem::path& path);
 
   /** Default constructor with no contents, checksum, or filename hint. In this
   case, the `checksum` will contain all zeros. */
