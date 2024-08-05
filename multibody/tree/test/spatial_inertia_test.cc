@@ -1,5 +1,6 @@
 #include "drake/multibody/tree/spatial_inertia.h"
 
+#include <iomanip>
 #include <limits>
 #include <sstream>
 
