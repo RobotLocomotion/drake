@@ -53,6 +53,16 @@ GTEST_TEST(MakeVolumeMeshPressureFieldTest, WithMargin) {
   // Max distance consistent with non_convex_mesh.vtk. This value might need to
   // be updated if that file changes.
   const double elastic_foundation_depth = 0.1;
+
+  // MakeVolumeMeshPressureField() is used to generate fields with margin but,
+  // unlike all other convex geometries, it is meant to work on the original
+  // non-inflated mesh. For interior vertices, it approximates distances d̃ in
+  // the inflated mesh from distances d in the non-inflated mesh as d̃ = d + δ,
+  // with δ the margin. Therefore if H is the elastic foundation depth of the
+  // non-inflated mesh, H̃ = H + δ is the elastic foundation depth in the
+  // inflated mesh.
+  const double inflated_elastic_foundation_depth =
+      elastic_foundation_depth + kMargin;
   const VolumeMesh<double> non_convex_mesh = MakeVolumeMeshFromVtk<double>(
       Mesh(FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk")));
   const VolumeMeshFieldLinear<double, double> field_no_margin =
@@ -61,8 +71,8 @@ GTEST_TEST(MakeVolumeMeshPressureFieldTest, WithMargin) {
       MakeVolumeMeshPressureField(&non_convex_mesh, kHydroelasticModulus,
                                   kMargin);
   VerifyInvariantsOfThePressureFieldWithMargin(
-      field_no_margin, field_with_margin, kMargin, elastic_foundation_depth,
-      kHydroelasticModulus);
+      field_no_margin, field_with_margin, kMargin,
+      inflated_elastic_foundation_depth, kHydroelasticModulus);
 }
 
 // Tests that an input mesh without interior vertices will throw. For

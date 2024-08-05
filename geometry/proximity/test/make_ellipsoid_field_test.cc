@@ -90,24 +90,50 @@ GTEST_TEST(MakeEllipsoidFieldTest, WithMargin) {
   const double kMargin = 0.012;
   // For an ellipsoid with bounding box 10cm x 16cm x 6cm, its semi-axes are
   // 5cm, 8cm, and 3cm long.
-  const Ellipsoid ellipsoid(0.05, 0.08, 0.03);
-  const double elastic_foundation_depth = 0.03;  // the min half-axis.
-  // Use resolution_hint 4cm to get a medium mesh with some boundary vertices
-  // not exactly on the surface of the ellipsoid due to numerical roundings.
-  // We do not want to use the coarsest mesh (octahedron) since all vertices
-  // are exactly on the coordinate axes.
+  const Vector3d radii(0.05, 0.08, 0.03);
+  const Ellipsoid ellipsoid(radii(0), radii(1), radii(2));
+
+  // The coarsest possible mesh (an octahedron) is sufficient for these tests.
+  // Therefore we set resolution_hint equal to the ellipsoid's major axis.
   const VolumeMesh<double> mesh = MakeEllipsoidVolumeMesh<double>(
-      ellipsoid, 0.04, TessellationStrategy::kDenseInteriorVertices);
-  const VolumeMeshFieldLinear<double, double> field_no_margin =
-      MakeEllipsoidPressureField<double>(ellipsoid, &mesh, kElasticModulus);
+      ellipsoid, 0.08, TessellationStrategy::kSingleInteriorVertex);
   const VolumeMeshFieldLinear<double, double> field_with_margin =
       MakeEllipsoidPressureField<double>(ellipsoid, &mesh, kElasticModulus,
                                          kMargin);
-  const double relative_tolerance =
-      2.0 * std::numeric_limits<double>::epsilon();
-  VerifyInvariantsOfThePressureFieldWithMargin(
-      field_no_margin, field_with_margin, kMargin, elastic_foundation_depth,
-      kElasticModulus, relative_tolerance);
+
+  // Test pressure field values at the points in the boundary that intersect the
+  // x , y, z axes.
+
+  // If `p` is an endpoint of one of the axes, it returns the index of the
+  // non-zero coordinate. Otherwise it returns a negative value.
+  auto is_endpoint_on_axis = [](const Vector3d sizes, const Vector3d& p) {
+    for (int i = 0; i < 3; ++i) {
+      const int j = (i + 1) % 3;
+      const int k = (i + 2) % 3;
+      if ((p(i) == sizes(i) || p(i) == -sizes(i)) && p(j) == 0 && p(k) == 0) {
+        return i;
+      }
+    }
+    return -1;
+  };
+  int num_points_tested = 0;
+  for (int i = 0; i < mesh.num_vertices(); ++i) {
+    const Vector3d& v = mesh.vertex(i);
+    const int k = is_endpoint_on_axis(radii, v);
+    if (k >= 0) {
+      const double p = field_with_margin.EvaluateAtVertex(i);
+      const double p_expected =
+          -kMargin / (radii(k) - kMargin) * kElasticModulus;
+      const double tolerance =
+          2.0 * std::numeric_limits<double>::epsilon() * std::abs(p_expected);
+      EXPECT_NEAR(p, p_expected, tolerance);
+      ++num_points_tested;
+    }
+  }
+
+  // The test above assumes MakeEllipsoidVolumeMesh() places vertices at the
+  // endpoints along each axis. We verify this assumption below.
+  EXPECT_EQ(num_points_tested, 6);
 }
 
 }  // namespace
