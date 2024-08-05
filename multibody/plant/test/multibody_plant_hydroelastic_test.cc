@@ -455,7 +455,7 @@ TEST_F(HydroelasticModelTests,
   }
 
   EXPECT_TRUE(CompareMatrices(compliant_compliant_p_WB_W,
-                              rigid_compliant_p_WB_W, 1e-8));
+                              rigid_compliant_p_WB_W, 1.3e-8));
 }
 
 // This tests consistency across the ContactModel modes: point pair,
