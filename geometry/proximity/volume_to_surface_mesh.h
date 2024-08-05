@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <utility>
 #include <vector>
 
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -12,7 +13,11 @@ namespace internal {
 
 /*
  Identify the triangular boundary faces of a tetrahedral volume mesh.
- @param tetrahedra   The tetrahedra of the mesh.
+ @param tetrahedra      The tetrahedra of the mesh.
+ @param element_indices An optional pointer to vector of pair of indices. The
+ first index of the pair being the index of the volume element that each
+ boundary face came from. The second index of the pair being the local index of
+ the surface face in the volume element.
  @return             The boundary faces, each of which is represented as an
                      array of three indices of vertices of the volume mesh.
                      Each face has its right-handed normal pointing outwards
@@ -23,7 +28,8 @@ namespace internal {
        2. Any given face is shared by one or two tetrahedra only.
  */
 std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
-    const std::vector<VolumeElement>& tetrahedra);
+    const std::vector<VolumeElement>& tetrahedra,
+    std::vector<std::pair<int, int>>* element_indices = nullptr);
 
 /*
  Collects unique vertices from faces of a volume mesh. Each vertex shared by
@@ -38,14 +44,25 @@ std::vector<int> CollectUniqueVertices(
 
 /*
  Implements the public API ConvertVolumeToSurfaceMesh() with optional return
- of the boundary vertices that we can use internally.
-     The returned integer indices are sorted in increasing order and refer
- to vertices in the input `volume` mesh.
+ of the boundary vertices that we can use internally and (optionally) the
+ mapping from TriangleSurfaceMesh elements to the VolumeMesh element containing
+ it in the original mesh. The returned integer indices are sorted in increasing
+ order and refer to vertices in the input `volume` mesh.
  */
+template <class T>
+TriangleSurfaceMesh<T>
+ConvertVolumeToSurfaceMeshWithBoundaryVerticesAndElementMap(
+    const VolumeMesh<T>& volume,
+    std::vector<int>* boundary_vertices_out = nullptr,
+    std::vector<std::pair<int, int>>* element_map = nullptr);
+
 template <class T>
 TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
     const VolumeMesh<T>& volume,
-    std::vector<int>* boundary_vertices_out = nullptr);
+    std::vector<int>* boundary_vertices_out = nullptr) {
+  return ConvertVolumeToSurfaceMeshWithBoundaryVerticesAndElementMap(
+      volume, boundary_vertices_out);
+}
 
 }  // namespace internal
 
@@ -63,8 +80,8 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
  @tparam_nonsymbolic_scalar */
 template <class T>
 TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
-  return internal::ConvertVolumeToSurfaceMeshWithBoundaryVertices(volume,
-                                                                  nullptr);
+  return internal::ConvertVolumeToSurfaceMeshWithBoundaryVerticesAndElementMap(
+      volume, nullptr, nullptr);
 }
 
 }  // namespace geometry

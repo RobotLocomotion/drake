@@ -772,6 +772,7 @@ filegroup(
     srcs = [
         "test/cube_as_6_squares.vtk",
         "test/cube_as_volume.vtk",
+        "test/inflation_infeasible_vertex.vtk",
         "test/non_convex_mesh.vtk",
         "test/one_negative_tetrahedron.vtk",
         "test/one_tetrahedron.vtk",

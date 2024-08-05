@@ -57,6 +57,18 @@ class VolumeElement {
    */
   int vertex(int i) const { return vertex_.at(i); }
 
+  /** Sets the vertex index of the i-th vertex in this element to `v`
+   @param i The local index of the vertex in this element.
+   @param v The vertex index in VolumeMesh.
+   @pre 0 <= i < 4
+   @pre v >= 0.
+  */
+  void set_vertex(int i, int v) {
+    DRAKE_DEMAND(i >= 0 && i < 4);
+    DRAKE_DEMAND(v >= 0);
+    vertex_[i] = v;
+  }
+
   /** Checks to see whether the given VolumeElement use the same four indices in
    the same order. We check for equality to the last bit consistently with
    VolumeMesh::Equal(). Two permutations of the four vertex indices of a
