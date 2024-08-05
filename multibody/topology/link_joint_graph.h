@@ -25,9 +25,6 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-// TODO(sherm1) The class comment describes the complete functionality of
-//  PR #20225; some functionality is currently missing.
-
 // TODO(sherm1) During the PR train leading up to MbP using this code in Drake
 //  master, I'm using Doxygen comments /** despite the fact that this is
 //  currently just internal. That allows me to validate Doxygen syntax in
@@ -104,6 +101,13 @@ class LinkJointGraph {
     int nq{-1};
     int nv{-1};
     bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
+  };
+
+  /** A LinkComposite is a set of Links that are mutually connected by weld
+  joints. It is massless only if _all_ its constituent Links are massless. */
+  struct LinkComposite {
+    std::vector<BodyIndex> links;
+    bool is_massless{false};
   };
 
   /** Default construction defines well-known joint types and World. */
@@ -357,6 +361,9 @@ class LinkJointGraph {
   present. `ssize(links())` is the number of Links currently in this graph. */
   [[nodiscard]] const std::vector<Link>& links() const { return data_.links; }
 
+  // TODO(sherm1) Re-think this naming strategy to use either link() or
+  //  link_by_ordinal(), and similar for the other APIs.
+
   /** Returns a reference to a particular Link using its current ordinal
   within the links() vector. Requires a LinkOrdinal, not a plain integer. */
   [[nodiscard]] inline const Link& links(LinkOrdinal link_ordinal) const;
@@ -408,19 +415,19 @@ class LinkJointGraph {
   [[nodiscard]] int num_user_joints() const { return data_.num_user_joints; }
 
   /** After the SpanningForest has been built, returns the mobilized body
-  (Mobod) followed by this Link. If the Link is part of a composite, this will
-  be the mobilized body for the whole composite. If the Link was split into a
-  primary and shadows, this is the mobilized body followed by the primary. If
+  (Mobod) followed by this Link. If the Link is part of a merged composite, this
+  will be the mobilized body for the whole composite. If the Link was split into
+  a primary and shadows, this is the mobilized body followed by the primary. If
   there is no valid Forest, the returned index will be invalid. */
   [[nodiscard]] MobodIndex link_to_mobod(BodyIndex index) const;
 
   /** After the SpanningForest has been built, returns groups of Links that are
-  welded together, which we call "LinkComposites". Each group may be modeled
-  in the Forest with a single mobilized body or multiple mobilized bodies
-  depending on modeling options, but that doesn't change anything here. The
-  first entry in each LinkComposite is the "active link", the one whose
-  (non-weld) Joint moves the whole LinkComposite due to its modeling in the
-  SpanningForest. The rest of the Links in the composite are listed in no
+  welded together, which we call "LinkComposites". Each composite may be modeled
+  in the Forest with a single mobilized body (a "merged composite") or multiple
+  mobilized bodies depending on modeling options, but that doesn't change
+  anything here. The first entry in each LinkComposite is the "active link", the
+  one whose (non-weld) Joint moves the whole LinkComposite due to its modeling
+  in the SpanningForest. The rest of the Links in the composite are listed in no
   particular order.
 
   The 0th LinkComposite is always present (if there is a valid SpanningForest)
@@ -430,17 +437,21 @@ class LinkJointGraph {
   here at all. LinkComposites are discovered as a side effect of
   forest-building; there is no cost to accessing them here.
 
+  A LinkComposite consisting only of massless Links is itself massless. If a
+  composite contains World or any massful body then it is massful. You can
+  check with the member LinkComposite::is_massless.
+
   If there is no valid Forest, the returned vector is empty. */
-  [[nodiscard]] const std::vector<std::vector<BodyIndex>>& link_composites()
-      const {
+  [[nodiscard]] const std::vector<LinkComposite>& link_composites() const {
     return data_.link_composites;
   }
 
   /** Returns a reference to a particular LinkComposite. Requires a
-  LinkCompositeIndex, not a plain integer.*/
-  [[nodiscard]] const std::vector<BodyIndex>& link_composites(
-      LinkCompositeIndex composite_link_index) const {
-    return link_composites().at(composite_link_index);
+  LinkCompositeIndex, not a plain integer.
+  @pre `link_composite_index` is valid and in range. */
+  [[nodiscard]] const LinkComposite& link_composites(
+      LinkCompositeIndex link_composite_index) const {
+    return link_composites().at(link_composite_index);
   }
 
   /** @returns `true` if a Link named `name` was added to `model_instance`.
@@ -464,9 +475,11 @@ class LinkJointGraph {
       BodyIndex link1_index, BodyIndex link2_index) const;
 
   /** Returns true if the given Link should be treated as massless. That
-  requires that the Link was marked TreatAsMassless and is not connected by
-  a Weld Joint to a massful Link or Composite. */
-  [[nodiscard]] bool must_treat_as_massless(LinkOrdinal link_ordinal) const;
+  requires that the Link was flagged kMassless and is not connected by
+  a Weld Joint to a massful Composite. If this Link is not part of a
+  LinkComposite then the result is the same as Link::is_massless(). */
+  [[nodiscard]] bool link_and_its_composite_are_massless(
+      LinkOrdinal link_ordinal) const;
 
   /** (Internal use only) For testing -- invalidates the Forest. */
   void ChangeLinkFlags(BodyIndex link_index, LinkFlags flags);
@@ -638,6 +651,11 @@ class LinkJointGraph {
                : std::nullopt;
   }
 
+  // Notes that we didn't model this Joint in the Forest because it is just a
+  // weld to an existing Composite.
+  void AddUnmodeledJointToComposite(JointOrdinal unmodeled_joint_ordinal,
+                                    LinkCompositeIndex which);
+
   [[noreturn]] void ThrowLinkWasRemoved(const char* func,
                                         BodyIndex link_index) const;
 
@@ -709,7 +727,7 @@ class LinkJointGraph {
     // and any links welded (recursively) to World. The other composites are
     // only present if there are at least two Links welded together. The first
     // Link in the composite is the active Link.
-    std::vector<std::vector<BodyIndex>> link_composites;
+    std::vector<LinkComposite> link_composites;
 
     bool forest_is_valid{false};  // set false whenever changes are made
 
