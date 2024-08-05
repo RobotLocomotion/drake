@@ -1,7 +1,5 @@
 #include "drake/geometry/read_obj.h"
 
-#include <fstream>
-#include <sstream>
 #include <utility>
 
 #include <fmt/format.h>
@@ -171,17 +169,10 @@ std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
 ReadObjFile(const std::string& filename, double scale, bool triangulate,
             bool vertices_only) {
-  std::ifstream f(filename);
-  if (!f.good()) {
-    throw std::runtime_error(
-        fmt::format("Unable to open file to read obj data: {}.", filename));
-  }
-  std::stringstream contents;
-  contents << f.rdbuf();
   // TODO(SeanCurtis-TRI): The file contents of this file should be read once
   // and stored in some geometry cache -- only accessed here rather than created
   // anew. For now, we are unnecessarily computing the hash for the contents.
-  return ReadObjContents(FileContents(std::move(contents).str(), filename),
+  return ReadObjContents(FileContents::Make(filename),
                          scale, triangulate, vertices_only);
 }
 
