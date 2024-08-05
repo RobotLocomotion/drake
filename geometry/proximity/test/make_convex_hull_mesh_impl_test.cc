@@ -569,14 +569,6 @@ GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
  via the MakeConvexHull() API. We just need indicators that the contents version
  uses all of the parameter as expected. */
 GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
-  auto file_contents = [](const std::string& filename) -> std::string {
-    std::ifstream file(filename);
-    DRAKE_DEMAND(file.good());
-    std::stringstream contents;
-    contents << file.rdbuf();
-    return std::move(contents).str();
-  };
-
   const double kScale = 2.0;
   const double kMargin = 1.0;
   // The box in box.obj has edge length of 2 m. We'll scale it by s = kScale and
@@ -585,9 +577,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   const std::string box_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
   const MeshSource obj_source(
-      InMemoryMesh{.mesh_file =
-                       FileContents(file_contents(box_path), "box.obj")},
-      ".obj");
+      InMemoryMesh{.mesh_file = FileContents::Make(box_path)}, ".obj");
   const PolyMesh expected_box = MakeCube(kScale + kMargin);
 
   // The tet in one_tetrahedron.vtk has vertices at origin and unit positions
@@ -595,9 +585,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   const std::string tet_path =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
   const MeshSource vtk_source(
-      InMemoryMesh{.mesh_file =
-                       FileContents(file_contents(tet_path), "tet.vtk")},
-      ".vtk");
+      InMemoryMesh{.mesh_file = FileContents::Make(tet_path)}, ".vtk");
   const PolyMesh expected_tet = GetTetrahedronWithMargin(kScale, kMargin);
 
   // The rainbow_box.gltf has embedded data *and* has a non-trivial hierarchy
@@ -605,8 +593,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   const std::string embedded_gltf_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf");
   const MeshSource gltf_embedded_source(
-      InMemoryMesh{.mesh_file = FileContents(file_contents(embedded_gltf_path),
-                                             "embedded.gltf")},
+      InMemoryMesh{.mesh_file = FileContents::Make(embedded_gltf_path)},
       ".gltf");
 
   // The fully_textured_pyramid.gltf references external files. Specifically,
@@ -616,13 +603,11 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   const std::string pyramid_bin_path = FindResourceOrThrow(
       "drake/geometry/render/test/meshes/fully_textured_pyramid.bin");
   const MeshSource gltf_pyramid_source(
-      InMemoryMesh{.mesh_file = FileContents(file_contents(pyramid_path),
-                                             "pyramid.gltf"),
-                   .supporting_files =
-                       string_map<FileContents>{
-                           {"fully_textured_pyramid.bin",
-                            FileContents(file_contents(pyramid_bin_path),
-                                         "pyramid.bin")}}},
+      InMemoryMesh{
+          .mesh_file = FileContents::Make(pyramid_path),
+          .supporting_files =
+              string_map<FileContents>{{"fully_textured_pyramid.bin",
+                                        FileContents::Make(pyramid_bin_path)}}},
       ".gltf");
   // The convex hull of the in-memory version should match that from disk.
   const PolyMesh expected_pyramid =
