@@ -37,6 +37,7 @@ class TestSnoptSolver(unittest.TestCase):
                 result.get_solver_details().F, np.array([0, 1.]))
             np.testing.assert_allclose(
                 result.get_solver_details().Fmul, np.array([0, 1.]))
+            self.assertGreater(result.get_solver_details().solve_time, 0)
 
     def test_solver_specific_error(self):
         # Intentionally write a constraint with incorrect gradients.
