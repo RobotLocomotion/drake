@@ -98,8 +98,7 @@ GTEST_TEST(OrientationCostTest, TwoFreeBodies) {
   RotationMatrix<double> R_AB = R_AbarA.inverse() * R_BbarB;  // because A == B.
   // We use the explicit formula in the Cost implementation; we test this
   // against Eigen's conversion from matrices to AngleAxis:
-  double theta =
-      math::wrap_to(R_AB.ToAngleAxis().angle(), -M_PI / 2.0, M_PI / 2.0);
+  double theta = R_AB.ToAngleAxis().angle();
   CheckCases(*cost, *cost_ad, q, c * (1.0 - cos(theta)));
 
   // X_WA, X_WB are arbitrary non-identity transforms.
@@ -113,7 +112,7 @@ GTEST_TEST(OrientationCostTest, TwoFreeBodies) {
 
   R_AB =
       (X_WAbar.rotation() * R_AbarA).inverse() * X_WBbar.rotation() * R_BbarB;
-  theta = math::wrap_to(R_AB.ToAngleAxis().angle(), -M_PI / 2.0, M_PI / 2.0);
+  theta = R_AB.ToAngleAxis().angle();
   CheckCases(*cost, *cost_ad, q, c * (1.0 - cos(theta)));
 }
 
