@@ -345,6 +345,8 @@ class SpanningForest {
   @pre v_index is in range [0, num_velocities) */
   inline TreeIndex v_to_tree(int v_index) const;
 
+  std::string GenerateGraphvizString(std::string_view label) const;
+
   // TODO(sherm1) Remove this.
   // (Testing stub only) Add enough fake elements to the forest to allow
   // testing of the Tree and LoopConstraint APIs.
