@@ -92,6 +92,7 @@ def _internal_config_repo_impl(rctx):
 
 internal_config_repo = repository_rule(
     implementation = _internal_config_repo_impl,
+    configure = True,
     environ = [_ENABLE_PYSTAR_ENVVAR_NAME],
 )
 

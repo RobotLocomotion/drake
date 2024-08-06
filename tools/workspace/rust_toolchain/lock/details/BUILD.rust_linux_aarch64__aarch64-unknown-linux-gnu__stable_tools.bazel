@@ -32,6 +32,11 @@ filegroup(
     srcs = ["bin/clippy-driver"],
     visibility = ["//visibility:public"],
 )
+filegroup(
+    name = "cargo_clippy_bin",
+    srcs = ["bin/cargo-clippy"],
+    visibility = ["//visibility:public"],
+)
 
 filegroup(
     name = "cargo",
@@ -96,6 +101,7 @@ rust_toolchain(
     rustfmt = "//:rustfmt_bin",
     cargo = "//:cargo",
     clippy_driver = "//:clippy_driver_bin",
+    cargo_clippy = "//:cargo_clippy_bin",
     llvm_cov = "//:llvm_cov_bin",
     llvm_profdata = "//:llvm_profdata_bin",
     rustc_lib = "//:rustc_lib",

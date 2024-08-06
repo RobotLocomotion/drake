@@ -1,7 +1,7 @@
 #include <benchmark/benchmark.h>
 #include <fmt/format.h>
 
-#include "drake/geometry/proximity/hydroelastic_callback.h"
+#include "drake/geometry/proximity/hydroelastic_calculator.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/make_ellipsoid_field.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
@@ -170,7 +170,7 @@ BENCHMARK_DEFINE_F(CompliantMeshIntersectionBenchmark, CompliantCompliantMesh)
 
   std::unique_ptr<ContactSurface<double>> surface_SR;
   for (auto _ : state) {
-    surface_SR = DispatchCompliantCompliantCalculation(
+    surface_SR = CalcCompliantCompliant(
         geo_S, RigidTransformd::Identity(), id_S, geo_R, X_SR_, id_R,
         HydroelasticContactRepresentation::kPolygon);
   }

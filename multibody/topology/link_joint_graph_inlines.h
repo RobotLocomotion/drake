@@ -47,12 +47,14 @@ inline void LinkJointGraph::set_primary_mobod_for_link(
   link.joint_ = primary_joint_index;
 }
 
-inline bool LinkJointGraph::must_treat_as_massless(
+inline bool LinkJointGraph::link_and_its_composite_are_massless(
     LinkOrdinal link_ordinal) const {
   const Link& link = links(link_ordinal);
-  // TODO(sherm1) If part of a Composite then this is only massless if the
-  //  entire Composite is composed of massless Links.
-  return link.treat_as_massless();
+  if (!link.is_massless()) return false;
+
+  return link.composite().has_value()
+             ? link_composites(*link.composite()).is_massless
+             : true;
 }
 
 // LinkJointGraph definitions deferred until Joint defined.
