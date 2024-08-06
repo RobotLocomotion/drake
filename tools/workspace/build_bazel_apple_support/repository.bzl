@@ -12,5 +12,8 @@ def build_bazel_apple_support_repository(
         repository = "bazelbuild/apple_support",  # License: Apache-2.0
         commit = "1.16.0",
         sha256 = "0ac024fa6227658524feb41a271a0671905f1c1208cce97b198ed8fa15964166",  # noqa
+        patches = [
+            ":patches/no_bazel_features.patch",
+        ],
         mirrors = mirrors,
     )
