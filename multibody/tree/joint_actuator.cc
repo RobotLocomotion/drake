@@ -30,7 +30,10 @@ void JointActuator<T>::set_controller_gains(PdControllerGains gains) {
         "before MultibodyPlant::Finalize().",
         name()));
   }
-  DRAKE_THROW_UNLESS(gains.p > 0);
+  using std::isfinite;
+  DRAKE_THROW_UNLESS(isfinite(gains.p));
+  DRAKE_THROW_UNLESS(isfinite(gains.d));
+  DRAKE_THROW_UNLESS(gains.p >= 0);
   DRAKE_THROW_UNLESS(gains.d >= 0);
   pd_controller_gains_ = gains;
 }
