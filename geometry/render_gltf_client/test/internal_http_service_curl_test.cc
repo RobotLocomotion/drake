@@ -63,7 +63,7 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
     EXPECT_FALSE(res_1.data_path.has_value());
     EXPECT_TRUE(res_1.service_error_message.has_value());
     EXPECT_THAT(res_1.service_error_message.value(),
-                testing::ContainsRegex("Could.?n.t resolve host.?name"));
+                testing::MatchesRegex("Could.?n.t resolve host.?name"));
 
     /* We can also validate that form entries will be added, but the same error
      (Couldn't resolve host name) is expected. */
@@ -89,7 +89,7 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
     EXPECT_FALSE(res_2.data_path.has_value());
     EXPECT_TRUE(res_2.service_error_message.has_value());
     EXPECT_THAT(res_2.service_error_message.value(),
-                testing::ContainsRegex("Could.?n.t resolve host.?name"));
+                testing::MatchesRegex("Could.?n.t resolve host.?name"));
 
     fs::remove(test_json_path);
     fs::remove(test_binary_path);
