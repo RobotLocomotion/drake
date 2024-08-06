@@ -140,6 +140,7 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   EXPECT_EQ(solver_details.xmul.size(), 3);
   EXPECT_EQ(solver_details.Fmul.size(), 2);
   EXPECT_EQ(solver_details.F.size(), 2);
+  EXPECT_GT(solver_details.solve_time, 0);
 }
 
 GTEST_TEST(SnoptTest, TestPrintFile) {
