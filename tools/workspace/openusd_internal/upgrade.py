@@ -13,6 +13,7 @@ SUBDIRS = [
     "pxr/base/arch",
     "pxr/base/gf",
     "pxr/base/js",
+    "pxr/base/pegtl",
     "pxr/base/plug",
     "pxr/base/tf",
     "pxr/base/trace",

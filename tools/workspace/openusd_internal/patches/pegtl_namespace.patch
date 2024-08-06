@@ -4,29 +4,29 @@ This patch fixes an OpenUSD bug with namespace token-pasting. The existing code
 failed to substitute the macro value 'PXR_INTERNAL_NS', rather accidentally
 using the macro name itself for the namespace. We should upstream this patch.
 
---- pxr/base/tf/pxrPEGTL/pegtl.h
-+++ pxr/base/tf/pxrPEGTL/pegtl.h
-@@ -49,7 +49,9 @@ SOFTWARE.
+--- pxr/base/pegtl/README.md
++++ pxr/base/pegtl/README.md
+@@ -39,7 +39,9 @@ This file defines the namespace name that PEGTL uses:
  #include "pxr/pxr.h"
-
+ 
  #if PXR_USE_NAMESPACES
--#define TAO_PEGTL_NAMESPACE PXR_INTERNAL_NS ## _pegtl
+-#define PXR_PEGTL_NAMESPACE PXR_INTERNAL_NS ## _pegtl
 +#define _impl_PASTE2(x, y) x ## y
 +#define _impl_PASTE(x, y) _impl_PASTE2(x, y)
-+#define TAO_PEGTL_NAMESPACE _impl_PASTE(PXR_INTERNAL_NS, _pegtl)
++#define PXR_PEGTL_NAMESPACE _impl_PASTE(PXR_INTERNAL_NS, _pegtl)
  #else
- #define TAO_PEGTL_NAMESPACE pxr_pegtl
+ #define PXR_PEGTL_NAMESPACE pxr_pegtl
  #endif
---- pxr/base/tf/pxrPEGTL/pxr-pegtl.patch
-+++ pxr/base/tf/pxrPEGTL/pxr-pegtl.patch
-@@ -26,7 +26,9 @@ index b14aebed2..e6b8962d7 100644
- +#include "pxr/pxr.h"
- +
- +#if PXR_USE_NAMESPACES
--+#define TAO_PEGTL_NAMESPACE PXR_INTERNAL_NS ## _pegtl
-++#define _impl_PASTE2(x, y) x ## y
-++#define _impl_PASTE(x, y) _impl_PASTE2(x, y)
-++#define TAO_PEGTL_NAMESPACE _impl_PASTE(PXR_INTERNAL_NS, _pegtl)
- +#else
- +#define TAO_PEGTL_NAMESPACE pxr_pegtl
- +#endif
+--- pxr/base/pegtl/pegtl/config.hpp
++++ pxr/base/pegtl/pegtl/config.hpp
+@@ -9,7 +9,9 @@
+ #include "pxr/pxr.h"
+ 
+ #if PXR_USE_NAMESPACES
+-#define PXR_PEGTL_NAMESPACE PXR_INTERNAL_NS ## _pegtl
++#define _impl_PASTE2(x, y) x ## y
++#define _impl_PASTE(x, y) _impl_PASTE2(x, y)
++#define PXR_PEGTL_NAMESPACE _impl_PASTE(PXR_INTERNAL_NS, _pegtl)
+ #else
+ #define PXR_PEGTL_NAMESPACE pxr_pegtl
+ #endif
