@@ -391,6 +391,8 @@ class SpanningForest {
   Forest is internally consistent and aborts if not. */
   void SanityCheckForest() const;
 
+  std::string GenerateGraphvizString(std::string_view label) const;
+
   /** (Debugging) Produces a human-readable summary of this Forest. */
   void DumpForest(std::string title) const;
 
