@@ -4397,7 +4397,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// translational velocity in frame A) written in terms of J𝑠_v_AP (point P's
   /// translational velocity Jacobian in frame A for s).  <pre>
   ///   v_AP = J𝑠_v_AP ⋅ 𝑠         which upon vector differentiation in A gives
-  ///   a_AP = Ĵ𝑠_v_AP ⋅ 𝑠  +  J𝑠_v_AP ⋅ 𝑠̇                 𝑠etting 𝑠̇ = 0, gives
+  ///   a_AP = Ĵ𝑠_v_AP ⋅ 𝑠  +  J𝑠_v_AP ⋅ 𝑠̇                 setting 𝑠̇ = 0, gives
   ///   a𝑠Bias_AP = Ĵ𝑠_v_AP ⋅ 𝑠                               is quadratic in s.
   /// </pre>
   /// Note: Since Ĵ𝑠_v_AP (the time-derivative of J𝑠_v_AP in frame A) is linear
