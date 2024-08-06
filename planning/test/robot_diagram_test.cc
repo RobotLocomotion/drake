@@ -118,6 +118,44 @@ GTEST_TEST(RobotDiagramBuilderTest, NoDefaultExportCustomSystems) {
   }
 }
 
+// All exported ports must be non-deprecated.
+GTEST_TEST(RobotDiagramBuilderTest, NoExportDeprecatedPorts) {
+  std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
+  auto diagram = dut->Build();
+  for (int i = 0; i < diagram->num_input_ports(); ++i) {
+    const auto& diagram_port = diagram->get_input_port(i);
+    const std::string& diagram_port_name = diagram_port.get_name();
+    if (diagram_port_name.starts_with("plant_")) {
+      const auto& leaf_port =
+          diagram->plant().GetInputPort(diagram_port_name.substr(6));
+      EXPECT_EQ(leaf_port.get_deprecation(), std::nullopt)
+          << leaf_port.get_name();
+    } else if (diagram_port_name.starts_with("scene_graph_")) {
+      const auto& leaf_port =
+          diagram->scene_graph().GetInputPort(diagram_port_name.substr(12));
+      EXPECT_EQ(leaf_port.get_deprecation(), std::nullopt)
+          << leaf_port.get_name();
+    } else {
+      GTEST_FAIL() << diagram_port_name;
+    }
+  }
+  for (int i = 0; i < diagram->num_output_ports(); ++i) {
+    const auto& diagram_port = diagram->get_output_port(i);
+    const std::string& diagram_port_name = diagram_port.get_name();
+    if (diagram_port_name.starts_with("plant_")) {
+      const auto& leaf_port =
+          diagram->plant().GetOutputPort(diagram_port_name.substr(6));
+      EXPECT_EQ(leaf_port.get_deprecation(), std::nullopt);
+    } else if (diagram_port_name.starts_with("scene_graph_")) {
+      const auto& leaf_port =
+          diagram->scene_graph().GetOutputPort(diagram_port_name.substr(12));
+      EXPECT_EQ(leaf_port.get_deprecation(), std::nullopt);
+    } else {
+      GTEST_FAIL() << diagram_port_name;
+    }
+  }
+}
+
 GTEST_TEST(RobotDiagramBuilderTest, Lifecycle) {
   std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
 
