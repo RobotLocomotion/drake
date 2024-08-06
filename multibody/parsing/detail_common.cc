@@ -170,6 +170,7 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
   return plant->AddBallConstraint(*body_A, p_AP, *body_B, p_BQ);
 }
 
+namespace {
 // See ParseCollisionFilterGroupCommon at header for documentation
 void CollectCollisionFilterGroup(
     const DiagnosticPolicy& diagnostic,
@@ -237,6 +238,7 @@ void CollectCollisionFilterGroup(
     resolver->AddPair(diagnostic, group_name, target_name, model_instance);
   }
 }
+}  // namespace
 
 void ParseCollisionFilterGroupCommon(
     const DiagnosticPolicy& diagnostic,

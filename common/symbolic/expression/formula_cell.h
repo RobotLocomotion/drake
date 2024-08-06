@@ -455,6 +455,8 @@ bool is_relational(const FormulaCell& f);
 bool is_conjunction(const FormulaCell& f);
 /** Checks if @p f is a disjunction (∨). */
 bool is_disjunction(const FormulaCell& f);
+/** Checks if @p f is N-ary. */
+bool is_nary(const FormulaCell& f);
 /** Checks if @p f is a negation (¬). */
 bool is_negation(const FormulaCell& f);
 /** Checks if @p f is a Forall formula (∀). */

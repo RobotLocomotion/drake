@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_frame.h"

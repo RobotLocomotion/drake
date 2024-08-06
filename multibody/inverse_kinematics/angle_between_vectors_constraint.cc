@@ -63,6 +63,8 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
   }
 }
 
+namespace {
+
 void EvalConstraintGradient(
     const systems::Context<double>& context,
     const MultibodyPlant<double>& plant, const Frame<double>& frameA,
@@ -125,6 +127,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
                            R_AB, x, y);
   }
 }
+
+}  // namespace
 
 void AngleBetweenVectorsConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {

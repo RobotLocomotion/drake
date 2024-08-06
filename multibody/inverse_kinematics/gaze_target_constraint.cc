@@ -69,6 +69,8 @@ GazeTargetConstraint::GazeTargetConstraint(
   }
 }
 
+namespace {
+
 void EvalConstraintGradient(
     const systems::Context<double>& context,
     const MultibodyPlant<double>& plant, const Frame<double>& frameA,
@@ -127,6 +129,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
                            y);
   }
 }
+
+}  // namespace
 
 void GazeTargetConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                   Eigen::VectorXd* y) const {

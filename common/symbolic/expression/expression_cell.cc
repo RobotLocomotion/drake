@@ -839,6 +839,7 @@ Expression ExpressionMul::Substitute(const Substitution& s) const {
                     });
 }
 
+namespace {
 // Computes ∂/∂x pow(f, g).
 Expression DifferentiatePow(const Expression& f, const Expression& g,
                             const Variable& x) {
@@ -862,6 +863,7 @@ Expression DifferentiatePow(const Expression& f, const Expression& g,
   return pow(f, g - 1) *
          (g * f.Differentiate(x) + log(f) * f * g.Differentiate(x));
 }
+}  // namespace
 
 Expression ExpressionMul::Differentiate(const Variable& x) const {
   // ∂/∂x (c   * f₁^g₁  * f₂^g₂        * ... * fₙ^gₙ

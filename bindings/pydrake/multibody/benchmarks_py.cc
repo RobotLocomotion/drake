@@ -14,6 +14,8 @@ using systems::LeafSystem;
 // TODO(eric.cousineau): Bind additional scalar types.
 using T = double;
 
+namespace {
+
 void init_acrobot(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::benchmarks::acrobot;
@@ -38,6 +40,8 @@ void init_all(py::module m) {
   py::exec("from pydrake.multibody.benchmarks.acrobot import *", py::globals(),
       vars);
 }
+
+}  // namespace
 
 PYBIND11_MODULE(benchmarks, m) {
   init_acrobot(m.def_submodule("acrobot"));

@@ -55,15 +55,6 @@ void CalcDistanceDerivatives(const MultibodyPlant<AutoDiffXd>&,
   *distance = distance_autodiff.value();
 }
 
-void CalcDistanceDerivatives(const MultibodyPlant<double>&,
-                             const systems::Context<double>&,
-                             const Frame<double>&, const Frame<double>&,
-                             const Eigen::Vector3d&, double distance_in,
-                             const Eigen::Vector3d&,
-                             const Eigen::Ref<const VectorX<double>>&,
-                             double* distance_out) {
-  *distance_out = distance_in;
-}
 template <typename T, typename S>
 VectorX<S> Distances(const MultibodyPlant<T>& plant,
                      systems::Context<T>* context,

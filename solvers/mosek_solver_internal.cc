@@ -13,6 +13,7 @@
 namespace drake {
 namespace solvers {
 namespace internal {
+namespace {
 // Given a vector of triplets (which might contain duplicated entries in the
 // matrix), returns the vector of rows, columns and values.
 void ConvertTripletsToVectors(
@@ -37,6 +38,7 @@ void ConvertTripletsToVectors(
     }
   }
 }
+}  // namespace
 
 size_t MatrixVariableEntry::get_next_id() {
   static never_destroyed<std::atomic<int>> next_id(0);
