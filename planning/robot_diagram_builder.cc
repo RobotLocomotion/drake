@@ -89,15 +89,11 @@ void RobotDiagramBuilder<T>::ExportDefaultPorts() const {
   // Export ports per the contract in the RobotDiagram class overview.
   for (const System<T>* system : builder_->GetSystems()) {
     for (InputPortIndex i{0}; i < system->num_input_ports(); ++i) {
-      if (system == &this->scene_graph()) {
-        // Don't export any SceneGraph input ports. The fact that it has any
-        // disconnected input ports is a bug that we'll paper over here.
-        // TODO(jwnimmer-tri) We can (and should) remove this special case once
-        // the deformable code resolves its messy "the configuration input port
-        // is disconnected by default" status quo.
-        break;  // Skip all input ports.
+      const InputPort<T>& port =
+          system->get_input_port(i, /* warn_deprecated = */ false);
+      if (port.get_deprecation().has_value()) {
+        continue;  // Don't export deprecated ports.
       }
-      const InputPort<T>& port = system->get_input_port(i);
       if (builder_->IsConnectedOrExported(port)) {
         // We can't export this input because it's internally-sourced already.
         continue;  // Skip just this one input port.
@@ -105,7 +101,11 @@ void RobotDiagramBuilder<T>::ExportDefaultPorts() const {
       builder_->ExportInput(port);
     }
     for (OutputPortIndex i{0}; i < system->num_output_ports(); ++i) {
-      const OutputPort<T>& port = system->get_output_port(i);
+      const OutputPort<T>& port =
+          system->get_output_port(i, /* warn_deprecated = */ false);
+      if (port.get_deprecation().has_value()) {
+        continue;  // Don't export deprecated ports.
+      }
       builder_->ExportOutput(port);
     }
   }
