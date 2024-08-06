@@ -35,8 +35,7 @@ application at hand or not.
 
 @throws std::exception if margin is negative. */
 VolumeMesh<double> MakeInflatedMesh(const VolumeMesh<double>& mesh,
-                                    double margin,
-                                    std::vector<int>* new_vertices);
+                                    double margin);
 
 }  // namespace internal
 }  // namespace geometry

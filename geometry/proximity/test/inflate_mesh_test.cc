@@ -34,12 +34,10 @@ void VerifyInvariants(const VolumeMesh<double>& mesh,
   ASSERT_EQ(mesh.num_elements(), inflated_mesh.num_elements());
 
   std::vector<int> surface_to_volume;
-  // element_map[f] = {element_index, local_index}
-  // local_element_index := {0, 1, 2, 3}
-  std::vector<std::pair<int, int>> element_map;
+  std::vector<TetFace> element_map;
   const TriangleSurfaceMesh<double> mesh_surface =
-      ConvertVolumeToSurfaceMeshWithBoundaryVerticesAndElementMap(
-          mesh, &surface_to_volume, &element_map);
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(mesh, &surface_to_volume,
+                                                     &element_map);
 
   // If there is at least one interior vertex. N.B. Not required for
   // InflateMesh(), but hydroelastic meshes do have this property.
@@ -68,7 +66,7 @@ void VerifyInvariants(const VolumeMesh<double>& mesh,
 
   // Verify that vertices produced a displacement of at least "margin" in the
   // direction of each adjacent face.
-  for (int f = 0; f < mesh_surface.num_elements(); ++f) {
+  for (int f = 0; f < mesh_surface.num_triangles(); ++f) {
     const Vector3d& n = mesh_surface.face_normal(f);
     // Face `f` corresponds to the `k`-th local face of element `e` in both the
     // original mesh and inflated mesh.
@@ -94,10 +92,7 @@ GTEST_TEST(MakeInflatedMesh, NonConvexMesh) {
   const std::string model = "drake/geometry/test/non_convex_mesh.vtk";
   const VolumeMesh<double> mesh =
       MakeVolumeMeshFromVtk<double>(Mesh(FindResourceOrThrow(model)));
-  std::vector<int> new_vertices;
-  const VolumeMesh<double> inflated_mesh =
-      MakeInflatedMesh(mesh, kMargin, &new_vertices);
-  EXPECT_EQ(new_vertices.size(), 0);
+  const VolumeMesh<double> inflated_mesh = MakeInflatedMesh(mesh, kMargin);
 
   std::vector<double> inflated_volumes = CalcCellVolumes(inflated_mesh);
   double min_vol = std::numeric_limits<double>::max();
@@ -121,12 +116,10 @@ GTEST_TEST(MakeInflatedMesh, SingleInfeasibleVertex) {
   const VolumeMesh<double> mesh =
       MakeVolumeMeshFromVtk<double>(Mesh(FindResourceOrThrow(model)));
   // The infeasible vertex is adjacent to 9 faces and 9 elements. The vertex
-  // will split into a vertices for each adjacent element, resulting in 8 new
+  // will split into a vertex for each adjacent element, resulting in 8 new
   // vertices
-  std::vector<int> new_vertices;
-  const VolumeMesh<double> inflated_mesh =
-      MakeInflatedMesh(mesh, kMargin, &new_vertices);
-  EXPECT_EQ(new_vertices.size(), 8);
+  const VolumeMesh<double> inflated_mesh = MakeInflatedMesh(mesh, kMargin);
+  EXPECT_EQ(inflated_mesh.num_vertices(), 8 + mesh.num_vertices());
 
   std::vector<double> inflated_volumes = CalcCellVolumes(inflated_mesh);
   double min_vol = std::numeric_limits<double>::max();
@@ -134,7 +127,8 @@ GTEST_TEST(MakeInflatedMesh, SingleInfeasibleVertex) {
     const double V = inflated_volumes[e];
     min_vol = std::min(min_vol, V);
   }
-  // We expect no element inversion, not even for large margin values.
+  // For this particular mesh, we expect no element inversion, not even for
+  // large margin values.
   EXPECT_GT(min_vol, 0.0);
 
   VerifyInvariants(mesh, inflated_mesh, kMargin,
