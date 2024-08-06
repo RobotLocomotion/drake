@@ -1315,11 +1315,16 @@ class TestPlant(unittest.TestCase):
         self.assert_sane(L_WSP_W.rotational(), nonzero=False)
         self.assertIsInstance(L_WSP_W, SpatialMomentum_[T])
 
-        abias_ACcm_E = plant.CalcBiasCenterOfMassTranslationalAcceleration(
+        aBias_ACcm_E = plant.CalcBiasCenterOfMassTranslationalAcceleration(
             context=context, with_respect_to=JacobianWrtVariable.kV,
             frame_A=world_frame, frame_E=world_frame)
-        self.assert_sane(abias_ACcm_E, nonzero=False)
-        self.assertEqual(abias_ACcm_E.shape, (3,))
+        self.assert_sane(aBias_ACcm_E, nonzero=False)
+        self.assertEqual(aBias_ACcm_E.shape, (3,))
+        aBias_ACcm_E = plant.CalcBiasCenterOfMassTranslationalAcceleration(
+            context=context, model_instances=[instance],
+            with_respect_to=wrt, frame_A=world_frame, frame_E=world_frame)
+        self.assert_sane(aBias_ACcm_E, nonzero=False)
+        self.assertEqual(aBias_ACcm_E.shape, (3,))
 
         AsBias_ABp_E = plant.CalcBiasSpatialAcceleration(
             context=context, with_respect_to=JacobianWrtVariable.kV,

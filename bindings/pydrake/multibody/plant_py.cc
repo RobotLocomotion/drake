@@ -385,17 +385,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("model_instances"), py::arg("p_WoP_W"),
             cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_3args)
-        .def(
-            "CalcBiasCenterOfMassTranslationalAcceleration",
-            [](const Class* self, const Context<T>& context,
-                JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
-                const Frame<T>& frame_E) {
-              return self->CalcBiasCenterOfMassTranslationalAcceleration(
-                  context, with_respect_to, frame_A, frame_E);
-            },
+        .def("CalcBiasCenterOfMassTranslationalAcceleration",
+            overload_cast_explicit<Vector3<T>, const Context<T>&,
+                JacobianWrtVariable, const Frame<T>&, const Frame<T>&>(
+                &Class::CalcBiasCenterOfMassTranslationalAcceleration),
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
             py::arg("frame_E"),
-            cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc)
+            cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc_4args)
+        .def("CalcBiasCenterOfMassTranslationalAcceleration",
+            overload_cast_explicit<Vector3<T>, const Context<T>&,
+                const std::vector<ModelInstanceIndex>&, JacobianWrtVariable,
+                const Frame<T>&, const Frame<T>&>(
+                &Class::CalcBiasCenterOfMassTranslationalAcceleration),
+            py::arg("context"), py::arg("model_instances"),
+            py::arg("with_respect_to"), py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc_5args)
         .def(
             "CalcJacobianCenterOfMassTranslationalVelocity",
             [](const Class* self, const Context<T>& context,
