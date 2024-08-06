@@ -1,0 +1,68 @@
+commit 2094ed9dc4cab6e5506b95740a6ed586785a079f
+Author: Rick Poyner <rick.poyner@tri.global>
+Date:   Tue Aug 6 19:06:09 2024 -0400
+
+    wip: nc symbol leaks
+
+diff --git pxr/base/gf/nc/nanocolor.c pxr/base/gf/nc/nanocolor.c
+index 663ee5083..5b6f9d54f 100644
+--- pxr/base/gf/nc/nanocolor.c
++++ pxr/base/gf/nc/nanocolor.c
+@@ -587,7 +587,7 @@ NcM33f NcGetXYZToRGBMatrix(const NcColorSpace* cs) {
+     return NcM3ffInvert(NcGetRGBToXYZMatrix(cs));
+ }
+ 
+-NcM33f GetRGBtoRGBMatrix(const NcColorSpace* src, const NcColorSpace* dst) {
++NcM33f NCAPI GetRGBtoRGBMatrix(const NcColorSpace* src, const NcColorSpace* dst) {
+     NcM33f t = NcM33fMultiply(NcM3ffInvert(NcGetRGBToXYZMatrix(src)),
+                                  NcGetXYZToRGBMatrix(dst));
+     return t;
+@@ -803,7 +803,7 @@ void NcTransformColorsWithAlpha(const NcColorSpace* dst, const NcColorSpace* src
+     }
+ }
+ 
+-NcRGB NcNormalizeLuminance(const NcColorSpace* cs, NcRGB rgb, float luminance) {
++NcRGB NCAPI  NcNormalizeLuminance(const NcColorSpace* cs, NcRGB rgb, float luminance) {
+     if (!cs)
+         return rgb;
+     
+@@ -945,7 +945,7 @@ typedef struct {
+     float v;
+ } NcYuvPrime;
+ 
+-NcYxy _NcYuv2Yxy(NcYuvPrime c) {
++NcYxy NCAPI _NcYuv2Yxy(NcYuvPrime c) {
+     float d = 6.f * c.u - 16.f * c.v + 12.f;
+     return (NcYxy) {
+         c.Y,
+@@ -969,7 +969,7 @@ NcYxy NcKelvinToYxy(float T, float luminance) {
+     return _NcYuv2Yxy((NcYuvPrime) {luminance, u, 3.f * v / 2.f });
+ }
+ 
+-NcYxy NcNormalizeYxy(NcYxy c) {
++NcYxy NCAPI NcNormalizeYxy(NcYxy c) {
+     return (NcYxy) {
+         c.Y,
+         c.Y * c.x / c.y,
+diff --git pxr/base/gf/nc/nanocolor.h pxr/base/gf/nc/nanocolor.h
+index 2ccee3534..ed8535453 100644
+--- pxr/base/gf/nc/nanocolor.h
++++ pxr/base/gf/nc/nanocolor.h
+@@ -18,7 +18,7 @@
+ // is a C++ only header; so the generated namespace prefixes can't be
+ // used here.
+ #ifndef NCNAMESPACE
+-#define NCNAMESPACE pxr_nc_1_0_
++#define NCNAMESPACE drake_vendor_pxr_nc_1_0_
+ #endif
+ 
+ // The NCCONCAT macro is used to apply a namespace to the symbols in the public
+@@ -28,7 +28,7 @@
+ 
+ // NCAPI may be overridden externally to control symbol visibility.
+ #ifndef NCAPI
+-#define NCAPI
++#define NCAPI __attribute__ ((visibility ("hidden")))
+ #endif
+ 
+ #ifdef __cplusplus

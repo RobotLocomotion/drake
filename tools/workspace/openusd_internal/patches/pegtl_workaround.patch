@@ -1,0 +1,16 @@
+commit 5a745155fdbdd0d58c6fb2290569e11dcdd213df
+Author: Rick Poyner <rick.poyner@tri.global>
+Date:   Tue Aug 6 19:10:08 2024 -0400
+
+    wip: pegtl workaround
+
+diff --git pxr/base/pegtl/build-workaround.cpp pxr/base/pegtl/build-workaround.cpp
+index 66bf2b510..b32e71d0b 100644
+--- pxr/base/pegtl/build-workaround.cpp
++++ pxr/base/pegtl/build-workaround.cpp
+@@ -11,4 +11,4 @@
+ 
+ #include "pxr/base/arch/export.h"
+ 
+-ARCH_EXPORT int __pxr_pegtl_workaround__;
++ARCH_EXPORT int __drake_vendor_pxr_pegtl_workaround__;
