@@ -58,7 +58,7 @@ drake_cc_googlebench_binary(
     test_timeout = "moderate",
     deps = [
         "//common:essential",
-        "//geometry/proximity:hydroelastic_callback",
+        "//geometry/proximity:hydroelastic_calculator",
         "//geometry/proximity:hydroelastic_internal",
         "//geometry/proximity:make_ellipsoid_field",
         "//geometry/proximity:make_ellipsoid_mesh",

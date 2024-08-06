@@ -359,15 +359,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "hydroelastic_callback",
-    hdrs = ["hydroelastic_callback.h"],
+    name = "hydroelastic_calculator",
+    srcs = ["hydroelastic_calculator.cc"],
+    hdrs = ["hydroelastic_calculator.h"],
     internal = True,
     visibility = [
         "//geometry:__pkg__",
         "//geometry/benchmarking:__pkg__",
     ],
     deps = [
-        ":collision_filter",
         ":field_intersection",
         ":hydroelastic_internal",
         ":mesh_half_space_intersection",
@@ -382,8 +382,6 @@ drake_cc_library(
         "//geometry:proximity_properties",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
-        "@fcl_internal//:fcl",
-        "@fmt",
     ],
 )
 
@@ -1246,9 +1244,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "hydroelastic_callback_test",
+    name = "hydroelastic_calculator_test",
     deps = [
-        ":hydroelastic_callback",
+        ":hydroelastic_calculator",
         "//common/test_utilities",
         "//math:autodiff",
     ],
