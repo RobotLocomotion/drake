@@ -33,6 +33,9 @@ struct SnoptSolverDetails {
    * general constraints F_lower <= F(x) <= F_upper.
    */
   Eigen::VectorXd Fmul;
+
+  // The duration of the snopt solve in seconds.
+  double solve_time;
 };
 
 /**

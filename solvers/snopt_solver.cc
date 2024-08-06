@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -1360,6 +1361,7 @@ void SolveWithGivenOptions(
   }
   // Actual solve.
   const char problem_name[] = "drake_problem";
+  auto snopt_start = std::chrono::high_resolution_clock::now();
   // clang-format off
   Snopt::snkera(Cold, problem_name, nF, nx, objective_constant, ObjRow,
                 snopt_userfun,
@@ -1378,6 +1380,9 @@ void SolveWithGivenOptions(
                 storage.iw(), storage.leniw(),
                 storage.rw(), storage.lenrw());
   // clang-format on
+  auto snopt_end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration<double>(
+      snopt_end - snopt_start);
   if (user_info.userfun_error_message().has_value()) {
     throw std::runtime_error(*user_info.userfun_error_message());
   }
@@ -1388,6 +1393,7 @@ void SolveWithGivenOptions(
     x_val(member.first) *= member.second;
   }
   solver_details.info = snopt_status;
+  solver_details.solve_time = duration.count();
 
   SetMathematicalProgramResult(
       prog, snopt_status, x_val, bb_con_dual_variable_indices,
