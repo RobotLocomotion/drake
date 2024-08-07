@@ -150,7 +150,9 @@ VolumeElement SwapTetVertex(const VolumeElement& tet, int k, int new_index) {
    - The definitions of *existing* tetrahedra in `tetrahedra` get changed to
      reference duplicated vertices.
    - Mapping from surface vertex to volume vertex is extended in
-    `surface_to_volume_vertices`. */
+    `surface_to_volume_vertices`.
+   - Mapping from split vertices to original vertices is stored in
+    `split_vertex_to_original` */
 void ProcessUnfeasibleVertex(const VolumeMesh<double>& mesh,
                              const TriangleSurfaceMesh<double>& mesh_surface,
                              double margin, int surface_vertex,
@@ -159,7 +161,8 @@ void ProcessUnfeasibleVertex(const VolumeMesh<double>& mesh,
                              std::vector<Vector3d>* u,
                              std::vector<Vector3d>* vertices,
                              std::vector<VolumeElement>* tetrahedra,
-                             std::vector<int>* surface_to_volume_vertices) {
+                             std::vector<int>* surface_to_volume_vertices,
+                             std::map<int, int>* split_vertex_to_original) {
   /* Find v's local index in its tetrahedron. */
   auto find_tet_local_index = [&](int tet_index, int vertex_index) {
     const VolumeElement& tet = mesh.element(tet_index);
@@ -193,6 +196,8 @@ void ProcessUnfeasibleVertex(const VolumeMesh<double>& mesh,
     /* Duplicate the vertex value. */
     const int dupe_volume_index = ssize(*vertices);
     surface_to_volume_vertices->push_back(dupe_volume_index);
+    split_vertex_to_original->insert(
+        std::make_pair(ssize(*vertices), volume_vertex));
     vertices->push_back(p);
     u->push_back(CalculateDisplacement(mesh_surface, face_group, margin));
 
@@ -206,9 +211,11 @@ void ProcessUnfeasibleVertex(const VolumeMesh<double>& mesh,
 
 }  // namespace
 
-VolumeMesh<double> MakeInflatedMesh(const VolumeMesh<double>& mesh,
-                                    double margin) {
+VolumeMesh<double> MakeInflatedMesh(
+    const VolumeMesh<double>& mesh, double margin,
+    std::map<int, int>* split_vertex_to_original) {
   DRAKE_THROW_UNLESS(margin >= 0);
+  DRAKE_DEMAND(split_vertex_to_original != nullptr);
 
   // Surface mesh and map to volume vertices.
   std::vector<int> surface_to_volume_vertices;
@@ -248,9 +255,9 @@ VolumeMesh<double> MakeInflatedMesh(const VolumeMesh<double>& mesh,
     if (result.is_success()) {
       u[s] = margin * result.get_x_val();
     } else {
-      ProcessUnfeasibleVertex(mesh, mesh_surface, margin, s, faces, tri_to_tet,
-                              &u, &vertices, &tetrahedra,
-                              &surface_to_volume_vertices);
+      ProcessUnfeasibleVertex(
+          mesh, mesh_surface, margin, s, faces, tri_to_tet, &u, &vertices,
+          &tetrahedra, &surface_to_volume_vertices, split_vertex_to_original);
     }
   }
 

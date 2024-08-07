@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/inflate_mesh.h"
 
 #include <algorithm>
+#include <map>
 #include <numeric>
 
 #include <gtest/gtest.h>
@@ -92,7 +93,12 @@ GTEST_TEST(MakeInflatedMesh, NonConvexMesh) {
   const std::string model = "drake/geometry/test/non_convex_mesh.vtk";
   const VolumeMesh<double> mesh =
       MakeVolumeMeshFromVtk<double>(Mesh(FindResourceOrThrow(model)));
-  const VolumeMesh<double> inflated_mesh = MakeInflatedMesh(mesh, kMargin);
+  std::map<int, int> split_vertex_to_original;
+  const VolumeMesh<double> inflated_mesh =
+      MakeInflatedMesh(mesh, kMargin, &split_vertex_to_original);
+
+  // All vertices in the input mesh should have a feasible set of constraints.
+  EXPECT_EQ(ssize(split_vertex_to_original), 0);
 
   std::vector<double> inflated_volumes = CalcCellVolumes(inflated_mesh);
   double min_vol = std::numeric_limits<double>::max();
@@ -115,11 +121,28 @@ GTEST_TEST(MakeInflatedMesh, SingleInfeasibleVertex) {
       "drake/geometry/test/inflation_infeasible_vertex.vtk";
   const VolumeMesh<double> mesh =
       MakeVolumeMeshFromVtk<double>(Mesh(FindResourceOrThrow(model)));
+  std::map<int, int> split_vertex_to_original;
+  // The index of the infeasible vertex in the input mesh. This must be updated
+  // if the model is changed.
+  const int infeasible_vertex_index = 7;
+  // The number of tetrahedral elements adjacent to the infeasible vertex. This
+  // must be updated if the model is changed.
+  const int num_adjacent_elements = 8;
+
   // The infeasible vertex is adjacent to 9 faces and 8 elements. The vertex
   // will split into a vertex for each adjacent element, resulting in 7 new
   // vertices
-  const VolumeMesh<double> inflated_mesh = MakeInflatedMesh(mesh, kMargin);
-  EXPECT_EQ(inflated_mesh.num_vertices(), 7 + mesh.num_vertices());
+  const VolumeMesh<double> inflated_mesh =
+      MakeInflatedMesh(mesh, kMargin, &split_vertex_to_original);
+  EXPECT_EQ(inflated_mesh.num_vertices(),
+            mesh.num_vertices() + num_adjacent_elements - 1);
+
+  EXPECT_EQ(ssize(split_vertex_to_original), num_adjacent_elements - 1);
+  for (int i = mesh.num_vertices();
+       i < mesh.num_vertices() + num_adjacent_elements - 1; ++i) {
+    EXPECT_TRUE(split_vertex_to_original.contains(i));
+    EXPECT_EQ(split_vertex_to_original[i], infeasible_vertex_index);
+  }
 
   std::vector<double> inflated_volumes = CalcCellVolumes(inflated_mesh);
   double min_vol = std::numeric_limits<double>::max();
