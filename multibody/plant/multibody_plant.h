@@ -4297,7 +4297,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see CalcJacobianSpatialVelocity() for details on J𝑠_V_AB.
   ///@{
 
-  /// Computes the bias term `C(q, v)v` containing Coriolis, centripetal, and
+  /// Computes the bias term `C(q,v)v` containing Coriolis, centripetal, and
   /// gyroscopic effects in the multibody equations of motion: <pre>
   ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
   /// </pre>
@@ -4308,15 +4308,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// spatial force on body B at Bo) with `Jv_V_WB(q)` (B's spatial Jacobian in
   /// world W with respect to generalized velocities v).
   /// Note: B's spatial velocity in W can be written `V_WB = Jv_V_WB * v`.
-  ///
   /// @param[in] context Contains the state of the multibody system, including
-  ///   the generalized positions q and the generalized velocities v.
-  /// @param[out] Cv
-  ///   On output, `Cv` will contain the product `C(q, v)v`. It must be a valid
-  ///   (non-null) pointer to a column vector in `ℛⁿ` with n the number of
-  ///   generalized velocities (num_velocities()) of the model.
-  ///   This method aborts if Cv is nullptr or if it does not have the
-  ///   proper size.
+  /// the generalized positions q and the generalized velocities v.
+  /// @param[out] Cv On output, `Cv` will contain the product `C(q, v)v`. It
+  /// must be a valid (non-null) pointer to a column vector in `ℛⁿ` with n the
+  /// number of generalized velocities (num_velocities()) of the model. This
+  /// method aborts if Cv is nullptr or if it does not have the proper size.
   void CalcBiasTerm(const systems::Context<T>& context,
                     EigenPtr<VectorX<T>> Cv) const {
     this->ValidateContext(context);
@@ -4346,6 +4343,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// translational velocity Jacobian in frame A with respect to 𝑠.
   /// @pre p_BoBi_B must have 3 rows.
   /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
+  /// @note See @ref bias_acceleration_functions "Bias acceleration functions"
+  /// for theory and details.
   Matrix3X<T> CalcBiasTranslationalAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
@@ -4374,6 +4373,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see CalcJacobianSpatialVelocity() to compute J𝑠_V_ABp, point Bp's
   /// spatial velocity Jacobian in frame A with respect to 𝑠.
   /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
+  /// @note To efficiently calculate bias translational accelerations of _many_
+  /// points (each fixed to frame B), use CalcBiasTranslationalAcceleration().
+  /// This function returns one bias _spatial_ acceleration, which containse
+  /// both frame B's bias angular acceleration and point Bp's bias translational
+  /// acceleration.
+  /// @note See @ref bias_acceleration_functions "Bias acceleration functions"
+  /// for theory and details.
   SpatialAcceleration<T> CalcBiasSpatialAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
