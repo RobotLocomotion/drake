@@ -4375,7 +4375,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
   /// @note Use CalcBiasTranslationalAcceleration() to efficiently calculate
   /// bias translational accelerations for a list of points (each fixed to
-  /// frame B). This function returns one bias spatial acceleration, which
+  /// frame B). This function returns only one bias spatial acceleration, which
   /// contains both frame B's bias angular acceleration and point Bp's bias
   /// translational acceleration.
   /// @note See @ref bias_acceleration_functions "Bias acceleration functions"
