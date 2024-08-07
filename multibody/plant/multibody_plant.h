@@ -4095,6 +4095,37 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::vector<JointIndex>& user_to_joint_index_map) const {
     return internal_tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
   }
+  /// @} <!-- System matrix computations -->
+
+  /// @anchor Jacobian_functions
+  /// @name Jacobian functions
+  /// A Jacobian is a matrix that contains the partial derivatives of a vector
+  /// with respect to a list of scalars. The scalars may be the system's
+  /// generalized positions q or "speeds" 𝑠 where 𝑠 is either q̇
+  /// (time-derivative of generalized positions) or v (generalized velocities).
+  ///
+  /// The name J𝑠_V_ABp denotes the spatial velocity Jacobian in a frame A
+  /// of a point Bp of frame B with respect to "speeds" 𝑠.
+  /// It is calculated with CalcJacobianSpatialVelocity().
+  ///
+  /// The name J𝑠_w_AB denotes a frame B's angular velocity Jacobian in a
+  /// frame A with respect to "speeds" 𝑠. It is calculated with
+  /// CalcJacobianAngularVelocity().
+  ///
+  /// The name J𝑠_v_ABp denotes the translational velocity Jacobian in a frame A
+  /// of a point Bp of frame B with respect to "speeds" 𝑠. It is calculated with
+  /// CalcJacobianTranslationalVelocity().
+  ///
+  /// The name J𝑠_v_AScm_E denotes point Scm's translational velocity Jacobian
+  /// in a frame A with respect to "speeds" 𝑠, where point Scm is the center of
+  /// mass of the designated system S. For the entire multibody system or for a
+  /// system designated by model_instances, it is calculated with
+  /// CalcJacobianCenterOfMassTranslationalVelocity()
+  ///
+  /// The name JAq_p_PQ denotes the Jacobian in a frame A of the position vector
+  /// from point P to point Q with respect to the generalized positions q.
+  /// It is calculated with CalcJacobianPositionVector().
+  ///@{
 
   /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
@@ -4126,15 +4157,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `J𝑠_V_ABp_E` is a `6 x n` matrix, where n is the number of elements in 𝑠.
   /// The Jacobian is a function of only generalized positions q (which are
   /// pulled from the context).
-  /// Note: The returned `6 x n` matrix stores frame B's angular velocity
+  /// @note The returned `6 x n` matrix stores frame B's angular velocity
   /// Jacobian in A in rows 1-3 and stores point Bp's translational velocity
   /// Jacobian in A in rows 4-6, i.e., <pre>
   ///     J𝑠_w_AB_E = J𝑠_V_ABp_E.topRows<3>();
   ///     J𝑠_v_ABp_E = J𝑠_V_ABp_E.bottomRows<3>();
   /// </pre>
-  /// Note: Consider CalcJacobianTranslationalVelocity() for multiple points
+  /// @note Consider CalcJacobianTranslationalVelocity() for multiple points
   /// fixed to frame B and consider CalcJacobianAngularVelocity() to calculate
   /// frame B's angular velocity Jacobian.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   /// @throws std::exception if `J𝑠_V_ABp_E` is nullptr or not sized `6 x n`.
   void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
                                    JacobianWrtVariable with_respect_to,
@@ -4174,6 +4207,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The Jacobian is a function of only generalized positions q (which are
   /// pulled from the context).  The previous definition shows `J𝑠_w_AB_E` is
   /// a matrix of size `3 x n`, where n is the number of elements in 𝑠.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   /// @throws std::exception if `J𝑠_w_AB_E` is nullptr or not of size `3 x n`.
   void CalcJacobianAngularVelocity(const systems::Context<T>& context,
                                    const JacobianWrtVariable with_respect_to,
@@ -4226,6 +4261,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// </pre>
   /// Note: Each partial derivative of p_AoBi is taken in frame A.
   /// @see CalcJacobianPositionVector() for details on Jq_p_AoBi.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   void CalcJacobianTranslationalVelocity(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
@@ -4274,6 +4311,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Note: Jq_p_AaBi = Jq_p_AoBi, where point Aa is _any_ point fixed/welded to
   /// frame A, i.e., this calculation's result is the same if point Ao is
   /// replaced with any point fixed on frame A.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   void CalcJacobianPositionVector(const systems::Context<T>& context,
                                   const Frame<T>& frame_B,
                                   const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
@@ -4311,6 +4350,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// are no massive bodies in MultibodyPlant (except world_body()).
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
   /// bodies contained in `this` MultibodyPlant).
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
@@ -4348,6 +4389,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
   /// and Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
   /// frame E (Bᵢcm is the center of mass of the iᵗʰ body).
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
@@ -4359,7 +4402,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, model_instances, with_respect_to, frame_A, frame_E,
         Js_v_ACcm_E);
   }
-  /// @} <!-- System matrix computations -->
+  ///@} <!-- End of anchor Jacobian_functions -->
 
   /// @anchor bias_acceleration_functions
   /// @name Bias acceleration functions
