@@ -1,4 +1,4 @@
-[openusd_internal] Fix macro expansion for TAO_PEGTL_NAMESPACE
+[openusd_internal] Fix macro expansion for PXR_PEGTL_NAMESPACE
 
 This patch fixes an OpenUSD bug with namespace token-pasting. The existing code
 failed to substitute the macro value 'PXR_INTERNAL_NS', rather accidentally

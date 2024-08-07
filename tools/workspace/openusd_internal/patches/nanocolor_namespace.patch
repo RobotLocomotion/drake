@@ -1,11 +1,11 @@
-commit 2094ed9dc4cab6e5506b95740a6ed586785a079f
-Author: Rick Poyner <rick.poyner@tri.global>
-Date:   Tue Aug 6 19:06:09 2024 -0400
+[openusd_internal] Fix symbol leaks from nanocolor
 
-    wip: nc symbol leaks
+This patch hides symbols from the nanocolor module, which is written in
+plain `C` and does not participate in the normal namespace mechanisms
+used elsewhere. Parts of this patch could be upstreamed, but obviously
+the direct overwrite of the "namespace" macro to include `drake_vendor`
+should not be.
 
-diff --git pxr/base/gf/nc/nanocolor.c pxr/base/gf/nc/nanocolor.c
-index 663ee5083..5b6f9d54f 100644
 --- pxr/base/gf/nc/nanocolor.c
 +++ pxr/base/gf/nc/nanocolor.c
 @@ -587,7 +587,7 @@ NcM33f NcGetXYZToRGBMatrix(const NcColorSpace* cs) {
@@ -44,8 +44,6 @@ index 663ee5083..5b6f9d54f 100644
      return (NcYxy) {
          c.Y,
          c.Y * c.x / c.y,
-diff --git pxr/base/gf/nc/nanocolor.h pxr/base/gf/nc/nanocolor.h
-index 2ccee3534..ed8535453 100644
 --- pxr/base/gf/nc/nanocolor.h
 +++ pxr/base/gf/nc/nanocolor.h
 @@ -18,7 +18,7 @@
