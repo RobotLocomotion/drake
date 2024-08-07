@@ -16,13 +16,11 @@ namespace internal {
 /*
  Generates a piecewise-linear pressure field inside the given ellipsoid as
  represented by the given volume mesh. The pressure at a point is defined as
- p(x)= E⋅e(x) where e(x) = (1-‖S⁻¹⋅x‖ - δ/H)/(1-δ/H), with the scale diagonal
- matrix S = diag({a, b, c}) where a, b, c are the lengths of the principal
- semi-axes of `ellipsoid`, H = min(a, b, c), and δ is the `margin` value. The
- zero pressure level set of this field defines an ellipsoid with principal
- semi-axes lengths a⋅(1-δ/H), b⋅(1-δ/H), c⋅(1-δ/H). Pressure is minimum at the
- boundary with value -E⋅δ/(H-δ). Pressure is maximum at the center of the
- ellipsoid with pressure equal to E.
+ p(x)= E⋅e(x) where e(x) = 1-‖S⁻¹⋅x‖, with the scale diagonal matrix S =
+ diag({a-δ, b-δ, c-δ}) where a, b, c are the lengths of the principal semi-axes
+ of `ellipsoid`, and δ is the `margin` value. The zero pressure level set of
+ this field defines an ellipsoid with principal semi-axes lengths a-δ, b-δ, c-δ.
+ Pressure is maximum at the center of the ellipsoid with pressure equal to E.
 
  @param ellipsoid        The ellipsoid with its canonical frame E.
  @param mesh_E           A pointer to a tetrahedral mesh of the ellipsoid. It
@@ -70,10 +68,9 @@ VolumeMeshFieldLinear<T, T> MakeEllipsoidPressureField(
   const T a = ellipsoid.a();
   const T b = ellipsoid.b();
   const T c = ellipsoid.c();
-  // N.B. Since a, b, c > δ, then H > δ.
-  const T H = min(a, min(b, c));
   // For scaling a position vector in the ellipsoid to the unit sphere.
-  const Vector3<T> scale{T(1.0) / a, T(1.0) / b, T(1.0) / c};
+  const Vector3<T> scale{T(1.0) / (a - margin), T(1.0) / (b - margin),
+                         T(1.0) / (c - margin)};
   std::vector<T> pressure_values;
   pressure_values.reserve(mesh_E->num_vertices());
   // A threshold to treat near-zero extent as zero extent (only for margin = 0).
@@ -81,15 +78,12 @@ VolumeMeshFieldLinear<T, T> MakeEllipsoidPressureField(
   // due to rounding errors. We will treat their near-zero extent as exactly
   // zero extent.
   constexpr double kExtentEpsilon = 1e-14;
-  const T min_extent = -margin / (H - margin);
   for (const Vector3<T>& r_EV : mesh_E->vertices()) {
     // Scale V in the ellipsoid to U in the unit sphere.
     const Vector3<T> r_EU = scale.cwiseProduct(r_EV);
-    const T e0 = T(1.0) - r_EU.norm();  // Zero margin extent.
-    // N.B. H > δ and thus 1 - δ / H > 0.
-    T extent = (e0 - margin / H) / (T(1.0) - margin / H);
-    if (abs(e0) < kExtentEpsilon) {
-      extent = min_extent;
+    T extent = T(1.0) - r_EU.norm();
+    if (margin == 0 && abs(extent) < kExtentEpsilon) {
+      extent = 0.0;
     }
     pressure_values.push_back(hydroelastic_modulus * extent);
   }
