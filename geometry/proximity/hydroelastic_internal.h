@@ -173,8 +173,11 @@ class SoftGeometry {
   }
 
   /* Returns the half space's margin -- calling this will throw if
-   is_half_space() returns `false`.  */
-  double margin() const {
+   is_half_space() returns `false`.
+   The margin value is part of the contact surface calculation for half spaces.
+   For SoftMesh instances, the margin is already part of the representative mesh
+   and it is not necessary to carry the value here.  */
+  double half_space_margin() const {
     if (!is_half_space()) {
       throw std::runtime_error(
           "SoftGeometry::margin() cannot be invoked for soft mesh");

@@ -301,7 +301,7 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
 //
 //    1. Geometry that has no hydro representation does not get inflated.
 //    2. Geometry that has a *rigid* representation does not get inflated.
-//    3. Geometry that has a *compliant* representation get inflated.
+//    3. Geometry that has a *compliant* representation gets inflated.
 //       - Primitives get inflated by the margin amount in each direction.
 //       - Meshes get inflated an arbitrary amount in each direction at least as
 //         large as the margin value.

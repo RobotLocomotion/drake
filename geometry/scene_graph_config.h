@@ -74,12 +74,13 @@ struct DefaultProximityProperties {
    resolution whenever their distance is within δ₁ + δ₂. That is, (speculative)
    contact constraints are added for objects at a distance smaller than δ₁+δ₂.
 
-   If _only_ the thin margin layers of two objects overlap, there will be no
-   contact nor contact forces. However, (speculative) contact constraints will
-   be added allowing our discrete contact solvers to predict if a contact "will"
-   occur at the next time step. This leads to additional time coherence and
-   stability. Analytical studies of stability show that a value of 0.1 mm to 1.0
-   mm is more than enough for most robotics applications. This is not an
+   There will only be _contact_ if the two zero level sets intersect. Unless the
+   zero level sets of both geometries overlap, there is no contact and no
+   contact force. However, (speculative) contact constraints will be added
+   allowing our discrete contact solvers to predict if a contact "will" occur at
+   the next time step. This leads to additional time coherence and stability.
+   Analytical studies of stability show that a value of 0.1 mm to 1.0 mm is more
+   than enough for most robotics applications. This is not an
    "action-at-a-distance" trick, there is no contact when the thin margin layers
    of two objects overlap. The margin is simply a "cheap" mechanism to avoid
    significantly more complex and costly strategies such as Continuous Collision

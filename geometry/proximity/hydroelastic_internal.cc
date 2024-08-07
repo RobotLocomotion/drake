@@ -208,37 +208,31 @@ template <typename ValueType>
 class Validator {
  public:
   // Parameters `shape_name` and `compliance` are only for error messages.
-  // A default value can optionally be provided, see has_default_value().
-  Validator(const char* shape_name, const char* compliance,
-            std::optional<ValueType> default_value = std::nullopt)
-      : shape_name_(shape_name),
-        compliance_(compliance),
-        default_value_(std::move(default_value)) {}
+  Validator(const char* shape_name, const char* compliance)
+      : shape_name_(shape_name), compliance_(compliance) {}
 
   virtual ~Validator() = default;
 
-  bool has_default_value() const { return default_value_.has_value(); }
-
-  // Extract an arbitrary property from the proximity properties. For validators
-  // with no default value (has_default_value() returns false), throws a
+  // Extract an arbitrary property from the proximity properties. If no default
+  // value is given (`default_value == std::nullopt)`, throws a
   // consistent error message in the case of missing or mis-typed properties.
-  // For validators with default value, the default value provided at
-  // construction is returned in case of a missing property.
+  // Otherwise, the default value is used in place of the missing property.
   // Relies on the ValidateValue() method to validate the value.
   ValueType Extract(const ProximityProperties& props, const char* group_name,
-                    const char* property_name) {
+                    const char* property_name,
+                    std::optional<ValueType> default_value = std::nullopt) {
     const std::string full_property_name =
         fmt::format("('{}', '{}')", group_name, property_name);
-    if (!has_default_value() && !props.HasProperty(group_name, property_name)) {
+    const bool has_default = default_value.has_value();
+    if (!has_default && !props.HasProperty(group_name, property_name)) {
       throw std::logic_error(
           fmt::format("Cannot create {} {}; missing the {} property",
                       compliance(), shape_name(), full_property_name));
     }
     const ValueType value =
-        has_default_value()
-            ? props.GetPropertyOrDefault(group_name, property_name,
-                                         *default_value_)
-            : props.GetProperty<ValueType>(group_name, property_name);
+        has_default ? props.GetPropertyOrDefault(group_name, property_name,
+                                                 *default_value)
+                    : props.GetProperty<ValueType>(group_name, property_name);
     ValidateValue(value, full_property_name);
     return value;
   }
@@ -255,14 +249,12 @@ class Validator {
  private:
   const char* shape_name_{};
   const char* compliance_{};
-  std::optional<ValueType> default_value_;
 };
 
 // Validator that extracts *strictly positive doubles*.
 class PositiveDouble : public Validator<double> {
  public:
-  PositiveDouble(const char* shape_name, const char* compliance)
-      : Validator<double>(shape_name, compliance) {}
+  using Validator<double>::Validator;
 
  protected:
   void ValidateValue(const double& value,
@@ -279,8 +271,7 @@ class PositiveDouble : public Validator<double> {
 // In case of missing property, a value of zero is returned.
 class NonNegativeDouble : public Validator<double> {
  public:
-  NonNegativeDouble(const char* shape_name, const char* compliance)
-      : Validator<double>(shape_name, compliance, 0.0) {}
+  using Validator<double>::Validator;
 
  protected:
   void ValidateValue(const double& value,
@@ -381,12 +372,14 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
-  PositiveDouble validator("Sphere", "soft");
-  const double margin =
-      NonNegativeDouble("Sphere", "soft").Extract(props, kHydroGroup, kMargin);
+  const double margin = NonNegativeDouble("Sphere", "soft")
+                            .Extract(props, kHydroGroup, kMargin, 0.0);
   const Sphere inflated_sphere(sphere.radius() + margin);
+
+  PositiveDouble positive_validator("Sphere", "soft");
   // First, create the mesh.
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  const double edge_length =
+      positive_validator.Extract(props, kHydroGroup, kRezHint);
   // If nothing is said, let's go for the *cheap* tessellation strategy.
   const TessellationStrategy strategy =
       props.GetPropertyOrDefault(kHydroGroup, "tessellation_strategy",
@@ -395,7 +388,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeSphereVolumeMesh<double>(inflated_sphere, edge_length, strategy));
 
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      positive_validator.Extract(props, kHydroGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeSpherePressureField(inflated_sphere, inflated_mesh.get(),
@@ -406,9 +399,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props) {
-  PositiveDouble validator("Box", "soft");
-  const double margin =
-      NonNegativeDouble("Box", "soft").Extract(props, kHydroGroup, kMargin);
+  const double margin = NonNegativeDouble("Box", "soft")
+                            .Extract(props, kHydroGroup, kMargin, 0.0);
 
   // Define the shape of the "inflated" hydroelastic geometry to include the
   // margin. We inflate all faces of the box a distance "margin" along the
@@ -420,7 +412,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeBoxVolumeMeshWithMa<double>(inflated_box));
 
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      PositiveDouble("Box", "soft").Extract(props, kHydroGroup, kElastic);
 
   auto pressure =
       make_unique<VolumeMeshFieldLinear<double, double>>(MakeBoxPressureField(
@@ -431,18 +423,19 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props) {
-  PositiveDouble validator("Cylinder", "soft");
   const double margin = NonNegativeDouble("Cylinder", "soft")
-                            .Extract(props, kHydroGroup, kMargin);
+                            .Extract(props, kHydroGroup, kMargin, 0.0);
   const Cylinder inflated_cylinder(cylinder.radius() + margin,
                                    cylinder.length() + 2.0 * margin);
 
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  PositiveDouble positive_validator("Cylinder", "soft");
+  const double edge_length =
+      positive_validator.Extract(props, kHydroGroup, kRezHint);
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
       MakeCylinderVolumeMeshWithMa<double>(inflated_cylinder, edge_length));
 
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      positive_validator.Extract(props, kHydroGroup, kElastic);
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeCylinderPressureField(inflated_cylinder, inflated_mesh.get(),
                                 hydroelastic_modulus, margin));
@@ -452,17 +445,18 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Capsule& capsule, const ProximityProperties& props) {
-  const double margin =
-      NonNegativeDouble("Capsule", "soft").Extract(props, kHydroGroup, kMargin);
+  const double margin = NonNegativeDouble("Capsule", "soft")
+                            .Extract(props, kHydroGroup, kMargin, 0.0);
   const Capsule inflated_capsule(capsule.radius() + margin, capsule.length());
 
+  PositiveDouble positive_validator("Capsule", "soft");
   const double edge_length =
-      PositiveDouble("Capsule", "soft").Extract(props, kHydroGroup, kRezHint);
+      positive_validator.Extract(props, kHydroGroup, kRezHint);
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
       MakeCapsuleVolumeMesh<double>(inflated_capsule, edge_length));
 
   const double hydroelastic_modulus =
-      PositiveDouble("Capsule", "soft").Extract(props, kHydroGroup, kElastic);
+      positive_validator.Extract(props, kHydroGroup, kElastic);
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeCapsulePressureField(inflated_capsule, inflated_mesh.get(),
                                hydroelastic_modulus, margin));
@@ -472,15 +466,16 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props) {
-  PositiveDouble validator("Ellipsoid", "soft");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   // If nothing is said, let's go for the *cheap* tessellation strategy.
   const TessellationStrategy strategy =
       props.GetPropertyOrDefault(kHydroGroup, "tessellation_strategy",
                                  TessellationStrategy::kSingleInteriorVertex);
 
   const double margin = NonNegativeDouble("Ellipsoid", "soft")
-                            .Extract(props, kHydroGroup, kMargin);
+                            .Extract(props, kHydroGroup, kMargin, 0.0);
+  PositiveDouble positive_validator("Ellipsoid", "soft");
+  const double edge_length =
+      positive_validator.Extract(props, kHydroGroup, kRezHint);
   const Ellipsoid inflated_ellipsoid(
       ellipsoid.a() + margin, ellipsoid.b() + margin, ellipsoid.c() + margin);
   auto inflated_mesh =
@@ -488,7 +483,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
           inflated_ellipsoid, edge_length, strategy));
 
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      positive_validator.Extract(props, kHydroGroup, kElastic);
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeEllipsoidPressureField(inflated_ellipsoid, inflated_mesh.get(),
                                  hydroelastic_modulus, margin));
@@ -498,24 +493,24 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const HalfSpace&, const ProximityProperties& props) {
-  PositiveDouble validator("HalfSpace", "soft");
+  PositiveDouble positive_validator("HalfSpace", "soft");
 
   const double thickness =
-      validator.Extract(props, kHydroGroup, kSlabThickness);
+      positive_validator.Extract(props, kHydroGroup, kSlabThickness);
 
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      positive_validator.Extract(props, kHydroGroup, kElastic);
 
   const double margin = NonNegativeDouble("HalfSpace", "soft")
-                            .Extract(props, kHydroGroup, kMargin);
+                            .Extract(props, kHydroGroup, kMargin, 0.0);
 
   return SoftGeometry(SoftHalfSpace{hydroelastic_modulus / thickness, margin});
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Convex& convex_spec, const ProximityProperties& props) {
-  const double margin =
-      NonNegativeDouble("Convex", "soft").Extract(props, kHydroGroup, kMargin);
+  const double margin = NonNegativeDouble("Convex", "soft")
+                            .Extract(props, kHydroGroup, kMargin, 0.0);
   // For zero margin, use the pre-computed convex hull for the shape.
   const TriangleSurfaceMesh<double> inflated_surface_mesh =
       MakeTriangleFromPolygonMesh(
@@ -537,18 +532,16 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Mesh& mesh_spec, const ProximityProperties& props) {
-  PositiveDouble validator("Mesh", "soft");
-
   const double hydroelastic_modulus =
-      validator.Extract(props, kHydroGroup, kElastic);
+      PositiveDouble("Mesh", "soft").Extract(props, kHydroGroup, kElastic);
 
   std::unique_ptr<VolumeMesh<double>> mesh;
   std::unique_ptr<VolumeMesh<double>> inflated_mesh;
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> inflated_field;
   std::map<int, int> split_vertices_map;
 
-  const double margin =
-      NonNegativeDouble("Mesh", "soft").Extract(props, kHydroGroup, kMargin);
+  const double margin = NonNegativeDouble("Mesh", "soft")
+                            .Extract(props, kHydroGroup, kMargin, 0.0);
 
   if (mesh_spec.extension() == ".vtk") {
     // If they've explicitly provided a .vtk file, we'll treat it as it is a
@@ -564,15 +557,16 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   inflated_mesh = make_unique<VolumeMesh<double>>(
       MakeInflatedMesh(*mesh, margin, &split_vertices_map));
 
-  // N.B. We use the original "non-inflated" mesh to compute the pressure field.
-  // The inflated mesh might have overlapping (negative) tets and the distance
-  // algorithms might fail. We then use the mapping provided by
-  // MakeInflatedMesh() to make field values on the inflated mesh. Unless
-  // vertices are duplicated, there is a simple one-to-one correspondence
-  // between the original and inflated vertices. If a vertex is duplicated, we
-  // also duplicate its pressure value.
+  // N.B. The inflated mesh might have different topology than the original
+  // mesh. This makes calling MakeVolumeMeshPressureField() on the inflated mesh
+  // problematic. Instead, we use the original "non-inflated" mesh to compute
+  // a pressure field with the given margin value and apply that to the inflated
+  // mesh. If no vertices are duplicated, the mapping between the two meshes
+  // is a simple one-to-one correspondence. For duplicate vertices, we use the
+  // mapping provided by MakeInflatedMesh() assign the same pressure values to
+  // duplicated vertices as assigned to the original.
 
-  // Pressure field computed using the original mesh.
+  // Pressure field computed using the original mesh but with margin.
   VolumeMeshFieldLinear<double, double> field =
       MakeVolumeMeshPressureField(mesh.get(), hydroelastic_modulus, margin);
 
@@ -588,7 +582,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     inflated_values[v_split] = values[v_original];
   }
 
-  // Replace mesh with one that only has positive tetrahedra volumes.
+  // Replace mesh with one that only has positive tetrahedra volumes. This
+  // doesn't change the vertex count.
   inflated_mesh =
       make_unique<VolumeMesh<double>>(RemoveNegativeVolumes(*inflated_mesh));
 
