@@ -4297,7 +4297,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see CalcJacobianSpatialVelocity() for details on J𝑠_V_AB.
   ///@{
 
-  /// Computes the bias term `C(q,v)v` containing Coriolis, centripetal, and
+  /// Computes the bias term `C(q, v) v` containing Coriolis, centripetal, and
   /// gyroscopic effects in the multibody equations of motion: <pre>
   ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
   /// </pre>
