@@ -141,7 +141,7 @@ GTEST_TEST(MakeInflatedMesh, SingleInfeasibleVertex) {
   for (int i = mesh.num_vertices();
        i < mesh.num_vertices() + num_adjacent_elements - 1; ++i) {
     EXPECT_TRUE(split_vertex_to_original.contains(i));
-    EXPECT_EQ(split_vertex_to_original[i], infeasible_vertex_index);
+    EXPECT_EQ(split_vertex_to_original.at(i), infeasible_vertex_index);
   }
 
   std::vector<double> inflated_volumes = CalcCellVolumes(inflated_mesh);

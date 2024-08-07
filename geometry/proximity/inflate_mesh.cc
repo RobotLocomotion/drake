@@ -196,8 +196,7 @@ void ProcessUnfeasibleVertex(const VolumeMesh<double>& mesh,
     /* Duplicate the vertex value. */
     const int dupe_volume_index = ssize(*vertices);
     surface_to_volume_vertices->push_back(dupe_volume_index);
-    split_vertex_to_original->insert(
-        std::make_pair(ssize(*vertices), volume_vertex));
+    split_vertex_to_original->emplace(dupe_volume_index, volume_vertex);
     vertices->push_back(p);
     u->push_back(CalculateDisplacement(mesh_surface, face_group, margin));
 
@@ -215,7 +214,7 @@ VolumeMesh<double> MakeInflatedMesh(
     const VolumeMesh<double>& mesh, double margin,
     std::map<int, int>* split_vertex_to_original) {
   DRAKE_THROW_UNLESS(margin >= 0);
-  DRAKE_DEMAND(split_vertex_to_original != nullptr);
+  DRAKE_THROW_UNLESS(split_vertex_to_original != nullptr);
 
   // Surface mesh and map to volume vertices.
   std::vector<int> surface_to_volume_vertices;
