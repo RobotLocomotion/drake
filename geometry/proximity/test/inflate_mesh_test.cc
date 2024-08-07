@@ -115,11 +115,11 @@ GTEST_TEST(MakeInflatedMesh, SingleInfeasibleVertex) {
       "drake/geometry/test/inflation_infeasible_vertex.vtk";
   const VolumeMesh<double> mesh =
       MakeVolumeMeshFromVtk<double>(Mesh(FindResourceOrThrow(model)));
-  // The infeasible vertex is adjacent to 9 faces and 9 elements. The vertex
-  // will split into a vertex for each adjacent element, resulting in 8 new
+  // The infeasible vertex is adjacent to 9 faces and 8 elements. The vertex
+  // will split into a vertex for each adjacent element, resulting in 7 new
   // vertices
   const VolumeMesh<double> inflated_mesh = MakeInflatedMesh(mesh, kMargin);
-  EXPECT_EQ(inflated_mesh.num_vertices(), 8 + mesh.num_vertices());
+  EXPECT_EQ(inflated_mesh.num_vertices(), 7 + mesh.num_vertices());
 
   std::vector<double> inflated_volumes = CalcCellVolumes(inflated_mesh);
   double min_vol = std::numeric_limits<double>::max();
