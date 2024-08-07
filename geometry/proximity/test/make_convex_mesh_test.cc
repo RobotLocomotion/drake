@@ -5,6 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -16,31 +17,33 @@ namespace internal {
 namespace {
 
 // Fixture to create a compliant mesh type from a simple cube mesh obj file
-// and a more complicated general convex mesh obj.
+// and a more complicated non-convex mesh (only for using as Convex shape).
 class MakeConvexMeshTest : public ::testing::Test {
  public:
   void SetUp() override {
     std::string cube_file =
         FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-    std::string convex_file =
-        FindResourceOrThrow("drake/geometry/test/convex.obj");
+    std::string hole_cube_file =
+        FindResourceOrThrow("drake/geometry/test/cube_with_hole.obj");
 
+    const Mesh cube_spec(cube_file);
     cube_tri_mesh_ = std::make_unique<TriangleSurfaceMesh<double>>(
-        ReadObjToTriangleSurfaceMesh(cube_file));
-    convex_tri_mesh_ = std::make_unique<TriangleSurfaceMesh<double>>(
-        ReadObjToTriangleSurfaceMesh(convex_file));
+        internal::MakeTriangleFromPolygonMesh(cube_spec.GetConvexHull()));
+    const Mesh hole_cube_spec(hole_cube_file);
+    hole_tri_mesh_ = std::make_unique<TriangleSurfaceMesh<double>>(
+        internal::MakeTriangleFromPolygonMesh(hole_cube_spec.GetConvexHull()));
 
-    cube_mesh_ = std::make_unique<VolumeMesh<double>>(
+    cube_tet_mesh_ = std::make_unique<VolumeMesh<double>>(
         MakeConvexVolumeMesh<double>(Convex(cube_file)));
-    convex_mesh_ = std::make_unique<VolumeMesh<double>>(
-        MakeConvexVolumeMesh<double>(Convex(convex_file)));
+    hole_cube_tet_mesh_ = std::make_unique<VolumeMesh<double>>(
+        MakeConvexVolumeMesh<double>(Convex(hole_cube_file)));
   }
 
  protected:
   std::unique_ptr<TriangleSurfaceMesh<double>> cube_tri_mesh_;
-  std::unique_ptr<TriangleSurfaceMesh<double>> convex_tri_mesh_;
-  std::unique_ptr<VolumeMesh<double>> cube_mesh_;
-  std::unique_ptr<VolumeMesh<double>> convex_mesh_;
+  std::unique_ptr<TriangleSurfaceMesh<double>> hole_tri_mesh_;
+  std::unique_ptr<VolumeMesh<double>> cube_tet_mesh_;
+  std::unique_ptr<VolumeMesh<double>> hole_cube_tet_mesh_;
 };
 
 // Tests that two triangle surface meshes are "equal" in the sense that their
@@ -166,19 +169,25 @@ void TestCoherentVertices(const TriangleSurfaceMesh<double>& tri_mesh,
   }
 }
 
-TEST_F(MakeConvexMeshTest, CoherhentVertices) {
-  TestCoherentVertices(*cube_tri_mesh_, *cube_mesh_);
-  TestCoherentVertices(*convex_tri_mesh_, *convex_mesh_);
+TEST_F(MakeConvexMeshTest, CoherentVertices) {
+  TestCoherentVertices(*cube_tri_mesh_, *cube_tet_mesh_);
+  TestCoherentVertices(*hole_tri_mesh_, *hole_cube_tet_mesh_);
 }
 
 TEST_F(MakeConvexMeshTest, SurfaceMeshEqualInput) {
-  const TriangleSurfaceMesh<double> converted_cube_tri_mesh =
-      ConvertVolumeToSurfaceMesh(*cube_mesh_);
-  TestSurfaceMeshEquality(*cube_tri_mesh_, converted_cube_tri_mesh);
+  {
+    SCOPED_TRACE("Cube mesh");
+    const TriangleSurfaceMesh<double> converted_cube_tri_mesh =
+        ConvertVolumeToSurfaceMesh(*cube_tet_mesh_);
+    TestSurfaceMeshEquality(*cube_tri_mesh_, converted_cube_tri_mesh);
+  }
 
-  const TriangleSurfaceMesh<double> converted_convex_tri_mesh =
-      ConvertVolumeToSurfaceMesh(*convex_mesh_);
-  TestSurfaceMeshEquality(*convex_tri_mesh_, converted_convex_tri_mesh);
+  {
+    SCOPED_TRACE("Hole cube mesh");
+    const TriangleSurfaceMesh<double> converted_convex_tri_mesh =
+        ConvertVolumeToSurfaceMesh(*hole_cube_tet_mesh_);
+    TestSurfaceMeshEquality(*hole_tri_mesh_, converted_convex_tri_mesh);
+  }
 }
 
 }  // namespace

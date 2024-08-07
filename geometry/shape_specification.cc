@@ -13,6 +13,7 @@
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
@@ -286,18 +287,12 @@ void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {
 
 namespace {
 
-template <class MeshType>
-double CalcMeshVolumeFromFile(const MeshType& mesh) {
-  std::string extension = std::filesystem::path(mesh.filename()).extension();
-  std::transform(extension.begin(), extension.end(), extension.begin(),
-                 [](unsigned char c) {
-                   return std::tolower(c);
-                 });
+double CalcMeshVolume(const Mesh& mesh) {
   // TODO(russt): Support .vtk files.
-  if (extension != ".obj") {
+  if (mesh.extension() != ".obj") {
     throw std::runtime_error(fmt::format(
         "CalcVolume currently only supports .obj files for mesh geometries; "
-        "but the volume of {} was requested.",
+        "but the volume of '{}' was requested.",
         mesh.filename()));
   }
   TriangleSurfaceMesh<double> surface_mesh =
@@ -316,8 +311,9 @@ double CalcVolume(const Shape& shape) {
         return M_PI * std::pow(capsule.radius(), 2) * capsule.length() +
                4.0 / 3.0 * M_PI * std::pow(capsule.radius(), 3);
       },
-      [](const Convex& mesh) {
-        return CalcMeshVolumeFromFile(mesh);
+      [](const Convex& convex) {
+        return internal::CalcEnclosedVolume(
+            internal::MakeTriangleFromPolygonMesh(convex.GetConvexHull()));
       },
       [](const Cylinder& cylinder) {
         return M_PI * std::pow(cylinder.radius(), 2) * cylinder.length();
@@ -329,7 +325,7 @@ double CalcVolume(const Shape& shape) {
         return std::numeric_limits<double>::infinity();
       },
       [](const Mesh& mesh) {
-        return CalcMeshVolumeFromFile(mesh);
+        return CalcMeshVolume(mesh);
       },
       [](const MeshcatCone& cone) {
         return 1.0 / 3.0 * M_PI * cone.a() * cone.b() * cone.height();
