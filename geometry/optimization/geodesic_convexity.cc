@@ -288,21 +288,17 @@ std::vector<Hyperrectangle> BoundingBoxesForListOfSetsSomeDimensions(
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
-  // TODO(cohnt): Add an optional argument to take in bounding boxes for all of
-  // the sets, so they can be reused across multiple calls to this function.
   DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
   const int dimension = convex_sets_A[0]->ambient_dimension();
   internal::ThrowsForInvalidContinuousJointsList(dimension,
                                                  continuous_revolute_joints);
 
-  std::vector<std::tuple<int, int, Eigen::VectorXd>> edges;
-
   // Bounding boxes along all dimensions (including joints which are not
   // continuous revolute). If preprocess_bbox is true, all lower and upper
   // limits will be computed and stored. Otherwise, only the entries
   // corresponding to continuous revolute joints will be populated, and all
-  // lower and upper bounds will be set to zero (and left unused). If
+  // lower and upper bounds will be set to zero. If
   // convex_sets_B == convex_sets_A, then we do not populate bboxes_B, and
   // instead point to the corresponding element in bboxes_A.
   std::vector<Hyperrectangle> bboxes_A, bboxes_B;
@@ -331,6 +327,40 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     }
   }
 
+  return CalcPairwiseIntersections(
+      convex_sets_A, convex_sets_B, continuous_revolute_joints, bboxes_A,
+      convex_sets_A_and_B_are_identical ? bboxes_A : bboxes_B);
+}
+
+std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
+    const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
+    const std::vector<int>& continuous_revolute_joints,
+    const std::vector<Hyperrectangle>& bboxes_A,
+    const std::vector<Hyperrectangle>& bboxes_B) {
+  DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
+  DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
+  DRAKE_THROW_UNLESS(convex_sets_A.size() == bboxes_A.size());
+  DRAKE_THROW_UNLESS(convex_sets_B.size() == bboxes_B.size());
+  const int dimension = convex_sets_A[0]->ambient_dimension();
+  internal::ThrowsForInvalidContinuousJointsList(dimension,
+                                                 continuous_revolute_joints);
+
+  bool convex_sets_A_and_B_are_identical = convex_sets_A == convex_sets_B;
+
+  // Ensure all set ambient dimensions match.
+  for (int i = 0; i < ssize(convex_sets_A); ++i) {
+    DRAKE_THROW_UNLESS(convex_sets_A[i]->ambient_dimension() ==
+                       bboxes_A[i].ambient_dimension());
+  }
+  if (!convex_sets_A_and_B_are_identical) {
+    for (int i = 0; i < ssize(convex_sets_B); ++i) {
+      DRAKE_THROW_UNLESS(convex_sets_B[i]->ambient_dimension() ==
+                         bboxes_B[i].ambient_dimension());
+    }
+  }
+
+  std::vector<std::tuple<int, int, Eigen::VectorXd>> edges;
+
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     for (int j = 0; j < ssize(convex_sets_B); ++j) {
@@ -340,12 +370,12 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
         // were flipped, and that set has already been added.
         continue;
       }
-      const auto& bbox_A = bboxes_A.at(i);
+      const auto& bbox_A = bboxes_A[i];
       // If convex_sets_A == convex_sets_B, then
       // region_minimum_and_maximum_values_B is empty, so we instead get the
       // bbox value from region_minimum_and_maximum_values_A.
       const auto& bbox_B =
-          convex_sets_A_and_B_are_identical ? bboxes_A.at(j) : bboxes_B.at(j);
+          convex_sets_A_and_B_are_identical ? bboxes_A[j] : bboxes_B[j];
 
       offset.setZero();
 
@@ -381,19 +411,21 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
       }
 
       // Now that we know the offset that is for each dimension, we actually
-      // check if the sets intersect. First, if preprocess_bbox is true, we
-      // perform the cheap axis-aligned bounding box intersection check,
-      // possibly confirming the sets are disjoint and skipping the rest of the
-      // steps for this iteration. Then, we run the actual intersection program
-      // to check if the sets intersect.
-      if (preprocess_bbox &&
-          !HyperrectangleOffsetIntersection(bbox_A, bbox_B, offset)) {
+      // check if the sets intersect. First, we perform the cheap axis-aligned
+      // bounding box intersection check, possibly confirming the sets are
+      // disjoint and skipping the rest of the steps for this iteration. Then,
+      // we run the actual intersection program to check if the sets intersect.
+
+      // Note: if the user called the variant of this method which doesn't take
+      // in bounding boxes and set the preprocess_bbox argument to false, then
+      // the bounding box upper and lower limits will be set identically to zero
+      // (except those which are computed for continuous revolute joints, as
+      // required for that machinery). Thus, this check will trivially pass,
+      // unless the values computed for continuous revolute joints happen to
+      // confirm the sets don't intersect.
+      if (!HyperrectangleOffsetIntersection(bbox_A, bbox_B, offset)) {
         continue;
       }
-      // TODO(cohnt) we should still be able to confirm some sets don't overlap
-      // when preprocess_bbox is false, since we have to compute the upper and
-      // lower limits along dimensions corresponding to continuous revolute
-      // joints.
 
       MathematicalProgram prog;
       VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
@@ -426,10 +458,16 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
-  // TODO(cohnt): Add an optional argument to take in bounding boxes for all of
-  // the sets, so they can be reused across multiple calls to this function.
   return CalcPairwiseIntersections(convex_sets, convex_sets,
                                    continuous_revolute_joints, preprocess_bbox);
+}
+
+std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
+    const ConvexSets& convex_sets,
+    const std::vector<int>& continuous_revolute_joints,
+    const std::vector<Hyperrectangle>& bboxes) {
+  return CalcPairwiseIntersections(convex_sets, convex_sets,
+                                   continuous_revolute_joints, bboxes, bboxes);
 }
 
 }  // namespace optimization

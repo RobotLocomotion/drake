@@ -290,6 +290,37 @@ GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersectionsAPI) {
                std::exception);
   EXPECT_THROW(CalcPairwiseIntersections({}, sets, std::vector<int>{}),
                std::exception);
+
+  // The AABBs must be the right size.
+  Hyperrectangle bbox(Vector1d(1), Vector1d(1));
+  std::vector<Hyperrectangle> bad_bboxes;
+  bad_bboxes.push_back(bbox);
+  bad_bboxes.push_back(bbox);
+  std::vector<Hyperrectangle> good_bboxes;
+  good_bboxes.push_back(bbox);
+  EXPECT_THROW(CalcPairwiseIntersections(sets, std::vector<int>{}, bad_bboxes),
+               std::exception);
+  EXPECT_THROW(CalcPairwiseIntersections(sets, sets, std::vector<int>{},
+                                         bad_bboxes, good_bboxes),
+               std::exception);
+  EXPECT_THROW(CalcPairwiseIntersections(sets, sets, std::vector<int>{},
+                                         good_bboxes, bad_bboxes),
+               std::exception);
+
+  // The ambient dimensions must line up correctly.
+  Hyperrectangle wrong_dim_bbox_1(Eigen::Vector2d(0, 0), Eigen::Vector2d(1, 1));
+  Hyperrectangle wrong_dim_bbox_2(Eigen::Vector2d(2, 2), Eigen::Vector2d(3, 3));
+  std::vector<Hyperrectangle> wrong_dim_bboxes_1;
+  wrong_dim_bboxes_1.push_back(wrong_dim_bbox_1);
+  std::vector<Hyperrectangle> wrong_dim_bboxes_2;
+  wrong_dim_bboxes_2.push_back(wrong_dim_bbox_2);
+  // If all bounding boxes agreed on dimension, but did not match the convex
+  // sets, no intersection checks would be performed. This checks that an
+  // error should still be thrown.
+  EXPECT_THROW(
+      CalcPairwiseIntersections(sets, sets, std::vector<int>{},
+                                wrong_dim_bboxes_1, wrong_dim_bboxes_2),
+      std::exception);
 }
 
 GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections1) {
@@ -320,6 +351,40 @@ GTEST_TEST(GeodesicConvexityTest, CalcPairwiseIntersections1) {
   const auto intersection_edges =
       CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1});
   EXPECT_EQ(intersection_edges.size(), 4);
+
+  // All results should be the same if the bounding boxes are provided.
+  std::vector<Hyperrectangle> bboxes_A = {h1, h2};
+  std::vector<Hyperrectangle> bboxes_B = {h3, h4};
+  EXPECT_EQ(CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{},
+                                      bboxes_A, bboxes_B)
+                .size(),
+            0);
+  EXPECT_EQ(CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0},
+                                      bboxes_A, bboxes_B)
+                .size(),
+            1);
+  EXPECT_EQ(CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{1},
+                                      bboxes_A, bboxes_B)
+                .size(),
+            0);
+  const auto other_intersection_edges = CalcPairwiseIntersections(
+      sets_A, sets_B, std::vector<int>{0, 1}, bboxes_A, bboxes_B);
+  ASSERT_EQ(other_intersection_edges.size(), 4);
+  // We use assert because we need the lengths of intersection_edges and
+  // other_intersection_edges to be the same for this next check.
+  for (int i = 0; i < ssize(intersection_edges); ++i) {
+    // Check that each entry is the same. The first two elements of the tuple
+    // are integers, so we can compare directly. The last entry is an
+    // Eigen::VectorXd, so we have to use CompareMatrices.
+    EXPECT_EQ(std::get<0>(intersection_edges[i]),
+              std::get<0>(other_intersection_edges[i]));
+    EXPECT_EQ(std::get<1>(intersection_edges[i]),
+              std::get<1>(other_intersection_edges[i]));
+    EXPECT_TRUE(CompareMatrices(std::get<2>(intersection_edges[i]),
+                                std::get<2>(other_intersection_edges[i]),
+                                1e-15));
+  }
+
   for (const auto& [index_a, index_b, offset] : intersection_edges) {
     // Verify all centers are integer multiples of 2π apart.
     const auto offset_mod_2π = offset.array() / (2 * M_PI);
