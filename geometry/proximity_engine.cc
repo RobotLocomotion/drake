@@ -221,39 +221,35 @@ bool OrderSignedDistanceToPoint(const SignedDistanceToPoint<T>& p1,
   return p1.id_G < p2.id_G;
 }
 
-// Sort the vector of `maybes` (std::optional or various pointer types will
-// work), then move the sorted objects to `objects`, ignoring any nullish
-// entries.  Type X must provide a bool conversion operator, and a dereference
-// operator. Type R must provide a comparison free function:
-//    bool Order(const R&, const R&)
-template <typename X, typename R = typename X::value_type>
-void SortCullFlatten(
-    std::vector<X>* maybes,
-    std::vector<R>* objects) {
-  std::sort(maybes->begin(), maybes->end(),
-            [](const X& a, const X& b) {
-              if (!a) {
-                // Note this case forces nulls to the end of the sequence.
-                return false;
-              }
-              if (!b) {
-                // Note this case forces nulls to the end of the sequence.
-                return true;
-              }
-              return Order(*a, *b);
-            });
-
-  // While flattening, filter out any nullish results.
-  objects->reserve(maybes->size());
-  for (const auto& maybe : *maybes) {
-    if (!maybe) {
-      // Thanks to comparison trick above, we can quit on first null.
-      break;
-    }
-    objects->push_back(std::move(*maybe));
-  }
+// @returns true iff `vector` is sorted, by a free function called `Order()`.
+template <typename V>
+bool IsSortedByOrder(V vector) {
+  return std::is_sorted(vector.begin(), vector.end(),
+                        [](const auto& a, const auto& b) {
+                          return Order(a, b);
+                        });
 }
 
+// Finds the dereferenced type of a type that can do dereference: pointers,
+// smart pointers, std::optional, etc.
+template <typename X>
+struct dereferenced {
+  using type = typename std::remove_cvref<decltype(*std::declval<X&>())>::type;
+};
+
+// For a vector of `maybes` (std::optional or various pointer types will work),
+// moves the dereferenced objects to `objects`, ignoring any nullish
+// entries. The order of the moved entries is preserved.  Type X must provide a
+// bool conversion operator, and a dereference operator.
+template <typename X, typename R = dereferenced<X>::type>
+void CullFlatten(std::vector<X>* maybes, std::vector<R>* objects) {
+  objects->reserve(maybes->size());
+  for (auto& maybe : *maybes) {
+    if (maybe) {
+      objects->push_back(std::move(*maybe));
+    }
+  }
+}
 
 }  // namespace
 
@@ -731,8 +727,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         surface_ptrs[k] = std::move(surface);
       }
     }
-    SortCullFlatten<std::unique_ptr<ContactSurface<T>>>(&surface_ptrs,
-                                                        &surfaces);
+    CullFlatten(&surface_ptrs, &surfaces);
+    DRAKE_ASSERT(IsSortedByOrder(surfaces));
     return surfaces;
   }
 
@@ -773,10 +769,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         surface_ptrs[k] = std::move(surface);
       }
     }
-    SortCullFlatten<std::unique_ptr<ContactSurface<T>>>(&surface_ptrs,
-                                                        surfaces);
-    SortCullFlatten<std::optional<PenetrationAsPointPair<T>>>(
-        &point_pair_maybes, point_pairs);
+    CullFlatten(&surface_ptrs, surfaces);
+    DRAKE_ASSERT(IsSortedByOrder(*surfaces));
+    CullFlatten(&point_pair_maybes, point_pairs);
+    DRAKE_ASSERT(IsSortedByOrder(*point_pairs));
   }
 
   void ComputeDeformableContact(
