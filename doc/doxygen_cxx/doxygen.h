@@ -66,6 +66,7 @@ only updated nightly.</p>
  @{
    @defgroup compliant_contact Modeling Compliant Contact
    @defgroup friction_model Modeling of Dry Friction
+   @defgroup hydro_margin Margin for Hydroelastic Contact
  @}
 
  @addtogroup multibody_solvers
