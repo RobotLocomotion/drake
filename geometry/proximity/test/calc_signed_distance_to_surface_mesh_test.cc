@@ -16,7 +16,7 @@ using std::vector;
 
 // This is a simple example that we can use the edge normal for inside-outside
 // test but not an arbitrary face normal.
-GTEST_TEST(VertexEdgeNormalTest, EdgeNormalSuccess_SomeFaceNormalFail) {
+GTEST_TEST(FeatureNormalSet, EdgeNormalSuccess_SomeFaceNormalFail) {
   // A triangular prism
   //
   //              Mz
@@ -26,7 +26,7 @@ GTEST_TEST(VertexEdgeNormalTest, EdgeNormalSuccess_SomeFaceNormalFail) {
   //            / ┆     ＼ v1
   //           /  ●┄┄┄┄┄┄┄●┄┄┄ My
   //       v2 ●  ╱       /
-  //          ┆ / ＼    / Q
+  //          ┆ / ＼    /      Q
   //          ┆╱    ＼ /
   //       v3 ●┄┄┄┄┄┄┄● v0
   //         /    ↓ face normal of triangle v0v3v1
@@ -42,14 +42,17 @@ GTEST_TEST(VertexEdgeNormalTest, EdgeNormalSuccess_SomeFaceNormalFail) {
       {Vector3d(2, 1, 0), Vector3d::UnitY(), Vector3d(2, 0, 1),
        Vector3d(2, 0, 0)}};
   const FeatureNormalSet dut(mesh_M);
-  // The query point Q is outside the prism, near the middle of edge v0v1, and
-  // slightly above the X-Y plane of frame M of the mesh.
-  const Vector3d p_MQ(1, 1.01, 0.01);
-  // The closest point N is on the edge v0v1.
+  // The query point Q is well outside the prism. Its nearest point is at the
+  // middle of edge v0v1. Q is slightly above the X-Y plane of the mesh's
+  // frame M, so the face normal of v0v3v1 will give the incorrect
+  // inside-outside test, while the edge normal of v0v1 (and also the face
+  // normal of v0v1v2) will give the correct inside-outside test.
+  const Vector3d p_MQ(1, 2, 0.1);
+  // The closest point N is at the middle of the edge v0v1.
   const Vector3d p_MN(1, 1, 0);
-  // The edge normal correctly classifies the query point Q as being outside
-  // (positive dot product).
-  EXPECT_GT(dut.edge_normal({0, 1}).dot(p_MQ - p_MN), 0);
+  // The edge normal correctly classifies the query point Q as being outside.
+  // The dot product is well positive.
+  EXPECT_GT(dut.edge_normal({0, 1}).dot(p_MQ - p_MN), 0.8);
   // The face normal of triangle v0v1v2 can classify correctly, but the face
   // normal of triangle v0v3v1 cannot. These checks illustrate the need for
   // FeatureNormalSet.
@@ -59,7 +62,7 @@ GTEST_TEST(VertexEdgeNormalTest, EdgeNormalSuccess_SomeFaceNormalFail) {
 
 // This is a simple example that we can use the vertex normal for
 // inside-outside test but not an arbitrary face normal.
-GTEST_TEST(VertexEdgeNormalTest, VertexNormalSucess_SomeFaceNormalFail) {
+GTEST_TEST(FeatureNormalSet, VertexNormalSucess_SomeFaceNormalFail) {
   // A triangular prism
   //
   //                           Mz
@@ -103,170 +106,189 @@ GTEST_TEST(VertexEdgeNormalTest, VertexNormalSucess_SomeFaceNormalFail) {
   EXPECT_GT(mesh_M.face_normal(2).dot(p_MQ - p_MN), 0);
 }
 
-GTEST_TEST(VertexEdgeNormalTest, EdgeNormalIsAverageFaceNormal) {
-  // A tetrahedron
-  //
-  //              Mz
-  //              ┆   ╱
-  //           v3 ●  ╱
-  //              ┆ ╱
-  //           v0 ┆╱    v2
-  //     ┄┄┄┄┄┄┄┄┄●┄┄┄┄┄┄┄●┄┄┄ My
-  //             ╱┆
-  //            ╱ ┆
-  //        v1 ●  ┆
-  //         ╱    ┆
-  //        Mx
-  //
-  // For the purpose of this test, we create only the two triangles sharing
-  // the edge v1v2 of the tetrahedron. The face windings of the triangles
-  // give outward normals with respect to the tetrahedron.
-  const TriangleSurfaceMesh<double> mesh_M{
-      {SurfaceTriangle{0, 2, 1}, SurfaceTriangle{1, 2, 3}},
-      {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
-       Vector3d::UnitZ()}};
-  FeatureNormalSet dut(mesh_M);
+class FeatureNormalSetTest : public ::testing::Test {
+ public:
+  FeatureNormalSetTest()
+      :  // Surface mesh of a tetrahedron, expressed in the mesh's frame M.
+         //
+         //              Mz
+         //              ┆
+         //           v3 ●
+         //              ┆
+         //              ┆      v2
+         //           v0 ●┄┄┄┄┄┄┄●┄┄┄ My
+         //             ╱
+         //            ╱
+         //        v1 ●
+         //         ╱
+         //        Mx
+         //
+        mesh_M_(
+            // The triangles have outward face winding.
+            {SurfaceTriangle{0, 2, 1}, SurfaceTriangle{0, 1, 3},
+             SurfaceTriangle{0, 3, 2}, SurfaceTriangle{1, 2, 3}},
+            {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
+             Vector3d::UnitZ()}) {}
 
-  const double kEps = std::numeric_limits<double>::epsilon();
-  // Edge v1v2 is shared by the two faces.
+  void SetUp() override {
+    // Sanity check that we define the face normals consistent with the mesh.
+    ASSERT_EQ(kFaceNormalV0V2V1_, mesh_M_.face_normal(0));
+    ASSERT_EQ(kFaceNormalV0V1V3_, mesh_M_.face_normal(1));
+    ASSERT_EQ(kFaceNormalV1V2V3_, mesh_M_.face_normal(3));
+  }
+
+ protected:
+  const TriangleSurfaceMesh<double> mesh_M_;
+  const Vector3d kFaceNormalV0V2V1_{-Vector3d::UnitZ()};
+  const Vector3d kFaceNormalV0V1V3_{-Vector3d::UnitY()};
+  const Vector3d kFaceNormalV1V2V3_{Vector3d(1, 1, 1).normalized()};
+  const double kEps_{std::numeric_limits<double>::epsilon()};
+};
+
+TEST_F(FeatureNormalSetTest, EdgeNormalIsAverageFaceNormal) {
+  const FeatureNormalSet dut(mesh_M_);
+
+  // Edge v1v2 is shared by triangles v0v2v1 and v1v2v3. We expect
+  // edge_normal() of v1v2 to be the equal-weight average of the two face
+  // normals independent of their face areas. (Here the triangle v0v2v1 has
+  // less area than the triangle v1v2v3.)
   const Vector3d kAverageNormalAtEdgeV1V2 =
-      (mesh_M.face_normal(0) + mesh_M.face_normal(1)).normalized();
-  EXPECT_TRUE(
-      CompareMatrices(dut.edge_normal({1, 2}), kAverageNormalAtEdgeV1V2, kEps));
+      (kFaceNormalV0V2V1_ + kFaceNormalV1V2V3_).normalized();
+
+  EXPECT_TRUE(CompareMatrices(dut.edge_normal({1, 2}), kAverageNormalAtEdgeV1V2,
+                              kEps_));
 }
 
-GTEST_TEST(VertexEdgeNormalTest, VertexNormalIsAngleWeightedAverage) {
-  // A tetrahedron
-  //
-  //              Mz
-  //              ┆   ╱
-  //           v3 ●  ╱
-  //              ┆ ╱
-  //           v0 ┆╱    v2
-  //     ┄┄┄┄┄┄┄┄┄●┄┄┄┄┄┄┄●┄┄┄ My
-  //             ╱┆
-  //            ╱ ┆
-  //        v1 ●  ┆
-  //         ╱    ┆
-  //        Mx
-  //
-  // For the purpose of this test, we create only the three triangles sharing
-  // the vertex v1 of the tetrahedron. The face windings of the triangles
-  // give outward normals with respect to the tetrahedron.
-  const TriangleSurfaceMesh<double> mesh_M{
-      {SurfaceTriangle{0, 2, 1}, SurfaceTriangle{0, 1, 3},
-       SurfaceTriangle{1, 2, 3}},
-      {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
-       Vector3d::UnitZ()}};
-  FeatureNormalSet dut(mesh_M);
+TEST_F(FeatureNormalSetTest, VertexNormalIsAngleWeightedAverage) {
+  const FeatureNormalSet dut(mesh_M_);
 
-  const double kEps = std::numeric_limits<double>::epsilon();
-  //   face index   vertices of the triangle    angle at v1 in the triangle
-  //       0        {v0, v2, v1}                π/4
-  //       1        {v0, v1, v3}                π/4
-  //       2        {v1, v2, v3}                π/3
+  // Vertex v1 is shared by triangles v0v2v1, v0v1v3, and v1v2v3. We expect
+  // vertex_normal() of v1 to be the angle-weighted average normal.
+  //
+  //     triangle        angle at v1 in the triangle
+  //   {v0, v2, v1}                π/4
+  //   {v0, v1, v3}                π/4
+  //   {v1, v2, v3}                π/3
   const Vector3d kAngleWeightedNormalAtV1 =
-      (M_PI_4 * mesh_M.face_normal(0) + M_PI_4 * mesh_M.face_normal(1) +
-       M_PI / 3 * mesh_M.face_normal(2))
+      (M_PI_4 * kFaceNormalV0V2V1_ + M_PI_4 * kFaceNormalV0V1V3_ +
+       M_PI / 3 * kFaceNormalV1V2V3_)
           .normalized();
+
   EXPECT_TRUE(
-      CompareMatrices(dut.vertex_normal(1), kAngleWeightedNormalAtV1, kEps));
+      CompareMatrices(dut.vertex_normal(1), kAngleWeightedNormalAtV1, kEps_));
 }
 
-GTEST_TEST(CalcSquaredDistanceToTriangleTest, ClosestToTriangle) {
-  // Triangle ABC
+class CalcSquaredDistanceToTriangleTest : public ::testing::Test {
+ protected:
   //                   My
   //                   ┆
-  //                   ┆              A
-  //                   ┆            🮠│
-  //                   ┆         🮠   │
-  //                   ┆      🮠      │
-  //                   ┆   🮠Q        │
-  //                   B ┄┄┄┄┄┄┄┄┄┄┄┄┄C┄┄┄┄┄┄┄┄ Mx
-  //
-  // The projection of Q is in the triangle.
-  //
-  const Vector3d p_MA(0.1, 0.1, 0);
-  const Vector3d p_MB = Vector3d::Zero();
-  const Vector3d p_MC(0.1, 0, 0);
-  const TriangleSurfaceMesh<double> mesh_M{{SurfaceTriangle{0, 1, 2}},
-                                           {p_MA, p_MB, p_MC}};
-  const Vector3d p_MQ(0.04, 0.01, 15);
-  const SquaredDistanceToTriangle dut =
-      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M);
-  // Expect the closest point N in the triangle.
-  const Vector3d expect_p_MN(0.04, 0.01, 0);
-  const double kEps = std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(dut.squared_distance, (p_MQ - expect_p_MN).squaredNorm(), kEps);
-  EXPECT_TRUE(CompareMatrices(dut.closest_point, expect_p_MN, kEps));
-  EXPECT_EQ(dut.location, SquaredDistanceToTriangle::Location::kTriangle);
-  EXPECT_EQ(dut.v, 0);
-}
-
-GTEST_TEST(CalcSquaredDistanceToTriangleTest, ClosestToEdge) {
-  // Triangle ABC
-  //                   My
-  //                   ┆
-  //                   ┆              A
+  //                   0.1           v0
   //                   ┆            🮠│
   //                   ┆         🮠   │
   //                   ┆      🮠      │
   //                   ┆   🮠         │
-  //                   B ┄┄┄┄┄┄┄┄┄┄┄┄┄C┄┄┄┄┄┄┄┄ Mx
-  //                   ↓       Q      ↓
-  //                   ↓              ↓
+  //                  v1 ┄┄┄┄┄┄┄┄┄┄┄┄0.1┄┄┄┄┄┄┄┄ Mx
+  //                                 v2
+  const TriangleSurfaceMesh<double> mesh_M_{
+      {SurfaceTriangle{0, 1, 2}},
+      {Vector3d(0.1, 0.1, 0), Vector3d::Zero(), Vector3d(0.1, 0, 0)}};
+  const double kEps_{std::numeric_limits<double>::epsilon()};
+};
+
+TEST_F(CalcSquaredDistanceToTriangleTest, Inside) {
+  // The query point Q is 15 meters above the triangle, and its projection
+  // Q' is inside the triangle.
+  //
+  //                   My
+  //                   ┆
+  //                   0.1
+  //                   ┆            🮠│
+  //                   ┆         🮠   │
+  //                   ┆      🮠      │
+  //                   ┆   🮠 Q'      │
+  //                   0 ┄┄┄┄┄┄┄┄┄┄┄┄0.1┄┄┄┄┄┄┄┄ Mx
+  //
+  const Vector3d p_MQ(0.04, 0.02, 15);
+  // Q' is the closest point.
+  const Vector3d kExpectClosestPoint(0.04, 0.02, 0);
+  const double kExpectSquaredDistance =
+      (p_MQ - kExpectClosestPoint).squaredNorm();
+
+  const SquaredDistanceToTriangle dut =
+      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_);
+
+  EXPECT_NEAR(dut.squared_distance, kExpectSquaredDistance, kEps_);
+  EXPECT_TRUE(CompareMatrices(dut.closest_point, kExpectClosestPoint, kEps_));
+  EXPECT_EQ(dut.location, SquaredDistanceToTriangle::Location::kInside);
+  EXPECT_EQ(dut.v, 0);
+}
+
+TEST_F(CalcSquaredDistanceToTriangleTest, OutsideNearEdge) {
+  // The query point Q is 10 meters below the triangle, and its projection
+  // Q' is outside the triangle nearest to edge v1v2.
+  //
+  //                   My
+  //                   ┆
+  //                   0.1           v0
+  //                   ┆            🮠│
+  //                   ┆         🮠   │
+  //                   ┆      🮠      │
+  //                   ┆   🮠         │
+  //                  v1 ┄┄┄┄┄┄┄┄┄┄┄┄┄v2┄┄┄┄┄┄┄┄ Mx
+  //                   ↓      Q'      ↓
   //                   ↓              ↓
   //                   ↓              ↓
   //
-  // The area between the two rays is the Voronoi region of edge BC (region
-  // of query points that are closest to edge BC).
-  const Vector3d p_MA(0.1, 0.1, 0);
-  const Vector3d p_MB = Vector3d::Zero();
-  const Vector3d p_MC(0.1, 0, 0);
-  const TriangleSurfaceMesh<double> mesh_M{{SurfaceTriangle{0, 1, 2}},
-                                           {p_MA, p_MB, p_MC}};
-  const Vector3d p_MQ(0.05, -0.3, 0.001);
+  const Vector3d p_MQ(0.04, -0.02, -10);
+  // Q' is (0.04, -0.02, 0), and its projection onto the edge v1v2 is the
+  // closest point (0.04, 0, 0).
+  const Vector3d kExpectClosestPoint(0.04, 0, 0);
+  const double kExpectSquaredDistance =
+      (p_MQ - kExpectClosestPoint).squaredNorm();
+
   const SquaredDistanceToTriangle dut =
-      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M);
-  // Expect the closest point N at the middle of edge BC.
-  const Vector3d expect_p_MN(0.05, 0, 0);
-  const double kEps = std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(dut.squared_distance, (p_MQ - expect_p_MN).squaredNorm(), kEps);
-  EXPECT_TRUE(CompareMatrices(dut.closest_point, expect_p_MN, kEps));
-  EXPECT_EQ(dut.location, SquaredDistanceToTriangle::Location::kEdge);
+      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_);
+
+  EXPECT_NEAR(dut.squared_distance, kExpectSquaredDistance, kEps_);
+  EXPECT_TRUE(CompareMatrices(dut.closest_point, kExpectClosestPoint, kEps_));
+  EXPECT_EQ(dut.location,
+            SquaredDistanceToTriangle::Location::kOutsideNearEdge);
+  // dut.v = 1 represents the edge v1v2.
   EXPECT_EQ(dut.v, 1);
 }
 
-GTEST_TEST(CalcSquaredDistanceToTriangleTest, ClosestToVertex) {
-  // Triangle ABC
+TEST_F(CalcSquaredDistanceToTriangleTest, OutsideNearVertex) {
+  // The query point Q is 5 meters above the triangle, and its projection
+  // Q' is outside the triangle nearest to vertex v1.
   //                   My
   //                   ┆
-  //                   ┆              A
+  //                   0.1           v0
   //      ↖            ┆            🮠│
   //         ↖         ┆         🮠   │
   //            ↖      ┆      🮠      │
   //               ↖   ┆   🮠         │
-  //                   B ┄┄┄┄┄┄┄┄┄┄┄┄┄C┄┄┄┄┄┄┄┄ Mx
-  //       Q           ↓
+  //                  v1 ┄┄┄┄┄┄┄┄┄┄┄┄┄v2┄┄┄┄┄┄┄┄ Mx
+  //       Q'          ↓
   //                   ↓
   //                   ↓
   //                   ↓
   //
-  // The area between the two rays is the Voronoi region of vertex B (region
-  // of query points that are closest to vertex B from the triangle ABC).
-  const Vector3d p_MA(0.1, 0.1, 0);
-  const Vector3d p_MB = Vector3d::Zero();
-  const Vector3d p_MC(0.1, 0, 0);
-  const TriangleSurfaceMesh<double> mesh_M{{SurfaceTriangle{0, 1, 2}},
-                                           {p_MA, p_MB, p_MC}};
-  // The query point Q is nearest to vertex B.
-  const Vector3d p_MQ(-0.1, -0.01, 0.001);
+  // The area between the two rays is the Voronoi region of vertex v1 (region
+  // of points that are closest to vertex v1).
+  const Vector3d p_MQ(-0.08, -0.02, 5);
+  // The closest point is at the vertex v1.
+  const Vector3d kExpectClosestPoint(0, 0, 0);
+  const double kExpectSquaredDistance =
+      (p_MQ - kExpectClosestPoint).squaredNorm();
+
   const SquaredDistanceToTriangle dut =
-      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M);
-  const double kEps = std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(dut.squared_distance, (p_MQ - p_MB).squaredNorm(), kEps);
-  EXPECT_TRUE(CompareMatrices(dut.closest_point, p_MB, kEps));
-  EXPECT_EQ(dut.location, SquaredDistanceToTriangle::Location::kVertex);
+      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_);
+
+  EXPECT_NEAR(dut.squared_distance, kExpectSquaredDistance, kEps_);
+  EXPECT_TRUE(CompareMatrices(dut.closest_point, kExpectClosestPoint, kEps_));
+  EXPECT_EQ(dut.location,
+            SquaredDistanceToTriangle::Location::kOutsideNearVertex);
+  // dut.v = 1 represents the vertex v1.
   EXPECT_EQ(dut.v, 1);
 }
 
