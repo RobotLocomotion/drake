@@ -76,7 +76,9 @@ void MaybeWarnForRedundantMaterial(
      ("phong", "diffuse").
    - Otherwise, if an image can be located with a "compatible name" (e.g.,
      foo.png for a mesh foo.obj), a material with an unmodulated texture is
-     created.
+     created. An existing foo.png that can't be read or an empty `mesh_path`
+     are both treated as "no compatible png" could be found and we fall through
+     to the next condition.
    - Otherwise, if a default_diffuse value is provided, a material is created
      with the given default_diffuse color value.
    - Finally, if no material is defined, std::nullopt is returned. In such a

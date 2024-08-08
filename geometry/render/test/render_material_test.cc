@@ -204,7 +204,10 @@ TEST_F(MaybeMakeMeshFallbackMaterialTest, NoMaterial) {
   EXPECT_FALSE(mat.has_value());
 }
 
-/* No material defined in the properties, but foo.png exists and is available.*/
+/* No material defined in the properties, but foo.png exists and is available.
+ Also covers the special case where the mesh path is empty -- it is treated as
+ if there is no compatible foo.png and it falls through to apply the default
+ diffuse. */
 TEST_F(MaybeMakeMeshFallbackMaterialTest, ValidFooPngMaterial) {
   PerceptionProperties props;
   const std::string tex_name =
@@ -217,26 +220,37 @@ TEST_F(MaybeMakeMeshFallbackMaterialTest, ValidFooPngMaterial) {
     UvState uv_state;
     std::string expected_texture;
     std::string error;
+    fs::path path;
+    Rgba rgba = Rgba(1, 1, 1);  // Default rgb for auto-loaded texture.
     std::string description;
   };
 
   const std::vector<TestCase> cases{
       {.uv_state = UvState::kFull,
        .expected_texture = tex_name,
+       .path = obj_path,
        .description = "Full UVs"},
       {.uv_state = UvState::kPartial,
        .error = "a complete set of",
+       .path = obj_path,
        .description = "Partial UVs"},
-      {.uv_state = UvState::kNone, .error = "any", .description = "No UVs"}};
+      {.uv_state = UvState::kNone,
+       .error = "any",
+       .path = obj_path,
+       .description = "No UVs"},
+      {.uv_state = UvState::kFull,
+       .path = fs::path(),
+       .rgba = default_diffuse(),
+       .description = "Empty path produces default diffuse"}};
   for (const TestCase& test_case : cases) {
     SCOPED_TRACE(test_case.description);
 
-    const std::optional<RenderMaterial> mat = MaybeMakeMeshFallbackMaterial(
-        props, obj_path.string(), default_diffuse(), diagnostic_policy_,
-        test_case.uv_state);
+    const std::optional<RenderMaterial> mat =
+        MaybeMakeMeshFallbackMaterial(props, test_case.path, default_diffuse(),
+                                      diagnostic_policy_, test_case.uv_state);
     ASSERT_TRUE(mat.has_value());
     EXPECT_EQ(mat->diffuse_map, test_case.expected_texture);
-    EXPECT_EQ(mat->diffuse, Rgba(1, 1, 1));
+    EXPECT_EQ(mat->diffuse, test_case.rgba);
     if (!test_case.error.empty()) {
       EXPECT_THAT(
           TakeWarning(),
@@ -245,6 +259,20 @@ TEST_F(MaybeMakeMeshFallbackMaterialTest, ValidFooPngMaterial) {
               test_case.error)));
     }
   }
+}
+
+/* When the mesh path is empty, no foo.png (foo.obj) will be considered. It is
+ the same
+ */
+TEST_F(MaybeMakeMeshFallbackMaterialTest, EmptyMeshPath) {
+  PerceptionProperties props;
+  fs::path empty_path;
+
+  const std::optional<RenderMaterial> mat = MaybeMakeMeshFallbackMaterial(
+      props, empty_path, default_diffuse(), diagnostic_policy_, UvState::kFull);
+  ASSERT_TRUE(mat.has_value());
+  EXPECT_EQ(mat->diffuse_map, "");
+  EXPECT_EQ(mat->diffuse, default_diffuse());
 }
 
 /* The presence of any material property should create a material.
