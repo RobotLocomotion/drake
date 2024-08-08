@@ -937,7 +937,9 @@ ExpressionMulFactory::ExpressionMulFactory(
     const map<Variable, int>& base_to_exponent_map)
     : is_expanded_{true}, constant_{1.0} {
   for (const auto& [base, exponent] : base_to_exponent_map) {
-    base_to_exponent_map_.emplace(base, exponent);
+    if (exponent > 0) {
+      base_to_exponent_map_.emplace(base, exponent);
+    }
   }
 }
 
