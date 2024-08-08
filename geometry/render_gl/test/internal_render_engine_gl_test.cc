@@ -22,6 +22,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/internal_gltf_vtk.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -94,6 +95,7 @@ using std::unique_ptr;
 using std::unordered_map;
 using systems::sensors::CameraInfo;
 using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageIo;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
@@ -508,11 +510,18 @@ class RenderEngineGlTest : public ::testing::Test {
   // Copies some supporting files for the glTF tests into this test's temp
   // directory.
   void SetupGltfTest() {
-    // Note: we're only copying the files associated with
-    // fully_textured_pyramid.gltf that we actually need. As we support more of
-    // glTF functionality, we'll have to include more of the textures.
-    for (const char* resource : {"fully_textured_pyramid.bin",
-                                 "fully_textured_pyramid_base_color.png"}) {
+    // Note: we're copying _all_ of the files associated with
+    // fully_textured_pyramid.gltf even though RenderEngineGl only uses a small
+    // fraction. tinygltf will attempt to load every named textures, so we need
+    // to make sure they're available to avoid warnings.
+    for (const char* resource :
+         {"fully_textured_pyramid.bin", "fully_textured_pyramid_base_color.png",
+          "fully_textured_pyramid_emissive.png",
+          "fully_textured_pyramid_normal.png", "fully_textured_pyramid_omr.png",
+          "fully_textured_pyramid_emissive.ktx2",
+          "fully_textured_pyramid_normal.ktx2",
+          "fully_textured_pyramid_omr.ktx2",
+          "fully_textured_pyramid_base_color.ktx2"}) {
       const fs::path source_path = FindResourceOrThrow(
           fmt::format("drake/geometry/render/test/meshes/{}", resource));
       fs::copy_file(source_path, temp_dir_ / resource);
@@ -1222,6 +1231,57 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   }
 }
 
+// Repeats various mesh-based tests, but this time the meshes are loaded from
+// memory. We render the scene twice: once with the one mesh and once with the
+// other to confirm they are rendered the same.
+TEST_F(RenderEngineGlTest, InMemoryMesh) {
+  Init(X_WR_, true);
+  const GeometryId id = GeometryId::get_new_id();
+  auto do_test = [this, id](std::string_view file_prefix, const Mesh& file_mesh,
+                            const Mesh& memory_mesh) {
+    renderer_->RemoveGeometry(id);
+    renderer_->RegisterVisual(id, file_mesh, PerceptionProperties{},
+                              RigidTransformd::Identity(), false);
+    ImageRgba8U file_image(kWidth, kHeight);
+    Render(nullptr, nullptr, &file_image, nullptr, nullptr);
+
+    renderer_->RemoveGeometry(id);
+    renderer_->RegisterVisual(id, memory_mesh, PerceptionProperties{},
+                              RigidTransformd::Identity(), false);
+    ImageRgba8U memory_image(kWidth, kHeight);
+    Render(nullptr, nullptr, &memory_image, nullptr, nullptr);
+
+    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+      const std::filesystem::path out_dir(dir);
+      ImageIo{}.Save(file_image,
+                     out_dir / fmt::format("{}_file.png", file_prefix));
+      ImageIo{}.Save(memory_image,
+                     out_dir / fmt::format("{}_memory.png", file_prefix));
+    }
+
+    EXPECT_TRUE(file_image == memory_image) << fmt::format(
+        "The glTF file loaded from disk didn't match that loaded from memory. "
+        "Check the bazel-testlogs for the saved images with the prefix '{}'.",
+        file_prefix);
+  };
+
+  // cube2.gltf uses file uris for images and data uris for geometry. This is
+  // sufficient, because we just want to see that the different kinds of uris
+  // get handled properly and assume the mesh and its supporting files has been
+  // instantiated correctly.
+  {
+    const std::filesystem::path path =
+        FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.gltf");
+    InMemoryMesh memory_mesh =
+        geometry::internal::PreParseGltf(path, /* include_images= */ true);
+    do_test("data_and_file_uri_gltf", Mesh(path.string()),
+            Mesh(memory_mesh.mesh_file.contents(), "cube2.gltf",
+                 std::move(memory_mesh.supporting_files)));
+  }
+
+  // TODO(SeanCurtis-TRI): Do the same for .obj.
+}
+
 // A note on testing the glTF support.
 //
 // These tests are *not* exhaustive. These cover major features and general
@@ -1285,7 +1345,7 @@ TEST_F(RenderEngineGlTest, GltfTinygltfErrors) {
   });
   DRAKE_EXPECT_THROWS_MESSAGE(
       InitAndRegisterMesh(malformed_gltf),
-      ".*Failed parsing the glTF file.*property is missing[^]*");
+      ".*Failed parsing the on-disk glTF file.*property is missing[^]*");
 }
 
 // The error conditions for GltfMeshExtractor::FindTargetRootNodes().
