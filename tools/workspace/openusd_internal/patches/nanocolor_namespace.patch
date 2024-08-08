@@ -67,3 +67,12 @@ should not be.
  #endif
  
  // The NCCONCAT macro is used to apply a namespace to the symbols in the public
+@@ -28,7 +28,7 @@
+ 
+ // NCAPI may be overridden externally to control symbol visibility.
+ #ifndef NCAPI
+-#define NCAPI
++#define NCAPI __attribute__ ((visibility ("hidden")))
+ #endif
+ 
+ #ifdef __cplusplus
