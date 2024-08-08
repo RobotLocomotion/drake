@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <map>
 #include <utility>
 #include <vector>
@@ -68,23 +69,75 @@ class FeatureNormalSet {
   std::map<SortedPair<int>, Vector3<double>> edge_normals_{};
 };
 
+// %SquaredDistanceToTriangle stores information about squared distance from
+// a query point Q to a triangle for the inside-outside test.
 struct SquaredDistanceToTriangle {
-  double squared_distance;
+  double squared_distance{std::numeric_limits<double>::infinity()};
+  // The point in the triangle closest to the query point Q.
   Vector3<double> closest_point{};
-  enum class Location { kTriangle, kEdge, kVertex } location;
+
+  // Classify the projection Q' of the query point Q onto the plane of the
+  // triangle.
+  enum class Location {
+    // Q' is in the triangle. It could be anywhere in the triangle including
+    // its edges and vertices.  The `closest_point` is Q'.  We can use the
+    // face normal of the triangle for the inside-outside test.
+    //                                  A
+    //                                🮠│
+    //                             🮠   │
+    //                          🮠      │
+    //                       🮠   Q'    │
+    //                   B ┄┄┄┄┄┄┄┄┄┄┄┄┄C
+    kInside,
+
+    // Q' is outside the triangle and nearest to a point in an edge
+    // excluding its vertices. The `closest_point` is the projection of Q'
+    // onto that edge. We can use the edge normal (the equal-weight average
+    // of face normals of two triangles sharing the edge) for the
+    // inside-outside test.
+    //                                  A
+    //                                🮠│
+    //                             🮠   │
+    //                          🮠      │
+    //                       🮠         │
+    //                   B ┄┄┄┄┄┄┄┄┄┄┄┄┄C
+    //                   ↓              ↓
+    //                   ↓       Q'     ↓
+    //                   ↓              ↓
+    kOutsideNearEdge,
+
+    // Q' is outside the triangle and nearest to a vertex of the triangle.
+    // The `closest_point` is that vertex. We can use the vertex normal (the
+    // angle-weighted average of face normals of triangles sharing the vertex)
+    // for the inside-outside test.
+    //                                  A
+    //                                🮠│
+    //         ↖                   🮠   │
+    //            ↖             🮠      │
+    //               ↖       🮠         │
+    //                   B ┄┄┄┄┄┄┄┄┄┄┄┄┄C
+    //       Q'          ↓
+    //                   ↓
+    //                   ↓
+    kOutsideNearVertex
+  } location{};
+
   // The meaning of v depends on `location`:
-  // - kTriangle: v is zero. The closest point is in the triangle.
-  // - kEdge: The closest point is in the edge between the triangle's
-  //          v-th vertex and (v+1)%3-th vertex; 0 <= v < 3.
-  // - kVertex: The closest point is at the triangle's v-th vertex; 0 <= v < 3.
-  int v;
+  // - kInside: v is zero. The closest point is in the triangle.
+  // - kOutsideNearEdge: The closest point is in the edge between the
+  //                     triangle's v-th vertex and (v+1)%3-th vertex;
+  //                     0 <= v < 3.
+  // - kOutsideNearVertex: The closest point is at the triangle's v-th vertex;
+  //                       0 <= v < 3.
+  int v{};
 
   auto operator<=>(const SquaredDistanceToTriangle&) const = default;
 };
 
 // TODO(DamrongGuoy): Consider consolidating this function with the one in
 //  the anonymous namespace of calc_distance_to_surface_mesh.cc. That one
-//  gives the squared distance without the closest point and its location.
+//  gives the squared distance without the closest point and the classification
+//  of the query point.
 
 SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
     const Vector3<double>& p_MQ, int triangle_index,
@@ -107,8 +160,9 @@ struct SignedDistanceToSurfaceMesh {
 //              surface mesh.
 // @param mesh_M   the surface mesh expressed in frame M.
 // @param bvh_M    the BVH of the surface mesh, expressed in frame M.
-// @param mesh_normal_M  provides angle weighted normals at vertices and
-//                       edges of the surface mesh, expressed in frame M.
+// @param mesh_normal_M  provides angle-weighted average normals at vertices
+//                       and equal-weight average normals at edges of the
+//                       surface mesh, expressed in frame M.
 //
 // @pre  The surface mesh is watertight and a closed manifold.
 //
