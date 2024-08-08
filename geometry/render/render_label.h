@@ -85,24 +85,10 @@ class RenderLabel {
                              reserved values.  */
   explicit RenderLabel(int value) : RenderLabel(value, true) {}
 
-  /** Compares this label with the `other` label. Reports true if they have the
-   same value.  */
-  bool operator==(const RenderLabel& other) const {
-    return value_ == other.value_;
-  }
-
-  /** Compares this label with the `other` label. Reports true if they have
-   different values.  */
-  bool operator!=(const RenderLabel& other) const {
-    return value_ != other.value_;
-  }
-
   /** Allows the labels to be compared to imply a total ordering -- facilitates
    use in data structures which require ordering (e.g., std::set). The ordering
    has no particular meaning for applications.  */
-  bool operator<(const RenderLabel& other) const {
-    return value_ < other.value_;
-  }
+  auto operator<=>(const RenderLabel& other) const = default;
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>

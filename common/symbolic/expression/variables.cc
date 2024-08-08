@@ -70,15 +70,14 @@ bool Variables::IsStrictSupersetOf(const Variables& vars) const {
   return IsSupersetOf(vars);
 }
 
-bool operator==(const Variables& vars1, const Variables& vars2) {
-  return std::equal(vars1.vars_.begin(), vars1.vars_.end(), vars2.vars_.begin(),
-                    vars2.vars_.end(), std::equal_to<Variable>{});
-}
-
-bool operator<(const Variables& vars1, const Variables& vars2) {
-  return std::lexicographical_compare(vars1.vars_.begin(), vars1.vars_.end(),
-                                      vars2.vars_.begin(), vars2.vars_.end(),
-                                      std::less<Variable>{});
+std::strong_ordering operator<=>(const Variables& vars1,
+                                 const Variables& vars2) {
+  return std::lexicographical_compare_three_way(
+      vars1.vars_.begin(), vars1.vars_.end(),  // BR
+      vars2.vars_.begin(), vars2.vars_.end(),
+      [](const Variable& v1, const Variable& v2) {
+        return v1.get_id() <=> v2.get_id();
+      });
 }
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.

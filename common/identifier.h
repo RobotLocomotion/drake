@@ -160,25 +160,18 @@ class Identifier {
   /** Reports if the id is valid. */
   bool is_valid() const { return value_ > 0; }
 
-  /** Compares one identifier with another of the same type for equality. This
-   is considered invalid for invalid ids and is strictly enforced in Debug
+  /** Compares one identifier with another of the same type for (in)equality.
+   This is considered invalid for invalid ids and is strictly enforced in Debug
    builds. */
   bool operator==(Identifier other) const {
     return this->get_value() == other.get_value();
   }
 
-  /** Compares one identifier with another of the same type for inequality. This
-   is considered invalid for invalid ids and is strictly enforced in Debug
-   builds. */
-  bool operator!=(Identifier other) const {
-    return this->get_value() != other.get_value();
-  }
-
   /** Compare two identifiers in order to define a total ordering among
    identifiers. This makes identifiers compatible with data structures which
    require total ordering (e.g., std::set).  */
-  bool operator<(Identifier other) const {
-    return this->get_value() < other.get_value();
+  auto operator<=>(Identifier other) const {
+    return get_value() <=> other.get_value();
   }
 
   /** Generates a new identifier for this id type. This new identifier will be

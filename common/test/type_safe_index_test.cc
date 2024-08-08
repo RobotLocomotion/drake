@@ -144,29 +144,29 @@ GTEST_TEST(TypeSafeIndex, InvalidIndexComparisonOperators) {
 
   // Comparison operators.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid == valid,
-                                      "Testing == with invalid LHS.+");
+                                      "Testing .+ with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid == invalid,
-                                      "Testing == with invalid RHS.+");
+                                      "Testing .+ with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid != valid,
-                                      "Testing != with invalid LHS.+");
+                                      "Testing .+ with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid != invalid,
-                                      "Testing != with invalid RHS.+");
+                                      "Testing .+ with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid < valid,
-                                      "Testing < with invalid LHS.+");
+                                      "Testing .+ with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid < invalid,
-                                      "Testing < with invalid RHS.+");
+                                      "Testing .+ with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid <= valid,
-                                      "Testing <= with invalid LHS.+");
+                                      "Testing .+ with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid <= invalid,
-                                      "Testing <= with invalid RHS.+");
+                                      "Testing .+ with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid > valid,
-                                      "Testing > with invalid LHS.+");
+                                      "Testing .+ with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid > invalid,
-                                      "Testing > with invalid RHS.+");
+                                      "Testing .+ with invalid RHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid >= valid,
-                                      "Testing >= with invalid LHS.+");
+                                      "Testing .+ with invalid LHS.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid >= invalid,
-                                      "Testing >= with invalid RHS.+");
+                                      "Testing .+ with invalid RHS.+");
 }
 
 // Tests the prefix increment behavior.
