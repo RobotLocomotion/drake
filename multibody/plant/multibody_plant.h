@@ -4272,6 +4272,95 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         Js_v_ACcm_E);
   }
 
+  /// This method allows users to map the state of `this` model, x, into a
+  /// vector of selected state xₛ with a given preferred ordering.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Sx such that `xₛ = Sx⋅x`. The size nₛ of xₛ is always smaller or equal
+  /// than the size of the full state x. That is, a user might be interested in
+  /// only a given portion of the full state x.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in xₛ via `user_to_joint_index_map`.
+  /// The selected state is built such that selected positions are followed
+  /// by selected velocities, as in `xₛ = [qₛ, vₛ]`.
+  /// The positions in qₛ are a concatenation of the positions for each joint
+  /// in the order they appear in `user_to_joint_index_map`. That is, the
+  /// positions for `user_to_joint_index_map[0]` are first, followed by the
+  /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
+  /// selected velocities vₛ.
+  ///
+  /// @throws std::exception if there are repeated indices in
+  /// `user_to_joint_index_map`.
+  MatrixX<double> MakeStateSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const {
+    // TODO(amcastro-tri): consider having an extra `free_body_index_map`
+    // so that users could also re-order free bodies if they wanted to.
+    return internal_tree().MakeStateSelectorMatrix(user_to_joint_index_map);
+  }
+
+  /// This method allows user to map a vector `uₛ` containing the actuation
+  /// for a set of selected actuators into the vector u containing the actuation
+  /// values for `this` full model.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
+  /// than the size of the full vector of actuation values u. That is, a user
+  /// might be interested in only a given subset of actuators in the model.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in uₛ via
+  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
+  /// concatenation of the values for each actuator in the order they appear in
+  /// `user_to_actuator_index_map`. The actuation value in the full vector of
+  /// actuation values `u` for a particular actuator can be found at offset
+  /// JointActuator::input_start().
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
+    return internal_tree().MakeActuatorSelectorMatrix(
+        user_to_actuator_index_map);
+  }
+
+  /// This method creates an actuation matrix B mapping a vector of actuation
+  /// values u into generalized forces `tau_u = B * u`, where B is a matrix of
+  /// size `nv x nu` with `nu` equal to num_actuated_dofs() and `nv` equal to
+  /// num_velocities().
+  /// The vector u of actuation values is of size num_actuated_dofs(). For a
+  /// given JointActuator, `u[JointActuator::input_start()]` stores the value
+  /// for the external actuation corresponding to that actuator. `tau_u` on the
+  /// other hand is indexed by generalized velocity indices according to
+  /// `Joint::velocity_start()`.
+  /// @warning B is a permutation matrix. While making a permutation has
+  /// `O(n)` complexity, making a full B matrix has `O(n²)` complexity. For most
+  /// applications this cost can be neglected but it could become significant
+  /// for very large systems.
+  MatrixX<T> MakeActuationMatrix() const;
+
+  /// Creates the pseudoinverse of the actuation matrix B directly (without
+  /// requiring an explicit inverse calculation). See MakeActuationMatrix().
+  ///
+  /// Notably, when B is full row rank (the system is fully actuated), then the
+  /// pseudoinverse is a true inverse.
+  Eigen::SparseMatrix<double> MakeActuationMatrixPseudoinverse() const;
+
+  /// Alternative signature to build an actuation selector matrix `Su` such
+  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
+  /// model (see get_actuation_input_port()) and uₛ is a vector of actuation
+  /// values for the actuators acting on the joints listed by
+  /// `user_to_joint_index_map`. It is assumed that all joints referenced by
+  /// `user_to_joint_index_map` are actuated. See
+  /// MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
+  /// details.
+  /// @throws std::exception if any of the joints in
+  /// `user_to_joint_index_map` does not have an actuator.
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const {
+    return internal_tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
+  }
+  /// @} <!-- System matrix computations -->
+
   /// @anchor bias_acceleration_functions
   /// @name Bias acceleration functions
   /// The name a𝑠Bias_AP denotes a point P's bias translational acceleration
@@ -4459,96 +4548,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
         context, model_instances, with_respect_to, frame_A, frame_E);
   }
-  ///@}
-
-  /// This method allows users to map the state of `this` model, x, into a
-  /// vector of selected state xₛ with a given preferred ordering.
-  /// The mapping, or selection, is returned in the form of a selector matrix
-  /// Sx such that `xₛ = Sx⋅x`. The size nₛ of xₛ is always smaller or equal
-  /// than the size of the full state x. That is, a user might be interested in
-  /// only a given portion of the full state x.
-  ///
-  /// This selection matrix is particularly useful when adding PID control
-  /// on a portion of the state, see systems::controllers::PidController.
-  ///
-  /// A user specifies the preferred order in xₛ via `user_to_joint_index_map`.
-  /// The selected state is built such that selected positions are followed
-  /// by selected velocities, as in `xₛ = [qₛ, vₛ]`.
-  /// The positions in qₛ are a concatenation of the positions for each joint
-  /// in the order they appear in `user_to_joint_index_map`. That is, the
-  /// positions for `user_to_joint_index_map[0]` are first, followed by the
-  /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
-  /// selected velocities vₛ.
-  ///
-  /// @throws std::exception if there are repeated indices in
-  /// `user_to_joint_index_map`.
-  MatrixX<double> MakeStateSelectorMatrix(
-      const std::vector<JointIndex>& user_to_joint_index_map) const {
-    // TODO(amcastro-tri): consider having an extra `free_body_index_map`
-    // so that users could also re-order free bodies if they wanted to.
-    return internal_tree().MakeStateSelectorMatrix(user_to_joint_index_map);
-  }
-
-  /// This method allows user to map a vector `uₛ` containing the actuation
-  /// for a set of selected actuators into the vector u containing the actuation
-  /// values for `this` full model.
-  /// The mapping, or selection, is returned in the form of a selector matrix
-  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
-  /// than the size of the full vector of actuation values u. That is, a user
-  /// might be interested in only a given subset of actuators in the model.
-  ///
-  /// This selection matrix is particularly useful when adding PID control
-  /// on a portion of the state, see systems::controllers::PidController.
-  ///
-  /// A user specifies the preferred order in uₛ via
-  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
-  /// concatenation of the values for each actuator in the order they appear in
-  /// `user_to_actuator_index_map`. The actuation value in the full vector of
-  /// actuation values `u` for a particular actuator can be found at offset
-  /// JointActuator::input_start().
-  MatrixX<double> MakeActuatorSelectorMatrix(
-      const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
-    return internal_tree().MakeActuatorSelectorMatrix(
-        user_to_actuator_index_map);
-  }
-
-  /// This method creates an actuation matrix B mapping a vector of actuation
-  /// values u into generalized forces `tau_u = B * u`, where B is a matrix of
-  /// size `nv x nu` with `nu` equal to num_actuated_dofs() and `nv` equal to
-  /// num_velocities().
-  /// The vector u of actuation values is of size num_actuated_dofs(). For a
-  /// given JointActuator, `u[JointActuator::input_start()]` stores the value
-  /// for the external actuation corresponding to that actuator. `tau_u` on the
-  /// other hand is indexed by generalized velocity indices according to
-  /// `Joint::velocity_start()`.
-  /// @warning B is a permutation matrix. While making a permutation has
-  /// `O(n)` complexity, making a full B matrix has `O(n²)` complexity. For most
-  /// applications this cost can be neglected but it could become significant
-  /// for very large systems.
-  MatrixX<T> MakeActuationMatrix() const;
-
-  /// Creates the pseudoinverse of the actuation matrix B directly (without
-  /// requiring an explicit inverse calculation). See MakeActuationMatrix().
-  ///
-  /// Notably, when B is full row rank (the system is fully actuated), then the
-  /// pseudoinverse is a true inverse.
-  Eigen::SparseMatrix<double> MakeActuationMatrixPseudoinverse() const;
-
-  /// Alternative signature to build an actuation selector matrix `Su` such
-  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
-  /// model (see get_actuation_input_port()) and uₛ is a vector of actuation
-  /// values for the actuators acting on the joints listed by
-  /// `user_to_joint_index_map`. It is assumed that all joints referenced by
-  /// `user_to_joint_index_map` are actuated. See
-  /// MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
-  /// details.
-  /// @throws std::exception if any of the joints in
-  /// `user_to_joint_index_map` does not have an actuator.
-  MatrixX<double> MakeActuatorSelectorMatrix(
-      const std::vector<JointIndex>& user_to_joint_index_map) const {
-    return internal_tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
-  }
-  /// @} <!-- System matrix computations -->
+  /// @} <!-- Bias acceleration functions -->
 
   /// @anchor mbp_introspection
   /// @name                    Introspection
