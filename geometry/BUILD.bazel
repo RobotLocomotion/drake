@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_version",
+        ":in_memory_mesh",
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
@@ -272,6 +273,36 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "in_memory_mesh",
+    srcs = ["in_memory_mesh.cc"],
+    hdrs = ["in_memory_mesh.h"],
+    deps = [
+        "//common:file_contents",
+        "//common:string_container",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_gltf_vtk",
+    srcs = ["internal_gltf_vtk.cc"],
+    hdrs = ["internal_gltf_vtk.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__subpackages__",
+    ],
+    deps = [
+        ":in_memory_mesh",
+        "//common:drake_export",
+        "//common:essential",
+        "//common:file_contents",
+        "//common:string_container",
+        "@nlohmann_internal//:nlohmann",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOCore",
+    ]
+)
+
+drake_cc_library(
     name = "make_mesh_for_deformable",
     srcs = ["make_mesh_for_deformable.cc"],
     hdrs = ["make_mesh_for_deformable.h"],
@@ -379,6 +410,8 @@ drake_cc_library(
     srcs = ["read_obj.cc"],
     hdrs = ["read_obj.h"],
     deps = [
+        ":in_memory_mesh",
+        "//common:file_contents",
         "@eigen",
     ],
     implementation_deps = [
@@ -393,6 +426,7 @@ drake_cc_library(
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
     deps = [
+        ":in_memory_mesh",
         "//common:essential",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
@@ -516,6 +550,7 @@ drake_cc_library(
         ":scene_graph_inspector",
         ":shape_specification",
         "//common:essential",
+        "//common:file_contents",
         "//common:name_value",
         "//common:timer",
         "//geometry/proximity:triangle_surface_mesh",
@@ -839,6 +874,14 @@ drake_cc_googletest(
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "in_memory_mesh_test",
+    deps = [
+        ":in_memory_mesh",
+        "//common:unused",
     ],
 )
 

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/file_contents.h"
 #include "drake/common/sha256.h"
 
 namespace drake {
@@ -36,31 +37,12 @@ class FileStorage final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FileStorage);
 
-  /* The record type contained in the database, as returned by Insert() or
-  Find(). It is the responsibility of users of FileStorage to hold the
-  `std::shared_ptr<const Handle>` handle as long as the entry should remain
-  findable in the FileStorage. */
-  struct Handle {
-    /* The contents of the file. */
-    std::string content;
-
-    /* The checksum of `content`. */
-    Sha256 sha256;
-
-    /* Some notional filename for the `content`, for use only in debugging.
-    This is allowed to be empty. Must not contain any newlines. */
-    std::string filename_hint;
-
-    // TODO(jwnimmer-tri) In the future, we might want to track additional
-    // metadata here, e.g., mime type.
-  };
-
   /* Constructs an empty database. */
   FileStorage();
 
-  /* Clears the database; it does not destroy any `Handle` objects still held by
-  users outside of this class. You can think of it like only the database's
-  index is destroyed. */
+  /* Clears the database; it does not destroy any `FileContents` objects still
+  held by users outside of this class. You can think of it like only the
+  database's index is destroyed. */
   ~FileStorage();
 
   /* Adds the given `content` to the database. Both arguments are consumed by
@@ -72,28 +54,29 @@ class FileStorage final {
   allowed to be empty; any newlines in the hint will be replaced. When the
   content already existed in the cache, the new hint will be dropped -- the hint
   used during the first first Insert() always wins. */
-  [[nodiscard]] std::shared_ptr<const Handle> Insert(
+  [[nodiscard]] std::shared_ptr<const common::FileContents> Insert(
       std::string&& content, std::string&& filename_hint);
 
   /* Returns the database content with the given checksum, or when not found
   returns nullptr. */
-  [[nodiscard]] std::shared_ptr<const Handle> Find(const Sha256& sha256) const;
+  [[nodiscard]] std::shared_ptr<const common::FileContents> Find(
+      const Sha256& sha256) const;
 
   /* Returns the entire database. All of the returned handles are non-null. */
-  [[nodiscard]] std::vector<std::shared_ptr<const Handle>> DumpEverything()
-      const;
+  [[nodiscard]] std::vector<std::shared_ptr<const common::FileContents>>
+  DumpEverything() const;
 
-  /* Returns the number of files (i.e., `Handle`s) being stored. */
+  /* Returns the number of files (i.e., `FileContents`s) being stored. */
   [[nodiscard]] size_t size() const;
 
   /* Meshcat uses content-addressable storage ("CAS") to serve asset files. See
   https://en.wikipedia.org/wiki/Content-addressable_storage. This function
-  returns the CAS URL for the given storage handle. */
-  static std::string GetCasUrl(const FileStorage::Handle& asset);
+  returns the CAS URL for the given storage file contents. */
+  static std::string GetCasUrl(const common::FileContents& asset);
 
  private:
   /* The implementation of Find(). Assumes that `mutex_` is already held. */
-  [[nodiscard]] std::shared_ptr<const Handle> FindWhileLocked(
+  [[nodiscard]] std::shared_ptr<const common::FileContents> FindWhileLocked(
       const Sha256& sha256) const;
 
   // We need to use shared_ptr<Impl> so that the handles give out can can safely

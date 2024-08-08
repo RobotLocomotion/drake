@@ -473,6 +473,7 @@ GTEST_TEST(ShapeTest, Constructors) {
 
   const Convex convex{kFilename, 1.5};
   EXPECT_EQ(convex.filename(), kFilename);
+  EXPECT_EQ(convex.extension(), ".obj");
   EXPECT_EQ(convex.scale(), 1.5);
 
   const Cylinder cylinder{1, 2};
@@ -497,8 +498,11 @@ GTEST_TEST(ShapeTest, Constructors) {
   unused(hs);
 
   const Mesh mesh{kFilename, 1.4};
+  EXPECT_FALSE(mesh.is_in_memory());
   EXPECT_EQ(mesh.filename(), kFilename);
+  EXPECT_EQ(mesh.extension(), ".obj");
   EXPECT_EQ(mesh.scale(), 1.4);
+  EXPECT_THROW(mesh.in_memory_mesh(), std::exception);
 
   const MeshcatCone cone{1.2, 3.4, 5.6};
   EXPECT_EQ(cone.height(), 1.2);
@@ -562,7 +566,7 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
                               "and c should all be > 0.+");
 
   DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", 1e-9),
-                              "Mesh .scale. cannot be < 1e-8.");
+                              "Mesh .scale. cannot be < 1e-8, given 1e-09.");
   DRAKE_EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
 
   DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(0, 1, 1),
@@ -597,6 +601,40 @@ GTEST_TEST(ShapeTest, ConvexHull) {
   };
   expect_convex_hull(Mesh(cube_path));
   expect_convex_hull(Convex(cube_path));
+}
+
+GTEST_TEST(ShapeTest, MeshFromMemory) {
+  // This will get normalized to ".obj".
+  const std::string mesh_name = "a_mesh.OBJ";
+  const std::string obj_contents = R"""(
+    v 0 0 0
+    v 1 0 0
+    v 1 1 0
+    v 0 1 0
+    v 0 0 1
+    v 1 0 1
+    v 1 1 1
+    v 0 1 1
+    f 1 2 3 4
+    f 5 6 7 8
+  )""";
+  string_map<common::FileContents> mesh_data;
+  mesh_data["fake.txt"] = common::FileContents("content", "fake.txt");
+  const Mesh mesh(obj_contents, mesh_name, mesh_data, 2.0);
+  ASSERT_TRUE(mesh.is_in_memory());
+  EXPECT_THROW(mesh.filename(), std::exception);
+  EXPECT_EQ(mesh.extension(), ".obj");
+  const InMemoryMesh& mem_mesh = mesh.in_memory_mesh();
+  EXPECT_EQ(mem_mesh.mesh_file.filename_hint(), mesh_name);
+  EXPECT_TRUE(mem_mesh.supporting_files.contains("fake.txt"));
+
+  // Also confirm that we can compute the convex hull from the in-memory
+  // representation. We don't test all file formats; we trust that visual
+  // inspection of the code under test shows that it doesn't depend on file
+  // format.
+  const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
+  EXPECT_EQ(hull.num_vertices(), 8);
+  EXPECT_EQ(hull.num_elements(), 6);
 }
 
 class DefaultReifierTest : public ShapeReifier, public ::testing::Test {};

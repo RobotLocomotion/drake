@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/file_contents.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/meshcat_file_storage_internal.h"
 #include "drake/geometry/scene_graph_inspector.h"
@@ -70,7 +71,7 @@ original file has disappeared in the meantime.
 @param[in,out] storage The database where assets should be stored.
 
 @returns The handles for all assets cited by `gltf_contents`. */
-[[nodiscard]] std::vector<std::shared_ptr<const FileStorage::Handle>>
+[[nodiscard]] std::vector<std::shared_ptr<const common::FileContents>>
 UnbundleGltfAssets(const std::filesystem::path& gltf_filename,
                    std::string* gltf_contents, FileStorage* storage);
 

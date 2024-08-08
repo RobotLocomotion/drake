@@ -242,6 +242,7 @@ drake_cc_googletest_linux_only(
         "//common:temp_directory",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:internal_gltf_vtk",
         "//geometry/render:render_label",
         "//systems/sensors:image_io",
         "//systems/sensors/test_utilities:image_compare",

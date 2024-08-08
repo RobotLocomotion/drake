@@ -661,17 +661,48 @@ void main() {
 
 // Given a filename (e.g., of a mesh), this produces a string that we use in
 // our maps to guarantee we only load the file once.
-std::string GetPathKey(const std::string& filename, bool is_convex) {
-  std::error_code path_error;
-  const fs::path path = fs::canonical(filename, path_error);
-  if (path_error) {
-    throw std::runtime_error(
-        fmt::format("RenderEngineGl: unable to access the file {}; {}",
-                    filename, path_error.message()));
+std::string GetPathKey(const MeshSource& source, bool is_convex) {
+  std::string prefix;
+  if (source.IsInMemory()) {
+    // TODO(SeanCurtis-TRI): This is a *bit* tricky. I have an in-memory mesh
+    // that is being keyed solely by the sha on its core file. But those
+    // contents could remain fixed while the contents of the supporting files
+    // with the same names could change. It would really be better if I had a
+    // composite sha across the whole family.
+    //
+    // Option 1: Simply concatenate all of the shas into one big string.
+    // This *appears* sketchy because I could have the same file in two
+    // different InMemoryMesh instances; the contents would be the same, but
+    // with different names, they'd end up keyed differently in the map.
+    // Therefore the order would get screwed up and the two otherwise identical
+    // maps wouldn't appear so. Why this isn't a *real* problem: if I change the
+    // name of a supporting some other file referencing must change to reference
+    // that new name. So, from a contents perspective, one of the shas has
+    // changed.
+    //
+    // In the case where a supporting file isn't actually referenced (just
+    // conservatively added), this would lead to identical content but different
+    // composite sha. But if people are shoving files they don't need in, they
+    // reap what they've sown.
+    //
+    // Alternatively, InMemoryMesh creates a sha for all of its data upon
+    // construction (it has the bits).
+    prefix = source.mesh_data().mesh_file.sha256().to_string() +
+             (is_convex ? "?convex" : "");
+  } else {
+    prefix = source.path().string();
+    DRAKE_DEMAND(source.IsPath());
+    std::error_code path_error;
+    const fs::path path = fs::canonical(source.path(), path_error);
+    if (path_error) {
+      throw std::runtime_error(
+          fmt::format("RenderEngineGl: unable to access the file {}; {}",
+                      prefix, path_error.message()));
+    }
   }
   // Note: We're using "?". It isn't valid for filenames, so using it in the
   // key guarantees we won't collide with potential file names.
-  return path.string() + (is_convex ? "?convex" : "");
+  return prefix + (is_convex ? "?convex" : "");
 }
 
 // We want to make sure the lights are as clean as possible. So, we'll
@@ -784,8 +815,8 @@ void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
   CacheConvexHullMesh(convex, *data);
   // Note: CacheConvexHullMesh() either succeeds or throws.
-  ImplementMeshesForFile(user_data, kUnitScale * convex.scale(),
-                         convex.filename(), /* is_convex=*/true);
+  ImplementMeshesForSource(user_data, kUnitScale * convex.scale(),
+                           convex.filename(), /* is_convex=*/true);
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
@@ -810,10 +841,10 @@ void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  CacheFileMeshesMaybe(mesh.filename(), data);
+  CacheFileMeshesMaybe(mesh.source(), data);
   if (data->accepted) {
-    ImplementMeshesForFile(user_data, kUnitScale * mesh.scale(),
-                           mesh.filename(), /* is_convex=*/false);
+    ImplementMeshesForSource(user_data, kUnitScale * mesh.scale(),
+                             mesh.source(), /* is_convex=*/false);
   }
 }
 
@@ -839,11 +870,15 @@ void RenderEngineGl::InitGlState() {
   glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 }
 
-void RenderEngineGl::ImplementMeshesForFile(void* user_data,
-                                            const Vector3<double>& scale,
-                                            const std::string& filename,
-                                            bool is_convex) {
-  const std::string file_key = GetPathKey(filename, is_convex);
+void RenderEngineGl::ImplementMeshesForSource(void* user_data,
+                                              const Vector3<double>& scale,
+                                              const MeshSource& source,
+                                              bool is_convex) {
+  const std::string file_key = GetPathKey(source, is_convex);
+  // If source is in memory, we want to pass an *empty* filename to
+  // MaybeMakeMeshFallbackmaterial().
+  const std::string filename =
+      source.IsPath() ? source.path().string() : std::string();
   DRAKE_DEMAND(meshes_.contains(file_key));
   for (const auto& gl_mesh : meshes_.at(file_key)) {
     const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
@@ -1345,38 +1380,111 @@ class RenderEngineGl::GltfMeshExtractor {
    registered with the containers passed into the constructor, the caller is
    responsible for taking ownership of the collection of RenderGlMesh
    instances returned. */
-  vector<RenderGlMesh> ExtractMeshes(std::string_view file_name,
+  vector<RenderGlMesh> ExtractMeshes(const MeshSource& source,
                                      const RegistrationData& data) {
-    file_name_ = file_name;
+    if (source.IsPath()) {
+      file_path_ = source.path();
+      embedded_prefix_ = file_path_.string();
+      description_ =
+          fmt::format("the on-disk glTF file: '{}'", file_path_.string());
+    } else {
+      DRAKE_DEMAND(source.IsInMemory());
+      file_path_.clear();
+      // TODO(SeanCurtis-TRI) This would be better as the sha for the whole
+      // mesh_data().
+      embedded_prefix_ = source.mesh_data().mesh_file.sha256().to_string();
+      description_ = fmt::format("the in-memory glTF file: '{}'",
+                                 source.mesh_data().mesh_file.filename_hint());
+    }
+
     tinygltf::TinyGLTF loader;
-
-    /* Capture embedded images for later registration. These include all images
-     defined in the file; not all of these will be used by RenderEngineGl. */
-    map<string, std::vector<unsigned char>> all_embedded_images;
-    auto load_image_callback =
-        [&all_embedded_images, this](
-            tinygltf::Image* image, const int image_index, std::string* /*err*/,
-            std::string* /*warn*/, int /*req_width*/, int /*req_height*/,
-            const unsigned char* bytes, int size, void* /*user_data*/) -> bool {
-      /* Update the image->uri to use the name we're using in the texture
-       library so that when we extract the material, the uri matches. */
-      image->uri = GetEmbeddedImageName(image_index);
-      all_embedded_images.insert(
-          {image->uri, vector<unsigned char>(bytes, bytes + size)});
-      return true;
-    };
-    loader.SetImageLoader(load_image_callback, nullptr);
-
     string error;
     string warn;
 
     tinygltf::Model model;
-    const bool valid_parse =
-        loader.LoadASCIIFromFile(&model, &error, &warn, file_name_);
+    bool valid_parse = false;
+    map<string, std::vector<unsigned char>> all_embedded_images;
+
+    /* Any image that can't be read from the disk later needs to be saved for
+     registration. That includes files stashed in a .bin file, or that use
+     a data: URI in a bufferView, or any image in an in-memory mesh. We'll
+     capture *all* such images, even if not all of them are used by
+     RenderEngineGl. */
+    auto load_image_callback =
+        [&all_embedded_images, this, &source](
+            tinygltf::Image* image, const int image_index, std::string* /*err*/,
+            std::string* /*warn*/, int /*req_width*/, int /*req_height*/,
+            const unsigned char* bytes, int size, void* /*user_data*/) -> bool {
+      /* Only capture the in-memory image if the source is in memory or if the
+       image isn't an on-disk file URI. We can tell if the bytes came from
+       the .bin or .gltf "data:"" uri because tinygltf will clear the image uri.
+       */
+      if (image->uri.empty() || source.IsInMemory()) {
+        /* Update the image->uri to use the name we're using in the texture
+         library so that when we extract the material, the uri matches. */
+        image->uri = GetEmbeddedImageName(image_index);
+        all_embedded_images.insert(
+            {image->uri, vector<unsigned char>(bytes, bytes + size)});
+      }
+      return true;
+    };
+    loader.SetImageLoader(load_image_callback, nullptr);
+    if (source.IsPath()) {
+      valid_parse =
+          loader.LoadASCIIFromFile(&model, &error, &warn, file_path_.string());
+    } else {
+      DRAKE_DEMAND(source.IsInMemory());
+
+      tinygltf::FsCallbacks callbacks{
+          .FileExists =
+              [&files = source.mesh_data().supporting_files](
+                  const std::string& abs_filename, void*) {
+                return files.contains(abs_filename);
+              },
+          .ExpandFilePath = tinygltf::ExpandFilePath,
+          .ReadWholeFile =
+              [&files = source.mesh_data().supporting_files](
+                  std::vector<unsigned char>* out, std::string* err,
+                  const std::string& filepath, void*) {
+                DRAKE_DEMAND(out != nullptr);
+                if (!files.contains(filepath)) {
+                  if (err) {
+                    *err += fmt::format(
+                        "Error reading in-memory glTF file '{}'\n", filepath);
+                  }
+                  return false;
+                }
+                const std::string& contents = files.at(filepath).contents();
+                *out = std::vector<unsigned char>(contents.begin(),
+                                                  contents.end());
+                return true;
+              },
+          .WriteWholeFile = tinygltf::WriteWholeFile,
+          .GetFileSizeInBytes =
+              [&files = source.mesh_data().supporting_files](
+                  size_t* filesize_out, std::string* err,
+                  const std::string& filepath, void*) {
+                DRAKE_DEMAND(filesize_out != nullptr);
+                if (!files.contains(filepath)) {
+                  if (err) {
+                    *err += fmt::format(
+                        "Error reading in-memory glTF file '{}'\n", filepath);
+                  }
+                  return false;
+                }
+                *filesize_out = files.at(filepath).contents().size();
+                return true;
+              }};
+      loader.SetFsCallbacks(std::move(callbacks));
+
+      const std::string& gltf = source.mesh_data().mesh_file.contents();
+      const std::string kEmptyBaseDir;
+      valid_parse = loader.LoadASCIIFromString(
+          &model, &error, &warn, gltf.c_str(), ssize(gltf), kEmptyBaseDir);
+    }
 
     if (!valid_parse) {
-      policy_.Error(fmt::format("Failed parsing the glTF file: {}: {}",
-                                file_name_, error));
+      policy_.Error(fmt::format("Failed parsing {}: {}", description_, error));
     }
 
     /* We better not get any errors if we have a valid parse. */
@@ -1428,7 +1536,7 @@ class RenderEngineGl::GltfMeshExtractor {
      suffix that further reduces accidentally interpreting the string as a valid
      file path. */
     return fmt::format("{}{}?image={}", TextureLibrary::InMemoryPrefix(),
-                       file_name_, image_index);
+                       embedded_prefix_, image_index);
   }
 
   /* Returns the indices of all glTF nodes that have no parents (i.e., are root
@@ -1464,9 +1572,9 @@ class RenderEngineGl::GltfMeshExtractor {
       if (model.defaultScene >= ssize(model.scenes)) {
         policy_.Error(fmt::format(
             "Error parsing a glTF file; it defines {} scenes but has an "
-            "invalid value for the \"glTF.scene\" property: {}. '{}'. No "
+            "invalid value for the \"glTF.scene\" property: {}. In {}. No "
             "geometry will be added.",
-            model.scenes.size(), model.defaultScene, file_name_));
+            model.scenes.size(), model.defaultScene, description_));
         return root_indices;
       }
 
@@ -1482,8 +1590,8 @@ class RenderEngineGl::GltfMeshExtractor {
       if (model.defaultScene < 0 && ssize(model.scenes) > 1) {
         policy_.Warning(fmt::format(
             "Parsing a glTF file with multiple scene and no explicit "
-            "default scene; using the zeroth scene: '{}'.",
-            file_name_));
+            "default scene; using the zeroth scene: In {}.",
+            description_));
       }
       const int scene_index = std::max(model.defaultScene, 0);
       root_indices = model.scenes[scene_index].nodes;
@@ -1492,21 +1600,21 @@ class RenderEngineGl::GltfMeshExtractor {
        */
       if (root_indices.empty()) {
         policy_.Error(fmt::format(
-            "Error parsing a glTF file; scene {} has no root nodes. '{}'.",
-            scene_index, file_name_));
+            "Error parsing a glTF file; scene {} has no root nodes. In {}.",
+            scene_index, description_));
       }
     } else {
       if (model.nodes.size() == 0) {
         policy_.Error(fmt::format(
-            "Error parsing a glTF file; it has no scenes and no nodes. '{}'.",
-            file_name_));
+            "Error parsing a glTF file; it has no scenes and no nodes. In {}.",
+            description_));
       }
       root_indices = FindAllRootNodes(model);
       if (root_indices.empty() && model.nodes.size() > 0) {
         policy_.Error(
             fmt::format("Error parsing a glTF file; none of its {} nodes are "
-                        "root nodes. '{}'.",
-                        model.nodes.size(), file_name_));
+                        "root nodes. In {}.",
+                        model.nodes.size(), description_));
       }
     }
     return root_indices;
@@ -1578,8 +1686,8 @@ class RenderEngineGl::GltfMeshExtractor {
       policy_.Error(fmt::format(
           "RenderEngineGl has limited support for glTF files. Primitives must "
           "define both 'POSITION' and 'NORMAL' attributes. A primitive is "
-          "missing the attribute '{}' in '{}'.",
-          attr_name, file_name_));
+          "missing the attribute '{}' in {}.",
+          attr_name, description_));
     }
     return {attribute, buffer_index};
   }
@@ -1639,8 +1747,8 @@ class RenderEngineGl::GltfMeshExtractor {
             "RenderEngineGl has limited support for glTF files. All attributes "
             "of a primitive must ultimately reference the same buffer. A "
             "primitive {} in mesh {} has attributes referencing multiple "
-            "buffers. '{}'.",
-            prim_i, mesh_index, file_name_));
+            "buffers. In {}.",
+            prim_i, mesh_index, description_));
       }
 
       OpenGlGeometry geometry;
@@ -1712,9 +1820,12 @@ class RenderEngineGl::GltfMeshExtractor {
             "A primitive from mesh {} has invalid material index {}; there are "
             "only {} materials in the glTF file '{}'.",
             gltf_mesh_index, prim.material, ssize(model.materials),
-            file_name_));
+            description_));
       }
-      return *MaybeMakeMeshFallbackMaterial(data.properties, file_name_,
+      // Note: if source is in-memory, `file_path_` will be empty. This will
+      // automatically short-circuit the texture logic and not look for a
+      // texture at that path.
+      return *MaybeMakeMeshFallbackMaterial(data.properties, file_path_,
                                             data.default_diffuse, policy_,
                                             render_mesh.uv_state);
     }
@@ -1742,8 +1853,8 @@ class RenderEngineGl::GltfMeshExtractor {
           "Drake's support for glTF files only includes the \"TEXCOORD_0\" set "
           "of texture coordinates. Material {} specifies a baseColorTexture "
           "that references texture coordinate set {}. That texture will be "
-          "ignored. {}.",
-          prim.material, gltf_pbr.baseColorTexture.texCoord, file_name_));
+          "ignored. In {}.",
+          prim.material, gltf_pbr.baseColorTexture.texCoord, description_));
       return material;
     }
     const tinygltf::Texture& texture =
@@ -1762,9 +1873,10 @@ class RenderEngineGl::GltfMeshExtractor {
       material.diffuse_map = image.uri;
       material.flip_y = false;
     } else {
-      const std::filesystem::path path(file_name_);
+      // The only way to get on-disk images is to have an on-disk glTF file.
+      DRAKE_DEMAND(!file_path_.empty());
       material.diffuse_map =
-          (path.parent_path() / image.uri).lexically_normal();
+          (file_path_.parent_path() / image.uri).lexically_normal();
       material.flip_y = true;
     }
 
@@ -1900,8 +2012,19 @@ class RenderEngineGl::GltfMeshExtractor {
   // behavior with non-throwing behavior can lead to undefined behavior.
   drake::internal::DiagnosticPolicy policy_;
 
-  /* The name of the glTF file being processed. */
-  std::string file_name_;
+  /* A description to use for warnings and error messages. If the mesh source
+   is a file, it includes the file name, otherwise it uses the FileContents
+   filename hint. This value will always be non-empty, at least communicating
+   the source of the glTF file. However, it may indicate that no filename
+   hint was provided. */
+  std::string description_;
+
+  /* The possibly empty path to the glTF file. If source is in memory, this will
+   remain empty. */
+  std::filesystem::path file_path_;
+
+  /* The embedded prefix is used to name embedded images. */
+  std::string embedded_prefix_;
 
   /* A map from a glTF accessor (named by its index) used as a primitive indices
    to the corresponding OpenGL index buffer. */
@@ -1915,10 +2038,10 @@ class RenderEngineGl::GltfMeshExtractor {
   TextureLibrary& texture_library_;
 };
 
-void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
+void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& source,
                                           RegistrationData* data) {
   DRAKE_DEMAND(opengl_context_->IsCurrent());
-  const std::string extension = Mesh(filename).extension();
+  const std::string& extension = source.extension();
   if (!(extension == ".obj" || extension == ".gltf")) {
     static const logging::Warn one_time(
         "RenderEngineGl only supports Mesh specifications which use "
@@ -1928,11 +2051,13 @@ void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
     return;
   }
 
-  const std::string file_key = GetPathKey(filename, /*is_convex=*/false);
+  const std::string file_key = GetPathKey(source, /* is_convex= */ false);
 
   if (!meshes_.contains(file_key)) {
     vector<RenderGlMesh> file_meshes;
     if (extension == ".obj") {
+      // TODO(SeanCurtis-TRI): Support in-memory obj.
+      DRAKE_DEMAND(source.IsPath());
       // Note: either the mesh has defined its own material or it hasn't. If it
       // has, that material will be defined in the RenderMesh and that material
       // will be saved in the cache, forcing every instance to use that
@@ -1942,7 +2067,7 @@ void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
       // why we simply pass a set of empty properties -- to emphasize its
       // independence.
       vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
-          filename, PerceptionProperties(), parameters_.default_diffuse,
+          source.path(), PerceptionProperties(), parameters_.default_diffuse,
           drake::internal::DiagnosticPolicy());
 
       for (const auto& render_mesh : meshes) {
@@ -1950,7 +2075,9 @@ void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
         DRAKE_DEMAND(mesh_index >= 0);
 
         geometries_[mesh_index].throw_if_undefined(
-            fmt::format("Error creating object for mesh {}", filename).c_str());
+            fmt::format("Error creating object for mesh {}",
+                        source.path().string())
+                .c_str());
 
         file_meshes.push_back(
             {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state});
@@ -1958,14 +2085,14 @@ void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
         DRAKE_DEMAND(render_mesh.material.has_value());
         const RenderMaterial& material = *render_mesh.material;
         // Only store materials defined by the mesh file; otherwise let
-        // instances define their own (see ImplementMeshesForFile()).
+        // instances define their own (see ImplementMeshesForSource()).
         if (material.from_mesh_file) {
           file_meshes.back().mesh_material = material;
         }
       }
     } else {
       file_meshes = GltfMeshExtractor(&geometries_, texture_library_.get())
-                        .ExtractMeshes(filename, *data);
+                        .ExtractMeshes(source, *data);
     }
     meshes_[file_key] = std::move(file_meshes);
   }
