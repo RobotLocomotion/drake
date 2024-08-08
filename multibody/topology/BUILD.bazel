@@ -36,7 +36,9 @@ drake_cc_library(
     name = "multibody_topology",
     srcs = [
         "link_joint_graph.cc",
+        "link_joint_graph_debug.cc",
         "spanning_forest.cc",
+        "spanning_forest_debug.cc",
         "spanning_forest_mobod.cc",
     ],
     hdrs = [

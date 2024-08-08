@@ -144,9 +144,10 @@ bool SpanningForest::BuildForest() {
   /* Model the World (Link 0) with mobilized body 0. This also starts the 0th
   LinkComposite in the graph and the 0th Welded Mobods group in the Forest.
   (1.1) */
-  data_.mobods.emplace_back(MobodIndex(0), LinkOrdinal(0));
+  Mobod& world = data_.mobods.emplace_back(MobodIndex(0), LinkOrdinal(0));
+  world.has_massful_follower_link_ = true;  // World is heavy!
   data_.welded_mobods.emplace_back(std::vector{MobodIndex(0)});
-  data_.mobods[MobodIndex(0)].welded_mobods_index_ = WeldedMobodsIndex(0);
+  world.welded_mobods_index_ = WeldedMobodsIndex(0);
   mutable_graph().set_primary_mobod_for_link(LinkOrdinal(0), MobodIndex(0),
                                              JointIndex{});
   mutable_graph().CreateWorldLinkComposite();

@@ -50,6 +50,7 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(world_link_index, BodyIndex(0));
   const LinkOrdinal world_link_ordinal = graph.world_link().ordinal();
   EXPECT_EQ(world_link_ordinal, LinkOrdinal(0));
+  EXPECT_FALSE(graph.world_link().is_massless());
 
   // Now build a forest representing the World-only graph.
   EXPECT_TRUE(graph.BuildForest());
@@ -68,6 +69,7 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
 
   // Check that the World-only forest makes sense.
   EXPECT_EQ(ssize(forest.mobods()), 1);
+  EXPECT_TRUE(forest.mobods(world_mobod_index).has_massful_follower_link());
   EXPECT_TRUE(forest.trees().empty());  // World isn't part of a tree.
   EXPECT_TRUE(forest.loop_constraints().empty());
   EXPECT_EQ(forest.height(), 1);
@@ -108,8 +110,8 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(world.nv_outboard(), 0);
   EXPECT_FALSE(world.has_quaternion());
   EXPECT_EQ(world.num_subtree_mobods(), 1);
-  EXPECT_EQ(world.subtree_velocities(), (std::pair{0, 0}));
-  EXPECT_EQ(world.outboard_velocities(), (std::pair{0, 0}));
+  EXPECT_EQ(world.subtree_velocities(), (pair{0, 0}));
+  EXPECT_EQ(world.outboard_velocities(), (pair{0, 0}));
 
   // Check that if we clear the graph, the forest returns to its invalid
   // condition as above.
@@ -223,7 +225,7 @@ LinkJointGraph MakeMultiBranchGraph(ModelInstanceIndex left,
     graph.AddLink("link" + std::to_string(i), link_to_instance[i]);
 
   // Joints: (Check against left-hand diagram above.)
-  const std::vector<std::pair<int, int>> joints{
+  const std::vector<pair<int, int>> joints{
       {1, 4},  {4, 5}, {4, 6}, {6, 9},  {6, 10},                        // left
       {12, 3}, {3, 8}, {3, 7}, {8, 11}, {11, 13}, {11, 14}, {14, 15}};  // right
   for (int i = 0; i < ssize(joints); ++i) {
@@ -496,8 +498,8 @@ GTEST_TEST(SpanningForest, BaseBodyChoicePolicy) {
   graph.RegisterJointType("revolute", 1, 1);
   for (int i = 1; i <= 10; ++i)
     graph.AddLink("link" + std::to_string(i), default_model_instance());
-  const std::vector<std::pair<int, int>> joints{{2, 1}, {2, 3}, {4, 5}, {6, 5},
-                                                {6, 7}, {8, 9}, {10, 9}};
+  const std::vector<pair<int, int>> joints{{2, 1}, {2, 3}, {4, 5}, {6, 5},
+                                           {6, 7}, {8, 9}, {10, 9}};
   for (int i = 0; i < ssize(joints); ++i) {
     const auto joint = joints[i];
     graph.AddJoint("joint" + std::to_string(i), default_model_instance(),
@@ -505,6 +507,8 @@ GTEST_TEST(SpanningForest, BaseBodyChoicePolicy) {
   }
 
   EXPECT_TRUE(graph.BuildForest());
+  graph.MakeGraphvizFiles("/tmp", "BaseBodyChoicePolicy");
+
   const SpanningForest& forest = graph.forest();
   EXPECT_EQ(graph.num_user_joints(), 7);
   EXPECT_EQ(ssize(graph.joints()), 10);  // 3 ephemeral base joints
@@ -1106,8 +1110,8 @@ GTEST_TEST(SpanningForest, SimpleTrees) {
         "link" + std::to_string(i), model_instance,
         massless.contains(i) ? LinkFlags::kMassless : LinkFlags::kDefault);
   }
-  const std::vector<std::pair<int, int>> joints{
-      {3, 1}, {3, 2}, {8, 3}, {10, 8}, {10, 9}, {9, 4}, {9, 7}};
+  const std::vector<pair<int, int>> joints{{3, 1},  {3, 2}, {8, 3}, {10, 8},
+                                           {10, 9}, {9, 4}, {9, 7}};
   for (int i = 0; i < 7; ++i) {
     graph.AddJoint("joint" + std::to_string(i), model_instance, "revolute",
                    BodyIndex(joints[i].first), BodyIndex(joints[i].second));
@@ -1190,8 +1194,8 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   for (int i = 1; i <= 6; ++i) {
     graph.AddLink("link" + std::to_string(i), model_instance);
   }
-  const std::vector<std::pair<int, int>> joints{{0, 1}, {1, 2}, {2, 3}, {3, 4},
-                                                {0, 5}, {5, 6}, {6, 4}};
+  const std::vector<pair<int, int>> joints{{0, 1}, {1, 2}, {2, 3}, {3, 4},
+                                           {0, 5}, {5, 6}, {6, 4}};
   for (int i = 0; i < 7; ++i) {
     graph.AddJoint("joint" + std::to_string(i), model_instance, "revolute",
                    BodyIndex(joints[i].first), BodyIndex(joints[i].second));
@@ -1379,8 +1383,8 @@ GTEST_TEST(SpanningForest, DoubleLoop) {
   for (int i = 1; i <= 7; ++i)
     graph.AddLink("link" + std::to_string(i), model_instance);
 
-  const std::vector<std::pair<int, int>> joints{{1, 2}, {1, 4}, {1, 3}, {2, 5},
-                                                {4, 7}, {3, 6}, {5, 6}, {7, 6}};
+  const std::vector<pair<int, int>> joints{{1, 2}, {1, 4}, {1, 3}, {2, 5},
+                                           {4, 7}, {3, 6}, {5, 6}, {7, 6}};
   for (int i = 0; i < 8; ++i) {
     graph.AddJoint("joint" + std::to_string(i), model_instance, "revolute",
                    BodyIndex(joints[i].first), BodyIndex(joints[i].second));
@@ -1392,6 +1396,8 @@ GTEST_TEST(SpanningForest, DoubleLoop) {
 
   EXPECT_TRUE(graph.BuildForest());  // Using default options.
   const SpanningForest& forest = graph.forest();
+
+  graph.MakeGraphvizFiles("/tmp", "DoubleLoop");
 
   EXPECT_EQ(ssize(graph.links()), 10);  // After modeling.
   EXPECT_EQ(ssize(graph.joints()), 9);
@@ -1582,7 +1588,7 @@ GTEST_TEST(SpanningForest, ShadowLinkPreservesJointOrder) {
   graph.AddLink("link3$1", default_model_instance());  // Awkward name!
   graph.AddLink("link2", default_model_instance());
   graph.AddLink("link3", default_model_instance());
-  const std::vector<std::pair<int, int>> joints{{0, 1}, {0, 2}, {1, 3}, {3, 2}};
+  const std::vector<pair<int, int>> joints{{0, 1}, {0, 2}, {1, 3}, {3, 2}};
   for (int i = 0; i < ssize(joints); ++i) {
     const auto joint = joints[i];
     graph.AddJoint("joint" + std::to_string(i), default_model_instance(),
@@ -1590,6 +1596,8 @@ GTEST_TEST(SpanningForest, ShadowLinkPreservesJointOrder) {
   }
 
   EXPECT_TRUE(graph.BuildForest());
+  graph.MakeGraphvizFiles("/tmp", "ShadowLinkPreservesJointOrder");
+
   const SpanningForest& forest = graph.forest();
   EXPECT_EQ(graph.num_user_joints(), 4);
   EXPECT_EQ(ssize(graph.joints()), 4);
@@ -1696,7 +1704,7 @@ GTEST_TEST(SpanningForest, MasslessLoopAreDetected) {
                   LinkFlags::kMassless);
   }
 
-  const std::vector<std::pair<int, int>> joints{{4, 1}, {4, 3}, {1, 2}, {2, 3}};
+  const std::vector<pair<int, int>> joints{{4, 1}, {4, 3}, {1, 2}, {2, 3}};
   for (int i = 0; i < ssize(joints); ++i) {
     graph.AddJoint("joint" + std::to_string(i), default_model_instance(),
                    "revolute", BodyIndex(joints[i].first),
@@ -1726,7 +1734,7 @@ GTEST_TEST(SpanningForest, MasslessLoopAreDetected) {
                         LinkFlags::kMassless);
   }
 
-  const std::vector<std::pair<int, int>> world_graph_joints{
+  const std::vector<pair<int, int>> world_graph_joints{
       {0, 1}, {0, 3}, {1, 2}, {2, 3}};
   for (int i = 0; i < ssize(world_graph_joints); ++i) {
     world_graph.AddJoint("joint" + std::to_string(i), default_model_instance(),
@@ -1783,8 +1791,8 @@ GTEST_TEST(SpanningForest, LoopWithComposites) {
         massless.contains(i) ? LinkFlags::kMassless : LinkFlags::kDefault);
   }
 
-  const std::vector<std::pair<int, int>> weld_joints{{1, 2}, {3, 4}, {5, 6}};
-  const std::vector<std::pair<int, int>> revolute_joints{
+  const std::vector<pair<int, int>> weld_joints{{1, 2}, {3, 4}, {5, 6}};
+  const std::vector<pair<int, int>> revolute_joints{
       {0, 1}, {2, 3}, {4, 5}, {0, 7}, {7, 8}, {8, 9}, {9, 10}, {6, 10}};
   for (int i = 0; i < ssize(weld_joints); ++i) {
     graph.AddJoint("weld_joint_" + std::to_string(i), model_instance, "weld",
@@ -1803,10 +1811,15 @@ GTEST_TEST(SpanningForest, LoopWithComposites) {
   EXPECT_EQ(ssize(graph.joints()), 11);
   EXPECT_EQ(ssize(graph.loop_constraints()), 0);
 
+  EXPECT_TRUE(graph.BuildForest());
+  graph.MakeGraphvizFiles("/tmp", "LoopWithComposites-nomerge");
+
   graph.SetGlobalForestBuildingOptions(
       ForestBuildingOptions::kMergeLinkComposites);
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
+
+  graph.MakeGraphvizFiles("/tmp", "LoopWithComposites-merge");
 
   // After modeling
   EXPECT_EQ(ssize(graph.links()), 12);            // split one, added shadow
@@ -1930,9 +1943,9 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
         massless.contains(i) ? LinkFlags::kMassless : LinkFlags::kDefault);
   }
 
-  const std::vector<std::pair<int, int>> revolute_joints{
-      {0, 1}, {1, 2}, {2, 3}, {5, 7}, {7, 8}, {3, 8}};
-  const std::vector<std::pair<int, int>> weld_joints{{0, 4}, {4, 5}, {4, 6}};
+  const std::vector<pair<int, int>> revolute_joints{{0, 1}, {1, 2}, {2, 3},
+                                                    {5, 7}, {7, 8}, {3, 8}};
+  const std::vector<pair<int, int>> weld_joints{{0, 4}, {4, 5}, {4, 6}};
 
   for (int i = 0; i < ssize(revolute_joints); ++i) {
     graph.AddJoint("joint_" + std::to_string(i), model_instance, "revolute",
@@ -1952,6 +1965,8 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
   EXPECT_EQ(ssize(graph.loop_constraints()), 0);
 
   EXPECT_TRUE(graph.BuildForest());
+
+  graph.MakeGraphvizFiles("/tmp", "MasslessMergedComposites_Anchored");
 
   // After modeling
   EXPECT_EQ(ssize(graph.links()), 10);  // added shadow 3s {9}
@@ -1993,6 +2008,8 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
   height of 3. */
   graph.ChangeJointType(JointIndex(6), "revolute");
   EXPECT_TRUE(graph.BuildForest());
+
+  graph.MakeGraphvizFiles("/tmp", "MasslessMergedComposites_Moving");
 
   // The links are massless and so is their composite.
   for (LinkOrdinal link_ordinal(4); link_ordinal <= 6; ++link_ordinal)
@@ -2106,6 +2123,141 @@ GTEST_TEST(SpanningForest, CheckMergingPolicy) {
   graph.ChangeJointFlags(JointIndex(1), JointFlags::kMustBeModeled);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_EQ(ssize(forest.mobods()), 3);
+}
+
+/* Check just some basic functioning of the Graphviz utilities for visualizing
+the graph and forest. We'll test that we get the expected dot strings for
+a very simple graph, but won't attempt to conjure up complete dot
+strings for every visualization quirk. Those will have to be validated by a
+human looking at the results. We'll also verify that the expected .png files
+are created, but won't look at their contents. */
+GTEST_TEST(SpanningForest, VisualizationWithGraphviz) {
+  const std::string tmpdir(getenv("TEST_TMPDIR"));
+  LinkJointGraph graph;
+  graph.RegisterJointType("revolute", 1, 1);
+  const SpanningForest& forest = graph.forest();
+
+  // Input graph:
+  //   {0} {1} -> {2}
+  // Will get an ephemeral floating joint between {0} and {1}.
+  const BodyIndex link1 = graph.AddLink("link1", default_model_instance());
+  const BodyIndex link2 = graph.AddLink("link2", default_model_instance());
+  graph.AddJoint("joint0", default_model_instance(), "revolute", link1, link2);
+  EXPECT_TRUE(graph.BuildForest());
+
+  // This is what we get if only the user elements are to be shown.
+  const char expected_graph[] = R"""(digraph LinkJointGraph {
+rankdir=BT;
+labelloc=t;
+label="GraphvizTest
+LinkJointGraph";
+legend [shape=none]
+[label="* = massless
+L/J(i) link/joint(ordinal)
+name:index"]
+subgraph cluster0 {
+label="LinkComposite(0)";
+link0 [label="L(0) world:0"];
+}
+link1 [label="L(1) link1:1"];
+link2 [label="L(2) link2:2"];
+link1 -> link2 [arrowhead=normal] [style=solid] [fontsize=10] [label="J(0) joint0:0
+revolute"] [color=green];
+}
+)""";
+
+  // This is what we should get if ephemeral elements are shown (the
+  // default behavior).
+  const char expected_augmented_graph[] = R"""(digraph LinkJointGraph {
+rankdir=BT;
+labelloc=t;
+label="GraphvizTest
+LinkJointGraph+";
+legend [shape=none]
+[label="* = massless
+L/J(i) link/joint(ordinal)
+name:index
+red = ephemeral"]
+subgraph cluster0 {
+label="LinkComposite(0)";
+link0 [label="L(0) world:0"];
+}
+link1 [label="L(1) link1:1"];
+link2 [label="L(2) link2:2"];
+link1 -> link2 [arrowhead=normal] [style=solid] [fontsize=10] [label="J(0) joint0:0
+revolute"] [color=green];
+link0 -> link1 [arrowhead=empty] [style=solid] [fontsize=10] [label="J(1) link1:1
+quaternion_floating"] [color=red];
+}
+)""";
+
+  const char expected_forest[] = R"""(digraph SpanningForest {
+rankdir=BT;
+labelloc=t;
+label="GraphvizTest
+SpanningForest";
+legend [shape=none]
+[label="* = massless
+red = shadow
+purple = reversed"]
+mobod0 [color=black] [label="mobod(0)
+L(0) "];
+mobod1 [color=black] [label="mobod(1)
+L(1) "];
+mobod0 -> mobod1 [arrowhead=normal] [fontsize=10] [style=solid][label="mobilizer(1)
+J(1) quaternion_floating
+q0 v0"] [color=blue];
+mobod2 [color=black] [label="mobod(2)
+L(2) "];
+mobod1 -> mobod2 [arrowhead=normal] [fontsize=10] [style=solid][label="mobilizer(2)
+J(0) revolute
+q7 v6"] [color=blue];
+}
+)""";
+
+  EXPECT_EQ(graph.GenerateGraphvizString("GraphvizTest", false),
+            expected_graph);
+  EXPECT_EQ(graph.GenerateGraphvizString("GraphvizTest"),
+            expected_augmented_graph);
+  EXPECT_EQ(forest.GenerateGraphvizString("GraphvizTest"), expected_forest);
+
+  // Returns true if file {tmpdir}/GraphvizTest_{suffix}.{extension} exists.
+  auto exists = [&tmpdir](const char* suffix, const char* extension) {
+    std::filesystem::path name =
+        std::filesystem::path(tmpdir).append("GraphvizTest_");
+    name.concat(suffix);
+    name.replace_extension(extension);
+    return std::filesystem::exists(name);
+  };
+
+  // Make sure we don't already have the .png files.
+  for (const char* suffix : {"graph", "graph+", "forest"})
+    EXPECT_FALSE(exists(suffix, "png"));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      graph.MakeGraphvizFiles("////bad_dir", "bad_file"),
+      "MakeGraphvizFiles.*can't create.*bad_dir/bad_file.*");
+
+  // We can't test running dot if it's not there. This is the documented
+  // search path for MakeGraphvizFiles().
+  if (!std::filesystem::exists("/usr/bin/dot") &&
+      !std::filesystem::exists("/usr/local/bin/dot") &&
+      !std::filesystem::exists("/bin/dot")) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        graph.MakeGraphvizFiles(tmpdir, "Anything"),
+        "MakeGraphvizFiles.*dot.*required but missing.*");
+  } else {
+    const std::filesystem::path directory =
+        graph.MakeGraphvizFiles(tmpdir, "GraphvizTest");
+
+    EXPECT_EQ(directory.string(), std::filesystem::absolute(tmpdir).string());
+
+    // Now check that (a) we have .pngs, and (b) we didn't leave any .dot files.
+    for (const char* suffix : {"graph", "graph+", "forest"}) {
+      EXPECT_TRUE(exists(suffix, "png"));
+      EXPECT_FALSE(exists(suffix, "dot"));
+    }
+  }
 }
 
 }  // namespace
