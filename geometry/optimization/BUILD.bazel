@@ -80,6 +80,8 @@ drake_cc_library(
         "//math:matrix_util",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
+        "//solvers:solver_interface",
+        "//solvers:solver_options",
     ],
     implementation_deps = [
         "//geometry:read_obj",
