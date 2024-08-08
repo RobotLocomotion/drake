@@ -50,8 +50,25 @@ void AddNewVariables(
 
 }  // namespace
 
-ConvexHull::ConvexHull(const ConvexSets& sets)
-    : ConvexSet(GetAmbientDimension(sets), false), sets_(sets) {}
+ConvexHull::ConvexHull(const ConvexSets& sets, const bool check_empty_sets)
+    : ConvexSet(GetAmbientDimension(sets), false), sets_(sets) {
+  drake::log()->info("sets size: {}", sets.size());
+  if (check_empty_sets) {
+    non_empty_sets_ = std::vector<copyable_unique_ptr<ConvexSet>>();
+    for (const auto& set : sets) {
+      if (!set->IsEmpty()) {
+        non_empty_sets_->push_back(set);
+        drake::log()->info("non empty set added");
+      }
+    }
+  } else {
+    non_empty_sets_ = std::nullopt;
+  }
+  drake::log()->info("non empty sets has value: {}", non_empty_sets_.has_value());
+  if (non_empty_sets_.has_value()) {
+    drake::log()->info("non empty sets size: {}", non_empty_sets_->size());
+  }
+}
 
 ConvexHull::~ConvexHull() = default;
 
@@ -69,16 +86,11 @@ std::optional<bool> ConvexHull::DoIsBoundedShortcut() const {
 }
 
 bool ConvexHull::DoIsEmpty() const {
-  if (sets_.empty()) {
-    return true;
+  if (non_empty_sets_.has_value()) {
+    return non_empty_sets_->empty();
   }
-  // The convex hull is empty if one of the participating sets is empty.
-  for (const auto& set : sets_) {
-    if (set->IsEmpty()) {
-      return true;
-    }
-  }
-  return false;
+  // if non_empty_sets_ does not have value, then we reconstruct the non_empty_sets_ and check if it is empty.
+  return ConvexHull(sets_, true).IsEmpty();
 }
 
 std::optional<VectorXd> ConvexHull::DoMaybeGetPoint() const {
@@ -90,7 +102,8 @@ bool ConvexHull::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
   // Check the feasibility of |x - ∑ᵢ xᵢ| <= tol * 1, xᵢ ∈ 𝛼ᵢXᵢ, 𝛼ᵢ ≥ 0, ∑ᵢ 𝛼ᵢ =
   // 1, where 1 is a vector of ones and |.| is interpreted element-wise.
   MathematicalProgram prog;
-  const int n = std::ssize(sets_);
+  const auto& participating_sets = non_empty_sets_.value_or(sets_);
+  const int n = std::ssize(participating_sets);
   const int d = ambient_dimension();
   // x_sets is d * n, each column is a variable for a convex set
   auto x_sets = prog.NewContinuousVariables(d, n, "x_sets");
@@ -108,7 +121,7 @@ bool ConvexHull::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
   prog.AddBoundingBoxConstraint(0, 1, alpha);
   // add the constraints for each convex set
   for (int i = 0; i < n; ++i) {
-    sets_[i]->AddPointInNonnegativeScalingConstraints(&prog, x_sets.col(i),
+    participating_sets[i]->AddPointInNonnegativeScalingConstraints(&prog, x_sets.col(i),
                                                       alpha(i));
   }
   // Check feasibility.
@@ -122,7 +135,8 @@ ConvexHull::DoAddPointInSetConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
   // Add the constraint that vars = ∑ᵢ xᵢ, xᵢ ∈ 𝛼ᵢXᵢ, 𝛼ᵢ ≥ 0, ∑ᵢ 𝛼ᵢ = 1.
-  const int n = std::ssize(sets_);
+  const auto& participating_sets = non_empty_sets_.value_or(sets_);
+  const int n = std::ssize(participating_sets);
   const int d = ambient_dimension();
   // The variable is d * n, each column is a variable for a convex set
   auto x_sets = prog->NewContinuousVariables(d, n, "x_sets");
@@ -147,7 +161,7 @@ ConvexHull::DoAddPointInSetConstraints(
   auto new_vars = drake::symbolic::Variables();
   // add the constraints for each convex set
   for (int i = 0; i < n; ++i) {
-    auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
+    auto cons = participating_sets[i]->AddPointInNonnegativeScalingConstraints(
         prog, x_sets.col(i), alpha(i));
     new_bindings.insert(new_bindings.end(), cons.begin(), cons.end());
     AddNewVariables(cons, &new_vars);
@@ -167,7 +181,8 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
     const symbolic::Variable& t) const {
   // Add the constraint that t >= 0, x = ∑ᵢ xᵢ, xᵢ ∈ 𝛼ᵢXᵢ, 𝛼ᵢ ≥ 0, ∑ᵢ 𝛼ᵢ = t.
-  const int n = std::ssize(sets_);
+  const auto& participating_sets = non_empty_sets_.value_or(sets_);
+  const int n = std::ssize(participating_sets);
   const int d = ambient_dimension();
   // The new variable is d * n, each row is a variable for a convex set
   auto x_sets = prog->NewContinuousVariables(d, n, "x_sets");
@@ -193,7 +208,7 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   new_bindings.push_back(prog->AddBoundingBoxConstraint(0, inf, alpha));
   // Finally add the constraints for each convex set.
   for (int i = 0; i < n; ++i) {
-    auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
+    auto cons = participating_sets[i]->AddPointInNonnegativeScalingConstraints(
         prog, x_sets.col(i), alpha(i));
     new_bindings.insert(new_bindings.end(), cons.begin(), cons.end());
   }
@@ -211,7 +226,8 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
   // Add the constraint that A_x * x + b_x = ∑ᵢ xᵢ, xᵢ ∈ 𝛼ᵢXᵢ, 𝛼ᵢ ≥ 0,
   // ∑ᵢ 𝛼ᵢ = c't + d.
   const int dim = ambient_dimension();
-  const int n = std::ssize(sets_);
+  const auto& participating_sets = non_empty_sets_.value_or(sets_);
+  const int n = std::ssize(participating_sets);
   // The new variable is dim * n, each column belongs to a convex set.
   auto x_sets = prog->NewContinuousVariables(dim, n, "x_sets");
   auto alpha = prog->NewContinuousVariables(n, "alpha");
@@ -240,7 +256,7 @@ ConvexHull::DoAddPointInNonnegativeScalingConstraints(
       prog->AddLinearEqualityConstraint(a_con, d, alpha_t_vec));
   // Add the inclusion constraints for each convex set.
   for (int i = 0; i < n; ++i) {
-    auto cons = sets_[i]->AddPointInNonnegativeScalingConstraints(
+    auto cons = participating_sets[i]->AddPointInNonnegativeScalingConstraints(
         prog, x_sets.col(i), alpha(i));
     new_bindings.insert(new_bindings.end(), cons.begin(), cons.end());
   }

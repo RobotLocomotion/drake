@@ -32,18 +32,37 @@ GTEST_TEST(ConvexHullTest, BasicTests) {
   EXPECT_FALSE(hull.IsEmpty());
   EXPECT_TRUE(hull.IsBounded());
   EXPECT_FALSE(hull.MaybeGetPoint().has_value());
+  // Inppropriate dimensions.
+  Point point_3d = Point(Eigen::Vector3d(1.0, 2.0, 3.0));
+  EXPECT_THROW(ConvexHull(MakeConvexSets(point, point_3d)), std::runtime_error);
+}
+
+GTEST_TEST(ConvexHullTest, CheckEmpty){
+  const Point point(Eigen::Vector2d(1.0, 2.0));
+  const Hyperrectangle rectangle(Eigen::Vector2d(-1.0, 1.0),
+                                 Eigen::Vector2d(1.0, 1.0));
   // Add an HPolyhedron that is empty.
   Eigen::MatrixXd A(2, 2);
   A << 1, 0, -1, 0;
   Eigen::VectorXd b(2);
   b << 1, -2;
   HPolyhedron empty_hpolyhedron(A, b);
-  ConvexHull empty_hull(MakeConvexSets(point, rectangle, empty_hpolyhedron));
-  EXPECT_TRUE(empty_hull.IsEmpty());
-  EXPECT_FALSE(empty_hull.MaybeGetPoint().has_value());
-  // Inppropriate dimensions.
-  Point point_3d = Point(Eigen::Vector3d(1.0, 2.0, 3.0));
-  EXPECT_THROW(ConvexHull(MakeConvexSets(point, point_3d)), std::runtime_error);
+  ConvexHull hull_1(MakeConvexSets(point, rectangle, empty_hpolyhedron));
+  EXPECT_FALSE(hull_1.IsEmpty());
+  EXPECT_TRUE(hull_1.maybe_non_empty_sets().has_value());
+  EXPECT_EQ(hull_1.maybe_non_empty_sets().value().size(), 2);
+  EXPECT_TRUE(hull_1.PointInSet(Eigen::Vector2d(0.0, 1.5), 1e-6));
+  // If bypass the check, it should be empty.
+  ConvexHull hull_2(MakeConvexSets(point, rectangle, empty_hpolyhedron), false);
+  // It will say the right thing: the convex hull is not empty.
+  EXPECT_FALSE(hull_2.IsEmpty());
+  // however, the non_empty_sets should be empty.
+  EXPECT_FALSE(hull_2.maybe_non_empty_sets().has_value()); 
+  // Because the user wrongly bypassed the check, PointInSet will return false. 
+  EXPECT_TRUE(hull_2.PointInSet(Eigen::Vector2d(0.0, 1.5), 1e-6));
+  // If only the empty_hpolyhedron is added, the convex hull should be empty.
+  ConvexHull hull_3(MakeConvexSets(empty_hpolyhedron));
+  EXPECT_TRUE(hull_3.IsEmpty());
 }
 
 GTEST_TEST(ConvexHullTest, PointInSet1) {
@@ -127,7 +146,14 @@ GTEST_TEST(ConvexHullTest, AddPointInNonnegativeScalingConstraints1) {
   Point point(Eigen::Vector2d(0.0, 0.0));
   Hyperrectangle rectangle(Eigen::Vector2d(-1.0, 1.0),
                            Eigen::Vector2d(1.0, 1.0));
-  ConvexHull hull(MakeConvexSets(point, rectangle));
+  // Add an HPolyhedron that is empty.
+  Eigen::MatrixXd A(2, 2);
+  A << 1, 0, -1, 0;
+  Eigen::VectorXd b(2);
+  b << 1, -2;
+  HPolyhedron empty_hpolyhedron(A, b);
+  ConvexHull hull(MakeConvexSets(point, rectangle, empty_hpolyhedron));
+  // ConvexHull hull(MakeConvexSets(point, rectangle));
   solvers::MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2, "x");
   auto t = prog.NewContinuousVariables(1, "t");
