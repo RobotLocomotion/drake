@@ -112,8 +112,12 @@ class Toppra {
    * generate a time parameterized trajectory.
    * The path parameterization has the same start time as the original path's
    * starting break.
+   *
+   * @param solver_id If not std::nullopt, then we will invoke this solver for
+   * the optimization problem. Otherwise Drake will choose the solver.
    */
-  std::optional<PiecewisePolynomial<double>> SolvePathParameterization();
+  std::optional<PiecewisePolynomial<double>> SolvePathParameterization(
+      const std::optional<solvers::SolverId>& solver_id = std::nullopt);
 
   /**
    * Adds a velocity limit to all the degrees of freedom in the plant. The
