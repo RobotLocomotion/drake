@@ -34,6 +34,7 @@ from drake import (
 from pydrake.geometry import (
     DrakeVisualizer,
     DrakeVisualizerParams,
+    Meshcat,
     MeshcatParams,
     Role,
 )
@@ -256,137 +257,105 @@ class TestMeldis(unittest.TestCase):
             # The link always exists after a DRAW.
             self.assertTrue(meshcat.HasPath(link_path))
 
-    def test_geometry_file_hasher(self):
-        """Checks _GeometryFileHasher's detection of changes to files.
+    def test_reload_detection(self):
+        """Tests the mechanism viewer applet uses to determine if it should
+        ignore a load message.
+
+        The loading is spread across on_viewer_load and on_viewer_draw. The
+        first determines if a redraw is necessary (by setting a flag), and
+        the latter actually performs the loading (lazily) while computing
+        file checksums.
+
+        We'll successively execute both functions and peek into the applet's
+        state to see how the redraw signal and hash values evolve.
         """
-        # A tiny wrapper function to make it easy to compute the hash.
-        def dut(data):
-            hasher = mut._meldis._GeometryFileHasher()
-            hasher.on_viewer_load_robot(data)
-            return hasher.value()
+        meshcat = Meshcat()
+        applet = mut._meldis._ViewerApplet(meshcat=meshcat,
+                                           path="/DRAKE_VIEWER",
+                                           alpha_slider_name="ReloadTest")
 
-        # Empty message => empty hash.
-        message = lcmt_viewer_load_robot()
-        empty_hash = hashlib.sha256().hexdigest()
-        self.assertEqual(dut(message), empty_hash)
+        # The applet starts with no hash history.
+        self.assertDictEqual(applet._load_deduplicator._path_hashes, {})
 
-        # Message with non-mesh primitive => empty hash.
-        sphere = lcmt_viewer_geometry_data()
-        sphere.type = lcmt_viewer_geometry_data.SPHERE
-        link = lcmt_viewer_link_data()
-        link.geom = [sphere]
-        link.num_geom = len(link.geom)
-        message.link = [link]
-        message.num_links = len(message.link)
-        self.assertEqual(dut(message), empty_hash)
-
-        # Message with inline mesh => empty hash.
-        mesh = lcmt_viewer_geometry_data()
-        mesh.type = lcmt_viewer_geometry_data.MESH
-        mesh.float_data = [0.0, 0.0]
-        mesh.num_float_data = len(mesh.float_data)
-        link.geom = [mesh]
-        link.num_geom = len(link.geom)
-        message.link = [link]
-        message.num_links = len(message.link)
-        self.assertEqual(dut(message), empty_hash)
-
-        # Message with invalid mesh filename => empty hash.
-        # (Invalid mesh filenames are not an error.)
-        mesh = lcmt_viewer_geometry_data()
-        mesh.type = lcmt_viewer_geometry_data.MESH
-        mesh.string_data = "no-such-file"
-        link.geom = [mesh]
-        link.num_geom = len(link.geom)
-        message.link = [link]
-        message.num_links = len(message.link)
-        self.assertEqual(dut(message), empty_hash)
-
-        # Switch to a valid .obj mesh filename => non-empty hash.
+        # We need to create an obj and mtl file so we can test changes to
+        # referenced files.
         test_tmpdir = Path(os.environ["TEST_TMPDIR"])
-        obj_filename = test_tmpdir / "mesh_checksum_test.obj"
+        png_filename = test_tmpdir / "reload_test.png"
+        with open(png_filename, "w") as f:
+            f.write("Not really a png")
+
+        mtl_filename = test_tmpdir / "reload_test.mtl"
+        with open(mtl_filename, "w") as f:
+            f.write("""
+                newmtl test_mat
+                map_Kd reload_test.png
+                Kd 1 1 1""")
+
+        obj_filename = test_tmpdir / "reload_test.obj"
         with open(obj_filename, "w") as f:
-            f.write("foobar")
+            f.write("""
+                mtllib reload_test.mtl
+                v 0 0 0
+                v 1 0 0
+                v 0 1 0
+                usemtl test_mat
+                f 1 2 3""")
+
+        # Now we need a load message that references the .obj.
+        mesh = lcmt_viewer_geometry_data()
+        mesh.float_data = (1, 1, 1)
+        mesh.position = (0, 0, 0)
+        mesh.quaternion = (1, 0, 0, 0)
+        mesh.color = (1, 0, 0, 1)
+        mesh.type = lcmt_viewer_geometry_data.MESH
         mesh.string_data = str(obj_filename)
-        mesh_hash_1 = dut(message)
-        self.assertNotEqual(mesh_hash_1, empty_hash)
+        link = lcmt_viewer_link_data()
+        link.name = "link1"
+        link.robot_num = 1
+        link.geom = [mesh]
+        link.num_geom = len(link.geom)
+        load_message = lcmt_viewer_load_robot()
+        load_message.link = [link]
+        load_message.num_links = len(load_message.link)
 
-        # Changing the .obj mesh content changes the checksum.
-        # Invalid mtl filenames are not an error.
-        with open(obj_filename, "w") as f:
-            f.write("foo\n mtllib mesh_checksum_test.mtl \nbar\n")
-        mesh_hash_2 = dut(message)
-        self.assertNotEqual(mesh_hash_2, empty_hash)
-        self.assertNotEqual(mesh_hash_2, mesh_hash_1)
+        # And a draw message that will trigger creation of objects in meshcat.
+        draw_message = lcmt_viewer_draw()
+        draw_message.link_name = [link.name]
+        draw_message.robot_num = [link.robot_num]
+        draw_message.position = [(0, 0, 0)]
+        draw_message.quaternion = [(1, 0, 0, 0)]
 
-        # The appearance of the .obj's mtl file changes the checksum.
-        with open(test_tmpdir / "mesh_checksum_test.mtl", "w") as f:
-            f.write("quux")
-        mesh_hash_3 = dut(message)
-        self.assertNotEqual(mesh_hash_3, empty_hash)
-        self.assertNotEqual(mesh_hash_3, mesh_hash_1)
-        self.assertNotEqual(mesh_hash_3, mesh_hash_2)
+        # The first load message should load and report a need to redraw. No
+        # files have been hashed yet, the only thing we did was memorize the
+        # load message.
+        applet.on_viewer_load(load_message)
+        self.assertTrue(applet._waiting_for_first_draw_message)
+        self.assertDictEqual(applet._load_deduplicator._path_hashes, {})
 
-        # Now finally, the mtl file has a texture. This time, as a cross-check,
-        # inspect the filenames that were hashed instead of the hash itself.
-        png_filename = test_tmpdir / "mesh_checksum_test.png"
-        with open(test_tmpdir / "mesh_checksum_test.mtl", "w") as f:
-            f.write("map_Kd mesh_checksum_test.png\n")
-        png_filename.touch()
-        hasher = mut._meldis._GeometryFileHasher()
-        hasher.on_viewer_load_robot(message)
-        hashed_names = set([x.name for x in hasher._paths])
-        self.assertSetEqual(hashed_names, {"mesh_checksum_test.obj",
-                                           "mesh_checksum_test.mtl",
-                                           "mesh_checksum_test.png"})
+        # After drawing, we should have all three files in the checksums.
+        applet.on_viewer_draw(draw_message)
+        self.assertFalse(applet._waiting_for_first_draw_message)
+        self.assertSetEqual(set(applet._load_deduplicator._path_hashes.keys()),
+                            {png_filename, mtl_filename, obj_filename})
 
-        # Message with .gltf mesh that can't be parsed => non-empty hash.
-        # (Invalid glTF content is not an error.)
-        gltf_filename = test_tmpdir / "mesh_checksum_test.gltf"
-        with open(gltf_filename, "w") as f:
-            f.write("I'm adversarially not json. {")
-        mesh.string_data = str(gltf_filename)
-        gltf_hash_1 = dut(message)
-        self.assertNotEqual(gltf_hash_1, empty_hash)
+        # Attempting to load the same load message without changes, means we
+        # shouldn't be waiting for a first draw message and checksums are
+        # unchanged.
+        checksum_copy = applet._load_deduplicator._path_hashes.copy()
+        applet.on_viewer_load(load_message)
+        self.assertFalse(applet._waiting_for_first_draw_message)
+        self.assertDictEqual(applet._load_deduplicator._path_hashes,
+                             checksum_copy)
 
-        # Valid glTF file, but with no external files; the glTF's contents
-        # matter.
-        with open(gltf_filename, "w") as f:
-            f.write("{}")
-        gltf_hash_2 = dut(message)
-        self.assertNotEqual(gltf_hash_2, empty_hash)
-        self.assertNotEqual(gltf_hash_2, gltf_hash_1)
-
-        # Valid glTF file reference an external image.
-        with open(gltf_filename, "w") as f:
-            f.write(json.dumps({"images": [{"uri": str(png_filename)}]}))
-        gltf_hash_3 = dut(message)
-        self.assertNotEqual(gltf_hash_3, empty_hash)
-        self.assertNotEqual(gltf_hash_3, gltf_hash_2)
-
-        # Now finally, the glTF file has a .bin. This time, as a cross-check,
-        # inspect the filenames that were hashed instead of the hash itself.
-        bin_filename = test_tmpdir / "mesh_checksum_test.bin"
-        bin_filename.touch()
-        with open(gltf_filename, "w") as f:
-            f.write(json.dumps({
-                "images": [{"uri": str(png_filename)}],
-                "buffers": [{"uri": str(bin_filename)}]
-            }))
-        hasher = mut._meldis._GeometryFileHasher()
-        hasher.on_viewer_load_robot(message)
-        hashed_names = set([x.name for x in hasher._paths])
-        self.assertSetEqual(hashed_names, {"mesh_checksum_test.gltf",
-                                           "mesh_checksum_test.bin",
-                                           "mesh_checksum_test.png"})
-
-        # A message with an unsupported extension => non-empty hash.
-        unsupported_filename = test_tmpdir / "mesh_checksum_test.ply"
-        with open(unsupported_filename, "w") as f:
-            f.write("Non-empty content will not matter.")
-        mesh.string_data = str(unsupported_filename)
-        unsupported_hash = dut(message)
-        self.assertNotEqual(unsupported_hash, empty_hash)
+        # Now we'll modify the mtl by removing the texture map.
+        with open(mtl_filename, "w") as f:
+            f.write("newmtl test_mat\n")
+            f.write("Kd 1 0 0")
+        applet.on_viewer_load(load_message)
+        self.assertDictEqual(applet._load_deduplicator._path_hashes, {})
+        applet.on_viewer_draw(draw_message)
+        self.assertSetEqual(set(applet._load_deduplicator._path_hashes.keys()),
+                            {mtl_filename, obj_filename})
 
     def test_viewer_applet_alpha_slider(self):
         # Create the device under test.

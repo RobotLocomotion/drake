@@ -346,40 +346,66 @@ GTEST_TEST(MeshcatTest, NumActive) {
 GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   Meshcat meshcat;
   EXPECT_TRUE(meshcat.GetPackedObject("sphere").empty());
-  meshcat.SetObject("sphere", Sphere(0.25), Rgba(1.0, 0, 0, 1));
+  EXPECT_THAT(meshcat.SetObject("sphere", Sphere(0.25), Rgba(1, 0, 0, 1)),
+              ::testing::IsEmpty());
   EXPECT_FALSE(meshcat.GetPackedObject("sphere").empty());
-  meshcat.SetObject("cylinder", Cylinder(0.25, 0.5), Rgba(0.0, 1.0, 0, 1));
+  EXPECT_THAT(
+      meshcat.SetObject("cylinder", Cylinder(0.25, 0.5), Rgba(0, 1, 0, 1)),
+      ::testing::IsEmpty());
   EXPECT_FALSE(meshcat.GetPackedObject("cylinder").empty());
   // HalfSpaces are not supported yet; this should only log a warning.
-  meshcat.SetObject("halfspace", HalfSpace());
+  EXPECT_THAT(meshcat.SetObject("halfspace", HalfSpace()),
+              ::testing::IsEmpty());
   EXPECT_TRUE(meshcat.GetPackedObject("halfspace").empty());
-  meshcat.SetObject("box", Box(0.25, 0.25, 0.5), Rgba(0, 0, 1, 1));
+  EXPECT_THAT(meshcat.SetObject("box", Box(0.25, 0.25, 0.5), Rgba(0, 0, 1, 1)),
+              ::testing::IsEmpty());
   EXPECT_FALSE(meshcat.GetPackedObject("box").empty());
-  meshcat.SetObject("ellipsoid", Ellipsoid(0.25, 0.25, 0.5),
-                    Rgba(1.0, 0, 1, 1));
+  EXPECT_THAT(meshcat.SetObject("ellipsoid", Ellipsoid(0.25, 0.25, 0.5),
+                                Rgba(1, 0, 1, 1)),
+              ::testing::IsEmpty());
   EXPECT_FALSE(meshcat.GetPackedObject("ellipsoid").empty());
-  meshcat.SetObject("capsule", Capsule(0.25, 0.5));
+  EXPECT_THAT(meshcat.SetObject("capsule", Capsule(0.25, 0.5)),
+              ::testing::IsEmpty());
   EXPECT_FALSE(meshcat.GetPackedObject("capsule").empty());
-  meshcat.SetObject(
-      "mesh",
-      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj"),
-           0.25));
+
+  const std::filesystem::path obj_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
+  const std::set<std::filesystem::path> expected_obj_files{
+      obj_path, obj_path.parent_path() / "box.obj.mtl",
+      obj_path.parent_path() / "box.png"};
+  EXPECT_THAT(meshcat.SetObject("mesh", Mesh(obj_path.string(), 0.25)),
+              ::testing::ContainerEq(expected_obj_files));
   EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
-  meshcat.SetObject(
-      "gltf",
-      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf"),
-           0.25));
+
+  const std::filesystem::path gltf_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  const std::set<std::filesystem::path> expected_gltf_files{
+      gltf_path,
+      gltf_path.parent_path() / "fully_textured_pyramid.bin",
+      gltf_path.parent_path() / "fully_textured_pyramid_emissive.png",
+      gltf_path.parent_path() / "fully_textured_pyramid_normal.png",
+      gltf_path.parent_path() / "fully_textured_pyramid_omr.png",
+      gltf_path.parent_path() / "fully_textured_pyramid_base_color.png",
+      gltf_path.parent_path() / "fully_textured_pyramid_emissive.ktx2",
+      gltf_path.parent_path() / "fully_textured_pyramid_normal.ktx2",
+      gltf_path.parent_path() / "fully_textured_pyramid_omr.ktx2",
+      gltf_path.parent_path() / "fully_textured_pyramid_base_color.ktx2"};
+  EXPECT_THAT(meshcat.SetObject("gltf", Mesh(gltf_path.string(), 0.25)),
+              ::testing::ContainerEq(expected_gltf_files));
   EXPECT_FALSE(meshcat.GetPackedObject("gltf").empty());
-  meshcat.SetObject(
-      "convex",
-      Convex(FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj"),
-             0.25));
+
+  EXPECT_THAT(
+      meshcat.SetObject("convex",
+                        Convex(FindResourceOrThrow(
+                                   "drake/geometry/render/test/meshes/box.obj"),
+                               0.25)),
+      ::testing::IsEmpty());
   EXPECT_FALSE(meshcat.GetPackedObject("convex").empty());
   // Bad filename (no extension).  Should only log a warning.
-  meshcat.SetObject("bad", Mesh("test"));
+  EXPECT_THAT(meshcat.SetObject("bad", Mesh("test")), ::testing::IsEmpty());
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
   // Bad filename (file doesn't exist).  Should only log a warning.
-  meshcat.SetObject("bad", Mesh("test.obj"));
+  EXPECT_THAT(meshcat.SetObject("bad", Mesh("test.obj")), ::testing::IsEmpty());
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
 }
 

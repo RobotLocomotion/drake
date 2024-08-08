@@ -3,13 +3,12 @@ from __future__ import annotations
 
 import copy
 import hashlib
-import json
 import logging
 import numpy as np
 from pathlib import Path
-import re
 import sys
 import time
+import typing
 
 from drake import (
     lcmt_contact_results_for_viz,
@@ -103,97 +102,66 @@ class _Slider:
         return value, value_changed
 
 
-class _GeometryFileHasher:
-    """Calculates a checksum of external file(s) referenced by geometry
-    messages such as lcmt_viewer_load_robot or similar.
-
-    Each "on_..." method incorporates all of the external files cited by the
-    given argument (of a specific type) into the current hash. Files that are
-    named but cannot be opened are silently skipped.
+class _DuplicateLoadMessageDetector:
+    """Remembers the most recently received lcmt_viewer_load_robot message and
+    reports whether the next received load message is a no-op.
     """
 
     def __init__(self):
-        self._paths = []
-        self._hasher = hashlib.sha256()
+        # The encoding and link count from the last unique load message.
+        self._prior_message_encoding = None
+        self._prior_link_count = 0
+        self._path_hashes = {}
 
-    def value(self):
-        return self._hasher.hexdigest()
-
-    def _read_file(self, path: Path):
-        """Reads the given file and adds its content to the current hash.
-        Returns the file content (as ``bytes``, not ``str``).
-        Remembers the filename (for unit testing).
-        If the file is missing, silently returns an empty ``bytes``.
+    def set_load_robot(self, *, message: lcmt_viewer_load_robot):
+        """Returns true when the load is novel (or false when load is a no-op).
         """
-        try:
-            with open(path, "rb") as f:
-                content = f.read()
-            self._hasher.update(content)
-            self._paths.append(path)
-            return content
-        except IOError:
-            return b""
-
-    def on_viewer_load_robot(self, message: lcmt_viewer_load_robot):
         assert isinstance(message, lcmt_viewer_load_robot)
-        for link in message.link:
-            for geom in link.geom:
-                self.on_viewer_geometry_data(geom)
 
-    def on_viewer_geometry_data(self, message: lcmt_viewer_geometry_data):
-        assert isinstance(message, lcmt_viewer_geometry_data)
-        if (message.type == lcmt_viewer_geometry_data.MESH
-                and message.string_data):
-            self.on_mesh(Path(message.string_data))
+        message_encoding = message.encode()
+        # The very first message is necessarily novel.
+        if self._prior_message_encoding is None:
+            self._prior_message_encoding = message_encoding
+            self._prior_link_count = message.num_links
+            assert len(self._path_hashes) == 0
+            return True
 
-    def on_mesh(self, path: Path):
-        assert isinstance(path, Path)
-        # Hash the file contents, even if we don't know how to interpret it.
-        content = self._read_file(path)
-        if path.suffix.lower() == ".obj":
-            self.on_obj(path, content)
-        elif path.suffix.lower() == ".gltf":
-            self.on_gltf(path, content)
-        else:
-            _logger.warn(f"Unsupported mesh file: '{path}'\n"
-                         "Update Meldis's hasher to trigger reloads on this "
-                         "kind of file.")
+        # The load message is a no-op iff it's exactly the same as the prior
+        # message, and all files used while processing the prior load message
+        # remain unchanged. (The num_links check is redundant with the encode
+        # check, but is a very fast way detect common kinds of novelty.)
+        if message.num_links == self._prior_link_count:
+            if (message_encoding == self._prior_message_encoding
+                    and all([
+                        self._hash(path=path) == old_hash
+                        for path, old_hash in self._path_hashes.items()
+                    ])):
+                # This message is a no-op.
+                return False
 
-    def on_obj(self, path: Path, content: bytes):
-        assert isinstance(path, Path)
-        for mtl_names in re.findall(rb"^\s*mtllib\s+(.*?)\s*$", content,
-                                    re.MULTILINE):
-            for mtl_name in mtl_names.decode("utf-8").split():
-                self.on_mtl(path.parent / mtl_name)
+        # This is a novel message, so we'll reset everything.
+        self._prior_message_encoding = message_encoding
+        self._prior_link_count = message.num_links
+        self._path_hashes = {}
+        return True
 
-    def on_mtl(self, path: Path):
-        assert isinstance(path, Path)
-        content = self._read_file(path)
-        for tex_name in re.findall(rb"^\s*map_.*?\s+(\S+)\s*$", content,
-                                   re.MULTILINE):
-            self.on_texture(path.parent / tex_name.decode("utf-8"))
-
-    def on_texture(self, path: Path):
-        assert isinstance(path, Path)
-        self._read_file(path)
-
-    def on_gltf(self, path: Path, content: bytes):
-        assert isinstance(path, Path)
+    @staticmethod
+    def _hash(*, path: Path) -> str:
         try:
-            document = json.loads(content.decode(encoding="utf-8"))
-        except json.JSONDecodeError:
-            _logger.warn(f"glTF file is not valid JSON: {path}")
-            return
+            data = path.read_bytes()
+        except IOError:
+            return ""
+        hasher = hashlib.sha256()
+        hasher.update(data)
+        return hasher.hexdigest()
 
-        # Handle the images
-        for image in document.get("images", []):
-            if not image.get("uri", "").startswith("data:"):
-                self.on_texture(path.parent / image["uri"])
-
-        # Handle the .bin files.
-        for buffer in document.get("buffers", []):
-            if not buffer.get("uri", "").startswith("data:"):
-                self._read_file(path.parent / buffer["uri"])
+    def add_dependencies(self, *, paths: typing.Iterable[Path]):
+        """Adds a (path, hash_value) pair to this objects path hashes for each
+        path in `paths`.
+        """
+        for path in paths:
+            if path not in self._path_hashes:
+                self._path_hashes[path] = self._hash(path=path)
 
 
 class _ViewerApplet:
@@ -212,7 +180,7 @@ class _ViewerApplet:
         self._meshcat = meshcat
         self._path = path
         self._load_message = None
-        self._load_message_mesh_checksum = None
+        self._load_deduplicator = _DuplicateLoadMessageDetector()
         self._alpha_slider = _Slider(meshcat, f"{alpha_slider_name} α")
         self._alpha_slider._value = initial_alpha_value
         if should_accept_link is not None:
@@ -232,23 +200,17 @@ class _ViewerApplet:
         # performance when the user is repeatedly viewing the same simulation
         # over and over again, since reloading a scene into Meshcat has high
         # latency.
-        hasher = _GeometryFileHasher()
-        hasher.on_viewer_load_robot(message)
-        mesh_checksum = hasher.value()
-        if self._load_message is not None:
-            if (message.num_links == self._load_message.num_links
-                    and message.encode() == self._load_message.encode()
-                    and mesh_checksum == self._load_message_mesh_checksum):
-                _logger.info("Ignoring duplicate load message for "
-                             f"{self._applet_name}.")
-                return
+        changed = self._load_deduplicator.set_load_robot(message=message)
+        if not changed:
+            _logger.info("Ignoring duplicate load message for "
+                         f"{self._applet_name}.")
+            return
 
         # The semantics of a load message is to reset the entire scene.
         self._meshcat.Delete(path=self._path)
 
         self._waiting_for_first_draw_message = True
         self._load_message = message
-        self._load_message_mesh_checksum = mesh_checksum
         self.set_alpha(self._alpha_slider._value, on_load=True)
 
     def _build_links(self):
@@ -278,7 +240,8 @@ class _ViewerApplet:
                     set_object_kwargs.update(mesh=shape)
                 else:
                     set_object_kwargs.update(shape=shape)
-                self._meshcat.SetObject(**set_object_kwargs)
+                paths = self._meshcat.SetObject(**set_object_kwargs)
+                self._load_deduplicator.add_dependencies(paths=(paths or []))
                 self._meshcat.SetTransform(path=geom_path, X_ParentPath=pose)
 
     def on_viewer_draw(self, message):
