@@ -16,10 +16,7 @@ cc_library_vendored(
     hdrs = ["tiny_gltf.h"],
     hdrs_vendored = ["drake_vendor/tiny_gltf.h"],
     defines = [
-        # Don't bother reading external images during glTF parsing; we'll
-        # handle while processing the resulting RenderMaterial.
-        "TINYGLTF_NO_EXTERNAL_IMAGE",
-        # We also won't use tinygltf to decode embedded images; we'll process
+        # We won't use tinygltf to decode embedded images; we'll process
         # the bytes in Drake.
         "TINYGLTF_NO_STB_IMAGE",
         "TINYGLTF_NO_STB_IMAGE_WRITE",
