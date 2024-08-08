@@ -13,7 +13,7 @@ from pydrake.multibody.plant import (
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.planar_scenegraph_visualizer import (
-   ConnectPlanarSceneGraphVisualizer, PlanarSceneGraphVisualizer)
+    ConnectPlanarSceneGraphVisualizer, PlanarSceneGraphVisualizer)
 
 
 class TestPlanarSceneGraphVisualizer(unittest.TestCase):
@@ -225,3 +225,31 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         # will be done.
         vis_auto_connect.draw(vis_auto_connect_context)
         vis_port_connect.draw(vis_port_connect_context)
+
+    def testContactInstantiation(self):
+        """Kuka with book and contact"""
+        url = (
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa14_no_collision.sdf")
+        builder = DiagramBuilder()
+        kuka, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        Parser(plant=kuka).AddModels(url=url)
+        kuka.Finalize()
+
+        # instantiate a planar scene graph
+        visualizer_contact = builder.AddSystem(
+            PlanarSceneGraphVisualizer(
+                scene_graph,
+                contact=True))
+        builder.Connect(
+            scene_graph.get_query_output_port(),
+            visualizer_contact.get_geometry_query_input_port())
+        builder.Connect(
+            kuka.GetOutputPort("contact_results"),
+            visualizer_contact.get_contact_results_input_port())
+        diagram = builder.Build()
+        diagram_context = diagram.CreateDefaultContext()
+        visualizer_contact_context = diagram.GetMutableSubsystemContext(
+            visualizer_contact, diagram_context
+        )
+        visualizer_contact.draw(visualizer_contact_context)
