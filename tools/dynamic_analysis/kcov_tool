@@ -29,7 +29,7 @@ def has_kcov_data(path):
     if not os.path.exists(zip_path):
         return False
     with zipfile.ZipFile(zip_path, 'r') as zf:
-        return 'kcov' in zf.namelist()
+        return 'kcov/' in zf.namelist()
 
 
 def maybe_expand_zipped_kcov_data(path):
@@ -42,7 +42,8 @@ def maybe_expand_zipped_kcov_data(path):
         return
     # Maybe our data has been zipped and deleted.
     zip_path = os.path.join(path, 'outputs.zip')
-    shutil.rmtree(kcov_dir)
+    shutil.rmtree(kcov_dir, ignore_errors=True)
+    os.chmod(path, 0o755)
     with zipfile.ZipFile(zip_path, 'r') as zf:
         members = [m for m in zf.namelist() if m.startswith('kcov')]
         zf.extractall(path=path, members=members)
