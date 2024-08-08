@@ -4,6 +4,7 @@
 #error Do not include this file. Use "drake/multibody/topology/forest.h".
 #endif
 
+#include <algorithm>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -22,11 +23,11 @@ class SpanningForest::Mobod {
   /** (Internal use only) This constructor is just for World, the only %Mobod
   with no mobilizer. (Or you can consider it welded to the universe at the
   World origin.) */
-  Mobod(MobodIndex mobod_index, BodyIndex world_link);
+  Mobod(MobodIndex mobod_index, LinkOrdinal world_link_ordinal);
 
   /** (Internal use only) The general constructor for any non-World %Mobod. */
-  Mobod(MobodIndex mobod_index, BodyIndex link_index, JointIndex joint_index,
-        int level, bool is_reversed);
+  Mobod(MobodIndex mobod_index, LinkOrdinal link_ordinal,
+        JointOrdinal joint_ordinal, int level, bool is_reversed);
 
   /** Returns `true` if this %Mobod is the World body, that is, the one with
   MobodIndex 0. Returns `false` for anything else, even if this %Mobod is
@@ -75,27 +76,38 @@ class SpanningForest::Mobod {
   %Mobod's level(). */
   const std::vector<MobodIndex>& outboards() const { return outboard_mobods_; }
 
-  /** Returns the index of the Link mobilized by this %Mobod. If this %Mobod
+  /** Returns the ordinal of the Link mobilized by this %Mobod. If this %Mobod
   models a LinkComposite (collection of welded-together Links), this is the
   "active" Link of that composite, the one whose (non-Weld) Joint connects
   the whole LinkComposite to its inboard %Mobod.
   @see joint() */
-  BodyIndex link() const { return follower_links()[0]; }
+  LinkOrdinal link_ordinal() const { return follower_link_ordinals()[0]; }
+
+  /** Returns true if _any_ of the follower links is massful, in which case
+  this Mobod is also massful. */
+  bool has_massful_follower_link() const { return has_massful_follower_link_; }
 
   /** Returns all the Links that are mobilized by this %Mobod. If this %Mobod
   represents a LinkComposite, the first Link returned is the "active" Link as
   returned by link(). There is always at least one Link. */
-  const std::vector<BodyIndex>& follower_links() const {
-    DRAKE_ASSERT(!follower_links_.empty());
-    return follower_links_;
+  const std::vector<LinkOrdinal>& follower_link_ordinals() const {
+    DRAKE_ASSERT(!follower_link_ordinals_.empty());
+    return follower_link_ordinals_;
   }
 
-  /** Returns the Joint represented by this %Mobod. If this %Mobod represents
-  a LinkComposite (which has internal weld Joints), the Joint returned here
-  is the "active" Joint that connects the Composite's active Link to a Link
-  that follows this %Mobod's inboard %Mobod in the forest. The returned
-  index is invalid if and only if this is the World %Mobod. */
-  JointIndex joint() const { return joint_index_; }
+  bool HasFollower(LinkOrdinal link_ordinal) const {
+    DRAKE_DEMAND(link_ordinal.is_valid());
+    return std::find(follower_link_ordinals_.cbegin(),
+                     follower_link_ordinals_.cend(),
+                     link_ordinal) != follower_link_ordinals_.cend();
+  }
+
+  /** Returns the ordinal of the Joint represented by this %Mobod. If this
+  %Mobod represents a LinkComposite (which has internal weld Joints), the Joint
+  returned here is the "active" Joint that connects the Composite's active Link
+  to a Link that follows this %Mobod's inboard %Mobod in the forest. The
+  returned ordinal is invalid only if this is the World %Mobod. */
+  JointOrdinal joint_ordinal() const { return joint_ordinal_; }
 
   /** Returns the index of the Tree of which this %Mobod is a member. The
   index is invalid if and only if this is the World %Mobod. */
@@ -119,6 +131,11 @@ class SpanningForest::Mobod {
 
   /** The number of position coordinates q used by this %Mobod's mobilizer. */
   int nq() const { return nq_; }
+
+  /** True if the first four entries in q (beginning at q_start()) for this
+  %Mobod are a quaternion. If so, it is stored in wxyz order -- that is, the
+  scalar followed by the vector part. */
+  bool has_quaternion() const { return has_quaternion_; }
 
   /** Starting offset within the contiguous v vector. */
   int v_start() const { return v_start_; }
@@ -177,9 +194,6 @@ class SpanningForest::Mobod {
   // Update all MobodIndex entries to use the new numbering.
   void FixupAfterReordering(const std::vector<MobodIndex>& old_to_new);
 
-  // Switch the contents of `this` and `other` mobilized bodies.
-  void Swap(Mobod& other);
-
   // Given a mapping from old MobodIndex to new MobodIndex, repair an
   // existing vector of old MobodIndexes to use the new numbering. Any invalid
   // indexes are left untouched.
@@ -187,15 +201,16 @@ class SpanningForest::Mobod {
       const std::vector<MobodIndex>& old_to_new,
       std::vector<MobodIndex>* to_be_renumbered);
 
-  // CAREFUL: if you add any members here, update Swap!
-
   // Links represented by this Mobod. The first one is always present and is
   // the active Link if we're mobilizing a LinkComposite.
-  std::vector<BodyIndex> follower_links_;
+  std::vector<LinkOrdinal> follower_link_ordinals_;
+
+  // Set to true if _any_ follower link has mass.
+  bool has_massful_follower_link_{false};
 
   // Corresponding Joint (user or modeling joint). If this Mobod represents
   // a LinkComposite, this is the Joint that mobilizes the whole Composite.
-  JointIndex joint_index_;
+  JointOrdinal joint_ordinal_;
 
   // For an already-existing Joint, must we use a reverse mobilizer? If true,
   // we know tree inboard/outboard order is opposite graph parent/child order.
@@ -222,6 +237,7 @@ class SpanningForest::Mobod {
   int nq_{-1};
   int v_start_{-1};  // within the full v vector
   int nv_{-1};
+  bool has_quaternion_{false};
 
   // Positioning within the coordinates of the containing tree. For World there
   // are zero inboard, num_positions and num_velocities outboard.

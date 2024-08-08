@@ -7,7 +7,6 @@ import copy
 import numpy as np
 
 from pydrake.common import RandomGenerator, temp_directory
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Convex, Ellipsoid, FramePoseVector, GeometryFrame,
@@ -110,8 +109,6 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(dut.IsBounded())
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(dut.PointInSet(dut.Project([])))
         self.assertEqual(dut.AffineDimension(), 0)
         self.assertTrue(dut.ContainedIn(mut.AffineSubspace()))
         self.assertTrue(dut.IsNearlyEqualTo(mut.AffineSubspace()))
@@ -134,12 +131,7 @@ class TestGeometryOptimization(unittest.TestCase):
 
         test_point = np.array([43, 43, 0])
         self.assertFalse(dut.PointInSet(test_point))
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(dut.PointInSet(dut.Project(test_point)))
 
-        with catch_drake_warnings(expected_count=1) as w:
-            np.testing.assert_array_equal(dut.ToGlobalCoordinates(
-                dut.ToLocalCoordinates(test_point)), dut.Project(test_point))
         local_coords = np.array([1, -1])
         np.testing.assert_array_equal(dut.ToLocalCoordinates(
             dut.ToGlobalCoordinates(local_coords)),
@@ -151,8 +143,6 @@ class TestGeometryOptimization(unittest.TestCase):
         test_point_batch = np.zeros((3, 5))
         self.assertEqual(dut.ToLocalCoordinates(x=test_point_batch).shape,
                          (2, 5))
-        with catch_drake_warnings(expected_count=1) as w:
-            self.assertEqual(dut.Project(x=test_point_batch).shape, (3, 5))
         local_coords_batch = np.zeros((2, 5))
         self.assertEqual(dut.ToGlobalCoordinates(y=local_coords_batch).shape,
                          (3, 5))
@@ -806,8 +796,58 @@ class TestGeometryOptimization(unittest.TestCase):
                                     result=result,
                                     tolerance=0.1)), 1)
 
-        self.assertIn("source", spp.GetGraphvizString(
-            result=result, show_slacks=True, precision=2, scientific=False))
+        graphviz_options = mut.GcsGraphvizOptions()
+        graphviz_options.show_slacks = True
+        graphviz_options.show_vars = True
+        graphviz_options.show_flows = True
+        graphviz_options.show_costs = True
+        graphviz_options.scientific = False
+        graphviz_options.precision = 3
+        self.assertIn(
+            "source",
+            spp.GetGraphvizString(
+                result=result, options=graphviz_options, active_path=[edge0]
+            ),
+        )
+        self.assertIn(
+            "source",
+            spp.GetGraphvizString(
+                result=result,
+                show_slacks=True,
+                show_vars=True,
+                show_flows=True,
+                show_costs=True,
+                scientific=True,
+                precision=3,
+                active_path=[edge0],
+            ),
+        )
+
+        options.max_rounded_paths = 5
+        self.assertTrue(
+            isinstance(
+                spp.SamplePaths(
+                    source=source,
+                    target=target,
+                    result=result,
+                    options=options
+                ),
+                list,
+            )
+        )
+
+        flows = {e: result.GetSolution(e.phi()) for e in spp.Edges()}
+        self.assertTrue(
+            isinstance(
+                spp.SamplePaths(
+                    source=source,
+                    target=target,
+                    flows=flows,
+                    options=options
+                ),
+                list,
+            )
+        )
 
         # Vertex
         self.assertAlmostEqual(
@@ -1368,14 +1408,40 @@ class TestCspaceFreePolytope(unittest.TestCase):
         sets_A = [mut.VPolytope(np.array([[0, 4]])),
                   mut.VPolytope(np.array([[2, 6]]))]
         sets_B = [mut.VPolytope(np.array([[1, 5]]) - (2 * np.pi))]
-        out = mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
-                                            convex_sets_B=sets_B,
-                                            continuous_revolute_joints=[0])
-        self.assertIsInstance(out, list)
-        self.assertEqual(len(out), 2)
-        self.assertIsInstance(out[0], tuple)
-        out2 = mut.CalcPairwiseIntersections(convex_sets=sets_A,
-                                             continuous_revolute_joints=[0])
-        self.assertIsInstance(out, list)
-        self.assertEqual(len(out), 2)
-        self.assertIsInstance(out[0], tuple)
+        bboxes_A = [mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(s)
+                    for s in sets_A]
+        bboxes_B = [mut.Hyperrectangle.MaybeCalcAxisAlignedBoundingBox(s)
+                    for s in sets_B]
+        for bbox_A in bboxes_A:
+            self.assertTrue(bbox_A is not None)
+        for bbox_B in bboxes_B:
+            self.assertTrue(bbox_B is not None)
+        outputs = []
+        outputs.append(
+                mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
+                                              convex_sets_B=sets_B,
+                                              continuous_revolute_joints=[0],
+                                              preprocess_bbox=True))
+        outputs.append(
+                mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
+                                              convex_sets_B=sets_B,
+                                              continuous_revolute_joints=[0],
+                                              bboxes_A=bboxes_A,
+                                              bboxes_B=bboxes_B))
+        for out in outputs:
+            self.assertIsInstance(out, list)
+            self.assertEqual(len(out), 2)
+            self.assertIsInstance(out[0], tuple)
+        outputs2 = []
+        outputs2.append(
+                mut.CalcPairwiseIntersections(convex_sets=sets_A,
+                                              continuous_revolute_joints=[0],
+                                              preprocess_bbox=True))
+        outputs2.append(
+                mut.CalcPairwiseIntersections(convex_sets=sets_A,
+                                              continuous_revolute_joints=[0],
+                                              bboxes=bboxes_A))
+        for out in outputs2:
+            self.assertIsInstance(out, list)
+            self.assertEqual(len(out), 2)
+            self.assertIsInstance(out[0], tuple)

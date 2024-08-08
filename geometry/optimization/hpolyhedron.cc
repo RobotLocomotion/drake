@@ -375,7 +375,7 @@ HPolyhedron::HPolyhedron(const MathematicalProgram& prog)
   std::vector<int> rows_to_keep;
   rows_to_keep.reserve(A_sparse.rows());
   for (int i = 0; i < ssize(b); ++i) {
-    if (abs(b[i]) < kInf) {
+    if (std::abs(b[i]) < kInf) {
       rows_to_keep.push_back(i);
     }
   }
@@ -515,18 +515,53 @@ HPolyhedron HPolyhedron::Intersection(const HPolyhedron& other,
 VectorXd HPolyhedron::UniformSample(
     RandomGenerator* generator,
     const Eigen::Ref<const Eigen::VectorXd>& previous_sample,
-    const int mixing_steps) const {
+    const int mixing_steps,
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& subspace,
+    double tol) const {
   DRAKE_THROW_UNLESS(mixing_steps >= 1);
+  if (subspace.has_value()) {
+    DRAKE_THROW_UNLESS(subspace->rows() == ambient_dimension());
+  }
 
   std::normal_distribution<double> gaussian;
-  VectorXd direction(ambient_dimension());
   VectorXd current_sample = previous_sample;
+
+  const int sampling_dim =
+      subspace.has_value() ? subspace->cols() : previous_sample.rows();
+  VectorXd gaussian_sample(sampling_dim);
+  VectorXd direction(ambient_dimension());
+
+  // If a row of the A matrix is orthogonal to all columns of the basis, then
+  // the constraint from that row is enforced by the sample being in the column
+  // space of the basis. Thus, we skip that constraint when performing
+  // hit-and-run sampling.
+  std::vector<bool> skip(A_.rows(), false);
+  if (subspace.has_value()) {
+    const double squared_tol = tol * tol;
+    VectorXd subspace_j_squared_norm(subspace->cols());
+    for (int j = 0; j < subspace->cols(); ++j) {
+      subspace_j_squared_norm(j) = subspace->col(j).squaredNorm();
+    }
+    for (int i = 0; i < A_.rows(); ++i) {
+      skip[i] = true;
+      const double Ai_squared_norm = A_.row(i).squaredNorm();
+      for (int j = 0; j < subspace->cols(); ++j) {
+        if (std::pow(A_.row(i) * subspace->col(j), 2) >
+            squared_tol * Ai_squared_norm * subspace_j_squared_norm(j)) {
+          skip[i] = false;
+          break;
+        }
+      }
+    }
+  }
 
   for (int step = 0; step < mixing_steps; ++step) {
     // Choose a random direction.
-    for (int i = 0; i < direction.size(); ++i) {
-      direction[i] = gaussian(*generator);
+    for (int i = 0; i < gaussian_sample.size(); ++i) {
+      gaussian_sample[i] = gaussian(*generator);
     }
+    direction =
+        subspace.has_value() ? *subspace * gaussian_sample : gaussian_sample;
     // Find max and min θ subject to
     //   A(previous_sample + θ*direction) ≤ b,
     // aka ∀i, θ * (A * direction)[i] ≤ (b - A * previous_sample)[i].
@@ -535,7 +570,9 @@ VectorXd HPolyhedron::UniformSample(
     double theta_max = std::numeric_limits<double>::infinity();
     double theta_min = -theta_max;
     for (int i = 0; i < line_a.size(); ++i) {
-      if (line_a[i] < 0.0) {
+      if (skip[i]) {
+        continue;
+      } else if (line_a[i] < 0.0) {
         theta_min = std::max(theta_min, line_b[i] / line_a[i]);
       } else if (line_a[i] > 0.0) {
         theta_max = std::min(theta_max, line_b[i] / line_a[i]);
@@ -555,16 +592,32 @@ VectorXd HPolyhedron::UniformSample(
     current_sample = current_sample + theta * direction;
   }
   // The new sample is previous_sample + θ * direction.
+
+  const double kWarnTolerance = 1e-8;
+  if ((current_sample - previous_sample).template lpNorm<Eigen::Infinity>() <
+      kWarnTolerance) {
+    // If the new sample is extremely close to the previous sample, the user
+    // may have a lower-dimensional polytope. We warn them if this happens. Note
+    // that we use an absolute tolerance here, since it's unclear how to compute
+    // an appropriate relative tolerance.
+    drake::log()->warn(
+        "The Hit and Run algorithm produced a random guess that is extremely "
+        "close to `previous_sample`, which could indicate that the HPolyhedron "
+        "being sampled is not full-dimensional. To draw samples from such an "
+        "HPolyhedron, please use the `subspace` argument.");
+  }
   return current_sample;
 }
 
 // Note: This method only exists to effectively provide ChebyshevCenter(),
 // which is a non-static class method, as a default argument for
 // previous_sample in the UniformSample method above.
-VectorXd HPolyhedron::UniformSample(RandomGenerator* generator,
-                                    const int mixing_steps) const {
+VectorXd HPolyhedron::UniformSample(
+    RandomGenerator* generator, const int mixing_steps,
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& subspace,
+    double tol) const {
   VectorXd center = ChebyshevCenter();
-  return UniformSample(generator, center, mixing_steps);
+  return UniformSample(generator, center, mixing_steps, subspace, tol);
 }
 
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,

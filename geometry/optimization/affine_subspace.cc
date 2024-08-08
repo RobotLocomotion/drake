@@ -258,14 +258,6 @@ double AffineSubspace::DoCalcVolume() const {
   return std::numeric_limits<double>::infinity();
 }
 
-Eigen::MatrixXd AffineSubspace::Project(
-    const Eigen::Ref<const Eigen::MatrixXd>& x) const {
-  DRAKE_THROW_UNLESS(x.rows() == ambient_dimension());
-  Eigen::MatrixXd projected_points = Eigen::MatrixXd::Zero(x.rows(), x.cols());
-  DoProjectionShortcut(x, &projected_points);
-  return projected_points;
-}
-
 std::vector<std::optional<double>> AffineSubspace::DoProjectionShortcut(
     const Eigen::Ref<const Eigen::MatrixXd>& points,
     EigenPtr<Eigen::MatrixXd> projected_points) const {

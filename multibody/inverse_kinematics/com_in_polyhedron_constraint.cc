@@ -64,6 +64,8 @@ ComInPolyhedronConstraint::ComInPolyhedronConstraint(
   }
 }
 
+namespace {
+
 void EvalConstraintGradient(
     const systems::Context<double>& context,
     const MultibodyPlant<double>& plant,
@@ -120,6 +122,8 @@ void DoEvalGeneric(
                            y);
   }
 }
+
+}  // namespace
 
 void ComInPolyhedronConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {

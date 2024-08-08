@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/scene_graph_config.h"

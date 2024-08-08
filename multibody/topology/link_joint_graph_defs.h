@@ -15,6 +15,9 @@ namespace internal {
 
 class SpanningForest;
 
+using LinkOrdinal = TypeSafeIndex<class LinkOrdinalTag>;
+using JointOrdinal = TypeSafeIndex<class JointOrdinalTag>;
+
 using JointTraitsIndex = TypeSafeIndex<class JointTraitsTag>;
 using LinkCompositeIndex = TypeSafeIndex<class LinkCompositeTag>;
 using LoopConstraintIndex = TypeSafeIndex<class LoopConstraintTag>;
@@ -23,10 +26,10 @@ using LoopConstraintIndex = TypeSafeIndex<class LoopConstraintTag>;
 these also produces a LinkFlags object. */
 enum class LinkFlags : uint32_t {
   kDefault = 0,
-  kStatic = 1 << 0,           ///< Implicitly welded to World.
-  kMustBeBaseBody = 1 << 1,   ///< Ensure connection to World if none.
-  kTreatAsMassless = 1 << 2,  ///< Can't be a terminal body in a tree.
-  kShadow = 1 << 3            ///< Link is a shadow (internal use only).
+  kStatic = 1 << 0,          ///< Implicitly welded to World.
+  kMustBeBaseBody = 1 << 1,  ///< Ensure connection to World if none.
+  kMassless = 1 << 2,        ///< Can't be a terminal body in a tree.
+  kShadow = 1 << 3           ///< Link is a shadow (internal use only).
 };
 
 /** Joint properties that can affect how the SpanningForest gets built. Or-ing
@@ -44,7 +47,7 @@ enum class ForestBuildingOptions : uint32_t {
   kStatic = 1 << 0,                ///< Weld all links to World.
   kUseFixedBase = 1 << 1,          ///< Use welds rather than floating joints.
   kUseRpyFloatingJoints = 1 << 2,  ///< For floating, use RPY not quaternion.
-  kCombineLinkComposites = 1 << 3  ///< Make a single Mobod for welded Links.
+  kMergeLinkComposites = 1 << 3    ///< Make a single Mobod for welded Links.
 };
 
 // These overloads make the above enums behave like bitmasks for the operations

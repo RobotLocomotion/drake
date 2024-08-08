@@ -179,6 +179,8 @@ void ConexSuperNodalSolver::CliqueAssembler::SetDenseData() {
   }
 }
 
+namespace {
+
 std::pair<int, int> FindPositionInClique(int element,
                                          const vector<vector<int>>& clique) {
   int i = 0;
@@ -207,11 +209,6 @@ void SortTheCliques(std::vector<std::vector<int>>* path) {
     std::sort((*path)[i].begin(), (*path)[i].end());
   }
 }
-
-// The destructor is defined in the source so we can use an incomplete
-// definition when storing unique pointers of CliqueAssembler within a
-// std::vector.
-ConexSuperNodalSolver::~ConexSuperNodalSolver() {}
 
 // Helper struct for assembling the input to the conex supernodal solver. The
 // variable "cliques" contains the nodes of a "supernodal elimination tree,"
@@ -339,6 +336,13 @@ SparsityData GetEliminationOrdering(
   data.separators = separators_full;
   return clique_data;
 }
+
+}  // namespace
+
+// The destructor is defined in the source so we can use an incomplete
+// definition when storing unique pointers of CliqueAssembler within a
+// std::vector.
+ConexSuperNodalSolver::~ConexSuperNodalSolver() {}
 
 void ConexSuperNodalSolver::Initialize(
     const vector<vector<int>>& cliques, int num_jacobian_row_blocks,

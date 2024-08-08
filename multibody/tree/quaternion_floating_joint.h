@@ -7,7 +7,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/random.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
@@ -150,12 +149,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return get_mobilizer().get_translation(context);
   }
 
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::get_translation()")
-  Vector3<T> get_position(const systems::Context<T>& context) const {
-    return get_translation(context);
-  }
-
   /// Returns the pose `X_FM` of the outboard frame M as measured and expressed
   /// in the inboard frame F. Refer to the documentation for this class for
   /// details.
@@ -164,12 +157,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
   math::RigidTransform<T> GetPose(const systems::Context<T>& context) const {
     return math::RigidTransform<T>(get_quaternion(context),
                                    get_translation(context));
-  }
-
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::GetPose()")
-  math::RigidTransform<T> get_pose(const systems::Context<T>& context) const {
-    return GetPose(context);
   }
 
   /// Retrieves from `context` the angular velocity `w_FM` of the child frame
@@ -215,13 +202,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return *this;
   }
 
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::SetQuaternion()")
-  const QuaternionFloatingJoint<T>& set_quaternion(
-      systems::Context<T>* context, const Quaternion<T>& q_FM) const {
-    return SetQuaternion(context, q_FM);
-  }
-
   /// Sets the quaternion in `context` so this joint's orientation is consistent
   /// with the given `R_FM` rotation matrix.
   /// @param[in,out] context
@@ -233,13 +213,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
       systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
     get_mobilizer().SetOrientation(context, R_FM);
     return *this;
-  }
-
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::SetOrientation()")
-  const QuaternionFloatingJoint<T>& SetFromRotationMatrix(
-      systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
-    return SetOrientation(context, R_FM);
   }
 
   /// For this joint, stores the position vector `p_FM` in `context`.
@@ -254,13 +227,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return *this;
   }
 
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::SetTranslation()")
-  const QuaternionFloatingJoint<T>& set_position(systems::Context<T>* context,
-                                                 const Vector3<T>& p_FM) const {
-    return SetTranslation(context, p_FM);
-  }
-
   /// Sets `context` to store `X_FM` the pose of frame M measured and expressed
   ///   in frame F.
   /// @param[in,out] context
@@ -272,13 +238,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
       systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
     SetTranslation(context, X_FM.translation());
     return SetOrientation(context, X_FM.rotation());
-  }
-
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::SetPose()")
-  const QuaternionFloatingJoint<T>& set_pose(
-      systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
-    return SetPose(context, X_FM);
   }
 
   /// Sets in `context` the state for `this` joint so that the angular velocity
@@ -326,13 +285,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
     get_mutable_mobilizer()->set_random_translation_distribution(p_FM);
   }
 
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::set_random_translation_distribution()")
-  void set_random_position_distribution(
-      const Vector3<symbolic::Expression>& p_FM) {
-    set_random_translation_distribution(p_FM);
-  }
-
   /// (Advanced) Sets the random distribution that the orientation of this joint
   /// will be randomly sampled from. If a translation (position) distribution
   /// has already been set with stochastic variables, it will remain so.
@@ -375,21 +327,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
   Vector3<double> get_default_translation() const {
     return this->default_positions().template tail<3>();
   }
-
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::get_default_translation()")
-  Vector3<double> get_default_position() const {
-    return get_default_translation();
-  }
-
-  DRAKE_DEPRECATED("2024-08-01",
-                   "Removed since functionality already provided by base class "
-                   "Joint::GetDefaultPose()")
-  math::RigidTransform<double> get_default_pose() const {
-    return math::RigidTransform(get_default_quaternion(),
-                                get_default_translation());
-  }
-
   /// @}
 
   /// @name Default value setters
@@ -416,12 +353,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
     VectorX<double> default_positions = this->default_positions();
     default_positions.template tail<3>() = p_FM;
     this->set_default_positions(default_positions);
-  }
-
-  DRAKE_DEPRECATED("2024-08-01",
-      "Use QuaternionFloatingJoint::set_default_translation()")
-  void set_default_position(const Vector3<double>& p_FM) {
-    set_default_translation(p_FM);
   }
   /// @}
 

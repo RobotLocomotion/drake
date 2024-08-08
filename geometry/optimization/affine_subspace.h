@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {
@@ -80,17 +79,6 @@ class AffineSubspace final : public ConvexSet {
   this is simply the number of columns in the basis_ matrix. A point will
   have affine dimension zero. */
   int AffineDimension() const { return basis_.cols(); }
-
-  /** Computes the orthogonal projection of x onto the AffineSubspace. This
-  is achieved by finding the least squares solution y for y to x = translation_
-  + basis_*y, and returning translation_ + basis_*y. Each column of the input
-  should be a vector in the ambient space, and the corresponding column of the
-  output will be its projection onto the affine subspace.
-  @pre x.rows() == ambient_dimension() */
-  DRAKE_DEPRECATED(
-      "2024-08-01",
-      "Projection has moved to `ConvexSet`; use `Projection()` instead.")
-  Eigen::MatrixXd Project(const Eigen::Ref<const Eigen::MatrixXd>& x) const;
 
   /** Given a point x in the standard basis of the ambient space, returns the
   coordinates of x in the basis of the AffineSubspace, with the zero point at

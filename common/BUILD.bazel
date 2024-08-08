@@ -896,7 +896,6 @@ drake_cc_library(
     testonly = True,
     srcs = ["test/hwy_dynamic_test_array_mul.cc"],
     hdrs = ["test/hwy_dynamic_test_array_mul.h"],
-    textual_hdrs = ["test/hwy_dynamic_test_array_mul.cc"],
     visibility = ["//visibility:private"],
     deps = [
         ":hwy_dynamic",

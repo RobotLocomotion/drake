@@ -88,7 +88,8 @@ class HydroelasticContactInfo {
   HydroelasticContactInfo(
       const geometry::ContactSurface<T>* contact_surface,
       const SpatialForce<T>& F_Ac_W,
-      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data)
+      std::vector<internal::HydroelasticQuadraturePointData<T>>&&
+          quadrature_point_data)
       : HydroelasticContactInfo(contact_surface, F_Ac_W) {
     unused(quadrature_point_data);
   }
@@ -97,7 +98,8 @@ class HydroelasticContactInfo {
   HydroelasticContactInfo(
       std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
       const SpatialForce<T>& F_Ac_W,
-      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data)
+      std::vector<internal::HydroelasticQuadraturePointData<T>>&&
+          quadrature_point_data)
       : HydroelasticContactInfo(std::move(contact_surface), F_Ac_W) {
     unused(quadrature_point_data);
   }
@@ -124,8 +126,8 @@ class HydroelasticContactInfo {
       "This detailed information was too costly to report, so is effectively "
       "no longer part of the ContactResults output port. The returned vector "
       "will always be empty during the deprecation window.")
-  const std::vector<HydroelasticQuadraturePointData<T>>& quadrature_point_data()
-      const;
+  const std::vector<internal::HydroelasticQuadraturePointData<T>>&
+  quadrature_point_data() const;
 
   /** Gets the spatial force applied on body A, at the centroid point C of the
    surface mesh M, and expressed in the world frame W. The position `p_WC` of

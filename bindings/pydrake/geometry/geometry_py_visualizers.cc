@@ -2,10 +2,12 @@
  found in drake::geometry. They can be found in the pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
@@ -109,8 +111,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
             // `meshcat` is a shared_ptr, so does not need a keep_alive.
             cls_doc.ctor.doc)
-        .def("ResetRealtimeRateCalculator", &Class::ResetRealtimeRateCalculator,
-            cls_doc.ResetRealtimeRateCalculator.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("StartRecording", &Class::StartRecording,
             py::arg("set_transforms_while_recording") = true,
@@ -147,6 +147,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference,
             cls_doc.AddToBuilder
                 .doc_4args_builder_query_object_port_meshcat_params);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("ResetRealtimeRateCalculator",
+            WrapDeprecated(cls_doc.ResetRealtimeRateCalculator.doc_deprecated,
+                &Class::ResetRealtimeRateCalculator),
+            cls_doc.ResetRealtimeRateCalculator.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 }
 
@@ -299,6 +308,8 @@ void DoScalarIndependentDefinitions(py::module m) {
                 const Eigen::Ref<const Eigen::Matrix4d>&>(&Class::SetTransform),
             py::arg("path"), py::arg("matrix"), cls_doc.SetTransform.doc_matrix)
         .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
+        .def("SetSimulationTime", &Class::SetSimulationTime,
+            py::arg("sim_time"), cls_doc.SetSimulationTime.doc)
         .def("SetRealtimeRate", &Class::SetRealtimeRate, py::arg("rate"),
             cls_doc.SetRealtimeRate.doc)
         .def("GetRealtimeRate", &Class::GetRealtimeRate,

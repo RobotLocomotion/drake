@@ -128,8 +128,8 @@ std::optional<ModelInstanceIndex> AddModelFromMesh(
   const ModelInstanceIndex model_instance =
       plant.AddModelInstance(model_instance_name);
 
-  const SpatialInertia<double> M_BBo_B =
-      CalcSpatialInertia(*named_mesh.mesh, 1000.0 /* kg/m3 */);
+  const SpatialInertia<double> M_BBo_B = CalcSpatialInertia(
+      *named_mesh.mesh, 1000.0 /* water density ≈ 1000 kg/m³ */);
   const RigidBody<double>& body =
       plant.AddRigidBody(candidate_name, model_instance, M_BBo_B);
 

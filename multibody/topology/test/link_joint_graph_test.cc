@@ -28,21 +28,24 @@ using std::pair;
 // member functions so that we can test those APIs standalone.
 class LinkJointGraphTester {
  public:
-  static LinkJointGraph::Link MakeLink(BodyIndex index, std::string name,
+  static LinkJointGraph::Link MakeLink(BodyIndex index, LinkOrdinal ordinal,
+                                       std::string name,
                                        ModelInstanceIndex model_instance,
                                        LinkFlags flags) {
-    return LinkJointGraph::Link(index, std::move(name), model_instance, flags);
+    return LinkJointGraph::Link(index, ordinal, std::move(name), model_instance,
+                                flags);
   }
 
-  static LinkJointGraph::Joint MakeJoint(JointIndex index, std::string name,
+  static LinkJointGraph::Joint MakeJoint(JointIndex index, JointOrdinal ordinal,
+                                         std::string name,
                                          ModelInstanceIndex model_instance,
                                          JointTraitsIndex joint_traits_index,
                                          BodyIndex parent_link_index,
                                          BodyIndex child_link_index,
                                          JointFlags flags) {
-    return LinkJointGraph::Joint(index, std::move(name), model_instance,
-                                 joint_traits_index, parent_link_index,
-                                 child_link_index, flags);
+    return LinkJointGraph::Joint(index, ordinal, std::move(name),
+                                 model_instance, joint_traits_index,
+                                 parent_link_index, child_link_index, flags);
   }
 
   static LinkFlags set_link_flags(LinkFlags to_set,
@@ -56,19 +59,20 @@ class LinkJointGraphTester {
   }
 
   static LoopConstraintIndex AddLoopClosingWeldConstraint(
-      BodyIndex primary_link_index, BodyIndex shadow_link_index,
+      LinkOrdinal primary_link_ordinal, LinkOrdinal shadow_link_ordinal,
       LinkJointGraph* graph) {
-    return graph->AddLoopClosingWeldConstraint(primary_link_index,
-                                               shadow_link_index);
+    return graph->AddLoopClosingWeldConstraint(primary_link_ordinal,
+                                               shadow_link_ordinal);
   }
 
-  static std::vector<BodyIndex> static_links(const LinkJointGraph& graph) {
-    return graph.static_links();
-  }
-
-  static std::vector<BodyIndex> non_static_must_be_base_body_links(
+  static std::vector<BodyIndex> static_link_indexes(
       const LinkJointGraph& graph) {
-    return graph.non_static_must_be_base_body_links();
+    return graph.static_link_indexes();
+  }
+
+  static std::vector<BodyIndex> non_static_must_be_base_body_link_indexes(
+      const LinkJointGraph& graph) {
+    return graph.non_static_must_be_base_body_link_indexes();
   }
 };
 
@@ -77,7 +81,7 @@ namespace {
 // Verify that the enums in link_joint_graph_defs.h work properly as bitmaps.
 GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
   const auto is_static = LinkFlags::kStatic;
-  const auto massless = LinkFlags::kTreatAsMassless;
+  const auto massless = LinkFlags::kMassless;
 
   // Or-ed flags still have LinkFlags type.
   auto link_flags = is_static | massless;
@@ -85,20 +89,20 @@ GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
 
   // And is bitwise but still returns LinkFlags, convertible to bool.
   EXPECT_EQ(link_flags & is_static, LinkFlags::kStatic);
-  EXPECT_EQ(link_flags & massless, LinkFlags::kTreatAsMassless);
+  EXPECT_EQ(link_flags & massless, LinkFlags::kMassless);
   EXPECT_FALSE(static_cast<bool>(link_flags & LinkFlags::kMustBeBaseBody));
   EXPECT_EQ(link_flags & LinkFlags::kMustBeBaseBody, LinkFlags::kDefault);
 
   // Repeat for Modeling Options.
   const auto use_fixed_base = ForestBuildingOptions::kUseFixedBase;
-  const auto combine_links = ForestBuildingOptions::kCombineLinkComposites;
+  const auto combine_links = ForestBuildingOptions::kMergeLinkComposites;
   auto forest_building_options = use_fixed_base | combine_links;
   static_assert(
       std::is_same_v<decltype(forest_building_options), ForestBuildingOptions>);
   EXPECT_EQ(forest_building_options & use_fixed_base,
             ForestBuildingOptions::kUseFixedBase);
   EXPECT_EQ(forest_building_options & combine_links,
-            ForestBuildingOptions::kCombineLinkComposites);
+            ForestBuildingOptions::kMergeLinkComposites);
   EXPECT_FALSE(static_cast<bool>(forest_building_options &
                                  ForestBuildingOptions::kUseRpyFloatingJoints));
   EXPECT_EQ(
@@ -122,7 +126,7 @@ GTEST_TEST(LinkJointGraph, SpecifyForestBuildingOptions) {
 
   const ForestBuildingOptions default_options = ForestBuildingOptions::kDefault;
   const ForestBuildingOptions two_options =
-      ForestBuildingOptions::kCombineLinkComposites |
+      ForestBuildingOptions::kMergeLinkComposites |
       ForestBuildingOptions::kUseRpyFloatingJoints;
 
   // If we haven't said anything, global and all ModelInstance options are
@@ -280,8 +284,9 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_TRUE(graph.world_link().is_anchored());
   EXPECT_EQ(graph.link_to_mobod(world_link_index), MobodIndex(0));
   EXPECT_EQ(ssize(graph.link_composites()), 1);
-  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0))), 1);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0))[0], world_link_index);
+  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
+  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
+            world_link_index);
 
   // Check that Clear() puts the graph back to default-constructed condition.
   // First add some junk to the graph.
@@ -328,10 +333,10 @@ GTEST_TEST(LinkJointGraph, AddLinkErrors) {
   // Addlink accepts flags, but not Shadow which is set internally only.
   const BodyIndex link2_index =
       graph.AddLink("link2", ModelInstanceIndex(3),
-                    LinkFlags::kTreatAsMassless | LinkFlags::kMustBeBaseBody);
-  const LinkJointGraph::Link& link2 = graph.links(link2_index);
-  EXPECT_TRUE(link2.treat_as_massless() && link2.must_be_base_body());
-  EXPECT_FALSE(link2.is_static() || link2.is_shadow());
+                    LinkFlags::kMassless | LinkFlags::kMustBeBaseBody);
+  const LinkJointGraph::Link& link2 = graph.link_by_index(link2_index);
+  EXPECT_TRUE(link2.is_massless() && link2.must_be_base_body());
+  EXPECT_FALSE(link2.is_static_flag_set() || link2.is_shadow());
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddLink("link3", ModelInstanceIndex(3), LinkFlags::kShadow),
@@ -352,17 +357,19 @@ GTEST_TEST(LinkJointGraph, InternalListsAreBuiltCorrectly) {
                     LinkFlags::kStatic | LinkFlags::kMustBeBaseBody);
 
   // Links 1 and 3 are static.
-  EXPECT_EQ(LinkJointGraphTester::static_links(graph),
+  EXPECT_EQ(LinkJointGraphTester::static_link_indexes(graph),
             (std::vector<BodyIndex>{link1_index, link3_index}));
   // But only link 2 should be on the non-static must be base body list.
-  EXPECT_EQ(LinkJointGraphTester::non_static_must_be_base_body_links(graph),
-            std::vector<BodyIndex>{link2_index});
+  EXPECT_EQ(
+      LinkJointGraphTester::non_static_must_be_base_body_link_indexes(graph),
+      std::vector<BodyIndex>{link2_index});
 }
 
 // Check operation of the public members of the Link subclass.
 GTEST_TEST(LinkJoinGraph, LinkAPITest) {
   LinkJointGraph::Link link5 = LinkJointGraphTester::MakeLink(
-      BodyIndex(5), "link5", ModelInstanceIndex(7), LinkFlags::kMustBeBaseBody);
+      BodyIndex(5), LinkOrdinal(0), "link5", ModelInstanceIndex(7),
+      LinkFlags::kMustBeBaseBody);
   EXPECT_EQ(link5.index(), BodyIndex(5));
   EXPECT_EQ(link5.model_instance(), ModelInstanceIndex(7));
   EXPECT_EQ(link5.name(), "link5");
@@ -370,15 +377,15 @@ GTEST_TEST(LinkJoinGraph, LinkAPITest) {
   // Check flags.
   EXPECT_FALSE(link5.is_world());
   EXPECT_FALSE(link5.is_anchored());
-  EXPECT_FALSE(link5.is_static());
-  EXPECT_FALSE(link5.treat_as_massless());
+  EXPECT_FALSE(link5.is_static_flag_set());
+  EXPECT_FALSE(link5.is_massless());
   EXPECT_FALSE(link5.is_shadow());
   EXPECT_TRUE(link5.must_be_base_body());
   LinkJointGraphTester::set_link_flags(LinkFlags::kStatic, &link5);
-  EXPECT_TRUE(link5.is_static());
+  EXPECT_TRUE(link5.is_static_flag_set());
   EXPECT_TRUE(link5.is_anchored());  // Static links are anchored to World.
-  EXPECT_TRUE(link5.must_be_base_body());   // Unchanged.
-  EXPECT_FALSE(link5.treat_as_massless());  // Unchanged.
+  EXPECT_TRUE(link5.must_be_base_body());  // Unchanged.
+  EXPECT_FALSE(link5.is_massless());       // Unchanged.
 
   // Only LinkJointGraph sets these; no public interface.
   EXPECT_TRUE(link5.joints().empty());
@@ -397,14 +404,14 @@ GTEST_TEST(LinkJointGraph, JointAPITest) {
   const BodyIndex child_index(2);
   const BodyIndex other_body_index(3);  // Not connected by joint3.
   LinkJointGraph::Joint joint3 = LinkJointGraphTester::MakeJoint(
-      JointIndex(3), "joint3", ModelInstanceIndex(9),
+      JointIndex(3), JointOrdinal(0), "joint3", ModelInstanceIndex(9),
       LinkJointGraph::rpy_floating_joint_traits_index(), parent_index,
       child_index, JointFlags::kMustBeModeled);
   EXPECT_EQ(joint3.index(), JointIndex(3));
   EXPECT_EQ(joint3.model_instance(), ModelInstanceIndex(9));
   EXPECT_EQ(joint3.name(), "joint3");
-  EXPECT_EQ(joint3.parent_link(), parent_index);
-  EXPECT_EQ(joint3.child_link(), child_index);
+  EXPECT_EQ(joint3.parent_link_index(), parent_index);
+  EXPECT_EQ(joint3.child_link_index(), child_index);
   EXPECT_FALSE(joint3.is_weld());
   EXPECT_EQ(joint3.traits_index(),
             LinkJointGraph::rpy_floating_joint_traits_index());
@@ -435,7 +442,7 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   EXPECT_EQ(ssize(graph.joint_traits()), 4);  // built-in types plus "revolute"
 
   EXPECT_FALSE(graph.IsJointTypeRegistered("prismatic"));
-  EXPECT_THROW(graph.joint_traits(JointTraitsIndex(99)), std::exception);
+  EXPECT_THROW((void)graph.joint_traits(JointTraitsIndex(99)), std::exception);
 
   // Verify that the revolute joint was correctly registered.
   EXPECT_TRUE(graph.IsJointTypeRegistered("revolute"));
@@ -473,7 +480,7 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   EXPECT_EQ(graph.num_user_joints(), 5);
 
   // Check that the links see their joints.
-  const LinkJointGraph::Link& link4 = graph.links(BodyIndex(4));
+  const LinkJointGraph::Link& link4 = graph.link_by_index(BodyIndex(4));
   EXPECT_EQ(link4.joints(),
             (std::vector<JointIndex>{JointIndex(3), JointIndex(4)}));
   EXPECT_EQ(link4.joints_as_parent(), std::vector<JointIndex>{JointIndex(4)});
@@ -483,11 +490,11 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   // weld constraint, and check that it properly updates the relevant links.
   // (This is a private function normally used only by SpanningForest as it
   // breaks loops; users can't add constraints to the graph.)
-  const LinkJointGraph::Link& link5 = graph.links(BodyIndex(5));
+  const LinkJointGraph::Link& link5 = graph.link_by_index(BodyIndex(5));
   const LoopConstraintIndex constraint0_index =
       LinkJointGraphTester::AddLoopClosingWeldConstraint(
-          link4.index(),  // primary link
-          link5.index(),  // shadow link
+          link4.ordinal(),  // primary link
+          link5.ordinal(),  // shadow link
           &graph);
   EXPECT_EQ(constraint0_index, LoopConstraintIndex(0));
   EXPECT_EQ(ssize(graph.loop_constraints()), 1);
@@ -505,7 +512,8 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
             std::vector<LoopConstraintIndex>{constraint0_index});
 
   // Out of range should throw.
-  EXPECT_THROW(graph.loop_constraints(LoopConstraintIndex(99)), std::exception);
+  EXPECT_THROW((void)graph.loop_constraints(LoopConstraintIndex(99)),
+               std::exception);
 
   // We cannot duplicate the name of a Link or Joint.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -540,11 +548,13 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddJoint("another_pin", model_instance, "revolute", BodyIndex(1),
                      BodyIndex(9)),
-      "AddJoint\\(\\): child link index 9 for joint '.*' is out of range.");
+      "AddJoint\\(\\): child link index 9 for joint '.*' refers.*"
+      "non-existent or ephemeral.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddJoint("another_pin", model_instance, "revolute", BodyIndex(9),
                      BodyIndex(1)),
-      "AddJoint\\(\\): parent link index 9 for joint '.*' is out of range.");
+      "AddJoint\\(\\): parent link index 9 for joint '.*' refers.*"
+      "non-existent or ephemeral.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddJoint("joint_to_self", model_instance, "revolute", BodyIndex(5),
@@ -557,10 +567,10 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   EXPECT_EQ(ssize(graph.joints()), 5);
 
   // Verify we can get bodies/joints.
-  EXPECT_EQ(graph.links(BodyIndex(3)).name(), "link3");
-  EXPECT_EQ(graph.joints(JointIndex(3)).name(), "pin4");
-  EXPECT_THROW(graph.links(BodyIndex(9)), std::exception);
-  EXPECT_THROW(graph.joints(JointIndex(9)), std::exception);
+  EXPECT_EQ(graph.link_by_index(BodyIndex(3)).name(), "link3");
+  EXPECT_EQ(graph.joint_by_index(JointIndex(3)).name(), "pin4");
+  EXPECT_THROW((void)graph.link_by_index(BodyIndex(9)), std::exception);
+  EXPECT_THROW((void)graph.joint_by_index(JointIndex(9)), std::exception);
 
   // Verify we can query if a Link/Joint is in the graph.
   const ModelInstanceIndex kInvalidModelInstance(666);
@@ -601,6 +611,171 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
             joint_10_11_index);
   EXPECT_FALSE(
       graph.MaybeGetJointBetween(world_index(), link10_index).has_value());
+}
+
+GTEST_TEST(LinkJointGraph, RemoveJoint) {
+  LinkJointGraph graph;
+  graph.RegisterJointType("revolute", 1, 1);
+  const ModelInstanceIndex model_instance(5);  // Arbitrary.
+
+  // Start with this graph:
+  // {1} ---> {2} ---> {3} ---> {4}
+  //      j0       j1       j2           indices
+  //       0        1        2           ordinals
+  for (int i = 1; i <= 4; ++i)
+    graph.AddLink("link" + std::to_string(i), model_instance);
+  for (int j = 0; j <= 2; ++j) {
+    graph.AddJoint("joint" + std::to_string(j), model_instance, "revolute",
+                   BodyIndex(j + 1), BodyIndex(j + 2));
+  }
+
+  for (int j = 0; j < 3; ++j)
+    EXPECT_EQ(graph.joint_by_index(JointIndex(j)).ordinal(), j);
+
+  EXPECT_EQ(ssize(graph.joints()), 3);
+  EXPECT_EQ(graph.num_user_joints(), 3);
+  EXPECT_TRUE(graph.has_joint(JointIndex(1)));
+  EXPECT_TRUE(graph.HasJointNamed("joint1", model_instance));
+
+  const LinkJointGraph::Link& link2 = graph.link_by_index(BodyIndex(2));
+  const LinkJointGraph::Link& link3 = graph.link_by_index(BodyIndex(3));
+
+  EXPECT_EQ(ssize(link2.joints()), 2);
+  EXPECT_EQ(ssize(link3.joints()), 2);
+  EXPECT_EQ(link2.joints_as_parent()[0], JointIndex(1));
+  EXPECT_EQ(link3.joints_as_child()[0], JointIndex(1));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.RemoveJoint(JointIndex(99)),
+                              "RemoveJoint..: Joint index 99.*out of range.*");
+
+  // Remove joint 1. Make sure all the bookkeeping is done right, including:
+  //   - Ordinal reassignment for later joints
+  //   - Joint counts are updated
+  //   - The index is no longer valid
+  //   - The name is forgotten
+  //   - Connected parent/child Links forget about the connection
+  graph.RemoveJoint(JointIndex(1));
+  // At this point we should have
+  // {1} ---> {2}      {3} ---> {4}
+  //      j0                j2           indices
+  //       0                 1           ordinals
+  EXPECT_EQ(graph.joint_by_index(JointIndex(0)).ordinal(), 0);
+  EXPECT_EQ(graph.joint_by_index(JointIndex(2)).ordinal(), 1);
+  EXPECT_EQ(ssize(graph.joints()), 2);
+  EXPECT_EQ(graph.num_user_joints(), 2);
+  EXPECT_FALSE(graph.has_joint(JointIndex(1)));
+  EXPECT_FALSE(graph.HasJointNamed("joint1", model_instance));
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.joint_by_index(JointIndex(1)),
+                              "joint_by_index.*joint.*1.*was removed.*");
+  EXPECT_EQ(ssize(link2.joints()), 1);
+  EXPECT_EQ(ssize(link3.joints()), 1);
+  EXPECT_TRUE(link2.joints_as_parent().empty());
+  EXPECT_EQ(link2.joints_as_child()[0], JointIndex(0));
+  EXPECT_TRUE(link3.joints_as_child().empty());
+  EXPECT_EQ(link3.joints_as_parent()[0], JointIndex(2));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.RemoveJoint(JointIndex(1)),
+                              "RemoveJoint..:.*index 1.*already removed.*");
+
+  graph.BuildForest();  // Adds 2 ephemeral joints: index 3,4 ordinal 2,3.
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(3)));
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(4)));
+  EXPECT_EQ(ssize(graph.joints()), 4);
+  EXPECT_EQ(graph.num_user_joints(), 2);
+
+  // Adding a new joint should wipe the ephemeral elements, whose indices
+  // are then available for reassignment (unlike user element indices).
+  const JointIndex replaced_index = graph.AddJoint(
+      "joint3", model_instance, "revolute", BodyIndex(2), BodyIndex(3));
+  EXPECT_EQ(replaced_index, JointIndex(3));
+
+  // At this point we should have
+  // {1} ---> {2} ---> {3} ---> {4}
+  //      j0       j3       j2           indices
+  //       0        2        1           ordinals
+  EXPECT_EQ(graph.joint_by_index(JointIndex(0)).ordinal(), 0);
+  EXPECT_EQ(graph.joint_by_index(JointIndex(2)).ordinal(), 1);
+  EXPECT_EQ(graph.joint_by_index(JointIndex(3)).ordinal(), 2);
+
+  EXPECT_EQ(ssize(graph.joints()), 3);
+  EXPECT_EQ(graph.num_user_joints(), 3);
+  EXPECT_TRUE(graph.has_joint(JointIndex(3)));
+  EXPECT_TRUE(graph.HasJointNamed("joint3", model_instance));
+
+  EXPECT_EQ(ssize(link2.joints()), 2);
+  EXPECT_EQ(ssize(link3.joints()), 2);
+  EXPECT_EQ(link2.joints_as_parent()[0], JointIndex(3));
+  EXPECT_EQ(link3.joints_as_child()[0], JointIndex(3));
+
+  // Now we'll build the forest and make sure
+  //  - RemoveJoint won't operate on ephemeral joints
+  //  - A failed RemoveJoint leaves the forest alone
+  //  - A successful RemoveJoint invalidates the forest
+  graph.BuildForest();
+  EXPECT_TRUE(graph.forest_is_valid());
+  EXPECT_EQ(ssize(graph.joints()), 4);  // 1 ephemeral joint: index 4 ordinal 3.
+  EXPECT_EQ(graph.num_user_joints(), 3);
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(4)));
+  EXPECT_EQ(graph.joint_by_index(JointIndex(4)).ordinal(), 3);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      graph.RemoveJoint(JointIndex(4)),
+      "RemoveJoint..: Joint link1.*index 4.*ephemeral.*");
+  EXPECT_TRUE(graph.forest_is_valid());
+  EXPECT_TRUE(graph.has_joint(JointIndex(4)));
+  EXPECT_TRUE(graph.HasJointNamed("link1", model_instance));
+
+  graph.RemoveJoint(JointIndex(0));
+  // Now we have:
+  // {1}      {2} ---> {3} ---> {4}
+  //               j3       j2           indices
+  //                1        0           ordinals
+
+  EXPECT_FALSE(graph.forest_is_valid());
+  EXPECT_EQ(ssize(graph.joints()), 2);
+  EXPECT_EQ(graph.num_user_joints(), 2);
+  EXPECT_FALSE(graph.has_joint(JointIndex(4)));
+  EXPECT_FALSE(graph.HasJointNamed("link1", model_instance));
+  EXPECT_EQ(graph.joint_by_index(JointIndex(2)).ordinal(), 0);
+  EXPECT_EQ(graph.joint_by_index(JointIndex(3)).ordinal(), 1);
+  EXPECT_EQ(ssize(link2.joints()), 1);
+  EXPECT_EQ(ssize(link3.joints()), 2);
+  EXPECT_EQ(link2.joints_as_parent()[0], JointIndex(3));
+
+  graph.BuildForest();  // Adds 2 ephemeral joints: indices 4,5 ordinals 2,3.
+  EXPECT_EQ(ssize(graph.joints()), 4);
+  EXPECT_EQ(graph.num_user_joints(), 2);
+  for (JointIndex i(2); i <= 5; ++i) EXPECT_TRUE(graph.has_joint(i));
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(4)));
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(5)));
+  EXPECT_EQ(graph.joint_by_index(JointIndex(4)).ordinal(), 2);
+  EXPECT_EQ(graph.joint_by_index(JointIndex(5)).ordinal(), 3);
+
+  // Test the case of removing the highest-index user joint (3 in this case),
+  // then build the forest, then make sure that no ephemeral joint gets that
+  // last index. (There was a bug in this case before.)
+  graph.RemoveJoint(JointIndex(3));
+  // Now we have:
+  // {1}      {2}      {3} ---> {4}
+  //                        j2           indices
+  //                         0           ordinals
+  graph.BuildForest();  // Should add 3 ephemeral joints, indices 4,5,6.
+  EXPECT_EQ(ssize(graph.joints()), 4);
+  EXPECT_EQ(graph.num_user_joints(), 1);
+  EXPECT_FALSE(graph.has_joint(JointIndex(3)));
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(4)));
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(5)));
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(6)));
+
+  // Make sure an Invalidate/Rebuild gives us the same Forest.
+  graph.InvalidateForest();  // Just being explicit; BuildForest() calls it too.
+  graph.BuildForest();       // Indices for ephemerals should get reused.
+  EXPECT_EQ(ssize(graph.joints()), 4);
+  EXPECT_EQ(graph.num_user_joints(), 1);
+  EXPECT_FALSE(graph.has_joint(JointIndex(3)));
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(4)));
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(5)));
+  EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(6)));
 }
 
 }  // namespace

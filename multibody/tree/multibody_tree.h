@@ -1145,6 +1145,15 @@ class MultibodyTree {
       const std::vector<ModelInstanceIndex>& model_instances) const;
 
   // See MultibodyPlant method.
+  Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
+      const systems::Context<T>& context) const;
+
+  // See MultibodyPlant method.
+  Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances) const;
+
+  // See MultibodyPlant method.
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const;
 
@@ -1256,6 +1265,13 @@ class MultibodyTree {
   // See MultibodyPlant method.
   Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A, const Frame<T>& frame_E) const;
+
+  // See MultibodyPlant method.
+  Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances,
+      JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E) const;
 
   // See MultibodyPlant method.

@@ -712,21 +712,29 @@ GTEST_TEST(ShapeTest, Volume) {
   EXPECT_NEAR(CalcVolume(MeshcatCone(4, 2, 3)), 8.0 * M_PI, 1e-14);
   EXPECT_NEAR(CalcVolume(Sphere(3)), 36.0 * M_PI, 1e-13);
 
+  // The convex hull of the cube with a hole, should have the same volume as
+  // a cube without the hole.
+  const std::string holey_cube_obj =
+      FindResourceOrThrow("drake/geometry/test/cube_with_hole.obj");
+  EXPECT_NEAR(CalcVolume(Convex(holey_cube_obj, 1.0)), 8.0, 1e-14);
   const std::string cube_obj =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  EXPECT_NEAR(CalcVolume(Convex(cube_obj, 1.0)), 8.0, 1e-14);
   EXPECT_NEAR(CalcVolume(Mesh(cube_obj, 1.0)), 8.0, 1e-14);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex("fakename.obj", 1.0)),
-                              "Cannot open file.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh("fakename.obj", 1.0)),
+  // Error thrown in ReadObjFile() (read_obj.cc). Note: this passes the tinyobj
+  // error along -- those terminate in new lines and has to be handled in the
+  // matching expression explicitly.
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex("fakename.obj")),
+                              ".*Cannot open file[^]*");
+  // Error thrown in ReadObjToTriangleSurfaceMesh() (obj_to_surface_mesh.cc).
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh("fakename.obj")),
                               "Cannot open file.*");
 
-  // We only support obj but should eventually support vtk.
   const std::string non_obj = "only_extension_matters.not_obj";
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex(non_obj, 1.0)),
-                              ".*only supports .obj files.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh(non_obj, 1.0)),
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex(non_obj)),
+                              ".*only applies to obj, vtk.*");
+  // We only support obj but should eventually support vtk.
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh(non_obj)),
                               ".*only supports .obj files.*");
 }
 

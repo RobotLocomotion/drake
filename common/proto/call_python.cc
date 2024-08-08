@@ -26,6 +26,7 @@ PythonRemoteVariable::PythonRemoteVariable()
 
 namespace internal {
 
+namespace {
 // Copies `size` bytes at `data` into `message->data`.
 void CopyBytes(const void* bytes, const int size,
                lcmt_call_python_data* message) {
@@ -33,6 +34,7 @@ void CopyBytes(const void* bytes, const int size,
   message->data.resize(size);
   std::memcpy(message->data.data(), bytes, size);
 }
+}  // namespace
 
 void ToPythonRemoteData(const PythonRemoteVariable& variable,
                         lcmt_call_python_data* message) {

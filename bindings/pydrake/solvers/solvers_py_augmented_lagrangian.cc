@@ -1,6 +1,7 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/solvers/augmented_lagrangian.h"
 
 namespace drake {

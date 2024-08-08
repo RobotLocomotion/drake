@@ -41,9 +41,9 @@ template <typename T>
 HydroelasticContactInfo<T>::~HydroelasticContactInfo() = default;
 
 template <typename T>
-const std::vector<HydroelasticQuadraturePointData<T>>&
+const std::vector<internal::HydroelasticQuadraturePointData<T>>&
 HydroelasticContactInfo<T>::quadrature_point_data() const {
-  using Result = std::vector<HydroelasticQuadraturePointData<T>>;
+  using Result = std::vector<internal::HydroelasticQuadraturePointData<T>>;
   static const never_destroyed<Result> result;
   return result.access();
 }

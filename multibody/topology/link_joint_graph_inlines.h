@@ -4,6 +4,8 @@
 #error Do not include this file. Use "drake/multibody/topology/graph.h".
 #endif
 
+#include <optional>
+
 namespace drake {
 namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
@@ -11,56 +13,84 @@ namespace internal {
 
 // LinkJointGraph definitions deferred until Link defined.
 
-inline auto LinkJointGraph::links(BodyIndex link_index) const -> const Link& {
-  return links().at(link_index);
+inline const LinkJointGraph::Link& LinkJointGraph::links(
+    LinkOrdinal link_ordinal) const {
+  DRAKE_ASSERT(link_ordinal < ssize(links()));
+  return data_.links[link_ordinal];
 }
 
-inline auto LinkJointGraph::mutable_link(BodyIndex link_index) -> Link& {
-  return data_.links.at(link_index);
+inline const LinkJointGraph::Link& LinkJointGraph::link_by_index(
+    BodyIndex link_index) const {
+  const std::optional<LinkOrdinal>& ordinal =
+      data_.link_index_to_ordinal.at(link_index);
+  if (!ordinal.has_value()) ThrowLinkWasRemoved(__func__, link_index);
+  DRAKE_ASSERT(ordinal < ssize(links()));
+  return links(*ordinal);
+}
+
+inline LinkJointGraph::Link& LinkJointGraph::mutable_link(
+    LinkOrdinal link_ordinal) {
+  DRAKE_ASSERT(link_ordinal < ssize(links()));
+  return data_.links[link_ordinal];
 }
 
 inline MobodIndex LinkJointGraph::link_to_mobod(BodyIndex index) const {
-  return links(index).mobod_;
+  return link_by_index(index).mobod_;
 }
 
 inline void LinkJointGraph::set_primary_mobod_for_link(
-    BodyIndex link_index, MobodIndex primary_mobod_index,
+    LinkOrdinal link_ordinal, MobodIndex primary_mobod_index,
     JointIndex primary_joint_index) {
-  Link& link = mutable_link(link_index);
-  DRAKE_DEMAND(!link.mobod_.is_valid());
+  Link& link = mutable_link(link_ordinal);
+  DRAKE_ASSERT(!link.mobod_.is_valid());
   link.mobod_ = primary_mobod_index;
   link.joint_ = primary_joint_index;
 }
 
-inline bool LinkJointGraph::must_treat_as_massless(BodyIndex link_index) const {
-  const Link& link = links(link_index);
-  // TODO(sherm1) If part of a Composite then this is only massless if the
-  //  entire Composite is composed of massless Links.
-  return link.treat_as_massless();
+inline bool LinkJointGraph::link_and_its_composite_are_massless(
+    LinkOrdinal link_ordinal) const {
+  const Link& link = links(link_ordinal);
+  if (!link.is_massless()) return false;
+
+  return link.composite().has_value()
+             ? link_composites(*link.composite()).is_massless
+             : true;
 }
 
 // LinkJointGraph definitions deferred until Joint defined.
 
-inline auto LinkJointGraph::joints(JointIndex joint_index) const
-    -> const Joint& {
-  return joints().at(joint_index);
+inline const LinkJointGraph::Joint& LinkJointGraph::joints(
+    JointOrdinal joint_ordinal) const {
+  DRAKE_ASSERT(joint_ordinal < ssize(joints()));
+  return data_.joints[joint_ordinal];
 }
 
-inline auto LinkJointGraph::mutable_joint(JointIndex joint_index) -> Joint& {
-  return data_.joints.at(joint_index);
+inline const LinkJointGraph::Joint& LinkJointGraph::joint_by_index(
+    JointIndex joint_index) const {
+  const std::optional<JointOrdinal>& ordinal =
+      data_.joint_index_to_ordinal.at(joint_index);
+  if (!ordinal.has_value()) ThrowJointWasRemoved(__func__, joint_index);
+  DRAKE_ASSERT(ordinal < ssize(joints()));
+  return joints(*ordinal);
 }
 
-inline void LinkJointGraph::set_mobod_for_joint(JointIndex joint_index,
+inline LinkJointGraph::Joint& LinkJointGraph::mutable_joint(
+    JointOrdinal joint_ordinal) {
+  DRAKE_ASSERT(joint_ordinal < ssize(joints()));
+  return data_.joints[joint_ordinal];
+}
+
+inline void LinkJointGraph::set_mobod_for_joint(JointOrdinal joint_ordinal,
                                                 MobodIndex mobod_index) {
-  Joint& joint = mutable_joint(joint_index);
-  DRAKE_DEMAND(joint.how_modeled_.index() == 0);  // I.e., empty.
+  Joint& joint = mutable_joint(joint_ordinal);
+  DRAKE_ASSERT(joint.how_modeled_.index() == 0);  // I.e., empty.
   joint.how_modeled_ = mobod_index;
 }
 
 // LinkJointGraph definitions deferred until LoopConstraint defined.
 
-inline auto LinkJointGraph::loop_constraints(
-    LoopConstraintIndex loop_constraint_index) const -> const LoopConstraint& {
+inline const LinkJointGraph::LoopConstraint& LinkJointGraph::loop_constraints(
+    LoopConstraintIndex loop_constraint_index) const {
   return loop_constraints().at(loop_constraint_index);
 }
 

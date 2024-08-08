@@ -79,6 +79,7 @@ void SdpaFreeFormat::DeclareXforPositiveSemidefiniteConstraints(
   }
 }
 
+namespace {
 void AddTermToTriplets(const EntryInX& entry_in_X, double coeff,
                        std::vector<Eigen::Triplet<double>>* triplets) {
   if (entry_in_X.row_index_in_block == entry_in_X.column_index_in_block) {
@@ -94,6 +95,7 @@ void AddTermToTriplets(const EntryInX& entry_in_X, double coeff,
         entry_in_X.X_start_row + entry_in_X.row_index_in_block, coeff / 2);
   }
 }
+}  // namespace
 
 void SdpaFreeFormat::AddLinearEqualityConstraint(
     const std::vector<double>& coeff_prog_vars,

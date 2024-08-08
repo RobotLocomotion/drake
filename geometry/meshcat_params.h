@@ -21,6 +21,7 @@ struct MeshcatParams {
     a->Visit(DRAKE_NVP(web_url_pattern));
     a->Visit(DRAKE_NVP(initial_properties));
     a->Visit(DRAKE_NVP(show_stats_plot));
+    a->Visit(DRAKE_NVP(realtime_rate_period));
   }
 
   /** Meshcat will listen only on the given hostname (e.g., "localhost").
@@ -82,6 +83,15 @@ struct MeshcatParams {
   user interface. This plot including realtime rate and WebGL render
   statistics. */
   bool show_stats_plot{true};
+
+  /** The minimum period of wall clock time (in seconds) between updates to the
+   broadcast realtime rate. If the period is too short, the reported realtime
+   rate can become visually noisy. Too long, and acute changes in performance
+   may be masked. It must be strictly *positive*.
+
+   Meshcat promises to broadcast messages to clients at this fixed period. See
+   Meshcat::SetSimulationTime() for details. */
+  double realtime_rate_period{0.25};
 };
 
 }  // namespace geometry

@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":detect_zero_simplex",
         ":field_intersection",
         ":hydroelastic_internal",
+        ":inflate_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
@@ -62,6 +63,7 @@ drake_cc_package_library(
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_mesh_refiner",
+        ":volume_mesh_topology",
         ":volume_to_surface_mesh",
         ":vtk_to_volume_mesh",
     ],
@@ -71,9 +73,19 @@ drake_cc_library(
     name = "boxes_overlap",
     srcs = ["boxes_overlap.cc"],
     hdrs = ["boxes_overlap.h"],
+    copts = [
+        # Hard coding optimization keeps performance high in debug.  If you are
+        # a developer trying to debug these files, you might want to comment
+        # this out temporarily.
+        "-O2",
+    ],
     deps = [
-        "//common:essential",
         "//math:geometric_transform",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//common:hwy_dynamic",
+        "@highway_internal//:hwy",
     ],
 )
 
@@ -348,14 +360,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "hydroelastic_callback",
-    hdrs = ["hydroelastic_callback.h"],
+    name = "hydroelastic_calculator",
+    srcs = ["hydroelastic_calculator.cc"],
+    hdrs = ["hydroelastic_calculator.h"],
     internal = True,
     visibility = [
         "//geometry:__pkg__",
+        "//geometry/benchmarking:__pkg__",
     ],
     deps = [
-        ":collision_filter",
         ":field_intersection",
         ":hydroelastic_internal",
         ":mesh_half_space_intersection",
@@ -370,8 +383,6 @@ drake_cc_library(
         "//geometry:proximity_properties",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
-        "@fcl_internal//:fcl",
-        "@fmt",
     ],
 )
 
@@ -381,11 +392,13 @@ drake_cc_library(
     hdrs = ["hydroelastic_internal.h"],
     deps = [
         ":bvh",
+        ":inflate_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
         ":make_capsule_mesh",
         ":make_convex_field",
+        ":make_convex_hull_mesh_impl",
         ":make_convex_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
@@ -407,6 +420,22 @@ drake_cc_library(
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "inflate_mesh",
+    srcs = ["inflate_mesh.cc"],
+    hdrs = ["inflate_mesh.h"],
+    deps = [
+        ":volume_mesh",
+    ],
+    implementation_deps = [
+        ":volume_to_surface_mesh",
+        "//common:essential",
+        "//solvers:clarabel_solver",
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
     ],
 )
 
@@ -526,6 +555,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":obj_to_surface_mesh",
+        ":polygon_to_triangle_mesh",
         ":triangle_surface_mesh",
         "//common:default_scalars",
         "//common:essential",
@@ -827,6 +857,7 @@ drake_cc_library(
         "//multibody/fixed_fem/dev:__pkg__",
     ],
     deps = [
+        ":mesh_field",
         ":sorted_triplet",
         ":volume_mesh",
         "//common:drake_export",
@@ -835,6 +866,23 @@ drake_cc_library(
         "//geometry:shape_specification",
         "@fcl_internal//:fcl",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "pressure_field_invariants",
+    testonly = 1,
+    srcs = ["test/pressure_field_invariants.cc"],
+    hdrs = ["test/pressure_field_invariants.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":mesh_field",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
+        "//common:essential",
+        "//math:geometric_transform",
+        "@gtest//:without_main",
     ],
 )
 
@@ -878,6 +926,20 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//math:geometric_transform",
         "//math:linear_solve",
+    ],
+)
+
+drake_cc_library(
+    name = "volume_mesh_topology",
+    srcs = [
+        "volume_mesh_topology.cc",
+    ],
+    hdrs = [
+        "volume_mesh_topology.h",
+    ],
+    deps = [
+        ":sorted_triplet",
+        ":volume_mesh",
     ],
 )
 
@@ -1201,9 +1263,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "hydroelastic_callback_test",
+    name = "hydroelastic_calculator_test",
     deps = [
-        ":hydroelastic_callback",
+        ":hydroelastic_calculator",
         "//common/test_utilities",
         "//math:autodiff",
     ],
@@ -1228,10 +1290,25 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "inflate_mesh_test",
+    data = [
+        "//geometry:test_vtk_files",
+    ],
+    deps = [
+        ":inflate_mesh",
+        ":make_mesh_from_vtk",
+        ":volume_to_surface_mesh",
+        "//common:find_resource",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_googletest(
     name = "make_box_field_test",
     deps = [
         ":make_box_field",
         ":make_box_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1250,6 +1327,7 @@ drake_cc_googletest(
     deps = [
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1314,6 +1392,7 @@ drake_cc_googletest(
     deps = [
         ":make_convex_mesh",
         ":obj_to_surface_mesh",
+        ":polygon_to_triangle_mesh",
         ":proximity_utilities",
         ":volume_to_surface_mesh",
         "//common:find_resource",
@@ -1325,6 +1404,7 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_field",
         ":make_cylinder_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1342,6 +1422,7 @@ drake_cc_googletest(
     deps = [
         ":make_ellipsoid_field",
         ":make_ellipsoid_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1361,6 +1442,7 @@ drake_cc_googletest(
     deps = [
         ":make_mesh_field",
         ":make_mesh_from_vtk",
+        ":pressure_field_invariants",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -1383,6 +1465,7 @@ drake_cc_googletest(
     deps = [
         ":make_sphere_field",
         ":make_sphere_mesh",
+        ":pressure_field_invariants",
         ":volume_to_surface_mesh",
     ],
 )
@@ -1614,6 +1697,13 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volume_mesh_topology_test",
+    deps = [
+        ":volume_mesh_topology",
     ],
 )
 

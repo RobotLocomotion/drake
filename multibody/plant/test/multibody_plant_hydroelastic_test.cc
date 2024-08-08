@@ -455,7 +455,7 @@ TEST_F(HydroelasticModelTests,
   }
 
   EXPECT_TRUE(CompareMatrices(compliant_compliant_p_WB_W,
-                              rigid_compliant_p_WB_W, 1e-8));
+                              rigid_compliant_p_WB_W, 1.3e-8));
 }
 
 // This tests consistency across the ContactModel modes: point pair,
@@ -504,6 +504,7 @@ class ContactModelTest : public ::testing::Test {
       scene_graph_ = builder.AddSystem(std::make_unique<SceneGraph<double>>());
       plant_->RegisterAsSourceForSceneGraph(scene_graph_);
     }
+    plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
 
     geometry::ProximityProperties props;
     geometry::AddContactMaterial(

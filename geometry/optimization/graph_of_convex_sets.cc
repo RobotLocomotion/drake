@@ -263,6 +263,27 @@ Edge::Edge(const EdgeId& id, Vertex* u, Vertex* v, std::string name)
 
 Edge::~Edge() = default;
 
+VectorXDecisionVariable Edge::NewSlackVariables(int rows,
+                                                const std::string& name = "s") {
+  auto s = symbolic::MakeVectorContinuousVariable(rows, name_ + "_" + name);
+
+  const int n = slacks_.size();
+  slacks_.conservativeResize(n + rows);
+  slacks_.tail(rows) = s;
+
+  for (int i = 0; i < rows; ++i) {
+    allowed_vars_.insert(s[i]);
+  }
+
+  // Add this slack variable to the x_to_yz map, so that it can
+  // be looked up like any other variable in the vertices.
+  for (int i = 0; i < rows; ++i) {
+    x_to_yz_.emplace(s[i], s[i]);
+  }
+
+  return s;
+}
+
 std::pair<Variable, Binding<Cost>> Edge::AddCost(
     const symbolic::Expression& e,
     const std::unordered_set<Transcription>& use_in_transcription) {
@@ -450,22 +471,39 @@ void GraphOfConvexSets::ClearAllPhiConstraints() {
   }
 }
 
-// TODO(russt): We could get fancy and dim the color of the nodes/edges
-// according to phi, using e.g. https://graphviz.org/docs/attr-types/color/ .
 std::string GraphOfConvexSets::GetGraphvizString(
-    const std::optional<solvers::MathematicalProgramResult>& result,
-    bool show_slacks, int precision, bool scientific) const {
+    const solvers::MathematicalProgramResult* result,
+    const GcsGraphvizOptions& options,
+    const std::vector<const Edge*>* active_path) const {
+  // This function converts the range (0.0, 1.0) to Hex strings in the range
+  // (20, FF).
+  const int kMaxHexValue = 255;
+  const int kMinHexValue = 32;
+  auto floatToHex = [](float value) -> std::string {
+    if (value < 0.0f || value > 1.0f) return "Out of range";
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
+       << static_cast<int>(value * (kMaxHexValue - kMinHexValue) +
+                           kMinHexValue);
+    return ss.str();
+  };
+
   // Note: We use stringstream instead of fmt in order to control the
   // formatting of the Eigen output and double output in a consistent way.
   std::stringstream graphviz;
-  graphviz.precision(precision);
-  if (!scientific) graphviz << std::fixed;
+  graphviz.precision(options.precision);
+  if (!options.scientific) graphviz << std::fixed;
   graphviz << "digraph GraphOfConvexSets {\n";
   graphviz << "labelloc=t;\n";
   for (const auto& [v_id, v] : vertices_) {
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
-      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose() << "]";
+      if (options.show_vars) {
+        graphviz << "\nx = [" << result->GetSolution(v->x()).transpose() << "]";
+      }
+      if (options.show_costs) {
+        graphviz << "\ncost = " << v->GetSolutionCost(*result);
+      }
     }
     graphviz << "\"]\n";
   }
@@ -474,19 +512,20 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << "v" << e->u().id() << " -> v" << e->v().id();
     graphviz << " [label=\"" << e->name();
     if (result) {
-      graphviz << "\n";
-      if (e->ell_.size() > 0) {
-        // SolveConvexRestriction does not yet return the rewritten costs.
-        if (result->get_decision_variable_index()->contains(
-                e->ell_[0].get_id())) {
-          graphviz << "cost = " << e->GetSolutionCost(*result);
+      if (options.show_costs) {
+        graphviz << "\n";
+        if (e->ell_.size() > 0) {
+          // SolveConvexRestriction does not yet return the rewritten costs.
+          if (result->get_decision_variable_index()->contains(
+                  e->ell_[0].get_id())) {
+            graphviz << "cost = " << e->GetSolutionCost(*result);
+          }
+        } else {
+          graphviz << "cost = 0";
         }
-      } else {
-        graphviz << "cost = 0";
       }
-      if (show_slacks) {
-        graphviz << ",\n";
-        graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
+      if (options.show_slacks) {
+        graphviz << "\n";
         if (result->get_decision_variable_index()->contains(
                 e->y_[0].get_id())) {
           graphviz << "ϕ xᵤ = [" << e->GetSolutionPhiXu(*result).transpose()
@@ -495,8 +534,28 @@ std::string GraphOfConvexSets::GetGraphvizString(
                    << "]";
         }
       }
+      if (options.show_flows) {
+        graphviz << "\n";
+        graphviz << "ϕ = " << result->GetSolution(e->phi());
+        graphviz << "\"";
+        // Note: This must be last, because it also sets the color parameter
+        // of the edge (and hence must close the name within quote-marks)
+        graphviz << ", color="
+                 << "\"#000000" << floatToHex(result->GetSolution(e->phi()));
+      }
     }
     graphviz << "\"];\n";
+  }
+
+  if (active_path) {
+    for (const auto& e : *active_path) {
+      graphviz << "v" << e->u().id() << " -> v" << e->v().id();
+      graphviz << " [label=\"" << e->name() << " = active\"";
+      graphviz << ", color="
+               << "\"#ff0000\"";
+      graphviz << ", style=\"dashed\"";
+      graphviz << "];\n";
+    }
   }
   graphviz << "}\n";
   return graphviz.str();
@@ -1007,6 +1066,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
     prog.AddDecisionVariables(e->y_);
     prog.AddDecisionVariables(e->z_);
+    prog.AddDecisionVariables(e->slacks_);
 
     // Spatial non-negativity: y ∈ ϕX, z ∈ ϕX.
     if (e->u().ambient_dimension() > 0) {
@@ -1341,77 +1401,34 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   // https://arxiv.org/abs/2205.04422
   if (*options.convex_relaxation && *options.max_rounded_paths > 0 &&
       result.is_success()) {
-    DRAKE_THROW_UNLESS(options.max_rounding_trials > 0);
-
-    RandomGenerator generator(options.rounding_seed);
-    std::uniform_real_distribution<double> uniform;
-    std::vector<std::vector<const Edge*>> paths;
-    std::map<EdgeId, double> flows;
+    std::unordered_map<const Edge*, double> flows;
     for (const auto& [edge_id, e] : edges_) {
       if (!e->phi_value_.value_or(true) || unusable_edges.contains(edge_id)) {
-        flows.emplace(edge_id, 0);
+        flows.emplace(e.get(), 0.0);
       } else {
-        flows.emplace(edge_id, result.GetSolution(relaxed_phi[edge_id]));
+        flows.emplace(e.get(), result.GetSolution(relaxed_phi[edge_id]));
       }
     }
-    int num_trials = 0;
-    int num_solves = 0;
+
+    std::vector<std::vector<const Edge*>> candidate_paths =
+        SamplePaths(source, target, flows, options);
+
+    if (candidate_paths.size() == 0) {
+      throw std::runtime_error(
+          "GCS rounding failed. The convex relaxation returned a "
+          "feasible solution, but there is (definitely) no path from the "
+          "source to the target using only edges with flows > "
+          "options.flow_tolerance. You can set "
+          "options.max_rounded_paths=0 to disable rounding and return "
+          "the solution to the relaxation instead.");
+    }
+
     MathematicalProgramResult best_rounded_result;
-    while (static_cast<int>(paths.size()) < *options.max_rounded_paths &&
-           num_trials < options.max_rounding_trials) {
-      ++num_trials;
 
-      // Find candidate path by traversing the graph with a depth first search
-      // where edges are taken with probability proportional to their flow.
-      std::vector<VertexId> visited_vertex_ids{source_id};
-      std::vector<VertexId> path_vertex_ids{source_id};
-      std::vector<const Edge*> new_path;
-      while (path_vertex_ids.back() != target_id) {
-        std::vector<const Edge*> candidate_edges;
-        for (const Edge* e : outgoing_edges[path_vertex_ids.back()]) {
-          if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
-                        e->v().id()) == visited_vertex_ids.end() &&
-              flows[e->id()] > options.flow_tolerance) {
-            candidate_edges.emplace_back(e);
-          }
-        }
-        // If the depth first search finds itself at a node with no candidate
-        // outbound edges, backtrack to the previous node and continue the
-        // search.
-        if (candidate_edges.size() == 0) {
-          path_vertex_ids.pop_back();
-          new_path.pop_back();
-          // Since this code requires result.is_success() to be true, we should
-          // always have a path. We assert that..
-          DRAKE_ASSERT(path_vertex_ids.size() > 0);
-          continue;
-        }
-        Eigen::VectorXd candidate_flows(candidate_edges.size());
-        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-          candidate_flows(ii) = flows[candidate_edges[ii]->id()];
-        }
-        double edge_sample = uniform(generator) * candidate_flows.sum();
-        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-          if (edge_sample >= candidate_flows(ii)) {
-            edge_sample -= candidate_flows(ii);
-          } else {
-            visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
-            path_vertex_ids.push_back(candidate_edges[ii]->v().id());
-            new_path.emplace_back(candidate_edges[ii]);
-            break;
-          }
-        }
-      }
-
-      if (std::find(paths.begin(), paths.end(), new_path) != paths.end()) {
-        continue;
-      }
-      paths.push_back(new_path);
-
-      // Optimize path
+    for (auto new_path : candidate_paths) {
+      // Optimize path.
       MathematicalProgramResult rounded_result =
           SolveConvexRestriction(new_path, options, &result);
-      ++num_solves;
 
       // Check path quality.
       if (rounded_result.is_success() &&
@@ -1431,13 +1448,146 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       result.set_solution_result(SolutionResult::kIterationLimit);
       result.set_solver_id(best_rounded_result.get_solver_id());
     }
-    log()->info(
-        "Finished {} rounding solutions with {}, discarding {} duplicate "
-        "paths.",
-        num_solves, result.get_solver_id().name(), num_trials - num_solves);
+    log()->info("Finished {} rounding solutions with {}.",
+                candidate_paths.size(), result.get_solver_id().name());
   }
 
   return result;
+}
+
+std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
+    const Vertex& source, const Vertex& target,
+    const solvers::MathematicalProgramResult& result,
+    const GraphOfConvexSetsOptions& options) const {
+  std::unordered_map<const Edge*, double> flows;
+  for (const auto& [edge_id, e] : edges_) {
+    double flow = result.GetSolution(e->phi_);
+    if (flow >= options.flow_tolerance) {
+      flows.emplace(e.get(), flow);
+    }
+  }
+  return SamplePaths(source, target, flows, options);
+}
+
+std::vector<std::vector<const Edge*>> GraphOfConvexSets::SamplePaths(
+    const Vertex& source, const Vertex& target,
+    const std::unordered_map<const Edge*, double>& flows,
+    const GraphOfConvexSetsOptions& options) const {
+  DRAKE_THROW_UNLESS(options.max_rounded_paths.value_or(0) > 0);
+
+  if (vertices_.count(source.id()) == 0) {
+    throw std::invalid_argument(fmt::format(
+        "Source vertex {} is not a vertex in this GraphOfConvexSets.",
+        source.name()));
+  }
+  if (vertices_.count(target.id()) == 0) {
+    throw std::invalid_argument(fmt::format(
+        "Target vertex {} is not a vertex in this GraphOfConvexSets.",
+        target.name()));
+  }
+
+  for (const auto& [edge, flow] : flows) {
+    if (edges_.count(edge->id()) == 0) {
+      throw std::invalid_argument(fmt::format(
+          "Edge with id {} does not exist in this GraphOfConvexSets.",
+          edge->id()));
+    }
+  }
+
+  auto flow_exists_and_above_threshold = [&](const Edge* edge) -> bool {
+    auto it = flows.find(edge);
+    return it != flows.end() && it->second > options.flow_tolerance;
+  };
+
+  RandomGenerator generator(options.rounding_seed);
+  std::uniform_real_distribution<double> uniform;
+  std::vector<std::vector<const Edge*>> paths;
+
+  int num_trials = 0;
+  bool no_feasible_paths = false;
+  while (static_cast<int>(paths.size()) < *options.max_rounded_paths &&
+         num_trials < options.max_rounding_trials) {
+    if (no_feasible_paths) {
+      break;
+    }
+
+    ++num_trials;
+
+    // Find candidate path by traversing the graph with a depth first search
+    // where edges are taken with probability proportional to their flow.
+    std::vector<VertexId> visited_vertex_ids{source.id()};
+    std::vector<const Edge*> new_path_edges;
+    std::vector<const Vertex*> new_path_vertices{&source};
+    while (new_path_vertices.back()->id() != target.id()) {
+      std::vector<const Edge*> candidate_edges;
+      for (const Edge* e : new_path_vertices.back()->outgoing_edges()) {
+        if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
+                      e->v().id()) == visited_vertex_ids.end() &&
+            flow_exists_and_above_threshold(e)) {
+          candidate_edges.emplace_back(e);
+        }
+      }
+      // If the depth first search finds itself at a node with no candidate
+      // outbound edges, backtrack to the previous node and continue the
+      // search.
+      if (candidate_edges.size() == 0) {
+        // Remove the vertex with no candidate outgoing edges from the path.
+        new_path_vertices.pop_back();
+
+        // There may be no feasible paths
+        // (This can for instance happen if the convex relaxation was
+        // infeasible, or the provided flows do not correspond to any paths from
+        // the source to the target).
+        if (new_path_vertices.size() == 0) {
+          no_feasible_paths = true;
+          break;
+        }
+
+        // If there still are vertices in the path, we remove the edge to the
+        // vertex with no candidate outgoing vertices and try again.
+        new_path_edges.pop_back();
+        continue;
+      }
+      Eigen::VectorXd candidate_flows(candidate_edges.size());
+      for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+        candidate_flows(ii) = flows.at(candidate_edges[ii]);
+      }
+      // Sample the next edge with probability corresponding to the edge flow
+      // (normalized by the sum of all the current outgoing candidate edge
+      // flows).
+      double edge_sample = uniform(generator) * candidate_flows.sum();
+      for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+        if (edge_sample >= candidate_flows(ii)) {
+          edge_sample -= candidate_flows(ii);
+        } else {
+          visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
+          new_path_vertices.push_back(&candidate_edges[ii]->v());
+          new_path_edges.emplace_back(candidate_edges[ii]);
+          break;
+        }
+      }
+    }
+
+    if (new_path_vertices.size() == 0) {
+      continue;
+    }
+
+    if (std::find(paths.begin(), paths.end(), new_path_edges) != paths.end()) {
+      continue;
+    }
+
+    paths.push_back(new_path_edges);
+  }
+
+  if (no_feasible_paths) {
+    log()->info("Could not find any feasible paths using flow tolerance {}.",
+                options.flow_tolerance);
+  } else {
+    log()->info("Found {} unique paths, discarded {} duplicate paths.",
+                paths.size(), num_trials - paths.size());
+  }
+
+  return paths;
 }
 
 std::vector<const Edge*> GraphOfConvexSets::GetSolutionPath(
@@ -1645,6 +1795,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
   }
 
   for (const auto* e : active_edges) {
+    prog.AddDecisionVariables(e->slacks_);
+
     // Edge costs.
     for (const auto& [b, transcriptions] : e->costs_) {
       if (transcriptions.contains(Transcription::kRestriction)) {

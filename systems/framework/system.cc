@@ -935,7 +935,9 @@ const OutputPort<T>& System<T>::GetOutputPort(
   std::vector<std::string_view> port_names;
   port_names.reserve(num_output_ports());
   for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
-    port_names.push_back(get_output_port_base(i).get_name());
+    const OutputPortBase& port_base = this->GetOutputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    port_names.push_back(port_base.get_name());
   }
   if (port_names.empty()) {
     port_names.push_back("it has no output ports");
