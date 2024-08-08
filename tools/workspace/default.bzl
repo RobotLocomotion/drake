@@ -22,6 +22,7 @@ load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_interna
 load("//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
 load("//tools/workspace/drake_models:repository.bzl", "drake_models_repository")  # noqa
 load("//tools/workspace/eigen:repository.bzl", "eigen_repository")
+load("//tools/workspace/expat_internal:repository.bzl", "expat_internal_repository")  # noqa
 load("//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")  # noqa
 load("//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("//tools/workspace/gflags:repository.bzl", "gflags_repository")
@@ -74,6 +75,7 @@ load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
 load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
+load("//tools/workspace/rnv_internal:repository.bzl", "rnv_internal_repository")  # noqa
 load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
 load("//tools/workspace/rules_cc:repository.bzl", "rules_cc_repository")  # noqa
 load("//tools/workspace/rules_license:repository.bzl", "rules_license_repository")  # noqa
@@ -162,6 +164,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         drake_models_repository(name = "drake_models", mirrors = mirrors)
     if "eigen" not in excludes:
         eigen_repository(name = "eigen")
+    if "expat_internal" not in excludes:
+        expat_internal_repository(name = "expat_internal", mirrors = mirrors)
     if "fcl_internal" not in excludes:
         fcl_internal_repository(name = "fcl_internal", mirrors = mirrors)
     if "fmt" not in excludes:
@@ -268,6 +272,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         qdldl_internal_repository(name = "qdldl_internal", mirrors = mirrors)
     if "qhull_internal" not in excludes:
         qhull_internal_repository(name = "qhull_internal", mirrors = mirrors)
+    if "rnv_internal" not in excludes:
+        rnv_internal_repository(name = "rnv_internal", mirrors = mirrors)
     if "ros_xacro_internal" not in excludes:
         ros_xacro_internal_repository(name = "ros_xacro_internal", mirrors = mirrors)  # noqa
     if "rules_cc" not in excludes:
