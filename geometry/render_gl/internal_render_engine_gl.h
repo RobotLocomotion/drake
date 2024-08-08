@@ -142,15 +142,15 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
     bool accepted{true};
   };
 
-  // Adds the mesh data associated with the given filename to geometries_.
+  // Adds the mesh data associated with the given source to geometries_.
   // Before adding it outright, it resolves the material heuristic. If the
   // mesh data has no intrinsic material, then considers the geometry properties
   // or existence of an identically named png file.
   //
-  // @pre The file key implied by filename and is_convex is in the meshes_
+  // @pre The file key derived from `source` and `is_convex` is in the meshes_
   // cache.
-  void ImplementMeshesForFile(void* user_data, const Vector3<double>& scale,
-                              const std::string& filename, bool is_convex);
+  void ImplementMeshesForSource(void* user_data, const Vector3<double>& scale,
+                                const MeshSource& source, bool is_convex);
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -246,14 +246,13 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // is degenerate).
   void CacheConvexHullMesh(const Convex& convex, const RegistrationData& data);
 
-  // For the given mesh filename, parses the file and attempts to place the
+  // For the given mesh source, parses the mesh data and attempts to place the
   // resulting render meshes in the geometry cache (i.e., a set of RenderMesh
   // instances are associated with the filename-derived key in `meshes_`).
   //
-  // If the file is an unsupported file type, no geometry is cached, and
-  // data->accepted is set to false.
-  void CacheFileMeshesMaybe(const std::string& filename,
-                            RegistrationData* data);
+  // If the source indicates an unsupported file type, no geometry is cached,
+  // and data->accepted is set to false.
+  void CacheFileMeshesMaybe(const MeshSource& source, RegistrationData* data);
 
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render
