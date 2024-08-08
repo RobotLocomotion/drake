@@ -132,26 +132,30 @@ FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M) {
 SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
     const Vector3<double>& p_MQ, int triangle_index,
     const TriangleSurfaceMesh<double>& mesh_M) {
+  // Barycentric coordinates of the projection of Q on the plane of the
+  // triangle.
   Vector3d b_Q = mesh_M.CalcBarycentric(p_MQ, triangle_index);
+
+  // Check whether Q projects inside or outside the triangle. Treat the
+  // case where the projection is at a vertex or on an edge the same as being
+  // inside the triangle.
   if (b_Q(0) >= 0 && b_Q(1) >= 0 && b_Q(2) >= 0) {
-    // The projection of Q on the plane of the triangle is in the triangle.
+    // The projection of Q onto the plane of the triangle is in the triangle,
+    // so the nearest point is at the projection.
     const Vector3d p_MN =
         mesh_M.CalcCartesianFromBarycentric(triangle_index, b_Q);
     return {(p_MQ - p_MN).squaredNorm(), p_MN,
-            SquaredDistanceToTriangle::Location::kTriangle, 0};
+            SquaredDistanceToTriangle::Location::kInside, 0};
   }
 
   const SurfaceTriangle& triangle = mesh_M.triangles()[triangle_index];
-  // Vertex indices into the mesh.
-  std::array<int, 3> v = {triangle.vertex(0), triangle.vertex(1),
-                          triangle.vertex(2)};
-  std::array<Vector3d, 3> p_MV = {mesh_M.vertex(v[0]), mesh_M.vertex(v[1]),
-                                  mesh_M.vertex(v[2])};
+  const std::array<Vector3d, 3> p_MV = {mesh_M.vertex(triangle.vertex(0)),
+                                        mesh_M.vertex(triangle.vertex(1)),
+                                        mesh_M.vertex(triangle.vertex(2))};
 
-  // The projection is outside the triangle, so the closest point is
-  // in an edge (line segment) or at a vertex.
-  SquaredDistanceToTriangle info{.squared_distance =
-                                     std::numeric_limits<double>::infinity()};
+  // The projection is outside the triangle, so the closest point is either
+  // in an edge or at a vertex. We will search the three edges.
+  SquaredDistanceToTriangle result;
   // Iterate over three edges, call each edge AB.
   for (int i = 0; i < 3; ++i) {
     const Vector3d p_MA = p_MV[i];
@@ -165,24 +169,24 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
     int index;
     if (t <= 0) {
       p_MN = p_MA;
-      location = SquaredDistanceToTriangle::Location::kVertex;
+      location = SquaredDistanceToTriangle::Location::kOutsideNearVertex;
       index = i;
     } else if (t >= 1) {
       p_MN = p_MB;
-      location = SquaredDistanceToTriangle::Location::kVertex;
+      location = SquaredDistanceToTriangle::Location::kOutsideNearVertex;
       index = (i + 1) % 3;
     } else {
       p_MN = (1.0 - t) * p_MA + t * p_MB;
-      location = SquaredDistanceToTriangle::Location::kEdge;
+      location = SquaredDistanceToTriangle::Location::kOutsideNearEdge;
       index = i;
     }
 
     const double d = (p_MQ - p_MN).squaredNorm();
-    if (d < info.squared_distance) {
-      info = SquaredDistanceToTriangle({d, p_MN, location, index});
+    if (d < result.squared_distance) {
+      result = SquaredDistanceToTriangle({d, p_MN, location, index});
     }
   }
-  return info;
+  return result;
 }
 
 SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
@@ -199,14 +203,14 @@ SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
   {
     const int v = closest.v;
     switch (closest.location) {
-      case SquaredDistanceToTriangle::Location::kTriangle:
+      case SquaredDistanceToTriangle::Location::kInside:
         normal_M = mesh_M.face_normal(tri_index);
         break;
-      case SquaredDistanceToTriangle::Location::kEdge:
+      case SquaredDistanceToTriangle::Location::kOutsideNearEdge:
         normal_M =
             mesh_normal_M.edge_normal({tri.vertex(v), tri.vertex((v + 1) % 3)});
         break;
-      case SquaredDistanceToTriangle::Location::kVertex:
+      case SquaredDistanceToTriangle::Location::kOutsideNearVertex:
         normal_M = mesh_normal_M.vertex_normal(tri.vertex(v));
     }
   }
