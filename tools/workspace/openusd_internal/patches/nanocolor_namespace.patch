@@ -1,0 +1,78 @@
+[openusd_internal] Fix symbol leaks from nanocolor
+
+This patch hides symbols from the nanocolor module, which is written in
+plain `C` and does not participate in the normal namespace mechanisms
+used elsewhere. Parts of this patch could be upstreamed, but obviously
+the direct overwrite of the "namespace" macro to include `drake_vendor`
+should not be.
+
+--- pxr/base/gf/nc/nanocolor.c
++++ pxr/base/gf/nc/nanocolor.c
+@@ -587,11 +587,13 @@ NcM33f NcGetXYZToRGBMatrix(const NcColorSpace* cs) {
+     return NcM3ffInvert(NcGetRGBToXYZMatrix(cs));
+ }
+ 
++#if 0
+ NcM33f GetRGBtoRGBMatrix(const NcColorSpace* src, const NcColorSpace* dst) {
+     NcM33f t = NcM33fMultiply(NcM3ffInvert(NcGetRGBToXYZMatrix(src)),
+                                  NcGetXYZToRGBMatrix(dst));
+     return t;
+ }
++#endif
+ 
+ NcM33f NcGetRGBToRGBMatrix(const NcColorSpace* src, const NcColorSpace* dst) {
+     if (!dst || !src) {
+@@ -803,6 +805,7 @@ void NcTransformColorsWithAlpha(const NcColorSpace* dst, const NcColorSpace* src
+     }
+ }
+ 
++#if 0
+ NcRGB NcNormalizeLuminance(const NcColorSpace* cs, NcRGB rgb, float luminance) {
+     if (!cs)
+         return rgb;
+@@ -819,6 +822,7 @@ NcRGB NcNormalizeLuminance(const NcColorSpace* cs, NcRGB rgb, float luminance) {
+     rgb.b = nc_FromLinear(cs, luminance * rgb.b / XYZ.y);
+     return rgb;
+ }
++#endif
+ 
+ NcXYZ NcRGBToXYZ(const NcColorSpace* ct, NcRGB rgb) {
+     if (!ct)
+@@ -945,7 +949,7 @@ typedef struct {
+     float v;
+ } NcYuvPrime;
+ 
+-NcYxy _NcYuv2Yxy(NcYuvPrime c) {
++static NcYxy _NcYuv2Yxy(NcYuvPrime c) {
+     float d = 6.f * c.u - 16.f * c.v + 12.f;
+     return (NcYxy) {
+         c.Y,
+@@ -969,7 +973,7 @@ NcYxy NcKelvinToYxy(float T, float luminance) {
+     return _NcYuv2Yxy((NcYuvPrime) {luminance, u, 3.f * v / 2.f });
+ }
+ 
+-NcYxy NcNormalizeYxy(NcYxy c) {
++static NcYxy NcNormalizeYxy(NcYxy c) {
+     return (NcYxy) {
+         c.Y,
+         c.Y * c.x / c.y,
+--- pxr/base/gf/nc/nanocolor.h
++++ pxr/base/gf/nc/nanocolor.h
+@@ -18,7 +18,7 @@
+ // is a C++ only header; so the generated namespace prefixes can't be
+ // used here.
+ #ifndef NCNAMESPACE
+-#define NCNAMESPACE pxr_nc_1_0_
++#define NCNAMESPACE drake_vendor_pxr_nc_1_0_
+ #endif
+ 
+ // The NCCONCAT macro is used to apply a namespace to the symbols in the public
+@@ -28,7 +28,7 @@
+ 
+ // NCAPI may be overridden externally to control symbol visibility.
+ #ifndef NCAPI
+-#define NCAPI
++#define NCAPI __attribute__ ((visibility ("hidden")))
+ #endif
+ 
+ #ifdef __cplusplus
