@@ -4099,10 +4099,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// @anchor Jacobian_functions
   /// @name Jacobian functions
-  /// A Jacobian is a matrix that contains the partial derivatives of a vector
-  /// with respect to a list of scalars. The scalars may be the system's
-  /// generalized positions q or "speeds" 𝑠 where 𝑠 is either q̇
-  /// (time-derivative of generalized positions) or v (generalized velocities).
+  /// Herein, a Jacobian is a matrix that contains the partial derivatives of a
+  /// vector with respect to a list of scalars. The vector may be a position
+  /// vector, translational velocity, angular velocity, or spatial velocity and
+  /// the scalars may be the system's generalized positions q or "speeds" 𝑠
+  /// where 𝑠 is either q̇ (time-derivative of generalized positions) or
+  /// v (generalized velocities).
   ///
   /// The name J𝑠_V_ABp denotes the spatial velocity Jacobian in a frame A
   /// of a point Bp of frame B with respect to "speeds" 𝑠.
