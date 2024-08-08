@@ -19,10 +19,10 @@ namespace test {
 
 using Eigen::Matrix3d;
 
+namespace {
+
 /* Creates an array of arbitrary autodiff deformation gradients. */
-template <int num_locations>
-std::array<Matrix3<AutoDiffXd>, num_locations>
-MakeDeformationGradientsWithDerivatives() {
+Matrix3<AutoDiffXd> MakeDeformationGradientsWithDerivatives() {
   /* Create an arbitrary AutoDiffXd deformation. */
   Matrix3d F;
   // clang-format off
@@ -30,24 +30,20 @@ MakeDeformationGradientsWithDerivatives() {
        0.13, 0.92, 0.17,
        0.03, 0.86, 0.85;
   // clang-format on
-  const std::array<Matrix3d, num_locations> deformation_gradients{F};
-  std::array<Matrix3<AutoDiffXd>, num_locations> deformation_gradients_autodiff;
+  const Matrix3d deformation_gradients{F};
+  Matrix3<AutoDiffXd> deformation_gradients_autodiff;
   const Eigen::Matrix<double, 9, Eigen::Dynamic> derivatives(
       Eigen::Matrix<double, 9, 9>::Identity());
-  for (int i = 0; i < num_locations; ++i) {
-    const auto F_autodiff_flat =
-        math::InitializeAutoDiff(Eigen::Map<const Eigen::Matrix<double, 9, 1>>(
-                                     deformation_gradients[i].data(), 9),
-                                 derivatives);
-    deformation_gradients_autodiff[i] =
-        Eigen::Map<const Matrix3<AutoDiffXd>>(F_autodiff_flat.data(), 3, 3);
-  }
+  const auto F_autodiff_flat =
+      math::InitializeAutoDiff(Eigen::Map<const Eigen::Matrix<double, 9, 1>>(
+                                   deformation_gradients.data(), 9),
+                               derivatives);
+  deformation_gradients_autodiff =
+      Eigen::Map<const Matrix3<AutoDiffXd>>(F_autodiff_flat.data(), 3, 3);
   return deformation_gradients_autodiff;
 }
 
-template <int num_locations>
-std::array<Matrix3<AutoDiffXd>, num_locations>
-MakeDeformationGradientsWithoutDerivatives() {
+Matrix3<AutoDiffXd> MakeDeformationGradientsWithoutDerivatives() {
   /* Create an arbitrary AutoDiffXd deformation. */
   Matrix3<AutoDiffXd> F;
   // clang-format off
@@ -55,12 +51,10 @@ MakeDeformationGradientsWithoutDerivatives() {
        0.13, 0.92, 0.17,
        0.03, 0.86, 0.85;
   // clang-format on
-  std::array<Matrix3<AutoDiffXd>, num_locations> result;
-  for (int i = 0; i < num_locations; ++i) {
-    result[i] = F;
-  }
-  return result;
+  return F;
 }
+
+}  // namespace
 
 /* Tests the constructors correctly initializes St.Venant-Kichhoff like
 constitutive models and rejects invalid Young's modulus and Poisson's ratio.
@@ -100,24 +94,23 @@ state.
 LinearCorotatedModel, or CorotatedModel. */
 template <class Model>
 void TestUndeformedState() {
-  constexpr int num_locations = Model::Data::num_locations;
   using T = typename Model::T;
 
   const T kYoungsModulus = 100.0;
   const T kPoissonRatio = 0.25;
   const Model model(kYoungsModulus, kPoissonRatio);
   typename Model::Traits::Data data;
-  const std::array<Matrix3<T>, num_locations> F{Matrix3<T>::Identity()};
-  const std::array<Matrix3<T>, num_locations> F0{Matrix3<T>::Identity()};
+  const Matrix3<T> F{Matrix3<T>::Identity()};
+  const Matrix3<T> F0{Matrix3<T>::Identity()};
   data.UpdateData(F, F0);
   /* At the undeformed state, the energy density should be zero. */
-  const std::array<T, num_locations> analytic_energy_density{0};
+  const T analytic_energy_density{0};
   /* At the undeformed state, the stress should be zero. */
-  const std::array<Matrix3<T>, num_locations> analytic_stress{Matrix3d::Zero()};
-  std::array<T, num_locations> energy_density;
+  const Matrix3<T> analytic_stress{Matrix3d::Zero()};
+  T energy_density;
   model.CalcElasticEnergyDensity(data, &energy_density);
   EXPECT_EQ(energy_density, analytic_energy_density);
-  std::array<Matrix3<T>, num_locations> stress;
+  Matrix3<T> stress;
   model.CalcFirstPiolaStress(data, &stress);
   EXPECT_EQ(stress, analytic_stress);
 }
@@ -130,26 +123,22 @@ LinearCorotatedModel, or CorotatedModel. */
 template <class Model>
 void TestPIsDerivativeOfPsi() {
   const double kTolerance = 1e-12;
-  constexpr int num_locations = Model::Data::num_locations;
   constexpr double kYoungsModulus = 100.0;
   constexpr double kPoissonRatio = 0.3;
   const Model model(kYoungsModulus, kPoissonRatio);
   typename Model::Traits::Data data;
-  const std::array<Matrix3<AutoDiffXd>, num_locations> deformation_gradients =
-      MakeDeformationGradientsWithDerivatives<num_locations>();
-  const std::array<Matrix3<AutoDiffXd>, num_locations>
-      previous_step_deformation_gradients =
-          MakeDeformationGradientsWithoutDerivatives<num_locations>();
+  const Matrix3<AutoDiffXd> deformation_gradients =
+      MakeDeformationGradientsWithDerivatives();
+  const Matrix3<AutoDiffXd> previous_step_deformation_gradients =
+      MakeDeformationGradientsWithoutDerivatives();
   data.UpdateData(deformation_gradients, previous_step_deformation_gradients);
-  std::array<AutoDiffXd, num_locations> energy;
+  AutoDiffXd energy;
   model.CalcElasticEnergyDensity(data, &energy);
-  std::array<Matrix3<AutoDiffXd>, num_locations> P;
+  Matrix3<AutoDiffXd> P;
   model.CalcFirstPiolaStress(data, &P);
-  for (int i = 0; i < num_locations; ++i) {
-    EXPECT_TRUE(CompareMatrices(
-        Eigen::Map<const Matrix3d>(energy[i].derivatives().data(), 3, 3), P[i],
-        CalcConditionNumberOfInvertibleMatrix<AutoDiffXd>(P[i]) * kTolerance));
-  }
+  EXPECT_TRUE(CompareMatrices(
+      Eigen::Map<const Matrix3d>(energy.derivatives().data(), 3, 3), P,
+      CalcConditionNumberOfInvertibleMatrix<AutoDiffXd>(P) * kTolerance));
 }
 
 /* Tests that the stress and the stress derivatives are consistent by verifying
@@ -160,60 +149,55 @@ template <class Model>
 void TestdPdFIsDerivativeOfP() {
   constexpr int kSpaceDimension = 3;
   const double kTolerance = 1e-12;
-  constexpr int num_locations = Model::Data::num_locations;
   constexpr double kYoungsModulus = 100.0;
   constexpr double kPoissonRatio = 0.3;
   const Model model(kYoungsModulus, kPoissonRatio);
   typename Model::Traits::Data data;
-  const std::array<Matrix3<AutoDiffXd>, num_locations> deformation_gradients =
-      MakeDeformationGradientsWithDerivatives<num_locations>();
-  const std::array<Matrix3<AutoDiffXd>, num_locations>
-      previous_step_deformation_gradients =
-          MakeDeformationGradientsWithoutDerivatives<num_locations>();
+  const Matrix3<AutoDiffXd> deformation_gradients =
+      MakeDeformationGradientsWithDerivatives();
+  const Matrix3<AutoDiffXd> previous_step_deformation_gradients =
+      MakeDeformationGradientsWithoutDerivatives();
   data.UpdateData(deformation_gradients, previous_step_deformation_gradients);
-  std::array<Matrix3<AutoDiffXd>, num_locations> P;
+  Matrix3<AutoDiffXd> P;
   model.CalcFirstPiolaStress(data, &P);
-  std::array<Eigen::Matrix<AutoDiffXd, 9, 9>, num_locations> dPdF;
+  Eigen::Matrix<AutoDiffXd, 9, 9> dPdF;
   model.CalcFirstPiolaStressDerivative(data, &dPdF);
-  for (int q = 0; q < num_locations; ++q) {
-    for (int i = 0; i < kSpaceDimension; ++i) {
-      for (int j = 0; j < kSpaceDimension; ++j) {
-        Matrix3d dPijdF;
-        for (int k = 0; k < kSpaceDimension; ++k) {
-          for (int l = 0; l < kSpaceDimension; ++l) {
-            dPijdF(k, l) = dPdF[q](3 * j + i, 3 * l + k).value();
-          }
+  for (int i = 0; i < kSpaceDimension; ++i) {
+    for (int j = 0; j < kSpaceDimension; ++j) {
+      Matrix3d dPijdF;
+      for (int k = 0; k < kSpaceDimension; ++k) {
+        for (int l = 0; l < kSpaceDimension; ++l) {
+          dPijdF(k, l) = dPdF(3 * j + i, 3 * l + k).value();
         }
-        EXPECT_TRUE(CompareMatrices(
-            Eigen::Map<const Matrix3d>(P[q](i, j).derivatives().data(), 3, 3),
-            dPijdF,
-            CalcConditionNumberOfInvertibleMatrix<AutoDiffXd>(P[q]) *
-                kTolerance));
       }
+      EXPECT_TRUE(CompareMatrices(
+          Eigen::Map<const Matrix3d>(P(i, j).derivatives().data(), 3, 3),
+          dPijdF,
+          CalcConditionNumberOfInvertibleMatrix<AutoDiffXd>(P) * kTolerance));
     }
   }
 }
 
-template void TestParameters<LinearConstitutiveModel<double, 1>>();
-template void TestParameters<LinearConstitutiveModel<AutoDiffXd, 1>>();
-template void TestUndeformedState<LinearConstitutiveModel<double, 1>>();
-template void TestUndeformedState<LinearConstitutiveModel<AutoDiffXd, 1>>();
-template void TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd, 1>>();
-template void TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd, 1>>();
+template void TestParameters<LinearConstitutiveModel<double>>();
+template void TestParameters<LinearConstitutiveModel<AutoDiffXd>>();
+template void TestUndeformedState<LinearConstitutiveModel<double>>();
+template void TestUndeformedState<LinearConstitutiveModel<AutoDiffXd>>();
+template void TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd>>();
+template void TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd>>();
 
-template void TestParameters<CorotatedModel<double, 1>>();
-template void TestParameters<CorotatedModel<AutoDiffXd, 1>>();
-template void TestUndeformedState<CorotatedModel<double, 1>>();
-template void TestUndeformedState<CorotatedModel<AutoDiffXd, 1>>();
-template void TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd, 1>>();
-template void TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, 1>>();
+template void TestParameters<CorotatedModel<double>>();
+template void TestParameters<CorotatedModel<AutoDiffXd>>();
+template void TestUndeformedState<CorotatedModel<double>>();
+template void TestUndeformedState<CorotatedModel<AutoDiffXd>>();
+template void TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd>>();
+template void TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd>>();
 
-template void TestParameters<LinearCorotatedModel<double, 1>>();
-template void TestParameters<LinearCorotatedModel<AutoDiffXd, 1>>();
-template void TestUndeformedState<LinearCorotatedModel<double, 1>>();
-template void TestUndeformedState<LinearCorotatedModel<AutoDiffXd, 1>>();
-template void TestPIsDerivativeOfPsi<LinearCorotatedModel<AutoDiffXd, 1>>();
-template void TestdPdFIsDerivativeOfP<LinearCorotatedModel<AutoDiffXd, 1>>();
+template void TestParameters<LinearCorotatedModel<double>>();
+template void TestParameters<LinearCorotatedModel<AutoDiffXd>>();
+template void TestUndeformedState<LinearCorotatedModel<double>>();
+template void TestUndeformedState<LinearCorotatedModel<AutoDiffXd>>();
+template void TestPIsDerivativeOfPsi<LinearCorotatedModel<AutoDiffXd>>();
+template void TestdPdFIsDerivativeOfP<LinearCorotatedModel<AutoDiffXd>>();
 
 }  // namespace test
 }  // namespace internal

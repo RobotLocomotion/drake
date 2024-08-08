@@ -31,8 +31,9 @@ static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
     internal::LinearSimplexElement<AD, kNaturalDimension, kSpatialDimension,
                                    kNumQuads>;
-using ConstitutiveModelType = CorotatedModel<AD, kNumQuads>;
-using DeformationGradientDataType = CorotatedModelData<AD, kNumQuads>;
+using ConstitutiveModelType = CorotatedModel<AD>;
+using DeformationGradientDataType =
+    std::array<CorotatedModelData<AD>, kNumQuads>;
 
 const AD kYoungsModulus{1};
 const AD kPoissonRatio{0.25};
@@ -181,7 +182,9 @@ class VolumetricElementTest : public ::testing::Test {
     const std::array<Matrix3<AD>, kNumQuads> F0 =
         element().CalcDeformationGradient(q0);
     DeformationGradientDataType deformation_gradient_data;
-    deformation_gradient_data.UpdateData(F, F0);
+    for (int i = 0; i < kNumQuads; ++i) {
+      deformation_gradient_data[i].UpdateData(F[i], F0[i]);
+    }
     return deformation_gradient_data;
   }
 
@@ -264,8 +267,10 @@ TEST_F(VolumetricElementTest, DeformedState) {
   const auto deformation_gradient_data = CalcDeformationGradientData(
       fem_state->GetPositions(), fem_state->GetPreviousStepPositions());
   std::array<AD, kNumQuads> energy_density_array;
-  constitutive_model().CalcElasticEnergyDensity(deformation_gradient_data,
-                                                &energy_density_array);
+  for (int q = 0; q < kNumQuads; ++q) {
+    constitutive_model().CalcElasticEnergyDensity(deformation_gradient_data[q],
+                                                  &energy_density_array[q]);
+  }
   const double energy_density = ExtractDoubleOrThrow(energy_density_array[0]);
   /* Set up a matrix to help with calculating volume of the element. */
   Matrix4<double> matrix_for_volume_calculation;
@@ -287,8 +292,10 @@ TEST_F(VolumetricElementTest, DeformedState) {
   const Vector3<double> force0 = -neg_elastic_force.head<3>();
   /* The first piola stress. */
   std::array<Matrix3<AD>, kNumQuads> P_array;
-  constitutive_model().CalcFirstPiolaStress(deformation_gradient_data,
-                                            &P_array);
+  for (int q = 0; q < kNumQuads; ++q) {
+    constitutive_model().CalcFirstPiolaStress(deformation_gradient_data[q],
+                                              &P_array[q]);
+  }
   const Matrix3<double>& P = math::DiscardGradient(P_array[0]);
   /* The directional face area of each face in the reference configuration. The
    indices are carefully ordered so that the direction is pointing to the inward

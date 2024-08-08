@@ -31,8 +31,7 @@ constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using AutoDiffIsoparametricElement =
     internal::LinearSimplexElement<AutoDiffXd, kNaturalDimension,
                                    kSpatialDimension, kNumQuads>;
-using AutoDiffConstitutiveModel =
-    internal::LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
+using AutoDiffConstitutiveModel = internal::LinearConstitutiveModel<AutoDiffXd>;
 using AutoDiffElement =
     VolumetricElement<AutoDiffIsoparametricElement, QuadratureType,
                       AutoDiffConstitutiveModel>;
@@ -40,8 +39,7 @@ using AutoDiffElement =
 using DoubleIsoparametricElement =
     internal::LinearSimplexElement<double, kNaturalDimension, kSpatialDimension,
                                    kNumQuads>;
-using DoubleConstitutiveModel =
-    internal::LinearConstitutiveModel<double, kNumQuads>;
+using DoubleConstitutiveModel = internal::LinearConstitutiveModel<double>;
 using DoubleElement =
     VolumetricElement<DoubleIsoparametricElement, QuadratureType,
                       DoubleConstitutiveModel>;

@@ -15,8 +15,7 @@ namespace internal {
 namespace test {
 
 /* Creates an array of arbitrary autodiff deformation gradients. */
-template <int num_locations>
-std::array<Matrix3<AutoDiffXd>, num_locations> MakeDeformationGradients();
+Matrix3<AutoDiffXd> MakeDeformationGradients();
 
 /* Tests the constructor and the accessors for St.Venant-Kirchhoff like
 constitutive models.

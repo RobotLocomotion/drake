@@ -11,32 +11,27 @@ namespace fem {
 namespace internal {
 
 /* Traits for CorotatedModel. */
-template <typename T, int num_locations>
+template <typename T>
 struct CorotatedModelTraits {
   using Scalar = T;
-  using Data = CorotatedModelData<T, num_locations>;
+  using Data = CorotatedModelData<T>;
   static constexpr int is_linear = false;
 };
 
 /* Implements the fixed corotated hyperelastic constitutive model as
  described in [Stomakhin, 2012].
  @tparam_nonsymbolic_scalar
- @tparam num_locations Number of locations at which the constitutive
- relationship is evaluated. We currently only provide one instantiation of this
- template with `num_locations = 1`, but more instantiations can easily be added
- when needed.
 
  [Stomakhin, 2012] Stomakhin, Alexey, et al. "Energetically consistent
  invertible elasticity." Proceedings of the 11th ACM SIGGRAPH/Eurographics
  conference on Computer Animation. 2012. */
-template <typename T, int num_locations>
+template <typename T>
 class CorotatedModel final
-    : public ConstitutiveModel<CorotatedModel<T, num_locations>,
-                               CorotatedModelTraits<T, num_locations>> {
+    : public ConstitutiveModel<CorotatedModel<T>, CorotatedModelTraits<T>> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CorotatedModel);
 
-  using Traits = CorotatedModelTraits<T, num_locations>;
+  using Traits = CorotatedModelTraits<T>;
   using Data = typename Traits::Data;
 
   /* Constructs a CorotatedModel constitutive model with the
@@ -62,24 +57,20 @@ class CorotatedModel final
   const T& lame_first_parameter() const { return lambda_; }
 
  private:
-  friend ConstitutiveModel<CorotatedModel<T, num_locations>,
-                           CorotatedModelTraits<T, num_locations>>;
+  friend ConstitutiveModel<CorotatedModel<T>, CorotatedModelTraits<T>>;
 
   /* Shadows ConstitutiveModel::CalcElasticEnergyDensityImpl() as required by
    the CRTP base class. */
-  void CalcElasticEnergyDensityImpl(const Data& data,
-                                    std::array<T, num_locations>* Psi) const;
+  void CalcElasticEnergyDensityImpl(const Data& data, T* Psi) const;
 
   /* Shadows ConstitutiveModel::CalcFirstPiolaStressImpl() as required by the
    CRTP base class. */
-  void CalcFirstPiolaStressImpl(const Data& data,
-                                std::array<Matrix3<T>, num_locations>* P) const;
+  void CalcFirstPiolaStressImpl(const Data& data, Matrix3<T>* P) const;
 
   /* Shadows ConstitutiveModel::CalcFirstPiolaStressDerivativeImpl() as required
    by the CRTP base class. */
-  void CalcFirstPiolaStressDerivativeImpl(
-      const Data& data,
-      std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const;
+  void CalcFirstPiolaStressDerivativeImpl(const Data& data,
+                                          Eigen::Matrix<T, 9, 9>* dPdF) const;
 
   T E_;       // Young's modulus, N/m².
   T nu_;      // Poisson's ratio.

@@ -10,30 +10,20 @@ namespace fem {
 namespace internal {
 namespace {
 
-constexpr int kNumLocations = 1;
-
-void VerifySizes(
-    const LinearConstitutiveModelData<double, kNumLocations>& data) {
-  ASSERT_EQ(data.deformation_gradient().size(), kNumLocations);
-  ASSERT_EQ(data.strain().size(), kNumLocations);
-  ASSERT_EQ(data.trace_strain().size(), kNumLocations);
-}
-
 /* Tests that the deformation gradient is initialized to the identity matrix and
  the deformation gradient dependent data are initialized to be consistent with
  the initial deformation gradient. */
 GTEST_TEST(LinearConstitutiveModelDataTest, Initialization) {
-  LinearConstitutiveModelData<double, kNumLocations> linear_elasticity_data;
-  VerifySizes(linear_elasticity_data);
-  EXPECT_TRUE(CompareMatrices(linear_elasticity_data.deformation_gradient()[0],
+  LinearConstitutiveModelData<double> linear_elasticity_data;
+  EXPECT_TRUE(CompareMatrices(linear_elasticity_data.deformation_gradient(),
                               Matrix3<double>::Identity()));
-  EXPECT_TRUE(CompareMatrices(linear_elasticity_data.strain()[0],
+  EXPECT_TRUE(CompareMatrices(linear_elasticity_data.strain(),
                               Matrix3<double>::Zero()));
-  EXPECT_EQ(linear_elasticity_data.trace_strain()[0], 0.0);
+  EXPECT_EQ(linear_elasticity_data.trace_strain(), 0.0);
 }
 
 GTEST_TEST(LinearConstitutiveModelDataTest, UpdateData) {
-  LinearConstitutiveModelData<double, kNumLocations> linear_elasticity_data;
+  LinearConstitutiveModelData<double> linear_elasticity_data;
 
   Matrix3<double> F;
   // clang-format off
@@ -50,13 +40,12 @@ GTEST_TEST(LinearConstitutiveModelDataTest, UpdateData) {
   const double expected_trace_strain = 12.0;
   const auto F0 = F;
 
-  linear_elasticity_data.UpdateData({F}, {F0});
+  linear_elasticity_data.UpdateData(F, F0);
   EXPECT_TRUE(
-      CompareMatrices(linear_elasticity_data.deformation_gradient()[0], F));
-  EXPECT_TRUE(CompareMatrices(linear_elasticity_data.strain()[0],
-                              expected_strain,
+      CompareMatrices(linear_elasticity_data.deformation_gradient(), F));
+  EXPECT_TRUE(CompareMatrices(linear_elasticity_data.strain(), expected_strain,
                               std::numeric_limits<double>::epsilon()));
-  EXPECT_DOUBLE_EQ(linear_elasticity_data.trace_strain()[0],
+  EXPECT_DOUBLE_EQ(linear_elasticity_data.trace_strain(),
                    expected_trace_strain);
 }
 

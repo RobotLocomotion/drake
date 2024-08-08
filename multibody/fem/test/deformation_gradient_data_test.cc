@@ -11,15 +11,13 @@ namespace fem {
 namespace internal {
 namespace {
 
-constexpr int kNumLocations = 1;
 using Eigen::Matrix3d;
 
 /* A dummy DeformationGradientData for testing the behaviors of
  DeformationGradientData::UpdateData(). It holds a single deformation
  gradient dependent data which simply doubles the deformation gradient. */
-template <typename T, int num_locations_at_compile_time>
-class DummyData : public DeformationGradientData<
-                      DummyData<T, num_locations_at_compile_time>> {
+template <typename T>
+class DummyData : public DeformationGradientData<DummyData<T>> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyData);
 
@@ -30,31 +28,21 @@ class DummyData : public DeformationGradientData<
     UpdateFromDeformationGradient();
   }
 
-  std::array<Matrix3<T>, num_locations_at_compile_time>
-  double_deformation_gradient() const {
+  const Matrix3<T>& double_deformation_gradient() const {
     return double_deformation_gradient_;
   }
 
  private:
-  friend DeformationGradientData<DummyData<T, num_locations_at_compile_time>>;
+  friend DeformationGradientData<DummyData<T>>;
 
   /* Shadows DeformationGradientData::UpdateFromDeformationGradient() as
    required by the CRTP base class. */
   void UpdateFromDeformationGradient() {
-    const std::array<Matrix3<T>, num_locations_at_compile_time>& F =
-        this->deformation_gradient();
-    for (int i = 0; i < num_locations_at_compile_time; ++i)
-      double_deformation_gradient_[i] = 2.0 * F[i];
+    double_deformation_gradient_ = 2.0 * this->deformation_gradient();
   }
 
-  std::array<Matrix3<T>, num_locations_at_compile_time>
-      double_deformation_gradient_;
+  Matrix3<T> double_deformation_gradient_;
 };
-
-void VerifySizes(const DummyData<double, kNumLocations>& data) {
-  ASSERT_EQ(data.deformation_gradient().size(), kNumLocations);
-  ASSERT_EQ(data.double_deformation_gradient().size(), kNumLocations);
-}
 
 /* Verifies that `DeformationGradientData::UpdateData()` does what it promises
 to do. In particular, it
@@ -62,14 +50,10 @@ to do. In particular, it
 2. invokes UpdateFromDeformationGradient() in the derived class *after* the
 deformation gradient is up to date. */
 GTEST_TEST(DeformationGradientDataTest, UpdateData) {
-  DummyData<double, kNumLocations> dummy_data;
-  /* Verify that the `dummy_data` instance has the expected size so that the
-   indexing in the following tests will not go out of bound. */
-  VerifySizes(dummy_data);
-
-  ASSERT_TRUE(CompareMatrices(dummy_data.deformation_gradient()[0],
-                              Matrix3d::Identity()));
-  ASSERT_TRUE(CompareMatrices(dummy_data.double_deformation_gradient()[0],
+  DummyData<double> dummy_data;
+  ASSERT_TRUE(
+      CompareMatrices(dummy_data.deformation_gradient(), Matrix3d::Identity()));
+  ASSERT_TRUE(CompareMatrices(dummy_data.double_deformation_gradient(),
                               2.0 * Matrix3d::Identity()));
 
   /* Arbitrary deformation gradient. */
@@ -80,13 +64,13 @@ GTEST_TEST(DeformationGradientDataTest, UpdateData) {
        8, 1, 6;
   // clang-format on
   const auto F0 = 1.23 * F;
-  dummy_data.UpdateData({F}, {F0});
+  dummy_data.UpdateData(F, F0);
 
-  EXPECT_TRUE(CompareMatrices(dummy_data.deformation_gradient()[0], F));
+  EXPECT_TRUE(CompareMatrices(dummy_data.deformation_gradient(), F));
   EXPECT_TRUE(
-      CompareMatrices(dummy_data.previous_step_deformation_gradient()[0], F0));
+      CompareMatrices(dummy_data.previous_step_deformation_gradient(), F0));
   EXPECT_TRUE(
-      CompareMatrices(dummy_data.double_deformation_gradient()[0], 2.0 * F));
+      CompareMatrices(dummy_data.double_deformation_gradient(), 2.0 * F));
 }
 
 }  // namespace
@@ -96,10 +80,8 @@ GTEST_TEST(DeformationGradientDataTest, UpdateData) {
  exception is thrown in the case where the derived class of
  DeformationGradientData doesn't shadow the UpdateFromDeformationGradient()
  method. */
-template <typename T, int num_locations_at_compile_time>
-class InvalidDummyData
-    : public DeformationGradientData<
-          InvalidDummyData<T, num_locations_at_compile_time>> {};
+template <typename T>
+class InvalidDummyData : public DeformationGradientData<InvalidDummyData<T>> {};
 
 namespace {
 
@@ -107,10 +89,10 @@ namespace {
  the `UpdateFromDeformationGradient()` method, an exception is thrown. */
 GTEST_TEST(DeformationGradientDataTest,
            UnshadowedUpdateFromDeformationGradient) {
-  InvalidDummyData<double, kNumLocations> invalid_dummy_data;
+  InvalidDummyData<double> invalid_dummy_data;
   const Matrix3d F = 2.8 * Matrix3d::Identity();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      invalid_dummy_data.UpdateData({F}, {F}),
+      invalid_dummy_data.UpdateData(F, F),
       fmt::format("The derived class {} must provide a shadow definition of "
                   "UpdateFromDeformationGradient.. to be correct.",
                   NiceTypeName::Get(invalid_dummy_data)));

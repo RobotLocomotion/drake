@@ -298,7 +298,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
                              const geometry::VolumeMesh<double>& mesh,
                              const fem::DeformableBodyConfig<T>& config);
 
-  template <template <class, int> class Model, typename T1 = T>
+  template <template <class> class Model, typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
   BuildLinearVolumetricModelHelper(DeformableBodyId id,
                                    const geometry::VolumeMesh<double>& mesh,

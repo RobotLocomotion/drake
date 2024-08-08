@@ -10,26 +10,24 @@ namespace fem {
 namespace internal {
 namespace test {
 
-constexpr int kNumLocations = 1;
-
 GTEST_TEST(CorotatedModelTest, Parameters) {
-  TestParameters<CorotatedModel<double, kNumLocations>>();
-  TestParameters<CorotatedModel<AutoDiffXd, kNumLocations>>();
-  CorotatedModel<double, kNumLocations> model(100, 0.4);
+  TestParameters<CorotatedModel<double>>();
+  TestParameters<CorotatedModel<AutoDiffXd>>();
+  CorotatedModel<double> model(100, 0.4);
   EXPECT_FALSE(model.is_linear);
 }
 
 GTEST_TEST(CorotatedModelTest, UndeformedState) {
-  TestUndeformedState<CorotatedModel<double, kNumLocations>>();
-  TestUndeformedState<CorotatedModel<AutoDiffXd, kNumLocations>>();
+  TestUndeformedState<CorotatedModel<double>>();
+  TestUndeformedState<CorotatedModel<AutoDiffXd>>();
 }
 
 GTEST_TEST(CorotatedModelTest, PIsDerivativeOfPsi) {
-  TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd, kNumLocations>>();
+  TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd>>();
 }
 
 GTEST_TEST(CorotatedModelTest, dPdFIsDerivativeOfP) {
-  TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, kNumLocations>>();
+  TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd>>();
 }
 
 }  // namespace test

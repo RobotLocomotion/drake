@@ -16,15 +16,10 @@ namespace internal {
 
  See LinearConstitutiveModel for how the data is used. See
  DeformationGradientData for more about constitutive model data.
- @tparam_nonsymbolic_scalar
- @tparam num_locations Number of locations at which the deformation gradient
- dependent quantities are evaluated. We currently only provide one instantiation
- of this template with `num_locations = 1`, but more instantiations can easily
- be added when needed. */
-template <typename T, int num_locations>
+ @tparam_nonsymbolic_scalar */
+template <typename T>
 class LinearConstitutiveModelData
-    : public DeformationGradientData<
-          LinearConstitutiveModelData<T, num_locations>> {
+    : public DeformationGradientData<LinearConstitutiveModelData<T>> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearConstitutiveModelData);
 
@@ -34,28 +29,24 @@ class LinearConstitutiveModelData
   /* Returns the infinitesimal strains (E = 0.5 * (F + Fᵀ) - I) evaluated with
    the deformation gradient passed when DeformationGradientData::UpdateData()
    was last invoked. */
-  const std::array<Matrix3<T>, num_locations>& strain() const {
-    return strain_;
-  }
+  const Matrix3<T>& strain() const { return strain_; }
 
   /* Returns the traces of the infinitesimal strains (Tr(E)) evaluated with the
    deformation gradient passed when DeformationGradientData::UpdateData() was
    last invoked. */
-  const std::array<T, num_locations>& trace_strain() const {
-    return trace_strain_;
-  }
+  const T& trace_strain() const { return trace_strain_; }
 
  private:
-  friend DeformationGradientData<LinearConstitutiveModelData<T, num_locations>>;
+  friend DeformationGradientData<LinearConstitutiveModelData<T>>;
 
   /* Shadows DeformationGradientData::UpdateFromDeformationGradient() as
    required by the CRTP base class. */
   void UpdateFromDeformationGradient();
 
   /* The infinitesimal strain. */
-  std::array<Matrix3<T>, num_locations> strain_;
+  Matrix3<T> strain_;
   /* Trace of `strain_`. */
-  std::array<T, num_locations> trace_strain_;
+  T trace_strain_;
 };
 
 }  // namespace internal
