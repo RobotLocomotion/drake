@@ -23,9 +23,9 @@ template<typename T> class Joint;
 /// PD controller gains. This enables the modeling of a simple low level PD
 /// controllers, see JointActuator::set_controller_gains().
 struct PdControllerGains {
-  // Proportional gain of the controller.
+  // Proportional gain of the controller. Must be non-negative and finite.
   double p{0.0};
-  // Derivative gain of the controller.
+  // Derivative gain of the controller. Must be non-negative and finite.
   double d{0.0};
 };
 
