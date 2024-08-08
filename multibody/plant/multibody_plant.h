@@ -4106,27 +4106,27 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// where 𝑠 is either q̇ (time-derivative of generalized positions) or
   /// v (generalized velocities).
   ///
-  /// The name J𝑠_V_ABp denotes the spatial velocity Jacobian in a frame A
-  /// of a point Bp of frame B with respect to "speeds" 𝑠.
-  /// It is calculated with CalcJacobianSpatialVelocity().
+  /// J𝑠_V_ABp denotes the spatial velocity Jacobian in a frame A of a point Bp
+  /// of frame B with respect to "speeds" 𝑠. It is calculated with
+  /// CalcJacobianSpatialVelocity().
   ///
-  /// The name J𝑠_w_AB denotes a frame B's angular velocity Jacobian in a
-  /// frame A with respect to "speeds" 𝑠. It is calculated with
+  /// J𝑠_w_AB denotes a frame B's angular velocity Jacobian in a frame A
+  /// with respect to "speeds" 𝑠. It is calculated with
   /// CalcJacobianAngularVelocity().
   ///
-  /// The name J𝑠_v_ABp denotes the translational velocity Jacobian in a frame A
-  /// of a point Bp of frame B with respect to "speeds" 𝑠. It is calculated with
+  /// J𝑠_v_ABp denotes the translational velocity Jacobian in a frame A of a
+  /// point Bp of frame B with respect to "speeds" 𝑠. It is calculated with
   /// CalcJacobianTranslationalVelocity().
   ///
-  /// The name J𝑠_v_AScm_E denotes point Scm's translational velocity Jacobian
-  /// in a frame A with respect to "speeds" 𝑠, where point Scm is the center of
-  /// mass of the designated system S. For the entire multibody system or for a
+  /// J𝑠_v_AScm_E denotes point Scm's translational velocity Jacobian in a
+  /// frame A with respect to "speeds" 𝑠, where point Scm is the center of mass
+  /// of the designated system S. For the entire multibody system or for a
   /// system designated by model_instances, it is calculated with
   /// CalcJacobianCenterOfMassTranslationalVelocity()
   ///
-  /// The name JAq_p_PQ denotes the Jacobian in a frame A of the position vector
-  /// from point P to point Q with respect to the generalized positions q.
-  /// It is calculated with CalcJacobianPositionVector().
+  /// JAq_p_PQ denotes the Jacobian in a frame A of the position vector from
+  /// point P to point Q with respect to the generalized positions q. It is
+  /// calculated with CalcJacobianPositionVector().
   ///@{
 
   /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
@@ -4404,7 +4404,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, model_instances, with_respect_to, frame_A, frame_E,
         Js_v_ACcm_E);
   }
-  ///@} <!-- End of anchor Jacobian_functions -->
+  ///@} <!-- Jacobian_functions -->
 
   /// @anchor bias_acceleration_functions
   /// @name Bias acceleration functions
