@@ -134,6 +134,9 @@ class RgbdSensor final : public LeafSystem<double> {
     return depth_camera_;
   }
 
+  /** Returns `X_PB`.  */
+  const math::RigidTransformd& X_PB() const { return X_PB_; }
+
   /** Returns `X_BC`.  */
   const math::RigidTransformd& X_BC() const {
     return color_camera_.core().sensor_pose_in_camera_body();

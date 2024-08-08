@@ -97,6 +97,7 @@ void DefineSensorsRgbd(py::module m) {
           py_rvp::reference_internal, doc.RgbdSensor.color_camera_info.doc)
       .def("depth_camera_info", &RgbdSensor::depth_camera_info,
           py_rvp::reference_internal, doc.RgbdSensor.depth_camera_info.doc)
+      .def("X_PB", &RgbdSensor::X_PB, doc.RgbdSensor.X_PB.doc)
       .def("X_BC", &RgbdSensor::X_BC, doc.RgbdSensor.X_BC.doc)
       .def("X_BD", &RgbdSensor::X_BD, doc.RgbdSensor.X_BD.doc)
       .def("parent_frame_id", &RgbdSensor::parent_frame_id,

@@ -468,6 +468,8 @@ class TestSensors(unittest.TestCase):
             sensor = constructor(parent_id, X_WB)
             check_info(sensor.color_camera_info())
             check_info(sensor.depth_camera_info())
+            self.assertIsInstance(sensor.X_PB(),
+                                  RigidTransform)
             self.assertIsInstance(sensor.X_BC(),
                                   RigidTransform)
             self.assertIsInstance(sensor.X_BD(),
