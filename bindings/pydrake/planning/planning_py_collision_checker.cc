@@ -190,6 +190,10 @@ void DefinePlanningCollisionChecker(py::module m) {
             py::arg("configs"), py::arg("parallelize") = true,
             py::call_guard<py::gil_scoped_release>(),
             cls_doc.CheckConfigsCollisionFree.doc)
+        .def("CheckConfigSliceCollisionFree", &Class::CheckConfigSliceCollisionFree,
+            py::arg("configs"), py::arg("start"), py::arg("end"),py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
+            cls_doc.CheckConfigSliceCollisionFree.doc)
         .def("SetDistanceAndInterpolationProvider",
             &Class::SetDistanceAndInterpolationProvider, py::arg("provider"),
             cls_doc.SetDistanceAndInterpolationProvider.doc)
