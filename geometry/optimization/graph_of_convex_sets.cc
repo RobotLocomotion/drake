@@ -964,6 +964,7 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
     prog->AddConstraint(binding.evaluator(), vars.tail(vars.size() - 1));
   } else if (dynamic_cast<solvers::QuadraticConstraint*>(constraint) !=
              nullptr) {
+    // TODO(Alexandre.Amice) Handle convex Quadratic Constraints for the users.
     // Special case the error message for QuadraticConstraint to suggest an easy
     // adjustment to downstream code for users.
     throw std::runtime_error(fmt::format(
