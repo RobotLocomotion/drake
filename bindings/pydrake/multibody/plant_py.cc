@@ -435,6 +435,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
+            py::arg("context"), py::arg("body"), py::arg("X_PB"),
+            cls_doc.SetFreeBodyPose.doc_3args)
+        .def("SetFreeBodyPose",
+            WrapDeprecated(
+                "\nDRAKE_DEPRECATED: a free body pose is defined in the parent "
+                "frame P which might not be the world. Use the parameter X_PB "
+                "instead.\nThe deprecated code will be removed from Drake on "
+                "or after 2024-12-01.",
+                overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
+                    const RigidTransform<T>&>(&Class::SetFreeBodyPose)),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             cls_doc.SetFreeBodyPose.doc_3args)
         .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,

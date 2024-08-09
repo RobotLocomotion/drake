@@ -1346,8 +1346,16 @@ class TestPlant(unittest.TestCase):
         # Set pose for the base.
         X_WB_desired = RigidTransform.Identity()
         X_WB = plant.CalcRelativeTransform(context, world_frame, base_frame)
+
+        # After 2024-12-01 deprecation is complete, we can remove this because
+        # we don't have to confirm which overload gets defaulted without
+        # parameters.
+        plant.SetFreeBodyPose(context, base, X_WB_desired)
         plant.SetFreeBodyPose(
-            context=context, body=base, X_WB=X_WB_desired)
+            context=context, body=base, X_PB=X_WB_desired)
+        with catch_drake_warnings(expected_count=1):
+            plant.SetFreeBodyPose(
+                context=context, body=base, X_WB=X_WB_desired)
         numpy_compare.assert_float_equal(
             X_WB.GetAsMatrix4(),
             numpy_compare.to_float(X_WB_desired.GetAsMatrix4()))

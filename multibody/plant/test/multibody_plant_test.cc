@@ -3639,6 +3639,118 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   unused(plant.MakeActuatorSelectorMatrix(std::vector<JointActuatorIndex>()));
 }
 
+// Confirms the floating body APIs w.r.t. bodies that have a floating mobilizer
+// but whose parent frame is not the world. They are still floating and the
+// various APIs should interpret poses as documented.
+//
+// We load a table and mug. The table is welded to the world, the mug is
+// floating. In some cases, it is floating w.r.t. the world and sometimes w.r.t.
+// the table.
+//
+// This test explicitly omits some APIs because they are tested elsewhere:
+//   - GTEST_TEST(StateSelection, FloatingBodies) tests
+//     SetFreeBodyPoseInAnchoredFrame.
+//   - GTEST_TEST(SetRandomTest, FloatingBodies) the random distribution of
+//     of free body poses, as that is dealt with below in
+//   - multibody_plant_introspection_test.cc covers the "UniqueFreBody" APIs.
+GTEST_TEST(StateSelection, FloatingBodiesNonWorld) {
+  const std::string table_sdf_url =
+      "package://drake/examples/kuka_iiwa_arm/models/table/"
+      "extra_heavy_duty_table_surface_only_collision.sdf";
+  const RigidTransformd X_WT(RotationMatrixd::MakeZRotation(M_PI / 2),
+                             Vector3d(1, 2, 3));
+
+  const std::string mug_sdf_url =
+      "package://drake/examples/simple_gripper/simple_mug.sdf";
+
+  for (bool mug_in_world : {true, false}) {
+    SCOPED_TRACE(mug_in_world ? "Mug joined to world" : "Mug joined to table");
+    MultibodyPlant<double> plant(0.0);
+
+    Parser parser(&plant, "test");
+    // Table is always welded to the world.
+    const ModelInstanceIndex table_model =
+        parser.AddModelsFromUrl(table_sdf_url).at(0);
+    const RigidBody<double>& table = plant.GetBodyByName("link", table_model);
+    plant.WeldFrames(plant.world_frame(), table.body_frame(), X_WT);
+
+    // Add a floating mug.
+    parser.AddModelsFromUrl(mug_sdf_url);
+    const RigidBody<double>& mug = plant.GetBodyByName("simple_mug");
+    if (!mug_in_world) {
+      // Explicitly put a floating joint between mug and table.
+      plant.AddJoint<QuaternionFloatingJoint>("floater", table, {}, mug, {});
+    }
+
+    plant.Finalize();
+
+    const RigidTransformd I = RigidTransformd::Identity();
+
+    const RigidTransformd X_PM(Vector3d(-3, 2, -1));
+    const RigidTransformd X_WM = mug_in_world ? X_PM : X_WT * X_PM;
+    DRAKE_DEMAND(mug_in_world || !CompareMatrices(X_PM.GetAsMatrix34(),
+                                                  X_WM.GetAsMatrix34(), 1));
+    // Whether the mug is "floating" depends on its parent frame.
+    ASSERT_EQ(mug.is_floating(), mug_in_world);
+    ASSERT_EQ(plant.GetFloatingBaseBodies().contains(mug.index()),
+              mug_in_world);
+
+    auto context = plant.CreateDefaultContext();
+
+    plant.SetFreeBodyPose(context.get(), mug, X_PM);
+
+    // The value we set for free body pose should always come right back -- it's
+    // the literal configuration of the joint.
+    EXPECT_TRUE(
+        CompareMatrices(plant.GetFreeBodyPose(*context, mug).GetAsMatrix34(),
+                        X_PM.GetAsMatrix34()));
+
+    // The world pose is as expected.
+    EXPECT_TRUE(CompareMatrices(
+        plant.EvalBodyPoseInWorld(*context, mug).GetAsMatrix34(),
+        X_WM.GetAsMatrix34()));
+
+    // Reset the pose.
+    plant.SetFreeBodyPose(context.get(), mug, I);
+    EXPECT_FALSE(CompareMatrices(
+        plant.EvalBodyPoseInWorld(*context, mug).GetAsMatrix34(),
+        X_WM.GetAsMatrix34(), 1));
+
+    // Explicitly setting things in the world frame produces the expected pose
+    // in world for floating free bodies, but not for "internal" free bodies.
+    if (mug_in_world) {
+      plant.SetFreeBodyPoseInWorldFrame(context.get(), mug, X_WM);
+      EXPECT_TRUE(CompareMatrices(
+          plant.EvalBodyPoseInWorld(*context, mug).GetAsMatrix34(),
+          X_WM.GetAsMatrix34()));
+    } else {
+      EXPECT_THROW(plant.SetFreeBodyPoseInWorldFrame(context.get(), mug, X_WM),
+                   std::exception);
+    }
+
+    // Although the mug has a quaternion floating joint, that is insufficient
+    // for setting a *default* floating pose -- the parent must be world.
+    plant.SetDefaultFreeBodyPose(mug, X_PM);
+
+    // As promised, the value set is regurgitated back.
+    EXPECT_TRUE(
+        CompareMatrices(plant.GetDefaultFreeBodyPose(mug).GetAsMatrix34(),
+                        X_PM.GetAsMatrix34()));
+
+    // The default pose takes affect iff the world is the parent frame.
+    auto alt_context = plant.CreateDefaultContext();
+    EXPECT_EQ(CompareMatrices(
+                  plant.GetFreeBodyPose(*alt_context, mug).GetAsMatrix34(),
+                  X_PM.GetAsMatrix34()),
+              mug_in_world);
+  }
+
+  // TODO(SeanCurtis-TRI): The following APIs have not been tested yet but
+  // should be:
+  //   - SetFreeBodyPose(context, state, body, X_PB)
+  //   - SetFreeBodySpatialVelocity (both overloads)
+}
+
 // This unit test verifies the workings of
 // MBP::SetFreeBodyPoseInAnchoredFrame(). To that end we build a model
 // representative of a real setup consisting of a robot arm mounted on a robot
