@@ -82,7 +82,7 @@ void MultibodyTreeSystem<T>::SetDefaultParameters(
   LeafSystem<T>::SetDefaultParameters(context, parameters);
 
   // Mobilizers.
-  for (MobilizerIndex mobilizer_index(0);
+  for (MobodIndex mobilizer_index(0);
        mobilizer_index < tree_->num_mobilizers(); ++mobilizer_index) {
     internal_tree()
         .get_mobilizer(mobilizer_index)
@@ -142,7 +142,7 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() {
 template <typename T>
 void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
   // Mobilizers.
-  for (MobilizerIndex mobilizer_index(0);
+  for (MobodIndex mobilizer_index(0);
        mobilizer_index < tree_->num_mobilizers(); ++mobilizer_index) {
     mutable_tree()
         .get_mutable_mobilizer(mobilizer_index)

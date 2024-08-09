@@ -152,6 +152,48 @@ class SpanningForest {
   using Link = LinkJointGraph::Link;
   using Joint = LinkJointGraph::Joint;
 
+  /** Returns the sequence of mobilized bodies from World to the given mobod B,
+  inclusive of both. The 0th element is always present in the result and is
+  the World (at level 0) with each entry being the Mobod at the next-higher
+  level along the path to B. Cost is O(ℓ) where ℓ is B's level in its tree. */
+  std::vector<MobodIndex> FindPathFromWorld(MobodIndex index) const;
+
+  /** Finds the highest-numbered mobilized body that is common to the paths
+  from each of the given ones to World. Returns World immediately if the bodies
+  are on different trees; otherwise the cost is O(ℓ) where ℓ is the length
+  of the longer path from one of the bodies to the ancestor.
+  @see FindPathsFromFirstCommonAncestor() */
+  MobodIndex FindFirstCommonAncestor(MobodIndex mobod1_index,
+                                     MobodIndex mobod2_index) const;
+
+  /** Finds the highest numbered common ancestor to two mobilized bodies and
+  returns the paths to the ancestor from each of them. The mobilizers along
+  the returned paths are the only ones that can affect the _relative_ pose
+  between the given mobilized bodies. The returned paths do not include the
+  ancestor but end with the Mobod whose inboard body is the ancestor. The
+  ancestor Mobod is returned separately as the function return value.
+  Complexity is O(ℓ) where ℓ is the length of the longer path from one of the
+  bodies to the ancestor. If either or both given Mobods are the ancestor then
+  one or both returned paths will be empty.
+  @param mobod1_index The index of Mobod 1
+  @param mobod2_index The index of Mobod 2
+  @param path1 path to ancestor from Mobod 1, not including the ancestor
+  @param path2 path to ancestor from Mobod 2, not including the ancestor
+  @retval ancestor_index the ancestor mobilized body's index
+  @see FindFirstCommonAncestor() if you don't need the paths
+  @pre indices are valid, path pointers are non-null */
+  MobodIndex FindPathsToFirstCommonAncestor(
+      MobodIndex mobod1_index, MobodIndex mobod2_index,
+      std::vector<MobodIndex>* path1, std::vector<MobodIndex>* path2) const;
+
+  /** Finds all the Links following the Forest subtree whose root mobilized body
+  B is given. That is, we return all the Links that follow B or any other Mobod
+  in the subtree rooted at B. The Links following B come first, and the rest
+  follow the depth-first ordering of the Mobods. In particular, the result is
+  _not_ sorted by BodyIndex. Computational cost is O(ℓ) where ℓ is the number of
+  Links following the subtree. */
+  std::vector<BodyIndex> FindSubtreeLinks(MobodIndex root_mobod_index) const;
+
   /** Returns a reference to the graph that owns this forest (as set during
   construction). */
   const LinkJointGraph& graph() const {
@@ -344,6 +386,15 @@ class SpanningForest {
   O(1), very fast.
   @pre v_index is in range [0, num_velocities) */
   inline TreeIndex v_to_tree(int v_index) const;
+
+  /** (Debugging, Testing) Runs a series of expensive tests to see that the
+  Forest is internally consistent and aborts if not. */
+  void SanityCheckForest() const;
+
+  std::string GenerateGraphvizString(std::string_view label) const;
+
+  /** (Debugging) Produces a human-readable summary of this Forest. */
+  void DumpForest(std::string title) const;
 
   // TODO(sherm1) Remove this.
   // (Testing stub only) Add enough fake elements to the forest to allow
@@ -580,6 +631,8 @@ class SpanningForest {
                           JointOrdinal weld_joint_ordinal,
                           std::vector<JointIndex>* open_joint_indexes,
                           int* num_unprocessed_links);
+
+  void DumpForestImpl(MobodIndex mobod = MobodIndex(0), int level = 0) const;
 
   struct Data {
     // These are all default but definitions deferred to .cc file so

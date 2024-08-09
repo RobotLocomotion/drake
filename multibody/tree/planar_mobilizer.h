@@ -41,9 +41,10 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
    `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting two
    translational and one rotational degrees of freedom as described in this
    class's documentation. */
-  PlanarMobilizer(const Frame<T>& inboard_frame_F,
+  PlanarMobilizer(const SpanningForest::Mobod& mobod,
+                  const Frame<T>& inboard_frame_F,
                   const Frame<T>& outboard_frame_M)
-      : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
+      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   ~PlanarMobilizer() final;
 

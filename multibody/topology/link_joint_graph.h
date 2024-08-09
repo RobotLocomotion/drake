@@ -4,6 +4,7 @@
 #error Do not include this file. Use "drake/multibody/topology/graph.h".
 #endif
 
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
@@ -498,6 +499,109 @@ class LinkJointGraph {
   void ChangeJointType(JointIndex existing_joint_index,
                        const std::string& name_of_new_type);
 
+  /** After the Forest is built, returns the sequence of Links from World to the
+  given Link L in the Forest. In case the Forest was built with a single Mobod
+  for each Link Composite (Links connected by Weld joints), we only report the
+  "active Link" for each Link Composite so that there is only one Link returned
+  for each level in Link L's tree. World is always the active Link for its
+  composite so will always be the first entry in the result. However, if L is
+  part of a Link Composite the final entry will be L's composite's active link,
+  which might not be L. Cost is O(ℓ) where ℓ is Link L's level in the
+  SpanningForest.
+  @throws std::exception if called prior to modeling
+  @see link_composites(), SpanningForest::FindPathFromWorld() */
+  std::vector<BodyIndex> FindPathFromWorld(BodyIndex link_index) const;
+
+  /** After the Forest is built, finds the first Link common to the paths
+  towards World from each of two Links in the SpanningForest. Returns World
+  immediately if the Links are on different trees of the forest. Otherwise the
+  cost is O(ℓ) where ℓ is the length of the longer path from one of the Links
+  to the ancestor. */
+  BodyIndex FindFirstCommonAncestor(BodyIndex link1_index,
+                                    BodyIndex link2_index) const;
+
+  /** After the Forest is built, finds all the Links following the Forest
+  subtree whose root mobilized body is the one followed by the given Link. That
+  is, we look up the given Link's Mobod B and return all the Links that follow
+  B or any other Mobod in the subtree rooted at B. The Links following B
+  come first, and the rest follow the depth-first ordering of the Mobods.
+  In particular, the result is _not_ sorted by BodyIndex. Computational cost
+  is O(ℓ) where ℓ is the number of Links following the subtree. */
+  std::vector<BodyIndex> FindSubtreeLinks(BodyIndex link_index) const;
+
+  /** After the Forest is built, this method can be called to return a
+  partitioning of the LinkJointGraph into subgraphs such that (a) every Link is
+  in one and only one subgraph, and (b) two Links are in the same subgraph iff
+  there is a path between them which consists only of Weld joints.
+  Each subgraph of welded Links is represented as a set of
+  Link indexes (using BodyIndex). By definition, these subgraphs will be
+  disconnected by any
+  non-Weld joint between two Links. A few notes:
+    - The maximum number of returned subgraphs equals the number of Links in
+      the graph. This corresponds to a graph with no Weld joints.
+    - The World Link is included in a set of welded Links, and this set is
+      element zero in the returned vector. The other subgraphs are in no
+      particular order.
+    - The minimum number of subgraphs is one. This corresponds to a graph with
+      all Links welded to World.
+
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see CalcSubgraphsOfWeldedLinks() if you haven't built a Forest yet */
+  std::vector<std::set<BodyIndex>> GetSubgraphsOfWeldedLinks() const;
+
+  /** This much-slower method does not depend on the SpanningForest having
+  already been built. It is a fallback for when there is no Forest.
+  @see GetSubgraphsOfWeldedLinks() if you already have a Forest built */
+  std::vector<std::set<BodyIndex>> CalcSubgraphsOfWeldedLinks() const;
+
+  /** After the Forest is built, returns all Links that are transitively welded,
+  or rigidly affixed, to `link_index`, per these two definitions:
+    1. A Link is always considered welded to itself.
+    2. Two unique Links are considered welded together exclusively by the
+       presence of weld joints, not by other constructs such as constraints.
+  Therefore, if `link_index` is a valid index to a Link in this graph, then the
+  return vector will always contain at least one entry storing `link_index`.
+  This is fast because we just need to sort the already-calculated
+  LinkComposite the given `link_index` is part of (if any).
+
+  @throws std::exception if the SpanningForest hasn't been built yet or
+                         `link_index` is out of range */
+  std::set<BodyIndex> GetLinksWeldedTo(BodyIndex link_index) const;
+
+  /** This slower method does not depend on the SpanningForest having
+  already been built. It is a fallback for when there is no Forest. */
+  std::set<BodyIndex> CalcLinksWeldedTo(BodyIndex link_index) const;
+
+  /** (Internal use only) For testing. */
+  void DumpGraph(std::string title) const;
+
+  /** Generate a graphviz representation of this %LinkJointGraph, with the
+  given label at the top. Will include ephemeral elements if they are
+  available (that is, if the forest is valid)  unless suppressed explicitly.
+  The result is in the "dot" language, see https://graphviz.org. If you
+  write it to some file foo.dot, you can generate a viewable png (for
+  example) using the command `dot -Tpng foo.dot >foo.png`.
+  @see MakeGraphvizFiles() for an easier way to get pngs. */
+  std::string GenerateGraphvizString(
+      std::string_view label, bool include_ephemeral_elements = true) const;
+
+  /** This is a useful debugging and presentation utility for getting
+  viewable "dot diagrams" of the graph and forest. You provide a directory
+  and a base name for the results. This function will generate
+  `basename_graph.png` showing the graph as the user defined it. If the
+  forest has been built, it will also produce `basename_graph+.png` showing
+  the augmented graph with its ephemeral elements, and `basename_forest.png`
+  showing the spanning forest.
+  @param where The directory in which to put the files. If empty, the
+    current directory is used.
+  @param basename The base of the file names to be produced, see above.
+  @returns the absolute path of the directory into which the files were
+    created.
+  @throws std::exception if files can't be created, or the `dot` command
+    fails or isn't in /usr/bin, /usr/local/bin, or /bin. */
+  std::filesystem::path MakeGraphvizFiles(std::filesystem::path where,
+                                          std::string_view basename) const;
+
   // Forest building requires these joint types so they are predefined.
 
   /** The predefined index for the "weld" joint type's traits. */
@@ -655,6 +759,12 @@ class LinkJointGraph {
   // weld to an existing Composite.
   void AddUnmodeledJointToComposite(JointOrdinal unmodeled_joint_ordinal,
                                     LinkCompositeIndex which);
+
+  // This is the implementation for CalcLinksWeldedTo().
+  void AppendLinksWeldedTo(BodyIndex link_index,
+                           std::set<BodyIndex>* result) const;
+
+  void ThrowIfForestNotBuiltYet(const char* func) const;
 
   [[noreturn]] void ThrowLinkWasRemoved(const char* func,
                                         BodyIndex link_index) const;
