@@ -4403,7 +4403,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, model_instances, with_respect_to, frame_A, frame_E,
         Js_v_ACcm_E);
   }
-  ///@} <!-- Jacobian_functions -->
+  /// @} <!-- Jacobian_functions -->
 
   /// @anchor bias_acceleration_functions
   /// @name Bias acceleration functions
