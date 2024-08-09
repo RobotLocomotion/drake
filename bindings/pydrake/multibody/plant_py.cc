@@ -435,11 +435,32 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
+            py::arg("context"), py::arg("body"), py::arg("X_PB"),
+            cls_doc.SetFreeBodyPose.doc_3args)
+        .def("SetFreeBodyPose",
+            WrapDeprecated(
+                "\nDRAKE_DEPRECATED: a free body pose is defined in the parent "
+                "frame P which might not be the world. Use the parameter X_PB "
+                "instead.\nThe deprecated code will be removed from Drake on "
+                "or after 2024-12-01.",
+                overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
+                    const RigidTransform<T>&>(&Class::SetFreeBodyPose)),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             cls_doc.SetFreeBodyPose.doc_3args)
         .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
-            py::arg("body"), py::arg("X_WB"),
+            py::arg("body"), py::arg("X_PB"),
             cls_doc.SetDefaultFreeBodyPose.doc)
+        .def("SetDefaultFreeBodyPose",
+            WrapDeprecated(
+                "\nDRAKE_DEPRECATED: a free body pose is defined in the parent "
+                "frame P which might not be the world. Use the parameter X_PB "
+                "instead.\nThe deprecated code will be removed from Drake on "
+                "or after 2024-12-01.",
+                overload_cast_explicit<void, const RigidBody<T>&,
+                    const RigidTransform<double>&>(
+                    &Class::SetDefaultFreeBodyPose)),
+            py::arg("body"), py::arg("X_WB"),
+            cls_doc.SetFreeBodyPose.doc_3args)
         .def("GetDefaultFreeBodyPose", &Class::GetDefaultFreeBodyPose,
             py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc)
         .def("SetActuationInArray", &Class::SetActuationInArray,
@@ -508,6 +529,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const SpatialVelocity<T>& V_WB, Context<T>* context) {
               self->SetFreeBodySpatialVelocity(context, body, V_WB);
             },
+            py::arg("body"), py::arg("V_PB"), py::arg("context"),
+            cls_doc.SetFreeBodySpatialVelocity.doc_3args)
+        .def("SetFreeBodySpatialVelocity",
+            WrapDeprecated(
+                "\nDRAKE_DEPRECATED: a free body pose is defined in the parent "
+                "frame P which might not be the world. Use the parameter V_PB "
+                "instead.\nThe deprecated code will be removed from Drake on "
+                "or after 2024-12-01.",
+                [](const Class* self, const RigidBody<T>& body,
+                    const SpatialVelocity<T>& V_WB, Context<T>* context) {
+                  self->SetFreeBodySpatialVelocity(context, body, V_WB);
+                }),
             py::arg("body"), py::arg("V_WB"), py::arg("context"),
             cls_doc.SetFreeBodySpatialVelocity.doc_3args)
         .def("HasUniqueFreeBaseBody", &Class::HasUniqueFreeBaseBody,
