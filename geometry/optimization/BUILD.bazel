@@ -51,6 +51,7 @@ drake_cc_library(
         "affine_ball.cc",
         "affine_subspace.cc",
         "cartesian_product.cc",
+        "convex_hull.cc",
         "convex_set.cc",
         "hpolyhedron.cc",
         "hyperellipsoid.cc",
@@ -65,6 +66,7 @@ drake_cc_library(
         "affine_ball.h",
         "affine_subspace.h",
         "cartesian_product.h",
+        "convex_hull.h",
         "convex_set.h",
         "hpolyhedron.h",
         "hyperellipsoid.h",
@@ -267,6 +269,16 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "cartesian_product_test",
+    deps = [
+        ":convex_set",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "convex_hull_test",
     deps = [
         ":convex_set",
         ":test_utilities",
