@@ -117,17 +117,27 @@ struct AddModel {
   /// or including this declaration.  The named frame must *always* be a scoped
   /// name, even if its part of the model added by this directive.
   ///
-  /// @warning if the transform's `base_frame` is not the world (explicitly or
-  /// implicitly by omission), the body associated with the named frame will
-  /// *not* be considered a free body (`body.is_floating()` returns `false`) and
-  /// calls to MultibodyPlant::SetDefaultFreeBodyPose() will have no effect on
-  /// an allocated context. If you want to change its default pose after adding
-  /// the model, you need to acquire the body's joint and set the new
-  /// default pose on the joint directly. Note: what you will *actually* be
-  /// posing is the *named* frame. If it's the name of the body, you will be
-  /// posing the body. If it's a frame affixed to the body frame, you will be
-  /// posing the fixed frame (with the body offset based on the relationship
-  /// between the two frames).
+  /// @warning there are two important implications for the named frame if the
+  /// transform's `base_frame` is not the world (explicitly or implicitly by
+  /// omission):
+  ///
+  ///  1. The named body will *not* be considered a "floating base" body (see
+  ///     @ref mbp_working_with_free_bodies "Working with free bodies"). Calls
+  ///     to MultibodyPlant::SetDefaultFreeBodyPose() will have no effect on an
+  ///     allocated context. If you want to change its default pose after
+  ///     adding the model, you need to acquire the body's joint and set the
+  ///     new default pose on the joint directly. Note: what you will
+  ///     *actually* be posing is the *named* frame. If it's the name of the
+  ///     body, you will be posing the body. If it's a frame affixed to the
+  ///     body frame, you will be posing the fixed frame (with the body offset
+  ///     based on the relationship between the two frames).
+  ///  2. The body associated with the named frame will have a six-dof joint
+  ///     between itself and the body associated with the transform's
+  ///     `base_frame`. When interpreting the qs for the "named" body, it is the
+  ///     six-dof pose of the body measured and expressed in the parent frame
+  ///     (transform's `base_frame`). This is true whether setting the position
+  ///     values in the resulting joint directly or using the
+  ///     @ref mbp_working_with_free_bodies "MultibodyPlant free body APIs".
   ///
   /// @warning There should not already be a joint in the model between the two
   /// bodies implied by the named frames.
