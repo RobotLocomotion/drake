@@ -270,14 +270,25 @@ drake_cc_library(
 
 drake_cc_library(
     name = "distance_to_point_callback",
-    srcs = ["distance_to_point_callback.cc"],
-    hdrs = ["distance_to_point_callback.h"],
+    srcs = [
+        "calc_signed_distance_to_surface_mesh.cc",
+        "distance_to_point_callback.cc",
+    ],
+    hdrs = [
+        "calc_signed_distance_to_surface_mesh.h",
+        "distance_to_point_callback.h",
+    ],
     internal = True,
     visibility = [
         "//geometry:__pkg__",
     ],
     deps = [
+        ":bv",
+        ":bvh",
         ":proximity_utilities",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
         "//common:default_scalars",
         "//common:drake_export",
         "//common:essential",
@@ -1070,6 +1081,17 @@ drake_cc_googletest(
     deps = [
         ":calc_distance_to_surface_mesh",
         ":make_box_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "calc_signed_distance_to_surface_mesh_test",
+    deps = [
+        # TODO(DamrongGuoy): Use ":calc_signed_distance_to_surface_mesh"
+        #  when we split it from :distance_to_point_callback
+        ":distance_to_point_callback",
+        ":make_box_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
