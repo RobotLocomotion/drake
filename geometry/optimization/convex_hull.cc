@@ -50,23 +50,17 @@ void AddNewVariables(
 
 }  // namespace
 
-ConvexHull::ConvexHull(const ConvexSets& sets, const bool check_empty_sets)
+ConvexHull::ConvexHull(const ConvexSets& sets, const bool remove_empty_sets)
     : ConvexSet(GetAmbientDimension(sets), false), sets_(sets) {
-  drake::log()->info("sets size: {}", sets.size());
-  if (check_empty_sets) {
+  if (remove_empty_sets) {
     non_empty_sets_ = std::vector<copyable_unique_ptr<ConvexSet>>();
     for (const auto& set : sets) {
       if (!set->IsEmpty()) {
         non_empty_sets_->push_back(set);
-        drake::log()->info("non empty set added");
       }
     }
   } else {
     non_empty_sets_ = std::nullopt;
-  }
-  drake::log()->info("non empty sets has value: {}", non_empty_sets_.has_value());
-  if (non_empty_sets_.has_value()) {
-    drake::log()->info("non empty sets size: {}", non_empty_sets_->size());
   }
 }
 
@@ -89,7 +83,8 @@ bool ConvexHull::DoIsEmpty() const {
   if (non_empty_sets_.has_value()) {
     return non_empty_sets_->empty();
   }
-  // if non_empty_sets_ does not have value, then we reconstruct the non_empty_sets_ and check if it is empty.
+  // if non_empty_sets_ does not have value, then we reconstruct the
+  // non_empty_sets_ and check if it is empty.
   return ConvexHull(sets_, true).IsEmpty();
 }
 
@@ -121,8 +116,8 @@ bool ConvexHull::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
   prog.AddBoundingBoxConstraint(0, 1, alpha);
   // add the constraints for each convex set
   for (int i = 0; i < n; ++i) {
-    participating_sets[i]->AddPointInNonnegativeScalingConstraints(&prog, x_sets.col(i),
-                                                      alpha(i));
+    participating_sets[i]->AddPointInNonnegativeScalingConstraints(
+        &prog, x_sets.col(i), alpha(i));
   }
   // Check feasibility.
   const auto result = solvers::Solve(prog);
