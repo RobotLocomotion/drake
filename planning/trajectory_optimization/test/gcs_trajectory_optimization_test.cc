@@ -180,18 +180,16 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, QuadPathLengthCost) {
   const GraphOfConvexSets::Vertex* v = gcs.Vertices()[0];
   EXPECT_EQ(v->ambient_dimension(), kDimension * (kOrder + 1) + 1);
 
-  EXPECT_EQ(v->GetCosts().size(), 4);
+  EXPECT_EQ(v->GetCosts().size(), 2);
 
   // Make a small mathematical program just to evaluate the bindings.
   VectorXd x = VectorXd::LinSpaced(v->ambient_dimension(), 1.23, 4.56);
   MathematicalProgram prog;
   prog.AddDecisionVariables(v->x());
   prog.SetInitialGuessForAllVariables(x);
-  EXPECT_NEAR((prog.EvalBindingAtInitialGuess(v->GetCosts()[0])[0] +
-               prog.EvalBindingAtInitialGuess(v->GetCosts()[1])[0]),
+  EXPECT_NEAR(prog.EvalBindingAtInitialGuess(v->GetCosts()[0])[0],
               (x.segment(2, 2) - x.segment(0, 2)).squaredNorm(), 1e-12);
-  EXPECT_NEAR((prog.EvalBindingAtInitialGuess(v->GetCosts()[2])[0] +
-               prog.EvalBindingAtInitialGuess(v->GetCosts()[3])[0]),
+  EXPECT_NEAR(prog.EvalBindingAtInitialGuess(v->GetCosts()[1])[0],
               (x.segment(4, 2) - x.segment(2, 2)).squaredNorm(), 1e-12);
 }
 

@@ -164,9 +164,11 @@ class GcsTrajectoryOptimization final {
     cost. However, this cost could also yield control points to visit a greater
     number of regions.
 
-    @param weight_matrix is the Q matrix used in the optimization between pairs
-    of control points.
-    @pre weight_matrix must be of size 2 x 2.
+    @param weight_matrix is the relative weight of each component for the cost.
+    The diagonal of the matrix is the weight for each dimension. The
+    off-diagonal elements are the weight for the cross terms, which can be used
+    to penalize diagonal movement.
+    @pre weight_matrix must be of size num_positions() x num_positions().
     */
     void AddPathEnergyCost(const Eigen::MatrixXd& weight_matrix);
 
@@ -675,9 +677,11 @@ class GcsTrajectoryOptimization final {
   only added to all subgraphs with order greater than zero. Note that this cost
   will be applied even to subgraphs added in the future.
 
-  @param weight_matrix is the Q matrix used in the optimization between pairs of
-  control points.
-  @pre weight_matrix must be of size 2 x 2.
+  @param weight_matrix is the relative weight of each component for the cost.
+  The diagonal of the matrix is the weight for each dimension. The
+  off-diagonal elements are the weight for the cross terms, which can be used
+  to penalize diagonal movement.
+  @pre weight_matrix must be of size num_positions() x num_positions().
   */
   void AddPathEnergyCost(const Eigen::MatrixXd& weight_matrix);
 

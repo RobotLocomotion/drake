@@ -385,7 +385,7 @@ void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
   (rᵢ₊₁ * weight_matrix * rᵢ)
   */
 
-  Eigen::MatrixXd b = Eigen::VectorXd::Zero(2);
+  Eigen::MatrixXd b = Eigen::VectorXd::Zero(2 * num_positions());
 
   // Occasionally numerical variation results in very small values that are not
   // exactly zero. This ensures that the members of b are actually 0
@@ -395,18 +395,26 @@ void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
     }
   }
 
+  MatrixXd Q(2 * num_positions(), 2 * num_positions());
+
+  Q.block(0, 0, num_positions(), num_positions()) << weight_matrix;
+  Q.block(num_positions(), num_positions(), num_positions(), num_positions())
+      << weight_matrix;
+  Q.block(0, num_positions(), num_positions(), num_positions())
+      << -weight_matrix;
+  Q.block(num_positions(), 0, num_positions(), num_positions())
+      << -weight_matrix;
+
   double constTerm = 0;
   const auto path_squared_cost =
-      std::make_shared<QuadraticCost>(weight_matrix, b, constTerm);
+      std::make_shared<QuadraticCost>(Q, b, constTerm);
 
   for (Vertex* v : vertices_) {
     auto control_points = GetControlPoints(*v);
     for (int i = 0; i < control_points.cols() - 1; ++i) {
-      for (int j = 0; j < num_positions(); j++) {
-        v->AddCost(Binding<QuadraticCost>(
-            path_squared_cost,
-            {control_points.col(i + 1).row(j), control_points.col(i).row(j)}));
-      }
+      v->AddCost(Binding<QuadraticCost>(
+          path_squared_cost,
+          {control_points.col(i + 1), control_points.col(i)}));
     }
   }
 }
@@ -418,10 +426,9 @@ void Subgraph::AddPathLengthCost(double weight) {
 }
 
 void Subgraph::AddPathEnergyCost(double weight) {
-  Eigen::MatrixXd Q(2, 2);
-  Q << 2, -2, -2, 2;
-
-  return Subgraph::AddPathEnergyCost(weight * Q);
+  const MatrixXd weight_matrix =
+      weight * 2 * MatrixXd::Identity(num_positions(), num_positions());
+  return Subgraph::AddPathEnergyCost(weight * weight_matrix);
 }
 
 void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
@@ -1590,10 +1597,9 @@ void GcsTrajectoryOptimization::AddPathLengthCost(double weight) {
 }
 
 void GcsTrajectoryOptimization::AddPathEnergyCost(double weight) {
-  Eigen::MatrixXd Q(2, 2);
-  Q << 2, -2, -2, 2;
-
-  return GcsTrajectoryOptimization::AddPathEnergyCost(weight * Q);
+  const MatrixXd weight_matrix =
+      weight * 2 * MatrixXd::Identity(num_positions(), num_positions());
+  return GcsTrajectoryOptimization::AddPathEnergyCost(weight * weight_matrix);
 }
 
 void GcsTrajectoryOptimization::AddVelocityBounds(
