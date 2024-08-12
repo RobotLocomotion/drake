@@ -309,6 +309,9 @@ MODULE_SETTINGS = {
             "VTK::ImagingSources",
         ],
     },
+    "VTK::FiltersReduction": {
+        # VTK uses this module internally but we don't need to customize it.
+    },
     "VTK::FiltersSources": {
         "visibility": ["//visibility:public"],
         "srcs_glob_exclude": [
@@ -426,6 +429,9 @@ MODULE_SETTINGS = {
             "IO/Legacy/vtkDataReader.cxx",
             "IO/Legacy/vtkUnstructuredGridReader.cxx",
         ],
+        "module_deps_ignore": [
+            "VTK::IOCellGrid",
+        ],
     },
     "VTK::ImagingCore": {
         "visibility": ["//visibility:public"],
@@ -471,6 +477,8 @@ MODULE_SETTINGS = {
         "srcs_glob_exclude": [
             # This is configure-time setup code, not library code.
             "**/vtkProbe*",
+            # This file requires codegen'd embedded vtp files. We don't need it.
+            "**/*vtkOpenGLAvatar*",
             # Avoid building unnecessary VTK::RenderingHyperTreeGrid.
             "**/*HyperTreeGrid*",
             # Exclude all renderers by default; we'll incorporate the necessary
@@ -517,6 +525,7 @@ MODULE_SETTINGS = {
             ],
         }),
         "module_deps_ignore": [
+            "VTK::IOXML",
             "VTK::RenderingHyperTreeGrid",
         ],
     },
