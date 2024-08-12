@@ -79,6 +79,16 @@ std::string UuidGenerator::GenerateRandom() {
 
 namespace {
 
+// The default URI loader -- it reads the uri from disk relative to the given
+// gltf directory.
+std::optional<std::string> DiskUriLoader(const fs::path& gltf_dir,
+                                         std::string_view uri) {
+  fs::path asset_filename = gltf_dir / uri;
+  return ReadFile(asset_filename);
+}
+
+
+
 // Load the given `uri` into `storage` and returns the storage handle.
 // On error, returns nullptr.
 // @param gltf_filename Only used for debugging and error messages.
@@ -86,7 +96,9 @@ namespace {
 //  Only used for debugging and error messages.
 std::shared_ptr<const common::FileContents> LoadGltfUri(
     const fs::path& gltf_filename, std::string_view array_hint,
-    std::string_view uri, FileStorage* storage) {
+    std::string_view uri, FileStorage* storage,
+    const std::function<std::optional<std::string>(const fs::path&,
+                                             std::string_view)>& uri_loader) {
   DRAKE_DEMAND(storage != nullptr);
   if (uri.substr(0, 5) == "data:") {
     constexpr std::string_view needle = ";base64,";
@@ -112,12 +124,16 @@ std::shared_ptr<const common::FileContents> LoadGltfUri(
     return storage->Insert(std::move(decoded), std::move(filename_hint));
   } else {
     // Not a data URI, so it must be a relative path.
+    std::optional<std::string> asset_data =
+        uri_loader(gltf_filename.parent_path(), uri);
+    // Note: this may not be a legitimate file path; if the glTF came from
+    // memory, `gltf_filename` may actually just be a filename *hint*. That's
+    // alright because this is only used in the warning message *and* as a
+    // filename hint in `storage`.
     fs::path asset_filename = gltf_filename.parent_path() / uri;
-    std::optional<std::string> asset_data = ReadFile(asset_filename);
     if (!asset_data) {
-      log()->warn(
-          "Meshcat could not open '{}' while loading {} from '{}'",
-          asset_filename.string(), array_hint, gltf_filename.string());
+      log()->warn("Meshcat could not open '{}' while loading {} from '{}'",
+                  asset_filename.string(), array_hint, gltf_filename.string());
       return nullptr;
     }
     return storage->Insert(std::move(*asset_data), asset_filename.string());
@@ -127,11 +143,15 @@ std::shared_ptr<const common::FileContents> LoadGltfUri(
 }  // namespace
 
 std::vector<std::shared_ptr<const common::FileContents>> UnbundleGltfAssets(
-    const fs::path& gltf_filename, std::string* gltf_contents,
+    const MeshSource& source, std::string* gltf_contents,
     FileStorage* storage) {
   DRAKE_DEMAND(gltf_contents != nullptr);
   DRAKE_DEMAND(storage != nullptr);
   std::vector<std::shared_ptr<const common::FileContents>> assets;
+  const fs::path gltf_filename =
+      source.IsPath() ? source.path()
+                      : fs::path(source.mesh_data().mesh_file.filename_hint());
+
   json gltf;
   try {
     gltf = json::parse(*gltf_contents);
@@ -140,6 +160,25 @@ std::vector<std::shared_ptr<const common::FileContents>> UnbundleGltfAssets(
                 gltf_filename.string(), e.what());
     return assets;
   }
+
+  // Resolving URIs depends on where the glTF specification resides.
+  std::function<std::optional<std::string>(const fs::path&, std::string_view)>
+      uri_loader;
+  if (source.IsPath()) {
+    uri_loader = DiskUriLoader;
+  } else {
+    DRAKE_DEMAND(source.IsInMemory());
+    uri_loader = [&files = source.mesh_data().supporting_files](
+                     const fs::path&,
+                     std::string_view uri) -> std::optional<std::string> {
+      auto iter = files.find(uri);
+      if (iter != files.end()) {
+        return iter->second.contents();
+      }
+      return std::nullopt;
+    };
+  }
+
   // In glTF 2.0, URIs can only appear in two places:
   //  "images": [ { "uri": "some.png" } ]
   //  "buffers": [ { "uri": "some.bin", "byteLength": 1024 } ]
@@ -153,7 +192,7 @@ std::vector<std::shared_ptr<const common::FileContents>> UnbundleGltfAssets(
             item["uri"].template get<std::string_view>();
         const std::string array_hint = fmt::format("{}[{}]", array_name, i);
         std::shared_ptr<const common::FileContents> asset =
-            LoadGltfUri(gltf_filename, array_hint, uri, storage);
+            LoadGltfUri(gltf_filename, array_hint, uri, storage, uri_loader);
         if (asset != nullptr) {
           item["uri"] = FileStorage::GetCasUrl(*asset);
           assets.push_back(std::move(asset));
