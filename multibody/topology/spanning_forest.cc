@@ -1008,66 +1008,6 @@ void SpanningForest::GrowCompositeMobod(
   }
 }
 
-// TODO(sherm1) Remove this.
-/* To permit testing the APIs of Tree and LoopConstraint before the implementing
-code is merged, we'll stub a forest that looks like this:
-
-           -> mobod1 => mobod2
-    World                 ^
-           -> mobod3 .....|  loop constraint
-
-There are two trees and a loop constraint where mobod3 is primary and
-mobod2 is the shadow. The two joints to World have 1 dof, the "=>" joint
-is a weld with 0 dofs.
-
-Note that there are no graph elements corresponding to any of this stuff
-in the stub; we're just testing SpanningForest APIs here which don't care.
-This will not be a well-formed forest for other purposes! */
-void SpanningForest::AddStubTreeAndLoopConstraint() {
-  /* Add three dummy Mobods. */
-  data_.mobods.reserve(4);  // Prevent invalidation of the references.
-  auto& mobod1 =
-      data_.mobods.emplace_back(MobodIndex(1), LinkOrdinal(1), JointOrdinal(1),
-                                1 /* level */, false /* is_reversed */);
-  auto& mobod2 =
-      data_.mobods.emplace_back(MobodIndex(2), LinkOrdinal(2), JointOrdinal(2),
-                                2 /* level */, false /* is_reversed */);
-  auto& mobod3 =
-      data_.mobods.emplace_back(MobodIndex(3), LinkOrdinal(3), JointOrdinal(3),
-                                1 /* level */, false /* is_reversed */);
-
-  /* Assign depth-first coordinates. */
-  mobod1.q_start_ = 0;
-  mobod1.nq_ = 1;
-  mobod1.v_start_ = 0;
-  mobod1.nv_ = 1;
-  mobod2.q_start_ = 1;
-  mobod2.nq_ = 0;
-  mobod2.v_start_ = 1;
-  mobod2.nv_ = 0;
-  mobod3.q_start_ = 1;
-  mobod3.nq_ = 1;
-  mobod3.v_start_ = 1;
-  mobod3.nv_ = 1;
-
-  // Make the trees.
-  data_.trees.reserve(2);
-  auto& tree0 = data_.trees.emplace_back(this, TreeIndex(0), MobodIndex(1));
-  tree0.last_mobod_ = MobodIndex(2);
-  tree0.height_ = 2;
-  auto& tree1 = data_.trees.emplace_back(this, TreeIndex(1), MobodIndex(3));
-  tree1.last_mobod_ = MobodIndex(3);
-  tree1.height_ = 1;
-
-  mobod1.tree_index_ = tree0.index();
-  mobod2.tree_index_ = tree0.index();
-  mobod3.tree_index_ = tree1.index();
-
-  // Add the loop constraint.
-  data_.loop_constraints.emplace_back(LoopConstraintIndex(0), MobodIndex(3),
-                                      MobodIndex(2));
-}
-
 SpanningForest::Data::Data() = default;
 SpanningForest::Data::Data(const Data&) = default;
 SpanningForest::Data::Data(Data&&) = default;
