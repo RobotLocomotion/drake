@@ -1711,8 +1711,11 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
                               ".*No joint with index.*registered.*removed.");
 }
 
-// Regression test for unhelpful error message -- see #14641.
-GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
+// Weld a body to World but with the body as the parent and World as the
+// child. This is fine but must be implemented with a reversed Weld
+// mobilizer that specifies World as the inboard body. We're just verifying
+// here that we can create the plant and finalize it with no trouble.
+GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
   // This test expects that the following model has a world body and a pair of
   // welded-together bodies.
   const std::string sdf_url =
@@ -1724,16 +1727,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
   const RigidBody<double>& extra = plant.AddRigidBody(
       "extra", default_model_instance(), SpatialInertia<double>::NaN());
   plant.WeldFrames(extra.body_frame(), plant.world_frame());
-
-  // The important property of this message is that it reports some identifier
-  // for the involved objects, so at least the developer can map those back to
-  // objects and deduce what API call was in error. If the details of the
-  // message change, update this check to match. If in future the error can be
-  // caught at the WeldFrames() step, so much the better. Modify this test to
-  // reflect that.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.Finalize(),
-      ".*already has a joint.*extra_welds_to_world.*joint.*not allowed.*");
+  EXPECT_NO_THROW(plant.Finalize());
 }
 
 // Verifies exact set of output ports we expect to be a direct feedthrough of
@@ -3848,8 +3842,8 @@ GTEST_TEST(SetRandomTest, SetDefaultWhenNoDistributionSpecified) {
   // explicitly added).
   const RigidBody<double>& body1 =
       plant.AddRigidBody("free body 1", SpatialInertia<double>::MakeUnitary());
-  plant.AddJoint<QuaternionFloatingJoint>("" + body1.name(), plant.world_body(),
-                                          {}, body1, {});
+  plant.AddJoint<QuaternionFloatingJoint>(body1.name(), plant.world_body(), {},
+                                          body1, {});
   const std::string acrobot_url =
       "package://drake/multibody/benchmarks/acrobot/acrobot.sdf";
   const ModelInstanceIndex acrobot =

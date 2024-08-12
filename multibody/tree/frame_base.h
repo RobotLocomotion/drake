@@ -31,7 +31,7 @@ namespace multibody {
 /// World frame W, so pose and motion with respect to W are always available.
 /// Utilities are provided for calculating frame motion with respect to other
 /// frames. Derived frame objects will have additional properties. For example,
-/// material frames have an associated Body.
+/// material frames have an associated RigidBody.
 ///
 /// Summarizing, %FrameBase serves as an abstraction for a general frame object;
 /// it doesn't store any values itself. As always in Drake, runtime values are
@@ -56,17 +56,18 @@ class FrameBase : public MultibodyElement<T> {
   ~FrameBase() override;
 
   // TODO(amcastro-tri): Provide a method with the signature:
-  // const math::RigidTransform<T>& get_pose_in_world_frame(
-  //     const Context<T>& context) const;
-  // returning the pose X_WF of this frame F measured and expressed in the world
-  // frame W. The pose will be stored in the cache and will be the product of
-  // the position kinematics update.
+  //  const math::RigidTransform<T>& get_pose_in_world_frame(
+  //      const Context<T>& context) const;
+  //  returning the pose X_WF of this frame F measured and expressed in the
+  //  world frame W. The pose will be stored in the cache and will be the
+  //  product of the position kinematics update.
+  //
   // TODO(amcastro-tri): Consider to provide a method with signature:
-  // math::RigidTransform<T> CalcPoseAsMeasuredIn(
-  //     const Context<T>& context,
-  //     const FrameBase<T> measured_in_frame) const;
-  // That computes the pose of `this` frame as measured in the
-  // `measured_in_frame` frame.
+  //  math::RigidTransform<T> CalcPoseAsMeasuredIn(
+  //      const Context<T>& context,
+  //      const FrameBase<T> measured_in_frame) const;
+  //  That computes the pose of `this` frame as measured in the
+  //  `measured_in_frame` frame.
  protected:
   explicit FrameBase(ModelInstanceIndex model_instance)
       : MultibodyElement<T>(model_instance) {}

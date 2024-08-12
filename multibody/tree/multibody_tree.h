@@ -20,7 +20,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/topology/multibody_graph.h"
+#include "drake/multibody/topology/graph.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
@@ -354,10 +354,12 @@ class MultibodyTree {
   template<template<typename Scalar> class ForceElementType, typename... Args>
   const ForceElementType<T>& AddForceElement(Args&&... args);
 
-  // See MultibodyPlant documentation.
+  // See MultibodyPlant documentation. In addition internally we distinguish
+  // user Joints from Joints added during modeling (called "ephemeral joints").
   template <template<typename Scalar> class JointType>
   const JointType<T>& AddJoint(
-      std::unique_ptr<JointType<T>> joint);
+      std::unique_ptr<JointType<T>> joint,
+      bool is_ephemeral_joint = false);
 
   // This method adds a Joint of type `JointType` between two bodies.
   // The two bodies connected by this Joint object are referred to as _parent_
@@ -480,6 +482,9 @@ class MultibodyTree {
   // @throws std::exception if Finalize() was already called on `this` tree.
   ModelInstanceIndex AddModelInstance(const std::string& name);
 
+  // Registers a joint in the graph if it isn't already there.
+  void RegisterJointInGraph(const Joint<T>& joint);
+
   // Renames an existing model instance.
   //
   // @param[in] model_instance
@@ -499,8 +504,8 @@ class MultibodyTree {
   // See MultibodyPlant method.
   int num_frames() const { return frames_.num_elements(); }
 
-  // Returns the number of bodies in the MultibodyPlant including the world
-  // body. Therefore the minimum number of bodies is one.
+  // Returns the number of RigidBodies in the %MultibodyPlant including World.
+  // Therefore the minimum number of bodies is one.
   int num_bodies() const { return rigid_bodies_.num_elements(); }
 
   // Returns the number of joints added with AddJoint() to the %MultibodyTree.
@@ -511,10 +516,10 @@ class MultibodyTree {
   int num_actuators() const { return actuators_.num_elements(); }
 
   // See MultibodyPlant method.
-  int num_mobilizers() const { return ssize(owned_mobilizers_); }
+  int num_mobilizers() const { return ssize(mobilizers_); }
 
   // See MultibodyPlant method.
-  int num_force_elements() const { return ssize(owned_force_elements_); }
+  int num_force_elements() const { return ssize(force_elements_); }
 
   // Returns the number of model instances in the MultibodyTree.
   int num_model_instances() const { return model_instances_.num_elements(); }
@@ -573,14 +578,14 @@ class MultibodyTree {
     return model_instances_.get_element(model_instance).num_actuated_dofs();
   }
 
-  // Returns the height of the tree data structure of `this` %MultibodyTree.
+  // Returns the height of the Forest data structure of `this` %MultibodyTree.
   // That is, the number of bodies in the longest kinematic path between the
-  // world and any other leaf body. For a model that only contains the _world_
-  // body, the height of the tree is one.
+  // world and any leaf body. For a model that only contains World, the height
+  // of the forest is one.
   // Kinematic paths are created by Mobilizer objects connecting a chain of
   // frames. Therefore, this method does not count kinematic cycles, which
   // could only be considered in the model using constraints.
-  int tree_height() const {
+  int forest_height() const {
     return topology_.forest_height();
   }
 
@@ -648,14 +653,14 @@ class MultibodyTree {
   }
 
   // See MultibodyPlant method.
-  const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
+  const Mobilizer<T>& get_mobilizer(MobodIndex mobilizer_index) const {
     DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
-    return *owned_mobilizers_[mobilizer_index];
+    return *mobilizers_[mobilizer_index];
   }
 
-  Mobilizer<T>& get_mutable_mobilizer(MobilizerIndex mobilizer_index) {
+  Mobilizer<T>& get_mutable_mobilizer(MobodIndex mobilizer_index) {
     DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
-    return *owned_mobilizers_[mobilizer_index];
+    return *mobilizers_[mobilizer_index];
   }
 
   // See MultibodyPlant method.
@@ -683,13 +688,13 @@ class MultibodyTree {
   const ForceElement<T>& get_force_element(
       ForceElementIndex force_element_index) const {
     DRAKE_THROW_UNLESS(force_element_index < num_force_elements());
-    return *owned_force_elements_[force_element_index];
+    return *force_elements_[force_element_index];
   }
 
   ForceElement<T>& get_mutable_force_element(
       ForceElementIndex force_element_index) {
     DRAKE_THROW_UNLESS(force_element_index < num_force_elements());
-    return *owned_force_elements_[force_element_index];
+    return *force_elements_[force_element_index];
   }
 
   // An accessor to the current gravity field.
@@ -866,13 +871,23 @@ class MultibodyTree {
   // retrieve a local copy of their topology.
   const MultibodyTreeTopology& get_topology() const { return topology_; }
 
-  // See MultibodyPlant method.
-  std::vector<BodyIndex> GetBodiesKinematicallyAffectedBy(
+  // Returns the set of RigidBodies that are affected kinematically by the given
+  // Joints' degrees of freedom. Weld joints are ignored. Otherwise this is just
+  // the set of Links in the subtrees rooted by these Joints' implementing
+  // Mobods.
+  std::set<BodyIndex> GetBodiesKinematicallyAffectedBy(
       const std::vector<JointIndex>& joint_indexes) const;
+
+  // Returns the set of RigidBodies that are on the same Mobod or outboard of
+  // the given bodies. This is just the set of rigid bodies in the subtrees
+  // rooted by these bodies' implementing Mobods. The given bodies are always
+  // included.
+  std::set<BodyIndex> GetBodiesOutboardOfBodies(
+      const std::vector<BodyIndex>& body_indexes) const;
 
   // Returns the mobilizer model for joint with index `joint_index`. The index
   // is invalid if the joint is not modeled with a mobilizer.
-  MobilizerIndex get_joint_mobilizer(JointIndex joint_index) const {
+  MobodIndex get_joint_mobilizer(JointIndex joint_index) const {
     DRAKE_DEMAND(has_joint(joint_index));
     return joint_to_mobilizer_.at(joint_index);
   }
@@ -936,21 +951,41 @@ class MultibodyTree {
   // @}
   // End of "Model instance accessors" section.
 
-  // This method must be called after all elements in the tree (joints, bodies,
+  // MultibodyPlant invokes this to construct a spanning forest/loop constraint
+  // model we want to use to simulate the user's Link and Joint structure.
+  const SpanningForest& BuildSpanningForest() {
+    link_joint_graph_.BuildForest();
+    return link_joint_graph_.forest();
+  }
+
+  [[nodiscard]] const LinkJointGraph& graph() const {
+    return link_joint_graph_;
+  }
+
+  [[nodiscard]] const SpanningForest& forest() const {
+    DRAKE_ASSERT(graph().forest_is_valid());
+    return graph().forest();
+  }
+
+  [[nodiscard]] const SpanningForest::Mobod& get_mobod(MobodIndex index) const {
+    return forest().mobods(index);
+  }
+
+  // This method must be called after all elements in the plant (joints, bodies,
   // force elements, constraints) were added and before any computations are
-  // performed.
-  // It essentially compiles all the necessary "topological information", i.e.
-  // how bodies, joints and, any other elements connect with each other, and
-  // performs all the required pre-processing to perform computations at a
-  // later stage.
+  // performed. It compiles all the necessary "topological information", i.e.
+  // how bodies, mobilizers, and any other elements connect with each other, and
+  // performs all the required pre-processing to permit efficient computations
+  // at a later stage.
   //
-  // If the finalize stage is successful, the topology of this %MultibodyTree
+  // If the finalize stage is successful, the topology of this MultibodyTree
   // is validated, meaning that the topology is up-to-date after this call.
-  // No more multibody tree elements can be added after a call to Finalize().
+  // No more multibody plant elements can be added after a call to Finalize().
   //
   // @throws std::exception if called post-finalize.
+
   // TODO(amcastro-tri): Consider making this method private and calling it
-  // automatically when CreateDefaultContext() is called.
+  //  automatically when CreateDefaultContext() is called.
   void Finalize();
 
   // (Advanced) Allocates a new context for this %MultibodyTree uniquely
@@ -2203,6 +2238,9 @@ class MultibodyTree {
     }
     auto tree_clone = std::make_unique<MultibodyTree<ToScalar>>();
 
+    // The graph and its forest model are scalar type-independent.
+    tree_clone->link_joint_graph_ = this->link_joint_graph_;
+
     // Fill the `frame_` collection with nulls. We'll be cloning the frames out
     // of order, so we can't just append them to the end like we do with the
     // other kinds of elements.
@@ -2219,19 +2257,6 @@ class MultibodyTree {
       tree_clone->AddModelInstance(model_instances_.get_element(index).name());
     }
 
-    // TODO(sherm1) Remove these unfortunate hacks needed to duplicate the
-    //  multibody graph. The upcoming LinkJointGraph is copyable. (Includes
-    //  RigidBody here and Joint below.)
-
-    // Partially copy multibody_graph_. The looped calls to RegisterJointInGraph
-    // below copy the second half. Skip World since it was created by
-    // MultibodyTree's default constructor above.
-    for (BodyIndex index(1); index < num_bodies(); ++index) {
-      const RigidBody<T>& body = get_body(index);
-      tree_clone->multibody_graph_.AddRigidBody(body.name(),
-                                                body.model_instance());
-    }
-
     // Frames are cloned in their index order, that is, in the exact same order
     // they were added to the original tree. Since the Frame API enforces the
     // creation of the parent frame first, this traversal guarantees that parent
@@ -2244,23 +2269,23 @@ class MultibodyTree {
       }
     }
 
-    for (const auto& mobilizer : owned_mobilizers_) {
+    for (const auto& mobilizer : mobilizers_) {
       // This call assumes that tree_clone already contains all the cloned
       // frames.
       tree_clone->CloneMobilizerAndAdd(*mobilizer);
     }
 
     // Throw away the default constructed gravity element.
-    tree_clone->owned_force_elements_.clear();
+    tree_clone->force_elements_.clear();
     tree_clone->gravity_field_ = nullptr;
-    for (const auto& force_element : owned_force_elements_) {
+    for (const auto& force_element : force_elements_) {
       tree_clone->CloneForceElementAndAdd(*force_element);
     }
 
     DRAKE_DEMAND(tree_clone->num_force_elements() > 0);
     tree_clone->gravity_field_ =
         dynamic_cast<UniformGravityFieldElement<ToScalar>*>(
-            tree_clone->owned_force_elements_[0].get());
+            tree_clone->force_elements_[0].get());
     DRAKE_DEMAND(tree_clone->gravity_field_ != nullptr);
 
     // Fill the `joints_` collection with nulls. This is to preserve the
@@ -2283,11 +2308,6 @@ class MultibodyTree {
 
     for (const JointActuator<T>* actuator : actuators_.elements()) {
       tree_clone->CloneActuatorAndAdd(*actuator);
-    }
-
-    // Register the cloned Joints with the multibody_graph_.
-    for (JointIndex index : GetJointIndices()) {
-      tree_clone->RegisterJointInGraph(tree_clone->get_joint(index));
     }
 
     // We can safely make a deep copy here since the original multibody tree is
@@ -2514,27 +2534,23 @@ class MultibodyTree {
   // Calculates the total default mass of all bodies in a set of BodyIndex.
   // @param[in] body_indexes A set of BodyIndex.
   // @retval Total mass of all bodies in body_indexes or 0 if there is no mass.
-  double CalcTotalDefaultMass(const std::set<BodyIndex>& body_indexes) const;
+  double CalcTotalDefaultMass(const std::vector<BodyIndex>& body_indexes) const;
 
   // In the set of bodies associated with BodyIndex, returns true if any of
   // the bodies have a NaN default rotational inertia.
   // @param[in] body_indexes A set of BodyIndex.
   bool IsAnyDefaultRotationalInertiaNaN(
-      const std::set<BodyIndex>& body_indexes) const;
+      const std::vector<BodyIndex>& body_indexes) const;
 
   // In the set of bodies associated with BodyIndex, returns true if all the
   // bodies have a zero default rotational inertia.
   // @param[in] body_indexes A set of BodyIndex.
   bool AreAllDefaultRotationalInertiaZero(
-      const std::set<BodyIndex>& body_indexes) const;
+      const std::vector<BodyIndex>& body_indexes) const;
 
   // Throw an exception if there are bodies whose default mass or inertia
   // properties will cause subsequent numerical problems.
   void ThrowDefaultMassInertiaError() const;
-
-  const internal::MultibodyGraph& multibody_graph() const {
-    return multibody_graph_;
-  }
 
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
@@ -2544,6 +2560,17 @@ class MultibodyTree {
 
   // Friend class to facilitate testing.
   friend class MultibodyTreeTester;
+
+  // (Internal use only) Adds a Joint to the MultibodyPlant corresponding to
+  // joints that were added to the LinkJointGraph during modeling (elements
+  // added during modeling are called "ephemeral"). The joint connects the body
+  // frames.
+  template<template<typename> class JointType, typename... Args>
+  const JointType<T>& AddEphemeralJoint(
+      const std::string& name,
+      const RigidBody<T>& parent,
+      const RigidBody<T>& child,
+      Args&&... args);
 
   // Helpers for getting the full qv discrete state once we know we are using
   // discrete state.
@@ -2631,7 +2658,8 @@ class MultibodyTree {
       ModelInstanceIndex joint_instance, std::string_view joint_name,
       std::string_view frame_suffix);
 
-  // Finalizes the MultibodyTreeTopology of this tree.
+  // Finalizes the MultibodyTreeTopology of this tree in accordance with the
+  // SpanningForest.
   void FinalizeTopology();
 
   // At Finalize(), this method performs all other finalization that is not
@@ -2752,6 +2780,13 @@ class MultibodyTree {
   // not be called pre-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
+
+  // Helper for ThrowDefaultMassInertiaError(): takes a terminal Link or a set
+  // of Links forming a terminal composite, and complains if its default
+  // mass properties are inappropriate for its active mobilizer.
+  void ThrowIfTerminalBodyHasBadDefaultMassProperties(
+      const std::vector<BodyIndex>& link_composites,
+      MobodIndex active_mobilizer_index) const;
 
   // Evaluates the cache entry stored in context with the spatial inertias
   // M_Bo_W(q) for each body in the system. These will be updated as needed.
@@ -2968,11 +3003,11 @@ class MultibodyTree {
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    MobilizerIndex mobilizer_index = mobilizer.index();
+    MobodIndex mobilizer_index = mobilizer.index();
     DRAKE_DEMAND(mobilizer_index < num_mobilizers());
     const MobilizerType<T>* mobilizer_variant =
         dynamic_cast<const MobilizerType<T>*>(
-            owned_mobilizers_[mobilizer_index].get());
+            mobilizers_[mobilizer_index].get());
     DRAKE_DEMAND(mobilizer_variant != nullptr);
     return *mobilizer_variant;
   }
@@ -2986,10 +3021,10 @@ class MultibodyTree {
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    MobilizerIndex mobilizer_index = mobilizer.index();
+    MobodIndex mobilizer_index = mobilizer.index();
     DRAKE_DEMAND(mobilizer_index < num_mobilizers());
     MobilizerType<T>* mobilizer_variant = dynamic_cast<MobilizerType<T>*>(
-        owned_mobilizers_[mobilizer_index].get());
+        mobilizers_[mobilizer_index].get());
     DRAKE_DEMAND(mobilizer_variant != nullptr);
     return *mobilizer_variant;
   }
@@ -3011,18 +3046,6 @@ class MultibodyTree {
     return *joint_variant;
   }
 
-  // Registers a joint in the graph.
-  void RegisterJointInGraph(const Joint<T>& joint) {
-    const std::string type_name = joint.type_name();
-    if (!multibody_graph_.IsJointTypeRegistered(type_name)) {
-      multibody_graph_.RegisterJointType(type_name);
-    }
-    // Note changes in the graph.
-    multibody_graph_.AddJoint(joint.name(), joint.model_instance(), type_name,
-                              joint.parent_body().index(),
-                              joint.child_body().index());
-  }
-
   // If there exists a unique base body (a body whose parent is the world body)
   // in the model given by `model_instance`, return the index of that body.
   // Otherwise return std::nullopt. In particular, if the given `model_instance`
@@ -3036,40 +3059,45 @@ class MultibodyTree {
   GetDefaultFreeBodyPoseAsQuaternionVec3Pair(const RigidBody<T>& body) const;
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
-  // a method that verifies the state of the topology with a signature similar
-  // to RoadGeometry::CheckHasRightSizeForModel().
+  //  a method that verifies the state of the topology with a signature similar
+  //  to RoadGeometry::CheckHasRightSizeForModel().
 
-  // A graph representing the body/joint topology of the multibody plant (Not
-  // to be confused with the spanning-tree model we will build for analysis.)
-  internal::MultibodyGraph multibody_graph_;
-
+  // These objects are defined via MultibodyPlant and are thus user-visible.
   const RigidBody<T>* world_rigid_body_{nullptr};
-
   // When we need to look up elements by name, we'll use an ElementCollection.
   // Otherwise, we'll just use a plain vector.
   ElementCollection<T, RigidBody, BodyIndex> rigid_bodies_;
   ElementCollection<T, Frame, FrameIndex> frames_;
-  std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
-  std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
+  ElementCollection<T, Joint, JointIndex> joints_;
+  std::vector<std::unique_ptr<ForceElement<T>>> force_elements_;
   ElementCollection<T, JointActuator, JointActuatorIndex> actuators_;
-  std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
+
+  // This is the internal representation of user-defined model instances.
   ElementCollection<T, internal::ModelInstance, ModelInstanceIndex>
       model_instances_;
-  ElementCollection<T, Joint, JointIndex> joints_;
+
+  // A graph representing the user-specified Link/Joint topology of the
+  // multibody plant, and containing the chosen SpanningForest we use
+  // for computation.
+  internal::LinkJointGraph link_joint_graph_;
+
+  // These are internal data structures generated to implement the model.
+  std::vector<std::unique_ptr<Mobilizer<T>>> mobilizers_;
+  std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
 
   // The gravity field force element.
   UniformGravityFieldElement<T>* gravity_field_{nullptr};
 
-  // BodyNode (mobilized body) indexes ordered by level (a.k.a depth). Therefore
-  // for the i-th level body_node_levels_[i] contains the list of all body node
-  // indexes in that level.
+  // Mobilized body indexes (for Mobods, BodyNodes, Mobilizers) are ordered
+  // by level (a.k.a depth) in the SpanningForest, starting with 0 for World.
+  // body_node_levels_[i] contains the list of all MobodIndexes at level i.
   std::vector<std::vector<MobodIndex>> body_node_levels_;
 
   // Joint to Mobilizer map, of size num_joints(). For a joint with index
   // joint_index, mobilizer_index = joint_to_mobilizer_[joint_index] maps to the
   // mobilizer model of the joint, or an invalid index if the joint is modeled
   // with constraints instead.
-  std::unordered_map<JointIndex, MobilizerIndex> joint_to_mobilizer_;
+  std::unordered_map<JointIndex, MobodIndex> joint_to_mobilizer_;
 
   // Maps the default body poses of all floating bodies AND bodies touched by
   // MultibodyPlant::SetDefaultFreeBodyPose(). During Finalize(), the default
@@ -3087,8 +3115,11 @@ class MultibodyTree {
 
   MultibodyTreeTopology topology_;
 
+  // Back pointer to the owning MultibodyTreeSystem.
   const MultibodyTreeSystem<T>* tree_system_{};
 
+  // TODO(sherm1) This should be split into separate position and velocity
+  //  states for efficient use of the cache.
   // The discrete state index for the multibody state if the system is discrete.
   systems::DiscreteStateIndex discrete_state_index_;
 };

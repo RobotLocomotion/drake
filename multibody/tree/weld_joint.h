@@ -95,8 +95,8 @@ class WeldJoint final : public Joint<T> {
   void do_set_default_positions(const VectorX<double>&) override { return; }
 
   // Joint<T> overrides:
-  std::unique_ptr<typename Joint<T>::BluePrint>
-  MakeImplementationBlueprint() const override;
+  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint(
+      const internal::SpanningForest::Mobod& mobod) const override;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
       const internal::MultibodyTree<double>& tree_clone) const override;
