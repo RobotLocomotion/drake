@@ -81,10 +81,12 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
   MatrixUpTo6<double> one_by_one(1, 1);
   one_by_one(0, 0) = -1;  // This should *definitely* fail.
 
+  const SpanningForest::Mobod* dummy_mobod{};
   {
     // Rotation only.
     const RevoluteMobilizer<double> mobilizer(
-        parent.body_frame(), child.body_frame(), Vector3d{0, 0, 1});
+        *dummy_mobod, parent.body_frame(), child.body_frame(),
+        Vector3d{0, 0, 1});
     const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
@@ -98,7 +100,8 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
   {
     // Translation only.
     const PrismaticMobilizer<double> mobilizer(
-        parent.body_frame(), child.body_frame(), Vector3d{0, 0, 1});
+        *dummy_mobod, parent.body_frame(), child.body_frame(),
+        Vector3d{0, 0, 1});
     const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
@@ -113,7 +116,7 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
     // N.B. using a 1x1 matrix with a PlanarMobilizer is physically nonsensical,
     // but acceptable for the test; the actual dimension of the mobilizers state
     // space is irrelevant.
-    const PlanarMobilizer<double> mobilizer(parent.body_frame(),
+    const PlanarMobilizer<double> mobilizer(*dummy_mobod, parent.body_frame(),
                                             child.body_frame());
     const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
     // In this case, we don't need to examine the full exception message since
@@ -140,8 +143,9 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
 
   const DummyBody world("world", world_index());
   const DummyBody body("child", BodyIndex(1));
+  const SpanningForest::Mobod* dummy_mobod{};
   const RevoluteMobilizer<double> mobilizer(
-      world.body_frame(), body.body_frame(), Vector3d{0, 0, 1});
+      *dummy_mobod, world.body_frame(), body.body_frame(), Vector3d{0, 0, 1});
   const BodyNode<double> world_node(nullptr, &world, nullptr);
   const BodyNode<double> body_node(&world_node, &body, &mobilizer);
 

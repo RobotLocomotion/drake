@@ -34,6 +34,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/ssize.h"
+#include "drake/multibody/topology/forest.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -56,37 +57,32 @@ struct RigidBodyTopology {
   // members of `other`.
   bool operator==(const RigidBodyTopology& other) const;
 
-  // Unique index in the MultibodyTree.
+  // Unique index in the MultibodyPlant.
   BodyIndex index{0};
 
-  // Unique index to the one and only inboard mobilizer a body can have.
-  // By default this is initialized to "invalid" so that we can detect
-  // graph loops within add_mobilizer().
-  // This will remain "invalid" for the world body.
-  MobilizerIndex inboard_mobilizer{};
+  // Index to the one and only inboard mobilizer a RigidBody can have.
+  MobodIndex inboard_mobilizer{};
 
-  // Within the tree structure of a MultibodyTree, the immediate inboard (or
-  // "parent") body connected by the Mobilizer indexed by `inboard_mobilizer`.
-  // By default this is initialized to "invalid" so that we can assert
-  // (from within add_mobilizer()) that each body can have only one parent
-  // body. Also, this will remain "invalid" for the world body.
+  // Within the SpanningForest, the RigidBody immediately inboard of this body;
+  // That is, the body at the other side of the inboard_mobilizer at a level
+  // one lower (closer to World) in the Forest. We're calling this "parent"
+  // here (in the tree sense) but don't confuse it with the parent RigidBody
+  // of a Joint. This will remain "invalid" for World.
   BodyIndex parent_body{};
 
-  // Within the tree structure of a MultibodyTree, the immediate outboard (or
-  // "child") bodies to this Body. Bodies appear in child_bodies in the order
-  // mobilizers were added to the model, with
-  // MultibodyTreeTopology::add_mobilizer().
+  // Within the SpanningForest, the immediate outboard (or "child") RigidBodies
+  // to this body. Bodies appear in child_bodies in the order mobilizers were
+  // added to the model, with MultibodyTreeTopology::add_mobilizer().
   std::vector<BodyIndex> child_bodies;
 
   // Unique index to the frame associated with this RigidBody.
   FrameIndex body_frame{0};
 
-  // Depth level in the MultibodyTree, level = 0 for the world.
-  // Initialized to an invalid negative value so that we can detect at
-  // Finalize() when a user forgets to connect a body with a mobilizer.
+  // Depth level in the SpanningForest, level = 0 for World.
   int level{-1};
 
-  // Index to the mobilized body (BodyNode) modeling this RigidBody.
+  // Index to the mobilized body (BodyNode) modeling this RigidBody in the
+  // SpanningForest.
   MobodIndex mobod_index;
 
   // `true` if this topology corresponds to a floating RigidBody.
@@ -137,27 +133,20 @@ struct FrameTopology {
 struct MobilizerTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MobilizerTopology);
 
-  // Default construction to invalid configuration.
-  MobilizerTopology() {}
-
-  // Constructs a %MobilizerTopology by specifying the index `mobilizer_index`
-  // for `this` new topology, the indexes to the inboard and outboard frames
-  // the Mobilizer will connect, given by `in_frame` and `out_frame`
-  // respectively, and similarly the inboard and outboard bodies being
-  // connected, given by `in_body` and `out_body`, respectively.  The
-  // constructed topology will correspond to that of a Mobilizer with
-  // `num_positions_in` generalized positions and `num_velocities_in`
-  // generalized velocities.
-  MobilizerTopology(MobilizerIndex mobilizer_index, FrameIndex in_frame,
-                    FrameIndex out_frame, BodyIndex in_body, BodyIndex out_body,
-                    int num_positions_in, int num_velocities_in)
-      : index(mobilizer_index),
-        inboard_frame(in_frame),
-        outboard_frame(out_frame),
-        inboard_body(in_body),
-        outboard_body(out_body),
-        num_positions(num_positions_in),
-        num_velocities(num_velocities_in) {}
+  // Constructs a MobilizerTopology from the corresponding Mobod, plus the
+  // connected RigidBodies and the Frame geometric information from the
+  // modeled Joint.
+  MobilizerTopology(
+      MobodIndex mobilizer_index,
+      FrameIndex in_frame, FrameIndex out_frame,
+      BodyIndex in_body, BodyIndex out_body,
+      const SpanningForest::Mobod& mobod) :
+      index(mobilizer_index),
+      inboard_frame(in_frame), outboard_frame(out_frame),
+      inboard_body(in_body), outboard_body(out_body),
+      num_positions(mobod.nq()),
+      positions_start(mobod.q_start()),
+      num_velocities(mobod.nv()), velocities_start_in_v(mobod.v_start()) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
@@ -178,18 +167,15 @@ struct MobilizerTopology {
   // Returns `true` if this Mobilizer is a weld.
   bool is_weld_mobilizer() const { return num_velocities == 0; }
 
-  // Unique index in the set of mobilizers.
-  MobilizerIndex index;
+  // Unique index in the set of Mobilizers. There will be a corresponding
+  // BodyNode (and hence BodyNodeTopology) with the same index.
+  MobodIndex index;
 
   FrameIndex inboard_frame;
   FrameIndex outboard_frame;
   BodyIndex inboard_body;
   BodyIndex outboard_body;
 
-  // Index to the mobilized body (BodyNode) modeling this Mobilizer.
-  MobodIndex mobod_index;
-
-  // Mobilizer indexing info: Set at Finalize() time.
   // Number of generalized coordinates granted by this mobilizer.
   int num_positions{0};
   // First entry in the q partition of the global array of states x = [q v z].
@@ -197,10 +183,6 @@ struct MobilizerTopology {
 
   // Number of generalized velocities granted by this mobilizer.
   int num_velocities{0};
-  // First entry in the global array of states, `x = [q v z]`, for the parent
-  // MultibodyTree.
-  int velocities_start_in_state{0};
-
   // Start index in a vector indexed like the v partition of states x, including
   // generalized accelerations (which are the time derivatives of the
   // generalized velocities) and generalized forces.
@@ -226,12 +208,13 @@ struct JointActuatorTopology {
 };
 
 // Data structure to store the topological information associated with a tree
-// node. A tree node essentially consists of a body and its inboard mobilizer.
+// node. A tree node consists of a body and its inboard mobilizer. Note that
+// BodyNodes and Mobilizers are indexed identically.
 // A body node is in charge of the computations associated to that body and
 // mobilizer, especially within a base-to-tip or tip-to-base recursion.
-// As the topological entity associated with a tree node (and specifically a
-// MultibodyTree node), this struct contains information regarding parent and
-// child nodes, parent and child bodies, etc.
+// As the topological entity associated with a tree node, this struct contains
+// information regarding parent and child nodes, corresponding parent and child
+// Links, etc.
 struct BodyNodeTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyNodeTopology);
 
@@ -252,24 +235,26 @@ struct BodyNodeTopology {
   // @param parent_rigid_body_in The parent body, in a tree structure sense, to
   //     `rigid_body_in`. In other words, `parent_rigid_body_in` is the body
   //     associated with node `parent_node_in`.
-  BodyNodeTopology(MobodIndex index_in, int level_in, MobodIndex parent_node_in,
-                   BodyIndex rigid_body_in, BodyIndex parent_rigid_body_in,
-                   MobilizerIndex mobilizer_in)
-      : index(index_in),
-        level(level_in),
+  BodyNodeTopology(
+      MobodIndex index_in, int level_in,
+      MobodIndex parent_node_in,
+      BodyIndex rigid_body_in, BodyIndex parent_rigid_body_in)
+      : index(index_in), level(level_in),
         parent_body_node(parent_node_in),
-        rigid_body(rigid_body_in),
-        parent_rigid_body(parent_rigid_body_in),
-        mobilizer(mobilizer_in) {}
+        rigid_body(rigid_body_in), parent_rigid_body(parent_rigid_body_in) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
   bool operator==(const BodyNodeTopology& other) const;
 
-  // Unique index of this node in the MultibodyTree.
+  // Returns the number of children to this node.
+  int get_num_children() const { return ssize(child_nodes);}
+
+  // Index of this node in the SpanningForest (0 for World). There
+  // is an associated Mobilizer with the same index.
   MobodIndex index{};
 
-  // Depth level in the MultibodyTree, level = 0 for the world.
+  // Depth level in the SpanningForest, level = 0 for World.
   int level{-1};
 
   // The index to the inboard ("parent") BodyNode of this node.
@@ -278,19 +263,13 @@ struct BodyNodeTopology {
   BodyIndex rigid_body;         // This node's RigidBody B.
   BodyIndex parent_rigid_body;  // This node's parent RigidBody P.
 
-  MobilizerIndex mobilizer;  // The mobilizer connecting bodies P and B.
-
   // The list of outboard ("child") body nodes to this node.
   std::vector<MobodIndex> child_nodes;
-
-  // Returns the number of children to this node.
-  int get_num_children() const { return ssize(child_nodes); }
 
   // Start and number of dofs for this node's mobilizer.
   int num_mobilizer_positions{0};
   int mobilizer_positions_start{0};
   int num_mobilizer_velocities{0};
-  int mobilizer_velocities_start_in_state{0};
 
   // Start index in a vector containing only generalized velocities.
   // It is also a valid index into a vector of generalized accelerations (which
@@ -299,17 +278,15 @@ struct BodyNodeTopology {
 };
 
 // Data structure to store the topological information associated with an
-// entire MultibodyTree.
+// entire SpanningForest of a MultibodyPlant.
 class MultibodyTreeTopology {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeTopology);
 
   // Default constructor creates an empty, invalid topology. The minimum valid
-  // topology for a minimum valid MultibodyTree contains at least the
-  // RigidBodyTopology for the world. The topology for the _world_ body does not
-  // get added until MultibodyTree construction, which creates a _world_ body
-  // and adds it to the tree.
-  MultibodyTreeTopology() = default;
+  // topology for a MultibodyPlant contains at least the
+  // RigidBodyTopology for World.
+  MultibodyTreeTopology() {}
 
   ~MultibodyTreeTopology();
 
@@ -325,16 +302,19 @@ class MultibodyTreeTopology {
   // Returns the number of physical frames in the multibody tree.
   int num_frames() const { return ssize(frames_); }
 
-  // Returns the number of mobilizers in the multibody tree. Since the "world"
-  // body does not have a mobilizer, the number of mobilizers will always equal
-  // the number of mobilized bodies minus one.
+  // Returns the number of Mobilizers. This is always the same as the number
+  // of BodyNodes and the number of mobilized bodies in the SpanningForest.
   int num_mobilizers() const { return ssize(mobilizers_); }
 
-  // Returns the number of mobilized bodies (BodyNodes). Currently this is
-  // restricted to being equal to the number of user-supplied RigidBody objects.
-  // TODO(sherm1) Relax this restriction -- the number of mobilized bodies can
-  //  differ from the number of user-provided links.
+  // Returns the number of BodyNodes. These are generated 1:1 from the
+  // MobilizedBodies in the SpanningForest. If we combined welded Links,
+  // there will be more RigidBodies than BodyNodes.
   int num_mobods() const { return ssize(body_nodes_); }
+
+  // Returns the number of joint actuators in the topology.
+  int num_joint_actuators() const {
+    return ssize(joint_actuators_);
+  }
 
   // Returns the number of levels in the forest topology.
   int forest_height() const { return forest_height_; }
@@ -360,8 +340,8 @@ class MultibodyTreeTopology {
   }
 
   // Returns a constant reference to the corresponding MobilizerTopology given a
-  // MobilizerIndex.
-  const MobilizerTopology& get_mobilizer(MobilizerIndex index) const {
+  // MobodIndex.
+  const MobilizerTopology& get_mobilizer(MobodIndex index) const {
     DRAKE_ASSERT(index < num_mobilizers());
     return mobilizers_[index];
   }
@@ -463,9 +443,12 @@ class MultibodyTreeTopology {
   // @throws std::exception if Finalize() was already called on `this`
   // topology.
   //
-  // @returns The MobilizerIndex assigned to the new MobilizerTopology.
-  MobilizerIndex add_mobilizer(FrameIndex in_frame, FrameIndex out_frame,
-                               int num_positions, int num_velocities);
+  // @returns The MobodIndex assigned to the new MobilizerTopology.
+  MobodIndex add_mobilizer(const SpanningForest::Mobod& mobod,
+                           FrameIndex in_frame, FrameIndex out_frame);
+
+  void add_world_mobilizer(const SpanningForest::Mobod& world_mobod,
+                           FrameIndex world_body_frame);
 
   // Creates and adds a new JointActuatorTopology for a joint with `num_dofs`
   // degrees of freedom.
@@ -487,25 +470,21 @@ class MultibodyTreeTopology {
 
   // This method must be called by MultibodyTree::Finalize() after all
   // topological elements in the plant (rigid bodies, joints, constraints) were
-  // added and before any computations are performed.
-  // It essentially compiles all the necessary "topological information", i.e.
-  // how bodies, joints and, any other elements connect with each other, and
-  // performs all the required pre-processing to perform computations at a
-  // later stage. This preprocessing includes:
+  // added and a suitable SpanningForest built.
   //
-  // - sorting in DFT order for fast recursions through the tree,
-  // - computation of state sizes and of pool sizes within cache entries,
-  // - computation of index maps to retrieve either state or cache entries for
-  //   each multibody element.
+  // We extract the necessary topological information from the Forest, i.e. how
+  // rigid bodies and joints are interconnected, and use that information to
+  // build BodyNodeTopology objects directly in depth-first order and extract
+  // Tree structure.
   //
   // If the finalize stage is successful, the `this` topology is validated,
-  // meaning it is up-to-date after this call.
-  // No more multibody tree elements can be added after a call to Finalize().
+  // meaning it is up-to-date after this call. No more multibody elements can be
+  // added after a call to Finalize().
   //
   // @throws std::exception If users attempt to call this method on an
   //         already finalized topology.
   // @see is_valid()
-  void Finalize();
+  void Finalize(const LinkJointGraph& graph);
 
   // Returns `true` if Finalize() was already called on `this` topology.
   // @see Finalize()
@@ -523,73 +502,6 @@ class MultibodyTreeTopology {
   // Returns the total number of actuated joint dofs in the model.
   int num_actuated_dofs() const { return num_actuated_dofs_; }
 
-  // Given a node in `this` topology, specified by its MobodIndex `from`,
-  // this method computes the kinematic path formed by all the nodes in the
-  // tree that connect `from` with the root (corresponding to the world).
-  //
-  // @param[in] from
-  //   A node in the tree topology to which the path to the root (world) is to
-  //   be computed.
-  // @param[out] path_to_world
-  //   A std::vector of body node indexes that on output will contain the path
-  //   to the root of the tree. Forward iteration (from element 0 to element
-  //   size()-1) of `path_to_world` will traverse all nodes in the tree
-  //   starting at the root along the path to `from`. That is, forward
-  //   iteration starts with the root of the tree at `path_to_world[0]` and
-  //   ends with `from` at `path_to_world.back()`.
-  //   On input, `path_to_world` must be a valid pointer. On output this vector
-  //   will be resized, only if needed, to store as many elements as the level
-  //   (BodyNodeTopology::level) of body node `from` plus one (so that we can
-  //   include the root node in the path).
-  void GetKinematicPathToWorld(MobodIndex from,
-                               std::vector<MobodIndex>* path_to_world) const;
-
-  // Returns `true` if the body with index `body_index` is anchored to the
-  // world.
-  // A body is said to be "anchored" if its kinematics path to the world only
-  // contains weld mobilizers.
-  // The complexity of this operation is O(depth), where "depth" refers to the
-  // depth in the tree of the body node associated with `body_index`.
-  bool IsBodyAnchored(BodyIndex body_index) const;
-
-  // This method partitions the tree topology into sub-graphs such that two
-  // bodies are in the same sub-graph if there is a path between them which
-  // includes only welded-mobilizer.
-  // Each sub-graph of welded bodies is represented as a set of body indices.
-  // By definition, these sub-graphs will be disconnected by any non-weld
-  // mobilizers that may be inboard or outboard of any given body. The first
-  // sub-graph will have all of the bodies welded to the world; all
-  // subsequent sub-graphs will be in no particular order.
-  // A few more notes:
-  //
-  // - Each body in the topology is included in one set and one set only.
-  // - The maximum size of the list equals the number of bodies in the topology
-  //   (num_rigid_bodies()). That would be a topology with no weld mobilizers.
-  // - The world body is also included in a welded-bodies set, and this set is
-  //   element zero in the returned vector.
-  // - The minimum size of the list is one. This corresponds to a topology with
-  //   all bodies welded to the world.
-  std::vector<std::set<BodyIndex>> CreateListOfWeldedBodies() const;
-
-  // Computes the number of generalized velocities in the tree composed of the
-  // nodes outboard of `base`, excluding the generalized velocities of `base`.
-  // Note: This method returns 0 if base is the most distal body in a multibody
-  // tree or if base's children are all welded to it and they are the most
-  // distal bodies in the tree.
-  // @pre Body nodes were already created.
-  int CalcNumberOfOutboardVelocitiesExcludingBase(
-      const BodyNodeTopology& base) const {
-    return CalcNumberOfOutboardVelocities(base) - base.num_mobilizer_velocities;
-  }
-
-  // Returns all bodies that are transitively outboard of the given bodies. In
-  // other words, returns the union of all bodies in the subtrees with the given
-  // bodies as roots. The result is sorted in increasing body index order.
-  // @pre Finalize() is called.
-  // @pre body_index is valid and is less than the number of bodies.
-  std::vector<BodyIndex> GetTransitiveOutboardBodies(
-      std::vector<BodyIndex> body_indexes) const;
-
  private:
   // Returns `true` if there is _any_ mobilizer in the multibody tree
   // connecting the frames with indexes `frame` and `frame2`.
@@ -597,40 +509,17 @@ class MultibodyTreeTopology {
                                       FrameIndex frame2) const;
 
   // Returns `true` if there is _any_ mobilizer in the multibody tree
-  // connecting the bodies with indexes `body2` and `body2`.
+  // connecting the Links with indexes `body1` and `body2`.
   bool IsThereAMobilizerBetweenRigidBodies(BodyIndex body1,
                                            BodyIndex body2) const;
 
-  // Recursive helper method for CreateListOfWeldedBodies().
-  // This method scans the children of body with parent_index. If a child is
-  // welded to body with parent_index, it gets added to the parent's body welded
-  // body, parent_welded_body. Otherwise a new welded body is created for the
-  // child body and gets added to the list of all welded bodies, welded_bodies.
-  void CreateListOfWeldedBodiesRecurse(
-      BodyIndex parent_index, std::set<BodyIndex>* parent_welded_body,
-      std::vector<std::set<BodyIndex>>* welded_bodies) const;
-
-  // This traverses the tree of nodes outboard of `base` and applies `operation`
-  // on each of them, starting with `base`. The traversal is performed in depth
-  // first order.
-  // @pre Body nodes were already created and therefore they are indexed in
-  // depth first order.
-  void TraverseOutboardNodes(
-      const BodyNodeTopology& base,
-      std::function<void(const BodyNodeTopology&)> operation) const;
-
-  // Computes the number of generalized velocities in the tree composed of the
-  // nodes outboard of `base`, including the generalized velocities of `base`.
-  // @pre Body nodes were already created.
-  int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) const;
-
   // Helper method to be used within Finalize() to obtain the topological
   // information that describes the multibody system as a "forest" of trees.
-  void ExtractForestInfo();
+  void ExtractForestInfo(const LinkJointGraph& graph);
 
   // is_valid is set to `true` after a successful Finalize().
   bool is_valid_{false};
-  // Number of levels (or generations) in the forest topology. After Finalize()
+  // Number of levels in the full Forest topology. After Finalize()
   // there will be at least one level (level = 0) with the world body.
   int forest_height_{-1};
 

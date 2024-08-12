@@ -1,8 +1,13 @@
+#include <vector>
+
+#include "drake/common/drake_throw.h"
 #include "drake/multibody/topology/forest.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
+
+// TODO(sherm1) Add more tests. This doesn't check everything.
 
 void SpanningForest::SanityCheckForest() const {
   // Should always have a LinkJointGraph backpointer even if empty.

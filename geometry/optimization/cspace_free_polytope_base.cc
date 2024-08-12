@@ -208,7 +208,7 @@ void CspaceFreePolytopeBase::CalcSBoundsPolynomial(
 void CspaceFreePolytopeBase::SetIndicesOfSOnChainForBodyPair(
     const SortedPair<multibody::BodyIndex>& body_pair) {
   if (!map_body_pair_to_s_on_chain_.contains(body_pair)) {
-    const std::vector<multibody::internal::MobilizerIndex> mobilizer_indices =
+    const std::vector<multibody::internal::MobodIndex> mobilizer_indices =
         multibody::internal::FindMobilizersOnPath(rational_forward_kin_.plant(),
                                                   body_pair.first(),
                                                   body_pair.second());

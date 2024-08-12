@@ -29,10 +29,11 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   // Constructor for a %WeldMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M`.
   // @param[in] X_FM Pose of `outboard_frame_M` in the `inboard_frame_F`.
-  WeldMobilizer(const Frame<T>& inboard_frame_F,
+  WeldMobilizer(const SpanningForest::Mobod& mobod,
+                const Frame<T>& inboard_frame_F,
                 const Frame<T>& outboard_frame_M,
                 const math::RigidTransform<double>& X_FM) :
-      MobilizerBase(inboard_frame_F, outboard_frame_M), X_FM_(X_FM) {}
+      MobilizerBase(mobod, inboard_frame_F, outboard_frame_M), X_FM_(X_FM) {}
 
   ~WeldMobilizer() final;
 
