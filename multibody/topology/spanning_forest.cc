@@ -1008,6 +1008,99 @@ void SpanningForest::GrowCompositeMobod(
   }
 }
 
+std::vector<MobodIndex> SpanningForest::FindPathFromWorld(
+    MobodIndex index) const {
+  const Mobod* mobod = &mobods(index);
+  std::vector<MobodIndex> path(mobod->level() + 1);
+  while (mobod->inboard().is_valid()) {
+    path[mobod->level()] = mobod->index();
+    mobod = &mobods(mobod->inboard());
+  }
+  DRAKE_DEMAND(mobod->is_world());
+  path[0] = MobodIndex(0);
+  return path;
+}
+
+MobodIndex SpanningForest::FindFirstCommonAncestor(
+    MobodIndex mobod1_index, MobodIndex mobod2_index) const {
+  // A body is its own first common ancestor.
+  if (mobod1_index == mobod2_index) return mobod1_index;
+
+  // If either body is World, that's the first common ancestor.
+  if (mobod1_index == world_mobod_index() ||
+      mobod2_index == world_mobod_index()) {
+    return world_mobod_index();
+  }
+
+  const Mobod* branch1 = &mobods(mobod1_index);
+  const Mobod* branch2 = &mobods(mobod2_index);
+
+  // If they are in different trees, World is the ancestor.
+  if (branch1->tree() != branch2->tree()) return world_mobod().index();
+
+  // Get down to a common level, then go down both branches.
+  while (branch1->level() > branch2->level())
+    branch1 = &mobods(branch1->inboard());
+  while (branch2->level() > branch1->level())
+    branch2 = &mobods(branch2->inboard());
+
+  // Both branches are at the same level now.
+  while (branch1->index() != branch2->index()) {
+    branch1 = &mobods(branch1->inboard());
+    branch2 = &mobods(branch2->inboard());
+  }
+
+  return branch1->index();  // Same as branch2->index().
+}
+
+MobodIndex SpanningForest::FindPathsToFirstCommonAncestor(
+    MobodIndex mobod1_index, MobodIndex mobod2_index,
+    std::vector<MobodIndex>* path1, std::vector<MobodIndex>* path2) const {
+  DRAKE_DEMAND(path1 != nullptr && path2 != nullptr);
+  path1->clear();
+  path2->clear();
+  // A body is its own first common ancestor.
+  if (mobod1_index == mobod2_index) return mobod1_index;
+
+  const Mobod* branch1 = &mobods(mobod1_index);
+  const Mobod* branch2 = &mobods(mobod2_index);
+
+  // Get down to a common level, then go down both branches.
+  while (branch1->level() > branch2->level()) {
+    path1->push_back(branch1->index());
+    branch1 = &mobods(branch1->inboard());
+  }
+  while (branch2->level() > branch1->level()) {
+    path2->push_back(branch2->index());
+    branch2 = &mobods(branch2->inboard());
+  }
+
+  // Both branches are at the same level now.
+  while (branch1->index() != branch2->index()) {
+    path1->push_back(branch1->index());
+    path2->push_back(branch2->index());
+    branch1 = &mobods(branch1->inboard());
+    branch2 = &mobods(branch2->inboard());
+  }
+
+  return branch1->index();  // Same as branch2->index().
+}
+
+std::vector<LinkIndex> SpanningForest::FindSubtreeLinks(
+    MobodIndex root_mobod_index) const {
+  const int num_subtree_mobods = mobods(root_mobod_index).num_subtree_mobods();
+  std::vector<LinkIndex> result;
+  result.reserve(num_subtree_mobods);  // Will be at least this big.
+  for (int i = 0; i < num_subtree_mobods; ++i) {
+    const Mobod& subtree_mobod = mobods(MobodIndex(root_mobod_index + i));
+    for (LinkOrdinal ordinal : subtree_mobod.follower_link_ordinals()) {
+      const Link& link = links(ordinal);
+      result.push_back(link.index());
+    }
+  }
+  return result;
+}
+
 SpanningForest::Data::Data() = default;
 SpanningForest::Data::Data(const Data&) = default;
 SpanningForest::Data::Data(Data&&) = default;
