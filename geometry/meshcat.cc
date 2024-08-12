@@ -324,162 +324,6 @@ class MeshcatShapeReifier : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  // Helper for ImplementGeometry, common to both Mesh and Convex shapes.
-  // The `extension` is lowercase and includes the leading dot (e.g., ".obj").
-  void ImplementMesh(const std::string& filename, const std::string& extension,
-                     double scale, void* data) {
-    DRAKE_DEMAND(data != nullptr);
-    auto& output = *static_cast<Output*>(data);
-    auto& lumped = output.lumped;
-    // TODO(russt): Use file contents to generate the uuid, and avoid resending
-    // meshes unless necessary.  Using the filename is tempting, but that leads
-    // to problems when the file contents change on disk.
-
-    std::string format = extension;
-    format.erase(0, 1);  // remove the . from the extension
-    std::optional<std::string> maybe_mesh_data = ReadFile(filename);
-    if (!maybe_mesh_data) {
-      drake::log()->warn("Meshcat: Could not open mesh filename {}", filename);
-      return;
-    }
-
-    // We simply dump the binary contents of the file into the data field of the
-    // message.  The javascript meshcat takes care of the rest.
-    std::string mesh_data = std::move(*maybe_mesh_data);
-
-    // TODO(russt): MeshCat.jl/src/mesh_files.jl loads dae with textures, also.
-
-    // TODO(russt): Make this mtllib parsing more robust (right now commented
-    // mtllib lines will match, too, etc).
-    size_t mtllib_pos;
-    if (format == "obj" &&
-        (mtllib_pos = mesh_data.find("mtllib ")) != std::string::npos) {
-      mtllib_pos += 7;  // Advance to after the actual "mtllib " string.
-      std::string mtllib_string =
-          mesh_data.substr(mtllib_pos, mesh_data.find('\n', mtllib_pos));
-      std::smatch matches;
-      std::regex_search(mtllib_string, matches, std::regex("\\s*([^\\s]+)"));
-      // Note: We do a minimal parsing manually here.  tinyobj does too much
-      // work (actually loading all of the content) and also does not give
-      // access to the intermediate data that we need to pass to meshcat, like
-      // the resource names in the mtl file.  This is also the approach taken
-      // in MeshCat.jl/src/mesh_files.jl.
-
-      auto& meshfile_object =
-          lumped.object.emplace<internal::MeshfileObjectData>();
-      meshfile_object.uuid = uuid_generator_.GenerateRandom();
-      meshfile_object.format = std::move(format);
-      meshfile_object.data = std::move(mesh_data);
-
-      std::string mtllib = matches.str(1);
-
-      // Use filename path as the base directory for textures.
-      const std::filesystem::path basedir =
-          std::filesystem::path(filename).parent_path();
-
-      // Read .mtl file into geometry.mtl_library.
-      if (std::optional<std::string> maybe_mtl_data =
-              ReadFile(basedir / mtllib)) {
-        meshfile_object.mtl_library = std::move(*maybe_mtl_data);
-
-        // Scan .mtl file for map_ lines.  For each, load the file and add
-        // the contents to geometry.resources.
-        // The syntax (http://paulbourke.net/dataformats/mtl/) is e.g.
-        //   map_Ka -options args filename
-        // Here we ignore the options and only extract the filename (by
-        // extracting the last word before the end of line/string).
-        //  - "map_.+" matches the map_ plus any options,
-        //  - "\s" matches one whitespace (before the filename),
-        //  - "[^\s]+" matches the filename, and
-        //  - "[$\r\n]" matches the end of string or end of line.
-        // TODO(russt): This parsing could still be more robust.
-        std::regex map_regex(R"""(map_.+\s([^\s]+)\s*[$\r\n])""");
-        for (std::sregex_iterator iter(meshfile_object.mtl_library.begin(),
-                                       meshfile_object.mtl_library.end(),
-                                       map_regex);
-             iter != std::sregex_iterator(); ++iter) {
-          std::string map = iter->str(1);
-          std::ifstream map_stream(basedir / map,
-                                   std::ios::binary | std::ios::ate);
-          if (map_stream.is_open()) {
-            int map_size = map_stream.tellg();
-            map_stream.seekg(0, std::ios::beg);
-            std::vector<uint8_t> map_data;
-            map_data.reserve(map_size);
-            map_data.assign(std::istreambuf_iterator<char>(map_stream),
-                            std::istreambuf_iterator<char>());
-            meshfile_object.resources.try_emplace(
-                map, std::string("data:image/png;base64,") +
-                         common_robotics_utilities::base64_helpers::Encode(
-                             map_data));
-          } else {
-            drake::log()->warn(
-                "Meshcat: Failed to load texture. \"{}\" references {}, but "
-                "Meshcat could not open filename \"{}\"",
-                (basedir / mtllib).string(), map, (basedir / map).string());
-          }
-        }
-      } else {
-        drake::log()->warn(
-            "Meshcat: Failed to load texture. {} references {}, but Meshcat "
-            "could not open filename \"{}\"",
-            filename, mtllib, (basedir / mtllib).string());
-      }
-    } else if (format == "gltf") {
-      output.assets =
-          internal::UnbundleGltfAssets(filename, &mesh_data, &file_storage_);
-      auto& meshfile_object =
-          lumped.object.emplace<internal::MeshfileObjectData>();
-      meshfile_object.uuid = uuid_generator_.GenerateRandom();
-      meshfile_object.format = std::move(format);
-      meshfile_object.data = std::move(mesh_data);
-    } else {
-      // We have a mesh that isn't a .gltf nor an obj with mtl. So, we'll make
-      // mesh file *geometry* instead of mesh file *object*. This will most
-      // typically be a Collada .dae file, an .stl, or simply an .obj that
-      // doesn't reference an .mtl.
-
-      // TODO(SeanCurtis-TRI): This doesn't work for STL even though meshcat
-      // supports STL. Meshcat treats STL differently from obj or dae.
-      // https://github.com/meshcat-dev/meshcat/blob/4b4f8ffbaa5f609352ea6227bd5ae8207b579c70/src/index.js#L130-L146.
-      // The "data" property of the _meshfile_geometry for obj and dae are
-      // simply passed along verbatim. But for STL it is interpreted as a
-      // buffer. However, we're not passing the data in a way that deserializes
-      // into a data array. So, either meshcat needs to change how it gets
-      // STL (being more permissive), or we need to change how we transmit STL
-      // data.
-
-      // TODO(SeanCurtis-TRI): Provide test showing that .dae works.
-
-      if (format != "obj" && format != "dae") {
-        // Note: We send the data along to meshcat regardless relying on meshcat
-        // to ignore the mesh and move on. The *path* will still exist.
-        static const logging::Warn one_time(
-            "Drake's Meshcat only supports Mesh/Convex specifications which "
-            "use .obj, .gltf, or .dae files. Mesh specifications using other "
-            "mesh types (e.g., .stl, etc.) will not be visualized.");
-      }
-      auto geometry = std::make_unique<internal::MeshFileGeometryData>();
-      geometry->uuid = uuid_generator_.GenerateRandom();
-      geometry->format = std::move(format);
-      geometry->data = std::move(mesh_data);
-      lumped.geometry = std::move(geometry);
-
-      lumped.object.emplace<internal::MeshData>();
-    }
-
-    // Set the scale.
-    std::visit<void>(
-        overloaded{[](std::monostate) {},
-                   [scale](auto& lumped_object) {
-                     Eigen::Map<Eigen::Matrix4d> matrix(lumped_object.matrix);
-                     matrix(0, 0) = scale;
-                     matrix(1, 1) = scale;
-                     matrix(2, 2) = scale;
-                   }},
-        lumped.object);
-  }
-
   void ImplementGeometry(const Box& box, void* data) override {
     DRAKE_DEMAND(data != nullptr);
     auto& output = *static_cast<Output*>(data);
@@ -582,7 +426,170 @@ class MeshcatShapeReifier : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void* data) override {
-    ImplementMesh(mesh.filename(), mesh.extension(), mesh.scale(), data);
+    DRAKE_DEMAND(data != nullptr);
+    auto& output = *static_cast<Output*>(data);
+    auto& lumped = output.lumped;
+    // TODO(russt): Use file contents to generate the uuid, and avoid resending
+    // meshes unless necessary.  Using the filename is tempting, but that leads
+    // to problems when the file contents change on disk.
+
+    std::string format = mesh.extension();
+    format.erase(0, 1);  // remove the . from the extension
+    const MeshSource& source = mesh.source();
+
+    const fs::path filename =
+        source.IsPath()
+            ? source.path()
+            : fs::path(source.mesh_data().mesh_file.filename_hint());
+    std::optional<std::string> maybe_mesh_data;
+    if (source.IsPath()) {
+      maybe_mesh_data = ReadFile(filename);
+      if (!maybe_mesh_data) {
+        drake::log()->warn("Meshcat: Could not open mesh filename {}",
+                           filename);
+        return;
+      }
+    } else {
+      DRAKE_DEMAND(source.IsInMemory());
+      maybe_mesh_data = source.mesh_data().mesh_file.contents();
+    }
+
+    // We simply dump the binary contents of the file into the data field of the
+    // message.  The javascript meshcat takes care of the rest.
+    std::string mesh_data = std::move(*maybe_mesh_data);
+
+    // TODO(russt): MeshCat.jl/src/mesh_files.jl loads dae with textures, also.
+
+    // TODO(russt): Make this mtllib parsing more robust (right now commented
+    // mtllib lines will match, too, etc).
+    size_t mtllib_pos;
+    if (format == "obj" &&
+        (mtllib_pos = mesh_data.find("mtllib ")) != std::string::npos) {
+      DRAKE_DEMAND(source.IsPath());
+      mtllib_pos += 7;  // Advance to after the actual "mtllib " string.
+      std::string mtllib_string =
+          mesh_data.substr(mtllib_pos, mesh_data.find('\n', mtllib_pos));
+      std::smatch matches;
+      std::regex_search(mtllib_string, matches, std::regex("\\s*([^\\s]+)"));
+      // Note: We do a minimal parsing manually here.  tinyobj does too much
+      // work (actually loading all of the content) and also does not give
+      // access to the intermediate data that we need to pass to meshcat, like
+      // the resource names in the mtl file.  This is also the approach taken
+      // in MeshCat.jl/src/mesh_files.jl.
+
+      auto& meshfile_object =
+          lumped.object.emplace<internal::MeshfileObjectData>();
+      meshfile_object.uuid = uuid_generator_.GenerateRandom();
+      meshfile_object.format = std::move(format);
+      meshfile_object.data = std::move(mesh_data);
+
+      std::string mtllib = matches.str(1);
+
+      // Use filename path as the base directory for textures.
+      const std::filesystem::path basedir = filename.parent_path();
+
+      // Read .mtl file into geometry.mtl_library.
+      if (std::optional<std::string> maybe_mtl_data =
+              ReadFile(basedir / mtllib)) {
+        meshfile_object.mtl_library = std::move(*maybe_mtl_data);
+
+        // Scan .mtl file for map_ lines.  For each, load the file and add
+        // the contents to geometry.resources.
+        // The syntax (http://paulbourke.net/dataformats/mtl/) is e.g.
+        //   map_Ka -options args filename
+        // Here we ignore the options and only extract the filename (by
+        // extracting the last word before the end of line/string).
+        //  - "map_.+" matches the map_ plus any options,
+        //  - "\s" matches one whitespace (before the filename),
+        //  - "[^\s]+" matches the filename, and
+        //  - "[$\r\n]" matches the end of string or end of line.
+        // TODO(russt): This parsing could still be more robust.
+        std::regex map_regex(R"""(map_.+\s([^\s]+)\s*[$\r\n])""");
+        for (std::sregex_iterator iter(meshfile_object.mtl_library.begin(),
+                                       meshfile_object.mtl_library.end(),
+                                       map_regex);
+             iter != std::sregex_iterator(); ++iter) {
+          std::string map = iter->str(1);
+          std::ifstream map_stream(basedir / map,
+                                   std::ios::binary | std::ios::ate);
+          if (map_stream.is_open()) {
+            int map_size = map_stream.tellg();
+            map_stream.seekg(0, std::ios::beg);
+            std::vector<uint8_t> map_data;
+            map_data.reserve(map_size);
+            map_data.assign(std::istreambuf_iterator<char>(map_stream),
+                            std::istreambuf_iterator<char>());
+            meshfile_object.resources.try_emplace(
+                map, std::string("data:image/png;base64,") +
+                         common_robotics_utilities::base64_helpers::Encode(
+                             map_data));
+          } else {
+            drake::log()->warn(
+                "Meshcat: Failed to load texture. \"{}\" references {}, but "
+                "Meshcat could not open filename \"{}\"",
+                (basedir / mtllib).string(), map, (basedir / map).string());
+          }
+        }
+      } else {
+        drake::log()->warn(
+            "Meshcat: Failed to load texture. {} references {}, but Meshcat "
+            "could not open filename \"{}\"",
+            filename, mtllib, (basedir / mtllib).string());
+      }
+    } else if (format == "gltf") {
+      output.assets =
+          internal::UnbundleGltfAssets(source, &mesh_data, &file_storage_);
+      auto& meshfile_object =
+          lumped.object.emplace<internal::MeshfileObjectData>();
+      meshfile_object.uuid = uuid_generator_.GenerateRandom();
+      meshfile_object.format = std::move(format);
+      meshfile_object.data = std::move(mesh_data);
+    } else {
+      // We have a mesh that isn't a .gltf nor an obj with mtl. So, we'll make
+      // mesh file *geometry* instead of mesh file *object*. This will most
+      // typically be a Collada .dae file, an .stl, or simply an .obj that
+      // doesn't reference an .mtl.
+
+      // TODO(SeanCurtis-TRI): This doesn't work for STL even though meshcat
+      // supports STL. Meshcat treats STL differently from obj or dae.
+      // https://github.com/meshcat-dev/meshcat/blob/4b4f8ffbaa5f609352ea6227bd5ae8207b579c70/src/index.js#L130-L146.
+      // The "data" property of the _meshfile_geometry for obj and dae are
+      // simply passed along verbatim. But for STL it is interpreted as a
+      // buffer. However, we're not passing the data in a way that deserializes
+      // into a data array. So, either meshcat needs to change how it gets
+      // STL (being more permissive), or we need to change how we transmit STL
+      // data.
+
+      // TODO(SeanCurtis-TRI): Provide test showing that .dae works.
+
+      if (format != "obj" && format != "dae") {
+        // Note: We send the data along to meshcat regardless relying on meshcat
+        // to ignore the mesh and move on. The *path* will still exist.
+        static const logging::Warn one_time(
+            "Drake's Meshcat only supports Mesh/Convex specifications which "
+            "use .obj, .gltf, or .dae files. Mesh specifications using other "
+            "mesh types (e.g., .stl, etc.) will not be visualized.");
+      }
+      auto geometry = std::make_unique<internal::MeshFileGeometryData>();
+      geometry->uuid = uuid_generator_.GenerateRandom();
+      geometry->format = std::move(format);
+      geometry->data = std::move(mesh_data);
+      lumped.geometry = std::move(geometry);
+
+      lumped.object.emplace<internal::MeshData>();
+    }
+
+    // Set the scale.
+    const double scale = mesh.scale();
+    std::visit<void>(
+        overloaded{[](std::monostate) {},
+                   [scale](auto& lumped_object) {
+                     Eigen::Map<Eigen::Matrix4d> matrix(lumped_object.matrix);
+                     matrix(0, 0) = scale;
+                     matrix(1, 1) = scale;
+                     matrix(2, 2) = scale;
+                   }},
+        lumped.object);
   }
 
   void ImplementGeometry(const MeshcatCone& cone, void* data) override {
