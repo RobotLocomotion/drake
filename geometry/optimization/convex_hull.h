@@ -22,21 +22,15 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexHull)
 
   /** Constructs the convex hull from a vector of convex sets.
-    @param sets A vector of convex sets that define the convex hull.
-    @param remove_empty_sets If true, the constructor will check if any of the
-    sets are empty and will not consider them. If false, the constructor will
-    not check if any of the sets are empty.
-    @note An empty set participating in the convex hull may lead to unexpected
-    results as xᵢ ∈ Xᵢ would be an infeasible constraint, and xᵢ ∈ 𝛼ᵢXᵢ would
-    only be feasible with 𝛼ᵢ=0 but may be encoded such that it have non-zero xᵢ.
-    For example, a 2D HPolyhedron with A=[1, 0; -1, 0], b=[-1; -1] is empty, but
-    A[x;y] ≤ 𝛼b is feasible for 𝛼 = 0 and any non-zero y.
-    @warning The check and removing empty participating sets in
-    remove_empty_sets is not recursive. If one of the participating sets is
-    itself a convex hull of other sets in which one is empty (which was
-    constructed incorrectly with remove_empty_sets=false), the remove_empty_sets
-    will *not* remove it but will remove the whole convex hull itself.
-    */
+  @param sets A vector of convex sets that define the convex hull.
+  @param remove_empty_sets If true, the constructor will check if any of the
+  sets are empty and will not consider them. If false, the constructor will
+  not check if any of the sets are empty.
+  @warning If remove_empty_sets is set to false, but some of the sets are in
+  fact empty, then unexpected and incorrect results may occur. Only set this
+  flag to false if you are sure that your sets are non-empty and performance in
+  the constructor is critical.
+  */
   explicit ConvexHull(const ConvexSets& sets,
                       const bool remove_empty_sets = true);
 
@@ -45,11 +39,14 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
   /** Returns the participating convex sets. */
   const ConvexSets& sets() const { return sets_; }
 
-  /** Returns the participating non-empty convex sets, if the constructor was
-   * called with remove_empty_sets=true. */
-  const std::optional<ConvexSets>& maybe_non_empty_sets() const {
-    return non_empty_sets_;
-  }
+  /** Returns the participating sets in the convex hull. If the constructor was
+  called with remove_empty_sets=false, this function will return the original
+  sets, including potentially empty sets. */
+  const ConvexSets& participating_sets() const { return participating_sets_; }
+
+  /** Returns true if the constructor checked for empty sets and removed them,
+  if any. */
+  bool empty_sets_removed() const { return empty_sets_removed_; }
 
   /** Returns a reference to the convex set at the given index (including empty
    * sets). */
@@ -59,7 +56,11 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
    * empty sets). */
   int num_elements() const { return sets_.size(); }
 
-  using ConvexSet::IsBounded;
+  /** @note if called on an instance that was called with
+  remove_empty_sets=false, this function will reconstruct the convex hull with
+  remove_empty_sets=true. Therefore, it is recommended to call this function
+  only once. */
+  using ConvexSet::IsEmpty;
 
   /** @throws  Not implemented. */
   using ConvexSet::CalcVolume;
@@ -102,7 +103,8 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
       const final;
 
   ConvexSets sets_{};
-  std::optional<ConvexSets> non_empty_sets_{};
+  ConvexSets participating_sets_{};
+  bool empty_sets_removed_;
 };
 
 }  // namespace optimization

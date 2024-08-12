@@ -49,14 +49,15 @@ GTEST_TEST(ConvexHullTest, CheckEmpty) {
   HPolyhedron empty_hpolyhedron(A, b);
   ConvexHull hull_1(MakeConvexSets(point, rectangle, empty_hpolyhedron));
   EXPECT_FALSE(hull_1.IsEmpty());
-  EXPECT_TRUE(hull_1.maybe_non_empty_sets().has_value());
-  EXPECT_EQ(hull_1.maybe_non_empty_sets().value().size(), 2);
+  EXPECT_TRUE(hull_1.empty_sets_removed());
+  EXPECT_EQ(hull_1.participating_sets().size(), 2);
   EXPECT_TRUE(hull_1.PointInSet(Eigen::Vector2d(0.0, 1.5), 1e-6));
   // [0, 3] is not in the convex hull.
   EXPECT_FALSE(hull_1.PointInSet(Eigen::Vector2d(0.0, 3.0), 1e-6));
   ConvexHull hull_2(MakeConvexSets(point, rectangle, empty_hpolyhedron), false);
   EXPECT_FALSE(hull_2.IsEmpty());
-  EXPECT_FALSE(hull_2.maybe_non_empty_sets().has_value());
+  EXPECT_FALSE(hull_2.empty_sets_removed());
+  EXPECT_EQ(hull_2.participating_sets().size(), 3);
   EXPECT_TRUE(hull_2.PointInSet(Eigen::Vector2d(0.0, 1.5), 1e-6));
   // Unexpected behavior because the check was bypassed.
   // [0, 3] is not in the convex hull, but it says it is because
