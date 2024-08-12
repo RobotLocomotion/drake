@@ -18,7 +18,7 @@ namespace multibody {
 /// @anchor model_instance
 /// Model instance information for multibody trees.
 ///
-/// A MultiBodyTree is composed of a number of MultibodyElement items.  In
+/// A MultibodyTree is composed of a number of MultibodyElement items.  In
 /// more complex trees, these items will be loaded from multiple models
 /// (e.g. robot arm, attached gripper, free bodies being manipulated).  Each
 /// model may have a different controller or observer, so the ability to view

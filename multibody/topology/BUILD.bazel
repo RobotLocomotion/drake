@@ -11,28 +11,6 @@ package(
 )
 
 drake_cc_library(
-    name = "multibody_graph",
-    srcs = [
-        "multibody_graph.cc",
-    ],
-    hdrs = [
-        "multibody_graph.h",
-    ],
-    deps = [
-        "//common:sorted_pair",
-        "//multibody/tree:multibody_tree_indexes",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_graph_test",
-    deps = [
-        ":multibody_graph",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_topology",
     srcs = [
         "link_joint_graph.cc",

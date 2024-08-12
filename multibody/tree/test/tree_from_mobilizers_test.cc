@@ -340,8 +340,8 @@ TEST_F(PendulumTests, CreateModelBasics) {
   // We need to Finalize() our model before testing the elbow mobilizer was
   // created correctly. Joint implementations are created at Finalize().
   DRAKE_ASSERT_NO_THROW(model_->Finalize());
-  // Each Joint should have a mobilizer now.
-  EXPECT_EQ(model_->num_mobilizers(), 2);
+  // Each Joint (and World) should have a mobilizer now.
+  EXPECT_EQ(model_->num_mobilizers(), 3);
 
   shoulder_mobilizer_ = JointTester::get_mobilizer(*shoulder_joint_);
   elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
@@ -365,7 +365,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
   // Request revolute mobilizers' axes.
   EXPECT_EQ(shoulder_mobilizer_->revolute_axis(), Vector3d::UnitZ());
 
-  EXPECT_EQ(model_->num_mobilizers(), 2);
+  EXPECT_EQ(model_->num_mobilizers(), 3);
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
       elbow_inboard_frame_->body().index(), upper_link_->index());
@@ -427,9 +427,9 @@ TEST_F(PendulumTests, Finalize) {
   EXPECT_THROW(
       model_->AddFrame<FixedOffsetFrame>("F", *lower_link_, X_LEo_),
       std::logic_error);
-  EXPECT_THROW(model_->AddMobilizer<RevoluteMobilizer>(
-      *shoulder_inboard_frame_, *shoulder_outboard_frame_,
-      Vector3d::UnitZ()), std::logic_error);
+  EXPECT_THROW(model_->AddJoint(make_unique<RevoluteJoint<double>>(
+      "joint_name", *shoulder_inboard_frame_, *shoulder_outboard_frame_,
+      Vector3d::UnitZ())), std::logic_error);
 
   // Asserts re-finalization is not allowed.
   EXPECT_THROW(model_->Finalize(), std::logic_error);
@@ -873,10 +873,9 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       tree().CalcPositionKinematicsCache(*context_, &pc);
 
       // Indexes to the BodyNode objects associated with each mobilizer.
-      const MobodIndex shoulder_node =
-          shoulder_mobilizer_->get_topology().mobod_index;
-      const MobodIndex elbow_node =
-          elbow_mobilizer_->get_topology().mobod_index;
+      // (BodyNodes are numbered identically to Mobods.)
+      const MobodIndex shoulder_node(shoulder_mobilizer_->mobod().index());
+      const MobodIndex elbow_node(elbow_mobilizer_->mobod().index());
 
       // Expected poses of the outboard frames measured in the inboard frame.
       RigidTransformd X_SiSo(RotationMatrixd::MakeZRotation(shoulder_angle));

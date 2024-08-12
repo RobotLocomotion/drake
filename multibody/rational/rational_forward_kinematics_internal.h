@@ -30,7 +30,7 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
 /*
  * Finds all the mobilizer on the path from start to the end.
  */
-std::vector<internal::MobilizerIndex> FindMobilizersOnPath(
+std::vector<internal::MobodIndex> FindMobilizersOnPath(
     const MultibodyPlant<double>& plant, BodyIndex start, BodyIndex end);
 
 /*

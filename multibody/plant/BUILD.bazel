@@ -147,6 +147,7 @@ drake_cc_library(
         "//multibody/contact_solvers/sap",
         "//multibody/fem",
         "//multibody/hydroelastics:hydroelastic_engine",
+        "//multibody/topology:multibody_topology",
         "//multibody/tree",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
