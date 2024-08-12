@@ -274,6 +274,25 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
 
   // With no forest built, there are no composites.
   EXPECT_TRUE(graph.link_composites().empty());
+  // These "Calc" functions don't require a forest.
+  EXPECT_EQ(ssize(graph.CalcSubgraphsOfWeldedLinks()), 1);
+  EXPECT_EQ(graph.CalcSubgraphsOfWeldedLinks()[0],
+            std::set<LinkIndex>{world_link_index});
+  EXPECT_EQ(graph.CalcLinksWeldedTo(world_link_index),
+            std::set<LinkIndex>{world_link_index});
+
+  // The "Find" and "Get" methods should complain if there's no Forest.
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.FindPathFromWorld(world_link_index),
+                              "FindPathFromWorld.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      graph.FindFirstCommonAncestor(world_link_index, world_link_index),
+      "FindFirstCommonAncestor.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.FindSubtreeLinks(world_link_index),
+                              "FindSubtreeLinks.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.GetSubgraphsOfWeldedLinks(),
+                              "GetSubgraphsOfWeldedLinks.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.GetLinksWeldedTo(world_link_index),
+                              "GetLinksWeldedTo.*no SpanningForest.*");
 
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
@@ -287,6 +306,21 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
             world_link_index);
+  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
+
+  auto world_path = graph.FindPathFromWorld(world_link_index);
+  EXPECT_EQ(ssize(world_path), 1);  // Just World.
+  EXPECT_EQ(world_path[0], world_link_index);
+  EXPECT_EQ(graph.FindFirstCommonAncestor(world_link_index, world_link_index),
+            world_link_index);
+  auto subtree_links = graph.FindSubtreeLinks(world_link_index);
+  EXPECT_EQ(ssize(subtree_links), 1);
+  EXPECT_EQ(subtree_links[0], world_link_index);
+  EXPECT_EQ(ssize(graph.GetSubgraphsOfWeldedLinks()), 1);
+  EXPECT_EQ(graph.GetSubgraphsOfWeldedLinks()[0],
+            std::set<LinkIndex>{world_link_index});
+  EXPECT_EQ(graph.GetLinksWeldedTo(world_link_index),
+            std::set<LinkIndex>{world_link_index});
 
   // Check that Clear() puts the graph back to default-constructed condition.
   // First add some junk to the graph.
