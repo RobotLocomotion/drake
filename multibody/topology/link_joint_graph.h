@@ -4,6 +4,7 @@
 #error Do not include this file. Use "drake/multibody/topology/graph.h".
 #endif
 
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
@@ -497,6 +498,39 @@ class LinkJointGraph {
     predefined joint type. */
   void ChangeJointType(JointIndex existing_joint_index,
                        const std::string& name_of_new_type);
+
+  // FYI Debugging APIs (including Graphviz-related) are defined in
+  // link_joint_graph_debug.cc.
+
+  /** Generate a graphviz representation of this %LinkJointGraph, with the
+  given label at the top. Will include ephemeral elements if they are
+  available (that is, if the forest is valid)  unless suppressed explicitly.
+  The result is in the "dot" language, see https://graphviz.org. If you
+  write it to some file foo.dot, you can generate a viewable png (for
+  example) using the command `dot -Tpng foo.dot >foo.png`.
+  @see MakeGraphvizFiles() for an easier way to get pngs. */
+  std::string GenerateGraphvizString(
+      std::string_view label, bool include_ephemeral_elements = true) const;
+
+  // TODO(sherm1) This function should be removed or reworked before upgrading
+  //  to Drake public API.
+
+  /** This is a useful debugging and presentation utility for getting
+  viewable "dot diagrams" of the graph and forest. You provide a directory
+  and a base name for the results. This function will generate
+  `basename_graph.png` showing the graph as the user defined it. If the
+  forest has been built, it will also produce `basename_graph+.png` showing
+  the augmented graph with its ephemeral elements, and `basename_forest.png`
+  showing the spanning forest.
+  @param where The directory in which to put the files. If empty, the
+    current directory is used.
+  @param basename The base of the file names to be produced, see above.
+  @returns the absolute path of the directory into which the files were
+    created.
+  @throws std::exception if files can't be created, or the `dot` command
+    fails or isn't in /usr/bin, /usr/local/bin, /opt/homebrew/bin, or /bin. */
+  std::filesystem::path MakeGraphvizFiles(std::filesystem::path where,
+                                          std::string_view basename) const;
 
   // Forest building requires these joint types so they are predefined.
 

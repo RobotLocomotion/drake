@@ -89,7 +89,7 @@ class SpanningForest::Mobod {
 
   /** Returns all the Links that are mobilized by this %Mobod. If this %Mobod
   represents a LinkComposite, the first Link returned is the "active" Link as
-  returned by link(). There is always at least one Link. */
+  returned by link_ordinal(). There is always at least one Link. */
   const std::vector<LinkOrdinal>& follower_link_ordinals() const {
     DRAKE_ASSERT(!follower_link_ordinals_.empty());
     return follower_link_ordinals_;
