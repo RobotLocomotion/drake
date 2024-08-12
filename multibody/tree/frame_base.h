@@ -31,7 +31,7 @@ namespace multibody {
 /// World frame W, so pose and motion with respect to W are always available.
 /// Utilities are provided for calculating frame motion with respect to other
 /// frames. Derived frame objects will have additional properties. For example,
-/// material frames have an associated Body.
+/// material frames have an associated RigidBody.
 ///
 /// Summarizing, %FrameBase serves as an abstraction for a general frame object;
 /// it doesn't store any values itself. As always in Drake, runtime values are
