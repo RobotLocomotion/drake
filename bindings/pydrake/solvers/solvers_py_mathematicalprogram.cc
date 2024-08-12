@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/common_solver_option.h"
@@ -266,7 +267,6 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
         ExplainUnsatisfiedProgramAttributes, prog);
   }
 };
-}  // namespace
 
 void BindSolverInterfaceAndFlags(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.solvers;
@@ -347,24 +347,6 @@ void BindSolverInterfaceAndFlags(py::module m) {
             return self != other;
           },
           py::is_operator());
-
-  py::enum_<ProgramType>(m, "ProgramType", doc.ProgramType.doc)
-      .value("kLP", ProgramType::kLP, doc.ProgramType.kLP.doc)
-      .value("kQP", ProgramType::kQP, doc.ProgramType.kQP.doc)
-      .value("kSOCP", ProgramType::kSOCP, doc.ProgramType.kSOCP.doc)
-      .value("kSDP", ProgramType::kSDP, doc.ProgramType.kSDP.doc)
-      .value("kGP", ProgramType::kGP, doc.ProgramType.kGP.doc)
-      .value("kCGP", ProgramType::kCGP, doc.ProgramType.kCGP.doc)
-      .value("kMILP", ProgramType::kMILP, doc.ProgramType.kMILP.doc)
-      .value("kMIQP", ProgramType::kMIQP, doc.ProgramType.kMIQP.doc)
-      .value("kMISOCP", ProgramType::kMISOCP, doc.ProgramType.kMISOCP.doc)
-      .value("kMISDP", ProgramType::kMISDP, doc.ProgramType.kMISDP.doc)
-      .value("kQuadraticCostConicConstraint",
-          ProgramType::kQuadraticCostConicConstraint,
-          doc.ProgramType.kQuadraticCostConicConstraint.doc)
-      .value("kNLP", ProgramType::kNLP, doc.ProgramType.kNLP.doc)
-      .value("kLCP", ProgramType::kLCP, doc.ProgramType.kLCP.doc)
-      .value("kUnknown", ProgramType::kUnknown, doc.ProgramType.kUnknown.doc);
 
   py::enum_<SolverType> solver_type(m, "SolverType", doc.SolverType.doc);
   solver_type  // BR
@@ -893,6 +875,13 @@ void BindMathematicalProgram(py::module m) {
           },
           py::arg("formulas"),
           doc.MathematicalProgram.AddConstraint.doc_1args_constEigenDenseBase)
+      .def(
+          "AddConstraint",
+          [](MathematicalProgram* self, const Binding<Constraint>& binding) {
+            return self->AddConstraint(binding);
+          },
+          py::arg("binding"),
+          doc.MathematicalProgram.AddConstraint.doc_1args_binding)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -1588,6 +1577,8 @@ for every column of ``prog_var_vals``. )""")
           py_rvp::copy, doc.MathematicalProgram.indeterminates.doc)
       .def("indeterminate", &MathematicalProgram::indeterminate, py::arg("i"),
           doc.MathematicalProgram.indeterminate.doc)
+      .def("required_capabilities", &MathematicalProgram::required_capabilities,
+          doc.MathematicalProgram.required_capabilities.doc)
       .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
           doc.MathematicalProgram.indeterminates_index.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
@@ -1674,6 +1665,8 @@ void BindFreeFunctions(py::module m) {
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
       .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc);
 }
+
+}  // namespace
 
 namespace internal {
 void DefineSolversMathematicalProgram(py::module m) {

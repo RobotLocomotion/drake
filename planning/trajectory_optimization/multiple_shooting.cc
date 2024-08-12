@@ -381,26 +381,6 @@ Formula MultipleShooting::SubstitutePlaceholderVariables(
   return f.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }
 
-solvers::MathematicalProgramResult Solve(const MultipleShooting& trajopt) {
-  const solvers::MathematicalProgram& prog = trajopt.prog();
-  return Solve(prog);
-}
-
-solvers::MathematicalProgramResult Solve(
-    const MultipleShooting& trajopt,
-    const Eigen::Ref<const Eigen::VectorXd>& initial_guess) {
-  const solvers::MathematicalProgram& prog = trajopt.prog();
-  return solvers::Solve(prog, initial_guess);
-}
-
-solvers::MathematicalProgramResult Solve(
-    const MultipleShooting& trajopt,
-    const std::optional<Eigen::VectorXd>& initial_guess,
-    const std::optional<solvers::SolverOptions>& solver_options) {
-  const solvers::MathematicalProgram& prog = trajopt.prog();
-  return Solve(prog, initial_guess, solver_options);
-}
-
 }  // namespace trajectory_optimization
 }  // namespace planning
 }  // namespace drake

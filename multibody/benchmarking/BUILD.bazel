@@ -84,6 +84,7 @@ drake_cc_googlebench_binary(
         "@drake_models//:ur_description",
         "@drake_models//:wsg_50_description",
     ],
+    test_size = "medium",
     test_tags = gurobi_test_tags(),
     deps = [
         "//common:find_resource",

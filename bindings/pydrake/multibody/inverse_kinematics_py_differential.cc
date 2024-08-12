@@ -1,4 +1,5 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/multibody/inverse_kinematics_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics.h"
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h"

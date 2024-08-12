@@ -196,6 +196,8 @@ class TestPlant(unittest.TestCase):
 
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant.SetUseSampledOutputPorts(use_sampled_output_ports=False)
+        self.assertEqual(plant.has_sampled_output_ports(), False)
         self.assertEqual(plant.time_step(), 0.0)
         spatial_inertia = SpatialInertia.NaN()
         body = plant.AddRigidBody(name="new_body",
@@ -1206,6 +1208,41 @@ class TestPlant(unittest.TestCase):
             context=context, model_instances=[instance])
         self.assertTupleEqual(p_com.shape, (3, ))
 
+        v_com = plant.CalcCenterOfMassTranslationalVelocityInWorld(
+            context=context)
+        self.assertTupleEqual(v_com.shape, (3, ))
+        v_com = plant.CalcCenterOfMassTranslationalVelocityInWorld(
+            context=context, model_instances=[instance])
+        self.assertTupleEqual(v_com.shape, (3, ))
+
+        # Test center of mass translational acceleration for entire plant.
+        if T == Expression and plant.time_step() != 0:
+            # Discrete time dynamics are not supported for symbolic scalars.
+            with self.assertRaises(Exception) as cm:
+                a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
+                    context=context)
+            self.assertIn(
+                "This method doesn't support T = Expression",
+                str(cm.exception))
+        else:
+            a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
+                context=context)
+            self.assertTupleEqual(a_com.shape, (3, ))
+
+        # Test center of mass translational acceleration for model_instances.
+        if T == Expression and plant.time_step() != 0:
+            # Discrete time dynamics are not supported for symbolic scalars.
+            with self.assertRaises(Exception) as cm:
+                a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
+                    context=context, model_instances=[instance])
+            self.assertIn(
+                "This method doesn't support T = Expression",
+                str(cm.exception))
+        else:
+            a_com = plant.CalcCenterOfMassTranslationalAccelerationInWorld(
+                context=context, model_instances=[instance])
+            self.assertTupleEqual(a_com.shape, (3, ))
+
         M_WWo_W = plant.CalcSpatialInertia(
             context=context, frame_F=world_frame,
             body_indexes=[BodyIndex(0)])
@@ -1278,11 +1315,16 @@ class TestPlant(unittest.TestCase):
         self.assert_sane(L_WSP_W.rotational(), nonzero=False)
         self.assertIsInstance(L_WSP_W, SpatialMomentum_[T])
 
-        abias_ACcm_E = plant.CalcBiasCenterOfMassTranslationalAcceleration(
+        aBias_ACcm_E = plant.CalcBiasCenterOfMassTranslationalAcceleration(
             context=context, with_respect_to=JacobianWrtVariable.kV,
             frame_A=world_frame, frame_E=world_frame)
-        self.assert_sane(abias_ACcm_E, nonzero=False)
-        self.assertEqual(abias_ACcm_E.shape, (3,))
+        self.assert_sane(aBias_ACcm_E, nonzero=False)
+        self.assertEqual(aBias_ACcm_E.shape, (3,))
+        aBias_ACcm_E = plant.CalcBiasCenterOfMassTranslationalAcceleration(
+            context=context, model_instances=[instance],
+            with_respect_to=wrt, frame_A=world_frame, frame_E=world_frame)
+        self.assert_sane(aBias_ACcm_E, nonzero=False)
+        self.assertEqual(aBias_ACcm_E.shape, (3,))
 
         AsBias_ABp_E = plant.CalcBiasSpatialAcceleration(
             context=context, with_respect_to=JacobianWrtVariable.kV,
@@ -2221,56 +2263,25 @@ class TestPlant(unittest.TestCase):
                                  damping)
                 joint.get_quaternion(context=context)
                 joint.get_translation(context=context)
-                # Warn on deprecated QuaternionFloatingJoint.get_position().
-                with catch_drake_warnings(expected_count=1):
-                    joint.get_position(context=context)
                 joint.GetPose(context=context)
-                # Warn on deprecated QuaternionFloatingJoint.get_pose().
-                with catch_drake_warnings(expected_count=1):
-                    joint.get_pose(context=context)
                 joint.get_angular_velocity(context=context)
                 joint.get_translational_velocity(context=context)
                 joint.SetQuaternion(context=context, q_FM=Quaternion_[T]())
-                # Deprecate QuaternionFloatingJoint.set_quaternion().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_quaternion(context=context,
-                                         q_FM=Quaternion_[T]())
                 joint.SetOrientation(context=context, R=RotationMatrix_[T]())
-                # Deprecate QuaternionFloatingJoint.SetFromRotationMatrix().
-                with catch_drake_warnings(expected_count=1):
-                    joint.SetFromRotationMatrix(context=context,
-                                                R_FM=RotationMatrix_[T]())
                 joint.SetTranslation(context=context, p_FM=[0, 0, 0])
-                # Warn deprecated QuaternionFloatingJoint.set_position().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_position(context=context, p_FM=[0, 0, 0])
                 joint.SetPose(context=context, X_FM=RigidTransform_[T]())
-                # Warn deprecated QuaternionFloatingJoint.set_pose().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_pose(context=context, X_FM=RigidTransform_[T]())
                 joint.set_angular_velocity(context=context, w_FM=[0, 0, 0])
                 joint.set_translational_velocity(context=context,
                                                  v_FM=[0, 0, 0])
                 joint.set_random_translation_distribution(
                     translation=[0, 0, 0])
-                # Deprecate set_random_position_distribution().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_random_position_distribution(p_FM=[0, 0, 0])
                 joint.set_random_quaternion_distribution(
                     q_FM=Quaternion_[Expression]())
                 joint.set_random_quaternion_distribution_to_uniform()
                 joint.get_default_quaternion()
                 joint.get_default_translation()
-                # Deprecated QuaternionFloatingJoint.get_default_position().
-                with catch_drake_warnings(expected_count=1):
-                    joint.get_default_position()
-                # Deprecated QuaternionFloatingJoint.get_default_pose().
-                joint.get_default_pose()
                 joint.set_default_quaternion(q_FM=Quaternion_[float]())
                 joint.set_default_translation(translation=[0, 0, 0])
-                # Deprecated QuaternionFloatingJoint.set_default_position().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_default_position(p_FM=[0, 0, 0])
                 # Check that the base class supports these for this joint.
                 joint.SetDefaultPose(X_FM=RigidTransform_[float]())
                 joint.SetDefaultPosePair(q_FM=Quaternion_[float](),
@@ -2320,9 +2331,6 @@ class TestPlant(unittest.TestCase):
                                      R_FM=RotationMatrix_[T]())
                 joint.get_translation(context=context)
                 joint.SetTranslation(context=context, p_FM=[0, 0, 0])
-                # Deprecated RpyFloatingJoint.set_translationposition().
-                with catch_drake_warnings(expected_count=1):
-                    joint.set_translation(context=context, p_FM=[0, 0, 0])
                 joint.GetPose(context=context)
                 joint.SetPose(context=context, X_FM=RigidTransform_[T]())
                 joint.get_angular_velocity(context=context)
@@ -3216,6 +3224,7 @@ class TestPlant(unittest.TestCase):
         Parser(plant).AddModels(FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/hydroelastic.sdf"))
         plant.set_contact_model(ContactModel.kHydroelastic)
+        plant.SetUseSampledOutputPorts(False)  # We're not stepping time.
         plant.Finalize()
 
         diagram = builder.Build()

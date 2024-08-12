@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -21,11 +22,6 @@ namespace multibody {
  nuances of geometry::Mesh and geometry::Convex calculations
  @ref CalcSpatialInertia(const geometry::TriangleSurfaceMesh<double>&,double)
  "see below".
-
- Note: Spatial inertia calculations for the geometry::Convex type do not
- currently require that the underlying mesh actually be convex. Although certain
- collision calculations involving geometry::Convex may use the mesh's convex
- hull, this function uses the *actual* mesh.
 
  @retval M_BBo_B The spatial inertia of the hypothetical body implied by the
                  given `shape`.
@@ -54,7 +50,14 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
  is meaningless.
  @pydrake_mkdoc_identifier{mesh} */
 SpatialInertia<double> CalcSpatialInertia(
-    const geometry::TriangleSurfaceMesh<double>& mesh, double density = 1.0);
+    const geometry::TriangleSurfaceMesh<double>& mesh, double density);
+
+DRAKE_DEPRECATED(
+    "2024-11-01",
+    "In the function CalcSpatialInertia(), the density argument's default "
+    "value of 1.0 was removed. Provide a sensible density value.")
+SpatialInertia<double> CalcSpatialInertia(
+    const geometry::TriangleSurfaceMesh<double>& mesh);
 
 // TODO(SeanCurtis-TRI): Add CalcSpatialinertia(VolumeMesh).
 

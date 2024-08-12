@@ -352,8 +352,7 @@ TEST_F(TwoFreeBodiesTest, OrientationCost) {
 
   const math::RotationMatrix<double> R_AB =
       (X_WAbar.rotation() * R_AbarA).inverse() * X_WBbar.rotation() * R_BbarB;
-  const double theta =
-      math::wrap_to(R_AB.ToAngleAxis().angle(), -M_PI / 2.0, M_PI / 2.0);
+  const double theta = R_AB.ToAngleAxis().angle();
   EXPECT_NEAR(ik_.prog().EvalBindingAtInitialGuess(binding)[0],
               c * (1.0 - cos(theta)), 1e-12);
 }

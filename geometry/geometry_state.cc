@@ -37,6 +37,7 @@ using internal::kElastic;
 using internal::kFriction;
 using internal::kHcDissipation;
 using internal::kHydroGroup;
+using internal::kMargin;
 using internal::kMaterialGroup;
 using internal::kPointStiffness;
 using internal::kRelaxationTime;
@@ -251,6 +252,7 @@ bool BackfillDefaults(ProximityProperties* properties,
                      defaults.hunt_crossley_dissipation);
   result |= backfill(kMaterialGroup, kRelaxationTime, defaults.relaxation_time);
   result |= backfill(kMaterialGroup, kPointStiffness, defaults.point_stiffness);
+  result |= backfill(kHydroGroup, kMargin, defaults.margin);
   if (defaults.static_friction.has_value()) {
     // DefaultProximityProperties::ValidateOrThrow() enforces invariants on
     // friction quantities.

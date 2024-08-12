@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/trajectories/bezier_curve.h"
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -23,6 +24,8 @@ GcsTrajectoryOptimization implements a simplified motion planning optimization
 problem introduced in the paper ["Motion Planning around Obstacles with Convex
 Optimization"](https://arxiv.org/abs/2205.04422) by Tobia Marcucci, Mark
 Petersen, David von Wrangel, Russ Tedrake.
+
+@experimental
 
 Instead of using the full time-scaling curve, this problem uses a single
 time-scaling variable for each region. This formulation yields continuous
@@ -249,8 +252,8 @@ class GcsTrajectoryOptimization final {
     Subgraph(const geometry::optimization::ConvexSets& regions,
              const std::vector<std::pair<int, int>>& regions_to_connect,
              int order, double h_min, double h_max, std::string name,
-             GcsTrajectoryOptimization* traj_opt,
-             std::optional<const std::vector<Eigen::VectorXd>> edge_offsets);
+             const std::vector<Eigen::VectorXd>* edge_offsets,
+             GcsTrajectoryOptimization* traj_opt);
 
     /* Convenience accessor, for brevity. */
     int num_positions() const { return traj_opt_.num_positions(); }
@@ -413,10 +416,12 @@ class GcsTrajectoryOptimization final {
         const;
 
    private:
-    EdgesBetweenSubgraphs(const Subgraph& from_subgraph,
-                          const Subgraph& to_subgraph,
-                          const geometry::optimization::ConvexSet* subspace,
-                          GcsTrajectoryOptimization* traj_opt);
+    EdgesBetweenSubgraphs(
+        const Subgraph& from_subgraph, const Subgraph& to_subgraph,
+        const geometry::optimization::ConvexSet* subspace,
+        GcsTrajectoryOptimization* traj_opt,
+        const std::vector<std::pair<int, int>>* edges_between_regions = nullptr,
+        const std::vector<Eigen::VectorXd>* edge_offsets = nullptr);
 
     /* Convenience accessor, for brevity. */
     int num_positions() const { return traj_opt_.num_positions(); }
@@ -430,9 +435,8 @@ class GcsTrajectoryOptimization final {
         const geometry::optimization::ConvexSet& A,
         const geometry::optimization::ConvexSet& B,
         const geometry::optimization::ConvexSet& subspace,
-        std::optional<const Eigen::VectorXd> maybe_set_B_offset = std::nullopt,
-        std::optional<const Eigen::VectorXd> maybe_subspace_offset =
-            std::nullopt);
+        const Eigen::VectorXd* maybe_set_B_offset = nullptr,
+        const Eigen::VectorXd* maybe_subspace_offset = nullptr);
 
     /* Extracts the control points variables from an edge. */
     Eigen::Map<const MatrixX<symbolic::Variable>> GetControlPointsU(
@@ -471,7 +475,7 @@ class GcsTrajectoryOptimization final {
   }
 
   /** Returns a Graphviz string describing the graph vertices and edges.  If
-  `results` is supplied, then the graph will be annotated with the solution
+  `result` is supplied, then the graph will be annotated with the solution
   values.
   @param show_slacks determines whether the values of the intermediate
   (slack) variables are also displayed in the graph.
@@ -481,11 +485,19 @@ class GcsTrajectoryOptimization final {
   or fixed (if false).
   */
   std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result =
-          std::nullopt,
-      bool show_slack = true, int precision = 3,
-      bool scientific = false) const {
-    return gcs_.GetGraphvizString(result, show_slack, precision, scientific);
+      const solvers::MathematicalProgramResult* result = nullptr,
+      const geometry::optimization::GcsGraphvizOptions& options = {}) const {
+    return gcs_.GetGraphvizString(result, options);
+  }
+
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "result should be of type const solvers::MathematicalProgramResult*.")
+  std::string GetGraphvizString(
+      const std::optional<solvers::MathematicalProgramResult>& result,
+      const geometry::optimization::GcsGraphvizOptions& options = {}) const {
+    return GetGraphvizString(result ? std::addressof(result.value()) : nullptr,
+                             options);
   }
 
   /** Creates a Subgraph with the given regions and indices.
@@ -508,9 +520,8 @@ class GcsTrajectoryOptimization final {
   @param name is the name of the subgraph. If the passed name is an empty
   string, a default name will be provided.
   @param edge_offsets is an optional list of vectors. If defined, the list must
-  contain the same number of entries as edges_between_regions. In other words,
-  if defined, there must be one edge offset for each specified edge. For each
-  pair of sets listed in edges_between_regions, the first set is translated (in
+  contain the same number of entries as `edges_between_regions`. For each pair
+  of sets listed in `edges_between_regions`, the first set is translated (in
   configuration space) by the corresponding vector in edge_offsets before
   computing the constraints associated to that edge. This is used to add edges
   between sets that "wrap around" 2π along some dimension, due to, e.g., a
@@ -524,9 +535,21 @@ class GcsTrajectoryOptimization final {
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-      double h_min = 1e-6, double h_max = 20, std::string name = "",
-      std::optional<const std::vector<Eigen::VectorXd>> edge_offsets =
-          std::nullopt);
+      double h_min = 0, double h_max = 20, std::string name = "",
+      const std::vector<Eigen::VectorXd>* edge_offsets = nullptr);
+
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "edge_offsets should be of type const std::vector<Eigen::VectorXd>*.")
+  Subgraph& AddRegions(
+      const geometry::optimization::ConvexSets& regions,
+      const std::vector<std::pair<int, int>>& edges_between_regions, int order,
+      double h_min, double h_max, std::string name,
+      const std::optional<std::vector<Eigen::VectorXd>>& edge_offsets) {
+    return AddRegions(
+        regions, edges_between_regions, order, h_min, h_max, name,
+        edge_offsets ? std::addressof(edge_offsets.value()) : nullptr);
+  }
 
   /** Creates a Subgraph with the given regions.
   This function will compute the edges between the regions based on the set
@@ -570,14 +593,52 @@ class GcsTrajectoryOptimization final {
   added, and the subspace is added as a constraint on the connecting control
   points. Subspaces of type point or HPolyhedron are supported since other sets
   require constraints that are not yet supported by the GraphOfConvexSets::Edge
-  constraint, e.g., set containment of a HyperEllipsoid is formulated via
+  constraint, e.g., set containment of a Hyperellipsoid is formulated via
   LorentzCone constraints. Workaround: Create a subgraph of zero order with the
   subspace as the region and connect it between the two subgraphs. This works
-  because GraphOfConvexSet::Vertex , supports arbitrary instances of ConvexSets.
+  because GraphOfConvexSet::Vertex supports arbitrary instances of ConvexSets.
+  @param edges_between_regions can be used to manually specify which edges
+  should be added, avoiding the intersection checks. It should be a list of
+  tuples `(i,j)`, where an edge will be added from the `i`th index region in
+  `from_subgraph` to the `j`th index region in `to_subgraph`.
+  @param edge_offsets is an optional list of vectors. If defined, the list must
+  contain the same number of entries as `edges_between_regions`, and the order
+  must match. In other words, if defined, there must be one edge offset for each
+  specified edge, and they must be at the same index. For each pair of sets
+  listed in `edges_between_regions`, the first set is translated (in
+  configuration space) by the corresponding vector in edge_offsets before
+  computing the constraints associated to that edge. This is used to add edges
+  between sets that "wrap around" 2π along some dimension, due to, e.g., a
+  continuous revolute joint. This edge offset corresponds to the translation
+  component of the affine map τ_uv in equation (11) of "Non-Euclidean Motion
+  Planning with Graphs of Geodesically-Convex Sets", and per the discussion in
+  Subsection VI A, τ_uv has no rotation component.
+  @throws std::exception if `edge_offsets` is provided, but `edge_offsets.size()
+  != edges_between_regions.size()`.
   */
   EdgesBetweenSubgraphs& AddEdges(
       const Subgraph& from_subgraph, const Subgraph& to_subgraph,
-      const geometry::optimization::ConvexSet* subspace = nullptr);
+      const geometry::optimization::ConvexSet* subspace = nullptr,
+      const std::vector<std::pair<int, int>>* edges_between_regions = nullptr,
+      const std::vector<Eigen::VectorXd>* edge_offsets = nullptr);
+
+  DRAKE_DEPRECATED("2024-10-01",
+                   "edges_between_regions should be of type const "
+                   "std::vector<std::pair<int, int>>*, and edge_offsets should "
+                   "be of type const std::vector<Eigen::VectorXd>*.")
+  EdgesBetweenSubgraphs& AddEdges(
+      const Subgraph& from_subgraph, const Subgraph& to_subgraph,
+      const geometry::optimization::ConvexSet* subspace,
+      const std::optional<std::vector<std::pair<int, int>>>&
+          edges_between_regions,
+      const std::optional<std::vector<Eigen::VectorXd>>& edge_offsets =
+          std::nullopt) {
+    return AddEdges(
+        from_subgraph, to_subgraph, subspace,
+        edges_between_regions ? std::addressof(edges_between_regions.value())
+                              : nullptr,
+        edge_offsets ? std::addressof(edge_offsets.value()) : nullptr);
+  }
 
   /** Adds a minimum time cost to all regions in the whole graph. The cost is
   the sum of the time scaling variables.

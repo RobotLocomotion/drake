@@ -12,6 +12,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+namespace {
 
 // Turn clang-formatting off so it doesn't interfere with the long lines.
 // clang-format off
@@ -272,6 +273,7 @@ void ReportContactSurfaces() {
   }
 }
 
+}  // namespace
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

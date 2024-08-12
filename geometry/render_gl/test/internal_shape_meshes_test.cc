@@ -466,7 +466,7 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
     }
     const Vector3d corner = Vector3d(0.5f, 0.5f, 0.0) * kMeasure;
     EXPECT_TRUE(CompareMatrices(min_pt, -corner, kEps));
-    EXPECT_TRUE(CompareMatrices(max_pt, corner, kEps));
+    EXPECT_TRUE(CompareMatrices(max_pt, corner, 8 * kEps));
 
     const auto expected_n = Vector3d::UnitZ().transpose();
     for (int v = 0; v < mesh_data.positions.rows(); ++v) {

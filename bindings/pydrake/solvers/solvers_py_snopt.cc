@@ -26,7 +26,9 @@ void DefineSolversSnopt(py::module m) {
           "xmul", &SnoptSolverDetails::xmul, doc.SnoptSolverDetails.xmul.doc)
       .def_readonly("F", &SnoptSolverDetails::F, doc.SnoptSolverDetails.F.doc)
       .def_readonly(
-          "Fmul", &SnoptSolverDetails::Fmul, doc.SnoptSolverDetails.Fmul.doc);
+          "Fmul", &SnoptSolverDetails::Fmul, doc.SnoptSolverDetails.Fmul.doc)
+      .def_readonly("solve_time", &SnoptSolverDetails::solve_time,
+          doc.SnoptSolverDetails.solve_time.doc);
   AddValueInstantiation<SnoptSolverDetails>(m);
 }
 

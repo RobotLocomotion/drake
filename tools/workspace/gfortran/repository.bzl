@@ -2,9 +2,10 @@ load("//tools/workspace:execute.bzl", "execute_or_fail", "which")
 
 def _gfortran_impl(repo_ctx):
     # Find the compiler.
-    compiler = str(which(repo_ctx, "gfortran"))
+    compiler = which(repo_ctx, "gfortran")
     if not compiler:
         fail("Could not find gfortran")
+    compiler = str(compiler)
     repo_ctx.symlink(compiler, "gfortran-found")
 
     # Transcribe which version we found.

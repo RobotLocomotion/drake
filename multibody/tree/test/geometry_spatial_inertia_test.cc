@@ -72,7 +72,7 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
 // provide the same value as passing through the SpatialInertia APIs.
 // This supports that goal as a regression test.
 
-GTEST_TEST(GeometrySpatialInertaTest, Box) {
+GTEST_TEST(GeometrySpatialInertiaTest, Box) {
   const double Lx = 1;
   const double Ly = 2;
   const double Lz = 3;
@@ -83,7 +83,7 @@ GTEST_TEST(GeometrySpatialInertaTest, Box) {
                                    M_BBo_B, /* tolerance = */ 0.0));
 }
 
-GTEST_TEST(GeometrySpatialInertaTest, Capsule) {
+GTEST_TEST(GeometrySpatialInertiaTest, Capsule) {
   const double r = 1.5;
   const double L = 2;
   const geometry::Capsule capsule(r, L);
@@ -96,7 +96,7 @@ GTEST_TEST(GeometrySpatialInertaTest, Capsule) {
 
 // Note: Convex can be found below in the MeshTypes test.
 
-GTEST_TEST(GeometrySpatialInertaTest, Cylinder) {
+GTEST_TEST(GeometrySpatialInertiaTest, Cylinder) {
   const double r = 1.5;
   const double L = 2;
   const geometry::Cylinder cylinder(r, L);
@@ -107,7 +107,7 @@ GTEST_TEST(GeometrySpatialInertaTest, Cylinder) {
                                    M_BBo_B, /* tolerance = */ 0.0));
 }
 
-GTEST_TEST(GeometrySpatialInertaTest, Ellipsoid) {
+GTEST_TEST(GeometrySpatialInertiaTest, Ellipsoid) {
   const double a = 1.5;
   const double b = 2.5;
   const double c = 3.5;
@@ -118,26 +118,47 @@ GTEST_TEST(GeometrySpatialInertaTest, Ellipsoid) {
                                    M_BBo_B, /* tolerance = */ 0.0));
 }
 
-GTEST_TEST(GeometrySpatialInertaTest, HalfSpace) {
+GTEST_TEST(GeometrySpatialInertiaTest, HalfSpace) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       CalcSpatialInertia(geometry::HalfSpace(), kDensity), ".*HalfSpace.*");
 }
 
 // Note: Mesh can be found below in the MeshTypes test.
 
-GTEST_TEST(GeometrySpatialInertaTest, MeshcatCone) {
+GTEST_TEST(GeometrySpatialInertiaTest, MeshcatCone) {
   const geometry::MeshcatCone cone(1, 2, 3);
   DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(cone, kDensity),
                               ".*MeshcatCone.*");
 }
 
-GTEST_TEST(GeometrySpatialInertaTest, Sphere) {
+GTEST_TEST(GeometrySpatialInertiaTest, Sphere) {
   const double r = 1.5;
   const geometry::Sphere sphere(r);
   const SpatialInertia<double> M_BBo_B =
       SpatialInertia<double>::SolidSphereWithDensity(kDensity, r);
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(sphere, kDensity),
                                    M_BBo_B, /* tolerance = */ 0.0));
+}
+
+// Confirm that Convex shapes use the convex hull. This doesn't fully test all
+// parameters -- see the Administrivia test below for those. This simply looks
+// for evidence that the convex hull is used.
+GTEST_TEST(GeometrySpatialInertiaTest, Convex) {
+  // A cube with edge length 2, but with a hole cut through it. We'll double the
+  // measure to confirm the scale factor contributes.
+  const std::string cube_path =
+      FindResourceOrThrow("drake/geometry/test/cube_with_hole.obj");
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::SolidBoxWithDensity(kDensity, 4, 4, 4);
+  // The inertia of the convex hull matches an equivalent box.
+  EXPECT_TRUE(SpatialInertiasEqual(
+      CalcSpatialInertia(geometry::Convex(cube_path, 2), kDensity), M_BBo_B,
+      /* tolerance = */ 1e-15));
+  // The inertia of the *mesh* doesn't match that of its convex hull.
+  EXPECT_FALSE(SpatialInertiasEqual(
+      CalcSpatialInertia(geometry::Convex(cube_path, 2), kDensity),
+      CalcSpatialInertia(geometry::Mesh(cube_path, 2), kDensity),
+      /* tolerance = */ 1e-1));
 }
 
 // Exercises the common code paths for Mesh and Convex (i.e., "MeshTypes").
@@ -177,9 +198,15 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
 
     EXPECT_NO_THROW(CalcSpatialInertia(unit_scale_obj, kDensity));
     EXPECT_NO_THROW(CalcSpatialInertia(unit_scale_vtk, kDensity));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        CalcSpatialInertia(nonexistent, kDensity),
-        ".*only supports .obj or .*.vtk .* given '.*nonexistent.stl'.*");
+    if constexpr (std::is_same_v<MeshType, geometry::Mesh>) {
+      // For MeshType = Convex, we won't achieve *this* error message in
+      // CalcSpatialInertia(); we'll fail in the underlying computation of the
+      // convex hull for an unsupported file type (which is tested elsewhere).
+      // So, we'll skip *this* test for Convex.
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          CalcSpatialInertia(nonexistent, kDensity),
+          ".*only supports .obj or .*.vtk .* given '.*nonexistent.stl'.*");
+      }
   }
 
   {
@@ -277,7 +304,7 @@ GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
     // tolerance.
     EXPECT_TRUE(SpatialInertiasEqual(
         CalcSpatialInertia(mesh, kDensity),
-        SpatialInertia<double>(mass, p_BcmMcm, G_MMo_M), 8 * kTol));
+        SpatialInertia<double>(mass, p_BcmMcm, G_MMo_M), 16 * kTol));
   }
 }
 

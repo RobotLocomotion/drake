@@ -365,7 +365,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
-    HydroelasticContactRepresentation representation) {
+    HydroelasticContactRepresentation representation, double margin) {
   std::vector<int> tri_indices;
   tri_indices.reserve(mesh_R.num_elements());
   auto bvh_callback = [&tri_indices, &mesh_R,
@@ -380,7 +380,18 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     }
     return BvttCallbackResult::Continue;
   };
-  const math::RigidTransform<T> X_RS = X_WR.InvertAndCompose(X_WS);
+
+  // When margin > 0, we define the "inflated" half space as the space occupied
+  // by the original half-spaced translated an amount "margin" along the half
+  // space's normal. We use this "inflated" half space with Bvh::Collide below
+  // to properly include triangles that intersect the thin layer of thickness
+  // equal to the margin.
+  math::RigidTransform<T> X_RS = X_WR.InvertAndCompose(X_WS);
+  const auto& Sz_R = X_RS.rotation().col(2);
+  const Vector3<T> p_RS = X_RS.translation() + Sz_R * margin;
+  X_RS.set_translation(p_RS);
+  const Vector3<T>& p_RSo = X_RS.translation();
+
   // To collide half space with _BVH_ we need (as documented):
   //   - HalfSpace and
   //   - X_PH - pose of the hierarchy in the primitive frame or, in this
@@ -392,18 +403,23 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
 
   // In contrast, to collide the half space with the _mesh_, we need the half
   // space measured and expressed in the mesh's frame.
-  const Vector3<T>& Sz_R = X_RS.rotation().col(2);
-  const Vector3<T>& p_RSo = X_RS.translation();
   // NOTE: We don't need the PosedHalfSpace constructor to normalize Sz_R. It's
   // sufficiently unit-length for our purposes.
   const PosedHalfSpace<T> hs_R{Sz_R, p_RSo, false /* needs_normalization */};
 
-  auto calc_pressure_R = [&hs_R, pressure_scale](const Vector3<T>& p_RV) {
-    // The signed distance of the point is the negative of the penetration
-    // depth. We can use the pressure_scale to directly compute pressure at the
-    // point.
+  // N.B. With rigid-compliant contact, the contact surface always lies on the
+  // surface of the rigid geometry (the mesh in this case). Therefore, this code
+  // doesn't use the pressure field to find the contact surface, it does so
+  // geometrically by intersecting half space and mesh. The pressure field is
+  // implicit, defined by calc_pressure_R(), and is used to assign pressure
+  // values to the intersecting geometry's vertices. Therefore, we "shift" the
+  // pressure field's definition to coordinate with the offset half space
+  // boundary.
+  auto calc_pressure_R = [&hs_R, pressure_scale,
+                          margin](const Vector3<T>& p_RV) {
+    // Signed distance to the "inflated" plane.
     const T phi_V = hs_R.CalcSignedDistance(p_RV);
-    return -phi_V * pressure_scale;
+    return (-phi_V - margin) * pressure_scale;
   };
 
   // The pressure gradient lies in the opposite direction of the half space

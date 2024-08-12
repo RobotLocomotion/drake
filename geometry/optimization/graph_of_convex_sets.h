@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -23,6 +24,24 @@ namespace geometry {
 namespace optimization {
 
 struct GraphOfConvexSetsOptions {
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. Note:
+  This only serializes options that are YAML built-in types.  */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(convex_relaxation));
+    a->Visit(DRAKE_NVP(max_rounded_paths));
+    a->Visit(DRAKE_NVP(preprocessing));
+    a->Visit(DRAKE_NVP(max_rounding_trials));
+    a->Visit(DRAKE_NVP(flow_tolerance));
+    a->Visit(DRAKE_NVP(rounding_seed));
+    // N.B. We skip the DRAKE_NVP(solver), DRAKE_NVP(restriction_solver), and
+    // DRAKE_NVP(preprocessing_solver), because it cannot be serialized.
+    // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
+    // TODO(#20967) Serialize the DRAKE_NVP(restriction_solver_options).
+    // TODO(#20967) Serialize the DRAKE_NVP(preprocessing_solver_options).
+  }
+
   /** Flag to solve the relaxed version of the problem.  As discussed in the
   paper, we know that this relaxation cannot solve the original NP-hard problem
   for all instances, but there are also many instances for which the convex
@@ -107,24 +126,46 @@ struct GraphOfConvexSetsOptions {
   not from the many smaller preprocessing optimizations. */
   std::optional<solvers::SolverOptions> preprocessing_solver_options{
       std::nullopt};
+};
 
+struct GcsGraphvizOptions {
   /** Passes this object to an Archive.
-  Refer to @ref yaml_serialization "YAML Serialization" for background. Note:
-  This only serializes options that are YAML built-in types.  */
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(convex_relaxation));
-    a->Visit(DRAKE_NVP(max_rounded_paths));
-    a->Visit(DRAKE_NVP(preprocessing));
-    a->Visit(DRAKE_NVP(max_rounding_trials));
-    a->Visit(DRAKE_NVP(flow_tolerance));
-    a->Visit(DRAKE_NVP(rounding_seed));
-    // N.B. We skip the DRAKE_NVP(solver), DRAKE_NVP(restriction_solver), and
-    // DRAKE_NVP(preprocessing_solver), because it cannot be serialized.
-    // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
-    // TODO(#20967) Serialize the DRAKE_NVP(restriction_solver_options).
-    // TODO(#20967) Serialize the DRAKE_NVP(preprocessing_solver_options).
+    a->Visit(DRAKE_NVP(show_slacks));
+    a->Visit(DRAKE_NVP(show_vars));
+    a->Visit(DRAKE_NVP(show_flows));
+    a->Visit(DRAKE_NVP(show_costs));
+    a->Visit(DRAKE_NVP(scientific));
+    a->Visit(DRAKE_NVP(precision));
   }
+
+  /** Determines whether the values of the intermediate (slack) variables are
+  also displayed in the graph. */
+  bool show_slacks{true};
+
+  /** Determines whether the solution values for decision variables in each set
+  are shown. */
+  bool show_vars{true};
+
+  /** Determines whether the flow value results are shown. The flow values are
+  shown both with a numeric value and through the transparency value on the
+  edge, where a flow of 0.0 will correspond to an (almost) invisible edge,
+  and a flow of 1.0 will display as a fully black edge. */
+  bool show_flows{true};
+
+  /** Determines whether the cost value results are shown. This will show both
+  edge and vertex costs. */
+  bool show_costs{true};
+
+  /** Sets the floating point formatting to scientific (if true) or fixed (if
+  false). */
+  bool scientific{false};
+
+  /** Sets the floating point precision (how many digits are generated) of the
+  annotations. */
+  int precision{3};
 };
 
 /**
@@ -636,21 +677,32 @@ class GraphOfConvexSets {
   /** Removes all constraints added to any edge with AddPhiConstraint. */
   void ClearAllPhiConstraints();
 
-  /** Returns a Graphviz string describing the graph vertices and edges.  If
-  `results` is supplied, then the graph will be annotated with the solution
-  values.
-  @param show_slacks determines whether the values of the intermediate
-  (slack) variables are also displayed in the graph.
-  @param precision sets the floating point precision (how many digits are
-  generated) of the annotations.
-  @param scientific sets the floating point formatting to scientific (if true)
-  or fixed (if false).
+  /** Returns a Graphviz string describing the graph vertices and edges. If
+  `result` is supplied, then the graph will be annotated with the solution
+  values, according to `options`.
+  @param result the optional result from a solver.
+  @param options the struct containing various options for visualization.
+  @param active_path optionally highlights a given path in the graph. The path
+  is displayed as dashed edges in red, displayed in addition to the original
+  graph edges.
   */
   std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result =
-          std::nullopt,
-      bool show_slacks = true, int precision = 3,
-      bool scientific = false) const;
+      const solvers::MathematicalProgramResult* result = nullptr,
+      const GcsGraphvizOptions& options = GcsGraphvizOptions(),
+      const std::vector<const Edge*>* active_path = nullptr) const;
+
+  DRAKE_DEPRECATED(
+      "2024-10-01",
+      "result should be of type const solvers::MathematicalProgramResult*.")
+  std::string GetGraphvizString(
+      const std::optional<solvers::MathematicalProgramResult>& result,
+      const geometry::optimization::GcsGraphvizOptions& options =
+          GcsGraphvizOptions(),
+      const std::optional<std::vector<const Edge*>>& active_path = {}) const {
+    return GetGraphvizString(
+        result ? std::addressof(result.value()) : nullptr, options,
+        active_path ? std::addressof(active_path.value()) : nullptr);
+  }
 
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the graph, as discussed in detail in
@@ -694,6 +746,55 @@ class GraphOfConvexSets {
       const Vertex& source, const Vertex& target,
       const solvers::MathematicalProgramResult& result,
       double tolerance = 1e-3) const;
+
+  /** Samples a collection of unique paths from `source` to `target`, where the
+   flow values (the relaxed binary variables associated with each `Edge`)
+   `flows` are interpreted as the probabilities of transitioning an edge.
+   The returned paths are guaranteed to be unique, and the number of returned
+   paths can be 0 if no paths are found. This function implements the first part
+   of the rounding scheme put forth in Section 4.2 of "Motion Planning around
+   Obstacles with Convex Optimization": https://arxiv.org/abs/2205.04422
+
+   @param source specifies the source vertex.
+   @param target specifies the target vertex.
+   @param flows specifies the edge flows, which are interprested as the
+   probability of transition an edge. Edge flows that are not specified are
+   taken to be zero.
+   @param options include all settings for sampling the paths. Specifically,
+   the behavior of this function is determined through `options.rounding_seed`,
+   `options.max_rounded_paths`, `options.max_rounding_trials`, and
+   `options.flow_tolerance`, as described in `GraphOfConvexSetsOptions`.
+   @returns A vector of paths, where each path is a vector of `Edge`s.
+   @throws std::exception if options.max_rounded_path < 1.
+   @pydrake_mkdoc_identifier{flows}
+   */
+  std::vector<std::vector<const Edge*>> SamplePaths(
+      const Vertex& source, const Vertex& target,
+      const std::unordered_map<const Edge*, double>& flows,
+      const GraphOfConvexSetsOptions& options) const;
+
+  /** Samples a collection of unique paths from `source` to `target`, where the
+   flow values (the relaxed binary variables associated with each `Edge`)
+   in `result` are interpreted as the probabilities of transitioning an edge.
+   The returned paths are guaranteed to be unique, and the number of returned
+   paths can be 0 if no paths are found. This function implements the first part
+   of the rounding scheme put forth in Section 4.2 of "Motion Planning around
+   Obstacles with Convex Optimization": https://arxiv.org/abs/2205.04422
+
+   @param source specifies the source vertex.
+   @param target specifies the target vertex.
+   @param options include all settings for sampling the paths. Specifically,
+   the behavior of this function is determined through `options.rounding_seed`,
+   `options.max_rounded_paths`, `options.max_rounding_trials`, and
+   `options.flow_tolerance`, as described in `GraphOfConvexSetsOptions`.
+   @returns A vector of paths, where each path is a vector of `Edge`s.
+   @throws std::exception if options.max_rounded_path < 1.
+   @pydrake_mkdoc_identifier{result}
+   */
+  std::vector<std::vector<const Edge*>> SamplePaths(
+      const Vertex& source, const Vertex& target,
+      const solvers::MathematicalProgramResult& result,
+      const GraphOfConvexSetsOptions& options) const;
 
   /** The non-convexity in a GCS problem comes from the binary variables (phi)
   associated with the edges being active or inactive in the solution. If those

@@ -4,7 +4,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
@@ -194,16 +193,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("translation", &AffineSubspace::translation,
             py_rvp::reference_internal, cls_doc.translation.doc)
         .def("AffineDimension", &AffineSubspace::AffineDimension,
-            cls_doc.AffineDimension.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("Project",
-            WrapDeprecated(
-                cls_doc.Project.doc_deprecated, &AffineSubspace::Project),
-            py::arg("x"), cls_doc.Project.doc_deprecated);
-#pragma GCC diagnostic pop
-    cls  // BR
+            cls_doc.AffineDimension.doc)
         .def("ToLocalCoordinates", &AffineSubspace::ToLocalCoordinates,
             py::arg("x"), cls_doc.ToLocalCoordinates.doc)
         .def("ToGlobalCoordinates", &AffineSubspace::ToGlobalCoordinates,
@@ -719,6 +709,17 @@ void DefineGeometryOptimization(py::module m) {
         cls_doc.preprocessing_solver.doc);
   }
 
+  // GcsGraphvizOptions
+  {
+    using Class = GcsGraphvizOptions;
+    constexpr auto& cls_doc = doc.GcsGraphvizOptions;
+    py::class_<Class> cls(m, "GcsGraphvizOptions", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
   // GraphOfConvexSets
   {
     const std::unordered_set<GraphOfConvexSets::Transcription>
@@ -910,9 +911,34 @@ void DefineGeometryOptimization(py::module m) {
         .def("ClearAllPhiConstraints",
             &GraphOfConvexSets::ClearAllPhiConstraints,
             cls_doc.ClearAllPhiConstraints.doc)
-        .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
-            py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
-            py::arg("precision") = 3, py::arg("scientific") = false,
+        .def("GetGraphvizString",
+            overload_cast_explicit<std::string,
+                const solvers::MathematicalProgramResult*,
+                const GcsGraphvizOptions&,
+                const std::vector<const GraphOfConvexSets::Edge*>*>(
+                &GraphOfConvexSets::GetGraphvizString),
+            py::arg("result") = nullptr,
+            py::arg("options") = GcsGraphvizOptions(),
+            py::arg("active_path") = nullptr, cls_doc.GetGraphvizString.doc)
+        .def(
+            "GetGraphvizString",
+            [](const GraphOfConvexSets& self,
+                const solvers::MathematicalProgramResult* result,
+                bool show_slacks, bool show_vars, bool show_flows,
+                bool show_costs, bool scientific, int precision,
+                std::vector<const GraphOfConvexSets::Edge*>* active_path) {
+              const GcsGraphvizOptions options{.show_slacks = show_slacks,
+                  .show_vars = show_vars,
+                  .show_flows = show_flows,
+                  .show_costs = show_costs,
+                  .scientific = scientific,
+                  .precision = precision};
+              return self.GetGraphvizString(result, options, active_path);
+            },
+            py::arg("result") = nullptr, py::arg("show_slacks") = true,
+            py::arg("show_vars") = true, py::arg("show_flows") = true,
+            py::arg("show_costs") = true, py::arg("scientific") = false,
+            py::arg("precision") = 3, py::arg("active_path") = nullptr,
             cls_doc.GetGraphvizString.doc)
         .def("SolveShortestPath",
             overload_cast_explicit<solvers::MathematicalProgramResult,
@@ -927,6 +953,29 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("source"), py::arg("target"), py::arg("result"),
             py::arg("tolerance") = 1e-3, py_rvp::reference_internal,
             cls_doc.GetSolutionPath.doc)
+        .def("SamplePaths",
+            overload_cast_explicit<
+                std::vector<std::vector<const GraphOfConvexSets::Edge*>>,
+                const GraphOfConvexSets::Vertex&,
+                const GraphOfConvexSets::Vertex&,
+                const std::unordered_map<const GraphOfConvexSets::Edge*,
+                    double>&,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SamplePaths),
+            py::arg("source"), py::arg("target"), py::arg("flows"),
+            py::arg("options"), py::return_value_policy::reference_internal,
+            cls_doc.SamplePaths.doc_flows)
+        .def("SamplePaths",
+            overload_cast_explicit<
+                std::vector<std::vector<const GraphOfConvexSets::Edge*>>,
+                const GraphOfConvexSets::Vertex&,
+                const GraphOfConvexSets::Vertex&,
+                const solvers::MathematicalProgramResult&,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SamplePaths),
+            py::arg("source"), py::arg("target"), py::arg("result"),
+            py::arg("options"), py::return_value_policy::reference_internal,
+            cls_doc.SamplePaths.doc_result)
         .def("SolveConvexRestriction",
             &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),
             py::arg("options") = GraphOfConvexSetsOptions(),
@@ -1280,7 +1329,24 @@ void DefineGeometryOptimization(py::module m) {
       },
       py::arg("convex_sets_A"), py::arg("convex_sets_B"),
       py::arg("continuous_revolute_joints"), py::arg("preprocess_bbox") = true,
-      doc.CalcPairwiseIntersections.doc_4args);
+      doc.CalcPairwiseIntersections
+          .doc_4args_convex_sets_A_convex_sets_B_continuous_revolute_joints_preprocess_bbox);
+  m.def(
+      "CalcPairwiseIntersections",
+      [](const std::vector<ConvexSet*>& convex_sets_A,
+          const std::vector<ConvexSet*>& convex_sets_B,
+          const std::vector<int>& continuous_revolute_joints,
+          const std::vector<Hyperrectangle>& bboxes_A,
+          const std::vector<Hyperrectangle>& bboxes_B) {
+        return CalcPairwiseIntersections(CloneConvexSets(convex_sets_A),
+            CloneConvexSets(convex_sets_B), continuous_revolute_joints,
+            bboxes_A, bboxes_B);
+      },
+      py::arg("convex_sets_A"), py::arg("convex_sets_B"),
+      py::arg("continuous_revolute_joints"), py::arg("bboxes_A"),
+      py::arg("bboxes_B"),
+      doc.CalcPairwiseIntersections
+          .doc_5args_convex_sets_A_convex_sets_B_continuous_revolute_joints_bboxes_A_bboxes_B);
   m.def(
       "CalcPairwiseIntersections",
       [](const std::vector<ConvexSet*>& convex_sets,
@@ -1291,7 +1357,20 @@ void DefineGeometryOptimization(py::module m) {
       },
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
       py::arg("preprocess_bbox") = true,
-      doc.CalcPairwiseIntersections.doc_3args);
+      doc.CalcPairwiseIntersections
+          .doc_3args_convex_sets_continuous_revolute_joints_preprocess_bbox);
+  m.def(
+      "CalcPairwiseIntersections",
+      [](const std::vector<ConvexSet*>& convex_sets,
+          const std::vector<int>& continuous_revolute_joints,
+          const std::vector<Hyperrectangle>& bboxes) {
+        return CalcPairwiseIntersections(
+            CloneConvexSets(convex_sets), continuous_revolute_joints, bboxes);
+      },
+      py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
+      py::arg("bboxes") = std::vector<Hyperrectangle>{},
+      doc.CalcPairwiseIntersections
+          .doc_3args_convex_sets_continuous_revolute_joints_bboxes);
   // NOLINTNEXTLINE(readability/fn_size)
 }
 

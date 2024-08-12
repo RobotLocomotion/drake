@@ -1,0 +1,27 @@
+[build_bazel_apple_support] Remove dependency on bazel_features repo
+
+For Drake's purposes, we'll choose not to add a new dependency to our
+workspace, since it does sketchy things under the hood that are not
+compatible with our approach to loading phases.
+
+When we switch to bzlmod, we can reconsider.
+
+--- crosstool/cc_toolchain_config.bzl
++++ crosstool/cc_toolchain_config.bzl
+@@ -13,7 +13,6 @@
+ # limitations under the License.
+ """A C++ toolchain configuration rule for macOS."""
+ 
+-load("@bazel_features//:features.bzl", "bazel_features")
+ load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
+ load(
+     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+@@ -1097,7 +1097,7 @@
+ 
+     gcc_quoting_for_param_files_feature = feature(
+         name = "gcc_quoting_for_param_files",
+-        enabled = bazel_features.cc.fixed_dsym_path_quoting,
++        enabled = False,
+     )
+ 
+     default_link_flags_feature = feature(

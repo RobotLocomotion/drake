@@ -40,12 +40,12 @@ OrientationCost::~OrientationCost() = default;
 
 void OrientationCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                              Eigen::VectorXd* y) const {
-  // OrientationConstraint computes tr(R_AB) = 1 - 2cosθ
-  // So 1 - cosθ = (1 + tr(R_AB))/2
+  // OrientationConstraint computes tr(R_AB) = 1 + 2cosθ
+  // So 1 - cosθ = (3 - tr(R_AB))/2
   y->resize(1);
   Eigen::VectorXd trace_R_AB(1);
   constraint_.Eval(x, &trace_R_AB);
-  (*y)[0] = c_ * (1.0 + trace_R_AB[0]) / 2.0;
+  (*y)[0] = c_ * (3.0 - trace_R_AB[0]) / 2.0;
 }
 
 void OrientationCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
@@ -53,7 +53,7 @@ void OrientationCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   y->resize(1);
   VectorX<AutoDiffXd> trace_R_AB(1);
   constraint_.Eval(x, &trace_R_AB);
-  (*y)[0] = c_ * (1.0 + trace_R_AB[0]) / 2.0;
+  (*y)[0] = c_ * (3.0 - trace_R_AB[0]) / 2.0;
 }
 
 void OrientationCost::DoEval(

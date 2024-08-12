@@ -14,8 +14,8 @@ namespace multibody {
 
 using Eigen::SparseMatrix;
 
-namespace internal {
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+namespace {
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematicsImpl(
     const Eigen::Ref<const VectorX<double>>& q_current,
     const Eigen::Ref<const VectorX<double>>& v_current,
     const math::RigidTransform<double>& X_WE,
@@ -51,7 +51,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
       J_WE_E_with_flags.topRows(num_cart_constraints), parameters, N, Nplus);
 }
 
-}  // namespace internal
+}  // namespace
 
 std::ostream& operator<<(std::ostream& os,
                          const DifferentialInverseKinematicsStatus value) {
@@ -289,7 +289,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     }
     Nplus = plant.MakeQDotToVelocityMap(context);
   }
-  return internal::DoDifferentialInverseKinematics(
+  return DoDifferentialInverseKinematicsImpl(
       plant.GetPositions(context), plant.GetVelocities(context), X_AE, J_AE,
       SpatialVelocity<double>(V_AE_desired), parameters, N, Nplus);
 }

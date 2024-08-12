@@ -2049,7 +2049,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
 
-    // total mass = ∑ mᵢ.
+    // total_mass = ∑ mᵢ.
     const T& body_mass = body.get_mass(context);
     total_mass += body_mass;
 
@@ -2088,18 +2088,16 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
   // Reminder: Although it is not possible for a body to belong to multiple
   // model instances [as RigidBody::model_instance() returns a body's unique
   // model instance], it is possible for the same model instance to be added
-  // multiple times to std::vector<ModelInstanceIndex>& model_instances).  The
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances). The
   // code below ensures a body's contribution to the sum occurs only once.
-  // Duplicate model_instances in std::vector are considered an upstream user
-  // error.
+  // Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      // total mass = ∑ mᵢ.
       const T& body_mass = body.get_mass(context);
-      total_mass += body_mass;
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
@@ -2202,7 +2200,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
 
-    // total mass = ∑ mᵢ.
+    // total_mass = ∑ mᵢ.
     const T& body_mass = body.get_mass(context);
     total_mass += body_mass;
 
@@ -2220,8 +2218,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
 
   // For a system S with center of mass Scm, Scm's translational velocity in the
   // world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
-  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bcm's velocity in world frame W
-  // (Bcm is the center of mass of the iᵗʰ body).
+  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bᵢcm's velocity in world frame W
+  // (Bᵢcm is the center of mass of the iᵗʰ body).
   return sum_mi_vi / total_mass;
 }
 
@@ -2245,18 +2243,16 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   // Reminder: Although it is not possible for a body to belong to multiple
   // model instances [as RigidBody::model_instance() returns a body's unique
   // model instance], it is possible for the same model instance to be added
-  // multiple times to std::vector<ModelInstanceIndex>& model_instances).  The
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances). The
   // code below ensures a body's contribution to the sum occurs only once.
-  // Duplicate model_instances in std::vector are considered an upstream user
-  // error.
+  // Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      // total mass = ∑ mᵢ.
       const T& body_mass = body.get_mass(context);
-      total_mass += body_mass;
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_vi = ∑ mᵢ * vi_WBcm_W.
@@ -2280,6 +2276,115 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   }
 
   return sum_mi_vi / total_mass;
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
+    const systems::Context<T>& context) const {
+  if (num_bodies() <= 1) {
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
+  }
+
+  // To ensure a sensible exception message is issued if the system's mass is
+  // zero or negative, check if ∑ mᵢ ≤ 0 _before_ calculating ∑ mᵢ * aᵢ.
+  // Why? Acceleration calculations may require a dynamic analysis that will
+  // issue a significantly less helpful exception message.
+  // Sum over all the bodies except the 0th body (which is the world body).
+  T total_mass = 0;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const RigidBody<T>& body = get_body(body_index);
+    const T& body_mass = body.get_mass(context);
+    total_mass += body_mass;  // total_mass = ∑ mᵢ.
+  }
+
+  if (total_mass <= 0) {
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
+  }
+
+  // Sum over all the bodies except the 0th body (which is the world body).
+  Vector3<T> sum_mi_ai = Vector3<T>::Zero();
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const RigidBody<T>& body = get_body(body_index);
+    const T& body_mass = body.get_mass(context);
+    const Vector3<T> ai_WBcm_W =
+        body.CalcCenterOfMassTranslationalAccelerationInWorld(context);
+    sum_mi_ai += body_mass * ai_WBcm_W;  // sum_mi_ai = ∑ mᵢ * ai_WBcm_W.
+  }
+
+  // For a system S with center of mass Scm, Scm's translational acceleration in
+  // the world W is calculated as a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where mₛ = ∑ mᵢ,
+  // mᵢ is the mass of the  iᵗʰ body, and aᵢ is Bᵢcm's acceleration in world W
+  // (Bᵢcm is the center of mass of the iᵗʰ body).
+  return sum_mi_ai / total_mass;
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances) const {
+  if (num_bodies() <= 1) {
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
+  }
+
+  // To ensure a sensible exception message is issued if the system's mass is
+  // zero or negative, check if ∑ mᵢ ≤ 0 _before_ calculating ∑ mᵢ * aᵢ.
+  // Why? Acceleration calculations may require a dynamic analysis that will
+  // issue a significantly less helpful exception message.
+  // Sum over all the bodies in model_instances except the 0th body (which is
+  // the world body). Each body is counted only once even if its model instance
+  // is listed multiple times.
+  T total_mass = 0;
+  int number_of_non_world_bodies_processed = 0;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const RigidBody<T>& body = get_body(body_index);
+    if (std::find(model_instances.begin(), model_instances.end(),
+                  body.model_instance()) != model_instances.end()) {
+      const T& body_mass = body.get_mass(context);
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
+      ++number_of_non_world_bodies_processed;
+    }
+  }
+
+  // Throw an exception if there are zero non-world bodies in model_instances.
+  if (number_of_non_world_bodies_processed == 0) {
+    std::string message = fmt::format("{}(): There must be at least one "
+        "non-world body contained in model_instances.", __func__);
+    throw std::logic_error(message);
+  }
+
+  if (total_mass <= 0) {
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
+  }
+
+  // Sum over all the bodies that are in model_instances except for the 0th body
+  // (which is the world body), and count each body's contribution only once.
+  // Reminder: Although it is not possible for a body to belong to multiple
+  // model instances [as RigidBody::model_instance() returns a body's unique
+  // model instance], it is possible for the same model instance to be added
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances).
+  // The code below ensures a body's contribution to the sum occurs only once.
+  // Duplicate model_instances in std::vector are ignored.
+  Vector3<T> sum_mi_ai = Vector3<T>::Zero();
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const RigidBody<T>& body = get_body(body_index);
+    if (std::find(model_instances.begin(), model_instances.end(),
+                  body.model_instance()) != model_instances.end()) {
+      const T& body_mass = body.get_mass(context);
+      const Vector3<T> ai_WBcm_W =
+          body.CalcCenterOfMassTranslationalAccelerationInWorld(context);
+      sum_mi_ai += body_mass * ai_WBcm_W;  // sum_mi_ai = ∑ mᵢ * ai_WBcm_W.
+    }
+  }
+
+  return sum_mi_ai / total_mass;
 }
 
 template <typename T>
@@ -3057,11 +3162,12 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
                           num_positions() : num_velocities();
   DRAKE_THROW_UNLESS(Js_v_ACcm_E != nullptr);
   DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
+
+  // Reminder: MultibodyTree always declares a world body (0ᵗʰ body).
   if (num_bodies() <= 1) {
-    throw std::runtime_error(
-        "CalcJacobianCenterOfMassTranslationalVelocity(): This "
-        "MultibodyPlant only contains the world_body() so its center of mass "
-        "is undefined.");
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
   }
 
   Js_v_ACcm_E->setZero();
@@ -3079,9 +3185,9 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   }
 
   if (composite_mass <= 0) {
-    throw std::logic_error(
-        "CalcJacobianCenterOfMassTranslationalVelocity(): The "
-        "system's total mass must be greater than zero.");
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
   }
 
   *Js_v_ACcm_E /= composite_mass;
@@ -3102,10 +3208,8 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
 
   // Reminder: MultibodyTree always declares a world body.
   if (num_bodies() <= 1) {
-    std::string message = fmt::format(
-        "{}(): This MultibodyPlant only contains "
-        "the world_body() so its center of mass is undefined.",
-        __func__);
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
     throw std::logic_error(message);
   }
 
@@ -3117,23 +3221,21 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   // Reminder: Although it is not possible for a body to belong to multiple
   // model instances [as RigidBody::model_instance() returns a body's unique
   // model instance], it is possible for the same model instance to be added
-  // multiple times to std::vector<ModelInstanceIndex>& model_instances).  The
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances). The
   // code below ensures a body's contribution to the sum occurs only once.
-  // Duplicate model_instances in std::vector are considered an upstream user
-  // error.
+  // Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      // total mass = ∑ mᵢ.
       const T& body_mass = body.get_mass(context);
-      total_mass += body_mass;
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_Ji = ∑ (mᵢ Jᵢ), where mᵢ is the mass of the iᵗʰ body and
-      // Jᵢ is Bcm's translational velocity Jacobian in frame A, expressed in
-      // frame E (Bcm is the center of mass of the iᵗʰ body).
+      // Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
+      // frame E (Bᵢcm is the center of mass of the iᵗʰ body).
       const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
       MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
       CalcJacobianTranslationalVelocity(context,
@@ -3151,7 +3253,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   // Throw an exception if there are zero non-world bodies in model_instances.
   if (number_of_non_world_bodies_processed == 0) {
     std::string message = fmt::format("{}(): There must be at least one "
-        "non-world body contained in model_instances.",  __func__);
+        "non-world body contained in model_instances.", __func__);
     throw std::logic_error(message);
   }
 
@@ -3170,34 +3272,101 @@ Vector3<T>
 MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_A, const Frame<T>& frame_E) const {
-  DRAKE_THROW_UNLESS(&frame_A == &world_frame());
-
+  // Reminder: MultibodyTree always declares a world body (0ᵗʰ body).
   if (num_bodies() <= 1) {
-    throw std::runtime_error(
-        "CalcBiasCenterOfMassTranslationalAcceleration(): This "
-        "MultibodyPlant only contains the world_body() so its center of mass "
-        "is undefined.");
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
   }
 
   T composite_mass = 0;
   Vector3<T> asBias_ACcm_E = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+    const Frame<T>& frame_B = body.body_frame();
     const SpatialAcceleration<T> AsBiasi_ACcm_E = CalcBiasSpatialAcceleration(
-       context, with_respect_to, body.body_frame(), pi_BoBcm, frame_A, frame_E);
+       context, with_respect_to, frame_B, pi_BoBcm_B, frame_A, frame_E);
     const T& body_mass = body.get_mass(context);
     asBias_ACcm_E += body_mass * AsBiasi_ACcm_E.translational();
     composite_mass += body_mass;
   }
 
   if (composite_mass <= 0) {
-    throw std::logic_error(
-        "CalcBiasCenterOfMassTranslationalAcceleration(): The "
-        "system's total mass must be greater than zero.");
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
   }
   asBias_ACcm_E /= composite_mass;
   return asBias_ACcm_E;
+}
+
+template <typename T>
+Vector3<T>
+MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances,
+    JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E) const {
+  // Reminder: MultibodyTree always declares a world body (0ᵗʰ body).
+  if (num_bodies() <= 1) {
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
+  }
+
+  T total_mass = 0;
+  Vector3<T> sum_mi_aBiasi = Vector3<T>::Zero();
+  // Sum over all bodies contained in model_instances except for the 0th body
+  // (which is the world body), and count each body's contribution only once.
+  // Reminder: Although it is not possible for a body to belong to multiple
+  // model instances [as RigidBody::model_instance() returns a body's unique
+  // model instance], it is possible for the same model instance to be added
+  // multiple times to std::vector<ModelInstanceIndex>& model_instances). The
+  // code below ensures a body's contribution to the sum occurs only once.
+  // Duplicate model_instances in std::vector are ignored.
+  int number_of_non_world_bodies_processed = 0;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const RigidBody<T>& body = get_body(body_index);
+    if (std::find(model_instances.begin(), model_instances.end(),
+                  body.model_instance()) != model_instances.end()) {
+      const T& body_mass = body.get_mass(context);
+      total_mass += body_mass;  // total_mass = ∑ mᵢ.
+      ++number_of_non_world_bodies_processed;
+
+      // sum_mi_aBiasi = ∑ (mᵢ aBiasᵢ), where mᵢ is the mass of the iᵗʰ body and
+      // aBiasᵢ is Bᵢcm's bias translational acceleration in frame A, expressed
+      // in frame E (Bᵢcm is the center of mass of the iᵗʰ body).
+      const Frame<T>& frame_B = body.body_frame();
+      const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+      const Vector3<T> aBiasi_ABcm_E = CalcBiasTranslationalAcceleration(
+                                        context,
+                                        with_respect_to,
+                                        frame_B,
+                                        pi_BoBcm_B,
+                                        frame_A,
+                                        frame_E);
+      sum_mi_aBiasi += body_mass * aBiasi_ABcm_E;
+    }
+  }
+
+  // Throw an exception if there are zero non-world bodies in model_instances.
+  if (number_of_non_world_bodies_processed == 0) {
+    std::string message = fmt::format("{}(): There must be at least one "
+        "non-world body contained in model_instances.", __func__);
+    throw std::logic_error(message);
+  }
+
+  if (total_mass <= 0) {
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
+  }
+
+  /// aBias_AScm_E = ∑ (mᵢ sum_mi_aBiasi) / mₛ, where mₛ = ∑ mᵢ.
+  const Vector3<T> aBias_AScm_E = sum_mi_aBiasi / total_mass;
+  return aBias_AScm_E;
 }
 
 template <typename T>

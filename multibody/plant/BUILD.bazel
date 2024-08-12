@@ -89,6 +89,7 @@ drake_cc_library(
         "compliant_contact_manager.cc",
         "deformable_driver.cc",
         "deformable_model.cc",
+        "discrete_step_memory.cc",
         "discrete_update_manager.cc",
         "dummy_physical_model.cc",
         "geometry_contact_data.cc",
@@ -105,6 +106,7 @@ drake_cc_library(
         "deformable_driver.h",
         "deformable_ids.h",
         "deformable_model.h",
+        "discrete_step_memory.h",
         "discrete_update_manager.h",
         "dummy_physical_model.h",
         "geometry_contact_data.h",
@@ -189,8 +191,10 @@ drake_cc_library(
         "contact_results.h",
         "deformable_contact_info.h",
         "hydroelastic_contact_info.h",
-        "hydroelastic_quadrature_point_data.h",
         "point_pair_contact_info.h",
+        # Upon 2024-12-01 deprecation removal, this next header can possibly
+        # move to a better home, e.g., the traction_calculator?
+        "hydroelastic_quadrature_point_data.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -500,6 +504,13 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
         "//multibody/plant/test_utilities:rigid_body_on_compliant_ground",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_step_memory_test",
+    deps = [
+        ":multibody_plant_core",
     ],
 )
 
@@ -1127,6 +1138,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "joint_locking_test",
+    shard_count = 2,
     deps = [
         ":multibody_plant_config_functions",
         ":plant",

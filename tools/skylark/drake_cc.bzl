@@ -16,6 +16,7 @@ CXX_FLAGS = [
     "-Werror=deprecated",
     "-Werror=deprecated-declarations",
     "-Werror=ignored-qualifiers",
+    "-Werror=missing-declarations",
     "-Werror=old-style-cast",
     "-Werror=overloaded-virtual",
     "-Werror=shadow",
@@ -38,6 +39,7 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=range-loop-analysis",
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
+    "-Werror=unqualified-std-cast-call",
 ]
 
 # The CLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
@@ -72,6 +74,7 @@ GCC_FLAGS = CXX_FLAGS + [
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
 # when building with gcc.
 GCC_CC_TEST_FLAGS = [
+    "-Wno-missing-declarations",
     "-Wno-unused-parameter",
 ]
 
@@ -376,7 +379,6 @@ def _raw_drake_cc_library(
         name,
         srcs = None,  # Cannot list any headers here.
         hdrs = None,
-        textual_hdrs = None,
         strip_include_prefix = None,
         include_prefix = None,
         copts = None,
@@ -439,7 +441,6 @@ def _raw_drake_cc_library(
         name = compiled_name,
         srcs = srcs,
         hdrs = hdrs,
-        textual_hdrs = textual_hdrs,
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
         copts = copts,

@@ -72,6 +72,8 @@ PointToLineDistanceConstraint::PointToLineDistanceConstraint(
   DRAKE_DEMAND(n_B2.norm() > 100 * kEps);
 }
 
+namespace {
+
 template <typename T>
 void EvalPointToLineDistanceConstraintGradient(
     const systems::Context<T>&, const MultibodyPlant<T>&, const Frame<T>&,
@@ -122,6 +124,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
                                             frame_line, p_B1P, p_QP_B2,
                                             project_matrix, x, y);
 }
+
+}  // namespace
 
 void PointToLineDistanceConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {

@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -21,10 +22,13 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-using WeldedMobodsIndex = TypeSafeIndex<class WeldedMobodsTag>;
+// TODO(sherm1) During the PR train leading up to MbP using this code in Drake
+//  master, I'm using Doxygen comments /** despite the fact that this is
+//  currently just internal. That allows me to validate Doxygen syntax in
+//  anticipation of the API becoming public later. Change these to /* in the
+//  final PR in this train to satisfy the styleguide.
 
-// TODO(sherm1) The following describes the aspirational SpanningForest but
-//  some functionality is missing. See PR #20225 for the full implementation.
+using WeldedMobodsIndex = TypeSafeIndex<class WeldedMobodsTag>;
 
 /** SpanningForest models a LinkJointGraph via a set of spanning trees and
 loop-closing constraints. This is a directed forest, with edges ordered from
@@ -168,24 +172,36 @@ class SpanningForest {
   explaining why. Otherwise returns the empty string. */
   const std::string& why_no_dynamics() const { return data_.why_no_dynamics; }
 
-  /** Provides convenient access to the owning graph's links. */
+  /** Provides convenient access to the owning graph's links, contiguous
+  and accessed by LinkOrdinal. */
   const std::vector<Link>& links() const { return graph().links(); }
 
   /** Provides convenient access to one of the owning graph's links. Requires
-  a BodyIndex, not a plain integer.
-  @pre link_index is in range */
-  const Link& links(BodyIndex link_index) const {
-    return graph().links(link_index);
+  a LinkOrdinal, not a plain integer.
+  @pre link_ordinal is in range */
+  const Link& links(LinkOrdinal link_ordinal) const {
+    return graph().links(link_ordinal);
   }
 
-  /** Provides convenient access to the owning graph's joints. */
+  // TODO(sherm1) Make this unchecked; maybe private?
+  const Link& link_by_index(BodyIndex link_index) const {
+    return graph().link_by_index(link_index);
+  }
+
+  /** Provides convenient access to the owning graph's joints, contiguous
+  and accessed by JointOrdinal. */
   const std::vector<Joint>& joints() const { return graph().joints(); }
 
   /** Provides convenient access to one of the owning graph's joints. Requires
-  a JointIndex, not a plain integer.
-  @pre joint_index is in range */
-  const Joint& joints(JointIndex joint_index) const {
-    return graph().joints(joint_index);
+  a JointOrdinal, not a plain integer.
+  @pre joint_ordinal is in range */
+  const Joint& joints(JointOrdinal joint_ordinal) const {
+    return graph().joints(joint_ordinal);
+  }
+
+  // TODO(sherm1) Make this unchecked; maybe private?
+  const Joint& joint_by_index(JointIndex joint_index) const {
+    return graph().joint_by_index(joint_index);
   }
 
   /** All the mobilized bodies, in depth-first order. World comes first,
@@ -279,13 +295,13 @@ class SpanningForest {
   "active" Link, that is, the one whose mobilizer is used to move the whole
   Composite. Cost is O(1) and very fast.
   @pre mobod_index is in range */
-  inline BodyIndex mobod_to_link(MobodIndex mobod_index) const;
+  inline LinkOrdinal mobod_to_link_ordinal(MobodIndex mobod_index) const;
 
   /** Returns all the Links mobilized by this Mobod. The "active" Link returned
   by mobod_to_link() comes first, then any other Links in the same Composite.
   O(1), very fast.
   @pre mobod_index is in range  */
-  inline const std::vector<BodyIndex>& mobod_to_links(
+  inline const std::vector<LinkOrdinal>& mobod_to_link_ordinals(
       MobodIndex mobod_index) const;
 
   /** Returns the total number of generalized position coordinates q used by
@@ -295,6 +311,13 @@ class SpanningForest {
   /** Returns the total number of generalized velocity coordinates v used by
   this model. O(1), very fast. */
   int num_velocities() const { return ssize(data_.v_to_mobod); }
+
+  /** Returns the indexes of all quaternions within the generalized position
+  coordinates q. Each quaternion begins at the given index with its scalar
+  element w, followed immediately by its vector part xyz. */
+  const std::vector<int>& quaternion_starts() const {
+    return data_.quaternion_starts;
+  }
 
   /** Returns the Mobod to which a given position coordinate q belongs.
   O(1), very fast.
@@ -394,14 +417,47 @@ class SpanningForest {
                    int* num_unprocessed_links);
 
   // Grows the trees containing each of the given Joints by one level. The
-  // output parameter `joints_to_model_next` (cleared on entry) on return
+  // output parameter `J_out` (cleared on entry) on return
   // contains the set of Joints that should be modeled at the next level.
-  // @pre the pointers are non-null and joints_to_model is not empty. On return,
+  // @pre the pointers are non-null and `J_in` is not empty. On return,
   // num_unprocessed_links will have been decremented by the number of Links
   // that were modeled.
-  void ExtendTreesOneLevel(const std::vector<JointIndex>& joints_to_model,
-                           int* num_unprocessed_links,
-                           std::vector<JointIndex>* joints_to_model_next);
+  void ExtendTreesOneLevel(const std::vector<JointIndex>& J_in,
+                           std::vector<JointIndex>* J_out,
+                           int* num_unprocessed_links);
+
+  // Helper for ExtendTreesOneLevel(). We're given a joint that has at least
+  // one link already in the forest. That's the "inboard link" I and we want
+  // to know the inboard Mobod it follows. The other (usually unmodeled)
+  // link is the "outboard link" O. If both links are already in the forest
+  // we'll arbitrarily consider the parent link as I and child as O.
+  // Return tuple is: [I's mobod, I, O, is_reversed].
+  std::tuple<MobodIndex, LinkOrdinal, LinkOrdinal, bool> FindInboardMobod(
+      const Joint& open_joint) const;
+
+  // Helper for ExtendTreesOneLevel(). We're given a set of as-yet-unmodeled,
+  // "open" joints, each of which has one end already following the given Mobod.
+  // Returns a list of joints that represent the "next level" in the forest
+  // outboard of the given Mobod. For any joint that doesn't have to be a
+  // merged joint in a merged composite, that joint goes directly on the
+  // "next level" list. Otherwise, we have to extend the composite and find all
+  // the open joints where one end is part of the composite; those are the
+  // "next level".
+  void FindNextLevelJoints(MobodIndex inboard_mobod_index,
+                           const std::vector<JointIndex>& J_in,
+                           std::vector<JointIndex>* J_level,
+                           int* num_unprocessed_links);
+
+  // Given a Mobod and a Joint known to have one of its links already following
+  // that Mobod, find the other (outboard) link. */
+  BodyIndex FindOutboardLink(MobodIndex inboard_mobod_index,
+                             const Joint& joint) const;
+
+  // Helper for ExtendTreesOneLevel(). Given a Mobod and a set of joints known
+  // to have one of their links already following that Mobod, look at the other
+  // (outboard) link and return true if we find one that has mass.
+  bool HasMassfulOutboardLink(MobodIndex inboard_mobod_index,
+                              const std::vector<JointIndex>& joints) const;
 
   // After dealing with everything that had some path to World, deals with
   // remaining disconnected subgraphs and lone free bodies. On return,
@@ -417,8 +473,8 @@ class SpanningForest {
   //  - updates maps of link-to-mobod and joint-to-mobod
   //  - if joint type is Weld, we are creating or joining a WeldedMobods group
   //    and LinkComposite; if welded to World the Mobod is "anchored". */
-  const Mobod& AddNewMobod(BodyIndex outboard_link_index,
-                           JointIndex joint_index,
+  const Mobod& AddNewMobod(LinkOrdinal outboard_link_ordinal,
+                           JointOrdinal joint_ordinal,
                            MobodIndex inboard_mobod_index, bool is_reversed);
 
   // Given a list of Static or MustBeBaseBody Links, adds a weld or floating
@@ -437,14 +493,14 @@ class SpanningForest {
   //  - if both are massless we have an invalid forest
   //  - either or both Links may be composites; it is the mass properties
   //    of the whole composite that determines masslessness.
-  void HandleLoopClosure(JointIndex loop_joint_index);
+  void HandleLoopClosure(JointOrdinal loop_joint_ordinal);
 
   // Adds a shadow Link of the given primary and mobilizes the shadow with
   // the given joint which was originally connected to the primary. Adds a
   // weld constraint to reattach the shadow to the primary. The shadow and
   // weld are added to the graph as ephemeral elements.
-  const Mobod& AddShadowMobod(BodyIndex primary_link_index,
-                              JointIndex shadow_joint_index);
+  const Mobod& AddShadowMobod(LinkOrdinal primary_link_ordinal,
+                              JointOrdinal shadow_joint_ordinal);
 
   bool model_instance_is_static(ModelInstanceIndex index) const {
     return static_cast<bool>(options(index) & ForestBuildingOptions::kStatic);
@@ -473,14 +529,57 @@ class SpanningForest {
                : LinkJointGraph::quaternion_floating_joint_traits_index();
   }
 
-  bool link_is_already_in_forest(BodyIndex link_index) const {
-    return graph().link_to_mobod(link_index).is_valid();
+  bool link_is_already_in_forest(LinkOrdinal link_ordinal) const {
+    return links(link_ordinal).mobod_index().is_valid();
   }
 
   LinkJointGraph& mutable_graph() {
     DRAKE_ASSERT(data_.graph != nullptr);
     return *data_.graph;
   }
+
+  // Returns true if this model instance requests optimization (link merging)
+  // of composites, either explicitly or via inheritance from the global
+  // settings.
+  bool should_merge_link_composites(ModelInstanceIndex index) const {
+    return static_cast<bool>(options(index) &
+                             ForestBuildingOptions::kMergeLinkComposites);
+  }
+
+  // This implements our policy for when to optimize LinkComposites by merging
+  // their constituent Links onto a single Mobod. We're given a Joint
+  // connecting parent and child Links and need to decide whether the parent
+  // and child will follow a single Mobod or two different Mobods. If we
+  // decide to merge them, the Joint won't be modeled at all since it will be
+  // interior to the composite.
+  //
+  // To return true (merge), the following must all be true:
+  //   - The joint must be a weld, and
+  //   - the joint's model instance must request merging composites, and
+  //   - the joint has _not_ demanded that it be modeled.
+  bool should_merge_parent_and_child(const Joint& joint) const {
+    return joint.is_weld() && !joint.must_be_modeled() &&
+           should_merge_link_composites(joint.model_instance());
+  }
+
+  // Adds the follower Link to the LinkComposite that inboard_mobod is
+  // mobilizing and notes that the Joint is internal to that LinkComposite
+  // so is not modeled. Will create the LinkComposite if there was only one
+  // Link mobilized before.
+  const Mobod& JoinExistingMobod(Mobod* inboard_mobod,
+                                 LinkOrdinal follower_link_ordinal,
+                                 JointOrdinal weld_joint_ordinal);
+
+  // We're given an existing Mobod and a to-be-merged weld joint where that
+  // joint's inboard link is already following the Mobod. Greedily extend this
+  // Mobod recursively to merge all links that are merge-welded to the inboard
+  // link. As we encounter non-merge joints attached to this composite we append
+  // them to `open_joint_indexes` for processing next. Those constitute the
+  // "next level" outboard of this merged composite.
+  void GrowCompositeMobod(Mobod* inboard_mobod, BodyIndex outboard_link_index,
+                          JointOrdinal weld_joint_ordinal,
+                          std::vector<JointIndex>* open_joint_indexes,
+                          int* num_unprocessed_links);
 
   struct Data {
     // These are all default but definitions deferred to .cc file so
@@ -525,10 +624,14 @@ class SpanningForest {
     std::vector<MobodIndex> q_to_mobod;  // size is nq (total number of q's)
     std::vector<MobodIndex> v_to_mobod;  // size is nv (total number of v's)
 
+    // Indexes of quaternion starts within the q vector, in increasing order.
+    std::vector<int> quaternion_starts;
+
     // This policy is expressed as a "less than" comparator of the type used by
     // std::priority_queue. It should return true if the left argument is a
     // worse choice than the right argument, according to the policy.
-    std::function<bool(const BodyIndex&, const BodyIndex&)> base_body_policy;
+    std::function<bool(const LinkOrdinal&, const LinkOrdinal&)>
+        base_body_policy;
 
     // Set to false if we had to end a branch with a massless body.
     bool dynamics_ok{true};

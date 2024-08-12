@@ -16,6 +16,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -354,12 +355,22 @@ get_actuation_input_port().
 The state of a multibody system `x = [q; v]` is given by its generalized
 positions vector q, of size `nq` (see num_positions()), and by its
 generalized velocities vector v, of size `nv` (see num_velocities()).
+
+A %MultibodyPlant can be constructed to be either continuous or discrete. The
+choice is indicated by the time_step passed to the constructor -- a non-zero
+time_step indicates a discrete plant, while a zero time_step indicates
+continuous. A @ref systems::Simulator "Simulator" will step a discrete plant
+using the indicated time_step, but will allow a numerical integrator to choose
+how to advance time for a continuous %MultibodyPlant.
+
+We'll discuss continuous plant dynamics in this section. Discrete dynamics is
+more complicated and gets its own section below.
+
 As a Drake @ref systems::System "System", %MultibodyPlant implements the
-governing equations for a
-multibody dynamical system in the form `ẋ = f(t, x, u)` with t being
-time and u the actuation forces. The governing equations for
-the dynamics of a multibody system modeled with %MultibodyPlant are
-[Featherstone 2008, Jain 2010]: <pre>
+governing equations for a multibody dynamical system in the form
+`ẋ = f(t, x, u)` with t being time and u external inputs such as actuation
+forces. The governing equations for the dynamics of a multibody system modeled
+with %MultibodyPlant are [Featherstone 2008, Jain 2010]: <pre>
          q̇ = N(q)v
   (1)    M(q)v̇ + C(q, v)v = τ
 </pre>
@@ -372,6 +383,134 @@ velocities v, [Seth 2010]. `N(q)` is an `nq x nv` matrix.
 The vector `τ ∈ ℝⁿᵛ` on the right hand side of Eq. (1) is
 the system's generalized forces. These incorporate gravity, springs,
 externally applied body forces, constraint forces, and contact forces.
+
+@anchor mbp_discrete_dynamics
+                         ### Discrete system dynamics
+
+We'll start with the basic difference equation interpretation of a discrete
+plant and then explain some Drake-specific subtleties.
+
+@note We use "kinematics" here to refer to quantities that involve only position
+or velocity, and "dynamics" to refer to quantities that also involve forces.
+
+By default, a discrete %MultibodyPlant has these update dynamics:
+
+       x[0] = initial kinematics      state variables x (={q, v}), s
+       s[0] = empty (no sample yet)
+
+     s[n+1] = g(t[n], x[n], u[n])     record sample
+     x[n+1] = f(t[n], x[n], u[n])     update kinematics
+    yd[n+1] = gd(s)                   dynamic outputs use sampled values
+    yk[n+1] = gk(x)                   kinematic outputs use current x
+
+Optionally, output port sampling can be disabled. In that case we have:
+
+     x[n+1] = f(t[n], x[n], u[n])       update kinematics
+    yd[n+1] = gd(g(t, x, u))            dynamic outputs use current values
+    yk[n+1] = gk(x)                     kinematic outputs use current x
+
+We're using `yd` and `yk` above to represent the calculated values of dynamic
+and kinematic output ports, resp. Kinematic output ports are those that depend
+only on position and velocity: `state`, `body_poses`, `body_spatial_velocities`.
+Everything else depends on forces so is a dynamic output port:
+`body_spatial_accelerations`, `generalized_acceleration`, `net_actuation`,
+`reaction_forces`, and `contact_results`.
+
+Use the function SetUseSampledOutputPorts() to choose which dynamics you prefer.
+The default behavior (output port sampling) is more efficient for simulation,
+but use slightly-different kinematics for the dynamic output port computations
+versus the kinematic output ports. Disabling output port sampling provides
+"live" output port results that are recalculated from the current state and
+inputs whenever changes occur. It also eliminates the sampling state variable
+(s above). Note that kinematic output ports (that is, those depending only on
+position and velocity) are always "live" -- they are calculated as needed from
+the current (updated) state.
+
+The reason that the default mode is more efficient for simulation is that the
+sample variable s records expensive-to-compute results (such as hydroelastic
+contact forces) that are needed to advance the state x. Those results are thus
+available for free at the start of step n. If instead we wait until after the
+state is updated to n+1, we would have to recalculate those expensive results
+at the new state in order to report them. Thus sampling means the output ports
+show the results that were calculated using kinematics values x[n], although
+the Context has been updated to kinematics values x[n+1]. If that isn't
+tolerable you should disable output port sampling. You can also force an update
+to occur using ExecuteForcedEvents().
+
+See @ref output_port_sampling "Output port sampling" below for more practical
+considerations.
+
+Minor details most users won't care about:
+
+  - The sample variable s is a Drake Abstract state variable. When it is
+    present, the plant update is performed using an Unrestricted update; when it
+    is absent we are able to use a Discrete update. Some Drake features (e.g.
+    linearization of discrete systems) may be restricted to systems that use
+    only Discrete (numeric) state variables and Discrete update.
+  - The sample variable s is used only by output ports. It does not affect the
+    behavior of any MultibodyPlant "Calc" or "Eval" functions -- those are
+    always calculated using the current values of time, kinematic state, and
+    input port values.
+
+@anchor output_port_sampling
+  ### Output port sampling
+
+As described in @ref mbp_discrete_dynamics "Discrete system dynamics" above,
+the semantics of certain %MultibodyPlant output ports depends on whether the
+plant is configured to advance using continuous time integration or discrete
+time steps (see is_discrete()). This section explains the details, focusing
+on the practical aspects moreso than the equations.
+
+Output ports that only depend on the [q, v] kinematic state (such as
+get_body_poses_output_port() or get_body_spatial_velocities_output_port())
+do _not_ change semantics for continuous vs discrete time. In all cases,
+the output value is a function of the kinematic state in the context.
+
+Output ports that incorporate dynamics (i.e., forces) _do_ change semantics
+based on the plant mode. Imagine that the get_applied_spatial_force_input_port()
+provides a continuously time-varying input force. The
+get_body_spatial_accelerations_output_port() output is dependent on that force.
+We could return a snapshot of the acceleration that was used in the last
+time step, or we could recalculate the acceleration to immediately reflect
+the changing forces. We call the former a "sampled" port and the latter a
+"live" port.
+
+For a continuous-time plant, there is no distinction -- the output port is
+always live -- it immediately reflects the instantaneous input value. It is a
+"direct feedthrough" output port (see SystemBase::GetDirectFeedthroughs()).
+
+For a discrete-time plant, the user can choose whether the output should be
+sampled or live: Use the function SetUseSampledOutputPorts() to change whether
+output ports are sampled or not, and has_sampled_output_ports() to check the
+current setting. When sampling is disabled, the only state in the context
+is the kinematic [q, v], so dynamics output ports will always reflect the
+instantaneous answer (i.e., direct feedthrough).  When sampling is enabled
+(the default), the plant state incorporates a snapshot of the most recent step's
+kinematics and dynamics, and the output ports will reflect that sampled state
+(i.e., not direct feedthrough). For a detailed discussion, see
+@ref mbp_discrete_dynamics "Discrete system dynamics".
+
+For a discrete-time plant, the sampled outputs are generally _much_
+faster to calculate than the feedthrough outputs when any inputs ports are
+changing values faster than the discrete time step, e.g., during a simulation.
+When input ports are fixed, or change at the time step rate (e.g., during motion
+planning), sampled vs feedthrough will have similar computational performance.
+
+Direct plant API function calls (e.g., EvalBodySpatialAccelerationInWorld())
+that depend on forces always use the instantaneous (not sampled) accelerations.
+
+Here are some practical tips that might help inform your particular situation:
+
+(1) If you need a minimal-state representation for motion planning, mathematical
+optimization, or similar, then you can either use a continuous-time plant or set
+the config option `use_sampled_output_ports=false` on a discrete-time plant.
+
+(2) By default, setting the positions of a discrete-time plant in the Context
+will not have any effect on the dynamics-related output ports, e.g., the contact
+results will not change. If you need to see changes to outputs without running
+the plant in a Simulator, then you can either use a continuous-time plant, set
+the config option `use_sampled_output_ports=false`, or use ExecuteForcedEvents()
+to force a dynamics step and then the outputs (and positions) will change.
 
 @anchor mbp_actuation
                 ### Actuation
@@ -439,7 +578,7 @@ See @ref pd_controllers "Using PD controlled actuators".
 
 While PD controllers can be modeled externally and be connected to the
 %MultibodyPlant model via the get_actuation_input_port(), simulation stability
-at discrete time steps can be compromised for high controller gains. For such
+at discrete-time steps can be compromised for high controller gains. For such
 cases, simulation stability and robustness can be improved significantly by
 moving your PD controller into the plant where the discrete solver can strongly
 couple controller and model dynamics.
@@ -885,6 +1024,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// accelerations is indexed by BodyIndex, and it has size num_bodies().
   /// BodyIndex "zero" (0) always corresponds to the world body, with zero
   /// spatial acceleration at all times.
+  ///
+  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
+  /// output of this port.  See @ref output_port_sampling "Output port sampling"
+  /// for details. When sampling is enabled and the plant has not yet taken a
+  /// step, the output value will be all zeros.
+  ///
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_body_spatial_accelerations_output_port()
       const;
@@ -921,6 +1066,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// offset JointActuator::input_start() in this vector. Models that include PD
   /// controllers will include their contribution in this port, refer to @ref
   /// mbp_actuation "Actuation" for further details.
+  ///
+  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
+  /// output of this port.  See @ref output_port_sampling "Output port sampling"
+  /// for details. When sampling is enabled and the plant has not yet taken a
+  /// step, the output value will be all zeros.
+  ///
   /// @note PD controllers are not considered for actuators on locked joints,
   /// see Joint::Lock(). Therefore they do not contribute to this port.
   /// @pre Finalize() was already called on `this` plant.
@@ -936,6 +1087,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// Every model instance in `this` plant model has a net actuation output
   /// port, even if zero sized (for model instance with no actuators).
+  ///
+  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
+  /// output of this port.  See @ref output_port_sampling "Output port sampling"
+  /// for details. When sampling is enabled and the plant has not yet taken a
+  /// step, the output value will be all zeros.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
   /// see Joint::Lock(). Therefore they do not contribute to this port.
@@ -1013,6 +1169,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the output port for generalized
   /// accelerations v̇ of the model.
+  ///
+  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
+  /// output of this port.  See @ref output_port_sampling "Output port sampling"
+  /// for details. When sampling is enabled and the plant has not yet taken a
+  /// step, the output value will be all zeros.
+  ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_generalized_acceleration_output_port()
@@ -1020,6 +1182,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the output port for the generalized
   /// accelerations v̇ᵢ ⊆ v̇ for model instance i.
+  ///
+  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
+  /// output of this port.  See @ref output_port_sampling "Output port sampling"
+  /// for details. When sampling is enabled and the plant has not yet taken a
+  /// step, the output value will be all zeros.
+  ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   /// @throws std::exception if the model instance does not exist.
@@ -1028,6 +1196,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the output port of generalized contact
   /// forces for a specific model instance.
+  ///
+  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
+  /// output of this port.  See @ref output_port_sampling "Output port sampling"
+  /// for details. When sampling is enabled and the plant has not yet taken a
+  /// step, the output value will be all zeros.
   ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
@@ -1055,10 +1228,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// body C (Joint::child_body()), at the joint's child frame `Jc`
   /// (Joint::frame_on_child()) and expressed in frame `Jc`.
   ///
+  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
+  /// output of this port.  See @ref output_port_sampling "Output port sampling"
+  /// for details. When sampling is enabled and the plant has not yet taken a
+  /// step, the output value will be all zeros.
+  ///
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_reaction_forces_output_port() const;
 
   /// Returns a constant reference to the port that outputs ContactResults.
+  ///
+  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
+  /// output of this port.  See @ref output_port_sampling "Output port sampling"
+  /// for details. When sampling is enabled and the plant has not yet taken a
+  /// step, the output value will be empty (no contacts).
+  ///
   /// @throws std::exception if called pre-finalize, see Finalize().
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
@@ -1144,6 +1328,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   explicit MultibodyPlant(const MultibodyPlant<U>& other);
 
   ~MultibodyPlant() override;
+
+  /// (Advanced) For a discrete-time plant, configures whether the output ports
+  /// are sampled (the default) or live (opt-in).
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  /// @throws std::exception if the plant is already finalized.
+  /// @throws std::exception if `use_sampled_output_ports` is `true` but `this`
+  /// %MultibodyPlant is not a discrete model (is_discrete() == false).
+  void SetUseSampledOutputPorts(bool use_sampled_output_ports);
 
   /// Creates a rigid body with the provided name and spatial inertia.  This
   /// method returns a constant reference to the body just added, which will
@@ -3009,14 +3201,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         body, translation);
   }
 
-  DRAKE_DEPRECATED(
-      "2024-08-01",
-      "Use MultibodyPlant::SetFreeBodyRandomTranslationDistribution()")
-  void SetFreeBodyRandomPositionDistribution(
-      const RigidBody<T>& body, const Vector3<symbolic::Expression>& position) {
-    return SetFreeBodyRandomTranslationDistribution(body, position);
-  }
-
   /// Sets the distribution used by SetRandomState() to populate the free
   /// body's `rotation` with respect to World.
   /// @throws std::exception if `body` is not a free body in the model.
@@ -3263,8 +3447,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` has no body except world_body().
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
   /// @note The world_body() is ignored.  p_WoScm_W = ∑ (mᵢ pᵢ) / mₛ, where
-  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and pᵢ is Bcm's position vector
-  /// from Wo expressed in frame W (Bcm is the center of mass of the iᵗʰ body).
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and pᵢ is Bᵢcm's position from
+  /// Wo expressed in frame W (Bᵢcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
@@ -3284,8 +3468,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
   /// @note The world_body() is ignored.  p_WoScm_W = ∑ (mᵢ pᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
-  /// and pᵢ is Bcm's position vector from Wo expressed in frame W
-  /// (Bcm is the center of mass of the iᵗʰ body).
+  /// and pᵢ is Bᵢcm's position vector from Wo expressed in frame W
+  /// (Bᵢcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {
@@ -3321,12 +3505,63 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` has no body except world_body().
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
   /// @note The world_body() is ignored.  v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where
-  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and vᵢ is Bcm's velocity in
-  /// world W (Bcm is the center of mass of the iᵗʰ body).
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and vᵢ is Bᵢcm's velocity in
+  /// world W (Bᵢcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    this->ValidateContext(context);
     return internal_tree().CalcCenterOfMassTranslationalVelocityInWorld(
         context);
+  }
+
+  /// For the system S contained in this %MultibodyPlant, calculates Scm's
+  /// translational acceleration in the world frame W expressed in W, where
+  /// Scm is the center of mass of S.
+  /// @param[in] context The context contains the state of the model.
+  /// @retval a_WScm_W Scm's translational acceleration in the world frame W
+  /// expressed in the world frame W.
+  /// @throws std::exception if `this` has no body except world_body().
+  /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
+  /// @note The world_body() is ignored.  a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body, and
+  /// aᵢ is the translational acceleration of Bᵢcm in world W expressed in W
+  /// (Bᵢcm is the center of mass of the iᵗʰ body).
+  /// @note When cached values are out of sync with the state stored in context,
+  /// this method performs an expensive forward dynamics computation, whereas
+  /// once evaluated, successive calls to this method are inexpensive.
+  Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
+      const systems::Context<T>& context) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    this->ValidateContext(context);
+    return internal_tree().CalcCenterOfMassTranslationalAccelerationInWorld(
+        context);
+  }
+
+  /// For the system S containing the selected model instances, calculates
+  /// Scm's translational acceleration in the world frame W expressed in W,
+  /// where Scm is the center of mass of S.
+  /// @param[in] context The context contains the state of the model.
+  /// @param[in] model_instances Vector of selected model instances.  If a model
+  /// instance is repeated in the vector (unusual), it is only counted once.
+  /// @retval a_WScm_W Scm's translational acceleration in the world frame W
+  /// expressed in the world frame W.
+  /// @throws std::exception if model_instances is empty or only has world body.
+  /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
+  /// @note The world_body() is ignored.  a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body in
+  /// model_instances, and aᵢ is the translational acceleration of Bᵢcm in
+  /// world W expressed in W (Bᵢcm is the center of mass of the iᵗʰ body).
+  /// @note When cached values are out of sync with the state stored in context,
+  /// this method performs an expensive forward dynamics computation, whereas
+  /// once evaluated, successive calls to this method are inexpensive.
+  Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    this->ValidateContext(context);
+    return internal_tree().CalcCenterOfMassTranslationalAccelerationInWorld(
+        context, model_instances);
   }
 
   /// Calculates system center of mass translational velocity in world frame W.
@@ -3340,11 +3575,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
   /// @note The world_body() is ignored.  v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
-  /// and vᵢ is Bcm's velocity in world W expressed in frame W
-  /// (Bcm is the center of mass of the iᵗʰ body).
+  /// and vᵢ is Bᵢcm's velocity in world W expressed in frame W
+  /// (Bᵢcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    this->ValidateContext(context);
     return internal_tree().CalcCenterOfMassTranslationalVelocityInWorld(
         context, model_instances);
   }
@@ -3771,120 +4008,92 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().CalcMassMatrix(context, M);
   }
 
-  /// Computes the bias term `C(q, v)v` containing Coriolis, centripetal, and
-  /// gyroscopic effects in the multibody equations of motion: <pre>
-  ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
-  /// </pre>
-  /// where `M(q)` is the multibody model's mass matrix (including rigid body
-  /// mass properties and @ref reflected_inertia "reflected inertias") and
-  /// `tau_app` is a vector of applied generalized forces. The last term is a
-  /// summation over all bodies of the dot-product of `Fapp_Bo_W` (applied
-  /// spatial force on body B at Bo) with `Jv_V_WB(q)` (B's spatial Jacobian in
-  /// world W with respect to generalized velocities v).
-  /// Note: B's spatial velocity in W can be written `V_WB = Jv_V_WB * v`.
+  /// This method allows users to map the state of `this` model, x, into a
+  /// vector of selected state xₛ with a given preferred ordering.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Sx such that `xₛ = Sx⋅x`. The size nₛ of xₛ is always smaller or equal
+  /// than the size of the full state x. That is, a user might be interested in
+  /// only a given portion of the full state x.
   ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q and the generalized velocities v.
-  /// @param[out] Cv
-  ///   On output, `Cv` will contain the product `C(q, v)v`. It must be a valid
-  ///   (non-null) pointer to a column vector in `ℛⁿ` with n the number of
-  ///   generalized velocities (num_velocities()) of the model.
-  ///   This method aborts if Cv is nullptr or if it does not have the
-  ///   proper size.
-  void CalcBiasTerm(const systems::Context<T>& context,
-                    EigenPtr<VectorX<T>> Cv) const {
-    this->ValidateContext(context);
-    DRAKE_DEMAND(Cv != nullptr);
-    internal_tree().CalcBiasTerm(context, Cv);
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in xₛ via `user_to_joint_index_map`.
+  /// The selected state is built such that selected positions are followed
+  /// by selected velocities, as in `xₛ = [qₛ, vₛ]`.
+  /// The positions in qₛ are a concatenation of the positions for each joint
+  /// in the order they appear in `user_to_joint_index_map`. That is, the
+  /// positions for `user_to_joint_index_map[0]` are first, followed by the
+  /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
+  /// selected velocities vₛ.
+  ///
+  /// @throws std::exception if there are repeated indices in
+  /// `user_to_joint_index_map`.
+  MatrixX<double> MakeStateSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const {
+    // TODO(amcastro-tri): consider having an extra `free_body_index_map`
+    // so that users could also re-order free bodies if they wanted to.
+    return internal_tree().MakeStateSelectorMatrix(user_to_joint_index_map);
   }
 
-  /// For each point Bi affixed/welded to a frame B, calculates a𝑠Bias_ABi, Bi's
-  /// translational acceleration bias in frame A with respect to "speeds" 𝑠,
-  /// where 𝑠 is either q̇ (time-derivatives of generalized positions) or v
-  /// (generalized velocities).  a𝑠Bias_ABi is the term in a_ABi (Bi's
-  /// translational acceleration in A) that does not include 𝑠̇, i.e.,
-  /// a𝑠Bias_ABi is Bi's translational acceleration in A when 𝑠̇ = 0. <pre>
-  ///   a_ABi =  J𝑠_v_ABi ⋅ 𝑠̇  +  J̇𝑠_v_ABi ⋅ 𝑠  (𝑠 = q̇ or 𝑠 = v), hence
-  ///   a𝑠Bias_ABi = J̇𝑠_v_ABi ⋅ 𝑠
-  /// </pre>
-  /// where J𝑠_v_ABi is Bi's translational velocity Jacobian in frame A for s
-  /// (see CalcJacobianTranslationalVelocity() for details on J𝑠_v_ABi).
-  /// @param[in] context The state of the multibody system.
-  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the translational
-  /// acceleration bias is with respect to 𝑠 = q̇ or 𝑠 = v.
-  /// @param[in] frame_B The frame on which points Bi are affixed/welded.
-  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
-  /// Bo (frame_B's origin) to points Bi (regarded as affixed to B), where each
-  /// position vector is expressed in frame_B.  Each column in the `3 x p`
-  /// matrix p_BoBi_B corresponds to a position vector.
-  /// @param[in] frame_A The frame that measures a𝑠Bias_ABi.
-  /// Currently, an exception is thrown if frame_A is not the World frame.
-  /// @param[in] frame_E The frame in which a𝑠Bias_ABi is expressed on output.
-  /// @returns a𝑠Bias_ABi_E Point Bi's translational acceleration bias in
-  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
-  /// a𝑠Bias_ABi_E is a `3 x p` matrix, where p is the number of points Bi.
-  /// @note Shown below, a𝑠Bias_ABi_E = J̇𝑠_v_ABp ⋅ 𝑠  is quadratic in 𝑠.<pre>
-  ///  v_ABi =  J𝑠_v_ABi ⋅ 𝑠        which upon vector differentiation in A gives
-  ///  a_ABi =  J𝑠_v_ABi ⋅ 𝑠̇ + J̇𝑠_v_ABi ⋅ 𝑠     Since J̇𝑠_v_ABi is linear in 𝑠,
-  ///  a𝑠Bias_ABi = J̇𝑠_v_ABi ⋅ 𝑠                             is quadratic in 𝑠.
-  /// </pre>
-  /// @see CalcJacobianTranslationalVelocity() to compute J𝑠_v_ABi, point Bi's
-  /// translational velocity Jacobian in frame A with respect to 𝑠.
-  /// @pre p_BoBi_B must have 3 rows.
-  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
-  /// @throws std::exception if frame_A is not the world frame.
-  Matrix3X<T> CalcBiasTranslationalAcceleration(
-      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
-      const Frame<T>& frame_A, const Frame<T>& frame_E) const {
-    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
-    this->ValidateContext(context);
-    return internal_tree().CalcBiasTranslationalAcceleration(
-        context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
+  /// This method allows user to map a vector `uₛ` containing the actuation
+  /// for a set of selected actuators into the vector u containing the actuation
+  /// values for `this` full model.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
+  /// than the size of the full vector of actuation values u. That is, a user
+  /// might be interested in only a given subset of actuators in the model.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in uₛ via
+  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
+  /// concatenation of the values for each actuator in the order they appear in
+  /// `user_to_actuator_index_map`. The actuation value in the full vector of
+  /// actuation values `u` for a particular actuator can be found at offset
+  /// JointActuator::input_start().
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
+    return internal_tree().MakeActuatorSelectorMatrix(
+        user_to_actuator_index_map);
   }
 
-  /// For one point Bp affixed/welded to a frame B, calculates A𝑠Bias_ABp, Bp's
-  /// spatial acceleration bias in frame A with respect to "speeds" 𝑠,
-  /// where 𝑠 is either q̇ (time-derivatives of generalized positions) or v
-  /// (generalized velocities).  A𝑠Bias_ABp is the term in A_ABp (Bp's
-  /// spatial acceleration in A) that does not include 𝑠̇, i.e.,
-  /// A𝑠Bias_ABp is Bi's translational acceleration in A when 𝑠̇ = 0. <pre>
-  ///   A_ABp =  J𝑠_V_ABp ⋅ 𝑠̇  +  J̇𝑠_V_ABp ⋅ 𝑠   (𝑠 = q̇ or 𝑠 = v), hence
-  ///   A𝑠Bias_ABp = J̇𝑠_V_ABp ⋅ 𝑠
-  /// </pre>
-  /// where J𝑠_V_ABp is Bp's spatial velocity Jacobian in frame A for speeds s
-  /// (see CalcJacobianSpatialVelocity() for details on J𝑠_V_ABp).
-  /// @param[in] context The state of the multibody system.
-  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the spatial accceleration bias
-  /// is with respect to 𝑠 = q̇ or 𝑠 = v.
-  /// @param[in] frame_B The frame on which point Bp is affixed/welded.
-  /// @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to point Bp
-  /// (regarded as affixed/welded to B), expressed in frame_B.
-  /// @param[in] frame_A The frame that measures A𝑠Bias_ABp.
-  /// Currently, an exception is thrown if frame_A is not the World frame.
-  /// @param[in] frame_E The frame in which A𝑠Bias_ABp is expressed on output.
-  /// @returns A𝑠Bias_ABp_E Point Bp's spatial acceleration bias in frame A
-  /// with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
-  /// @note Shown below, A𝑠Bias_ABp_E = J̇𝑠_V_ABp ⋅ 𝑠  is quadratic in 𝑠. <pre>
-  ///  V_ABp =  J𝑠_V_ABp ⋅ 𝑠        which upon vector differentiation in A gives
-  ///  A_ABp =  J𝑠_V_ABp ⋅ 𝑠̇  +  J̇𝑠_V_ABp ⋅ 𝑠   Since J̇𝑠_V_ABp is linear in 𝑠,
-  ///  A𝑠Bias_ABp = J̇𝑠_V_ABp ⋅ 𝑠                             is quadratic in 𝑠.
-  /// </pre>
-  /// @see CalcJacobianSpatialVelocity() to compute J𝑠_V_ABp, point Bp's
-  /// translational velocity Jacobian in frame A with respect to 𝑠.
-  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
-  /// @throws std::exception if frame_A is not the world frame.
-  SpatialAcceleration<T> CalcBiasSpatialAcceleration(
-      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
-      const Frame<T>& frame_A, const Frame<T>& frame_E) const {
-    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
-    this->ValidateContext(context);
-    return internal_tree().CalcBiasSpatialAcceleration(
-        context, with_respect_to, frame_B, p_BoBp_B, frame_A, frame_E);
+  /// This method creates an actuation matrix B mapping a vector of actuation
+  /// values u into generalized forces `tau_u = B * u`, where B is a matrix of
+  /// size `nv x nu` with `nu` equal to num_actuated_dofs() and `nv` equal to
+  /// num_velocities().
+  /// The vector u of actuation values is of size num_actuated_dofs(). For a
+  /// given JointActuator, `u[JointActuator::input_start()]` stores the value
+  /// for the external actuation corresponding to that actuator. `tau_u` on the
+  /// other hand is indexed by generalized velocity indices according to
+  /// `Joint::velocity_start()`.
+  /// @warning B is a permutation matrix. While making a permutation has
+  /// `O(n)` complexity, making a full B matrix has `O(n²)` complexity. For most
+  /// applications this cost can be neglected but it could become significant
+  /// for very large systems.
+  MatrixX<T> MakeActuationMatrix() const;
+
+  /// Creates the pseudoinverse of the actuation matrix B directly (without
+  /// requiring an explicit inverse calculation). See MakeActuationMatrix().
+  ///
+  /// Notably, when B is full row rank (the system is fully actuated), then the
+  /// pseudoinverse is a true inverse.
+  Eigen::SparseMatrix<double> MakeActuationMatrixPseudoinverse() const;
+
+  /// Alternative signature to build an actuation selector matrix `Su` such
+  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
+  /// model (see get_actuation_input_port()) and uₛ is a vector of actuation
+  /// values for the actuators acting on the joints listed by
+  /// `user_to_joint_index_map`. It is assumed that all joints referenced by
+  /// `user_to_joint_index_map` are actuated. See
+  /// MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
+  /// details.
+  /// @throws std::exception if any of the joints in
+  /// `user_to_joint_index_map` does not have an actuator.
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const {
+    return internal_tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
   }
 
   /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
@@ -4137,8 +4346,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if model_instances is empty or only has world body.
   /// @note The world_body() is ignored.  J𝑠_v_ACcm_ = ∑ (mᵢ Jᵢ) / mₛ, where
   /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
-  /// and Jᵢ is Bcm's translational velocity Jacobian in frame A, expressed in
-  /// frame E (Bcm is the center of mass of the iᵗʰ body).
+  /// and Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
+  /// frame E (Bᵢcm is the center of mass of the iᵗʰ body).
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
@@ -4150,127 +4359,196 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, model_instances, with_respect_to, frame_A, frame_E,
         Js_v_ACcm_E);
   }
+  /// @} <!-- System matrix computations -->
 
-  /// Calculates abias_ACcm_E, point Ccm's translational "bias" acceleration
-  /// term in frame A with respect to "speeds" 𝑠, expressed in frame E, where
-  /// point Ccm is the composite center of mass of the system of all bodies
-  /// (except world_body()) in the MultibodyPlant. abias_ACcm is the part of
-  /// a_ACcm (Ccm's translational acceleration) that does not multiply ṡ, equal
-  /// to abias_ACcm = J̇𝑠_v_ACcm ⋅ s. This allows a_ACcm to be written as
-  /// a_ACcm = J𝑠_v_ACcm ⋅ ṡ + abias_ACcm.
+  /// @anchor bias_acceleration_functions
+  /// @name Bias acceleration functions
+  /// The name a𝑠Bias_AP denotes a point P's bias translational acceleration
+  /// with respect to "speeds" 𝑠 measured in a frame A, where 𝑠 is either q̇
+  /// (time-derivatives of generalized positions) or v (generalized velocities).
+  /// a𝑠Bias_AP includes the terms in a_AP (P's translational acceleration in A)
+  /// that depend on q, q̇, v, but not terms that depend on 𝑠̇, i.e.,
+  /// a𝑠Bias_AP = a_AP when 𝑠̇ = 0. The proof below starts with v_AP (point P's
+  /// translational velocity in frame A) written in terms of J𝑠_v_AP (point P's
+  /// translational velocity Jacobian in frame A for s).  <pre>
+  ///   v_AP = J𝑠_v_AP ⋅ 𝑠         which upon vector differentiation in A gives
+  ///   a_AP = Ĵ𝑠_v_AP ⋅ 𝑠  +  J𝑠_v_AP ⋅ 𝑠̇                 setting 𝑠̇ = 0, gives
+  ///   a𝑠Bias_AP = Ĵ𝑠_v_AP ⋅ 𝑠                               is quadratic in s.
+  /// </pre>
+  /// Note: Since Ĵ𝑠_v_AP (the time-derivative of J𝑠_v_AP in frame A) is linear
+  /// in s, a𝑠Bias_AP = Ĵ𝑠_v_AP ⋅ 𝑠  is quadratic in 𝑠.
   ///
-  /// @param[in] context The state of the multibody system.
+  /// Similarly, A𝑠Bias_AB denotes a frame B's bias spatial acceleration with
+  /// respect to speeds 𝑠 measured in frame A. It can be written in terms of the
+  /// time-derivative of J𝑠_V_AB (B's spatial velocity Jacobian in frame A for
+  /// speeds 𝑠) as <pre>
+  ///   A𝑠Bias_AB = Ĵ𝑠_V_AB ⋅ 𝑠                       is quadratic in s. </pre>
+  /// @see CalcJacobianSpatialVelocity() for details on J𝑠_V_AB.
+  ///@{
+
+  /// Computes the bias term `C(q, v) v` containing Coriolis, centripetal, and
+  /// gyroscopic effects in the multibody equations of motion: <pre>
+  ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
+  /// </pre>
+  /// where `M(q)` is the multibody model's mass matrix (including rigid body
+  /// mass properties and @ref reflected_inertia "reflected inertias") and
+  /// `tau_app` is a vector of applied generalized forces. The last term is a
+  /// summation over all bodies of the dot-product of `Fapp_Bo_W` (applied
+  /// spatial force on body B at Bo) with `Jv_V_WB(q)` (B's spatial Jacobian in
+  /// world W with respect to generalized velocities v).
+  /// Note: B's spatial velocity in W can be written `V_WB = Jv_V_WB * v`.
+  /// @param[in] context Contains the state of the multibody system, including
+  /// the generalized positions q and the generalized velocities v.
+  /// @param[out] Cv On output, `Cv` will contain the product `C(q, v)v`. It
+  /// must be a valid (non-null) pointer to a column vector in `ℛⁿ` with n the
+  /// number of generalized velocities (num_velocities()) of the model. This
+  /// method aborts if Cv is nullptr or if it does not have the proper size.
+  void CalcBiasTerm(const systems::Context<T>& context,
+                    EigenPtr<VectorX<T>> Cv) const {
+    this->ValidateContext(context);
+    DRAKE_DEMAND(Cv != nullptr);
+    internal_tree().CalcBiasTerm(context, Cv);
+  }
+
+  /// For each point Bi affixed/welded to a frame B, calculates a𝑠Bias_ABi, Bi's
+  /// translational acceleration bias in frame A with respect to "speeds" 𝑠,
+  /// expressed in frame E, where speeds 𝑠 is either q̇ or v.
+  /// @param[in] context Contains the state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `abias_ACcm` is
-  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
-  /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_A The frame in which abias_ACcm is measured.
-  /// @param[in] frame_E The frame in which abias_ACcm is expressed on output.
-  /// @retval abias_ACcm_E Point Ccm's translational "bias" acceleration term
-  /// in frame A with respect to "speeds" 𝑠, expressed in frame E.
-  /// @throws std::exception if Ccm does not exist, which occurs if there
-  /// are no massive bodies in MultibodyPlant (except world_body()).
-  /// @throws std::exception if composite_mass <= 0, where composite_mass is
-  /// the total mass of all bodies except world_body() in MultibodyPlant.
-  /// @throws std::exception if frame_A is not the world frame.
+  /// JacobianWrtVariable::kV, indicating whether the translational
+  /// acceleration bias is with respect to 𝑠 = q̇ or 𝑠 = v. Currently, an
+  /// exception is thrown if with_respect_to is JacobianWrtVariable::kQDot.
+  /// @param[in] frame_B The frame on which points Bi are affixed/welded.
+  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
+  /// Bo (frame_B's origin) to points Bi (regarded as affixed to B), where each
+  /// position vector is expressed in frame_B.  Each column in the `3 x p`
+  /// matrix p_BoBi_B corresponds to a position vector.
+  /// @param[in] frame_A The frame in which a𝑠Bias_ABi is measured.
+  /// @param[in] frame_E The frame in which a𝑠Bias_ABi is expressed on output.
+  /// @returns a𝑠Bias_ABi_E Point Bi's translational acceleration bias in
+  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// a𝑠Bias_ABi_E is a `3 x p` matrix, where p is the number of points Bi.
+  /// @see CalcJacobianTranslationalVelocity() to compute J𝑠_v_ABi, point Bi's
+  /// translational velocity Jacobian in frame A with respect to 𝑠.
+  /// @pre p_BoBi_B must have 3 rows.
+  /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
+  /// @note See @ref bias_acceleration_functions "Bias acceleration functions"
+  /// for theory and details.
+  Matrix3X<T> CalcBiasTranslationalAcceleration(
+      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+      const Frame<T>& frame_A, const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
+    this->ValidateContext(context);
+    return internal_tree().CalcBiasTranslationalAcceleration(
+        context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
+  }
+
+  /// For one point Bp affixed/welded to a frame B, calculates A𝑠Bias_ABp, Bp's
+  /// spatial acceleration bias in frame A with respect to "speeds" 𝑠, expressed
+  /// in frame E, where speeds 𝑠 is either q̇ or v.
+  /// @param[in] context Contains the state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the spatial accceleration bias
+  /// is with respect to 𝑠 = q̇ or 𝑠 = v. Currently, an exception is thrown if
+  /// with_respect_to is JacobianWrtVariable::kQDot.
+  /// @param[in] frame_B The frame on which point Bp is affixed/welded.
+  /// @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to point Bp
+  /// (regarded as affixed/welded to B), expressed in frame_B.
+  /// @param[in] frame_A The frame in which A𝑠Bias_ABp is measured.
+  /// @param[in] frame_E The frame in which A𝑠Bias_ABp is expressed on output.
+  /// @returns A𝑠Bias_ABp_E Point Bp's spatial acceleration bias in frame A
+  /// with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// @see CalcJacobianSpatialVelocity() to compute J𝑠_V_ABp, point Bp's
+  /// spatial velocity Jacobian in frame A with respect to 𝑠.
+  /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
+  /// @note Use CalcBiasTranslationalAcceleration() to efficiently calculate
+  /// bias translational accelerations for a list of points (each fixed to
+  /// frame B). This function returns only one bias spatial acceleration, which
+  /// contains both frame B's bias angular acceleration and point Bp's bias
+  /// translational acceleration.
+  /// @note See @ref bias_acceleration_functions "Bias acceleration functions"
+  /// for theory and details.
+  SpatialAcceleration<T> CalcBiasSpatialAcceleration(
+      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+      const Frame<T>& frame_A, const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
+    this->ValidateContext(context);
+    return internal_tree().CalcBiasSpatialAcceleration(
+        context, with_respect_to, frame_B, p_BoBp_B, frame_A, frame_E);
+  }
+
+  /// For the system S of all bodies other than the world body, calculates
+  /// a𝑠Bias_AScm_E, Scm's translational acceleration bias in frame A with
+  /// respect to "speeds" 𝑠, expressed in frame E, where Scm is the center of
+  /// mass of S and speeds 𝑠 is either q̇ or v.
+  /// @param[in] context Contains the state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the accceleration bias is
+  /// with respect to 𝑠 = q̇ or 𝑠 = v. Currently, an exception is thrown if
+  /// with_respect_to is JacobianWrtVariable::kQDot.
+  /// @param[in] frame_A The frame in which a𝑠Bias_AScm is measured.
+  /// @param[in] frame_E The frame in which a𝑠Bias_AScm is expressed on output.
+  /// @returns a𝑠Bias_AScm_E Point Scm's translational acceleration bias in
+  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// @throws std::exception if `this` has no body except world_body().
+  /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
+  /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
+  /// @see CalcJacobianCenterOfMassTranslationalVelocity() to compute J𝑠_v_Scm,
+  /// point Scm's translational velocity Jacobian in frame A with respect to 𝑠.
+  /// @note The world_body() is ignored. asBias_AScm_E = ∑ (mᵢ aᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body, and
+  /// aᵢ is the translational bias acceleration of Bᵢcm in frame A expressed in
+  /// frame E for speeds 𝑠 (Bᵢcm is the center of mass of the iᵗʰ body).
+  /// @note See @ref bias_acceleration_functions "Bias acceleration functions"
+  /// for theory and details.
   Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E) const {
-    // TODO(yangwill): Add an optional parameter to calculate this for a
-    // subset of bodies instead of the full system
+    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
     this->ValidateContext(context);
     return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
         context, with_respect_to, frame_A, frame_E);
   }
 
-  /// This method allows users to map the state of `this` model, x, into a
-  /// vector of selected state xₛ with a given preferred ordering.
-  /// The mapping, or selection, is returned in the form of a selector matrix
-  /// Sx such that `xₛ = Sx⋅x`. The size nₛ of xₛ is always smaller or equal
-  /// than the size of the full state x. That is, a user might be interested in
-  /// only a given portion of the full state x.
-  ///
-  /// This selection matrix is particularly useful when adding PID control
-  /// on a portion of the state, see systems::controllers::PidController.
-  ///
-  /// A user specifies the preferred order in xₛ via `user_to_joint_index_map`.
-  /// The selected state is built such that selected positions are followed
-  /// by selected velocities, as in `xₛ = [qₛ, vₛ]`.
-  /// The positions in qₛ are a concatenation of the positions for each joint
-  /// in the order they appear in `user_to_joint_index_map`. That is, the
-  /// positions for `user_to_joint_index_map[0]` are first, followed by the
-  /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
-  /// selected velocities vₛ.
-  ///
-  /// @throws std::exception if there are repeated indices in
-  /// `user_to_joint_index_map`.
-  MatrixX<double> MakeStateSelectorMatrix(
-      const std::vector<JointIndex>& user_to_joint_index_map) const {
-    // TODO(amcastro-tri): consider having an extra `free_body_index_map`
-    // so that users could also re-order free bodies if they wanted to.
-    return internal_tree().MakeStateSelectorMatrix(user_to_joint_index_map);
+  /// For the system S containing the selected model instances, calculates
+  /// a𝑠Bias_AScm_E, Scm's translational acceleration bias in frame A with
+  /// respect to "speeds" 𝑠, expressed in frame E, where Scm is the center of
+  /// mass of S and speeds 𝑠 is either q̇ or v.
+  /// @param[in] context Contains the state of the multibody system.
+  /// @param[in] model_instances Vector of selected model instances.  If a model
+  /// instance is repeated in the vector (unusual), it is only counted once.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the accceleration bias is
+  /// with respect to 𝑠 = q̇ or 𝑠 = v. Currently, an exception is thrown if
+  /// with_respect_to is JacobianWrtVariable::kQDot.
+  /// @param[in] frame_A The frame in which a𝑠Bias_AScm is measured.
+  /// @param[in] frame_E The frame in which a𝑠Bias_AScm is expressed on output.
+  /// @returns a𝑠Bias_AScm_E Point Scm's translational acceleration bias in
+  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// @throws std::exception if `this` has no body except world_body().
+  /// @throws std::exception if mₛ ≤ 0, where mₛ is the mass of system S.
+  /// @throws std::exception if with_respect_to is JacobianWrtVariable::kQDot.
+  /// @see CalcJacobianCenterOfMassTranslationalVelocity() to compute J𝑠_v_Scm,
+  /// point Scm's translational velocity Jacobian in frame A with respect to 𝑠.
+  /// @note The world_body() is ignored. asBias_AScm_E = ∑ (mᵢ aᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ is the mass of system S, mᵢ is the mass of the iᵗʰ body, and
+  /// aᵢ is the translational bias acceleration of Bᵢcm in frame A expressed in
+  /// frame E for speeds 𝑠 (Bᵢcm is the center of mass of the iᵗʰ body).
+  /// @note See @ref bias_acceleration_functions "Bias acceleration functions"
+  /// for theory and details.
+  Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances,
+      JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
+    this->ValidateContext(context);
+    return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
+        context, model_instances, with_respect_to, frame_A, frame_E);
   }
-
-  /// This method allows user to map a vector `uₛ` containing the actuation
-  /// for a set of selected actuators into the vector u containing the actuation
-  /// values for `this` full model.
-  /// The mapping, or selection, is returned in the form of a selector matrix
-  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
-  /// than the size of the full vector of actuation values u. That is, a user
-  /// might be interested in only a given subset of actuators in the model.
-  ///
-  /// This selection matrix is particularly useful when adding PID control
-  /// on a portion of the state, see systems::controllers::PidController.
-  ///
-  /// A user specifies the preferred order in uₛ via
-  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
-  /// concatenation of the values for each actuator in the order they appear in
-  /// `user_to_actuator_index_map`. The actuation value in the full vector of
-  /// actuation values `u` for a particular actuator can be found at offset
-  /// JointActuator::input_start().
-  MatrixX<double> MakeActuatorSelectorMatrix(
-      const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
-    return internal_tree().MakeActuatorSelectorMatrix(
-        user_to_actuator_index_map);
-  }
-
-  /// This method creates an actuation matrix B mapping a vector of actuation
-  /// values u into generalized forces `tau_u = B * u`, where B is a matrix of
-  /// size `nv x nu` with `nu` equal to num_actuated_dofs() and `nv` equal to
-  /// num_velocities().
-  /// The vector u of actuation values is of size num_actuated_dofs(). For a
-  /// given JointActuator, `u[JointActuator::input_start()]` stores the value
-  /// for the external actuation corresponding to that actuator. `tau_u` on the
-  /// other hand is indexed by generalized velocity indices according to
-  /// `Joint::velocity_start()`.
-  /// @warning B is a permutation matrix. While making a permutation has
-  /// `O(n)` complexity, making a full B matrix has `O(n²)` complexity. For most
-  /// applications this cost can be neglected but it could become significant
-  /// for very large systems.
-  MatrixX<T> MakeActuationMatrix() const;
-
-  /// Creates the pseudoinverse of the actuation matrix B directly (without
-  /// requiring an explicit inverse calculation). See MakeActuationMatrix().
-  ///
-  /// Notably, when B is full row rank (the system is fully actuated), then the
-  /// pseudoinverse is a true inverse.
-  Eigen::SparseMatrix<double> MakeActuationMatrixPseudoinverse() const;
-
-  /// Alternative signature to build an actuation selector matrix `Su` such
-  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
-  /// model (see get_actuation_input_port()) and uₛ is a vector of actuation
-  /// values for the actuators acting on the joints listed by
-  /// `user_to_joint_index_map`. It is assumed that all joints referenced by
-  /// `user_to_joint_index_map` are actuated. See
-  /// MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
-  /// details.
-  /// @throws std::exception if any of the joints in
-  /// `user_to_joint_index_map` does not have an actuator.
-  MatrixX<double> MakeActuatorSelectorMatrix(
-      const std::vector<JointIndex>& user_to_joint_index_map) const {
-    return internal_tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
-  }
-  /// @} <!-- System matrix computations -->
+  /// @} <!-- Bias acceleration functions -->
 
   /// @anchor mbp_introspection
   /// @name                    Introspection
@@ -4300,6 +4578,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Finalize().
   /// @see Finalize().
   bool is_finalized() const { return internal_tree().topology_is_valid(); }
+
+  /// (Advanced) If `this` plant is continuous (i.e., is_discrete() is `false`),
+  /// returns false. If `this` plant is discrete, returns whether or not the
+  /// output ports are sampled (change only at a time step boundary) or
+  /// live (instantaneously reflect changes to the input ports).
+  /// See @ref output_port_sampling "Output port sampling" for details.
+  bool has_sampled_output_ports() const { return use_sampled_output_ports_; }
 
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
@@ -5167,6 +5452,36 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // This happens during Finalize().
   void DeclareOutputPorts();
 
+  // Declares an output port that is sampled (or else direct feedthrough) based
+  // on the use_sampled_output_ports_ option. Note that the name "declare
+  // sampled ..." is slightly misleading: the port is sampled if and only if the
+  // option is set to true.
+  //
+  // The `model_value` is passed along to the systems framework in support of
+  // allocating storage for type erasure. If the port should be vector-valued
+  // instead of abstract, pass an `int` for the `model_value`, containing the
+  // size of the vector.
+  //
+  // The two `calc_...` callbacks should both be member function pointers,
+  // typically to a member function templated on `<bool sampled>`. They should
+  // accept the signature `(const Context<T>&, ModelValue*) const` or
+  // `(ModelInstanceIndex, const Context<T>&, ModelValue*) const`.
+  //
+  // The `prerequisites_of_unsampled` provides the dependency tickets for
+  // `calc_unsampled`. The dependency ticket for `calc_sampled` is always
+  // just the DiscreteStepMemory abstract state.
+  //
+  // If the optional `ModelInstanceIndex model_instance` last argument is
+  // given, then it will be passed along as the first argument of the calc
+  // callbacks (in front of the context).
+  template <typename ModelValue, typename CalcFunction,
+            typename MaybeModelInstanceIndex = void*>
+  DRAKE_NO_EXPORT systems::OutputPortIndex DeclareSampledOutputPort(
+      const std::string& name, const ModelValue& model_value,
+      const CalcFunction& calc_sampled, const CalcFunction& calc_unsampled,
+      const std::set<systems::DependencyTicket>& prerequisites_of_unsampled,
+      MaybeModelInstanceIndex model_instance = {});
+
   // Estimates a global set of point contact parameters given a
   // `penetration_allowance`. See set_penetration_allowance()` for details.
   // TODO(amcastro-tri): Once #13064 is resolved, make this a method outside MBP
@@ -5184,10 +5499,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
 
   // Calc method for the "net_actuation" output port.
+  template <bool sampled>
   void CalcNetActuationOutput(const systems::Context<T>& context,
                               systems::BasicVector<T>* output) const;
 
   // Calc method for the "{model_instance_name}_net_actuation" output ports.
+  template <bool sampled>
   void CalcInstanceNetActuationOutput(ModelInstanceIndex model_instance,
                                       const systems::Context<T>& context,
                                       systems::BasicVector<T>* output) const;
@@ -5227,8 +5544,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       internal::AccelerationKinematicsCache<T>* ac) const override;
 
   // If the plant is modeled as a discrete system with periodic updates (see
-  // is_discrete()), this method computes the periodic updates of the state
-  // using a semi-explicit Euler strategy, that is:
+  // is_discrete()) with use_sampled_output_ports set to `false`, then this
+  // method computes the periodic updates of the state using a semi-explicit
+  // Euler strategy, that is:
   //   vⁿ⁺¹ = vⁿ + dt v̇ⁿ
   //   qⁿ⁺¹ = qⁿ + dt N(qⁿ) vⁿ⁺¹
   // This semi-explicit update inherits some of the nice properties of the
@@ -5240,9 +5558,34 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // shown to be exactly conserved and to be within O(dt) of the real energy of
   // the mechanical system.)
   // TODO(amcastro-tri): Update this docs when contact is added.
-  systems::EventStatus CalcDiscreteStep(
+  systems::EventStatus CalcStepDiscrete(
       const systems::Context<T>& context0,
-      systems::DiscreteValues<T>* updates) const;
+      systems::DiscreteValues<T>* next_discrete_state) const;
+
+  // If the plant is modeled as a discrete system with periodic updates (see
+  // is_discrete()) with use_sampled_output_ports set to `true`, then this
+  // method computes the periodic updates of the state. The function performs
+  // the same update as CalcStepDiscrete() does for the discrete values, but
+  // also updates the abstract state that holds the sample.
+  systems::EventStatus CalcStepUnrestricted(
+      const systems::Context<T>& context0, systems::State<T>* next_state) const;
+
+  // Accesses the AccelerationKinematicsCache for use by possibly-sampled
+  // output port calculations:
+  //
+  // - When `sampled` is true, the result will be all-zero when the plant has
+  //   not yet taken a step. Otherwise, it will refer to the sampled
+  //   acceleration kinematics from the most recent step.
+  //
+  // - When `sampled` is false, the result will be an instantaneously up-to-date
+  //   function of the current context.
+  //
+  // Note that MbTS::EvalForwardDynamics is the non-sampled flavor of this eval
+  // function. When sampled is false, we just call that.
+  template <bool sampled>
+  const internal::AccelerationKinematicsCache<T>&
+  EvalAccelerationKinematicsCacheForOutputPortCalc(
+      const systems::Context<T>& context) const;
 
   // Data will be resized on output according to the documentation for
   // JointLockingCacheData.
@@ -5294,8 +5637,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     requires scalar_predicate<T>::is_bool;
 
   // Calc method for the "reaction_forces" output port.
+  // This is responsible for handling the sampled vs unsampled branching logic.
+  template <bool sampled>
   void CalcReactionForcesOutput(const systems::Context<T>& context,
                                 std::vector<SpatialForce<T>>* output) const;
+
+  // Helper method used by CalcReactionForcesOutput().
+  // This is responsible for the actual (unsampled) computation of the dynamics.
+  void CalcReactionForces(const systems::Context<T>& context,
+                          std::vector<SpatialForce<T>>* output) const;
 
   // Collect joint actuator forces and externally provided spatial and
   // generalized forces.
@@ -5356,6 +5706,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Calc method for the "{model_instance_name}_generalized_acceleration" output
   // ports.
+  template <bool sampled>
   void CalcInstanceGeneralizedContactForcesOutput(
       ModelInstanceIndex model_instance, const systems::Context<T>& context,
       systems::BasicVector<T>* output) const;
@@ -5370,16 +5721,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       std::vector<SpatialVelocity<T>>* output) const;
 
   // Calc method for the "body_spatial_accelerations" output port.
+  template <bool sampled>
   void CalcBodySpatialAccelerationsOutput(
       const systems::Context<T>& context,
       std::vector<SpatialAcceleration<T>>* output) const;
 
   // Calc method for the "generalized_acceleration" output port.
+  template <bool sampled>
   void CalcGeneralizedAccelerationOutput(const systems::Context<T>& context,
                                          systems::BasicVector<T>* output) const;
 
   // Calc method for the "{model_instance_name}_generalized_acceleration"
   // output ports.
+  template <bool sampled>
   void CalcInstanceGeneralizedAccelerationOutput(
       ModelInstanceIndex model_instance, const systems::Context<T>& context,
       systems::BasicVector<T>* output) const;
@@ -5422,6 +5776,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               geometry::FramePoseVector<T>* output) const;
 
   // Calc method for the "contact_results" output port.
+  template <bool sampled>
   void CalcContactResultsOutput(const systems::Context<T>& context,
                                 ContactResults<T>* output) const;
 
@@ -5637,6 +5992,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
 
+  bool use_sampled_output_ports_{};
+
   // This manager class is used to advance discrete states.
   // Post-finalize, it is never null (for a discrete-time plant).
   // TODO(amcastro-tri): migrate the entirety of computations related to contact
@@ -5667,6 +6024,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Whether to apply collsion filters to adjacent bodies at Finalize().
   bool adjacent_bodies_collision_filters_{
       MultibodyPlantConfig{}.adjacent_bodies_collision_filters};
+
+  // When use_sampled_output_ports_ is true, then during Finalize() we populate
+  // this with all-zero data, for use when the State has not yet been stepped.
+  std::unique_ptr<internal::AccelerationKinematicsCache<T>>
+      zero_acceleration_kinematics_placeholder_;
 
   InputPortIndices input_port_indices_;
   OutputPortIndices output_port_indices_;

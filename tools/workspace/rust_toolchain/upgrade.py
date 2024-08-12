@@ -87,7 +87,7 @@ def _main():
     subprocess.run(check=True, args=[
         "bazel", "build", "//tools/lint:buildifier"])
     subprocess.run(check=True, args=[
-        "../../../bazel-bin/tools/lint/buildifier", archives])
+        "../../../bazel-bin/tools/lint/buildifier", archives.absolute()])
 
     # Clean up (but not with a context manager -- if we crash, we should leave
     # the intermediate output intact for debugging).

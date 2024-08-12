@@ -277,8 +277,7 @@ class JointActuator final : public MultibodyElement<T> {
   /// modeling of PD controlled actuators.
   ///@{
 
-  // TODO(amcastro-tri): Place gains in the context as parameters to allow
-  // changing them post-finalize.
+  // TODO(amcastro-tri): Place gains in the context as parameters.
   /// Set controller gains for this joint actuator.
   /// This enables the modeling of a simple PD controller of the form:
   ///   ũ = -Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff
@@ -292,10 +291,15 @@ class JointActuator final : public MultibodyElement<T> {
   /// velocity are specified through
   /// MultibodyPlant::get_desired_state_input_port().
   ///
+  /// @pre The MultibodyPlant associated with this actuator has not yet
+  /// allocated a Context. In other words, although gains can be changed
+  /// post-Finalize, they cannot be changed during simulation.
+  ///
   /// @throws iff the proportional gain is not strictly positive or if the
   /// derivative gain is negative.
-  /// @throws iff the owning MultibodyPlant is finalized. See
-  /// MultibodyPlant::Finalize().
+  /// @throws iff the owning MultibodyPlant is finalized and no gains were set
+  /// pre-finalize. In other words, *editing* gains post-finalize is fine, but
+  /// *adding* gains post-finalize is an error. See MultibodyPlant::Finalize().
   void set_controller_gains(PdControllerGains gains);
 
   /// Returns `true` if controller gains have been specified with a call to
