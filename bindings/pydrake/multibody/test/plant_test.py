@@ -1165,12 +1165,24 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        instance, = Parser(plant_f).AddModels(file_name)
+        parser = Parser(plant_f)
+        instance, = parser.AddModels(file_name)
+        # We'll add one more body with a floating joint between it and the
+        # double_pendulum base.
+        box_file = FindResourceOrThrow("drake/multibody/models/box.urdf")
+        box_instance, = parser.AddModels(box_file)
+        base_f = plant_f.GetBodyByName("base")
+        box_f = plant_f.GetBodyByName("box")
+        plant_f.AddJoint(QuaternionFloatingJoint_[float](
+            name="quaternion_floating",
+            frame_on_parent=base_f.body_frame(),
+            frame_on_child=box_f.body_frame()))
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
         world_frame = plant.world_frame()
         base = plant.GetBodyByName("base")
+        box = plant.GetBodyByName("box")
         base_frame = plant.GetFrameByName("base")
         X_WL = plant.CalcRelativeTransform(
             context=context, frame_A=world_frame, frame_B=base_frame)
@@ -1346,19 +1358,24 @@ class TestPlant(unittest.TestCase):
         # Set pose for the base.
         X_WB_desired = RigidTransform.Identity()
         X_WB = plant.CalcRelativeTransform(context, world_frame, base_frame)
-
-        # After 2024-12-01 deprecation is complete, we can remove this because
-        # we don't have to confirm which overload gets defaulted without
-        # parameters.
-        plant.SetFreeBodyPose(context, base, X_WB_desired)
-        plant.SetFreeBodyPose(
-            context=context, body=base, X_PB=X_WB_desired)
-        with catch_drake_warnings(expected_count=1):
-            plant.SetFreeBodyPose(
-                context=context, body=base, X_WB=X_WB_desired)
+        plant.SetFreeBodyPose(context=context, body=base, X_PB=X_WB_desired)
         numpy_compare.assert_float_equal(
             X_WB.GetAsMatrix4(),
             numpy_compare.to_float(X_WB_desired.GetAsMatrix4()))
+
+        # Tests against legacy parameter name `X_WB`.`
+        # When we don't *name* the pose (via X_WB=), no exceptions. Likewise,
+        # if we call it X_PB (with base tested above).
+        plant.SetFreeBodyPose(context, base, X_WB_desired)
+        plant.SetFreeBodyPose(context, box, X_WB_desired)
+        plant.SetFreeBodyPose(context=context, body=box, X_PB=X_WB_desired)
+
+        # When we *name* the pose as X_WB, the body's "floating" state matters.
+        plant.SetFreeBodyPose(
+            context=context, body=base, X_WB=X_WB_desired)
+        with self.assertRaises(RuntimeError):
+            plant.SetFreeBodyPose(
+                context=context, body=box, X_WB=X_WB_desired)
 
         # Compute spatial accelerations for base.
         if T == Expression and plant.time_step() != 0:
