@@ -380,20 +380,10 @@ void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix) {
 }
 
 void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
-  /*
-  Add a cost to the control points of the trajectory that is of the form ∑
-  (rᵢ₊₁ * weight_matrix * rᵢ)
-  */
+  // Add a cost to the control points of the trajectory that is of the form ∑
+  // (rᵢ₊₁ * weight_matrix * rᵢ)
 
   Eigen::MatrixXd b = Eigen::VectorXd::Zero(2 * num_positions());
-
-  // Occasionally numerical variation results in very small values that are not
-  // exactly zero. This ensures that the members of b are actually 0
-  for (int i = 0; i < b.rows(); i++) {
-    for (int j = 0; j < b.cols(); j++) {
-      b(i, j) = 0;
-    }
-  }
 
   MatrixXd Q(2 * num_positions(), 2 * num_positions());
 
@@ -405,9 +395,7 @@ void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
   Q.block(num_positions(), 0, num_positions(), num_positions())
       << -weight_matrix;
 
-  double constTerm = 0;
-  const auto path_squared_cost =
-      std::make_shared<QuadraticCost>(Q, b, constTerm);
+  const auto path_squared_cost = std::make_shared<QuadraticCost>(Q, b);
 
   for (Vertex* v : vertices_) {
     auto control_points = GetControlPoints(*v);
@@ -1433,7 +1421,6 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
     for (const MatrixXd& weight_matrix : global_path_length_costs_) {
       subgraph->AddPathLengthCost(weight_matrix);
     }
-    // These costs and constraints rely on the derivative of the trajectory.
     for (const MatrixXd& weight_matrix : global_path_energy_costs_) {
       subgraph->AddPathEnergyCost(weight_matrix);
     }

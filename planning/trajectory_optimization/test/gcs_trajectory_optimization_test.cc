@@ -245,10 +245,11 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, QuadraticPathLengthSpacing) {
     const auto* bezier =
         dynamic_cast<const drake::trajectories::BezierCurve<double>*>(&segment);
     EXPECT_TRUE(bezier);
-    auto controlPts = bezier->control_points();
+    auto control_points = bezier->control_points();
     for (int j = 0; j < (kOrder - 1); j++) {
-      EXPECT_NEAR((controlPts.col(j) - controlPts.col(j + 1)).norm(),
-                  (controlPts.col(j + 1) - controlPts.col(j + 2)).norm(), 1e-3);
+      EXPECT_NEAR(
+          (control_points.col(j) - control_points.col(j + 1)).norm(),
+          (control_points.col(j + 1) - control_points.col(j + 2)).norm(), 1e-3);
     }
   }
 }

@@ -154,15 +154,12 @@ class GcsTrajectoryOptimization final {
     */
     void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix);
 
-    /** Adds multiple Quadratic Costs on the path length. Since we cannot
-    directly compute the path length of a Bézier curve, we minimize the upper
-    bound of the path integral by minimizing the sum of (weighted) distances
-    between control points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂². This cost yields
-    simpler gradients than AddPathLengthCost, and biases the control points
-    towards being evenly spaced. In most cases, solve times for graphs with path
-    energy cost can be expected to solve 30% faster than graphs with path length
-    cost. However, this cost could also yield control points to visit a greater
-    number of regions.
+    /** Similar to AddPathLengthCost in usage, but minimizes ∑ |weight_matrix *
+    (rᵢ₊₁ − rᵢ)|₂². In comparison to AddPathLength cost, this cost encourages
+    control points to be evenly spaced but may result in greater number of
+    regions and larger path length on the solution. It is recommended to use
+    this cost only with SolveConvexRestriction when it becomes a quadratic cost
+    for which some solvers show a better performance.
 
     @param weight_matrix is the relative weight of each component for the cost.
     The diagonal of the matrix is the weight for each dimension. The
@@ -182,15 +179,13 @@ class GcsTrajectoryOptimization final {
     */
     void AddPathLengthCost(double weight = 1.0);
 
-    /** Adds multiple Quadratic Costs on the path length. Since we cannot
-    directly compute the path length of a Bézier curve, we minimize the upper
-    bound of the path integral by minimizing the sum of (weighted) distances
-    between control points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂². This cost yields
-    simpler gradients than AddPathLengthCost, and biases the control points
-    towards being evenly spaced. In most cases, solve times for graphs with path
-    energy cost can be expected to solve 30% faster than graphs with path length
-    cost. However, this cost could also yield control points to visit a greater
-    number of regions.
+    /** Similar to AddPathLengthCost in usage, but minimizes ∑ |(rᵢ₊₁ − rᵢ)|₂²
+    with weight being applied uniformly to all dimensions. In comparison to
+    AddPathLength cost, this cost encourages control points to be evenly spaced
+    but may result in greater number of regions and larger path length on the
+    solution. It is recommended to use this cost only with
+    SolveConvexRestriction when it becomes a quadratic cost for which some
+    solvers show a better performance.
 
     @param weight is the relative weight of the cost.
     */
@@ -663,14 +658,12 @@ class GcsTrajectoryOptimization final {
   */
   void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix);
 
-  /** Adds multiple Quadratic Costs on the path length. Since we cannot directly
-  compute the path length of a Bézier curve, we minimize the upper bound of the
-  path integral by minimizing the sum of (weighted) distances between control
-  points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂². This cost yields simpler gradients
-  than AddPathLengthCost, and biases the control points towards being evenly
-  spaced. In most cases, solve times for graphs with path energy cost can be
-  expected to solve 30% faster than graphs with path length cost. However, this
-  cost could also yield control points to visit a greater number of regions.
+  /** Similar to AddPathLengthCost in usage, but minimizes ∑ |weight_matrix *
+  (rᵢ₊₁ − rᵢ)|₂². In comparison to AddPathLength cost, this cost encourages
+  control points to be evenly spaced but may result in greater number of regions
+  and larger path length on the solution. It is recommended to use this cost
+  only with SolveConvexRestriction when it becomes a quadratic cost for which
+  some solvers show a better performance.
 
   This cost will be added to the entire graph. Since the path length is only
   defined for Bézier curves that have two or more control points, this cost will
@@ -701,14 +694,13 @@ class GcsTrajectoryOptimization final {
   */
   void AddPathLengthCost(double weight = 1.0);
 
-  /** Adds multiple Quadratic Costs on the path length. Since we cannot directly
-  compute the path length of a Bézier curve, we minimize the upper bound of the
-  path integral by minimizing the sum of (weighted) distances between control
-  points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂². This cost yields simpler gradients
-  than AddPathLengthCost, and biases the control points towards being evenly
-  spaced. In most cases, solve times for graphs with path energy cost can be
-  expected to solve 30% faster than graphs with path length cost. However, this
-  could also yield control points to visit a greater number of regions.
+  /** Similar to AddPathLengthCost in usage, but minimizes ∑ |(rᵢ₊₁ − rᵢ)|₂²
+  with weight being applied uniformly to all dimensions. In comparison to
+  AddPathLength cost, this cost encourages control points to be evenly spaced
+  but may result in greater number of regions and larger path length on the
+  solution. It is recommended to use this cost only with SolveConvexRestriction
+  when it becomes a quadratic cost for which some solvers show a better
+  performance.
 
   This cost will be added to the entire graph. Since the path length is only
   defined for Bézier curves that have two or more control points, this cost will
