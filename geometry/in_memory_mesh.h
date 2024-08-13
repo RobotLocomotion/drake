@@ -5,6 +5,7 @@
 #include <utility>
 #include <variant>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/file_contents.h"
 #include "drake/common/string_map.h"
 
@@ -34,6 +35,8 @@ struct InMemoryMesh {
  specification, an instance of %MeshSource to communicate that ability. */
 class MeshSource {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshSource);
+
   /** Constructs from a file path. This explicitly allows for implicit
    conversion from std::filesystem::path. */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
