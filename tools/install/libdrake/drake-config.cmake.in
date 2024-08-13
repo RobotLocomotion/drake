@@ -6,7 +6,7 @@ if(CMAKE_VERSION VERSION_LESS 3.9.0)
   message(FATAL_ERROR "CMake >= 3.9 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 3.0)
+cmake_policy(VERSION 3.9)
 set(CMAKE_IMPORT_FILE_VERSION 1)
 
 include(CMakeFindDependencyMacro)
