@@ -90,7 +90,7 @@ bool ConvexHull::DoIsEmpty() const {
   if (empty_sets_removed_) {
     return participating_sets_.empty();
   }
-  // if empty_sets_removed_ is false, then we reconstruct the
+  // If empty_sets_removed_ is false, then we reconstruct the
   // participating_sets_ and check if it is empty.
   return ConvexHull(sets_, true).IsEmpty();
 }
@@ -120,7 +120,7 @@ bool ConvexHull::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                                    VectorXd::Ones(1), alpha);
   // constraint: 1 ≥ αᵢ ≥ 0
   prog.AddBoundingBoxConstraint(0, 1, alpha);
-  // add the constraints for each convex set
+  // Add the constraints for each convex set.
   for (int i = 0; i < n; ++i) {
     participating_sets_[i]->AddPointInNonnegativeScalingConstraints(
         &prog, x_sets.col(i), alpha(i));

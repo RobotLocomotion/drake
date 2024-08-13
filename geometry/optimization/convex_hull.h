@@ -44,8 +44,7 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
   sets, including potentially empty sets. */
   const ConvexSets& participating_sets() const { return participating_sets_; }
 
-  /** Returns true if the constructor checked for empty sets and removed them,
-  if any. */
+  /** Returns true if `this` was constructed with remove_empty_sets=true. */
   bool empty_sets_removed() const { return empty_sets_removed_; }
 
   /** Returns a reference to the convex set at the given index (including empty

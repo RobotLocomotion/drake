@@ -75,7 +75,7 @@ GTEST_TEST(ConvexHullTest, PointInSet1) {
   ConvexHull hull(MakeConvexSets(rectangle));
   EXPECT_TRUE(hull.PointInSet(Eigen::Vector2d(0.0, 1.0), 1e-6));
   EXPECT_FALSE(hull.PointInSet(Eigen::Vector2d(1.0, 1.1), 1e-6));
-  // test tolerance.
+  // Test tolerance.
   EXPECT_TRUE(hull.PointInSet(Eigen::Vector2d(1.0, 1.1), 0.1));
 }
 
@@ -136,7 +136,7 @@ GTEST_TEST(ConvexHullTest, AddPointInSetConstraints3) {
                            Eigen::Vector2d(1.0, 1.0));
   ConvexHull hull1(MakeConvexSets(point1, rectangle));
   ConvexHull hull2(MakeConvexSets(hull1, point2));
-  // We know that (0.5,0) to (1.0, 1.0) becomes a face
+  // We know that (0.5, 0) to (1.0, 1.0) becomes a face
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(
       hull2, Eigen::Vector2d(0.3, 0.0)));
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(
@@ -156,7 +156,6 @@ GTEST_TEST(ConvexHullTest, AddPointInNonnegativeScalingConstraints1) {
   b << 1, -2;
   HPolyhedron empty_hpolyhedron(A, b);
   ConvexHull hull(MakeConvexSets(point, rectangle, empty_hpolyhedron));
-  // ConvexHull hull(MakeConvexSets(point, rectangle));
   solvers::MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2, "x");
   auto t = prog.NewContinuousVariables(1, "t");
@@ -192,7 +191,7 @@ GTEST_TEST(ConvexHullTest, AddPointInNonnegativeScalingConstraints2) {
   Eigen::MatrixXd A(2, 2);
   A << 0, -1, 1, 0;
   Eigen::Vector2d b(0.0, 2.0);
-  // Select a 3d vector c = [1, 2, -1] and d = 5.0, just to make the problem.
+  // Select a 3d vector c = [1, 2, -1] and d = 5.0, just to make the problem
   // more interesting.
   Eigen::Vector3d c(1.0, 1.0, 1.0);
   const double d = 0.4;
