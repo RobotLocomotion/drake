@@ -345,10 +345,10 @@ class SpanningForest {
   @pre v_index is in range [0, num_velocities) */
   inline TreeIndex v_to_tree(int v_index) const;
 
-  // TODO(sherm1) Remove this.
-  // (Testing stub only) Add enough fake elements to the forest to allow
-  // testing of the Tree and LoopConstraint APIs.
-  void AddStubTreeAndLoopConstraint();
+  // FYI Debugging APIs (including Graphviz-related) are defined in
+  // spanning_forest_debug.cc.
+
+  std::string GenerateGraphvizString(std::string_view label) const;
 
  private:
   friend class LinkJointGraph;

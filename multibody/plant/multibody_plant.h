@@ -4008,6 +4008,126 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().CalcMassMatrix(context, M);
   }
 
+  /// This method allows users to map the state of `this` model, x, into a
+  /// vector of selected state xₛ with a given preferred ordering.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Sx such that `xₛ = Sx⋅x`. The size nₛ of xₛ is always smaller or equal
+  /// than the size of the full state x. That is, a user might be interested in
+  /// only a given portion of the full state x.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in xₛ via `user_to_joint_index_map`.
+  /// The selected state is built such that selected positions are followed
+  /// by selected velocities, as in `xₛ = [qₛ, vₛ]`.
+  /// The positions in qₛ are a concatenation of the positions for each joint
+  /// in the order they appear in `user_to_joint_index_map`. That is, the
+  /// positions for `user_to_joint_index_map[0]` are first, followed by the
+  /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
+  /// selected velocities vₛ.
+  ///
+  /// @throws std::exception if there are repeated indices in
+  /// `user_to_joint_index_map`.
+  MatrixX<double> MakeStateSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const {
+    // TODO(amcastro-tri): consider having an extra `free_body_index_map`
+    // so that users could also re-order free bodies if they wanted to.
+    return internal_tree().MakeStateSelectorMatrix(user_to_joint_index_map);
+  }
+
+  /// This method allows user to map a vector `uₛ` containing the actuation
+  /// for a set of selected actuators into the vector u containing the actuation
+  /// values for `this` full model.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
+  /// than the size of the full vector of actuation values u. That is, a user
+  /// might be interested in only a given subset of actuators in the model.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in uₛ via
+  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
+  /// concatenation of the values for each actuator in the order they appear in
+  /// `user_to_actuator_index_map`. The actuation value in the full vector of
+  /// actuation values `u` for a particular actuator can be found at offset
+  /// JointActuator::input_start().
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
+    return internal_tree().MakeActuatorSelectorMatrix(
+        user_to_actuator_index_map);
+  }
+
+  /// This method creates an actuation matrix B mapping a vector of actuation
+  /// values u into generalized forces `tau_u = B * u`, where B is a matrix of
+  /// size `nv x nu` with `nu` equal to num_actuated_dofs() and `nv` equal to
+  /// num_velocities().
+  /// The vector u of actuation values is of size num_actuated_dofs(). For a
+  /// given JointActuator, `u[JointActuator::input_start()]` stores the value
+  /// for the external actuation corresponding to that actuator. `tau_u` on the
+  /// other hand is indexed by generalized velocity indices according to
+  /// `Joint::velocity_start()`.
+  /// @warning B is a permutation matrix. While making a permutation has
+  /// `O(n)` complexity, making a full B matrix has `O(n²)` complexity. For most
+  /// applications this cost can be neglected but it could become significant
+  /// for very large systems.
+  MatrixX<T> MakeActuationMatrix() const;
+
+  /// Creates the pseudoinverse of the actuation matrix B directly (without
+  /// requiring an explicit inverse calculation). See MakeActuationMatrix().
+  ///
+  /// Notably, when B is full row rank (the system is fully actuated), then the
+  /// pseudoinverse is a true inverse.
+  Eigen::SparseMatrix<double> MakeActuationMatrixPseudoinverse() const;
+
+  /// Alternative signature to build an actuation selector matrix `Su` such
+  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
+  /// model (see get_actuation_input_port()) and uₛ is a vector of actuation
+  /// values for the actuators acting on the joints listed by
+  /// `user_to_joint_index_map`. It is assumed that all joints referenced by
+  /// `user_to_joint_index_map` are actuated. See
+  /// MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
+  /// details.
+  /// @throws std::exception if any of the joints in
+  /// `user_to_joint_index_map` does not have an actuator.
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const {
+    return internal_tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
+  }
+  /// @} <!-- System matrix computations -->
+
+  /// @anchor Jacobian_functions
+  /// @name Jacobian functions
+  /// Herein, a Jacobian is a matrix that contains the partial derivatives of a
+  /// vector with respect to a list of scalars. The vector may be a position
+  /// vector, translational velocity, angular velocity, or spatial velocity and
+  /// the scalars may be the system's generalized positions q or "speeds" 𝑠
+  /// where 𝑠 is either q̇ (time-derivative of generalized positions) or
+  /// v (generalized velocities).
+  ///
+  /// JAq_p_PQ denotes the Jacobian in a frame A of the position vector from
+  /// point P to point Q with respect to the generalized positions q. It is
+  /// calculated with CalcJacobianPositionVector().
+  ///
+  /// J𝑠_w_AB denotes the angular velocity Jacobian in a frame A of a frame B
+  /// with respect to "speeds" 𝑠. It is calculated with
+  /// CalcJacobianAngularVelocity().
+  ///
+  /// J𝑠_V_ABp denotes the spatial velocity Jacobian in a frame A of a point Bp
+  /// of frame B with respect to "speeds" 𝑠. It is calculated with
+  /// CalcJacobianSpatialVelocity().
+  ///
+  /// J𝑠_v_ABp denotes the translational velocity Jacobian in a frame A of a
+  /// point Bp of frame B with respect to "speeds" 𝑠. It is calculated with
+  /// CalcJacobianTranslationalVelocity().
+  ///
+  /// J𝑠_v_AScm_E denotes the translational velocity Jacobian in a frame A of a
+  /// point Scm with respect to "speeds" 𝑠, where point Scm is the center of
+  /// mass of a system S. It is calculated with
+  /// CalcJacobianCenterOfMassTranslationalVelocity()
+  ///@{
+
   /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
@@ -4038,15 +4158,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `J𝑠_V_ABp_E` is a `6 x n` matrix, where n is the number of elements in 𝑠.
   /// The Jacobian is a function of only generalized positions q (which are
   /// pulled from the context).
-  /// Note: The returned `6 x n` matrix stores frame B's angular velocity
+  /// @note The returned `6 x n` matrix stores frame B's angular velocity
   /// Jacobian in A in rows 1-3 and stores point Bp's translational velocity
   /// Jacobian in A in rows 4-6, i.e., <pre>
   ///     J𝑠_w_AB_E = J𝑠_V_ABp_E.topRows<3>();
   ///     J𝑠_v_ABp_E = J𝑠_V_ABp_E.bottomRows<3>();
   /// </pre>
-  /// Note: Consider CalcJacobianTranslationalVelocity() for multiple points
+  /// @note Consider CalcJacobianTranslationalVelocity() for multiple points
   /// fixed to frame B and consider CalcJacobianAngularVelocity() to calculate
   /// frame B's angular velocity Jacobian.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   /// @throws std::exception if `J𝑠_V_ABp_E` is nullptr or not sized `6 x n`.
   void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
                                    JacobianWrtVariable with_respect_to,
@@ -4086,6 +4208,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The Jacobian is a function of only generalized positions q (which are
   /// pulled from the context).  The previous definition shows `J𝑠_w_AB_E` is
   /// a matrix of size `3 x n`, where n is the number of elements in 𝑠.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   /// @throws std::exception if `J𝑠_w_AB_E` is nullptr or not of size `3 x n`.
   void CalcJacobianAngularVelocity(const systems::Context<T>& context,
                                    const JacobianWrtVariable with_respect_to,
@@ -4138,6 +4262,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// </pre>
   /// Note: Each partial derivative of p_AoBi is taken in frame A.
   /// @see CalcJacobianPositionVector() for details on Jq_p_AoBi.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   void CalcJacobianTranslationalVelocity(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
@@ -4186,6 +4312,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Note: Jq_p_AaBi = Jq_p_AoBi, where point Aa is _any_ point fixed/welded to
   /// frame A, i.e., this calculation's result is the same if point Ao is
   /// replaced with any point fixed on frame A.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   void CalcJacobianPositionVector(const systems::Context<T>& context,
                                   const Frame<T>& frame_B,
                                   const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
@@ -4223,6 +4351,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// are no massive bodies in MultibodyPlant (except world_body()).
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
   /// bodies contained in `this` MultibodyPlant).
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
@@ -4260,6 +4390,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
   /// and Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
   /// frame E (Bᵢcm is the center of mass of the iᵗʰ body).
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
@@ -4271,6 +4403,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, model_instances, with_respect_to, frame_A, frame_E,
         Js_v_ACcm_E);
   }
+  /// @} <!-- Jacobian_functions -->
 
   /// @anchor bias_acceleration_functions
   /// @name Bias acceleration functions
@@ -4459,96 +4592,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
         context, model_instances, with_respect_to, frame_A, frame_E);
   }
-  ///@}
-
-  /// This method allows users to map the state of `this` model, x, into a
-  /// vector of selected state xₛ with a given preferred ordering.
-  /// The mapping, or selection, is returned in the form of a selector matrix
-  /// Sx such that `xₛ = Sx⋅x`. The size nₛ of xₛ is always smaller or equal
-  /// than the size of the full state x. That is, a user might be interested in
-  /// only a given portion of the full state x.
-  ///
-  /// This selection matrix is particularly useful when adding PID control
-  /// on a portion of the state, see systems::controllers::PidController.
-  ///
-  /// A user specifies the preferred order in xₛ via `user_to_joint_index_map`.
-  /// The selected state is built such that selected positions are followed
-  /// by selected velocities, as in `xₛ = [qₛ, vₛ]`.
-  /// The positions in qₛ are a concatenation of the positions for each joint
-  /// in the order they appear in `user_to_joint_index_map`. That is, the
-  /// positions for `user_to_joint_index_map[0]` are first, followed by the
-  /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
-  /// selected velocities vₛ.
-  ///
-  /// @throws std::exception if there are repeated indices in
-  /// `user_to_joint_index_map`.
-  MatrixX<double> MakeStateSelectorMatrix(
-      const std::vector<JointIndex>& user_to_joint_index_map) const {
-    // TODO(amcastro-tri): consider having an extra `free_body_index_map`
-    // so that users could also re-order free bodies if they wanted to.
-    return internal_tree().MakeStateSelectorMatrix(user_to_joint_index_map);
-  }
-
-  /// This method allows user to map a vector `uₛ` containing the actuation
-  /// for a set of selected actuators into the vector u containing the actuation
-  /// values for `this` full model.
-  /// The mapping, or selection, is returned in the form of a selector matrix
-  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
-  /// than the size of the full vector of actuation values u. That is, a user
-  /// might be interested in only a given subset of actuators in the model.
-  ///
-  /// This selection matrix is particularly useful when adding PID control
-  /// on a portion of the state, see systems::controllers::PidController.
-  ///
-  /// A user specifies the preferred order in uₛ via
-  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
-  /// concatenation of the values for each actuator in the order they appear in
-  /// `user_to_actuator_index_map`. The actuation value in the full vector of
-  /// actuation values `u` for a particular actuator can be found at offset
-  /// JointActuator::input_start().
-  MatrixX<double> MakeActuatorSelectorMatrix(
-      const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
-    return internal_tree().MakeActuatorSelectorMatrix(
-        user_to_actuator_index_map);
-  }
-
-  /// This method creates an actuation matrix B mapping a vector of actuation
-  /// values u into generalized forces `tau_u = B * u`, where B is a matrix of
-  /// size `nv x nu` with `nu` equal to num_actuated_dofs() and `nv` equal to
-  /// num_velocities().
-  /// The vector u of actuation values is of size num_actuated_dofs(). For a
-  /// given JointActuator, `u[JointActuator::input_start()]` stores the value
-  /// for the external actuation corresponding to that actuator. `tau_u` on the
-  /// other hand is indexed by generalized velocity indices according to
-  /// `Joint::velocity_start()`.
-  /// @warning B is a permutation matrix. While making a permutation has
-  /// `O(n)` complexity, making a full B matrix has `O(n²)` complexity. For most
-  /// applications this cost can be neglected but it could become significant
-  /// for very large systems.
-  MatrixX<T> MakeActuationMatrix() const;
-
-  /// Creates the pseudoinverse of the actuation matrix B directly (without
-  /// requiring an explicit inverse calculation). See MakeActuationMatrix().
-  ///
-  /// Notably, when B is full row rank (the system is fully actuated), then the
-  /// pseudoinverse is a true inverse.
-  Eigen::SparseMatrix<double> MakeActuationMatrixPseudoinverse() const;
-
-  /// Alternative signature to build an actuation selector matrix `Su` such
-  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
-  /// model (see get_actuation_input_port()) and uₛ is a vector of actuation
-  /// values for the actuators acting on the joints listed by
-  /// `user_to_joint_index_map`. It is assumed that all joints referenced by
-  /// `user_to_joint_index_map` are actuated. See
-  /// MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
-  /// details.
-  /// @throws std::exception if any of the joints in
-  /// `user_to_joint_index_map` does not have an actuator.
-  MatrixX<double> MakeActuatorSelectorMatrix(
-      const std::vector<JointIndex>& user_to_joint_index_map) const {
-    return internal_tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
-  }
-  /// @} <!-- System matrix computations -->
+  /// @} <!-- Bias acceleration functions -->
 
   /// @anchor mbp_introspection
   /// @name                    Introspection
