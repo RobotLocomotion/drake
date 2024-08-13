@@ -564,8 +564,6 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
 
   m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,
       py::arg("plant"), doc.GetContinuousRevoluteJointIndices.doc);
-
-  // NOLINTNEXTLINE(readability/fn_size)
 }
 
 }  // namespace internal
