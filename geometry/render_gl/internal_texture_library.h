@@ -81,16 +81,24 @@ class TextureLibrary {
    */
   static std::string_view InMemoryPrefix() { return "from_memory://"; }
 
-  /* Adds a set of in-memory textures to the library. The textures are presented
-   in a map with (name, texture) pairs where the name is what will be referenced
-   in the RenderMaterial specification that applies the texture.
+  /* Adds an in-memory texture to the library.
 
-   If a name already exists in the library, the texture data is *assumed* to
+   @param name        The name that this texture will be referenced by later in
+                      a call to GetTextureId(). It must be prefixed with the
+                      value given by InMemoryPrefix().
+   @param file_bytes  The contents of a supported texture file. _Not_ a decoded
+                      RGB or RGBA image.
+
+   If `name` already exists in the library, the texture data is *assumed* to
    be redundant and ignored.
 
-   @pre Each name in the map has the prefix reported by InMemoryPrefix() to
-   prevent possible collision with real file.
+   @pre `name` begins with the prefix reported by InMemoryPrefix().
    @pre The OpenGl context "partnered" to this library has been bound. */
+  void AddInMemoryImage(const std::string& name,
+                        const std::vector<unsigned char>& file_bytes);
+
+  /* Batch variant of AddInMemoryImage(). The key for entry is `name` and the
+   value are the `file_bytes`. */
   void AddInMemoryImages(
       const std::map<std::string, std::vector<unsigned char>>& images);
 

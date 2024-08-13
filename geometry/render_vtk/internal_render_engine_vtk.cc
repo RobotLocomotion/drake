@@ -563,7 +563,7 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh, double scale,
 bool RenderEngineVtk::ImplementObj(const Mesh& mesh,
                                    const RegistrationData& data) {
   std::vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
-      mesh.filename(), data.properties, default_diffuse_, diagnostic_);
+      mesh.source(), data.properties, default_diffuse_, diagnostic_);
   for (auto& render_mesh : meshes) {
     ImplementRenderMesh(std::move(render_mesh), mesh.scale(), data);
   }
@@ -944,8 +944,6 @@ void RenderEngineVtk::InitializePipelines() {
 void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
                                         const RenderMaterial& material,
                                         const RegistrationData& data) {
-  // Parsing via VTK should never require an image to be flipped.
-  DRAKE_DEMAND(material.flip_y == false);
   std::array<vtkSmartPointer<vtkActor>, kNumPipelines> actors{
       vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
       vtkSmartPointer<vtkActor>::New()};
@@ -999,15 +997,30 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   if (use_pbr_materials_) {
     color_actor->GetProperty()->SetInterpolationToPBR();
   }
-  if (!material.diffuse_map.empty()) {
+  if (!material.diffuse_map.IsEmpty()) {
+    // Parsing via VTK should never require an image to be flipped.
+    DRAKE_DEMAND(material.flip_y == false);
+
     vtkNew<vtkPNGReader> texture_reader;
-    texture_reader->SetFileName(material.diffuse_map.c_str());
+    std::string description;
+    if (material.diffuse_map.IsPath()) {
+      description = material.diffuse_map.path().string();
+      texture_reader->SetFileName(material.diffuse_map.path().c_str());
+    } else if (material.diffuse_map.IsInMemory()) {
+      const std::string& contents = material.diffuse_map.contents().contents();
+      texture_reader->SetMemoryBuffer(contents.c_str());
+      texture_reader->SetMemoryBufferLength(contents.size());
+      description = material.diffuse_map.contents().filename_hint();
+    } else {
+      // RenderEngineVtk should never see diffuse_map.IsKey().
+      DRAKE_UNREACHABLE();
+    }
     texture_reader->Update();
     if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
       log()->warn(
           "Texture map '{}' has an unsupported bit depth, casting it to uchar "
           "channels.",
-          material.diffuse_map);
+          description);
     }
 
     vtkNew<vtkImageCast> caster;
