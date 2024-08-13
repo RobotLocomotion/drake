@@ -5,6 +5,7 @@ def tinyobjloader_internal_repository(
         mirrors = None):
     github_archive(
         name = name,
+        local_repository_override = "/home/seancurtis/code/tinyobjloader",
         repository = "tinyobjloader/tinyobjloader",
         commit = "cab4ad7254cbf7eaaafdb73d272f99e92f166df8",
         sha256 = "4cc086e2d6c7d521231745c51fed8ac2467a0570a544ff4c9e96023f2512cfb2",  # noqa

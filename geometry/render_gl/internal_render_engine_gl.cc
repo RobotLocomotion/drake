@@ -435,8 +435,10 @@ class DefaultTextureColorShader final : public LightingShader {
       const PerceptionProperties& properties) const final {
     if (!properties.HasProperty("phong", "diffuse_map")) return std::nullopt;
 
+    fmt::print("DoCreateProgramData -- reading diffuse map file name...\n");
     const string& file_name =
         properties.GetProperty<string>("phong", "diffuse_map");
+    fmt::print("...success\n");
     std::optional<GLuint> texture_id = library_->GetTextureId(file_name);
 
     if (!texture_id.has_value()) return std::nullopt;
@@ -895,7 +897,15 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
           data.properties, filename, parameters_.default_diffuse,
           drake::internal::DiagnosticPolicy(), gl_mesh.uv_state);
     }
-    temp_props.UpdateProperty("phong", "diffuse_map", material.diffuse_map);
+    if (material.diffuse_map.IsPath()) {
+      // TODO(SeanCurtis-TRI): If the texture is in memory, I need to transport
+      // the possible in-memory textures to AddGeometryInstance(). I can't
+      // meaningfully do that via the ("phong", "diffuse_map") property. We're
+      // doing this because if the gl mesh doesn't have a material, we need to
+      // define it from properties.
+      temp_props.UpdateProperty("phong", "diffuse_map",
+                                material.diffuse_map.path().string());
+    }
     temp_props.UpdateProperty("phong", "diffuse", material.diffuse);
     // Non-public property to communicate to the shaders.
     temp_props.UpdateProperty("texture", "flip", material.flip_y);
@@ -932,8 +942,16 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
             ? *render_mesh.material
             : MakeDiffuseMaterial(parameters_.default_diffuse);
     PerceptionProperties mesh_properties(properties);
-    mesh_properties.UpdateProperty("phong", "diffuse_map",
-                                   material.diffuse_map);
+    // TODO(SeanCurtis-TRI): For now, we'll assume that deformable visuals must
+    // all come from disk. Later, we'll expand it to include in-memory. The
+    // challenge is that we're using geometry properties as a middle man and
+    // ("phong", "diffuse_map") should only contain a string containing a file
+    // path. If the image is in memory, we need to do something else.
+    if (material.diffuse_map.IsPath()) {
+      mesh_properties.UpdateProperty("phong", "diffuse_map",
+                                     material.diffuse_map.path().string());
+      // If empty, key, or file contents, we leave it alone and do nothing.
+    }
     mesh_properties.UpdateProperty("phong", "diffuse", material.diffuse);
     RegistrationData data{id, RigidTransformd::Identity(), mesh_properties,
                           parameters_.default_diffuse};
@@ -1506,12 +1524,15 @@ class RenderEngineGl::GltfMeshExtractor {
     for (const auto& mesh : meshes) {
       if (!mesh.mesh_material.has_value()) continue;
       /* Currently, we only support diffuse maps. */
-      const std::string& diffuse_map = mesh.mesh_material->diffuse_map;
-      if (used_embedded_images.contains(diffuse_map)) continue;
-      if (diffuse_map.starts_with(TextureLibrary::InMemoryPrefix())) {
-        used_embedded_images[diffuse_map] =
-            std::move(all_embedded_images[diffuse_map]);
-        all_embedded_images.erase(diffuse_map);
+      if (mesh.mesh_material->diffuse_map.IsKey()) {
+        // Note: we only have to worry about diffuse_maps that encode as keys.
+        const std::string& diffuse_map = mesh.mesh_material->diffuse_map.key();
+        if (used_embedded_images.contains(diffuse_map)) continue;
+        if (diffuse_map.starts_with(TextureLibrary::InMemoryPrefix())) {
+          used_embedded_images[diffuse_map] =
+              std::move(all_embedded_images[diffuse_map]);
+          all_embedded_images.erase(diffuse_map);
+        }
       }
     }
     texture_library_.AddInMemoryImages(used_embedded_images);
