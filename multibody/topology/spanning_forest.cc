@@ -689,7 +689,7 @@ void SpanningForest::FindNextLevelJoints(MobodIndex inboard_mobod_index,
     same merged LinkComposite. We must grow the composite in the outboard
     direction of the joint, which is the end that is _not_ already following
     the inboard Mobod. */
-    const BodyIndex outboard_link_index =
+    const LinkIndex outboard_link_index =
         FindOutboardLink(inboard_mobod_index, j_in);
 
     /* Adds the outboard link O to the inboard composite and keeps collecting
@@ -700,7 +700,7 @@ void SpanningForest::FindNextLevelJoints(MobodIndex inboard_mobod_index,
   }
 }
 
-BodyIndex SpanningForest::FindOutboardLink(MobodIndex inboard_mobod_index,
+LinkIndex SpanningForest::FindOutboardLink(MobodIndex inboard_mobod_index,
                                            const Joint& joint) const {
   const Link& parent_link = link_by_index(joint.parent_link_index());
   const Link& child_link = link_by_index(joint.child_link_index());
@@ -718,7 +718,7 @@ bool SpanningForest::HasMassfulOutboardLink(
     const std::vector<JointIndex>& joints) const {
   for (JointIndex joint_index : joints) {
     const Joint& joint = joint_by_index(joint_index);
-    const BodyIndex outboard_link_index =
+    const LinkIndex outboard_link_index =
         FindOutboardLink(inboard_mobod_index, joint);
     if (!link_by_index(outboard_link_index).is_massless()) return true;
   }
@@ -787,7 +787,7 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
 }
 
 void SpanningForest::ConnectLinksToWorld(
-    const std::vector<BodyIndex>& links_to_connect, bool use_weld) {
+    const std::vector<LinkIndex>& links_to_connect, bool use_weld) {
   for (const auto& link_index : links_to_connect) {
     const LinkOrdinal link_ordinal = graph().index_to_ordinal(link_index);
     DRAKE_DEMAND(!link_is_already_in_forest(link_ordinal));
@@ -903,7 +903,7 @@ const SpanningForest::Mobod& SpanningForest::AddShadowMobod(
   const Link& primary_link = links(primary_link_ordinal);
   Joint& shadow_joint = mutable_graph().mutable_joint(shadow_joint_ordinal);
   DRAKE_DEMAND(shadow_joint.connects(primary_link.index()));
-  const BodyIndex inboard_link_index =
+  const LinkIndex inboard_link_index =
       shadow_joint.other_link_index(primary_link.index());
 
   /* The Joint was written to connect inboard_link to primary_link but is
@@ -958,7 +958,7 @@ const SpanningForest::Mobod& SpanningForest::JoinExistingMobod(
 }
 
 void SpanningForest::GrowCompositeMobod(
-    Mobod* mobod, BodyIndex outboard_link_index,
+    Mobod* mobod, LinkIndex outboard_link_index,
     JointOrdinal weld_joint_ordinal,
     std::vector<JointIndex>* open_joint_indexes, int* num_unprocessed_links) {
   /* If the outboard_link has already been processed we're looking at a loop
@@ -999,7 +999,7 @@ void SpanningForest::GrowCompositeMobod(
     /* We've found another unprocessed joint that needs merging onto this
     composite. One of its links is the outboard_link (already in the forest
     at this point). Find the other link. */
-    const BodyIndex other_link_index =
+    const LinkIndex other_link_index =
         joint.other_link_index(outboard_link_index);
 
     /* Recursively extend the Composite along the new merge-weld joint. */

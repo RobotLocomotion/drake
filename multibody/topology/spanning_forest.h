@@ -184,7 +184,7 @@ class SpanningForest {
   }
 
   // TODO(sherm1) Make this unchecked; maybe private?
-  const Link& link_by_index(BodyIndex link_index) const {
+  const Link& link_by_index(LinkIndex link_index) const {
     return graph().link_by_index(link_index);
   }
 
@@ -450,7 +450,7 @@ class SpanningForest {
 
   // Given a Mobod and a Joint known to have one of its links already following
   // that Mobod, find the other (outboard) link. */
-  BodyIndex FindOutboardLink(MobodIndex inboard_mobod_index,
+  LinkIndex FindOutboardLink(MobodIndex inboard_mobod_index,
                              const Joint& joint) const;
 
   // Helper for ExtendTreesOneLevel(). Given a Mobod and a set of joints known
@@ -479,7 +479,7 @@ class SpanningForest {
 
   // Given a list of Static or MustBeBaseBody Links, adds a weld or floating
   // Joint to World for each Link that doesn't already have one.
-  void ConnectLinksToWorld(const std::vector<BodyIndex>& links, bool use_weld);
+  void ConnectLinksToWorld(const std::vector<LinkIndex>& links, bool use_weld);
 
   // Sets the comparison function to be used in making the "best" choice.
   void SetBaseBodyChoicePolicy();
@@ -576,7 +576,7 @@ class SpanningForest {
   // link. As we encounter non-merge joints attached to this composite we append
   // them to `open_joint_indexes` for processing next. Those constitute the
   // "next level" outboard of this merged composite.
-  void GrowCompositeMobod(Mobod* inboard_mobod, BodyIndex outboard_link_index,
+  void GrowCompositeMobod(Mobod* inboard_mobod, LinkIndex outboard_link_index,
                           JointOrdinal weld_joint_ordinal,
                           std::vector<JointIndex>* open_joint_indexes,
                           int* num_unprocessed_links);

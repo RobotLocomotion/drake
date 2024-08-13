@@ -71,8 +71,8 @@ void LinkJointGraph::Clear() {
                rpy_floating_joint_traits_index());
 
   // Define the World Link.
-  const BodyIndex world_index = AddLink("world", world_model_instance());
-  DRAKE_DEMAND(world_index == BodyIndex(0));
+  const LinkIndex world_index = AddLink("world", world_model_instance());
+  DRAKE_DEMAND(world_index == LinkIndex(0));
 }
 
 void LinkJointGraph::SetGlobalForestBuildingOptions(
@@ -163,7 +163,7 @@ const LinkJointGraph::Link& LinkJointGraph::world_link() const {
   return links(LinkOrdinal(0));
 }
 
-BodyIndex LinkJointGraph::AddLink(const std::string& link_name,
+LinkIndex LinkJointGraph::AddLink(const std::string& link_name,
                                   ModelInstanceIndex model_instance,
                                   LinkFlags flags) {
   DRAKE_DEMAND(model_instance.is_valid());
@@ -196,7 +196,7 @@ BodyIndex LinkJointGraph::AddLink(const std::string& link_name,
   // If we have a SpanningForest, it's no good now.
   InvalidateForest();
 
-  const BodyIndex link_index(num_link_indexes());
+  const LinkIndex link_index(num_link_indexes());
   const LinkOrdinal link_ordinal(ssize(links()));
   data_.link_index_to_ordinal.push_back(link_ordinal);
 
@@ -219,7 +219,7 @@ BodyIndex LinkJointGraph::AddLink(const std::string& link_name,
     data_.non_static_must_be_base_body_link_indexes.push_back(link_index);
   }
 
-  std::vector<BodyIndex>& links_in_instance =
+  std::vector<LinkIndex>& links_in_instance =
       data_.model_instance_to_link_indexes[model_instance];
   links_in_instance.push_back(link_index);
 
@@ -274,7 +274,7 @@ bool LinkJointGraph::HasJointNamed(
 }
 
 std::optional<JointIndex> LinkJointGraph::MaybeGetJointBetween(
-    BodyIndex link1_index, BodyIndex link2_index) const {
+    LinkIndex link1_index, LinkIndex link2_index) const {
   // Work with the Link that has the fewest joints. (If one of these is World
   // it is probably the other one!)
   const Link& link1 = link_by_index(link1_index);
@@ -296,8 +296,8 @@ std::optional<JointIndex> LinkJointGraph::MaybeGetJointBetween(
 JointIndex LinkJointGraph::AddJoint(const std::string& name,
                                     ModelInstanceIndex model_instance_index,
                                     const std::string& type,
-                                    BodyIndex parent_link_index,
-                                    BodyIndex child_link_index,
+                                    LinkIndex parent_link_index,
+                                    LinkIndex child_link_index,
                                     JointFlags flags) {
   DRAKE_DEMAND(model_instance_index.is_valid());
   DRAKE_DEMAND(parent_link_index.is_valid());
@@ -515,7 +515,7 @@ std::optional<JointTraitsIndex> LinkJointGraph::GetJointTraitsIndex(
   return it->second;
 }
 
-void LinkJointGraph::ChangeLinkFlags(BodyIndex link_index, LinkFlags flags) {
+void LinkJointGraph::ChangeLinkFlags(LinkIndex link_index, LinkFlags flags) {
   InvalidateForest();
   mutable_link(index_to_ordinal(link_index)).set_flags(flags);
 }
@@ -588,7 +588,7 @@ JointIndex LinkJointGraph::AddEphemeralJointToWorld(
   data_.joint_index_to_ordinal.push_back(new_joint_ordinal);
   data_.joints.emplace_back(
       Joint(new_joint_index, new_joint_ordinal, joint_name, model_instance,
-            traits_index, BodyIndex(0), child.index(), JointFlags::kDefault));
+            traits_index, LinkIndex(0), child.index(), JointFlags::kDefault));
   // Links need to know their joints.
   mutable_link(LinkOrdinal(0)).add_joint_as_parent(new_joint_index);
   mutable_link(child_link_ordinal).add_joint_as_child(new_joint_index);
@@ -612,7 +612,7 @@ LinkCompositeIndex LinkJointGraph::AddToLinkComposite(
     existing_composite_index = maybe_composite_link.link_composite_index_ =
         LinkCompositeIndex(ssize(data_.link_composites));
     data_.link_composites.emplace_back(LinkComposite{
-        .links = std::vector<BodyIndex>{maybe_composite_link.index()},
+        .links = std::vector<LinkIndex>{maybe_composite_link.index()},
         .is_massless = maybe_composite_link.is_massless()});
   }
 
@@ -639,7 +639,7 @@ LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,
                                           bool shadow_is_parent) {
   /* Caution: this Link reference will be invalid after the emplace. */
   const Link& primary_link = links(primary_link_ordinal);
-  const BodyIndex primary_link_index = primary_link.index();
+  const LinkIndex primary_link_index = primary_link.index();
   const int shadow_num = primary_link.num_shadows() + 1;
   /* Name should be <primary_name>$<shadow_num> (unique within primary's model
   instance). In the unlikely event that a user has names like this, we'll keep
@@ -649,7 +649,7 @@ LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,
       fmt::format("{}${}", primary_link.name(), shadow_num);
   while (HasLinkNamed(shadow_link_name, primary_link.model_instance()))
     shadow_link_name = "_" + shadow_link_name;
-  const BodyIndex shadow_link_index(num_link_indexes());
+  const LinkIndex shadow_link_index(num_link_indexes());
   const LinkOrdinal shadow_link_ordinal(ssize(links()));
   DRAKE_DEMAND(shadow_link_ordinal >= num_user_links());  // A sanity check.
   data_.link_index_to_ordinal.push_back(shadow_link_ordinal);
@@ -705,7 +705,7 @@ bool LinkJointGraph::link_is_static(const Link& link) const {
 }
 
 void LinkJointGraph::ThrowLinkWasRemoved(const char* func,
-                                         BodyIndex link_index) const {
+                                         LinkIndex link_index) const {
   throw std::logic_error(fmt::format(
       "{}(): An attempt was made to access a link with index {} but that "
       "link was removed.",
@@ -727,7 +727,7 @@ LinkJointGraph::Data::~Data() = default;
 auto LinkJointGraph::Data::operator=(const Data&) -> Data& = default;
 auto LinkJointGraph::Data::operator=(Data&&) -> Data& = default;
 
-LinkJointGraph::Link::Link(BodyIndex index, LinkOrdinal ordinal,
+LinkJointGraph::Link::Link(LinkIndex index, LinkOrdinal ordinal,
                            std::string name, ModelInstanceIndex model_instance,
                            LinkFlags flags)
     : index_(index),
@@ -768,8 +768,8 @@ LinkJointGraph::Joint::Joint(JointIndex index, JointOrdinal ordinal,
                              std::string name,
                              ModelInstanceIndex model_instance,
                              JointTraitsIndex joint_traits_index,
-                             BodyIndex parent_link_index,
-                             BodyIndex child_link_index, JointFlags flags)
+                             LinkIndex parent_link_index,
+                             LinkIndex child_link_index, JointFlags flags)
     : index_(index),
       ordinal_(ordinal),
       name_(std::move(name)),
