@@ -350,11 +350,6 @@ class SpanningForest {
 
   std::string GenerateGraphvizString(std::string_view label) const;
 
-  // TODO(sherm1) Remove this.
-  // (Testing stub only) Add enough fake elements to the forest to allow
-  // testing of the Tree and LoopConstraint APIs.
-  void AddStubTreeAndLoopConstraint();
-
  private:
   friend class LinkJointGraph;
   friend class copyable_unique_ptr<SpanningForest>;

@@ -126,19 +126,34 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_TRUE(forest.loop_constraints().empty());
 }
 
+/* Basic proof-of-life tests of Tree and LoopConstraint APIs. */
 GTEST_TEST(SpanningForest, TreeAndLoopConstraintAPIs) {
   LinkJointGraph graph;
   const SpanningForest& forest = graph.forest();
+  graph.RegisterJointType("revolute", 1, 1);
+
+  // Create this graph:
+  //          -> link1 --+
+  //    World            |
+  //          -> link2 <-+
+
+  graph.AddLink("link1", default_model_instance());
+  graph.AddLink("link2", default_model_instance());
+  graph.AddJoint("joint0", default_model_instance(), "revolute", BodyIndex(0),
+                 BodyIndex(1));
+  graph.AddJoint("joint1", default_model_instance(), "revolute", BodyIndex(0),
+                 BodyIndex(2));
+  graph.AddJoint("joint2", default_model_instance(), "revolute", BodyIndex(1),
+                 BodyIndex(2));
+
   EXPECT_TRUE(graph.BuildForest());
 
-  // This stub exists solely to enable these API tests until the implementing
-  // code is merged. Here's the forest we're expecting:
-  //            -> mobod1 => mobod2
+  // Here's the forest we're expecting:
+  //            -> mobod1 -> mobod2
   //     World                 ^
-  //            -> mobod3 .....|  loop constraint
-  // There are two 1-dof "->" joints and one 0-dof "=>" weld.
-  // TODO(sherm1) Make the same forest legitimately.
-  const_cast<SpanningForest&>(forest).AddStubTreeAndLoopConstraint();
+  //            -> mobod3 =====+  loop weld constraint
+  //
+  // We had to cut link2. Mobod2 is for the shadow link.
 
   EXPECT_EQ(ssize(forest.trees()), 2);
   EXPECT_EQ(ssize(forest.mobods()), 4);
@@ -162,8 +177,8 @@ GTEST_TEST(SpanningForest, TreeAndLoopConstraintAPIs) {
   EXPECT_EQ(tree0.num_mobods(), 2);
   EXPECT_EQ(tree0.q_start(), 0);
   EXPECT_EQ(tree0.v_start(), 0);
-  EXPECT_EQ(tree0.nq(), 1);
-  EXPECT_EQ(tree0.nv(), 1);
+  EXPECT_EQ(tree0.nq(), 2);
+  EXPECT_EQ(tree0.nv(), 2);
 
   const SpanningForest::Tree& tree1 = forest.trees(TreeIndex(1));
   EXPECT_EQ(tree1.index(), TreeIndex(1));
@@ -175,8 +190,8 @@ GTEST_TEST(SpanningForest, TreeAndLoopConstraintAPIs) {
   EXPECT_EQ(tree1.front().index(), MobodIndex(3));
   EXPECT_EQ(tree1.back().index(), MobodIndex(3));
   EXPECT_EQ(tree1.num_mobods(), 1);
-  EXPECT_EQ(tree1.q_start(), 1);
-  EXPECT_EQ(tree1.v_start(), 1);
+  EXPECT_EQ(tree1.q_start(), 2);
+  EXPECT_EQ(tree1.v_start(), 2);
   EXPECT_EQ(tree1.nq(), 1);
   EXPECT_EQ(tree1.nv(), 1);
 }
