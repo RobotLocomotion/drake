@@ -94,6 +94,11 @@ class TextureLibrary {
   void AddInMemoryImages(
       const std::map<std::string, std::vector<unsigned char>>& images);
 
+  // TODO: Swap order and documentation.
+  /* Adds a single in-memory texture to the library. */
+  void AddInMemoryImage(const std::string& name,
+                        const std::vector<unsigned char>& file_bytes);
+
   /* Reports the key to use for the texture with the given image URI.
    This resolves symlinks to prevent redundant texture definitions. */
   static std::string GetTextureKey(const std::string& file_uri);

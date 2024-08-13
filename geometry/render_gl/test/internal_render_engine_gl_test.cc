@@ -923,6 +923,7 @@ TEST_F(RenderEngineGlTest, DeformableTest) {
     PerceptionProperties material = simple_material(use_texture);
     // This is a dummy placeholder to allow invoking LoadRenderMeshesFromObj(),
     // the actual diffuse color either comes from the mtl file or the
+    // perception properties.
     Rgba unused_diffuse_color(1, 1, 1, 1);
     std::vector<geometry::internal::RenderMesh> render_meshes =
         geometry::internal::LoadRenderMeshesFromObj(filename, material,
