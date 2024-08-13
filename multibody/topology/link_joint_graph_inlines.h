@@ -20,7 +20,7 @@ inline const LinkJointGraph::Link& LinkJointGraph::links(
 }
 
 inline const LinkJointGraph::Link& LinkJointGraph::link_by_index(
-    BodyIndex link_index) const {
+    LinkIndex link_index) const {
   const std::optional<LinkOrdinal>& ordinal =
       data_.link_index_to_ordinal.at(link_index);
   if (!ordinal.has_value()) ThrowLinkWasRemoved(__func__, link_index);
@@ -34,7 +34,7 @@ inline LinkJointGraph::Link& LinkJointGraph::mutable_link(
   return data_.links[link_ordinal];
 }
 
-inline MobodIndex LinkJointGraph::link_to_mobod(BodyIndex index) const {
+inline MobodIndex LinkJointGraph::link_to_mobod(LinkIndex index) const {
   return link_by_index(index).mobod_;
 }
 

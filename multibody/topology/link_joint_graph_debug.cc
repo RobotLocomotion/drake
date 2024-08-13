@@ -44,7 +44,7 @@ std::string LinkJointGraph::GenerateGraphvizString(
     graphviz += fmt::format("subgraph cluster{}", index) + " {\n";
     graphviz += fmt::format("label=\"LinkComposite({}){}\";\n", index,
                             composite.is_massless ? "*" : "");
-    for (const BodyIndex& link_index : composite.links) {
+    for (const LinkIndex& link_index : composite.links) {
       const Link& link = link_by_index(link_index);
       const bool ephemeral = link_is_ephemeral(link.index());
       if (ephemeral && !include_ephemeral_elements) continue;
