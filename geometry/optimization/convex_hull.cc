@@ -49,7 +49,7 @@ void AddNewVariables(
 }
 
 // Given a vector of convex sets, return a vector of non-empty convex sets if
-// the remove_empty_sets is true, otherwise return the original vector.
+// remove_empty_sets is true, otherwise return the original vector.
 ConvexSets MakeParticipartingSets(const ConvexSets& sets,
                                   const bool remove_empty_sets) {
   if (!remove_empty_sets) {
