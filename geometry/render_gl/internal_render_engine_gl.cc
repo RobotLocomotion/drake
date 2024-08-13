@@ -879,7 +879,6 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
   // MaybeMakeMeshFallbackmaterial().
   const std::string filename =
       source.IsPath() ? source.path().string() : std::string();
-  DRAKE_DEMAND(meshes_.contains(file_key));
   for (const auto& gl_mesh : meshes_.at(file_key)) {
     const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
     PerceptionProperties temp_props(data.properties);
@@ -895,7 +894,20 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
           data.properties, filename, parameters_.default_diffuse,
           drake::internal::DiagnosticPolicy(), gl_mesh.uv_state);
     }
-    temp_props.UpdateProperty("phong", "diffuse_map", material.diffuse_map);
+    if (!material.diffuse_map.IsEmpty()) {
+      // By the time the render material gets here, it should either be a path
+      // or it is a key into an in-memory image already registered with the
+      // texture library. It should never be FileContents.
+      DRAKE_DEMAND(!material.diffuse_map.IsInMemory());
+      if (material.diffuse_map.IsPath()) {
+        temp_props.UpdateProperty("phong", "diffuse_map",
+                                  material.diffuse_map.path().string());
+      } else {
+        DRAKE_DEMAND(material.diffuse_map.IsKey());
+        temp_props.UpdateProperty("phong", "diffuse_map",
+                                  material.diffuse_map.key());
+      }
+    }
     temp_props.UpdateProperty("phong", "diffuse", material.diffuse);
     // Non-public property to communicate to the shaders.
     temp_props.UpdateProperty("texture", "flip", material.flip_y);
@@ -932,8 +944,16 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
             ? *render_mesh.material
             : MakeDiffuseMaterial(parameters_.default_diffuse);
     PerceptionProperties mesh_properties(properties);
-    mesh_properties.UpdateProperty("phong", "diffuse_map",
-                                   material.diffuse_map);
+    // TODO(SeanCurtis-TRI): For now, we'll assume that deformable visuals must
+    // all come from disk. Later, we'll expand it to include in-memory. The
+    // challenge is that we're using geometry properties as a middle man and
+    // ("phong", "diffuse_map") should only contain a string containing a file
+    // path. If the image is in memory, we need to do something else.
+    if (material.diffuse_map.IsPath()) {
+      mesh_properties.UpdateProperty("phong", "diffuse_map",
+                                     material.diffuse_map.path().string());
+      // If empty, key, or file contents, we leave it alone and do nothing.
+    }
     mesh_properties.UpdateProperty("phong", "diffuse", material.diffuse);
     RegistrationData data{id, RigidTransformd::Identity(), mesh_properties,
                           parameters_.default_diffuse};
@@ -1506,12 +1526,15 @@ class RenderEngineGl::GltfMeshExtractor {
     for (const auto& mesh : meshes) {
       if (!mesh.mesh_material.has_value()) continue;
       /* Currently, we only support diffuse maps. */
-      const std::string& diffuse_map = mesh.mesh_material->diffuse_map;
-      if (used_embedded_images.contains(diffuse_map)) continue;
-      if (diffuse_map.starts_with(TextureLibrary::InMemoryPrefix())) {
-        used_embedded_images[diffuse_map] =
-            std::move(all_embedded_images[diffuse_map]);
-        all_embedded_images.erase(diffuse_map);
+      if (mesh.mesh_material->diffuse_map.IsKey()) {
+        // Note: we only have to worry about diffuse_maps that encode as keys.
+        const std::string& diffuse_map = mesh.mesh_material->diffuse_map.key();
+        if (used_embedded_images.contains(diffuse_map)) continue;
+        if (diffuse_map.starts_with(TextureLibrary::InMemoryPrefix())) {
+          used_embedded_images[diffuse_map] =
+              std::move(all_embedded_images[diffuse_map]);
+          all_embedded_images.erase(diffuse_map);
+        }
       }
     }
     texture_library_.AddInMemoryImages(used_embedded_images);
@@ -2056,8 +2079,9 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& source,
   if (!meshes_.contains(file_key)) {
     vector<RenderGlMesh> file_meshes;
     if (extension == ".obj") {
-      // TODO(SeanCurtis-TRI): Support in-memory obj.
-      DRAKE_DEMAND(source.IsPath());
+      const std::string description =
+          source.IsPath() ? source.path().string()
+                          : source.mesh_data().mesh_file.filename_hint();
       // Note: either the mesh has defined its own material or it hasn't. If it
       // has, that material will be defined in the RenderMesh and that material
       // will be saved in the cache, forcing every instance to use that
@@ -2067,7 +2091,7 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& source,
       // why we simply pass a set of empty properties -- to emphasize its
       // independence.
       vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
-          source.path(), PerceptionProperties(), parameters_.default_diffuse,
+          source, PerceptionProperties(), parameters_.default_diffuse,
           drake::internal::DiagnosticPolicy());
 
       for (const auto& render_mesh : meshes) {
@@ -2075,8 +2099,7 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& source,
         DRAKE_DEMAND(mesh_index >= 0);
 
         geometries_[mesh_index].throw_if_undefined(
-            fmt::format("Error creating object for mesh {}",
-                        source.path().string())
+            fmt::format("Error creating object for mesh '{}'.", description)
                 .c_str());
 
         file_meshes.push_back(
@@ -2088,6 +2111,28 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& source,
         // instances define their own (see ImplementMeshesForSource()).
         if (material.from_mesh_file) {
           file_meshes.back().mesh_material = material;
+          // The material may have an in-memory diffuse texture. We need to
+          // make sure it gets registered with the texture library and the
+          // materials re-expressed to access them. This needs to happen before
+          // we finish reifying in the call to ImplementMeshesForSource().
+          // The input render meshes read from an .obj should either have no
+          // diffuse map, a file path, or an in-memory image.
+          DRAKE_DEMAND(!material.diffuse_map.IsKey());
+          if (material.diffuse_map.IsInMemory()) {
+            // In-memory images need to be loaded into the library directly.
+            const std::string image_key = fmt::format(
+                "{}{}", TextureLibrary::InMemoryPrefix(),
+                material.diffuse_map.contents().sha256().to_string());
+            const std::string& contents =
+                material.diffuse_map.contents().contents();
+            // Note: if multiple materials reference the same in-memory image,
+            // it will still only be added to the texture library once.
+            texture_library_->AddInMemoryImage(
+                image_key,
+                std::vector<unsigned char>(contents.begin(), contents.end()));
+            file_meshes.back().mesh_material->diffuse_map = image_key;
+            file_meshes.back().mesh_material->flip_y = true;
+          }
         }
       }
     } else {

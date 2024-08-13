@@ -3,14 +3,106 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <utility>
+#include <variant>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/common/file_contents.h"
 #include "drake/geometry/geometry_properties.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
+
+/* A texture can be specified for a RenderMaterial in several ways:
+
+  - No image at all (aka an "empty" texture source).
+  - A file path to an image on the disk.
+  - A special key for access in some coordinated image database.
+  - Contents of a known image file format. */
+class TextureSource {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TextureSource);
+
+  /* Default constructor is empty. */
+  TextureSource() = default;
+
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  explicit TextureSource(std::filesystem::path path);
+
+  template <typename StringLike>
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  explicit TextureSource(StringLike key_string)
+      : data_(std::move(std::string(key_string))) {
+    if (key().empty()) set_empty();
+  }
+
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  explicit TextureSource(common::FileContents file_data);
+
+  /* Clears the texture source, making it "empty". */
+  void set_empty() { data_ = std::monostate(); }
+
+  /* Sets the texture source to the given path. The result is empty if the path
+   is empty. */
+  TextureSource& operator=(std::filesystem::path path);
+
+  /* Sets the texture source to the given key string. The result is empty if the
+   key string is empty. */
+  template <typename StringLike>
+  TextureSource& operator=(StringLike key) {
+    std::string str_value(std::move(key));
+    if (str_value.empty()) {
+      set_empty();
+    } else {
+      data_ = std::move(str_value);
+    }
+    return *this;
+  }
+
+  /* Sets the texture source to the given file contents. The result is empty if
+   the file contents are empty. */
+  TextureSource& operator=(common::FileContents contents);
+
+  /* Reports `true` if the texture source is empty. */
+  bool IsEmpty() const { return std::holds_alternative<std::monostate>(data_); }
+
+  /* Reports `true` if the texture is given by a system filepath. */
+  bool IsPath() const {
+    return std::holds_alternative<std::filesystem::path>(data_);
+  }
+
+  /* Reports `true` if the textures is given by a key value. */
+  bool IsKey() const { return std::holds_alternative<std::string>(data_); }
+
+  /* Reports `true` if the texture is contained in file contents. */
+  bool IsInMemory() const {
+    return std::holds_alternative<common::FileContents>(data_);
+  }
+
+  /* Returns the path.
+   @pre IsPath() returns `true`. */
+  const std::filesystem::path& path() const {
+    return std::get<std::filesystem::path>(data_);
+  }
+
+  /* Returns the key.
+   @pre IsKey() returns `true`. */
+  const std::string& key() const { return std::get<std::string>(data_); }
+
+  /* Returns the file contents.
+   @pre IsInMemory() returns `true`. */
+  const common::FileContents& contents() const {
+    return std::get<common::FileContents>(data_);
+  }
+
+ private:
+  std::variant<std::monostate, std::string, std::filesystem::path,
+               common::FileContents>
+      data_;
+};
 
 /* Reports how UVs have been assigned to the mesh receiving a material. Textures
  should only be applied to meshes with *fully* assigned UVs. */
@@ -34,7 +126,7 @@ struct RenderMaterial {
 
    Regardless of how a non-empty string is interpreted, an empty string always
    means no diffuse map. */
-  std::string diffuse_map;
+  TextureSource diffuse_map;
 
   /* OpenGL defines image origin at the bottom-left corner of the texture. Some
    geometry formats (e.g., glTF), define the origin at the top-left corner.
