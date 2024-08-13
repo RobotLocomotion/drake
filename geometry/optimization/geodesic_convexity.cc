@@ -283,11 +283,37 @@ std::vector<Hyperrectangle> BoundingBoxesForListOfSetsSomeDimensions(
   }
   return bboxes;
 }
+
+/* Convenience function to change the new type standard for edges and their
+offsets to the old standard, simplifying the deprecated versions of the
+functions. Can be removed when CalcPairwiseIntersections is removed. */
+std::vector<std::tuple<int, int, Eigen::VectorXd>> ReorganizeEdgesAndOffsets(
+    std::vector<std::pair<int, int>> edges,
+    std::vector<Eigen::VectorXd> edge_offsets) {
+  DRAKE_DEMAND(edges.size() == edge_offsets.size());
+  std::vector<std::tuple<int, int, Eigen::VectorXd>> reorganized_edges;
+  for (int i = 0; i < ssize(edges); ++i) {
+    reorganized_edges.emplace_back(edges[i].first, edges[i].second,
+                                   edge_offsets[i]);
+  }
+  return reorganized_edges;
+}
 }  // namespace
 
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
+  auto [edges, edge_offsets] =
+      ComputePairwiseIntersections(convex_sets_A, convex_sets_B,
+                                   continuous_revolute_joints, preprocess_bbox);
+  return ReorganizeEdgesAndOffsets(edges, edge_offsets);
+}
+
+std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
+ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
+                             const ConvexSets& convex_sets_B,
+                             const std::vector<int>& continuous_revolute_joints,
+                             bool preprocess_bbox) {
   DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
   const int dimension = convex_sets_A[0]->ambient_dimension();
@@ -327,7 +353,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     }
   }
 
-  return CalcPairwiseIntersections(
+  return ComputePairwiseIntersections(
       convex_sets_A, convex_sets_B, continuous_revolute_joints, bboxes_A,
       convex_sets_A_and_B_are_identical ? bboxes_A : bboxes_B);
 }
@@ -337,6 +363,18 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const std::vector<int>& continuous_revolute_joints,
     const std::vector<Hyperrectangle>& bboxes_A,
     const std::vector<Hyperrectangle>& bboxes_B) {
+  auto [edges, edge_offsets] = ComputePairwiseIntersections(
+      convex_sets_A, convex_sets_B, continuous_revolute_joints, bboxes_A,
+      bboxes_B);
+  return ReorganizeEdgesAndOffsets(edges, edge_offsets);
+}
+
+std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
+ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
+                             const ConvexSets& convex_sets_B,
+                             const std::vector<int>& continuous_revolute_joints,
+                             const std::vector<Hyperrectangle>& bboxes_A,
+                             const std::vector<Hyperrectangle>& bboxes_B) {
   DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_A.size() == bboxes_A.size());
@@ -359,8 +397,10 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     }
   }
 
-  std::vector<std::tuple<int, int, Eigen::VectorXd>> edges;
+  std::vector<std::pair<int, int>> edges;
+  std::vector<Eigen::VectorXd> edge_offsets;
 
+  // TODO(wrangelvid): This is O(n^2) and can be improved.
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     for (int j = 0; j < ssize(convex_sets_B); ++j) {
@@ -444,30 +484,50 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
         // Regions are overlapping, add edge (i, j). If we're adding edges
         // within convex_sets_A, also add edge (j, i), since edges are
         // considered bidirectional in that context.
-        edges.emplace_back(i, j, offset);
+        edges.emplace_back(i, j);
+        edge_offsets.emplace_back(offset);
         if (convex_sets_A_and_B_are_identical) {
-          edges.emplace_back(j, i, -offset);
+          edges.emplace_back(j, i);
+          edge_offsets.emplace_back(-offset);
         }
       }
     }
   }
 
-  return edges;
+  return {edges, edge_offsets};
 }
 
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
-  return CalcPairwiseIntersections(convex_sets, convex_sets,
-                                   continuous_revolute_joints, preprocess_bbox);
+  auto [edges, edge_offsets] = ComputePairwiseIntersections(
+      convex_sets, continuous_revolute_joints, preprocess_bbox);
+  return ReorganizeEdgesAndOffsets(edges, edge_offsets);
+}
+
+std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
+ComputePairwiseIntersections(const ConvexSets& convex_sets,
+                             const std::vector<int>& continuous_revolute_joints,
+                             bool preprocess_bbox) {
+  return ComputePairwiseIntersections(
+      convex_sets, convex_sets, continuous_revolute_joints, preprocess_bbox);
 }
 
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
     const std::vector<Hyperrectangle>& bboxes) {
-  return CalcPairwiseIntersections(convex_sets, convex_sets,
-                                   continuous_revolute_joints, bboxes, bboxes);
+  auto [edges, edge_offsets] = ComputePairwiseIntersections(
+      convex_sets, continuous_revolute_joints, bboxes);
+  return ReorganizeEdgesAndOffsets(edges, edge_offsets);
+}
+
+std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
+ComputePairwiseIntersections(const ConvexSets& convex_sets,
+                             const std::vector<int>& continuous_revolute_joints,
+                             const std::vector<Hyperrectangle>& bboxes) {
+  return ComputePairwiseIntersections(
+      convex_sets, convex_sets, continuous_revolute_joints, bboxes, bboxes);
 }
 
 }  // namespace optimization

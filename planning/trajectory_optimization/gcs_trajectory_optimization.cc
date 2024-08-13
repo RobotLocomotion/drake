@@ -33,9 +33,9 @@ using drake::solvers::VectorXDecisionVariable;
 using Eigen::MatrixXd;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
-using geometry::optimization::CalcPairwiseIntersections;
 using geometry::optimization::CartesianProduct;
 using geometry::optimization::CheckIfSatisfiesConvexityRadius;
+using geometry::optimization::ComputePairwiseIntersections;
 using geometry::optimization::ConvexSet;
 using geometry::optimization::ConvexSets;
 using geometry::optimization::GraphOfConvexSets;
@@ -742,30 +742,35 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     }
   }
 
-  std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data;
+  // These will hold the edge data if they weren't given as arguments.
+  std::vector<std::pair<int, int>> maybe_edges_between_regions;
+  std::vector<Eigen::VectorXd> maybe_edge_offsets;
+
   if (edges_between_regions) {
-    edge_data.reserve(edges_between_regions->size());
-    for (int edge_idx = 0; edge_idx < ssize(*edges_between_regions);
-         ++edge_idx) {
-      int i = std::get<0>((*edges_between_regions)[edge_idx]);
-      int j = std::get<1>((*edges_between_regions)[edge_idx]);
+    for (const auto& [i, j] : *edges_between_regions) {
       DRAKE_THROW_UNLESS(0 <= i && 0 <= j && i < from_subgraph_.size() &&
                          j < to_subgraph_.size());
-      edge_data.emplace_back(i, j,
-                             edge_offsets ? edge_offsets->at(edge_idx)
-                                          : VectorXd::Zero(num_positions()));
     }
   } else {
-    // TODO(cohnt): Make the return type of CalcPairwiseIntersections match the
-    // argument to this function, so this block of code can be simplified.
-    edge_data = CalcPairwiseIntersections(from_subgraph.regions(),
-                                          to_subgraph.regions(),
-                                          continuous_revolute_joints());
+    std::tie(maybe_edges_between_regions, maybe_edge_offsets) =
+        ComputePairwiseIntersections(from_subgraph.regions(),
+                                     to_subgraph.regions(),
+                                     continuous_revolute_joints());
+    DRAKE_DEMAND(maybe_edges_between_regions.size() ==
+                 maybe_edge_offsets.size());
+    edges_between_regions = &maybe_edges_between_regions;
+    edge_offsets = &maybe_edge_offsets;
   }
-  for (const auto& edge : edge_data) {
-    int i = std::get<0>(edge);
-    int j = std::get<1>(edge);
-    Eigen::VectorXd edge_offset = std::get<2>(edge);
+
+  for (int edge_idx = 0; edge_idx < ssize(*edges_between_regions); ++edge_idx) {
+    int i = (*edges_between_regions)[edge_idx].first;
+    int j = (*edges_between_regions)[edge_idx].second;
+    // If the user specified edges_between_regions but not edge_offsets, then
+    // edge_offsets are implicitly assumed to be zero. That is indicated here by
+    // edge_offsets being nullptr.
+    const Eigen::VectorXd& edge_offset =
+        edge_offsets ? (*edge_offsets)[edge_idx]
+                     : Eigen::VectorXd::Zero(num_positions());
 
     // Check if the overlap between the sets is contained in the subspace.
     if (subspace != nullptr) {
@@ -1419,22 +1424,9 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
                                                 int order, double h_min,
                                                 double h_max,
                                                 std::string name) {
-  // TODO(wrangelvid): This is O(n^2) and can be improved.
   DRAKE_DEMAND(regions.size() > 0);
-
-  const std::vector<std::tuple<int, int, Eigen::VectorXd>> edge_data =
-      CalcPairwiseIntersections(regions, continuous_revolute_joints());
-
-  std::vector<std::pair<int, int>> edges_between_regions;
-  std::vector<Eigen::VectorXd> edge_offsets;
-  edges_between_regions.reserve(edge_data.size());
-  edge_offsets.reserve(edge_data.size());
-  for (int i = 0; i < ssize(edge_data); ++i) {
-    edges_between_regions.emplace_back(std::get<0>(edge_data[i]),
-                                       std::get<1>(edge_data[i]));
-    edge_offsets.emplace_back(std::get<2>(edge_data[i]));
-  }
-
+  auto [edges_between_regions, edge_offsets] =
+      ComputePairwiseIntersections(regions, continuous_revolute_joints());
   return GcsTrajectoryOptimization::AddRegions(regions, edges_between_regions,
                                                order, h_min, h_max,
                                                std::move(name), &edge_offsets);
