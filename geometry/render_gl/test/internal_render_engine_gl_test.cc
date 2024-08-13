@@ -923,6 +923,7 @@ TEST_F(RenderEngineGlTest, DeformableTest) {
     PerceptionProperties material = simple_material(use_texture);
     // This is a dummy placeholder to allow invoking LoadRenderMeshesFromObj(),
     // the actual diffuse color either comes from the mtl file or the
+    // perception properties.
     Rgba unused_diffuse_color(1, 1, 1, 1);
     std::vector<geometry::internal::RenderMesh> render_meshes =
         geometry::internal::LoadRenderMeshesFromObj(filename, material,
@@ -1235,7 +1236,12 @@ TEST_F(RenderEngineGlTest, MeshTest) {
 // memory. We render the scene twice: once with the one mesh and once with the
 // other to confirm they are rendered the same.
 TEST_F(RenderEngineGlTest, InMemoryMesh) {
-  Init(X_WR_, true);
+  // Pose the camera so we can see three sides of the cubes.
+  const RotationMatrixd R_WR(math::RollPitchYawd(-0.75 * M_PI, 0, M_PI_4));
+  const RigidTransformd X_WR(R_WR,
+                             R_WR * -Vector3d(0, 0, 1.5 * kDefaultDistance));
+  Init(X_WR, true);
+
   const GeometryId id = GeometryId::get_new_id();
   auto do_test = [this, id](std::string_view file_prefix, const Mesh& file_mesh,
                             const Mesh& memory_mesh) {
@@ -1270,7 +1276,7 @@ TEST_F(RenderEngineGlTest, InMemoryMesh) {
 
   // cube2.gltf uses file uris for images and data uris for geometry. This is
   // sufficient, because we just want to see that the different kinds of uris
-  // get handled properly and assume the mesh and its supporting files has been
+  // get handled properly and assume the mesh and its supporting files have been
   // instantiated correctly.
   {
     const std::filesystem::path path =
@@ -1282,7 +1288,24 @@ TEST_F(RenderEngineGlTest, InMemoryMesh) {
                  std::move(memory_mesh.supporting_files)));
   }
 
-  // TODO(SeanCurtis-TRI): Do the same for .obj.
+  // rainbow_box.obj has some faces colored by texture, some by material. The
+  // rendering includes faces of both types so we can tell if the right
+  // materials and textures are getting loaded in the right way.
+  {
+    const std::filesystem::path obj_path = FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/rainbow_box.obj");
+    do_test(
+        "textured_obj", Mesh(obj_path.string()),
+        Mesh(*ReadFile(obj_path), "rainbow_box.obj",
+             string_map<common::FileContents>{
+                 {"rainbow_box.mtl",
+                  common::FileContents::Make(FindResourceOrThrow(
+                      "drake/geometry/render/test/meshes/rainbow_box.mtl"))},
+                 {"rainbow_stripes.png",
+                  common::FileContents::Make(
+                      FindResourceOrThrow("drake/geometry/render/test/"
+                                          "meshes/rainbow_stripes.png"))}}));
+  }
 }
 
 // A note on testing the glTF support.
