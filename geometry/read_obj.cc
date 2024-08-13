@@ -114,13 +114,11 @@ std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
 ReadObjContents(const FileContents& file_contents, double scale,
                 bool triangulate, bool vertices_only) {
-  // We're not reading materials.
-  const std::string no_mtl_contents;
-
   tinyobj::ObjReader reader;
   tinyobj::ObjReaderConfig config;
   config.triangulate = triangulate;
-  reader.ParseFromString(file_contents.contents(), no_mtl_contents, config);
+  reader.ParseFromString(file_contents.contents(), /* mtl_reader= */ nullptr,
+                         config);
 
   if (!reader.Valid() || !reader.Error().empty()) {
     throw std::runtime_error(fmt::format("Error parsing OBJ '{}': {}",
