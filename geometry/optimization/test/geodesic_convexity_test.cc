@@ -419,13 +419,29 @@ GTEST_TEST(GeodesicConvexityTest, ComputePairwiseIntersections1) {
   // Deprecation tests.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_NO_THROW(
-      CalcPairwiseIntersections(sets_A, std::vector<int>{}, bboxes_A));
-  EXPECT_NO_THROW(CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{},
-                                            bboxes_A, bboxes_B));
-  EXPECT_NO_THROW(CalcPairwiseIntersections(sets_A, std::vector<int>{}, true));
-  EXPECT_NO_THROW(
-      CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{}, true));
+  ASSERT_NO_THROW(CalcPairwiseIntersections(
+      sets_A, sets_B, std::vector<int>{0, 1}, bboxes_A, bboxes_B));
+  auto edges_both_old = CalcPairwiseIntersections(
+      sets_A, sets_B, std::vector<int>{0, 1}, bboxes_A, bboxes_B);
+  ASSERT_EQ(edges_both_old.size(), edges_both.size());
+  for (int i = 0; i < ssize(edges_both); ++i) {
+    EXPECT_EQ(std::get<0>(edges_both_old[i]), edges_both[i].first);
+    EXPECT_EQ(std::get<1>(edges_both_old[i]), edges_both[i].second);
+    EXPECT_TRUE(CompareMatrices(std::get<2>(edges_both_old[i]), offsets_both[i],
+                                1e-15));
+  }
+
+  ASSERT_NO_THROW(
+      CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1}, true));
+  edges_both_old =
+      CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1}, true);
+  ASSERT_EQ(edges_both_old.size(), edges_both.size());
+  for (int i = 0; i < ssize(edges_both); ++i) {
+    EXPECT_EQ(std::get<0>(edges_both_old[i]), edges_both[i].first);
+    EXPECT_EQ(std::get<1>(edges_both_old[i]), edges_both[i].second);
+    EXPECT_TRUE(CompareMatrices(std::get<2>(edges_both_old[i]), offsets_both[i],
+                                1e-15));
+  }
 #pragma GCC diagnostic pop
 }
 
@@ -476,6 +492,43 @@ GTEST_TEST(GeodesicConvexityTest, ComputePairwiseIntersections2) {
     DRAKE_DEMAND(h_first != nullptr);
     EXPECT_TRUE(sets[index_b]->PointInSet(h_first->Center() + offset, 1e-6));
   }
+
+// Deprecation tests.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  std::vector<Hyperrectangle> bboxes;
+  bboxes.emplace_back(h1);
+  bboxes.emplace_back(h2);
+  bboxes.emplace_back(h3);
+
+  ASSERT_NO_THROW(
+      CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, bboxes));
+  auto intersections_both_old =
+      CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, bboxes);
+  ASSERT_EQ(intersections_both_old.size(), intersections_both.size());
+  for (int i = 0; i < ssize(intersections_both); ++i) {
+    EXPECT_EQ(std::get<0>(intersections_both_old[i]),
+              intersections_both[i].first);
+    EXPECT_EQ(std::get<1>(intersections_both_old[i]),
+              intersections_both[i].second);
+    EXPECT_TRUE(CompareMatrices(std::get<2>(intersections_both_old[i]),
+                                offsets_both[i], 1e-15));
+  }
+
+  ASSERT_NO_THROW(
+      CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, true));
+  intersections_both_old =
+      CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, true);
+  ASSERT_EQ(intersections_both_old.size(), intersections_both.size());
+  for (int i = 0; i < ssize(intersections_both); ++i) {
+    EXPECT_EQ(std::get<0>(intersections_both_old[i]),
+              intersections_both[i].first);
+    EXPECT_EQ(std::get<1>(intersections_both_old[i]),
+              intersections_both[i].second);
+    EXPECT_TRUE(CompareMatrices(std::get<2>(intersections_both_old[i]),
+                                offsets_both[i], 1e-15));
+  }
+#pragma GCC diagnostic pop
 }
 
 }  // namespace optimization
