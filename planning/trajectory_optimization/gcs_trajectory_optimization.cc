@@ -1771,9 +1771,11 @@ GcsTrajectoryOptimization::ReconstructTrajectoryFromSolutionPath(
     if (num_control_points > 1 &&
         h < PiecewiseTrajectory<double>::kEpsilonTime) {
       throw std::runtime_error(
-          "GcsTrajectoryOptimization returned a trajectory segment with zero "
-          "duration. Make sure you set h_min to be nonzero for regions whose "
-          "subgraph order is larger than 1 or impose velocity limits.");
+          fmt::format("GcsTrajectoryOptimization returned a trajectory segment "
+                      "with near-zero duration. Make sure you set h_min to be "
+                      "at least {} for regions whose subgraph order is at "
+                      "least 1 or impose velocity limits.",
+                      PiecewiseTrajectory<double>::kEpsilonTime));
     } else if (!(num_control_points == 1 &&
                  vertex_to_subgraph_[&e->u()]->h_min_ == 0)) {
       bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
@@ -1798,10 +1800,11 @@ GcsTrajectoryOptimization::ReconstructTrajectoryFromSolutionPath(
   // Skip edges with a single control point that spend near zero time in the
   // region, since zero order continuity constraint is sufficient.
   if (num_control_points > 1 && h < PiecewiseTrajectory<double>::kEpsilonTime) {
-    throw std::runtime_error(
-        "GcsTrajectoryOptimization returned a trajectory segment with zero "
-        "duration. Make sure you set h_min to be nonzero for regions whose "
-        "subgraph order is larger than 1 or impose velocity limits.");
+    throw std::runtime_error(fmt::format(
+        "GcsTrajectoryOptimization returned a trajectory segment with "
+        "near-zero duration. Make sure you set h_min to be at least {} for "
+        "regions whose subgraph order is at least 1 or impose velocity limits.",
+        PiecewiseTrajectory<double>::kEpsilonTime));
   } else if (!(num_control_points == 1 &&
                vertex_to_subgraph_[&last_edge.v()]->h_min_ == 0)) {
     bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
