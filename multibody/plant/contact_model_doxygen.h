@@ -626,7 +626,7 @@ simulation time step sizes are large in order to meet real-time requirements
 within a limited computational budget. In Drake however, margin is used to
 mitigate instability problems inherent of discrete schemes.
 
-In the following sections we describe why we introduce margin, how we do it and
+In the following sections we describe why we introduce margin, how we do it, and
 its limitations.
 
 @section discrete_contact_instabilities Discrete Contact Instabilities
@@ -643,8 +643,9 @@ forth between two corners.
 @image html drake/multibody/plant/images/unstable_box_box_contact.gif "Figure 1: Unstable flat-on-flat contact." width=50%
 
 This wobbling is not physical, but rather a numerical instability. To gain
-insight into this problem, we analyze the simplified system in Fig. 2. This
-figure shows a box in contact with the ground (in gray) at three consecutive
+insight into this problem, we analyze the simplified system in Fig. 2. In this
+case, it is contact between a box and a ground plane in 2D where contact is
+represented by a single point. In Fig. 2, we see the box at three consecutive
 time steps, labeled tₙ, tₙ₊₁, and , tₙ₊₂. In this simplified system we use a
 point contact model in which only the corners marked in red can make contact
 with the ground. At time tₙ only the left corner is in penetration. For such a
@@ -656,34 +657,37 @@ the left corner is out of contact. In this configuration, the box can overshoot
 once again to the state at tₙ₊₂. Even more, the motion of the box can fall into
 a limit cycle with intermittent contact between the two corners. 
 
-The situation is more complex in Fig. 1, where we have continuous (in space)
-contact surfaces instead of discrete points between fully three dimensional
-objects. Still, the underlying principle of this instability remains.
+The situation is more complex in Fig. 1, but the underlying principle of this
+instability remains.
 
 @image html drake/multibody/plant/images/discrete_instabilities.png "Figure 2: Intermittent contact results in wobbling instabilities." width=35%
 
-While the instability tends to show more frequently for the case of contact
-between flat surfaces, it can also happen between complex geometries. Figure 3
-shows an example of this instability for the contact between a mug placed on top
-of a plate. When the visuals for the geometries are turned off, we can see the
-two contact surfaces (table/plate and plate/table) rocking back and forth. The
-visualization also includes the contact forces (red) and moments (blue).
+The stability arises when the stable contact between two object has a large
+cross-sectional area on a plane (i.e., it really doesn't happen between spheres
+and planes). Figure 3 shows an example of this instability for the contact
+between a mug placed on top of a plate. When the visuals for the geometries are
+turned off, we can see the two contact surfaces (table/plate and plate/table)
+rocking back and forth. The visualization also includes the contact forces (red)
+and moments (blue). In both contacts, the table contact surface is a large, flat
+circular patch. Even if the mug had an extruded rim on its bottom, the stable
+contact would be a large, planar ring-like patch, exhibiting the same behavior.
 
 @image html drake/multibody/plant/images/mug_on_plate.gif "Figure 3: Instability on complex geometries. Mug on a plate." width=50%
 
 @section speculative_constraints Speculative Constraints
 
-Lets consider once again the schematic in Fig. 2. At each time step, only one
-constraint is added corresponding to the one contact point (left or right) that
-is in penetration. If instead the set of contact constraints is augmented to
-include both points, the solver can now use this information to compute a force
-that can avoid the overshooting that leads to the instability.  We are
-essentially adding contact constraints before contact actually happens. Whether
-this constraints become active or not, will ultimately depend on the contact
-resolution phase, which considers balance of momentum and the physics of
-contact. We refer to this new set of constraints as "speculative constraints",
-see (add Kato's reference). Speculative constraints are highlighted with blue
-boxes in Fig. 2.
+Lets consider once again the schematic in Fig. 2. At each time step, the solver
+only adds one constraint for each reported contact point (left or right).
+Satisfying this single constraint can lead to unbounded "correction". If,
+instead, the set of contact constraints is augmented to include both points --
+a point in contact and a point nearly in contact -- the solver can now use this
+additional information to compute a force that can avoid the overshooting that
+leads to the instability.  We are essentially adding contact constraints before
+contact actually happens. Whether these constraints become active or not, will
+ultimately depend on the contact resolution phase, which considers balance of
+momentum and the physics of contact. We refer to this new set of constraints as
+"speculative constraints", see (add Kato's reference). Speculative constraints
+are highlighted with blue boxes in Fig. 2.
 
 To provide more context, we'll discuss briefly how the solver can use
 information from speculative constraints. Each contact pair will be
@@ -693,7 +697,7 @@ a compliant contact with stiffness k, the normal force is modeled according to:
   fₙ = k (-ϕ)₊,                                                             (1)
 </pre>
 where (a)₊ = max(0, a). Notice that fₙ > 0 (i.e. repulsive) always, even if ϕ₀ >
-0 (speculative constraint). At each time step Drake solvers user a first order
+0 (speculative constraint). At each time step Drake solvers use a first order
 approximation of the signed distance function as ϕ ≈ ϕ₀ + δt⋅vₙ, where ϕ₀ is the
 signed distance from the previous time step, vₙ the normal component of the
 relative velocity between the two participating bodies at the contact point and
@@ -709,10 +713,13 @@ approximation used for ϕ is no longer accurate for large extrapolations.
 Notice that with δ = 0 (no margin) we only consider a subset of all
 desired contact constraints.
 
-Notice that while speculative constraints will allow the solver to avoid
-overshoots and mitigate instabilities, this is done at the expense of having to
-solve a contact problem with a larger number of constraints. While generally
-negligible, this will impact performance.
+Speculative constraints come from finding more "contact" points. When margin is
+zero, only those points actually in contact are reported. As margin grows, we
+also need to find points that are outside of contact, but within margin distance
+of contact. There is an increased computational cost for positive margin values
+in both finding those additional points as well as handling the constraints that
+arise from them. Tuned well, the impact of this additional computation can be
+negligible compared to the benefits of increased stability.
 
 The precise value of margin is therefore determined as a trade-off between
 accuracy/stability and performance. Section @ref margin_how_much discusses how
@@ -729,18 +736,31 @@ not as straightforward.
 In the @ref hydro_contact "hydroelastic contact model", each geometry is
 assigned a body centric "pressure" field. The contact surface between two
 overlapping geometries is computed as the surface of equal hydroelastic
-pressure. 
+pressure. Historically, the pressure field is defined to be zero at the surface
+of the geometry (no contact implies no contact pressure). Contact surfaces
+always have non-negative pressure and lay completely within the intersecting
+volume of the two colliding geometries.
 
-To include the concept of margin, we need to extend hydroelastic contact. In our
-approach we first "inflate" geometries such that their boundary is moved a
-margin distance in the outwards direction. This creates a thin layer of margin
-thickness all around the object. While this operation is well defined for convex
-shapes, it requires a more careful consideration for non-convex shapes (this is
-discussed in further detail in @ref margin_non_convex). We then extend the
-pressure field within this new "margin layer" with negative values at the
-boundary of the extended region, in such a way that the zero level set of the
-pressure field is good approximation to the original geometry (exact for convex
-shapes).
+To include the concept of margin, we need to extend the notion of hydroelastic
+contact to include _imminent_ contact. A contact surface shouldn't be limited
+to the non-negative region of the pressure field but should extend into the
+negative region at a distance equal to the margin amount. By doing so, we can
+extract the necessary point data for introducing speculative constraints.
+
+Extending the contact surface into the negative region can be done a number of
+ways. We chose an approach that limits the impact on computation. The goal is
+to increase the extent of the pressure field over which we can find contact
+surfaces, without increasing the cost of finding the surfaces. To that end, we
+replace the specified compliant hydroelastic geometry with an alternative
+representation whose surface is an approximation of the offset surface of the
+original geometry's surface (extended outward by margin distance). The
+pressure field defined within this "inflated" geometry is defined such that the
+zero level set of the pressure field is a good approximation to the original
+geometry's surface (where reasonably possible, it is an exact reproduction).
+
+It's worth noting that offset surfaces are reasonably well defined for convex
+shapes. Non-convex shapes require additional consideration and are discussed in
+further detail in @ref margin_non_convex.
 
 Figure 4 exemplifies this process for the case of a cylinder. Iso-surfaces of
 constant pressure, colored by pressure, are shown. The extended pressure is
@@ -754,10 +774,12 @@ processed as any other hydroelastic fields. When the geometries (including their
 margin region) overlap, the contact surface is computed as the surface of equal
 pressure. This computation will now lead to triangulated contact surfaces with a
 thin "skirt", of thickness in the order of the margin, all around the contact
-surface where pressures are negative. Figure 5 shows peppers modeled with a very
-large margin value of 1 cm to exaggerate the visualization of this "skirt" of
-negative pressure values. The margin layer or skirt is clearly visible as a
-halo all around the peppers.
+surface where pressures are negative. Figure 5 shows peppers in contact with a
+blue table surface. THe peppers have been modeled with a very large margin value
+of 1 cm to emphasize this "skirt" of negative pressure values. Normally, the
+contact surface would, by definition, lie completely within the pepper. Here,
+we can see the contact surface extending outside the pepper by about the margin
+distance, showing the negative pressure regime.
 
 @image html drake/multibody/plant/images/peppers_margin_1cm.png "Figure 5: Pepper models with a very large margin of δ = 1 cm." width=30%
 
@@ -782,15 +804,15 @@ the number of constraints, increasing the contact problem size.
 For more on hydroelastic contact, including the modeling of dissipation, refer
 to @ref hydro_contact "Hydroelastic Contact".
 
-@section margin_how_much But, How Much Margin?
+@section margin_how_much But How Much Margin?
 
-How much margin is enough to mitigate stability problems? and how does this
-quantity scales or depends on problem parameters such stiffness, size, etc.?
+How much margin is enough to mitigate stability problems and how does this
+quantity scale or depend on problem parameters such stiffness, size, etc.?
 
 To answer this question we consider the simplified two-dimensional system in
 Fig. 6. This is a massless rod of length `L` connecting two points of mass
 `m/2`. We assume the rod to be in a limit cycle between two states, left (State
-I) and right (State II) in Fig. 6. Only one point is in penetration in each
+I) and right (State II). Only one point is in penetration in each
 state. In the discrete setting, the rod is assumed to go back and forth between
 these two states in a single time step. The states are assumed symmetric, with
 the rod rotated an angle θ in State I and an angle -θ in State II. Due to this
@@ -837,14 +859,14 @@ To verify the validity of this scaling result on a more complex situation, we
 run the simulation of Fig. 1, with different problem parameters, sizes and
 margin. Notice the case is now three-dimensional, with contact modeled using the
 hydroelastic contact model instead of point contact, which provides continuous
-surfaces rather than discrete points. We run the simulation with the box stacked
-on top of each other, no margin, and let the system reach its limit cycle in
-which the boxes rattle back and forth. Unlike the simplified system of Fig. 6,
-the limit cycle typically include several time  steps and the boxes rotate about
-an axes usually not aligned with their axes of symmetry.
+surfaces rather than discrete points. We run the simulation with the boxes
+stacked on top of each other, no margin, and let the system reach its limit
+cycle in which the boxes rattle back and forth. Unlike the simplified system of
+Fig. 6, the limit cycle typically include several time  steps and the boxes
+rotate about an axes usually not aligned with their axes of symmetry.
 
 The results are shown in Fig. 7. We plot mean penetration dimensionless with
-`δt²⋅g`. On the horizontal axes with plot a "semi-dimensionless" time step. With
+`δt²⋅g`. On the horizontal axes we plot a "semi-dimensionless" time step. With
 that we mean that if hydro modulus E was a point contact stiffness k, this
 quantity would be dimensionless. It is not, but it still scales data properly
 such that curves overlap in the region at the left of the plot. We observe two
@@ -855,7 +877,7 @@ hydroelastic modulus is lowered.
 
 @image html drake/multibody/plant/images/box_on_box_mean_penetration.png "Figure 7: Scaling of the mean penetration with problem parameters." width=30%
 
-For non-zero margin, we now expect that if these vibrations are in the oder of
+For non-zero margin, we now expect that if these vibrations are in the order of
 the margin δ, they'll be mitigated. We test this by running the same simulation
 and plotting the standard deviation of the vibrations vs margin (dimensionless
 with δt²⋅g) in Fig. 8. We observe in Fig. 8 that indeed for `Δϕ / (δt²⋅g) < 1`
