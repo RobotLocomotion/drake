@@ -13,6 +13,8 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
+using LinkIndex = BodyIndex;
+
 class SpanningForest;
 
 using LinkOrdinal = TypeSafeIndex<class LinkOrdinalTag>;

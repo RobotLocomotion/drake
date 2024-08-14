@@ -35,16 +35,26 @@ namespace internal {
 /** Represents a graph consisting of Links (user-defined rigid bodies)
 interconnected by Joints.
 
-Terminology note: for clarity we use "Link" here to mean what MultibodyPlant
-calls a "RigidBody" (or just "Body"), that is, what a user inputs as an sdf or
-urdf "link", as a MuJoCo "body", or using the AddRigidBody() call in
-MultibodyPlant's API. (It would have been preferable to use Link in
-MultibodyPlant as well, but that ship has sailed and there is less chance of
-confusion there.) The spanning forest we generate uses "mobilized bodies"
-(Mobods). A single Mobod may represent multiple Links (e.g., when multiple
-links are welded together). Conversely, a single Link may be split to create
-multiple Mobods (to break cycles in the graph). As there is not necessarily a
-one-to-one mapping, we're careful not to mix the two terms.
+Terminology notes:
+ - For clarity we use "Link" here to mean what MultibodyPlant calls a
+   "RigidBody" (or just "Body"), that is, what a user inputs as an SDFormat or
+   URDF "link", as a MuJoCo "body", or using the AddRigidBody() call in
+   MultibodyPlant's API.  (It would have been preferable to use Link exclusively
+   in MultibodyPlant as well, but that ship has sailed and there is less chance
+   of confusion there.)
+ - The LinkIndex we use here is just an alias for MultibodyPlant's BodyIndex;
+   they may be used interchangeably.
+ - The spanning forest we generate uses "mobilized bodies" (Mobods). A single
+   Mobod may represent multiple Links when multiple links are welded together.
+   Conversely, a single Link may be split to create multiple Mobods (to break
+   cycles in the graph). As there is not necessarily a one-to-one mapping, we're
+   careful not to mix the two terms.
+ - Because Links and Joints may be removed from an existing graph, there may be
+   gaps in the sequence of LinkIndex and JointIndex values. However, any
+   remaining Links and Joints are stored consecutively, indexed by LinkOrdinal
+   and JointOrdinal. The sequence of ordinals does not have gaps. Indices are
+   persistent once assigned; ordinals may change as elements are added or
+   removed.
 
 %LinkJointGraph is a directed, possibly cyclic, graph whose nodes are Links and
 whose edges are Joints, defined by a sequence of calls to AddLink() and
@@ -86,7 +96,7 @@ In general during SpanningForest building:
   - We never delete any of the user's Links or Joints; we may add new ones
     during forest building but those are distinct from the user's.
 
-@note Links are indexed using MultibodyPlant's BodyIndex type; there is no
+@note Links are indexed using MultibodyPlant's LinkIndex type; there is no
 separate LinkIndex type since these are necessarily the same. */
 class LinkJointGraph {
  public:
@@ -107,7 +117,7 @@ class LinkJointGraph {
   /** A LinkComposite is a set of Links that are mutually connected by weld
   joints. It is massless only if _all_ its constituent Links are massless. */
   struct LinkComposite {
-    std::vector<BodyIndex> links;
+    std::vector<LinkIndex> links;
     bool is_massless{false};
   };
 
@@ -221,28 +231,28 @@ class LinkJointGraph {
     any flags marked "internal use only" (currently just `Shadow`).
   @note The World Link is always predefined with name "world" (case sensitive),
     model instance world_model_instance(), and index 0.
-  @returns The unique BodyIndex for the added Link in the graph.
+  @returns The unique LinkIndex for the added Link in the graph.
   @throws std::exception if `name` is duplicated within `model_instance`.
   @throws std::exception if an attempt is made to add a link into the World's
     model instance
   @throws std::exception if the `flags` parameter has any internal-only flags
     set (currently just `Shadow`). */
-  BodyIndex AddLink(const std::string& name, ModelInstanceIndex model_instance,
+  LinkIndex AddLink(const std::string& name, ModelInstanceIndex model_instance,
                     LinkFlags flags = LinkFlags::kDefault);
 
   // TODO(sherm1) Add this method;
-  //  void RemoveLink(BodyIndex doomed_link_index);
+  //  void RemoveLink(LinkIndex doomed_link_index);
 
   /** Returns true if the given `link_index` is in range and the corresponding
   Link hasn't been removed. Can be a user or ephemeral Link. */
-  [[nodiscard]] bool has_link(BodyIndex link_index) const {
+  [[nodiscard]] bool has_link(LinkIndex link_index) const {
     return link_index < num_link_indexes() &&
            data_.link_index_to_ordinal[link_index].has_value();
   }
 
   /** Returns true if the given Link exists and is ephemeral. Ephemeral links
   are present only if the SpanningForest is valid. */
-  [[nodiscard]] bool link_is_ephemeral(BodyIndex link_index) const {
+  [[nodiscard]] bool link_is_ephemeral(LinkIndex link_index) const {
     if (has_link(link_index) && link_index > data_.max_user_link_index) {
       DRAKE_ASSERT(index_to_ordinal(link_index) >= num_user_links());
       return true;
@@ -264,10 +274,10 @@ class LinkJointGraph {
     registered with calls to RegisterJointType().
   @param[in] parent_link_index
     The index of a Link previously obtained with a call to AddLink(), or
-    BodyIndex(0) for the World Link.
+    LinkIndex(0) for the World Link.
   @param[in] child_link_index
     The index of a Link previously obtained with a call to AddLink(), or
-    BodyIndex(0) for the World Link.
+    LinkIndex(0) for the World Link.
   @param[in] flags
     Optional JointFlags requesting special handling for this Joint.
   @returns The unique JointIndex for the added Joint in the graph.
@@ -281,8 +291,8 @@ class LinkJointGraph {
       other than a "weld" Joint. */
   JointIndex AddJoint(const std::string& name,
                       ModelInstanceIndex model_instance_index,
-                      const std::string& type, BodyIndex parent_link_index,
-                      BodyIndex child_link_index,
+                      const std::string& type, LinkIndex parent_link_index,
+                      LinkIndex child_link_index,
                       JointFlags flags = JointFlags::kDefault);
 
   /** Removes a previously-added Joint and any references to it in the graph.
@@ -358,7 +368,7 @@ class LinkJointGraph {
   }
 
   /** Returns a reference to the vector of Link objects, contiguous and ordered
-  by ordinal (not by BodyIndex). World is always the first entry and is always
+  by ordinal (not by LinkIndex). World is always the first entry and is always
   present. `ssize(links())` is the number of Links currently in this graph. */
   [[nodiscard]] const std::vector<Link>& links() const { return data_.links; }
 
@@ -370,11 +380,11 @@ class LinkJointGraph {
   [[nodiscard]] inline const Link& links(LinkOrdinal link_ordinal) const;
 
   /** Returns a reference to a particular Link using the index returned by
-  AddLink(). The World Link is BodyIndex(0). Ephemeral links added by
-  BuildForest() are indexed last. Requires a BodyIndex, not a plain integer.
+  AddLink(). The World Link is LinkIndex(0). Ephemeral links added by
+  BuildForest() are indexed last. Requires a LinkIndex, not a plain integer.
   @throws std::exception if the index is out of range or if the selected Link
     was removed. */
-  [[nodiscard]] inline const Link& link_by_index(BodyIndex link_index) const;
+  [[nodiscard]] inline const Link& link_by_index(LinkIndex link_index) const;
 
   /** Returns a reference to the vector of Joint objects, contiguous and ordered
   by ordinal (not by JointIndex). `ssize(joints())` is the number of Joints
@@ -420,7 +430,7 @@ class LinkJointGraph {
   will be the mobilized body for the whole composite. If the Link was split into
   a primary and shadows, this is the mobilized body followed by the primary. If
   there is no valid Forest, the returned index will be invalid. */
-  [[nodiscard]] MobodIndex link_to_mobod(BodyIndex index) const;
+  [[nodiscard]] MobodIndex link_to_mobod(LinkIndex index) const;
 
   /** After the SpanningForest has been built, returns groups of Links that are
   welded together, which we call "LinkComposites". Each composite may be modeled
@@ -473,7 +483,7 @@ class LinkJointGraph {
   building, so you may get a different answer before and after modeling. Cost is
   O(j) where j=min(j₁,j₂) with jᵢ the number of Joints attached to linkᵢ. */
   [[nodiscard]] std::optional<JointIndex> MaybeGetJointBetween(
-      BodyIndex link1_index, BodyIndex link2_index) const;
+      LinkIndex link1_index, LinkIndex link2_index) const;
 
   /** Returns true if the given Link should be treated as massless. That
   requires that the Link was flagged kMassless and is not connected by
@@ -483,7 +493,7 @@ class LinkJointGraph {
       LinkOrdinal link_ordinal) const;
 
   /** (Internal use only) For testing -- invalidates the Forest. */
-  void ChangeLinkFlags(BodyIndex link_index, LinkFlags flags);
+  void ChangeLinkFlags(LinkIndex link_index, LinkFlags flags);
 
   /** (Internal use only) For testing -- invalidates the Forest. */
   void ChangeJointFlags(JointIndex joint_index, JointFlags flags);
@@ -572,7 +582,7 @@ class LinkJointGraph {
 
   // Given a link index returns that link's ordinal.
   // @pre the index refers to a link that exists and hasn't been removed.
-  [[nodiscard]] LinkOrdinal index_to_ordinal(BodyIndex link_index) const {
+  [[nodiscard]] LinkOrdinal index_to_ordinal(LinkIndex link_index) const {
     DRAKE_ASSERT(link_index.is_valid() &&
                  link_index < ssize(data_.link_index_to_ordinal));
     const std::optional<LinkOrdinal>& ordinal =
@@ -659,14 +669,14 @@ class LinkJointGraph {
       const std::string& joint_type_name) const;
 
   // Links that were explicitly flagged LinkFlags::kStatic in AddLink().
-  const std::vector<BodyIndex>& static_link_indexes() const {
+  const std::vector<LinkIndex>& static_link_indexes() const {
     return data_.static_link_indexes;
   }
 
   // Links that were flagged LinkFlags::kMustBeBaseBody in AddLink() but were
   // not also flagged kStatic (those are inherently base bodies since by
   // definition they are welded to World).
-  const std::vector<BodyIndex>& non_static_must_be_base_body_link_indexes()
+  const std::vector<LinkIndex>& non_static_must_be_base_body_link_indexes()
       const {
     return data_.non_static_must_be_base_body_link_indexes;
   }
@@ -691,7 +701,7 @@ class LinkJointGraph {
                                     LinkCompositeIndex which);
 
   [[noreturn]] void ThrowLinkWasRemoved(const char* func,
-                                        BodyIndex link_index) const;
+                                        LinkIndex link_index) const;
 
   [[noreturn]] void ThrowJointWasRemoved(const char* func,
                                          JointIndex joint_index) const;
@@ -710,7 +720,7 @@ class LinkJointGraph {
 
     std::vector<JointTraits> joint_traits;
 
-    // The first entry in links is the World Link with BodyIndex(0) and name
+    // The first entry in links is the World Link with LinkIndex(0) and name
     // world_link().name(). Ephemeral "as-built" links and joints are placed
     // at the end of these lists, following the user-supplied ones.
     // Access these lists by _ordinal_ rather than _index_.
@@ -732,7 +742,7 @@ class LinkJointGraph {
     // is an index temporarily assigned to ephemeral elements. Note that the
     // highest-ordinal user link or joint does not necessarily have the
     // highest-ever user index since higher ones might have been removed.
-    BodyIndex max_user_link_index;
+    LinkIndex max_user_link_index;
     JointIndex max_user_joint_index;
 
     // Loop Weld Constraints are only added during forest building; we don't
@@ -740,11 +750,11 @@ class LinkJointGraph {
     // affect how we build the forest.
     std::vector<LoopConstraint> loop_constraints;
 
-    std::vector<BodyIndex> static_link_indexes;
-    std::vector<BodyIndex> non_static_must_be_base_body_link_indexes;
+    std::vector<LinkIndex> static_link_indexes;
+    std::vector<LinkIndex> non_static_must_be_base_body_link_indexes;
 
     // Every user Link, organized by Model Instance.
-    std::map<ModelInstanceIndex, std::vector<BodyIndex>>
+    std::map<ModelInstanceIndex, std::vector<LinkIndex>>
         model_instance_to_link_indexes;
 
     // This must always have the same number of entries as joint_traits_.
@@ -754,7 +764,7 @@ class LinkJointGraph {
     // links/joints/actuators/etc may appear with the same name in different
     // model instances. The index values are still unique across the graph.
     // These include only user-supplied links and joints.
-    string_unordered_multimap<BodyIndex> link_name_to_index;
+    string_unordered_multimap<LinkIndex> link_name_to_index;
     string_unordered_multimap<JointIndex> joint_name_to_index;
 
     // The 0th composite always exists and contains World (listed first)
@@ -768,7 +778,7 @@ class LinkJointGraph {
     // These parallel {link,joint}_name_to_index except they hold mappings
     // for ephemeral links and joints added during forest-building. We keep
     // them separately so they are easy to get rid of.
-    string_unordered_multimap<BodyIndex> ephemeral_link_name_to_index;
+    string_unordered_multimap<LinkIndex> ephemeral_link_name_to_index;
     string_unordered_multimap<JointIndex> ephemeral_joint_name_to_index;
 
     ForestBuildingOptions global_forest_building_options{
