@@ -78,7 +78,7 @@ struct SquaredDistanceToTriangle {
 
   // Classify the projection Q' of the query point Q onto the plane of the
   // triangle.
-  enum class Location {
+  enum class Projection {
     // Q' is in the triangle. It could be anywhere in the triangle including
     // its edges and vertices.  The `closest_point` is Q'.  We can use the
     // face normal of the triangle for the inside-outside test.
@@ -94,7 +94,9 @@ struct SquaredDistanceToTriangle {
     // excluding its vertices. The `closest_point` is the projection of Q'
     // onto that edge. We can use the edge normal (the equal-weight average
     // of face normals of two triangles sharing the edge) for the
-    // inside-outside test.
+    // inside-outside test. In the picture below, the area between the
+    // two rays is the region of points that are closest to edge BC (Voronoi
+    // region of the edge).
     //                                  A
     //                                🮠│
     //                             🮠   │
@@ -109,8 +111,10 @@ struct SquaredDistanceToTriangle {
     // Q' is outside the triangle and nearest to a vertex of the triangle.
     // The `closest_point` is that vertex. We can use the vertex normal (the
     // angle-weighted average of face normals of triangles sharing the vertex)
-    // for the inside-outside test.
-    //                                  A
+    // for the inside-outside test. In the picture below, the area between
+    // the two rays is the region of points that are closest to
+    // vertex B (Voronoi region of the vertex).
+    //                                   A
     //                                🮠│
     //         ↖                   🮠   │
     //            ↖             🮠      │
@@ -164,8 +168,17 @@ struct SignedDistanceToSurfaceMesh {
 //                       and equal-weight average normals at edges of the
 //                       surface mesh, expressed in frame M.
 //
-// @pre  The surface mesh is watertight and a closed manifold.
+// @pre  The surface mesh is watertight and a closed manifold. Otherwise, it
+// might return incorrect signs and gradients.
 //
+// @note If p_MQ is equally far from multiple faces, the nearest point and
+// the gradient are selected arbitrarily from those faces.
+//
+// @note If p_MQ is on the surface, the returned signed distance is zero,
+// the nearest point is p_MQ itself, and the gradient is in the conical hull
+// of outward face normals of triangles that contain p_MQ. (There are two such
+// triangles if p_MQ is in an edge. There are multiple such triangles
+// if p_MQ is at a vertex.)
 SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
