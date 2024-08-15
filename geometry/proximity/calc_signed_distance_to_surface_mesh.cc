@@ -145,7 +145,7 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
     const Vector3d p_MN =
         mesh_M.CalcCartesianFromBarycentric(triangle_index, b_Q);
     return {(p_MQ - p_MN).squaredNorm(), p_MN,
-            SquaredDistanceToTriangle::Location::kInside, 0};
+            SquaredDistanceToTriangle::Projection::kInside, 0};
   }
 
   const SurfaceTriangle& triangle = mesh_M.triangles()[triangle_index];
@@ -165,19 +165,19 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
     const double t = p_AB_M.dot(p_MQ - p_MA) / p_AB_M.squaredNorm();
     // N is the nearest point in the line segment.
     Vector3d p_MN;
-    SquaredDistanceToTriangle::Location location;
+    SquaredDistanceToTriangle::Projection location;
     int index;
     if (t <= 0) {
       p_MN = p_MA;
-      location = SquaredDistanceToTriangle::Location::kOutsideNearVertex;
+      location = SquaredDistanceToTriangle::Projection::kOutsideNearVertex;
       index = i;
     } else if (t >= 1) {
       p_MN = p_MB;
-      location = SquaredDistanceToTriangle::Location::kOutsideNearVertex;
+      location = SquaredDistanceToTriangle::Projection::kOutsideNearVertex;
       index = (i + 1) % 3;
     } else {
       p_MN = (1.0 - t) * p_MA + t * p_MB;
-      location = SquaredDistanceToTriangle::Location::kOutsideNearEdge;
+      location = SquaredDistanceToTriangle::Projection::kOutsideNearEdge;
       index = i;
     }
 
@@ -203,14 +203,14 @@ SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
   {
     const int v = closest.v;
     switch (closest.location) {
-      case SquaredDistanceToTriangle::Location::kInside:
+      case SquaredDistanceToTriangle::Projection::kInside:
         normal_M = mesh_M.face_normal(tri_index);
         break;
-      case SquaredDistanceToTriangle::Location::kOutsideNearEdge:
+      case SquaredDistanceToTriangle::Projection::kOutsideNearEdge:
         normal_M =
             mesh_normal_M.edge_normal({tri.vertex(v), tri.vertex((v + 1) % 3)});
         break;
-      case SquaredDistanceToTriangle::Location::kOutsideNearVertex:
+      case SquaredDistanceToTriangle::Projection::kOutsideNearVertex:
         normal_M = mesh_normal_M.vertex_normal(tri.vertex(v));
     }
   }
