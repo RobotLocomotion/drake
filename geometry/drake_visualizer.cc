@@ -7,6 +7,9 @@
 #include <utility>
 #include <vector>
 
+#include <common_robotics_utilities/base64_helpers.hpp>
+#include <nlohmann/json.hpp>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/scope_exit.h"
@@ -378,7 +381,38 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.string_data = mesh.filename();
+    const MeshSource& source = mesh.source();
+    if (source.IsPath()) {
+      geometry_data_.string_data = source.path().string();
+    } else {
+      DRAKE_DEMAND(source.IsInMemory());
+      const InMemoryMesh& mem_mesh = source.mesh_data();
+      using nlohmann::json;
+      json in_memory;
+      // To reconstruct a mesh, we need a file name with the appropriate
+      // extension. If the filename hint doesn't already have one, give it
+      // the known extension.
+      in_memory["in_memory_mesh"]["name"] =
+          mem_mesh.mesh_file.filename_hint().ends_with(mesh.extension())
+              ? mem_mesh.mesh_file.filename_hint()
+              : fmt::format("{}{}", mem_mesh.mesh_file.filename_hint(),
+                            mesh.extension());
+      // We're going to encode all files in base64 so we don't have to think
+      // about which are ascii and which aren't.
+      {
+        const std::string& contents = mem_mesh.mesh_file.contents();
+        std::vector<uint8_t> bytes(contents.begin(), contents.end());
+        in_memory["in_memory_mesh"]["mesh_file"] =
+            common_robotics_utilities::base64_helpers::Encode(bytes);
+      }
+      for (const auto& [key, file] : mem_mesh.supporting_files) {
+        std::vector<uint8_t> bytes(file.contents().begin(),
+                                   file.contents().end());
+        in_memory["in_memory_mesh"]["supporting_files"][key] =
+            common_robotics_utilities::base64_helpers::Encode(bytes);
+      }
+      geometry_data_.string_data = in_memory.dump();
+    }
   }
 
   void ImplementGeometry(const Sphere& sphere, void*) override {

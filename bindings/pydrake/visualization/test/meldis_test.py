@@ -30,15 +30,22 @@ from drake import (
     lcmt_viewer_link_data,
     lcmt_viewer_load_robot,
 )
-
+from pydrake.common import (
+    FileContents,
+)
 from pydrake.geometry import (
     DrakeVisualizer,
     DrakeVisualizerParams,
+    GeometryInstance,
+    Mesh,
     MeshcatParams,
     Role,
 )
 from pydrake.lcm import (
     DrakeLcm,
+)
+from pydrake.math import (
+    RigidTransform,
 )
 from pydrake.multibody.parsing import (
     Parser,
@@ -444,6 +451,43 @@ class TestMeldis(unittest.TestCase):
         message = meshcat._GetPackedProperty(path, "modulated_opacity")
         parsed = umsgpack.unpackb(message)
         self.assertEqual(parsed['value'], new_alpha)
+
+    def test_viewer_applet_in_memory_mesh(self):
+        """This simply makes sure meldis doesn't crash for in-memory meshes."""
+        dut = mut.Meldis()
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        obj_contents="""
+mtllib meldis_test.mtl
+v 0 0 0
+v 1 0 0
+v 0 1 0
+vn 0 0 1
+usemtl meldis_mat
+f 1 2 3
+"""
+        mtl_contents="""
+newmtl meldis_mat
+Kd 1 1 0
+"""
+        mesh = Mesh(mesh_contents=obj_contents, name="from_test.obj",
+                    supporting_files={
+                        "meldis_test.mtl": FileContents(mtl_contents,
+                                                        "melids_test.mtl")})
+        scene_graph.RegisterAnchoredGeometry(
+            plant.get_source_id(),
+            GeometryInstance(X_PG = RigidTransform(), shape=mesh,
+                             name="in_memory"))
+        lcm = dut._lcm
+        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
+                                     params=DrakeVisualizerParams(), lcm=lcm)
+        plant.Finalize()
+        diagram = builder.Build()
+
+        diagram.ForcedPublish(diagram.CreateDefaultContext())
+        lcm.HandleSubscriptions(timeout_millis=0)
+        dut._invoke_subscriptions()
+        self.assertEqual(dut.meshcat.HasPath("/DRAKE_VIEWER"), True)
 
     def test_inertia_geometry(self):
         url = "package://drake_models/manipulation_station/sphere.sdf"
