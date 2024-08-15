@@ -281,6 +281,19 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_EQ(graph.CalcLinksWeldedTo(world_link_index),
             std::set<LinkIndex>{world_link_index});
 
+  // The "Find" and "Get" methods should complain if there's no Forest.
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.FindPathFromWorld(world_link_index),
+                              "FindPathFromWorld.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      graph.FindFirstCommonAncestor(world_link_index, world_link_index),
+      "FindFirstCommonAncestor.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.FindSubtreeLinks(world_link_index),
+                              "FindSubtreeLinks.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.GetSubgraphsOfWeldedLinks(),
+                              "GetSubgraphsOfWeldedLinks.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.GetLinksWeldedTo(world_link_index),
+                              "GetLinksWeldedTo.*no SpanningForest.*");
+
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
   EXPECT_TRUE(graph.forest_is_valid());

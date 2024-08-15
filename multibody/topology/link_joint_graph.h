@@ -518,7 +518,7 @@ class LinkJointGraph {
   part of a Link Composite the final entry will be L's composite's active link,
   which might not be L. Cost is O(ℓ) where ℓ is Link L's level in the
   SpanningForest.
-  @throws std::exception if called prior to modeling
+  @@throws std::exception if the SpanningForest hasn't been built yet.
   @see link_composites(), SpanningForest::FindPathFromWorld() */
   std::vector<LinkIndex> FindPathFromWorld(LinkIndex link_index) const;
 
@@ -526,7 +526,10 @@ class LinkJointGraph {
   towards World from each of two Links in the SpanningForest. Returns World
   immediately if the Links are on different trees of the forest. Otherwise the
   cost is O(ℓ) where ℓ is the length of the longer path from one of the Links
-  to the ancestor. */
+  to the ancestor.
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see SpanningForest::FindFirstCommonAncestor()
+  @see SpanningForest::FindPathsToFirstCommonAncestor() */
   LinkIndex FindFirstCommonAncestor(LinkIndex link1_index,
                                     LinkIndex link2_index) const;
 
@@ -536,7 +539,9 @@ class LinkJointGraph {
   B or any other Mobod in the subtree rooted at B. The Links following B
   come first, and the rest follow the depth-first ordering of the Mobods.
   In particular, the result is _not_ sorted by LinkIndex. Computational cost
-  is O(ℓ) where ℓ is the number of Links following the subtree. */
+  is O(ℓ) where ℓ is the number of Links following the subtree.
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see SpanningForest::FindSubtreeLinks() */
   std::vector<LinkIndex> FindSubtreeLinks(LinkIndex link_index) const;
 
   /** After the Forest is built, this method can be called to return a
@@ -575,11 +580,13 @@ class LinkJointGraph {
   LinkComposite the given `link_index` is part of (if any).
 
   @throws std::exception if the SpanningForest hasn't been built yet or
-                         `link_index` is out of range */
+                         `link_index` is out of range
+  @see CalcLinksWeldedTo() if you haven't built a Forest yet */
   std::set<LinkIndex> GetLinksWeldedTo(LinkIndex link_index) const;
 
   /** This slower method does not depend on the SpanningForest having
-  already been built. It is a fallback for when there is no Forest. */
+  already been built. It is a fallback for when there is no Forest.
+  @see GetLinksWeldedTo() if you already have a Forest built */
   std::set<LinkIndex> CalcLinksWeldedTo(LinkIndex link_index) const;
 
   // FYI Debugging APIs (including Graphviz-related) are defined in
