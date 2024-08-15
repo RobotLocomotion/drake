@@ -13,11 +13,13 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/file_contents.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/nice_type_name_override.h"
 #include "drake/common/parallelism.h"
 #include "drake/common/random.h"
+#include "drake/common/sha256.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
 
@@ -138,6 +140,40 @@ void InitLowLevelModules(py::module m) {
           return fmt::format("Parallelism(num_threads={})", num_threads);
         });
     DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = Sha256;
+    constexpr auto& cls_doc = doc.Sha256;
+    py::class_<Class> cls(m, "Sha256", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def_static("Checksum",
+            py::overload_cast<std::string_view>(&Class::Checksum),
+            cls_doc.Checksum.doc_1args_data)
+        .def_static("Parse", &Class::Parse, cls_doc.Parse.doc)
+        .def("to_string", &Class::to_string, cls_doc.to_string.doc)
+        // TODO(SeanCurtis-TRI): We generate empty strings for ne and lt, but
+        // not eq. Why?
+        .def("__eq__", &Class::operator==, "")
+        .def("__ne__", &Class::operator!=, cls_doc.operator_ne.doc)
+        .def("__lt__", &Class::operator<, cls_doc.operator_lt.doc);
+  }
+
+  {
+    using Class = common::FileContents;
+    constexpr auto& cls_doc = doc.common.FileContents;
+    py::class_<Class> cls(m, "FileContents", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<std::string, std::string>(), py::arg("contents"),
+            py::arg("filename_hint"), cls_doc.ctor.doc_2args)
+        .def("contents", &Class::contents, py_rvp::reference_internal,
+            cls_doc.contents.doc)
+        .def("sha256", &Class::sha256, py_rvp::reference_internal,
+            cls_doc.sha256.doc)
+        .def("filename_hint", &Class::filename_hint, py_rvp::reference_internal,
+            cls_doc.filename_hint.doc);
   }
 
   py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)

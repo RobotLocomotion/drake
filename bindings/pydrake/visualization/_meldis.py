@@ -1,6 +1,7 @@
 # Remove once we have Python >= 3.10.
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import json
@@ -22,6 +23,7 @@ from drake import (
 )
 from pydrake.common import (
     configure_logging,
+    FileContents,
 )
 from pydrake.common.eigen_geometry import (
     Quaternion,
@@ -144,20 +146,29 @@ class _GeometryFileHasher:
         assert isinstance(message, lcmt_viewer_geometry_data)
         if (message.type == lcmt_viewer_geometry_data.MESH
                 and message.string_data):
-            self.on_mesh(Path(message.string_data))
+            self.on_mesh(message.string_data)
 
-    def on_mesh(self, path: Path):
-        assert isinstance(path, Path)
-        # Hash the file contents, even if we don't know how to interpret it.
-        content = self._read_file(path)
-        if path.suffix.lower() == ".obj":
-            self.on_obj(path, content)
-        elif path.suffix.lower() == ".gltf":
-            self.on_gltf(path, content)
+    def on_mesh(self, string_data: str):
+        if string_data[0] == '{':
+            # The mesh is fully defined as json data. We'll hash it even if
+            # it's *bad* json.
+            self._hasher.update(string_data.encode())
+            # There is no file to add to self._paths. A json-encoded in-memory
+            # mesh is completely self contained and can be treated like any
+            # other shape completely defined in the LCM message.
         else:
-            _logger.warn(f"Unsupported mesh file: '{path}'\n"
-                         "Update Meldis's hasher to trigger reloads on this "
-                         "kind of file.")
+            path = Path(string_data)
+            # Hash the file contents, even if we don't know how to interpret
+            # it.
+            content = self._read_file(path)
+            if path.suffix.lower() == ".obj":
+                self.on_obj(path, content)
+            elif path.suffix.lower() == ".gltf":
+                self.on_gltf(path, content)
+            else:
+                _logger.warn(f"Unsupported mesh file: '{path}'\n"
+                            "Update Meldis's hasher to trigger reloads on "
+                            "this kind of file.")
 
     def on_obj(self, path: Path, content: bytes):
         assert isinstance(path, Path)
@@ -379,11 +390,34 @@ class _ViewerApplet:
             (a, b, c) = geom.float_data
             shape = Ellipsoid(a=a, b=b, c=c)
         elif geom.type == lcmt_viewer_geometry_data.MESH and geom.string_data:
-            # A mesh to be loaded from a file.
-            (scale_x, scale_y, scale_z) = geom.float_data
-            filename = geom.string_data
-            assert scale_x == scale_y and scale_y == scale_z
-            shape = Mesh(filename=filename, scale=scale_x)
+            if geom.string_data[0] == "{":
+                # Contains json of an in-memory mesh.
+                try:
+                    payload = json.loads(geom.string_data)
+                except json.JSONDecodeError:
+                    _logger.warn("Received message with malformed json")
+                    return (None, None, None)
+                if ("in_memory_mesh" not in payload or
+                    "name" not in payload["in_memory_mesh"] or
+                    "mesh_file" not in payload["in_memory_mesh"]):
+                    _logger.warn("Received Mesh with unexpected json content")
+                    return (None, None, None)
+                mesh_data = payload["in_memory_mesh"]
+                supporting_files = {}
+                for name, coded in mesh_data.get("supporting_files",
+                                                 {}).items():
+                    supporting_files[name] = FileContents(
+                        base64.b64decode(coded), name)
+                shape = Mesh(
+                    mesh_contents=base64.b64decode(mesh_data["mesh_file"]),
+                    name=mesh_data["name"],
+                    supporting_files=supporting_files)
+            else:
+                # A mesh to be loaded from a file.
+                (scale_x, scale_y, scale_z) = geom.float_data
+                filename = geom.string_data
+                assert scale_x == scale_y and scale_y == scale_z
+                shape = Mesh(filename=filename, scale=scale_x)
         elif geom.type == lcmt_viewer_geometry_data.MESH:
             assert not geom.string_data
             shape = self._make_triangle_mesh(geom.float_data)
