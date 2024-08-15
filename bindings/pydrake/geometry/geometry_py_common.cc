@@ -473,7 +473,12 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Mesh, Shape> mesh_cls(m, "Mesh", doc.Mesh.doc);
     mesh_cls
         .def(py::init<std::string, double>(), py::arg("filename"),
-            py::arg("scale") = 1.0, doc.Mesh.ctor.doc)
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args)
+        .def(py::init<std::string, std::string,
+                 string_map<common::FileContents>, double>(),
+            py::arg("mesh_contents"), py::arg("name"),
+            py::arg("supporting_files"), py::arg("scale") = 1.0,
+            doc.Mesh.ctor.doc_4args)
         .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)

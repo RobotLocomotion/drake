@@ -31,6 +31,25 @@ class TestCommon(unittest.TestCase):
     def test_find_resource_or_throw(self):
         mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf")
 
+    def test_sha256(self):
+        empty = mut.Sha256()
+        not_empty = mut.Sha256.Checksum("Some string")
+        self.assertFalse(empty == not_empty)
+        self.assertTrue(empty != not_empty)
+        self.assertTrue(empty < not_empty)
+
+        str_value = not_empty.to_string()
+        not_empty2 = mut.Sha256.Parse(str_value)
+        self.assertTrue(not_empty == not_empty2)
+
+    def test_file_contents(self):
+        content_string = "Some string"
+        hint = "hint"
+        file = mut.FileContents(content_string, hint)
+        self.assertEqual(file.sha256(), mut.Sha256.Checksum(content_string))
+        self.assertEqual(file.contents(), content_string)
+        self.assertEqual(file.filename_hint(), hint)
+
     def test_parallelism(self):
         # This matches the BUILD.bazel rule for this test program.
         self.assertEqual(os.environ.get("DRAKE_NUM_THREADS"), "2")
