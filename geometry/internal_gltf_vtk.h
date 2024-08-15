@@ -44,6 +44,9 @@ class MeshMemoryLoader final : public vtkURILoader {
   vtkSmartPointer<vtkURI> base_uri_;
 };
 
+// TODO(SeanCurtis-TRI): This does *not* belong in this file. It's a general
+// glTF utility that is shared by multiple call sites. Move this into its own
+// thing.
 /* Given a file path to a .gltf file, loads the .gltf file contents into memory
  along with any supporting .bin and .image files. Note: in applications where
  only the geometry matters, images can be excluded by setting `include_images`

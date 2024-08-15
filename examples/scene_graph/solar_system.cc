@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/file_contents.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -155,15 +156,31 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   const double orrery_bottom = -1.5;
   const double pipe_radius = 0.05;
 
-  // Allocate the sun.
   // NOTE: we don't store the id of the sun geometry because we have no need
   // for subsequent access (the same is also true for dynamic geometries).
+
+  // Allocate the sun.
+  // We're explicitly using an in-memory mesh so that this can serve as an
+  // easy way to reality check the visualization of in-memory meshes.
+  // The sun should appear in both meldis and meshcat visualizer.
   std::string sun_path =
       FindResourceOrThrow("drake/examples/scene_graph/sun.gltf");
+  std::string sun_contents = *ReadFile(sun_path);
+  using common::FileContents;
+  string_map<FileContents> supporting_files{
+      {"sun.bin", FileContents::Make(FindResourceOrThrow(
+                      "drake/examples/scene_graph/sun.bin"))},
+      {"sun.png", FileContents::Make(FindResourceOrThrow(
+                      "drake/examples/scene_graph/sun.png"))},
+      {"sun.ktx2", FileContents::Make(FindResourceOrThrow(
+                       "drake/examples/scene_graph/sun.ktx2"))}};
+
   scene_graph->RegisterAnchoredGeometry(
       source_id_,
       MakeShape<Mesh>(RigidTransformd::Identity(), "Sun",
-                      std::nullopt /* diffuse */, sun_path, 1.0 /* scale */));
+                      std::nullopt /* diffuse */, std::move(sun_contents),
+                      "sun.gltf", std::move(supporting_files),
+                      1.0 /* scale */));
 
   // The fixed post on which Sun sits and around which all planets rotate.
   const double post_height = 1;
