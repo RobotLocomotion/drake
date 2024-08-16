@@ -286,10 +286,12 @@ std::vector<Hyperrectangle> BoundingBoxesForListOfSetsSomeDimensions(
 
 /* Convenience function to change the new type standard for edges and their
 offsets to the old standard, simplifying the deprecated versions of the
-functions. Can be removed when CalcPairwiseIntersections is removed. */
+functions. */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> ReorganizeEdgesAndOffsets(
     std::vector<std::pair<int, int>> edges,
     std::vector<Eigen::VectorXd> edge_offsets) {
+  // TODO(cohnt): This entire function can be removed when
+  // CalcPairwiseIntersections is removed.
   DRAKE_DEMAND(edges.size() == edge_offsets.size());
   std::vector<std::tuple<int, int, Eigen::VectorXd>> reorganized_edges;
   for (int i = 0; i < ssize(edges); ++i) {

@@ -399,8 +399,8 @@ GTEST_TEST(GeodesicConvexityTest, ComputePairwiseIntersections1) {
   }
 
   for (int i = 0; i < ssize(intersection_edges); ++i) {
-    const int& index_a = intersection_edges[i].first;
-    const int& index_b = intersection_edges[i].second;
+    const int index_a = intersection_edges[i].first;
+    const int index_b = intersection_edges[i].second;
     const Eigen::VectorXd& offset = intersection_edge_offsets[i];
 
     // Verify all centers are integer multiples of 2π apart.
@@ -477,8 +477,8 @@ GTEST_TEST(GeodesicConvexityTest, ComputePairwiseIntersections2) {
   EXPECT_EQ(intersections_both.size(), offsets_both.size());
   EXPECT_EQ(intersections_both.size(), 6);
   for (int i = 0; i < ssize(intersections_both); ++i) {
-    const int& index_a = intersections_both[i].first;
-    const int& index_b = intersections_both[i].second;
+    const int index_a = intersections_both[i].first;
+    const int index_b = intersections_both[i].second;
     const Eigen::VectorXd& offset = offsets_both[i];
     // Verify all centers are integer multiples of 2π apart.
     const auto offset_mod_2π = offset.array() / (2 * M_PI);
