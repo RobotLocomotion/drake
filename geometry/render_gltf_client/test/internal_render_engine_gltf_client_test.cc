@@ -5,6 +5,7 @@
 #include <set>
 #include <vector>
 
+#include <common_robotics_utilities/base64_helpers.hpp>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
@@ -12,6 +13,7 @@
 #include <vtkCamera.h>     // vtkRenderingCore
 #include <vtkMatrix4x4.h>  // vtkCommonMath
 
+#include "drake/common/file_contents.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/scope_exit.h"
@@ -304,9 +306,9 @@ class RenderEngineGltfClientGltfTest : public ::testing::Test {
   const std::filesystem::path temp_dir_;
 };
 
-/* RenderEngineGltfClient departs from RenderEngineVtk in registering Mesh and
- Convex. It defers to RenderEngineVtk for meshes with .obj extensions and
- handles everything else.
+/* RenderEngineGltfClient departs from RenderEngineVtk in registering Mesh. It
+ defers to RenderEngineVtk for meshes with .obj extensions and handles
+ everything else.
 
  We do limited testing of the obj case, merely confirm that registration
  reports true and the geometry id reports as registered.
@@ -319,11 +321,6 @@ TEST_F(RenderEngineGltfClientGltfTest, RegisteringMeshes) {
   // also a warning, but we're not testing for that).
   EXPECT_FALSE(engine_.RegisterVisual(GeometryId::get_new_id(),
                                       Mesh("some.stl"), properties_, X_WG_));
-  // This is the only time we'll explicitly test Convex. Given Mesh and Convex
-  // yield similar results *here*, we'll assume they'll be similar for
-  // successful registration as well.
-  EXPECT_FALSE(engine_.RegisterVisual(GeometryId::get_new_id(),
-                                      Convex("some.stl"), properties_, X_WG_));
 
   // Objs and glTFs are both accepted.
   AddObj();
@@ -352,6 +349,142 @@ TEST_F(RenderEngineGltfClientGltfTest, RegisteringMeshes) {
   // The pose of the root node should have been set as part of its registration.
   // We're not testing it here because defining that pose is a bit more
   // elaborate. It is tested below in a dedicated test.
+}
+
+/* RenderEngineGltfClient should accept in-memory Mesh shapes. */
+TEST_F(RenderEngineGltfClientGltfTest, InMemoryMeshes) {
+  // The same .obj used in AddObj().
+  const std::string obj_contents = ReadFileOrThrow(
+      FindResourceOrThrow("drake/geometry/render_gltf_client/test/tri.obj"));
+  const GeometryId obj_id = GeometryId::get_new_id();
+  EXPECT_TRUE(engine_.RegisterVisual(obj_id, Mesh(obj_contents, "test.obj"),
+                                     properties_, X_WG_));
+
+  // The same .gltf used in AddGltf().
+  const std::string gltf_contents = ReadFileOrThrow(FindResourceOrThrow(
+      "drake/geometry/render_gltf_client/test/tri_tree.gltf"));
+  const GeometryId gltf_id = GeometryId::get_new_id();
+  EXPECT_TRUE(engine_.RegisterVisual(
+      gltf_id, Mesh(gltf_contents, "test.gltf", {}, scale_), properties_,
+      X_WG_));
+
+  const std::map<GeometryId, Tester::GltfRecord>& gltfs =
+      Tester::gltfs(engine_);
+  ASSERT_TRUE(gltfs.contains(gltf_id));
+  const Tester::GltfRecord& record = gltfs.at(gltf_id);
+  EXPECT_EQ(record.scale, scale_);
+  EXPECT_EQ(record.label, label_);
+  // There are three nodes in the gltf, but only two root nodes. One of the
+  // root nodes is empty.
+  EXPECT_EQ(record.contents["nodes"].size(), 3);
+  EXPECT_EQ(record.root_nodes.size(), 2);
+  // The root node data extracted directly from tri_tree.gltf.
+  const std::map<int, Matrix4<double>> expected_roots{
+      {1, RigidTransformd(Vector3d(1, 3, -2)).GetAsMatrix4()},    // root_tri
+      {2, RigidTransformd(Vector3d(-1, -3, 2)).GetAsMatrix4()}};  // empty_root
+  for (const int index : {1, 2}) {
+    EXPECT_TRUE(
+        CompareMatrices(record.root_nodes.at(index), expected_roots.at(index)))
+        << "Index: " << index;
+  }
+}
+
+/* RenderEngineGltfClient has the responsibility of turning file URIs into
+ data URIs. It needs to handle both on-disk and in-memory meshes. We'll check
+ both.
+
+ We'll load two .gltf files.
+    1. One has multiple relative file URIs for both buffers and images. We'll
+       use this to confirm that all of the entries get hit.
+    2. One has only data uris; those uris should be preserved. */
+TEST_F(RenderEngineGltfClientGltfTest, FileToDataUris) {
+  // tri_tree.gltf contains all the data in a URI.
+  {
+    const fs::path obj_path = FindResourceOrThrow(
+        "drake/geometry/render_gltf_client/test/tri_tree.gltf");
+    const std::string contents = ReadFileOrThrow(obj_path);
+    const GeometryId disk_id = GeometryId::get_new_id();
+    EXPECT_TRUE(engine_.RegisterVisual(disk_id, Mesh(obj_path.string()),
+                                       properties_, X_WG_));
+    const GeometryId memory_id = GeometryId::get_new_id();
+    EXPECT_TRUE(engine_.RegisterVisual(memory_id, Mesh(contents, "memory.gltf"),
+                                       properties_, X_WG_));
+
+    const std::map<GeometryId, Tester::GltfRecord>& gltfs =
+        Tester::gltfs(engine_);
+    ASSERT_TRUE(gltfs.contains(disk_id));
+    ASSERT_TRUE(gltfs.contains(memory_id));
+    const json& disk_contents = gltfs.at(disk_id).contents;
+    const json& memory_contents = gltfs.at(memory_id).contents;
+    const json ref_contents = json::parse(contents);
+
+    // The two json structures should be *equivalent*. However, we can't
+    // compare directly because the engine can make small changes (e.g.,
+    // transformation matrices). So, we'll compare images and buffers directly.
+    EXPECT_EQ(disk_contents.value("images", json{}),
+              ref_contents.value("images", json{}));
+    EXPECT_EQ(disk_contents.value("buffers", json{}),
+              ref_contents.value("buffers", json{}));
+
+    EXPECT_EQ(memory_contents.value("images", json{}),
+              ref_contents.value("images", json{}));
+    EXPECT_EQ(memory_contents.value("buffers", json{}),
+              ref_contents.value("buffers", json{}));
+  }
+
+  // cube3.gltf has two images and one .bin file. So, we'll see that they all
+  // get processed.
+  {
+    const std::filesystem::path dir("drake/geometry/render/test/meshes");
+    const std::filesystem::path gltf_path =
+        FindResourceOrThrow(dir / "cube3.gltf");
+    const std::string gltf_content = ReadFileOrThrow(gltf_path);
+
+    string_map<common::FileContents> files;
+    for (const char* file_name :
+         {"cube3_normal.png", "cube3_divot.png", "cube3.bin"}) {
+      files.insert({file_name, common::FileContents::Make(
+                                   FindResourceOrThrow(dir / file_name))});
+    }
+
+    const GeometryId disk_id = GeometryId::get_new_id();
+    EXPECT_TRUE(
+        engine_.RegisterVisual(disk_id, Mesh(gltf_path), properties_, X_WG_));
+
+    const GeometryId memory_id = GeometryId::get_new_id();
+    EXPECT_TRUE(engine_.RegisterVisual(memory_id,
+                                       Mesh(gltf_content, "memory.gltf", files),
+                                       properties_, X_WG_));
+
+    const std::map<GeometryId, Tester::GltfRecord>& gltfs =
+        Tester::gltfs(engine_);
+    ASSERT_TRUE(gltfs.contains(disk_id));
+    ASSERT_TRUE(gltfs.contains(memory_id));
+
+    const json& disk_contents = gltfs.at(disk_id).contents;
+    const json& memory_contents = gltfs.at(memory_id).contents;
+    const json ref_contents = json::parse(gltf_content);
+
+    const std::string_view prefix("data:application/octet-stream;base64,");
+    auto make_data_uri = [](const std::string& content) {
+      return common_robotics_utilities::base64_helpers::Encode(
+          std::vector<uint8_t>(content.begin(), content.end()));
+    };
+
+    for (std::string_view array : {"images", "buffers"}) {
+      for (size_t i = 0; i < ref_contents[array].size(); ++i) {
+        const std::string ref_string = make_data_uri(
+            files[ref_contents[array][i]["uri"].get<std::string>()].contents());
+        for (const json* test : {&disk_contents, &memory_contents}) {
+          SCOPED_TRACE(fmt::format("{}[{}] from {}", array, i,
+                                   test == &disk_contents ? "disk" : "memory"));
+          auto uri = (*test)[array][i]["uri"].get<std::string_view>();
+          EXPECT_TRUE(uri.starts_with(prefix));
+          EXPECT_EQ(uri.substr(prefix.size()), ref_string);
+        }
+      }
+    }
+  }
 }
 
 /* Currently, our server expects us to output a z-up gltf (because (a) Drake is
