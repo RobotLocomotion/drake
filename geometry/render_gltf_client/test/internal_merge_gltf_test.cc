@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
@@ -577,7 +576,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
   static vector<MergeCase> MergeBuffersCases() {
     vector<MergeCase> cases;
     auto merge = [](json* j1, json&& j2) {
-      MergeBuffers(j1, std::move(j2), "/unused/dir");
+      MergeBuffers(j1, std::move(j2));
     };
     VerbatimCopy(&cases, "buffers", merge);
     return cases;
@@ -594,7 +593,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
   static vector<MergeCase> MergeImageCases() {
     vector<MergeCase> cases;
     auto merge = [](json* j1, json&& j2) {
-      MergeImages(j1, std::move(j2), "/unused/dir");
+      MergeImages(j1, std::move(j2));
     };
     BumpIndex(&cases, "images", "bufferViews", "bufferView", merge);
     VerbatimCopy(&cases, "images", merge);
@@ -818,27 +817,6 @@ TEST_P(MergeFailureTest, Evaluate) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       test_case.merge(&merged_target, std::move(source), source_name, &record),
       test_case.expected_error);
-}
-
-/* Check that a buffer with several relative URIs is converted to data URIs. */
-GTEST_TEST(MergeGltf, BufferDataUri) {
-  json target = ReadJsonFile(FindResourceOrThrow(
-      "drake/geometry/render_gltf_client/test/red_box.gltf"));
-  const std::filesystem::path source_path =
-      FindResourceOrThrow("drake/geometry/render/test/meshes/cube3.gltf");
-  MergeRecord record("test_target");
-  EXPECT_NO_THROW(
-      MergeGltf(&target, ReadJsonFile(source_path), source_path, &record));
-
-  // Expect one buffer URI from each of the two gltf files.
-  ASSERT_EQ(target["buffers"].size(), 2);
-  EXPECT_THAT(target["buffers"][0]["uri"], testing::StartsWith("data:"));
-  EXPECT_THAT(target["buffers"][1]["uri"], testing::StartsWith("data:"));
-
-  // Expect two image URIs, both from cube3.gltf.
-  ASSERT_EQ(target["images"].size(), 2);
-  EXPECT_THAT(target["images"][0]["uri"], testing::StartsWith("data:"));
-  EXPECT_THAT(target["images"][1]["uri"], testing::StartsWith("data:"));
 }
 
 /* Simply call MergeGltf on real glTF files and makes sure it doesn't throw. */
