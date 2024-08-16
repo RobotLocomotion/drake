@@ -533,11 +533,13 @@ bool RenderEngineGltfClient::DoRemoveGeometry(GeometryId id) {
 
 void RenderEngineGltfClient::ImplementGeometry(const Convex& convex,
                                                void* user_data) {
+  // TODO: This is wrong -- it should be the convex hull.
   ImplementMesh(convex.filename(), convex.scale(), user_data);
 }
 
 void RenderEngineGltfClient::ImplementGeometry(const Mesh& mesh,
                                                void* user_data) {
+  // TODO: This needs to be updated to handle in-memory meshes.
   ImplementMesh(mesh.filename(), mesh.scale(), user_data);
 }
 
@@ -546,7 +548,7 @@ void RenderEngineGltfClient::ImplementMesh(
   auto& data = *static_cast<RegistrationData*>(user_data);
   const std::string extension = Mesh(mesh_path.string()).extension();
   if (extension == ".obj") {
-    data.accepted = ImplementObj(mesh_path.string(), scale, data);
+    data.accepted = ImplementObj(Mesh(mesh_path.string(), scale), data);
   } else if (extension == ".gltf") {
     data.accepted = ImplementGltf(mesh_path, scale, data);
   } else {
