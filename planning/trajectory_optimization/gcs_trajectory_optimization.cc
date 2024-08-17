@@ -397,7 +397,7 @@ void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
 
   const auto path_squared_cost = std::make_shared<QuadraticCost>(Q, b);
 
-  for (const Vertex* v : vertices_) {
+  for (Vertex* v : vertices_) {
     auto control_points = GetControlPoints(*v);
     for (int i = 0; i < control_points.cols() - 1; ++i) {
       v->AddCost(Binding<QuadraticCost>(
