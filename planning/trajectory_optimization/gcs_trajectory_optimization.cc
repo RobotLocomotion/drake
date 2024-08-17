@@ -397,7 +397,7 @@ void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
 
   const auto path_squared_cost = std::make_shared<QuadraticCost>(Q, b);
 
-  for (Vertex* v : vertices_) {
+  for (const Vertex* v : vertices_) {
     auto control_points = GetControlPoints(*v);
     for (int i = 0; i < control_points.cols() - 1; ++i) {
       v->AddCost(Binding<QuadraticCost>(
@@ -414,6 +414,10 @@ void Subgraph::AddPathLengthCost(double weight) {
 }
 
 void Subgraph::AddPathEnergyCost(double weight) {
+  // Note that the scalar 2 is present to construct an appropriate default cost
+  // of the form |(rᵢ₊₁ − rᵢ)|₂². The constructed quadratic cost is of the form
+  // .5 * x'Qx, so Q must be 2 * I to counteract the 0.5 scalar in the quadratic
+  // cost.
   const MatrixXd weight_matrix =
       weight * 2 * MatrixXd::Identity(num_positions(), num_positions());
   return Subgraph::AddPathEnergyCost(weight * weight_matrix);
