@@ -1421,7 +1421,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
   }
 
   if (order > 0) {
-    /// These costs and constraints rely on the derivative of the trajectory.
+    // These costs and constraints rely on the derivative of the trajectory.
     for (const MatrixXd& weight_matrix : global_path_length_costs_) {
       subgraph->AddPathLengthCost(weight_matrix);
     }
