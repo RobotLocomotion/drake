@@ -274,6 +274,24 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
 
   // With no forest built, there are no composites.
   EXPECT_TRUE(graph.link_composites().empty());
+  // These "Calc" functions don't require a forest.
+  EXPECT_EQ(graph.CalcSubgraphsOfWeldedLinks(),
+            std::vector<std::set<LinkIndex>>{{world_link_index}});
+  EXPECT_EQ(graph.CalcLinksWeldedTo(world_link_index),
+            std::set<LinkIndex>{world_link_index});
+
+  // The "Find" and "Get" methods should complain if there's no Forest.
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.FindPathFromWorld(world_link_index),
+                              "FindPathFromWorld.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      graph.FindFirstCommonAncestor(world_link_index, world_link_index),
+      "FindFirstCommonAncestor.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.FindSubtreeLinks(world_link_index),
+                              "FindSubtreeLinks.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.GetSubgraphsOfWeldedLinks(),
+                              "GetSubgraphsOfWeldedLinks.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.GetLinksWeldedTo(world_link_index),
+                              "GetLinksWeldedTo.*no SpanningForest.*");
 
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
@@ -287,6 +305,18 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
             world_link_index);
+  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
+
+  EXPECT_EQ(graph.FindPathFromWorld(world_link_index),
+            std::vector<LinkIndex>{world_link_index});  // Just World.
+  EXPECT_EQ(graph.FindFirstCommonAncestor(world_link_index, world_link_index),
+            world_link_index);
+  EXPECT_EQ(graph.FindSubtreeLinks(world_link_index),
+            std::vector<LinkIndex>{world_link_index});
+  EXPECT_EQ(graph.GetSubgraphsOfWeldedLinks(),
+            std::vector<std::set<LinkIndex>>{{world_link_index}});
+  EXPECT_EQ(graph.GetLinksWeldedTo(world_link_index),
+            std::set<LinkIndex>{world_link_index});
 
   // Check that Clear() puts the graph back to default-constructed condition.
   // First add some junk to the graph.
@@ -313,6 +343,90 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_FALSE(graph.forest_is_valid());
   EXPECT_TRUE(graph.BuildForest());  // OK to build even if just World in graph.
   EXPECT_TRUE(graph.forest_is_valid());
+}
+
+/* Check that various algorithms work on a non-trivial graph (they were
+tested on the world-only graph above). Most of these
+are actually wrappers around SpanningForest algorithms which are tested
+more thoroughly in spanning_forest_test.cc, so this is mostly testing
+that the wrapping worked correctly.
+
+Here is the graph:
+
+                  {9}
+                   ^
+                   |
+           {1} -> {2} => {3} => {8}
+   World
+     {0}   {4} => {5} -> {6}
+
+           {7} (static)
+*/
+GTEST_TEST(LinkJointGraph, CheckMiscAlgorithms) {
+  LinkJointGraph graph;
+  graph.RegisterJointType("revolute", 1, 1);
+
+  for (int i = 1; i <= 9; ++i) {
+    graph.AddLink(fmt::format("link{}", i), default_model_instance(),
+                  i == 7 ? LinkFlags::kStatic : LinkFlags::kDefault);
+  }
+
+  graph.AddJoint("joint0", default_model_instance(), "revolute", LinkIndex(1),
+                 LinkIndex(2));
+  graph.AddJoint("joint1", default_model_instance(), "weld", LinkIndex(2),
+                 LinkIndex(3));
+  graph.AddJoint("joint2", default_model_instance(), "weld", LinkIndex(3),
+                 LinkIndex(8));
+  graph.AddJoint("joint3", default_model_instance(), "revolute", LinkIndex(2),
+                 LinkIndex(9));
+  graph.AddJoint("joint4", default_model_instance(), "weld", LinkIndex(4),
+                 LinkIndex(5));
+  graph.AddJoint("joint5", default_model_instance(), "revolute", LinkIndex(5),
+                 LinkIndex(6));
+
+  const std::vector<std::set<LinkIndex>> expected_subgraphs{
+      {LinkIndex(0), LinkIndex(7)},
+      {LinkIndex(2), LinkIndex(3), LinkIndex(8)},
+      {LinkIndex(4), LinkIndex(5)},
+      {LinkIndex(1)},
+      {LinkIndex(6)},
+      {LinkIndex(9)}};
+
+  // The two "Calc" functions should work even though we haven't built the
+  // forest.
+  EXPECT_EQ(graph.CalcSubgraphsOfWeldedLinks(), expected_subgraphs);
+
+  EXPECT_EQ(graph.CalcLinksWeldedTo(LinkIndex(3)),
+            (std::set<LinkIndex>{{LinkIndex(2), LinkIndex(3), LinkIndex(8)}}));
+
+  // Building the forest gives us access to the faster functions.
+  graph.BuildForest();
+
+  EXPECT_EQ(graph.GetSubgraphsOfWeldedLinks(), expected_subgraphs);
+  EXPECT_EQ(graph.GetLinksWeldedTo(LinkIndex(3)),
+            (std::set<LinkIndex>{{LinkIndex(2), LinkIndex(3), LinkIndex(8)}}));
+
+  EXPECT_EQ(
+      graph.FindPathFromWorld(LinkIndex(3)),
+      (std::vector{LinkIndex(0), LinkIndex(1), LinkIndex(2), LinkIndex(3)}));
+
+  EXPECT_EQ(graph.FindFirstCommonAncestor(LinkIndex(8), LinkIndex(9)),
+            LinkIndex(2));
+  EXPECT_EQ(graph.FindFirstCommonAncestor(LinkIndex(9), LinkIndex(8)),
+            LinkIndex(2));
+
+  EXPECT_EQ(
+      graph.FindSubtreeLinks(LinkIndex(2)),
+      (std::vector{LinkIndex(2), LinkIndex(3), LinkIndex(8), LinkIndex(9)}));
+
+  // Welds for static links get added first, then floating joints.
+  EXPECT_EQ(graph.FindSubtreeLinks(LinkIndex(0)),
+            (std::vector{
+                LinkIndex(0), LinkIndex(7),  // static (tree0)
+                LinkIndex(1), LinkIndex(2), LinkIndex(3), LinkIndex(8),
+                LinkIndex(9),                             // tree1
+                LinkIndex(4), LinkIndex(5), LinkIndex(6)  // tree2
+            }));
 }
 
 // Make sure AddLink() rejects obvious errors.

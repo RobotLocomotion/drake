@@ -417,11 +417,11 @@ class LinkJointGraph {
   [[nodiscard]] inline const LoopConstraint& loop_constraints(
       LoopConstraintIndex constraint_index) const;
 
-  /** Links with this index or higher are "ephemeral" (added during
+  /** Links with this ordinal or higher are "ephemeral" (added during
   forest-building). See the class comment for more information. */
   [[nodiscard]] int num_user_links() const { return data_.num_user_links; }
 
-  /** Joints with this index or higher are "ephemeral" (added during
+  /** Joints with this ordinal or higher are "ephemeral" (added during
   forest-building). See the class comment for more information. */
   [[nodiscard]] int num_user_joints() const { return data_.num_user_joints; }
 
@@ -509,6 +509,86 @@ class LinkJointGraph {
   void ChangeJointType(JointIndex existing_joint_index,
                        const std::string& name_of_new_type);
 
+  /** After the Forest is built, returns the sequence of Links from World to the
+  given Link L in the Forest. In case the Forest was built with a single Mobod
+  for each Link Composite (Links connected by Weld joints), we only report the
+  "active Link" for each Link Composite so that there is only one Link returned
+  for each level in Link L's tree. World is always the active Link for its
+  composite so will always be the first entry in the result. However, if L is
+  part of a Link Composite the final entry will be L's composite's active link,
+  which might not be L. Cost is O(ℓ) where ℓ is Link L's level in the
+  SpanningForest.
+  @@throws std::exception if the SpanningForest hasn't been built yet.
+  @see link_composites(), SpanningForest::FindPathFromWorld() */
+  std::vector<LinkIndex> FindPathFromWorld(LinkIndex link_index) const;
+
+  /** After the Forest is built, finds the first Link common to the paths
+  towards World from each of two Links in the SpanningForest. Returns World
+  immediately if the Links are on different trees of the forest. Otherwise the
+  cost is O(ℓ) where ℓ is the length of the longer path from one of the Links
+  to the ancestor.
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see SpanningForest::FindFirstCommonAncestor()
+  @see SpanningForest::FindPathsToFirstCommonAncestor() */
+  LinkIndex FindFirstCommonAncestor(LinkIndex link1_index,
+                                    LinkIndex link2_index) const;
+
+  /** After the Forest is built, finds all the Links following the Forest
+  subtree whose root mobilized body is the one followed by the given Link. That
+  is, we look up the given Link's Mobod B and return all the Links that follow
+  B or any other Mobod in the subtree rooted at B. The Links following B
+  come first, and the rest follow the depth-first ordering of the Mobods.
+  In particular, the result is _not_ sorted by LinkIndex. Computational cost
+  is O(ℓ) where ℓ is the number of Links following the subtree.
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see SpanningForest::FindSubtreeLinks() */
+  std::vector<LinkIndex> FindSubtreeLinks(LinkIndex link_index) const;
+
+  /** After the Forest is built, this method can be called to return a
+  partitioning of the LinkJointGraph into subgraphs such that (a) every Link is
+  in one and only one subgraph, and (b) two Links are in the same subgraph iff
+  there is a path between them which consists only of Weld joints.
+  Each subgraph of welded Links is represented as a set of
+  Link indexes (using LinkIndex). By definition, these subgraphs will be
+  disconnected by any non-Weld joint between two Links. A few notes:
+    - The maximum number of returned subgraphs equals the number of Links in
+      the graph. This corresponds to a graph with no Weld joints.
+    - The World Link is included in a set of welded Links, and this set is
+      element zero in the returned vector. The other subgraphs are in no
+      particular order.
+    - The minimum number of subgraphs is one. This corresponds to a graph with
+      all Links welded to World.
+
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see CalcSubgraphsOfWeldedLinks() if you haven't built a Forest yet */
+  std::vector<std::set<LinkIndex>> GetSubgraphsOfWeldedLinks() const;
+
+  /** This much-slower method does not depend on the SpanningForest having
+  already been built. It is a fallback for when there is no Forest.
+  @see GetSubgraphsOfWeldedLinks() if you already have a Forest built */
+  std::vector<std::set<LinkIndex>> CalcSubgraphsOfWeldedLinks() const;
+
+  /** After the Forest is built, returns all Links that are transitively welded,
+  or rigidly affixed, to `link_index`, per these two definitions:
+    1. A Link is always considered welded to itself.
+    2. Two unique Links are considered welded together exclusively by the
+       presence of weld joints, not by other constructs such as constraints.
+
+  Therefore, if `link_index` is a valid index to a Link in this graph, then the
+  return vector will always contain at least one entry storing `link_index`.
+  This is fast because we just need to sort the already-calculated
+  LinkComposite the given `link_index` is part of (if any).
+
+  @throws std::exception if the SpanningForest hasn't been built yet or
+                         `link_index` is out of range
+  @see CalcLinksWeldedTo() if you haven't built a Forest yet */
+  std::set<LinkIndex> GetLinksWeldedTo(LinkIndex link_index) const;
+
+  /** This slower method does not depend on the SpanningForest having
+  already been built. It is a fallback for when there is no Forest.
+  @see GetLinksWeldedTo() if you already have a Forest built */
+  std::set<LinkIndex> CalcLinksWeldedTo(LinkIndex link_index) const;
+
   // FYI Debugging APIs (including Graphviz-related) are defined in
   // link_joint_graph_debug.cc.
 
@@ -518,6 +598,7 @@ class LinkJointGraph {
   The result is in the "dot" language, see https://graphviz.org. If you
   write it to some file foo.dot, you can generate a viewable png (for
   example) using the command `dot -Tpng foo.dot >foo.png`.
+  @see SpanningForest::GenerateGraphvizString()
   @see MakeGraphvizFiles() for an easier way to get pngs. */
   std::string GenerateGraphvizString(
       std::string_view label, bool include_ephemeral_elements = true) const;
@@ -699,6 +780,12 @@ class LinkJointGraph {
   // weld to an existing Composite.
   void AddUnmodeledJointToComposite(JointOrdinal unmodeled_joint_ordinal,
                                     LinkCompositeIndex which);
+
+  // This is the implementation for CalcLinksWeldedTo().
+  void AppendLinksWeldedTo(LinkIndex link_index,
+                           std::set<LinkIndex>* result) const;
+
+  void ThrowIfForestNotBuiltYet(const char* func) const;
 
   [[noreturn]] void ThrowLinkWasRemoved(const char* func,
                                         LinkIndex link_index) const;
