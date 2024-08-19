@@ -822,6 +822,15 @@ class TestGeometryOptimization(unittest.TestCase):
                 active_path=[edge0],
             ),
         )
+        # Confirm that both overloads work with the default arguments (#21816).
+        self.assertIn(
+            "source",
+            spp.GetGraphvizString(options=mut.GcsGraphvizOptions()),
+        )
+        self.assertIn(
+            "source",
+            spp.GetGraphvizString(show_slacks=True),
+        )
 
         options.max_rounded_paths = 5
         self.assertTrue(
