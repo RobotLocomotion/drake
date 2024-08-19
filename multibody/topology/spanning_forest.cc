@@ -167,6 +167,8 @@ bool SpanningForest::BuildForest() {
   /* Dole out the q's and v's, depth-first. (Phase 3) */
   AssignCoordinates();
 
+  DRAKE_ASSERT_VOID(SanityCheckForest());
+
   return dynamics_ok();
 }
 

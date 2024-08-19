@@ -57,6 +57,7 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_TRUE(graph.forest_is_valid());
   EXPECT_TRUE(forest.is_valid());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
   EXPECT_EQ(&forest.graph(), &graph);
   const SpanningForest::Mobod& world = forest.mobods(MobodIndex(0));
   EXPECT_EQ(&world, &forest.world_mobod());
@@ -293,6 +294,7 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
 
   // Build with default options.
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(forest.options(), ForestBuildingOptions::kDefault);
   EXPECT_EQ(forest.options(left_instance), ForestBuildingOptions::kDefault);
@@ -678,6 +680,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
                                  ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
+  EXPECT_NO_THROW(forest.SanityCheckForest());
   EXPECT_TRUE(graph.forest_is_valid());
 
   // Verify that ChangeJointType() rejects an attempt to change a static link's
@@ -817,6 +820,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
                                  ForestBuildingOptions::kMergeLinkComposites |
                                      ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   // The graph shouldn't change from SpanningForest 1, but the forest will.
   EXPECT_EQ(ssize(graph.joints()) - graph.num_user_joints(), 4);
@@ -861,6 +865,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   graph.ChangeJointFlags(joint_10_11_index, JointFlags::kMustBeModeled);
   // Built the forest with same options as used for 2a.
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(ssize(forest.mobods()), 9);
   EXPECT_EQ(ssize(forest.trees()), 3);
@@ -895,6 +900,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
                                  ForestBuildingOptions::kMergeLinkComposites |
                                      ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(ssize(forest.mobods()), 6);
   EXPECT_EQ(ssize(forest.trees()), 1);
@@ -1056,6 +1062,7 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
 
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(graph.num_user_links(), 14);  // Same as before building.
   EXPECT_EQ(graph.num_user_joints(), 14);
@@ -1223,6 +1230,7 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
   graph.SetGlobalForestBuildingOptions(
       ForestBuildingOptions::kMergeLinkComposites);
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(ssize(graph.links()), 15);  // Only one added shadow.
   EXPECT_EQ(ssize(graph.link_composites()), 3);
@@ -1376,6 +1384,7 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
 
   EXPECT_TRUE(graph.BuildForest());  // Using default options.
   const SpanningForest& forest = graph.forest();
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(ssize(graph.links()), 8);  // Added a shadow.
   EXPECT_EQ(ssize(graph.joints()), 7);
@@ -1392,6 +1401,7 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   // (Tests Case 2 in ExtendTreesOneLevel())
   graph.ChangeLinkFlags(LinkIndex(3), LinkFlags::kMassless);
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   // Check that links not in a composite still respond correctly.
   EXPECT_TRUE(graph.link_and_its_composite_are_massless(LinkOrdinal(3)));
@@ -1411,6 +1421,7 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   // (Tests Case 3 in ExtendTreesOneLevel())
   graph.ChangeLinkFlags(LinkIndex(4), LinkFlags::kMassless);
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(ssize(graph.links()), 8);
   EXPECT_EQ(ssize(graph.joints()), 7);
@@ -1478,6 +1489,7 @@ GTEST_TEST(SpanningForest, MasslessBodiesShareSplitLink) {
 
   EXPECT_TRUE(graph.BuildForest());  // Using default options.
   const SpanningForest& forest = graph.forest();
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(ssize(graph.links()), 5);  // After modeling.
   EXPECT_EQ(graph.num_user_links(), 4);
@@ -1566,6 +1578,7 @@ GTEST_TEST(SpanningForest, DoubleLoop) {
 
   EXPECT_TRUE(graph.BuildForest());  // Using default options.
   const SpanningForest& forest = graph.forest();
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(ssize(graph.links()), 10);  // After modeling.
   EXPECT_EQ(ssize(graph.joints()), 9);
@@ -1668,6 +1681,7 @@ GTEST_TEST(SpanningForest, WorldCompositeComesFirst) {
 
   EXPECT_TRUE(graph.BuildForest());  // Using default options.
   const SpanningForest& forest = graph.forest();
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   EXPECT_EQ(ssize(graph.links()), 5);
   EXPECT_EQ(ssize(forest.mobods()), 5);  // Because we're not merging.
@@ -1697,7 +1711,7 @@ GTEST_TEST(SpanningForest, WorldCompositeComesFirst) {
   graph.SetGlobalForestBuildingOptions(
       ForestBuildingOptions::kMergeLinkComposites);
   EXPECT_TRUE(graph.BuildForest());
-
+  EXPECT_NO_THROW(forest.SanityCheckForest());
   EXPECT_EQ(ssize(forest.mobods()), 3);  // Because we're merging.
   EXPECT_EQ(forest.mobods(MobodIndex(0)).follower_link_ordinals(),
             (std::vector<LinkOrdinal>{LinkOrdinal(0), LinkOrdinal(3)}));
@@ -1984,6 +1998,7 @@ GTEST_TEST(SpanningForest, LoopWithComposites) {
       ForestBuildingOptions::kMergeLinkComposites);
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   // After modeling
   EXPECT_EQ(ssize(graph.links()), 12);            // split one, added shadow
@@ -2022,6 +2037,7 @@ GTEST_TEST(SpanningForest, LoopWithComposites) {
   EXPECT_EQ(ssize(graph_copy.links()), 12);
   EXPECT_TRUE(graph_copy.forest_is_valid());
   const SpanningForest& copy_model = graph_copy.forest();
+  EXPECT_NO_THROW(copy_model.SanityCheckForest());
   EXPECT_NE(&copy_model, &forest);
   EXPECT_EQ(&copy_model.graph(), &graph_copy);  // backpointer
 
@@ -2030,23 +2046,27 @@ GTEST_TEST(SpanningForest, LoopWithComposites) {
   EXPECT_EQ(ssize(graph_assign.links()), 12);
   EXPECT_TRUE(graph_assign.forest_is_valid());
   EXPECT_NE(&graph_assign.forest(), &forest);
+  EXPECT_NO_THROW(graph_assign.forest().SanityCheckForest());
   EXPECT_EQ(&graph_assign.forest().graph(), &graph_assign);
 
   LinkJointGraph graph_move(std::move(graph));
   EXPECT_EQ(ssize(graph_move.links()), 12);
   EXPECT_EQ(ssize(graph.links()), 1);  // Just world now.
   EXPECT_EQ(&graph_move.forest(), &forest);
+  EXPECT_NO_THROW(graph_move.forest().SanityCheckForest());
   EXPECT_EQ(&graph_move.forest().graph(), &graph_move);
   // graph is now default-constructed so still has a forest
   EXPECT_NE(&graph.forest(), &forest);
   EXPECT_FALSE(graph.forest_is_valid());
   EXPECT_EQ(&graph.forest().graph(), &graph);
+  EXPECT_NO_THROW(graph.forest().SanityCheckForest());  // Empty but OK.
 
   LinkJointGraph graph_move_assign;
   graph_move_assign = std::move(graph_copy);
   EXPECT_EQ(ssize(graph_move_assign.links()), 12);
   EXPECT_TRUE(graph_move_assign.forest_is_valid());
   EXPECT_EQ(&graph_move_assign.forest(), &copy_model);
+  EXPECT_NO_THROW(graph_move_assign.forest().SanityCheckForest());
   EXPECT_EQ(&graph_move_assign.forest().graph(), &graph_move_assign);
   // graph_copy is now default-constructed. Should have world and a
   // new (empty) forest.
@@ -2054,6 +2074,7 @@ GTEST_TEST(SpanningForest, LoopWithComposites) {
   EXPECT_NE(&graph_copy.forest(), &copy_model);
   EXPECT_FALSE(graph_copy.forest_is_valid());
   EXPECT_EQ(&graph_copy.forest().graph(), &graph_copy);
+  EXPECT_NO_THROW(graph_copy.forest().SanityCheckForest());  // Empty but OK.
 }
 
 /* Make sure massless, merged composites are working correctly. They are
@@ -2129,6 +2150,7 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
   EXPECT_EQ(ssize(graph.loop_constraints()), 0);
 
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   // After modeling
   EXPECT_EQ(ssize(graph.links()), 10);  // added shadow 3s {9}
@@ -2169,6 +2191,7 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
   height of 3. */
   graph.ChangeJointType(JointIndex(6), "revolute");
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
 
   // The links are massless and so is their composite.
   for (LinkOrdinal link_ordinal(4); link_ordinal <= 6; ++link_ordinal)
@@ -2195,6 +2218,7 @@ GTEST_TEST(SpanningForest, MasslessMergedComposites) {
   graph.ChangeLinkFlags(LinkIndex(7), LinkFlags::kMassless);
   graph.ChangeLinkFlags(LinkIndex(8), LinkFlags::kMassless);
   EXPECT_TRUE(graph.BuildForest());
+  EXPECT_NO_THROW(forest.SanityCheckForest());
   const auto& newer_shadow_link = graph.link_by_index(LinkIndex(9));
   EXPECT_TRUE(newer_shadow_link.is_shadow());
   EXPECT_EQ(newer_shadow_link.name(), "link3$1");

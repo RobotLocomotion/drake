@@ -353,9 +353,9 @@ that the wrapping worked correctly.
 
 Here is the graph:
 
-                  {9}
-                   ^
-                   |
+                  {9}                        {l} Link l
+                   ^                          -> revolute joint
+                   |                          => weld joint
            {1} -> {2} => {3} => {8}
    World
      {0}   {4} => {5} -> {6}

@@ -405,6 +405,11 @@ class SpanningForest {
   @see LinkJointGraph::GenerateGraphvizString() */
   std::string GenerateGraphvizString(std::string_view label) const;
 
+  /** (Debugging, Testing) Runs a series of expensive tests to see that the
+  Graph and Forest are internally consistent and throws if not. Does nothing
+  if no Forest has been built. */
+  void SanityCheckForest() const;
+
  private:
   friend class LinkJointGraph;
   friend class copyable_unique_ptr<SpanningForest>;
