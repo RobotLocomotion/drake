@@ -4,3 +4,4 @@ notebook
 Pillow
 pydot
 PyYAML
+numpy==2.0.1
