@@ -782,11 +782,11 @@ drake_cc_library(
     deps = [
         ":triangle_surface_mesh",
         "//common:diagnostic_policy",
+        "//geometry:in_memory_mesh",
     ],
     implementation_deps = [
         "//common:essential",
-        "@fmt",
-        "@tinyobjloader_internal//:tinyobjloader",
+        "//geometry:read_obj",
     ],
 )
 
