@@ -33,8 +33,11 @@ AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
   }
 }
 
-AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
+AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
     : ConvexSet(0, true) {
+  if (tol) {
+    DRAKE_THROW_UNLESS(tol >= 0);
+  }
   // If the set is clearly a singleton, we can easily compute its affine hull.
   const auto singleton_maybe = set.MaybeGetPoint();
   if (singleton_maybe.has_value()) {
@@ -45,8 +48,10 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
   }
 
   // If the set is not clearly a singleton, we find a feasible point and
-  // iteratively compute a basis of the affine hull. If no feasible point
-  // exists, the set is empty, so we throw an error.
+  // iteratively compute a basis of the affine hull. This requires a numerical
+  // tolerance be given.
+  DRAKE_THROW_UNLESS(tol.has_value());
+  // If no feasible point exists, the set is empty, so we throw an error.
   const auto translation_maybe = set.MaybeGetFeasiblePoint();
   if (!translation_maybe.has_value()) {
     throw std::runtime_error(
@@ -137,7 +142,7 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
                       result.get_solution_result()));
     }
 
-    if (result.get_optimal_cost() < -tol) {
+    if (result.get_optimal_cost() < -tol.value()) {
       // x is in the affine hull, and is added to the basis.
       VectorXd new_basis_vector = result.GetSolution(x);
       basis.col(affine_dimension++) =
