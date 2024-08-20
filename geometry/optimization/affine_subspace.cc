@@ -76,9 +76,11 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
   }
 
   // If the set is not clearly a singleton, we find a feasible point and
-  // iteratively compute a basis of the affine hull. This requires a numerical
-  // tolerance be given.
-  DRAKE_THROW_UNLESS(tol.has_value());
+  // iteratively compute a basis of the affine hull. If the numerical tolerance
+  // was not specified, we use a reasonable default.
+  if (!tol) {
+    tol = 1e-12;
+  }
   // If no feasible point exists, the set is empty, so we throw an error.
   const auto translation_maybe = set.MaybeGetFeasiblePoint();
   if (!translation_maybe.has_value()) {

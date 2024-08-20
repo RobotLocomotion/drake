@@ -536,16 +536,10 @@ void CheckAffineHullTightness(const AffineSubspace& as, const ConvexSet& set,
 }
 
 GTEST_TEST(AffineSubspaceTest, AffineHulToleranceAPI) {
-  // A Point does not require a numerical tolerance to compute its affine hull.
-  // An HPolyhedron does require a numerical tolerance to compute its affine
-  // hull.
-  Point p(Vector1d(1.0));
-  HPolyhedron h = HPolyhedron::MakeUnitBox(1);
-  EXPECT_NO_THROW(AffineSubspace(p, std::nullopt));
-  EXPECT_THROW(AffineSubspace(h, std::nullopt), std::exception);
-
   // Don't accept a negative tolerance (even if it will be ignored by the
   // function based on the subclass of ConvexSet).
+  Point p(Vector1d(1.0));
+  HPolyhedron h = HPolyhedron::MakeUnitBox(1);
   EXPECT_THROW(AffineSubspace(p, -1.0), std::exception);
   EXPECT_THROW(AffineSubspace(h, -1.0), std::exception);
 }

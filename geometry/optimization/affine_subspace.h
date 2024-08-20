@@ -53,12 +53,11 @@ class AffineSubspace final : public ConvexSet {
   `tol` sets the numerical precision of the computation. For each dimension, a
   pair of feasible points are constructed, so as to maximize the displacement in
   that dimension. If their displacement along that dimension is larger than tol,
-  then the vector connecting the points is added as a basis vector.
+  then the vector connecting the points is added as a basis vector. If unset,
+  1e-12 is used.
 
   @throws std::exception if `set` is empty.
   @throws std::exception if `tol < 0`.
-  @throws std::exception if `tol` is `std::nullopt`, but the resulting solve
-  requires a numerical tolerance.
 
   For several subclasses of ConvexSet, there is a closed-form computation (or
   more efficient numerical computation) that is preferred.
@@ -71,7 +70,7 @@ class AffineSubspace final : public ConvexSet {
   encompasses sets which are obviously a singleton point, as determined via
   MaybeGetPoint. */
   explicit AffineSubspace(const ConvexSet& set,
-                          std::optional<double> tol = 1e-12);
+                          std::optional<double> tol = std::nullopt);
 
   ~AffineSubspace() final;
 
