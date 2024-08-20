@@ -2,6 +2,7 @@
 
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/geometry/optimization/affine_ball.h"
+#include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -47,6 +48,38 @@ AffineSubspace AffineBallAffineHull(const AffineBall& affine_ball,
       MatrixXd::Identity(affine_ball.ambient_dimension(), qr.rank());
   return AffineSubspace(basis, affine_ball.center());
 }
+
+AffineSubspace CartesianProductAffineHull(
+    const CartesianProduct& cartesian_product, std::optional<double> tol) {
+  // TODO(cohnt): Support affine transformations of Cartesian products.
+  DRAKE_THROW_UNLESS(cartesian_product.A() == std::nullopt);
+  DRAKE_THROW_UNLESS(cartesian_product.b() == std::nullopt);
+  // Compute the affine hull of each factor of cartesian_product and combine.
+
+  // The basis will be a block diagonal matrix, whose blocks correspond to the
+  // bases of the affine subspace of each factor. Not all blocks will be square,
+  // and some of the columns on the right will be skipped, since the affine hull
+  // may be a proper subspace.
+  Eigen::MatrixXd basis =
+      Eigen::MatrixXd::Zero(cartesian_product.ambient_dimension(),
+                            cartesian_product.ambient_dimension());
+  // The translation will be a vector, concatenating all of the translations of
+  // each factor. Zero-initialization is not needed, since all entries will be
+  // overwritten in the following loop.
+  Eigen::VectorXd translation(cartesian_product.ambient_dimension());
+  int current_dimension = 0;
+  int num_basis_vectors = 0;
+  for (int i = 0; i < cartesian_product.num_factors(); ++i) {
+    AffineSubspace a(cartesian_product.factor(i), tol);
+    basis.block(current_dimension, num_basis_vectors, a.ambient_dimension(),
+                a.AffineDimension()) = a.basis();
+    translation.segment(current_dimension, a.ambient_dimension()) =
+        a.translation();
+    current_dimension += a.ambient_dimension();
+    num_basis_vectors += a.AffineDimension();
+  }
+  return AffineSubspace(basis.leftCols(num_basis_vectors), translation);
+}
 }  // namespace
 
 AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
@@ -67,12 +100,22 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
       dynamic_cast<const AffineBall* const>(&set);
   const AffineSubspace* const maybe_affine_subspace =
       dynamic_cast<const AffineSubspace* const>(&set);
+  const CartesianProduct* const maybe_cartesian_product =
+      dynamic_cast<const CartesianProduct* const>(&set);
   if (maybe_affine_ball) {
     *this = AffineBallAffineHull(*maybe_affine_ball, tol);
     return;
   } else if (maybe_affine_subspace) {
     *this = *maybe_affine_subspace;
     return;
+  } else if (maybe_cartesian_product) {
+    // TODO(cohnt): Handle the case where the CartesianProduct has an associated
+    // affine transformation.
+    if (maybe_cartesian_product->A() == std::nullopt &&
+        maybe_cartesian_product->b() == std::nullopt) {
+      *this = CartesianProductAffineHull(*maybe_cartesian_product, tol);
+      return;
+    }
   }
 
   // If the set is not clearly a singleton, we find a feasible point and
