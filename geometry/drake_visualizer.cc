@@ -385,31 +385,28 @@ class ShapeToLcm : public ShapeReifier {
     if (source.IsPath()) {
       geometry_data_.string_data = source.path().string();
     } else {
-      DRAKE_DEMAND(source.IsInMemory());
-      const InMemoryMesh& mem_mesh = source.mesh_data();
       using nlohmann::json;
-      json in_memory;
-      // To reconstruct a mesh, we need a file name with the appropriate
-      // extension. If the filename hint doesn't already have one, give it
-      // the known extension.
-      in_memory["in_memory_mesh"]["name"] =
-          mem_mesh.mesh_file.filename_hint().ends_with(mesh.extension())
-              ? mem_mesh.mesh_file.filename_hint()
-              : fmt::format("{}{}", mem_mesh.mesh_file.filename_hint(),
-                            mesh.extension());
-      // We're going to encode all files in base64 so we don't have to think
-      // about which are ascii and which aren't.
-      {
-        const std::string& contents = mem_mesh.mesh_file.contents();
-        std::vector<uint8_t> bytes(contents.begin(), contents.end());
-        in_memory["in_memory_mesh"]["mesh_file"] =
-            common_robotics_utilities::base64_helpers::Encode(bytes);
-      }
-      for (const auto& [key, file] : mem_mesh.supporting_files) {
+
+      auto json_memory_file = [](const MemoryFile& file) {
+        json mesh_file_j;
+        mesh_file_j["filename_hint"] = file.filename_hint();
+        mesh_file_j["extension"] = file.extension();
         std::vector<uint8_t> bytes(file.contents().begin(),
                                    file.contents().end());
-        in_memory["in_memory_mesh"]["supporting_files"][key] =
+        mesh_file_j["contents"] =
             common_robotics_utilities::base64_helpers::Encode(bytes);
+        return mesh_file_j;
+      };
+
+      DRAKE_DEMAND(source.IsInMemory());
+      const InMemoryMesh& mem_mesh = source.mesh_data();
+      json in_memory;
+      in_memory["in_memory_mesh"]["mesh_file"] =
+          json_memory_file(mem_mesh.mesh_file);
+
+      for (const auto& [key, file] : mem_mesh.supporting_files) {
+        in_memory["in_memory_mesh"]["supporting_files"][key] =
+            json_memory_file(file);
       }
       geometry_data_.string_data = in_memory.dump();
     }

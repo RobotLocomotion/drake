@@ -56,9 +56,13 @@ std::shared_ptr<const MemoryFile> FileStorage::Insert(
     }
   }
 
+  // TODO(SeanCurtis-TRI) It would be better if these stored files had proper
+  // extensions.
+  constexpr char kEmptyExtension[] = "";
   // Take ownership of the provided strings (cleaning them out) and computing
   // the sha outside the critical section.
-  MemoryFile new_contents(std::move(content), std::move(filename_hint));
+  MemoryFile new_contents(std::move(content), kEmptyExtension,
+                          std::move(filename_hint));
 
   // Hold a transactional lock for all operations on our map.
   // This is important to avoid TOCTOU races.

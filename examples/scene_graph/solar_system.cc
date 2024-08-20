@@ -165,7 +165,6 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // The sun should appear in both meldis and meshcat visualizer.
   std::string sun_path =
       FindResourceOrThrow("drake/examples/scene_graph/sun.gltf");
-  std::string sun_contents = *ReadFile(sun_path);
   string_map<MemoryFile> supporting_files{
       {"sun.bin", MemoryFile::Make(FindResourceOrThrow(
                       "drake/examples/scene_graph/sun.bin"))},
@@ -177,9 +176,8 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   scene_graph->RegisterAnchoredGeometry(
       source_id_,
       MakeShape<Mesh>(RigidTransformd::Identity(), "Sun",
-                      std::nullopt /* diffuse */, std::move(sun_contents),
-                      "sun.gltf", std::move(supporting_files),
-                      1.0 /* scale */));
+                      std::nullopt /* diffuse */, MemoryFile::Make(sun_path),
+                      std::move(supporting_files), 1.0 /* scale */));
 
   // The fixed post on which Sun sits and around which all planets rotate.
   const double post_height = 1;

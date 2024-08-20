@@ -16,6 +16,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/unused.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/internal_gltf_vtk.h"
@@ -387,8 +388,7 @@ class DrakeVisualizerTest : public ::testing::Test {
       if constexpr (std::is_same_v<MeshType, Mesh>) {
         InMemoryMesh memory_mesh = geometry::internal::PreParseGltf(
             std::filesystem::path(gltf_path), /* include_images= */ true);
-        mesh = make_unique<MeshType>(memory_mesh.mesh_file.contents(),
-                                     "fully_textured_pyramid.gltf",
+        mesh = make_unique<MeshType>(memory_mesh.mesh_file,
                                      std::move(memory_mesh.supporting_files));
       }
     } else {
@@ -406,7 +406,7 @@ class DrakeVisualizerTest : public ::testing::Test {
     const RigidTransformd X_PC(Vector3d(-1, 2, -3));
     const GeometryId g_id = this->scene_graph_->RegisterGeometry(
         this->pose_source_id_, f_id,
-        make_unique<GeometryInstance>(X_PC, std::move(mesh), "test"));
+        make_unique<GeometryInstance>(X_PC, mesh->Clone(), "test"));
 
     // We assign a diffuse color, because we expect it to come through when
     // `expect_hull` is true.
@@ -481,8 +481,30 @@ class DrakeVisualizerTest : public ::testing::Test {
             nlohmann::json::parse(geo_message.string_data);
         ASSERT_TRUE(json_root.contains("in_memory_mesh"));
         const auto& json_mesh = json_root["in_memory_mesh"];
-        EXPECT_TRUE(json_mesh.contains("name"));
         ASSERT_TRUE(json_mesh.contains("mesh_file"));
+        ASSERT_TRUE(json_mesh["mesh_file"].contains("contents"));
+        ASSERT_TRUE(json_mesh["mesh_file"].contains("extension"));
+        ASSERT_TRUE(json_mesh["mesh_file"].contains("filename_hint"));
+        // Checking actual *values* needs to be conditioned on Mesh vs Convex
+        // until Convex also supports MeshSource.
+        if constexpr (std::is_same_v<MeshType, Mesh>) {
+          // Contents is a valid base64-encoded glTF file.
+          auto gltf_base64 =
+              json_mesh["mesh_file"]["contents"].get<std::string_view>();
+          const std::vector<uint8_t> decoded_vec =
+              common_robotics_utilities::base64_helpers::Decode(
+                  std::string{gltf_base64});
+          std::string gltf_content(
+              reinterpret_cast<const char*>(decoded_vec.data()),
+              decoded_vec.size());
+          EXPECT_FALSE(gltf_content.empty());
+          EXPECT_NO_THROW(unused(nlohmann::json::parse(gltf_content)));
+          EXPECT_EQ(json_mesh["mesh_file"]["extension"].get<std::string_view>(),
+                    mesh->source().extension());
+          EXPECT_EQ(
+              json_mesh["mesh_file"]["filename_hint"].get<std::string_view>(),
+              mesh->source().mesh_data().mesh_file.filename_hint());
+        }
         ASSERT_TRUE(json_mesh.contains("supporting_files"));
         // Exploit knowledge of fully_textured_pyramid.gltf's contents to grab
         // a single supporting file. We'll confirm that decoding it from base
@@ -491,7 +513,8 @@ class DrakeVisualizerTest : public ::testing::Test {
             "fully_textured_pyramid_emissive.png"));
         const std::string& emissive_64 =
             json_mesh["supporting_files"]["fully_textured_pyramid_emissive.png"]
-                .get<std::string>();
+                     ["contents"]
+                         .get<std::string>();
         const std::vector<uint8_t> decoded_vec =
             common_robotics_utilities::base64_helpers::Decode(
                 std::string{emissive_64});

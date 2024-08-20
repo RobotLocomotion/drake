@@ -170,15 +170,13 @@ GTEST_TEST(ReadObjTest, MeshSourceRegression) {
   // In-memory source.
   {
     const MeshSource source(
-        InMemoryMesh{.mesh_file = MemoryFile(R"""(
-    v 0 0 0
-    v 0 1 0
-    v 1 0 0
-    v 1 1 0
-    f 1 2 3 4
-  )""",
-                                                       "test")},
-        ".obj");
+        InMemoryMesh{.mesh_file = MemoryFile(R"""(v 0 0 0
+                                                  v 0 1 0
+                                                  v 1 0 0
+                                                  v 1 1 0
+                                                  f 1 2 3 4
+                                                )""",
+                                              ".obj", "test")});
     const auto [vertices, faces, num_faces] =
         ReadObj(source, 2.0, /* triangulate= */ true);
     EXPECT_EQ(vertices->size(), 4);
@@ -207,8 +205,7 @@ GTEST_TEST(ReadObjTest, VertexOnly) {
     v 1 0 0
     v 1 1 0
   )""",
-                                                     "no_faces")},
-      ".obj");
+                                           ".obj", "no_faces")});
   const auto [vertices, faces, num_faces] =
       ReadObj(source, 2.0, /* triangulate= */ true, /* vertex_only= */ true);
   EXPECT_EQ(vertices->size(), 4);
@@ -226,8 +223,7 @@ GTEST_TEST(ReadObj, EmptyObj) {
     v 1 0 0
     v 1 1 0
   )""",
-                                                     "no_faces")},
-      ".obj");
+                                           ".obj", "no_faces")});
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, 2.0, /* triangulate= */ false,
                                       /* vertex_only= */ false),
                               ".*no objects.*");

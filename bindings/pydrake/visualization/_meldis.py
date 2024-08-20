@@ -371,6 +371,14 @@ class _ViewerApplet:
         pose = _to_pose(geom.position, geom.quaternion)
         return (vertices, faces, rgba, pose)
 
+    @staticmethod
+    def _json_to_memory_file(json):
+        """Converts the json representation of a MemoryFile to an instance of
+        same."""
+        return MemoryFile(contents=base64.b64decode(json["contents"]),
+                          extension=json["extension"],
+                          filename_hint=json["filename_hint"])
+
     def _convert_geom(self, geom):
         """Given an lcmt_viewer_geometry_data, parses it into a tuple of
         (Shape, Rgba, RigidTransform) or
@@ -398,7 +406,6 @@ class _ViewerApplet:
                     _logger.warn("Received message with malformed json")
                     return (None, None, None)
                 if ("in_memory_mesh" not in payload
-                        or "name" not in payload["in_memory_mesh"]
                         or "mesh_file" not in payload["in_memory_mesh"]):
                     _logger.warn("Received Mesh with unexpected json content")
                     return (None, None, None)
@@ -406,11 +413,9 @@ class _ViewerApplet:
                 supporting_files = {}
                 for name, coded in mesh_data.get("supporting_files",
                                                  {}).items():
-                    supporting_files[name] = MemoryFile(
-                        base64.b64decode(coded), name)
+                    supporting_files[name] = self._json_to_memory_file(coded)
                 shape = Mesh(
-                    mesh_contents=base64.b64decode(mesh_data["mesh_file"]),
-                    name=mesh_data["name"],
+                    file=self._json_to_memory_file(mesh_data["mesh_file"]),
                     supporting_files=supporting_files)
             else:
                 # A mesh to be loaded from a file.
