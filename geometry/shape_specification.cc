@@ -343,14 +343,18 @@ namespace {
 
 double CalcMeshVolume(const Mesh& mesh) {
   // TODO(russt): Support .vtk files.
+  const MeshSource& source = mesh.source();
   if (mesh.extension() != ".obj") {
+    const std::string description =
+        source.IsPath() ? source.path().string()
+                        : source.mesh_data().mesh_file.filename_hint();
     throw std::runtime_error(fmt::format(
         "CalcVolume currently only supports .obj files for mesh geometries; "
         "but the volume of '{}' was requested.",
-        mesh.filename()));
+        description));
   }
   TriangleSurfaceMesh<double> surface_mesh =
-      ReadObjToTriangleSurfaceMesh(mesh.filename(), mesh.scale());
+      ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale());
   return internal::CalcEnclosedVolume(surface_mesh);
 }
 
