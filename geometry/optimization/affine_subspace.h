@@ -74,7 +74,10 @@ class AffineSubspace final : public ConvexSet {
   as in the generic affine hull computation.
   - Point: Can be computed in closed-form; `tol` is ignored. This also
   encompasses sets which are obviously a singleton point, as determined via
-  MaybeGetPoint. */
+  MaybeGetPoint.
+  - VPolytope: Can be computed via a singular value decomposition; `tol` is
+  used as the numerical tolerance for the rank of the matrix. Pass
+  `std::nullopt` for `tol` to use Eigen's automatic tolerance computation. */
   explicit AffineSubspace(const ConvexSet& set,
                           std::optional<double> tol = std::nullopt);
 

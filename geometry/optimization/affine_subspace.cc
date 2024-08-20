@@ -5,6 +5,7 @@
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -99,6 +100,25 @@ AffineSubspace HyperrectangleAffineHull(const Hyperrectangle& hyperrectangle,
   }
   return AffineSubspace(basis.leftCols(num_basis_vectors), hyperrectangle.lb());
 }
+
+AffineSubspace VPolytopeAffineHull(const VPolytope& vpolytope,
+                                   std::optional<double> tol) {
+  DRAKE_THROW_UNLESS(vpolytope.vertices().size() > 0);
+  // Eigen::JacobiSVD<MatrixXd, Eigen::DecompositionOptions::ComputeThinU>
+  // svd(vpolytope.vertices());
+  Eigen::JacobiSVD<MatrixXd> svd;
+  Eigen::MatrixXd centered_points =
+      vpolytope.vertices()
+          .rightCols(vpolytope.vertices().cols() - 1)
+          .colwise() -
+      vpolytope.vertices().col(0);
+  svd.compute(centered_points, Eigen::DecompositionOptions::ComputeThinU);
+  if (tol) {
+    svd.setThreshold(tol.value());
+  }
+  return AffineSubspace(svd.matrixU().leftCols(svd.rank()),
+                        vpolytope.vertices().col(0));
+}
 }  // namespace
 
 AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
@@ -125,6 +145,8 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
       dynamic_cast<const Hyperellipsoid* const>(&set);
   const Hyperrectangle* const maybe_hyperrectangle =
       dynamic_cast<const Hyperrectangle* const>(&set);
+  const VPolytope* const maybe_vpolytope =
+      dynamic_cast<const VPolytope* const>(&set);
   if (maybe_affine_ball) {
     *this = AffineBallAffineHull(*maybe_affine_ball, tol);
     return;
@@ -153,6 +175,9 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
     // default.
     *this = HyperrectangleAffineHull(*maybe_hyperrectangle,
                                      tol ? tol.value() : 1e-12);
+    return;
+  } else if (maybe_vpolytope) {
+    *this = VPolytopeAffineHull(*maybe_vpolytope, tol);
     return;
   }
 
