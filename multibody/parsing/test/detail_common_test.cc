@@ -13,17 +13,18 @@ namespace {
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
 using geometry::GeometryProperties;
-using geometry::ProximityProperties;
 using geometry::internal::HydroelasticType;
 using geometry::internal::kComplianceType;
-using geometry::internal::kRelaxationTime;
 using geometry::internal::kElastic;
 using geometry::internal::kFriction;
 using geometry::internal::kHcDissipation;
-using geometry::internal::kPointStiffness;
 using geometry::internal::kHydroGroup;
+using geometry::internal::kMargin;
 using geometry::internal::kMaterialGroup;
+using geometry::internal::kPointStiffness;
+using geometry::internal::kRelaxationTime;
 using geometry::internal::kRezHint;
+using geometry::ProximityProperties;
 using std::optional;
 using testing::MatchesRegex;
 
@@ -260,6 +261,18 @@ TEST_F(ParseProximityPropertiesTest, Dissipation) {
   EXPECT_TRUE(ExpectScalar(kMaterialGroup, kHcDissipation, kValue, properties));
   // Dissipation is the only property.
   EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
+  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+}
+
+// Confirms successful parsing of margin.
+TEST_F(ParseProximityPropertiesTest, Margin) {
+  const double kValue = 1.25;
+  ProximityProperties properties = ParseProximityProperties(
+      param_read_double("drake:hydroelastic_margin", kValue), !rigid,
+      !compliant);
+  EXPECT_TRUE(ExpectScalar(kHydroGroup, kMargin, kValue, properties));
+  // Margin is the only property.
+  EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
   EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
 }
 

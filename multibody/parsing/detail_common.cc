@@ -97,6 +97,9 @@ geometry::ProximityProperties ParseProximityProperties(
   std::optional<double> dissipation =
       read_double("drake:hunt_crossley_dissipation");
 
+  std::optional<double> margin =
+      read_double("drake:hydroelastic_margin");
+
   std::optional<double> relaxation_time =
       read_double("drake:relaxation_time");
 
@@ -122,11 +125,22 @@ geometry::ProximityProperties ParseProximityProperties(
     if (*relaxation_time < 0) {
       throw std::logic_error(
           fmt::format("The dissipation time scale can't be negative; given {}",
-                      *dissipation));
+                      *relaxation_time));
     }
     properties.AddProperty(geometry::internal::kMaterialGroup,
                            geometry::internal::kRelaxationTime,
                            *relaxation_time);
+  }
+
+  if (margin.has_value()) {
+    if (*margin < 0) {
+      throw std::logic_error(
+          fmt::format("The hydroelastic margin can't be negative; given {}",
+                      *margin));
+    }
+    properties.AddProperty(geometry::internal::kHydroGroup,
+                           geometry::internal::kMargin,
+                           *margin);
   }
 
   return properties;
