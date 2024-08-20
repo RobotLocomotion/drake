@@ -42,10 +42,10 @@ GTEST_TEST(TextureSourceTest, Construction) {
   EXPECT_TRUE(TextureSource("const char").IsKey());
   EXPECT_TRUE(TextureSource(std::string_view("string_view")).IsKey());
 
-  const TextureSource in_mem(common::FileContents("Fake stuff", "name"));
+  const TextureSource in_mem(MemoryFile("Fake stuff", "name"));
   ASSERT_TRUE(in_mem.IsInMemory());
-  EXPECT_EQ(in_mem.contents().contents(), "Fake stuff");
-  const TextureSource empty_file(common::FileContents("", "name"));
+  EXPECT_EQ(in_mem.memory_file().contents(), "Fake stuff");
+  const TextureSource empty_file(MemoryFile("", "name"));
   EXPECT_TRUE(empty_file.IsEmpty());
 }
 
@@ -55,7 +55,7 @@ GTEST_TEST(TextureSourceTest, Assignment) {
   const TextureSource empty;
   const TextureSource path(fs::path("test"));
   const TextureSource key(std::string("A Key"));
-  const TextureSource in_mem(common::FileContents("Fake stuff", "name"));
+  const TextureSource in_mem(MemoryFile("Fake stuff", "name"));
 
   source = path;
   EXPECT_TRUE(source.IsPath());
@@ -67,7 +67,7 @@ GTEST_TEST(TextureSourceTest, Assignment) {
 
   source = in_mem;
   EXPECT_TRUE(source.IsInMemory());
-  EXPECT_EQ(source.contents().contents(), in_mem.contents().contents());
+  EXPECT_EQ(source.memory_file().contents(), in_mem.memory_file().contents());
 
   source = fs::path("second test");
   ASSERT_TRUE(source.IsPath());
@@ -93,10 +93,10 @@ GTEST_TEST(TextureSourceTest, Assignment) {
   source = std::string{};
   EXPECT_TRUE(source.IsEmpty());
 
-  source = common::FileContents("more", "more");
+  source = MemoryFile("more", "more");
   ASSERT_TRUE(source.IsInMemory());
-  EXPECT_EQ(source.contents().contents(), "more");
-  source = common::FileContents("", "more");
+  EXPECT_EQ(source.memory_file().contents(), "more");
+  source = MemoryFile("", "more");
   EXPECT_TRUE(source.IsEmpty());
 }
 

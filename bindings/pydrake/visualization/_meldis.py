@@ -23,7 +23,7 @@ from drake import (
 )
 from pydrake.common import (
     configure_logging,
-    FileContents,
+    MemoryFile,
 )
 from pydrake.common.eigen_geometry import (
     Quaternion,
@@ -406,7 +406,7 @@ class _ViewerApplet:
                 supporting_files = {}
                 for name, coded in mesh_data.get("supporting_files",
                                                  {}).items():
-                    supporting_files[name] = FileContents(
+                    supporting_files[name] = MemoryFile(
                         base64.b64decode(coded), name)
                 shape = Mesh(
                     mesh_contents=base64.b64decode(mesh_data["mesh_file"]),

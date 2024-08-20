@@ -1297,14 +1297,13 @@ TEST_F(RenderEngineGlTest, InMemoryMesh) {
     do_test(
         "textured_obj", Mesh(obj_path.string()),
         Mesh(*ReadFile(obj_path), "rainbow_box.obj",
-             string_map<common::FileContents>{
+             string_map<MemoryFile>{
                  {"rainbow_box.mtl",
-                  common::FileContents::Make(FindResourceOrThrow(
+                  MemoryFile::Make(FindResourceOrThrow(
                       "drake/geometry/render/test/meshes/rainbow_box.mtl"))},
-                 {"rainbow_stripes.png",
-                  common::FileContents::Make(
-                      FindResourceOrThrow("drake/geometry/render/test/"
-                                          "meshes/rainbow_stripes.png"))}}));
+                 {"rainbow_stripes.png", MemoryFile::Make(FindResourceOrThrow(
+                                             "drake/geometry/render/test/"
+                                             "meshes/rainbow_stripes.png"))}}));
   }
 }
 

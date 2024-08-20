@@ -21,8 +21,6 @@ namespace drake {
 namespace geometry {
 namespace {
 
-using common::FileContents;
-
 std::string GetExtensionLower(const std::string& filename) {
   std::filesystem::path file_path(filename);
   std::string ext = file_path.extension();
@@ -207,9 +205,9 @@ Mesh::Mesh(const std::string& filename, double scale)
 }
 
 Mesh::Mesh(std::string mesh_contents, std::string name,
-           string_map<FileContents> supporting_files, double scale)
+           string_map<MemoryFile> supporting_files, double scale)
     : source_(InMemoryMesh{.mesh_file =
-                               FileContents(std::move(mesh_contents), name),
+                               MemoryFile(std::move(mesh_contents), name),
                            .supporting_files = std::move(supporting_files)},
               GetExtensionLower(name)),
       scale_(scale) {

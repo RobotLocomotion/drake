@@ -94,7 +94,7 @@ std::optional<std::string> DiskUriLoader(const fs::path& gltf_dir,
 // @param gltf_filename Only used for debugging and error messages.
 // @param array_hint The place where this URI occurred, e.g., "buffers[1]".
 //  Only used for debugging and error messages.
-std::shared_ptr<const common::FileContents> LoadGltfUri(
+std::shared_ptr<const MemoryFile> LoadGltfUri(
     const fs::path& gltf_filename, std::string_view array_hint,
     std::string_view uri, FileStorage* storage,
     const std::function<std::optional<std::string>(const fs::path&,
@@ -142,12 +142,12 @@ std::shared_ptr<const common::FileContents> LoadGltfUri(
 
 }  // namespace
 
-std::vector<std::shared_ptr<const common::FileContents>> UnbundleGltfAssets(
+std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
     const MeshSource& source, std::string* gltf_contents,
     FileStorage* storage) {
   DRAKE_DEMAND(gltf_contents != nullptr);
   DRAKE_DEMAND(storage != nullptr);
-  std::vector<std::shared_ptr<const common::FileContents>> assets;
+  std::vector<std::shared_ptr<const MemoryFile>> assets;
   const fs::path gltf_filename =
       source.IsPath() ? source.path()
                       : fs::path(source.mesh_data().mesh_file.filename_hint());
@@ -191,7 +191,7 @@ std::vector<std::shared_ptr<const common::FileContents>> UnbundleGltfAssets(
         const std::string_view uri =
             item["uri"].template get<std::string_view>();
         const std::string array_hint = fmt::format("{}[{}]", array_name, i);
-        std::shared_ptr<const common::FileContents> asset =
+        std::shared_ptr<const MemoryFile> asset =
             LoadGltfUri(gltf_filename, array_hint, uri, storage, uri_loader);
         if (asset != nullptr) {
           item["uri"] = FileStorage::GetCasUrl(*asset);

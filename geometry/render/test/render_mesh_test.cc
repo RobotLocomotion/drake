@@ -918,7 +918,7 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
 
   /* Obj references no mtl file. */
   {
-    const MeshSource source(InMemoryMesh{.mesh_file = common::FileContents(
+    const MeshSource source(InMemoryMesh{.mesh_file = MemoryFile(
                                              R"""(v 0 0 0
                                                  v 1 0 0
                                                  v 0 1 0
@@ -941,7 +941,7 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
   /* Obj references available mtl, no textures. */
   {
     const MeshSource source(
-        InMemoryMesh{.mesh_file = common::FileContents(
+        InMemoryMesh{.mesh_file = MemoryFile(
                          R"""(mtllib mem.mtl
                               v 0 0 0
                               v 1 0 0
@@ -951,7 +951,7 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
                               f 1//1 2//1 3//1
                             )""",
                          "obj2"),
-                     .supporting_files = {{"mem.mtl", common::FileContents(
+                     .supporting_files = {{"mem.mtl", MemoryFile(
                                                           R"""(newmtl test
                                                                Kd 1 0 0)""",
                                                           "mem.mtl")}}},
@@ -970,8 +970,9 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
   /* Obj references available mtl, with available texture. */
   {
     const MeshSource source(
-        InMemoryMesh{.mesh_file = common::FileContents(
-                         R"""(mtllib mem.mtl
+        InMemoryMesh{
+            .mesh_file = MemoryFile(
+                R"""(mtllib mem.mtl
                               v 0 0 0
                               v 1 0 0
                               v 0 1 0
@@ -979,13 +980,12 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
                               usemtl test
                               f 1//1 2//1 3//1
                             )""",
-                         "obj3"),
-                     .supporting_files = {{"mem.mtl", common::FileContents(
-                                                          R"""(newmtl test
+                "obj3"),
+            .supporting_files = {{"mem.mtl", MemoryFile(
+                                                 R"""(newmtl test
                                                                map_Kd fake.png)""",
-                                                          "mem.mtl")},
-                                          {"fake.png", common::FileContents(
-                                                           "abc", "png")}}},
+                                                 "mem.mtl")},
+                                 {"fake.png", MemoryFile("abc", "png")}}},
         ".obj");
     const RenderMesh mesh = LoadRenderMeshesFromObj(
         source, props, kDefaultDiffuse, diagnostic_policy_)[0];
@@ -1001,7 +1001,7 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
   {
     ASSERT_EQ(this->NumWarnings(), 0);
     ASSERT_EQ(this->NumErrors(), 0);
-    const MeshSource source(InMemoryMesh{.mesh_file = common::FileContents(
+    const MeshSource source(InMemoryMesh{.mesh_file = MemoryFile(
                                              R"""(mtllib missing.mtl
                                                  v 0 0 0
                                                  v 1 0 0
@@ -1030,7 +1030,7 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
     ASSERT_EQ(this->NumWarnings(), 0);
     ASSERT_EQ(this->NumErrors(), 0);
     const MeshSource source(
-        InMemoryMesh{.mesh_file = common::FileContents(
+        InMemoryMesh{.mesh_file = MemoryFile(
                          R"""(mtllib mem.mtl
                               v 0 0 0
                               v 1 0 0
@@ -1040,7 +1040,7 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
                               f 1//1 2//1 3//1
                             )""",
                          "obj5"),
-                     .supporting_files = {{"mem.mtl", common::FileContents(
+                     .supporting_files = {{"mem.mtl", MemoryFile(
                                                           R"""(newmtl test
                                                                map_Kd fake.png)""",
                                                           "mem.mtl")}}},

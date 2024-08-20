@@ -40,7 +40,7 @@ class TextureSource {
   }
 
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
-  explicit TextureSource(common::FileContents file_data);
+  explicit TextureSource(MemoryFile file);
 
   /* Clears the texture source, making it "empty". */
   void set_empty() { data_ = std::monostate(); }
@@ -64,7 +64,7 @@ class TextureSource {
 
   /* Sets the texture source to the given file contents. The result is empty if
    the file contents are empty. */
-  TextureSource& operator=(common::FileContents contents);
+  TextureSource& operator=(MemoryFile file);
 
   /* Reports `true` if the texture source is empty. */
   bool IsEmpty() const { return std::holds_alternative<std::monostate>(data_); }
@@ -78,9 +78,7 @@ class TextureSource {
   bool IsKey() const { return std::holds_alternative<std::string>(data_); }
 
   /* Reports `true` if the texture is contained in file contents. */
-  bool IsInMemory() const {
-    return std::holds_alternative<common::FileContents>(data_);
-  }
+  bool IsInMemory() const { return std::holds_alternative<MemoryFile>(data_); }
 
   /* Returns the path.
    @pre IsPath() returns `true`. */
@@ -92,15 +90,12 @@ class TextureSource {
    @pre IsKey() returns `true`. */
   const std::string& key() const { return std::get<std::string>(data_); }
 
-  /* Returns the file contents.
+  /* Returns the in-memory file contents.
    @pre IsInMemory() returns `true`. */
-  const common::FileContents& contents() const {
-    return std::get<common::FileContents>(data_);
-  }
+  const MemoryFile& memory_file() const { return std::get<MemoryFile>(data_); }
 
  private:
-  std::variant<std::monostate, std::string, std::filesystem::path,
-               common::FileContents>
+  std::variant<std::monostate, std::string, std::filesystem::path, MemoryFile>
       data_;
 };
 

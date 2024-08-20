@@ -64,7 +64,7 @@ GTEST_TEST(UnbundleGltfAssetsTest, DataUri) {
 
   // Unbundle it.
   FileStorage storage;
-  std::vector<std::shared_ptr<const common::FileContents>> assets =
+  std::vector<std::shared_ptr<const MemoryFile>> assets =
       UnbundleGltfAssets(gltf_filename, &gltf_contents, &storage);
 
   // The contents got smaller due to unbundling (but not too small).
@@ -116,7 +116,7 @@ GTEST_TEST(UnbundleGltfAssetsTest, RelativeUri) {
 
   // Unbundle it.
   FileStorage storage;
-  std::vector<std::shared_ptr<const common::FileContents>> assets =
+  std::vector<std::shared_ptr<const MemoryFile>> assets =
       UnbundleGltfAssets(gltf_filename, &gltf_contents, &storage);
 
   // One asset was added to storage, identical to cube2.bin.

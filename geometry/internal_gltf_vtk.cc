@@ -12,11 +12,10 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-using common::FileContents;
 using Eigen::Vector3d;
 using nlohmann::json;
 
-MeshMemoryLoader::MeshMemoryLoader(const string_map<FileContents>* data)
+MeshMemoryLoader::MeshMemoryLoader(const string_map<MemoryFile>* data)
     : mesh_data_(*data) {
   DRAKE_DEMAND(data != nullptr);
   base_uri_ = vtkURI::Make("file", vtkURIComponent(), "/convex_hull/");
@@ -51,9 +50,9 @@ vtkSmartPointer<vtkResourceStream> MeshMemoryLoader::DoLoad(const vtkURI& uri) {
       // it's an actual parsing problem.
       return nullptr;
     }
-    const FileContents& file_data = mesh_data_.at(name);
+    const MemoryFile& file = mesh_data_.at(name);
     vtkNew<vtkMemoryResourceStream> stream;
-    stream->SetBuffer(file_data.contents().c_str(), file_data.contents().size(),
+    stream->SetBuffer(file.contents().c_str(), file.contents().size(),
                       /* copy= */ false);
     return stream;
   } else if (scheme == "data") {
@@ -69,7 +68,7 @@ namespace {
 
 void AddFilesFromUris(const std::filesystem::path gltf_path, const json& gltf,
                       std::string_view array_name,
-                      string_map<FileContents>* supporting_files) {
+                      string_map<MemoryFile>* supporting_files) {
   auto& array = gltf[array_name];
   for (size_t i = 0; i < array.size(); ++i) {
     auto& item = array[i];
@@ -80,7 +79,7 @@ void AddFilesFromUris(const std::filesystem::path gltf_path, const json& gltf,
         continue;
       }
       supporting_files->emplace(
-          uri, FileContents::Make(gltf_path.parent_path() / uri));
+          uri, MemoryFile::Make(gltf_path.parent_path() / uri));
     }
   }
 }
@@ -89,9 +88,9 @@ void AddFilesFromUris(const std::filesystem::path gltf_path, const json& gltf,
 
 InMemoryMesh PreParseGltf(const std::filesystem::path gltf_path,
                           bool include_images) {
-  auto gltf_file = FileContents::Make(gltf_path);
+  auto gltf_file = MemoryFile::Make(gltf_path);
 
-  string_map<FileContents> supporting_files;
+  string_map<MemoryFile> supporting_files;
   json gltf;
   try {
     gltf = json::parse(gltf_file.contents());

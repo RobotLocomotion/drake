@@ -22,7 +22,6 @@ namespace geometry {
 namespace internal {
 namespace {
 
-using common::FileContents;
 using Eigen::Vector3d;
 using PolyMesh = PolygonSurfaceMesh<double>;
 using std::vector;
@@ -577,7 +576,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   const std::string box_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
   const MeshSource obj_source(
-      InMemoryMesh{.mesh_file = FileContents::Make(box_path)}, ".obj");
+      InMemoryMesh{.mesh_file = MemoryFile::Make(box_path)}, ".obj");
   const PolyMesh expected_box = MakeCube(kScale + kMargin);
 
   // The tet in one_tetrahedron.vtk has vertices at origin and unit positions
@@ -585,7 +584,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   const std::string tet_path =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
   const MeshSource vtk_source(
-      InMemoryMesh{.mesh_file = FileContents::Make(tet_path)}, ".vtk");
+      InMemoryMesh{.mesh_file = MemoryFile::Make(tet_path)}, ".vtk");
   const PolyMesh expected_tet = GetTetrahedronWithMargin(kScale, kMargin);
 
   // The rainbow_box.gltf has embedded data *and* has a non-trivial hierarchy
@@ -593,8 +592,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   const std::string embedded_gltf_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf");
   const MeshSource gltf_embedded_source(
-      InMemoryMesh{.mesh_file = FileContents::Make(embedded_gltf_path)},
-      ".gltf");
+      InMemoryMesh{.mesh_file = MemoryFile::Make(embedded_gltf_path)}, ".gltf");
 
   // The fully_textured_pyramid.gltf references external files. Specifically,
   // the .bin file is necessary to know vertex positions.
@@ -604,10 +602,10 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
       "drake/geometry/render/test/meshes/fully_textured_pyramid.bin");
   const MeshSource gltf_pyramid_source(
       InMemoryMesh{
-          .mesh_file = FileContents::Make(pyramid_path),
+          .mesh_file = MemoryFile::Make(pyramid_path),
           .supporting_files =
-              string_map<FileContents>{{"fully_textured_pyramid.bin",
-                                        FileContents::Make(pyramid_bin_path)}}},
+              string_map<MemoryFile>{{"fully_textured_pyramid.bin",
+                                      MemoryFile::Make(pyramid_bin_path)}}},
       ".gltf");
   // The convex hull of the in-memory version should match that from disk.
   const PolyMesh expected_pyramid =

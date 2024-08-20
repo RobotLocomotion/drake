@@ -191,6 +191,9 @@ drake_cc_library(
         ":essential",
         ":sha256",
     ],
+    implementation_deps = [
+        ":find_resource",
+    ],
 )
 
 drake_cc_library(

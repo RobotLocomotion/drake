@@ -16,8 +16,6 @@ namespace geometry {
 namespace internal {
 namespace {
 
-using common::FileContents;
-
 // TODO(SeanCurtis-TRI) Move this tinyobj->fcl code into its own library that
 //  can be built and tested separately.
 
@@ -112,22 +110,20 @@ std::vector<int> TinyObjToFclFaces(
 
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
-ReadObjContents(const FileContents& file_contents, double scale,
-                bool triangulate, bool vertices_only) {
+ReadObjContents(const MemoryFile& file, double scale, bool triangulate,
+                bool vertices_only) {
   tinyobj::ObjReader reader;
   tinyobj::ObjReaderConfig config;
   config.triangulate = triangulate;
-  reader.ParseFromString(file_contents.contents(), /* mtl_reader= */ nullptr,
-                         config);
+  reader.ParseFromString(file.contents(), /* mtl_reader= */ nullptr, config);
 
   if (!reader.Valid() || !reader.Error().empty()) {
     throw std::runtime_error(fmt::format("Error parsing OBJ '{}': {}",
-                                         file_contents.filename_hint(),
-                                         reader.Error()));
+                                         file.filename_hint(), reader.Error()));
   }
   if (!reader.Warning().empty()) {
     drake::log()->warn("Warning while parsing OBJ '{}' : {}",
-                       file_contents.filename_hint(), reader.Warning());
+                       file.filename_hint(), reader.Warning());
   }
 
   const tinyobj::attrib_t& attrib = reader.GetAttrib();
@@ -143,7 +139,7 @@ ReadObjContents(const FileContents& file_contents, double scale,
     throw std::runtime_error(
         fmt::format("The OBJ data parsed contains no objects; the data could "
                     "be corrupt, empty, or not an OBJ file. Name: '{}'",
-                    file_contents.filename_hint()));
+                    file.filename_hint()));
   }
 
   // We will have `faces.size()` larger than the number of faces. For each
@@ -170,7 +166,7 @@ ReadObjFile(const std::string& filename, double scale, bool triangulate,
   // TODO(SeanCurtis-TRI): The file contents of this file should be read once
   // and stored in some geometry cache -- only accessed here rather than created
   // anew. For now, we are unnecessarily computing the hash for the contents.
-  return ReadObjContents(FileContents::Make(filename),
+  return ReadObjContents(MemoryFile::Make(filename),
                          scale, triangulate, vertices_only);
 }
 

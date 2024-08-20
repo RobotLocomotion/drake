@@ -45,7 +45,7 @@ class TestCommon(unittest.TestCase):
     def test_memory_file(self):
         content_string = "Some string"
         hint = "hint"
-        file = mut.FileContents(content_string, hint)
+        file = mut.MemoryFile(content_string, hint)
         self.assertEqual(file.sha256(), mut.Sha256.Checksum(content_string))
         self.assertEqual(file.contents(), content_string)
         self.assertEqual(file.filename_hint(), hint)

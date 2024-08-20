@@ -20,9 +20,8 @@ TextureSource::TextureSource(std::filesystem::path path)
   if (this->path().empty()) set_empty();
 }
 
-TextureSource::TextureSource(common::FileContents file_data)
-    : data_(std::move(file_data)) {
-  if (contents().contents().size() == 0) set_empty();
+TextureSource::TextureSource(MemoryFile file) : data_(std::move(file)) {
+  if (memory_file().contents().size() == 0) set_empty();
 }
 
 TextureSource& TextureSource::operator=(std::filesystem::path path) {
@@ -34,11 +33,11 @@ TextureSource& TextureSource::operator=(std::filesystem::path path) {
   return *this;
 }
 
-TextureSource& TextureSource::operator=(common::FileContents contents) {
-  if (contents.contents().size() == 0) {
+TextureSource& TextureSource::operator=(MemoryFile file) {
+  if (file.contents().size() == 0) {
     set_empty();
   } else {
-    data_ = std::move(contents);
+    data_ = std::move(file);
   }
   return *this;
 }

@@ -147,8 +147,7 @@ class MaterialLibraryServer final : public tinyobj::MaterialReader {
                      std::map<std::string, int>* matMap, std::string* warn,
                      std::string* err) const {
     DRAKE_DEMAND(source_.IsInMemory());
-    const string_map<common::FileContents> files =
-        source_.mesh_data().supporting_files;
+    const string_map<MemoryFile> files = source_.mesh_data().supporting_files;
     // matId is the filename that appears after mtllib. There may be multiple
     // such files named.
     if (!files.contains(matId)) {
