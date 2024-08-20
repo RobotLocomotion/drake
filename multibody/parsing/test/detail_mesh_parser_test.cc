@@ -165,24 +165,9 @@ TEST_F(MeshParserTest, ErrorModes) {
     }
 
     DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromMeshFile(file.string(), ""),
-                                ".* has no faces.*");
+                                ".*OBJ data parsed contains no objects.*");
   }
-  // 2. Two objects.
-  {
-    const std::filesystem::path file = temp_dir / "two_objects.obj";
-    {
-      std::ofstream f(file.string());
-      ASSERT_TRUE(f);
-      f << "v 0 0 0\n"
-        << "o one\n"   // Create first object.
-        << "f 1 1 1\n"
-        << "o two\n"    // Create a second object.
-        << "f 1 1 1\n";
-    }
-    DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromMeshFile(file.string(), ""),
-                                ".* 2 unique shapes; only 1 allowed.*");
-  }
-  // 3. Not an OBJ.
+  // 2. Not an OBJ.
   {
     const std::filesystem::path file = temp_dir / "empty.obj";
     {
@@ -191,9 +176,9 @@ TEST_F(MeshParserTest, ErrorModes) {
       f << "Non-OBJ gibberish";
     }
     DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromMeshFile(file.string(), ""),
-                                ".* has no faces.*");
+                                ".*OBJ data parsed contains no objects.*");
   }
-  // 4. Called with obj data in a string.
+  // 3. Called with obj data in a string.
   {
     const std::string data("Just some text");
     const DataSource data_source{DataSource::kContents, &data};

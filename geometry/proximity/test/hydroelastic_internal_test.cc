@@ -674,16 +674,14 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
 // on the fact that we're loading a unit cube (vertices one unit away from the
 // origin along each axis) to confirm that the correct mesh got loaded. We also
 // confirm that the scale factor is included in the rigid representation.
-void TestRigidMeshCube(const std::string& file) {
+void TestRigidMeshCube(const Mesh& mesh) {
   // Empty props since its contents do not matter.
   ProximityProperties props;
 
   constexpr double kEps = 2 * std::numeric_limits<double>::epsilon();
 
   // Non-unit scale to make sure scale is being accounted for.
-  const double scale = 0.75;
-  std::optional<RigidGeometry> geometry =
-      MakeRigidRepresentation(Mesh(file, scale), props);
+  std::optional<RigidGeometry> geometry = MakeRigidRepresentation(mesh, props);
   ASSERT_NE(geometry, std::nullopt);
   ASSERT_FALSE(geometry->is_half_space());
 
@@ -697,32 +695,44 @@ void TestRigidMeshCube(const std::string& file) {
   // The scale factor multiplies the measure of every vertex position, so
   // the expected distance of the vertex to the origin should be:
   // scale * sqrt(3) (because the original mesh was the unit sphere).
-  const double expected_dist = std::sqrt(3) * scale;
+  const double expected_dist = std::sqrt(3) * mesh.scale();
   for (int v = 0; v < surface_mesh.num_vertices(); ++v) {
     const double dist = surface_mesh.vertex(v).norm();
-    ASSERT_NEAR(dist, expected_dist, scale * kEps)
-        << "for scale: " << scale << " at vertex " << v;
+    ASSERT_NEAR(dist, expected_dist, mesh.scale() * kEps)
+        << "for scale: " << mesh.scale() << " at vertex " << v;
   }
 }
 
 // Confirm support for a rigid Mesh. Tests that a hydroelastic representation
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Mesh) {
+  // We just want a non-unit scale.
+  constexpr double kScale = 0.75;
+  const std::string obj_path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const std::string vtk_path =
+      FindResourceOrThrow("drake/geometry/test/cube_as_volume.vtk");
   {
-    SCOPED_TRACE("Rigid Mesh, obj");
-    const std::string file_name =
-        FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-    TestRigidMeshCube(file_name);
+    SCOPED_TRACE("Rigid Mesh, on-disk obj");
+    TestRigidMeshCube(Mesh(obj_path, kScale));
   }
   {
-    SCOPED_TRACE("Rigid Mesh, vtk");
-    const std::string file_name =
-        FindResourceOrThrow("drake/geometry/test/cube_as_volume.vtk");
-    TestRigidMeshCube(file_name);
+    SCOPED_TRACE("Rigid Mesh, on-disk vtk");
+    TestRigidMeshCube(Mesh(vtk_path, kScale));
+  }
+  {
+    SCOPED_TRACE("Rigid Mesh, in-memory obj");
+    TestRigidMeshCube(Mesh(common::FileContents::Make(obj_path).contents(),
+                           "in_memory.obj", {}, kScale));
+  }
+  {
+    SCOPED_TRACE("Rigid Mesh, in-memory vtk");
+    TestRigidMeshCube(Mesh(common::FileContents::Make(vtk_path).contents(),
+                           "in_memory.vtk", {}, kScale));
   }
   {
     SCOPED_TRACE("Rigid Mesh, unsupported extension");
-    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshCube("invalid.stl"),
+    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshCube(Mesh("invalid.stl", kScale)),
                                 ".*Mesh shapes can only use .*invalid.stl");
   }
 }
