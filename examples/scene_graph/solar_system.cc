@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/file_contents.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/memory_file.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"

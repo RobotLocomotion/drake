@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/file_contents.h"
+#include "drake/common/memory_file.h"
 #include "drake/common/sha256.h"
 
 namespace drake {

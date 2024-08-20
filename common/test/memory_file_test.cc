@@ -1,4 +1,4 @@
-#include "drake/common/file_contents.h"
+#include "drake/common/memory_file.h"
 
 #include <gtest/gtest.h>
 
@@ -30,12 +30,12 @@ GTEST_TEST(FileContentsTest, StaticMethods) {
   const std::string path =
       FindResourceOrThrow("drake/common/test/find_resource_test_data.txt");
   const std::string contents = FileContents::Read(path);
-  const FileContents file_contents = FileContents::Make(path);
+  const FileContents memory_file = FileContents::Make(path);
   const FileContents ref(contents, path);
 
-  EXPECT_EQ(contents, file_contents.contents());
-  EXPECT_EQ(file_contents.sha256(), ref.sha256());
-  EXPECT_EQ(path, file_contents.filename_hint());
+  EXPECT_EQ(contents, memory_file.contents());
+  EXPECT_EQ(memory_file.sha256(), ref.sha256());
+  EXPECT_EQ(path, memory_file.filename_hint());
 }
 
 }  // namespace
