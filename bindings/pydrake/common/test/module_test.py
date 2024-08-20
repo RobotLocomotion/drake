@@ -42,7 +42,7 @@ class TestCommon(unittest.TestCase):
         not_empty2 = mut.Sha256.Parse(str_value)
         self.assertTrue(not_empty == not_empty2)
 
-    def test_file_contents(self):
+    def test_memory_file(self):
         content_string = "Some string"
         hint = "hint"
         file = mut.FileContents(content_string, hint)

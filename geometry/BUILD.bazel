@@ -279,7 +279,7 @@ drake_cc_library(
     srcs = ["in_memory_mesh.cc"],
     hdrs = ["in_memory_mesh.h"],
     deps = [
-        "//common:file_contents",
+        "//common:memory_file",
         "//common:string_container",
     ],
 )
@@ -296,7 +296,7 @@ drake_cc_library(
         ":in_memory_mesh",
         "//common:drake_export",
         "//common:essential",
-        "//common:file_contents",
+        "//common:memory_file",
         "//common:string_container",
         "@nlohmann_internal//:nlohmann",
         "@vtk_internal//:vtkCommonCore",
@@ -413,7 +413,7 @@ drake_cc_library(
     hdrs = ["read_obj.h"],
     deps = [
         ":in_memory_mesh",
-        "//common:file_contents",
+        "//common:memory_file",
         "@eigen",
     ],
     implementation_deps = [
@@ -552,7 +552,7 @@ drake_cc_library(
         ":scene_graph_inspector",
         ":shape_specification",
         "//common:essential",
-        "//common:file_contents",
+        "//common:memory_file",
         "//common:name_value",
         "//common:timer",
         "//geometry/proximity:triangle_surface_mesh",

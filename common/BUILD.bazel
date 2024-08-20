@@ -33,7 +33,6 @@ drake_cc_package_library(
         ":dummy_value",
         ":essential",
         ":extract_double",
-        ":file_contents",
         ":find_resource",
         ":find_runfiles",
         ":fmt",
@@ -42,6 +41,7 @@ drake_cc_package_library(
         ":is_approx_equal_abstol",
         ":is_cloneable",
         ":is_less_than_comparable",
+        ":memory_file",
         ":name_value",
         ":network_policy",
         ":nice_type_name",
@@ -184,9 +184,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "file_contents",
-    srcs = ["file_contents.cc"],
-    hdrs = ["file_contents.h"],
+    name = "memory_file",
+    srcs = ["memory_file.cc"],
+    hdrs = ["memory_file.h"],
     deps = [
         ":essential",
         ":sha256",
@@ -960,17 +960,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "file_contents_test",
-    data = [
-        "test/find_resource_test_data.txt",
-    ],
-    deps = [
-        ":file_contents",
-        "//common:find_resource",
-    ],
-)
-
-drake_cc_googletest(
     name = "find_cache_test",
     deps = [
         ":find_cache",
@@ -1074,6 +1063,17 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":is_approx_equal_abstol",
+    ],
+)
+
+drake_cc_googletest(
+    name = "memory_file_test",
+    data = [
+        "test/find_resource_test_data.txt",
+    ],
+    deps = [
+        ":memory_file",
+        "//common:find_resource",
     ],
 )
 

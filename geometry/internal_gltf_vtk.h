@@ -14,7 +14,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/file_contents.h"
+#include "drake/common/memory_file.h"
 #include "drake/common/string_map.h"
 #include "drake/geometry/in_memory_mesh.h"
 

@@ -7,7 +7,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/file_contents.h"
+#include "drake/common/memory_file.h"
 #include "drake/geometry/in_memory_mesh.h"
 
 namespace drake {

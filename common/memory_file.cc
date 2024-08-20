@@ -1,4 +1,4 @@
-#include "drake/common/file_contents.h"
+#include "drake/common/memory_file.h"
 
 #include <fstream>
 #include <sstream>

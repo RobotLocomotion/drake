@@ -13,9 +13,9 @@
 #include <vtkCamera.h>     // vtkRenderingCore
 #include <vtkMatrix4x4.h>  // vtkCommonMath
 
-#include "drake/common/file_contents.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/memory_file.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

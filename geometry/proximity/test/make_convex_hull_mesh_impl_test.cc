@@ -10,9 +10,9 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
-#include "drake/common/file_contents.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/memory_file.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"

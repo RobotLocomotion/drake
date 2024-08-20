@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/file_contents.h"
+#include "drake/common/memory_file.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/meshcat_file_storage_internal.h"
 #include "drake/geometry/scene_graph_inspector.h"
