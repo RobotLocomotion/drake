@@ -8,6 +8,7 @@
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/geometry/optimization/point.h"
@@ -659,6 +660,23 @@ GTEST_TEST(AffineSubspaceTest, AffineHullHyperellipsoid) {
 
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as, E));
   CheckAffineHullTightness(as, E);
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullHyperrectangle) {
+  const Eigen::Vector3d lb{0, -1, -1};
+  const Eigen::Vector3d ub{0, 1, 1};
+
+  Hyperrectangle H(lb, ub);
+  AffineSubspace as(H);
+
+  EXPECT_EQ(as.basis().cols(), 2);
+  EXPECT_EQ(as.basis().rows(), 3);
+  EXPECT_EQ(as.translation().size(), 3);
+  EXPECT_EQ(as.ambient_dimension(), 3);
+
+  const double kTol = 1e-15;
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as, H, kTol));
+  CheckAffineHullTightness(as, H);
 }
 
 GTEST_TEST(AffineSubspaceTest, AffineHullIntersection) {
