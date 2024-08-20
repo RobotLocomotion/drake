@@ -65,8 +65,13 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
 
   const AffineBall* const maybe_affine_ball =
       dynamic_cast<const AffineBall* const>(&set);
+  const AffineSubspace* const maybe_affine_subspace =
+      dynamic_cast<const AffineSubspace* const>(&set);
   if (maybe_affine_ball) {
     *this = AffineBallAffineHull(*maybe_affine_ball, tol);
+    return;
+  } else if (maybe_affine_subspace) {
+    *this = *maybe_affine_subspace;
     return;
   }
 

@@ -65,6 +65,8 @@ class AffineSubspace final : public ConvexSet {
   - AffineBall: Can be computed via a rank-revealing decomposition; `tol` is
   used as the numerical tolerance for the rank of the matrix. Pass
   `std::nullopt` for `tol` to use Eigen's automatic tolerance computation.
+  - AffineSubspace: Equivalent to the copy-constructor, but needed since that
+  method is not available in the Python bindings; `tol` is ignored.
   - Point: Can be computed in closed-form; `tol` is ignored. This also
   encompasses sets which are obviously a singleton point, as determined via
   MaybeGetPoint. */
