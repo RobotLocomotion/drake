@@ -619,8 +619,8 @@ GTEST_TEST(ShapeTest, MeshFromMemory) {
     f 1 2 3 4
     f 5 6 7 8
   )""";
-  string_map<common::FileContents> mesh_data;
-  mesh_data["fake.txt"] = common::FileContents("content", "fake.txt");
+  string_map<MemoryFile> mesh_data;
+  mesh_data["fake.txt"] = MemoryFile("content", "fake.txt");
   const Mesh mesh(obj_contents, mesh_name, mesh_data, 2.0);
   ASSERT_TRUE(mesh.is_in_memory());
   EXPECT_THROW(mesh.filename(), std::exception);

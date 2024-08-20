@@ -170,7 +170,7 @@ GTEST_TEST(ReadObjTest, MeshSourceRegression) {
   // In-memory source.
   {
     const MeshSource source(
-        InMemoryMesh{.mesh_file = common::FileContents(R"""(
+        InMemoryMesh{.mesh_file = MemoryFile(R"""(
     v 0 0 0
     v 0 1 0
     v 1 0 0
@@ -201,7 +201,7 @@ GTEST_TEST(ReadObjTest, MeshSourceRegression) {
 // data (see EmptyObj, below).
 GTEST_TEST(ReadObjTest, VertexOnly) {
   const MeshSource source(
-      InMemoryMesh{.mesh_file = common::FileContents(R"""(
+      InMemoryMesh{.mesh_file = MemoryFile(R"""(
     v 0 0 0
     v 0 1 0
     v 1 0 0
@@ -220,7 +220,7 @@ GTEST_TEST(ReadObjTest, VertexOnly) {
 // vertex only).
 GTEST_TEST(ReadObj, EmptyObj) {
   const MeshSource source(
-      InMemoryMesh{.mesh_file = common::FileContents(R"""(
+      InMemoryMesh{.mesh_file = MemoryFile(R"""(
     v 0 0 0
     v 0 1 0
     v 1 0 0

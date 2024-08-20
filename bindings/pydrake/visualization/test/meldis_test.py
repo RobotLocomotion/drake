@@ -31,7 +31,7 @@ from drake import (
     lcmt_viewer_load_robot,
 )
 from pydrake.common import (
-    FileContents,
+    MemoryFile,
 )
 from pydrake.geometry import (
     DrakeVisualizer,
@@ -472,8 +472,8 @@ Kd 1 1 0
 """
         mesh = Mesh(mesh_contents=obj_contents, name="from_test.obj",
                     supporting_files={
-                        "meldis_test.mtl": FileContents(mtl_contents,
-                                                        "melids_test.mtl")})
+                        "meldis_test.mtl": MemoryFile(mtl_contents,
+                                                      "melids_test.mtl")})
         scene_graph.RegisterAnchoredGeometry(
             plant.get_source_id(),
             GeometryInstance(X_PG=RigidTransform(), shape=mesh,

@@ -15,7 +15,7 @@ namespace internal {
 namespace {
 
 GTEST_TEST(MeshcatFileStorageInternalTest, BasicWorkflow) {
-  using ContentsPtr = std::shared_ptr<const common::FileContents>;
+  using ContentsPtr = std::shared_ptr<const MemoryFile>;
   FileStorage dut;
 
   // Start out empty.
@@ -109,7 +109,7 @@ GTEST_TEST(MeshcatFileStorageInternalTest, BasicWorkflow) {
 }
 
 GTEST_TEST(MeshcatFileStorageInternalTest, ReinsertExpired) {
-  using ContentsPtr = std::shared_ptr<const common::FileContents>;
+  using ContentsPtr = std::shared_ptr<const MemoryFile>;
   FileStorage dut;
 
   // Insert content and then immediately expire it.
@@ -143,7 +143,7 @@ GTEST_TEST(MeshcatFileStorageInternalTest, ThreadingStress) {
       "alpha", "bravo", "charlie", "delta", "echo", "fox",
   };
 
-  using ContentsPtr = std::shared_ptr<const common::FileContents>;
+  using ContentsPtr = std::shared_ptr<const MemoryFile>;
   FileStorage dut;
 
   // This loop imitates the outer Meshcat class, by adding and removing content

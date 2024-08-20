@@ -897,7 +897,7 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
     if (!material.diffuse_map.IsEmpty()) {
       // By the time the render material gets here, it should either be a path
       // or it is a key into an in-memory image already registered with the
-      // texture library. It should never be FileContents.
+      // texture library. It should never be MemoryFile.
       DRAKE_DEMAND(!material.diffuse_map.IsInMemory());
       if (material.diffuse_map.IsPath()) {
         temp_props.UpdateProperty("phong", "diffuse_map",
@@ -2036,7 +2036,7 @@ class RenderEngineGl::GltfMeshExtractor {
   drake::internal::DiagnosticPolicy policy_;
 
   /* A description to use for warnings and error messages. If the mesh source
-   is a file, it includes the file name, otherwise it uses the FileContents
+   is a file, it includes the file name, otherwise it uses the MemoryFile
    filename hint. This value will always be non-empty, at least communicating
    the source of the glTF file. However, it may indicate that no filename
    hint was provided. */
@@ -2120,9 +2120,9 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& source,
             // In-memory images need to be loaded into the library directly.
             const std::string image_key = fmt::format(
                 "{}{}", TextureLibrary::InMemoryPrefix(),
-                material.diffuse_map.contents().sha256().to_string());
+                material.diffuse_map.memory_file().sha256().to_string());
             const std::string& contents =
-                material.diffuse_map.contents().contents();
+                material.diffuse_map.memory_file().contents();
             // Note: if multiple materials reference the same in-memory image,
             // it will still only be added to the texture library once.
             texture_library_->AddInMemoryImage(

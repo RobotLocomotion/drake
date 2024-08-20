@@ -34,13 +34,13 @@ class MeshMemoryLoader final : public vtkURILoader {
                 URL referred to by other files -- typically the glTF file.
                 The data will be aliased and must stay alive longer than this.
    */
-  explicit MeshMemoryLoader(const string_map<common::FileContents>* data);
+  explicit MeshMemoryLoader(const string_map<MemoryFile>* data);
 
  private:
   vtkSmartPointer<vtkResourceStream> DoLoad(const vtkURI& uri) final;
 
   const std::string name_;
-  const string_map<common::FileContents>& mesh_data_;
+  const string_map<MemoryFile>& mesh_data_;
   vtkSmartPointer<vtkURI> base_uri_;
 };
 

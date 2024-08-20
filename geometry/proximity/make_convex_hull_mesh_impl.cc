@@ -37,7 +37,6 @@ namespace geometry {
 namespace internal {
 namespace {
 
-using common::FileContents;
 using drake::internal::DiagnosticPolicy;
 using Eigen::Vector3d;
 using Eigen::Vector4d;

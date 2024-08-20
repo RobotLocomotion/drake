@@ -13,8 +13,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_path.h"
-#include "drake/common/memory_file.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/memory_file.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/nice_type_name_override.h"
 #include "drake/common/parallelism.h"
@@ -161,9 +161,9 @@ void InitLowLevelModules(py::module m) {
   }
 
   {
-    using Class = common::FileContents;
-    constexpr auto& cls_doc = doc.common.FileContents;
-    py::class_<Class> cls(m, "FileContents", cls_doc.doc);
+    using Class = MemoryFile;
+    constexpr auto& cls_doc = doc.MemoryFile;
+    py::class_<Class> cls(m, "MemoryFile", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::string, std::string>(), py::arg("contents"),

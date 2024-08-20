@@ -440,11 +440,11 @@ TEST_F(RenderEngineGltfClientGltfTest, FileToDataUris) {
         FindResourceOrThrow(dir / "cube3.gltf");
     const std::string gltf_content = ReadFileOrThrow(gltf_path);
 
-    string_map<common::FileContents> files;
+    string_map<MemoryFile> files;
     for (const char* file_name :
          {"cube3_normal.png", "cube3_divot.png", "cube3.bin"}) {
-      files.insert({file_name, common::FileContents::Make(
-                                   FindResourceOrThrow(dir / file_name))});
+      files.insert(
+          {file_name, MemoryFile::Make(FindResourceOrThrow(dir / file_name))});
     }
 
     const GeometryId disk_id = GeometryId::get_new_id();

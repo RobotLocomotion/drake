@@ -722,12 +722,12 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
   }
   {
     SCOPED_TRACE("Rigid Mesh, in-memory obj");
-    TestRigidMeshCube(Mesh(common::FileContents::Make(obj_path).contents(),
+    TestRigidMeshCube(Mesh(MemoryFile::Make(obj_path).contents(),
                            "in_memory.obj", {}, kScale));
   }
   {
     SCOPED_TRACE("Rigid Mesh, in-memory vtk");
-    TestRigidMeshCube(Mesh(common::FileContents::Make(vtk_path).contents(),
+    TestRigidMeshCube(Mesh(MemoryFile::Make(vtk_path).contents(),
                            "in_memory.vtk", {}, kScale));
   }
   {
@@ -1270,8 +1270,7 @@ TEST_F(HydroelasticSoftGeometryTest, Mesh) {
   std::string path =
       FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk");
   const std::vector<Mesh> meshes{
-      Mesh(path),
-      Mesh(common::FileContents::Read(path), "in_memory/non_convex_mesh.vtk")};
+      Mesh(path), Mesh(ReadFileOrThrow(path), "in_memory/non_convex_mesh.vtk")};
   for (const Mesh& mesh_specification : meshes) {
     ProximityProperties properties = soft_properties();
     std::optional<SoftGeometry> compliant_geometry =

@@ -7,31 +7,26 @@
 #include "drake/common/sha256.h"
 
 namespace drake {
-namespace common {
 
-/** A record of a file's contents and related metadata. */
-class FileContents {
+/** The idea of a data file stored in memory. */
+class MemoryFile {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FileContents);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MemoryFile);
 
-  /** Creates an instance of %FileContents from the file located at the given
+  /** Creates an instance of %MemoryFile from the file located at the given
    `path`. The filename_hint() will be the stringified path. This includes the
    calculation of the content's hash. To avoid computing the hash, see
    Read().
    @throws std::exception if the file at `path` cannot be read. */
-  static FileContents Make(const std::filesystem::path& path);
-
-  /** Returns the contents of the file located at the given `path`.
-   @throws std::exception if the file at `path` cannot be read. */
-  static std::string Read(const std::filesystem::path& path);
+  static MemoryFile Make(const std::filesystem::path& path);
 
   /** Default constructor with no contents, checksum, or filename hint. In this
   case, the `checksum` will contain all zeros. */
-  FileContents();
+  MemoryFile();
 
   /** Constructs the record with the given `contents` and filename hint.
   @pre `filename_hint` contains no newlines. */
-  FileContents(std::string contents, std::string filename_hint);
+  MemoryFile(std::string contents, std::string filename_hint);
 
   /** The contents of a nominal file. */
   const std::string& contents() const { return contents_; }
@@ -55,5 +50,4 @@ class FileContents {
   // metadata here, e.g., mime type.
 };
 
-}  // namespace common
 }  // namespace drake

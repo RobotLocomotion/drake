@@ -463,7 +463,7 @@ class Mesh final : public Shape {
   explicit Mesh(const std::string& filename, double scale = 1.0);
 
   // TODO(SeanCurtis-TRI) We should also communicate file types, mime types.
-  // That would best live in FileContents.
+  // That would best live in MemoryFile.
 
   // TODO(SeanCurtis-TRI) Document that only .obj is currently supported.
 
@@ -475,7 +475,7 @@ class Mesh final : public Shape {
    `mesh_contents`. Some mesh file formats can comprise multiple files (e.g.,
    .obj and .mtl files, .gltf and .bin files, various texture files, etc.). If
    the mesh data in `mesh_contents` names other files, we will first look in
-   `mesh_data` for FileContents keyed by that name.
+   `mesh_data` for MemoryFile keyed by that name.
    <!--
    TODO(SeanCurtis-TRI): This documentation is aspirational; figure out how
    to make it a reality.
@@ -498,7 +498,7 @@ class Mesh final : public Shape {
    @pre The extension in `name` matches the data in `mesh_contents`.
    @pre The extension in `name` names a supported mesh file type. */
   Mesh(std::string mesh_contents, std::string name,
-       string_map<common::FileContents> supporting_files = {},
+       string_map<MemoryFile> supporting_files = {},
        double scale = 1.0);
 
   ~Mesh() final;

@@ -82,8 +82,8 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& source, double scale) {
   } else {
     DRAKE_DEMAND(source.IsInMemory());
     vtkNew<vtkCharArray> char_array;
-    const common::FileContents& contents = source.mesh_data().mesh_file;
-    const std::string& data = contents.contents();
+    const MemoryFile& file = source.mesh_data().mesh_file;
+    const std::string& data = file.contents();
     // vtkCharArray requires a non-const pointer. Yuck. But this allows us to
     // avoid copying the string.
     char* contents_array = const_cast<char*>(data.c_str());

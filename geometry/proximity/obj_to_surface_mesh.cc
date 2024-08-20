@@ -79,8 +79,8 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
   std::stringstream content;
   content << input_stream->rdbuf();
 
-  InMemoryMesh mesh{.mesh_file = common::FileContents(std::move(content).str(),
-                                                      "in_memory.obj")};
+  InMemoryMesh mesh{.mesh_file =
+                        MemoryFile(std::move(content).str(), "in_memory.obj")};
 
   // We will either throw or return a mesh here.
   return *internal::DoReadObjToSurfaceMesh(MeshSource(mesh, ".obj"), scale,

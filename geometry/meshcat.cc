@@ -121,7 +121,7 @@ class SceneTreeElement {
     /* If the message refers to http assets (e.g., image files), then this list
     is responsible for keeping alive a non-zero reference count for those
     file(s) in our in-memory storage. */
-    std::vector<std::shared_ptr<const common::FileContents>> assets;
+    std::vector<std::shared_ptr<const MemoryFile>> assets;
   };
 
   // Provide direct access to all member fields except the list of children.
@@ -319,7 +319,7 @@ class MeshcatShapeReifier : public ShapeReifier {
   // to ImplementGeometry() should always be passed as this type.
   struct Output {
     internal::LumpedObjectData& lumped;
-    std::vector<std::shared_ptr<const common::FileContents>>& assets;
+    std::vector<std::shared_ptr<const MemoryFile>>& assets;
   };
 
   using ShapeReifier::ImplementGeometry;
@@ -919,7 +919,7 @@ class Meshcat::Impl {
     // (which could be from the cloud to a local browser) more than necessary.
 
     MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_, rgba);
-    std::vector<std::shared_ptr<const common::FileContents>> assets;
+    std::vector<std::shared_ptr<const MemoryFile>> assets;
     MeshcatShapeReifier::Output reifier_output{.lumped = data.object,
                                                .assets = assets};
     shape.Reify(&reifier, &reifier_output);
@@ -1285,7 +1285,7 @@ class Meshcat::Impl {
           "Cannot open '{}' when attempting to set property '{}' on '{}'",
           file_path.string(), property, path));
     }
-    std::shared_ptr<const common::FileContents> asset =
+    std::shared_ptr<const MemoryFile> asset =
         file_storage_.Insert(std::move(*content), file_path.string());
 
     internal::SetPropertyData<std::string> data;
@@ -1743,7 +1743,7 @@ class Meshcat::Impl {
     // Insert a JavaScript URL hook that knows how to serve the CAS database.
     // (See FileStorage and GetCasUrl for details about CAS.)
     std::string javascript("casAssets = {};\n");
-    std::vector<std::shared_ptr<const common::FileContents>> assets =
+    std::vector<std::shared_ptr<const MemoryFile>> assets =
         file_storage_.DumpEverything();
     for (const auto& asset : assets) {
       javascript += fmt::format("// {}\n", asset->filename_hint());
@@ -2135,8 +2135,7 @@ class Meshcat::Impl {
         response->end("");
         return;
       }
-      std::shared_ptr<const common::FileContents> handle =
-          file_storage_.Find(*key);
+      std::shared_ptr<const MemoryFile> handle = file_storage_.Find(*key);
       if (handle == nullptr) {
         drake::log()->warn(
             "Meshcat: Unknown CAS key {} (there are {} assets in the cache)",

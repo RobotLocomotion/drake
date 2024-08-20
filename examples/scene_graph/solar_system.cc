@@ -166,13 +166,12 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   std::string sun_path =
       FindResourceOrThrow("drake/examples/scene_graph/sun.gltf");
   std::string sun_contents = *ReadFile(sun_path);
-  using common::FileContents;
-  string_map<FileContents> supporting_files{
-      {"sun.bin", FileContents::Make(FindResourceOrThrow(
+  string_map<MemoryFile> supporting_files{
+      {"sun.bin", MemoryFile::Make(FindResourceOrThrow(
                       "drake/examples/scene_graph/sun.bin"))},
-      {"sun.png", FileContents::Make(FindResourceOrThrow(
+      {"sun.png", MemoryFile::Make(FindResourceOrThrow(
                       "drake/examples/scene_graph/sun.png"))},
-      {"sun.ktx2", FileContents::Make(FindResourceOrThrow(
+      {"sun.ktx2", MemoryFile::Make(FindResourceOrThrow(
                        "drake/examples/scene_graph/sun.ktx2"))}};
 
   scene_graph->RegisterAnchoredGeometry(

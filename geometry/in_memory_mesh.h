@@ -21,13 +21,13 @@ namespace geometry {
  contents. Failure to provide the supporting files may or may not lead to
  errors; it depends on the context in which the mesh data is used. */
 struct InMemoryMesh {
-  // TODO(SeanCurtis-TRI): FileContents must include extension/mime type so
+  // TODO(SeanCurtis-TRI): MemoryFile must include extension/mime type so
   // knowing how to interpret the bits is self-contained.
   /** They key for the actual mesh file data in `data`. */
-  common::FileContents mesh_file;
+  MemoryFile mesh_file;
 
   /** The optional collection of supporting files. */
-  string_map<common::FileContents> supporting_files;
+  string_map<MemoryFile> supporting_files;
 };
 
 /** Provides an general abstraction to the definition of a mesh. A mesh
@@ -47,7 +47,7 @@ class MeshSource {
   MeshSource(StringLike path_string)
       : MeshSource(std::filesystem::path(std::move(path_string))) {}
 
-  // TODO(SeanCurtis-TRI): When FileContents tracks its own extension, remove
+  // TODO(SeanCurtis-TRI): When MemoryFile tracks its own extension, remove
   // the additional parameter here and allow implicit conversion from
   // InMemoryMesh.
   /** Constructs from an in-memory mesh. */
