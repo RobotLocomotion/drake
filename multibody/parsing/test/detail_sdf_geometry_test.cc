@@ -1222,9 +1222,10 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   <drake:proximity_properties>
     <drake:mesh_resolution_hint>2.5</drake:mesh_resolution_hint>
     <drake:hydroelastic_modulus>3.5</drake:hydroelastic_modulus>
+    <drake:hydroelastic_margin>1.3</drake:hydroelastic_margin>
     <drake:hunt_crossley_dissipation>4.5</drake:hunt_crossley_dissipation>
     <drake:relaxation_time>3.1</drake:relaxation_time>
-    <drake:mu_dynamic>4.5</drake:mu_dynamic>
+    <drake:mu_dynamic>4.25</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
   </drake:proximity_properties>)""");
     std::optional<ProximityProperties> properties =
@@ -1234,11 +1235,13 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
                            geometry::internal::kRezHint, 2.5);
     assert_single_property(*properties, geometry::internal::kHydroGroup,
                            geometry::internal::kElastic, 3.5);
+    assert_single_property(*properties, geometry::internal::kHydroGroup,
+                           geometry::internal::kMargin, 1.3);
     assert_single_property(*properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kHcDissipation, 4.5);
     assert_single_property(*properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kRelaxationTime, 3.1);
-    assert_friction(*properties, {4.75, 4.5});
+    assert_friction(*properties, {4.75, 4.25});
   }
 
   // Case: specifies rigid hydroelastic.

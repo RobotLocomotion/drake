@@ -482,6 +482,7 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
       "drake:soft_hydroelastic",
       "drake:mesh_resolution_hint",
       "drake:hydroelastic_modulus",
+      "drake:hydroelastic_margin",
       "drake:hunt_crossley_dissipation",
       "drake:relaxation_time",
       "drake:point_contact_stiffness",
