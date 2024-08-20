@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/optimization/affine_ball.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -33,6 +34,21 @@ AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
   }
 }
 
+// Internal namespace for better numerical computations of affine hulls.
+namespace {
+AffineSubspace AffineBallAffineHull(const AffineBall& affine_ball,
+                                    std::optional<double> tol) {
+  Eigen::ColPivHouseholderQR<MatrixXd> qr(affine_ball.B());
+  if (tol) {
+    qr.setThreshold(tol.value());
+  }
+  Eigen::MatrixXd basis =
+      qr.householderQ() *
+      MatrixXd::Identity(affine_ball.ambient_dimension(), qr.rank());
+  return AffineSubspace(basis, affine_ball.center());
+}
+}  // namespace
+
 AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
     : ConvexSet(0, true) {
   if (tol) {
@@ -44,6 +60,13 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
     // Fall back to the basis and translation constructor.
     *this = AffineSubspace(Eigen::MatrixXd::Zero(set.ambient_dimension(), 0),
                            singleton_maybe.value());
+    return;
+  }
+
+  const AffineBall* const maybe_affine_ball =
+      dynamic_cast<const AffineBall* const>(&set);
+  if (maybe_affine_ball) {
+    *this = AffineBallAffineHull(*maybe_affine_ball, tol);
     return;
   }
 

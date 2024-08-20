@@ -62,6 +62,9 @@ class AffineSubspace final : public ConvexSet {
 
   For several subclasses of ConvexSet, there is a closed-form computation (or
   more efficient numerical computation) that is preferred.
+  - AffineBall: Can be computed via a rank-revealing decomposition; `tol` is
+  used as the numerical tolerance for the rank of the matrix. Pass
+  `std::nullopt` for `tol` to use Eigen's automatic tolerance computation.
   - Point: Can be computed in closed-form; `tol` is ignored. This also
   encompasses sets which are obviously a singleton point, as determined via
   MaybeGetPoint. */
