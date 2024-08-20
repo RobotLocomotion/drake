@@ -63,6 +63,9 @@ geometry::ProximityProperties ParseProximityProperties(
   using geometry::internal::kComplianceType;
   using geometry::internal::kElastic;
   using geometry::internal::kHydroGroup;
+  using geometry::internal::kMargin;
+  using geometry::internal::kMaterialGroup;
+  using geometry::internal::kRelaxationTime;
   using geometry::internal::kRezHint;
 
   // Both being true is disallowed -- so assert is_rigid NAND is_compliant.
@@ -75,72 +78,72 @@ geometry::ProximityProperties ParseProximityProperties(
     properties.AddProperty(kHydroGroup, kComplianceType, HT::kSoft);
   }
 
-  std::optional<double> rez_hint = read_double("drake:mesh_resolution_hint");
-  if (rez_hint) {
-    properties.AddProperty(kHydroGroup, kRezHint, *rez_hint);
-  }
-
-  std::optional<double> hydroelastic_modulus =
-      read_double("drake:hydroelastic_modulus");
-  if (hydroelastic_modulus) {
-    if (is_rigid) {
-      diagnostic.Warning(fmt::format(
-          "Rigid geometries defined with the tag drake:rigid_hydroelastic"
-          " should not contain the tag drake:hydroelastic_modulus. The"
-          " specified value ({}) will be ignored.",
-          *hydroelastic_modulus));
-    } else {
-      properties.AddProperty(kHydroGroup, kElastic, *hydroelastic_modulus);
+  {
+    std::optional<double> rez_hint = read_double("drake:mesh_resolution_hint");
+    if (rez_hint) {
+      properties.AddProperty(kHydroGroup, kRezHint, *rez_hint);
     }
   }
 
-  std::optional<double> dissipation =
-      read_double("drake:hunt_crossley_dissipation");
-
-  std::optional<double> margin =
-      read_double("drake:hydroelastic_margin");
-
-  std::optional<double> relaxation_time =
-      read_double("drake:relaxation_time");
-
-  std::optional<double> stiffness =
-      read_double("drake:point_contact_stiffness");
-
-  std::optional<double> mu_dynamic = read_double("drake:mu_dynamic");
-  std::optional<double> mu_static = read_double("drake:mu_static");
-  std::optional<CoulombFriction<double>> friction;
-  // Note: we rely on the constructor of CoulombFriction to detect negative
-  // values and bad relationship between static and dynamic coefficients.
-  if (mu_dynamic && mu_static) {
-    friction = CoulombFriction<double>(*mu_static, *mu_dynamic);
-  } else if (mu_dynamic) {
-    friction = CoulombFriction<double>(*mu_dynamic, *mu_dynamic);
-  } else if (mu_static) {
-    friction = CoulombFriction<double>(*mu_static, *mu_static);
+  {
+    std::optional<double> hydroelastic_modulus =
+        read_double("drake:hydroelastic_modulus");
+    if (hydroelastic_modulus) {
+      if (is_rigid) {
+        diagnostic.Warning(fmt::format(
+            "Rigid geometries defined with the tag drake:rigid_hydroelastic"
+            " should not contain the tag drake:hydroelastic_modulus. The"
+            " specified value ({}) will be ignored.",
+            *hydroelastic_modulus));
+      } else {
+        properties.AddProperty(kHydroGroup, kElastic, *hydroelastic_modulus);
+      }
+    }
   }
 
-  geometry::AddContactMaterial(dissipation, stiffness, friction, &properties);
-
-  if (relaxation_time.has_value()) {
-    if (*relaxation_time < 0) {
-      throw std::logic_error(
-          fmt::format("The dissipation time scale can't be negative; given {}",
-                      *relaxation_time));
+  {
+    std::optional<double> dissipation =
+        read_double("drake:hunt_crossley_dissipation");
+    std::optional<double> stiffness =
+        read_double("drake:point_contact_stiffness");
+    std::optional<double> mu_dynamic = read_double("drake:mu_dynamic");
+    std::optional<double> mu_static = read_double("drake:mu_static");
+    std::optional<CoulombFriction<double>> friction;
+    // Note: we rely on the constructor of CoulombFriction to detect negative
+    // values and bad relationship between static and dynamic coefficients.
+    if (mu_dynamic && mu_static) {
+      friction = CoulombFriction<double>(*mu_static, *mu_dynamic);
+    } else if (mu_dynamic) {
+      friction = CoulombFriction<double>(*mu_dynamic, *mu_dynamic);
+    } else if (mu_static) {
+      friction = CoulombFriction<double>(*mu_static, *mu_static);
     }
-    properties.AddProperty(geometry::internal::kMaterialGroup,
-                           geometry::internal::kRelaxationTime,
-                           *relaxation_time);
+
+    geometry::AddContactMaterial(dissipation, stiffness, friction, &properties);
   }
 
-  if (margin.has_value()) {
-    if (*margin < 0) {
-      throw std::logic_error(
-          fmt::format("The hydroelastic margin can't be negative; given {}",
-                      *margin));
+  {
+    std::optional<double> relaxation_time =
+        read_double("drake:relaxation_time");
+    if (relaxation_time.has_value()) {
+      if (*relaxation_time < 0) {
+        throw std::logic_error(
+            fmt::format("The relaxation time can't be negative; given {}",
+                        *relaxation_time));
+      }
+      properties.AddProperty(kMaterialGroup, kRelaxationTime, *relaxation_time);
     }
-    properties.AddProperty(geometry::internal::kHydroGroup,
-                           geometry::internal::kMargin,
-                           *margin);
+  }
+
+  {
+    std::optional<double> margin = read_double("drake:hydroelastic_margin");
+    if (margin.has_value()) {
+      if (*margin < 0) {
+        throw std::logic_error(fmt::format(
+            "The hydroelastic margin can't be negative; given {}", *margin));
+      }
+      properties.AddProperty(kHydroGroup, kMargin, *margin);
+    }
   }
 
   return properties;
