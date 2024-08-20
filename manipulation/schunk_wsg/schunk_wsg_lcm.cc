@@ -89,11 +89,11 @@ void SchunkWsgCommandSender::CalcCommandOutput(
 
 SchunkWsgStatusReceiver::SchunkWsgStatusReceiver()
     : state_output_port_(
-          this->DeclareVectorOutputPort("state", 2,
+          this->DeclareVectorOutputPort("state_measured", 2,
                                         &SchunkWsgStatusReceiver::CopyStateOut)
               .get_index()),
       force_output_port_(
-          this->DeclareVectorOutputPort("force", 1,
+          this->DeclareVectorOutputPort("force_measured", 1,
                                         &SchunkWsgStatusReceiver::CopyForceOut)
               .get_index()) {
   this->DeclareAbstractInputPort("lcmt_schunk_wsg_status",
