@@ -4,6 +4,7 @@
 #include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -81,6 +82,23 @@ AffineSubspace CartesianProductAffineHull(
   }
   return AffineSubspace(basis.leftCols(num_basis_vectors), translation);
 }
+
+AffineSubspace HyperrectangleAffineHull(const Hyperrectangle& hyperrectangle,
+                                        double tol) {
+  Eigen::MatrixXd basis = Eigen::MatrixXd::Zero(
+      hyperrectangle.ambient_dimension(), hyperrectangle.ambient_dimension());
+  Eigen::VectorXd translation(hyperrectangle.ambient_dimension());
+  int current_dimension = 0;
+  int num_basis_vectors = 0;
+  for (int i = 0; i < hyperrectangle.ambient_dimension(); ++i) {
+    if (hyperrectangle.ub()[i] - hyperrectangle.lb()[i] > tol) {
+      basis(current_dimension, num_basis_vectors) = 1;
+      ++num_basis_vectors;
+    }
+    ++current_dimension;
+  }
+  return AffineSubspace(basis.leftCols(num_basis_vectors), hyperrectangle.lb());
+}
 }  // namespace
 
 AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
@@ -105,6 +123,8 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
       dynamic_cast<const CartesianProduct* const>(&set);
   const Hyperellipsoid* const maybe_hyperellipsoid =
       dynamic_cast<const Hyperellipsoid* const>(&set);
+  const Hyperrectangle* const maybe_hyperrectangle =
+      dynamic_cast<const Hyperrectangle* const>(&set);
   if (maybe_affine_ball) {
     *this = AffineBallAffineHull(*maybe_affine_ball, tol);
     return;
@@ -127,6 +147,12 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
         Eigen::MatrixXd::Identity(maybe_hyperellipsoid->ambient_dimension(),
                                   maybe_hyperellipsoid->ambient_dimension()),
         Eigen::VectorXd::Zero(maybe_hyperellipsoid->ambient_dimension()));
+    return;
+  } else if (maybe_hyperrectangle) {
+    // If the numerical tolerance was not specified, we use a reasonable
+    // default.
+    *this = HyperrectangleAffineHull(*maybe_hyperrectangle,
+                                     tol ? tol.value() : 1e-12);
     return;
   }
 
