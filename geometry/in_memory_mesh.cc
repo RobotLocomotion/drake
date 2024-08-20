@@ -24,5 +24,10 @@ MeshSource::MeshSource(std::filesystem::path path) : source_(std::move(path)) {
 MeshSource::MeshSource(InMemoryMesh mesh, std::string extension)
     : source_(std::move(mesh)), extension_(std::move(extension)) {}
 
+std::string MeshSource::description() const {
+  return IsPath() ? path().string()
+                  : mesh_data().mesh_file.filename_hint();
+}
+
 }  // namespace geometry
 }  // namespace drake

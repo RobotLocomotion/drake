@@ -480,12 +480,19 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("supporting_files"), py::arg("scale") = 1.0,
             doc.Mesh.ctor.doc_4args)
         .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
+        .def("source", &Mesh::source, doc.Mesh.source.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
         .def(py::pickle(
             [](const Mesh& self) {
-              return std::make_pair(self.filename(), self.scale());
+              // TODO(SeanCurtis-TRI) Pickle in-memory meshes.
+              if (!self.source().IsPath()) {
+                throw std::runtime_error(
+                    "Only on-disk Mesh specifications can be pickedl.");
+              }
+              return std::make_pair(
+                  self.source().path().string(), self.scale());
             },
             [](std::pair<std::string, double> info) {
               return Mesh(info.first, info.second);

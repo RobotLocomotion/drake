@@ -261,7 +261,18 @@ const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
 }
 
 std::string Mesh::do_to_string() const {
-  return fmt::format("Mesh(filename='{}', scale={})", filename(), scale());
+  const std::string description = [this](){
+    if (source_.IsPath()){
+      return fmt::format("filename='{}'", source_.path().string());
+    } else {
+      const InMemoryMesh& data = source_.mesh_data();
+      return fmt::format(
+        "mesh_contents='{}...', name='{}', supporting_files=<map of {} files>",
+        data.mesh_file.contents().substr(0, 30), data.mesh_file.filename_hint(),
+        data.supporting_files.size());
+    }
+  }();
+  return fmt::format("Mesh({}, scale={})", description, scale());
 }
 
 MeshcatCone::MeshcatCone(double height, double a, double b)
@@ -345,13 +356,10 @@ double CalcMeshVolume(const Mesh& mesh) {
   // TODO(russt): Support .vtk files.
   const MeshSource& source = mesh.source();
   if (mesh.extension() != ".obj") {
-    const std::string description =
-        source.IsPath() ? source.path().string()
-                        : source.mesh_data().mesh_file.filename_hint();
     throw std::runtime_error(fmt::format(
         "CalcVolume currently only supports .obj files for mesh geometries; "
         "but the volume of '{}' was requested.",
-        description));
+        source.description()));
   }
   TriangleSurfaceMesh<double> surface_mesh =
       ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale());

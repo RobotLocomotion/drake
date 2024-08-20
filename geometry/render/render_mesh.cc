@@ -94,10 +94,7 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
     }
   }
 
-  const std::string description =
-      source.IsPath() ? source.path().string()
-                      : source.mesh_data().mesh_file.filename_hint();
-  MaybeWarnForRedundantMaterial(properties, description, policy);
+  MaybeWarnForRedundantMaterial(properties, source.description(), policy);
   return result;
 }
 
@@ -175,16 +172,12 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
     const MeshSource& source, const GeometryProperties& properties,
     const std::optional<Rgba>& default_diffuse,
     const DiagnosticPolicy& policy) {
-  const std::string description =
-      source.IsPath() ? source.path().string()
-                      : source.mesh_data().mesh_file.filename_hint();
-
   const std::string& obj_contents =
       source.IsPath() ? ReadFile(source.path()).value_or("")
                       : source.mesh_data().mesh_file.contents();
   if (obj_contents.empty()) {
     throw std::runtime_error(fmt::format(
-        "Failed parsing obj data; no data given: {}.", description));
+        "Failed parsing obj data; no data given: {}.", source.description()));
   }
   tinyobj::ObjReaderConfig config;
   config.triangulate = true;
@@ -195,8 +188,9 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
       reader.ParseFromString(obj_contents, &mat_server, config);
 
   if (!valid_parse) {
-    throw std::runtime_error(fmt::format(
-        "Failed parsing the obj data: '{}': {}", description, reader.Error()));
+    throw std::runtime_error(
+        fmt::format("Failed parsing the obj data: '{}': {}",
+                    source.description(), reader.Error()));
   }
 
   // We better not get any errors if we have a valid parse.
@@ -213,7 +207,7 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
     throw std::runtime_error(fmt::format(
         "The OBJ data appears to have no faces; it could be missing faces or "
         "might not be an OBJ file: {}",
-        description));
+        source.description()));
   }
 
   if (!reader.Warning().empty()) {
@@ -274,7 +268,7 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
   //   2. Make use of smoothing groups.
   if (attrib.normals.size() == 0) {
     throw std::runtime_error(
-        fmt::format("OBJ has no normals: {}", description));
+        fmt::format("OBJ has no normals: {}", source.description()));
   }
 
   /* Each triangle consists of three vertices. Any of those vertices may be
@@ -314,8 +308,8 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
         const int norm_index = shape_mesh.indices[v_index].normal_index;
         const int uv_index = shape_mesh.indices[v_index].texcoord_index;
         if (norm_index < 0) {
-          throw std::runtime_error(
-              fmt::format("Not all faces reference normals: {}", description));
+          throw std::runtime_error(fmt::format(
+              "Not all faces reference normals: {}", source.description()));
         }
         const auto obj_indices =
             make_tuple(position_index, norm_index, uv_index);

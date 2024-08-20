@@ -599,7 +599,8 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
   DRAKE_DEMAND(renderer != nullptr);
 
   if (renderer->VisibleActorCount() == 0) {
-    log()->warn("No visible meshes found in glTF file: {}", mesh.filename());
+    log()->warn("No visible meshes found in glTF file: '{}'",
+                mesh.source().description());
     return false;
   }
 
@@ -621,7 +622,7 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
         "Drake materials have been assigned to a glTF file. glTF defines its "
         "own materials, so post hoc materials will be ignored and should be "
         "removed from the model specification. glTF file: '{}'",
-        mesh.filename());
+        mesh.source().description());
   }
 
   const RenderLabel label = GetRenderLabelOrThrow(data.properties);

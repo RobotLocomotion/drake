@@ -2079,9 +2079,6 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& source,
   if (!meshes_.contains(file_key)) {
     vector<RenderGlMesh> file_meshes;
     if (extension == ".obj") {
-      const std::string description =
-          source.IsPath() ? source.path().string()
-                          : source.mesh_data().mesh_file.filename_hint();
       // Note: either the mesh has defined its own material or it hasn't. If it
       // has, that material will be defined in the RenderMesh and that material
       // will be saved in the cache, forcing every instance to use that
@@ -2099,7 +2096,8 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& source,
         DRAKE_DEMAND(mesh_index >= 0);
 
         geometries_[mesh_index].throw_if_undefined(
-            fmt::format("Error creating object for mesh '{}'.", description)
+            fmt::format("Error creating object for mesh '{}'.",
+                        source.description())
                 .c_str());
 
         file_meshes.push_back(

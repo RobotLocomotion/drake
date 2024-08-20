@@ -357,7 +357,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
     throw(std::runtime_error(fmt::format(
         "hydroelastic::MakeRigidRepresentation(): for rigid hydroelastic Mesh "
         "shapes can only use .obj or .vtk files; given: {}",
-        mesh_spec.filename())));
+        mesh_spec.source().description())));
   }
 
   return RigidGeometry(RigidMesh(std::move(mesh)));
