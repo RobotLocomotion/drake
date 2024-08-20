@@ -3,6 +3,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/cartesian_product.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -102,10 +103,13 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
       dynamic_cast<const AffineSubspace* const>(&set);
   const CartesianProduct* const maybe_cartesian_product =
       dynamic_cast<const CartesianProduct* const>(&set);
+  const Hyperellipsoid* const maybe_hyperellipsoid =
+      dynamic_cast<const Hyperellipsoid* const>(&set);
   if (maybe_affine_ball) {
     *this = AffineBallAffineHull(*maybe_affine_ball, tol);
     return;
   } else if (maybe_affine_subspace) {
+    // We can directly copy the object.
     *this = *maybe_affine_subspace;
     return;
   } else if (maybe_cartesian_product) {
@@ -116,6 +120,14 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
       *this = CartesianProductAffineHull(*maybe_cartesian_product, tol);
       return;
     }
+  } else if (maybe_hyperellipsoid) {
+    // Hyperellipsoids are always positive volume, so we can trivially construct
+    // their affine hull as the whole vector space.
+    *this = AffineSubspace(
+        Eigen::MatrixXd::Identity(maybe_hyperellipsoid->ambient_dimension(),
+                                  maybe_hyperellipsoid->ambient_dimension()),
+        Eigen::VectorXd::Zero(maybe_hyperellipsoid->ambient_dimension()));
+    return;
   }
 
   // If the set is not clearly a singleton, we find a feasible point and

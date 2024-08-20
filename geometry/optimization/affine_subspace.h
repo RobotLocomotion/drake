@@ -69,6 +69,7 @@ class AffineSubspace final : public ConvexSet {
   - CartesianProduct: Can compute the affine hull of each factor individually;
   `tol` is propagated to the constituent calls. (This is not done of the
   Cartesian product has an associated affine transformation.)
+  - Hyperellipsoid: Always equal to the whole ambient space; `tol` is ignored.
   - Point: Can be computed in closed-form; `tol` is ignored. This also
   encompasses sets which are obviously a singleton point, as determined via
   MaybeGetPoint. */
