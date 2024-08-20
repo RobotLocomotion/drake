@@ -1,12 +1,13 @@
-/** @file
-A robot that has revolute joints without any limits has an inherently
+/** \defgroup geometry_optimization_geodesic_convexity Geodesic Convexity
+@ingroup geometry_optimization
+
+@brief A robot that has revolute joints without any limits has an inherently
 non-Euclidean configuration space, but one can still consider
 "geodesically-convex" sets, akin to convex sets in Euclidean space. In practice,
 this only requires that the width of the set along each dimension corresponding
 to an unbounded revolute joint be strictly less than π. These functions are
 primarily used by GcsTrajectoryOptimization to make motion plans for these types
-of robots.
-*/
+of robots. */
 
 #pragma once
 
@@ -65,13 +66,15 @@ may occur with continuous revolute joints.
 @throws std::exception if continuous_bbox_A.size() != continuous_bbox_B.size().
 @throws std::exception if num_positions and continuous_revolute_joints do not
 satisfy the conditions checked by
-internal::ThrowsForInvalidContinuousJointsList.
-*/
+internal::ThrowsForInvalidContinuousJointsList. */
 Eigen::VectorXd ComputeOffsetContinuousRevoluteJoints(
     const int num_positions, const std::vector<int>& continuous_revolute_joints,
     const std::vector<std::pair<double, double>>& continuous_bbox_A,
     const std::vector<std::pair<double, double>>& continuous_bbox_B);
 }  // namespace internal
+
+/** \addtogroup geometry_optimization_geodesic_convexity
+@{ */
 
 /** Given a convex set, and a list of indices corresponding to continuous
 revolute joints, checks whether or not the set satisfies the convexity radius.
@@ -153,8 +156,7 @@ to compute those bounding boxes.
 @throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
 ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
-@throws if `convex_sets_A` or `convex_sets_B` are empty.
-*/
+@throws if `convex_sets_A` or `convex_sets_B` are empty. */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints,
@@ -197,8 +199,7 @@ to solve an optimization problem.
 @throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
 ambient dimension of the convex sets in `convex_sets`.
-@throws if `convex_sets` is empty.
-*/
+@throws if `convex_sets` is empty. */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
@@ -215,11 +216,13 @@ corresponding to the sets in `convex_sets`.
 
 @throws if `convex_sets.size() != bboxes.size()`
 @throws if not all entries of `convex_sets` and `bboxes` have the same
-ambient dimension.*/
+ambient dimension. */
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
     const std::vector<geometry::optimization::Hyperrectangle>& bboxes);
+
+/** @} */
 
 }  // namespace optimization
 }  // namespace geometry
