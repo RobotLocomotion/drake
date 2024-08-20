@@ -204,12 +204,10 @@ Mesh::Mesh(const std::string& filename, double scale)
   }
 }
 
-Mesh::Mesh(std::string mesh_contents, std::string name,
+Mesh::Mesh(MemoryFile file,
            string_map<MemoryFile> supporting_files, double scale)
-    : source_(InMemoryMesh{.mesh_file =
-                               MemoryFile(std::move(mesh_contents), name),
-                           .supporting_files = std::move(supporting_files)},
-              GetExtensionLower(name)),
+    : source_(InMemoryMesh{.mesh_file = std::move(file),
+                           .supporting_files = std::move(supporting_files)}),
       scale_(scale) {
   // Note: We don't validate extensions because there's a possibility that a
   // mesh of unsupported type is used, but only processed by client code.

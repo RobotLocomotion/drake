@@ -110,7 +110,8 @@ std::shared_ptr<const MemoryFile> LoadGltfUri(
       return nullptr;
     }
     // TODO(jwnimmer-tri) Save the media type to http-serve later on.
-    // For now, we'll just skip ahead to the actual content.
+    // For now, we'll just skip ahead to the actual content. The minimum first
+    // step is to get the extension.
     std::string_view base64_content = uri.substr(pos + needle.size());
     // TODO(jwnimmer-tri) Use a decoder with a better types, to avoid all of
     // these extra copies.
@@ -148,6 +149,8 @@ std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
   DRAKE_DEMAND(gltf_contents != nullptr);
   DRAKE_DEMAND(storage != nullptr);
   std::vector<std::shared_ptr<const MemoryFile>> assets;
+  // Note: this is only truly used as a filepath if source.IsPath(), otherwise
+  // it's only used for error messages.
   const fs::path gltf_filename =
       source.IsPath() ? source.path()
                       : fs::path(source.mesh_data().mesh_file.filename_hint());

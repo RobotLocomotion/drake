@@ -48,8 +48,6 @@ Mesh GetPyramidInMemory(double scale = 1.0) {
   const std::filesystem::path gltf_path = FindResourceOrThrow(
       "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
   const std::filesystem::path gltf_dir = gltf_path.parent_path();
-  std::optional<std::string> gltf_contents = ReadFile(gltf_path);
-  DRAKE_DEMAND(gltf_contents.has_value());
   string_map<MemoryFile> supporting_files;
   // These are _all_ the files referenced in fully_textured_pyramid.gltf. Only
   // the ktx2 images will render, console will complain about not being able
@@ -62,12 +60,10 @@ Mesh GetPyramidInMemory(double scale = 1.0) {
         "fully_textured_pyramid_normal.ktx2", "fully_textured_pyramid_omr.ktx2",
         "fully_textured_pyramid_base_color.ktx2",
         "fully_textured_pyramid.bin"}) {
-    supporting_files.emplace(
-        f, MemoryFile::Make(std::move(gltf_dir / f)));
+    supporting_files.emplace(f, MemoryFile::Make(std::move(gltf_dir / f)));
   }
 
-  return Mesh(std::move(*gltf_contents), "fully_textured_pyramid.gltf",
-              std::move(supporting_files), scale);
+  return Mesh(MemoryFile::Make(gltf_path), std::move(supporting_files), scale);
 }
 
 int do_main() {

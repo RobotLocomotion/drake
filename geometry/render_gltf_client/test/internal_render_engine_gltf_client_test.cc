@@ -354,18 +354,18 @@ TEST_F(RenderEngineGltfClientGltfTest, RegisteringMeshes) {
 /* RenderEngineGltfClient should accept in-memory Mesh shapes. */
 TEST_F(RenderEngineGltfClientGltfTest, InMemoryMeshes) {
   // The same .obj used in AddObj().
-  const std::string obj_contents = ReadFileOrThrow(
-      FindResourceOrThrow("drake/geometry/render_gltf_client/test/tri.obj"));
+  const std::string obj_path =
+      FindResourceOrThrow("drake/geometry/render_gltf_client/test/tri.obj");
   const GeometryId obj_id = GeometryId::get_new_id();
-  EXPECT_TRUE(engine_.RegisterVisual(obj_id, Mesh(obj_contents, "test.obj"),
+  EXPECT_TRUE(engine_.RegisterVisual(obj_id, Mesh(MemoryFile::Make(obj_path)),
                                      properties_, X_WG_));
 
   // The same .gltf used in AddGltf().
-  const std::string gltf_contents = ReadFileOrThrow(FindResourceOrThrow(
-      "drake/geometry/render_gltf_client/test/tri_tree.gltf"));
+  const std::string gltf_path = FindResourceOrThrow(
+      "drake/geometry/render_gltf_client/test/tri_tree.gltf");
   const GeometryId gltf_id = GeometryId::get_new_id();
   EXPECT_TRUE(engine_.RegisterVisual(
-      gltf_id, Mesh(gltf_contents, "test.gltf", {}, scale_), properties_,
+      gltf_id, Mesh(MemoryFile::Make(gltf_path), {}, scale_), properties_,
       X_WG_));
 
   const std::map<GeometryId, Tester::GltfRecord>& gltfs =
@@ -400,15 +400,15 @@ TEST_F(RenderEngineGltfClientGltfTest, InMemoryMeshes) {
 TEST_F(RenderEngineGltfClientGltfTest, FileToDataUris) {
   // tri_tree.gltf contains all the data in a URI.
   {
-    const fs::path obj_path = FindResourceOrThrow(
+    const fs::path gltf_path = FindResourceOrThrow(
         "drake/geometry/render_gltf_client/test/tri_tree.gltf");
-    const std::string contents = ReadFileOrThrow(obj_path);
     const GeometryId disk_id = GeometryId::get_new_id();
-    EXPECT_TRUE(engine_.RegisterVisual(disk_id, Mesh(obj_path.string()),
+    EXPECT_TRUE(engine_.RegisterVisual(disk_id, Mesh(gltf_path.string()),
                                        properties_, X_WG_));
     const GeometryId memory_id = GeometryId::get_new_id();
-    EXPECT_TRUE(engine_.RegisterVisual(memory_id, Mesh(contents, "memory.gltf"),
-                                       properties_, X_WG_));
+    MemoryFile gltf_file = MemoryFile::Make(gltf_path);
+    EXPECT_TRUE(
+        engine_.RegisterVisual(memory_id, Mesh(gltf_file), properties_, X_WG_));
 
     const std::map<GeometryId, Tester::GltfRecord>& gltfs =
         Tester::gltfs(engine_);
@@ -416,7 +416,7 @@ TEST_F(RenderEngineGltfClientGltfTest, FileToDataUris) {
     ASSERT_TRUE(gltfs.contains(memory_id));
     const json& disk_contents = gltfs.at(disk_id).contents;
     const json& memory_contents = gltfs.at(memory_id).contents;
-    const json ref_contents = json::parse(contents);
+    const json ref_contents = json::parse(gltf_file.contents());
 
     // The two json structures should be *equivalent*. However, we can't
     // compare directly because the engine can make small changes (e.g.,
@@ -453,7 +453,7 @@ TEST_F(RenderEngineGltfClientGltfTest, FileToDataUris) {
 
     const GeometryId memory_id = GeometryId::get_new_id();
     EXPECT_TRUE(engine_.RegisterVisual(memory_id,
-                                       Mesh(gltf_content, "memory.gltf", files),
+                                       Mesh(MemoryFile::Make(gltf_path), files),
                                        properties_, X_WG_));
 
     const std::map<GeometryId, Tester::GltfRecord>& gltfs =

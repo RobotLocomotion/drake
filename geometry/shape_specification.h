@@ -462,11 +462,6 @@ class Mesh final : public Shape {
                                 considering revisiting the model itself. */
   explicit Mesh(const std::string& filename, double scale = 1.0);
 
-  // TODO(SeanCurtis-TRI) We should also communicate file types, mime types.
-  // That would best live in MemoryFile.
-
-  // TODO(SeanCurtis-TRI) Document that only .obj is currently supported.
-
   /** Constructs a mesh shape specification from the contents of a
    Drake-supported mesh file type.
 
@@ -486,19 +481,14 @@ class Mesh final : public Shape {
    mesh can reference on-disk resources (but not vice versa).
    -->
 
-   @param mesh_contents      The key in `mesh_data` that corresponds to the mesh
-                             file data (and not ancillary data).
-   @param name               A name to associate with the mesh file. This will
-                             appear in diagnostic messages and should include
-                             the correct extension associated with
-                             `mesh_contents`'s file type.
+   @param file               The in-memory file contents that define the mesh
+                             data for this shape.
    @param supporting_files   An optional map from file-like names to contents of
                              the putative files.
    @param scale              An optional scale to coordinates.
    @pre The extension in `name` matches the data in `mesh_contents`.
    @pre The extension in `name` names a supported mesh file type. */
-  Mesh(std::string mesh_contents, std::string name,
-       string_map<MemoryFile> supporting_files = {},
+  Mesh(MemoryFile file, string_map<MemoryFile> supporting_files = {},
        double scale = 1.0);
 
   ~Mesh() final;
@@ -512,6 +502,10 @@ class Mesh final : public Shape {
    @see is_in_memory(). */
   std::string filename() const;
 
+  // TODO(SeanCurtis-TRI): Deprecate `filename()` and remove `filepath()`,
+  // `extension()`, `is_in_memory()`, and `in_memory_mesh()` in favor of
+  // source().path(), source.extension(), source.IsPath(), source.IsInMemory(),
+  // source.mesh_data(), respectively.
   /** Returns the filepath passed to the constructor.
    @throws std::exception if `this` %Mesh was constructed using in-memory file
                           contents.
@@ -525,7 +519,7 @@ class Mesh final : public Shape {
    defined as in std::filesystem::path::extension().
 
    If `this` is constructed using in-memory file contents, it is the extension
-   passed to the constructor. */
+   of the MemoryFile passed to the constructor. */
   const std::string& extension() const { return source_.extension(); }
 
   double scale() const { return scale_; }
@@ -537,8 +531,6 @@ class Mesh final : public Shape {
    @throws std::exception if `this` %Mesh was constructed using a file path.
    @see is_in_memory(). */
   const InMemoryMesh& in_memory_mesh() const;
-
-  // TODO(SeanCurtis-TRI): I need access to the *mesh data*.
 
   /** Reports the convex hull of the named mesh.
 

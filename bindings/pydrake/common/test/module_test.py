@@ -45,10 +45,16 @@ class TestCommon(unittest.TestCase):
     def test_memory_file(self):
         content_string = "Some string"
         hint = "hint"
-        file = mut.MemoryFile(content_string, hint)
+        ext = ".bob"
+        file = mut.MemoryFile(content_string, ext, hint)
         self.assertEqual(file.sha256(), mut.Sha256.Checksum(content_string))
         self.assertEqual(file.contents(), content_string)
+        self.assertEqual(file.extension(), ext)
         self.assertEqual(file.filename_hint(), hint)
+
+        file = mut.MemoryFile.Make(
+            mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"))
+        self.assertEqual(file.extension(), ".urdf")
 
     def test_parallelism(self):
         # This matches the BUILD.bazel rule for this test program.

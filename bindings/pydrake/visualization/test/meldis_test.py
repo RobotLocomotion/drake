@@ -470,9 +470,9 @@ f 1 2 3
 newmtl meldis_mat
 Kd 1 1 0
 """
-        mesh = Mesh(mesh_contents=obj_contents, name="from_test.obj",
+        mesh = Mesh(file=MemoryFile(obj_contents, ".obj", "from_test.obj"),
                     supporting_files={
-                        "meldis_test.mtl": MemoryFile(mtl_contents,
+                        "meldis_test.mtl": MemoryFile(mtl_contents, ".mtl",
                                                       "melids_test.mtl")})
         scene_graph.RegisterAnchoredGeometry(
             plant.get_source_id(),

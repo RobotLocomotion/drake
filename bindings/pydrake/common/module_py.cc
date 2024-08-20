@@ -166,14 +166,18 @@ void InitLowLevelModules(py::module m) {
     py::class_<Class> cls(m, "MemoryFile", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init<std::string, std::string>(), py::arg("contents"),
-            py::arg("filename_hint"), cls_doc.ctor.doc_2args)
+        .def(py::init<std::string, std::string, std::string>(),
+            py::arg("contents"), py::arg("extension"), py::arg("filename_hint"),
+            cls_doc.ctor.doc_3args)
         .def("contents", &Class::contents, py_rvp::reference_internal,
             cls_doc.contents.doc)
+        .def("extension", &Class::extension, py_rvp::reference_internal,
+            cls_doc.extension.doc)
         .def("sha256", &Class::sha256, py_rvp::reference_internal,
             cls_doc.sha256.doc)
         .def("filename_hint", &Class::filename_hint, py_rvp::reference_internal,
-            cls_doc.filename_hint.doc);
+            cls_doc.filename_hint.doc)
+        .def_static("Make", &Class::Make, py::arg("path"), cls_doc.Make.doc);
   }
 
   py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)

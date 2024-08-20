@@ -21,8 +21,6 @@ namespace geometry {
  contents. Failure to provide the supporting files may or may not lead to
  errors; it depends on the context in which the mesh data is used. */
 struct InMemoryMesh {
-  // TODO(SeanCurtis-TRI): MemoryFile must include extension/mime type so
-  // knowing how to interpret the bits is self-contained.
   /** They key for the actual mesh file data in `data`. */
   MemoryFile mesh_file;
 
@@ -47,11 +45,9 @@ class MeshSource {
   MeshSource(StringLike path_string)
       : MeshSource(std::filesystem::path(std::move(path_string))) {}
 
-  // TODO(SeanCurtis-TRI): When MemoryFile tracks its own extension, remove
-  // the additional parameter here and allow implicit conversion from
-  // InMemoryMesh.
   /** Constructs from an in-memory mesh. */
-  MeshSource(InMemoryMesh mesh, std::string extension);
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  MeshSource(InMemoryMesh mesh);
 
   /** Reports `true` if this source is a filesystem path. */
   bool IsPath() const {
@@ -76,7 +72,7 @@ class MeshSource {
 
    If `this` is constructed using in-memory file contents, it is the extension
    passed to the constructor. */
-  const std::string& extension() const { return extension_;  }
+  const std::string& extension() const { return extension_; }
 
   /** Returns the source's file path.
    @pre IsPath() return s`true`. */
@@ -92,6 +88,7 @@ class MeshSource {
 
  private:
   std::variant<std::filesystem::path, InMemoryMesh> source_;
+  // We cache the extension so that we don't have recompute it each time.
   std::string extension_;
 };
 

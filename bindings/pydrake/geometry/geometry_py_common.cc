@@ -474,22 +474,21 @@ void DoScalarIndependentDefinitions(py::module m) {
     mesh_cls
         .def(py::init<std::string, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args)
-        .def(py::init<std::string, std::string, string_map<MemoryFile>,
-                 double>(),
-            py::arg("mesh_contents"), py::arg("name"),
-            py::arg("supporting_files"), py::arg("scale") = 1.0,
-            doc.Mesh.ctor.doc_4args)
-        .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
+        .def(py::init<MemoryFile, string_map<MemoryFile>, double>(),
+            py::arg("file"), py::arg("supporting_files"),
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_3args)
         .def("source", &Mesh::source, doc.Mesh.source.doc)
+        .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
         .def(py::pickle(
             [](const Mesh& self) {
-              // TODO(SeanCurtis-TRI) Pickle in-memory meshes.
+              // TODO(SeanCurtis-TRI) Pickle in-memory meshes. I need to be able
+              // to pickle MemoryFile, InMemoryMesh, and MeshFile.
               if (!self.source().IsPath()) {
                 throw std::runtime_error(
-                    "Only on-disk Mesh specifications can be pickedl.");
+                    "Only on-disk Mesh specifications can be pickled.");
               }
               return std::make_pair(
                   self.source().path().string(), self.scale());

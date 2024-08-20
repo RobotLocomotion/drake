@@ -1285,8 +1285,8 @@ class Meshcat::Impl {
           "Cannot open '{}' when attempting to set property '{}' on '{}'",
           file_path.string(), property, path));
     }
-    std::shared_ptr<const MemoryFile> asset =
-        file_storage_.Insert(std::move(*content), file_path.string());
+    std::shared_ptr<const MemoryFile> asset = file_storage_.Insert(
+        std::move(*content), file_path.string());
 
     internal::SetPropertyData<std::string> data;
     data.path = FullPath(path);

@@ -45,6 +45,8 @@ class FileStorage final {
   database's index is destroyed. */
   ~FileStorage();
 
+  // TODO(SeanCurtis-TRI): This should also require _extension_ to properly
+  // characterize the MemoryFile that gets instantiated.
   /* Adds the given `content` to the database. Both arguments are consumed by
   this call and will be empty afterwards. (Use the return value instead.) If
   possible, this function re-uses an existing entry, i.e., this function will

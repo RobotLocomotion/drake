@@ -1076,6 +1076,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":memory_file",
+        ":temp_directory",
         "//common:find_resource",
     ],
 )
