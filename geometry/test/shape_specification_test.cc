@@ -766,7 +766,7 @@ GTEST_TEST(ShapeTest, Volume) {
                               ".*cannot read the file[^]*");
   // Error thrown in ReadObjToTriangleSurfaceMesh() (obj_to_surface_mesh.cc).
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh("fakename.obj")),
-                              "Cannot open file.*");
+                              ".*cannot read the file[^]*");
 
   const std::string non_obj = "only_extension_matters.not_obj";
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex(non_obj)),
