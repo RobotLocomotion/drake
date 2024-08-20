@@ -266,9 +266,6 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
 }
 
 VertexCloud ReadVertices(const MeshSource& source, double scale) {
-  const std::string description =
-      source.IsPath() ? source.path().string()
-                      : source.mesh_data().mesh_file.filename_hint();
   VertexCloud cloud;
   if (source.extension() == ".obj") {
     cloud.vertices = ReadObjVertices(source, scale);
@@ -280,18 +277,18 @@ VertexCloud ReadVertices(const MeshSource& source, double scale) {
     throw std::runtime_error(
         fmt::format("MakeConvexHull only applies to .obj, .vtk, and .gltf "
                     "meshes; unsupported extension '{}' for geometry data: {}.",
-                    source.extension(), description));
+                    source.extension(), source.description()));
   }
 
   if (cloud.vertices.size() < 3) {
     throw std::runtime_error(fmt::format(
         "MakeConvexHull() cannot be used on a mesh with fewer "
         "than three vertices; found {} vertices in geometry data: {}.",
-        cloud.vertices.size(), description));
+        cloud.vertices.size(), source.description()));
   }
 
   /* Characterizes planarity. */
-  cloud.n = FindNormal(cloud.vertices, description);
+  cloud.n = FindNormal(cloud.vertices, source.description());
   double d = cloud.n.dot(cloud.vertices[0]);
   cloud.interior_point = cloud.vertices[0];
   /* Assume planarity and look for evidence to the contrary. */

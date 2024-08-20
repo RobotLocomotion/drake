@@ -27,7 +27,7 @@ class Hullifier final : public ShapeReifier {
   using ShapeReifier::ImplementGeometry;
 
   void ImplementGeometry(const Mesh& mesh, void*) final {
-    hull_ = MakeConvexHull(mesh.filename(), mesh.scale());
+    hull_ = MakeConvexHull(mesh.source(), mesh.scale());
   }
 
   void ImplementGeometry(const Convex& convex, void*) final {

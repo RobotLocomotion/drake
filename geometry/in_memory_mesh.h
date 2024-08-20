@@ -63,6 +63,11 @@ class MeshSource {
     return std::holds_alternative<InMemoryMesh>(source_);
   }
 
+  /** Provides a source-agnostic description of the mesh. If IsPath() is true,
+   it is the path. If IsInMemory() is true, it is the filename_hint for the
+   in-memory mesh file. */
+  std::string description() const;
+
   /** Returns the extension of the mesh type -- all lower case and including
    the dot. If `this` is constructed from a file path, the extension is
    extracted from the path. I.e., /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would

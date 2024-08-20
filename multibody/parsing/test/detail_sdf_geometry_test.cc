@@ -443,7 +443,8 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
       MakeShapeFromSdfGeometry(*sdf_geometry);
   const Mesh* mesh = dynamic_cast<const Mesh*>(shape->get());
   ASSERT_NE(mesh, nullptr);
-  EXPECT_EQ(mesh->filename(), absolute_file_path);
+  ASSERT_TRUE(mesh->source().IsPath());
+  EXPECT_EQ(mesh->source().path(), absolute_file_path);
   EXPECT_EQ(mesh->scale(), 3);
 }
 

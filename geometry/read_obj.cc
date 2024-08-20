@@ -180,9 +180,6 @@ std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
 ReadObj(const MeshSource& source, double scale, bool triangulate,
         bool vertices_only) {
-  const std::string description =
-      source.IsPath() ? source.path().string()
-                      : source.mesh_data().mesh_file.filename_hint();
   DRAKE_DEMAND(source.extension() == ".obj");
   if (source.IsPath()) {
     return ReadObjFile(source.path().string(), scale, triangulate,

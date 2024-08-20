@@ -71,13 +71,10 @@ VolumeMesh<double> ReadVtkToVolumeMesh(vtkUnstructuredGridReader* reader,
 }  // namespace
 
 VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& source, double scale) {
-  const std::string description =
-      source.IsPath() ? source.path().string()
-                      : source.mesh_data().mesh_file.filename_hint();
   if (scale <= 0.0) {
     throw std::runtime_error(fmt::format(
         "ReadVtkToVolumeMesh() requires a positive scale. Given {} for '{}'.",
-        scale, description));
+        scale, source.description()));
   }
   vtkNew<vtkUnstructuredGridReader> reader;
   if (source.IsPath()) {
@@ -94,7 +91,7 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& source, double scale) {
     reader->SetInputArray(char_array);
     reader->SetReadFromInputString(true);
   }
-  return ReadVtkToVolumeMesh(reader, description, scale);
+  return ReadVtkToVolumeMesh(reader, source.description(), scale);
 }
 
 }  // namespace internal
