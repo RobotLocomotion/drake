@@ -112,7 +112,7 @@ class TestModelMaker(unittest.TestCase):
                              output_dir=self._temp_dir)
 
         # Invalid because it doesn't exist.
-        with self.assertRaisesRegex(RuntimeError, "Cannot open file.*"):
+        with self.assertRaisesRegex(RuntimeError, "cannot read the file.*"):
             dut.make_model()
         self.assertFalse(self._sdf_path.exists())
 
@@ -120,7 +120,7 @@ class TestModelMaker(unittest.TestCase):
         not_an_obj = self._temp_dir / "not_an_obj.txt"
         with open(not_an_obj, 'w') as f:
             f.write("Just some text\n")
-        with self.assertRaisesRegex(RuntimeError, ".+obj data has no.+"):
+        with self.assertRaisesRegex(RuntimeError, '.*extension.. == ".obj".*'):
             dut.mesh_path = not_an_obj
             dut.make_model()
         self.assertFalse(self._sdf_path.exists())

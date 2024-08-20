@@ -167,8 +167,8 @@ class _GeometryFileHasher:
                 self.on_gltf(path, content)
             else:
                 _logger.warn(f"Unsupported mesh file: '{path}'\n"
-                            "Update Meldis's hasher to trigger reloads on "
-                            "this kind of file.")
+                             "Update Meldis's hasher to trigger reloads on "
+                             "this kind of file.")
 
     def on_obj(self, path: Path, content: bytes):
         assert isinstance(path, Path)
@@ -397,9 +397,9 @@ class _ViewerApplet:
                 except json.JSONDecodeError:
                     _logger.warn("Received message with malformed json")
                     return (None, None, None)
-                if ("in_memory_mesh" not in payload or
-                    "name" not in payload["in_memory_mesh"] or
-                    "mesh_file" not in payload["in_memory_mesh"]):
+                if ("in_memory_mesh" not in payload
+                        or "name" not in payload["in_memory_mesh"]
+                        or "mesh_file" not in payload["in_memory_mesh"]):
                     _logger.warn("Received Mesh with unexpected json content")
                     return (None, None, None)
                 mesh_data = payload["in_memory_mesh"]

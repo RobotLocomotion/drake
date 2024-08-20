@@ -261,8 +261,8 @@ const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
 }
 
 std::string Mesh::do_to_string() const {
-  const std::string description = [this](){
-    if (source_.IsPath()){
+  const std::string description = [this]() {
+    if (source_.IsPath()) {
       return fmt::format("filename='{}'", source_.path().string());
     } else {
       const InMemoryMesh& data = source_.mesh_data();

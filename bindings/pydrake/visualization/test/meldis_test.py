@@ -457,7 +457,7 @@ class TestMeldis(unittest.TestCase):
         dut = mut.Meldis()
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-        obj_contents="""
+        obj_contents = """
 mtllib meldis_test.mtl
 v 0 0 0
 v 1 0 0
@@ -466,7 +466,7 @@ vn 0 0 1
 usemtl meldis_mat
 f 1 2 3
 """
-        mtl_contents="""
+        mtl_contents = """
 newmtl meldis_mat
 Kd 1 1 0
 """
@@ -476,7 +476,7 @@ Kd 1 1 0
                                                         "melids_test.mtl")})
         scene_graph.RegisterAnchoredGeometry(
             plant.get_source_id(),
-            GeometryInstance(X_PG = RigidTransform(), shape=mesh,
+            GeometryInstance(X_PG=RigidTransform(), shape=mesh,
                              name="in_memory"))
         lcm = dut._lcm
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
