@@ -235,7 +235,9 @@ void DefineGeometryOptimization(py::module m) {
         .def("num_factors", &CartesianProduct::num_factors,
             cls_doc.num_factors.doc)
         .def("factor", &CartesianProduct::factor, py_rvp::reference_internal,
-            py::arg("index"), cls_doc.factor.doc);
+            py::arg("index"), cls_doc.factor.doc)
+        .def("A", &CartesianProduct::A, cls_doc.A.doc)
+        .def("b", &CartesianProduct::b, cls_doc.b.doc);
   }
 
   // HPolyhedron
