@@ -125,8 +125,7 @@ void ReadObjVertices(const fs::path filename, double scale,
  @pre `filename` references a vtk file (with a volume mesh). */
 void ReadVtkVertices(const fs::path filename, double scale,
                      std::vector<Vector3d>* vertices) {
-  const VolumeMesh<double> volume_mesh =
-      ReadVtkToVolumeMesh(std::string(filename), scale);
+  const VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(filename, scale);
 
   // It would be nice if we could simply steal the vertices rather than copy.
   *vertices = volume_mesh.vertices();
