@@ -268,11 +268,11 @@ TEST_F(TwoPoints, Basic) {
 // Confirms that we can add costs (both ways) and get the solution.
 // The correctness of the added costs will be established by the solution tests.
 TEST_F(TwoPoints, AddCost) {
-  auto [ell0, b0] = e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
+  auto b0 = e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
   auto cost = std::make_shared<LinearCost>(Vector2d::Zero(), 0.1);
-  auto [ell1, b1] = e_->AddCost(Binding(cost, e_->xu()));
-  auto [v_ell0, v_b0] = v_->AddCost((v_->x() + Vector3d::Ones()).squaredNorm());
-  auto [v_ell1, v_b1] = v_->AddCost(Binding(cost, v_->x().head<2>()));
+  auto b1 = e_->AddCost(Binding(cost, e_->xu()));
+  auto v_b0 = v_->AddCost((v_->x() + Vector3d::Ones()).squaredNorm());
+  auto v_b1 = v_->AddCost(Binding(cost, v_->x().head<2>()));
 
   // Confirm that they are down-castable.
   auto quadratic = dynamic_cast<QuadraticCost*>(b0.evaluator().get());
@@ -291,19 +291,6 @@ TEST_F(TwoPoints, AddCost) {
   const auto& vertex_costs = v_->GetCosts();
   EXPECT_EQ(vertex_costs[0], v_b0);
   EXPECT_EQ(vertex_costs[1], v_b1);
-
-  MathematicalProgramResult result;
-  std::unordered_map<symbolic::Variable::Id, int> map;
-  map.emplace(ell0.get_id(), 0);
-  map.emplace(ell1.get_id(), 1);
-  map.emplace(v_ell0.get_id(), 2);
-  map.emplace(v_ell1.get_id(), 3);
-  const Vector4d ell{1.2, 3.4, 5.6, 7.8};
-  result.set_decision_variable_index(map);
-  result.set_x_val(ell);
-
-  EXPECT_NEAR(e_->GetSolutionCost(result), ell.head<2>().sum(), 1e-16);
-  EXPECT_NEAR(v_->GetSolutionCost(result), ell.tail<2>().sum(), 1e-16);
 
   symbolic::Variable other_var("x");
   DRAKE_EXPECT_THROWS_MESSAGE(e_->AddCost(other_var), ".*IsSubsetOf.*");
@@ -483,9 +470,9 @@ TEST_F(TwoPoints, VerifyCostTranscriptionAssignment) {
                                          kCostRelaxation},
         std::pair<Transcription, double>{Transcription::kRestriction,
                                          kCostRestriction}}) {
-    auto [ell, e_b] = e_->AddCost(cost, {transcription});
+    auto e_b = e_->AddCost(cost, {transcription});
     e_->AddCost(e_b, {transcription});
-    auto [v_ell, v_b] = v_->AddCost(cost, {transcription});
+    auto v_b = v_->AddCost(cost, {transcription});
     v_->AddCost(v_b, {transcription});
   }
   GraphOfConvexSetsOptions options;
@@ -744,9 +731,8 @@ class ThreePoints : public ::testing::Test {
     EXPECT_NEAR(result.get_optimal_cost(),
                 restriction_result.get_optimal_cost(), 1e-4);
     for (const auto* v : {source_, target_, sink_}) {
-      EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
-                                  restriction_result.GetSolution(v->x()),
-                                  1e-6));
+      EXPECT_TRUE(CompareMatrices(v->GetSolution(result),
+                                  v->GetSolution(restriction_result), 1e-6));
     }
   }
 
@@ -790,9 +776,9 @@ TEST_F(ThreePoints, NoMixedIntegerSolverAvailable) {
 }
 
 TEST_F(ThreePoints, LinearCost1) {
-  e_on_->AddCost(1.0);
-  e_off_->AddCost(1.0);
-  source_->AddCost(1.0);
+  auto e_on_cost = e_on_->AddCost(1.0);
+  auto e_off_cost = e_off_->AddCost(1.0);
+  auto source_cost = source_->AddCost(1.0);
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), 1.0, 1e-6);
@@ -800,6 +786,15 @@ TEST_F(ThreePoints, LinearCost1) {
   EXPECT_NEAR(source_->GetSolutionCost(result), 1.0, 1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+
+  // Check GetSolutionCost overloads which take the binding.
+  EXPECT_NEAR(e_on_->GetSolutionCost(result, e_on_cost), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result, e_off_cost), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result, source_cost), 1.0, 1e-6);
+  DRAKE_EXPECT_THROWS_MESSAGE(e_on_->GetSolutionCost(result, e_off_cost),
+                              ".*not registered with this vertex.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(target_->GetSolutionCost(result, source_cost),
+                              ".*not registered with this vertex.*");
 
   EXPECT_TRUE(
       CompareMatrices(e_on_->GetSolutionPhiXu(result), p_source_.x(), 1e-6));
@@ -1324,9 +1319,8 @@ class ThreeBoxes : public ::testing::Test {
     EXPECT_NEAR(result.get_optimal_cost(),
                 restriction_result.get_optimal_cost(), 1e-6);
     for (const auto* v : {source_, target_, sink_}) {
-      EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
-                                  restriction_result.GetSolution(v->x()),
-                                  1e-6));
+      EXPECT_TRUE(CompareMatrices(v->GetSolution(result),
+                                  v->GetSolution(restriction_result), 1e-6));
     }
   }
 
@@ -1983,8 +1977,8 @@ TEST_F(ThreeBoxes, SolveConvexRestriction) {
   EXPECT_NEAR(result.get_optimal_cost(), restriction_result.get_optimal_cost(),
               1e-6);
   for (const auto* v : g_.Vertices()) {
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
-                                restriction_result.GetSolution(v->x()), 1e-6));
+    EXPECT_TRUE(CompareMatrices(v->GetSolution(result),
+                                v->GetSolution(restriction_result), 1e-6));
   }
 }
 
