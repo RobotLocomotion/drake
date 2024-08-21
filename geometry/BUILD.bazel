@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_version",
+        ":in_memory_mesh",
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
@@ -268,6 +269,16 @@ drake_cc_library(
         "//geometry/proximity:make_convex_hull_mesh",
         "//geometry/render:render_engine",
         "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "in_memory_mesh",
+    srcs = ["in_memory_mesh.cc"],
+    hdrs = ["in_memory_mesh.h"],
+    deps = [
+        "//common:memory_file",
+        "//common:string_container",
     ],
 )
 
@@ -840,6 +851,15 @@ drake_cc_googletest(
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "in_memory_mesh_test",
+    deps = [
+        ":in_memory_mesh",
+        "//common:unused",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

@@ -981,6 +981,7 @@ drake_cc_library(
     deps = [
         ":volume_mesh",
         "//common:essential",
+        "//geometry:in_memory_mesh",
     ],
     implementation_deps = [
         "@fmt",
