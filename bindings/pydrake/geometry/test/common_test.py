@@ -2,10 +2,14 @@ import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
 import copy
+from pathlib import Path
+import pickle
+import re
 import unittest
 
 import numpy as np
 
+from pydrake.common import MemoryFile
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
@@ -221,6 +225,104 @@ class TestGeometryCore(unittest.TestCase):
         self.assertIn(
             f"value={id_1.get_value()}",
             repr(id_1))
+
+    def test_in_memory_mesh(self):
+        empty_mesh = mut.InMemoryMesh()
+        self.assertTrue(empty_mesh.empty())
+
+        file = MemoryFile(contents="stuff", extension=".ext",
+                          filename_hint="some_hint")
+        only_mesh = mut.InMemoryMesh(mesh_file=file)
+        self.assertEqual(only_mesh.mesh_file().contents(), file.contents())
+
+        representation = repr(only_mesh)
+        # repr correctness is determined in two ways:
+        #   - It can be eval'd back into an instance. This only works because
+        #     the contents length is below MemoryFile's hard-coded limit
+        #     on creating a perfect representation.
+        #   - the repr'd string has expected values.
+        self.assertIsInstance(eval(representation,
+                                   {"InMemoryMesh": mut.InMemoryMesh,
+                                    "MemoryFile": MemoryFile}),
+                              mut.InMemoryMesh)
+        self.assertRegex(representation,
+                         re.compile("mesh_file=MemoryFile.+stuff",
+                                    re.DOTALL))
+
+        copy.copy(only_mesh)
+        copy.deepcopy(only_mesh)
+        mesh_copy = mut.InMemoryMesh(other=only_mesh)
+        self.assertEqual(mesh_copy.mesh_file().contents(), file.contents())
+
+        assert_pickle(self, only_mesh, repr)
+        # Check that data pickled as InMemoryMesh in Drake v1.33.0 can be
+        # unpickled in newer versions. The data should produce a InMemoryMesh
+        # identical to `only_mesh` above.
+        legacy_data = b"\x80\x04\x95\xa2\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\x0cInMemoryMesh\x94\x93\x94)\x81\x94}\x94\x8c\tmesh_file\x94\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x05stuff\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\tsome_hint\x94ubsb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.InMemoryMesh)
+        self.assertEqual(obj.mesh_file().contents(),
+                         only_mesh.mesh_file().contents())
+
+    def test_mesh_source(self):
+        source = mut.MeshSource(path="/a/path.obj")
+        self.assertTrue(source.is_path())
+        self.assertFalse(source.is_in_memory())
+        self.assertEqual(source.description(), "/a/path.obj")
+        self.assertEqual(source.extension(), ".obj")
+        self.assertEqual(source.path(), Path("/a/path.obj"))
+        with self.assertRaises(RuntimeError):
+            source.in_memory()
+        # repr correctness is determined the same as for InMemoryMesh (with the
+        # same caveats).
+        self.assertIsInstance(eval(repr(source),
+                                   {"MeshSource": mut.MeshSource}),
+                              mut.MeshSource)
+        self.assertRegex(repr(source), "path=['\"]/a/path.obj['\"]")
+        copy.copy(source)
+        copy.deepcopy(source)
+        source_copy = mut.MeshSource(other=source)
+        self.assertTrue(source_copy.is_path())
+        self.assertEqual(source_copy.description(), "/a/path.obj")
+
+        assert_pickle(self, source, repr)
+        # Check that data pickled as MeshSource in Drake v1.33.0 can be
+        # unpickled in newer versions. The data should produce a MeshSource
+        # identical to `source` above. We'll do it for one with a path source
+        # and once with an in-memory source (below).
+        legacy_data = b"\x80\x04\x95?\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\nMeshSource\x94\x93\x94)\x81\x94}\x94\x8c\x04path\x94\x8c\x0b/a/path.obj\x94sb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.MeshSource)
+        self.assertEqual(obj.is_path(), source.is_path())
+        self.assertEqual(obj.path(), source.path())
+
+        mesh = mut.InMemoryMesh(mesh_file=MemoryFile("a", ".ext", "hint"))
+        source = mut.MeshSource(mesh=mesh)
+        self.assertFalse(source.is_path())
+        self.assertTrue(source.is_in_memory())
+        self.assertEqual(source.description(), "hint")
+        self.assertEqual(source.extension(), ".ext")
+        self.assertIsInstance(source.in_memory(), mut.InMemoryMesh)
+        with self.assertRaises(RuntimeError):
+            source.path()
+        self.assertIsInstance(eval(repr(source),
+                                   {"MeshSource": mut.MeshSource,
+                                    "InMemoryMesh": mut.InMemoryMesh,
+                                    "MemoryFile": MemoryFile}),
+                              mut.MeshSource)
+        self.assertRegex(repr(source),
+                         re.compile("mesh=InMemoryMesh.*hint.*", re.DOTALL))
+        copy.copy(source)
+        copy.deepcopy(source)
+
+        # Again for a source with an in-memory mesh.
+        assert_pickle(self, source, repr)
+        legacy_data = b"\x80\x04\x95\xb8\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\nMeshSource\x94\x93\x94)\x81\x94}\x94\x8c\x04mesh\x94h\x00\x8c\x0cInMemoryMesh\x94\x93\x94)\x81\x94}\x94\x8c\tmesh_file\x94\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x01a\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\x04hint\x94ubsbsb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.MeshSource)
+        self.assertEqual(obj.is_in_memory(), source.is_in_memory())
+        self.assertEqual(obj.in_memory().mesh_file().contents(),
+                         source.in_memory().mesh_file().contents())
 
     def test_proximity_properties(self):
         """

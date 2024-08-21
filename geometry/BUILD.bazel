@@ -31,11 +31,13 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_version",
+        ":in_memory_mesh",
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
         ":make_mesh_for_deformable",
         ":mesh_deformation_interpolator",
+        ":mesh_source",
         ":meshcat",
         ":meshcat_animation",
         ":meshcat_graphviz",
@@ -272,6 +274,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "in_memory_mesh",
+    srcs = ["in_memory_mesh.cc"],
+    hdrs = ["in_memory_mesh.h"],
+    deps = [
+        "//common:memory_file",
+    ],
+)
+
+drake_cc_library(
     name = "make_mesh_for_deformable",
     srcs = ["make_mesh_for_deformable.cc"],
     hdrs = ["make_mesh_for_deformable.h"],
@@ -292,6 +303,15 @@ drake_cc_library(
         "//geometry/proximity:triangle_surface_mesh",
         "//geometry/proximity:volume_mesh",
         "//geometry/proximity:volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_source",
+    srcs = ["mesh_source.cc"],
+    hdrs = ["mesh_source.h"],
+    deps = [
+        ":in_memory_mesh",
     ],
 )
 
@@ -840,6 +860,21 @@ drake_cc_googletest(
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "in_memory_mesh_test",
+    deps = [
+        ":in_memory_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_source_test",
+    deps = [
+        ":in_memory_mesh",
+        ":mesh_source",
     ],
 )
 
