@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/text_logging.h"
@@ -23,7 +25,7 @@ int do_main(int argc, char* argv[]) {
     return 1;
   }
 
-  auto mesh = ReadVtkToVolumeMesh(argv[1]);
+  auto mesh = ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
   auto bad_tets = DetectTetrahedronWithAllBoundaryVertices(mesh);
   auto bad_triangles = DetectInteriorTriangleWithAllBoundaryVertices(mesh);
   auto bad_edges = DetectInteriorEdgeWithAllBoundaryVertices(mesh);

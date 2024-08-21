@@ -38,8 +38,8 @@ namespace internal {
  @throws if there is an unforeseen error in computing the convex hull.
  @throws if `scale` is negative or zero.
  @throws if `margin` is negative. */
-PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
-                                          double scale, double margin = 0);
+PolygonSurfaceMesh<double> MakeConvexHull(
+    const std::filesystem::path& mesh_file, double scale, double margin = 0);
 
 }  // namespace internal
 }  // namespace geometry
