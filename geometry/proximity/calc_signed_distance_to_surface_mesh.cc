@@ -90,34 +90,34 @@ class BvhVisitor {
 
 }  // namespace
 
-FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M) {
-  vertex_normals_.resize(mesh_M.num_vertices(), Vector3d::Zero());
+FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M)
+    : vertex_normals_(mesh_M.num_vertices(), Vector3d::Zero()) {
   const std::vector<Vector3d>& vertices = mesh_M.vertices();
   // Accumulate data from the mesh. They are not normal vectors yet. We will
   // normalize them afterward.
   for (int f = 0; f < mesh_M.num_triangles(); ++f) {
-    const Vector3d& triangle_normal = mesh_M.face_normal(f);
-    const int v[3] = {mesh_M.triangles()[f].vertex(0),
-                      mesh_M.triangles()[f].vertex(1),
-                      mesh_M.triangles()[f].vertex(2)};
+    const Vector3d& face_normal = mesh_M.face_normal(f);
+    const SurfaceTriangle& tri = mesh_M.triangles()[f];
+    const int v[3] = {tri.vertex(0), tri.vertex(1), tri.vertex(2)};
     const Vector3d unit_edge_vector[3] = {
         (vertices[v[1]] - vertices[v[0]]).stableNormalized(),
         (vertices[v[2]] - vertices[v[1]]).stableNormalized(),
         (vertices[v[0]] - vertices[v[2]]).stableNormalized()};
+
     // Accumulate angle*normal for each vertex of the triangle.
     for (int i = 0; i < 3; ++i) {
       const double angle =
           std::acos(unit_edge_vector[i].dot(-unit_edge_vector[(i + 2) % 3]));
-      vertex_normals_[v[i]] += angle * triangle_normal;
+      vertex_normals_[v[i]] += angle * face_normal;
     }
     // Accumulate normal for each edge of the triangle.
     for (int i = 0; i < 3; ++i) {
       const auto edge = MakeSortedPair(v[i], v[(i + 1) % 3]);
       auto it = edge_normals_.find(edge);
       if (it == edge_normals_.end()) {
-        edge_normals_[edge] = triangle_normal;
+        edge_normals_[edge] = face_normal;
       } else {
-        it->second += triangle_normal;
+        it->second += face_normal;
       }
     }
   }
@@ -136,10 +136,16 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
   // triangle.
   Vector3d b_Q = mesh_M.CalcBarycentric(p_MQ, triangle_index);
 
+  // Due to floating-point arithmetics in CalcBaryCentric(), we will use this
+  // precision for the calculated barycentric coordinates to decide whether
+  // the projection of Q is in the interior of the triangle, which excludes
+  // its boundary edges.
+  const double kEps = std::numeric_limits<double>::epsilon();
+
   // Check whether Q projects inside or outside the triangle. Treat the
   // case where the projection is at a vertex or on an edge the same as being
-  // inside the triangle.
-  if (b_Q(0) >= 0 && b_Q(1) >= 0 && b_Q(2) >= 0) {
+  // outside the triangle.
+  if (b_Q(0) > kEps && b_Q(1) > kEps && b_Q(2) > kEps) {
     // The projection of Q onto the plane of the triangle is in the triangle,
     // so the nearest point is at the projection.
     const Vector3d p_MN =

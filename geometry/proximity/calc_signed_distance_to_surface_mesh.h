@@ -2,11 +2,12 @@
 
 #include <limits>
 #include <map>
-#include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/common/ssize.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -18,7 +19,7 @@ namespace internal {
 // TODO(DamrongGuoy) Consider moving FeatureNormalSet into its own file if it
 //  is useful for other applications.
 
-// %FeatureNormalSet provides a certain kind of outward normal vectors at
+// %FeatureNormalSet provides certain kinds of outward normal vectors at
 // vertices and edges of a triangle surface mesh. The normal at a vertex is
 // the angle weighted average of face normals of triangles sharing the vertex.
 // The normal at an edge is the equal-weight average of face normals of two
@@ -36,7 +37,7 @@ class FeatureNormalSet {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FeatureNormalSet);
 
   // Computes and stores the normals at vertices and edges of the given
-  // surface mesh.
+  // surface mesh expressed in frame M.
   explicit FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M);
 
   // Returns the normal at a vertex `v` as the angle weighted average of face
@@ -47,8 +48,11 @@ class FeatureNormalSet {
   //
   // @param v  the vertex index into the mesh
   //
-  // @pre 0 <= v < mesh_M.num_vertices()
-  Vector3<double> vertex_normal(int v) const { return vertex_normals_.at(v); }
+  // @pre 0 <= v < number of vertices in the mesh
+  Vector3<double> vertex_normal(int v) const {
+    DRAKE_THROW_UNLESS(0 <= v && v < ssize(vertex_normals_));
+    return vertex_normals_[v];
+  }
 
   // Returns the normal at an edge `uv` as the average normal from the two
   // triangles sharing the edge. Both triangles have equal weight.
@@ -58,10 +62,11 @@ class FeatureNormalSet {
   // @param uv   the SortedPair<int>{u, v} of the edge between vertex
   //             index u and vertex index v
   //
-  // @pre 0 <= u,v < mesh_M.num_vertices()
   // @pre The edge `uv` is in the mesh.
   Vector3<double> edge_normal(const SortedPair<int>& uv) const {
-    return edge_normals_.at(uv);
+    auto it = edge_normals_.find(uv);
+    DRAKE_THROW_UNLESS(it != edge_normals_.end());
+    return it->second;
   }
 
  private:
@@ -77,26 +82,32 @@ struct SquaredDistanceToTriangle {
   Vector3<double> closest_point{};
 
   // Classify the projection Q' of the query point Q onto the plane of the
-  // triangle.
+  // triangle. We use the following definitions:
+  //
+  // - The _interior_ of a triangle consists of points in the triangle that
+  //   are neither in edges nor at vertices.
+  // - The _interior_ of an edge consists points in the edge that are not at
+  //   vertices.
   enum class Projection {
-    // Q' is in the triangle. It could be anywhere in the triangle including
-    // its edges and vertices.  The `closest_point` is Q'.  We can use the
-    // face normal of the triangle for the inside-outside test.
+    // Q' is in the interior of the triangle. The `closest_point` is Q'.
+    // We can use the face normal of the triangle for the inside-outside test.
+    //
     //                                  A
     //                                🮠│
     //                             🮠   │
     //                          🮠      │
     //                       🮠   Q'    │
-    //                   B ┄┄┄┄┄┄┄┄┄┄┄┄┄C
+    //                   B ┄ ┄ ┄ ┄ ┄ ┄ ┄C
     kInside,
 
-    // Q' is outside the triangle and nearest to a point in an edge
-    // excluding its vertices. The `closest_point` is the projection of Q'
-    // onto that edge. We can use the edge normal (the equal-weight average
-    // of face normals of two triangles sharing the edge) for the
-    // inside-outside test. In the picture below, the area between the
-    // two rays is the region of points that are closest to edge BC (Voronoi
-    // region of the edge).
+    // Q' is outside the interior of the triangle, and it is nearest to the
+    // interior of an edge (Q' could be in the interior of an edge).
+    // The `closest_point` is the projection of Q' onto that edge.
+    // We can use the edge normal (the equal-weight average of face normals of
+    // two triangles sharing the edge) for the inside-outside test. In the
+    // picture below, the area between the two rays is the region of such
+    // Q' closest to edge BC.
+    //
     //                                  A
     //                                🮠│
     //                             🮠   │
@@ -108,12 +119,13 @@ struct SquaredDistanceToTriangle {
     //                   ↓              ↓
     kOutsideNearEdge,
 
-    // Q' is outside the triangle and nearest to a vertex of the triangle.
-    // The `closest_point` is that vertex. We can use the vertex normal (the
-    // angle-weighted average of face normals of triangles sharing the vertex)
-    // for the inside-outside test. In the picture below, the area between
-    // the two rays is the region of points that are closest to
-    // vertex B (Voronoi region of the vertex).
+    // Q' is outside the interior of the triangle nearest to a vertex
+    // (Q' could be at a vertex). The `closest_point` is that vertex. We can
+    // use the vertex normal (the angle-weighted average of face normals of
+    // triangles sharing the vertex) for the inside-outside test. In the
+    // picture below, the area between the two rays is the region of such Q'
+    // closest to vertex B.
+    //
     //                                   A
     //                                🮠│
     //         ↖                   🮠   │
@@ -171,14 +183,15 @@ struct SignedDistanceToSurfaceMesh {
 // @pre  The surface mesh is watertight and a closed manifold. Otherwise, it
 // might return incorrect signs and gradients.
 //
-// @note If p_MQ is equally far from multiple faces, the nearest point and
-// the gradient are selected arbitrarily from those faces.
+// @note If p_MQ is equally far from multiple features (faces, edges, or
+// vertices), the nearest point and the gradient are computed from one
+// of those features.
 //
 // @note If p_MQ is on the surface, the returned signed distance is zero,
-// the nearest point is p_MQ itself, and the gradient is in the conical hull
-// of outward face normals of triangles that contain p_MQ. (There are two such
-// triangles if p_MQ is in an edge. There are multiple such triangles
-// if p_MQ is at a vertex.)
+// the nearest point is p_MQ itself, and the gradient is the surface normal
+// at the triangle, edge, or vertex where p_MQ locates.
+//
+// @note Due to limited numerical precision, this query may be imprecise.
 SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
