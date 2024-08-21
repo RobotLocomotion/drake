@@ -39,7 +39,8 @@ int do_main(int argc, char* argv[]) {
     return 1;
   }
 
-  VolumeMesh<double> mesh = internal::ReadVtkToVolumeMesh(argv[1]);
+  VolumeMesh<double> mesh =
+      internal::ReadVtkToVolumeMesh(std::filesystem::path(argv[1]));
   std::vector<int> bad_tets =
       internal::DetectTetrahedronWithAllBoundaryVertices(mesh);
   std::vector<internal::SortedTriplet<int>> bad_triangles =

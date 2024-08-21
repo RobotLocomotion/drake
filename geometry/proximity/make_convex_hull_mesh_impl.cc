@@ -114,7 +114,7 @@ struct VertexCloud {
 
 /* Returns the scaled vertices from the named obj file.
  @pre `filename` references an obj file. */
-void ReadObjVertices(const fs::path filename, double scale,
+void ReadObjVertices(const fs::path& filename, double scale,
                      std::vector<Vector3d>* vertices) {
   const auto [tinyobj_vertices, _1, _2] = geometry::internal::ReadObjFile(
       std::string(filename), scale, /* triangulate = */ false);
@@ -123,10 +123,9 @@ void ReadObjVertices(const fs::path filename, double scale,
 
 /* Returns the scaled vertices from the named vtk file.
  @pre `filename` references a vtk file (with a volume mesh). */
-void ReadVtkVertices(const fs::path filename, double scale,
+void ReadVtkVertices(const fs::path& filename, double scale,
                      std::vector<Vector3d>* vertices) {
-  const VolumeMesh<double> volume_mesh =
-      ReadVtkToVolumeMesh(std::string(filename), scale);
+  const VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(filename, scale);
 
   // It would be nice if we could simply steal the vertices rather than copy.
   *vertices = volume_mesh.vertices();
@@ -142,7 +141,7 @@ Vector3d VtkMultiply(vtkMatrix4x4* T_BA, const Vector3d& p_AQ) {
 
 /* Returns the scaled vertices from the named glTF file.
  @pre `filename` references a glTF file. */
-void ReadGltfVertices(const fs::path filename, double scale,
+void ReadGltfVertices(const fs::path& filename, double scale,
                       std::vector<Vector3d>* vertices) {
   vtkNew<vtkGLTFImporter> importer;
   importer->SetFileName(filename.c_str());
@@ -187,7 +186,7 @@ void ReadGltfVertices(const fs::path filename, double scale,
  @throws if the vertices span a severely degenerate space in R3 (e.g.,
          co-linear or coincident). */
 Vector3d FindNormal(const std::vector<Vector3d>& vertices,
-                    const fs::path filename) {
+                    const fs::path& filename) {
   // Note: this isn't an exhaustive search. We assign i = 0 and then
   // sequentially search for j and k. This may fail but possibly succeed for
   // a different value of i. That risk seems small. Any mesh that depends on
@@ -232,7 +231,7 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
 
 /* Simply reads the vertices from an OBJ, VTK or glTF file referred to by name.
  */
-VertexCloud ReadVertices(const fs::path filename, double scale) {
+VertexCloud ReadVertices(const fs::path& filename, double scale) {
   std::string extension = filename.extension();
   std::transform(extension.begin(), extension.end(), extension.begin(),
                  [](unsigned char c) {
@@ -496,7 +495,7 @@ class ConvexHull {
 
 }  // namespace
 
-PolygonSurfaceMesh<double> MakeConvexHull(const std::filesystem::path mesh_file,
+PolygonSurfaceMesh<double> MakeConvexHull(const fs::path& mesh_file,
                                           double scale, double margin) {
   DRAKE_THROW_UNLESS(scale > 0);
   DRAKE_THROW_UNLESS(margin >= 0);
