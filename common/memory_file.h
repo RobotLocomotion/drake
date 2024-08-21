@@ -45,6 +45,8 @@ class MemoryFile {
   MemoryFile(std::string contents, std::string extension,
              std::string filename_hint);
 
+  ~MemoryFile();
+
   /** Returns the file's contents. */
   const std::string& contents() const { return contents_; }
 
