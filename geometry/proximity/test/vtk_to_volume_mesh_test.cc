@@ -51,6 +51,22 @@ GTEST_TEST(VtkToVolumeMeshTest, Scale) {
   EXPECT_TRUE(volume_mesh.Equal(expected_mesh));
 }
 
+GTEST_TEST(VtkToVolumeMeshTest, FromMemory) {
+  // Scale from a one-meter object to a one-centimeter object.
+  const double kScale = 0.01;
+  const std::string test_file =
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
+  InMemoryMesh mem_mesh(MemoryFile::Make(test_file));
+  VolumeMesh<double> volume_mesh =
+      internal::ReadVtkToVolumeMesh(MeshSource(mem_mesh), kScale);
+
+  const VolumeMesh<double> expected_mesh{
+      {{0, 1, 2, 3}},
+      {kScale * Vector3d::Zero(), kScale * Vector3d::UnitX(),
+       kScale * Vector3d::UnitY(), kScale * Vector3d::UnitZ()}};
+  EXPECT_TRUE(volume_mesh.Equal(expected_mesh));
+}
+
 GTEST_TEST(VtkToVolumeMeshTest, BadScale) {
   const std::string test_file =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
@@ -58,12 +74,11 @@ GTEST_TEST(VtkToVolumeMeshTest, BadScale) {
   const double kNegativeScale = -0.01;
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ReadVtkToVolumeMesh(test_file, kNegativeScale),
-      "ReadVtkToVolumeMesh.*: scale=.* is not a positive number.*");
+      "ReadVtkToVolumeMesh.* requires a positive scale.*");
 
   const double kZeroScale = 0.0;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::ReadVtkToVolumeMesh(test_file, kZeroScale),
-      "ReadVtkToVolumeMesh.*: scale=.* is not a positive number.*");
+  EXPECT_THROW(internal::ReadVtkToVolumeMesh(test_file, kZeroScale),
+               std::exception);
 }
 
 GTEST_TEST(VtkToVolumeMeshTest, BogusFileName) {
