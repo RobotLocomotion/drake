@@ -176,6 +176,43 @@ GTEST_TEST(MultibodyPlantIntrospection, NonUniqueBaseBody) {
       "Model " + plant.GetModelInstanceName(default_model_instance()) +
           " does not have a unique base body.");
 }
+
+GTEST_TEST(MultibodyPlantIntrospection, GetContinuousJoints) {
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& first_body = plant.AddRigidBody("first_body");
+  const RigidBody<double>& second_body = plant.AddRigidBody("second_body");
+  const RigidBody<double>& third_body = plant.AddRigidBody("third_body");
+  const RigidBody<double>& fourth_body = plant.AddRigidBody("fourth_body");
+
+  // Add a planar joint without limits
+  plant.AddJoint<PlanarJoint>("first_joint", plant.world_body(), {}, first_body,
+                              {}, Eigen::Matrix<double, 3, 1>::Zero());
+
+  // Add a planar joint with limits
+  std::unique_ptr<PlanarJoint<double>> second_joint_ptr(new PlanarJoint<double>(
+      "second_joint", first_body.body_frame(), second_body.body_frame(),
+      Eigen::Matrix<double, 3, 1>::Zero()));
+  second_joint_ptr->set_position_limits(Eigen::Vector3d{-1.0, -1.0, -1.0},
+                                        Eigen::Vector3d{1.0, 1.0, 1.0});
+  plant.AddJoint<PlanarJoint>(std::move(second_joint_ptr));
+
+  // Add a revolute joint without limits
+  plant.AddJoint<RevoluteJoint>("third_joint", second_body, {}, third_body, {},
+                                Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0});
+
+  // Add a revolute joint with limits
+  plant.AddJoint<RevoluteJoint>("fourth_joint", third_body, {}, fourth_body, {},
+                                Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0},
+                                -1.0, 1.0);
+
+  plant.Finalize();
+
+  const std::vector<int> continuous_joint_indices = plant.GetContinuousRevoluteJointIndices();
+  ASSERT_EQ(continuous_joint_indices.size(), 2);
+  EXPECT_EQ(continuous_joint_indices[0], 2);
+  EXPECT_EQ(continuous_joint_indices[1], 6);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
