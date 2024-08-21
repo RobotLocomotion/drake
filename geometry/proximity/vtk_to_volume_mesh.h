@@ -2,21 +2,20 @@
 
 #include <string>
 
+#include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
-/* @name Import tetrahedral volume meshes from VTK files for deformable
- geometries. These internal functions import VolumeMesh from a subset of VTK
- files (legacy, serial, ASCII, UNSTRUCTURED_GRID). They only support a limited
- number of tags and ignore the rest. The file format is described in:
- https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
- */
-//@{
+/* Instantiates a VolumeMesh from VTK file data.
 
-/* Reads VolumeMesh from VTK file.
+ The VTK file data is a subset of VTK files (legacy, serial, ASCII,
+ UNSTRUCTURED_GRID). A limited number of tags are supported; the rest ignored.
+ The file format is described in:
+ https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
+
  It looks for lines like these to describe positions of vertices and the four
  vertices of each tetrahedron.
 
@@ -35,19 +34,16 @@ namespace internal {
  Other sections like POINT_DATA and CELL_DATA, e.g. per-vertex pressure value
  or per-tetrahedron velocity field are ignored.
 
- @param filename    A file name with absolute path or relative path.
- @param scale       An optional scale to coordinates.
+ @param mesh_source      The source of mesh data to parse.
+ @param scale            An optional scale to coordinates.
  @return tetrahedral volume mesh
 
  @note Error handling from parsing the file is performed by VTK library.
 
  @throw  std::exception if the file does not exist or unsupported.
-         std::exceptoin for non-positive scale factors.
- */
-VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
+         std::exception for non-positive scale factors. */
+VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
                                        double scale = 1.0);
-
-//@}
 
 }  // namespace internal
 }  // namespace geometry

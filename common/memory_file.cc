@@ -44,4 +44,6 @@ MemoryFile::MemoryFile(std::string contents, std::string extension,
                      std::string::npos);
 }
 
+MemoryFile::~MemoryFile() = default;
+
 }  // namespace drake
