@@ -158,6 +158,7 @@ void InitLowLevelModules(py::module m) {
         .def("__eq__", &Class::operator==, "")
         .def("__ne__", &Class::operator!=, cls_doc.operator_ne.doc)
         .def("__lt__", &Class::operator<, cls_doc.operator_lt.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
