@@ -272,19 +272,22 @@ class GraphOfConvexSets {
     relating to being able to "turn-off" the cost on inactive vertices, all
     costs are eventually implemented with a slack variable and a constraint:
     @verbatim
-    min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x)
+    min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x).
     @endverbatim
+    You must use GetSolutionCost() to retrieve the cost of the solution, rather
+    than evaluating the cost directly, in order to get consistent behavior when
+    solving with the different GCS transcriptions.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
-    @returns the pair <ℓ, g(x)>.
+    @returns the added cost, g(x).
     @throws std::exception if e.GetVariables() is not a subset of x().
     @throws std::exception if no transcription is specified.
-     @pydrake_mkdoc_identifier{expression}
+    @pydrake_mkdoc_identifier{expression}
     */
-    std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
+    solvers::Binding<solvers::Cost> AddCost(
         const symbolic::Expression& e,
         const std::unordered_set<Transcription>& use_in_transcription = {
             Transcription::kMIP, Transcription::kRelaxation,
@@ -295,19 +298,22 @@ class GraphOfConvexSets {
     the cost on inactive vertices, all costs are eventually implemented with a
     slack variable and a constraint:
     @verbatim
-    min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x)
+    min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x).
     @endverbatim
+    You must use GetSolutionCost() to retrieve the cost of the solution, rather
+    than evaluating the cost directly, in order to get consistent behavior when
+    solving with the different GCS transcriptions.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
-    @returns the pair <ℓ, g(x)>.
+    @returns the added cost, g(x).
     @throws std::exception if binding.variables() is not a subset of x().
     @throws std::exception if no transcription is specified.
     @pydrake_mkdoc_identifier{binding}
     */
-    std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
+    solvers::Binding<solvers::Cost> AddCost(
         const solvers::Binding<solvers::Cost>& binding,
         const std::unordered_set<Transcription>& use_in_transcription = {
             Transcription::kMIP, Transcription::kRelaxation,
@@ -367,6 +373,12 @@ class GraphOfConvexSets {
     solvers::MathematicalProgramResult. */
     double GetSolutionCost(
         const solvers::MathematicalProgramResult& result) const;
+
+    /** Returns the cost associated with the `cost` binding on this vertex in a
+    solvers::MathematicalProgramResult.
+    @throws std::exception if cost is not associated with this vertex. */
+    double GetSolutionCost(const solvers::MathematicalProgramResult& result,
+                           const solvers::Binding<solvers::Cost>& cost) const;
 
     /** Returns the solution of x() in a MathematicalProgramResult.  This
     solution is NaN if the vertex is not in the shortest path (or if we are
@@ -480,17 +492,20 @@ class GraphOfConvexSets {
     @verbatim
     min g(xu, xv) ⇒ min ℓ, s.t. ℓ ≥ g(xu,xv)
     @endverbatim
+    You must use GetSolutionCost() to retrieve the cost of the solution, rather
+    than evaluating the cost directly, in order to get consistent behavior when
+    solving with the different GCS transcriptions.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
-    @returns the pair <ℓ, g(xu, xv)>.
+    @returns the added cost, g(xu, xv).
     @throws std::exception if e.GetVariables() is not a subset of xu() ∪ xv().
     @throws std::exception if no transcription is specified.
     @pydrake_mkdoc_identifier{expression}
     */
-    std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
+    solvers::Binding<solvers::Cost> AddCost(
         const symbolic::Expression& e,
         const std::unordered_set<Transcription>& use_in_transcription = {
             Transcription::kMIP, Transcription::kRelaxation,
@@ -503,18 +518,21 @@ class GraphOfConvexSets {
     @verbatim
     min g(xu, xv) ⇒ min ℓ, s.t. ℓ ≥ g(xu,xv)
     @endverbatim
+    You must use GetSolutionCost() to retrieve the cost of the solution, rather
+    than evaluating the cost directly, in order to get consistent behavior when
+    solving with the different GCS transcriptions.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
     @note Linear costs lead to negative costs if decision variables are not
     properly constrained. Users may want to check that the solution does not
     contain negative costs.
-    @returns the pair <ℓ, g(xu, xv)>.
+    @returns the added cost, g(xu, xv).
     @throws std::exception if binding.variables() is not a subset of xu() ∪
     xv().
     @throws std::exception if no transcription is specified.
     @pydrake_mkdoc_identifier{binding}
     */
-    std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
+    solvers::Binding<solvers::Cost> AddCost(
         const solvers::Binding<solvers::Cost>& binding,
         const std::unordered_set<Transcription>& use_in_transcription = {
             Transcription::kMIP, Transcription::kRelaxation,
@@ -589,6 +607,12 @@ class GraphOfConvexSets {
     solvers::MathematicalProgramResult. */
     double GetSolutionCost(
         const solvers::MathematicalProgramResult& result) const;
+
+    /** Returns the cost associated with the `cost` binding on this edge in a
+    solvers::MathematicalProgramResult.
+    @throws std::exception if cost is not associated with this vertex. */
+    double GetSolutionCost(const solvers::MathematicalProgramResult& result,
+                           const solvers::Binding<solvers::Cost>& cost) const;
 
     /** Returns the vector value of the slack variables associated with ϕxᵤ in
     a solvers::MathematicalProgramResult. This can obtain a different value
