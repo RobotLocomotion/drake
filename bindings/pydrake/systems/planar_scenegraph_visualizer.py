@@ -243,11 +243,22 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                          for pt in sample_pts])
 
                 elif isinstance(shape, (Mesh, Convex)):
+                    # TODO(SeanCurtis-TRI): Support in-memory meshes.
                     # Legacy behavior for looking for a .obj when the extension
                     # is not recognized.
-                    filename = Path(shape.filename())
+                    # TODO(SeanCurtis-TRI): Once Convex also supports
+                    # MeshSource, we won't have to split on class type.
+                    if isinstance(shape, Mesh):
+                        if shape.source().IsInMemory():
+                            raise RuntimeError(
+                                "PlanarSceneGraphVisualizer does not yet "
+                                "support in-memory meshes.")
+                        filename = Path(shape.source().path())
+                    else:
+                        filename = Path(shape.filename())
+                    original_filename = filename
                     known_suffixes = [".obj", ".vtk", ".gltf"]
-                    if (filename.suffix.lower() not in known_suffixes
+                    if (shape.extension() not in known_suffixes
                             and substitute_collocated_mesh_files):
                         # Check for a co-located fallback (case insensitive).
                         for new_suffix in known_suffixes:
@@ -262,7 +273,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     if not filename.exists():
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
                             errno.ENOENT), filename)
-                    if filename == shape.filename():
+                    if filename == original_filename:
                         # It may have already been computed elsewhere.
                         convex_hull = shape.GetConvexHull()
                     else:

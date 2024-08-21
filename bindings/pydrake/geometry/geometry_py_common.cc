@@ -5,6 +5,7 @@
  the pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -280,6 +281,29 @@ void DoScalarIndependentDefinitions(py::module m) {
     BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
   }
 
+  // InMemoryMesh
+  {
+    using Class = InMemoryMesh;
+    constexpr auto& cls_doc = doc.InMemoryMesh;
+    py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>())
+        .def_readwrite("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
+        .def_readwrite("supporting_files", &Class::supporting_files,
+            cls_doc.supporting_files.doc)
+        .def("__repr__", [](const Class& self) {
+          py::object obj = py::cast(&self);
+          py::str support;
+          if (self.supporting_files.size() > 0) {
+            support = py::str(", supporting_files={}")
+                          .format(py::repr(obj.attr("supporting_files")));
+          }
+          return py::str("InMemoryMesh(mesh_file={}{})")
+              .format(py::repr(obj.attr("mesh_file")), support);
+        });
+    DefCopyAndDeepCopy(&cls);
+  }
+
   // IllustrationProperties
   {
     py::class_<IllustrationProperties, GeometryProperties> cls(
@@ -287,6 +311,40 @@ void DoScalarIndependentDefinitions(py::module m) {
     cls.def(py::init(), doc.IllustrationProperties.ctor.doc)
         .def(py::init<const IllustrationProperties&>(), py::arg("other"),
             "Creates a copy of the properties");
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  // MeshSource
+  {
+    using Class = MeshSource;
+    constexpr auto& cls_doc = doc.MeshSource;
+    py::class_<Class> cls(m, "MeshSource", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>([](const std::string& path) { return Class(path); }),
+            py::arg("path"), cls_doc.ctor.doc_1args_path)
+        .def(py::init<InMemoryMesh>(), py::arg("mesh"),
+            cls_doc.ctor.doc_1args_mesh)
+        .def("IsPath", &Class::IsPath, cls_doc.IsPath.doc)
+        .def("IsInMemory", &Class::IsInMemory, cls_doc.IsInMemory.doc)
+        .def("description", &Class::description, cls_doc.description.doc)
+        .def("extension", &Class::extension, cls_doc.extension.doc)
+        .def("path", &Class::path, cls_doc.path.doc)
+        .def("mesh_data", &Class::mesh_data, cls_doc.mesh_data.doc)
+        .def("__repr__", [](const Class& self) {
+          // We need to make sure the strings get repr as python strings and
+          // not just symbols in the line.
+          py::str params;
+          if (self.IsPath()) {
+            py::str py_path(self.path());
+            params = py::str("path={}").format(py::repr(py_path));
+          } else {
+            DRAKE_DEMAND(self.IsInMemory());
+            py::object obj = py::cast(&self);
+            params =
+                py::str("mesh={}").format(py::repr(obj.attr("mesh_data")()));
+          }
+          return py::str("MeshSource({})").format(params);
+        });
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -478,7 +536,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("file"), py::arg("supporting_files"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc_3args)
         .def("source", &Mesh::source, doc.Mesh.source.doc)
-        .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
@@ -496,6 +553,13 @@ void DoScalarIndependentDefinitions(py::module m) {
             [](std::pair<std::string, double> info) {
               return Mesh(info.first, info.second);
             }));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    mesh_cls.def("filename",
+        WrapDeprecated(doc.Mesh.filename.doc_deprecated, &Mesh::filename),
+        doc.Mesh.filename.doc_deprecated);
+#pragma GCC diagnostic pop
 
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
@@ -547,6 +611,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("properties"), py::arg("dissipation") = std::nullopt,
       py::arg("point_stiffness") = std::nullopt,
       py::arg("friction") = std::nullopt, doc.AddContactMaterial.doc);
+  // TODO(SeanCurtis-TRI): Decompose this in some meaningful way.
+  // NOLINTNEXTLINE(readability/fn_size)
 }
 
 // Test-only code.

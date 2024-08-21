@@ -2,11 +2,14 @@ import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
 import copy
+from pathlib import Path
 import unittest
 
 import numpy as np
 
+from pydrake.common import MemoryFile
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.common.yaml import yaml_load_typed
@@ -221,6 +224,58 @@ class TestGeometryCore(unittest.TestCase):
         self.assertIn(
             f"value={id_1.get_value()}",
             repr(id_1))
+
+    def test_in_memory_mesh(self):
+        mesh_file = MemoryFile(contents="stuff", extension=".ext",
+                               filename_hint="some_hint")
+        supporting_files = {
+            "file": MemoryFile(contents="a", extension=".a",
+                               filename_hint="a")
+        }
+        only_mesh = mut.InMemoryMesh(mesh_file=mesh_file)
+        full_mesh = mut.InMemoryMesh(mesh_file=mesh_file,
+                                     supporting_files=supporting_files)
+        self.assertEqual(only_mesh.mesh_file.contents(), mesh_file.contents())
+        self.assertEqual(len(only_mesh.supporting_files), 0)
+        self.assertEqual(full_mesh.mesh_file.contents(), mesh_file.contents())
+
+        representation = repr(only_mesh)
+        # We'll look for evidence that the MemoryFiles got repr'd.
+        self.assertRegex(representation, ".*mesh_file=MemoryFile.*stuff.*")
+        self.assertNotIn("supporting_files=", representation)
+
+        representation = repr(full_mesh)
+        self.assertRegex(representation, ".*mesh_file=MemoryFile.*stuff.*")
+        self.assertRegex(representation, ".*supporting_files=.*\\.a")
+
+        copy.copy(full_mesh)
+        copy.deepcopy(full_mesh)
+
+    def test_mesh_source(self):
+        source = mut.MeshSource(path="/a/path.obj")
+        self.assertTrue(source.IsPath())
+        self.assertFalse(source.IsInMemory())
+        self.assertEqual(source.description(), "/a/path.obj")
+        self.assertEqual(source.extension(), ".obj")
+        self.assertEqual(source.path(), Path("/a/path.obj"))
+        with self.assertRaises(RuntimeError):
+            source.mesh_data()
+        self.assertRegex(repr(source), "path=['\"]/a/path.obj['\"]")
+        copy.copy(source)
+        copy.deepcopy(source)
+
+        mesh = mut.InMemoryMesh(mesh_file=MemoryFile("a", ".ext", "hint"))
+        source = mut.MeshSource(mesh=mesh)
+        self.assertFalse(source.IsPath())
+        self.assertTrue(source.IsInMemory())
+        self.assertEqual(source.description(), "hint")
+        self.assertEqual(source.extension(), ".ext")
+        self.assertIsInstance(source.mesh_data(), mut.InMemoryMesh)
+        with self.assertRaises(RuntimeError):
+            source.path()
+        self.assertRegex(repr(source), "mesh=InMemoryMesh")
+        copy.copy(source)
+        copy.deepcopy(source)
 
     def test_proximity_properties(self):
         """
@@ -473,7 +528,8 @@ class TestGeometryCore(unittest.TestCase):
 
         mesh = mut.Mesh(filename=junk_path, scale=1.0)
         assert_shape_api(mesh)
-        self.assertIn(junk_path, mesh.filename())
+        with catch_drake_warnings(expected_count=1):
+            self.assertIn(junk_path, mesh.filename())
         self.assertEqual(".ext", mesh.extension())
         self.assertEqual(mesh.scale(), 1.0)
         with self.assertRaisesRegex(RuntimeError,
@@ -481,8 +537,11 @@ class TestGeometryCore(unittest.TestCase):
             # We just need evidence that it invokes convex hull machinery; the
             # exception for a bad extension suffices.
             mesh.GetConvexHull()
+        # TODO(SeanCurtis-TRI) Also test pickle when in-memory meshes support
+        # it.
         assert_pickle(
-            self, mesh, lambda shape: [shape.filename(), shape.scale()])
+            self, mesh, lambda shape: [shape.source().description(),
+                                       shape.scale()])
 
         sphere = mut.Sphere(radius=1.0)
         assert_shape_api(sphere)

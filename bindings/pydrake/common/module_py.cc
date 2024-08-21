@@ -177,7 +177,23 @@ void InitLowLevelModules(py::module m) {
             cls_doc.sha256.doc)
         .def("filename_hint", &Class::filename_hint, py_rvp::reference_internal,
             cls_doc.filename_hint.doc)
-        .def_static("Make", &Class::Make, py::arg("path"), cls_doc.Make.doc);
+        .def_static("Make", &Class::Make, py::arg("path"), cls_doc.Make.doc)
+        .def("__repr__", [](const Class& self) {
+          // We need to make sure the strings get repr as python strings and
+          // not just symbols in the line.
+          py::str py_contents = self.contents();
+          py::str py_ext = self.extension();
+          py::str py_hint = self.filename_hint();
+          return py::str(
+              "MemoryFile("
+              "contents={}, "
+              "extension={}, "
+              "filename_hint={}"
+              ")")
+              .format(
+                  py::repr(py_contents), py::repr(py_ext), py::repr(py_hint));
+        });
+    DefCopyAndDeepCopy(&cls);
   }
 
   py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)

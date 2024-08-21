@@ -35,8 +35,7 @@ class MeshSource {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshSource);
 
-  /** Constructs from a file path. This explicitly allows for implicit
-   conversion from std::filesystem::path. */
+  /** Constructs from a file path. */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   MeshSource(std::filesystem::path path);
 

@@ -47,10 +47,23 @@ class TestCommon(unittest.TestCase):
         hint = "hint"
         ext = ".bob"
         file = mut.MemoryFile(content_string, ext, hint)
+
         self.assertEqual(file.sha256(), mut.Sha256.Checksum(content_string))
         self.assertEqual(file.contents(), content_string)
         self.assertEqual(file.extension(), ext)
         self.assertEqual(file.filename_hint(), hint)
+
+        def string_regex(s):
+            """Confirm that the string is surrounded by quotes (either double
+            or single; we don't care which, just so long as they match)."""
+            return f"""(['"]){s}\\1"""
+        representation = repr(file)
+        self.assertRegex(representation, string_regex(content_string))
+        self.assertRegex(representation, string_regex(hint))
+        self.assertRegex(representation, string_regex(ext))
+
+        copy.copy(file)
+        copy.deepcopy(file)
 
         file = mut.MemoryFile.Make(
             mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"))

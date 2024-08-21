@@ -498,12 +498,13 @@ GTEST_TEST(ShapeTest, Constructors) {
   unused(hs);
 
   const Mesh mesh{kFilename, 1.4};
-  EXPECT_FALSE(mesh.is_in_memory());
-  EXPECT_EQ(mesh.filename(), kFilename);
   EXPECT_EQ(mesh.source().description(), kFilename);
   EXPECT_EQ(mesh.extension(), ".obj");
   EXPECT_EQ(mesh.scale(), 1.4);
-  EXPECT_THROW(mesh.in_memory_mesh(), std::exception);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(mesh.filename(), kFilename);
+#pragma GCC diagnostic pop
 
   const MeshcatCone cone{1.2, 3.4, 5.6};
   EXPECT_EQ(cone.height(), 1.2);
@@ -622,12 +623,16 @@ GTEST_TEST(ShapeTest, MeshFromMemory) {
   string_map<MemoryFile> mesh_data;
   mesh_data["fake.txt"] = MemoryFile("content", ".txt", "fake.txt");
   const Mesh mesh(MemoryFile(obj_contents, ".OBJ", mesh_name), mesh_data, 2.0);
-  ASSERT_TRUE(mesh.is_in_memory());
-  EXPECT_THROW(mesh.filename(), std::exception);
   EXPECT_EQ(mesh.extension(), ".obj");
-  const InMemoryMesh& mem_mesh = mesh.in_memory_mesh();
-  EXPECT_EQ(mem_mesh.mesh_file.filename_hint(), mesh_name);
-  EXPECT_TRUE(mem_mesh.supporting_files.contains("fake.txt"));
+  const MeshSource& source = mesh.source();
+  ASSERT_TRUE(source.IsInMemory());
+  EXPECT_EQ(source.mesh_data().mesh_file.filename_hint(), mesh_name);
+  EXPECT_TRUE(source.mesh_data().supporting_files.contains("fake.txt"));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_THROW(mesh.filename(), std::exception);
+#pragma GCC diagnostic pop
 
   // Also confirm that we can compute the convex hull from the in-memory
   // representation. We don't test all file formats; we trust that visual

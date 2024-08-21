@@ -218,37 +218,13 @@ Mesh::Mesh(MemoryFile file,
 }
 
 std::string Mesh::filename() const {
-  if (!is_in_memory()) {
+  if (source_.IsPath()) {
     return source_.path().string();
   }
   throw std::runtime_error(
       fmt::format("Mesh::filename() cannot be called when constructed on "
                   "in-memory mesh data: '{}'. Call in_memory_mesh() instead.",
                   source_.mesh_data().mesh_file.filename_hint()));
-}
-
-const std::filesystem::path Mesh::filepath() const {
-  if (!is_in_memory()) {
-    return source_.path();
-  }
-  throw std::runtime_error(
-      fmt::format("Mesh::filepath() cannot be called when constructed on "
-                  "in-memory mesh data: '{}'. Call in_memory_mesh() instead.",
-                  source_.mesh_data().mesh_file.filename_hint()));
-}
-
-bool Mesh::is_in_memory() const {
-  return source_.IsInMemory();
-}
-
-const InMemoryMesh& Mesh::in_memory_mesh() const {
-  if (is_in_memory()) {
-    return source_.mesh_data();
-  }
-  throw std::runtime_error(
-      fmt::format("Mesh::in_memory_mesh() cannot be called when constructed on "
-                  "a file path: '{}'. Call filename() instead.",
-                  source_.path().string()));
 }
 
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
