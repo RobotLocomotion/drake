@@ -2,10 +2,12 @@ import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
 import copy
+from pathlib import Path
 import unittest
 
 import numpy as np
 
+from pydrake.common import MemoryFile
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
@@ -221,6 +223,60 @@ class TestGeometryCore(unittest.TestCase):
         self.assertIn(
             f"value={id_1.get_value()}",
             repr(id_1))
+
+    def test_in_memory_mesh(self):
+        file = MemoryFile(contents="stuff", extension=".ext",
+                          filename_hint="some_hint")
+        only_mesh = mut.InMemoryMesh(mesh_file=file)
+        self.assertEqual(only_mesh.mesh_file().contents(),
+                         file.contents())
+
+        representation = repr(only_mesh)
+        # repr correctness is determined in two ways:
+        #   - It can be eval'd back into an instance.
+        #   - the repr'd string has expected values.
+        self.assertIsInstance(eval(representation,
+                                   {"InMemoryMesh": mut.InMemoryMesh,
+                                    "MemoryFile": MemoryFile}),
+                              mut.InMemoryMesh)
+        self.assertRegex(representation, ".*mesh_file=MemoryFile.*stuff.*")
+
+    def test_mesh_source(self):
+        source = mut.MeshSource(path="/a/path.obj")
+        self.assertTrue(source.IsPath())
+        self.assertFalse(source.IsInMemory())
+        self.assertEqual(source.description(), "/a/path.obj")
+        self.assertEqual(source.extension(), ".obj")
+        self.assertEqual(source.path(), Path("/a/path.obj"))
+        with self.assertRaises(RuntimeError):
+            source.mesh_data()
+        # repr correctness is determined in two ways:
+        #   - It can be eval'd back into an instance.
+        #   - the repr'd string has expected values.
+        self.assertIsInstance(eval(repr(source),
+                                   {"MeshSource": mut.MeshSource}),
+                              mut.MeshSource)
+        self.assertRegex(repr(source), "path=['\"]/a/path.obj['\"]")
+        copy.copy(source)
+        copy.deepcopy(source)
+
+        mesh = mut.InMemoryMesh(mesh_file=MemoryFile("a", ".ext", "hint"))
+        source = mut.MeshSource(mesh=mesh)
+        self.assertFalse(source.IsPath())
+        self.assertTrue(source.IsInMemory())
+        self.assertEqual(source.description(), "hint")
+        self.assertEqual(source.extension(), ".ext")
+        self.assertIsInstance(source.mesh_data(), mut.InMemoryMesh)
+        with self.assertRaises(RuntimeError):
+            source.path()
+        self.assertIsInstance(eval(repr(source),
+                                   {"MeshSource": mut.MeshSource,
+                                    "InMemoryMesh": mut.InMemoryMesh,
+                                    "MemoryFile": MemoryFile}),
+                              mut.MeshSource)
+        self.assertRegex(repr(source), "mesh=InMemoryMesh.*hint.*")
+        copy.copy(source)
+        copy.deepcopy(source)
 
     def test_proximity_properties(self):
         """

@@ -18,6 +18,7 @@
 #include "drake/geometry/geometry_properties.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_version.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -280,6 +281,24 @@ void DoScalarIndependentDefinitions(py::module m) {
     BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
   }
 
+  // InMemoryMesh
+  {
+    using Class = InMemoryMesh;
+    constexpr auto& cls_doc = doc.InMemoryMesh;
+    py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<MemoryFile>(), py::arg("mesh_file"),
+            cls_doc.ctor.doc_1args)
+        .def("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
+        .def("empty", &Class::empty, cls_doc.empty.doc)
+        .def("__repr__", [](const Class& self) {
+          return py::str("InMemoryMesh(mesh_file={})")
+              .format(py::repr(py::cast(self.mesh_file())));
+        });
+    DefCopyAndDeepCopy(&cls);
+  }
+
   // IllustrationProperties
   {
     py::class_<IllustrationProperties, GeometryProperties> cls(
@@ -287,6 +306,39 @@ void DoScalarIndependentDefinitions(py::module m) {
     cls.def(py::init(), doc.IllustrationProperties.ctor.doc)
         .def(py::init<const IllustrationProperties&>(), py::arg("other"),
             "Creates a copy of the properties");
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  // MeshSource
+  {
+    using Class = MeshSource;
+    constexpr auto& cls_doc = doc.MeshSource;
+    py::class_<Class> cls(m, "MeshSource", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>([](const std::string& path) { return Class(path); }),
+            py::arg("path"), cls_doc.ctor.doc_1args_path)
+        .def(py::init<InMemoryMesh>(), py::arg("mesh"),
+            cls_doc.ctor.doc_1args_mesh)
+        .def("IsPath", &Class::IsPath, cls_doc.IsPath.doc)
+        .def("IsInMemory", &Class::IsInMemory, cls_doc.IsInMemory.doc)
+        .def("description", &Class::description, cls_doc.description.doc)
+        .def("extension", &Class::extension, cls_doc.extension.doc)
+        .def("path", &Class::path, cls_doc.path.doc)
+        .def("mesh_data", &Class::mesh_data, cls_doc.mesh_data.doc)
+        .def("__repr__", [](const Class& self) {
+          // We need to make sure the strings get repr as python strings and
+          // not just symbols in the line.
+          py::str params;
+          if (self.IsPath()) {
+            py::str py_path(self.path());
+            params = py::str("path={}").format(py::repr(py_path));
+          } else {
+            DRAKE_DEMAND(self.IsInMemory());
+            params =
+                py::str("mesh={}").format(py::repr(py::cast(self.mesh_data())));
+          }
+          return py::str("MeshSource({})").format(params);
+        });
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -536,6 +588,9 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("properties"), py::arg("dissipation") = std::nullopt,
       py::arg("point_stiffness") = std::nullopt,
       py::arg("friction") = std::nullopt, doc.AddContactMaterial.doc);
+
+  // TODO(SeanCurtis-TRI): Decompose this in some meaningful way.
+  // NOLINTNEXTLINE(readability/fn_size)
 }
 
 // Test-only code.
