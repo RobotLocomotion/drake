@@ -628,9 +628,10 @@ bool RenderEngineGltfClient::ImplementGltf(
   SetRootPoses(&mesh_data, root_nodes, data.X_WG, mesh.scale(), true);
 
   DRAKE_DEMAND(!gltfs_.contains(data.id));
+  const MeshSource& source = mesh.source();
   const std::string gltf_name =
-      mesh.is_in_memory() ? mesh.in_memory_mesh().mesh_file.filename_hint()
-                          : mesh.filepath().string();
+      source.IsInMemory() ? source.mesh_data().mesh_file.filename_hint()
+                          : source.path().string();
   gltfs_.insert({data.id,
                  {gltf_name, std::move(mesh_data), std::move(root_nodes),
                   mesh.scale(), GetRenderLabelOrThrow(data.properties)}});

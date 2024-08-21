@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/geometry/in_memory_mesh.h"
@@ -499,18 +500,12 @@ class Mesh final : public Shape {
   /** Returns the filename passed to the constructor.
    @throws std::exception if `this` %Mesh was constructed using in-memory file
                           contents.
-   @see is_in_memory(). */
+   @see source().IsPath(). */
+  DRAKE_DEPRECATED(
+      "2025-01-01",
+      "Meshes can be defined from a file path or in memory data. Use "
+      "Mesh::source() to determine if a filename is available.")
   std::string filename() const;
-
-  // TODO(SeanCurtis-TRI): Deprecate `filename()` and remove `filepath()`,
-  // `extension()`, `is_in_memory()`, and `in_memory_mesh()` in favor of
-  // source().path(), source.extension(), source.IsPath(), source.IsInMemory(),
-  // source.mesh_data(), respectively.
-  /** Returns the filepath passed to the constructor.
-   @throws std::exception if `this` %Mesh was constructed using in-memory file
-                          contents.
-   @see is_in_memory(). */
-  const std::filesystem::path filepath() const;
 
   /** Returns the extension of the mesh type -- all lower case and including
    the dot. If `this` is constructed from a file path, the extension is
@@ -523,14 +518,6 @@ class Mesh final : public Shape {
   const std::string& extension() const { return source_.extension(); }
 
   double scale() const { return scale_; }
-
-  /** Reports `true` if `this` was constructed from in-memory mesh data. */
-  bool is_in_memory() const;
-
-  /** Returns the in-memory mesh data passed to the constructor.
-   @throws std::exception if `this` %Mesh was constructed using a file path.
-   @see is_in_memory(). */
-  const InMemoryMesh& in_memory_mesh() const;
 
   /** Reports the convex hull of the named mesh.
 
