@@ -71,3 +71,27 @@ def StartMeshcat():
     if "DEEPNOTE_PROJECT_ID" in os.environ:
         return _start_meshcat_deepnote()
     return Meshcat()
+
+
+def _add_extraneous_repr_functions():
+    """Defines repr functions for various classes in common where defining it
+    in python is simply more convenient.
+    """
+    def in_memory_mesh_repr(mesh):
+        return (
+            f"InMemoryMesh(mesh_file={repr(mesh.mesh_file())})"
+        )
+    InMemoryMesh.__repr__ = in_memory_mesh_repr
+
+    def mesh_source_repr(source):
+        if source.is_path():
+            param_str = f"path={repr(str(source.path()))}"
+        else:
+            param_str = f"mesh={repr(source.in_memory())}"
+        return (
+            f"MeshSource({param_str})"
+        )
+    MeshSource.__repr__ = mesh_source_repr
+
+
+_add_extraneous_repr_functions()
