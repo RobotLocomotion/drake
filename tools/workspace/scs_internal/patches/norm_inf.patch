@@ -9,7 +9,7 @@ We should report this bug to upstream.
  
  scs_float SCS(norm_inf)(const scs_float *a, scs_int len) {
 +  if (len <= 0) {
-+    return -INFINITY;
++    return 0;  // Follow the semantics of BLASI(lange) for zero-size array.
 +  }
    blas_int bone = 1;
    blas_int blen = (blas_int)len;
