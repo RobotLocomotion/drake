@@ -809,6 +809,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetJointActuatorIndices.doc_1args)
         .def("GetActuatedJointIndices", &Class::GetActuatedJointIndices,
             py::arg("model_instance"), cls_doc.GetActuatedJointIndices.doc)
+        .def("GetContinuousRevoluteJointIndices",
+            &Class::GetContinuousRevoluteJointIndices,
+            cls_doc.GetContinuousRevoluteJointIndices.doc)
         .def("GetModelInstanceName",
             overload_cast_explicit<const string&, ModelInstanceIndex>(
                 &Class::GetModelInstanceName),

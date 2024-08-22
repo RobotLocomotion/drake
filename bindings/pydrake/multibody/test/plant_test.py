@@ -554,6 +554,8 @@ class TestPlant(unittest.TestCase):
         self.assertEqual("acrobot", plant.GetModelInstanceName(
             model_instance=model_instance))
         self.assertIn("acrobot", plant.GetTopologyGraphvizString())
+        continuous_revolute_joints = plant.GetContinuousRevoluteJointIndices()
+        self.assertEqual(continuous_revolute_joints, [0, 1])
 
     def test_scoped_name(self):
         ScopedName()
