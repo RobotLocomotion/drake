@@ -1,5 +1,7 @@
 #include "drake/geometry/read_obj.h"
 
+#include <fstream>
+
 #include <fmt/format.h>
 #include <tiny_obj_loader.h>
 
@@ -107,33 +109,38 @@ std::vector<int> TinyObjToFclFaces(
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
 ReadObjFile(const std::string& filename, double scale, bool triangulate) {
+  std::ifstream f(filename);
+  return ReadObjStream(&f, scale, triangulate, filename);
+}
+
+std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
+           std::shared_ptr<std::vector<int>>, int>
+ReadObjStream(std::istream* input_stream, double scale, bool triangulate,
+              std::string_view description) {
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
   std::vector<tinyobj::material_t> materials;
   std::string warn;
   std::string err;
 
-  // Tinyobj doesn't infer the search directory from the directory containing
-  // the obj file. We have to provide that directory; of course, this assumes
-  // that the material library reference is relative to the obj directory.
-  const size_t pos = filename.find_last_of('/');
-  const std::string obj_folder = filename.substr(0, pos + 1);
-  const char* mtl_basedir = obj_folder.c_str();
+  // We don't need materials, so we won't bother reading them.
+  tinyobj::MaterialReader* mat_reader = nullptr;
 
   bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
-                              filename.c_str(), mtl_basedir, triangulate);
+                              input_stream, mat_reader, triangulate);
   if (!ret || !err.empty()) {
-    throw std::runtime_error("Error parsing file '" + filename + "' : " + err);
+    throw std::runtime_error(
+        fmt::format("Error parsing file '{}' : {}", description, err));
   }
   if (!warn.empty()) {
-    drake::log()->warn("Warning parsing file '{}' : {}", filename, warn);
+    drake::log()->warn("Warning parsing file '{}' : {}", description, warn);
   }
 
   if (shapes.size() == 0) {
     throw std::runtime_error(
         fmt::format("The file parsed contains no objects;. The file could be "
                     "corrupt, empty, or not an OBJ file. File name: '{}'",
-                    filename));
+                    description));
   }
 
   auto vertices = std::make_shared<std::vector<Eigen::Vector3d>>(
@@ -155,6 +162,7 @@ ReadObjFile(const std::string& filename, double scale, bool triangulate) {
       std::make_shared<std::vector<int>>(TinyObjToFclFaces(shapes));
   return {vertices, faces, num_faces};
 }
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
