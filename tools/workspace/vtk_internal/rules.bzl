@@ -288,7 +288,10 @@ def modules_closure(module_names, *, max_depth = 10):
                     if dep_name in ignore:
                         continue
                     if _VERBOSE:
-                        print("Modules closure: {} uses {}".format(name, dep_name))
+                        print("Modules closure: {} uses {}".format(
+                            name,
+                            dep_name,
+                        ))
                     next_worklist.append(dep_name)
         worklist = next_worklist
     if worklist:
