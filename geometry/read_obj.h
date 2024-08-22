@@ -1,5 +1,6 @@
 #pragma once
 
+#include <istream>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -10,7 +11,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
-/** Reads the OBJ file with the given `filename` into a collection of data. It
+/* Reads the OBJ file with the given `filename` into a collection of data. It
  includes the vertex positions, face encodings (see TinyObjToFclFaces), and
  number of faces.
 
@@ -30,6 +31,12 @@ namespace internal {
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
 ReadObjFile(const std::string& filename, double scale, bool triangulate);
+
+/* Variant that takes a stream. */
+std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
+           std::shared_ptr<std::vector<int>>, int>
+ReadObjStream(std::istream* input_stream, double scale, bool triangulate,
+              std::string_view description);
 
 }  // namespace internal
 }  // namespace geometry
