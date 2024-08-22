@@ -477,7 +477,7 @@ MODULE_SETTINGS = {
         "srcs_glob_exclude": [
             # This is configure-time setup code, not library code.
             "**/vtkProbe*",
-            # This file requires codegen'd embedded vtp files. We don't need it.
+            # This file uses codegen'd embedded vtp files. We don't need it.
             "**/*vtkOpenGLAvatar*",
             # Avoid building unnecessary VTK::RenderingHyperTreeGrid.
             "**/*HyperTreeGrid*",
