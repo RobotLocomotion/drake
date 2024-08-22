@@ -18,39 +18,39 @@ class LinkJointGraph::Joint {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Joint);
 
-  /** Returns this %Joint's unique index in the graph. This is persistent after
+  /* Returns this %Joint's unique index in the graph. This is persistent after
   the %Joint has been allocated. */
   JointIndex index() const { return index_; }
 
-  /** Returns the current value of this %Joint's ordinal (position in the
+  /* Returns the current value of this %Joint's ordinal (position in the
   joints() vector). This can change as %Joints are removed. */
   JointOrdinal ordinal() const { return ordinal_; }
 
-  /** Returns this %Joint's model instance. */
+  /* Returns this %Joint's model instance. */
   ModelInstanceIndex model_instance() const { return model_instance_; }
 
-  /** Returns this %Joint's name, unique within model_instance(). */
+  /* Returns this %Joint's name, unique within model_instance(). */
   const std::string& name() const { return name_; }
 
-  /** Returns the index of this %Joint's parent Link. */
+  /* Returns the index of this %Joint's parent Link. */
   LinkIndex parent_link_index() const { return parent_link_index_; }
 
-  /** Returns the index of this %Joint's child Link. */
+  /* Returns the index of this %Joint's child Link. */
   LinkIndex child_link_index() const { return child_link_index_; }
 
-  /** Returns `true` if this is a Weld %Joint. */
+  /* Returns `true` if this is a Weld %Joint. */
   bool is_weld() const { return traits_index() == weld_joint_traits_index(); }
 
-  /** Returns the index of this %Joint's traits. */
+  /* Returns the index of this %Joint's traits. */
   JointTraitsIndex traits_index() const { return traits_index_; }
 
-  /** Returns `true` if either the parent or child Link of this %Joint is
+  /* Returns `true` if either the parent or child Link of this %Joint is
   the specified `link`. */
   bool connects(LinkIndex link) const {
     return link == parent_link_index() || link == child_link_index();
   }
 
-  /** Returns `true` if this %Joint connects the two given Links. That is, if
+  /* Returns `true` if this %Joint connects the two given Links. That is, if
   one of these is the parent Link and the other is the child Link, in either
   order. */
   bool connects(LinkIndex link1, LinkIndex link2) const {
@@ -62,7 +62,7 @@ class LinkJointGraph::Joint {
   //  return link_index ^ (parent_link_index ^ child_link_index);
   //  with the second term precalculated. Consider that if performance warrants.
 
-  /** Given one of the Links connected by this %Joint, returns the other one.
+  /* Given one of the Links connected by this %Joint, returns the other one.
   @pre `link_index` is either the parent or child */
   LinkIndex other_link_index(LinkIndex link_index) const {
     DRAKE_DEMAND((parent_link_index() == link_index) ||
@@ -71,13 +71,13 @@ class LinkJointGraph::Joint {
                                              : parent_link_index();
   }
 
-  /** Returns `true` if this %Joint was added with
+  /* Returns `true` if this %Joint was added with
   JointFlags::kMustBeModeled. */
   bool must_be_modeled() const {
     return static_cast<bool>(flags_ & JointFlags::kMustBeModeled);
   }
 
-  /** Returns the index of the Mobod whose inboard mobilizer models this
+  /* Returns the index of the Mobod whose inboard mobilizer models this
   %Joint, if any. If this %Joint is unmodeled then the returned index is
   invalid. */
   MobodIndex mobod_index() const {
@@ -85,7 +85,7 @@ class LinkJointGraph::Joint {
     return std::get<MobodIndex>(how_modeled_);
   }
 
-  /** (Internal use only) During construction of the forest, this is used
+  /* (Internal use only) During construction of the forest, this is used
   to check whether this %Joint has already been modeled. */
   bool has_been_processed() const {
     return !std::holds_alternative<std::monostate>(how_modeled_);

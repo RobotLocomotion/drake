@@ -11,7 +11,7 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-/** A weld constraint used to close a topological loop (cycle) in the input
+/* A weld constraint used to close a topological loop (cycle) in the input
 graph after modeling as a forest. The parent/child ordering sets the sign
 convention for the constraint multipliers. Added welds between a primary %Link
 and one of its shadow Links always make the primary %Link the parent. */
