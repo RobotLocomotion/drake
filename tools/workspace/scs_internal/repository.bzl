@@ -14,6 +14,7 @@ def scs_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/include_paths.patch",
+            ":patches/norm_inf.patch",
         ],
         mirrors = mirrors,
     )
