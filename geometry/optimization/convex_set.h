@@ -276,6 +276,15 @@ class ConvexSet {
                                       const double desired_rel_accuracy = 1e-2,
                                       const int max_num_samples = 1e4) const;
 
+/** Calculates an estimate of the largest distance in the convex set using
+    sampling in Euclidean space.
+    @param generator a random number generator.
+    @param num_samples the number of samples to use.
+    @return the estimated largest distance in the set.
+    @throws if ambient_dimension() == 0. */
+  double CalcMaximumDistanceViaSampling(RandomGenerator* generator,
+                                        const int num_samples = 1e3) const;
+
   /** Computes in the L₂ norm the distance and the nearest point in this convex
    set to every column of @p points. If this set is empty, we return nullopt.
    @pre points.rows() == ambient_dimension().
