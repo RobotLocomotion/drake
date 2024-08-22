@@ -4008,270 +4008,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().CalcMassMatrix(context, M);
   }
 
-  /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
-  /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
-  /// <pre>
-  ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is j or k)
-  ///      V_ABp = J𝑠_V_ABp ⋅ 𝑠          V_ABp is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
-  /// </pre>
-  /// `V_ABp` is Bp's spatial velocity in frame A and "speeds" 𝑠 is either
-  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
-  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-  ///
-  /// @param[in] context The state of the multibody system.
-  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_V_ABp` is
-  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
-  /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_B The frame on which point Bp is fixed/welded.
-  /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
-  /// Bp (regarded as fixed/welded to B), expressed in frame_B.
-  /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
-  /// Note: It is natural to wonder why there is no parameter p_AoAp_A (similar
-  /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAp_A
-  /// because Bp's velocity in A is defined as the derivative in frame A of
-  /// Bp's position vector from _any_ point fixed to A.
-  /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_V_ABp` is expressed on output.
-  /// @param[out] J𝑠_V_ABp_E Point Bp's spatial velocity Jacobian in frame A
-  /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `J𝑠_V_ABp_E` is a `6 x n` matrix, where n is the number of elements in 𝑠.
-  /// The Jacobian is a function of only generalized positions q (which are
-  /// pulled from the context).
-  /// Note: The returned `6 x n` matrix stores frame B's angular velocity
-  /// Jacobian in A in rows 1-3 and stores point Bp's translational velocity
-  /// Jacobian in A in rows 4-6, i.e., <pre>
-  ///     J𝑠_w_AB_E = J𝑠_V_ABp_E.topRows<3>();
-  ///     J𝑠_v_ABp_E = J𝑠_V_ABp_E.bottomRows<3>();
-  /// </pre>
-  /// Note: Consider CalcJacobianTranslationalVelocity() for multiple points
-  /// fixed to frame B and consider CalcJacobianAngularVelocity() to calculate
-  /// frame B's angular velocity Jacobian.
-  /// @throws std::exception if `J𝑠_V_ABp_E` is nullptr or not sized `6 x n`.
-  void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
-                                   JacobianWrtVariable with_respect_to,
-                                   const Frame<T>& frame_B,
-                                   const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
-                                   const Frame<T>& frame_A,
-                                   const Frame<T>& frame_E,
-                                   EigenPtr<MatrixX<T>> Js_V_ABp_E) const {
-    this->ValidateContext(context);
-    DRAKE_DEMAND(Js_V_ABp_E != nullptr);
-    internal_tree().CalcJacobianSpatialVelocity(context, with_respect_to,
-                                                frame_B, p_BoBp_B, frame_A,
-                                                frame_E, Js_V_ABp_E);
-  }
-
-  /// Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
-  /// with respect to "speeds" 𝑠.
-  /// <pre>
-  ///      J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
-  ///      w_AB = J𝑠_w_AB ⋅ 𝑠          w_AB is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
-  /// </pre>
-  /// `w_AB` is B's angular velocity in frame A and "speeds" 𝑠 is either
-  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
-  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-  ///
-  /// @param[in] context The state of the multibody system.
-  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_w_AB` is
-  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
-  /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_B The frame B in `w_AB` (B's angular velocity in A).
-  /// @param[in] frame_A The frame A in `w_AB` (B's angular velocity in A).
-  /// @param[in] frame_E The frame in which `w_AB` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_w_AB` is expressed on output.
-  /// @param[out] J𝑠_w_AB_E Frame B's angular velocity Jacobian in frame A with
-  /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// The Jacobian is a function of only generalized positions q (which are
-  /// pulled from the context).  The previous definition shows `J𝑠_w_AB_E` is
-  /// a matrix of size `3 x n`, where n is the number of elements in 𝑠.
-  /// @throws std::exception if `J𝑠_w_AB_E` is nullptr or not of size `3 x n`.
-  void CalcJacobianAngularVelocity(const systems::Context<T>& context,
-                                   const JacobianWrtVariable with_respect_to,
-                                   const Frame<T>& frame_B,
-                                   const Frame<T>& frame_A,
-                                   const Frame<T>& frame_E,
-                                   EigenPtr<Matrix3X<T>> Js_w_AB_E) const {
-    this->ValidateContext(context);
-    DRAKE_DEMAND(Js_w_AB_E != nullptr);
-    return internal_tree().CalcJacobianAngularVelocity(
-        context, with_respect_to, frame_B, frame_A, frame_E, Js_w_AB_E);
-  }
-
-  /// For each point Bi affixed/welded to a frame B, calculates J𝑠_v_ABi, Bi's
-  /// translational velocity Jacobian in frame A with respect to "speeds" 𝑠.
-  /// <pre>
-  ///      J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
-  ///      v_ABi = J𝑠_v_ABi ⋅ 𝑠          v_ABi is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
-  /// </pre>
-  /// `v_ABi` is Bi's translational velocity in frame A and "speeds" 𝑠 is either
-  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
-  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-  ///
-  /// @param[in] context The state of the multibody system.
-  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ABi` is
-  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
-  /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_B The frame on which point Bi is affixed/welded.
-  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
-  /// Bo (frame_B's origin) to points Bi (regarded as affixed to B), where each
-  /// position vector is expressed in frame_B.
-  /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
-  /// Note: It is natural to wonder why there is no parameter p_AoAi_A (similar
-  /// to the parameter p_BoBi_B for frame_B).  There is no need for p_AoAi_A
-  /// because Bi's velocity in A is defined as the derivative in frame A of
-  /// Bi's position vector from _any_ point affixed to A.
-  /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_v_ABi` is expressed on output.
-  /// @param[out] J𝑠_v_ABi_E Point Bi's velocity Jacobian in frame A with
-  /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `J𝑠_v_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
-  /// n is the number of elements in 𝑠.  The Jacobian is a function of only
-  /// generalized positions q (which are pulled from the context).
-  /// @throws std::exception if `J𝑠_v_ABi_E` is nullptr or not sized `3*p x n`.
-  /// @note When 𝑠 = q̇, `Jq̇_v_ABi = Jq_p_AoBi`.  In other words, point Bi's
-  /// velocity Jacobian in frame A with respect to q̇ is equal to point Bi's
-  /// position Jacobian from Ao (A's origin) in frame A with respect to q. <pre>
-  /// [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ⱼ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qⱼ]
-  /// </pre>
-  /// Note: Each partial derivative of p_AoBi is taken in frame A.
-  /// @see CalcJacobianPositionVector() for details on Jq_p_AoBi.
-  void CalcJacobianTranslationalVelocity(
-      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<MatrixX<T>> Js_v_ABi_E) const {
-    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
-    // some applications it is all we need and it is more efficient to compute.
-    this->ValidateContext(context);
-    DRAKE_DEMAND(Js_v_ABi_E != nullptr);
-    internal_tree().CalcJacobianTranslationalVelocity(
-        context, with_respect_to, frame_B, frame_B, p_BoBi_B, frame_A, frame_E,
-        Js_v_ABi_E);
-  }
-
-  /// For each point Bi affixed/welded to a frame B, calculates Jq_p_AoBi, Bi's
-  /// position vector Jacobian in frame A with respect to the generalized
-  /// positions q ≜ [q₁ ... qₙ]ᵀ as
-  /// <pre>
-  ///      Jq_p_AoBi ≜ [ ᴬ∂(p_AoBi)/∂q₁,  ...  ᴬ∂(p_AoBi)/∂qₙ ]
-  /// </pre>
-  /// where p_AoBi is Bi's position vector from point Ao (frame A's origin) and
-  /// ᴬ∂(p_AoBi)/∂qᵣ denotes the partial derivative in frame A of p_AoBi with
-  /// respect to the generalized position qᵣ, where qᵣ is one of q₁ ... qₙ.
-  /// @param[in] context The state of the multibody system.
-  /// @param[in] frame_B The frame on which point Bi is affixed/welded.
-  /// @param[in] p_BoBi_B A position vector or list of k position vectors from
-  /// Bo (frame_B's origin) to points Bi (Bi is regarded as affixed to B), where
-  /// each position vector is expressed in frame_B.
-  /// @param[in] frame_A The frame in which partial derivatives are calculated
-  /// and the frame in which point Ao is affixed.
-  /// @param[in] frame_E The frame in which the Jacobian Jq_p_AoBi is expressed
-  /// on output.
-  /// @param[out] Jq_p_AoBi_E Point Bi's position vector Jacobian in frame A
-  /// with generalized positions q, expressed in frame E. Jq_p_AoBi_E is a
-  /// `3*k x n` matrix, where k is the number of points Bi and n is the number
-  /// of elements in q.  The Jacobian is a function of only generalized
-  /// positions q (which are pulled from the context).
-  /// @throws std::exception if Jq_p_AoBi_E is nullptr or not sized `3*k x n`.
-  /// @note Jq̇_v_ABi = Jq_p_AoBi.  In other words, point Bi's velocity Jacobian
-  /// in frame A with respect to q̇ is equal to point Bi's position vector
-  /// Jacobian in frame A with respect to q.
-  /// <pre>
-  /// [∂(v_ABi)/∂q̇₁, ... ∂(v_ABi)/∂q̇ₙ] = [ᴬ∂(p_AoBi)/∂q₁, ... ᴬ∂(p_AoBi)/∂qₙ]
-  /// </pre>
-  /// @see CalcJacobianTranslationalVelocity() for details on Jq̇_v_ABi.
-  /// Note: Jq_p_AaBi = Jq_p_AoBi, where point Aa is _any_ point fixed/welded to
-  /// frame A, i.e., this calculation's result is the same if point Ao is
-  /// replaced with any point fixed on frame A.
-  void CalcJacobianPositionVector(const systems::Context<T>& context,
-                                  const Frame<T>& frame_B,
-                                  const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
-                                  const Frame<T>& frame_A,
-                                  const Frame<T>& frame_E,
-                                  EigenPtr<MatrixX<T>> Jq_p_AoBi_E) const {
-    // TODO(mitiguy) Consider providing the Jacobian-times-vector operation.
-    //  Sometimes it is all that is needed and more efficient to compute.
-    this->ValidateContext(context);
-    DRAKE_DEMAND(Jq_p_AoBi_E != nullptr);
-    internal_tree().CalcJacobianTranslationalVelocity(
-        context, JacobianWrtVariable::kQDot, frame_B, frame_B, p_BoBi_B,
-        frame_A, frame_E, Jq_p_AoBi_E);
-  }
-
-  /// Calculates J𝑠_v_ACcm_E, point Ccm's translational velocity Jacobian in
-  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point CCm
-  /// is the center of mass of the system of all non-world bodies contained in
-  /// `this` MultibodyPlant.
-  /// @param[in] context contains the state of the model.
-  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
-  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
-  /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_A The frame in which the translational velocity
-  /// v_ACcm and its Jacobian J𝑠_v_ACcm are measured.
-  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_ACcm is
-  /// expressed on output.
-  /// @param[out] J𝑠_v_ACcm_E Point Ccm's translational velocity Jacobian in
-  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
-  /// J𝑠_v_ACcm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
-  /// The Jacobian is a function of only generalized positions q (which are
-  /// pulled from the context).
-  /// @throws std::exception if CCm does not exist, which occurs if there
-  /// are no massive bodies in MultibodyPlant (except world_body()).
-  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
-  /// bodies contained in `this` MultibodyPlant).
-  void CalcJacobianCenterOfMassTranslationalVelocity(
-      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
-    this->ValidateContext(context);
-    DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
-    internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
-        context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
-  }
-
-  /// Calculates J𝑠_v_ACcm_E, point Ccm's translational velocity Jacobian in
-  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point CCm
-  /// is the center of mass of the system of all non-world bodies contained in
-  /// model_instances.
-  /// @param[in] context contains the state of the model.
-  /// @param[in] model_instances Vector of selected model instances.  If a model
-  /// instance is repeated in the vector (unusual), it is only counted once.
-  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
-  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
-  /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_A The frame in which the translational velocity
-  /// v_ACcm and its Jacobian J𝑠_v_ACcm are measured.
-  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_ACcm is
-  /// expressed on output.
-  /// @param[out] J𝑠_v_ACcm_E Point Ccm's translational velocity Jacobian in
-  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
-  /// J𝑠_v_ACcm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
-  /// The Jacobian is a function of only generalized positions q (which are
-  /// pulled from the context).
-  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
-  /// bodies contained in model_instances).
-  /// @throws std::exception if model_instances is empty or only has world body.
-  /// @note The world_body() is ignored.  J𝑠_v_ACcm_ = ∑ (mᵢ Jᵢ) / mₛ, where
-  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
-  /// and Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
-  /// frame E (Bᵢcm is the center of mass of the iᵗʰ body).
-  void CalcJacobianCenterOfMassTranslationalVelocity(
-      const systems::Context<T>& context,
-      const std::vector<ModelInstanceIndex>& model_instances,
-      JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
-      const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
-    this->ValidateContext(context);
-    DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
-    internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
-        context, model_instances, with_respect_to, frame_A, frame_E,
-        Js_v_ACcm_E);
-  }
-
   /// This method allows users to map the state of `this` model, x, into a
   /// vector of selected state xₛ with a given preferred ordering.
   /// The mapping, or selection, is returned in the form of a selector matrix
@@ -4360,6 +4096,314 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
   }
   /// @} <!-- System matrix computations -->
+
+  /// @anchor Jacobian_functions
+  /// @name Jacobian functions
+  /// Herein, a Jacobian is a matrix that contains the partial derivatives of a
+  /// vector with respect to a list of scalars. The vector may be a position
+  /// vector, translational velocity, angular velocity, or spatial velocity and
+  /// the scalars may be the system's generalized positions q or "speeds" 𝑠
+  /// where 𝑠 is either q̇ (time-derivative of generalized positions) or
+  /// v (generalized velocities).
+  ///
+  /// JAq_p_PQ denotes the Jacobian in a frame A of the position vector from
+  /// point P to point Q with respect to the generalized positions q. It is
+  /// calculated with CalcJacobianPositionVector().
+  ///
+  /// J𝑠_w_AB denotes the angular velocity Jacobian in a frame A of a frame B
+  /// with respect to "speeds" 𝑠. It is calculated with
+  /// CalcJacobianAngularVelocity().
+  ///
+  /// J𝑠_V_ABp denotes the spatial velocity Jacobian in a frame A of a point Bp
+  /// of frame B with respect to "speeds" 𝑠. It is calculated with
+  /// CalcJacobianSpatialVelocity().
+  ///
+  /// J𝑠_v_ABp denotes the translational velocity Jacobian in a frame A of a
+  /// point Bp of frame B with respect to "speeds" 𝑠. It is calculated with
+  /// CalcJacobianTranslationalVelocity().
+  ///
+  /// J𝑠_v_AScm_E denotes the translational velocity Jacobian in a frame A of a
+  /// point Scm with respect to "speeds" 𝑠, where point Scm is the center of
+  /// mass of a system S. It is calculated with
+  /// CalcJacobianCenterOfMassTranslationalVelocity()
+  ///@{
+
+  /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
+  /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
+  /// <pre>
+  ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is j or k)
+  ///      V_ABp = J𝑠_V_ABp ⋅ 𝑠          V_ABp is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  /// </pre>
+  /// `V_ABp` is Bp's spatial velocity in frame A and "speeds" 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  ///
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_V_ABp` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_B The frame on which point Bp is fixed/welded.
+  /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
+  /// Bp (regarded as fixed/welded to B), expressed in frame_B.
+  /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
+  /// Note: It is natural to wonder why there is no parameter p_AoAp_A (similar
+  /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAp_A
+  /// because Bp's velocity in A is defined as the derivative in frame A of
+  /// Bp's position vector from _any_ point fixed to A.
+  /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
+  /// the frame in which the Jacobian `J𝑠_V_ABp` is expressed on output.
+  /// @param[out] J𝑠_V_ABp_E Point Bp's spatial velocity Jacobian in frame A
+  /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
+  /// `J𝑠_V_ABp_E` is a `6 x n` matrix, where n is the number of elements in 𝑠.
+  /// The Jacobian is a function of only generalized positions q (which are
+  /// pulled from the context).
+  /// @note The returned `6 x n` matrix stores frame B's angular velocity
+  /// Jacobian in A in rows 1-3 and stores point Bp's translational velocity
+  /// Jacobian in A in rows 4-6, i.e., <pre>
+  ///     J𝑠_w_AB_E = J𝑠_V_ABp_E.topRows<3>();
+  ///     J𝑠_v_ABp_E = J𝑠_V_ABp_E.bottomRows<3>();
+  /// </pre>
+  /// @note Consider CalcJacobianTranslationalVelocity() for multiple points
+  /// fixed to frame B and consider CalcJacobianAngularVelocity() to calculate
+  /// frame B's angular velocity Jacobian.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
+  /// @throws std::exception if `J𝑠_V_ABp_E` is nullptr or not sized `6 x n`.
+  void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
+                                   JacobianWrtVariable with_respect_to,
+                                   const Frame<T>& frame_B,
+                                   const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+                                   const Frame<T>& frame_A,
+                                   const Frame<T>& frame_E,
+                                   EigenPtr<MatrixX<T>> Js_V_ABp_E) const {
+    this->ValidateContext(context);
+    DRAKE_DEMAND(Js_V_ABp_E != nullptr);
+    internal_tree().CalcJacobianSpatialVelocity(context, with_respect_to,
+                                                frame_B, p_BoBp_B, frame_A,
+                                                frame_E, Js_V_ABp_E);
+  }
+
+  /// Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
+  /// with respect to "speeds" 𝑠.
+  /// <pre>
+  ///      J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
+  ///      w_AB = J𝑠_w_AB ⋅ 𝑠          w_AB is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  /// </pre>
+  /// `w_AB` is B's angular velocity in frame A and "speeds" 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  ///
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_w_AB` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_B The frame B in `w_AB` (B's angular velocity in A).
+  /// @param[in] frame_A The frame A in `w_AB` (B's angular velocity in A).
+  /// @param[in] frame_E The frame in which `w_AB` is expressed on input and
+  /// the frame in which the Jacobian `J𝑠_w_AB` is expressed on output.
+  /// @param[out] J𝑠_w_AB_E Frame B's angular velocity Jacobian in frame A with
+  /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
+  /// The Jacobian is a function of only generalized positions q (which are
+  /// pulled from the context).  The previous definition shows `J𝑠_w_AB_E` is
+  /// a matrix of size `3 x n`, where n is the number of elements in 𝑠.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
+  /// @throws std::exception if `J𝑠_w_AB_E` is nullptr or not of size `3 x n`.
+  void CalcJacobianAngularVelocity(const systems::Context<T>& context,
+                                   const JacobianWrtVariable with_respect_to,
+                                   const Frame<T>& frame_B,
+                                   const Frame<T>& frame_A,
+                                   const Frame<T>& frame_E,
+                                   EigenPtr<Matrix3X<T>> Js_w_AB_E) const {
+    this->ValidateContext(context);
+    DRAKE_DEMAND(Js_w_AB_E != nullptr);
+    return internal_tree().CalcJacobianAngularVelocity(
+        context, with_respect_to, frame_B, frame_A, frame_E, Js_w_AB_E);
+  }
+
+  /// For each point Bi affixed/welded to a frame B, calculates J𝑠_v_ABi, Bi's
+  /// translational velocity Jacobian in frame A with respect to "speeds" 𝑠.
+  /// <pre>
+  ///      J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
+  ///      v_ABi = J𝑠_v_ABi ⋅ 𝑠          v_ABi is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  /// </pre>
+  /// `v_ABi` is Bi's translational velocity in frame A and "speeds" 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  ///
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ABi` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_B The frame on which point Bi is affixed/welded.
+  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
+  /// Bo (frame_B's origin) to points Bi (regarded as affixed to B), where each
+  /// position vector is expressed in frame_B.
+  /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
+  /// Note: It is natural to wonder why there is no parameter p_AoAi_A (similar
+  /// to the parameter p_BoBi_B for frame_B).  There is no need for p_AoAi_A
+  /// because Bi's velocity in A is defined as the derivative in frame A of
+  /// Bi's position vector from _any_ point affixed to A.
+  /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
+  /// the frame in which the Jacobian `J𝑠_v_ABi` is expressed on output.
+  /// @param[out] J𝑠_v_ABi_E Point Bi's velocity Jacobian in frame A with
+  /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
+  /// `J𝑠_v_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// n is the number of elements in 𝑠.  The Jacobian is a function of only
+  /// generalized positions q (which are pulled from the context).
+  /// @throws std::exception if `J𝑠_v_ABi_E` is nullptr or not sized `3*p x n`.
+  /// @note When 𝑠 = q̇, `Jq̇_v_ABi = Jq_p_AoBi`.  In other words, point Bi's
+  /// velocity Jacobian in frame A with respect to q̇ is equal to point Bi's
+  /// position Jacobian from Ao (A's origin) in frame A with respect to q. <pre>
+  /// [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ⱼ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qⱼ]
+  /// </pre>
+  /// Note: Each partial derivative of p_AoBi is taken in frame A.
+  /// @see CalcJacobianPositionVector() for details on Jq_p_AoBi.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
+  void CalcJacobianTranslationalVelocity(
+      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      EigenPtr<MatrixX<T>> Js_v_ABi_E) const {
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
+    // some applications it is all we need and it is more efficient to compute.
+    this->ValidateContext(context);
+    DRAKE_DEMAND(Js_v_ABi_E != nullptr);
+    internal_tree().CalcJacobianTranslationalVelocity(
+        context, with_respect_to, frame_B, frame_B, p_BoBi_B, frame_A, frame_E,
+        Js_v_ABi_E);
+  }
+
+  /// For each point Bi affixed/welded to a frame B, calculates Jq_p_AoBi, Bi's
+  /// position vector Jacobian in frame A with respect to the generalized
+  /// positions q ≜ [q₁ ... qₙ]ᵀ as
+  /// <pre>
+  ///      Jq_p_AoBi ≜ [ ᴬ∂(p_AoBi)/∂q₁,  ...  ᴬ∂(p_AoBi)/∂qₙ ]
+  /// </pre>
+  /// where p_AoBi is Bi's position vector from point Ao (frame A's origin) and
+  /// ᴬ∂(p_AoBi)/∂qᵣ denotes the partial derivative in frame A of p_AoBi with
+  /// respect to the generalized position qᵣ, where qᵣ is one of q₁ ... qₙ.
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] frame_B The frame on which point Bi is affixed/welded.
+  /// @param[in] p_BoBi_B A position vector or list of k position vectors from
+  /// Bo (frame_B's origin) to points Bi (Bi is regarded as affixed to B), where
+  /// each position vector is expressed in frame_B.
+  /// @param[in] frame_A The frame in which partial derivatives are calculated
+  /// and the frame in which point Ao is affixed.
+  /// @param[in] frame_E The frame in which the Jacobian Jq_p_AoBi is expressed
+  /// on output.
+  /// @param[out] Jq_p_AoBi_E Point Bi's position vector Jacobian in frame A
+  /// with generalized positions q, expressed in frame E. Jq_p_AoBi_E is a
+  /// `3*k x n` matrix, where k is the number of points Bi and n is the number
+  /// of elements in q.  The Jacobian is a function of only generalized
+  /// positions q (which are pulled from the context).
+  /// @throws std::exception if Jq_p_AoBi_E is nullptr or not sized `3*k x n`.
+  /// @note Jq̇_v_ABi = Jq_p_AoBi.  In other words, point Bi's velocity Jacobian
+  /// in frame A with respect to q̇ is equal to point Bi's position vector
+  /// Jacobian in frame A with respect to q.
+  /// <pre>
+  /// [∂(v_ABi)/∂q̇₁, ... ∂(v_ABi)/∂q̇ₙ] = [ᴬ∂(p_AoBi)/∂q₁, ... ᴬ∂(p_AoBi)/∂qₙ]
+  /// </pre>
+  /// @see CalcJacobianTranslationalVelocity() for details on Jq̇_v_ABi.
+  /// Note: Jq_p_AaBi = Jq_p_AoBi, where point Aa is _any_ point fixed/welded to
+  /// frame A, i.e., this calculation's result is the same if point Ao is
+  /// replaced with any point fixed on frame A.
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
+  void CalcJacobianPositionVector(const systems::Context<T>& context,
+                                  const Frame<T>& frame_B,
+                                  const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+                                  const Frame<T>& frame_A,
+                                  const Frame<T>& frame_E,
+                                  EigenPtr<MatrixX<T>> Jq_p_AoBi_E) const {
+    // TODO(mitiguy) Consider providing the Jacobian-times-vector operation.
+    //  Sometimes it is all that is needed and more efficient to compute.
+    this->ValidateContext(context);
+    DRAKE_DEMAND(Jq_p_AoBi_E != nullptr);
+    internal_tree().CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kQDot, frame_B, frame_B, p_BoBi_B,
+        frame_A, frame_E, Jq_p_AoBi_E);
+  }
+
+  /// Calculates J𝑠_v_ACcm_E, point Ccm's translational velocity Jacobian in
+  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point CCm
+  /// is the center of mass of the system of all non-world bodies contained in
+  /// `this` MultibodyPlant.
+  /// @param[in] context contains the state of the model.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_A The frame in which the translational velocity
+  /// v_ACcm and its Jacobian J𝑠_v_ACcm are measured.
+  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_ACcm is
+  /// expressed on output.
+  /// @param[out] J𝑠_v_ACcm_E Point Ccm's translational velocity Jacobian in
+  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// J𝑠_v_ACcm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
+  /// The Jacobian is a function of only generalized positions q (which are
+  /// pulled from the context).
+  /// @throws std::exception if CCm does not exist, which occurs if there
+  /// are no massive bodies in MultibodyPlant (except world_body()).
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
+  /// bodies contained in `this` MultibodyPlant).
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
+  void CalcJacobianCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+    this->ValidateContext(context);
+    DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
+    internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
+        context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
+  }
+
+  /// Calculates J𝑠_v_ACcm_E, point Ccm's translational velocity Jacobian in
+  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point CCm
+  /// is the center of mass of the system of all non-world bodies contained in
+  /// model_instances.
+  /// @param[in] context contains the state of the model.
+  /// @param[in] model_instances Vector of selected model instances.  If a model
+  /// instance is repeated in the vector (unusual), it is only counted once.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_A The frame in which the translational velocity
+  /// v_ACcm and its Jacobian J𝑠_v_ACcm are measured.
+  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_ACcm is
+  /// expressed on output.
+  /// @param[out] J𝑠_v_ACcm_E Point Ccm's translational velocity Jacobian in
+  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// J𝑠_v_ACcm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
+  /// The Jacobian is a function of only generalized positions q (which are
+  /// pulled from the context).
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
+  /// bodies contained in model_instances).
+  /// @throws std::exception if model_instances is empty or only has world body.
+  /// @note The world_body() is ignored.  J𝑠_v_ACcm_ = ∑ (mᵢ Jᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
+  /// and Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
+  /// frame E (Bᵢcm is the center of mass of the iᵗʰ body).
+  /// @see See @ref Jacobian_functions "Jacobian functions" for related
+  /// functions.
+  void CalcJacobianCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances,
+      JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
+      const Frame<T>& frame_E, EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+    this->ValidateContext(context);
+    DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
+    internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
+        context, model_instances, with_respect_to, frame_A, frame_E,
+        Js_v_ACcm_E);
+  }
+  /// @} <!-- Jacobian_functions -->
 
   /// @anchor bias_acceleration_functions
   /// @name Bias acceleration functions

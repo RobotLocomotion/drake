@@ -34,7 +34,8 @@ inline MobodIndex world_mobod_index() { return MobodIndex(0); }
 /// Type used to identify frames by index in a multibody tree system.
 using FrameIndex = TypeSafeIndex<class FrameTag>;
 
-/// Type used to identify bodies by index in a multibody tree system.
+/// Type used to identify RigidBodies (a.k.a. Links) by index in a multibody
+/// system. Interchangeable with LinkIndex.
 using BodyIndex = TypeSafeIndex<class BodyTag>;
 
 /// Type used to identify force elements by index within a multibody tree

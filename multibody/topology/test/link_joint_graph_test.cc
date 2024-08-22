@@ -28,7 +28,7 @@ using std::pair;
 // member functions so that we can test those APIs standalone.
 class LinkJointGraphTester {
  public:
-  static LinkJointGraph::Link MakeLink(BodyIndex index, LinkOrdinal ordinal,
+  static LinkJointGraph::Link MakeLink(LinkIndex index, LinkOrdinal ordinal,
                                        std::string name,
                                        ModelInstanceIndex model_instance,
                                        LinkFlags flags) {
@@ -40,8 +40,8 @@ class LinkJointGraphTester {
                                          std::string name,
                                          ModelInstanceIndex model_instance,
                                          JointTraitsIndex joint_traits_index,
-                                         BodyIndex parent_link_index,
-                                         BodyIndex child_link_index,
+                                         LinkIndex parent_link_index,
+                                         LinkIndex child_link_index,
                                          JointFlags flags) {
     return LinkJointGraph::Joint(index, ordinal, std::move(name),
                                  model_instance, joint_traits_index,
@@ -65,12 +65,12 @@ class LinkJointGraphTester {
                                                shadow_link_ordinal);
   }
 
-  static std::vector<BodyIndex> static_link_indexes(
+  static std::vector<LinkIndex> static_link_indexes(
       const LinkJointGraph& graph) {
     return graph.static_link_indexes();
   }
 
-  static std::vector<BodyIndex> non_static_must_be_base_body_link_indexes(
+  static std::vector<LinkIndex> non_static_must_be_base_body_link_indexes(
       const LinkJointGraph& graph) {
     return graph.non_static_must_be_base_body_link_indexes();
   }
@@ -245,8 +245,8 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_TRUE(graph.joints().empty());
   EXPECT_EQ(graph.world_link().name(), "world");
   EXPECT_EQ(graph.world_link().model_instance(), world_model_instance());
-  const BodyIndex world_link_index = graph.world_link().index();
-  EXPECT_EQ(world_link_index, BodyIndex(0));
+  const LinkIndex world_link_index = graph.world_link().index();
+  EXPECT_EQ(world_link_index, LinkIndex(0));
 
   // Topologically important joint types are predefined.
   EXPECT_EQ(ssize(graph.joint_traits()), 3);
@@ -274,6 +274,24 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
 
   // With no forest built, there are no composites.
   EXPECT_TRUE(graph.link_composites().empty());
+  // These "Calc" functions don't require a forest.
+  EXPECT_EQ(graph.CalcSubgraphsOfWeldedLinks(),
+            std::vector<std::set<LinkIndex>>{{world_link_index}});
+  EXPECT_EQ(graph.CalcLinksWeldedTo(world_link_index),
+            std::set<LinkIndex>{world_link_index});
+
+  // The "Find" and "Get" methods should complain if there's no Forest.
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.FindPathFromWorld(world_link_index),
+                              "FindPathFromWorld.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      graph.FindFirstCommonAncestor(world_link_index, world_link_index),
+      "FindFirstCommonAncestor.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.FindSubtreeLinks(world_link_index),
+                              "FindSubtreeLinks.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.GetSubgraphsOfWeldedLinks(),
+                              "GetSubgraphsOfWeldedLinks.*no SpanningForest.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.GetLinksWeldedTo(world_link_index),
+                              "GetLinksWeldedTo.*no SpanningForest.*");
 
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
@@ -287,16 +305,28 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
             world_link_index);
+  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
+
+  EXPECT_EQ(graph.FindPathFromWorld(world_link_index),
+            std::vector<LinkIndex>{world_link_index});  // Just World.
+  EXPECT_EQ(graph.FindFirstCommonAncestor(world_link_index, world_link_index),
+            world_link_index);
+  EXPECT_EQ(graph.FindSubtreeLinks(world_link_index),
+            std::vector<LinkIndex>{world_link_index});
+  EXPECT_EQ(graph.GetSubgraphsOfWeldedLinks(),
+            std::vector<std::set<LinkIndex>>{{world_link_index}});
+  EXPECT_EQ(graph.GetLinksWeldedTo(world_link_index),
+            std::set<LinkIndex>{world_link_index});
 
   // Check that Clear() puts the graph back to default-constructed condition.
   // First add some junk to the graph.
   graph.RegisterJointType("revolute", 1, 1);
-  const BodyIndex dummy_index =
+  const LinkIndex dummy_index =
       graph.AddLink("dummy", default_model_instance());
   graph.AddJoint("joint0", default_model_instance(), "revolute", world_index(),
                  dummy_index);
   EXPECT_TRUE(graph.HasLinkNamed("dummy", default_model_instance()));
-  EXPECT_EQ(dummy_index, BodyIndex(1));
+  EXPECT_EQ(dummy_index, LinkIndex(1));
   EXPECT_EQ(ssize(graph.links()), 2);
   EXPECT_EQ(ssize(graph.joints()), 1);
   EXPECT_EQ(ssize(graph.joint_traits()), 4);
@@ -315,6 +345,90 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_TRUE(graph.forest_is_valid());
 }
 
+/* Check that various algorithms work on a non-trivial graph (they were
+tested on the world-only graph above). Most of these
+are actually wrappers around SpanningForest algorithms which are tested
+more thoroughly in spanning_forest_test.cc, so this is mostly testing
+that the wrapping worked correctly.
+
+Here is the graph:
+
+                  {9}                        {l} Link l
+                   ^                          -> revolute joint
+                   |                          => weld joint
+           {1} -> {2} => {3} => {8}
+   World
+     {0}   {4} => {5} -> {6}
+
+           {7} (static)
+*/
+GTEST_TEST(LinkJointGraph, CheckMiscAlgorithms) {
+  LinkJointGraph graph;
+  graph.RegisterJointType("revolute", 1, 1);
+
+  for (int i = 1; i <= 9; ++i) {
+    graph.AddLink(fmt::format("link{}", i), default_model_instance(),
+                  i == 7 ? LinkFlags::kStatic : LinkFlags::kDefault);
+  }
+
+  graph.AddJoint("joint0", default_model_instance(), "revolute", LinkIndex(1),
+                 LinkIndex(2));
+  graph.AddJoint("joint1", default_model_instance(), "weld", LinkIndex(2),
+                 LinkIndex(3));
+  graph.AddJoint("joint2", default_model_instance(), "weld", LinkIndex(3),
+                 LinkIndex(8));
+  graph.AddJoint("joint3", default_model_instance(), "revolute", LinkIndex(2),
+                 LinkIndex(9));
+  graph.AddJoint("joint4", default_model_instance(), "weld", LinkIndex(4),
+                 LinkIndex(5));
+  graph.AddJoint("joint5", default_model_instance(), "revolute", LinkIndex(5),
+                 LinkIndex(6));
+
+  const std::vector<std::set<LinkIndex>> expected_subgraphs{
+      {LinkIndex(0), LinkIndex(7)},
+      {LinkIndex(2), LinkIndex(3), LinkIndex(8)},
+      {LinkIndex(4), LinkIndex(5)},
+      {LinkIndex(1)},
+      {LinkIndex(6)},
+      {LinkIndex(9)}};
+
+  // The two "Calc" functions should work even though we haven't built the
+  // forest.
+  EXPECT_EQ(graph.CalcSubgraphsOfWeldedLinks(), expected_subgraphs);
+
+  EXPECT_EQ(graph.CalcLinksWeldedTo(LinkIndex(3)),
+            (std::set<LinkIndex>{{LinkIndex(2), LinkIndex(3), LinkIndex(8)}}));
+
+  // Building the forest gives us access to the faster functions.
+  graph.BuildForest();
+
+  EXPECT_EQ(graph.GetSubgraphsOfWeldedLinks(), expected_subgraphs);
+  EXPECT_EQ(graph.GetLinksWeldedTo(LinkIndex(3)),
+            (std::set<LinkIndex>{{LinkIndex(2), LinkIndex(3), LinkIndex(8)}}));
+
+  EXPECT_EQ(
+      graph.FindPathFromWorld(LinkIndex(3)),
+      (std::vector{LinkIndex(0), LinkIndex(1), LinkIndex(2), LinkIndex(3)}));
+
+  EXPECT_EQ(graph.FindFirstCommonAncestor(LinkIndex(8), LinkIndex(9)),
+            LinkIndex(2));
+  EXPECT_EQ(graph.FindFirstCommonAncestor(LinkIndex(9), LinkIndex(8)),
+            LinkIndex(2));
+
+  EXPECT_EQ(
+      graph.FindSubtreeLinks(LinkIndex(2)),
+      (std::vector{LinkIndex(2), LinkIndex(3), LinkIndex(8), LinkIndex(9)}));
+
+  // Welds for static links get added first, then floating joints.
+  EXPECT_EQ(graph.FindSubtreeLinks(LinkIndex(0)),
+            (std::vector{
+                LinkIndex(0), LinkIndex(7),  // static (tree0)
+                LinkIndex(1), LinkIndex(2), LinkIndex(3), LinkIndex(8),
+                LinkIndex(9),                             // tree1
+                LinkIndex(4), LinkIndex(5), LinkIndex(6)  // tree2
+            }));
+}
+
 // Make sure AddLink() rejects obvious errors.
 GTEST_TEST(LinkJointGraph, AddLinkErrors) {
   LinkJointGraph graph;
@@ -331,7 +445,7 @@ GTEST_TEST(LinkJointGraph, AddLinkErrors) {
       "AddLink.*already a link named.*link1.*model instance.*3.*");
 
   // Addlink accepts flags, but not Shadow which is set internally only.
-  const BodyIndex link2_index =
+  const LinkIndex link2_index =
       graph.AddLink("link2", ModelInstanceIndex(3),
                     LinkFlags::kMassless | LinkFlags::kMustBeBaseBody);
   const LinkJointGraph::Link& link2 = graph.link_by_index(link2_index);
@@ -348,29 +462,29 @@ GTEST_TEST(LinkJointGraph, AddLinkErrors) {
 GTEST_TEST(LinkJointGraph, InternalListsAreBuiltCorrectly) {
   LinkJointGraph graph;
 
-  const BodyIndex link1_index =
+  const LinkIndex link1_index =
       graph.AddLink("link1", default_model_instance(), LinkFlags::kStatic);
-  const BodyIndex link2_index = graph.AddLink("link2", default_model_instance(),
+  const LinkIndex link2_index = graph.AddLink("link2", default_model_instance(),
                                               LinkFlags::kMustBeBaseBody);
-  const BodyIndex link3_index =
+  const LinkIndex link3_index =
       graph.AddLink("link3", default_model_instance(),
                     LinkFlags::kStatic | LinkFlags::kMustBeBaseBody);
 
   // Links 1 and 3 are static.
   EXPECT_EQ(LinkJointGraphTester::static_link_indexes(graph),
-            (std::vector<BodyIndex>{link1_index, link3_index}));
+            (std::vector<LinkIndex>{link1_index, link3_index}));
   // But only link 2 should be on the non-static must be base body list.
   EXPECT_EQ(
       LinkJointGraphTester::non_static_must_be_base_body_link_indexes(graph),
-      std::vector<BodyIndex>{link2_index});
+      std::vector<LinkIndex>{link2_index});
 }
 
 // Check operation of the public members of the Link subclass.
 GTEST_TEST(LinkJoinGraph, LinkAPITest) {
   LinkJointGraph::Link link5 = LinkJointGraphTester::MakeLink(
-      BodyIndex(5), LinkOrdinal(0), "link5", ModelInstanceIndex(7),
+      LinkIndex(5), LinkOrdinal(0), "link5", ModelInstanceIndex(7),
       LinkFlags::kMustBeBaseBody);
-  EXPECT_EQ(link5.index(), BodyIndex(5));
+  EXPECT_EQ(link5.index(), LinkIndex(5));
   EXPECT_EQ(link5.model_instance(), ModelInstanceIndex(7));
   EXPECT_EQ(link5.name(), "link5");
 
@@ -400,9 +514,9 @@ GTEST_TEST(LinkJoinGraph, LinkAPITest) {
 
 // Check operation of the public members of the Joint subclass.
 GTEST_TEST(LinkJointGraph, JointAPITest) {
-  const BodyIndex parent_index(1);
-  const BodyIndex child_index(2);
-  const BodyIndex other_body_index(3);  // Not connected by joint3.
+  const LinkIndex parent_index(1);
+  const LinkIndex child_index(2);
+  const LinkIndex other_body_index(3);  // Not connected by joint3.
   LinkJointGraph::Joint joint3 = LinkJointGraphTester::MakeJoint(
       JointIndex(3), JointOrdinal(0), "joint3", ModelInstanceIndex(9),
       LinkJointGraph::rpy_floating_joint_traits_index(), parent_index,
@@ -465,10 +579,10 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
       fmt::format("AddLink\\(\\): Model instance index {} is reserved.*",
                   world_model_instance()));
 
-  BodyIndex parent = graph.AddLink("link1", model_instance);
+  LinkIndex parent = graph.AddLink("link1", model_instance);
   graph.AddJoint("pin1", model_instance, "revolute", world_index(), parent);
   for (int i = 2; i <= 5; ++i) {
-    BodyIndex child = graph.AddLink("link" + std::to_string(i), model_instance);
+    LinkIndex child = graph.AddLink("link" + std::to_string(i), model_instance);
     graph.AddJoint("pin" + std::to_string(i), model_instance, "revolute",
                    parent, child);
     parent = child;
@@ -480,7 +594,7 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   EXPECT_EQ(graph.num_user_joints(), 5);
 
   // Check that the links see their joints.
-  const LinkJointGraph::Link& link4 = graph.link_by_index(BodyIndex(4));
+  const LinkJointGraph::Link& link4 = graph.link_by_index(LinkIndex(4));
   EXPECT_EQ(link4.joints(),
             (std::vector<JointIndex>{JointIndex(3), JointIndex(4)}));
   EXPECT_EQ(link4.joints_as_parent(), std::vector<JointIndex>{JointIndex(4)});
@@ -490,7 +604,7 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   // weld constraint, and check that it properly updates the relevant links.
   // (This is a private function normally used only by SpanningForest as it
   // breaks loops; users can't add constraints to the graph.)
-  const LinkJointGraph::Link& link5 = graph.link_by_index(BodyIndex(5));
+  const LinkJointGraph::Link& link5 = graph.link_by_index(LinkIndex(5));
   const LoopConstraintIndex constraint0_index =
       LinkJointGraphTester::AddLoopClosingWeldConstraint(
           link4.ordinal(),  // primary link
@@ -521,44 +635,44 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
       "AddLink.*already a link named.*link3.*model instance.*5.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      graph.AddJoint("pin3", model_instance, "revolute", BodyIndex(1),
-                     BodyIndex(2)),
+      graph.AddJoint("pin3", model_instance, "revolute", LinkIndex(1),
+                     LinkIndex(2)),
       "AddJoint.*already a joint named.*pin3.*model instance.*5.*");
 
   // We cannot add a redundant joint.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      graph.AddJoint("other", model_instance, "revolute", BodyIndex(1),
-                     BodyIndex(2)),
+      graph.AddJoint("other", model_instance, "revolute", LinkIndex(1),
+                     LinkIndex(2)),
       "AddJoint\\(\\):.*already has joint.*pin2.*instance 5.*"
       " connecting.*link1.*link2.*adding joint.*other.*instance 5.*"
       " connecting.*link1.*link2.*is not allowed.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      graph.AddJoint("reverse", model_instance, "revolute", BodyIndex(2),
-                     BodyIndex(1)),
+      graph.AddJoint("reverse", model_instance, "revolute", LinkIndex(2),
+                     LinkIndex(1)),
       "AddJoint\\(\\):.*already has joint.*pin2.*instance 5.*"
       " connecting.*link1.*link2.*adding joint.*reverse.*instance 5.*"
       " connecting.*link2.*link1.*is not allowed.");
 
   // We cannot add an unregistered joint type.
   DRAKE_EXPECT_THROWS_MESSAGE(graph.AddJoint("screw1", model_instance, "screw",
-                                             BodyIndex(1), BodyIndex(2)),
+                                             LinkIndex(1), LinkIndex(2)),
                               "AddJoint\\(\\): Unrecognized type.*");
 
   // Invalid parent/child Link throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      graph.AddJoint("another_pin", model_instance, "revolute", BodyIndex(1),
-                     BodyIndex(9)),
+      graph.AddJoint("another_pin", model_instance, "revolute", LinkIndex(1),
+                     LinkIndex(9)),
       "AddJoint\\(\\): child link index 9 for joint '.*' refers.*"
       "non-existent or ephemeral.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      graph.AddJoint("another_pin", model_instance, "revolute", BodyIndex(9),
-                     BodyIndex(1)),
+      graph.AddJoint("another_pin", model_instance, "revolute", LinkIndex(9),
+                     LinkIndex(1)),
       "AddJoint\\(\\): parent link index 9 for joint '.*' refers.*"
       "non-existent or ephemeral.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      graph.AddJoint("joint_to_self", model_instance, "revolute", BodyIndex(5),
-                     BodyIndex(5)),
+      graph.AddJoint("joint_to_self", model_instance, "revolute", LinkIndex(5),
+                     LinkIndex(5)),
       "AddJoint\\(\\): Joint.*joint_to_self.*instance 5.*would connect.*link5.*"
       "to itself.");
 
@@ -567,9 +681,9 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   EXPECT_EQ(ssize(graph.joints()), 5);
 
   // Verify we can get bodies/joints.
-  EXPECT_EQ(graph.link_by_index(BodyIndex(3)).name(), "link3");
+  EXPECT_EQ(graph.link_by_index(LinkIndex(3)).name(), "link3");
   EXPECT_EQ(graph.joint_by_index(JointIndex(3)).name(), "pin4");
-  EXPECT_THROW((void)graph.link_by_index(BodyIndex(9)), std::exception);
+  EXPECT_THROW((void)graph.link_by_index(LinkIndex(9)), std::exception);
   EXPECT_THROW((void)graph.joint_by_index(JointIndex(9)), std::exception);
 
   // Verify we can query if a Link/Joint is in the graph.
@@ -584,9 +698,9 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   // We can add a Static Link with no Joint, or attach it to World with an
   // explicit Weld, but we can't use any other kind of Joint to World.
   graph.AddLink("static6", static_model_instance);
-  const BodyIndex static7_index =
+  const LinkIndex static7_index =
       graph.AddLink("static7", static_model_instance);
-  const BodyIndex static8_index =
+  const LinkIndex static8_index =
       graph.AddLink("static8", model_instance, LinkFlags::kStatic);
   graph.AddJoint("static7_weld", model_instance,  // OK
                  "weld", graph.world_link().index(), static7_index);
@@ -599,8 +713,8 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   // Now add a free link and a free-floating pair.
   graph.AddLink("free9", model_instance);
 
-  const BodyIndex link10_index = graph.AddLink("link10", model_instance);
-  const BodyIndex base11_index =
+  const LinkIndex link10_index = graph.AddLink("link10", model_instance);
+  const LinkIndex base11_index =
       graph.AddLink("base11", model_instance, LinkFlags::kMustBeBaseBody);
   const JointIndex joint_10_11_index = graph.AddJoint(
       "weld", model_instance, "weld", link10_index, base11_index);
@@ -626,7 +740,7 @@ GTEST_TEST(LinkJointGraph, RemoveJoint) {
     graph.AddLink("link" + std::to_string(i), model_instance);
   for (int j = 0; j <= 2; ++j) {
     graph.AddJoint("joint" + std::to_string(j), model_instance, "revolute",
-                   BodyIndex(j + 1), BodyIndex(j + 2));
+                   LinkIndex(j + 1), LinkIndex(j + 2));
   }
 
   for (int j = 0; j < 3; ++j)
@@ -637,8 +751,8 @@ GTEST_TEST(LinkJointGraph, RemoveJoint) {
   EXPECT_TRUE(graph.has_joint(JointIndex(1)));
   EXPECT_TRUE(graph.HasJointNamed("joint1", model_instance));
 
-  const LinkJointGraph::Link& link2 = graph.link_by_index(BodyIndex(2));
-  const LinkJointGraph::Link& link3 = graph.link_by_index(BodyIndex(3));
+  const LinkJointGraph::Link& link2 = graph.link_by_index(LinkIndex(2));
+  const LinkJointGraph::Link& link3 = graph.link_by_index(LinkIndex(3));
 
   EXPECT_EQ(ssize(link2.joints()), 2);
   EXPECT_EQ(ssize(link3.joints()), 2);
@@ -686,7 +800,7 @@ GTEST_TEST(LinkJointGraph, RemoveJoint) {
   // Adding a new joint should wipe the ephemeral elements, whose indices
   // are then available for reassignment (unlike user element indices).
   const JointIndex replaced_index = graph.AddJoint(
-      "joint3", model_instance, "revolute", BodyIndex(2), BodyIndex(3));
+      "joint3", model_instance, "revolute", LinkIndex(2), LinkIndex(3));
   EXPECT_EQ(replaced_index, JointIndex(3));
 
   // At this point we should have

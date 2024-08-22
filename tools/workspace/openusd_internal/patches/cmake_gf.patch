@@ -1,0 +1,14 @@
+[openusd_internal] Add missing pxr/base/gf header file
+
+We should upstream this patch.
+
+--- pxr/base/gf/CMakeLists.txt
++++ pxr/base/gf/CMakeLists.txt
+@@ -84,6 +84,7 @@ pxr_library(gf
+         ostreamHelpers
+ 
+     PRIVATE_HEADERS
++        colorSpace_data.h
+         ilmbase_eLut.h
+         ilmbase_toFloat.h
+         nc/nanocolor.h

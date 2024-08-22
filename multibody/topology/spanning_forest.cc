@@ -144,9 +144,10 @@ bool SpanningForest::BuildForest() {
   /* Model the World (Link 0) with mobilized body 0. This also starts the 0th
   LinkComposite in the graph and the 0th Welded Mobods group in the Forest.
   (1.1) */
-  data_.mobods.emplace_back(MobodIndex(0), LinkOrdinal(0));
+  Mobod& world = data_.mobods.emplace_back(MobodIndex(0), LinkOrdinal(0));
+  world.has_massful_follower_link_ = true;  // World is heavy!
   data_.welded_mobods.emplace_back(std::vector{MobodIndex(0)});
-  data_.mobods[MobodIndex(0)].welded_mobods_index_ = WeldedMobodsIndex(0);
+  world.welded_mobods_index_ = WeldedMobodsIndex(0);
   mutable_graph().set_primary_mobod_for_link(LinkOrdinal(0), MobodIndex(0),
                                              JointIndex{});
   mutable_graph().CreateWorldLinkComposite();
@@ -165,6 +166,8 @@ bool SpanningForest::BuildForest() {
 
   /* Dole out the q's and v's, depth-first. (Phase 3) */
   AssignCoordinates();
+
+  DRAKE_ASSERT_VOID(SanityCheckForest());
 
   return dynamics_ok();
 }
@@ -688,7 +691,7 @@ void SpanningForest::FindNextLevelJoints(MobodIndex inboard_mobod_index,
     same merged LinkComposite. We must grow the composite in the outboard
     direction of the joint, which is the end that is _not_ already following
     the inboard Mobod. */
-    const BodyIndex outboard_link_index =
+    const LinkIndex outboard_link_index =
         FindOutboardLink(inboard_mobod_index, j_in);
 
     /* Adds the outboard link O to the inboard composite and keeps collecting
@@ -699,7 +702,7 @@ void SpanningForest::FindNextLevelJoints(MobodIndex inboard_mobod_index,
   }
 }
 
-BodyIndex SpanningForest::FindOutboardLink(MobodIndex inboard_mobod_index,
+LinkIndex SpanningForest::FindOutboardLink(MobodIndex inboard_mobod_index,
                                            const Joint& joint) const {
   const Link& parent_link = link_by_index(joint.parent_link_index());
   const Link& child_link = link_by_index(joint.child_link_index());
@@ -717,7 +720,7 @@ bool SpanningForest::HasMassfulOutboardLink(
     const std::vector<JointIndex>& joints) const {
   for (JointIndex joint_index : joints) {
     const Joint& joint = joint_by_index(joint_index);
-    const BodyIndex outboard_link_index =
+    const LinkIndex outboard_link_index =
         FindOutboardLink(inboard_mobod_index, joint);
     if (!link_by_index(outboard_link_index).is_massless()) return true;
   }
@@ -786,7 +789,7 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
 }
 
 void SpanningForest::ConnectLinksToWorld(
-    const std::vector<BodyIndex>& links_to_connect, bool use_weld) {
+    const std::vector<LinkIndex>& links_to_connect, bool use_weld) {
   for (const auto& link_index : links_to_connect) {
     const LinkOrdinal link_ordinal = graph().index_to_ordinal(link_index);
     DRAKE_DEMAND(!link_is_already_in_forest(link_ordinal));
@@ -902,7 +905,7 @@ const SpanningForest::Mobod& SpanningForest::AddShadowMobod(
   const Link& primary_link = links(primary_link_ordinal);
   Joint& shadow_joint = mutable_graph().mutable_joint(shadow_joint_ordinal);
   DRAKE_DEMAND(shadow_joint.connects(primary_link.index()));
-  const BodyIndex inboard_link_index =
+  const LinkIndex inboard_link_index =
       shadow_joint.other_link_index(primary_link.index());
 
   /* The Joint was written to connect inboard_link to primary_link but is
@@ -957,7 +960,7 @@ const SpanningForest::Mobod& SpanningForest::JoinExistingMobod(
 }
 
 void SpanningForest::GrowCompositeMobod(
-    Mobod* mobod, BodyIndex outboard_link_index,
+    Mobod* mobod, LinkIndex outboard_link_index,
     JointOrdinal weld_joint_ordinal,
     std::vector<JointIndex>* open_joint_indexes, int* num_unprocessed_links) {
   /* If the outboard_link has already been processed we're looking at a loop
@@ -998,7 +1001,7 @@ void SpanningForest::GrowCompositeMobod(
     /* We've found another unprocessed joint that needs merging onto this
     composite. One of its links is the outboard_link (already in the forest
     at this point). Find the other link. */
-    const BodyIndex other_link_index =
+    const LinkIndex other_link_index =
         joint.other_link_index(outboard_link_index);
 
     /* Recursively extend the Composite along the new merge-weld joint. */
@@ -1007,64 +1010,97 @@ void SpanningForest::GrowCompositeMobod(
   }
 }
 
-// TODO(sherm1) Remove this.
-/* To permit testing the APIs of Tree and LoopConstraint before the implementing
-code is merged, we'll stub a forest that looks like this:
+std::vector<MobodIndex> SpanningForest::FindPathFromWorld(
+    MobodIndex index) const {
+  const Mobod* mobod = &mobods(index);
+  std::vector<MobodIndex> path(mobod->level() + 1);
+  while (mobod->inboard().is_valid()) {
+    path[mobod->level()] = mobod->index();
+    mobod = &mobods(mobod->inboard());
+  }
+  DRAKE_DEMAND(mobod->is_world());
+  path[0] = MobodIndex(0);
+  return path;
+}
 
-           -> mobod1 => mobod2
-    World                 ^
-           -> mobod3 .....|  loop constraint
+MobodIndex SpanningForest::FindFirstCommonAncestor(
+    MobodIndex mobod1_index, MobodIndex mobod2_index) const {
+  // A body is its own first common ancestor.
+  if (mobod1_index == mobod2_index) return mobod1_index;
 
-There are two trees and a loop constraint where mobod3 is primary and
-mobod2 is the shadow. The two joints to World have 1 dof, the "=>" joint
-is a weld with 0 dofs.
+  // If either body is World, that's the first common ancestor.
+  if (mobod1_index == world_mobod_index() ||
+      mobod2_index == world_mobod_index()) {
+    return world_mobod_index();
+  }
 
-Note that there are no graph elements corresponding to any of this stuff
-in the stub; we're just testing SpanningForest APIs here which don't care.
-This will not be a well-formed forest for other purposes! */
-void SpanningForest::AddStubTreeAndLoopConstraint() {
-  /* Add three dummy Mobods. */
-  data_.mobods.reserve(4);  // Prevent invalidation of the references.
-  auto& mobod1 =
-      data_.mobods.emplace_back(MobodIndex(1), LinkOrdinal(1), JointOrdinal(1),
-                                1 /* level */, false /* is_reversed */);
-  auto& mobod2 =
-      data_.mobods.emplace_back(MobodIndex(2), LinkOrdinal(2), JointOrdinal(2),
-                                2 /* level */, false /* is_reversed */);
-  auto& mobod3 =
-      data_.mobods.emplace_back(MobodIndex(3), LinkOrdinal(3), JointOrdinal(3),
-                                1 /* level */, false /* is_reversed */);
+  const Mobod* branch1 = &mobods(mobod1_index);
+  const Mobod* branch2 = &mobods(mobod2_index);
 
-  /* Assign depth-first coordinates. */
-  mobod1.q_start_ = 0;
-  mobod1.nq_ = 1;
-  mobod1.v_start_ = 0;
-  mobod1.nv_ = 1;
-  mobod2.q_start_ = 1;
-  mobod2.nq_ = 0;
-  mobod2.v_start_ = 1;
-  mobod2.nv_ = 0;
-  mobod3.q_start_ = 1;
-  mobod3.nq_ = 1;
-  mobod3.v_start_ = 1;
-  mobod3.nv_ = 1;
+  // If they are in different trees, World is the ancestor.
+  if (branch1->tree() != branch2->tree()) return world_mobod().index();
 
-  // Make the trees.
-  data_.trees.reserve(2);
-  auto& tree0 = data_.trees.emplace_back(this, TreeIndex(0), MobodIndex(1));
-  tree0.last_mobod_ = MobodIndex(2);
-  tree0.height_ = 2;
-  auto& tree1 = data_.trees.emplace_back(this, TreeIndex(1), MobodIndex(3));
-  tree1.last_mobod_ = MobodIndex(3);
-  tree1.height_ = 1;
+  // Get down to a common level, then go down both branches.
+  while (branch1->level() > branch2->level())
+    branch1 = &mobods(branch1->inboard());
+  while (branch2->level() > branch1->level())
+    branch2 = &mobods(branch2->inboard());
 
-  mobod1.tree_index_ = tree0.index();
-  mobod2.tree_index_ = tree0.index();
-  mobod3.tree_index_ = tree1.index();
+  // Both branches are at the same level now.
+  while (branch1->index() != branch2->index()) {
+    branch1 = &mobods(branch1->inboard());
+    branch2 = &mobods(branch2->inboard());
+  }
 
-  // Add the loop constraint.
-  data_.loop_constraints.emplace_back(LoopConstraintIndex(0), MobodIndex(3),
-                                      MobodIndex(2));
+  return branch1->index();  // Same as branch2->index().
+}
+
+MobodIndex SpanningForest::FindPathsToFirstCommonAncestor(
+    MobodIndex mobod1_index, MobodIndex mobod2_index,
+    std::vector<MobodIndex>* path1, std::vector<MobodIndex>* path2) const {
+  DRAKE_DEMAND(path1 != nullptr && path2 != nullptr);
+  path1->clear();
+  path2->clear();
+  // A body is its own first common ancestor.
+  if (mobod1_index == mobod2_index) return mobod1_index;
+
+  const Mobod* branch1 = &mobods(mobod1_index);
+  const Mobod* branch2 = &mobods(mobod2_index);
+
+  // Get down to a common level, then go down both branches.
+  while (branch1->level() > branch2->level()) {
+    path1->push_back(branch1->index());
+    branch1 = &mobods(branch1->inboard());
+  }
+  while (branch2->level() > branch1->level()) {
+    path2->push_back(branch2->index());
+    branch2 = &mobods(branch2->inboard());
+  }
+
+  // Both branches are at the same level now.
+  while (branch1->index() != branch2->index()) {
+    path1->push_back(branch1->index());
+    path2->push_back(branch2->index());
+    branch1 = &mobods(branch1->inboard());
+    branch2 = &mobods(branch2->inboard());
+  }
+
+  return branch1->index();  // Same as branch2->index().
+}
+
+std::vector<LinkIndex> SpanningForest::FindSubtreeLinks(
+    MobodIndex root_mobod_index) const {
+  const int num_subtree_mobods = mobods(root_mobod_index).num_subtree_mobods();
+  std::vector<LinkIndex> result;
+  result.reserve(num_subtree_mobods);  // Will be at least this big.
+  for (int i = 0; i < num_subtree_mobods; ++i) {
+    const Mobod& subtree_mobod = mobods(MobodIndex(root_mobod_index + i));
+    for (LinkOrdinal ordinal : subtree_mobod.follower_link_ordinals()) {
+      const Link& link = links(ordinal);
+      result.push_back(link.index());
+    }
+  }
+  return result;
 }
 
 SpanningForest::Data::Data() = default;
