@@ -55,6 +55,8 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(point.x(), 2*p)
         point.set_x(x=p)
         assert_pickle(self, point, lambda S: S.x())
+        self.assertAlmostEqual(point.CalcMaximumDistanceViaSampling(
+            generator=RandomGenerator(), num_samples=1000), 0.0, delta=1e-6)
 
         # TODO(SeanCurtis-TRI): This doesn't test the constructor that
         # builds from shape.
@@ -84,6 +86,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(E.IsBounded())
         self.assertTrue(E.PointInSet(E.MaybeGetFeasiblePoint()))
         self.assertTrue(E.IntersectsWith(E))
+        self.assertAlmostEqual(E.CalcMaximumDistanceViaSampling(
+            generator=RandomGenerator(), num_samples=1000), 2.0, delta=1e-6)
 
         mut.AffineBall.MakeAxisAligned(
             radius=np.ones(3), center=np.zeros(3))
@@ -197,6 +201,9 @@ class TestGeometryOptimization(unittest.TestCase):
         h_unit_box = mut.HPolyhedron.MakeUnitBox(dim=3)
         np.testing.assert_array_equal(h_box.A(), h_unit_box.A())
         np.testing.assert_array_equal(h_box.b(), h_unit_box.b())
+        self.assertAlmostEqual(h_unit_box.CalcMaximumDistanceViaSampling(
+            generator=RandomGenerator(), num_samples=1000), 2 * 3 ** 0.5,
+        delta=1e-6)
         A_l1 = np.array([[1, 1, 1],
                          [-1, 1, 1],
                          [1, -1, 1],
