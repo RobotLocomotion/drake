@@ -152,6 +152,55 @@ class SpanningForest {
   using Link = LinkJointGraph::Link;
   using Joint = LinkJointGraph::Joint;
 
+  /** Returns the sequence of mobilized bodies from World to the given mobod B,
+  inclusive of both. The 0th element is always present in the result and is
+  the World (at level 0) with each entry being the Mobod at the next-higher
+  level along the path to B. Cost is O(ℓ) where ℓ is B's level in its tree. */
+  std::vector<MobodIndex> FindPathFromWorld(MobodIndex index) const;
+
+  /** Finds the highest-numbered mobilized body that is common to the paths
+  from each of the given ones to World. Returns World immediately if the bodies
+  are on different trees; otherwise the cost is O(ℓ) where ℓ is the length
+  of the longer path from one of the bodies to the ancestor.
+  @note Because the forest uses depth-first numbering for the Mobods, the
+  highest-numbered Mobod is also the ancestor with the highest level (i.e.,
+  the one farthest from World).
+  @see FindPathsToFirstCommonAncestor() */
+  MobodIndex FindFirstCommonAncestor(MobodIndex mobod1_index,
+                                     MobodIndex mobod2_index) const;
+
+  /** Finds the highest numbered common ancestor to two mobilized bodies and
+  returns the paths to the ancestor from each of them. The mobilizers along
+  the returned paths are the only ones that can affect the _relative_ pose
+  between the given mobilized bodies. The returned paths do not include the
+  ancestor but end with the Mobod whose inboard body is the ancestor. The
+  ancestor Mobod is returned separately as the function return value.
+  Complexity is O(ℓ) where ℓ is the length of the longer path from one of the
+  bodies to the ancestor. Each of the given Mobods will be included in its
+  returned path (as the first entry) except when it is the ancestor, in which
+  case its path will be empty.
+  @note Because the forest uses depth-first numbering for the Mobods, the
+  highest-numbered Mobod is also the ancestor with the highest level (i.e.,
+  the one farthest from World).
+  @param mobod1_index The index of Mobod 1
+  @param mobod2_index The index of Mobod 2
+  @param path1 path to ancestor from Mobod 1, not including the ancestor
+  @param path2 path to ancestor from Mobod 2, not including the ancestor
+  @retval ancestor_index the ancestor mobilized body's index
+  @see FindFirstCommonAncestor() if you don't need the paths
+  @pre indices are valid, path pointers are non-null */
+  MobodIndex FindPathsToFirstCommonAncestor(
+      MobodIndex mobod1_index, MobodIndex mobod2_index,
+      std::vector<MobodIndex>* path1, std::vector<MobodIndex>* path2) const;
+
+  /** Finds all the Links following the Forest subtree whose root mobilized body
+  B is given. That is, we return all the Links that follow B or any other Mobod
+  in the subtree rooted at B. The Links following B come first, and the rest
+  follow the depth-first ordering of the Mobods. In particular, the result is
+  _not_ sorted by LinkIndex. Computational cost is O(ℓ) where ℓ is the number of
+  Links following the subtree. */
+  std::vector<LinkIndex> FindSubtreeLinks(MobodIndex root_mobod_index) const;
+
   /** Returns a reference to the graph that owns this forest (as set during
   construction). */
   const LinkJointGraph& graph() const {
@@ -184,7 +233,7 @@ class SpanningForest {
   }
 
   // TODO(sherm1) Make this unchecked; maybe private?
-  const Link& link_by_index(BodyIndex link_index) const {
+  const Link& link_by_index(LinkIndex link_index) const {
     return graph().link_by_index(link_index);
   }
 
@@ -345,10 +394,21 @@ class SpanningForest {
   @pre v_index is in range [0, num_velocities) */
   inline TreeIndex v_to_tree(int v_index) const;
 
-  // TODO(sherm1) Remove this.
-  // (Testing stub only) Add enough fake elements to the forest to allow
-  // testing of the Tree and LoopConstraint APIs.
-  void AddStubTreeAndLoopConstraint();
+  // FYI Debugging APIs (including Graphviz-related) are defined in
+  // spanning_forest_debug.cc.
+
+  /** Generate a graphviz representation of this %SpanningForest, with the
+  given label at the top. The result is in the "dot" language, see
+  https://graphviz.org. If you write it to some file foo.dot, you can
+  generate a viewable png (for example) using the command
+  `dot -Tpng foo.dot >foo.png`.
+  @see LinkJointGraph::GenerateGraphvizString() */
+  std::string GenerateGraphvizString(std::string_view label) const;
+
+  /** (Debugging, Testing) Runs a series of expensive tests to see that the
+  Graph and Forest are internally consistent and throws if not. Does nothing
+  if no Forest has been built. */
+  void SanityCheckForest() const;
 
  private:
   friend class LinkJointGraph;
@@ -450,7 +510,7 @@ class SpanningForest {
 
   // Given a Mobod and a Joint known to have one of its links already following
   // that Mobod, find the other (outboard) link. */
-  BodyIndex FindOutboardLink(MobodIndex inboard_mobod_index,
+  LinkIndex FindOutboardLink(MobodIndex inboard_mobod_index,
                              const Joint& joint) const;
 
   // Helper for ExtendTreesOneLevel(). Given a Mobod and a set of joints known
@@ -479,7 +539,7 @@ class SpanningForest {
 
   // Given a list of Static or MustBeBaseBody Links, adds a weld or floating
   // Joint to World for each Link that doesn't already have one.
-  void ConnectLinksToWorld(const std::vector<BodyIndex>& links, bool use_weld);
+  void ConnectLinksToWorld(const std::vector<LinkIndex>& links, bool use_weld);
 
   // Sets the comparison function to be used in making the "best" choice.
   void SetBaseBodyChoicePolicy();
@@ -576,7 +636,7 @@ class SpanningForest {
   // link. As we encounter non-merge joints attached to this composite we append
   // them to `open_joint_indexes` for processing next. Those constitute the
   // "next level" outboard of this merged composite.
-  void GrowCompositeMobod(Mobod* inboard_mobod, BodyIndex outboard_link_index,
+  void GrowCompositeMobod(Mobod* inboard_mobod, LinkIndex outboard_link_index,
                           JointOrdinal weld_joint_ordinal,
                           std::vector<JointIndex>* open_joint_indexes,
                           int* num_unprocessed_links);

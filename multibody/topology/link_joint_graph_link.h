@@ -25,7 +25,7 @@ class LinkJointGraph::Link {
 
   /** Returns this %Link's unique index in the graph. This is persistent after
   the %Link has been allocated. */
-  BodyIndex index() const { return index_; }
+  LinkIndex index() const { return index_; }
 
   /** Returns the current value of this %Link's ordinal (position in the
   links() vector). This can change as %Links are removed. */
@@ -61,7 +61,7 @@ class LinkJointGraph::Link {
   /** Returns `true` only if this is the World %Link. Static Links and Links
   in the World Composite are not included; see is_anchored() if you want to
   include everything that is fixed with respect to World. */
-  bool is_world() const { return index_ == BodyIndex(0); }
+  bool is_world() const { return index_ == LinkIndex(0); }
 
   /** After modeling, returns `true` if this %Link is fixed with respect to
   World. That includes World itself, static Links, and any Link that is part
@@ -97,7 +97,7 @@ class LinkJointGraph::Link {
 
   /** If this %Link is a shadow, returns the primary %Link it shadows. If
   not a shadow then it is its own primary %Link so returns index(). */
-  BodyIndex primary_link() const { return primary_link_; }
+  LinkIndex primary_link() const { return primary_link_; }
 
   /** If this is a primary %Link (not a shadow) returns the number of Shadow
   Links that were added due to loop breaking. */
@@ -129,7 +129,7 @@ class LinkJointGraph::Link {
   friend class LinkJointGraph;
   friend class LinkJointGraphTester;
 
-  Link(BodyIndex index, LinkOrdinal ordinal, std::string name,
+  Link(LinkIndex index, LinkOrdinal ordinal, std::string name,
        ModelInstanceIndex model_instance, LinkFlags flags);
 
   // (For testing) If `to_set` is LinkFlags::kDefault sets the flags to
@@ -173,12 +173,12 @@ class LinkJointGraph::Link {
   // @pre this is a user link, not a shadow.
   void ClearModel(JointIndex max_user_joint_index);
 
-  BodyIndex index_;      // persistent
+  LinkIndex index_;      // persistent
   LinkOrdinal ordinal_;  // can change
   std::string name_;
   ModelInstanceIndex model_instance_;
   LinkFlags flags_{LinkFlags::kDefault};
-  BodyIndex primary_link_;  // Same as index_ unless this is a shadow link.
+  LinkIndex primary_link_;  // Same as index_ unless this is a shadow link.
 
   // Members below here may contain as-modeled information that has to be
   // removed when the SpanningForest is cleared or rebuilt. The joint
@@ -194,7 +194,7 @@ class LinkJointGraph::Link {
   MobodIndex mobod_;  // Mobod that mobilizes this Link.
   JointIndex joint_;  // Joint that connects us to the Mobod (invalid if World).
 
-  std::vector<BodyIndex> shadow_links_;
+  std::vector<LinkIndex> shadow_links_;
 
   // World is always in a composite; other links are in a composite only
   // if they are welded to another link.
