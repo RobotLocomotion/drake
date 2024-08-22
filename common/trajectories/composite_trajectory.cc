@@ -22,6 +22,7 @@ std::vector<T> ExtractBreaks(
   }
 
   for (int i = 0; i < static_cast<int>(segments.size()); ++i) {
+    DRAKE_THROW_UNLESS(segments[i].get() != nullptr);
     if (i > 0) {
       DRAKE_THROW_UNLESS(segments[i]->start_time() ==
                          segments[i - 1]->end_time());
@@ -40,6 +41,7 @@ CompositeTrajectory<T>::CompositeTrajectory(
     : PiecewiseTrajectory<T>(ExtractBreaks(segments)),
       segments_(std::move(segments)) {
   for (int i = 1; i < ssize(segments_); ++i) {
+    // segments_[i] is checked for nullptr in ExtractBreaks.
     DRAKE_DEMAND(segments_[i]->rows() == segments_[0]->rows());
     DRAKE_DEMAND(segments_[i]->cols() == segments_[0]->cols());
   }
@@ -112,20 +114,22 @@ template <typename T>
 CompositeTrajectory<T> CompositeTrajectory<T>::AlignAndConcatenate(
     std::vector<copyable_unique_ptr<Trajectory<T>>> segments) {
   DRAKE_THROW_UNLESS(segments.size() > 0);
+  DRAKE_THROW_UNLESS(segments[0].get() != nullptr);
   for (int i = 1; i < ssize(segments); ++i) {
+    DRAKE_THROW_UNLESS(segments[i].get() != nullptr);
     DRAKE_THROW_UNLESS(segments[i]->rows() == segments[0]->rows());
     DRAKE_THROW_UNLESS(segments[i]->cols() == segments[0]->cols());
   }
   std::vector<copyable_unique_ptr<Trajectory<T>>> aligned_segments;
   aligned_segments.emplace_back(segments[0]);
   for (int i = 1; i < ssize(segments); ++i) {
-    T new_start = aligned_segments.back()->end_time();
-    T duration = segments[i]->end_time() - segments[i]->start_time();
-    std::vector<T> breaks = {new_start, new_start + duration};
-    std::vector<Eigen::MatrixX<T>> samples = {
+    const T new_start = aligned_segments.back()->end_time();
+    const T duration = segments[i]->end_time() - segments[i]->start_time();
+    const std::vector<T> breaks = {new_start, new_start + duration};
+    const std::vector<Eigen::MatrixX<T>> samples = {
         Vector1<T>(segments[i]->start_time()),
         Vector1<T>(segments[i]->end_time())};
-    PiecewisePolynomial<T> time_traj =
+    const PiecewisePolynomial<T> time_traj =
         PiecewisePolynomial<T>::FirstOrderHold(breaks, samples);
     aligned_segments.emplace_back(copyable_unique_ptr(
         PathParameterizedTrajectory(*segments[i], time_traj)));

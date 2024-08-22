@@ -24,6 +24,7 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CompositeTrajectory);
 
   /** Constructs a composite trajectory from a list of Trajectories.
+  @pre ∀i, `segments[i].get() != nullptr`.
   @pre ∀i, `segments[i+1].start_time() == segments[i].end_time()`.
   @pre ∀i, `segments[i].rows() == segments[0].rows()` and segments[i].cols() ==
   segments[0].cols()`. */
@@ -54,6 +55,7 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
 
   /** Constructs a composite trajectory from a list of trajectories whose start
   and end times may not coincide, by translating their start and end times.
+  @pre ∀i, `segments[i].get() != nullptr`.
   @pre ∀i, `segments[i].rows() == segments[0].rows()` and segments[i].cols() ==
   segments[0].cols()`. */
   static CompositeTrajectory<T> AlignAndConcatenate(
