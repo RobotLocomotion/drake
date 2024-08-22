@@ -11,6 +11,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/planar_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 
 namespace drake {
 
@@ -207,7 +209,8 @@ GTEST_TEST(MultibodyPlantIntrospection, GetContinuousJoints) {
 
   plant.Finalize();
 
-  const std::vector<int> continuous_joint_indices = plant.GetContinuousRevoluteJointIndices();
+  const std::vector<int> continuous_joint_indices =
+      plant.GetContinuousRevoluteJointIndices();
   ASSERT_EQ(continuous_joint_indices.size(), 2);
   EXPECT_EQ(continuous_joint_indices[0], 2);
   EXPECT_EQ(continuous_joint_indices[1], 6);
