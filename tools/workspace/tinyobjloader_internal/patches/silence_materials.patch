@@ -1,0 +1,18 @@
+tinyobj gives us the option to parse an obj file _without_ specifying a material
+reader. However, even if no material reader has been provided, usages of
+"usemtl" will bark at the lack of material. In the case where we're clearly not
+reading materials, we shouldn't bother processing the usemtl directives either.
+
+This should be upstreamed into tinyobjloader.
+
+--- tiny_obj_loader.h
++++ tiny_obj_loader.h
+@@ -2848,6 +2848,8 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
+ 
+     // use mtl
+     if ((0 == strncmp(token, "usemtl", 6))) {
++      // Skip materials if we don't have a material reader.
++      if (readMatFn == nullptr) continue;
+       token += 6;
+       std::string namebuf = parseString(&token);
+ 
