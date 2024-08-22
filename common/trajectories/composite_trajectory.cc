@@ -112,7 +112,7 @@ std::unique_ptr<Trajectory<T>> CompositeTrajectory<T>::DoMakeDerivative(
 
 template <typename T>
 CompositeTrajectory<T> CompositeTrajectory<T>::AlignAndConcatenate(
-    std::vector<copyable_unique_ptr<Trajectory<T>>> segments) {
+    const std::vector<copyable_unique_ptr<Trajectory<T>>>& segments) {
   DRAKE_THROW_UNLESS(segments.size() > 0);
   DRAKE_THROW_UNLESS(segments[0].get() != nullptr);
   for (int i = 1; i < ssize(segments); ++i) {

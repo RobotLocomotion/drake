@@ -59,7 +59,7 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
   @pre ∀i, `segments[i].rows() == segments[0].rows()` and segments[i].cols() ==
   segments[0].cols()`. */
   static CompositeTrajectory<T> AlignAndConcatenate(
-      std::vector<copyable_unique_ptr<Trajectory<T>>> segments);
+      const std::vector<copyable_unique_ptr<Trajectory<T>>>& segments);
 
  private:
   bool do_has_derivative() const final;
