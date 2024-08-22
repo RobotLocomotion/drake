@@ -1,5 +1,6 @@
 #pragma once
 
+#include <istream>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -7,10 +8,12 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/diagnostic_policy.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
-/** Reads the OBJ file with the given `filename` into a collection of data. It
+/* Reads the OBJ file with the given `filename` into a collection of data. It
  includes the vertex positions, face encodings (see TinyObjToFclFaces), and
  number of faces.
 
@@ -26,10 +29,20 @@ namespace internal {
             ...}
   where n_i is the number of vertices of face_i, vi_j is the index in
  `vertices` for a vertex on face i. Note that the size of faces is larger than
- num_faces. */
+ num_faces.
+
+ In the case of an error, the pointers will be null. */
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
-ReadObjFile(const std::string& filename, double scale, bool triangulate);
+ReadObjFile(const std::string& filename, double scale, bool triangulate,
+            const drake::internal::DiagnosticPolicy& diagnostic = {});
+
+/* Variant that takes a stream. */
+std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
+           std::shared_ptr<std::vector<int>>, int>
+ReadObjStream(std::istream* input_stream, double scale, bool triangulate,
+              std::string_view description,
+              const drake::internal::DiagnosticPolicy& diagnostic = {});
 
 }  // namespace internal
 }  // namespace geometry

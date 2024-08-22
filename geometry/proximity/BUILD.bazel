@@ -780,8 +780,8 @@ drake_cc_library(
     ],
     implementation_deps = [
         "//common:essential",
+        "//geometry:read_obj",
         "@fmt",
-        "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 

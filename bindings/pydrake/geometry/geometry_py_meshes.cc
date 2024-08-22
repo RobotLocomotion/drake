@@ -191,7 +191,7 @@ void DoMeshDependentDefinitions(py::module m) {
       },
       py::arg("filename"), py::arg("scale") = 1.0,
       // N.B. We have not bound the optional "on_warning" argument.
-      doc.ReadObjToTriangleSurfaceMesh.doc_3args_filename_scale_on_warning);
+      doc.ReadObjToTriangleSurfaceMesh.doc_3args);
 }
 
 }  // namespace
