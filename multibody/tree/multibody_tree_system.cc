@@ -140,7 +140,8 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() {
 }
 
 template <typename T>
-void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
+void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters(
+    int* num_frame_body_pose_slots_needed) {
   // Mobilizers.
   for (MobodIndex mobilizer_index(0);
        mobilizer_index < tree_->num_mobilizers(); ++mobilizer_index) {
@@ -165,9 +166,15 @@ void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
     mutable_tree().get_mutable_body(body_index).DeclareParameters(this);
   }
   // Frames.
+  *num_frame_body_pose_slots_needed = 1;  // 0th is for an identity transform.
   for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
        ++frame_index) {
-    mutable_tree().get_mutable_frame(frame_index).DeclareParameters(this);
+    Frame<T>& frame = mutable_tree().get_mutable_frame(frame_index);
+    frame.DeclareParameters(this);
+    // This is where the extracted, reformatted, and composed body pose X_BF for
+    // this Frame will be stored in the frame body poses cache entry.
+    frame.set_body_pose_index_in_cache(
+        frame.is_body_frame() ? 0 : (*num_frame_body_pose_slots_needed)++);
   }
   // Force Elements.
   for (ForceElementIndex force_element_index(0);
@@ -189,7 +196,9 @@ void MultibodyTreeSystem<T>::Finalize() {
     tree_->Finalize();
   }
 
-  DeclareMultibodyElementParameters();
+  int num_frame_body_poses_needed{-1};
+  DeclareMultibodyElementParameters(&num_frame_body_poses_needed);
+  DRAKE_DEMAND(num_frame_body_poses_needed > 0);  // Always at least 1.
 
   // Declare state.
   if (is_discrete_) {
@@ -202,14 +211,40 @@ void MultibodyTreeSystem<T>::Finalize() {
                                  0 /* num_z */);
   }
 
+  // Declare cache entries dependent only on parameters.
+
   // TODO(joemasterjohn): Create more granular parameter tickets for finer
   //  control over cache dependencies on parameters. For example,
   //  all_rigid_body_parameters, etc.
+
+  cache_indexes_.reflected_inertia =
+      this->DeclareCacheEntry(std::string("reflected inertia"),
+                              VectorX<T>(internal_tree().num_velocities()),
+                              &MultibodyTreeSystem<T>::CalcReflectedInertia,
+                              {this->all_parameters_ticket()})
+          .cache_index();
+
+  cache_indexes_.joint_damping =
+      this->DeclareCacheEntry(std::string("joint damping"),
+                              VectorX<T>(internal_tree().num_velocities()),
+                              &MultibodyTreeSystem<T>::CalcJointDamping,
+                              {this->all_parameters_ticket()})
+          .cache_index();
+
+  cache_indexes_.frame_body_poses =
+      this->DeclareCacheEntry(std::string("frame pose in body frame"),
+                              FrameBodyPoseCache<T>(
+                                  num_frame_body_poses_needed),
+                              &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
+                              {this->all_parameters_ticket()})
+          .cache_index();
 
   const DependencyTicket position_ticket =
       is_discrete_ ? this->xd_ticket() : this->q_ticket();
   const DependencyTicket velocity_ticket =
       is_discrete_ ? this->xd_ticket() : this->v_ticket();
+
+  // Declare cache entries dependent on positions (and parameters).
 
   // Allocate position cache.
   cache_indexes_.position_kinematics =
@@ -230,21 +265,6 @@ void MultibodyTreeSystem<T>::Finalize() {
               {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
-  cache_indexes_.reflected_inertia =
-      this->DeclareCacheEntry(std::string("reflected inertia"),
-                              VectorX<T>(internal_tree().num_velocities()),
-                              &MultibodyTreeSystem<T>::CalcReflectedInertia,
-                              {this->all_parameters_ticket()})
-          .cache_index();
-
-  // Allocate cache entry for joint damping.
-  cache_indexes_.joint_damping =
-      this->DeclareCacheEntry(std::string("joint damping"),
-                              VectorX<T>(internal_tree().num_velocities()),
-                              &MultibodyTreeSystem<T>::CalcJointDamping,
-                              {this->all_parameters_ticket()})
-          .cache_index();
-
   // Allocate cache entry for composite-body inertias Mc_B_W(q) for each body.
   cache_indexes_.composite_body_inertia_in_world =
       this->DeclareCacheEntry(
@@ -254,6 +274,8 @@ void MultibodyTreeSystem<T>::Finalize() {
               &MultibodyTreeSystem<T>::CalcCompositeBodyInertiasInWorld,
               {position_kinematics_cache_entry().ticket()})
           .cache_index();
+
+  // Declare cache entries dependent on velocities (and parameters & positions).
 
   // Allocate velocity cache.
   cache_indexes_.velocity_kinematics =
@@ -315,6 +337,9 @@ void MultibodyTreeSystem<T>::Finalize() {
               &MultibodyTreeSystem<T>::CalcArticulatedBodyForceBias,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
+
+  // Declare cache entries dependent on forces and accelerations (and
+  // parameters, positions, and velocities).
 
   // Forces, and thus accelerations, are functions not only of state but also
   // inputs. In addition, the forces and accelerations can have extra
