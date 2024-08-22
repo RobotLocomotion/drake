@@ -49,7 +49,7 @@ drake_cc_library(
     ],
     deps = [
         ":multibody_tree_indexes",
-        "//multibody/topology:multibody_topology",
+        "//multibody/topology",
     ],
 )
 
@@ -183,7 +183,7 @@ drake_cc_library(
         "//common:string_container",
         "//common:unused",
         "//math:geometric_transform",
-        "//multibody/topology:multibody_topology",
+        "//multibody/topology",
         "//systems/framework:leaf_system",
     ],
 )
