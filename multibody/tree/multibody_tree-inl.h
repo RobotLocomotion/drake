@@ -102,16 +102,14 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // later to define mobilizers between those frames in a second tree2.
   mobilizer->inboard_frame().HasThisParentTreeOrThrow(this);
   mobilizer->outboard_frame().HasThisParentTreeOrThrow(this);
-  const int num_positions = mobilizer->num_positions();
-  const int num_velocities = mobilizer->num_velocities();
-  MobilizerIndex mobilizer_index = topology_.add_mobilizer(
+  MobodIndex mobilizer_index = topology_.add_mobilizer(
+      mobilizer->mobod(),
       mobilizer->inboard_frame().index(),
-      mobilizer->outboard_frame().index(),
-      num_positions, num_velocities);
+      mobilizer->outboard_frame().index());
 
-  // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
+  // This DRAKE_DEMAND MUST be performed BEFORE mobilizers_.push_back()
   // below. Do not move it around!
-  DRAKE_ASSERT(mobilizer_index == num_mobilizers());
+  DRAKE_DEMAND(mobilizer_index == num_mobilizers());
 
   // TODO(sammy-tri) This effectively means that there's no way to
   //  programmatically add mobilizers from outside of MultibodyTree
@@ -137,7 +135,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
       mobilizer->has_quaternion_dofs();
 
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
-  owned_mobilizers_.push_back(std::move(mobilizer));
+  mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;
 }
 
@@ -183,7 +181,7 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
   force_element->set_parent_tree(this, force_element_index);
 
   ForceElementType<T>* raw_force_element_ptr = force_element.get();
-  owned_force_elements_.push_back(std::move(force_element));
+  force_elements_.push_back(std::move(force_element));
   return *raw_force_element_ptr;
 }
 
@@ -201,7 +199,7 @@ MultibodyTree<T>::AddForceElement(Args&&... args) {
 template <typename T>
 template <template<typename Scalar> class JointType>
 const JointType<T>& MultibodyTree<T>::AddJoint(
-    std::unique_ptr<JointType<T>> joint) {
+    std::unique_ptr<JointType<T>> joint, bool is_ephemeral_joint) {
   static_assert(std::is_convertible_v<JointType<T>*, Joint<T>*>,
                 "JointType must be a sub-class of Joint<T>.");
 
@@ -237,14 +235,16 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
                     joint->child_body().name()));
   }
 
-  // This will check some additional error conditions.
-  RegisterJointInGraph(*joint);
+  // User joints need to be registered with the LinkJointGraph but joints added
+  // during modeling are already in the graph.
+  if (!is_ephemeral_joint)
+    RegisterJointAndMaybeJointTypeInGraph(*joint.get());
 
   joint->set_parent_tree(this, joints_.next_index());
   joint->set_ordinal(joints_.num_elements());
-  JointType<T>* result = joint.get();
+  JointType<T>* raw_joint_ptr = joint.get();
   joints_.Add(std::move(joint));
-  return *result;
+  return *raw_joint_ptr;
 }
 
 template <typename T>
@@ -258,6 +258,15 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
     Args&&... args) {
   static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                 "JointType<T> must be a sub-class of Joint<T>.");
+
+  if (&parent.get_parent_tree() != this || &child.get_parent_tree() != this) {
+    throw std::logic_error(
+        fmt::format("AddJoint(): can't add joint {} between {} and {} "
+                    "because one or both belong to a different "
+                    "MultibodyPlant.",
+                    name, parent.name(), child.name()));
+  }
+
   // The Joint constructor promises that the Joint's model instance will be the
   // same as the child body's model instance. We'll assume that for now, and
   // then cross-check it at the bottom of this function. We need to use the same
@@ -270,6 +279,22 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
       name, frame_on_parent, frame_on_child, std::forward<Args>(args)...));
   DRAKE_DEMAND(result.model_instance() == joint_instance);
+  return result;
+}
+
+// This is internal use only so doesn't need the error checking provided
+// by the AddJoint() signature.
+template <typename T>
+template<template<typename> class JointType, typename... Args>
+const JointType<T>& MultibodyTree<T>::AddEphemeralJoint(
+    const std::string& name,
+    const RigidBody<T>& parent,
+    const RigidBody<T>& child,
+    Args&&... args) {
+
+  const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
+  name, parent.body_frame(), child.body_frame(), std::forward<Args>(args)...),
+                                        true /*ephemeral joint*/);
   return result;
 }
 
@@ -384,12 +409,12 @@ template <typename T>
 template <typename FromScalar>
 Mobilizer<T>* MultibodyTree<T>::CloneMobilizerAndAdd(
     const Mobilizer<FromScalar>& mobilizer) {
-  MobilizerIndex mobilizer_index = mobilizer.index();
+  const MobodIndex mobilizer_index = mobilizer.index();
   auto mobilizer_clone = mobilizer.CloneToScalar(*this);
   mobilizer_clone->set_parent_tree(this, mobilizer_index);
   mobilizer_clone->set_model_instance(mobilizer.model_instance());
   Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
-  owned_mobilizers_.push_back(std::move(mobilizer_clone));
+  mobilizers_.push_back(std::move(mobilizer_clone));
   return raw_mobilizer_clone_ptr;
 }
 
@@ -397,11 +422,11 @@ template <typename T>
 template <typename FromScalar>
 void MultibodyTree<T>::CloneForceElementAndAdd(
     const ForceElement<FromScalar>& force_element) {
-  ForceElementIndex force_element_index = force_element.index();
+  const ForceElementIndex force_element_index = force_element.index();
   auto force_element_clone = force_element.CloneToScalar(*this);
   force_element_clone->set_parent_tree(this, force_element_index);
   force_element_clone->set_model_instance(force_element.model_instance());
-  owned_force_elements_.push_back(std::move(force_element_clone));
+  force_elements_.push_back(std::move(force_element_clone));
 }
 
 template <typename T>

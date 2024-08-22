@@ -66,10 +66,10 @@ RationalForwardKinematics::RationalForwardKinematics(
   map_mobilizer_to_s_index_ = std::vector<int>(tree.num_mobilizers(), -1);
   for (BodyIndex body_index(1); body_index < plant_.num_bodies();
        ++body_index) {
-    const internal::RigidBodyTopology& body_topology =
+    const internal::RigidBodyTopology& rigid_body_topology =
         tree.get_topology().get_rigid_body(body_index);
     const internal::Mobilizer<double>* mobilizer =
-        &(tree.get_mobilizer(body_topology.inboard_mobilizer));
+        &(tree.get_mobilizer(rigid_body_topology.inboard_mobilizer));
     if (IsRevolute(*mobilizer)) {
       const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
       s_.push_back(s_angle);
@@ -229,8 +229,8 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
       tree.get_topology().get_rigid_body(parent);
   const internal::RigidBodyTopology& child_topology =
       tree.get_topology().get_rigid_body(child);
-  internal::MobilizerIndex mobilizer_index;
-  bool is_order_reversed;
+  internal::MobodIndex mobilizer_index;
+  bool is_order_reversed{};
   if (parent_topology.parent_body.is_valid() &&
       parent_topology.parent_body == child) {
     is_order_reversed = true;
