@@ -476,9 +476,36 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   const Eigen::VectorXd seed = plant.GetPositions(context);
   const int nc = static_cast<int>(options.configuration_obstacles.size());
   // Note: We require finite joint limits to define the bounding box for the
-  // IRIS algorithm.
-  DRAKE_DEMAND(plant.GetPositionLowerLimits().array().isFinite().all());
-  DRAKE_DEMAND(plant.GetPositionUpperLimits().array().isFinite().all());
+  // IRIS algorithm. The exception is revolute joints -- continuous revolute
+  // joints will have their lower boundary set to seed - π/2 +
+  // options.convexity_radius_stepback and their upper boundary set to seed
+  // + π/2 - options.convexity_radius_stepback.
+
+  Eigen::VectorXd lower_limits = plant.GetPositionLowerLimits();
+  Eigen::VectorXd upper_limits = plant.GetPositionUpperLimits();
+  std::vector<int> continuous_revolute_joints =
+      plant.GetContinuousRevoluteJointIndices();
+
+  DRAKE_DEMAND(options.convexity_radius_stepback < M_PI / 2.0);
+  for (int i = 0; i < plant.num_positions(); ++i) {
+    if (!(std::isfinite(lower_limits[i]) && std::isfinite(upper_limits[i]))) {
+      // One of the joint limits is infinite. We check if this joint is a
+      // continuous revolute joint, and if so, manually specify the lower and
+      // upper limits. Otherwise, we throw an error.
+      if (std::find(continuous_revolute_joints.begin(),
+                    continuous_revolute_joints.end(),
+                    i) == continuous_revolute_joints.end()) {
+        throw std::runtime_error(
+            "IRIS requires that all joints (except for continuous revolute "
+            "joints) have position limits.");
+      } else {
+        lower_limits[i] =
+            seed[i] - (M_PI / 2.0) + options.convexity_radius_stepback;
+        upper_limits[i] =
+            seed[i] + (M_PI / 2.0) - options.convexity_radius_stepback;
+      }
+    }
+  }
   DRAKE_DEMAND(options.num_collision_infeasible_samples >= 0);
   for (int i = 0; i < nc; ++i) {
     DRAKE_DEMAND(options.configuration_obstacles[i]->ambient_dimension() == nq);
@@ -494,8 +521,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   }
 
   // Make the polytope and ellipsoid.
-  HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
-                                       plant.GetPositionUpperLimits());
+  HPolyhedron P = HPolyhedron::MakeBox(lower_limits, upper_limits);
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
 
   if (options.bounding_region) {

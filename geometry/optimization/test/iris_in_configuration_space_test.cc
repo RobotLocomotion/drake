@@ -78,6 +78,112 @@ GTEST_TEST(IrisInConfigurationSpaceTest, JointLimits) {
   EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
 }
 
+// One revolute joint without limits.  Iris should return the interval
+// [θ - π/2 + convexity_radius_stepback, θ + π/2 - convexity_radius_stepback]
+GTEST_TEST(IrisInConfigurationSpaceTest, ContinuousRevoluteJoint) {
+  const std::string continuous_urdf = R"(
+<robot name="limits">
+  <link name="movable">
+    <collision>
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="movable" type="continuous">
+    <axis xyz="1 0 0"/>
+    <parent link="world"/>
+    <child link="movable"/>
+  </joint>
+</robot>
+)";
+
+  const Vector1d sample = Vector1d::Zero();
+  IrisOptions options;
+  HPolyhedron region = IrisFromUrdf(continuous_urdf, sample, options);
+
+  EXPECT_EQ(region.ambient_dimension(), 1);
+  EXPECT_EQ(region.A().rows(), 2);
+
+  const double kTol = 1e-5;
+  double qmin = -M_PI / 2 + options.convexity_radius_stepback;
+  double qmax = M_PI / 2 - options.convexity_radius_stepback;
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+
+  // Negative convexity radius stepback is allowed.
+  options.convexity_radius_stepback = -0.25;
+  region = IrisFromUrdf(continuous_urdf, sample, options);
+
+  EXPECT_EQ(region.ambient_dimension(), 1);
+  EXPECT_EQ(region.A().rows(), 2);
+
+  qmin = -M_PI / 2 + options.convexity_radius_stepback;
+  qmax = M_PI / 2 - options.convexity_radius_stepback;
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+}
+
+GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
+  // Check that IRIS correctly handles the continuous revolute component of a
+  // planar joint.
+  const std::string planar_urdf = R"(
+<robot name="limits">
+  <link name="movable">
+    <collision>
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="movable" type="planar">
+    <axis xyz="0 0 1"/>
+    <parent link="world"/>
+    <child link="movable"/>
+  </joint>
+</robot>
+)";
+
+  systems::DiagramBuilder<double> builder;
+  multibody::MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
+  multibody::Parser parser(&plant);
+  parser.package_map().AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package/package.xml"));
+  parser.AddModelsFromString(planar_urdf, "urdf");
+
+  plant.get_mutable_joint(multibody::JointIndex(0))
+      .set_position_limits(
+          Eigen::Vector3d{-1.0, -1.0, -std::numeric_limits<double>::infinity()},
+          Eigen::Vector3d{1.0, 1.0, std::numeric_limits<double>::infinity()});
+
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  const std::vector<int> continuous_joint_indices =
+      plant.GetContinuousRevoluteJointIndices();
+  ASSERT_EQ(continuous_joint_indices.size(), 1);
+  EXPECT_EQ(continuous_joint_indices[0], 2);
+
+  const Eigen::Vector3d sample = Eigen::Vector3d::Zero();
+  auto context = diagram->CreateDefaultContext();
+  plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()), sample);
+  IrisOptions options;
+  HPolyhedron region = IrisInConfigurationSpace(
+      plant, plant.GetMyContextFromRoot(*context), options);
+
+  EXPECT_EQ(region.ambient_dimension(), 3);
+  EXPECT_EQ(region.A().rows(), 6);
+
+  const double kTol = 1e-5;
+  double qmin = -M_PI / 2 + options.convexity_radius_stepback;
+  double qmax = M_PI / 2 - options.convexity_radius_stepback;
+  EXPECT_TRUE(region.PointInSet(Eigen::Vector3d{0.0, 0.0, qmin + kTol}));
+  EXPECT_TRUE(region.PointInSet(Eigen::Vector3d{0.0, 0.0, qmax - kTol}));
+  EXPECT_FALSE(region.PointInSet(Eigen::Vector3d{0.0, 0.0, qmin - kTol}));
+  EXPECT_FALSE(region.PointInSet(Eigen::Vector3d{0.0, 0.0, qmax + kTol}));
+}
+
 const char boxes_urdf[] = R"""(
 <robot name="boxes">
   <link name="fixed">
