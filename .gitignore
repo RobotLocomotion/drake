@@ -28,3 +28,4 @@
 
 # User-specified configuration
 /user.bazelrc
+/requirements.txt
