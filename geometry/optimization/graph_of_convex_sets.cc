@@ -215,7 +215,12 @@ std::vector<solvers::Binding<solvers::Constraint>> Vertex::GetConstraints(
   return constraints;
 }
 
-double Vertex::GetSolutionCost(const MathematicalProgramResult& result) const {
+std::optional<double> Vertex::GetSolutionCost(
+    const MathematicalProgramResult& result) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::nullopt;
+  }
   double sum = 0.0;
   for (int i = 0; i < ssize(ell_); ++i) {
     if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
@@ -225,9 +230,13 @@ double Vertex::GetSolutionCost(const MathematicalProgramResult& result) const {
   return sum;
 }
 
-double Vertex::GetSolutionCost(
+std::optional<double> Vertex::GetSolutionCost(
     const MathematicalProgramResult& result,
     const solvers::Binding<solvers::Cost>& cost) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::nullopt;
+  }
   for (int i = 0; i < ssize(costs_); ++i) {
     if (costs_[i].first == cost) {
       if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
@@ -242,13 +251,18 @@ double Vertex::GetSolutionCost(
       cost.to_string()));
 }
 
-VectorXd Vertex::GetSolution(const MathematicalProgramResult& result) const {
-  if (result.get_decision_variable_index()->contains(
+std::optional<VectorXd> Vertex::GetSolution(
+    const MathematicalProgramResult& result) const {
+  if (result.get_decision_variable_index() &&
+      result.get_decision_variable_index()->contains(
           placeholder_x_[0].get_id())) {
-    return result.GetSolution(placeholder_x_);
+    VectorXd x = result.GetSolution(placeholder_x_);
+    if (x.array().isNaN().any()) {
+      return std::nullopt;
+    }
+    return x;
   } else {
-    return VectorXd::Constant(ambient_dimension(),
-                              std::numeric_limits<double>::quiet_NaN());
+    return std::nullopt;
   }
 }
 
@@ -404,7 +418,12 @@ void Edge::ClearPhiConstraints() {
   phi_value_ = std::nullopt;
 }
 
-double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
+std::optional<double> Edge::GetSolutionCost(
+    const MathematicalProgramResult& result) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::nullopt;
+  }
   double sum = 0.0;
   for (int i = 0; i < ssize(ell_); ++i) {
     if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
@@ -414,9 +433,13 @@ double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
   return sum;
 }
 
-double Edge::GetSolutionCost(
+std::optional<double> Edge::GetSolutionCost(
     const MathematicalProgramResult& result,
     const solvers::Binding<solvers::Cost>& cost) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::nullopt;
+  }
   for (int i = 0; i < ssize(costs_); ++i) {
     if (costs_[i].first == cost) {
       if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
@@ -431,23 +454,31 @@ double Edge::GetSolutionCost(
       cost.to_string()));
 }
 
-Eigen::VectorXd Edge::GetSolutionPhiXu(
+std::optional<Eigen::VectorXd> Edge::GetSolutionPhiXu(
     const solvers::MathematicalProgramResult& result) const {
-  if (result.get_decision_variable_index()->contains(y_[0].get_id())) {
-    return result.GetSolution(y_);
+  if (result.get_decision_variable_index() &&
+      result.get_decision_variable_index()->contains(y_[0].get_id())) {
+    VectorXd sol = result.GetSolution(y_);
+    if (sol.array().isNaN().any()) {
+      return std::nullopt;
+    }
+    return sol;
   } else {
-    return VectorXd::Constant(u_->ambient_dimension(),
-                              std::numeric_limits<double>::quiet_NaN());
+    return std::nullopt;
   }
 }
 
-Eigen::VectorXd Edge::GetSolutionPhiXv(
+std::optional<Eigen::VectorXd> Edge::GetSolutionPhiXv(
     const solvers::MathematicalProgramResult& result) const {
-  if (result.get_decision_variable_index()->contains(z_[0].get_id())) {
-    return result.GetSolution(z_);
+  if (result.get_decision_variable_index() &&
+      result.get_decision_variable_index()->contains(z_[0].get_id())) {
+    VectorXd sol = result.GetSolution(z_);
+    if (sol.array().isNaN().any()) {
+      return std::nullopt;
+    }
+    return sol;
   } else {
-    return VectorXd::Constant(v_->ambient_dimension(),
-                              std::numeric_limits<double>::quiet_NaN());
+    return std::nullopt;
   }
 }
 
@@ -571,10 +602,16 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
       if (options.show_vars) {
-        graphviz << "\nx = [" << v->GetSolution(*result).transpose() << "]";
+        std::optional<VectorXd> x = v->GetSolution(*result);
+        if (x) {
+          graphviz << "\nx = [" << x->transpose() << "]";
+        }
       }
       if (options.show_costs) {
-        graphviz << "\ncost = " << v->GetSolutionCost(*result);
+        std::optional<double> cost = v->GetSolutionCost(*result);
+        if (cost) {
+          graphviz << "\ncost = " << *cost;
+        }
       }
     }
     graphviz << "\"]\n";
@@ -585,16 +622,20 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << " [label=\"" << e->name();
     if (result) {
       if (options.show_costs) {
-        graphviz << "\ncost = " << e->GetSolutionCost(*result);
+        std::optional<double> cost = e->GetSolutionCost(*result);
+        if (cost) {
+          graphviz << "\ncost = " << *cost;
+        }
       }
-      if (options.show_slacks) {
+      if (options.show_slacks && result->get_decision_variable_index()) {
         graphviz << "\n";
-        if (result->get_decision_variable_index()->contains(
-                e->y_[0].get_id())) {
-          graphviz << "ϕ xᵤ = [" << e->GetSolutionPhiXu(*result).transpose()
-                   << "],\n";
-          graphviz << "ϕ xᵥ = [" << e->GetSolutionPhiXv(*result).transpose()
-                   << "]";
+        std::optional<VectorXd> phixu = e->GetSolutionPhiXu(*result);
+        if (phixu) {
+          graphviz << "ϕ xᵤ = [" << phixu->transpose() << "],\n";
+        }
+        std::optional<VectorXd> phixv = e->GetSolutionPhiXv(*result);
+        if (phixv) {
+          graphviz << "ϕ xᵥ = [" << phixv->transpose() << "]";
         }
       }
       if (options.show_flows) {
