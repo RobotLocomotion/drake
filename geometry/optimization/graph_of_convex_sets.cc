@@ -216,6 +216,10 @@ std::vector<solvers::Binding<solvers::Constraint>> Vertex::GetConstraints(
 }
 
 double Vertex::GetSolutionCost(const MathematicalProgramResult& result) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::numeric_limits<double>::quiet_NaN();
+  }
   double sum = 0.0;
   for (int i = 0; i < ssize(ell_); ++i) {
     if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
@@ -228,6 +232,10 @@ double Vertex::GetSolutionCost(const MathematicalProgramResult& result) const {
 double Vertex::GetSolutionCost(
     const MathematicalProgramResult& result,
     const solvers::Binding<solvers::Cost>& cost) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::numeric_limits<double>::quiet_NaN();
+  }
   for (int i = 0; i < ssize(costs_); ++i) {
     if (costs_[i].first == cost) {
       if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
@@ -243,7 +251,8 @@ double Vertex::GetSolutionCost(
 }
 
 VectorXd Vertex::GetSolution(const MathematicalProgramResult& result) const {
-  if (result.get_decision_variable_index()->contains(
+  if (result.get_decision_variable_index() &&
+      result.get_decision_variable_index()->contains(
           placeholder_x_[0].get_id())) {
     return result.GetSolution(placeholder_x_);
   } else {
@@ -405,6 +414,10 @@ void Edge::ClearPhiConstraints() {
 }
 
 double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::numeric_limits<double>::quiet_NaN();
+  }
   double sum = 0.0;
   for (int i = 0; i < ssize(ell_); ++i) {
     if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
@@ -417,6 +430,10 @@ double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
 double Edge::GetSolutionCost(
     const MathematicalProgramResult& result,
     const solvers::Binding<solvers::Cost>& cost) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::numeric_limits<double>::quiet_NaN();
+  }
   for (int i = 0; i < ssize(costs_); ++i) {
     if (costs_[i].first == cost) {
       if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
@@ -433,7 +450,8 @@ double Edge::GetSolutionCost(
 
 Eigen::VectorXd Edge::GetSolutionPhiXu(
     const solvers::MathematicalProgramResult& result) const {
-  if (result.get_decision_variable_index()->contains(y_[0].get_id())) {
+  if (result.get_decision_variable_index() &&
+      result.get_decision_variable_index()->contains(y_[0].get_id())) {
     return result.GetSolution(y_);
   } else {
     return VectorXd::Constant(u_->ambient_dimension(),
@@ -443,7 +461,8 @@ Eigen::VectorXd Edge::GetSolutionPhiXu(
 
 Eigen::VectorXd Edge::GetSolutionPhiXv(
     const solvers::MathematicalProgramResult& result) const {
-  if (result.get_decision_variable_index()->contains(z_[0].get_id())) {
+  if (result.get_decision_variable_index() &&
+      result.get_decision_variable_index()->contains(z_[0].get_id())) {
     return result.GetSolution(z_);
   } else {
     return VectorXd::Constant(v_->ambient_dimension(),
@@ -587,7 +606,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
       if (options.show_costs) {
         graphviz << "\ncost = " << e->GetSolutionCost(*result);
       }
-      if (options.show_slacks) {
+      if (options.show_slacks && result->get_decision_variable_index()) {
         graphviz << "\n";
         if (result->get_decision_variable_index()->contains(
                 e->y_[0].get_id())) {

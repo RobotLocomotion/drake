@@ -3293,6 +3293,26 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
 #pragma GCC diagnostic pop
 }
 
+// Confirm that GetGraphvizString works even if the result was (barely)
+// populated due to an early termination error.
+GTEST_TEST(ShortestPathTest, Issue21839) {
+  GraphOfConvexSets gcs;
+  Vertex* source = gcs.AddVertex(Point(Vector1d{0.1}));
+  Vertex* target = gcs.AddVertex(Point(Vector1d{0.2}));
+
+  auto result = gcs.SolveShortestPath(*source, *target);
+  // The solve returns with an early error and doesn't even set any decision
+  // variables in the result.
+  EXPECT_FALSE(result.get_decision_variable_index());
+
+  GcsGraphvizOptions options;
+  options.show_slacks = true;
+  options.show_vars = true;
+  options.show_flows = true;
+  options.show_costs = true;
+  EXPECT_NO_THROW(gcs.GetGraphvizString(&result, options));
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
