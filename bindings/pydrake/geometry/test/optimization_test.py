@@ -773,9 +773,12 @@ class TestGeometryOptimization(unittest.TestCase):
 
         spp = mut.GraphOfConvexSets()
         source = spp.AddVertex(set=mut.Point([0.1]), name="source")
+        source_cost = source.AddCost(1.23)
         target = spp.AddVertex(set=mut.Point([0.2]), name="target")
         edge0 = spp.AddEdge(u=source, v=target, name="edge0")
+        edge0_cost = edge0.AddCost(2.34)
         edge1 = spp.AddEdge(u=source, v=target, name="edge1")
+        edge1.AddCost(3.45)
         self.assertEqual(len(spp.Vertices()), 2)
         self.assertEqual(len(spp.Edges()), 2)
         result = spp.SolveShortestPath(
@@ -859,8 +862,9 @@ class TestGeometryOptimization(unittest.TestCase):
         )
 
         # Vertex
-        self.assertAlmostEqual(
-            source.GetSolutionCost(result=result), 0.0, 1e-6)
+        self.assertAlmostEqual(source.GetSolutionCost(result=result), 1.23)
+        self.assertAlmostEqual(source.GetSolutionCost(
+            result=result, cost=source_cost), 1.23)
         np.testing.assert_array_almost_equal(
             source.GetSolution(result), [0.1], 1e-6)
         self.assertIsInstance(source.id(), mut.GraphOfConvexSets.VertexId)
@@ -868,18 +872,16 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(source.name(), "source")
         self.assertIsInstance(source.x()[0], Variable)
         self.assertIsInstance(source.set(), mut.Point)
-        var, binding = source.AddCost(
+        binding = source.AddCost(
             e=1.0+source.x()[0],
             use_in_transcription={kMIP, kRelaxation, kRestriction})
-        self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        var, binding = source.AddCost(
+        binding = source.AddCost(
             binding=binding,
             use_in_transcription={kMIP, kRelaxation, kRestriction})
-        self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
         self.assertEqual(len(source.GetCosts(
-            used_in_transcription={kMIP, kRelaxation, kRestriction})), 2)
+            used_in_transcription={kMIP, kRelaxation, kRestriction})), 3)
         binding = source.AddConstraint(f=(source.x()[0] <= 1.0))
         self.assertIsInstance(binding, Binding[Constraint])
         binding = source.AddConstraint(
@@ -928,7 +930,9 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(target.outgoing_edges()), 0)
 
         # Edge
-        self.assertAlmostEqual(edge0.GetSolutionCost(result=result), 0.0, 1e-6)
+        self.assertAlmostEqual(edge0.GetSolutionCost(result=result), 2.34)
+        self.assertAlmostEqual(edge0.GetSolutionCost(
+            result=result, cost=edge0_cost), 2.34)
         np.testing.assert_array_almost_equal(
             edge0.GetSolutionPhiXu(result=result), [0.1], 1e-6)
         np.testing.assert_array_almost_equal(
@@ -940,19 +944,17 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(edge0.phi(), Variable)
         self.assertIsInstance(edge0.xu()[0], Variable)
         self.assertIsInstance(edge0.xv()[0], Variable)
-        var, binding = edge0.AddCost(
+        binding = edge0.AddCost(
             e=1.0+edge0.xu()[0],
             use_in_transcription={kMIP, kRelaxation, kRestriction})
-        self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
-        var, binding = edge0.AddCost(
+        binding = edge0.AddCost(
             binding=binding,
             use_in_transcription={kMIP, kRelaxation, kRestriction})
-        self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
         self.assertEqual(len(edge0.GetCosts(
             used_in_transcription={kMIP, kRelaxation, kRestriction}
-            )), 2)
+            )), 3)
         binding = edge0.AddConstraint(f=(edge0.xu()[0] == edge0.xv()[0]))
         self.assertIsInstance(binding, Binding[Constraint])
         binding = edge0.AddConstraint(

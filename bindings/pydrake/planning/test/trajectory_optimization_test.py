@@ -590,7 +590,6 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertTrue(traj.end_time() - traj.start_time() >= 10)
 
         graphviz_options = GcsGraphvizOptions()
-        graphviz_options.show_costs = False
         self.assertIsInstance(
             gcs.GetGraphvizString(result=result, options=graphviz_options),
             str
