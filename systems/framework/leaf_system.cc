@@ -229,17 +229,59 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   // The input -> output feedthrough result we'll return to the user.
   std::multimap<int, int> feedthrough;
 
-  // The set of pairs for which we don't know an answer yet; currently all.
+  // Helper to grab the `const CacheEntry&` for an output port.
+  auto get_leaf_output_port_cache_entry =
+      [this](OutputPortIndex o) -> const CacheEntry& {
+    const OutputPortBase& base = this->GetOutputPortBaseOrThrow(
+        __func__, o, /* warn_deprecated = */ false);
+    DRAKE_ASSERT(typeid(base) == typeid(LeafOutputPort<T>));
+    return static_cast<const LeafOutputPort<T>&>(base).cache_entry();
+  };
+
+  // The `unknown` worklist will contatin the pairs for which we don't know an
+  // answer yet.
   std::set<std::pair<InputPortIndex, OutputPortIndex>> unknown;
-  for (InputPortIndex u{0}; u < this->num_input_ports(); ++u) {
-    for (OutputPortIndex v{0}; v < this->num_output_ports(); ++v) {
-      unknown.emplace(std::make_pair(u, v));
+
+  // To start, we'll fill in `unknown` with the full cross product of inputs and
+  // outputs, unless the output port's prerequisites provides an obvious answer
+  // that doesn't require walking the dependency graph.
+  for (OutputPortIndex o{0}; o < this->num_output_ports(); ++o) {
+    const std::set<DependencyTicket>& prerequisites =
+        get_leaf_output_port_cache_entry(o).prerequisites();
+
+    // One obvious short-circuit is when this output uses "all input".
+    if (prerequisites.contains(this->all_input_ports_ticket())) {
+      for (InputPortIndex i{0}; i < this->num_input_ports(); ++i) {
+        feedthrough.emplace(i, o);
+      }
+      continue;
+    }
+
+    // Another worthwhile short-circuit is when this output only depends on
+    // time, state, parameters, etc -- not any cache entries.
+    if (std::all_of(prerequisites.begin(), prerequisites.end(),
+                    [this](const auto& ticket) {
+                      return this->IsObviouslyNotInputDependent(ticket);
+                    })) {
+      continue;
+    }
+
+    // Step through all input ports; they're either feedthrough or unknown.
+    for (InputPortIndex i{0}; i < this->num_input_ports(); ++i) {
+      const InputPortBase& input = this->GetInputPortBaseOrThrow(
+          __func__, i, /* warn_deprecated = */ false);
+      if (prerequisites.contains(input.ticket())) {
+        feedthrough.emplace(i, o);
+      } else {
+        unknown.emplace(std::make_pair(i, o));
+      }
     }
   }
 
-  // A System with no input ports or no output ports has no feedthrough!
-  if (unknown.empty())
-    return feedthrough;  // Also empty.
+  // We might already be done.
+  if (unknown.empty()) {
+    return feedthrough;
+  }
 
   // A helper function that removes an item from `unknown`.
   const auto remove_unknown = [&unknown](const auto& in_out_pair) {
@@ -258,11 +300,8 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   const auto orig_unknown = unknown;
   for (const auto& input_output : orig_unknown) {
     // Get the CacheEntry associated with the output port in this pair.
-    const OutputPortBase& output = this->GetOutputPortBaseOrThrow(
-        __func__, input_output.second, /* warn_deprecated = */ false);
-    DRAKE_ASSERT(typeid(output) == typeid(LeafOutputPort<T>));
-    const auto& leaf_output = static_cast<const LeafOutputPort<T>&>(output);
-    const auto& cache_entry = leaf_output.cache_entry();
+    const auto& cache_entry =
+        get_leaf_output_port_cache_entry(input_output.second);
 
     // If the user left the output prerequisites unspecified, then the cache
     // entry tells us nothing useful about feedthrough for this pair.

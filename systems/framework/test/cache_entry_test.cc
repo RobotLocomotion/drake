@@ -152,6 +152,7 @@ class MySystemBase final : public SystemBase {
   }
 
   using SystemBase::DeclareCacheEntry;
+  using SystemBase::IsObviouslyNotInputDependent;
 
  private:
   std::unique_ptr<ContextBase> DoAllocateContext() const final {
@@ -755,6 +756,12 @@ TEST_F(CacheEntryTest, Copy) {
   // These aren't downstream of entry0().
   EXPECT_FALSE(string_entry().is_out_of_date(clone_context));
   EXPECT_FALSE(vector_entry().is_out_of_date(clone_context));
+}
+
+TEST_F(CacheEntryTest, TicketInterrogation) {
+  EXPECT_TRUE(system_.IsObviouslyNotInputDependent(system_.time_ticket()));
+  EXPECT_FALSE(
+      system_.IsObviouslyNotInputDependent(system_.all_input_ports_ticket()));
 }
 
 }  // namespace
