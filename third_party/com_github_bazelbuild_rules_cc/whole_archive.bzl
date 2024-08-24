@@ -15,7 +15,7 @@
 
 # This function is forked and modified from bazelbuild/rules_cc as of:
 # https://github.com/bazelbuild/rules_cc/blob/262ebec/cc/find_cc_toolchain.bzl
-def _find_cc_toolchain(ctx):
+def find_cc_toolchain(ctx):
     # Check the incompatible flag for toolchain resolution.
     if hasattr(cc_common, "is_cc_toolchain_resolution_enabled_do_not_use") and cc_common.is_cc_toolchain_resolution_enabled_do_not_use(ctx = ctx):  # noqa
         valid_names = [
@@ -47,7 +47,7 @@ def _find_cc_toolchain(ctx):
 # https://github.com/bazelbuild/rules_cc/blob/262ebec3c2296296526740db4aefce68c80de7fa/examples/my_c_archive/my_c_archive.bzl
 def _cc_whole_archive_library_impl(ctx):
     # Find the C++ toolchain.
-    cc_toolchain = _find_cc_toolchain(ctx)
+    cc_toolchain = find_cc_toolchain(ctx)
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,

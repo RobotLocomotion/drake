@@ -1,4 +1,8 @@
 load("@cc//:compiler.bzl", "COMPILER_ID", "COMPILER_VERSION_MAJOR")
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    "find_cc_toolchain",
+)
 load("//tools/skylark:cc.bzl", "cc_binary", "cc_library", "cc_test")
 load(
     "//tools/skylark:kwargs.bzl",
@@ -346,6 +350,59 @@ def drake_transitive_installed_hdrs_filegroup(
         **kwargs
     )
 
+def _cc_relink_static_library_impl(ctx):
+    cc_toolchain = find_cc_toolchain(ctx)
+    pic_objects = []
+    for dep in ctx.attr.deps:
+        linker_inputs = dep[CcInfo].linking_context.linker_inputs
+        linker_input = linker_inputs.to_list()[0]
+        for lib in linker_input.libraries:
+            pic_objects.extend(lib.pic_objects)
+    compilation_outputs = cc_common.create_compilation_outputs(
+        pic_objects = depset(pic_objects),
+    )
+    linking_context, linking_outputs = \
+        cc_common.create_linking_context_from_compilation_outputs(
+            name = "_relink" + ctx.attr.name,
+            compilation_outputs = compilation_outputs,
+            disallow_dynamic_library = True,
+            actions = ctx.actions,
+            cc_toolchain = cc_toolchain,
+            feature_configuration = cc_common.configure_features(
+                ctx = ctx,
+                cc_toolchain = cc_toolchain,
+            ),
+        )
+    return [
+        DefaultInfo(),
+        CcInfo(
+            compilation_context = None,
+            linking_context = cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = ctx.label,
+                        libraries = depset([
+                            linking_outputs.library_to_link,
+                        ]),
+                    ),
+                ]),
+            ),
+        ),
+    ]
+
+cc_relink_static_library = rule(
+    implementation = _cc_relink_static_library_impl,
+    doc = """
+XXX Links the given dependencies but discards the entire compilation context,
+i.e., include paths and preprocessor definitions.
+""",
+    attrs = {
+        "deps": attr.label_list(providers = [CcInfo]),
+    },
+    fragments = ["cpp"],
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+)
+
 def _cc_linkonly_library_impl(ctx):
     deps_cc_infos = cc_common.merge_cc_infos(
         cc_infos = [dep[CcInfo] for dep in ctx.attr.deps],
@@ -392,6 +449,7 @@ def _raw_drake_cc_library(
         tags = None,
         testonly = None,
         visibility = None,
+        compile_once_per_scalar = False,
         declare_installed_headers = None,
         install_hdrs_exclude = None,
         deprecation = None):
@@ -405,6 +463,15 @@ def _raw_drake_cc_library(
     _, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
         fail("private_hdrs = " + private_hdrs)
+    multiphase_linking = False
+    if implementation_deps:
+        if not linkstatic:
+            fail("implementation_deps is only supported for static libs")
+        multiphase_linking = True
+    if compile_once_per_scalar:
+        if not linkstatic:
+            fail("compile_once_per_scalar is only supported for static libs")
+        multiphase_linking = True
 
     # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
     if strip_include_prefix == None:
@@ -423,62 +490,85 @@ def _raw_drake_cc_library(
             visibility = ["//visibility:public"],
         )
 
-    # If we're using implementation_deps, then the result of compiling our srcs
-    # needs to use an intermediate label name. The actual `name` label will be
-    # used for the "implementation sandwich", below.
-    # TODO(jwnimmer-tri) Once https://github.com/bazelbuild/bazel/issues/12350
-    # is fixed and Bazel offers implementation_deps natively, then we can
-    # switch to that implementation instead of making our own sandwich.
-    compiled_name = name
-    compiled_visibility = visibility
-    compiled_deprecation = deprecation
-    if implementation_deps:
-        if not linkstatic:
-            fail("implementation_deps are only supported for static libraries")
-        compiled_name = "_{}_compiled_cc_impl".format(name)
-        compiled_visibility = ["//visibility:private"]
-    cc_library(
-        name = compiled_name,
-        srcs = srcs,
-        hdrs = hdrs,
-        strip_include_prefix = strip_include_prefix,
-        include_prefix = include_prefix,
-        copts = copts,
-        defines = defines,
-        data = data,
-        deps = (deps or []) + (implementation_deps or []),
-        linkstatic = linkstatic,
-        linkopts = linkopts,
-        alwayslink = alwayslink,
-        tags = tags,
-        testonly = testonly,
-        visibility = compiled_visibility,
-        deprecation = compiled_deprecation,
-    )
-
-    # If we're using implementation_deps, then make me an "implementation
-    # sandwich".  Create one library with our headers, one library with only
-    # our static archive, and then squash them together to the final result.
-    if implementation_deps:
-        headers_name = "_{}_headers_cc_impl".format(name)
+    # If there are no special link options needed, we'll just do the compile
+    # and link now with a single call.
+    if not multiphase_linking:
         cc_library(
-            name = headers_name,
+            name = name,
+            srcs = srcs,
             hdrs = hdrs,
             strip_include_prefix = strip_include_prefix,
             include_prefix = include_prefix,
+            copts = copts,
             defines = defines,
-            deps = deps,  # N.B. No implementation_deps!
-            linkstatic = 1,
+            data = data,
+            deps = deps,
+            linkstatic = True,
+            linkopts = linkopts,
+            alwayslink = alwayslink,
             tags = tags,
             testonly = testonly,
+            visibility = visibility,
+            deprecation = deprecation,
+        )
+        return
+
+    # We're doing something fancy with linking, so for starters we'll need the
+    # headers and interface deps all by themselves.
+    headers_name = "_{}_headers_cc_impl".format(name)
+    cc_library(
+        name = headers_name,
+        srcs = None,
+        hdrs = hdrs,
+        strip_include_prefix = strip_include_prefix,
+        include_prefix = include_prefix,
+        copts = None,
+        defines = defines,
+        data = data,
+        deps = deps,  # N.B. No implementation_deps!
+        linkstatic = True,
+        linkopts = linkopts,
+        alwayslink = alwayslink,
+        tags = (tags or []) + ["manual"],
+        testonly = testonly,
+        visibility = ["//visibility:private"],
+        deprecation = None,
+    )
+
+    # If the only special link option was interface vs implementation deps, we
+    # can do that with an "implementation sandwich".
+    # TODO(jwnimmer-tri) Once https://github.com/bazelbuild/bazel/issues/12350
+    # is fixed and Bazel offers implementation_deps natively then we can switch
+    # to that implementation instead of making our own sandwich.
+    if not compile_once_per_scalar:
+        # The result of compiling our srcs needs to use an intermediate label
+        # name. The actual `name` label will be used for the "implementation
+        # sandwich", below.
+        compiled_name = "_{}_compiled_cc_impl".format(name)
+        cc_library(
+            name = compiled_name,
+            srcs = srcs,
+            hdrs = hdrs,
+            strip_include_prefix = strip_include_prefix,
+            include_prefix = include_prefix,
+            copts = copts,
+            defines = defines,
+            data = data,
+            deps = (deps or []) + (implementation_deps or []),
+            linkstatic = True,
+            linkopts = linkopts,
+            alwayslink = alwayslink,
+            tags = (tags or []) + ["manual"],
+            testonly = testonly,
             visibility = ["//visibility:private"],
+            deprecation = None,
         )
         archive_name = "_{}_archive_cc_impl".format(name)
         cc_linkonly_library(
             name = archive_name,
             deps = [":" + compiled_name],
             visibility = ["//visibility:private"],
-            tags = tags,
+            tags = (tags or []) + ["manual"],
         )
         cc_library(
             name = name,
@@ -486,12 +576,77 @@ def _raw_drake_cc_library(
                 ":" + headers_name,
                 ":" + archive_name,
             ],
-            linkstatic = 1,
+            linkstatic = True,
             tags = tags,
             testonly = testonly,
             visibility = visibility,
             deprecation = deprecation,
         )
+        return
+
+    # Okay, get ready. We're going to compile the same code multiple times,
+    # with different copts each time.
+    deps_all = (deps or []) + (implementation_deps or [])
+    ith_names = []
+    for i in range(3):
+        ith_name = "_{}_compiled_cc_impl_{}".format(name, i)
+        ith_names.append(ith_name)
+        ith_copts = [
+            "-DDRAKE_ONCE_PER_SCALAR_PHASE={}".format(i),
+        ]
+        if i == 0:
+            ith_tags = (tags or []) + ["manual"]
+        else:
+            ith_tags = (tags or []) + ["manual", "nolint"]
+        cc_library(
+            name = ith_name,
+            srcs = srcs,
+            hdrs = hdrs,
+            strip_include_prefix = strip_include_prefix,
+            include_prefix = include_prefix,
+            copts = copts + ith_copts,
+            defines = defines,
+            data = data,
+            deps = deps_all,
+            linkstatic = 1,
+            linkopts = linkopts,
+            alwayslink = alwayslink,
+            tags = ith_tags,
+            testonly = testonly,
+            visibility = ["//visibility:private"],
+            deprecation = None,
+        )
+    relink_name = "_{}_relink_cc_impl".format(name)
+    cc_relink_static_library(
+        name = relink_name,
+        deps = [
+            ":" + ith_name
+            for ith_name in ith_names
+        ] + (implementation_deps or []),
+        visibility = ["//visibility:private"],
+        tags = ["manual"],
+    )
+    archive_name = "_{}_archive_cc_impl".format(name)
+    cc_linkonly_library(
+        name = archive_name,
+        deps = [
+            ":" + relink_name,
+        ],
+        visibility = ["//visibility:private"],
+        tags = tags + ["manual"],
+    )
+    cc_library(
+        name = name,
+        deps = [
+            ":" + headers_name,
+            ":" + archive_name,
+        ] + deps,
+        linkstatic = 1,
+        tags = tags,
+        testonly = testonly,
+        visibility = visibility,
+        deprecation = deprecation,
+    )
 
 def _maybe_add_pruned_private_hdrs_dep(
         base_name,
@@ -538,6 +693,7 @@ def drake_cc_library(
         gcc_copts = [],
         linkstatic = 1,
         internal = False,
+        compile_once_per_scalar = False,
         declare_installed_headers = 1,
         install_hdrs_exclude = [],
         **kwargs):
@@ -622,6 +778,7 @@ def drake_cc_library(
         linkstatic = linkstatic,
         declare_installed_headers = declare_installed_headers,
         install_hdrs_exclude = install_hdrs_exclude,
+        compile_once_per_scalar = compile_once_per_scalar,
         tags = new_tags,
         **kwargs
     )
