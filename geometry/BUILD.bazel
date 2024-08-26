@@ -279,6 +279,7 @@ drake_cc_library(
     srcs = ["in_memory_mesh.cc"],
     hdrs = ["in_memory_mesh.h"],
     deps = [
+        "//common:file_source",
         "//common:memory_file",
         "//common:string_container",
     ],
@@ -298,9 +299,11 @@ drake_cc_library(
         "//common:essential",
         "//common:memory_file",
         "//common:string_container",
-        "@nlohmann_internal//:nlohmann",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOCore",
+    ],
+    implementation_deps = [
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 

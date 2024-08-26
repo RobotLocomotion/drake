@@ -6,10 +6,9 @@
 #include <filesystem>
 #include <string>
 
-#include <vtkMatrix4x4.h>             // vtkCommonMath
-#include <vtkMemoryResourceStream.h>  // vtkIOCore
-#include <vtkURI.h>                   // vtkIOCore
-#include <vtkURILoader.h>             // vtkIOCore
+#include <vtkMatrix4x4.h>  // vtkCommonMath
+#include <vtkURI.h>        // vtkIOCore
+#include <vtkURILoader.h>  // vtkIOCore
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"

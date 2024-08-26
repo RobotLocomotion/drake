@@ -13,6 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/file_source.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/memory_file.h"
 #include "drake/common/nice_type_name.h"
@@ -119,6 +120,40 @@ void InitLowLevelModules(py::module m) {
   m.def("_use_native_cpp_logging", &internal::UseNativeCppLogging);
 
   ExecuteExtraPythonCode(m, true);
+
+  {
+    using Class = FileSource;
+    constexpr auto& cls_doc = doc.FileSource;
+    py::class_<Class> cls(m, "FileSource", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>([](const std::string& path) { return Class(path); }),
+            py::arg("path"), cls_doc.ctor.doc_1args_path)
+        .def(py::init<MemoryFile>(), py::arg("file"),
+            cls_doc.ctor.doc_1args_file)
+        .def("is_path", &Class::is_path, cls_doc.is_path.doc)
+        .def("is_in_memory", &Class::is_in_memory, cls_doc.is_in_memory.doc)
+        .def("description", &Class::description, cls_doc.description.doc)
+        .def("path", &Class::path, cls_doc.path.doc)
+        .def("memory_file", &Class::memory_file, cls_doc.memory_file.doc)
+        .def("clear", &Class::clear, cls_doc.clear.doc)
+        .def("empty", &Class::empty, cls_doc.empty.doc)
+        .def("__repr__", [](const Class& self) {
+          // We need to make sure the strings get repr'd as python strings and
+          // not just symbols in the line.
+          py::str params;
+          if (self.is_path()) {
+            py::str py_path(self.path());
+            params = py::str("path={}").format(py::repr(py_path));
+          } else {
+            DRAKE_DEMAND(self.is_in_memory());
+            const MemoryFile& file = self.memory_file();
+            py::object obj = py::cast(&file);
+            params = py::str("file={}").format(py::repr(obj));
+          }
+          return py::str("FileSource({})").format(params);
+        });
+    DefCopyAndDeepCopy(&cls);
+  }
 
   {
     using Class = Parallelism;

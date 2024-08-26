@@ -105,7 +105,7 @@ struct RenderMesh {
                            faces fail to reference the texture coordinates if
                            they are present. */
 std::vector<RenderMesh> LoadRenderMeshesFromObj(
-    const MeshSource& source, const GeometryProperties& properties,
+    const MeshSource& mesh_source, const GeometryProperties& properties,
     const std::optional<Rgba>& default_diffuse,
     const drake::internal::DiagnosticPolicy& policy = {});
 

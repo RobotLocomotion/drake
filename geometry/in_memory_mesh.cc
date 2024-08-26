@@ -22,16 +22,16 @@ std::string GetExtensionLower(const std::filesystem::path& file_path) {
 InMemoryMesh::InMemoryMesh() = default;
 
 InMemoryMesh::InMemoryMesh(MemoryFile mesh_file,
-                           string_map<MemoryFile> supporting_files)
+                           string_map<FileSource> supporting_files)
     : mesh_file_(std::move(mesh_file)),
       supporting_files_(std::move(supporting_files)) {}
 
-void InMemoryMesh::AddSupportingFile(std::string_view name, MemoryFile file) {
+void InMemoryMesh::AddSupportingFile(std::string_view name, FileSource file) {
   if (supporting_files_.contains(name)) {
     throw std::runtime_error(
         fmt::format("InMemoryMesh cannot add supporting file '{}', that name "
                     "has already been used for file '{}'.",
-                    name, this->file(name)->filename_hint()));
+                    name, this->file(name)->description()));
   }
   supporting_files_.emplace(name, std::move(file));
 }
@@ -44,7 +44,7 @@ std::vector<std::string_view> InMemoryMesh::SupportingFileNames() const {
   return names;
 }
 
-const MemoryFile* InMemoryMesh::file(std::string_view name) const {
+const FileSource* InMemoryMesh::file(std::string_view name) const {
   const auto iter = supporting_files_.find(name);
   if (iter == supporting_files_.end()) {
     return nullptr;

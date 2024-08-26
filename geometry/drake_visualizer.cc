@@ -381,9 +381,9 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    const MeshSource& source = mesh.source();
-    if (source.IsPath()) {
-      geometry_data_.string_data = source.path().string();
+    const MeshSource& mesh_source = mesh.source();
+    if (mesh_source.IsPath()) {
+      geometry_data_.string_data = mesh_source.path().string();
     } else {
       using nlohmann::json;
 
@@ -398,15 +398,30 @@ class ShapeToLcm : public ShapeReifier {
         return mesh_file_j;
       };
 
-      DRAKE_DEMAND(source.IsInMemory());
-      const InMemoryMesh& mem_mesh = source.mesh_data();
+      auto json_file_source =
+          [&json_memory_file](const FileSource& file_source) {
+            json mesh_file_j;
+            if (file_source.is_path()) {
+              mesh_file_j["path"] = file_source.path().string();
+            } else {
+              DRAKE_DEMAND(file_source.is_in_memory());
+              const MemoryFile& file = file_source.memory_file();
+              mesh_file_j = json_memory_file(file);
+            }
+            return mesh_file_j;
+          };
+
+      DRAKE_DEMAND(mesh_source.IsInMemory());
+      const InMemoryMesh& mem_mesh = mesh_source.mesh_data();
       json in_memory;
       in_memory["in_memory_mesh"]["mesh_file"] =
           json_memory_file(mem_mesh.mesh_file());
 
       for (const auto& name : mem_mesh.SupportingFileNames()) {
+        const FileSource* file_source = mem_mesh.file(name);
+        if (file_source == nullptr || file_source->empty()) continue;
         in_memory["in_memory_mesh"]["supporting_files"][name] =
-            json_memory_file(*mem_mesh.file(name));
+            json_file_source(*file_source);
       }
       geometry_data_.string_data = in_memory.dump();
     }

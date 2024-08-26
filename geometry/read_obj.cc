@@ -174,16 +174,16 @@ ReadObjFile(const std::string& filename, double scale, bool triangulate,
 
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
-ReadObj(const MeshSource& source, double scale, bool triangulate,
+ReadObj(const MeshSource& mesh_source, double scale, bool triangulate,
         bool vertices_only) {
-  DRAKE_DEMAND(source.extension() == ".obj");
-  if (source.IsPath()) {
-    return ReadObjFile(source.path().string(), scale, triangulate,
+  DRAKE_DEMAND(mesh_source.extension() == ".obj");
+  if (mesh_source.IsPath()) {
+    return ReadObjFile(mesh_source.path().string(), scale, triangulate,
                        vertices_only);
   } else {
-    DRAKE_DEMAND(source.IsInMemory());
-    return ReadObjContents(source.mesh_data().mesh_file(), scale, triangulate,
-                           vertices_only);
+    DRAKE_DEMAND(mesh_source.IsInMemory());
+    return ReadObjContents(mesh_source.mesh_data().mesh_file(), scale,
+                           triangulate, vertices_only);
   }
 }
 

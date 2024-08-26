@@ -435,12 +435,12 @@ class MeshcatShapeReifier : public ShapeReifier {
 
     std::string format = mesh.extension();
     format.erase(0, 1);  // remove the . from the extension
-    const MeshSource& source = mesh.source();
+    const MeshSource& mesh_source = mesh.source();
 
-    // MeshSource::description() *is* the file path if, source.IsPath().
-    const fs::path filename = source.description();
+    // MeshSource::description() *is* the file path if, mesh_source.IsPath().
+    const fs::path filename = mesh_source.description();
     std::optional<std::string> maybe_mesh_data;
-    if (source.IsPath()) {
+    if (mesh_source.IsPath()) {
       maybe_mesh_data = ReadFile(filename);
       if (!maybe_mesh_data) {
         drake::log()->warn("Meshcat: Could not open mesh filename {}",
@@ -448,8 +448,8 @@ class MeshcatShapeReifier : public ShapeReifier {
         return;
       }
     } else {
-      DRAKE_DEMAND(source.IsInMemory());
-      maybe_mesh_data = source.mesh_data().mesh_file().contents();
+      DRAKE_DEMAND(mesh_source.IsInMemory());
+      maybe_mesh_data = mesh_source.mesh_data().mesh_file().contents();
     }
 
     // We simply dump the binary contents of the file into the data field of the
@@ -483,14 +483,14 @@ class MeshcatShapeReifier : public ShapeReifier {
       const std::string mtllib = matches.str(1);
 
       std::optional<std::string> maybe_mtl_data;
-      if (source.IsPath()) {
+      if (mesh_source.IsPath()) {
         // Use filename path as the base directory for textures.
         const std::filesystem::path basedir = filename.parent_path();
         maybe_mtl_data = ReadFile(basedir / mtllib);
       } else {
-        const MemoryFile* mtl_file = source.mesh_data().file(mtllib);
-        if (mtl_file != nullptr) {
-          maybe_mtl_data = mtl_file->contents();
+        const FileSource* mtl_source = mesh_source.mesh_data().file(mtllib);
+        if (mtl_source != nullptr && !mtl_source->empty()) {
+          maybe_mtl_data = mtl_source->memory_file().contents();
         }
       }
 
@@ -516,53 +516,68 @@ class MeshcatShapeReifier : public ShapeReifier {
                                        map_regex);
              iter != std::sregex_iterator(); ++iter) {
           std::string map = iter->str(1);
-          if (source.IsPath()) {
-            std::ifstream map_stream(basedir / map,
+          // The *possible* path to the texture image.
+          std::filesystem::path map_path;
+          // We'll put the bytes of the available image in here.
+          std::vector<uint8_t> map_data;
+          if (mesh_source.IsInMemory()) {
+            const FileSource* map_file_source =
+                mesh_source.mesh_data().file(map);
+            if (map_file_source != nullptr && !map_file_source->empty()) {
+              // Load it.
+              if (map_file_source->is_in_memory()) {
+                const MemoryFile& map_file = map_file_source->memory_file();
+                map_data = std::vector<uint8_t>(map_file.contents().begin(),
+                                                map_file.contents().end());
+              } else {
+                // Note: paths to supporting files in an in-memory mesh have no
+                // "base directory". The path must be sufficiently well defined
+                // so that it can be read directly.
+                DRAKE_DEMAND(map_file_source->is_path());
+                map_path = map_file_source->path();
+              }
+            }
+          } else {
+            DRAKE_DEMAND(mesh_source.IsPath());
+            map_path = basedir / map;
+          }
+
+          // map_path is non-empty only if one of two paths above required an
+          // on-disk path to the map.
+          if (!map_path.empty()) {
+            std::ifstream map_stream(map_path,
                                      std::ios::binary | std::ios::ate);
             if (map_stream.is_open()) {
               int map_size = map_stream.tellg();
               map_stream.seekg(0, std::ios::beg);
-              std::vector<uint8_t> map_data;
               map_data.reserve(map_size);
               map_data.assign(std::istreambuf_iterator<char>(map_stream),
                               std::istreambuf_iterator<char>());
-              meshfile_object.resources.try_emplace(
-                  map, std::string("data:image/png;base64,") +
-                           common_robotics_utilities::base64_helpers::Encode(
-                               map_data));
-            } else {
-              drake::log()->warn(
-                  "Meshcat: Failed to load texture. \"{}\" references {}, but "
-                  "Meshcat could not open filename \"{}\"",
-                  (basedir / mtllib).string(), map, (basedir / map).string());
             }
+          }
+
+          // Either we now have bytes for the map, or we had a look up error.
+          if (map_data.size() > 0) {
+            meshfile_object.resources.try_emplace(
+                map, std::string("data:image/png;base64,") +
+                         common_robotics_utilities::base64_helpers::Encode(
+                             map_data));
           } else {
-            const MemoryFile* map_file = source.mesh_data().file(map);
-            if (map_file != nullptr) {
-              // Load it.
-              std::vector<uint8_t> bytes(map_file->contents().begin(),
-                                         map_file->contents().end());
-              meshfile_object.resources.try_emplace(
-                  map,
-                  std::string("data:image/png;base64,") +
-                      common_robotics_utilities::base64_helpers::Encode(bytes));
-            } else {
-              drake::log()->warn(
-                  "Meshcat: Failed to load texture. \"{}\" references an "
-                  "unavailable texture map: '{}'.",
-                  mtllib, map);
-            }
+            drake::log()->warn(
+                "Meshcat: Failed to load texture. \"{}\" references {}, but "
+                "Meshcat could not open filename \"{}\"",
+                (basedir / mtllib).string(), map, map_path.string());
           }
         }
       } else if (!mtllib.empty()) {
         drake::log()->warn(
-            "Meshcat: The obj referenced a material library '{}' Meshcat could "
-            "not open for obj '{}'. No materials will be included.",
-            source.description(), mtllib);
+            "Meshcat: The obj referenced a material library '{}' Meshcat "
+            "could not open for obj '{}'. No materials will be included.",
+            mesh_source.description(), mtllib);
       }
     } else if (format == "gltf") {
       output.assets =
-          internal::UnbundleGltfAssets(source, &mesh_data, &file_storage_);
+          internal::UnbundleGltfAssets(mesh_source, &mesh_data, &file_storage_);
       auto& meshfile_object =
           lumped.object.emplace<internal::MeshfileObjectData>();
       meshfile_object.uuid = uuid_generator_.GenerateRandom();

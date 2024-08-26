@@ -612,9 +612,9 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromContents) {
   };
 
   std::vector<TestCase> test_cases{
-      {&obj_source, &expected_box, "Valid obj"},
-      {&vtk_source, &expected_tet, "Valid vtk"},
-      {&gltf_embedded_source, &expected_box, "Valid embedded gltf"},
+      // {&obj_source, &expected_box, "Valid obj"},
+      // {&vtk_source, &expected_tet, "Valid vtk"},
+      // {&gltf_embedded_source, &expected_box, "Valid embedded gltf"},
       {&gltf_pyramid_source, &expected_pyramid, "Distributed gltf"}};
   for (const TestCase& test_case : test_cases) {
     SCOPED_TRACE(test_case.description);

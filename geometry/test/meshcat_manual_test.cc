@@ -48,7 +48,7 @@ Mesh GetPyramidInMemory(double scale = 1.0) {
   const std::filesystem::path gltf_path = FindResourceOrThrow(
       "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
   const std::filesystem::path gltf_dir = gltf_path.parent_path();
-  string_map<MemoryFile> supporting_files;
+  string_map<FileSource> supporting_files;
   // These are _all_ the files referenced in fully_textured_pyramid.gltf. Only
   // the ktx2 images will render, console will complain about not being able
   // to find the .png images if we don't make the available in memory.

@@ -81,13 +81,11 @@ namespace {
 
 // The default URI loader -- it reads the uri from disk relative to the given
 // gltf directory.
-std::optional<std::string> DiskUriLoader(const fs::path& gltf_dir,
-                                         std::string_view uri) {
+std::optional<std::string> LoadUriFromDisk(const fs::path& gltf_dir,
+                                           std::string_view uri) {
   fs::path asset_filename = gltf_dir / uri;
   return ReadFile(asset_filename);
 }
-
-
 
 // Load the given `uri` into `storage` and returns the storage handle.
 // On error, returns nullptr.
@@ -144,17 +142,17 @@ std::shared_ptr<const MemoryFile> LoadGltfUri(
 }  // namespace
 
 std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
-    const MeshSource& source, std::string* gltf_contents,
+    const MeshSource& mesh_source, std::string* gltf_contents,
     FileStorage* storage) {
   DRAKE_DEMAND(gltf_contents != nullptr);
   DRAKE_DEMAND(storage != nullptr);
   std::vector<std::shared_ptr<const MemoryFile>> assets;
-  // Note: this is only truly used as a filepath if source.IsPath(), otherwise
-  // it's only used for error messages.
+  // Note: this is only truly used as a filepath if mesh_source.IsPath(),
+  // otherwise it's only used for error messages.
   const fs::path gltf_filename =
-      source.IsPath()
-          ? source.path()
-          : fs::path(source.mesh_data().mesh_file().filename_hint());
+      mesh_source.IsPath()
+          ? mesh_source.path()
+          : fs::path(mesh_source.mesh_data().mesh_file().filename_hint());
 
   json gltf;
   try {
@@ -168,16 +166,22 @@ std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
   // Resolving URIs depends on where the glTF specification resides.
   std::function<std::optional<std::string>(const fs::path&, std::string_view)>
       uri_loader;
-  if (source.IsPath()) {
-    uri_loader = DiskUriLoader;
+  if (mesh_source.IsPath()) {
+    uri_loader = LoadUriFromDisk;
   } else {
-    DRAKE_DEMAND(source.IsInMemory());
-    uri_loader = [&mesh = source.mesh_data()](
-                     const fs::path&,
+    DRAKE_DEMAND(mesh_source.IsInMemory());
+    uri_loader = [&mesh = mesh_source.mesh_data()](
+                     const fs::path& gltf_dir,
                      std::string_view uri) -> std::optional<std::string> {
-      const MemoryFile* file = mesh.file(uri);
-      if (file != nullptr) {
-        return file->contents();
+      const FileSource* file_source = mesh.file(uri);
+      if (file_source == nullptr || file_source->empty()) {
+        return std::nullopt;
+      }
+      if (file_source->is_path()) {
+        return LoadUriFromDisk(gltf_dir, uri);
+      } else {
+        DRAKE_DEMAND(file_source->is_in_memory());
+        return file_source->memory_file().contents();
       }
       return std::nullopt;
     };

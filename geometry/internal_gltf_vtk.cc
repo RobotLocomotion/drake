@@ -5,6 +5,8 @@
 
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
+#include <vtkFileResourceStream.h>    // vtkIOCore
+#include <vtkMemoryResourceStream.h>  // vtkIOCore
 
 #include "drake/common/drake_assert.h"
 
@@ -15,10 +17,16 @@ namespace internal {
 using Eigen::Vector3d;
 using nlohmann::json;
 
+namespace {
+
+constexpr char kBaseUriPrefix[] = "/MeshMemoryLoader/";
+constexpr int kBaseUriPrefxLength = 18;
+}
+
 MeshMemoryLoader::MeshMemoryLoader(const InMemoryMesh* mesh)
     : mesh_(*mesh) {
   DRAKE_DEMAND(mesh != nullptr);
-  base_uri_ = vtkURI::Make("file", vtkURIComponent(), "/convex_hull/");
+  base_uri_ = vtkURI::Make("file", vtkURIComponent(), kBaseUriPrefix);
   SetBaseURI(base_uri_);
 }
 
@@ -33,28 +41,36 @@ vtkSmartPointer<vtkResourceStream> MeshMemoryLoader::DoLoad(const vtkURI& uri) {
     // Populate the stream with the data.
     const std::string& path = uri.GetPath().GetValue();
     // TODO(SeanCurtis-TRI): IF the glTF file references a file in a *higher*
-    // directory (e.g., ../common.bin), then this trick will not work.
-    auto pos = path.find("/convex_hull/");
+    // directory (e.g., ../common.bin), then this trick will not work. But
+    // glTF specification disallows that.
+    auto pos = path.find(kBaseUriPrefix);
     if (pos == std::string::npos) {
       throw std::runtime_error(fmt::format(
-          "Can't compute convex hull for in-memory glTF file. The glTF file "
-          "has an unrecognizable resource URI: '{}'. All URIs should be "
-          "use relative file positions and be included in the in-memory "
-          "mesh's supporting files.",
+          "Error with in-memory glTF file. The glTF file has an unrecognizable "
+          "resource file URI: '{}'. All URIs should use relative file "
+          "positions and be included in the in-memory mesh's supporting files.",
           uri.ToString()));
     }
-    const std::string name = path.substr(pos + 13);
-    const MemoryFile* file = mesh_.file(name);
-    if (file == nullptr) {
+    const std::string name = path.substr(pos + kBaseUriPrefxLength);
+    const FileSource* file_source = mesh_.file(name);
+    if (file_source == nullptr || file_source->empty()) {
       // If the glTF file refers to a file that isn't in our set of
       // supporting files, we won't immediately throw. We'll wait to see if
       // it's an actual parsing problem.
       return nullptr;
     }
-    vtkNew<vtkMemoryResourceStream> stream;
-    stream->SetBuffer(file->contents().c_str(), file->contents().size(),
-                      /* copy= */ false);
-    return stream;
+    if (file_source->is_path()) {
+      vtkNew<vtkFileResourceStream> stream;
+      stream->Open(file_source->path().c_str());
+      return stream;
+    } else {
+      DRAKE_DEMAND(file_source->is_in_memory());
+      const MemoryFile& file = file_source->memory_file();
+      vtkNew<vtkMemoryResourceStream> stream;
+      stream->SetBuffer(file.contents().c_str(), file.contents().size(),
+                        /* copy= */ false);
+      return stream;
+    }
   } else if (scheme == "data") {
     // For data URIs, we'll let VTK's infrastructure handle it.
     return this->LoadData(uri);
@@ -68,7 +84,7 @@ namespace {
 
 void AddFilesFromUris(const std::filesystem::path gltf_path, const json& gltf,
                       std::string_view array_name,
-                      string_map<MemoryFile>* supporting_files) {
+                      string_map<FileSource>* supporting_files) {
   auto& array = gltf[array_name];
   for (size_t i = 0; i < array.size(); ++i) {
     auto& item = array[i];
@@ -78,8 +94,7 @@ void AddFilesFromUris(const std::filesystem::path gltf_path, const json& gltf,
       if (uri.find("data:") != std::string::npos) {
         continue;
       }
-      supporting_files->emplace(
-          uri, MemoryFile::Make(gltf_path.parent_path() / uri));
+      supporting_files->emplace(uri, gltf_path.parent_path() / uri);
     }
   }
 }
@@ -90,7 +105,7 @@ InMemoryMesh PreParseGltf(const std::filesystem::path gltf_path,
                           bool include_images) {
   auto gltf_file = MemoryFile::Make(gltf_path);
 
-  string_map<MemoryFile> supporting_files;
+  string_map<FileSource> supporting_files;
   json gltf;
   try {
     gltf = json::parse(gltf_file.contents());

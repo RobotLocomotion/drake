@@ -31,7 +31,7 @@ using std::vector;
 
 /* Constructs a RenderMaterial from a single tinyobj material specification. */
 RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
-                                   const MeshSource& source,
+                                   const MeshSource& mesh_source,
                                    const GeometryProperties& properties,
                                    const DiagnosticPolicy& policy,
                                    UvState uv_state) {
@@ -41,7 +41,7 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
   result.diffuse.set(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2],
                      mat.dissolve);
   if (!mat.diffuse_texname.empty()) {
-    if (source.IsPath()) {
+    if (mesh_source.IsPath()) {
       std::filesystem::path tex_path(mat.diffuse_texname);
       // There are three potential paths: path to obj, path to mtl, and path to
       // texture image (png). We have the path to obj. The mtl is defined
@@ -55,16 +55,20 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
       // the mtl file it came from or the directory of that mtl file. Then
       // relative paths of the referenced images can be properly interpreted.
       // Or what is stored in material_t should be relative to the obj.
-      std::filesystem::path obj_dir = source.path().parent_path();
+      std::filesystem::path obj_dir = mesh_source.path().parent_path();
       result.diffuse_map = tex_path.is_absolute()
                                ? tex_path
                                : (obj_dir / tex_path).lexically_normal();
     } else {
-      DRAKE_DEMAND(source.IsInMemory());
-      const InMemoryMesh& data = source.mesh_data();
-      const MemoryFile* file = data.file(mat.diffuse_texname);
-      if (file != nullptr) {
-        result.diffuse_map = *file;
+      DRAKE_DEMAND(mesh_source.IsInMemory());
+      const InMemoryMesh& data = mesh_source.mesh_data();
+      const FileSource* file_source = data.file(mat.diffuse_texname);
+      if (file_source != nullptr && !file_source->empty()) {
+        if (file_source->is_path()) {
+          result.diffuse_map = file_source->path();
+        } else {
+          result.diffuse_map = file_source->memory_file();
+        }
       } else {
         policy.Warning(fmt::format(
             "The OBJ file's material requested an unavailable diffuse texture "
@@ -95,7 +99,7 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
     }
   }
 
-  MaybeWarnForRedundantMaterial(properties, source.description(), policy);
+  MaybeWarnForRedundantMaterial(properties, mesh_source.description(), policy);
   return result;
 }
 
@@ -116,10 +120,11 @@ struct AliasingStringReadBuf : public std::streambuf {
 // otherwise they must be in the in-memory mesh's supporting files.
 class MaterialLibraryServer final : public tinyobj::MaterialReader {
  public:
-  // Constructs the server for the given `source`. `source` will be aliased and
-  // must remain valid for at least as long as `this`.
-  explicit MaterialLibraryServer(const MeshSource* source) : source_(*source) {
-    DRAKE_DEMAND(source != nullptr);
+  // Constructs the server for the given `mesh_source`. `mesh_source` will be
+  // aliased and must remain valid for at least as long as `this`.
+  explicit MaterialLibraryServer(const MeshSource* mesh_source)
+      : source_(*mesh_source) {
+    DRAKE_DEMAND(mesh_source != nullptr);
   }
 
   bool operator()(const std::string& matId,
@@ -148,16 +153,22 @@ class MaterialLibraryServer final : public tinyobj::MaterialReader {
                      std::map<std::string, int>* matMap, std::string* warn,
                      std::string* err) const {
     DRAKE_DEMAND(source_.IsInMemory());
-    const MemoryFile* file = source_.mesh_data().file(matId);
+    const FileSource* file_source = source_.mesh_data().file(matId);
     // matId is the filename that appears after mtllib. There may be multiple
     // such files named.
-    if (file == nullptr) {
+    if (file_source == nullptr || file_source->empty()) {
       // TODO(SeanCurtis-TRI) warning about unavailable material library.
       return false;
     }
-    AliasingStringReadBuf mat_buf(file->contents());
-    std::istream mtl_stream(&mat_buf);
-    tinyobj::LoadMtl(matMap, materials, &mtl_stream, warn, err);
+    if (file_source->is_path()) {
+      std::ifstream mtl_stream(file_source->path());
+      tinyobj::LoadMtl(matMap, materials, &mtl_stream, warn, err);
+    } else {
+      DRAKE_DEMAND(file_source->is_in_memory());
+      AliasingStringReadBuf mat_buf(file_source->memory_file().contents());
+      std::istream mtl_stream(&mat_buf);
+      tinyobj::LoadMtl(matMap, materials, &mtl_stream, warn, err);
+    }
     return true;
   }
 
@@ -170,28 +181,29 @@ class MaterialLibraryServer final : public tinyobj::MaterialReader {
 // reference it in these errors/warnings.
 
 vector<RenderMesh> LoadRenderMeshesFromObj(
-    const MeshSource& source, const GeometryProperties& properties,
+    const MeshSource& mesh_source, const GeometryProperties& properties,
     const std::optional<Rgba>& default_diffuse,
     const DiagnosticPolicy& policy) {
   const std::string& obj_contents =
-      source.IsPath() ? ReadFile(source.path()).value_or("")
-                      : source.mesh_data().mesh_file().contents();
+      mesh_source.IsPath() ? ReadFile(mesh_source.path()).value_or("")
+                           : mesh_source.mesh_data().mesh_file().contents();
   if (obj_contents.empty()) {
-    throw std::runtime_error(fmt::format(
-        "Failed parsing obj data; no data given: {}.", source.description()));
+    throw std::runtime_error(
+        fmt::format("Failed parsing obj data; no data given: {}.",
+                    mesh_source.description()));
   }
   tinyobj::ObjReaderConfig config;
   config.triangulate = true;
   config.vertex_color = false;
   tinyobj::ObjReader reader;
-  MaterialLibraryServer mat_server(&source);
+  MaterialLibraryServer mat_server(&mesh_source);
   const bool valid_parse =
       reader.ParseFromString(obj_contents, &mat_server, config);
 
   if (!valid_parse) {
     throw std::runtime_error(
         fmt::format("Failed parsing the obj data: '{}': {}",
-                    source.description(), reader.Error()));
+                    mesh_source.description(), reader.Error()));
   }
 
   // We better not get any errors if we have a valid parse.
@@ -208,7 +220,7 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
     throw std::runtime_error(fmt::format(
         "The OBJ data appears to have no faces; it could be missing faces or "
         "might not be an OBJ file: {}",
-        source.description()));
+        mesh_source.description()));
   }
 
   if (!reader.Warning().empty()) {
@@ -269,7 +281,7 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
   //   2. Make use of smoothing groups.
   if (attrib.normals.size() == 0) {
     throw std::runtime_error(
-        fmt::format("OBJ has no normals: {}", source.description()));
+        fmt::format("OBJ has no normals: {}", mesh_source.description()));
   }
 
   /* Each triangle consists of three vertices. Any of those vertices may be
@@ -309,8 +321,9 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
         const int norm_index = shape_mesh.indices[v_index].normal_index;
         const int uv_index = shape_mesh.indices[v_index].texcoord_index;
         if (norm_index < 0) {
-          throw std::runtime_error(fmt::format(
-              "Not all faces reference normals: {}", source.description()));
+          throw std::runtime_error(
+              fmt::format("Not all faces reference normals: {}",
+                          mesh_source.description()));
         }
         const auto obj_indices =
             make_tuple(position_index, norm_index, uv_index);
@@ -370,12 +383,12 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
        Note: an in-memory mesh creates an empty path. This means the fallback
        material logic will _not_ look for a foo.png image on disk. */
       std::filesystem::path obj_path =
-          source.IsPath() ? source.path() : std::filesystem::path();
+          mesh_source.IsPath() ? mesh_source.path() : std::filesystem::path();
       mesh_data.material = MaybeMakeMeshFallbackMaterial(
           properties, obj_path, default_diffuse, policy, mesh_data.uv_state);
     } else {
       mesh_data.material =
-          MakeMaterialFromMtl(reader.GetMaterials().at(mat_index), source,
+          MakeMaterialFromMtl(reader.GetMaterials().at(mat_index), mesh_source,
                               properties, policy, mesh_data.uv_state);
     }
 

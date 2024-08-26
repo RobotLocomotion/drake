@@ -18,14 +18,14 @@ using Eigen::Vector3d;
 namespace internal {
 
 std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
-    const MeshSource& source, double scale,
+    const MeshSource& mesh_source, double scale,
     const DiagnosticPolicy& diagnostic) {
   std::shared_ptr<std::vector<Eigen::Vector3d>> vertices;
   std::shared_ptr<std::vector<int>> face_data;
   int num_tris{};
   try {
     std::tie(vertices, face_data, num_tris) =
-        ReadObj(source, scale, /* triangulate = */ true);
+        ReadObj(mesh_source, scale, /* triangulate = */ true);
   } catch (const std::exception& e) {
     diagnostic.Error(e.what());
     return std::nullopt;
@@ -87,10 +87,10 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
 }
 
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    const MeshSource& source, double scale,
+    const MeshSource& mesh_source, double scale,
     std::function<void(std::string_view)> on_warning) {
   // We will either throw or return a mesh here.
-  return *internal::DoReadObjToSurfaceMesh(source, scale,
+  return *internal::DoReadObjToSurfaceMesh(mesh_source, scale,
                                            MakePolicy(on_warning));
 }
 

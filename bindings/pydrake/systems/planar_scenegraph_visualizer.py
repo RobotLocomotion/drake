@@ -248,6 +248,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     # is not recognized.
                     # TODO(SeanCurtis-TRI): Once Convex also supports
                     # MeshSource, we won't have to split on class type.
+                    # TODO(SeanCurtis-TRI): If this is a convex, it should be
+                    # using the Shape's convex hull and not the filename.
                     if isinstance(shape, Mesh):
                         if shape.source().IsInMemory():
                             raise RuntimeError(

@@ -22,7 +22,8 @@ from drake import (
     lcmt_viewer_load_robot,
 )
 from pydrake.common import (
-    configure_logging,
+    configure_logging, 
+    FileSource,
     MemoryFile,
 )
 from pydrake.common.eigen_geometry import (
@@ -380,6 +381,15 @@ class _ViewerApplet:
                           extension=json["extension"],
                           filename_hint=json["filename_hint"])
 
+    @staticmethod
+    def _json_to_file_source(json):
+        """Converts the json representation of a FileSource to an instance of
+        same."""
+        if "path" in json:
+            return FileSource(path=json["path"])
+        else:
+            return FileSource(file=_ViewerApplet._json_to_memory_file(json))
+
     def _convert_geom(self, geom):
         """Given an lcmt_viewer_geometry_data, parses it into a tuple of
         (Shape, Rgba, RigidTransform) or
@@ -414,7 +424,7 @@ class _ViewerApplet:
                 supporting_files = {}
                 for name, coded in mesh_data.get("supporting_files",
                                                  {}).items():
-                    supporting_files[name] = self._json_to_memory_file(coded)
+                    supporting_files[name] = self._json_to_file_source(coded)
                 shape = Mesh(
                     InMemoryMesh(mesh_file=self._json_to_memory_file(
                                      mesh_data["mesh_file"]),

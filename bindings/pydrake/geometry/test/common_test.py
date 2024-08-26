@@ -7,7 +7,10 @@ import unittest
 
 import numpy as np
 
-from pydrake.common import MemoryFile
+from pydrake.common import (
+    FileSource,
+    MemoryFile,
+)
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
@@ -229,8 +232,8 @@ class TestGeometryCore(unittest.TestCase):
         file = MemoryFile(contents="stuff", extension=".ext",
                           filename_hint="some_hint")
         supporting_files = {
-            "file": MemoryFile(contents="a", extension=".a",
-                               filename_hint="a")
+            "file": FileSource(MemoryFile(contents="a", extension=".a",
+                                          filename_hint="a"))
         }
         only_mesh = mut.InMemoryMesh(mesh_file=file)
         self.assertEqual(only_mesh.mesh_file().contents(),
@@ -248,7 +251,8 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(full_mesh.mesh_file().contents(),
                          file.contents())
         self.assertIsNotNone(full_mesh.file("file"))
-        full_mesh.AddSupportingFile("fileb", MemoryFile("b", ".b", "bb"))
+        full_mesh.AddSupportingFile("fileb",
+                                    FileSource(MemoryFile("b", ".b", "bb")))
         self.assertIsNotNone(full_mesh.file("fileb"))
         self.assertEqual(full_mesh.num_supporting_files(), 2)
         self.assertIsNone(full_mesh.file("c"))
@@ -270,6 +274,9 @@ class TestGeometryCore(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             source.mesh_data()
         self.assertRegex(repr(source), "path=['\"]/a/path.obj['\"]")
+        self.assertIsInstance(eval(repr(source),
+                                   {"MeshSource": mut.MeshSource}),
+                              mut.MeshSource)
         copy.copy(source)
         copy.deepcopy(source)
 

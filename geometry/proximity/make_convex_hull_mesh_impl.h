@@ -37,10 +37,11 @@ namespace internal {
  objects, inflation of planar (zero thickness) meshes is not implemented. Margin
  is ignored for planar meshes.
 
- @param source  The source of the mesh data.
- @param scale   The scale to apply to the vertex data -- the vertex position
-                vectors are scaled relative to the mesh data's canonical frame.
- @param margin  The optional margin.
+ @param mesh_source  The source of the mesh data.
+ @param scale        The scale to apply to the vertex data -- the vertex
+                     position vectors are scaled relative to the mesh data's
+                     canonical frame.
+ @param margin       The optional margin.
 
  @throws std::exception if the mesh data is in an unsupported format.
  @throws std::exception if the mesh data is ill formed.
@@ -52,7 +53,7 @@ namespace internal {
                            hull.
  @throws std::exception if `scale` is not strictly positive.
  @throws std::exception if `margin` is negative. */
-PolygonSurfaceMesh<double> MakeConvexHull(const MeshSource& source,
+PolygonSurfaceMesh<double> MakeConvexHull(const MeshSource& mesh_source,
                                           double scale, double margin = 0);
 
 }  // namespace internal

@@ -19,14 +19,16 @@ GTEST_TEST(InMemoryMeshTest, Constructor) {
 
   const InMemoryMesh full_mesh(MemoryFile("body", ".ext", "hint"),
                                {{"a", MemoryFile("aa", ".a", "aa")},
-                                {"b", MemoryFile("bb", ".b", "bb")}});
+                                {"b", "b/path"}});
   EXPECT_FALSE(full_mesh.empty());
   EXPECT_EQ(full_mesh.num_supporting_files(), 2);
   EXPECT_EQ(full_mesh.file("unknown"), nullptr);
   ASSERT_NE(full_mesh.file("a"), nullptr);
-  EXPECT_EQ(full_mesh.file("a")->contents(), "aa");
+  ASSERT_TRUE(full_mesh.file("a")->is_in_memory());
+  EXPECT_EQ(full_mesh.file("a")->memory_file().contents(), "aa");
   ASSERT_NE(full_mesh.file("b"), nullptr);
-  EXPECT_EQ(full_mesh.file("b")->contents(), "bb");
+  ASSERT_TRUE(full_mesh.file("b")->is_path());
+  EXPECT_EQ(full_mesh.file("b")->path(), "b/path");
 }
 
 GTEST_TEST(InMemoryMeshTest, SupportingFiles) {
@@ -36,12 +38,12 @@ GTEST_TEST(InMemoryMeshTest, SupportingFiles) {
   mesh.AddSupportingFile("first", MemoryFile("1", ".1", "1"));
   EXPECT_EQ(mesh.num_supporting_files(), 1);
   ASSERT_NE(mesh.file("first"), nullptr);
-  EXPECT_EQ(mesh.file("first")->contents(), "1");
+  EXPECT_EQ(mesh.file("first")->memory_file().contents(), "1");
 
   mesh.AddSupportingFile("alpha", MemoryFile("A", ".A", "A"));
   EXPECT_EQ(mesh.num_supporting_files(), 2);
   ASSERT_NE(mesh.file("alpha"), nullptr);
-  EXPECT_EQ(mesh.file("alpha")->contents(), "A");
+  EXPECT_EQ(mesh.file("alpha")->memory_file().contents(), "A");
 
   std::vector<std::string_view> names = mesh.SupportingFileNames();
   for (const auto name : names) {
@@ -51,6 +53,49 @@ GTEST_TEST(InMemoryMeshTest, SupportingFiles) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       mesh.AddSupportingFile("first", MemoryFile("2", ".2", "2")),
       ".*that name has already been used for file '1'.");
+}
+
+GTEST_TEST(MeshSourceTest, PathConstructor) {
+  const MeshSource s(std::filesystem::path("path"));
+  EXPECT_TRUE(s.IsPath());
+  EXPECT_FALSE(s.IsInMemory());
+  EXPECT_EQ(s.path(), "path");
+  EXPECT_EQ(s.description(), "path");
+}
+
+GTEST_TEST(MeshSourceTest, InMemorymeshConstructor) {
+  const MeshSource s(InMemoryMesh(MemoryFile("contents", ".ext", "hint")));
+  EXPECT_FALSE(s.IsPath());
+  EXPECT_TRUE(s.IsInMemory());
+  EXPECT_EQ(s.mesh_data().mesh_file().contents(), "contents");
+  EXPECT_EQ(s.description(), "hint");
+}
+
+GTEST_TEST(MeshSourceTest, StringConstructor) {
+  const char c_ptr[] = "path1";
+  const std::string_view view("path2");
+  const std::string str("path3");
+
+  /* C-style string. */
+  {
+    const MeshSource s(c_ptr);
+    EXPECT_TRUE(s.IsPath());
+    EXPECT_FALSE(s.IsInMemory());
+  }
+
+  /* std::string_view. */
+  {
+    const MeshSource s(view);
+    EXPECT_TRUE(s.IsPath());
+    EXPECT_FALSE(s.IsInMemory());
+  }
+
+  /* std::string_view. */
+  {
+    const MeshSource s(str);
+    EXPECT_TRUE(s.IsPath());
+    EXPECT_FALSE(s.IsInMemory());
+  }
 }
 
 /* Dummy function for testing implicit construction. */

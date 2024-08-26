@@ -16,7 +16,7 @@ namespace render_gltf_client {
 namespace internal {
 
 /* Returns the parsed result of the json file indicated by the given source. */
-nlohmann::json ReadJsonFile(const MeshSource& source);
+nlohmann::json ReadJsonFile(const MeshSource& mesh_source);
 
 /* Creates the glTF matrix array from the given 4x4 matrix.
  @returns A json list of 16 number values. */

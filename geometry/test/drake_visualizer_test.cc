@@ -381,14 +381,26 @@ class DrakeVisualizerTest : public ::testing::Test {
     const std::string gltf_path = FindResourceOrThrow(
         "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
 
+    // The names of two supporting files. We'll poke the results by examining
+    // each of these two files when the Mesh is defined in memory.
+    const std::string kSupportingPngAsPath("fully_textured_pyramid_omr.png");
+    const std::string kSupportingPngAsMemory(
+        "fully_textured_pyramid_normal.png");
+
     // TODO(SeanCurtis-TRI): When Convex supports in-memory, we can remove the
     // is_same_v and just flag on `in_memory`.
     const bool expect_in_memory = in_memory && std::is_same_v<MeshType, Mesh>;
     if (expect_in_memory) {
       if constexpr (std::is_same_v<MeshType, Mesh>) {
-        InMemoryMesh mesh_data = geometry::internal::PreParseGltf(
+        const InMemoryMesh mesh_data = geometry::internal::PreParseGltf(
             std::filesystem::path(gltf_path), /* include_images= */ true);
-        mesh = make_unique<MeshType>(std::move(mesh_data));
+        // PreParseGltf loads all supporting files as path file sources. We'll
+        // swap one to be MemoryFile so we can exercise both paths in dut.
+        string_map<FileSource> alt_files = mesh_data.supporting_files();
+        alt_files[kSupportingPngAsMemory] =
+            MemoryFile::Make(alt_files[kSupportingPngAsMemory].path());
+        mesh = make_unique<MeshType>(std::move(
+            InMemoryMesh(mesh_data.mesh_file(), std::move(alt_files))));
       }
     } else {
       mesh = make_unique<MeshType>(gltf_path);
@@ -490,12 +502,12 @@ class DrakeVisualizerTest : public ::testing::Test {
           // Contents is a valid base64-encoded glTF file.
           auto gltf_base64 =
               json_mesh["mesh_file"]["contents"].get<std::string_view>();
-          const std::vector<uint8_t> decoded_vec =
+          const std::vector<uint8_t> decoded_gltf =
               common_robotics_utilities::base64_helpers::Decode(
                   std::string{gltf_base64});
           std::string gltf_content(
-              reinterpret_cast<const char*>(decoded_vec.data()),
-              decoded_vec.size());
+              reinterpret_cast<const char*>(decoded_gltf.data()),
+              decoded_gltf.size());
           EXPECT_FALSE(gltf_content.empty());
           EXPECT_NO_THROW(unused(nlohmann::json::parse(gltf_content)));
           EXPECT_EQ(json_mesh["mesh_file"]["extension"].get<std::string_view>(),
@@ -503,23 +515,33 @@ class DrakeVisualizerTest : public ::testing::Test {
           EXPECT_EQ(
               json_mesh["mesh_file"]["filename_hint"].get<std::string_view>(),
               mesh->source().mesh_data().mesh_file().filename_hint());
-        }
-        ASSERT_TRUE(json_mesh.contains("supporting_files"));
-        // Exploit knowledge of fully_textured_pyramid.gltf's contents to grab
-        // a single supporting file. We'll confirm that decoding it from base
-        // 64 produces a recognizable .png file.
-        ASSERT_TRUE(json_mesh["supporting_files"].contains(
-            "fully_textured_pyramid_emissive.png"));
-        const std::string& emissive_64 =
-            json_mesh["supporting_files"]["fully_textured_pyramid_emissive.png"]
-                     ["contents"]
-                         .get<std::string>();
-        const std::vector<uint8_t> decoded_vec =
-            common_robotics_utilities::base64_helpers::Decode(
-                std::string{emissive_64});
-        uint8_t kPngHeader[] = {137, 80, 78, 71, 13, 10, 26, 10};
-        for (int i = 0; i < 8; ++i) {
-          ASSERT_EQ(decoded_vec[i], kPngHeader[i]);
+
+          ASSERT_TRUE(json_mesh.contains("supporting_files"));
+          const nlohmann::json& files = json_mesh["supporting_files"];
+
+          // We won't explore *all* of the supporting files. We'll poke one that
+          // should be encoded as a path, and the other as a MemoryFile.
+          ASSERT_TRUE(files.contains(kSupportingPngAsPath));
+          ASSERT_TRUE(files[kSupportingPngAsPath].contains("path"));
+          EXPECT_EQ(
+              files[kSupportingPngAsPath]["path"].get<std::string_view>(),
+              mesh->source().mesh_data().file(kSupportingPngAsPath)->path());
+
+          ASSERT_TRUE(files.contains(kSupportingPngAsMemory));
+          const nlohmann::json& mem_file = files[kSupportingPngAsMemory];
+          EXPECT_EQ(mem_file["extension"].get<std::string_view>(), ".png");
+          EXPECT_TRUE(
+              mem_file["filename_hint"].get<std::string_view>().ends_with(
+                  kSupportingPngAsMemory));
+          const auto emissive_64 = mem_file["contents"].get<std::string_view>();
+          // We'll confirm that the contents indicate an encoded png.
+          const std::vector<uint8_t> decoded_png =
+              common_robotics_utilities::base64_helpers::Decode(
+                  std::string{emissive_64});
+          uint8_t kPngHeader[] = {137, 80, 78, 71, 13, 10, 26, 10};
+          for (int i = 0; i < 8; ++i) {
+            ASSERT_EQ(decoded_png[i], kPngHeader[i]);
+          }
         }
       } else {
         EXPECT_THAT(geo_message.string_data,

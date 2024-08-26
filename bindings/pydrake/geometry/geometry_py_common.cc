@@ -289,9 +289,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init<MemoryFile, string_map<MemoryFile>>(),
+        .def(py::init<MemoryFile, string_map<FileSource>>(),
             py::arg("mesh_file"),
-            py::arg("supporting_files") = string_map<MemoryFile>(),
+            py::arg("supporting_files") = string_map<FileSource>(),
             cls_doc.ctor.doc_2args)
         .def("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
         .def("AddSupportingFile", &Class::AddSupportingFile, py::arg("name"),

@@ -398,10 +398,10 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
   // If only the texture is missing, we still have "success" - materials are
   // loaded but the image is not.
   {
+    DRAKE_DEMAND(meshcat.GetPackedObject("obj_path").empty());
     meshcat.SetObject(
         "obj_path",
         Mesh(InMemoryMesh(obj_file, {{"rainbow_box.mtl", mtl_file}})));
-    DRAKE_DEMAND(meshcat.GetPackedObject("obj_path").empty());
     const std::string packed_obj = meshcat.GetPackedObject("obj_path");
     EXPECT_FALSE(packed_obj.empty());
     EXPECT_THAT(packed_obj, Not(HasSubstr("data:image/png;base64")));

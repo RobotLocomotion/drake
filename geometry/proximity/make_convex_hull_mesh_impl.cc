@@ -263,30 +263,30 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
   return n_candidate.normalized();
 }
 
-VertexCloud ReadVertices(const MeshSource& source, double scale) {
+VertexCloud ReadVertices(const MeshSource& mesh_source, double scale) {
   VertexCloud cloud;
-  if (source.extension() == ".obj") {
-    cloud.vertices = ReadObjVertices(source, scale);
-  } else if (source.extension() == ".vtk") {
-    cloud.vertices = ReadVtkVertices(source, scale);
-  } else if (source.extension() == ".gltf") {
-    cloud.vertices = ReadGltfVertices(source, scale);
+  if (mesh_source.extension() == ".obj") {
+    cloud.vertices = ReadObjVertices(mesh_source, scale);
+  } else if (mesh_source.extension() == ".vtk") {
+    cloud.vertices = ReadVtkVertices(mesh_source, scale);
+  } else if (mesh_source.extension() == ".gltf") {
+    cloud.vertices = ReadGltfVertices(mesh_source, scale);
   } else {
     throw std::runtime_error(
         fmt::format("MakeConvexHull only applies to .obj, .vtk, and .gltf "
                     "meshes; unsupported extension '{}' for geometry data: {}.",
-                    source.extension(), source.description()));
+                    mesh_source.extension(), mesh_source.description()));
   }
 
   if (cloud.vertices.size() < 3) {
     throw std::runtime_error(fmt::format(
         "MakeConvexHull() cannot be used on a mesh with fewer "
         "than three vertices; found {} vertices in geometry data: {}.",
-        cloud.vertices.size(), source.description()));
+        cloud.vertices.size(), mesh_source.description()));
   }
 
   /* Characterizes planarity. */
-  cloud.n = FindNormal(cloud.vertices, source.description());
+  cloud.n = FindNormal(cloud.vertices, mesh_source.description());
   double d = cloud.n.dot(cloud.vertices[0]);
   cloud.interior_point = cloud.vertices[0];
   /* Assume planarity and look for evidence to the contrary. */
@@ -521,11 +521,11 @@ class ConvexHull {
 
 }  // namespace
 
-PolygonSurfaceMesh<double> MakeConvexHull(const MeshSource& source,
+PolygonSurfaceMesh<double> MakeConvexHull(const MeshSource& mesh_source,
                                           double scale, double margin) {
   DRAKE_THROW_UNLESS(scale > 0);
   DRAKE_THROW_UNLESS(margin >= 0);
-  VertexCloud cloud = ReadVertices(source, scale);
+  VertexCloud cloud = ReadVertices(mesh_source, scale);
 
   // Hull of the input cloud of vertices.
   const ConvexHull hull(std::move(cloud));

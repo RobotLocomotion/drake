@@ -583,14 +583,14 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
   // importer (see systems/sensors/image_io_load.cc).
   vtkNew<vtkGLTFImporter> importer;
   observe(importer);
-  const MeshSource& source = mesh.source();
-  if (source.IsPath()) {
-    importer->SetFileName(source.path().c_str());
+  const MeshSource& mesh_source = mesh.source();
+  if (mesh_source.IsPath()) {
+    importer->SetFileName(mesh_source.path().c_str());
   } else {
     vtkSmartPointer<MeshMemoryLoader> uri_loader(
-        new MeshMemoryLoader(&source.mesh_data()));
+        new MeshMemoryLoader(&mesh_source.mesh_data()));
     vtkSmartPointer<vtkResourceStream> gltf_stream =
-        MakeStreamForString(&source.mesh_data().mesh_file().contents());
+        MakeStreamForString(&mesh_source.mesh_data().mesh_file().contents());
     importer->SetInputStream(gltf_stream, uri_loader, /* binary= */ false);
   }
   importer->Update();

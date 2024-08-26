@@ -58,7 +58,7 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
 /** Overload of @ref ReadObjToTriangleSurfaceMesh(const std::string&, double)
  with the Wavefront .obj in a Mesh shape specification. */
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    const MeshSource& source, double scale,
+    const MeshSource& mesh_source, double scale,
     std::function<void(std::string_view)> on_warning = {});
 
 }  // namespace geometry

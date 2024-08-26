@@ -441,7 +441,7 @@ TEST_F(RenderEngineGltfClientGltfTest, FileToDataUris) {
         FindResourceOrThrow(dir / "cube3.gltf");
     const std::string gltf_content = ReadFileOrThrow(gltf_path);
 
-    string_map<MemoryFile> files;
+    string_map<FileSource> files;
     for (const char* file_name :
          {"cube3_normal.png", "cube3_divot.png", "cube3.bin"}) {
       files.insert(
@@ -474,8 +474,12 @@ TEST_F(RenderEngineGltfClientGltfTest, FileToDataUris) {
 
     for (std::string_view array : {"images", "buffers"}) {
       for (size_t i = 0; i < ref_contents[array].size(); ++i) {
-        const std::string ref_string = make_data_uri(
-            files[ref_contents[array][i]["uri"].get<std::string>()].contents());
+        const std::string& name =
+            ref_contents[array][i]["uri"].get<std::string>();
+        const FileSource& file_source = files[name];
+        DRAKE_DEMAND(file_source.is_in_memory());
+        const std::string ref_string =
+            make_data_uri(file_source.memory_file().contents());
         for (const json* test : {&disk_contents, &memory_contents}) {
           SCOPED_TRACE(fmt::format("{}[{}] from {}", array, i,
                                    test == &disk_contents ? "disk" : "memory"));

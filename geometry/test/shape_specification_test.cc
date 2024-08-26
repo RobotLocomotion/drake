@@ -710,7 +710,7 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   const Mesh mem_mesh1(InMemoryMesh(MemoryFile("a", ".a", "A")), 1.5);
   const Mesh mem_mesh2(InMemoryMesh(MemoryFile("a", ".a", "A"),
                                     {{"bb", MemoryFile("b", ".b", "B")},
-                                     {"cc", MemoryFile("c", ".c", "C")}}), 1.5);
+                                     {"cc", "path/to/c"}}), 1.5);
   const MeshcatCone cone(1.5, 0.25, 0.5);
   const Sphere sphere(1.25);
 
@@ -736,14 +736,12 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(mem_mesh1.to_string(), "Mesh(mesh_data=InMemoryMesh(mesh_file="
                                    "MemoryFile(contents='a', extension='.a', "
                                    "filename_hint='A')), scale=1.5)");
-  EXPECT_EQ(mem_mesh2.to_string(), "Mesh(mesh_data=InMemoryMesh(mesh_file="
-                                   "MemoryFile(contents='a', extension='.a', "
-                                   "filename_hint='A'), supporting_files={"
-                                   "{'bb', MemoryFile(contents='b', "
-                                   "extension='.b', filename_hint='B')}, "
-                                   "{'cc', MemoryFile(contents='c', "
-                                   "extension='.c', filename_hint='C')}}), "
-                                   "scale=1.5)");
+  EXPECT_EQ(mem_mesh2.to_string(),
+            "Mesh(mesh_data=InMemoryMesh(mesh_file=MemoryFile(contents='a', "
+            "extension='.a', filename_hint='A'), supporting_files={{'bb', "
+            "FileSource(file=MemoryFile(contents='b', extension='.b', "
+            "filename_hint='B'))}, {'cc', FileSource(path='path/to/c')}}), "
+            "scale=1.5)");
   EXPECT_EQ(cone.to_string(), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
   EXPECT_EQ(sphere.to_string(), "Sphere(radius=1.25)");
 

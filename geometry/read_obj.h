@@ -18,7 +18,7 @@ namespace internal {
  It includes the vertex positions, face encodings (see TinyObjToFclFaces() in
  the .cc file), and number of faces.
 
- @param source         The source for the OBJ data.
+ @param mesh_source    The source for the OBJ data.
  @param scale          Scale to coordinates.
  @param triangulate    If `true` polygons in the obj will be triangulated.
  @param vertices_only  If true, only the vertex data will be populated; faces
@@ -37,7 +37,7 @@ namespace internal {
  @pre `source.extension() == ".obj"`. */
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
-ReadObj(const MeshSource& source, double scale, bool triangulate,
+ReadObj(const MeshSource& mesh_source, double scale, bool triangulate,
         bool vertices_only = false);
 
 }  // namespace internal

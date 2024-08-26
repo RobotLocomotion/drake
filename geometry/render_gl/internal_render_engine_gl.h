@@ -147,10 +147,10 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // mesh data has no intrinsic material, then considers the geometry properties
   // or existence of an identically named png file.
   //
-  // @pre The file key derived from `source` and `is_convex` is in the meshes_
-  // cache.
+  // @pre The file key derived from `mesh_source` and `is_convex` is in the
+  // meshes_ cache.
   void ImplementMeshesForSource(void* user_data, const Vector3<double>& scale,
-                                const MeshSource& source, bool is_convex);
+                                const MeshSource& mesh_source, bool is_convex);
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -252,7 +252,8 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   //
   // If the source indicates an unsupported file type, no geometry is cached,
   // and data->accepted is set to false.
-  void CacheFileMeshesMaybe(const MeshSource& source, RegistrationData* data);
+  void CacheFileMeshesMaybe(const MeshSource& mesh_source,
+                            RegistrationData* data);
 
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render

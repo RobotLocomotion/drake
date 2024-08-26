@@ -38,14 +38,14 @@ std::string GetExtensionLower(const std::string& filename) {
 // shape_specification_thread_test.cc.
 void ComputeConvexHullAsNecessary(
     std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
-    const MeshSource& source, double scale) {
+    const MeshSource& mesh_source, double scale) {
   std::shared_ptr<PolygonSurfaceMesh<double>> check =
       std::atomic_load(hull_ptr);
   if (check == nullptr) {
     // Note: This approach means that multiple threads *may* redundantly compute
     // the convex hull; but only the first one will set the hull.
     auto new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(source, scale));
+        internal::MakeConvexHull(mesh_source, scale));
     std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
   }
 }
@@ -239,13 +239,27 @@ std::string Mesh::do_to_string() const {
       const InMemoryMesh& data = source_.mesh_data();
       auto format_file = [](const MemoryFile& file) {
         return fmt::format(
-            "MemoryFile(contents='{}', extension='{}', filename_hint='{}')",
+            "MemoryFile(contents='{}', extension='{}', "
+            "filename_hint='{}')",
             file.contents(), file.extension(), file.filename_hint());
+      };
+      // @pre file.empty() is false.
+      auto format_file_source = [&format_file](const FileSource& file_source) {
+        if (file_source.is_path()) {
+          return fmt::format("FileSource(path='{}')",
+                             file_source.path().string());
+        } else {
+          DRAKE_DEMAND(file_source.is_in_memory());
+          const MemoryFile& file = file_source.memory_file();
+          return fmt::format("FileSource(file={})", format_file(file));
+        }
       };
       std::vector<std::string> supporting;
       for (const auto& name : data.SupportingFileNames()) {
+        const FileSource* file = data.file(name);
+        if (file->empty()) continue;
         supporting.push_back(
-            fmt::format("{{'{}', {}}}", name, format_file(*data.file(name))));
+            fmt::format("{{'{}', {}}}", name, format_file_source(*file)));
       }
       std::string supporting_str =
           supporting.size() > 0 ? fmt::format(", supporting_files={{{}}}",
@@ -337,15 +351,15 @@ namespace {
 
 double CalcMeshVolume(const Mesh& mesh) {
   // TODO(russt): Support .vtk files.
-  const MeshSource& source = mesh.source();
-  if (mesh.extension() != ".obj") {
+  const MeshSource& mesh_source = mesh.source();
+  if (mesh_source.extension() != ".obj") {
     throw std::runtime_error(fmt::format(
         "CalcVolume currently only supports .obj files for mesh geometries; "
         "but the volume of '{}' was requested.",
-        source.description()));
+        mesh_source.description()));
   }
   TriangleSurfaceMesh<double> surface_mesh =
-      ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale());
+      ReadObjToTriangleSurfaceMesh(mesh_source, mesh.scale());
   return internal::CalcEnclosedVolume(surface_mesh);
 }
 

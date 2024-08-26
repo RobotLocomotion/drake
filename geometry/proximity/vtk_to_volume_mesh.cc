@@ -70,19 +70,20 @@ VolumeMesh<double> ReadVtkToVolumeMesh(vtkUnstructuredGridReader* reader,
 
 }  // namespace
 
-VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& source, double scale) {
+VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
+                                       double scale) {
   if (scale <= 0.0) {
     throw std::runtime_error(fmt::format(
         "ReadVtkToVolumeMesh() requires a positive scale. Given {} for '{}'.",
-        scale, source.description()));
+        scale, mesh_source.description()));
   }
   vtkNew<vtkUnstructuredGridReader> reader;
-  if (source.IsPath()) {
-    reader->SetFileName(source.path().c_str());
+  if (mesh_source.IsPath()) {
+    reader->SetFileName(mesh_source.path().c_str());
   } else {
-    DRAKE_DEMAND(source.IsInMemory());
+    DRAKE_DEMAND(mesh_source.IsInMemory());
     vtkNew<vtkCharArray> char_array;
-    const MemoryFile& file = source.mesh_data().mesh_file();
+    const MemoryFile& file = mesh_source.mesh_data().mesh_file();
     const std::string& data = file.contents();
     // vtkCharArray requires a non-const pointer. Yuck. But this allows us to
     // avoid copying the string.
@@ -91,7 +92,7 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& source, double scale) {
     reader->SetInputArray(char_array);
     reader->SetReadFromInputString(true);
   }
-  return ReadVtkToVolumeMesh(reader, source.description(), scale);
+  return ReadVtkToVolumeMesh(reader, mesh_source.description(), scale);
 }
 
 }  // namespace internal

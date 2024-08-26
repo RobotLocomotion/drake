@@ -227,13 +227,13 @@ void MergeRecord::AddElementTree(const json& root,
   add_tree_recurse(root);
 }
 
-json ReadJsonFile(const MeshSource& source) {
-  if (source.IsPath()) {
-    std::ifstream f(source.path());
+json ReadJsonFile(const MeshSource& mesh_source) {
+  if (mesh_source.IsPath()) {
+    std::ifstream f(mesh_source.path());
     return json::parse(f);
   } else {
-    DRAKE_DEMAND(source.IsInMemory());
-    return json::parse(source.mesh_data().mesh_file().contents());
+    DRAKE_DEMAND(mesh_source.IsInMemory());
+    return json::parse(mesh_source.mesh_data().mesh_file().contents());
   }
 }
 

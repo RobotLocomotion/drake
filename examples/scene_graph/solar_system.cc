@@ -164,13 +164,15 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Allocate the sun.
   // We're explicitly using an in-memory mesh so that this can serve as an
   // easy way to reality check the visualization of in-memory meshes.
-  // The sun should appear in both meldis and meshcat visualizer.
+  // The sun should appear in both meldis and meshcat visualizer. Note that
+  // some of the supporting files are MemoryFiles and some are paths -- this is
+  // to exercise both representations.
   std::string sun_path =
       FindResourceOrThrow("drake/examples/scene_graph/sun.gltf");
-  string_map<MemoryFile> supporting_files{
+  string_map<FileSource> supporting_files{
       {"sun.bin", MemoryFile::Make(FindResourceOrThrow(
                       "drake/examples/scene_graph/sun.bin"))},
-      {"sun.png", MemoryFile::Make(FindResourceOrThrow(
+      {"sun.png", std::filesystem::path(FindResourceOrThrow(
                       "drake/examples/scene_graph/sun.png"))},
       {"sun.ktx2", MemoryFile::Make(FindResourceOrThrow(
                        "drake/examples/scene_graph/sun.ktx2"))}};

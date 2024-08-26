@@ -34,8 +34,8 @@ namespace internal {
  Other sections like POINT_DATA and CELL_DATA, e.g. per-vertex pressure value
  or per-tetrahedron velocity field are ignored.
 
- @param source      The source of mesh data to parse.
- @param scale       An optional scale to coordinates.
+ @param mesh_source      The source of mesh data to parse.
+ @param scale            An optional scale to coordinates.
  @return tetrahedral volume mesh
 
  @note Error handling from parsing the file is performed by VTK library.
@@ -43,7 +43,7 @@ namespace internal {
  @throw  std::exception if the file does not exist or unsupported.
          std::exception for non-positive scale factors.
  */
-VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& source,
+VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
                                        double scale = 1.0);
 
 }  // namespace internal

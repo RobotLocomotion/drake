@@ -563,7 +563,8 @@ namespace {
 //
 // When merging a glTF, we expect that our images- and buffers-handling logic
 // must call this function as a subroutine.
-void MaybeEmbedDataUri(nlohmann::json* item_inout, const MeshSource& source,
+void MaybeEmbedDataUri(nlohmann::json* item_inout,
+                       const MeshSource& mesh_source,
                        std::string_view array_name) {
   DRAKE_DEMAND(item_inout != nullptr);
   nlohmann::json& item = *item_inout;
@@ -575,20 +576,35 @@ void MaybeEmbedDataUri(nlohmann::json* item_inout, const MeshSource& source,
     return;
   }
   std::string content;
-  if (source.IsPath()) {
-    const std::filesystem::path base_path = source.path().parent_path();
-    content = ReadFileOrThrow(base_path / uri);
+  std::filesystem::path filepath;
+  if (mesh_source.IsPath()) {
+    const std::filesystem::path base_path = mesh_source.path().parent_path();
+    filepath = base_path / uri;
   } else {
-    DRAKE_DEMAND(source.IsInMemory());
-    const MemoryFile* file = source.mesh_data().file(uri);
-    if (file == nullptr) {
+    DRAKE_DEMAND(mesh_source.IsInMemory());
+    const FileSource* file_source = mesh_source.mesh_data().file(uri);
+    if (file_source == nullptr || file_source->empty()) {
       throw std::runtime_error(fmt::format(
           "RenderEngineGltfClient cannot add an in-memory Mesh. The Mesh's "
           "glTF ('{}') file names an item in {} file that is not contained "
           "within the supporting files.",
-          source.mesh_data().mesh_file().filename_hint(), array_name));
+          mesh_source.mesh_data().mesh_file().filename_hint(), array_name));
     }
-    content = file->contents();
+    if (file_source->is_in_memory()) {
+      content = file_source->memory_file().contents();
+    } else {
+      DRAKE_DEMAND(file_source->is_path());
+      filepath = file_source->path();
+    }
+  }
+
+  if (content.empty() && !filepath.empty()) {
+    // Didn't read anything and have no alternative.
+    content = ReadFileOrThrow(filepath);
+  }
+
+  if (content.empty()) {
+    throw std::runtime_error("SOMETHING BAD");
   }
 
   item["uri"] =
@@ -597,13 +613,13 @@ void MaybeEmbedDataUri(nlohmann::json* item_inout, const MeshSource& source,
                       std::vector<uint8_t>(content.begin(), content.end())));
 }
 
-void EmbedFileUris(nlohmann::json* gltf_ptr, const MeshSource& source) {
+void EmbedFileUris(nlohmann::json* gltf_ptr, const MeshSource& mesh_source) {
   nlohmann::json& gltf = *gltf_ptr;
   // Iterate through buffers and images.
   for (std::string_view array_name : {"buffers", "images"}) {
     auto& array = gltf[array_name];
     for (size_t i = 0; i < array.size(); ++i) {
-      MaybeEmbedDataUri(&array[i], source, array_name);
+      MaybeEmbedDataUri(&array[i], mesh_source, array_name);
     }
   }
 }
@@ -628,8 +644,8 @@ bool RenderEngineGltfClient::ImplementGltf(
   SetRootPoses(&mesh_data, root_nodes, data.X_WG, mesh.scale(), true);
 
   DRAKE_DEMAND(!gltfs_.contains(data.id));
-  const MeshSource& source = mesh.source();
-  const std::string gltf_name = source.description();
+  const MeshSource& mesh_source = mesh.source();
+  const std::string gltf_name = mesh_source.description();
   gltfs_.insert({data.id,
                  {gltf_name, std::move(mesh_data), std::move(root_nodes),
                   mesh.scale(), GetRenderLabelOrThrow(data.properties)}});
