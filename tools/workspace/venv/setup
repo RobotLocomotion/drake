@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# Python venv set-up script for Drake, which uses
+#  https://github.com/jazzband/pip-tools
+# under the hood for setup.
+#
+# Most users do NOT need to run this manually:
+# - The `drake/setup/*/install_prereqs.sh` logic runs `./setup` automatically.
+# - Our `./repository.bzl` logic runs `./sync` automatically.
+
+set -eux -o pipefail
+
+# Process command line arguments.
+expunge=0
+with_test_only=1
+while [ "${1:-}" != "" ]; do
+  case "$1" in
+    --expunge)
+      # Delete everything and start over.
+      expunge=1
+      ;;
+    --without-test-only)
+      # Delete everything and start over.
+      with_test_only=0
+      ;;
+    *)
+      echo 'Invalid command line argument' >&2
+      exit 5
+  esac
+  shift
+done
+
+# Determine what Python to use
+if [[ "$(uname)" == "Darwin" ]]; then
+  if [[ $(arch) = "arm64" ]]; then
+    readonly python=/opt/homebrew/bin/python3
+  else
+    readonly python=/usr/local/bin/python3
+  fi
+else
+  readonly python=/usr/bin/python3
+fi
+
+# Find a home for the venvs inside of Bazel's cache/scratch directory, and put a
+# `bazel-venv` symlink in place to help find it. (We also allow CI to override
+# the location for better caching; the output_base is specific to the git
+# checkout and is zapped after every build, but in CI we want to have a single
+# venv farm per machine to speed things up.)
+workspace="$(cd $(dirname $0)/../../.. && pwd)"
+venv_base="$(cd "${workspace}" && bazel info output_base)/execroot/venv"
+mkdir -p "${venv_base}"
+ln -nsf "${venv_base}" "${workspace}/bazel-venv"
+
+# Install pip-tools into a virtual environment. As suggested by the pip-tools
+# docs, we segregate the pip-tools apps from the environment they are managing,
+# so that changes to the managed environment cannot break pip-tools.
+venv_jazzband="${venv_base}/venv.jazzband"
+if [[ "${expunge}" -eq 1 ]]; then
+  rm -rf "${venv_jazzband}"
+fi
+if [ ! -d ${venv_jazzband} ]; then
+  $python -m venv "${venv_jazzband}"
+fi
+# TODO(jeremy.nimmer) Ideally, we also would pin all of the dependencies of
+# pip-tools here, but it's not obvious to me how to do that in a way which is
+# easy to upgrade/re-pin over time.
+"${venv_jazzband}/bin/pip" install -U pip-tools==7.4.1
+
+# Prepare an (empty) venv that will hold Drake's requirements.txt. The `./sync`
+# script will fill this in later.
+venv_drake="${venv_base}/venv.drake"
+if [[ "${expunge}" -eq 1 ]]; then
+  rm -rf "${venv_drake}"
+fi
+if [ ! -d ${venv_drake} ]; then
+  $python -m venv "${venv_drake}"
+fi
+# Any environment managed by pip-tools requires a sufficiently new version of
+# pip as compared to the Ubuntu 22.04 default.
+"${venv_drake}/bin/pip" install -U pip==24.2
+
+if [[ "${with_test_only}" -eq 1 ]]; then
+  ln -nsf requirements-with-test.txt "${workspace}/requirements.txt"
+else
+  ln -nsf requirements-without-test.txt "${workspace}/requirements.txt"
+fi
