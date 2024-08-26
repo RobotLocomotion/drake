@@ -96,6 +96,42 @@ GTEST_TEST(CompositeTrajectoryTest, Empty) {
   DRAKE_EXPECT_THROWS_MESSAGE(traj.cols(), ".*no segments.*");
 }
 
+GTEST_TEST(CompositeTrajectoryTest, NullSegment) {
+  std::vector<copyable_unique_ptr<Trajectory<double>>> segments;
+  // Create a null copyable_unique_ptr.
+  segments.emplace_back(copyable_unique_ptr<Trajectory<double>>());
+  EXPECT_THROW(CompositeTrajectory<double>{segments}, std::exception);
+  EXPECT_THROW(CompositeTrajectory<double>::AlignAndConcatenate(segments),
+               std::exception);
+}
+
+GTEST_TEST(CompositeTrajectoryTest, RetimeAndConcatenate) {
+  Eigen::Matrix<double, 2, 3> points;
+  // clang-format off
+  points << 1, 0, 0,
+            0, 0, 1;
+  // clang-format on
+
+  std::vector<copyable_unique_ptr<Trajectory<double>>> segments(2);
+  segments[0] = std::make_unique<BezierCurve<double>>(2, 3, points);
+
+  points.col(0) = points.col(2);
+  points.col(1) << 3, 10;
+  segments[1] = std::make_unique<BezierCurve<double>>(4, 5, points);
+
+  EXPECT_THROW(CompositeTrajectory<double>{segments}, std::exception);
+
+  CompositeTrajectory<double> traj =
+      CompositeTrajectory<double>::AlignAndConcatenate(segments);
+
+  EXPECT_EQ(traj.start_time(), 2);
+  EXPECT_EQ(traj.end_time(), 4);
+  EXPECT_EQ(traj.value(2), segments[0]->value(2));
+  EXPECT_EQ(traj.value(3), segments[0]->value(3));
+  EXPECT_EQ(traj.value(3), segments[1]->value(4));
+  EXPECT_EQ(traj.value(4), segments[1]->value(5));
+}
+
 }  // namespace
 }  // namespace trajectories
 }  // namespace drake
