@@ -1090,7 +1090,8 @@ drake_cc_googletest(
         # TODO(DamrongGuoy): Use ":calc_signed_distance_to_surface_mesh"
         #  when we split it from :distance_to_point_callback
         ":distance_to_point_callback",
-        ":make_box_mesh",
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

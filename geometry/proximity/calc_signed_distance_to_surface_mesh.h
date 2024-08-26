@@ -183,15 +183,12 @@ struct SignedDistanceToSurfaceMesh {
 // @pre  The surface mesh is watertight and a closed manifold. Otherwise, it
 // might return incorrect signs and gradients.
 //
-// @note If p_MQ is equally far from multiple features (faces, edges, or
-// vertices), the nearest point and the gradient are computed from one
-// of those features.
-//
 // @note If p_MQ is on the surface, the returned signed distance is zero,
-// the nearest point is p_MQ itself, and the gradient is the surface normal
+// the nearest point is p_MQ itself, and the gradient is the normal
 // at the triangle, edge, or vertex where p_MQ locates.
 //
-// @note Due to limited numerical precision, this query may be imprecise.
+// @note If p_MQ has multiple nearest features, the nearest point and the
+// gradient are computed from one of those features.
 SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
