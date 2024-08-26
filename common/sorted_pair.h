@@ -119,47 +119,13 @@ struct SortedPair {
   }
   //@}
 
+  /// Standard comparison operator.
+  friend auto operator<=>(const SortedPair<T>&, const SortedPair<T>&) = default;
+
  private:
   T first_{};   // The first of the two objects, according to operator<.
   T second_{};  // The second of the two objects, according to operator<.
 };
-
-/// Two pairs of the same type are equal iff their members are equal after
-/// sorting.
-template <class T>
-inline bool operator==(const SortedPair<T>& x, const SortedPair<T>& y) {
-  return !(x < y) && !(y < x);
-}
-
-/// Compares two pairs using lexicographic ordering.
-template <class T>
-inline bool operator<(const SortedPair<T>& x, const SortedPair<T>& y) {
-  return std::tie(x.first(), x.second()) < std::tie(y.first(), y.second());
-}
-
-/// Determine whether two SortedPair objects are not equal using `operator==`.
-template <class T>
-inline bool operator!=(const SortedPair<T>& x, const SortedPair<T>& y) {
-  return !(x == y);
-}
-
-/// Determines whether `x > y` using `operator<`.
-template <class T>
-inline bool operator>(const SortedPair<T>& x, const SortedPair<T>& y) {
-  return y < x;
-}
-
-/// Determines whether `x <= y` using `operator<`.
-template <class T>
-inline bool operator<=(const SortedPair<T>& x, const SortedPair<T>& y) {
-  return !(y < x);
-}
-
-/// Determines whether `x >= y` using `operator<`.
-template <class T>
-inline bool operator>=(const SortedPair<T>& x, const SortedPair<T>& y) {
-  return !(x < y);
-}
 
 /// @brief A convenience wrapper for creating a sorted pair from two objects.
 /// @param x  The first_ object.
