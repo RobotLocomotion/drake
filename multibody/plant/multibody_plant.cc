@@ -1110,9 +1110,9 @@ std::vector<int> MultibodyPlant<T>::GetContinuousRevoluteJointIndices() const {
       }
       continue;
     }
-    // TODO(cohnt): Determine if other joint types (e.g. UniversalJoint) can
-    // be handled appropriately with wraparound edges, and if so, return their
-    // indices as well.
+    // TODO(cohnt): Determine if other joint types (e.g. UniversalJoint,
+    // RpyFloatingJoint) have components that are angle-valued, and have no
+    // limits.
   }
   return indices;
 }

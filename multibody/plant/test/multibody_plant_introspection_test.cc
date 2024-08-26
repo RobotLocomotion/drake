@@ -186,11 +186,11 @@ GTEST_TEST(MultibodyPlantIntrospection, GetContinuousJoints) {
   const RigidBody<double>& third_body = plant.AddRigidBody("third_body");
   const RigidBody<double>& fourth_body = plant.AddRigidBody("fourth_body");
 
-  // Add a planar joint without limits
+  // Add a planar joint without limits.
   plant.AddJoint<PlanarJoint>("first_joint", plant.world_body(), {}, first_body,
-                              {}, Eigen::Matrix<double, 3, 1>::Zero());
+                              {}, Eigen::Vector3d::Zero());
 
-  // Add a planar joint with limits
+  // Add a planar joint with limits.
   std::unique_ptr<PlanarJoint<double>> second_joint_ptr(new PlanarJoint<double>(
       "second_joint", first_body.body_frame(), second_body.body_frame(),
       Eigen::Matrix<double, 3, 1>::Zero()));
@@ -198,17 +198,28 @@ GTEST_TEST(MultibodyPlantIntrospection, GetContinuousJoints) {
                                         Eigen::Vector3d{1.0, 1.0, 1.0});
   plant.AddJoint<PlanarJoint>(std::move(second_joint_ptr));
 
-  // Add a revolute joint without limits
+  // Add a revolute joint without limits.
   plant.AddJoint<RevoluteJoint>("third_joint", second_body, {}, third_body, {},
                                 Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0});
 
-  // Add a revolute joint with limits
+  // Add a revolute joint with limits.
   plant.AddJoint<RevoluteJoint>("fourth_joint", third_body, {}, fourth_body, {},
                                 Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0},
                                 -1.0, 1.0);
 
   plant.Finalize();
 
+  // The configuration is stored in a vector as follows:
+  // 0: first_joint (x component, no limits)        --> not continuous revolute
+  // 1: first_joint (y component, no limits)        --> not continuous revolute
+  // 2: first_joint (revolute component, no limits) --> continuous revolute
+  // 3: second_joint (x component, limits)          --> not continuous revolute
+  // 4: second_joint (y component, limits)          --> not continuous revolute
+  // 5: second_joint (revolute component, limits)   --> not continuous revolute
+  // 6: third_joint (revolute, no limits)           --> continuous revolute
+  // 7: fourth_joint (revolute, limits)             --> not continuous revolute
+  // So the output of plant.GetContinuousRevoluteJointIndices() should be a
+  // vector with entries 2 and 6.
   const std::vector<int> continuous_joint_indices =
       plant.GetContinuousRevoluteJointIndices();
   ASSERT_EQ(continuous_joint_indices.size(), 2);
