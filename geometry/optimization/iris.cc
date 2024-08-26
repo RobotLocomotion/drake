@@ -486,7 +486,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   std::vector<int> continuous_revolute_joints =
       plant.GetContinuousRevoluteJointIndices();
 
-  DRAKE_DEMAND(options.convexity_radius_stepback < M_PI / 2.0);
+  DRAKE_DEMAND(options.convexity_radius_stepback < M_PI_2);
   for (int i = 0; i < plant.num_positions(); ++i) {
     if (!(std::isfinite(lower_limits[i]) && std::isfinite(upper_limits[i]))) {
       // One of the joint limits is infinite. We check if this joint is a
@@ -500,9 +500,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
             "joints) have position limits.");
       } else {
         lower_limits[i] =
-            seed[i] - (M_PI / 2.0) + options.convexity_radius_stepback;
+            seed[i] - M_PI_2 + options.convexity_radius_stepback;
         upper_limits[i] =
-            seed[i] + (M_PI / 2.0) - options.convexity_radius_stepback;
+            seed[i] + M_PI_2 - options.convexity_radius_stepback;
       }
     }
   }

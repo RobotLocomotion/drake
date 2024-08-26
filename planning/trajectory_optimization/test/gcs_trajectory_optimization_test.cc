@@ -2364,17 +2364,10 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
   plant.Finalize();
 
   const std::vector<int> continuous_joint_indices =
-      plant.GetContinuousRevoluteJointIndices();
+      trajectory_optimization::GetContinuousRevoluteJointIndices(plant);
   ASSERT_EQ(continuous_joint_indices.size(), 2);
   EXPECT_EQ(continuous_joint_indices[0], 2);
   EXPECT_EQ(continuous_joint_indices[1], 6);
-
-  const std::vector<int> continuous_joint_indices_2 =
-      trajectory_optimization::GetContinuousRevoluteJointIndices(plant);
-  ASSERT_EQ(continuous_joint_indices.size(), continuous_joint_indices_2.size());
-  for (int i = 0; i < ssize(continuous_joint_indices); ++i) {
-    ASSERT_EQ(continuous_joint_indices[i], continuous_joint_indices_2[i]);
-  }
 }
 #pragma GCC diagnostic pop
 
