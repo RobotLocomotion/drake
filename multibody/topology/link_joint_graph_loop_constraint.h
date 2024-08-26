@@ -11,7 +11,7 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-/** A weld constraint used to close a topological loop (cycle) in the input
+/* A weld constraint used to close a topological loop (cycle) in the input
 graph after modeling as a forest. The parent/child ordering sets the sign
 convention for the constraint multipliers. Added welds between a primary %Link
 and one of its shadow Links always make the primary %Link the parent. */
@@ -21,7 +21,7 @@ class LinkJointGraph::LoopConstraint {
 
   LoopConstraint(LoopConstraintIndex index, std::string name,
                  ModelInstanceIndex model_instance,
-                 BodyIndex primary_link_index, BodyIndex shadow_link_index)
+                 LinkIndex primary_link_index, LinkIndex shadow_link_index)
       : index_(index),
         name_(name),
         model_instance_(model_instance),
@@ -34,15 +34,15 @@ class LinkJointGraph::LoopConstraint {
 
   const std::string& name() const { return name_; }
 
-  BodyIndex primary_link() const { return primary_link_index_; }
-  BodyIndex shadow_link() const { return shadow_link_index_; }
+  LinkIndex primary_link() const { return primary_link_index_; }
+  LinkIndex shadow_link() const { return shadow_link_index_; }
 
  private:
   LoopConstraintIndex index_;
   std::string name_;
   ModelInstanceIndex model_instance_;
-  BodyIndex primary_link_index_;
-  BodyIndex shadow_link_index_;
+  LinkIndex primary_link_index_;
+  LinkIndex shadow_link_index_;
 
   // TODO(sherm1) Record the ephemeral MultibodyPlant Constraint here, e.g.:
   //  MultibodyConstraintId plant_constraint_id_;

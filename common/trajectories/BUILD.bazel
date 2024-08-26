@@ -67,6 +67,8 @@ drake_cc_library(
         "composite_trajectory.h",
     ],
     deps = [
+        ":path_parameterized_trajectory",
+        ":piecewise_polynomial",
         ":piecewise_trajectory",
     ],
 )

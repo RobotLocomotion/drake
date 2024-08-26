@@ -202,6 +202,9 @@ std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
     case sdf::GeometryType::POLYLINE: {
       return std::unique_ptr<geometry::Shape>(nullptr);
     }
+    case sdf::GeometryType::CONE: {
+      return std::unique_ptr<geometry::Shape>(nullptr);
+    }
   }
 
   DRAKE_UNREACHABLE();
@@ -251,6 +254,7 @@ std::optional<std::unique_ptr<GeometryInstance>>
     case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
     case sdf::GeometryType::CAPSULE:
+    case sdf::GeometryType::CONE:
     case sdf::GeometryType::CYLINDER:
     case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:
@@ -421,6 +425,7 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
     case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
     case sdf::GeometryType::CAPSULE:
+    case sdf::GeometryType::CONE:
     case sdf::GeometryType::CYLINDER:
     case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:

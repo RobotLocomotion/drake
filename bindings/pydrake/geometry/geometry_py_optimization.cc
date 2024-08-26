@@ -800,8 +800,18 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetConstraints", &GraphOfConvexSets::Vertex::GetConstraints,
             py::arg("used_in_transcription") = all_transcriptions,
             vertex_doc.GetConstraints.doc)
-        .def("GetSolutionCost", &GraphOfConvexSets::Vertex::GetSolutionCost,
-            py::arg("result"), vertex_doc.GetSolutionCost.doc)
+        .def("GetSolutionCost",
+            overload_cast_explicit<double,
+                const solvers::MathematicalProgramResult&>(
+                &GraphOfConvexSets::Vertex::GetSolutionCost),
+            py::arg("result"), vertex_doc.GetSolutionCost.doc_1args)
+        .def("GetSolutionCost",
+            overload_cast_explicit<double,
+                const solvers::MathematicalProgramResult&,
+                const solvers::Binding<solvers::Cost>&>(
+                &GraphOfConvexSets::Vertex::GetSolutionCost),
+            py::arg("result"), py::arg("cost"),
+            vertex_doc.GetSolutionCost.doc_2args)
         .def("GetSolution", &GraphOfConvexSets::Vertex::GetSolution,
             py::arg("result"), vertex_doc.GetSolution.doc)
         .def("incoming_edges", &GraphOfConvexSets::Vertex::incoming_edges,
@@ -874,8 +884,18 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetConstraints", &GraphOfConvexSets::Edge::GetConstraints,
             py::arg("used_in_transcription") = all_transcriptions,
             edge_doc.GetConstraints.doc)
-        .def("GetSolutionCost", &GraphOfConvexSets::Edge::GetSolutionCost,
-            py::arg("result"), edge_doc.GetSolutionCost.doc)
+        .def("GetSolutionCost",
+            overload_cast_explicit<double,
+                const solvers::MathematicalProgramResult&>(
+                &GraphOfConvexSets::Edge::GetSolutionCost),
+            py::arg("result"), edge_doc.GetSolutionCost.doc_1args)
+        .def("GetSolutionCost",
+            overload_cast_explicit<double,
+                const solvers::MathematicalProgramResult&,
+                const solvers::Binding<solvers::Cost>&>(
+                &GraphOfConvexSets::Edge::GetSolutionCost),
+            py::arg("result"), py::arg("cost"),
+            edge_doc.GetSolutionCost.doc_2args)
         .def("GetSolutionPhiXu", &GraphOfConvexSets::Edge::GetSolutionPhiXu,
             py::arg("result"), edge_doc.GetSolutionPhiXu.doc)
         .def("GetSolutionPhiXv", &GraphOfConvexSets::Edge::GetSolutionPhiXv,
@@ -911,34 +931,42 @@ void DefineGeometryOptimization(py::module m) {
         .def("ClearAllPhiConstraints",
             &GraphOfConvexSets::ClearAllPhiConstraints,
             cls_doc.ClearAllPhiConstraints.doc)
-        .def("GetGraphvizString",
-            overload_cast_explicit<std::string,
-                const solvers::MathematicalProgramResult*,
-                const GcsGraphvizOptions&,
-                const std::vector<const GraphOfConvexSets::Edge*>*>(
-                &GraphOfConvexSets::GetGraphvizString),
+        .def(
+            "GetGraphvizString",
+            [](const GraphOfConvexSets& self,
+                const solvers::MathematicalProgramResult* result,
+                const GcsGraphvizOptions& options,
+                // Pass by value to resolve #21816.
+                std::vector<const GraphOfConvexSets::Edge*> active_path) {
+              return self.GetGraphvizString(result, options, &active_path);
+            },
             py::arg("result") = nullptr,
             py::arg("options") = GcsGraphvizOptions(),
-            py::arg("active_path") = nullptr, cls_doc.GetGraphvizString.doc)
+            py::arg("active_path") =
+                std::vector<const GraphOfConvexSets::Edge*>(),
+            cls_doc.GetGraphvizString.doc)
         .def(
             "GetGraphvizString",
             [](const GraphOfConvexSets& self,
                 const solvers::MathematicalProgramResult* result,
                 bool show_slacks, bool show_vars, bool show_flows,
                 bool show_costs, bool scientific, int precision,
-                std::vector<const GraphOfConvexSets::Edge*>* active_path) {
+                // Pass by value to resolve #21816.
+                std::vector<const GraphOfConvexSets::Edge*> active_path) {
               const GcsGraphvizOptions options{.show_slacks = show_slacks,
                   .show_vars = show_vars,
                   .show_flows = show_flows,
                   .show_costs = show_costs,
                   .scientific = scientific,
                   .precision = precision};
-              return self.GetGraphvizString(result, options, active_path);
+              return self.GetGraphvizString(result, options, &active_path);
             },
             py::arg("result") = nullptr, py::arg("show_slacks") = true,
             py::arg("show_vars") = true, py::arg("show_flows") = true,
             py::arg("show_costs") = true, py::arg("scientific") = false,
-            py::arg("precision") = 3, py::arg("active_path") = nullptr,
+            py::arg("precision") = 3,
+            py::arg("active_path") =
+                std::vector<const GraphOfConvexSets::Edge*>(),
             cls_doc.GetGraphvizString.doc)
         .def("SolveShortestPath",
             overload_cast_explicit<solvers::MathematicalProgramResult,

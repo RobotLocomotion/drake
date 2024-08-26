@@ -38,7 +38,7 @@ struct BodyPairHash {
 [[nodiscard]] bool ChainIsWelded(const multibody::MultibodyPlant<double>& plant,
                                  multibody::BodyIndex start,
                                  multibody::BodyIndex end) {
-  const std::vector<multibody::internal::MobilizerIndex> mobilizers =
+  const std::vector<multibody::internal::MobodIndex> mobilizers =
       multibody::internal::FindMobilizersOnPath(plant, start, end);
   if (mobilizers.size() == 0) {
     return true;

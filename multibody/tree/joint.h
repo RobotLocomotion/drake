@@ -23,6 +23,7 @@ namespace internal {
 // for a particular joint object.
 template <typename T>
 class JointImplementationBuilder;
+class MobilizerTester;
 }  // namespace internal
 
 /// A %Joint models the kinematical relationship which characterizes the
@@ -802,7 +803,8 @@ class Joint : public MultibodyElement<T> {
   /// This method must be implemented by derived classes in order to provide
   /// JointImplementationBuilder a BluePrint of their internal implementation
   /// JointImplementation.
-  virtual std::unique_ptr<BluePrint> MakeImplementationBlueprint() const = 0;
+  virtual std::unique_ptr<BluePrint> MakeImplementationBlueprint(
+      const internal::SpanningForest::Mobod& mobod) const = 0;
 
   /// Returns a const reference to the internal implementation of `this` joint.
   /// @warning The MultibodyTree model must have already been finalized, or
@@ -817,6 +819,18 @@ class Joint : public MultibodyElement<T> {
   /// Returns whether `this` joint owns a particular implementation.
   /// If the MultibodyTree has been finalized, this will return true.
   bool has_implementation() const { return implementation_ != nullptr; }
+
+ protected:
+  /// Utility for concrete joint implementations to use to select the
+  /// inboard/outboard frames for a tree in the spanning forest, given
+  /// whether they should be reversed from the parent/child frames that are
+  /// members of this Joint object.
+  std::pair<const Frame<T>*, const Frame<T>*> tree_frames(
+      bool use_reversed_mobilizer) const {
+    return use_reversed_mobilizer
+               ? std::make_pair(&frame_on_child(), &frame_on_parent())
+               : std::make_pair(&frame_on_parent(), &frame_on_child());
+  }
 
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can make

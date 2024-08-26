@@ -13,6 +13,8 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
+using LinkIndex = BodyIndex;
+
 class SpanningForest;
 
 using LinkOrdinal = TypeSafeIndex<class LinkOrdinalTag>;
@@ -22,7 +24,7 @@ using JointTraitsIndex = TypeSafeIndex<class JointTraitsTag>;
 using LinkCompositeIndex = TypeSafeIndex<class LinkCompositeTag>;
 using LoopConstraintIndex = TypeSafeIndex<class LoopConstraintTag>;
 
-/** Link properties that can affect how the forest model gets built. Or-ing
+/* Link properties that can affect how the forest model gets built. Or-ing
 these also produces a LinkFlags object. */
 enum class LinkFlags : uint32_t {
   kDefault = 0,
@@ -32,14 +34,14 @@ enum class LinkFlags : uint32_t {
   kShadow = 1 << 3           ///< Link is a shadow (internal use only).
 };
 
-/** Joint properties that can affect how the SpanningForest gets built. Or-ing
+/* Joint properties that can affect how the SpanningForest gets built. Or-ing
 these also produces a JointFlags object. */
 enum class JointFlags : uint32_t {
   kDefault = 0,
   kMustBeModeled = 1 << 0  ///< Model explicitly even if ignorable weld.
 };
 
-/** Options for how to build the SpanningForest. Or-ing these also produces a
+/* Options for how to build the SpanningForest. Or-ing these also produces a
 ForestBuildingOptions object. These can be provided as per-model instance
 options to locally override global options. */
 enum class ForestBuildingOptions : uint32_t {

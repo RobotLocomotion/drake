@@ -9,8 +9,8 @@ def scs_internal_repository(
         upgrade_advice = """
         When updating this commit, see drake/tools/workspace/qdldl/README.md.
         """,
-        commit = "3.2.3",
-        sha256 = "fe5e8c61ca5ea97975e231b1bb4a873d86e7908fdff416101c2a7cd13ecf5b41",  # noqa
+        commit = "3.2.7",
+        sha256 = "bc8211cfd213f3117676ceb7842f4ed8a3bc7ed9625c4238cc7d83f666e22cc9",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/include_paths.patch",

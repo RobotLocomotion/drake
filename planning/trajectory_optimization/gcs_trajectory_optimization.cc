@@ -8,6 +8,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/symbolic/decompose.h"
+#include "drake/common/trajectories/piecewise_trajectory.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/geodesic_convexity.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -62,12 +63,14 @@ using solvers::L2NormCost;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
+using solvers::QuadraticCost;
 using symbolic::DecomposeLinearExpressions;
 using symbolic::Expression;
 using symbolic::MakeMatrixContinuousVariable;
 using symbolic::MakeVectorContinuousVariable;
 using trajectories::BezierCurve;
 using trajectories::CompositeTrajectory;
+using trajectories::PiecewiseTrajectory;
 using trajectories::Trajectory;
 using Vertex = GraphOfConvexSets::Vertex;
 using Edge = GraphOfConvexSets::Edge;
@@ -378,10 +381,48 @@ void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix) {
   }
 }
 
+void Subgraph::AddPathEnergyCost(const MatrixXd& weight_matrix) {
+  // Add a cost to the control points of the trajectory that is of the form ∑
+  // (rᵢ₊₁ * weight_matrix * rᵢ)
+
+  Eigen::MatrixXd b = Eigen::VectorXd::Zero(2 * num_positions());
+
+  MatrixXd Q(2 * num_positions(), 2 * num_positions());
+
+  Q.block(0, 0, num_positions(), num_positions()) << weight_matrix;
+  Q.block(num_positions(), num_positions(), num_positions(), num_positions())
+      << weight_matrix;
+  Q.block(0, num_positions(), num_positions(), num_positions())
+      << -weight_matrix;
+  Q.block(num_positions(), 0, num_positions(), num_positions())
+      << -weight_matrix;
+
+  const auto path_squared_cost = std::make_shared<QuadraticCost>(Q, b);
+
+  for (Vertex* v : vertices_) {
+    auto control_points = GetControlPoints(*v);
+    for (int i = 0; i < control_points.cols() - 1; ++i) {
+      v->AddCost(Binding<QuadraticCost>(
+          path_squared_cost,
+          {control_points.col(i + 1), control_points.col(i)}));
+    }
+  }
+}
+
 void Subgraph::AddPathLengthCost(double weight) {
   const MatrixXd weight_matrix =
       weight * MatrixXd::Identity(num_positions(), num_positions());
   return Subgraph::AddPathLengthCost(weight_matrix);
+}
+
+void Subgraph::AddPathEnergyCost(double weight) {
+  // Note that the scalar 2 is present to construct an appropriate default cost
+  // of the form |(rᵢ₊₁ − rᵢ)|₂². The constructed quadratic cost is of the form
+  // .5 * x'Qx, so Q must be 2 * I to counteract the 0.5 scalar in the quadratic
+  // cost.
+  const MatrixXd weight_matrix =
+      weight * 2 * MatrixXd::Identity(num_positions(), num_positions());
+  return Subgraph::AddPathEnergyCost(weight * weight_matrix);
 }
 
 void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
@@ -1393,6 +1434,9 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
     for (const MatrixXd& weight_matrix : global_path_length_costs_) {
       subgraph->AddPathLengthCost(weight_matrix);
     }
+    for (const MatrixXd& weight_matrix : global_path_energy_costs_) {
+      subgraph->AddPathEnergyCost(weight_matrix);
+    }
     for (const auto& [lb, ub] : global_velocity_bounds_) {
       subgraph->AddVelocityBounds(lb, ub);
     }
@@ -1522,10 +1566,27 @@ void GcsTrajectoryOptimization::AddPathLengthCost(
   global_path_length_costs_.push_back(weight_matrix);
 }
 
+void GcsTrajectoryOptimization::AddPathEnergyCost(
+    const MatrixXd& weight_matrix) {
+  // Add path energy cost to each subgraph.
+  for (std::unique_ptr<Subgraph>& subgraph : subgraphs_) {
+    if (subgraph->order() > 0) {
+      subgraph->AddPathEnergyCost(weight_matrix);
+    }
+  }
+  global_path_energy_costs_.push_back(weight_matrix);
+}
+
 void GcsTrajectoryOptimization::AddPathLengthCost(double weight) {
   const MatrixXd weight_matrix =
       weight * MatrixXd::Identity(num_positions(), num_positions());
   return GcsTrajectoryOptimization::AddPathLengthCost(weight_matrix);
+}
+
+void GcsTrajectoryOptimization::AddPathEnergyCost(double weight) {
+  const MatrixXd weight_matrix =
+      weight * 2 * MatrixXd::Identity(num_positions(), num_positions());
+  return GcsTrajectoryOptimization::AddPathEnergyCost(weight * weight_matrix);
 }
 
 void GcsTrajectoryOptimization::AddVelocityBounds(
@@ -1758,8 +1819,16 @@ GcsTrajectoryOptimization::ReconstructTrajectoryFromSolutionPath(
     // region, since zero order continuity constraint is sufficient. These edges
     // would result in a discontinuous trajectory for velocities and higher
     // derivatives.
-    if (!(num_control_points == 1 &&
-          vertex_to_subgraph_[&e->u()]->h_min_ == 0)) {
+    if (num_control_points > 1 &&
+        h < PiecewiseTrajectory<double>::kEpsilonTime) {
+      throw std::runtime_error(
+          fmt::format("GcsTrajectoryOptimization returned a trajectory segment "
+                      "with near-zero duration. Make sure you set h_min to be "
+                      "at least {} for regions whose subgraph order is at "
+                      "least 1 or impose velocity limits.",
+                      PiecewiseTrajectory<double>::kEpsilonTime));
+    } else if (!(num_control_points == 1 &&
+                 vertex_to_subgraph_[&e->u()]->h_min_ == 0)) {
       bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
           start_time, start_time + h, edge_path_points));
     }
@@ -1781,8 +1850,14 @@ GcsTrajectoryOptimization::ReconstructTrajectoryFromSolutionPath(
 
   // Skip edges with a single control point that spend near zero time in the
   // region, since zero order continuity constraint is sufficient.
-  if (!(num_control_points == 1 &&
-        vertex_to_subgraph_[&last_edge.v()]->h_min_ == 0)) {
+  if (num_control_points > 1 && h < PiecewiseTrajectory<double>::kEpsilonTime) {
+    throw std::runtime_error(fmt::format(
+        "GcsTrajectoryOptimization returned a trajectory segment with "
+        "near-zero duration. Make sure you set h_min to be at least {} for "
+        "regions whose subgraph order is at least 1 or impose velocity limits.",
+        PiecewiseTrajectory<double>::kEpsilonTime));
+  } else if (!(num_control_points == 1 &&
+               vertex_to_subgraph_[&last_edge.v()]->h_min_ == 0)) {
     bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
         start_time, start_time + h, edge_path_points));
   }

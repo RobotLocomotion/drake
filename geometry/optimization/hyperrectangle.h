@@ -15,7 +15,9 @@ namespace geometry {
 namespace optimization {
 
 /** Axis-aligned hyperrectangle in Rᵈ defined by its lower bounds and upper
- * bounds as {x| lb ≤ x ≤ ub} */
+ bounds as {x| lb ≤ x ≤ ub}
+ @ingroup geometry_optimization
+ */
 class Hyperrectangle final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperrectangle);

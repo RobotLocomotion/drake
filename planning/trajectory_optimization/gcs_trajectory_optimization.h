@@ -157,6 +157,21 @@ class GcsTrajectoryOptimization final {
     */
     void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix);
 
+    /** Similar to AddPathLengthCost in usage, but minimizes ∑ |weight_matrix *
+    (rᵢ₊₁ − rᵢ)|₂². In comparison to AddPathLength cost, this cost encourages
+    control points to be evenly spaced but may result in greater number of
+    regions and larger path length on the solution. It is recommended to use
+    this cost only with SolveConvexRestriction when it becomes a quadratic cost
+    for which some solvers show a better performance.
+
+    @param weight_matrix is the relative weight of each component for the cost.
+    The diagonal of the matrix is the weight for each dimension. The
+    off-diagonal elements are the weight for the cross terms, which can be used
+    to penalize diagonal movement.
+    @pre weight_matrix must be of size num_positions() x num_positions().
+    */
+    void AddPathEnergyCost(const Eigen::MatrixXd& weight_matrix);
+
     /** Adds multiple L2Norm Costs on the upper bound of the path length.
     We upper bound the trajectory length by the sum of the distances between
     control points. For Bézier curves, this is equivalent to the sum
@@ -166,6 +181,18 @@ class GcsTrajectoryOptimization final {
     @param weight is the relative weight of the cost.
     */
     void AddPathLengthCost(double weight = 1.0);
+
+    /** Similar to AddPathLengthCost in usage, but minimizes ∑ |(rᵢ₊₁ − rᵢ)|₂²
+    with weight being applied uniformly to all dimensions. In comparison to
+    AddPathLength cost, this cost encourages control points to be evenly spaced
+    but may result in greater number of regions and larger path length on the
+    solution. It is recommended to use this cost only with
+    SolveConvexRestriction when it becomes a quadratic cost for which some
+    solvers show a better performance.
+
+    @param weight is the relative weight of the cost.
+    */
+    void AddPathEnergyCost(double weight = 1.0);
 
     /** Adds a linear velocity constraint to the subgraph `lb` ≤ q̇(t) ≤
     `ub`.
@@ -572,7 +599,7 @@ class GcsTrajectoryOptimization final {
   dimensions corresponding to continuous revolute joints.
   */
   Subgraph& AddRegions(const geometry::optimization::ConvexSets& regions,
-                       int order, double h_min = 0, double h_max = 20,
+                       int order, double h_min = 1e-6, double h_max = 20,
                        std::string name = "");
 
   /** Remove a subgraph and all associated edges found in the subgraph and
@@ -668,6 +695,26 @@ class GcsTrajectoryOptimization final {
   */
   void AddPathLengthCost(const Eigen::MatrixXd& weight_matrix);
 
+  /** Similar to AddPathLengthCost in usage, but minimizes ∑ |weight_matrix *
+  (rᵢ₊₁ − rᵢ)|₂². In comparison to AddPathLength cost, this cost encourages
+  control points to be evenly spaced but may result in greater number of regions
+  and larger path length on the solution. It is recommended to use this cost
+  only with SolveConvexRestriction when it becomes a quadratic cost for which
+  some solvers show a better performance.
+
+  This cost will be added to the entire graph. Since the path length is only
+  defined for Bézier curves that have two or more control points, this cost will
+  only added to all subgraphs with order greater than zero. Note that this cost
+  will be applied even to subgraphs added in the future.
+
+  @param weight_matrix is the relative weight of each component for the cost.
+  The diagonal of the matrix is the weight for each dimension. The
+  off-diagonal elements are the weight for the cross terms, which can be used
+  to penalize diagonal movement.
+  @pre weight_matrix must be of size num_positions() x num_positions().
+  */
+  void AddPathEnergyCost(const Eigen::MatrixXd& weight_matrix);
+
   /** Adds multiple L2Norm Costs on the upper bound of the path length.
   Since we cannot directly compute the path length of a Bézier curve, we
   minimize the upper bound of the path integral by minimizing the sum of
@@ -683,6 +730,23 @@ class GcsTrajectoryOptimization final {
   @param weight is the relative weight of the cost.
   */
   void AddPathLengthCost(double weight = 1.0);
+
+  /** Similar to AddPathLengthCost in usage, but minimizes ∑ |(rᵢ₊₁ − rᵢ)|₂²
+  with weight being applied uniformly to all dimensions. In comparison to
+  AddPathLength cost, this cost encourages control points to be evenly spaced
+  but may result in greater number of regions and larger path length on the
+  solution. It is recommended to use this cost only with SolveConvexRestriction
+  when it becomes a quadratic cost for which some solvers show a better
+  performance.
+
+  This cost will be added to the entire graph. Since the path length is only
+  defined for Bézier curves that have two or more control points, this cost will
+  only added to all subgraphs with order greater than zero. Note that this cost
+  will be applied even to subgraphs added in the future.
+
+  @param weight is the relative weight of the cost.
+  */
+  void AddPathEnergyCost(double weight = 1.0);
 
   /** Adds a linear velocity constraint to the entire graph `lb` ≤ q̇(t) ≤
   `ub`.
@@ -921,6 +985,7 @@ class GcsTrajectoryOptimization final {
       vertex_to_subgraph_;
   std::vector<double> global_time_costs_;
   std::vector<Eigen::MatrixXd> global_path_length_costs_;
+  std::vector<Eigen::MatrixXd> global_path_energy_costs_;
   std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
       global_velocity_bounds_{};
   std::vector<std::tuple<Eigen::VectorXd, Eigen::VectorXd, int>>

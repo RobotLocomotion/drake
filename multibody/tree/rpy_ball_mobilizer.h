@@ -67,9 +67,10 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // inboard_frame_F and an outboard frame M outboard_frame_M granting
   // three rotational degree of freedom corresponding to angles θ₀, θ₁, θ₂ as
   // described in this class's documentation.
-  RpyBallMobilizer(const Frame<T>& inboard_frame_F,
+  RpyBallMobilizer(const SpanningForest::Mobod& mobod,
+                   const Frame<T>& inboard_frame_F,
                    const Frame<T>& outboard_frame_M) :
-      MobilizerBase(inboard_frame_F, outboard_frame_M) {}
+      MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   ~RpyBallMobilizer() final;
 

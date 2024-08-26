@@ -44,10 +44,11 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // restriction above), only the direction is used.
   // @throws std::exception if the L2 norm of `axis_F` is less than the square
   // root of machine epsilon.
-  PrismaticMobilizer(const Frame<T>& inboard_frame_F,
+  PrismaticMobilizer(const SpanningForest::Mobod& mobod,
+                     const Frame<T>& inboard_frame_F,
                      const Frame<T>& outboard_frame_M,
                      const Vector3<double>& axis_F) :
-      MobilizerBase(inboard_frame_F, outboard_frame_M), axis_F_(axis_F) {
+      MobilizerBase(mobod, inboard_frame_F, outboard_frame_M), axis_F_(axis_F) {
     double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_DEMAND(!axis_F.isZero(kEpsilon));
     axis_F_.normalize();
