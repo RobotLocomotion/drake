@@ -19,6 +19,7 @@ package(default_visibility = ["//visibility:private"])
 drake_py_library(
     name = "system_doxygen",
     srcs = ["system_doxygen.py"],
+    deps = ["@venv"],
     visibility = [
         "//doc/pydrake:__pkg__",
         "//tools/workspace/pybind11:__pkg__",
