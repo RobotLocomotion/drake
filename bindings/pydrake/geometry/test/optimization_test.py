@@ -557,6 +557,29 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(sum2.num_factors(), 2)
         self.assertIsInstance(sum2.factor(1), mut.HPolyhedron)
 
+    def test_convex_hull(self):
+        point = mut.Point(np.array([0.0, 2.0]))
+        h_box = mut.HPolyhedron.MakeBox(lb=[-1, 0], ub=[1, 1])
+        empty_hpolyhedron = mut.HPolyhedron(np.array([[1, 0], [-1, 0]]),
+                                            np.array([1, -2]))
+        convex_hull = mut.ConvexHull([point, h_box, empty_hpolyhedron],
+                                     remove_empty_sets=False)
+        self.assertFalse(convex_hull.IsEmpty())
+        self.assertFalse(convex_hull.MaybeGetFeasiblePoint() is None)
+        self.assertEqual(convex_hull.ambient_dimension(), 2)
+        self.assertEqual(convex_hull.num_elements(), 3)
+        self.assertIsInstance(convex_hull.element(0), mut.Point)
+        self.assertIsInstance(convex_hull.element(1), mut.HPolyhedron)
+        self.assertEqual(len(convex_hull.sets()), 3)
+        self.assertEqual(len(convex_hull.participating_sets()), 3)
+        self.assertFalse(convex_hull.empty_sets_removed())
+        convex_hull_2 = mut.ConvexHull([point, h_box, empty_hpolyhedron],
+                                       remove_empty_sets=True)
+        self.assertEqual(len(convex_hull_2.participating_sets()), 2)
+        self.assertTrue(convex_hull_2.empty_sets_removed())
+        self.assertTrue(convex_hull_2.PointInSet(
+            np.array([0.5, 1.5]), tol=1e-8))
+
     def test_intersection(self):
         mut.Intersection()
         point = mut.Point(np.array([0.1, 0.2, 0.3]))

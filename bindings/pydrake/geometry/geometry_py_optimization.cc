@@ -18,6 +18,7 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/cartesian_product.h"
+#include "drake/geometry/optimization/convex_hull.h"
 #include "drake/geometry/optimization/cspace_free_polytope.h"
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
@@ -236,6 +237,47 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.num_factors.doc)
         .def("factor", &CartesianProduct::factor, py_rvp::reference_internal,
             py::arg("index"), cls_doc.factor.doc);
+  }
+
+  // ConvexHull
+  {
+    const auto& cls_doc = doc.ConvexHull;
+    py::class_<ConvexHull, ConvexSet>(m, "ConvexHull", cls_doc.doc)
+        .def(py::init([](const std::vector<ConvexSet*>& sets,
+                          const bool remove_empty_sets) {
+          return std::make_unique<ConvexHull>(
+              CloneConvexSets(sets), remove_empty_sets);
+        }),
+            py::arg("sets"), cls_doc.ctor.doc,
+            py::arg("remove_empty_sets") = true)
+        .def(
+            "sets",
+            [](ConvexHull* self) {
+              std::vector<const geometry::optimization::ConvexSet*> sets;
+              for (auto& set : self->sets()) {
+                sets.push_back(set.get());
+              }
+              py::object self_py = py::cast(self, py_rvp::reference);
+              return py::cast(sets, py_rvp::reference_internal, self_py);
+            },
+            cls_doc.sets.doc)
+        .def(
+            "participating_sets",
+            [](ConvexHull* self) {
+              std::vector<const geometry::optimization::ConvexSet*> sets;
+              for (auto& set : self->participating_sets()) {
+                sets.push_back(set.get());
+              }
+              py::object self_py = py::cast(self, py_rvp::reference);
+              return py::cast(sets, py_rvp::reference_internal, self_py);
+            },
+            cls_doc.sets.doc)
+        .def("empty_sets_removed", &ConvexHull::empty_sets_removed,
+            cls_doc.empty_sets_removed.doc)
+        .def("element", &ConvexHull::element, py_rvp::reference_internal,
+            py::arg("index"), cls_doc.element.doc)
+        .def("num_elements", &ConvexHull::num_elements,
+            cls_doc.num_elements.doc);
   }
 
   // HPolyhedron
