@@ -1,10 +1,13 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
+#include "drake/bindings/pydrake/geometry/optimization_pybind.h"
+
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/distance_and_interpolation_provider.h"
 #include "drake/planning/scene_graph_collision_checker.h"
+#include "drake/planning/configuration_space_obstacle_collision_checker.h"
 #include "drake/planning/unimplemented_collision_checker.h"
 
 namespace drake {
@@ -309,6 +312,26 @@ void DefinePlanningCollisionChecker(py::module m) {
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "
                 "list of properties available here as kwargs.")
                 .c_str());
+  }
+
+  {
+    using Class = ConfigurationSpaceObstacleCollisionChecker;
+
+    py::class_<Class, drake::planning::CollisionChecker>(m, 
+        "ConfigurationSpaceObstacleCollisionChecker")
+        .def(py::init([](const drake::planning::CollisionChecker& checker,
+                         const std::vector<drake::geometry::optimization::ConvexSet*>& configuration_obstacles) {
+                 return std::make_unique<Class>(copyable_unique_ptr<drake::planning::CollisionChecker> (checker.Clone()), CloneConvexSets(configuration_obstacles));
+             }),
+             py::arg("checker"), py::arg("configuration_obstacles"),
+             "Creates a new ConfigurationSpaceObstacleCollisionChecker with "
+             "the given checker and configuration space obstacles.")
+        .def("add_configuration_space_obstacles", 
+            &Class::AddConfigurationSpaceObstacles, py::arg("new_obstacles"),
+            "Adds new configuration space obstacles.")
+        .def("set_configuration_space_obstacles", 
+            &Class::SetConfigurationSpaceObstacles, py::arg("new_obstacles"),
+            "Sets the configuration space obstacles.");
   }
 
   {

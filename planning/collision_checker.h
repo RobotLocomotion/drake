@@ -1251,6 +1251,8 @@ class CollisionChecker {
    */
   std::string CriticizePaddingMatrix() const;
 
+  friend class ConfigurationSpaceObstacleCollisionChecker;
+
  private:
   /* @param context_number Optional implicit context number.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
