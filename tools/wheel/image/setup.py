@@ -9,7 +9,7 @@ DRAKE_VERSION = os.environ.get('DRAKE_VERSION', '0.0.0')
 # Required python packages that will be pip installed along with pydrake
 python_required = [
     'matplotlib',
-    'numpy < 2.1',
+    'numpy',
     'pydot',
     'PyYAML',
 ]
