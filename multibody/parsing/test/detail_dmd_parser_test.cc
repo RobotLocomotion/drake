@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/diagnostic_policy.h"
@@ -63,7 +64,6 @@ class DmdParserTest : public test::DiagnosticPolicyTestBase {
  protected:
   ParsingOptions options_;
   PackageMap package_map_;
-  DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.01};
 };
 
@@ -305,6 +305,28 @@ directives:
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseModelDirectives(directives),
       ".*already has.*joint.*connecting.*dummy.*ball.*");
+}
+
+/* When a model contains multiple bodies, it is an error not to specify which
+body to posture. */
+TEST_F(DmdParserTest, DefaultFreeBodyPoseMultipleBodies) {
+  const ModelDirectives directives =
+      LoadYamlString<ModelDirectives>(fmt::format(
+                                          R"""(
+directives:
+- add_model:
+    name: panda_arm
+    file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+    default_free_body_pose:
+      "":
+        translation: [1, 2, 3]
+)"""),
+                                      {}, ModelDirectives());
+
+  EXPECT_NO_THROW(ParseModelDirectives(directives));
+  EXPECT_THAT(TakeError(),
+              testing::MatchesRegex(
+                  ".*panda_arm.*default_free_body_pose.*3.*bodies.*"));
 }
 
 }  // namespace

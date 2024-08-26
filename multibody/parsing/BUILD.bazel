@@ -590,6 +590,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "detail_dmd_parser_test",
+    data = [
+        "@drake_models",
+    ],
     deps = [
         ":detail_dmd_parser",
         ":detail_sdf_parser",
