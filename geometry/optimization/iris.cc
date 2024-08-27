@@ -696,13 +696,11 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   bool do_debugging_visualization = options.meshcat && nq <= 3;
 
   const std::string seed_point_error_msg =
-      "IrisInConfigurationSpace: require_sample_point_is_contained is true "
-      "but "
+      "IrisInConfigurationSpace: require_sample_point_is_contained is true but "
       "the seed point exited the initial region. Does the provided "
       "options.starting_ellipse not contain the seed point?";
   const std::string seed_point_msg =
-      "IrisInConfigurationSpace: terminating iterations because the seed "
-      "point "
+      "IrisInConfigurationSpace: terminating iterations because the seed point "
       "is no longer in the region.";
   const std::string termination_error_msg =
       "IrisInConfigurationSpace: the termination function returned false on "
@@ -864,8 +862,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                 10 * options.num_collision_infeasible_samples) {
           warned_many_searches = true;
           log()->info(
-              " Checking {} against {} has already required {} "
-              "counter-example "
+              " Checking {} against {} has already required {} counter-example "
               "searches; still searching...",
               inspector.GetName(pair_w_distance.geomA),
               inspector.GetName(pair_w_distance.geomB),
