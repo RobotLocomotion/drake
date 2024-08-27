@@ -48,12 +48,13 @@ const char free_box[] = R"""(
 </robot>
 )""";
 
-std::unique_ptr<CollisionChecker> MakeSphereInCollisionChecker() {
+std::unique_ptr<SceneGraphCollisionChecker> SceneGraphCollisionCheckerFromUrdf(
+    const std::string urdf) {
   CollisionCheckerParams params;
 
   RobotDiagramBuilder<double> builder(0.0);
   params.robot_model_instances =
-      builder.parser().AddModelsFromString(free_box, "urdf");
+      builder.parser().AddModelsFromString(urdf, "urdf");
   params.edge_step_size = 0.01;
 
   params.model = builder.Build();
@@ -92,17 +93,14 @@ GTEST_TEST(IrisEntrypointTest, NotImplemented) {
     }
   }
 
-  std::unique_ptr<CollisionChecker> checker = MakeSphereInCollisionChecker();
+  std::unique_ptr<CollisionChecker> checker =
+      SceneGraphCollisionCheckerFromUrdf(free_box);
   for (const auto& invalid_option : not_implemented_option) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         GrowIrisRegion(*checker, invalid_option, VectorXd::Zero(2)),
         ".*not supported yet.*");
   }
 }
-
-// GTEST_TEST(IrisEntrypointTest, UnsupportedOptionsNP) {
-//   std::vector<IrisAlgorithm>
-// }
 
 }  // namespace
 }  // namespace planning
