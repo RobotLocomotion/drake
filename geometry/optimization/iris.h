@@ -163,13 +163,14 @@ struct IrisOptions {
   /** The SolverOptions used in the optimization program. */
   std::optional<solvers::SolverOptions> solver_options;
 
-  /** Artificial joint limits are added to continuous revolute joints on a
-  per-region basis. If the seed point value for that joint is θ, then the limits
-  are θ - π/2 + convexity_radius_stepback and θ + π/2 -
-  convexity_radius_stepback. Setting this to a negative number allows growing
-  larger regions, but those regions must then be partitioned to be used with
-  GcsTrajectoryOptimization. See @ref geometry_optimization_geodesic_convexity
-  for more details. IrisInConfigurationSpace throws if this value is not smaller
+  /** Artificial joint limits are added to continuous revolute joints and planar
+  joints with an unbounded revolute degree-of-freedom on a per-region basis. If
+  the seed point value for that joint is θ, then the limits are
+  θ - π/2 + convexity_radius_stepback and θ + π/2 - convexity_radius_stepback.
+  Setting this to a negative number allows growing larger regions, but those
+  regions must then be partitioned to be used with GcsTrajectoryOptimization.
+  See @ref geometry_optimization_geodesic_convexity for more details.
+  IrisInConfigurationSpace throws if this value is not smaller
   than π/2. */
   double convexity_radius_stepback{1e-3};
 };
