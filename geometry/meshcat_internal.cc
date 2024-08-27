@@ -152,8 +152,9 @@ std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
   // Note: this is only truly used as a filepath if source.IsPath(), otherwise
   // it's only used for error messages.
   const fs::path gltf_filename =
-      source.IsPath() ? source.path()
-                      : fs::path(source.mesh_data().mesh_file.filename_hint());
+      source.IsPath()
+          ? source.path()
+          : fs::path(source.mesh_data().mesh_file().filename_hint());
 
   json gltf;
   try {
@@ -171,12 +172,12 @@ std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
     uri_loader = DiskUriLoader;
   } else {
     DRAKE_DEMAND(source.IsInMemory());
-    uri_loader = [&files = source.mesh_data().supporting_files](
+    uri_loader = [&mesh = source.mesh_data()](
                      const fs::path&,
                      std::string_view uri) -> std::optional<std::string> {
-      auto iter = files.find(uri);
-      if (iter != files.end()) {
-        return iter->second.contents();
+      const MemoryFile* file = mesh.file(uri);
+      if (file != nullptr) {
+        return file->contents();
       }
       return std::nullopt;
     };

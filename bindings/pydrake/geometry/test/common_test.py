@@ -226,23 +226,32 @@ class TestGeometryCore(unittest.TestCase):
             repr(id_1))
 
     def test_in_memory_mesh(self):
-        mesh_file = MemoryFile(contents="stuff", extension=".ext",
-                               filename_hint="some_hint")
+        file = MemoryFile(contents="stuff", extension=".ext",
+                          filename_hint="some_hint")
         supporting_files = {
             "file": MemoryFile(contents="a", extension=".a",
                                filename_hint="a")
         }
-        only_mesh = mut.InMemoryMesh(mesh_file=mesh_file)
-        full_mesh = mut.InMemoryMesh(mesh_file=mesh_file,
-                                     supporting_files=supporting_files)
-        self.assertEqual(only_mesh.mesh_file.contents(), mesh_file.contents())
-        self.assertEqual(len(only_mesh.supporting_files), 0)
-        self.assertEqual(full_mesh.mesh_file.contents(), mesh_file.contents())
+        only_mesh = mut.InMemoryMesh(mesh_file=file)
+        self.assertEqual(only_mesh.mesh_file().contents(),
+                         file.contents())
+        self.assertEqual(only_mesh.num_supporting_files(), 0)
+        self.assertEqual(len(only_mesh.SupportingFileNames()), 0)
 
         representation = repr(only_mesh)
         # We'll look for evidence that the MemoryFiles got repr'd.
         self.assertRegex(representation, ".*mesh_file=MemoryFile.*stuff.*")
         self.assertNotIn("supporting_files=", representation)
+
+        full_mesh = mut.InMemoryMesh(mesh_file=file,
+                                     supporting_files=supporting_files)
+        self.assertEqual(full_mesh.mesh_file().contents(),
+                         file.contents())
+        self.assertIsNotNone(full_mesh.file("file"))
+        full_mesh.AddSupportingFile("fileb", MemoryFile("b", ".b", "bb"))
+        self.assertIsNotNone(full_mesh.file("fileb"))
+        self.assertEqual(full_mesh.num_supporting_files(), 2)
+        self.assertIsNone(full_mesh.file("c"))
 
         representation = repr(full_mesh)
         self.assertRegex(representation, ".*mesh_file=MemoryFile.*stuff.*")
@@ -440,6 +449,8 @@ class TestGeometryCore(unittest.TestCase):
             mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
             mut.Mesh(filename="arbitrary/path", scale=1.0),
+            mut.Mesh(mesh_data=mut.InMemoryMesh(
+                MemoryFile("# ", ".obj", "junk")), scale=1.0),
             mut.Convex(filename="arbitrary/path", scale=1.0),
             mut.MeshcatCone(height=1.23, a=3.45, b=6.78)
         ]
@@ -456,7 +467,10 @@ class TestGeometryCore(unittest.TestCase):
             self.assertIsInstance(shape_copy, shape_cls)
             self.assertIsNot(shape_copy, shape)
 
-            new_shape = eval(repr(shape), dict([(shape_cls_name, shape_cls)]))
+            # Representation of Mesh requires additional types.
+            new_shape = eval(repr(shape), {shape_cls_name: shape_cls,
+                                           'InMemoryMesh': mut.InMemoryMesh,
+                                           'MemoryFile': MemoryFile})
             self.assertIsInstance(new_shape, shape_cls)
             self.assertEqual(repr(new_shape), repr(shape))
 
@@ -526,22 +540,28 @@ class TestGeometryCore(unittest.TestCase):
         X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
         self.assertIsInstance(X_FH, RigidTransform)
 
-        mesh = mut.Mesh(filename=junk_path, scale=1.0)
-        assert_shape_api(mesh)
-        with catch_drake_warnings(expected_count=1):
-            self.assertIn(junk_path, mesh.filename())
-        self.assertEqual(".ext", mesh.extension())
-        self.assertEqual(mesh.scale(), 1.0)
-        with self.assertRaisesRegex(RuntimeError,
-                                    "MakeConvexHull only applies to"):
-            # We just need evidence that it invokes convex hull machinery; the
-            # exception for a bad extension suffices.
-            mesh.GetConvexHull()
-        # TODO(SeanCurtis-TRI) Also test pickle when in-memory meshes support
-        # it.
-        assert_pickle(
-            self, mesh, lambda shape: [shape.source().description(),
-                                       shape.scale()])
+        for dut_mesh in [mut.Mesh(filename=junk_path, scale=1.5),
+                         mut.Mesh(mesh_data=mut.InMemoryMesh(
+                                      MemoryFile("#junk", ".ext", "test")),
+                                  scale=1.5)]:
+            assert_shape_api(dut_mesh)
+            self.assertEqual(".ext", dut_mesh.extension())
+            self.assertEqual(dut_mesh.scale(), 1.5)
+            self.assertIsInstance(dut_mesh.source(), mut.MeshSource)
+            with self.assertRaisesRegex(RuntimeError,
+                                        "MakeConvexHull only applies to"):
+                # We just need evidence that it invokes convex hull
+                # machinery; the exception for a bad extension suffices.
+                dut_mesh.GetConvexHull()
+            if dut_mesh.source().IsPath():
+                with catch_drake_warnings(expected_count=1):
+                    self.assertIn(junk_path, dut_mesh.filename())
+                # TODO(SeanCurtis-TRI) Also test pickle when in-memory meshes
+                # support it.
+                assert_pickle(
+                    self, dut_mesh,
+                    lambda shape: [shape.source().description(),
+                                   shape.scale()])
 
         sphere = mut.Sphere(radius=1.0)
         assert_shape_api(sphere)

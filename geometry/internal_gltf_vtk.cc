@@ -15,9 +15,9 @@ namespace internal {
 using Eigen::Vector3d;
 using nlohmann::json;
 
-MeshMemoryLoader::MeshMemoryLoader(const string_map<MemoryFile>* data)
-    : mesh_data_(*data) {
-  DRAKE_DEMAND(data != nullptr);
+MeshMemoryLoader::MeshMemoryLoader(const InMemoryMesh* mesh)
+    : mesh_(*mesh) {
+  DRAKE_DEMAND(mesh != nullptr);
   base_uri_ = vtkURI::Make("file", vtkURIComponent(), "/convex_hull/");
   SetBaseURI(base_uri_);
 }
@@ -44,15 +44,15 @@ vtkSmartPointer<vtkResourceStream> MeshMemoryLoader::DoLoad(const vtkURI& uri) {
           uri.ToString()));
     }
     const std::string name = path.substr(pos + 13);
-    if (!mesh_data_.contains(name)) {
+    const MemoryFile* file = mesh_.file(name);
+    if (file == nullptr) {
       // If the glTF file refers to a file that isn't in our set of
       // supporting files, we won't immediately throw. We'll wait to see if
       // it's an actual parsing problem.
       return nullptr;
     }
-    const MemoryFile& file = mesh_data_.at(name);
     vtkNew<vtkMemoryResourceStream> stream;
-    stream->SetBuffer(file.contents().c_str(), file.contents().size(),
+    stream->SetBuffer(file->contents().c_str(), file->contents().size(),
                       /* copy= */ false);
     return stream;
   } else if (scheme == "data") {
@@ -105,7 +105,7 @@ InMemoryMesh PreParseGltf(const std::filesystem::path gltf_path,
     AddFilesFromUris(gltf_path, gltf, "images", &supporting_files);
   }
 
-  return {std::move(gltf_file), std::move(supporting_files)};
+  return InMemoryMesh(std::move(gltf_file), std::move(supporting_files));
 }
 
 Vector3d VtkMultiply(vtkMatrix4x4* T_BA, const Vector3d& p_AQ) {

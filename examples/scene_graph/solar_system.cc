@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/kinematics_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
@@ -33,17 +34,18 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
-using geometry::SceneGraph;
+using geometry::InMemoryMesh;
 using geometry::Mesh;
+using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
 using math::RigidTransformd;
+using std::make_unique;
+using std::unique_ptr;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 using systems::DiscreteValues;
-using std::make_unique;
-using std::unique_ptr;
 
 template <typename Shape, typename... ShapeArgs>
 unique_ptr<GeometryInstance> MakeShape(const RigidTransformd& pose,
@@ -175,9 +177,10 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
 
   scene_graph->RegisterAnchoredGeometry(
       source_id_,
-      MakeShape<Mesh>(RigidTransformd::Identity(), "Sun",
-                      std::nullopt /* diffuse */, MemoryFile::Make(sun_path),
-                      std::move(supporting_files), 1.0 /* scale */));
+      MakeShape<Mesh>(
+          RigidTransformd::Identity(), "Sun", std::nullopt /* diffuse */,
+          InMemoryMesh(MemoryFile::Make(sun_path), std::move(supporting_files)),
+          1.0 /* scale */));
 
   // The fixed post on which Sun sits and around which all planets rotate.
   const double post_height = 1;

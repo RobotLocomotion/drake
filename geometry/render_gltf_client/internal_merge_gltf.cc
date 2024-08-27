@@ -233,7 +233,7 @@ json ReadJsonFile(const MeshSource& source) {
     return json::parse(f);
   } else {
     DRAKE_DEMAND(source.IsInMemory());
-    return json::parse(source.mesh_data().mesh_file.contents());
+    return json::parse(source.mesh_data().mesh_file().contents());
   }
 }
 

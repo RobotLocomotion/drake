@@ -19,6 +19,7 @@
 #include "drake/geometry/geometry_properties.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_version.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -287,19 +288,29 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.InMemoryMesh;
     py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
     cls  // BR
-        .def(ParamInit<Class>())
-        .def_readwrite("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
-        .def_readwrite("supporting_files", &Class::supporting_files,
-            cls_doc.supporting_files.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<MemoryFile, string_map<MemoryFile>>(),
+            py::arg("mesh_file"),
+            py::arg("supporting_files") = string_map<MemoryFile>(),
+            cls_doc.ctor.doc_2args)
+        .def("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
+        .def("AddSupportingFile", &Class::AddSupportingFile, py::arg("name"),
+            py::arg("file"), cls_doc.AddSupportingFile.doc)
+        .def("SupportingFileNames", &Class::SupportingFileNames,
+            py_rvp::reference_internal, cls_doc.SupportingFileNames.doc)
+        .def("num_supporting_files", &Class::num_supporting_files,
+            cls_doc.num_supporting_files.doc)
+        .def("file", &Class::file, py::arg("name"), py_rvp::reference,
+            cls_doc.file.doc)
+        .def("empty", &Class::empty, cls_doc.empty.doc)
         .def("__repr__", [](const Class& self) {
-          py::object obj = py::cast(&self);
           py::str support;
-          if (self.supporting_files.size() > 0) {
+          if (self.num_supporting_files() > 0) {
             support = py::str(", supporting_files={}")
-                          .format(py::repr(obj.attr("supporting_files")));
+                          .format(py::repr(py::cast(self.supporting_files())));
           }
           return py::str("InMemoryMesh(mesh_file={}{})")
-              .format(py::repr(obj.attr("mesh_file")), support);
+              .format(py::repr(py::cast(self.mesh_file())), support);
         });
     DefCopyAndDeepCopy(&cls);
   }
@@ -531,10 +542,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Mesh, Shape> mesh_cls(m, "Mesh", doc.Mesh.doc);
     mesh_cls
         .def(py::init<std::string, double>(), py::arg("filename"),
-            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args)
-        .def(py::init<MemoryFile, string_map<MemoryFile>, double>(),
-            py::arg("file"), py::arg("supporting_files"),
-            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_3args)
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_filename_scale)
+        .def(py::init<InMemoryMesh, double>(), py::arg("mesh_data"),
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_mesh_data_scale)
         .def("source", &Mesh::source, doc.Mesh.source.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)

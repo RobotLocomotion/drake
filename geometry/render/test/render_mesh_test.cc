@@ -918,14 +918,14 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
 
   /* Obj references no mtl file. */
   {
-    const MeshSource source(InMemoryMesh{.mesh_file = MemoryFile(
-                                             R"""(v 0 0 0
-                                                  v 1 0 0
-                                                  v 0 1 0
-                                                  vn 0 0 1
-                                                  f 1//1 2//1 3//1
-                                               )""",
-                                             ".obj", "obj1")});
+    const MeshSource source(InMemoryMesh(MemoryFile(
+        R"""(v 0 0 0
+             v 1 0 0
+             v 0 1 0
+             vn 0 0 1
+             f 1//1 2//1 3//1
+          )""",
+        ".obj", "obj1")));
     const RenderMesh mesh = LoadRenderMeshesFromObj(
         source, props, kDefaultDiffuse, diagnostic_policy_)[0];
     EXPECT_EQ(mesh.positions.rows(), 3);
@@ -939,21 +939,21 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
 
   /* Obj references available mtl, no textures. */
   {
-    const MeshSource source(InMemoryMesh{
-        .mesh_file = MemoryFile(
-            R"""(mtllib mem.mtl
-                 v 0 0 0
-                 v 1 0 0
-                 v 0 1 0
-                 vn 0 0 1
-                 usemtl test
-                 f 1//1 2//1 3//1
-               )""",
-            ".obj", "obj2"),
-        .supporting_files = {{"mem.mtl", MemoryFile(
-                                             R"""(newmtl test
-                                                  Kd 1 0 0)""",
-                                             ".mtl", "mem.mtl")}}});
+    const MeshSource source(
+        InMemoryMesh(MemoryFile(
+                         R"""(mtllib mem.mtl
+                              v 0 0 0
+                              v 1 0 0
+                              v 0 1 0
+                              vn 0 0 1
+                              usemtl test
+                              f 1//1 2//1 3//1
+                            )""",
+                         ".obj", "obj2"),
+                     {{"mem.mtl", MemoryFile(
+                                      R"""(newmtl test
+                                           Kd 1 0 0)""",
+                                      ".mtl", "mem.mtl")}}));
     const RenderMesh mesh = LoadRenderMeshesFromObj(
         source, props, kDefaultDiffuse, diagnostic_policy_)[0];
     EXPECT_EQ(mesh.positions.rows(), 3);
@@ -967,22 +967,22 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
 
   /* Obj references available mtl, with available texture. */
   {
-    const MeshSource source(InMemoryMesh{
-        .mesh_file = MemoryFile(
-            R"""(mtllib mem.mtl
-                 v 0 0 0
-                 v 1 0 0
-                 v 0 1 0
-                 vn 0 0 1
-                 usemtl test
-                 f 1//1 2//1 3//1
-               )""",
-            ".obj", "obj3"),
-        .supporting_files = {{"mem.mtl", MemoryFile(
-                                             R"""(newmtl test
-                                                  map_Kd fake.png)""",
-                                             ".mtl", "mem.mtl")},
-                             {"fake.png", MemoryFile("abc", ".png", "png")}}});
+    const MeshSource source(
+        InMemoryMesh(MemoryFile(
+                         R"""(mtllib mem.mtl
+                              v 0 0 0
+                              v 1 0 0
+                              v 0 1 0
+                              vn 0 0 1
+                              usemtl test
+                              f 1//1 2//1 3//1
+                            )""",
+                         ".obj", "obj3"),
+                     {{"mem.mtl", MemoryFile(
+                                      R"""(newmtl test
+                                           map_Kd fake.png)""",
+                                      ".mtl", "mem.mtl")},
+                      {"fake.png", MemoryFile("abc", ".png", "png")}}));
     const RenderMesh mesh = LoadRenderMeshesFromObj(
         source, props, kDefaultDiffuse, diagnostic_policy_)[0];
     EXPECT_EQ(mesh.positions.rows(), 3);
@@ -997,15 +997,15 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
   {
     ASSERT_EQ(this->NumWarnings(), 0);
     ASSERT_EQ(this->NumErrors(), 0);
-    const MeshSource source(InMemoryMesh{.mesh_file = MemoryFile(
-                                             R"""(mtllib missing.mtl
-                                                 v 0 0 0
-                                                 v 1 0 0
-                                                 v 0 1 0
-                                                 vn 0 0 1
-                                                 f 1//1 2//1 3//1
-                                               )""",
-                                             ".obj", "obj4")});
+    const MeshSource source(InMemoryMesh(MemoryFile(
+        R"""(mtllib missing.mtl
+             v 0 0 0
+             v 1 0 0
+             v 0 1 0
+             vn 0 0 1
+             f 1//1 2//1 3//1
+           )""",
+        ".obj", "obj4")));
     const RenderMesh mesh = LoadRenderMeshesFromObj(
         source, props, kDefaultDiffuse, diagnostic_policy_)[0];
     EXPECT_EQ(mesh.positions.rows(), 3);
@@ -1024,21 +1024,20 @@ TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
   {
     ASSERT_EQ(this->NumWarnings(), 0);
     ASSERT_EQ(this->NumErrors(), 0);
-    const MeshSource source(InMemoryMesh{
-        .mesh_file = MemoryFile(
-            R"""(mtllib mem.mtl
-                     v 0 0 0
-                     v 1 0 0
-                     v 0 1 0
-                     vn 0 0 1
-                     usemtl test
-                     f 1//1 2//1 3//1
-                   )""",
-            ".obj", "obj5"),
-        .supporting_files = {{"mem.mtl", MemoryFile(R"""(newmtl test
-                                                           map_Kd fake.png)""",
-                                                    ".mtl", "mem.mtl")}}});
-    fmt::print("Testing {}\n", source.mesh_data().mesh_file.filename_hint());
+    const MeshSource source(
+        InMemoryMesh(MemoryFile(
+                         R"""(mtllib mem.mtl
+                              v 0 0 0
+                              v 1 0 0
+                              v 0 1 0
+                              vn 0 0 1
+                              usemtl test
+                              f 1//1 2//1 3//1
+                            )""",
+                         ".obj", "obj5"),
+                     {{"mem.mtl", MemoryFile(R"""(newmtl test
+                                                  map_Kd fake.png)""",
+                                             ".mtl", "mem.mtl")}}));
     const RenderMesh mesh = LoadRenderMeshesFromObj(
         source, props, kDefaultDiffuse, diagnostic_policy_)[0];
     EXPECT_EQ(mesh.positions.rows(), 3);

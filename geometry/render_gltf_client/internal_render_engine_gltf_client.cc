@@ -580,15 +580,15 @@ void MaybeEmbedDataUri(nlohmann::json* item_inout, const MeshSource& source,
     content = ReadFileOrThrow(base_path / uri);
   } else {
     DRAKE_DEMAND(source.IsInMemory());
-    const auto iter = source.mesh_data().supporting_files.find(uri);
-    if (iter == source.mesh_data().supporting_files.end()) {
+    const MemoryFile* file = source.mesh_data().file(uri);
+    if (file == nullptr) {
       throw std::runtime_error(fmt::format(
           "RenderEngineGltfClient cannot add an in-memory Mesh. The Mesh's "
           "glTF ('{}') file names an item in {} file that is not contained "
           "within the supporting files.",
-          source.mesh_data().mesh_file.filename_hint(), array_name));
+          source.mesh_data().mesh_file().filename_hint(), array_name));
     }
-    content = iter->second.contents();
+    content = file->contents();
   }
 
   item["uri"] =
@@ -629,9 +629,7 @@ bool RenderEngineGltfClient::ImplementGltf(
 
   DRAKE_DEMAND(!gltfs_.contains(data.id));
   const MeshSource& source = mesh.source();
-  const std::string gltf_name =
-      source.IsInMemory() ? source.mesh_data().mesh_file.filename_hint()
-                          : source.path().string();
+  const std::string gltf_name = source.description();
   gltfs_.insert({data.id,
                  {gltf_name, std::move(mesh_data), std::move(root_nodes),
                   mesh.scale(), GetRenderLabelOrThrow(data.properties)}});

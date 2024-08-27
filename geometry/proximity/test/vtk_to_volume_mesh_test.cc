@@ -64,8 +64,8 @@ GTEST_TEST(VtkToVolumeMeshTest, FromContents) {
   MemoryFile file(std::move(file_contents).str(), ".vtk", test_file);
   // Scale from a one-meter object to a one-centimeter object.
   const double kScale = 0.01;
-  VolumeMesh<double> volume_mesh = internal::ReadVtkToVolumeMesh(
-      MeshSource(InMemoryMesh{.mesh_file = file}), kScale);
+  VolumeMesh<double> volume_mesh =
+      internal::ReadVtkToVolumeMesh(MeshSource(InMemoryMesh(file)), kScale);
 
   const VolumeMesh<double> expected_mesh{
       {{0, 1, 2, 3}},

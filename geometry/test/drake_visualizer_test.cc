@@ -386,10 +386,9 @@ class DrakeVisualizerTest : public ::testing::Test {
     const bool expect_in_memory = in_memory && std::is_same_v<MeshType, Mesh>;
     if (expect_in_memory) {
       if constexpr (std::is_same_v<MeshType, Mesh>) {
-        InMemoryMesh memory_mesh = geometry::internal::PreParseGltf(
+        InMemoryMesh mesh_data = geometry::internal::PreParseGltf(
             std::filesystem::path(gltf_path), /* include_images= */ true);
-        mesh = make_unique<MeshType>(memory_mesh.mesh_file,
-                                     std::move(memory_mesh.supporting_files));
+        mesh = make_unique<MeshType>(std::move(mesh_data));
       }
     } else {
       mesh = make_unique<MeshType>(gltf_path);
@@ -503,7 +502,7 @@ class DrakeVisualizerTest : public ::testing::Test {
                     mesh->source().extension());
           EXPECT_EQ(
               json_mesh["mesh_file"]["filename_hint"].get<std::string_view>(),
-              mesh->source().mesh_data().mesh_file.filename_hint());
+              mesh->source().mesh_data().mesh_file().filename_hint());
         }
         ASSERT_TRUE(json_mesh.contains("supporting_files"));
         // Exploit knowledge of fully_textured_pyramid.gltf's contents to grab

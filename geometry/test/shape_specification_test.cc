@@ -620,14 +620,15 @@ GTEST_TEST(ShapeTest, MeshFromMemory) {
     f 1 2 3 4
     f 5 6 7 8
   )""";
-  string_map<MemoryFile> mesh_data;
-  mesh_data["fake.txt"] = MemoryFile("content", ".txt", "fake.txt");
-  const Mesh mesh(MemoryFile(obj_contents, ".OBJ", mesh_name), mesh_data, 2.0);
+  InMemoryMesh mesh_data(
+      MemoryFile(obj_contents, ".OBJ", mesh_name),
+      {{"fake.txt", MemoryFile("content", ".txt", "fake.txt")}});
+  const Mesh mesh(std::move(mesh_data), 2.0);
   EXPECT_EQ(mesh.extension(), ".obj");
   const MeshSource& source = mesh.source();
   ASSERT_TRUE(source.IsInMemory());
-  EXPECT_EQ(source.mesh_data().mesh_file.filename_hint(), mesh_name);
-  EXPECT_TRUE(source.mesh_data().supporting_files.contains("fake.txt"));
+  EXPECT_EQ(source.mesh_data().mesh_file().filename_hint(), mesh_name);
+  EXPECT_NE(source.mesh_data().file("fake.txt"), nullptr);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -706,6 +707,10 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   const Ellipsoid ellipsoid(1.25, 2.5, 0.5);
   const HalfSpace half_space;
   const Mesh mesh("/some/file", 1.5);
+  const Mesh mem_mesh1(InMemoryMesh(MemoryFile("a", ".a", "A")), 1.5);
+  const Mesh mem_mesh2(InMemoryMesh(MemoryFile("a", ".a", "A"),
+                                    {{"bb", MemoryFile("b", ".b", "B")},
+                                     {"cc", MemoryFile("c", ".c", "C")}}), 1.5);
   const MeshcatCone cone(1.5, 0.25, 0.5);
   const Sphere sphere(1.25);
 
@@ -716,6 +721,8 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(ellipsoid.type_name(), "Ellipsoid");
   EXPECT_EQ(half_space.type_name(), "HalfSpace");
   EXPECT_EQ(mesh.type_name(), "Mesh");
+  EXPECT_EQ(mem_mesh1.type_name(), "Mesh");
+  EXPECT_EQ(mem_mesh2.type_name(), "Mesh");
   EXPECT_EQ(cone.type_name(), "MeshcatCone");
   EXPECT_EQ(sphere.type_name(), "Sphere");
 
@@ -726,6 +733,17 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(ellipsoid.to_string(), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(half_space.to_string(), "HalfSpace()");
   EXPECT_EQ(mesh.to_string(), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(mem_mesh1.to_string(), "Mesh(mesh_data=InMemoryMesh(mesh_file="
+                                   "MemoryFile(contents='a', extension='.a', "
+                                   "filename_hint='A')), scale=1.5)");
+  EXPECT_EQ(mem_mesh2.to_string(), "Mesh(mesh_data=InMemoryMesh(mesh_file="
+                                   "MemoryFile(contents='a', extension='.a', "
+                                   "filename_hint='A'), supporting_files={"
+                                   "{'bb', MemoryFile(contents='b', "
+                                   "extension='.b', filename_hint='B')}, "
+                                   "{'cc', MemoryFile(contents='c', "
+                                   "extension='.c', filename_hint='C')}}), "
+                                   "scale=1.5)");
   EXPECT_EQ(cone.to_string(), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
   EXPECT_EQ(sphere.to_string(), "Sphere(radius=1.25)");
 
@@ -736,6 +754,8 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(fmt::to_string(ellipsoid), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(fmt::to_string(half_space), "HalfSpace()");
   EXPECT_EQ(fmt::to_string(mesh), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(fmt::to_string(mem_mesh1), mem_mesh1.to_string());
+  EXPECT_EQ(fmt::to_string(mem_mesh2), mem_mesh2.to_string());
   EXPECT_EQ(fmt::to_string(cone), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
   EXPECT_EQ(fmt::to_string(sphere), "Sphere(radius=1.25)");
 

@@ -402,11 +402,11 @@ class ShapeToLcm : public ShapeReifier {
       const InMemoryMesh& mem_mesh = source.mesh_data();
       json in_memory;
       in_memory["in_memory_mesh"]["mesh_file"] =
-          json_memory_file(mem_mesh.mesh_file);
+          json_memory_file(mem_mesh.mesh_file());
 
-      for (const auto& [key, file] : mem_mesh.supporting_files) {
-        in_memory["in_memory_mesh"]["supporting_files"][key] =
-            json_memory_file(file);
+      for (const auto& name : mem_mesh.SupportingFileNames()) {
+        in_memory["in_memory_mesh"]["supporting_files"][name] =
+            json_memory_file(*mem_mesh.file(name));
       }
       geometry_data_.string_data = in_memory.dump();
     }

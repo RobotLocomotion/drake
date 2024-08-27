@@ -33,6 +33,7 @@ from pydrake.geometry import (
     Capsule,
     Cylinder,
     Ellipsoid,
+    InMemoryMesh,
     Mesh,
     Meshcat,
     MeshcatParams,
@@ -415,8 +416,9 @@ class _ViewerApplet:
                                                  {}).items():
                     supporting_files[name] = self._json_to_memory_file(coded)
                 shape = Mesh(
-                    file=self._json_to_memory_file(mesh_data["mesh_file"]),
-                    supporting_files=supporting_files)
+                    InMemoryMesh(mesh_file=self._json_to_memory_file(
+                                     mesh_data["mesh_file"]),
+                                 supporting_files=supporting_files))
             else:
                 # A mesh to be loaded from a file.
                 (scale_x, scale_y, scale_z) = geom.float_data

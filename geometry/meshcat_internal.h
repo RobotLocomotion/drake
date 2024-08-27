@@ -64,7 +64,7 @@ original file has disappeared in the meantime.
 
 @param[in] source The MeshSource for the given glTF, used to resolve file URIs
   used in the `gltf_contents`. The actual contents of
-  `source.mesh_data().mesh_file` will _not_ be used; `gltf_contents` takes
+  `source.mesh_data().mesh_file()` will _not_ be used; `gltf_contents` takes
   precedence, but is expected to be a copy of the source's glTF file contents.
 
 @param[in,out] gltf_contents The glTF data named in `source`. It will be edited

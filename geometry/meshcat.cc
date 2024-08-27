@@ -437,10 +437,8 @@ class MeshcatShapeReifier : public ShapeReifier {
     format.erase(0, 1);  // remove the . from the extension
     const MeshSource& source = mesh.source();
 
-    const fs::path filename =
-        source.IsPath()
-            ? source.path()
-            : fs::path(source.mesh_data().mesh_file.filename_hint());
+    // MeshSource::description() *is* the file path if, source.IsPath().
+    const fs::path filename = source.description();
     std::optional<std::string> maybe_mesh_data;
     if (source.IsPath()) {
       maybe_mesh_data = ReadFile(filename);
@@ -451,7 +449,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       }
     } else {
       DRAKE_DEMAND(source.IsInMemory());
-      maybe_mesh_data = source.mesh_data().mesh_file.contents();
+      maybe_mesh_data = source.mesh_data().mesh_file().contents();
     }
 
     // We simply dump the binary contents of the file into the data field of the
@@ -465,7 +463,6 @@ class MeshcatShapeReifier : public ShapeReifier {
     size_t mtllib_pos;
     if (format == "obj" &&
         (mtllib_pos = mesh_data.find("mtllib ")) != std::string::npos) {
-      DRAKE_DEMAND(source.IsPath());
       mtllib_pos += 7;  // Advance to after the actual "mtllib " string.
       std::string mtllib_string =
           mesh_data.substr(mtllib_pos, mesh_data.find('\n', mtllib_pos));
@@ -483,14 +480,23 @@ class MeshcatShapeReifier : public ShapeReifier {
       meshfile_object.format = std::move(format);
       meshfile_object.data = std::move(mesh_data);
 
-      std::string mtllib = matches.str(1);
+      const std::string mtllib = matches.str(1);
 
-      // Use filename path as the base directory for textures.
-      const std::filesystem::path basedir = filename.parent_path();
+      std::optional<std::string> maybe_mtl_data;
+      if (source.IsPath()) {
+        // Use filename path as the base directory for textures.
+        const std::filesystem::path basedir = filename.parent_path();
+        maybe_mtl_data = ReadFile(basedir / mtllib);
+      } else {
+        const MemoryFile* mtl_file = source.mesh_data().file(mtllib);
+        if (mtl_file != nullptr) {
+          maybe_mtl_data = mtl_file->contents();
+        }
+      }
 
       // Read .mtl file into geometry.mtl_library.
-      if (std::optional<std::string> maybe_mtl_data =
-              ReadFile(basedir / mtllib)) {
+      if (maybe_mtl_data.has_value()) {
+        const std::filesystem::path basedir = filename.parent_path();
         meshfile_object.mtl_library = std::move(*maybe_mtl_data);
 
         // Scan .mtl file for map_ lines.  For each, load the file and add
@@ -510,31 +516,49 @@ class MeshcatShapeReifier : public ShapeReifier {
                                        map_regex);
              iter != std::sregex_iterator(); ++iter) {
           std::string map = iter->str(1);
-          std::ifstream map_stream(basedir / map,
-                                   std::ios::binary | std::ios::ate);
-          if (map_stream.is_open()) {
-            int map_size = map_stream.tellg();
-            map_stream.seekg(0, std::ios::beg);
-            std::vector<uint8_t> map_data;
-            map_data.reserve(map_size);
-            map_data.assign(std::istreambuf_iterator<char>(map_stream),
-                            std::istreambuf_iterator<char>());
-            meshfile_object.resources.try_emplace(
-                map, std::string("data:image/png;base64,") +
-                         common_robotics_utilities::base64_helpers::Encode(
-                             map_data));
+          if (source.IsPath()) {
+            std::ifstream map_stream(basedir / map,
+                                     std::ios::binary | std::ios::ate);
+            if (map_stream.is_open()) {
+              int map_size = map_stream.tellg();
+              map_stream.seekg(0, std::ios::beg);
+              std::vector<uint8_t> map_data;
+              map_data.reserve(map_size);
+              map_data.assign(std::istreambuf_iterator<char>(map_stream),
+                              std::istreambuf_iterator<char>());
+              meshfile_object.resources.try_emplace(
+                  map, std::string("data:image/png;base64,") +
+                           common_robotics_utilities::base64_helpers::Encode(
+                               map_data));
+            } else {
+              drake::log()->warn(
+                  "Meshcat: Failed to load texture. \"{}\" references {}, but "
+                  "Meshcat could not open filename \"{}\"",
+                  (basedir / mtllib).string(), map, (basedir / map).string());
+            }
           } else {
-            drake::log()->warn(
-                "Meshcat: Failed to load texture. \"{}\" references {}, but "
-                "Meshcat could not open filename \"{}\"",
-                (basedir / mtllib).string(), map, (basedir / map).string());
+            const MemoryFile* map_file = source.mesh_data().file(map);
+            if (map_file != nullptr) {
+              // Load it.
+              std::vector<uint8_t> bytes(map_file->contents().begin(),
+                                         map_file->contents().end());
+              meshfile_object.resources.try_emplace(
+                  map,
+                  std::string("data:image/png;base64,") +
+                      common_robotics_utilities::base64_helpers::Encode(bytes));
+            } else {
+              drake::log()->warn(
+                  "Meshcat: Failed to load texture. \"{}\" references an "
+                  "unavailable texture map: '{}'.",
+                  mtllib, map);
+            }
           }
         }
-      } else {
+      } else if (!mtllib.empty()) {
         drake::log()->warn(
-            "Meshcat: Failed to load texture. {} references {}, but Meshcat "
-            "could not open filename \"{}\"",
-            filename, mtllib, (basedir / mtllib).string());
+            "Meshcat: The obj referenced a material library '{}' Meshcat could "
+            "not open for obj '{}'. No materials will be included.",
+            source.description(), mtllib);
       }
     } else if (format == "gltf") {
       output.assets =

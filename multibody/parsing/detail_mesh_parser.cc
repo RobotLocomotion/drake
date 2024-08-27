@@ -68,7 +68,7 @@ NamedMesh DoGetObjMesh(const DiagnosticPolicy& diagnostic,
     // a unique buffer type, but it suffices for now. This will become more
     // important when AddModelFromMesh() supports in-memory DataSources.
     input_stream = std::make_unique<std::istringstream>(
-        obj_source.mesh_data().mesh_file.contents());
+        obj_source.mesh_data().mesh_file().contents());
   }
 
   const bool result =

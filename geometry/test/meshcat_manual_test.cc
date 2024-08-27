@@ -63,7 +63,9 @@ Mesh GetPyramidInMemory(double scale = 1.0) {
     supporting_files.emplace(f, MemoryFile::Make(std::move(gltf_dir / f)));
   }
 
-  return Mesh(MemoryFile::Make(gltf_path), std::move(supporting_files), scale);
+  return Mesh(
+      InMemoryMesh(MemoryFile::Make(gltf_path), std::move(supporting_files)),
+      scale);
 }
 
 int do_main() {

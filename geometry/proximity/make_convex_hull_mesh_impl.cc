@@ -147,9 +147,8 @@ std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
           ? PreParseGltf(gltf_source.path(), /* include_images= */ false)
           : gltf_source.mesh_data();
 
-  const std::string& gltf_name = mem_mesh.mesh_file.filename_hint();
-  vtkSmartPointer<MeshMemoryLoader> uri_loader(
-      new MeshMemoryLoader(&mem_mesh.supporting_files));
+  const std::string& gltf_name = mem_mesh.mesh_file().filename_hint();
+  vtkSmartPointer<MeshMemoryLoader> uri_loader(new MeshMemoryLoader(&mem_mesh));
   vtkNew<vtkGLTFDocumentLoader> loader;
   loader->SetConfig({.include_animation = false,
                      .include_images = false,
@@ -161,7 +160,7 @@ std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
   loader->AddObserver(vtkCommand::WarningEvent, observer);
 
   vtkSmartPointer<vtkResourceStream> gltf_stream =
-      MakeStreamForString(&mem_mesh.mesh_file.contents());
+      MakeStreamForString(&mem_mesh.mesh_file().contents());
 
   if (!loader->LoadModelMetaDataFromStream(gltf_stream, uri_loader) ||
       !loader->LoadModelData({}) || !loader->BuildModelVTKGeometry()) {

@@ -37,6 +37,8 @@ from pydrake.geometry import (
     DrakeVisualizer,
     DrakeVisualizerParams,
     GeometryInstance,
+    IllustrationProperties,
+    InMemoryMesh,
     Mesh,
     MeshcatParams,
     Role,
@@ -470,14 +472,18 @@ f 1 2 3
 newmtl meldis_mat
 Kd 1 1 0
 """
-        mesh = Mesh(file=MemoryFile(obj_contents, ".obj", "from_test.obj"),
+        mesh = Mesh(mesh_data=InMemoryMesh(
+                        mesh_file=MemoryFile(obj_contents, ".obj",
+                                             "from_test.obj"),
                     supporting_files={
                         "meldis_test.mtl": MemoryFile(mtl_contents, ".mtl",
-                                                      "melids_test.mtl")})
-        scene_graph.RegisterAnchoredGeometry(
+                                                      "meldis_test.mtl")}))
+        g_id = scene_graph.RegisterAnchoredGeometry(
             plant.get_source_id(),
             GeometryInstance(X_PG=RigidTransform(), shape=mesh,
                              name="in_memory"))
+        scene_graph.AssignRole(plant.get_source_id(), g_id,
+                               IllustrationProperties())
         lcm = dut._lcm
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
                                      params=DrakeVisualizerParams(), lcm=lcm)

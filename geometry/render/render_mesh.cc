@@ -62,8 +62,9 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
     } else {
       DRAKE_DEMAND(source.IsInMemory());
       const InMemoryMesh& data = source.mesh_data();
-      if (data.supporting_files.contains(mat.diffuse_texname)) {
-        result.diffuse_map = data.supporting_files.at(mat.diffuse_texname);
+      const MemoryFile* file = data.file(mat.diffuse_texname);
+      if (file != nullptr) {
+        result.diffuse_map = *file;
       } else {
         policy.Warning(fmt::format(
             "The OBJ file's material requested an unavailable diffuse texture "
@@ -147,18 +148,19 @@ class MaterialLibraryServer final : public tinyobj::MaterialReader {
                      std::map<std::string, int>* matMap, std::string* warn,
                      std::string* err) const {
     DRAKE_DEMAND(source_.IsInMemory());
-    const string_map<MemoryFile> files = source_.mesh_data().supporting_files;
+    const MemoryFile* file = source_.mesh_data().file(matId);
     // matId is the filename that appears after mtllib. There may be multiple
     // such files named.
-    if (!files.contains(matId)) {
+    if (file == nullptr) {
       // TODO(SeanCurtis-TRI) warning about unavailable material library.
       return false;
     }
-    AliasingStringReadBuf mat_buf(files.at(matId).contents());
+    AliasingStringReadBuf mat_buf(file->contents());
     std::istream mtl_stream(&mat_buf);
     tinyobj::LoadMtl(matMap, materials, &mtl_stream, warn, err);
     return true;
   }
+
   const MeshSource& source_;
 };
 
@@ -173,7 +175,7 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
     const DiagnosticPolicy& policy) {
   const std::string& obj_contents =
       source.IsPath() ? ReadFile(source.path()).value_or("")
-                      : source.mesh_data().mesh_file.contents();
+                      : source.mesh_data().mesh_file().contents();
   if (obj_contents.empty()) {
     throw std::runtime_error(fmt::format(
         "Failed parsing obj data; no data given: {}.", source.description()));

@@ -588,9 +588,9 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
     importer->SetFileName(source.path().c_str());
   } else {
     vtkSmartPointer<MeshMemoryLoader> uri_loader(
-        new MeshMemoryLoader(&source.mesh_data().supporting_files));
+        new MeshMemoryLoader(&source.mesh_data()));
     vtkSmartPointer<vtkResourceStream> gltf_stream =
-        MakeStreamForString(&source.mesh_data().mesh_file.contents());
+        MakeStreamForString(&source.mesh_data().mesh_file().contents());
     importer->SetInputStream(gltf_stream, uri_loader, /* binary= */ false);
   }
   importer->Update();

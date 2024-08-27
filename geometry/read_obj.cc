@@ -182,7 +182,7 @@ ReadObj(const MeshSource& source, double scale, bool triangulate,
                        vertices_only);
   } else {
     DRAKE_DEMAND(source.IsInMemory());
-    return ReadObjContents(source.mesh_data().mesh_file, scale, triangulate,
+    return ReadObjContents(source.mesh_data().mesh_file(), scale, triangulate,
                            vertices_only);
   }
 }

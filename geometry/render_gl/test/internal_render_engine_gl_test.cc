@@ -1281,11 +1281,10 @@ TEST_F(RenderEngineGlTest, InMemoryMesh) {
   {
     const std::filesystem::path path =
         FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.gltf");
-    InMemoryMesh memory_mesh =
+    InMemoryMesh mesh_data =
         geometry::internal::PreParseGltf(path, /* include_images= */ true);
-    do_test(
-        "data_and_file_uri_gltf", Mesh(path.string()),
-        Mesh(memory_mesh.mesh_file, std::move(memory_mesh.supporting_files)));
+    do_test("data_and_file_uri_gltf", Mesh(path.string()),
+            Mesh(std::move(mesh_data)));
   }
 
   // rainbow_box.obj has some faces colored by texture, some by material. The
@@ -1296,14 +1295,14 @@ TEST_F(RenderEngineGlTest, InMemoryMesh) {
         "drake/geometry/render/test/meshes/rainbow_box.obj");
     do_test(
         "textured_obj", Mesh(obj_path.string()),
-        Mesh(MemoryFile::Make(obj_path),
-             string_map<MemoryFile>{
-                 {"rainbow_box.mtl",
-                  MemoryFile::Make(FindResourceOrThrow(
-                      "drake/geometry/render/test/meshes/rainbow_box.mtl"))},
-                 {"rainbow_stripes.png", MemoryFile::Make(FindResourceOrThrow(
-                                             "drake/geometry/render/test/"
-                                             "meshes/rainbow_stripes.png"))}}));
+        Mesh(InMemoryMesh(
+            MemoryFile::Make(obj_path),
+            {{"rainbow_box.mtl",
+              MemoryFile::Make(FindResourceOrThrow(
+                  "drake/geometry/render/test/meshes/rainbow_box.mtl"))},
+             {"rainbow_stripes.png", MemoryFile::Make(FindResourceOrThrow(
+                                         "drake/geometry/render/test/"
+                                         "meshes/rainbow_stripes.png"))}})));
   }
 }
 

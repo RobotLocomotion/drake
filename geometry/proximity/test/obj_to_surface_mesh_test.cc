@@ -97,8 +97,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, MeshSource) {
   const std::string filename =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   MeshSource disk_source(filename);
-  MeshSource memory_source(
-      InMemoryMesh{.mesh_file = MemoryFile::Make(filename)});
+  MeshSource memory_source(InMemoryMesh(MemoryFile::Make(filename)));
   const TriangleSurfaceMesh<double> disk_surface =
       ReadObjToTriangleSurfaceMesh(disk_source, kUnitScale);
   const TriangleSurfaceMesh<double> memory_surface =

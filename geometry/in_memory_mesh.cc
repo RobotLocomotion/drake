@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <utility>
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace geometry {
 namespace {
@@ -17,17 +19,53 @@ std::string GetExtensionLower(const std::filesystem::path& file_path) {
 
 }  // namespace
 
+InMemoryMesh::InMemoryMesh() = default;
+
+InMemoryMesh::InMemoryMesh(MemoryFile mesh_file,
+                           string_map<MemoryFile> supporting_files)
+    : mesh_file_(std::move(mesh_file)),
+      supporting_files_(std::move(supporting_files)) {}
+
+void InMemoryMesh::AddSupportingFile(std::string_view name, MemoryFile file) {
+  if (supporting_files_.contains(name)) {
+    throw std::runtime_error(
+        fmt::format("InMemoryMesh cannot add supporting file '{}', that name "
+                    "has already been used for file '{}'.",
+                    name, this->file(name)->filename_hint()));
+  }
+  supporting_files_.emplace(name, std::move(file));
+}
+
+std::vector<std::string_view> InMemoryMesh::SupportingFileNames() const {
+  std::vector<std::string_view> names;
+  for (const auto& [name, _] : supporting_files_) {
+    names.emplace_back(name);
+  }
+  return names;
+}
+
+const MemoryFile* InMemoryMesh::file(std::string_view name) const {
+  const auto iter = supporting_files_.find(name);
+  if (iter == supporting_files_.end()) {
+    return nullptr;
+  }
+  return &iter->second;
+}
+
+bool InMemoryMesh::empty() const {
+  return mesh_file_.contents().empty();
+}
+
 MeshSource::MeshSource(std::filesystem::path path) : source_(std::move(path)) {
   extension_ = GetExtensionLower(this->path());
 }
 
 MeshSource::MeshSource(InMemoryMesh mesh) : source_(std::move(mesh)) {
-  extension_ = mesh_data().mesh_file.extension();
+  extension_ = mesh_data().mesh_file().extension();
 }
 
 std::string MeshSource::description() const {
-  return IsPath() ? path().string()
-                  : mesh_data().mesh_file.filename_hint();
+  return IsPath() ? path().string() : mesh_data().mesh_file().filename_hint();
 }
 
 }  // namespace geometry

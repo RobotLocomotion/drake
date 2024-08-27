@@ -468,29 +468,13 @@ class Mesh final : public Shape {
 
    The mesh is defined by the contents of a @ref supported_file_types
    "mesh file format supported by Drake". Those contents are passed in as
-   `mesh_contents`. Some mesh file formats can comprise multiple files (e.g.,
-   .obj and .mtl files, .gltf and .bin files, various texture files, etc.). If
-   the mesh data in `mesh_contents` names other files, we will first look in
-   `mesh_data` for MemoryFile keyed by that name.
-   <!--
-   TODO(SeanCurtis-TRI): This documentation is aspirational; figure out how
-   to make it a reality.
+   `mesh_data`. The mesh data should include the main mesh file's contents as
+   well as any supporting file contents as needed. See InMemoryMesh.
 
-   If not found, we'll interpret it as
-   a file path and look in the file system. If still not found, best effort
-   will be made in parsing the file. One implication is that an in-memory
-   mesh can reference on-disk resources (but not vice versa).
-   -->
-
-   @param file               The in-memory file contents that define the mesh
+   @param mesh_data          The in-memory file contents that define the mesh
                              data for this shape.
-   @param supporting_files   An optional map from file-like names to contents of
-                             the putative files.
-   @param scale              An optional scale to coordinates.
-   @pre The extension in `name` matches the data in `mesh_contents`.
-   @pre The extension in `name` names a supported mesh file type. */
-  Mesh(MemoryFile file, string_map<MemoryFile> supporting_files = {},
-       double scale = 1.0);
+   @param scale              An optional scale to coordinates. */
+  explicit Mesh(InMemoryMesh mesh_data, double scale = 1.0);
 
   ~Mesh() final;
 

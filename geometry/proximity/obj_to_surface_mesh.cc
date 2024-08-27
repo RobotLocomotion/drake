@@ -1,6 +1,5 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 
-#include <filesystem>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -33,7 +32,6 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
   }
 
   DRAKE_DEMAND(ssize(*face_data) == num_tris * 4);
-
   std::vector<SurfaceTriangle> triangles;
   triangles.reserve(num_tris);
   int i = 0;
@@ -43,6 +41,7 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
                            (*face_data)[i + 3]);
     i += 4;
   }
+
   return TriangleSurfaceMesh<double>(std::move(triangles),
                                      std::move(*vertices));
 }
@@ -73,14 +72,15 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
 
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     std::istream* input_stream, const double scale,
-    std::function<void(std::string_view)> on_warning) {
+    std::function<void(std::string_view)> on_warning,
+    std::string_view description) {
   DRAKE_THROW_UNLESS(input_stream != nullptr);
   DRAKE_THROW_UNLESS(input_stream->good());
   std::stringstream content;
   content << input_stream->rdbuf();
 
-  InMemoryMesh mesh{.mesh_file = MemoryFile(std::move(content).str(), ".obj",
-                                            "in_memory.obj")};
+  const InMemoryMesh mesh(
+      MemoryFile(std::move(content).str(), ".obj", std::string(description)));
 
   // We will either throw or return a mesh here.
   return *internal::DoReadObjToSurfaceMesh(mesh, scale, MakePolicy(on_warning));

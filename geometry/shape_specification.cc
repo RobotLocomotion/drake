@@ -5,6 +5,7 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 
@@ -204,11 +205,8 @@ Mesh::Mesh(const std::string& filename, double scale)
   }
 }
 
-Mesh::Mesh(MemoryFile file,
-           string_map<MemoryFile> supporting_files, double scale)
-    : source_(InMemoryMesh{.mesh_file = std::move(file),
-                           .supporting_files = std::move(supporting_files)}),
-      scale_(scale) {
+Mesh::Mesh(InMemoryMesh mesh_data, double scale)
+    : source_(std::move(mesh_data)), scale_(scale) {
   // Note: We don't validate extensions because there's a possibility that a
   // mesh of unsupported type is used, but only processed by client code.
   if (std::abs(scale) < 1e-8) {
@@ -223,8 +221,9 @@ std::string Mesh::filename() const {
   }
   throw std::runtime_error(
       fmt::format("Mesh::filename() cannot be called when constructed on "
-                  "in-memory mesh data: '{}'. Call in_memory_mesh() instead.",
-                  source_.mesh_data().mesh_file.filename_hint()));
+                  "in-memory mesh data: '{}'. "
+                  "Call Mesh::source().path() instead.",
+                  source_.mesh_data().mesh_file().filename_hint()));
 }
 
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
@@ -238,10 +237,22 @@ std::string Mesh::do_to_string() const {
       return fmt::format("filename='{}'", source_.path().string());
     } else {
       const InMemoryMesh& data = source_.mesh_data();
-      return fmt::format(
-        "mesh_contents='{}...', name='{}', supporting_files=<map of {} files>",
-        data.mesh_file.contents().substr(0, 30), data.mesh_file.filename_hint(),
-        data.supporting_files.size());
+      auto format_file = [](const MemoryFile& file) {
+        return fmt::format(
+            "MemoryFile(contents='{}', extension='{}', filename_hint='{}')",
+            file.contents(), file.extension(), file.filename_hint());
+      };
+      std::vector<std::string> supporting;
+      for (const auto& name : data.SupportingFileNames()) {
+        supporting.push_back(
+            fmt::format("{{'{}', {}}}", name, format_file(*data.file(name))));
+      }
+      std::string supporting_str =
+          supporting.size() > 0 ? fmt::format(", supporting_files={{{}}}",
+                                              fmt::join(supporting, ", "))
+                                : std::string();
+      return fmt::format("mesh_data=InMemoryMesh(mesh_file={}{})",
+                         format_file(data.mesh_file()), supporting_str);
     }
   }();
   return fmt::format("Mesh({}, scale={})", description, scale());

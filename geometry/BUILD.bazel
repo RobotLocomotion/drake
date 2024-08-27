@@ -886,6 +886,7 @@ drake_cc_googletest(
     deps = [
         ":in_memory_mesh",
         "//common:unused",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

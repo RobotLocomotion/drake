@@ -687,7 +687,7 @@ std::string GetPathKey(const MeshSource& source, bool is_convex) {
     //
     // Alternatively, InMemoryMesh creates a sha for all of its data upon
     // construction (it has the bits).
-    prefix = source.mesh_data().mesh_file.sha256().to_string() +
+    prefix = source.mesh_data().mesh_file().sha256().to_string() +
              (is_convex ? "?convex" : "");
   } else {
     prefix = source.path().string();
@@ -1412,9 +1412,10 @@ class RenderEngineGl::GltfMeshExtractor {
       file_path_.clear();
       // TODO(SeanCurtis-TRI) This would be better as the sha for the whole
       // mesh_data().
-      embedded_prefix_ = source.mesh_data().mesh_file.sha256().to_string();
-      description_ = fmt::format("the in-memory glTF file: '{}'",
-                                 source.mesh_data().mesh_file.filename_hint());
+      embedded_prefix_ = source.mesh_data().mesh_file().sha256().to_string();
+      description_ =
+          fmt::format("the in-memory glTF file: '{}'",
+                      source.mesh_data().mesh_file().filename_hint());
     }
 
     tinygltf::TinyGLTF loader;
@@ -1457,47 +1458,49 @@ class RenderEngineGl::GltfMeshExtractor {
 
       tinygltf::FsCallbacks callbacks{
           .FileExists =
-              [&files = source.mesh_data().supporting_files](
-                  const std::string& abs_filename, void*) {
-                return files.contains(abs_filename);
+              [&mesh = source.mesh_data()](const std::string& abs_filename,
+                                           void*) {
+                return mesh.file(abs_filename) != nullptr;
               },
           .ExpandFilePath = tinygltf::ExpandFilePath,
           .ReadWholeFile =
-              [&files = source.mesh_data().supporting_files](
-                  std::vector<unsigned char>* out, std::string* err,
-                  const std::string& filepath, void*) {
+              [&mesh = source.mesh_data()](std::vector<unsigned char>* out,
+                                           std::string* err,
+                                           const std::string& filepath, void*) {
                 DRAKE_DEMAND(out != nullptr);
-                if (!files.contains(filepath)) {
+                const MemoryFile* file = mesh.file(filepath);
+                if (file == nullptr) {
                   if (err) {
                     *err += fmt::format(
                         "Error reading in-memory glTF file '{}'\n", filepath);
                   }
                   return false;
                 }
-                const std::string& contents = files.at(filepath).contents();
+                const std::string& contents = file->contents();
                 *out = std::vector<unsigned char>(contents.begin(),
                                                   contents.end());
                 return true;
               },
           .WriteWholeFile = tinygltf::WriteWholeFile,
           .GetFileSizeInBytes =
-              [&files = source.mesh_data().supporting_files](
-                  size_t* filesize_out, std::string* err,
-                  const std::string& filepath, void*) {
+              [&mesh = source.mesh_data()](size_t* filesize_out,
+                                           std::string* err,
+                                           const std::string& filepath, void*) {
                 DRAKE_DEMAND(filesize_out != nullptr);
-                if (!files.contains(filepath)) {
+                const MemoryFile* file = mesh.file(filepath);
+                if (file == nullptr) {
                   if (err) {
                     *err += fmt::format(
                         "Error reading in-memory glTF file '{}'\n", filepath);
                   }
                   return false;
                 }
-                *filesize_out = files.at(filepath).contents().size();
+                *filesize_out = file->contents().size();
                 return true;
               }};
       loader.SetFsCallbacks(std::move(callbacks));
 
-      const std::string& gltf = source.mesh_data().mesh_file.contents();
+      const std::string& gltf = source.mesh_data().mesh_file().contents();
       const std::string kEmptyBaseDir;
       valid_parse = loader.LoadASCIIFromString(
           &model, &error, &warn, gltf.c_str(), ssize(gltf), kEmptyBaseDir);

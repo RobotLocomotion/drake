@@ -20,10 +20,9 @@ namespace geometry {
 namespace internal {
 
 /* Creates a triangle mesh from the obj data contained in the `input_stream`.
- Parsing will continue through warnings, but stop for errors. If the given
- diagnostic policy (as defined in `config`) doesn't throw for errors,
- std::nullopt is returned.
- @pre `config` has both warning and error handlers defined. */
+ Parsing will continue through warnings. If the given diagnostic policy isn't
+ configured to stop for errors, std::nullopt is returned.
+ @pre `diagnostic` has both warning and error handlers defined. */
 std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
     const MeshSource& source, double scale,
     const drake::internal::DiagnosticPolicy& diagnostic);
@@ -53,7 +52,8 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
  with the Wavefront .obj file given in std::istream. */
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     std::istream* input_stream, double scale = 1.0,
-    std::function<void(std::string_view)> on_warning = {});
+    std::function<void(std::string_view)> on_warning = {},
+    std::string_view description = "from_stream");
 
 /** Overload of @ref ReadObjToTriangleSurfaceMesh(const std::string&, double)
  with the Wavefront .obj in a Mesh shape specification. */
