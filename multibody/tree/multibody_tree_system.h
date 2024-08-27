@@ -9,6 +9,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/topology/forest.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
@@ -308,9 +309,9 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   /* Returns a mutable reference to the MultibodyTree owned by this class. */
   MultibodyTree<T>& mutable_tree();
 
-  /* Finalize the tree if that hasn't already been done, complete System
+  /* Finalize the tree to implement the SpanningForest, complete System
   construction, and declare any needed Context resources for the tree. You must
-  call this before performing any computation. */
+  call this before performing any computation. Throws if already finalized. */
   void Finalize();
 
   /* Derived class (likely MultibodyPlant) must implement this if it has

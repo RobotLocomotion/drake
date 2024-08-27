@@ -63,7 +63,10 @@ struct VolumetricElementData {
   Vector<T, num_dofs> element_a;
   /* The current locations of the quadrature points in the world frame. */
   std::array<Vector<T, 3>, num_quadrature_points> quadrature_positions;
-  typename ConstitutiveModelType::Data deformation_gradient_data;
+
+  using DeformationGradientData = typename ConstitutiveModelType::Data;
+  std::array<DeformationGradientData, num_quadrature_points>
+      deformation_gradient_data;
   /* The elastic energy density evaluated at quadrature points. Note that this
    is energy per unit of "reference" volume. */
   std::array<T, num_quadrature_points> Psi;
@@ -109,11 +112,6 @@ struct FemElementTraits<VolumetricElement<
           IsoparametricElementType::num_sample_locations,
       "The number of quadrature points of the quadrature rule must be the same "
       "as the number of evaluation locations in the isoparametric element.");
-  static_assert(
-      QuadratureType::num_quadrature_points ==
-          ConstitutiveModelType::num_locations,
-      "The number of quadrature points must be the same as the number of "
-      "locations at which the constitutive model is evaluated.");
   /* Check that the natural dimensions are compatible. */
   static_assert(IsoparametricElementType::natural_dimension ==
                     QuadratureType::natural_dimension,
@@ -409,15 +407,20 @@ class VolumetricElement
         isoparametric_element_.template InterpolateNodalValues<3>(
             element_q_reshaped);
 
-    data.deformation_gradient_data.UpdateData(
-        CalcDeformationGradient(data.element_q),
-        CalcDeformationGradient(data.element_q0));
-    this->constitutive_model().CalcElasticEnergyDensity(
-        data.deformation_gradient_data, &data.Psi);
-    this->constitutive_model().CalcFirstPiolaStress(
-        data.deformation_gradient_data, &data.P);
-    this->constitutive_model().CalcFirstPiolaStressDerivative(
-        data.deformation_gradient_data, &data.dPdF);
+    std::array<Matrix3<T>, num_quadrature_points> F =
+        CalcDeformationGradient(data.element_q);
+    std::array<Matrix3<T>, num_quadrature_points> F0 =
+        CalcDeformationGradient(data.element_q0);
+
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      data.deformation_gradient_data[q].UpdateData(F[q], F0[q]);
+      this->constitutive_model().CalcElasticEnergyDensity(
+          data.deformation_gradient_data[q], &(data.Psi[q]));
+      this->constitutive_model().CalcFirstPiolaStress(
+          data.deformation_gradient_data[q], &(data.P[q]));
+      this->constitutive_model().CalcFirstPiolaStressDerivative(
+          data.deformation_gradient_data[q], &(data.dPdF[q]));
+    }
     return data;
   }
 
@@ -429,9 +432,9 @@ class VolumetricElement
         quadrature_positions = data.quadrature_positions;
     const std::array<Vector<T, num_nodes>, num_quadrature_points>& S =
         isoparametric_element_.GetShapeFunctions();
-    const std::array<Matrix3<T>, num_quadrature_points>& deformation_gradients =
-        data.deformation_gradient_data.deformation_gradient();
     for (int q = 0; q < num_quadrature_points; ++q) {
+      const Matrix3<T>& deformation_gradient =
+          data.deformation_gradient_data[q].deformation_gradient();
       Vector3<T> scaled_force = Vector3<T>::Zero();
       for (const multibody::ForceDensityField<T>* force_density :
            plant_data.force_density_fields) {
@@ -440,7 +443,7 @@ class VolumetricElement
             force_density->density_type() ==
                     multibody::ForceDensityType::kPerReferenceVolume
                 ? 1.0
-                : deformation_gradients[q].determinant();
+                : deformation_gradient.determinant();
         scaled_force += scale *
                         force_density->EvaluateAt(plant_data.plant_context,
                                                   quadrature_positions[q]) *

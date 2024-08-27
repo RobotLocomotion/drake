@@ -126,6 +126,9 @@ ImageIo::LoaderTools ImageIo::MakeLoaderTools(
   }
   tools.reader->AddObserver(vtkCommand::ErrorEvent, tools.reader_observer);
   tools.reader->Update();
+  if (tools.errors->size() > 0) {
+    return tools;
+  }
   // Note that we do NOT call ImageLowerLeftOff() here. That means that the
   // lower left pixel is (0, 0), counting upwards moving up the image.
   tools.loader->SetInputConnection(tools.reader->GetOutputPort(0));

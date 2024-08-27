@@ -26,13 +26,7 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-// TODO(sherm1) During the PR train leading up to MbP using this code in Drake
-//  master, I'm using Doxygen comments /** despite the fact that this is
-//  currently just internal. That allows me to validate Doxygen syntax in
-//  anticipation of the API becoming public later. Change these to /* in the
-//  final PR in this train to satisfy the styleguide.
-
-/** Represents a graph consisting of Links (user-defined rigid bodies)
+/* Represents a graph consisting of Links (user-defined rigid bodies)
 interconnected by Joints.
 
 Terminology notes:
@@ -106,7 +100,7 @@ class LinkJointGraph {
   class Joint;
   class LoopConstraint;
 
-  /** This is all we need to know about joint types for topological purposes. */
+  /* This is all we need to know about joint types for topological purposes. */
   struct JointTraits {
     std::string name;
     int nq{-1};
@@ -114,27 +108,27 @@ class LinkJointGraph {
     bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
   };
 
-  /** A LinkComposite is a set of Links that are mutually connected by weld
+  /* A LinkComposite is a set of Links that are mutually connected by weld
   joints. It is massless only if _all_ its constituent Links are massless. */
   struct LinkComposite {
     std::vector<LinkIndex> links;
     bool is_massless{false};
   };
 
-  /** Default construction defines well-known joint types and World. */
+  /* Default construction defines well-known joint types and World. */
   LinkJointGraph();
 
-  /** Restores this graph to its default-constructed state. The contained
+  /* Restores this graph to its default-constructed state. The contained
   SpanningForest object is preserved but now invalid. */
   void Clear();
 
-  /** Sets the forest building options to be used for elements of any model
+  /* Sets the forest building options to be used for elements of any model
   instance that does not have its own forest building options set. Invalidates
   the current forest.
   @see SetForestBuildingOptions() */
   void SetGlobalForestBuildingOptions(ForestBuildingOptions global_options);
 
-  /** Gets the forest building options to be used for elements of any model
+  /* Gets the forest building options to be used for elements of any model
   instance that does not have its own forest building options set. If no call
   has yet been made to SetGlobalForestBuildingOptions(), returns
   ForestBuildingOptions::kDefault. */
@@ -143,7 +137,7 @@ class LinkJointGraph {
     return data_.global_forest_building_options;
   }
 
-  /** Sets the forest building options to be used for elements of the given
+  /* Sets the forest building options to be used for elements of the given
   `model_instance`, completely overriding (not blending with) global options.
   Invalidates the current forest. Model instances do not have to
   be pre-declared; we will simply record the given `options` with the given
@@ -154,7 +148,7 @@ class LinkJointGraph {
   void SetForestBuildingOptions(ModelInstanceIndex model_instance,
                                 ForestBuildingOptions options);
 
-  /** Gets the forest building options to be used for elements of the given
+  /* Gets the forest building options to be used for elements of the given
   model instance. Returns the options set explicitly for this model instance,
   if any. Otherwise, returns what get_global_forest_building_options() returns.
   @pre `instance_index` is any valid index */
@@ -164,11 +158,11 @@ class LinkJointGraph {
         .value_or(get_global_forest_building_options());
   }
 
-  /** Resets the global forest building options to kDefault and removes any
+  /* Resets the global forest building options to kDefault and removes any
   per-model instance options that were set. */
   void ResetForestBuildingOptions();
 
-  /** Models this LinkJointGraph as a spanning forest, records the result
+  /* Models this LinkJointGraph as a spanning forest, records the result
   into this graph's SpanningForest object, and marks it valid. The currently-set
   forest building options are used. This is done unconditionally; if there
   was already a valid forest it is cleared and then rebuilt. If you don't want
@@ -191,7 +185,7 @@ class LinkJointGraph {
   @see InvalidateForest() */
   bool BuildForest();
 
-  /** Invalidates this LinkJointGraph's SpanningForest and removes ephemeral
+  /* Invalidates this LinkJointGraph's SpanningForest and removes ephemeral
   "as-built" Link, Joint, and Constraint elements that were added to the graph
   during forest building. After this call the graph will contain only
   user-provided elements and forest_is_valid() will return `false`. A
@@ -200,13 +194,13 @@ class LinkJointGraph {
     invalidate the forest as a side effect. */
   void InvalidateForest();
 
-  /** Has the SpanningForest been rebuilt with BuildForest() since the most
+  /* Has the SpanningForest been rebuilt with BuildForest() since the most
   recent change to this LinkJointGraph or to the forest building options? If
   this returns `false` then a call to BuildForest() is required before you can
   make use of the SpanningForest. */
   [[nodiscard]] bool forest_is_valid() const { return data_.forest_is_valid; }
 
-  /** Returns a reference to this LinkJointGraph's SpanningForest
+  /* Returns a reference to this LinkJointGraph's SpanningForest
   object (without rebuilding). The forest is a data member of LinkJointGraph and
   the _reference_ remains unchanged across repeated graph modifications and
   calls to BuildForest(), though the _contents_ will change. You can call the
@@ -218,7 +212,7 @@ class LinkJointGraph {
     anything about the contents otherwise. */
   [[nodiscard]] const SpanningForest& forest() const { return *data_.forest; }
 
-  /** Adds a new Link to the graph. Invalidates the SpanningForest; call
+  /* Adds a new Link to the graph. Invalidates the SpanningForest; call
   BuildForest() to rebuild.
   @param[in] name
     A unique name for the new Link (rigid body) in the given `model_instance`.
@@ -243,14 +237,14 @@ class LinkJointGraph {
   // TODO(sherm1) Add this method;
   //  void RemoveLink(LinkIndex doomed_link_index);
 
-  /** Returns true if the given `link_index` is in range and the corresponding
+  /* Returns true if the given `link_index` is in range and the corresponding
   Link hasn't been removed. Can be a user or ephemeral Link. */
   [[nodiscard]] bool has_link(LinkIndex link_index) const {
     return link_index < num_link_indexes() &&
            data_.link_index_to_ordinal[link_index].has_value();
   }
 
-  /** Returns true if the given Link exists and is ephemeral. Ephemeral links
+  /* Returns true if the given Link exists and is ephemeral. Ephemeral links
   are present only if the SpanningForest is valid. */
   [[nodiscard]] bool link_is_ephemeral(LinkIndex link_index) const {
     if (has_link(link_index) && link_index > data_.max_user_link_index) {
@@ -260,7 +254,7 @@ class LinkJointGraph {
     return false;
   }
 
-  /** Adds a new Joint to the graph.
+  /* Adds a new Joint to the graph.
   @param[in] name
     A unique name for the new Joint in the given `model_instance`. Several
     Joints can have the same name within a %LinkJointGraph as long as they are
@@ -295,7 +289,7 @@ class LinkJointGraph {
                       LinkIndex child_link_index,
                       JointFlags flags = JointFlags::kDefault);
 
-  /** Removes a previously-added Joint and any references to it in the graph.
+  /* Removes a previously-added Joint and any references to it in the graph.
   Invalidates the SpanningForest. Will repack and change ordinals for the
   remaining Joints in the joints() vector, though all JointIndexes are
   preserved. The `doomed_joint_index` given here will never be re-used.
@@ -304,14 +298,14 @@ class LinkJointGraph {
     an already-removed Joint, or refers to an ephemeral Joint. */
   void RemoveJoint(JointIndex doomed_joint_index);
 
-  /** Returns true if the given `joint_index` is in range and the corresponding
+  /* Returns true if the given `joint_index` is in range and the corresponding
   Joint hasn't been removed. Can be a user or ephemeral Joint. */
   [[nodiscard]] bool has_joint(JointIndex joint_index) const {
     return joint_index < num_joint_indexes() &&
            data_.joint_index_to_ordinal[joint_index].has_value();
   }
 
-  /** Returns true if the given Joint exists and is ephemeral. Ephemeral joints
+  /* Returns true if the given Joint exists and is ephemeral. Ephemeral joints
   are present only if the SpanningForest is valid. */
   [[nodiscard]] bool joint_is_ephemeral(JointIndex joint_index) const {
     if (has_joint(joint_index) && joint_index > data_.max_user_joint_index) {
@@ -321,10 +315,10 @@ class LinkJointGraph {
     return false;
   }
 
-  /** Returns the Link that corresponds to World (always predefined). */
+  /* Returns the Link that corresponds to World (always predefined). */
   [[nodiscard]] const Link& world_link() const;
 
-  /** Registers a joint type by name and provides the joint traits for it.
+  /* Registers a joint type by name and provides the joint traits for it.
   @param[in] joint_type_name
     A unique string identifying a joint type, such as "revolute" or
     "prismatic". Should match the MultibodyPlant name for the Joint it
@@ -349,25 +343,25 @@ class LinkJointGraph {
   JointTraitsIndex RegisterJointType(const std::string& joint_type_name, int nq,
                                      int nv, bool has_quaternion = false);
 
-  /** Returns `true` if the given `joint_type_name` was previously registered
+  /* Returns `true` if the given `joint_type_name` was previously registered
   via a call to RegisterJointType(), or is one of the pre-registered names. */
   [[nodiscard]] bool IsJointTypeRegistered(
       const std::string& joint_type_name) const;
 
-  /** Returns a reference to the vector of traits for the known and registered
+  /* Returns a reference to the vector of traits for the known and registered
   Joint types. */
   [[nodiscard]] const std::vector<JointTraits>& joint_traits() const {
     return data_.joint_traits;
   }
 
-  /** Returns a reference to a particular JointTraits object using one of the
+  /* Returns a reference to a particular JointTraits object using one of the
   predefined indices or an index returned by RegisterJointType(). Requires a
   JointTraitsIndex, not a plain integer.*/
   [[nodiscard]] const JointTraits& joint_traits(JointTraitsIndex index) const {
     return joint_traits().at(index);
   }
 
-  /** Returns a reference to the vector of Link objects, contiguous and ordered
+  /* Returns a reference to the vector of Link objects, contiguous and ordered
   by ordinal (not by LinkIndex). World is always the first entry and is always
   present. `ssize(links())` is the number of Links currently in this graph. */
   [[nodiscard]] const std::vector<Link>& links() const { return data_.links; }
@@ -375,29 +369,29 @@ class LinkJointGraph {
   // TODO(sherm1) Re-think this naming strategy to use either link() or
   //  link_by_ordinal(), and similar for the other APIs.
 
-  /** Returns a reference to a particular Link using its current ordinal
+  /* Returns a reference to a particular Link using its current ordinal
   within the links() vector. Requires a LinkOrdinal, not a plain integer. */
   [[nodiscard]] inline const Link& links(LinkOrdinal link_ordinal) const;
 
-  /** Returns a reference to a particular Link using the index returned by
+  /* Returns a reference to a particular Link using the index returned by
   AddLink(). The World Link is LinkIndex(0). Ephemeral links added by
   BuildForest() are indexed last. Requires a LinkIndex, not a plain integer.
   @throws std::exception if the index is out of range or if the selected Link
     was removed. */
   [[nodiscard]] inline const Link& link_by_index(LinkIndex link_index) const;
 
-  /** Returns a reference to the vector of Joint objects, contiguous and ordered
+  /* Returns a reference to the vector of Joint objects, contiguous and ordered
   by ordinal (not by JointIndex). `ssize(joints())` is the number of Joints
   currently in this graph. */
   [[nodiscard]] const std::vector<Joint>& joints() const {
     return data_.joints;
   }
 
-  /** Returns a reference to a particular Joint using its current ordinal
+  /* Returns a reference to a particular Joint using its current ordinal
   within the joints() vector. Requires a JointOrdinal, not a plain integer. */
   [[nodiscard]] inline const Joint& joints(JointOrdinal joint_ordinal) const;
 
-  /** Returns a reference to a particular Joint using the index returned by
+  /* Returns a reference to a particular Joint using the index returned by
   AddJoint(). Ephemeral joints added by BuildForest() are indexed last. Requires
   a JointIndex, not a plain integer.
   @throws std::exception if the index is out of range or if the selected Joint
@@ -405,34 +399,34 @@ class LinkJointGraph {
   [[nodiscard]] inline const Joint& joint_by_index(
       JointIndex joint_index) const;
 
-  /** Returns a reference to the vector of LoopConstraint objects. These are
+  /* Returns a reference to the vector of LoopConstraint objects. These are
   always "ephemeral" (added during forest-building) so this will return empty
   if there is no valid Forest. See the class comment for more information. */
   [[nodiscard]] const std::vector<LoopConstraint>& loop_constraints() const {
     return data_.loop_constraints;
   }
 
-  /** Returns a reference to a particular LoopConstraint. Requires a
+  /* Returns a reference to a particular LoopConstraint. Requires a
   LoopConstraintIndex, not a plain integer.*/
   [[nodiscard]] inline const LoopConstraint& loop_constraints(
       LoopConstraintIndex constraint_index) const;
 
-  /** Links with this index or higher are "ephemeral" (added during
+  /* Links with this ordinal or higher are "ephemeral" (added during
   forest-building). See the class comment for more information. */
   [[nodiscard]] int num_user_links() const { return data_.num_user_links; }
 
-  /** Joints with this index or higher are "ephemeral" (added during
+  /* Joints with this ordinal or higher are "ephemeral" (added during
   forest-building). See the class comment for more information. */
   [[nodiscard]] int num_user_joints() const { return data_.num_user_joints; }
 
-  /** After the SpanningForest has been built, returns the mobilized body
+  /* After the SpanningForest has been built, returns the mobilized body
   (Mobod) followed by this Link. If the Link is part of a merged composite, this
   will be the mobilized body for the whole composite. If the Link was split into
   a primary and shadows, this is the mobilized body followed by the primary. If
   there is no valid Forest, the returned index will be invalid. */
   [[nodiscard]] MobodIndex link_to_mobod(LinkIndex index) const;
 
-  /** After the SpanningForest has been built, returns groups of Links that are
+  /* After the SpanningForest has been built, returns groups of Links that are
   welded together, which we call "LinkComposites". Each composite may be modeled
   in the Forest with a single mobilized body (a "merged composite") or multiple
   mobilized bodies depending on modeling options, but that doesn't change
@@ -457,7 +451,7 @@ class LinkJointGraph {
     return data_.link_composites;
   }
 
-  /** Returns a reference to a particular LinkComposite. Requires a
+  /* Returns a reference to a particular LinkComposite. Requires a
   LinkCompositeIndex, not a plain integer.
   @pre `link_composite_index` is valid and in range. */
   [[nodiscard]] const LinkComposite& link_composites(
@@ -465,19 +459,19 @@ class LinkJointGraph {
     return link_composites().at(link_composite_index);
   }
 
-  /** @returns `true` if a Link named `name` was added to `model_instance`.
+  /* @returns `true` if a Link named `name` was added to `model_instance`.
   @see AddLink().
   @throws std::exception if `model_instance_index` is not a valid index. */
   [[nodiscard]] bool HasLinkNamed(
       std::string_view name, ModelInstanceIndex model_instance_index) const;
 
-  /** @returns `true` if a Joint named `name` was added to `model_instance`.
+  /* @returns `true` if a Joint named `name` was added to `model_instance`.
   @see AddJoint().
   @throws std::exception if `model_instance_index` is not a valid index. */
   [[nodiscard]] bool HasJointNamed(
       std::string_view name, ModelInstanceIndex model_instance_index) const;
 
-  /** If there is a Joint connecting the given Links, returns its index. You can
+  /* If there is a Joint connecting the given Links, returns its index. You can
   call this any time and it will work with whatever Joints have been defined.
   But note that Links may be split and additional Joints added during Forest
   building, so you may get a different answer before and after modeling. Cost is
@@ -485,20 +479,20 @@ class LinkJointGraph {
   [[nodiscard]] std::optional<JointIndex> MaybeGetJointBetween(
       LinkIndex link1_index, LinkIndex link2_index) const;
 
-  /** Returns true if the given Link should be treated as massless. That
+  /* Returns true if the given Link should be treated as massless. That
   requires that the Link was flagged kMassless and is not connected by
   a Weld Joint to a massful Composite. If this Link is not part of a
   LinkComposite then the result is the same as Link::is_massless(). */
   [[nodiscard]] bool link_and_its_composite_are_massless(
       LinkOrdinal link_ordinal) const;
 
-  /** (Internal use only) For testing -- invalidates the Forest. */
+  /* (Internal use only) For testing -- invalidates the Forest. */
   void ChangeLinkFlags(LinkIndex link_index, LinkFlags flags);
 
-  /** (Internal use only) For testing -- invalidates the Forest. */
+  /* (Internal use only) For testing -- invalidates the Forest. */
   void ChangeJointFlags(JointIndex joint_index, JointFlags flags);
 
-  /** (Internal use only) Changes the type of an existing user-defined Joint
+  /* (Internal use only) Changes the type of an existing user-defined Joint
   without making any other changes. Invalidates the Forest, even if the new
   type is the same as the current type.
   @throws std::exception if called on an ephemeral (added) joint.
@@ -509,15 +503,96 @@ class LinkJointGraph {
   void ChangeJointType(JointIndex existing_joint_index,
                        const std::string& name_of_new_type);
 
+  /* After the Forest is built, returns the sequence of Links from World to the
+  given Link L in the Forest. In case the Forest was built with a single Mobod
+  for each Link Composite (Links connected by Weld joints), we only report the
+  "active Link" for each Link Composite so that there is only one Link returned
+  for each level in Link L's tree. World is always the active Link for its
+  composite so will always be the first entry in the result. However, if L is
+  part of a Link Composite the final entry will be L's composite's active link,
+  which might not be L. Cost is O(ℓ) where ℓ is Link L's level in the
+  SpanningForest.
+  @@throws std::exception if the SpanningForest hasn't been built yet.
+  @see link_composites(), SpanningForest::FindPathFromWorld() */
+  std::vector<LinkIndex> FindPathFromWorld(LinkIndex link_index) const;
+
+  /* After the Forest is built, finds the first Link common to the paths
+  towards World from each of two Links in the SpanningForest. Returns World
+  immediately if the Links are on different trees of the forest. Otherwise the
+  cost is O(ℓ) where ℓ is the length of the longer path from one of the Links
+  to the ancestor.
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see SpanningForest::FindFirstCommonAncestor()
+  @see SpanningForest::FindPathsToFirstCommonAncestor() */
+  LinkIndex FindFirstCommonAncestor(LinkIndex link1_index,
+                                    LinkIndex link2_index) const;
+
+  /* After the Forest is built, finds all the Links following the Forest
+  subtree whose root mobilized body is the one followed by the given Link. That
+  is, we look up the given Link's Mobod B and return all the Links that follow
+  B or any other Mobod in the subtree rooted at B. The Links following B
+  come first, and the rest follow the depth-first ordering of the Mobods.
+  In particular, the result is _not_ sorted by LinkIndex. Computational cost
+  is O(ℓ) where ℓ is the number of Links following the subtree.
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see SpanningForest::FindSubtreeLinks() */
+  std::vector<LinkIndex> FindSubtreeLinks(LinkIndex link_index) const;
+
+  /* After the Forest is built, this method can be called to return a
+  partitioning of the LinkJointGraph into subgraphs such that (a) every Link is
+  in one and only one subgraph, and (b) two Links are in the same subgraph iff
+  there is a path between them which consists only of Weld joints.
+  Each subgraph of welded Links is represented as a set of
+  Link indexes (using LinkIndex). By definition, these subgraphs will be
+  disconnected by any non-Weld joint between two Links. A few notes:
+    - The maximum number of returned subgraphs equals the number of Links in
+      the graph. This corresponds to a graph with no Weld joints.
+    - The World Link is included in a set of welded Links, and this set is
+      element zero in the returned vector. The other subgraphs are in no
+      particular order.
+    - The minimum number of subgraphs is one. This corresponds to a graph with
+      all Links welded to World.
+
+  @throws std::exception if the SpanningForest hasn't been built yet.
+  @see CalcSubgraphsOfWeldedLinks() if you haven't built a Forest yet */
+  std::vector<std::set<LinkIndex>> GetSubgraphsOfWeldedLinks() const;
+
+  /* This much-slower method does not depend on the SpanningForest having
+  already been built. It is a fallback for when there is no Forest.
+  @see GetSubgraphsOfWeldedLinks() if you already have a Forest built */
+  std::vector<std::set<LinkIndex>> CalcSubgraphsOfWeldedLinks() const;
+
+  /* After the Forest is built, returns all Links that are transitively welded,
+  or rigidly affixed, to `link_index`, per these two definitions:
+    1. A Link is always considered welded to itself.
+    2. Two unique Links are considered welded together exclusively by the
+       presence of weld joints, not by other constructs such as constraints.
+
+  Therefore, if `link_index` is a valid index to a Link in this graph, then the
+  return vector will always contain at least one entry storing `link_index`.
+  This is fast because we just need to sort the already-calculated
+  LinkComposite the given `link_index` is part of (if any).
+
+  @throws std::exception if the SpanningForest hasn't been built yet or
+                         `link_index` is out of range
+  @see CalcLinksWeldedTo() if you haven't built a Forest yet */
+  std::set<LinkIndex> GetLinksWeldedTo(LinkIndex link_index) const;
+
+  /* This slower method does not depend on the SpanningForest having
+  already been built. It is a fallback for when there is no Forest.
+  @see GetLinksWeldedTo() if you already have a Forest built */
+  std::set<LinkIndex> CalcLinksWeldedTo(LinkIndex link_index) const;
+
   // FYI Debugging APIs (including Graphviz-related) are defined in
   // link_joint_graph_debug.cc.
 
-  /** Generate a graphviz representation of this %LinkJointGraph, with the
+  /* Generate a graphviz representation of this %LinkJointGraph, with the
   given label at the top. Will include ephemeral elements if they are
   available (that is, if the forest is valid)  unless suppressed explicitly.
   The result is in the "dot" language, see https://graphviz.org. If you
   write it to some file foo.dot, you can generate a viewable png (for
   example) using the command `dot -Tpng foo.dot >foo.png`.
+  @see SpanningForest::GenerateGraphvizString()
   @see MakeGraphvizFiles() for an easier way to get pngs. */
   std::string GenerateGraphvizString(
       std::string_view label, bool include_ephemeral_elements = true) const;
@@ -525,7 +600,7 @@ class LinkJointGraph {
   // TODO(sherm1) This function should be removed or reworked before upgrading
   //  to Drake public API.
 
-  /** This is a useful debugging and presentation utility for getting
+  /* This is a useful debugging and presentation utility for getting
   viewable "dot diagrams" of the graph and forest. You provide a directory
   and a base name for the results. This function will generate
   `basename_graph.png` showing the graph as the user defined it. If the
@@ -544,18 +619,18 @@ class LinkJointGraph {
 
   // Forest building requires these joint types so they are predefined.
 
-  /** The predefined index for the "weld" joint type's traits. */
+  /* The predefined index for the "weld" joint type's traits. */
   [[nodiscard]] static JointTraitsIndex weld_joint_traits_index() {
     return JointTraitsIndex(0);
   }
 
-  /** The predefined index for the "quaternion_floating" joint type's traits. */
+  /* The predefined index for the "quaternion_floating" joint type's traits. */
   [[nodiscard]] static JointTraitsIndex
   quaternion_floating_joint_traits_index() {
     return JointTraitsIndex(1);
   }
 
-  /** The predefined index for the "rpy_floating" joint type's traits. */
+  /* The predefined index for the "rpy_floating" joint type's traits. */
   [[nodiscard]] static JointTraitsIndex rpy_floating_joint_traits_index() {
     return JointTraitsIndex(2);
   }
@@ -699,6 +774,12 @@ class LinkJointGraph {
   // weld to an existing Composite.
   void AddUnmodeledJointToComposite(JointOrdinal unmodeled_joint_ordinal,
                                     LinkCompositeIndex which);
+
+  // This is the implementation for CalcLinksWeldedTo().
+  void AppendLinksWeldedTo(LinkIndex link_index,
+                           std::set<LinkIndex>* result) const;
+
+  void ThrowIfForestNotBuiltYet(const char* func) const;
 
   [[noreturn]] void ThrowLinkWasRemoved(const char* func,
                                         LinkIndex link_index) const;

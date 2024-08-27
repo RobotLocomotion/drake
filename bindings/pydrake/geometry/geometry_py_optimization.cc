@@ -802,8 +802,18 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetConstraints", &GraphOfConvexSets::Vertex::GetConstraints,
             py::arg("used_in_transcription") = all_transcriptions,
             vertex_doc.GetConstraints.doc)
-        .def("GetSolutionCost", &GraphOfConvexSets::Vertex::GetSolutionCost,
-            py::arg("result"), vertex_doc.GetSolutionCost.doc)
+        .def("GetSolutionCost",
+            overload_cast_explicit<double,
+                const solvers::MathematicalProgramResult&>(
+                &GraphOfConvexSets::Vertex::GetSolutionCost),
+            py::arg("result"), vertex_doc.GetSolutionCost.doc_1args)
+        .def("GetSolutionCost",
+            overload_cast_explicit<double,
+                const solvers::MathematicalProgramResult&,
+                const solvers::Binding<solvers::Cost>&>(
+                &GraphOfConvexSets::Vertex::GetSolutionCost),
+            py::arg("result"), py::arg("cost"),
+            vertex_doc.GetSolutionCost.doc_2args)
         .def("GetSolution", &GraphOfConvexSets::Vertex::GetSolution,
             py::arg("result"), vertex_doc.GetSolution.doc)
         .def("incoming_edges", &GraphOfConvexSets::Vertex::incoming_edges,
@@ -876,8 +886,18 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetConstraints", &GraphOfConvexSets::Edge::GetConstraints,
             py::arg("used_in_transcription") = all_transcriptions,
             edge_doc.GetConstraints.doc)
-        .def("GetSolutionCost", &GraphOfConvexSets::Edge::GetSolutionCost,
-            py::arg("result"), edge_doc.GetSolutionCost.doc)
+        .def("GetSolutionCost",
+            overload_cast_explicit<double,
+                const solvers::MathematicalProgramResult&>(
+                &GraphOfConvexSets::Edge::GetSolutionCost),
+            py::arg("result"), edge_doc.GetSolutionCost.doc_1args)
+        .def("GetSolutionCost",
+            overload_cast_explicit<double,
+                const solvers::MathematicalProgramResult&,
+                const solvers::Binding<solvers::Cost>&>(
+                &GraphOfConvexSets::Edge::GetSolutionCost),
+            py::arg("result"), py::arg("cost"),
+            edge_doc.GetSolutionCost.doc_2args)
         .def("GetSolutionPhiXu", &GraphOfConvexSets::Edge::GetSolutionPhiXu,
             py::arg("result"), edge_doc.GetSolutionPhiXu.doc)
         .def("GetSolutionPhiXv", &GraphOfConvexSets::Edge::GetSolutionPhiXv,

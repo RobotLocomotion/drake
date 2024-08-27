@@ -22,15 +22,9 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-// TODO(sherm1) During the PR train leading up to MbP using this code in Drake
-//  master, I'm using Doxygen comments /** despite the fact that this is
-//  currently just internal. That allows me to validate Doxygen syntax in
-//  anticipation of the API becoming public later. Change these to /* in the
-//  final PR in this train to satisfy the styleguide.
-
 using WeldedMobodsIndex = TypeSafeIndex<class WeldedMobodsTag>;
 
-/** SpanningForest models a LinkJointGraph via a set of spanning trees and
+/* SpanningForest models a LinkJointGraph via a set of spanning trees and
 loop-closing constraints. This is a directed forest, with edges ordered from
 inboard (closer to World) to outboard. The nodes are mobilized bodies (Mobods)
 representing a body and its inboard mobilizer. While building the Forest we also
@@ -152,31 +146,80 @@ class SpanningForest {
   using Link = LinkJointGraph::Link;
   using Joint = LinkJointGraph::Joint;
 
-  /** Returns a reference to the graph that owns this forest (as set during
+  /* Returns the sequence of mobilized bodies from World to the given mobod B,
+  inclusive of both. The 0th element is always present in the result and is
+  the World (at level 0) with each entry being the Mobod at the next-higher
+  level along the path to B. Cost is O(ℓ) where ℓ is B's level in its tree. */
+  std::vector<MobodIndex> FindPathFromWorld(MobodIndex index) const;
+
+  /* Finds the highest-numbered mobilized body that is common to the paths
+  from each of the given ones to World. Returns World immediately if the bodies
+  are on different trees; otherwise the cost is O(ℓ) where ℓ is the length
+  of the longer path from one of the bodies to the ancestor.
+  @note Because the forest uses depth-first numbering for the Mobods, the
+  highest-numbered Mobod is also the ancestor with the highest level (i.e.,
+  the one farthest from World).
+  @see FindPathsToFirstCommonAncestor() */
+  MobodIndex FindFirstCommonAncestor(MobodIndex mobod1_index,
+                                     MobodIndex mobod2_index) const;
+
+  /* Finds the highest numbered common ancestor to two mobilized bodies and
+  returns the paths to the ancestor from each of them. The mobilizers along
+  the returned paths are the only ones that can affect the _relative_ pose
+  between the given mobilized bodies. The returned paths do not include the
+  ancestor but end with the Mobod whose inboard body is the ancestor. The
+  ancestor Mobod is returned separately as the function return value.
+  Complexity is O(ℓ) where ℓ is the length of the longer path from one of the
+  bodies to the ancestor. Each of the given Mobods will be included in its
+  returned path (as the first entry) except when it is the ancestor, in which
+  case its path will be empty.
+  @note Because the forest uses depth-first numbering for the Mobods, the
+  highest-numbered Mobod is also the ancestor with the highest level (i.e.,
+  the one farthest from World).
+  @param mobod1_index The index of Mobod 1
+  @param mobod2_index The index of Mobod 2
+  @param path1 path to ancestor from Mobod 1, not including the ancestor
+  @param path2 path to ancestor from Mobod 2, not including the ancestor
+  @retval ancestor_index the ancestor mobilized body's index
+  @see FindFirstCommonAncestor() if you don't need the paths
+  @pre indices are valid, path pointers are non-null */
+  MobodIndex FindPathsToFirstCommonAncestor(
+      MobodIndex mobod1_index, MobodIndex mobod2_index,
+      std::vector<MobodIndex>* path1, std::vector<MobodIndex>* path2) const;
+
+  /* Finds all the Links following the Forest subtree whose root mobilized body
+  B is given. That is, we return all the Links that follow B or any other Mobod
+  in the subtree rooted at B. The Links following B come first, and the rest
+  follow the depth-first ordering of the Mobods. In particular, the result is
+  _not_ sorted by LinkIndex. Computational cost is O(ℓ) where ℓ is the number of
+  Links following the subtree. */
+  std::vector<LinkIndex> FindSubtreeLinks(MobodIndex root_mobod_index) const;
+
+  /* Returns a reference to the graph that owns this forest (as set during
   construction). */
   const LinkJointGraph& graph() const {
     DRAKE_ASSERT(data_.graph != nullptr);
     return *data_.graph;
   }
 
-  /** Returns `true` if this forest is up to date with respect to its owning
+  /* Returns `true` if this forest is up to date with respect to its owning
   graph. */
   bool is_valid() const { return graph().forest_is_valid(); }
 
-  /** Returns `true` if this forest can be used for dynamics (the usual case).
+  /* Returns `true` if this forest can be used for dynamics (the usual case).
   Otherwise, the presence of a terminal massless body will make the resulting
   mass matrix singular, restricting use to kinematic operations. */
   bool dynamics_ok() const { return data_.dynamics_ok; }
 
-  /** If dynamics_ok() returns `false`, returns a human-readable message
+  /* If dynamics_ok() returns `false`, returns a human-readable message
   explaining why. Otherwise returns the empty string. */
   const std::string& why_no_dynamics() const { return data_.why_no_dynamics; }
 
-  /** Provides convenient access to the owning graph's links, contiguous
+  /* Provides convenient access to the owning graph's links, contiguous
   and accessed by LinkOrdinal. */
   const std::vector<Link>& links() const { return graph().links(); }
 
-  /** Provides convenient access to one of the owning graph's links. Requires
+  /* Provides convenient access to one of the owning graph's links. Requires
   a LinkOrdinal, not a plain integer.
   @pre link_ordinal is in range */
   const Link& links(LinkOrdinal link_ordinal) const {
@@ -188,11 +231,11 @@ class SpanningForest {
     return graph().link_by_index(link_index);
   }
 
-  /** Provides convenient access to the owning graph's joints, contiguous
+  /* Provides convenient access to the owning graph's joints, contiguous
   and accessed by JointOrdinal. */
   const std::vector<Joint>& joints() const { return graph().joints(); }
 
-  /** Provides convenient access to one of the owning graph's joints. Requires
+  /* Provides convenient access to one of the owning graph's joints. Requires
   a JointOrdinal, not a plain integer.
   @pre joint_ordinal is in range */
   const Joint& joints(JointOrdinal joint_ordinal) const {
@@ -204,50 +247,50 @@ class SpanningForest {
     return graph().joint_by_index(joint_index);
   }
 
-  /** All the mobilized bodies, in depth-first order. World comes first,
+  /* All the mobilized bodies, in depth-first order. World comes first,
   then every Mobod in tree 0, then every Mobod in tree 1, etc. Free bodies
   that weren't explicitly connected to World by a Joint come last. */
   const std::vector<Mobod>& mobods() const { return data_.mobods; }
 
-  /** Provides convenient access to a particular Mobod. Requires a MobodIndex,
+  /* Provides convenient access to a particular Mobod. Requires a MobodIndex,
   not a plain integer.
   @pre mobod_index is in range */
   inline const Mobod& mobods(MobodIndex mobod_index) const;
 
-  /** The mobilized body (Mobod) corresponding to the World Link.
+  /* The mobilized body (Mobod) corresponding to the World Link.
   @pre The forest is valid. */
   // Internal use only: this is valid during BuildForest() also.
   const Mobod& world_mobod() const { return mobods(MobodIndex(0)); }
 
-  /** Constraints we added to close loops we had to cut. */
+  /* Constraints we added to close loops we had to cut. */
   const std::vector<LoopConstraint>& loop_constraints() const {
     return data_.loop_constraints;
   }
 
-  /** Provides convenient access to a particular LoopConstraint. Requires a
+  /* Provides convenient access to a particular LoopConstraint. Requires a
   LoopConstraintIndex, not a plain integer. */
   inline const LoopConstraint& loop_constraints(
       LoopConstraintIndex index) const;
 
-  /** The partitioning of the forest of mobilized bodies into trees. Each Tree
+  /* The partitioning of the forest of mobilized bodies into trees. Each Tree
   has a base (root) mobilized body that is connected directly to the World
   Mobod (which may represent a LinkComposite). World is not considered to
   be part of any Tree; it is the root of the Forest. */
   const std::vector<Tree>& trees() const { return data_.trees; }
 
-  /** Provides convenient access to a particular Tree. Requires a TreeIndex,
+  /* Provides convenient access to a particular Tree. Requires a TreeIndex,
   not a plain integer.
   @pre tree_index is in range */
   inline const Tree& trees(TreeIndex tree_index) const;
 
-  /** When this %SpanningForest is valid (i.e., after BuildForest() returns)
+  /* When this %SpanningForest is valid (i.e., after BuildForest() returns)
   this is the height of the forest, defined as the height of the tallest
   Tree, plus 1 for World. Returns zero for an invalid forest. */
   // Internal use only: During BuildForest() this will track the largest
   // height seen so far.
   int height() const { return data_.forest_height; }
 
-  /** Returns precalculated groups of mobilized bodies that are mutually
+  /* Returns precalculated groups of mobilized bodies that are mutually
   interconnected by Weld mobilizers so have no relative degrees of freedom.
   Note that if you have chosen the modeling option to combine welded-together
   Links into single bodies, then each LinkComposite gets only a single Mobod
@@ -269,19 +312,19 @@ class SpanningForest {
     return data_.welded_mobods;
   }
 
-  /** Provides convenient access to a particular WeldedMobods group. Requires a
+  /* Provides convenient access to a particular WeldedMobods group. Requires a
   WeldedMobodsIndex, not a plain integer.
   @pre index is in range */
   const std::vector<MobodIndex>& welded_mobods(WeldedMobodsIndex index) const {
     return welded_mobods().at(index);
   }
 
-  /** Returns the global ForestBuildingOptions in effect in the owning graph. */
+  /* Returns the global ForestBuildingOptions in effect in the owning graph. */
   ForestBuildingOptions options() const {
     return graph().get_global_forest_building_options();
   }
 
-  /** Returns the ForestBuildingOptions in effect for elements of the given
+  /* Returns the ForestBuildingOptions in effect for elements of the given
   ModelInstance. If we don't have specific options for this instance, we
   return the global ForestBuildingOptions as returned by options().
   @pre index is valid (but not necessarily one we've seen before) */
@@ -289,7 +332,7 @@ class SpanningForest {
     return graph().get_forest_building_options_in_use(index);
   }
 
-  /** Returns the Link that is represented by the given Mobod. This could be
+  /* Returns the Link that is represented by the given Mobod. This could be
   one of the Links from the original graph or an added shadow Link. If this
   Mobod represents a LinkComposite, the Link returned here is the
   "active" Link, that is, the one whose mobilizer is used to move the whole
@@ -297,29 +340,29 @@ class SpanningForest {
   @pre mobod_index is in range */
   inline LinkOrdinal mobod_to_link_ordinal(MobodIndex mobod_index) const;
 
-  /** Returns all the Links mobilized by this Mobod. The "active" Link returned
+  /* Returns all the Links mobilized by this Mobod. The "active" Link returned
   by mobod_to_link() comes first, then any other Links in the same Composite.
   O(1), very fast.
   @pre mobod_index is in range  */
   inline const std::vector<LinkOrdinal>& mobod_to_link_ordinals(
       MobodIndex mobod_index) const;
 
-  /** Returns the total number of generalized position coordinates q used by
+  /* Returns the total number of generalized position coordinates q used by
   this model. O(1), very fast. */
   int num_positions() const { return ssize(data_.q_to_mobod); }
 
-  /** Returns the total number of generalized velocity coordinates v used by
+  /* Returns the total number of generalized velocity coordinates v used by
   this model. O(1), very fast. */
   int num_velocities() const { return ssize(data_.v_to_mobod); }
 
-  /** Returns the indexes of all quaternions within the generalized position
+  /* Returns the indexes of all quaternions within the generalized position
   coordinates q. Each quaternion begins at the given index with its scalar
   element w, followed immediately by its vector part xyz. */
   const std::vector<int>& quaternion_starts() const {
     return data_.quaternion_starts;
   }
 
-  /** Returns the Mobod to which a given position coordinate q belongs.
+  /* Returns the Mobod to which a given position coordinate q belongs.
   O(1), very fast.
   @pre q_index is in range [0, num_positions) */
   MobodIndex q_to_mobod(int q_index) const {
@@ -327,7 +370,7 @@ class SpanningForest {
     return data_.q_to_mobod[q_index];
   }
 
-  /** Returns the Mobod to which a given velocity coordinate v belongs.
+  /* Returns the Mobod to which a given velocity coordinate v belongs.
   O(1), very fast.
   @pre v_index is in range [0, num_velocities) */
   MobodIndex v_to_mobod(int v_index) const {
@@ -335,12 +378,12 @@ class SpanningForest {
     return data_.v_to_mobod[v_index];
   }
 
-  /** Returns the Tree to which a given position coordinate q belongs.
+  /* Returns the Tree to which a given position coordinate q belongs.
   O(1), very fast.
   @pre q_index is in range [0, num_positions) */
   inline TreeIndex q_to_tree(int q_index) const;
 
-  /** Returns the Tree to which a given velocity coordinate v belongs.
+  /* Returns the Tree to which a given velocity coordinate v belongs.
   O(1), very fast.
   @pre v_index is in range [0, num_velocities) */
   inline TreeIndex v_to_tree(int v_index) const;
@@ -348,7 +391,18 @@ class SpanningForest {
   // FYI Debugging APIs (including Graphviz-related) are defined in
   // spanning_forest_debug.cc.
 
+  /* Generate a graphviz representation of this %SpanningForest, with the
+  given label at the top. The result is in the "dot" language, see
+  https://graphviz.org. If you write it to some file foo.dot, you can
+  generate a viewable png (for example) using the command
+  `dot -Tpng foo.dot >foo.png`.
+  @see LinkJointGraph::GenerateGraphvizString() */
   std::string GenerateGraphvizString(std::string_view label) const;
+
+  /* (Debugging, Testing) Runs a series of expensive tests to see that the
+  Graph and Forest are internally consistent and throws if not. Does nothing
+  if no Forest has been built. */
+  void SanityCheckForest() const;
 
  private:
   friend class LinkJointGraph;

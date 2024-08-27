@@ -6,34 +6,18 @@ load(
     "drake_cc_package_library",
 )
 
-package(
-    default_visibility = ["//visibility:public"],
-)
+package(default_visibility = ["//visibility:private"])
 
-drake_cc_library(
-    name = "multibody_graph",
-    srcs = [
-        "multibody_graph.cc",
-    ],
-    hdrs = [
-        "multibody_graph.h",
-    ],
+drake_cc_package_library(
+    name = "topology",
+    visibility = ["//visibility:public"],
     deps = [
-        "//common:sorted_pair",
-        "//multibody/tree:multibody_tree_indexes",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_graph_test",
-    deps = [
-        ":multibody_graph",
-        "//common/test_utilities:expect_throws_message",
+        ":impl",
     ],
 )
 
 drake_cc_library(
-    name = "multibody_topology",
+    name = "impl",
     srcs = [
         "link_joint_graph.cc",
         "link_joint_graph_debug.cc",
@@ -66,7 +50,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "link_joint_graph_test",
     deps = [
-        ":multibody_topology",
+        ":impl",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -74,7 +58,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "spanning_forest_test",
     deps = [
-        ":multibody_topology",
+        ":impl",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],

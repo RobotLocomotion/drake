@@ -1,6 +1,6 @@
 #pragma once
 
-/** @file
+/* @file
 This is the file to #include to use SpanningForest. It includes
 subsidiary headers for nested class definitions to keep file sizes
 reasonable. */

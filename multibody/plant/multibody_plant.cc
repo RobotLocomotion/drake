@@ -27,6 +27,7 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
+#include "drake/multibody/topology/graph.h"
 #include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/prismatic_spring.h"
@@ -1053,8 +1054,10 @@ const SceneGraphInspector<T>& MultibodyPlant<T>::EvalSceneGraphInspector(
 template <typename T>
 std::vector<const RigidBody<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
     const RigidBody<T>& body) const {
+  const internal::LinkJointGraph& graph = internal_tree().graph();
   const std::set<BodyIndex> island =
-      internal_tree().multibody_graph().FindBodiesWeldedTo(body.index());
+      graph.forest_is_valid() ? graph.GetLinksWeldedTo(body.index())
+                              : graph.CalcLinksWeldedTo(body.index());
   // Map body indices to pointers.
   std::vector<const RigidBody<T>*> sub_graph_bodies;
   for (BodyIndex body_index : island) {
@@ -1079,7 +1082,10 @@ std::vector<BodyIndex> MultibodyPlant<T>::GetBodiesKinematicallyAffectedBy(
           fmt::format("{}: joint with index {} is welded.", __func__, joint));
     }
   }
-  return internal_tree().GetBodiesKinematicallyAffectedBy(joint_indexes);
+  const std::set<BodyIndex> links =
+      internal_tree().GetBodiesKinematicallyAffectedBy(joint_indexes);
+  // TODO(sherm1) Change the return type to set to avoid this copy.
+  return std::vector<BodyIndex>(links.cbegin(), links.cend());
 }
 
 template <typename T>
@@ -1146,6 +1152,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context, const RigidBody<T>& body,
     const math::RigidTransform<T>& X_WB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(body.is_floating());
   this->ValidateContext(context);
   internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
 }
@@ -1157,7 +1164,10 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
 
-  if (!internal_tree().get_topology().IsBodyAnchored(frame_F.body().index())) {
+  if (!internal_tree()
+           .graph()
+           .link_by_index(frame_F.body().index())
+           .is_anchored()) {
     throw std::logic_error("Frame '" + frame_F.name() +
                            "' must be anchored to the world frame.");
   }
@@ -1527,7 +1537,7 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   }
   // We explicitly exclude collisions within welded subgraphs.
   std::vector<std::set<BodyIndex>> subgraphs =
-      internal_tree().multibody_graph().FindSubgraphsOfWeldedBodies();
+      internal_tree().graph().GetSubgraphsOfWeldedLinks();
   for (const auto& subgraph : subgraphs) {
     // Only operate on non-trivial weld subgraphs.
     if (subgraph.size() <= 1) {
@@ -3911,12 +3921,11 @@ void MultibodyPlant<T>::CalcReactionForces(
   // necessary frame conversions.
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
-    const internal::MobilizerIndex mobilizer_index =
+    const internal::MobodIndex mobilizer_index =
         internal_tree().get_joint_mobilizer(joint_index);
     const internal::Mobilizer<T>& mobilizer =
         internal_tree().get_mobilizer(mobilizer_index);
-    const internal::MobodIndex mobod_index =
-        mobilizer.get_topology().mobod_index;
+    const internal::MobodIndex mobod_index = mobilizer.mobod().index();
 
     // Force on mobilized body B at mobilized frame's origin Mo, expressed in
     // world frame.
@@ -4051,7 +4060,7 @@ void MultibodyPlant<T>::RemoveUnsupportedScalars(
 template <typename T>
 std::vector<std::set<BodyIndex>>
 MultibodyPlant<T>::FindSubgraphsOfWeldedBodies() const {
-  return internal_tree().multibody_graph().FindSubgraphsOfWeldedBodies();
+  return internal_tree().graph().GetSubgraphsOfWeldedLinks();
 }
 
 template <typename T>

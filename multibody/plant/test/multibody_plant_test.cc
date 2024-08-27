@@ -1711,8 +1711,12 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
                               ".*No joint with index.*registered.*removed.");
 }
 
-// Regression test for unhelpful error message -- see #14641.
-GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
+// Weld a body to World but with the body as the parent and World as the
+// child. This is fine but must be implemented with a reversed Weld
+// mobilizer that specifies World as the inboard body. Drake doesn't support
+// that yet.
+// TODO(sherm1) Remove this restriction and fix the test.
+GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
   // This test expects that the following model has a world body and a pair of
   // welded-together bodies.
   const std::string sdf_url =
@@ -1725,15 +1729,10 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
       "extra", default_model_instance(), SpatialInertia<double>::NaN());
   plant.WeldFrames(extra.body_frame(), plant.world_frame());
 
-  // The important property of this message is that it reports some identifier
-  // for the involved objects, so at least the developer can map those back to
-  // objects and deduce what API call was in error. If the details of the
-  // message change, update this check to match. If in future the error can be
-  // caught at the WeldFrames() step, so much the better. Modify this test to
-  // reflect that.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.Finalize(),
-      ".*already has a joint.*extra_welds_to_world.*joint.*not allowed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.Finalize(),
+                              ".*Finalize.*: parent/child ordering.*"
+                              "Joint extra_welds_to_world.*WorldModelInstance.*"
+                              "would have to be reversed.*");
 }
 
 // Verifies exact set of output ports we expect to be a direct feedthrough of
@@ -3639,6 +3638,146 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   unused(plant.MakeActuatorSelectorMatrix(std::vector<JointActuatorIndex>()));
 }
 
+// Confirms the free body APIs w.r.t. bodies that have a floating mobilizer
+// but whose parent frame is not the world. They are still free and the
+// various APIs should interpret poses as documented.
+//
+// We load a table and mug. The table is given a prismatic joint to the world
+// (to facilitate testing spatial velocities), the mug is free. In some cases,
+// it is a "floating base body" (its parent is the world) and sometimes only a
+// "free body" (its parent is the table).
+//
+// This test explicitly omits some APIs because they are tested elsewhere:
+//   - GTEST_TEST(StateSelection, FloatingBodies) tests
+//     SetFreeBodyPoseInAnchoredFrame.
+//   - GTEST_TEST(SetRandomTest, FloatingBodies) the random distribution of
+//     of free body poses, as that is dealt with below in
+//   - multibody_plant_introspection_test.cc covers the "UniqueFreeBody" APIs.
+GTEST_TEST(StateSelection, FreeBodiesVsFloatingBaseBodies) {
+  const std::string table_sdf_url =
+      "package://drake/examples/kuka_iiwa_arm/models/table/"
+      "extra_heavy_duty_table_surface_only_collision.sdf";
+  const std::string mug_sdf_url =
+      "package://drake/examples/simple_gripper/simple_mug.sdf";
+
+  for (bool mug_in_world : {true, false}) {
+    SCOPED_TRACE(mug_in_world ? "Mug joined to world" : "Mug joined to table");
+    MultibodyPlant<double> plant(0.0);
+
+    Parser parser(&plant, "test");
+    const ModelInstanceIndex table_model =
+        parser.AddModelsFromUrl(table_sdf_url).at(0);
+    const RigidBody<double>& table = plant.GetBodyByName("link", table_model);
+    plant.AddJoint(std::make_unique<PrismaticJoint<double>>(
+        "table", plant.world_frame(), table.body_frame(), Vector3d(1, 1, 1)));
+
+    // Add a mug with no joint. This will become a floating base body at
+    // finalization unless we add a joint.
+    parser.AddModelsFromUrl(mug_sdf_url);
+    const RigidBody<double>& mug = plant.GetBodyByName("simple_mug");
+    if (!mug_in_world) {
+      // Explicitly put a 6-dof joint between mug and table, making this a
+      // "free" body, but _not_ a floating base body.
+      plant.AddJoint<QuaternionFloatingJoint>("sixdof", table, {}, mug, {});
+    }
+
+    plant.Finalize();
+    auto context = plant.CreateDefaultContext();
+
+    // Table has non-identity position and velocity w.r.t. world.
+    VectorX<double> table_q =
+        plant.GetPositionsAndVelocities(*context, table.model_instance());
+    DRAKE_DEMAND(table_q.size() == 2);
+    table_q << 3, 3;
+    plant.SetPositionsAndVelocities(context.get(), table.model_instance(),
+                                    table_q);
+
+    const RigidTransformd I = RigidTransformd::Identity();
+
+    const RigidTransformd X_WT = plant.EvalBodyPoseInWorld(*context, table);
+    const RigidTransformd X_PM(Vector3d(-3, 2, -1));
+    const RigidTransformd X_WM = mug_in_world ? X_PM : X_WT * X_PM;
+    // Mug is in the world, or its world and transform poses are different.
+    DRAKE_DEMAND(mug_in_world || !CompareMatrices(X_PM.GetAsMatrix34(),
+                                                  X_WM.GetAsMatrix34(), 1));
+    // Whether the mug is a "floating base" body depends on its parent frame.
+    ASSERT_EQ(mug.is_floating(), mug_in_world);
+    ASSERT_EQ(plant.GetFloatingBaseBodies().contains(mug.index()),
+              mug_in_world);
+
+    plant.SetFreeBodyPose(context.get(), mug, X_PM);
+
+    // The value we set for free body pose should always come right back -- it's
+    // the literal configuration of the joint.
+    EXPECT_TRUE(
+        CompareMatrices(plant.GetFreeBodyPose(*context, mug).GetAsMatrix34(),
+                        X_PM.GetAsMatrix34()));
+
+    // The world pose is as expected.
+    EXPECT_TRUE(CompareMatrices(
+        plant.EvalBodyPoseInWorld(*context, mug).GetAsMatrix34(),
+        X_WM.GetAsMatrix34()));
+
+    // Reset the pose.
+    plant.SetFreeBodyPose(context.get(), mug, I);
+    EXPECT_FALSE(CompareMatrices(
+        plant.EvalBodyPoseInWorld(*context, mug).GetAsMatrix34(),
+        X_WM.GetAsMatrix34(), 1));
+
+    // Note: We're not explicitly testing
+    // MultibodyPlant::SetFreeBodyPose(context, state, body, X_PB) because the
+    // non-state variant ultimately just forwards to the same API. MbP's
+    // implementation is a tiny wrapper around the code that is ultimately
+    // tested by the call to SetFreeBodyPose(context, body, X_PB).
+
+    // Explicitly setting things in the world frame produces the expected pose
+    // in world for floating free bodies, but not for "internal" free bodies.
+    if (mug_in_world) {
+      plant.SetFreeBodyPoseInWorldFrame(context.get(), mug, X_WM);
+      EXPECT_TRUE(CompareMatrices(
+          plant.EvalBodyPoseInWorld(*context, mug).GetAsMatrix34(),
+          X_WM.GetAsMatrix34()));
+    } else {
+      EXPECT_THROW(plant.SetFreeBodyPoseInWorldFrame(context.get(), mug, X_WM),
+                   std::exception);
+    }
+
+    // Although the mug has a quaternion floating joint, that is insufficient
+    // for setting a *default* floating pose -- the parent must be world.
+    plant.SetDefaultFreeBodyPose(mug, X_PM);
+
+    // As promised, the value set is regurgitated back.
+    EXPECT_TRUE(
+        CompareMatrices(plant.GetDefaultFreeBodyPose(mug).GetAsMatrix34(),
+                        X_PM.GetAsMatrix34()));
+
+    // The default pose takes affect iff the world is the parent frame.
+    auto alt_context = plant.CreateDefaultContext();
+    EXPECT_EQ(CompareMatrices(
+                  plant.GetFreeBodyPose(*alt_context, mug).GetAsMatrix34(),
+                  X_PM.GetAsMatrix34()),
+              mug_in_world);
+
+    const SpatialVelocity<double> V_PB(Vector3d(1.0, 2.0, 3.0),
+                                       Vector3d(-1.0, 4.0, -0.5));
+    plant.SetFreeBodySpatialVelocity(context.get(), mug, V_PB);
+    if (mug_in_world) {
+      EXPECT_TRUE(CompareMatrices(
+          plant.EvalBodySpatialVelocityInWorld(*context, mug).get_coeffs(),
+          V_PB.get_coeffs()));
+    } else {
+      EXPECT_FALSE(CompareMatrices(
+          plant.EvalBodySpatialVelocityInWorld(*context, mug).get_coeffs(),
+          V_PB.get_coeffs(), 1.0));
+    }
+
+    // We omit the SetFreeBodySpatialVelocity() that takes state for the same
+    // reason as omitting SetFreeBodyPose(): the thing wrapper can be validated
+    // by inspection, the the overload called here tests the shared, underlying
+    // implementation.
+  }
+}
+
 // This unit test verifies the workings of
 // MBP::SetFreeBodyPoseInAnchoredFrame(). To that end we build a model
 // representative of a real setup consisting of a robot arm mounted on a robot
@@ -3848,8 +3987,8 @@ GTEST_TEST(SetRandomTest, SetDefaultWhenNoDistributionSpecified) {
   // explicitly added).
   const RigidBody<double>& body1 =
       plant.AddRigidBody("free body 1", SpatialInertia<double>::MakeUnitary());
-  plant.AddJoint<QuaternionFloatingJoint>("" + body1.name(), plant.world_body(),
-                                          {}, body1, {});
+  plant.AddJoint<QuaternionFloatingJoint>(body1.name(), plant.world_body(), {},
+                                          body1, {});
   const std::string acrobot_url =
       "package://drake/multibody/benchmarks/acrobot/acrobot.sdf";
   const ModelInstanceIndex acrobot =

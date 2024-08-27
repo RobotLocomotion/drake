@@ -223,8 +223,7 @@ GTEST_TEST(FemModelTest, CalcTangentMatrixNoAutoDiff) {
   using IsoparametricElementType =
       fem::internal::LinearSimplexElement<T, kNaturalDimension,
                                           kSpatialDimension, kNumQuads>;
-  using ConstitutiveModelType =
-      fem::internal::LinearCorotatedModel<T, kNumQuads>;
+  using ConstitutiveModelType = fem::internal::LinearCorotatedModel<T>;
   using FemElementType =
       fem::internal::VolumetricElement<IsoparametricElementType, QuadratureType,
                                        ConstitutiveModelType>;

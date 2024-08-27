@@ -236,29 +236,31 @@ class RigidBody : public MultibodyElement<T> {
     return body_frame_;
   }
 
-  /// For a floating %RigidBody, lock its inboard joint. Its generalized
+  /// For a floating base %RigidBody, lock its inboard joint. Its generalized
   /// velocities will be 0 until it is unlocked.
-  /// @throws std::exception if this body is not a floating body.
+  /// @throws std::exception if this body is not a floating base body.
   void Lock(systems::Context<T>* context) const {
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     //  non-floating bodies.
     if (!is_floating()) {
       throw std::logic_error(fmt::format(
-          "Attempted to call Lock() on non-floating rigid body {}", name()));
+          "Attempted to call Lock() on non-floating-base rigid body {}",
+          name()));
     }
     this->get_parent_tree()
         .get_mobilizer(topology_.inboard_mobilizer)
         .Lock(context);
   }
 
-  /// For a floating %RigidBody, unlock its inboard joint.
-  /// @throws std::exception if this body is not a floating body.
+  /// For a floating base %RigidBody, unlock its inboard joint.
+  /// @throws std::exception if this body is not a floating base body.
   void Unlock(systems::Context<T>* context) const {
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     //  non-floating bodies.
     if (!is_floating()) {
       throw std::logic_error(fmt::format(
-          "Attempted to call Unlock() on non-floating rigid body {}", name()));
+          "Attempted to call Unlock() on non-floating-base rigid body {}",
+          name()));
     }
     this->get_parent_tree()
         .get_mobilizer(topology_.inboard_mobilizer)
@@ -266,8 +268,8 @@ class RigidBody : public MultibodyElement<T> {
   }
 
   /// Determines whether this %RigidBody is currently locked to its inboard
-  /// (parent) %RigidBody. This is not limited to floating bodies but generally
-  /// Joint::is_locked() is preferable otherwise.
+  /// (parent) %RigidBody. This is not limited to floating base bodies but
+  /// generally Joint::is_locked() is preferable otherwise.
   /// @returns true if the body is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
     return this->get_parent_tree()
@@ -285,7 +287,7 @@ class RigidBody : public MultibodyElement<T> {
 
   /// (Advanced) Returns `true` if this body is granted 6-dofs by a Mobilizer
   /// and the parent body of this body's associated 6-dof joint is `world`.
-  /// @note A floating body is not necessarily modeled with a quaternion
+  /// @note A floating base body is not necessarily modeled with a quaternion
   /// mobilizer, see has_quaternion_dofs(). Alternative options include a
   /// roll-pitch-yaw (rpy) parametrization of rotations, see
   /// RpyFloatingMobilizer.
@@ -298,8 +300,9 @@ class RigidBody : public MultibodyElement<T> {
 
   /// (Advanced) If `true`, this body's generalized position coordinates q
   /// include a quaternion, which occupies the first four elements of q. Note
-  /// that this does not imply that the body is floating since it may have
-  /// fewer than 6 dofs or its inboard body could be something other than World.
+  /// that this does not imply that the body is floating base body since it may
+  /// have fewer than 6 dofs or its inboard body could be something other than
+  /// World.
   /// @throws std::exception if called pre-finalize
   /// @see is_floating(), MultibodyPlant::Finalize()
   bool has_quaternion_dofs() const {
@@ -307,16 +310,16 @@ class RigidBody : public MultibodyElement<T> {
     return topology_.has_quaternion_dofs;
   }
 
-  /// (Advanced) For floating bodies (see is_floating()) this method returns the
-  /// index of this %RigidBody's first generalized position in the vector q of
-  /// generalized position coordinates for a MultibodyPlant model. Positions q
-  /// for this %RigidBody are then contiguous starting at this index.
-  /// When a floating %RigidBody is modeled with quaternion coordinates (see
-  /// has_quaternion_dofs()), the four consecutive entries in the state starting
-  /// at this index correspond to the quaternion that parametrizes this
+  /// (Advanced) For floating base bodies (see is_floating()) this method
+  /// returns the index of this %RigidBody's first generalized position in the
+  /// vector q of generalized position coordinates for a MultibodyPlant model.
+  /// Positions q for this %RigidBody are then contiguous starting at this
+  /// index. When a floating %RigidBody is modeled with quaternion coordinates
+  /// (see has_quaternion_dofs()), the four consecutive entries in the state
+  /// starting at this index correspond to the quaternion that parametrizes this
   /// %RigidBody's orientation.
   /// @throws std::exception if called pre-finalize
-  /// @pre this is a floating body
+  /// @pre this is a floating base body
   /// @see is_floating(), has_quaternion_dofs(), MultibodyPlant::Finalize()
   int floating_positions_start() const {
     ThrowIfNotFinalized(__func__);
@@ -324,12 +327,12 @@ class RigidBody : public MultibodyElement<T> {
     return topology_.floating_positions_start;
   }
 
-  /// (Advanced) For floating bodies (see is_floating()) this method returns the
-  /// index of this %RigidBody's first generalized velocity in the vector v of
-  /// generalized velocities for a MultibodyPlant model. Velocities v for this
-  /// %RigidBody are then contiguous starting at this index.
+  /// (Advanced) For floating base bodies (see is_floating()) this method
+  /// returns the index of this %RigidBody's first generalized velocity in the
+  /// vector v of generalized velocities for a MultibodyPlant model. Velocities
+  /// v for this %RigidBody are then contiguous starting at this index.
   /// @throws std::exception if called pre-finalize
-  /// @pre this is a floating body
+  /// @pre this is a floating base body
   /// @see is_floating(), MultibodyPlant::Finalize()
   int floating_velocities_start_in_v() const {
     ThrowIfNotFinalized(__func__);
@@ -341,7 +344,7 @@ class RigidBody : public MultibodyElement<T> {
   /// the `k`th position in the floating base. `position_index_in_body` must
   /// be in [0, 7) if `has_quaternion_dofs()` is true, otherwise in [0, 6).
   /// @throws std::exception if called pre-finalize
-  /// @pre this is a floating body
+  /// @pre this is a floating base body
   /// @see is_floating(), has_quaternion_dofs(), MultibodyPlant::Finalize()
   std::string floating_position_suffix(int position_index_in_body) const {
     ThrowIfNotFinalized(__func__);
@@ -359,7 +362,7 @@ class RigidBody : public MultibodyElement<T> {
   /// the `k`th velocity in the floating base. `velocity_index_in_body` must
   /// be in [0,6).
   /// @throws std::exception if called pre-finalize
-  /// @pre this is a floating body
+  /// @pre this is a floating base body
   /// @see is_floating(), MultibodyPlant::Finalize()
   std::string floating_velocity_suffix(int velocity_index_in_body) const {
     ThrowIfNotFinalized(__func__);
@@ -526,7 +529,7 @@ class RigidBody : public MultibodyElement<T> {
   /// origin), expressed in B. M_BBo_B contains properties related to B's mass,
   /// the position vector from Bo to Bcm (B's center of mass), and G_BBo_B
   /// (B's unit inertia about Bo expressed in B).
-  /// @pre the context makes sense for use by this RigidBody.
+  /// @pre the context makes sense for use by this %RigidBody.
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const {
     // TODO(joemasterjohn): Speed this up when we can store a reference to a
@@ -563,7 +566,7 @@ class RigidBody : public MultibodyElement<T> {
   /// modifying G_BBo_B (B's unit inertia about Bo, expressed in B). Since this
   /// use case is very unlikely, consider using SetSpatialInertiaInBodyFrame()
   /// or SetCenterOfMassInBodyFrameAndPreserveCentralInertia().
-  /// @pre the context makes sense for use by this RigidBody.
+  /// @pre the context makes sense for use by this %RigidBody.
   /// @throws std::exception if context is null.
   /// @warning Do not use this function unless it is needed (think twice).
   // TODO(Mitiguy) Consider deprecating this function.
@@ -597,7 +600,7 @@ class RigidBody : public MultibodyElement<T> {
   /// origin), expressed in B. M_Bo_B contains properties related to B's mass,
   /// the position vector from Bo to Bcm (B's center of mass), and G_Bo_B
   /// (B's unit inertia about Bo expressed in B).
-  /// @pre the context makes sense for use by this RigidBody.
+  /// @pre the context makes sense for use by this %RigidBody.
   /// @throws std::exception if context is null.
   void SetSpatialInertiaInBodyFrame(systems::Context<T>* context,
                                     const SpatialInertia<T>& M_Bo_B) const {
@@ -781,7 +784,7 @@ class RigidBody : public MultibodyElement<T> {
   // if changing center of mass position also changes G_BBo_B and necessitates
   // a call to SetUnitInertiaAboutBodyOrigin(). B's inertia properties can be
   // checked via CalcSpatialInertiaInBodyFrame().IsPhysicallyValid().
-  // @pre the context makes sense for use by this RigidBody.
+  // @pre the context makes sense for use by this %RigidBody.
   // @throws std::exception if context is null.
   void SetCenterOfMassInBodyFrameNoModifyInertia(
       systems::Context<T>* context,
@@ -795,7 +798,7 @@ class RigidBody : public MultibodyElement<T> {
   // also changes B's center of mass and necessitates a call to
   // SetCenterOfMassInBodyFrameNoModifyInertia(). B's inertia properties can be
   // checked via CalcSpatialInertiaInBodyFrame().IsPhysicallyValid().
-  // @pre the context makes sense for use by this RigidBody.
+  // @pre the context makes sense for use by this %RigidBody.
   // @throws std::exception if context is null.
   void SetUnitInertiaAboutBodyOrigin(
       systems::Context<T>* context,

@@ -11,17 +11,15 @@ namespace fem {
 namespace internal {
 
 using Eigen::Matrix3d;
-constexpr int kNumLocations = 2;
 
 /* Minimal required data type to be used in the derived constitutive model
  traits. */
-template <typename T, int num_locations_at_compile_time>
-struct DummyData : public DeformationGradientData<
-                       DummyData<T, num_locations_at_compile_time>> {};
+template <typename T>
+struct DummyData : public DeformationGradientData<DummyData<T>> {};
 
 struct InvalidModelTraits {
   using Scalar = double;
-  using Data = DummyData<double, kNumLocations>;
+  using Data = DummyData<double>;
 };
 
 /* ConstitutiveModel requires derived classes to shadow the
@@ -35,25 +33,22 @@ class InvalidModel
 namespace {
 GTEST_TEST(ConstitutiveModelTest, InvalidModel) {
   const InvalidModel model;
-  const DummyData<double, kNumLocations> data;
-  std::array<double, DummyData<double, kNumLocations>::num_locations>
-      energy_density;
+  const DummyData<double> data;
+  double energy_density;
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.CalcElasticEnergyDensity(data, &energy_density),
       fmt::format("The derived class {} must provide a shadow definition of "
                   "CalcElasticEnergyDensityImpl.. to be correct.",
                   NiceTypeName::Get(model)));
 
-  std::array<Matrix3d, DummyData<double, kNumLocations>::num_locations> P;
+  Matrix3d P;
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.CalcFirstPiolaStress(data, &P),
       fmt::format("The derived class {} must provide a shadow definition of "
                   "CalcFirstPiolaStressImpl.. to be correct.",
                   NiceTypeName::Get(model)));
 
-  std::array<Eigen::Matrix<double, 9, 9>,
-             DummyData<double, kNumLocations>::num_locations>
-      dPdF;
+  Eigen::Matrix<double, 9, 9> dPdF;
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.CalcFirstPiolaStressDerivative(data, &dPdF),
       fmt::format("The derived class {} must provide a shadow definition of "

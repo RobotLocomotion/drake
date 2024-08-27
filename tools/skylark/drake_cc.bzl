@@ -557,6 +557,9 @@ def drake_cc_library(
     implementation deps's header files, nor will any preprocessor definitions
     for the implementation deps propagate past this firewall.
 
+    When declaring a build rule, the spelling for "interface deps" is `deps =`
+    and for "implemenetation deps" is `implementation_deps =`.
+
     The dependencies of a drake_cc_library must be another drake_cc_library, or
     else be named like "@something//etc..." (i.e., come from the workspace, not
     part of Drake).  In other words, all of Drake's C++ libraries must be

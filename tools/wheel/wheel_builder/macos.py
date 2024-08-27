@@ -21,7 +21,9 @@ _files_to_remove = []
 # default, all targets are built, but the user may down-select from this set.
 # On macOS (unlike Linux), this is just the set of Python versions targeted.
 python_targets = (
-    PythonTarget(3, 11),
+    # TODO(jwnimmer-tri) Python 3.11 is disabled until NumPy ships PyPI wheels
+    # for that Python version that are installable on macOS 13.
+    # PythonTarget(3, 11),
     PythonTarget(3, 12),
 )
 
