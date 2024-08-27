@@ -35,6 +35,7 @@ struct IrisOptions {
     a->Visit(DRAKE_NVP(num_additional_constraint_infeasible_samples));
     a->Visit(DRAKE_NVP(random_seed));
     a->Visit(DRAKE_NVP(mixing_steps));
+    a->Visit(DRAKE_NVP(convexity_radius_stepback));
   }
 
   /** The initial polytope is guaranteed to contain the point if that point is
@@ -154,13 +155,24 @@ struct IrisOptions {
   */
   std::function<bool(const HPolyhedron&)> termination_func{};
 
-  /* The `mixing_steps` parameters is passed to HPolyhedron::UniformSample to
+  /** The `mixing_steps` parameters is passed to HPolyhedron::UniformSample to
   control the total number of hit-and-run steps taken for each new random
   sample. */
   int mixing_steps{10};
 
-  /* The SolverOptions used in the optimization program. */
+  /** The SolverOptions used in the optimization program. */
   std::optional<solvers::SolverOptions> solver_options;
+
+  /** Artificial joint limits are added to continuous revolute joints and planar
+  joints with an unbounded revolute degree-of-freedom on a per-region basis. If
+  the seed point value for that joint is θ, then the limits are
+  θ - π/2 + convexity_radius_stepback and θ + π/2 - convexity_radius_stepback.
+  Setting this to a negative number allows growing larger regions, but those
+  regions must then be partitioned to be used with GcsTrajectoryOptimization.
+  See @ref geometry_optimization_geodesic_convexity for more details.
+  IrisInConfigurationSpace throws if this value is not smaller
+  than π/2. */
+  double convexity_radius_stepback{1e-3};
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
