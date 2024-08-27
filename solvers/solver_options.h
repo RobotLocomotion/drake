@@ -128,6 +128,10 @@ class SolverOptions {
    * else an empty string if the option has not been set. */
   std::string get_standalone_reproduction_file_name() const;
 
+  /** Returns the kMaxThreads set via CommonSolverOption, or else -1 if
+   * the option has not been set. */
+  int get_max_threads() const;
+
   template <typename T>
   const std::unordered_map<std::string, T>& GetOptions(
       const SolverId& solver_id) const {

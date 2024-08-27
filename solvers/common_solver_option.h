@@ -37,6 +37,16 @@ enum class CommonSolverOption {
    * empty string "" indicates that no file should be written.
    */
   kStandaloneReproductionFileName,
+  /** Many solvers are multi-threaded. The user can request the maximum number
+   * of threads used by the solver with this option.
+   *
+   * @pre The number of threads must be greater than 0.
+   * @note Setting this value higher than the actual hardware concurrency may
+   * result in a degraded performance. It is recommended to set this value lower
+   * than or equal to Parallelsim.Max().num_threads().
+   * @note A solver may choose to use fewer threads than the value specified.
+   */
+  kMaxThreads,
 };
 
 std::ostream& operator<<(std::ostream& os,

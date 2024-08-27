@@ -13,6 +13,7 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
   EXPECT_EQ(dut.get_print_file_name(), "");
   EXPECT_EQ(dut.get_print_to_console(), false);
   EXPECT_EQ(dut.get_standalone_reproduction_file_name(), "");
+  EXPECT_EQ(dut.get_max_threads(), -1);
 
   const SolverId id1("id1");
   const SolverId id2("id2");
@@ -27,9 +28,11 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
   dut.SetOption(CommonSolverOption::kPrintFileName, "foo.txt");
   dut.SetOption(CommonSolverOption::kPrintToConsole, 1);
   dut.SetOption(CommonSolverOption::kStandaloneReproductionFileName, "bar.py");
+  dut.SetOption(CommonSolverOption::kMaxThreads, 2);
 
   EXPECT_EQ(to_string(dut),
             "{SolverOptions,"
+            " CommonSolverOption::kMaxThreads=2,"
             " CommonSolverOption::kPrintFileName=foo.txt,"
             " CommonSolverOption::kPrintToConsole=1,"
             " CommonSolverOption::kStandaloneReproductionFileName=bar.py,"
@@ -41,6 +44,7 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
   EXPECT_EQ(dut.get_print_file_name(), "foo.txt");
   EXPECT_EQ(dut.get_print_to_console(), true);
   EXPECT_EQ(dut.get_standalone_reproduction_file_name(), "bar.py");
+  EXPECT_EQ(dut.get_max_threads(), 2);
 
   const std::unordered_map<CommonSolverOption,
                            std::variant<double, int, std::string>>
@@ -151,6 +155,12 @@ GTEST_TEST(SolverOptionsTest, SetOptionError) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kPrintToConsole, 2),
       "kPrintToConsole expects value either 0 or 1");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_options.SetOption(CommonSolverOption::kMaxThreads, 2.1),
+      "SolverOptions::SetOption support kMaxThreads only with int value.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_options.SetOption(CommonSolverOption::kMaxThreads, -1),
+      "kMaxThreads must be >= 0.*");
 }
 }  // namespace solvers
 }  // namespace drake
