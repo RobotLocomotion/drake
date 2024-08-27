@@ -259,8 +259,8 @@ TEST_F(CalcSquaredDistanceToTriangleTest, SpecialCasePointAtVertex) {
 //  | negative |      yes      |     edge      | (N-Q).normalized() |
 //  |   zero   |      yes      |    vertex     |    vertex normal   |
 //  | :------: | :-----------: | :-----------: | :----------------: |
+//  | positive |      no       |   triangle    | (Q-N).normalized() |
 //  | positive |      no       |    vertex     | (Q-N).normalized() |
-//  | negative |      no       |   triangle    | (N-Q).normalized() |
 class CalcSignedDistanceToSurfaceMeshTest : public ::testing::Test {
  public:
   CalcSignedDistanceToSurfaceMeshTest()
@@ -362,387 +362,42 @@ TEST_F(CalcSignedDistanceToSurfaceMeshTest, ZeroVertex) {
       CompareMatrices(d.gradient, mesh_normal_M_.vertex_normal(3), kEps_));
 }
 
-// Positive signed distance with nearest points at multiple vertices. This
-// case needs a non-convex mesh.
-TEST_F(CalcSignedDistanceToSurfaceMeshTest, PositiveMultipleVertices) {
-  // Q is equally far from two vertices v1 and v2 on X and Y axes.
-  const Vector3d p_MQ(1.5, 1.5, 0);
+// Nearest points in multiple triangles.
+TEST_F(CalcSignedDistanceToSurfaceMeshTest, MultipleTriangles) {
+  // Q is equally far from two faces v0v3v1 and v0v2v3 on XZ-plane and
+  // YZ-plane respectively.
+  const Vector3d p_MQ(0.1, 0.1, 0.1);
+  // The nearest point N1 is in triangle v0v3v1 in XZ-plane.
+  const Vector3d p_MN1(0.1, 0, 0.1);
+  // The nearest point N2 is in triangle v0v2v3 in YZ-plane.
+  const Vector3d p_MN2(0, 0.1, 0.1);
+  // Both N1 and N2 are 0.1 meters from Q.
+  const double kExpectDistance = 0.1;
   const SignedDistanceToSurfaceMesh d =
       CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  EXPECT_TRUE(CompareMatrices(d.nearest_point, p_MV1_, kEps_) ||
-              CompareMatrices(d.nearest_point, p_MV2_, kEps_));
-  EXPECT_NEAR(d.signed_distance, (d.nearest_point - p_MQ).norm(), kEps_);
+  EXPECT_NEAR(d.signed_distance, kExpectDistance, kEps_);
+  EXPECT_TRUE(CompareMatrices(d.nearest_point, p_MN1, kEps_) ||
+              CompareMatrices(d.nearest_point, p_MN2, kEps_));
   EXPECT_TRUE(CompareMatrices(d.gradient, (p_MQ - d.nearest_point).normalized(),
                               kEps_));
 }
 
-// Negative signed distance with nearest points on multiple triangles.
-TEST_F(CalcSignedDistanceToSurfaceMeshTest, NegativeMultipleTriangles) {
-  // Q is inside the polytope and on the symmetric plane X=Y of the shape near
-  // the convex edge v3v4.
-  const Vector3d p_MQ = (p_MV3_ + p_MV4_) / 2 + Vector3d(0, 0, -0.1);
+// Nearest points at multiple vertices. This case needs a non-convex mesh.
+TEST_F(CalcSignedDistanceToSurfaceMeshTest, MultipleVertices) {
+  // Q is equally far from two vertices v1 and v2 on X-axis and Y-axis
+  // respectively.
+  const Vector3d p_MQ(1.5, 1.5, 0);
+  const double dist1 = (p_MQ - p_MV1_).norm();
+  const double dist2 = (p_MQ - p_MV2_).norm();
+  // Sanity check that v1 and v2 are at the same distance from Q.
+  ASSERT_EQ(dist1, dist2);
   const SignedDistanceToSurfaceMesh d =
       CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  // N1 is the chosen nearest point, and N2 is the reflection of N1 on the
-  // symmetric plane X=Y.
-  const Vector3d p_MN1 = d.nearest_point;
-  const Vector3d p_MN2(p_MN1.y(), p_MN1.x(), p_MN1.z());
-  EXPECT_NEAR(d.signed_distance, -(p_MN1 - p_MQ).norm(), kEps_);
-  EXPECT_NEAR(d.signed_distance, -(p_MN2 - p_MQ).norm(), kEps_);
-  EXPECT_TRUE(CompareMatrices(d.gradient, (d.nearest_point - p_MQ).normalized(),
+  EXPECT_TRUE(CompareMatrices(d.nearest_point, p_MV1_, kEps_) ||
+              CompareMatrices(d.nearest_point, p_MV2_, kEps_));
+  EXPECT_NEAR(d.signed_distance, dist1, kEps_);
+  EXPECT_TRUE(CompareMatrices(d.gradient, (p_MQ - d.nearest_point).normalized(),
                               kEps_));
-}
-
-// This test fixture covers cases of positive signed distances with
-// nearest points in a triangle, an edge, or a vertex.
-//
-// The next test fixture will cover cases of negative signed distances.
-class CalcSignedDistanceToSurfaceMesh_Positive : public ::testing::Test {
- public:
-  CalcSignedDistanceToSurfaceMesh_Positive()
-      :  // This convex surface mesh is the boundary of a tetrahedron.
-         //
-         //              Mz
-         //              ┆
-         //           v3 ●
-         //              ┆
-         //              ┆
-         //              ┆
-         //              ┆
-         //              ┆            v2
-         //           v0 ●┄┄┄┄┄┄┄┄┄┄┄┄┄●┄┄┄ My
-         //             ╱
-         //            ╱
-         //           ╱
-         //          ╱
-         //      v1 ●
-         //        ╱
-         //       Mx
-         //
-        mesh_M_{{
-                    // The triangle windings give outward normals.
-                    SurfaceTriangle{0, 2, 1},
-                    SurfaceTriangle{0, 1, 3},
-                    SurfaceTriangle{0, 3, 2},
-                    SurfaceTriangle{1, 2, 3},
-                },
-                {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
-                 Vector3d::UnitZ()}},
-        bvh_M_(mesh_M_),
-        mesh_normal_M_(mesh_M_) {}
-
-  void SetUp() override {
-    // Sanity check that we define the face normals consistent with the mesh.
-    ASSERT_EQ(kFaceNormalV0V2V1_, mesh_M_.face_normal(0));
-    ASSERT_EQ(kFaceNormalV0V1V3_, mesh_M_.face_normal(1));
-    ASSERT_EQ(kFaceNormalV0V3V2_, mesh_M_.face_normal(2));
-    ASSERT_EQ(kFaceNormalV1V2V3_, mesh_M_.face_normal(3));
-  }
-
- protected:
-  const TriangleSurfaceMesh<double> mesh_M_;
-  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M_;
-  const FeatureNormalSet mesh_normal_M_;
-  const double kEps_{std::numeric_limits<double>::epsilon()};
-  const Vector3d kFaceNormalV0V2V1_{-Vector3d::UnitZ()};
-  const Vector3d kFaceNormalV0V1V3_{-Vector3d::UnitY()};
-  const Vector3d kFaceNormalV0V3V2_{-Vector3d::UnitX()};
-  const Vector3d kFaceNormalV1V2V3_{Vector3d::Ones().normalized()};
-};
-
-// Positive signed distance with nearest point in a triangle.
-TEST_F(CalcSignedDistanceToSurfaceMesh_Positive, Triangle) {
-  // Q is 0.3 meters below the bottom face v0v2v1.
-  const Vector3d p_MQ(0.1, 0.2, -0.3);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-
-  // The nearest point is the projection of Q onto the bottom face in the
-  // X-Y plane.
-  EXPECT_TRUE(CompareMatrices(d.nearest_point, Vector3d(0.1, 0.2, 0), kEps_));
-  EXPECT_NEAR(d.signed_distance, 0.3, kEps_);
-  EXPECT_TRUE(CompareMatrices(d.gradient, -Vector3d::UnitZ(), kEps_));
-}
-
-// Positive signed distance with nearest point in an edge.
-// Also illustrate why it is a good idea to use the average
-// normal when the nearest point is in an edge.
-TEST_F(CalcSignedDistanceToSurfaceMesh_Positive, Edge) {
-  const Vector3d kMidV1V2 = (mesh_M_.vertex(1) + mesh_M_.vertex(2)) / 2;
-  // Set up the query point Q by a translation from the midpoint of
-  // edge v0v1 in an outward direction perpendicular to the edge.
-  const Vector3d p_MQ = kMidV1V2 + Vector3d(0.1, 0.1, -2);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-
-  EXPECT_EQ(d.nearest_point, kMidV1V2);
-  EXPECT_EQ(d.signed_distance, (p_MQ - kMidV1V2).norm());
-  EXPECT_EQ(d.gradient, (p_MQ - kMidV1V2).normalized());
-
-  // It is a good idea to use the average face normal because
-  // the two face normals do not agree on the sign of the dot products.
-  // Here we can use a large tolerance because we are interested mostly in
-  // the sign of the dot product to assign the sign of the distance.
-  EXPECT_NEAR((p_MQ - kMidV1V2).dot(kFaceNormalV0V2V1_), 2, 0.1);
-  EXPECT_NEAR((p_MQ - kMidV1V2).dot(kFaceNormalV1V2V3_), -1, 0.1);
-}
-
-// Positive signed distance with nearest point at a vertex.
-// This test also illustrates why it is a good idea to use the average normal
-// when the nearest point is at a vertex.
-TEST_F(CalcSignedDistanceToSurfaceMesh_Positive, Vertex) {
-  const Vector3d p_MQ = mesh_M_.vertex(3) + Vector3d(0.1, 0.1, 0.1);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-
-  const Vector3d kNearest = mesh_M_.vertex(3);
-  EXPECT_EQ(d.nearest_point, kNearest);
-  EXPECT_EQ(d.signed_distance, (p_MQ - kNearest).norm());
-  EXPECT_EQ(d.gradient, (p_MQ - kNearest).normalized());
-
-  // It is a good idea to use the average face normal because
-  // the three face normals do not agree on the sign of the dot products.
-  EXPECT_NEAR((p_MQ - kNearest).dot(kFaceNormalV1V2V3_), 0.173, 0.01);
-  EXPECT_NEAR((p_MQ - kNearest).dot(kFaceNormalV0V1V3_), -0.1, 0.01);
-  EXPECT_NEAR((p_MQ - kNearest).dot(kFaceNormalV0V3V2_), -0.1, 0.01);
-}
-
-// This test fixture covers cases of negative signed distances with nearest
-// points in triangles, edges, or vertices. The last two cases need a
-// non-convex mesh.
-class CalcSignedDistanceToSurfaceMesh_Negative : public ::testing::Test {
- public:
-  CalcSignedDistanceToSurfaceMesh_Negative()
-      :  // This non-convex surface mesh has one concave vertex v0 at the
-         // origin and three concave edges v0v1, v0v2, and v0v3. The vertex
-         // v4 is convex.
-         //
-         //              Mz
-         //              ┆
-         //           v3 ●
-         //              ┆
-         //              ┆
-         //              ┆
-         //              ┆
-         //              ┆            v2
-         //           v0 ●┄┄┄┄┄┄┄┄┄┄┄┄┄●┄┄┄ My
-         //     ●       ╱
-         //    v4      ╱
-         //           ╱
-         //          ╱
-         //      v1 ●
-         //        ╱
-         //       Mx
-         //
-        mesh_M_{{
-                    // The first three triangles share the vertex v0. Their
-                    // windings give outward normals.
-                    SurfaceTriangle{0, 1, 2},
-                    SurfaceTriangle{0, 3, 1},
-                    SurfaceTriangle{0, 2, 3},
-                    // The last three triangles share the vertex v4. Their
-                    // windings give outward normals.
-                    SurfaceTriangle{4, 2, 1},
-                    SurfaceTriangle{4, 1, 3},
-                    SurfaceTriangle{4, 3, 2},
-                },
-                {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
-                 Vector3d::UnitZ(), Vector3d(-1, -1, -1)}},
-        bvh_M_(mesh_M_),
-        mesh_normal_M_(mesh_M_) {}
-
- protected:
-  const TriangleSurfaceMesh<double> mesh_M_;
-  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M_;
-  const FeatureNormalSet mesh_normal_M_;
-  const double kEps_{std::numeric_limits<double>::epsilon() * (1 << 4)};
-};
-
-TEST_F(CalcSignedDistanceToSurfaceMesh_Negative, Triangle) {
-  const Vector3d face_centroid = mesh_M_.element_centroid(3);
-  const Vector3d face_normal = mesh_M_.face_normal(3);
-  const double kNegativeDistance = -0.1;
-  const Vector3d p_MQ = face_centroid + kNegativeDistance * face_normal;
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  EXPECT_TRUE(CompareMatrices(d.nearest_point, face_centroid, kEps_));
-  EXPECT_NEAR(d.signed_distance, kNegativeDistance, kEps_);
-  EXPECT_TRUE(CompareMatrices(d.gradient, face_normal, kEps_));
-}
-
-TEST_F(CalcSignedDistanceToSurfaceMesh_Negative, Edge) {
-  const Vector3d kMidPointEdgeV0V1 =
-      (mesh_M_.vertex(0) + mesh_M_.vertex(1)) / 2;
-  // Set up the query point Q by a small translation from the midpoint of
-  // edge v0v1 in an inward direction perpendicular to the concave edge.
-  const Vector3d p_MQ = kMidPointEdgeV0V1 + Vector3d(0, -0.01, -0.01);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  EXPECT_EQ(d.nearest_point, kMidPointEdgeV0V1);
-  EXPECT_EQ(d.signed_distance, -(p_MQ - d.nearest_point).norm());
-  EXPECT_EQ(d.gradient, (d.nearest_point - p_MQ).normalized());
-}
-
-TEST_F(CalcSignedDistanceToSurfaceMesh_Negative, Vertex) {
-  const Vector3d p_MQ = mesh_M_.vertex(0) + Vector3d(-0.005, -0.005, -0.005);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  const Vector3d kExpectNearestPoint = mesh_M_.vertex(0);
-  EXPECT_EQ(d.nearest_point, kExpectNearestPoint);
-  EXPECT_EQ(d.signed_distance, -(p_MQ - kExpectNearestPoint).norm());
-  EXPECT_EQ(d.gradient, (kExpectNearestPoint - p_MQ).normalized());
-}
-
-// This test fixture covers the cases of zero signed distances with nearest
-// points in a triangle, an edge, or a vertex.
-//
-// Since the query point Q and the nearest point N are at the same location, we
-// cannot use the normalized displacement between Q and N as the gradient. In
-// this case, we check that the gradient is the normal at the triangle, edge, or
-// vertex where Q locates.
-class CalcSignedDistanceToSurfaceMesh_Zero : public ::testing::Test {
- public:
-  CalcSignedDistanceToSurfaceMesh_Zero()
-      :  // This convex surface mesh is the boundary of a tetrahedron.
-         //
-         //              Mz
-         //              ┆
-         //           v3 ●
-         //              ┆
-         //              ┆
-         //              ┆
-         //              ┆
-         //              ┆            v2
-         //           v0 ●┄┄┄┄┄┄┄┄┄┄┄┄┄●┄┄┄ My
-         //             ╱
-         //            ╱
-         //           ╱
-         //          ╱
-         //      v1 ●
-         //        ╱
-         //       Mx
-         //
-        mesh_M_{{
-                    // The triangle windings give outward normals.
-                    SurfaceTriangle{0, 2, 1},
-                    SurfaceTriangle{0, 1, 3},
-                    SurfaceTriangle{0, 3, 2},
-                    SurfaceTriangle{1, 2, 3},
-                },
-                {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
-                 Vector3d::UnitZ()}},
-        bvh_M_(mesh_M_),
-        mesh_normal_M_(mesh_M_) {}
-
- protected:
-  const TriangleSurfaceMesh<double> mesh_M_;
-  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M_;
-  const FeatureNormalSet mesh_normal_M_;
-};
-
-TEST_F(CalcSignedDistanceToSurfaceMesh_Zero, Triangle) {
-  const Vector3d p_MQ = mesh_M_.element_centroid(2);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  EXPECT_EQ(d.signed_distance, 0);
-  EXPECT_EQ(d.nearest_point, p_MQ);
-  EXPECT_EQ(d.gradient, mesh_M_.face_normal(2));
-}
-
-TEST_F(CalcSignedDistanceToSurfaceMesh_Zero, Edge) {
-  // The query point is at the middle of edge v1v2.
-  const Vector3d p_MQ = (mesh_M_.vertex(1) + mesh_M_.vertex(2)) / 2;
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  EXPECT_EQ(d.signed_distance, 0);
-  EXPECT_EQ(d.nearest_point, p_MQ);
-  EXPECT_EQ(d.gradient, mesh_normal_M_.edge_normal({1, 2}));
-}
-
-TEST_F(CalcSignedDistanceToSurfaceMesh_Zero, Vertex) {
-  // The query point is at a vertex.
-  const Vector3d p_MQ = mesh_M_.vertex(2);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  EXPECT_EQ(d.signed_distance, 0);
-  EXPECT_EQ(d.nearest_point, p_MQ);
-  EXPECT_EQ(d.gradient, mesh_normal_M_.vertex_normal(2));
-}
-
-// This test fixture covers the cases that the query point Q has multiple
-// nearest points. They can be in multiple triangles, or multiple edges, or
-// multiple vertices.
-class CalcSignedDistanceToSurfaceMesh_MultipleNearest : public ::testing::Test {
- public:
-  CalcSignedDistanceToSurfaceMesh_MultipleNearest()
-      :  //
-         //                       Mz
-         //                       ┆     -Mx
-         //            v4      v3 ●     ╱
-         //              ●┄┄┄┄┄┄┄┄┆┄┄┄┄+
-         //             ╱         ┆   ╱
-         //            ╱          ┆  ╱
-         //           ╱           ┆ ╱
-         //          ╱          v0┆╱            v2
-         //  -My ┄┄┄+┄┄┄┄┄┄┄┄┄┄┄┄┄●┄┄┄┄┄┄┄┄┄┄┄┄┄●┄┄┄ My
-         //                      ╱
-         //                     ╱
-         //                    ╱
-         //                   ╱
-         //               v1 ●
-         //                 ╱
-         //                Mx
-         //
-        two_tetrahedra_M_{
-            {VolumeElement{0, 1, 3, 4}, VolumeElement{0, 3, 2, 4}},
-            {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
-             Vector3d::UnitZ(), Vector3d(-1, -1, 0)}},
-        mesh_M_(ConvertVolumeToSurfaceMesh(two_tetrahedra_M_)),
-        bvh_M_(mesh_M_),
-        mesh_normal_M_(mesh_M_) {}
-
- protected:
-  const VolumeMesh<double> two_tetrahedra_M_;
-  const TriangleSurfaceMesh<double> mesh_M_;
-  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_M_;
-  const FeatureNormalSet mesh_normal_M_;
-  const double kEps_{std::numeric_limits<double>::epsilon() * (1 << 4)};
-};
-
-TEST_F(CalcSignedDistanceToSurfaceMesh_MultipleNearest, Triangle) {
-  // Q is equally far from two faces v0v2v3 and v0v3v1 on Y-Z and X-Z planes.
-  const Vector3d p_MQ(0.1, 0.1, 0.1);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  EXPECT_NEAR(d.signed_distance, 0.1, kEps_);
-  EXPECT_TRUE(CompareMatrices(d.nearest_point, Vector3d(0.1, 0, 0.1), kEps_) ||
-              CompareMatrices(d.nearest_point, Vector3d(0, 0.1, 0.1), kEps_));
-  EXPECT_TRUE(CompareMatrices(d.gradient, Vector3d::UnitX(), kEps_) ||
-              CompareMatrices(d.gradient, Vector3d::UnitY(), kEps_));
-}
-
-TEST_F(CalcSignedDistanceToSurfaceMesh_MultipleNearest, Edge) {
-  // Q is equally far from two edge v0v1 and v0v2 on X-axis and Y-axis.
-  const Vector3d p_MQ(0.1, 0.1, 0);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  EXPECT_NEAR(d.signed_distance, 0.1, kEps_);
-  EXPECT_TRUE(CompareMatrices(d.nearest_point, Vector3d(0.1, 0, 0), kEps_) ||
-              CompareMatrices(d.nearest_point, Vector3d(0, 0.1, 0), kEps_));
-  EXPECT_TRUE(CompareMatrices(d.gradient, Vector3d::UnitX(), kEps_) ||
-              CompareMatrices(d.gradient, Vector3d::UnitY(), kEps_));
-}
-
-TEST_F(CalcSignedDistanceToSurfaceMesh_MultipleNearest, Vertex) {
-  // Q is equally far from two vertices v1 and v2 on X and Y axes.
-  const Vector3d p_MQ(1, 1, 0);
-  const SignedDistanceToSurfaceMesh d =
-      CalcSignedDistanceToSurfaceMesh(p_MQ, mesh_M_, bvh_M_, mesh_normal_M_);
-  EXPECT_NEAR(d.signed_distance, 1, kEps_);
-  EXPECT_TRUE(CompareMatrices(d.nearest_point, Vector3d::UnitX(), kEps_) ||
-              CompareMatrices(d.nearest_point, Vector3d::UnitY(), kEps_));
-  EXPECT_TRUE(CompareMatrices(d.gradient, Vector3d::UnitX(), kEps_) ||
-              CompareMatrices(d.gradient, Vector3d::UnitY(), kEps_));
 }
 
 }  // namespace
