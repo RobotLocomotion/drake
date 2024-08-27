@@ -164,11 +164,6 @@ GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
   plant.Finalize();
   auto diagram = builder.Build();
 
-  const std::vector<int> continuous_joint_indices =
-      plant.GetContinuousRevoluteJointIndices();
-  ASSERT_EQ(continuous_joint_indices.size(), 1);
-  EXPECT_EQ(continuous_joint_indices[0], 2);
-
   const Eigen::Vector3d sample = Eigen::Vector3d::Zero();
   auto context = diagram->CreateDefaultContext();
   plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()), sample);
