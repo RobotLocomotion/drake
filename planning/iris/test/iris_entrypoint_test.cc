@@ -12,7 +12,9 @@ namespace drake {
 namespace planning {
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::VectorXd;
+using geometry::optimization::HPolyhedron;
 
 /* A movable sphere in a box.
 ┌───────────────┐
@@ -101,6 +103,30 @@ GTEST_TEST(IrisEntrypointTest, NotImplemented) {
         ".*not supported yet.*");
   }
 }
+
+GTEST_TEST(IrisEntrypointTest, CallIrisNpTest) {
+  std::unique_ptr<CollisionChecker> checker =
+      SceneGraphCollisionCheckerFromUrdf(free_box);
+  Vector2d seed(0, 0);
+  IrisOptions options;
+  options.algorithm = IrisAlgorithm::NP;
+  options.region_space = IrisRegionSpace::ConfigurationSpace;
+
+  HPolyhedron region = GrowIrisRegion(*checker, options, seed);
+  // The region should encompass all configurations up to 0.1m away from the
+  // boundary of the box.
+  std::vector<Vector2d> query_points = {
+      Vector2d(-0.9, -0.9), Vector2d(-0.9, 0.9), Vector2d(0.9, -0.9),
+      Vector2d(0.9, 0.9)};
+  const double kTol =
+      1e-9;  // A nonzero tolerance is necessary due to the stepback.
+  for (const auto& point : query_points) {
+    EXPECT_TRUE(region.PointInSet(point, kTol));
+  }
+}
+
+// TODO(cohnt): Copy over the tests from IrisInConfigurationSpace, but route
+// them through the common entrypoint.
 
 }  // namespace
 }  // namespace planning
