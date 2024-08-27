@@ -104,8 +104,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ContinuousRevoluteJoint) {
   EXPECT_EQ(region.A().rows(), 2);
 
   const double kTol = 1e-5;
-  double qmin = -M_PI / 2 + options.convexity_radius_stepback;
-  double qmax = M_PI / 2 - options.convexity_radius_stepback;
+  double qmin = -M_PI_2 + options.convexity_radius_stepback;
+  double qmax = M_PI_2 - options.convexity_radius_stepback;
   EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
   EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
   EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
@@ -118,17 +118,21 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ContinuousRevoluteJoint) {
   EXPECT_EQ(region.ambient_dimension(), 1);
   EXPECT_EQ(region.A().rows(), 2);
 
-  qmin = -M_PI / 2 + options.convexity_radius_stepback;
-  qmax = M_PI / 2 - options.convexity_radius_stepback;
+  qmin = -M_PI_2 + options.convexity_radius_stepback;
+  qmax = M_PI_2 - options.convexity_radius_stepback;
   EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
   EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
   EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
   EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+
+  // Convexity radius must be strictly less than π/2
+  options.convexity_radius_stepback = M_PI_2;
+  EXPECT_THROW(IrisFromUrdf(continuous_urdf, sample, options), std::exception);
 }
 
+// Check that IRIS correctly handles the continuous revolute component of a
+// planar joint.
 GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
-  // Check that IRIS correctly handles the continuous revolute component of a
-  // planar joint.
   const std::string planar_urdf = R"(
 <robot name="limits">
   <link name="movable">
@@ -176,12 +180,17 @@ GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
   EXPECT_EQ(region.A().rows(), 6);
 
   const double kTol = 1e-5;
-  double qmin = -M_PI / 2 + options.convexity_radius_stepback;
-  double qmax = M_PI / 2 - options.convexity_radius_stepback;
+  double qmin = -M_PI_2 + options.convexity_radius_stepback;
+  double qmax = M_PI_2 - options.convexity_radius_stepback;
   EXPECT_TRUE(region.PointInSet(Eigen::Vector3d{0.0, 0.0, qmin + kTol}));
   EXPECT_TRUE(region.PointInSet(Eigen::Vector3d{0.0, 0.0, qmax - kTol}));
   EXPECT_FALSE(region.PointInSet(Eigen::Vector3d{0.0, 0.0, qmin - kTol}));
   EXPECT_FALSE(region.PointInSet(Eigen::Vector3d{0.0, 0.0, qmax + kTol}));
+
+  // If we don't set the position limits, then it should throw, since
+  // the prismatic components of the planar joint are unbounded.
+  DRAKE_EXPECT_THROWS_MESSAGE(IrisFromUrdf(planar_urdf, sample, options),
+                              ".*position limits.*");
 }
 
 const char boxes_urdf[] = R"""(
