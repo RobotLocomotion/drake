@@ -187,8 +187,39 @@ struct SignedDistanceToSurfaceMesh {
 // the nearest point is p_MQ itself, and the gradient is the normal
 // at the triangle, edge, or vertex where p_MQ locates.
 //
-// @note If p_MQ has multiple nearest features, the nearest point and the
-// gradient are computed from one of those features.
+// @note If p_MQ has multiple nearest points, the nearest point and the
+// gradient are chosen and computed from one of them.
+//
+// The following table characterizes all possible cases.  The first part
+// considers typical cases of a query point Q with a unique nearest point N
+// in a triangle, an edge, or a vertex. The gradient depends on the sign of
+// the distance. The second part considers special cases when Q has multiple
+// nearest points, which exclude the cases of zero distances.
+//
+//  |   sign   |     unique    |  location of  |      gradient       |
+//  |          | nearest point | nearest point |                     |
+//  | :------: | :-----------: | :-----------: | :-----------------: |
+//  | positive |      yes      |   triangle    | (Q-N).normalized()  |
+//  | positive |      yes      |     edge      | (Q-N).normalized()  |
+//  | positive |      yes      |    vertex     | (Q-N).normalized()  |
+//  | negative |      yes      |   triangle    | (N-Q).normalized()  |
+//  | negative |      yes      |     edge      | (N-Q).normalized()  |
+//  | negative |      yes      |    vertex     | (N-Q).normalized()  |
+//  |   zero   |      yes      |   triangle    |     face normal     |
+//  |   zero   |      yes      |     edge      |     edge normal     |
+//  |   zero   |      yes      |    vertex     |    vertex normal    |
+//  | :------: | :-----------: | :-----------: | :-----------------: |
+//  | positive |      no       |   triangle    | (Q-N).normalized()ᵃ |
+//  | positive |      no       |     edge      | (Q-N).normalized()ᵃ |
+//  | positive |      no       |    vertex     | (Q-N).normalized()ᵃ |
+//  | negative |      no       |   triangle    | (N-Q).normalized()ᵃ |
+//  | negative |      no       |     edge      | (N-Q).normalized()ᵃ |
+//  | negative |      no       |    vertex     | (N-Q).normalized()ᵃ |
+//  __*Table 1*__: Possible cases of signed distances and gradients according
+//  to location and uniqueness of the nearest point.
+//
+//  - ᵃ When Q has multiple nearest points, we pick the nearest point N
+//      arbitrarily in a repeatable way.
 SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
