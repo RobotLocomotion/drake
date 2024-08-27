@@ -18,18 +18,13 @@ HPolyhedron GrowIrisRegion(const CollisionChecker& checker,
 
   if (options.algorithm == IrisAlgorithm::Convex) {
     throw std::runtime_error("IrisAlgorithm::Convex is not supported yet.");
-  }
-  if (options.algorithm == IrisAlgorithm::NP2) {
+  } else if (options.algorithm == IrisAlgorithm::NP2) {
     throw std::runtime_error("IrisAlgorithm::NP2 is not supported yet.");
-  }
-  if (options.algorithm == IrisAlgorithm::ZO) {
+  } else if (options.algorithm == IrisAlgorithm::ZO) {
     throw std::runtime_error("IrisAlgorithm::ZO is not supported yet.");
-  }
-  if (options.algorithm == IrisAlgorithm::Certified) {
+  } else if (options.algorithm == IrisAlgorithm::Certified) {
     throw std::runtime_error("IrisAlgorithm::Certified is not supported yet.");
-  }
-
-  if (options.algorithm == IrisAlgorithm::NP) {
+  } else if (options.algorithm == IrisAlgorithm::NP) {
     if (options.region_space == IrisRegionSpace::TaskSpace2d ||
         options.region_space == IrisRegionSpace::TaskSpace3d ||
         options.region_space == IrisRegionSpace::AbstractSpaceNd ||
@@ -94,6 +89,8 @@ HPolyhedron GrowIrisRegion(const CollisionChecker& checker,
         plant, plant_context, iris_np_options);
   }
 
+  // Code should never reach this point, since we throw if the algorithm is
+  // unset, and every algorithm will return an HPolyhedron or throw.
   return HPolyhedron::MakeUnitBox(seed.size());
 }
 

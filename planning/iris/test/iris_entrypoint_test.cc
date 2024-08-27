@@ -84,6 +84,9 @@ GTEST_TEST(IrisEntrypointTest, NotImplemented) {
     if (algorithm != IrisAlgorithm::NP) {
       IrisOptions options;
       options.algorithm = algorithm;
+      // We can use anything for options.region_space besides
+      // IrisRegionSpace::Unset, since the region space is checked after the
+      // algorithm.
       options.region_space = IrisRegionSpace::TaskSpace2d;
       not_implemented_option.push_back(options);
     }
