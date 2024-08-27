@@ -49,20 +49,22 @@ See @ref IrisAlgorithm for a list of algorithms, and @ref IrisRegionSpace for a
 list of spaces where regions can be grown. The below table describes which
 algorithms can be used with which spaces.
 
-|           |   %TaskSpace2d  | %TaskSpace3d | %AbstractSpaceNd |
-%ConfigruationSpace | %RationalConfigurationSpace | | --------: |
-:-------------: | :----------: | :--------------: | :-----------------: |
-:-------------------------: | | Convex    |  Planned        |  Planned     |
-Planned         |  Unsupported        |  Unsupported                | | NP |
-Unsupported    |  Unsupported |  Unsupported     |  Supported          | Planned
-| | NP2       |  Unsupported    |  Unsupported |  Unsupported     |  Planned |
-Planned                    | | ZO        |  Unsupported    |  Unsupported |
-Unsupported     |  Planned            |  Planned                    | |
-Certified |  Unsupported    |  Unsupported |  Unsupported     |  Unsupported |
-Planned                    |
-__*Table 1*__: Algorithm/space compatibility matrix.
-
 */
+// TODO(cohnt): Figure out how to get clang not to complain about this.
+// clang-format off
+/**
+|           |   %TaskSpace2d  | %TaskSpace3d | %AbstractSpaceNd | %ConfigruationSpace | %RationalConfigurationSpace |
+| --------: | :-------------: | :----------: | :--------------: | :-----------------: | :-------------------------: |
+| Convex    |  Planned        |  Planned     |  Planned         |  Unsupported        |  Unsupported                |
+| NP        |  Unsupported    |  Unsupported |  Unsupported     |  Supported          |  Planned                    |
+| NP2       |  Unsupported    |  Unsupported |  Unsupported     |  Planned            |  Planned                    |
+| ZO        |  Unsupported    |  Unsupported |  Unsupported     |  Planned            |  Planned                    |
+| Certified |  Unsupported    |  Unsupported |  Unsupported     |  Unsupported        |  Planned                    |
+__*Table 1*__: Algorithm/space compatibility matrix.
+*/
+// clang-format on
+/**
+ */
 struct IrisOptions {
   /** TODO(cohnt): Document */
   IrisAlgorithm algorithm{IrisAlgorithm::Unset};
