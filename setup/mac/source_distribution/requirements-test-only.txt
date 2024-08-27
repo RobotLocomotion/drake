@@ -1,4 +1,0 @@
-flask
-six
-u-msgpack-python
-websockets
