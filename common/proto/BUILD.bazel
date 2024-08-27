@@ -41,6 +41,7 @@ drake_py_library(
     imports = ["."],
     deps = [
         "//lcmtypes:lcmtypes_drake_py",
+        "@venv",
     ],
 )
 
