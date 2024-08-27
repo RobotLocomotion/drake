@@ -47,6 +47,59 @@ void AddWeld(
   }
 }
 
+// If the given model contains a single body, returns its body frame.
+// Otherwise, triggers a parse error.
+const Frame<double>& GetUniqueBodyFrame(const ParsingWorkspace& workspace,
+                                        ModelInstanceIndex model_instance) {
+  const auto& plant = *workspace.plant;
+  const auto& body_indices = plant.GetBodyIndices(model_instance);
+  if (body_indices.size() == 1) {
+    return plant.get_body(body_indices[0]).body_frame();
+  }
+  workspace.diagnostic.Error(fmt::format(
+      "Model instance '{}' cannot use an empty frame name for its "
+      "default_free_body_pose because it has {} (not 1) bodies.",
+      plant.GetModelInstanceName(model_instance), body_indices.size()));
+  return plant.world_frame();
+}
+
+// Implements the AddModel::default_free_body_pose logic (for one entry of that
+// std::map).
+void ApplyAddModelDefaultFreeBodyPose(
+    const ParsingWorkspace& workspace, ModelInstanceIndex model_instance,
+    const Frame<double>& parent_frame, const std::string& child_frame_name,
+    const math::RigidTransform<double>& X_PC) {
+  auto& plant = *workspace.plant;
+  const Frame<double>& child_frame =
+      child_frame_name.empty()
+          ? GetUniqueBodyFrame(workspace, model_instance)
+          : plant.GetFrameByName(child_frame_name, model_instance);
+  const math::RigidTransform<double> child_offset =
+      child_frame.GetFixedPoseInBodyFrame();
+  if ((&parent_frame == &plant.world_frame()) &&
+      child_offset.IsExactlyIdentity()) {
+    // If the parent is the world frame and the child frame is coincident with
+    // the body frame, then we can use the "free body" setter instead of adding
+    // a joint.
+    plant.SetDefaultFreeBodyPose(child_frame.body(), X_PC);
+  } else {
+    // Add a floating joint so that we can set a default posture.
+    // TODO(SeanCurtis-TRI): When the new multibody graph code lands,
+    // update this code to test to see if there is already a joint between
+    // the two bodies.
+    // Note: the logic for generating the joint name is borrowed from
+    // MultibodyTree::CreateJointImplementations().
+    std::string joint_name = child_frame.body().name();
+    while (plant.HasJointNamed(joint_name, model_instance)) {
+      joint_name = "_" + joint_name;
+    }
+    const auto& joint =
+        plant.AddJoint(std::make_unique<QuaternionFloatingJoint<double>>(
+            joint_name, parent_frame, child_frame));
+    plant.get_mutable_joint(joint.index()).SetDefaultPose(X_PC);
+  }
+}
+
 void ParseModelDirectivesImpl(
     const ModelDirectives& directives,
     const std::string& model_namespace,
@@ -85,34 +138,16 @@ void ParseModelDirectivesImpl(
         plant->GetMutableJointByName(joint_name, child_model_instance_id)
             .set_default_positions(positions);
       }
-      for (const auto& [element_name, pose] :
+      for (const auto& [child_frame_name, pose] :
            directive.add_model->default_free_body_pose) {
-        const Frame<double>& child_frame =
-            plant->GetFrameByName(element_name, *child_model_instance_id);
-        if (pose.base_frame.has_value() && *pose.base_frame != "world") {
-          // TODO(SeanCurtis-TRI): When the new multibody graph code lands,
-          // update this code to test to see if there is already a joint between
-          // the two bodies.
-
-          // Note: the logic for generating the joint name is borrowed from
-          // MultibodyTree::CreateJointImplementations().
-          std::string joint_name = child_frame.body().name();
-          while (plant->HasJointNamed(joint_name, *child_model_instance_id)) {
-            joint_name = "_" + joint_name;
-          }
-
-          const Frame<double>& parent_frame =
-              get_scoped_frame(*pose.base_frame);
-          plant->AddJoint(std::make_unique<QuaternionFloatingJoint<double>>(
-              joint_name, parent_frame, child_frame));
-          auto& joint =
-              plant->GetMutableJointByName(joint_name, child_model_instance_id);
-          joint.SetDefaultPose(pose.GetDeterministicValue());
-        } else {
-          // We can only call this if we haven't injected the floating joint.
-          plant->SetDefaultFreeBodyPose(child_frame.body(),
-                                        pose.GetDeterministicValue());
-        }
+        const std::string parent_frame_name = pose.base_frame.value_or("world");
+        const Frame<double>& parent_frame =
+            (parent_frame_name == "world")
+                ? plant->world_frame()
+                : get_scoped_frame(parent_frame_name);
+        const math::RigidTransform<double> X_PC = pose.GetDeterministicValue();
+        ApplyAddModelDefaultFreeBodyPose(workspace, *child_model_instance_id,
+                                         parent_frame, child_frame_name, X_PC);
       }
       info.model_instance = *child_model_instance_id;
       info.model_name = name;

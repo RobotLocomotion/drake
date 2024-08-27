@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/diagnostic_policy.h"
@@ -63,7 +64,6 @@ class DmdParserTest : public test::DiagnosticPolicyTestBase {
  protected:
   ParsingOptions options_;
   PackageMap package_map_;
-  DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.01};
 };
 
@@ -305,6 +305,35 @@ directives:
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseModelDirectives(directives),
       ".*already has.*joint.*connecting.*dummy.*ball.*");
+}
+
+/* When a model contains multiple bodies, it is an error not to specify which
+body to posture. */
+TEST_F(DmdParserTest, DefaultFreeBodyPoseMultipleBodies) {
+  const std::string sphere_sdf =
+      "file://" + MakeSphereSdf(Vector3d::Zero()).string();
+  const ModelDirectives directives =
+      LoadYamlString<ModelDirectives>(fmt::format(
+                                          R"""(
+directives:
+- add_model:
+    name: sphere
+    file: {sphere_sdf}
+- add_model:
+    name: my_gripper
+    file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+    default_free_body_pose:
+      "":
+        base_frame: sphere::ball
+        translation: [1, 2, 3]
+)""",
+                                          fmt::arg("sphere_sdf", sphere_sdf)),
+                                      {}, ModelDirectives());
+
+  EXPECT_NO_THROW(ParseModelDirectives(directives));
+  EXPECT_THAT(TakeError(),
+              testing::MatchesRegex(
+                  ".*my_gripper.*default_free_body_pose.*3.*bodies.*"));
 }
 
 }  // namespace
