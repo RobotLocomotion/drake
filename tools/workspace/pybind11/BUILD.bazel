@@ -47,6 +47,7 @@ drake_py_binary(
         ":libclang_setup_py",
         ":mkdoc_comment_py",
         "@clang_cindex_python3_internal//:clang",
+        "@venv",
     ],
 )
 
