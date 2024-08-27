@@ -1,39 +1,42 @@
 #pragma once
 
+#include <memory>
+#include <optional>
+
+#include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/planning/collision_checker.h"
-#include "drake/geometry/meshcat.h"
 
 namespace drake {
 namespace planning {
 
 enum class IrisAlgorithm {
-  Unset,      ///< Default value -- must be changed by the user.
-  Convex,     ///< The original IRIS algorithm for convex obstacles in task space.
-  NP,         ///< The IRIS-NP algorithm, which uses nonlinear programming to grow
-              ///< regions in configuration space.
-  NP2,        ///< The IRIS-NP2 algorithm, an improved version of IRIS-NP.
-  ZO,         ///< The IRIS-ZO algorithm, which uses a gradient-free (zero-order)
-              ///< optimization to grow regions in configuration space.
+  Unset,   ///< Default value -- must be changed by the user.
+  Convex,  ///< The original IRIS algorithm for convex obstacles in task space.
+  NP,      ///< The IRIS-NP algorithm, which uses nonlinear programming to grow
+           ///< regions in configuration space.
+  NP2,     ///< The IRIS-NP2 algorithm, an improved version of IRIS-NP.
+  ZO,      ///< The IRIS-ZO algorithm, which uses a gradient-free (zero-order)
+           ///< optimization to grow regions in configuration space.
   Certified,  ///< The sums-of-squares certified version of the IRIS algorithm,
               ///< for growing regions in the rational parametrization of
               ///< configuration space.
 };
 
 enum class IrisRegionSpace {
-  Unset,                      ///< Default value -- must be changed by the user.
-  TaskSpace2d,                ///< Regions are grown in task space along the horizontal (xz)
-                              ///< plane.
-  TaskSpace3d,                ///< Regions are grown in task space.
-  AbstractSpaceNd,            ///< Regions are grown in an abstract n-dimensional
-                              ///< space. The CollisionChecker is ignored, and only
-                              ///< the convex obstacles specified in the options are
-                              ///< used. TODO(cohnt): Clean this explanation up.
-  ConfigurationSpace,         ///< Regions are grown in configuration space.
-  RationalConfigurationSpace, ///< Regions are grown in the rational
-                              ///< parametrization of configuration space.
+  Unset,        ///< Default value -- must be changed by the user.
+  TaskSpace2d,  ///< Regions are grown in task space along the horizontal (xz)
+                ///< plane.
+  TaskSpace3d,  ///< Regions are grown in task space.
+  AbstractSpaceNd,     ///< Regions are grown in an abstract n-dimensional
+                       ///< space. The CollisionChecker is ignored, and only
+                       ///< the convex obstacles specified in the options are
+                       ///< used. TODO(cohnt): Clean this explanation up.
+  ConfigurationSpace,  ///< Regions are grown in configuration space.
+  RationalConfigurationSpace,  ///< Regions are grown in the rational
+                               ///< parametrization of configuration space.
 };
 
 // TODO(cohnt): Annotate each option with which algorithms and spaces they are
@@ -46,13 +49,17 @@ See @ref IrisAlgorithm for a list of algorithms, and @ref IrisRegionSpace for a
 list of spaces where regions can be grown. The below table describes which
 algorithms can be used with which spaces.
 
-|           |   %TaskSpace2d  | %TaskSpace3d | %AbstractSpaceNd | %ConfigruationSpace | %RationalConfigurationSpace |
-| --------: | :-------------: | :----------: | :--------------: | :-----------------: | :-------------------------: |
-| Convex    |  Planned        |  Planned     |  Planned         |  Unsupported        |  Unsupported                |
-| NP        |  Unsupported    |  Unsupported |  Unsupported     |  Supported          |  Planned                    |
-| NP2       |  Unsupported    |  Unsupported |  Unsupported     |  Planned            |  Planned                    |
-| ZO        |  Unsupported    |  Unsupported |  Unsupported     |  Planned            |  Planned                    |
-| Certified |  Unsupported    |  Unsupported |  Unsupported     |  Unsupported        |  Planned                    |
+|           |   %TaskSpace2d  | %TaskSpace3d | %AbstractSpaceNd |
+%ConfigruationSpace | %RationalConfigurationSpace | | --------: |
+:-------------: | :----------: | :--------------: | :-----------------: |
+:-------------------------: | | Convex    |  Planned        |  Planned     |
+Planned         |  Unsupported        |  Unsupported                | | NP |
+Unsupported    |  Unsupported |  Unsupported     |  Supported          | Planned
+| | NP2       |  Unsupported    |  Unsupported |  Unsupported     |  Planned |
+Planned                    | | ZO        |  Unsupported    |  Unsupported |
+Unsupported     |  Planned            |  Planned                    | |
+Certified |  Unsupported    |  Unsupported |  Unsupported     |  Unsupported |
+Planned                    |
 __*Table 1*__: Algorithm/space compatibility matrix.
 
 */
@@ -71,10 +78,12 @@ struct IrisOptions {
   // TODO(wernerpe): Add IRIS-ZO options.
   // TODO(alexandreamice): Add C-IRIS options.
 
-  /** The polytope produced by the first iteration of each algorithm is guaranteed to contain the seed point, as long as that point is
-  collision-free. However, subsequent iterations do not make this guarantee, so the IRIS paper recommends that if containment is a
-  requirement, then the algorithm should simply terminate early if alternations
-  would ever cause the set to not contain the point. 
+  /** The polytope produced by the first iteration of each algorithm is
+  guaranteed to contain the seed point, as long as that point is collision-free.
+  However, subsequent iterations do not make this guarantee, so the IRIS paper
+  recommends that if containment is a requirement, then the algorithm should
+  simply terminate early if alternations would ever cause the set to not contain
+  the point.
 
   \b Algorithms: All */
   bool require_sample_point_is_contained{false};
@@ -173,7 +182,7 @@ struct IrisOptions {
   int num_additional_constraint_infeasible_samples{5};
 
   /** Set the initial seed for any random number generation.
-  
+
   \b Algorithms: NP, NP2, ZO */
   int random_seed{1234};
 
@@ -208,7 +217,8 @@ struct IrisOptions {
   require_sample_point_is_contained is enforced.
 
   \b Algorithms: All */
-  std::function<bool(const geometry::optimization::HPolyhedron&)> termination_func{};
+  std::function<bool(const geometry::optimization::HPolyhedron&)>
+      termination_function{};
 
   /* The `mixing_steps` parameters is passed to HPolyhedron::UniformSample to
   control the total number of hit-and-run steps taken for each new random
@@ -217,7 +227,10 @@ struct IrisOptions {
   \b Algorithms: NP, NP2, ZO */
   int mixing_steps{10};
 
-  /* SolverOptions passed into the optimization programs. For IRIS-NP and IRIS-NP2, this is sent to the nonlinear optimizer solving the counterexample search programs. For C-IRIS, these options are used for solving the SOS program.
+  /* SolverOptions passed into the optimization programs. For IRIS-NP and
+  IRIS-NP2, this is sent to the nonlinear optimizer solving the counterexample
+  search programs. For C-IRIS, these options are used for solving the SOS
+  program.
 
   \b Algorithms: NP, NP2, Certified*/
   std::optional<solvers::SolverOptions> solver_options;
@@ -236,7 +249,7 @@ geometry::optimization::HPolyhedron GrowIrisRegion(
 // TODO(cohnt): Add an algorithm/region_space compatibility matrix.
 // TODO(cohnt): Add IRIS-NP support.
 // TODO(cohnt): Add (original) IRIS support.
-// TODO(rhjiang): Add IRIS-NP2 support.
+// TODO(rhjiang/cohnt): Add IRIS-NP2 support.
 // TODO(wernerpe): Add IRIS-ZO support.
 // TODO(alexandreamice): Add C-IRIS support.
 

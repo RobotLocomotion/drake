@@ -64,23 +64,20 @@ std::unique_ptr<CollisionChecker> MakeSphereInCollisionChecker() {
 }
 
 std::vector<IrisAlgorithm> all_algorithms = {
-  IrisAlgorithm::Convex,
-  IrisAlgorithm::NP,
-  IrisAlgorithm::NP2,
-  IrisAlgorithm::ZO,
-  IrisAlgorithm::Certified,
+    IrisAlgorithm::Convex, IrisAlgorithm::NP,        IrisAlgorithm::NP2,
+    IrisAlgorithm::ZO,     IrisAlgorithm::Certified,
 };
 
 std::vector<IrisRegionSpace> all_region_spaces = {
-  IrisRegionSpace::TaskSpace2d,
-  IrisRegionSpace::TaskSpace3d,
-  IrisRegionSpace::AbstractSpaceNd,
-  IrisRegionSpace::ConfigurationSpace,
-  IrisRegionSpace::RationalConfigurationSpace,
+    IrisRegionSpace::TaskSpace2d,
+    IrisRegionSpace::TaskSpace3d,
+    IrisRegionSpace::AbstractSpaceNd,
+    IrisRegionSpace::ConfigurationSpace,
+    IrisRegionSpace::RationalConfigurationSpace,
 };
 
 GTEST_TEST(IrisEntrypointTest, NotImplemented) {
-  std::vector<IrisOptions> not_implemented_option();
+  std::vector<IrisOptions> not_implemented_option;
 
   // Not yet implemented.
   for (const auto& algorithm : all_algorithms) {
