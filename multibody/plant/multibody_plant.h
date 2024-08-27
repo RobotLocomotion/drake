@@ -4886,11 +4886,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         name, model_instance);
   }
 
-  /// Returns a list of indices in the plant's generalized positions which
-  /// correspond to a continuous revolute joint (a revolute joint with no joint
-  /// limits). This includes the revolute component of a planar joint.
-  std::vector<int> GetContinuousRevoluteJointIndices() const;
-
   /// Returns the number of Frame objects in this model.
   /// Frames include body frames associated with each of the bodies,
   /// including the _world_ body. This means the minimum number of frames is

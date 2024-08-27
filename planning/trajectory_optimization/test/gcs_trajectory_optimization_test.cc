@@ -2331,8 +2331,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ContinuousJointsApi) {
       "interval.*");
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
   MultibodyPlant<double> plant(0.0);
   const RigidBody<double>& first_body = plant.AddRigidBody("first_body");
@@ -2369,7 +2367,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
   EXPECT_EQ(continuous_joint_indices[0], 2);
   EXPECT_EQ(continuous_joint_indices[1], 6);
 }
-#pragma GCC diagnostic pop
 
 // Confirm that NonlinearDerivativeConstraint supports symbolic.
 GTEST_TEST(GcsTrajectoryOptimizationTest, NonlinearDerivativeBoundsSymbolic) {

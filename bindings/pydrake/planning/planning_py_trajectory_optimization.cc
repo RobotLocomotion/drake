@@ -587,11 +587,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             cls_doc.UnwrapToContinousTrajectory.doc);
   }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   m.def("GetContinuousRevoluteJointIndices", &GetContinuousRevoluteJointIndices,
-      py::arg("plant"), doc.GetContinuousRevoluteJointIndices.doc_deprecated);
-#pragma GCC diagnostic pop
+      py::arg("plant"), doc.GetContinuousRevoluteJointIndices.doc);
   // NOLINTNEXTLINE(readability/fn_size)
 }
 
