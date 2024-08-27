@@ -63,24 +63,33 @@ std::unique_ptr<CollisionChecker> MakeSphereInCollisionChecker() {
   return checker;
 }
 
-GTEST_TEST(IrisEntrypointTest, NotImplemented) {
-  std::vector<IrisAlgorithm> all_algorithms;
-  all_algorithms.push_back(IrisAlgorithm::Convex);
-  all_algorithms.push_back(IrisAlgorithm::NP);
-  all_algorithms.push_back(IrisAlgorithm::NP2);
-  all_algorithms.push_back(IrisAlgorithm::ZO);
-  all_algorithms.push_back(IrisAlgorithm::Certified);
+std::vector<IrisAlgorithm> all_algorithms = {
+  IrisAlgorithm::Convex,
+  IrisAlgorithm::NP,
+  IrisAlgorithm::NP2,
+  IrisAlgorithm::ZO,
+  IrisAlgorithm::Certified,
+};
 
-  std::vector<IrisOptions> not_implemented_option(5, IrisOptions());
+std::vector<IrisRegionSpace> all_region_spaces = {
+  IrisRegionSpace::TaskSpace2d,
+  IrisRegionSpace::TaskSpace3d,
+  IrisRegionSpace::AbstractSpaceNd,
+  IrisRegionSpace::ConfigurationSpace,
+  IrisRegionSpace::RationalConfigurationSpace,
+};
+
+GTEST_TEST(IrisEntrypointTest, NotImplemented) {
+  std::vector<IrisOptions> not_implemented_option();
 
   // Not yet implemented.
-  not_implemented_option[0].algorithm = IrisAlgorithm::Convex;
-  not_implemented_option[1].algorithm = IrisAlgorithm::NP;
-  not_implemented_option[2].algorithm = IrisAlgorithm::NP2;
-  not_implemented_option[3].algorithm = IrisAlgorithm::ZO;
-  not_implemented_option[4].algorithm = IrisAlgorithm::Certified;
-  for (int i = 0; i < 5; ++i) {
-    not_implemented_option[i].region_space = IrisRegionSpace::TaskSpace2d;
+  for (const auto& algorithm : all_algorithms) {
+    if (algorithm != IrisAlgorithm::NP) {
+      IrisOptions options;
+      options.algorithm = algorithm;
+      options.region_space = IrisRegionSpace::TaskSpace2d;
+      not_implemented_option.push_back(options);
+    }
   }
 
   std::unique_ptr<CollisionChecker> checker = MakeSphereInCollisionChecker();
@@ -90,6 +99,10 @@ GTEST_TEST(IrisEntrypointTest, NotImplemented) {
         ".*not supported yet.*");
   }
 }
+
+// GTEST_TEST(IrisEntrypointTest, UnsupportedOptionsNP) {
+//   std::vector<IrisAlgorithm>
+// }
 
 }  // namespace
 }  // namespace planning

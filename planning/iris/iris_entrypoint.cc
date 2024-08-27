@@ -18,9 +18,6 @@ HPolyhedron GrowIrisRegion(const CollisionChecker& checker,
   if (options.algorithm == IrisAlgorithm::Convex) {
     throw std::runtime_error("IrisAlgorithm::Convex is not supported yet.");
   }
-  if (options.algorithm == IrisAlgorithm::NP) {
-    throw std::runtime_error("IrisAlgorithm::NP is not supported yet.");
-  }
   if (options.algorithm == IrisAlgorithm::NP2) {
     throw std::runtime_error("IrisAlgorithm::NP2 is not supported yet.");
   }
@@ -29,6 +26,16 @@ HPolyhedron GrowIrisRegion(const CollisionChecker& checker,
   }
   if (options.algorithm == IrisAlgorithm::Certified) {
     throw std::runtime_error("IrisAlgorithm::Certified is not supported yet.");
+  }
+
+  if (options.algorithm == IrisAlgorithm::NP) {
+    if (options.region_space == IrisRegionSpace::TaskSpace2d || options.region_space == IrisRegionSpace::TaskSpace3d || options.region_space == IrisRegionSpace::AbstractSpaceNd || options.region_space == IrisRegionSpace::RationalConfigurationSpace) {
+      throw std::runtime_error("IrisAlgorithm::NP only supports options.region_space == IrisRegionSpace::ConfigurationSpace.");
+    }
+    const SceneGraphCollisionChecker* maybe_scene_graph_collision_checker = dynamic_cast<const SceneGraphCollisionChecker*>(&checker);
+    if (!maybe_scene_graph_collision_checker) {
+      throw std::runtime_error("IrisAlgorithm::NP only supports SceneGraphCollisionChecker.");
+    }
   }
 
   unused(checker);
