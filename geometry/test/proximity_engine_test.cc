@@ -802,10 +802,10 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     Convex convex{file.string(), 1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        ".*The file parsed contains no objects;.+");
+        ".*cannot be used on a mesh with fewer than three vertices.*");
   }
 
-  // The file does not have OBJ contents..
+  // The file does not have OBJ contents.
   { const std::filesystem::path file = temp_dir / "not_really_an_obj.obj";
     std::ofstream f(file.string());
     f << "I'm not a valid obj\n";
@@ -813,7 +813,8 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     Convex convex{file.string(), 1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        ".*The file parsed contains no objects;.+");}
+        ".*cannot be used on a mesh with fewer than three vertices.*");
+  }
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------

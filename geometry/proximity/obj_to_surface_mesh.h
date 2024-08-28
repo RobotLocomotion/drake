@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <istream>
 #include <optional>
@@ -8,6 +9,8 @@
 #include <vector>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 // TODO(SeanCurtis-TRI): This should distill further and combine with
@@ -23,12 +26,17 @@ namespace internal {
  configured to stop for errors, std::nullopt is returned.
  @pre `diagnostic` has both warning and error handlers defined. */
 std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
-    std::istream* input_stream, double scale,
-    const drake::internal::DiagnosticPolicy& diagnostic,
-    std::string_view description);
+    const MeshSource& source, double scale,
+    const drake::internal::DiagnosticPolicy& diagnostic);
 
 }  // namespace internal
 
+// TODO(SeanCurtis-TRI): Remove ReadObjToTriangleSurfaceMesh(const path&). We
+// have implicit conversion from std::filesystem::path to MeshSource. What this
+// overload provides is conversion from string -> path -> MeshSource. The
+// python bindings bind `filename` as a std::filesystem::path, so it need not
+// change. But C++ callsites will explicitly have to update their parameters
+// from string-like types that implicitly convert to path to actual paths.
 /** Constructs a surface mesh from a Wavefront .obj file and optionally scales
  coordinates by the given scale factor. Polygons will be triangulated if they
  are not triangles already. All objects in the .obj file will be merged into
@@ -41,19 +49,27 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
  @param on_warning
      An optional callback that will receive warning message(s) encountered
      while reading the mesh.  When not provided, drake::log() will be used.
- @throws std::exception if `filename` doesn't have a valid file path, or the
-     file has no faces.
+ @throws std::exception if there is an error reading the mesh data.
  @return surface mesh */
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    const std::string& filename, double scale = 1.0,
+    const std::filesystem::path& filename, double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});
 
 /** Overload of @ref ReadObjToTriangleSurfaceMesh(const std::string&, double)
  with the Wavefront .obj file given in std::istream. */
+DRAKE_DEPRECATED(
+    "2025-01-01",
+    "Please use ReadObjToTriangleSurfaceMesh(const MeshSource&) instead.")
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     std::istream* input_stream, double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {},
     std::string_view description = "from_stream");
+
+/** Overload of @ref ReadObjToTriangleSurfaceMesh(const std::string&, double)
+ with the Wavefront .obj in a Mesh shape specification. */
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
+    const MeshSource& mesh_source, double scale = 1.0,
+    std::function<void(std::string_view)> on_warning = {});
 
 }  // namespace geometry
 }  // namespace drake
