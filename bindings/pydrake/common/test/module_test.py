@@ -1,5 +1,6 @@
 import copy
 import os
+from pathlib import Path
 import unittest
 
 import numpy as np
@@ -44,6 +45,39 @@ class TestCommon(unittest.TestCase):
 
         copy.copy(not_empty)
         copy.deepcopy(not_empty)
+
+    def test_file_source(self):
+        source = mut.FileSource(path="/a/path.TXT")
+        self.assertTrue(source.is_path())
+        self.assertFalse(source.is_in_memory())
+        self.assertEqual(source.description(), "/a/path.TXT")
+        self.assertEqual(source.path(), Path("/a/path.TXT"))
+        with self.assertRaises(RuntimeError):
+            source.memory_file()
+        self.assertRegex(repr(source), "path=['\"]/a/path.TXT['\"]")
+        self.assertIsInstance(eval(repr(source),
+                                   {"FileSource": mut.FileSource}),
+                              mut.FileSource)
+        copy.copy(source)
+        copy.deepcopy(source)
+
+        file = mut.MemoryFile(contents="a", extension=".ext",
+                              filename_hint="hint")
+        source = mut.FileSource(file=file)
+        self.assertFalse(source.is_path())
+        self.assertTrue(source.is_in_memory())
+        self.assertEqual(source.description(), "hint")
+        self.assertIsInstance(source.memory_file(), mut.MemoryFile)
+        with self.assertRaises(RuntimeError):
+            source.path()
+        self.assertRegex(repr(source), "file=MemoryFile")
+        print(repr(source))
+        self.assertIsInstance(eval(repr(source),
+                                   {"FileSource": mut.FileSource,
+                                    "MemoryFile": mut.MemoryFile}),
+                              mut.FileSource)
+        copy.copy(source)
+        copy.deepcopy(source)
 
     def test_memory_file(self):
         content_string = "Some string"
