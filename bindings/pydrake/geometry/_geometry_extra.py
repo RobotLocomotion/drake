@@ -93,5 +93,16 @@ def _add_extraneous_repr_functions():
         )
     MeshSource.__repr__ = mesh_source_repr
 
+    def mesh_type_repr(mesh, type_name):
+        if mesh.source().is_path():
+            data_param = f"filename={repr(str(mesh.source().path()))}"
+        else:
+            data_param = f"mesh_data={repr(mesh.source().in_memory())}"
+        return (
+            f"{type_name}({data_param}, scale={repr(mesh.scale())})"
+        )
+    Mesh.__repr__ = lambda x: mesh_type_repr(x, "Mesh")
+    Convex.__repr__ = lambda x: mesh_type_repr(x, "Convex")
+
 
 _add_extraneous_repr_functions()
