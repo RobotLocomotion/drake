@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 
@@ -72,6 +73,8 @@ class Shape {
   /** Returns the (unqualified) type name of this Shape, e.g., "Box". */
   std::string_view type_name() const { return do_type_name(); }
 
+  // TODO(SeanCurtis-TRI): Deprecate this in favor of a camel-case spelling; the
+  // cost of Mesh::to_string() and Convex::to_string() belie the snake_case.
   /** Returns a string representation of this shape. */
   std::string to_string() const { return do_to_string(); }
 
@@ -263,14 +266,42 @@ class Convex final : public Shape {
                                 considering revisiting the model itself. */
   explicit Convex(const std::string& filename, double scale = 1.0);
 
+  // We're intentionally omitting these new in-memory APIs from doxygen until
+  // we have a minimum level of support.
+#ifndef DRAKE_DOXYGEN_CXX
+  /** Constructs a convex shape specification from the contents of a
+   Drake-supported mesh file type.
+
+   The mesh is defined by the contents of a @ref supported_file_types
+   "mesh file format supported by Drake". Those contents are passed in as
+   `mesh_data`. For %Convex, the only supporting files required are those
+   necessary to define vertex positions (e.g., a glTF's .bin file); materials
+   and textures are ignored.
+
+   @param mesh_data          The in-memory file contents that define the vertex
+                             data for this shape.
+   @param scale              An optional scale to coordinates. */
+  explicit Convex(InMemoryMesh mesh_data, double scale = 1.0);
+#endif
+
   ~Convex() final;
 
-  const std::string& filename() const { return filename_; }
+#ifndef DRAKE_DOXYGEN_CXX
+  /** Returns the source for this specification's mesh data. When working with
+   %Convex, this API should only be used for introspection. The contract for
+   %Convex is that the convex hull is always used in place of whatever
+   underlying mesh declaration is provided. For all functional geometric
+   usage, exclusively use the convex hull returned by GetConvexHull(). */
+  const MeshSource& source() const { return source_; }
+#endif
+
+  std::string filename() const;
+
   /** Returns the extension of the mesh filename -- all lower case and including
    the dot. In other words /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both
    report the ".obj" extension. The "extension" portion of the filename is
    defined as in std::filesystem::path::extension(). */
-  const std::string& extension() const { return extension_; }
+  const std::string& extension() const { return source_.extension(); }
   double scale() const { return scale_; }
 
   /** Reports the convex hull of the named mesh.
@@ -291,8 +322,7 @@ class Convex final : public Shape {
   std::string do_to_string() const final;
   VariantShapeConstPtr get_variant_this() const final;
 
-  std::string filename_;
-  std::string extension_;
+  MeshSource source_;
   double scale_{};
   // Allows the deferred computation of the hull on an otherwise const Convex.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
@@ -461,14 +491,38 @@ class Mesh final : public Shape {
                                 considering revisiting the model itself. */
   explicit Mesh(const std::string& filename, double scale = 1.0);
 
+  // We're intentionally omitting these new in-memory APIs from doxygen until
+  // we have a minimum level of support.
+#ifndef DRAKE_DOXYGEN_CXX
+  /** Constructs a mesh shape specification from the contents of a
+   Drake-supported mesh file type.
+
+   The mesh is defined by the contents of a @ref supported_file_types
+   "mesh file format supported by Drake". Those contents are passed in as
+   `mesh_data`. The mesh data should include the main mesh file's contents as
+   well as any supporting file contents as needed. See InMemoryMesh.
+
+   @param mesh_data          The in-memory file contents that define the mesh
+                             data for this shape.
+   @param scale              An optional scale to coordinates. */
+  explicit Mesh(InMemoryMesh mesh_data, double scale = 1.0);
+#endif
+
   ~Mesh() final;
 
-  const std::string& filename() const { return filename_; }
+#ifndef DRAKE_DOXYGEN_CXX
+  /** Returns the source for this specification's mesh data. */
+  const MeshSource& source() const { return source_; }
+#endif
+
+  std::string filename() const;
+
   /** Returns the extension of the mesh filename -- all lower case and including
    the dot. In other words /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both
    report the ".obj" extension. The "extension" portion of the filename is
    defined as in std::filesystem::path::extension(). */
-  const std::string& extension() const { return extension_; }
+  const std::string& extension() const { return source_.extension(); }
+
   double scale() const { return scale_; }
 
   /** Reports the convex hull of the named mesh.
@@ -490,8 +544,7 @@ class Mesh final : public Shape {
   VariantShapeConstPtr get_variant_this() const final;
 
   // NOTE: Cannot be const to support default copy/move semantics.
-  std::string filename_;
-  std::string extension_;
+  MeshSource source_;
   double scale_{};
   // Allows the deferred computation of the hull on an otherwise const Mesh.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};

@@ -486,7 +486,11 @@ class TestGeometryCore(unittest.TestCase):
             mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
             mut.Mesh(filename="arbitrary/path", scale=1.0),
+            mut.Mesh(mesh_data=mut.InMemoryMesh(
+                MemoryFile("# ", ".obj", "junk")), scale=1.0),
             mut.Convex(filename="arbitrary/path", scale=1.0),
+            mut.Convex(mesh_data=mut.InMemoryMesh(
+                MemoryFile("# ", ".obj", "junk")), scale=1.0),
             mut.MeshcatCone(height=1.23, a=3.45, b=6.78)
         ]
         for shape in shapes:
@@ -502,7 +506,10 @@ class TestGeometryCore(unittest.TestCase):
             self.assertIsInstance(shape_copy, shape_cls)
             self.assertIsNot(shape_copy, shape)
 
-            new_shape = eval(repr(shape), dict([(shape_cls_name, shape_cls)]))
+            # Representation of Mesh/Convex requires additional types.
+            new_shape = eval(repr(shape), {shape_cls_name: shape_cls,
+                                           'InMemoryMesh': mut.InMemoryMesh,
+                                           'MemoryFile': MemoryFile})
             self.assertIsInstance(new_shape, shape_cls)
             self.assertEqual(repr(new_shape), repr(shape))
 
@@ -572,18 +579,31 @@ class TestGeometryCore(unittest.TestCase):
         X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
         self.assertIsInstance(X_FH, RigidTransform)
 
-        mesh = mut.Mesh(filename=junk_path, scale=1.0)
-        assert_shape_api(mesh)
-        self.assertIn(junk_path, mesh.filename())
-        self.assertEqual(".ext", mesh.extension())
-        self.assertEqual(mesh.scale(), 1.0)
-        with self.assertRaisesRegex(RuntimeError,
-                                    "MakeConvexHull only applies to"):
-            # We just need evidence that it invokes convex hull machinery; the
-            # exception for a bad extension suffices.
-            mesh.GetConvexHull()
-        assert_pickle(
-            self, mesh, lambda shape: [shape.filename(), shape.scale()])
+        for dut_mesh in [mut.Mesh(filename=junk_path, scale=1.5),
+                         mut.Mesh(mesh_data=mut.InMemoryMesh(
+                                      MemoryFile("#junk", ".ext", "test")),
+                                  scale=1.5),
+                         mut.Convex(filename=junk_path, scale=1.5),
+                         mut.Convex(mesh_data=mut.InMemoryMesh(
+                            MemoryFile("#junk", ".ext", "test")),
+                            scale=1.5)]:
+            assert_shape_api(dut_mesh)
+            self.assertEqual(".ext", dut_mesh.extension())
+            self.assertEqual(dut_mesh.scale(), 1.5)
+            self.assertIsInstance(dut_mesh.source(), mut.MeshSource)
+            if dut_mesh.source().IsPath():
+                with self.assertRaisesRegex(RuntimeError,
+                                            "MakeConvexHull only applies to"):
+                    # We just need evidence that it invokes convex hull
+                    # machinery; the exception for a bad extension suffices.
+                    dut_mesh.GetConvexHull()
+                self.assertIn(junk_path, dut_mesh.filename())
+                # TODO(SeanCurtis-TRI) Also test pickle when in-memory meshes
+                # support it.
+                assert_pickle(
+                    self, dut_mesh,
+                    lambda shape: [shape.source().description(),
+                                   shape.scale()])
 
         sphere = mut.Sphere(radius=1.0)
         assert_shape_api(sphere)

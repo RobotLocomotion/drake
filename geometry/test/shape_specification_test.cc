@@ -472,8 +472,10 @@ GTEST_TEST(ShapeTest, Constructors) {
   EXPECT_EQ(capsule2.length(), 5);
 
   const Convex convex{kFilename, 1.5};
-  EXPECT_EQ(convex.filename(), kFilename);
+  EXPECT_EQ(convex.source().description(), kFilename);
+  EXPECT_EQ(convex.extension(), ".obj");
   EXPECT_EQ(convex.scale(), 1.5);
+  EXPECT_EQ(convex.filename(), kFilename);
 
   const Cylinder cylinder{1, 2};
   EXPECT_EQ(cylinder.radius(), 1);
@@ -497,8 +499,10 @@ GTEST_TEST(ShapeTest, Constructors) {
   unused(hs);
 
   const Mesh mesh{kFilename, 1.4};
-  EXPECT_EQ(mesh.filename(), kFilename);
+  EXPECT_EQ(mesh.source().description(), kFilename);
+  EXPECT_EQ(mesh.extension(), ".obj");
   EXPECT_EQ(mesh.scale(), 1.4);
+  EXPECT_EQ(mesh.filename(), kFilename);
 
   const MeshcatCone cone{1.2, 3.4, 5.6};
   EXPECT_EQ(cone.height(), 1.2);
@@ -537,7 +541,7 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
                               "Capsule radius and length should both be > 0.+");
 
   DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", 0),
-                              "Convex .scale. cannot be < 1e-8.");
+                              "Convex .scale. cannot be < 1e-8.*");
   DRAKE_EXPECT_NO_THROW(Convex("foo", -1));  // Special case for negative scale.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -562,7 +566,7 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
                               "and c should all be > 0.+");
 
   DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", 1e-9),
-                              "Mesh .scale. cannot be < 1e-8.");
+                              "Mesh .scale. cannot be < 1e-8.*");
   DRAKE_EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
 
   DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(0, 1, 1),
@@ -597,6 +601,61 @@ GTEST_TEST(ShapeTest, ConvexHull) {
   };
   expect_convex_hull(Mesh(cube_path));
   expect_convex_hull(Convex(cube_path));
+}
+
+GTEST_TEST(ShapeTest, ConvexFromMemory) {
+  // This will get normalized to ".obj".
+  const std::string mesh_name = "a_mesh.OBJ";
+  const std::string obj_contents = R"""(
+    v 0 0 0
+    v 1 0 0
+    v 1 1 0
+    v 0 1 0
+    v 0 0 1
+    v 1 0 1
+    v 1 1 1
+    v 0 1 1
+    # intentionally omit faces.
+  )""";
+  InMemoryMesh mesh_data(
+      MemoryFile(obj_contents, ".OBJ", mesh_name),
+      {{"fake.txt", MemoryFile("content", ".txt", "fake.txt")}});
+  const Convex convex(std::move(mesh_data), 2.0);
+  EXPECT_EQ(convex.extension(), ".obj");
+  const MeshSource& source = convex.source();
+  ASSERT_TRUE(source.IsInMemory());
+  EXPECT_EQ(source.mesh_data().mesh_file().filename_hint(), mesh_name);
+  EXPECT_NE(source.mesh_data().file("fake.txt"), nullptr);
+
+  EXPECT_THROW(convex.filename(), std::exception);
+}
+
+GTEST_TEST(ShapeTest, MeshFromMemory) {
+  // This will get normalized to ".obj".
+  const std::string mesh_name = "a_mesh.OBJ";
+  const std::string obj_contents = R"""(
+    v 0 0 0
+    v 1 0 0
+    v 1 1 0
+    v 0 1 0
+    v 0 0 1
+    v 1 0 1
+    v 1 1 1
+    v 0 1 1
+    f 1 2 3 4
+    f 5 6 7 8
+  )""";
+  InMemoryMesh mesh_data(
+      MemoryFile(obj_contents, ".OBJ", mesh_name),
+      {{"fake.txt", MemoryFile("content", ".txt", "fake.txt")}});
+  const Mesh mesh(std::move(mesh_data), 2.0);
+  EXPECT_EQ(mesh.extension(), ".obj");
+  const MeshSource& source = mesh.source();
+  ASSERT_TRUE(source.IsInMemory());
+  EXPECT_EQ(source.mesh_data().mesh_file().filename_hint(), mesh_name);
+  EXPECT_NE(source.mesh_data().file("fake.txt"), nullptr);
+
+  EXPECT_THROW(mesh.filename(), std::exception);
 }
 
 class DefaultReifierTest : public ShapeReifier, public ::testing::Test {};
@@ -655,13 +714,34 @@ TEST_F(OverrideDefaultGeometryTest, UnsupportedGeometry) {
 }
 
 GTEST_TEST(ShapeTest, TypeNameAndToString) {
+  // In-memory meshes we'll use on Convex and Mesh.
+  const InMemoryMesh in_memory1(MemoryFile("a", ".a", "A"));
+  const InMemoryMesh in_memory2(
+      MemoryFile("a", ".a", "A"),
+      {{"bb", MemoryFile("b", ".b", "B")}, {"cc", "path/to/c"}});
+  // The Mesh and Convex in-memory mesh to_string() results should match except
+  // for the class name.
+  static constexpr const char* mem1_fmt =
+      "{}(mesh_data=InMemoryMesh(mesh_file=MemoryFile(contents='a', "
+      "extension='.a', filename_hint='A')), scale=1.5)";
+  static constexpr const char* mem2_fmt =
+      "{}(mesh_data=InMemoryMesh(mesh_file=MemoryFile(contents='a', "
+      "extension='.a', filename_hint='A'), supporting_files={{{{'bb', "
+      "FileSource(file=MemoryFile(contents='b', extension='.b', "
+      "filename_hint='B'))}}, {{'cc', FileSource(path='path/to/c')}}}}), "
+      "scale=1.5)";
+
   const Box box(1.5, 2.5, 3.5);
   const Capsule capsule(1.25, 2.5);
   const Convex convex("/some/file", 1.5);
+  const Convex mem_convex1(in_memory1, 1.5);
+  const Convex mem_convex2(in_memory2, 1.5);
   const Cylinder cylinder(1.25, 2.5);
   const Ellipsoid ellipsoid(1.25, 2.5, 0.5);
   const HalfSpace half_space;
   const Mesh mesh("/some/file", 1.5);
+  const Mesh mem_mesh1(in_memory1, 1.5);
+  const Mesh mem_mesh2(in_memory2, 1.5);
   const MeshcatCone cone(1.5, 0.25, 0.5);
   const Sphere sphere(1.25);
 
@@ -672,26 +752,36 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(ellipsoid.type_name(), "Ellipsoid");
   EXPECT_EQ(half_space.type_name(), "HalfSpace");
   EXPECT_EQ(mesh.type_name(), "Mesh");
+  EXPECT_EQ(mem_mesh1.type_name(), "Mesh");
+  EXPECT_EQ(mem_mesh2.type_name(), "Mesh");
   EXPECT_EQ(cone.type_name(), "MeshcatCone");
   EXPECT_EQ(sphere.type_name(), "Sphere");
 
   EXPECT_EQ(box.to_string(), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(capsule.to_string(), "Capsule(radius=1.25, length=2.5)");
   EXPECT_EQ(convex.to_string(), "Convex(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(mem_convex1.to_string(), fmt::format(mem1_fmt, "Convex"));
+  EXPECT_EQ(mem_convex2.to_string(), fmt::format(mem2_fmt, "Convex"));
   EXPECT_EQ(cylinder.to_string(), "Cylinder(radius=1.25, length=2.5)");
   EXPECT_EQ(ellipsoid.to_string(), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(half_space.to_string(), "HalfSpace()");
   EXPECT_EQ(mesh.to_string(), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(mem_mesh1.to_string(), fmt::format(mem1_fmt, "Mesh"));
+  EXPECT_EQ(mem_mesh2.to_string(), fmt::format(mem2_fmt, "Mesh"));
   EXPECT_EQ(cone.to_string(), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
   EXPECT_EQ(sphere.to_string(), "Sphere(radius=1.25)");
 
   EXPECT_EQ(fmt::to_string(box), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(fmt::to_string(capsule), "Capsule(radius=1.25, length=2.5)");
   EXPECT_EQ(fmt::to_string(convex), "Convex(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(fmt::to_string(mem_convex1), mem_convex1.to_string());
+  EXPECT_EQ(fmt::to_string(mem_convex2), mem_convex2.to_string());
   EXPECT_EQ(fmt::to_string(cylinder), "Cylinder(radius=1.25, length=2.5)");
   EXPECT_EQ(fmt::to_string(ellipsoid), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(fmt::to_string(half_space), "HalfSpace()");
   EXPECT_EQ(fmt::to_string(mesh), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(fmt::to_string(mem_mesh1), mem_mesh1.to_string());
+  EXPECT_EQ(fmt::to_string(mem_mesh2), mem_mesh2.to_string());
   EXPECT_EQ(fmt::to_string(cone), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
   EXPECT_EQ(fmt::to_string(sphere), "Sphere(radius=1.25)");
 
