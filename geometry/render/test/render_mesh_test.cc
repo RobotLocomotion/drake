@@ -129,7 +129,7 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryErrorModes) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         LoadRenderMeshesFromObj("__garbage_doesn't_exist__.obj", empty_props(),
                                 kDefaultDiffuse, diagnostic_policy_),
-        "Failed parsing the obj file[^]*");
+        "Failed parsing obj data[^]*");
   }
   {
     // Case: Vertices only reports no faces found.
@@ -385,7 +385,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorOnly) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(0.5, 1, 1));
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
 }
 
 /* The OBJ has a single intrinsic material which only defines diffuse texture.
@@ -409,7 +409,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureOnly) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 1));
-  EXPECT_THAT(mesh.material->diffuse_map,
+  ASSERT_TRUE(mesh.material->diffuse_map.IsPath());
+  EXPECT_THAT(mesh.material->diffuse_map.path().string(),
               testing::EndsWith("diag_gradient.png"));
 }
 
@@ -433,7 +434,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorAndTexture) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 0));
-  EXPECT_THAT(mesh.material->diffuse_map,
+  ASSERT_TRUE(mesh.material->diffuse_map.IsPath());
+  EXPECT_THAT(mesh.material->diffuse_map.path().string(),
               testing::EndsWith("diag_gradient.png"));
 }
 
@@ -467,7 +469,9 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryDislocatedTexture) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 1));
-  EXPECT_EQ(mesh.material->diffuse_map, (temp_dir() / "diag_gradient.png"));
+  ASSERT_TRUE(mesh.material->diffuse_map.IsPath());
+  EXPECT_EQ(mesh.material->diffuse_map.path(),
+            (temp_dir() / "diag_gradient.png"));
 }
 
 /* The OBJ has multiple intrinsic materials *defined* in the .mtl file. But only
@@ -490,7 +494,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryMultipleDefinedIntrinsic) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(1, 0, 1));
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
 }
 
 /* The OBJ has a single intrinsic material which defines a bad texture. The
@@ -514,7 +518,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorAndBadTexture) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(1, 0.5, 1));
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
   EXPECT_THAT(
       TakeWarning(),
       testing::HasSubstr("requested an unavailable diffuse texture image"));
@@ -542,7 +546,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureButNoUvs) {
                                     "define any texture coordinates.*"));
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 0));
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
 }
 
 /* The OBJ has a single intrinsic material with a texture but no uvs. The
@@ -569,7 +573,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureButPartialUvs) {
                             "complete set of texture coordinates.*"));
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 0));
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
 }
 
 /* This test merely exposes a known flaw in the code. Images are defined
@@ -598,7 +602,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryObjMtlDislocation) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 0));
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
   // Because of our limited access to parsing information, this will look like
   // the image is unavailable.
   EXPECT_THAT(
@@ -633,11 +637,11 @@ TEST_F(LoadRenderMeshFromObjTest, MultipleValidIntrinsicMaterials) {
     if (mesh.indices.rows() == 1) {
       // test_material_1 applied to a single triangle.
       EXPECT_EQ(mesh.material->diffuse, Rgba(1, 0, 1));
-      EXPECT_EQ(mesh.material->diffuse_map, "");
+      EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
     } else if (mesh.indices.rows() == 2) {
       // test_material_2 applied to two triangles.
       EXPECT_EQ(mesh.material->diffuse, Rgba(1, 0, 0));
-      EXPECT_EQ(mesh.material->diffuse_map, "");
+      EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
     } else {
       DRAKE_UNREACHABLE();
     }
@@ -669,7 +673,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackObjMtlDislocationAbsolute) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
   // The tinyobj warning that the material library can't be found.
   EXPECT_THAT(TakeWarning(), testing::HasSubstr("not found in a path"));
 }
@@ -698,11 +702,11 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackDefaultedFaces) {
     if (mesh.indices.rows() == 1) {
       // default material applied to a single triangle.
       EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
-      EXPECT_EQ(mesh.material->diffuse_map, "");
+      EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
     } else if (mesh.indices.rows() == 2) {
       // test_material applied to two triangles.
       EXPECT_EQ(mesh.material->diffuse, Rgba(0.5, 1, 1));
-      EXPECT_EQ(mesh.material->diffuse_map, "");
+      EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
     } else {
       DRAKE_UNREACHABLE();
     }
@@ -728,7 +732,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackBadMaterialName) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
   EXPECT_THAT(TakeWarning(),
               testing::HasSubstr("material [ 'bad_material' ] not found"));
 }
@@ -751,7 +755,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackMissingMtl) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
   EXPECT_THAT(
       TakeWarning(),
       testing::HasSubstr("Material file [ not_really_a.mtl ] not found"));
@@ -775,7 +779,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackNoAppliedMaterial) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
 }
 
 /* The OBJ references no material library. The material should be the fallback
@@ -794,7 +798,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackNoMaterialLibrary) {
   const RenderMesh& mesh = result[0];
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
 }
 
 /* The OBJ references no material library. The material should be the fallback
@@ -850,7 +854,7 @@ TEST_F(LoadRenderMeshFromObjTest, RedundantMaterialWarnings) {
   // We still get the intrinsic material.
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(0.5, 1, 1));
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
   EXPECT_THAT(
       TakeWarning(),
       testing::MatchesRegex(".*has its own materials.*'phong', 'diffuse'.*"));
@@ -881,7 +885,7 @@ TEST_F(LoadRenderMeshFromObjTest, UvStatePassedToFallback) {
   // Inability to apply a valid texture leaves the material flat white.
   ASSERT_TRUE(mesh.material.has_value());
   EXPECT_EQ(mesh.material->diffuse, Rgba(1, 1, 1));
-  EXPECT_EQ(mesh.material->diffuse_map, "");
+  EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
   EXPECT_THAT(TakeWarning(),
               testing::MatchesRegex(
                   ".*'diffuse_map'.* doesn't define a complete set of.*"));
@@ -890,8 +894,9 @@ TEST_F(LoadRenderMeshFromObjTest, UvStatePassedToFallback) {
 /* Tests if the `from_mesh_file` flag is correctly propagated. */
 TEST_F(LoadRenderMeshFromObjTest, PropagateFromMeshFileFlag) {
   for (const bool from_mesh_file : {false, true}) {
-    // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
-    // from box.obj by stripping out material data by the build system.
+    // N.B. box_no_mtl.obj doesn't exist in the mesh_source tree and is
+    // generated from box.obj by stripping out material data by the build
+    // system.
     const std::string filename =
         from_mesh_file
             ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
@@ -902,6 +907,179 @@ TEST_F(LoadRenderMeshFromObjTest, PropagateFromMeshFileFlag) {
         filename, empty_props(), kDefaultDiffuse, diagnostic_policy_)[0];
     ASSERT_TRUE(mesh_data.material.has_value());
     EXPECT_EQ(from_mesh_file, mesh_data.material->from_mesh_file);
+  }
+}
+
+/* Tests parsing of in-memory obj. This isn't exhaustive. This largely tests the
+ use of supporting files. What happens when a supporting file is referenced but
+ is or isn't present in the set of supporting files. The rest of the parsing
+ is assumed to be identical to the on-disk parsing. */
+TEST_F(LoadRenderMeshFromObjTest, InMemoryMesh) {
+  const PerceptionProperties props;
+
+  /* Obj references no mtl file. */
+  {
+    const MeshSource mesh_source(InMemoryMesh(MemoryFile(
+        R"""(v 0 0 0
+             v 1 0 0
+             v 0 1 0
+             vn 0 0 1
+             f 1//1 2//1 3//1
+          )""",
+        ".obj", "obj1")));
+    const RenderMesh mesh = LoadRenderMeshesFromObj(
+        mesh_source, props, kDefaultDiffuse, diagnostic_policy_)[0];
+    EXPECT_EQ(mesh.positions.rows(), 3);
+    EXPECT_EQ(mesh.normals.rows(), 3);
+    EXPECT_EQ(mesh.uvs.rows(), 3);
+    EXPECT_EQ(mesh.indices.rows(), 1);
+    ASSERT_TRUE(mesh.material.has_value());
+    EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
+    EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
+  }
+
+  /* Obj references available mtl, no textures. */
+  {
+    const MeshSource mesh_source(
+        InMemoryMesh(MemoryFile(
+                         R"""(mtllib mem.mtl
+                              v 0 0 0
+                              v 1 0 0
+                              v 0 1 0
+                              vn 0 0 1
+                              usemtl test
+                              f 1//1 2//1 3//1
+                            )""",
+                         ".obj", "obj2"),
+                     {{"mem.mtl", MemoryFile(
+                                      R"""(newmtl test
+                                           Kd 1 0 0)""",
+                                      ".mtl", "mem.mtl")}}));
+    const RenderMesh mesh = LoadRenderMeshesFromObj(
+        mesh_source, props, kDefaultDiffuse, diagnostic_policy_)[0];
+    EXPECT_EQ(mesh.positions.rows(), 3);
+    EXPECT_EQ(mesh.normals.rows(), 3);
+    EXPECT_EQ(mesh.uvs.rows(), 3);
+    EXPECT_EQ(mesh.indices.rows(), 1);
+    ASSERT_TRUE(mesh.material.has_value());
+    EXPECT_EQ(mesh.material->diffuse, Rgba(1, 0, 0));
+    EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
+  }
+
+  /* Obj references available in-memory mtl, with available in-memory image. */
+  {
+    const MeshSource mesh_source(
+        InMemoryMesh(MemoryFile(
+                         R"""(mtllib mem.mtl
+                              v 0 0 0
+                              v 1 0 0
+                              v 0 1 0
+                              vn 0 0 1
+                              usemtl test
+                              f 1//1 2//1 3//1
+                            )""",
+                         ".obj", "obj3"),
+                     {{"mem.mtl", MemoryFile(
+                                      R"""(newmtl test
+                                           map_Kd fake.png)""",
+                                      ".mtl", "mem.mtl")},
+                      {"fake.png", MemoryFile("abc", ".png", "png")}}));
+    const RenderMesh mesh = LoadRenderMeshesFromObj(
+        mesh_source, props, kDefaultDiffuse, diagnostic_policy_)[0];
+    EXPECT_EQ(mesh.positions.rows(), 3);
+    EXPECT_EQ(mesh.normals.rows(), 3);
+    EXPECT_EQ(mesh.uvs.rows(), 3);
+    EXPECT_EQ(mesh.indices.rows(), 1);
+    ASSERT_TRUE(mesh.material.has_value());
+    EXPECT_TRUE(mesh.material->diffuse_map.IsInMemory());
+  }
+
+  /* Obj references available on-disk mtl, with available in-memory image. */
+  {
+    /* We reference an existing .mtl file and use the material name and texture
+     names found in that file. */
+    const MeshSource mesh_source(InMemoryMesh(
+        MemoryFile(
+            R"""(mtllib mem.mtl
+                 v 0 0 0
+                 v 1 0 0
+                 v 0 1 0
+                 vn 0 0 1
+                 usemtl material_0
+                 f 1//1 2//1 3//1
+               )""",
+            ".obj", "obj3"),
+        {{"mem.mtl",
+          FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj.mtl")},
+         {"box.png", MemoryFile("abc", ".png", "png")}}));
+    const RenderMesh mesh = LoadRenderMeshesFromObj(
+        mesh_source, props, kDefaultDiffuse, diagnostic_policy_)[0];
+    EXPECT_EQ(mesh.positions.rows(), 3);
+    EXPECT_EQ(mesh.normals.rows(), 3);
+    EXPECT_EQ(mesh.uvs.rows(), 3);
+    EXPECT_EQ(mesh.indices.rows(), 1);
+    ASSERT_TRUE(mesh.material.has_value());
+    EXPECT_TRUE(mesh.material->diffuse_map.IsInMemory());
+  }
+
+  /* Obj references unavailable mtl. */
+  {
+    ASSERT_EQ(this->NumWarnings(), 0);
+    ASSERT_EQ(this->NumErrors(), 0);
+    const MeshSource mesh_source(InMemoryMesh(MemoryFile(
+        R"""(mtllib missing.mtl
+             v 0 0 0
+             v 1 0 0
+             v 0 1 0
+             vn 0 0 1
+             f 1//1 2//1 3//1
+           )""",
+        ".obj", "obj4")));
+    const RenderMesh mesh = LoadRenderMeshesFromObj(
+        mesh_source, props, kDefaultDiffuse, diagnostic_policy_)[0];
+    EXPECT_EQ(mesh.positions.rows(), 3);
+    EXPECT_EQ(mesh.normals.rows(), 3);
+    EXPECT_EQ(mesh.uvs.rows(), 3);
+    EXPECT_EQ(mesh.indices.rows(), 1);
+    ASSERT_TRUE(mesh.material.has_value());
+    EXPECT_EQ(mesh.material->diffuse, kDefaultDiffuse);
+    EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
+    ASSERT_EQ(this->NumWarnings(), 2);  // One from Drake, one from tinyobj.
+    EXPECT_THAT(this->TakeWarning(),
+                testing::HasSubstr("not in its supporting files"));
+    EXPECT_THAT(this->TakeWarning(),
+                testing::HasSubstr("Failed to load material file"));
+  }
+
+  /* Obj references unavailable texture image. */
+  {
+    ASSERT_EQ(this->NumWarnings(), 0);
+    ASSERT_EQ(this->NumErrors(), 0);
+    const MeshSource mesh_source(
+        InMemoryMesh(MemoryFile(
+                         R"""(mtllib mem.mtl
+                              v 0 0 0
+                              v 1 0 0
+                              v 0 1 0
+                              vn 0 0 1
+                              usemtl test
+                              f 1//1 2//1 3//1
+                            )""",
+                         ".obj", "obj5"),
+                     {{"mem.mtl", MemoryFile(R"""(newmtl test
+                                                  map_Kd fake.png)""",
+                                             ".mtl", "mem.mtl")}}));
+    const RenderMesh mesh = LoadRenderMeshesFromObj(
+        mesh_source, props, kDefaultDiffuse, diagnostic_policy_)[0];
+    EXPECT_EQ(mesh.positions.rows(), 3);
+    EXPECT_EQ(mesh.normals.rows(), 3);
+    EXPECT_EQ(mesh.uvs.rows(), 3);
+    EXPECT_EQ(mesh.indices.rows(), 1);
+    ASSERT_TRUE(mesh.material.has_value());
+    EXPECT_TRUE(mesh.material->diffuse_map.IsEmpty());
+    ASSERT_EQ(this->NumWarnings(), 1);
+    EXPECT_THAT(this->TakeWarning(),
+                testing::HasSubstr("image will be omitted"));
   }
 }
 
