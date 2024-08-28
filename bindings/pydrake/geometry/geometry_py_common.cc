@@ -507,7 +507,10 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Convex, Shape> convex_cls(m, "Convex", doc.Convex.doc);
     convex_cls
         .def(py::init<std::string, double>(), py::arg("filename"),
-            py::arg("scale") = 1.0, doc.Convex.ctor.doc)
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_filename_scale)
+        .def(py::init<InMemoryMesh, double>(), py::arg("mesh_data"),
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_mesh_data_scale)
+        .def("source", &Convex::source, doc.Convex.source.doc)
         .def("filename", &Convex::filename, doc.Convex.filename.doc)
         .def("extension", &Convex::extension, doc.Convex.extension.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
@@ -515,7 +518,14 @@ void DoScalarIndependentDefinitions(py::module m) {
             doc.Convex.GetConvexHull.doc)
         .def(py::pickle(
             [](const Convex& self) {
-              return std::make_pair(self.filename(), self.scale());
+              // TODO(SeanCurtis-TRI) Pickle in-memory meshes. I need to be able
+              // to pickle MemoryFile, InMemoryMesh, and MeshFile.
+              if (!self.source().is_path()) {
+                throw std::runtime_error(
+                    "Only on-disk Mesh specifications can be pickled.");
+              }
+              return std::make_pair(
+                  self.source().path().string(), self.scale());
             },
             [](std::pair<std::string, double> info) {
               return Convex(info.first, info.second);
@@ -561,14 +571,24 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Mesh, Shape> mesh_cls(m, "Mesh", doc.Mesh.doc);
     mesh_cls
         .def(py::init<std::string, double>(), py::arg("filename"),
-            py::arg("scale") = 1.0, doc.Mesh.ctor.doc)
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_filename_scale)
+        .def(py::init<InMemoryMesh, double>(), py::arg("mesh_data"),
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_mesh_data_scale)
+        .def("source", &Mesh::source, doc.Mesh.source.doc)
         .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
         .def(py::pickle(
             [](const Mesh& self) {
-              return std::make_pair(self.filename(), self.scale());
+              // TODO(SeanCurtis-TRI) Pickle in-memory meshes. I need to be able
+              // to pickle MemoryFile, InMemoryMesh, and MeshFile.
+              if (!self.source().is_path()) {
+                throw std::runtime_error(
+                    "Only on-disk Mesh specifications can be pickled.");
+              }
+              return std::make_pair(
+                  self.source().path().string(), self.scale());
             },
             [](std::pair<std::string, double> info) {
               return Mesh(info.first, info.second);
