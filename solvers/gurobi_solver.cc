@@ -949,7 +949,15 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
     SetOptionOrThrow(model_env, "LogToConsole",
                      static_cast<int>(merged_options.get_print_to_console()));
   }
-
+  // Handle maximum threads via the common solver options. If the user has
+  // manually specified `Threads` then the common solver option will be
+  // overwritten.
+  if (!error) {
+    const int num_threads = static_cast<int>(merged_options.get_max_threads());
+    if (num_threads > 0) {
+      SetOptionOrThrow(model_env, "Threads", num_threads);
+    }
+  }
   // Default the option for number of threads based on an environment variable
   // (but only if the user hasn't set the option directly already).
   if (!merged_options.GetOptionsInt(id()).contains("Threads")) {

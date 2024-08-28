@@ -158,7 +158,10 @@ class SettingsConverter {
     // Propagate Drake's common options into `settings_`.
     settings_.verbose = solver_options.get_print_to_console();
     // TODO(jwnimmer-tri) Handle get_print_file_name().
-    // TODO(Alexandre.Amice) Handle kMaxThreads.
+
+    // Clarabel does not support setting the number of threads so we ignore
+    // the kMaxNumThreads option. Some of the linear solvers in Clarabel may be
+    // multithreaded.
 
     // Copy the Clarabel-specific `solver_options` to pending maps.
     pending_options_double_ =
@@ -371,14 +374,12 @@ b = [{}]
         out_file << "  clarabel.SecondOrderConeT(" << cone.nvars() << "),"
                  << std::endl;
         break;
-      case clarabel::SupportedConeT<double>::Tag::PSDTriangleConeT:
-        {
-          const clarabel::PSDTriangleConeT<double>* psd_cone =
-              static_cast<const clarabel::PSDTriangleConeT<double>*>(&cone);
-          out_file << "  clarabel.PSDTriangleConeT(" << psd_cone->dimension()
-                  << ")," << std::endl;
-        }
-        break;
+      case clarabel::SupportedConeT<double>::Tag::PSDTriangleConeT: {
+        const clarabel::PSDTriangleConeT<double>* psd_cone =
+            static_cast<const clarabel::PSDTriangleConeT<double>*>(&cone);
+        out_file << "  clarabel.PSDTriangleConeT(" << psd_cone->dimension()
+                 << ")," << std::endl;
+      } break;
       case clarabel::SupportedConeT<double>::Tag::ExponentialConeT:
         out_file << "  clarabel.ExponentialConeT()," << std::endl;
         break;
