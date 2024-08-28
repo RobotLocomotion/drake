@@ -448,6 +448,18 @@ void DefineRoleAssign(py::module m) {
   }
 }
 
+// Utility function for pickling Convex and Mesh. Turns the parameters into a
+// dictionary of kwargs to use for unpickling.
+py::dict PickleMeshSource(const MeshSource& source, double scale) {
+  if (source.is_path()) {
+    return py::dict(
+        py::arg("filename") = source.path(), py::arg("scale") = scale);
+  }
+  DRAKE_DEMAND(source.is_in_memory());
+  return py::dict(
+      py::arg("mesh_data") = source.in_memory(), py::arg("scale") = scale);
+}
+
 void DefineShapes(py::module m) {
   // Shape constructors - ordered alphabetically and not in the order given in
   // shape_specification.h
@@ -491,9 +503,13 @@ void DefineShapes(py::module m) {
             }));
 
     py::class_<Convex, Shape> convex_cls(m, "Convex", doc.Convex.doc);
+    py::object convex_ctor = m.attr("Convex");
     convex_cls
-        .def(py::init<std::string, double>(), py::arg("filename"),
-            py::arg("scale") = 1.0, doc.Convex.ctor.doc)
+        .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_filename_scale)
+        .def(py::init<InMemoryMesh, double>(), py::arg("mesh_data"),
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_mesh_data_scale)
+        .def("source", &Convex::source, doc.Convex.source.doc)
         .def("filename", &Convex::filename, doc.Convex.filename.doc)
         .def("extension", &Convex::extension, doc.Convex.extension.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
@@ -501,10 +517,10 @@ void DefineShapes(py::module m) {
             doc.Convex.GetConvexHull.doc)
         .def(py::pickle(
             [](const Convex& self) {
-              return std::make_pair(self.filename(), self.scale());
+              return PickleMeshSource(self.source(), self.scale());
             },
-            [](std::pair<std::string, double> info) {
-              return Convex(info.first, info.second);
+            [convex_ctor](const py::dict& kwargs) {
+              return convex_ctor(**kwargs).cast<Convex>();
             }));
 
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
@@ -545,19 +561,23 @@ void DefineShapes(py::module m) {
             py::arg("p_FB"), doc.HalfSpace.MakePose.doc);
 
     py::class_<Mesh, Shape> mesh_cls(m, "Mesh", doc.Mesh.doc);
+    py::object mesh_ctor = m.attr("Mesh");
     mesh_cls
-        .def(py::init<std::string, double>(), py::arg("filename"),
-            py::arg("scale") = 1.0, doc.Mesh.ctor.doc)
+        .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_filename_scale)
+        .def(py::init<InMemoryMesh, double>(), py::arg("mesh_data"),
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_mesh_data_scale)
+        .def("source", &Mesh::source, doc.Mesh.source.doc)
         .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
         .def(py::pickle(
             [](const Mesh& self) {
-              return std::make_pair(self.filename(), self.scale());
+              return PickleMeshSource(self.source(), self.scale());
             },
-            [](std::pair<std::string, double> info) {
-              return Mesh(info.first, info.second);
+            [mesh_ctor](const py::dict& kwargs) {
+              return mesh_ctor(**kwargs).cast<Mesh>();
             }));
 
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
