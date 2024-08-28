@@ -146,6 +146,8 @@ drake_cc_library(
         "//lcm:drake_lcm",
         "//lcmtypes:viewer",
         "//systems/lcm:lcm_system_graphviz",
+        "@common_robotics_utilities",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -414,6 +416,7 @@ drake_cc_library(
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
     deps = [
+        ":mesh_source",
         "//common:essential",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
@@ -861,6 +864,7 @@ drake_cc_googletest(
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis:simulator",
+        "@common_robotics_utilities",
     ],
 )
 
