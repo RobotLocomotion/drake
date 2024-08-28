@@ -988,14 +988,30 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
     color_actor->GetProperty()->SetInterpolationToPBR();
   }
   if (!material.diffuse_map.empty()) {
+    // Parsing via VTK should never require an image to be flipped.
+    DRAKE_DEMAND(material.flip_y == false);
+
     vtkNew<vtkPNGReader> texture_reader;
-    texture_reader->SetFileName(material.diffuse_map.c_str());
+    std::string description;
+    if (material.diffuse_map.is_path()) {
+      description = material.diffuse_map.path().string();
+      texture_reader->SetFileName(material.diffuse_map.path().c_str());
+    } else if (material.diffuse_map.is_memory_file()) {
+      const std::string& contents =
+          material.diffuse_map.memory_file().contents();
+      texture_reader->SetMemoryBuffer(contents.c_str());
+      texture_reader->SetMemoryBufferLength(contents.size());
+      description = material.diffuse_map.memory_file().filename_hint();
+    } else {
+      // RenderEngineVtk should never see diffuse_map.is_key().
+      DRAKE_UNREACHABLE();
+    }
     texture_reader->Update();
     if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
       log()->warn(
           "Texture map '{}' has an unsupported bit depth, casting it to uchar "
           "channels.",
-          material.diffuse_map);
+          description);
     }
 
     vtkNew<vtkImageCast> caster;

@@ -8,6 +8,7 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_properties.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/render/render_material.h"
 #include "drake/geometry/rgba.h"
@@ -104,7 +105,7 @@ struct RenderMesh {
                            faces fail to reference the texture coordinates if
                            they are present. */
 std::vector<RenderMesh> LoadRenderMeshesFromObj(
-    const std::filesystem::path& obj_path, const GeometryProperties& properties,
+    const MeshSource& mesh_source, const GeometryProperties& properties,
     const std::optional<Rgba>& default_diffuse,
     const drake::internal::DiagnosticPolicy& policy = {});
 

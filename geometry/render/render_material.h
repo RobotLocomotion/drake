@@ -3,14 +3,103 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <utility>
+#include <variant>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/common/memory_file.h"
 #include "drake/geometry/geometry_properties.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
+
+/* A texture can be specified for a RenderMaterial in several ways:
+
+  - No image at all (aka an "empty" texture source).
+  - A file path to an image on the disk.
+  - A special key for access in some coordinated image database.
+  - Contents of a known image file format. */
+class TextureSource {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TextureSource);
+
+  /* Default constructor is empty. */
+  TextureSource() = default;
+
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  explicit TextureSource(std::filesystem::path path);
+
+  template <typename StringLike>
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  explicit TextureSource(StringLike key_string)
+      : data_(std::move(std::string(key_string))) {
+    if (key().empty()) set_empty();
+  }
+
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  explicit TextureSource(MemoryFile file);
+
+  /* Clears the texture source, making it "empty". */
+  void set_empty() { data_ = std::monostate(); }
+
+  /* Sets the texture source to the given path. The result is empty if the path
+   is empty. */
+  TextureSource& operator=(std::filesystem::path path);
+
+  /* Sets the texture source to the given key string. The result is empty if the
+   key string is empty. */
+  template <typename StringLike>
+  TextureSource& operator=(StringLike key) {
+    std::string str_value(std::move(key));
+    if (str_value.empty()) {
+      set_empty();
+    } else {
+      data_ = std::move(str_value);
+    }
+    return *this;
+  }
+
+  /* Sets the texture source to the given file contents. The result is empty if
+   the file contents are empty. */
+  TextureSource& operator=(MemoryFile file);
+
+  /* Reports `true` if the texture source is empty. */
+  bool empty() const { return std::holds_alternative<std::monostate>(data_); }
+
+  /* Reports `true` if the texture is given by a system filepath. */
+  bool is_path() const {
+    return std::holds_alternative<std::filesystem::path>(data_);
+  }
+
+  /* Reports `true` if the textures is given by a key value. */
+  bool is_key() const { return std::holds_alternative<std::string>(data_); }
+
+  /* Reports `true` if the texture is contained in file contents. */
+  bool is_memory_file() const {
+    return std::holds_alternative<MemoryFile>(data_);
+  }
+
+  /* Returns the path.
+   @pre is_path() returns `true`. */
+  const std::filesystem::path& path() const {
+    return std::get<std::filesystem::path>(data_);
+  }
+
+  /* Returns the key.
+   @pre is_key() returns `true`. */
+  const std::string& key() const { return std::get<std::string>(data_); }
+
+  /* Returns the in-memory file contents.
+   @pre is_memory_file() returns `true`. */
+  const MemoryFile& memory_file() const { return std::get<MemoryFile>(data_); }
+
+ private:
+  std::variant<std::monostate, std::string, std::filesystem::path, MemoryFile>
+      data_;
+};
 
 /* Reports how UVs have been assigned to the mesh receiving a material. Textures
  should only be applied to meshes with *fully* assigned UVs. */
@@ -25,16 +114,15 @@ struct RenderMaterial {
    `diffuse_map` is empty, it acts as the multiplicative identity. */
   Rgba diffuse;
 
-  /* The optional texture to use as diffuse map. For universal compatibility,
-   it is an image file path. However, in RenderEngine implementations that
-   construct and consume their own %RenderMaterial instances, the file path
-   can be replaced with an arbitrary string which the RenderEngine
-   implementation knows how to map to an actual texture. Such %RenderMaterial
-   instances should be kept hidden within those implementations.
-
-   Regardless of how a non-empty string is interpreted, an empty string always
-   means no diffuse map. */
-  std::string diffuse_map;
+  /* The optional texture to use as diffuse map. If no diffuse texture is
+   defined, it will be "empty". Otherwise, the texture can be specified by a
+   path to an on-disk or in-memory image file. In some RenderEngine
+   implementations that construct and consume their own %RenderMaterial
+   instances, there is a fourth option. The texture map can be defined by an
+   arbitrary string (a key) which the RenderEngine implementation knows how to
+   map to an actual texture. Such %RenderMaterial instances should be kept
+   hidden within those implementations. */
+  TextureSource diffuse_map;
 
   /* OpenGL defines image origin at the bottom-left corner of the texture. Some
    geometry formats (e.g., glTF), define the origin at the top-left corner.
@@ -76,7 +164,9 @@ void MaybeWarnForRedundantMaterial(
      ("phong", "diffuse").
    - Otherwise, if an image can be located with a "compatible name" (e.g.,
      foo.png for a mesh foo.obj), a material with an unmodulated texture is
-     created.
+     created. An existing foo.png that can't be read or an empty `mesh_path`
+     are both treated as "no compatible png" could be found and we fall through
+     to the next condition.
    - Otherwise, if a default_diffuse value is provided, a material is created
      with the given default_diffuse color value.
    - Finally, if no material is defined, std::nullopt is returned. In such a
