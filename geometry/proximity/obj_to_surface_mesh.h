@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 // TODO(SeanCurtis-TRI): This should distill further and combine with
@@ -23,9 +24,8 @@ namespace internal {
  configured to stop for errors, std::nullopt is returned.
  @pre `diagnostic` has both warning and error handlers defined. */
 std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
-    std::istream* input_stream, double scale,
-    const drake::internal::DiagnosticPolicy& diagnostic,
-    std::string_view description);
+    const MeshSource& source, double scale,
+    const drake::internal::DiagnosticPolicy& diagnostic);
 
 }  // namespace internal
 
@@ -54,6 +54,12 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     std::istream* input_stream, double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {},
     std::string_view description = "from_stream");
+
+/** Overload of @ref ReadObjToTriangleSurfaceMesh(const std::string&, double)
+ with the Wavefront .obj in a Mesh shape specification. */
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
+    const MeshSource& mesh_source, double scale,
+    std::function<void(std::string_view)> on_warning = {});
 
 }  // namespace geometry
 }  // namespace drake

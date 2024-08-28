@@ -17,67 +17,11 @@ namespace drake {
 namespace geometry {
 namespace {
 
-// Tests TinyObjToSurfaceVertices through ReadObjToTriangleSurfaceMesh. We
-// cannot test TinyObjToSurfaceVertices directly because we hide tinyobj from
-// public API.
-GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceVertices) {
-  std::istringstream test_stream{
-      "v  1.0 -1.0 -1.0\n"
-      "v  1.0 -1.0  1.0\n"
-      "v -1.0 -1.0  1.0\n"
-      "f 1 2 3\n"};
-  for (const double scale : {1.0, 2.0, 5.0}) {
-    // Seek to the beginning of the stream in each iteration.
-    test_stream.seekg(0, test_stream.beg);
-
-    const std::vector<Vector3<double>> surface_vertices(
-        ReadObjToTriangleSurfaceMesh(&test_stream, scale).vertices());
-
-    EXPECT_EQ(3, surface_vertices.size());
-    const std::vector<Vector3<double>> expect_vertices{
-        scale * Vector3<double>{1.0, -1.0, -1.0},  // first vertex.
-        scale * Vector3<double>{1.0, -1.0, 1.0},   // second vertex.
-        scale * Vector3<double>{-1.0, -1.0, 1.0}   // third vertex.
-    };
-
-    for (int i = 0; i < 3; ++i) {
-      EXPECT_EQ(expect_vertices[i], surface_vertices[i]);
-    }
-  }
-}
-
-// Tests TinyObjToSurfaceFaces through ReadObjToTriangleSurfaceMesh. We cannot
-// test TinyObjToSurfaceFaces directly because we hide tinyobj from public API.
-GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
-  std::istringstream test_stream{
-      "v  1.0 -1.0 -1.0\n"
-      "v  1.0 -1.0  1.0\n"
-      "v -1.0 -1.0  1.0\n"
-      "v -1.0 -1.0 -1.0\n"
-      "f 1 2 3\n"
-      "f 1 3 4\n"};
-
-  const std::vector<SurfaceTriangle> surface_faces(
-      ReadObjToTriangleSurfaceMesh(&test_stream).triangles());
-
-  EXPECT_EQ(2, surface_faces.size());
-  // Vertex indices in obj file start with 1, but vertex indices in our
-  // TriangleSurfaceMesh start with 0.
-  const int expect_faces[2][3]{{0, 1, 2}, {0, 2, 3}};
-  auto face_equal = [](const SurfaceTriangle& f,
-                       const SurfaceTriangle& g) -> bool {
-    return std::make_tuple(f.vertex(0), f.vertex(1), f.vertex(2)) ==
-           std::make_tuple(g.vertex(0), g.vertex(1), g.vertex(2));
-  };
-  for (int i = 0; i < 2; ++i) {
-    EXPECT_TRUE(face_equal(SurfaceTriangle(expect_faces[i]), surface_faces[i]));
-  }
-}
-
 GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToTriangleSurfaceMesh) {
   const std::string filename =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  TriangleSurfaceMesh<double> surface = ReadObjToTriangleSurfaceMesh(filename);
+  const TriangleSurfaceMesh<double> surface =
+      ReadObjToTriangleSurfaceMesh(filename);
 
   ASSERT_EQ(surface.num_vertices(), 8);
   ASSERT_EQ(surface.num_triangles(), 12);
@@ -147,16 +91,31 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToTriangleSurfaceMesh) {
   }
 }
 
+// Tests the MeshSource-based overload.
+GTEST_TEST(ObjToSurfaceMeshTest, MeshSource) {
+  constexpr double kUnitScale = 1.0;
+  const std::string filename =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  MeshSource disk_source(filename);
+  MeshSource memory_source(InMemoryMesh(MemoryFile::Make(filename)));
+  const TriangleSurfaceMesh<double> disk_surface =
+      ReadObjToTriangleSurfaceMesh(disk_source, kUnitScale);
+  const TriangleSurfaceMesh<double> memory_surface =
+      ReadObjToTriangleSurfaceMesh(memory_source, kUnitScale);
+
+  EXPECT_TRUE(disk_surface.Equal(memory_surface));
+}
+
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionInvalidFilePath) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ReadObjToTriangleSurfaceMesh(std::string("invalid_file_path")),
-      "Cannot open file 'invalid_file_path'");
+      ReadObjToTriangleSurfaceMesh(std::string("invalid_file_path.obj")),
+      ".*cannot read the file 'invalid_file_path.obj'.");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyFile) {
   std::istringstream empty("");
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&empty),
-                              ".*The file parsed contains no objects.*");
+                              ".*OBJ data parsed contains no objects.*");
 }
 
 void FailOnWarning(std::string_view message) {
@@ -164,7 +123,7 @@ void FailOnWarning(std::string_view message) {
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, WarningCallback) {
-  // This *.obj file refers to a separate *.mtl file.  In various cases below,
+  // This *.obj file refers to a separate *.mtl file. In various cases below,
   // this may cause warnings from the parser.
   const std::string filename =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
@@ -188,7 +147,7 @@ v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 )"};
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&no_faces),
-                              ".*The file parsed contains no objects.*");
+                              ".*OBJ data parsed contains no objects.*");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionObjectHasNoFaces) {
@@ -199,7 +158,7 @@ v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 )"};
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&no_faces),
-                              ".*The file parsed contains no objects.*");
+                              ".*OBJ data parsed contains no objects.*");
 }
 
 // Confirms that we can accept an obj file with faces (f lines) without
