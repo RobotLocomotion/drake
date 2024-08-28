@@ -571,6 +571,7 @@ drake_py_binary(
     visibility = [
         "//bindings/pydrake/visualization:__pkg__",
     ],
+    deps = ["@venv"],
 )
 
 drake_cc_googletest(
