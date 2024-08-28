@@ -1,8 +1,10 @@
 #include "drake/multibody/parsing/detail_dmd_parser.h"
 
 #include <string>
+#include <tuple>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/diagnostic_policy.h"
@@ -67,8 +69,8 @@ class DmdParserTest : public test::DiagnosticPolicyTestBase {
   MultibodyPlant<double> plant_{0.01};
 };
 
-/* Make an SDF containing a "ball" body (with an attached frame) and a dummy
- body (with an attached frame). */
+/* Make an SDFormat file containing a "ball" body (with an attached frame) and
+ a dummy body (with an attached frame). */
 std::filesystem::path MakeSphereSdf(const Vector3d& p_BF) {
   std::filesystem::path dir = temp_directory();
   std::filesystem::path sdf_path = dir / "sphere.sdf";
@@ -190,88 +192,143 @@ directives:
         ball:
             base_frame: pose_body_to_in_scope_frame_8::dummy_offset
             translation: {offset_str}
+- add_model:
+    name: pose_frame_to_world_9
+    file: {sphere_sdf}
+    default_free_body_pose:
+        base_offset:
+            translation: {offset_str}
 )""",
                                           fmt::arg("offset_str", offset_str),
                                           fmt::arg("sphere_sdf", sphere_sdf)),
                                       {}, ModelDirectives());
 
-  std::vector<ModelInstanceInfo> results = ParseModelDirectives(directives);
-  ASSERT_EQ(results.size(), 7);
-
-  /* Instantiate the floating joint between ball and world and set all the
-   default poses. */
+  ParseModelDirectives(directives);
   plant_.Finalize();
   auto context = plant_.CreateDefaultContext();
 
-  /* We'll grab all the relevant bodies (the balls we posed and their parent
-   bodies), enumerating them based on the expected model instance index. */
-  auto get_body = [this, &results](
-                      int expected_index,
-                      std::string_view body_name =
-                          "ball") -> const RigidBody<double>& {
-    const ModelInstanceIndex index(expected_index);
-    const int result_index = expected_index - 2;
-    EXPECT_EQ(results[result_index].model_instance, index);
-    return this->plant_.GetBodyByName(body_name, index);
-  };
-  const RigidBody<double>& ball_2 = get_body(2);
-  const RigidBody<double>& ball_3 = get_body(3);
-  const RigidBody<double>& ball_4 = get_body(4);
-  const RigidBody<double>& ball_5 = get_body(5);
-  const RigidBody<double>& ball_6 = get_body(6);
-  const RigidBody<double>& ball_7 = get_body(7);
-  const RigidBody<double>& ball_8 = get_body(8);
-  // Ball 8 is ultimately a child of dummy 8, so we'll grab it for later.
-  const RigidBody<double>& dummy_8 = get_body(8, "dummy");
-  const RigidBody<double>& world = plant_.world_body();
+  /* To check the correctness of the parse, we'll check which pair of frames
+   every joint connects, and the world pose of every frame. */
 
-  /* Now we'll look at each of the spheres in turn, and confirm that they are
-   posed as we expect. */
-  struct BallExpectations {
-    const RigidBody<double>* body{};
-    const RigidBody<double>* parent{};
-    int num_offset{1};
-    bool body_floats{false};
-  };
-  std::vector<BallExpectations> balls{
-      {.body = &ball_2, .parent = &world, .body_floats = true},
-      {.body = &ball_3, .parent = &world, .body_floats = true},
-      {.body = &ball_4, .parent = &ball_3, .num_offset = 2},
-      {.body = &ball_5, .parent = &ball_2, .num_offset = 3},
-      /* Ball 6 is frame-to-body, this undoes the effect of an offset. */
-      {.body = &ball_6, .parent = &ball_2, .num_offset = 1},
-      /* Ball 7 is frame-to-frame, undoing the effect of an offset. */
-      {.body = &ball_7, .parent = &ball_2, .num_offset = 2},
-      {.body = &ball_8, .parent = &dummy_8, .num_offset = 2}};
-
-  for (const auto& ball : balls) {
-    SCOPED_TRACE(fmt::format(
-        "Ball {}", plant_.GetModelInstanceName(ball.body->model_instance())));
-    /* Because it's not floating, its default pose must come from the joint. */
-    EXPECT_EQ(ball.body->is_floating(), ball.body_floats);
-    if (ball.body_floats) {
-      /* For floating bodies, the default pose can be reported by the plant. */
-      RigidTransformd X_PC_plant_default =
-          plant_.GetDefaultFreeBodyPose(*ball.body);
-      EXPECT_TRUE(CompareMatrices(
-          X_PC_plant_default.GetAsMatrix34(),
-          RigidTransformd(ball.num_offset * p_PC).GetAsMatrix34()));
-    }
-    const std::string joint_name = ball.body->name();
-    ASSERT_TRUE(plant_.HasJointNamed(joint_name, ball.body->model_instance()));
-    const auto& joint =
-        plant_.GetJointByName(joint_name, ball.body->model_instance());
-
-    /* The default pose can *always* be checked from the joint. */
-    EXPECT_TRUE(CompareMatrices(joint.GetDefaultPose().GetAsMatrix34(),
-                                RigidTransformd(p_PC).GetAsMatrix34()));
-    EXPECT_EQ(&joint.parent_body(), ball.parent);
-    EXPECT_EQ(&joint.child_body(), ball.body);
-
-    EXPECT_TRUE(CompareMatrices(
-        ball.body->EvalPoseInWorld(*context).GetAsMatrix34(),
-        RigidTransformd(ball.num_offset * p_PC).GetAsMatrix34()));
+  // List of (joint, parent_frame, child_frame) tuples, in joint index order.
+  using JointDetail = std::tuple<std::string, std::string, std::string>;
+  std::vector<JointDetail> joints_actual;
+  for (JointIndex index : plant_.GetJointIndices()) {
+    const Joint<double>& joint = plant_.get_joint(index);
+    joints_actual.emplace_back(
+        ScopedName(plant_.GetModelInstanceName(joint.model_instance()),
+                   joint.name())
+            .to_string(),
+        joint.frame_on_parent().scoped_name().to_string(),
+        joint.frame_on_child().scoped_name().to_string());
   }
+  // clang-format off
+  std::vector<JointDetail> joints_expected{
+      // The default_free_body_pose for #4 added a joint.
+      {"pose_body_to_body_4::ball",
+       "pose_body_to_world_explicitly_3::ball",
+       "pose_body_to_body_4::ball"},
+      // The default_free_body_pose for #5 added a joint.
+      {"pose_body_to_frame_5::ball",
+       "pose_body_to_world_implicitly_2::base_offset",
+       "pose_body_to_frame_5::ball"},
+      // The default_free_body_pose for #6 added a joint.
+      {"pose_frame_to_body_6::ball",
+       "pose_body_to_world_implicitly_2::ball",
+       "pose_frame_to_body_6::base_offset"},
+      // The default_free_body_pose for #7 added a joint.
+      {"pose_frame_to_frame_7::ball",
+       "pose_body_to_world_implicitly_2::base_offset",
+       "pose_frame_to_frame_7::base_offset"},
+      // The default_free_body_pose for #8 added a joint.
+      {"pose_body_to_in_scope_frame_8::ball",
+       "pose_body_to_in_scope_frame_8::dummy_offset",
+       "pose_body_to_in_scope_frame_8::ball"},
+      // The default_free_body_pose for #9 added a joint.
+      {"pose_frame_to_world_9::ball",
+       "WorldModelInstance::world",
+       "pose_frame_to_world_9::base_offset"},
+      // All other joints were added during Finalize. The exact order here is
+      // not important, rather it's just hard-coded for simplicity. If Finalize
+      // ever changes its mind about how the below entries get ordered, it's
+      // fine to adjust this list.
+      {"pose_body_to_world_implicitly_2::ball", "WorldModelInstance::world",
+       "pose_body_to_world_implicitly_2::ball"},
+      {"pose_body_to_world_explicitly_3::ball", "WorldModelInstance::world",
+       "pose_body_to_world_explicitly_3::ball"},
+      {"pose_body_to_in_scope_frame_8::dummy", "WorldModelInstance::world",
+       "pose_body_to_in_scope_frame_8::dummy"},
+      {"pose_body_to_world_implicitly_2::dummy", "WorldModelInstance::world",
+       "pose_body_to_world_implicitly_2::dummy"},
+      {"pose_body_to_world_explicitly_3::dummy", "WorldModelInstance::world",
+       "pose_body_to_world_explicitly_3::dummy"},
+      {"pose_body_to_body_4::dummy", "WorldModelInstance::world",
+       "pose_body_to_body_4::dummy"},
+      {"pose_body_to_frame_5::dummy", "WorldModelInstance::world",
+       "pose_body_to_frame_5::dummy"},
+      {"pose_frame_to_body_6::dummy", "WorldModelInstance::world",
+       "pose_frame_to_body_6::dummy"},
+      {"pose_frame_to_frame_7::dummy", "WorldModelInstance::world",
+       "pose_frame_to_frame_7::dummy"},
+      {"pose_frame_to_world_9::dummy", "WorldModelInstance::world",
+       "pose_frame_to_world_9::dummy"}};
+  // clang-format on
+  EXPECT_THAT(joints_actual, testing::ContainerEq(joints_expected));
+
+  // List of (frame, X_WF) in frame index order.
+  using FrameDetail = std::tuple<std::string, Eigen::RowVector3d>;
+  std::vector<FrameDetail> poses_actual;
+  for (FrameIndex i{0}; i < plant_.num_frames(); ++i) {
+    const Frame<double>& frame = plant_.get_frame(i);
+    poses_actual.emplace_back(frame.scoped_name().to_string(),
+                              frame.CalcPoseInWorld(*context).translation());
+  }
+  // clang-format off
+  const std::vector<FrameDetail> poses_expected{
+      {"WorldModelInstance::world",                     p_PC * 0},
+      {"pose_body_to_world_implicitly_2::ball",         p_PC * 1},
+      {"pose_body_to_world_implicitly_2::dummy",        p_PC * 0},
+      {"pose_body_to_world_implicitly_2::__model__",    p_PC * 1},
+      {"pose_body_to_world_implicitly_2::base_offset",  p_PC * 2},
+      {"pose_body_to_world_implicitly_2::dummy_offset", p_PC * 1},
+      {"pose_body_to_world_explicitly_3::ball",         p_PC * 1},
+      {"pose_body_to_world_explicitly_3::dummy",        p_PC * 0},
+      {"pose_body_to_world_explicitly_3::__model__",    p_PC * 1},
+      {"pose_body_to_world_explicitly_3::base_offset",  p_PC * 2},
+      {"pose_body_to_world_explicitly_3::dummy_offset", p_PC * 1},
+      {"pose_body_to_body_4::ball",                     p_PC * 2},
+      {"pose_body_to_body_4::dummy",                    p_PC * 0},
+      {"pose_body_to_body_4::__model__",                p_PC * 2},
+      {"pose_body_to_body_4::base_offset",              p_PC * 3},
+      {"pose_body_to_body_4::dummy_offset",             p_PC * 1},
+      {"pose_body_to_frame_5::ball",                    p_PC * 3},
+      {"pose_body_to_frame_5::dummy",                   p_PC * 0},
+      {"pose_body_to_frame_5::__model__",               p_PC * 3},
+      {"pose_body_to_frame_5::base_offset",             p_PC * 4},
+      {"pose_body_to_frame_5::dummy_offset",            p_PC * 1},
+      {"pose_frame_to_body_6::ball",                    p_PC * 1},
+      {"pose_frame_to_body_6::dummy",                   p_PC * 0},
+      {"pose_frame_to_body_6::__model__",               p_PC * 1},
+      {"pose_frame_to_body_6::base_offset",             p_PC * 2},
+      {"pose_frame_to_body_6::dummy_offset",            p_PC * 1},
+      {"pose_frame_to_frame_7::ball",                   p_PC * 2},
+      {"pose_frame_to_frame_7::dummy",                  p_PC * 0},
+      {"pose_frame_to_frame_7::__model__",              p_PC * 2},
+      {"pose_frame_to_frame_7::base_offset",            p_PC * 3},
+      {"pose_frame_to_frame_7::dummy_offset",           p_PC * 1},
+      {"pose_body_to_in_scope_frame_8::ball",           p_PC * 2},
+      {"pose_body_to_in_scope_frame_8::dummy",          p_PC * 0},
+      {"pose_body_to_in_scope_frame_8::__model__",      p_PC * 2},
+      {"pose_body_to_in_scope_frame_8::base_offset",    p_PC * 3},
+      {"pose_body_to_in_scope_frame_8::dummy_offset",   p_PC * 1},
+      {"pose_frame_to_world_9::ball",                   p_PC * -1},
+      {"pose_frame_to_world_9::dummy",                  p_PC * 0},
+      {"pose_frame_to_world_9::__model__",              p_PC * -1},
+      {"pose_frame_to_world_9::base_offset",            p_PC * 0},
+      {"pose_frame_to_world_9::dummy_offset",           p_PC * 1},
+  };
+  // clang-format on
+  EXPECT_THAT(poses_actual, testing::ContainerEq(poses_expected));
 }
 
 /* When a joint already exists between two bodies, adding a "default free body
