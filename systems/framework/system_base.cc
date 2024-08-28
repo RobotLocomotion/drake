@@ -9,6 +9,7 @@
 #include <unordered_set>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "drake/common/hash.h"
 #include "drake/common/unused.h"
