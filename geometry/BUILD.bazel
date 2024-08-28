@@ -399,11 +399,13 @@ drake_cc_library(
     srcs = ["read_obj.cc"],
     hdrs = ["read_obj.h"],
     deps = [
+        ":mesh_source",
         "//common:diagnostic_policy",
         "@eigen",
     ],
     implementation_deps = [
         "//common:essential",
+        "//common:memory_file",
         "@fmt",
         "@tinyobjloader_internal//:tinyobjloader",
     ],

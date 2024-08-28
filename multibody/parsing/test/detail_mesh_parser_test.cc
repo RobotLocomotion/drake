@@ -191,7 +191,7 @@ TEST_F(MeshParserTest, ErrorModes) {
     }
 
     DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromMeshFile(file.string(), ""),
-                                ".*file parsed contains no objects.*");
+                                ".*OBJ data parsed contains no objects.*");
   }
   // 2. Not an OBJ.
   {
@@ -202,7 +202,7 @@ TEST_F(MeshParserTest, ErrorModes) {
       f << "Non-OBJ gibberish";
     }
     DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromMeshFile(file.string(), ""),
-                                ".*file parsed contains no objects.*");
+                                ".*OBJ data parsed contains no objects.*");
   }
   // 3. Called with obj data in a string.
   {
