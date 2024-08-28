@@ -87,9 +87,19 @@ void ParseModelDirectivesImpl(
       }
       for (const auto& [element_name, pose] :
            directive.add_model->default_free_body_pose) {
+        const math::RigidTransform<double> X_PC = pose.GetDeterministicValue();
+        const bool parent_is_world =
+            pose.base_frame.value_or("world") == "world";
         const Frame<double>& child_frame =
             plant->GetFrameByName(element_name, *child_model_instance_id);
-        if (pose.base_frame.has_value() && *pose.base_frame != "world") {
+        const math::RigidTransform<double> child_offset =
+            child_frame.GetFixedPoseInBodyFrame();
+        if (parent_is_world && child_offset.IsExactlyIdentity()) {
+          // If the parent frame is the world and the child frame is coincident
+          // with the body frame, then we can use the function to posture a body
+          // without first adding a joint.
+          plant->SetDefaultFreeBodyPose(child_frame.body(), X_PC);
+        } else {
           // TODO(SeanCurtis-TRI): When the new multibody graph code lands,
           // update this code to test to see if there is already a joint between
           // the two bodies.
@@ -102,16 +112,13 @@ void ParseModelDirectivesImpl(
           }
 
           const Frame<double>& parent_frame =
-              get_scoped_frame(*pose.base_frame);
+              parent_is_world ? plant->world_frame()
+                              : get_scoped_frame(*pose.base_frame);
           plant->AddJoint(std::make_unique<QuaternionFloatingJoint<double>>(
               joint_name, parent_frame, child_frame));
           auto& joint =
               plant->GetMutableJointByName(joint_name, child_model_instance_id);
-          joint.SetDefaultPose(pose.GetDeterministicValue());
-        } else {
-          // We can only call this if we haven't injected the floating joint.
-          plant->SetDefaultFreeBodyPose(child_frame.body(),
-                                        pose.GetDeterministicValue());
+          joint.SetDefaultPose(X_PC);
         }
       }
       info.model_instance = *child_model_instance_id;
