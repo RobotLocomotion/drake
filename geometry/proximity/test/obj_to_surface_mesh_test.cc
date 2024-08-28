@@ -1,15 +1,18 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <tuple>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
@@ -17,75 +20,15 @@ namespace drake {
 namespace geometry {
 namespace {
 
-// Tests TinyObjToSurfaceVertices through ReadObjToTriangleSurfaceMesh. We
-// cannot test TinyObjToSurfaceVertices directly because we hide tinyobj from
-// public API.
-GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceVertices) {
-  std::istringstream test_stream{
-      "v  1.0 -1.0 -1.0\n"
-      "v  1.0 -1.0  1.0\n"
-      "v -1.0 -1.0  1.0\n"
-      "f 1 2 3\n"};
-  for (const double scale : {1.0, 2.0, 5.0}) {
-    // Seek to the beginning of the stream in each iteration.
-    test_stream.seekg(0, test_stream.beg);
+namespace fs = std::filesystem;
 
-    const std::vector<Vector3<double>> surface_vertices(
-        ReadObjToTriangleSurfaceMesh(&test_stream, scale).vertices());
-
-    EXPECT_EQ(3, surface_vertices.size());
-    const std::vector<Vector3<double>> expect_vertices{
-        scale * Vector3<double>{1.0, -1.0, -1.0},  // first vertex.
-        scale * Vector3<double>{1.0, -1.0, 1.0},   // second vertex.
-        scale * Vector3<double>{-1.0, -1.0, 1.0}   // third vertex.
-    };
-
-    for (int i = 0; i < 3; ++i) {
-      EXPECT_EQ(expect_vertices[i], surface_vertices[i]);
-    }
-  }
-}
-
-// Tests TinyObjToSurfaceFaces through ReadObjToTriangleSurfaceMesh. We cannot
-// test TinyObjToSurfaceFaces directly because we hide tinyobj from public API.
-GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
-  std::istringstream test_stream{
-      "v  1.0 -1.0 -1.0\n"
-      "v  1.0 -1.0  1.0\n"
-      "v -1.0 -1.0  1.0\n"
-      "v -1.0 -1.0 -1.0\n"
-      "f 1 2 3\n"
-      "f 1 3 4\n"};
-
-  const std::vector<SurfaceTriangle> surface_faces(
-      ReadObjToTriangleSurfaceMesh(&test_stream).triangles());
-
-  EXPECT_EQ(2, surface_faces.size());
-  // Vertex indices in obj file start with 1, but vertex indices in our
-  // TriangleSurfaceMesh start with 0.
-  const int expect_faces[2][3]{{0, 1, 2}, {0, 2, 3}};
-  auto face_equal = [](const SurfaceTriangle& f,
-                       const SurfaceTriangle& g) -> bool {
-    return std::make_tuple(f.vertex(0), f.vertex(1), f.vertex(2)) ==
-           std::make_tuple(g.vertex(0), g.vertex(1), g.vertex(2));
-  };
-  for (int i = 0; i < 2; ++i) {
-    EXPECT_TRUE(face_equal(SurfaceTriangle(expect_faces[i]), surface_faces[i]));
-  }
-}
-
-GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToTriangleSurfaceMesh) {
-  const std::string filename =
-      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  TriangleSurfaceMesh<double> surface = ReadObjToTriangleSurfaceMesh(filename);
-
-  ASSERT_EQ(surface.num_vertices(), 8);
-  ASSERT_EQ(surface.num_triangles(), 12);
-
-  // This test relies on the specific content of the file quad_cube.obj.
-  // These coordinates came from the first section of quad_cube.obj.
+// Creates the TriangleSurfaceMesh expected when parsing quad_cube.obj. Note:
+// this depends on tinyobj's triangulation method. If that changes, this mesh
+// definition may have to adapt. That's fine.
+TriangleSurfaceMesh<double> MeshForQuadCube() {
   // clang-format off
-  std::vector<Vector3<double>> expect_vertices {
+  // Vertices copied from the file.
+  std::vector<Vector3<double>> vertices {
       { 1.000000, -1.000000, -1.000000},
       { 1.000000, -1.000000,  1.000000},
       {-1.000000, -1.000000,  1.000000},
@@ -96,10 +39,6 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToTriangleSurfaceMesh) {
       {-1.000000,  1.000000, -1.000000}
   };
   // clang-format on
-
-  for (int i = 0; i < 8; ++i) {
-    EXPECT_EQ(expect_vertices[i], surface.vertex(i));
-  }
 
   // TODO(SeanCurtis-TRI) Devise a formulation of this that is less sensitive
   //  to the details of the triangulation algorithm.
@@ -119,7 +58,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToTriangleSurfaceMesh) {
   //    └───┘   └───┘
   //
   // This test may fail with subsequent updates to the triangulation algorithm.
-  int expect_faces[12][3]{
+  std::vector<SurfaceTriangle> triangles{
       {0, 1, 3}, {1, 2, 3},  // face 1 2 3 4 in quad_cube.obj
       {4, 7, 5}, {7, 6, 5},  // face 5 8 7 6 in quad_cube.obj
       {0, 4, 1}, {4, 5, 1},  // face 1 5 6 2 in quad_cube.obj
@@ -127,36 +66,58 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToTriangleSurfaceMesh) {
       {2, 6, 3}, {6, 7, 3},  // face 3 7 8 4 in quad_cube.obj
       {4, 0, 7}, {0, 3, 7}   // face 5 1 4 8 in quad_cube.obj
   };
+  return TriangleSurfaceMesh<double>(std::move(triangles), std::move(vertices));
+}
 
-  auto face_equal = [](const SurfaceTriangle& f,
-                       const SurfaceTriangle& g) -> ::testing::AssertionResult {
-    const auto f_indices =
-        std::make_tuple(f.vertex(0), f.vertex(1), f.vertex(2));
-    const auto g_indices =
-        std::make_tuple(g.vertex(0), g.vertex(1), g.vertex(2));
-    if (f_indices == g_indices) return ::testing::AssertionSuccess();
-    return ::testing::AssertionFailure()
-           << "\n  Expected: " << f.vertex(0) << ", " << f.vertex(1) << ", "
-           << f.vertex(2) << "\n  Found: " << g.vertex(0) << ", " << g.vertex(1)
-           << ", " << g.vertex(2);
-  };
+GTEST_TEST(ObjToSurfaceMeshTest, FromPath) {
+  const fs::path filename =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const TriangleSurfaceMesh<double> surface =
+      ReadObjToTriangleSurfaceMesh(filename);
 
-  for (int i = 0; i < 12; ++i) {
-    EXPECT_TRUE(
-        face_equal(SurfaceTriangle(expect_faces[i]), surface.element(i)));
-  }
+  EXPECT_TRUE(surface.Equal(MeshForQuadCube()));
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(ObjToSurfaceMeshTest, FromStream) {
+  const fs::path filename =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  std::ifstream stream(filename);
+  DRAKE_DEMAND(stream.is_open());
+  const TriangleSurfaceMesh<double> surface =
+      ReadObjToTriangleSurfaceMesh(&stream);
+
+  EXPECT_TRUE(surface.Equal(MeshForQuadCube()));
+}
+#pragma GCC diagnostic pop
+
+// Tests the MeshSource-based overload.
+GTEST_TEST(ObjToSurfaceMeshTest, MeshSource) {
+  constexpr double kUnitScale = 1.0;
+  const std::string filename =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  MeshSource disk_source(filename);
+  MeshSource memory_source(InMemoryMesh(MemoryFile::Make(filename)));
+  const TriangleSurfaceMesh<double> disk_surface =
+      ReadObjToTriangleSurfaceMesh(disk_source, kUnitScale);
+  const TriangleSurfaceMesh<double> memory_surface =
+      ReadObjToTriangleSurfaceMesh(memory_source, kUnitScale);
+
+  EXPECT_TRUE(disk_surface.Equal(memory_surface));
+  EXPECT_TRUE(disk_surface.Equal(MeshForQuadCube()));
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionInvalidFilePath) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ReadObjToTriangleSurfaceMesh(std::string("invalid_file_path")),
-      "Cannot open file 'invalid_file_path'");
+      ReadObjToTriangleSurfaceMesh(fs::path("invalid_file_path.obj")),
+      ".*cannot read the file 'invalid_file_path.obj'.");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyFile) {
-  std::istringstream empty("");
-  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&empty),
-                              ".*The file parsed contains no objects.*");
+  const MeshSource empty(InMemoryMesh(MemoryFile("", ".obj", "empty")));
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(empty),
+                              ".*OBJ data parsed contains no objects.*");
 }
 
 void FailOnWarning(std::string_view message) {
@@ -164,55 +125,52 @@ void FailOnWarning(std::string_view message) {
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, WarningCallback) {
-  // This *.obj file refers to a separate *.mtl file.  In various cases below,
-  // this may cause warnings from the parser.
-  const std::string filename =
-      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  // *One* source of a warning is a degenerate face (fewer than three vertices).
+  // We'll show that the warning callback gets invoked for this one warning and
+  // consider that as representative for all tinyobj warnings.
+  const MeshSource obj(InMemoryMesh(MemoryFile(R"""(
+  v 1 0 0
+  v 0 1 0
+  v 0 0 1
+  f 1 2 3
+  f 2 3
+  )""",
+                                               ".obj", "trigger warning")));
 
-  // When loaded as a stream (such that the *.mtl file is missing) with
-  // a defaulted callback, we will drake::log() but not throw.
-  {
-    std::ifstream input(filename);
-    EXPECT_NO_THROW(ReadObjToTriangleSurfaceMesh(&input, 1.0));
-  }
+  // By not setting the callback, the default warning behavior won't throw.
+  EXPECT_NO_THROW(ReadObjToTriangleSurfaceMesh(obj));
 
-  // When parsing using a filename, we are able to locate the *.mtl file with
-  // no warnings.
-  EXPECT_NO_THROW(ReadObjToTriangleSurfaceMesh(filename, 1.0, &FailOnWarning));
+  // Now we'll throw on warnings.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ReadObjToTriangleSurfaceMesh(obj, 1.0, &FailOnWarning),
+      "[^]*Degenerated face found[^]*");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionFileHasNoFaces) {
-  std::istringstream no_faces{R"(
+  const MeshSource no_faces(
+      InMemoryMesh(MemoryFile(R"""(
 v 1.0 0.0 0.0
 v 0.0 1.0 0.0
 v 0.0 0.0 1.0
-)"};
-  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&no_faces),
-                              ".*The file parsed contains no objects.*");
-}
-
-GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionObjectHasNoFaces) {
-  std::istringstream no_faces{R"(
-o object_without_faces
-v 1.0 0.0 0.0
-v 0.0 1.0 0.0
-v 0.0 0.0 1.0
-)"};
-  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&no_faces),
-                              ".*The file parsed contains no objects.*");
+)""",
+                              ".obj", "Obj with no faces")));
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(no_faces),
+                              ".*OBJ data parsed contains no objects.*");
 }
 
 // Confirms that we can accept an obj file with faces (f lines) without
 // objects (o lines).
 GTEST_TEST(ObjToSurfaceMeshTest, AcceptFacesWithoutObject) {
-  std::istringstream faces_without_objects{R"(
+  const MeshSource faces_without_objects(
+      InMemoryMesh(MemoryFile(R"""(
 v 1.0 0.0 0.0
 v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 f 1 2 3
-)"};
+)""",
+                              ".obj", "faces without objects")));
   TriangleSurfaceMesh<double> surface =
-      ReadObjToTriangleSurfaceMesh(&faces_without_objects);
+      ReadObjToTriangleSurfaceMesh(faces_without_objects);
   ASSERT_EQ(3, surface.num_vertices());
   std::vector<Vector3<double>> expect_vertices{
       {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
@@ -228,7 +186,7 @@ f 1 2 3
 
 // Confirms that we can accept multiple objects in one obj file.
 GTEST_TEST(ObjToSurfaceMeshTest, AcceptMultipleObjects) {
-  std::istringstream two_objects{R"(
+  const MeshSource two_objects(InMemoryMesh(MemoryFile(R"""(
 o first_object
 v 1.0 0.0 0.0
 v 0.0 1.0 0.0
@@ -240,9 +198,10 @@ v 2.0 0.0 0.0
 v 0.0 2.0 0.0
 v 0.0 0.0 2.0
 f 4 5 6
-)"};
+)""",
+                                                       ".obj", "two objects")));
   TriangleSurfaceMesh<double> surface =
-      ReadObjToTriangleSurfaceMesh(&two_objects);
+      ReadObjToTriangleSurfaceMesh(two_objects);
   ASSERT_EQ(6, surface.num_vertices());
   std::vector<Vector3<double>> expect_vertices{
       {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0},
@@ -259,6 +218,29 @@ f 4 5 6
   }
 }
 
+class ObjToMeshDiagnosticsTest : public test::DiagnosticPolicyTestBase {};
+
+// Calling ReadObjToTriangleSurfaceMesh() is documented as throwing on error.
+// However, DoReadObjToSurfaceMesh can take a diagnostic policy that *doesn't*
+// throw. It can return nullopt.
+TEST_F(ObjToMeshDiagnosticsTest, ErrorModes) {
+  const std::string no_face_obj = R"""(
+  v 0 0 0
+  v 0 1 0
+  v 1 0 0
+  v 1 1 0
+  )""";
+  const MeshSource source(
+      InMemoryMesh(MemoryFile(no_face_obj, ".obj", "no_faces")));
+  auto maybe_mesh =
+      internal::DoReadObjToSurfaceMesh(source, 1.0, diagnostic_policy_);
+  ASSERT_FALSE(maybe_mesh.has_value());
+  EXPECT_THAT(TakeError(), testing::HasSubstr("no objects"));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::DoReadObjToSurfaceMesh(source, 1.0,
+                                       drake::internal::DiagnosticPolicy()),
+      "[^]*no objects[^]*");
+}
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
