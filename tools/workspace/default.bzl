@@ -99,6 +99,7 @@ load("//tools/workspace/typing_extensions_internal:repository.bzl", "typing_exte
 load("//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py_internal_repository")  # noqa
 load("//tools/workspace/usockets_internal:repository.bzl", "usockets_internal_repository")  # noqa
 load("//tools/workspace/uwebsockets_internal:repository.bzl", "uwebsockets_internal_repository")  # noqa
+load("//tools/workspace/venv:repository.bzl", "venv_repository")
 load("//tools/workspace/voxelized_geometry_tools:repository.bzl", "voxelized_geometry_tools_repository")  # noqa
 load("//tools/workspace/vtk_internal:repository.bzl", "vtk_internal_repository")  # noqa
 load("//tools/workspace/x11:repository.bzl", "x11_repository")
@@ -318,6 +319,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         usockets_internal_repository(name = "usockets_internal", mirrors = mirrors)  # noqa
     if "uwebsockets_internal" not in excludes:
         uwebsockets_internal_repository(name = "uwebsockets_internal", mirrors = mirrors)  # noqa
+    if "venv" not in excludes:
+        venv_repository(name = "venv")
     if "voxelized_geometry_tools" not in excludes:
         voxelized_geometry_tools_repository(name = "voxelized_geometry_tools", mirrors = mirrors)  # noqa
     if "vtk_internal" not in excludes:

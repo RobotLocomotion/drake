@@ -1,0 +1,18 @@
+# PyPI packages to make available as Drake's bazel `@venv` repository.
+
+# WARNING: If you change this file, then it is up to you to regenerate
+# the "locked" requirements.txt file via:
+#
+#     tools/workspace/venv/upgrade
+
+# Packages that we are happy to take the most recent version any time we
+# update requirements.  The versions of these packages are "locked" in the
+# requirements.txt file and change any time it updates.  This should be
+# the overwhelming majority of our requirements.
+
+flask
+six
+u-msgpack-python
+websockets
+
+# The following are constrained or pinned version of packages.
