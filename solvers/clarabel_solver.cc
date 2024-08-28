@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/ranges.h>
 #include <Clarabel>
 #include <Eigen/Eigen>
 
