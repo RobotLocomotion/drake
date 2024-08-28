@@ -1,6 +1,7 @@
 #include "drake/systems/framework/diagram.h"
 
 #include <Eigen/Dense>
+#include <fmt/ranges.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

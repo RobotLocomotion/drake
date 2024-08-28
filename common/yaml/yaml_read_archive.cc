@@ -5,6 +5,7 @@
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <fmt/ranges.h>
 #include <yaml-cpp/yaml.h>
 
 #include "drake/common/nice_type_name.h"

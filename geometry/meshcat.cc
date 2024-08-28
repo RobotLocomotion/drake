@@ -20,6 +20,7 @@
 #include <App.h>
 #include <common_robotics_utilities/base64_helpers.hpp>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <msgpack.hpp>
 
 #include "drake/common/drake_export.h"
