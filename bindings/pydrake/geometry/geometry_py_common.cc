@@ -10,6 +10,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
+#include "drake/common/overloaded.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_frame.h"
@@ -375,6 +376,9 @@ void DefineMeshSource(py::module m) {
             }));
     // Note: __repr__ is defined in _geometry_extra.py.
     DefCopyAndDeepCopy(&cls);
+
+    py::implicitly_convertible<std::filesystem::path, MeshSource>();
+    py::implicitly_convertible<InMemoryMesh&&, MeshSource>();
   }
 }
 
@@ -447,8 +451,7 @@ void DefineRoleAssign(py::module m) {
 }
 
 void DefineShapes(py::module m) {
-  // Shape constructors - ordered alphabetically and not in the order given in
-  // shape_specification.h
+  // Shape constructors.
   {
     py::class_<Shape> shape_cls(m, "Shape", doc.Shape.doc);
     shape_cls  // BR
@@ -490,8 +493,13 @@ void DefineShapes(py::module m) {
 
     py::class_<Convex, Shape> convex_cls(m, "Convex", doc.Convex.doc);
     convex_cls
-        .def(py::init<std::string, double>(), py::arg("filename"),
-            py::arg("scale") = 1.0, doc.Convex.ctor.doc)
+        .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_filename_scale)
+        .def(py::init<InMemoryMesh, double>(), py::arg("mesh_data"),
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_mesh_data_scale)
+        .def(py::init<MeshSource, double>(), py::arg("source"),
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_source_scale)
+        .def("source", &Convex::source, doc.Convex.source.doc)
         .def("filename", &Convex::filename, doc.Convex.filename.doc)
         .def("extension", &Convex::extension, doc.Convex.extension.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
@@ -499,11 +507,13 @@ void DefineShapes(py::module m) {
             doc.Convex.GetConvexHull.doc)
         .def(py::pickle(
             [](const Convex& self) {
-              return std::make_pair(self.filename(), self.scale());
+              return std::make_pair(self.source(), self.scale());
             },
-            [](std::pair<std::string, double> info) {
-              return Convex(info.first, info.second);
+            [](std::pair<MeshSource, double> info) {
+              return Convex(std::move(info.first), info.second);
             }));
+    // Note: Convex.__repr__ is redefined in _geometry_extra.py;
+    // Shape::to_string() does not properly condition strings for python.
 
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
@@ -544,19 +554,26 @@ void DefineShapes(py::module m) {
 
     py::class_<Mesh, Shape> mesh_cls(m, "Mesh", doc.Mesh.doc);
     mesh_cls
-        .def(py::init<std::string, double>(), py::arg("filename"),
-            py::arg("scale") = 1.0, doc.Mesh.ctor.doc)
+        .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_filename_scale)
+        .def(py::init<InMemoryMesh, double>(), py::arg("mesh_data"),
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_mesh_data_scale)
+        .def(py::init<MeshSource, double>(), py::arg("source"),
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_source_scale)
+        .def("source", &Mesh::source, doc.Mesh.source.doc)
         .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
         .def(py::pickle(
             [](const Mesh& self) {
-              return std::make_pair(self.filename(), self.scale());
+              return std::make_pair(self.source(), self.scale());
             },
-            [](std::pair<std::string, double> info) {
-              return Mesh(info.first, info.second);
+            [](std::pair<MeshSource, double> info) {
+              return Mesh(std::move(info.first), info.second);
             }));
+    // Note: Convex.__repr__ is redefined in _geometry_extra.py;
+    // Shape::to_string() does not properly condition strings for python.
 
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
