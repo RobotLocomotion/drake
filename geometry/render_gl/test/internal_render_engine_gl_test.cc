@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstring>
+#include <filesystem>
 #include <optional>
 #include <unordered_map>
 
@@ -903,7 +904,7 @@ TEST_F(RenderEngineGlTest, DeformableTest) {
 
     // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
     // from box.obj by stripping out material data in the build system.
-    auto filename =
+    const std::filesystem::path filename =
         use_texture
             ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
             : FindResourceOrThrow(

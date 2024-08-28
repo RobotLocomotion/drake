@@ -546,7 +546,7 @@ void RenderEngineGltfClient::ImplementMesh(
   auto& data = *static_cast<RegistrationData*>(user_data);
   const std::string extension = Mesh(mesh_path.string()).extension();
   if (extension == ".obj") {
-    data.accepted = ImplementObj(mesh_path.string(), scale, data);
+    data.accepted = ImplementObj(mesh_path, scale, data);
   } else if (extension == ".gltf") {
     data.accepted = ImplementGltf(mesh_path, scale, data);
   } else {
