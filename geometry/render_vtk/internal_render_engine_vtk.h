@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -199,7 +200,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   // Adds an .obj to the scene for the id currently being reified (data->id).
   // Returns true if added, false if ignored (for whatever reason).
-  bool ImplementObj(const std::string& file_name, double scale,
+  bool ImplementObj(const std::filesystem::path& file_name, double scale,
                     const RegistrationData& data);
 
   // Adds a .gltf to the scene for the id currently being reified (data->id).
