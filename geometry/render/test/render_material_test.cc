@@ -19,6 +19,28 @@ namespace {
 
 namespace fs = std::filesystem;
 
+GTEST_TEST(TextureSourceTest, Empty) {
+  EXPECT_TRUE(IsEmpty(TextureSource()));
+  EXPECT_TRUE(IsEmpty(TextureSource(fs::path(""))));
+  EXPECT_TRUE(IsEmpty(TextureSource("")));
+  EXPECT_TRUE(IsEmpty(TextureSource(std::string())));
+  EXPECT_TRUE(IsEmpty(TextureSource(std::string_view())));
+  EXPECT_TRUE(IsEmpty(TextureSource(MemoryFile("", ".ext", "hint"))));
+
+  TextureSource source;
+  EXPECT_TRUE(IsEmpty(source));
+  source = fs::path("");
+  EXPECT_TRUE(IsEmpty(source));
+  source = "";
+  EXPECT_TRUE(IsEmpty(source));
+  source = std::string();
+  EXPECT_TRUE(IsEmpty(source));
+  source = std::string_view();
+  EXPECT_TRUE(IsEmpty(source));
+  source = MemoryFile("", ".ext", "hint");
+  EXPECT_TRUE(IsEmpty(source));
+}
+
 /* Confirms the expected diagnostic warnings in the presence of material
  properties. */
 class MaybeWarnForRedundantMaterialTest
@@ -58,7 +80,7 @@ TEST_F(DefineMaterialTest, DefaultFallback) {
   const RenderMaterial mat =
       DefineMaterial(props_, default_diffuse(), diagnostic_policy_);
 
-  EXPECT_TRUE(mat.diffuse_map.empty());
+  EXPECT_TRUE(IsEmpty(mat.diffuse_map));
   EXPECT_EQ(mat.diffuse, default_diffuse());
 }
 
@@ -71,7 +93,7 @@ TEST_F(DefineMaterialTest, PhongDiffuseOnly) {
   const RenderMaterial mat =
       DefineMaterial(props_, default_diffuse(), diagnostic_policy_);
 
-  EXPECT_TRUE(mat.diffuse_map.empty());
+  EXPECT_TRUE(IsEmpty(mat.diffuse_map));
   EXPECT_EQ(mat.diffuse, diffuse);
 }
 
@@ -85,7 +107,8 @@ TEST_F(DefineMaterialTest, PhongDiffuseMapOnly) {
   const RenderMaterial mat =
       DefineMaterial(props_, default_diffuse(), diagnostic_policy_);
 
-  EXPECT_EQ(mat.diffuse_map, tex_name);
+  ASSERT_TRUE(std::holds_alternative<fs::path>(mat.diffuse_map));
+  EXPECT_EQ(std::get<fs::path>(mat.diffuse_map), tex_name);
   EXPECT_EQ(mat.diffuse, Rgba(1, 1, 1));
 }
 
@@ -101,7 +124,8 @@ TEST_F(DefineMaterialTest, PhongDiffuseAll) {
   const RenderMaterial mat =
       DefineMaterial(props_, default_diffuse(), diagnostic_policy_);
 
-  EXPECT_EQ(mat.diffuse_map, tex_name);
+  ASSERT_TRUE(std::holds_alternative<fs::path>(mat.diffuse_map));
+  EXPECT_EQ(std::get<fs::path>(mat.diffuse_map), tex_name);
   EXPECT_EQ(mat.diffuse, diffuse);
 }
 
@@ -115,7 +139,7 @@ TEST_F(DefineMaterialTest, DiffuseMapError) {
   const RenderMaterial mat = DefineMaterial(props_, default_diffuse(),
                                             diagnostic_policy_, UvState::kNone);
 
-  EXPECT_TRUE(mat.diffuse_map.empty());
+  EXPECT_TRUE(IsEmpty(mat.diffuse_map));
   EXPECT_EQ(mat.diffuse, Rgba(1, 1, 1));
   EXPECT_THAT(
       TakeWarning(),
@@ -137,7 +161,7 @@ TEST_F(DefineMaterialTest, DiffuseMapUvCoverageError) {
     const RenderMaterial mat = DefineMaterial(
         props_, default_diffuse(), diagnostic_policy_, UvState::kNone);
 
-    EXPECT_TRUE(mat.diffuse_map.empty());
+    EXPECT_TRUE(IsEmpty(mat.diffuse_map));
     EXPECT_EQ(mat.diffuse, Rgba(1, 1, 1));
     EXPECT_THAT(TakeWarning(),
                 testing::MatchesRegex(
@@ -149,7 +173,7 @@ TEST_F(DefineMaterialTest, DiffuseMapUvCoverageError) {
     const RenderMaterial mat = DefineMaterial(
         props_, default_diffuse(), diagnostic_policy_, UvState::kPartial);
 
-    EXPECT_TRUE(mat.diffuse_map.empty());
+    EXPECT_TRUE(IsEmpty(mat.diffuse_map));
     EXPECT_EQ(mat.diffuse, Rgba(1, 1, 1));
     EXPECT_THAT(TakeWarning(),
                 testing::MatchesRegex(".*referenced a map, .* doesn't define a "
@@ -188,7 +212,7 @@ TEST_F(MaybeMakeMeshFallbackMaterialTest, DefaultDiffuseMaterial) {
       props, "no_png_for_this.obj", default_diffuse(), diagnostic_policy_,
       UvState::kFull);
   ASSERT_TRUE(mat.has_value());
-  EXPECT_TRUE(mat->diffuse_map.empty());
+  EXPECT_TRUE(IsEmpty(mat->diffuse_map));
   EXPECT_EQ(mat->diffuse, default_diffuse());
 }
 
@@ -204,7 +228,10 @@ TEST_F(MaybeMakeMeshFallbackMaterialTest, NoMaterial) {
   EXPECT_FALSE(mat.has_value());
 }
 
-/* No material defined in the properties, but foo.png exists and is available.*/
+/* No material defined in the properties, but foo.png exists and is available.
+ Also covers the special case where the mesh path is empty -- it is treated as
+ if there is no compatible foo.png and it falls through to apply the default
+ diffuse. */
 TEST_F(MaybeMakeMeshFallbackMaterialTest, ValidFooPngMaterial) {
   PerceptionProperties props;
   const std::string tex_name =
@@ -217,26 +244,41 @@ TEST_F(MaybeMakeMeshFallbackMaterialTest, ValidFooPngMaterial) {
     UvState uv_state;
     std::string expected_texture;
     std::string error;
+    fs::path path;
+    Rgba rgba = Rgba(1, 1, 1);  // Default rgb for auto-loaded texture.
     std::string description;
   };
 
   const std::vector<TestCase> cases{
       {.uv_state = UvState::kFull,
        .expected_texture = tex_name,
+       .path = obj_path,
        .description = "Full UVs"},
       {.uv_state = UvState::kPartial,
        .error = "a complete set of",
+       .path = obj_path,
        .description = "Partial UVs"},
-      {.uv_state = UvState::kNone, .error = "any", .description = "No UVs"}};
+      {.uv_state = UvState::kNone,
+       .error = "any",
+       .path = obj_path,
+       .description = "No UVs"},
+      {.uv_state = UvState::kFull,
+       .path = fs::path(),
+       .rgba = default_diffuse(),
+       .description = "Empty path produces default diffuse"}};
   for (const TestCase& test_case : cases) {
     SCOPED_TRACE(test_case.description);
 
-    const std::optional<RenderMaterial> mat = MaybeMakeMeshFallbackMaterial(
-        props, obj_path.string(), default_diffuse(), diagnostic_policy_,
-        test_case.uv_state);
+    const std::optional<RenderMaterial> mat =
+        MaybeMakeMeshFallbackMaterial(props, test_case.path, default_diffuse(),
+                                      diagnostic_policy_, test_case.uv_state);
     ASSERT_TRUE(mat.has_value());
-    EXPECT_EQ(mat->diffuse_map, test_case.expected_texture);
-    EXPECT_EQ(mat->diffuse, Rgba(1, 1, 1));
+    ASSERT_EQ(IsEmpty(mat->diffuse_map), test_case.expected_texture.empty());
+    if (!test_case.expected_texture.empty()) {
+      EXPECT_EQ(std::get<fs::path>(mat->diffuse_map),
+                test_case.expected_texture);
+    }
+    EXPECT_EQ(mat->diffuse, test_case.rgba);
     if (!test_case.error.empty()) {
       EXPECT_THAT(
           TakeWarning(),
@@ -268,7 +310,7 @@ TEST_F(MaybeMakeMeshFallbackMaterialTest, PropertiesHaveDiffuseColor) {
       UvState::kFull);
 
   ASSERT_TRUE(mat.has_value());
-  EXPECT_TRUE(mat->diffuse_map.empty());
+  EXPECT_TRUE(IsEmpty(mat->diffuse_map));
   EXPECT_EQ(mat->diffuse, props.GetProperty<Rgba>("phong", "diffuse"));
 }
 
@@ -282,7 +324,8 @@ TEST_F(MaybeMakeMeshFallbackMaterialTest, PropertiesHaveDiffuseMap) {
       UvState::kFull);
 
   ASSERT_TRUE(mat.has_value());
-  EXPECT_EQ(mat->diffuse_map, tex_name);
+  ASSERT_TRUE(std::holds_alternative<fs::path>(mat->diffuse_map));
+  EXPECT_EQ(std::get<fs::path>(mat->diffuse_map), tex_name);
   EXPECT_EQ(mat->diffuse, Rgba(1, 1, 1));
 }
 
@@ -297,7 +340,8 @@ TEST_F(MaybeMakeMeshFallbackMaterialTest, PropertiesHaveEverything) {
       UvState::kFull);
 
   ASSERT_TRUE(mat.has_value());
-  EXPECT_EQ(mat->diffuse_map, tex_name);
+  ASSERT_TRUE(std::holds_alternative<fs::path>(mat->diffuse_map));
+  EXPECT_EQ(std::get<fs::path>(mat->diffuse_map), tex_name);
   EXPECT_EQ(mat->diffuse, props.GetProperty<Rgba>("phong", "diffuse"));
 }
 
