@@ -390,7 +390,9 @@ drake_cc_library(
     srcs = ["read_obj.cc"],
     hdrs = ["read_obj.h"],
     deps = [
+        ":in_memory_mesh",
         "//common:diagnostic_policy",
+        "//common:memory_file",
         "@eigen",
     ],
     implementation_deps = [
