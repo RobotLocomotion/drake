@@ -10,6 +10,7 @@
 #include <tiny_gltf.h>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"
@@ -33,6 +34,8 @@ using geometry::internal::MakeDiffuseMaterial;
 using geometry::internal::MaybeMakeMeshFallbackMaterial;
 using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
+using geometry::internal::TextureKey;
+using geometry::internal::TextureSource;
 using geometry::internal::UvState;
 using math::RigidTransformd;
 using math::RotationMatrixd;
@@ -860,7 +863,23 @@ void RenderEngineGl::ImplementMeshesForFile(void* user_data,
           data.properties, filename, parameters_.default_diffuse,
           drake::internal::DiagnosticPolicy(), gl_mesh.uv_state);
     }
-    temp_props.UpdateProperty("phong", "diffuse_map", material.diffuse_map);
+    if (!IsEmpty(material.diffuse_map)) {
+      // By the time the render material gets here, it should either be a path
+      // or it is a key into an in-memory image already registered with the
+      // texture library. It should never be MemoryFile.
+      std::visit(overloaded{[](const auto&) {
+                              throw std::logic_error("Should be path or key.");
+                            },
+                            [&temp_props](const fs::path& path) {
+                              temp_props.UpdateProperty("phong", "diffuse_map",
+                                                        path.string());
+                            },
+                            [&temp_props](const TextureKey& key) {
+                              temp_props.UpdateProperty("phong", "diffuse_map",
+                                                        key.value);
+                            }},
+                 material.diffuse_map);
+    }
     temp_props.UpdateProperty("phong", "diffuse", material.diffuse);
     // Non-public property to communicate to the shaders.
     temp_props.UpdateProperty("texture", "flip", material.flip_y);
@@ -897,8 +916,17 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
             ? *render_mesh.material
             : MakeDiffuseMaterial(parameters_.default_diffuse);
     PerceptionProperties mesh_properties(properties);
-    mesh_properties.UpdateProperty("phong", "diffuse_map",
-                                   material.diffuse_map);
+    // TODO(SeanCurtis-TRI): For now, we'll assume that deformable visuals must
+    // all come from disk. Later, we'll expand it to include in-memory. The
+    // challenge is that we're using geometry properties as a middle man and
+    // ("phong", "diffuse_map") should only contain a string containing a file
+    // path. If the image is in memory, we need to do something else.
+    const auto* path_ptr = std::get_if<fs::path>(&material.diffuse_map);
+    if (path_ptr != nullptr) {
+      mesh_properties.UpdateProperty("phong", "diffuse_map",
+                                     path_ptr->string());
+      // If empty, key, or file contents, we leave it alone and do nothing.
+    }
     mesh_properties.UpdateProperty("phong", "diffuse", material.diffuse);
     RegistrationData data{id, RigidTransformd::Identity(), mesh_properties,
                           parameters_.default_diffuse};
@@ -1398,12 +1426,27 @@ class RenderEngineGl::GltfMeshExtractor {
     for (const auto& mesh : meshes) {
       if (!mesh.mesh_material.has_value()) continue;
       /* Currently, we only support diffuse maps. */
-      const std::string& diffuse_map = mesh.mesh_material->diffuse_map;
-      if (used_embedded_images.contains(diffuse_map)) continue;
-      if (diffuse_map.starts_with(TextureLibrary::InMemoryPrefix())) {
-        used_embedded_images[diffuse_map] =
-            std::move(all_embedded_images[diffuse_map]);
-        all_embedded_images.erase(diffuse_map);
+      const TextureSource& diffuse_source = mesh.mesh_material->diffuse_map;
+      // No support for in-memory yet.
+      DRAKE_DEMAND(std::get_if<MemoryFile>(&diffuse_source) == nullptr);
+      if (!IsEmpty(diffuse_source)) {
+        const std::string& diffuse_map = std::visit(
+            overloaded{[](const auto&) -> std::string {
+                         throw std::logic_error("Must be path or key");
+                       },
+                       [](const std::filesystem::path& path) {
+                         return path.string();
+                       },
+                       [](const TextureKey& key) {
+                         return key.value;
+                       }},
+            diffuse_source);
+        if (used_embedded_images.contains(diffuse_map)) continue;
+        if (diffuse_map.starts_with(TextureLibrary::InMemoryPrefix())) {
+          used_embedded_images[diffuse_map] =
+              std::move(all_embedded_images[diffuse_map]);
+          all_embedded_images.erase(diffuse_map);
+        }
       }
     }
     texture_library_.AddInMemoryImages(used_embedded_images);
@@ -1942,8 +1985,8 @@ void RenderEngineGl::CacheFileMeshesMaybe(const std::string& filename,
       // why we simply pass a set of empty properties -- to emphasize its
       // independence.
       vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
-          filename, PerceptionProperties(), parameters_.default_diffuse,
-          drake::internal::DiagnosticPolicy());
+          std::filesystem::path(filename), PerceptionProperties(),
+          parameters_.default_diffuse, drake::internal::DiagnosticPolicy());
 
       for (const auto& render_mesh : meshes) {
         int mesh_index = CreateGlGeometry(render_mesh);

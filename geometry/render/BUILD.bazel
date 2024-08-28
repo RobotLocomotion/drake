@@ -83,6 +83,7 @@ drake_cc_library(
     deps = [
         "//common:diagnostic_policy",
         "//common:essential",
+        "//common:overloaded",
         "//geometry:geometry_properties",
         "//geometry:rgba",
     ],
@@ -99,7 +100,9 @@ drake_cc_library(
         ":render_material",
         "//common:diagnostic_policy",
         "//common:essential",
+        "//common:find_resource",
         "//geometry:geometry_properties",
+        "//geometry:mesh_source",
         "//geometry:rgba",
         "//geometry/proximity:triangle_surface_mesh",
     ],
