@@ -1462,14 +1462,15 @@ class TestCspaceFreePolytope(unittest.TestCase):
             self.assertTrue(len(out[1]) > 0)
             self.assertIsInstance(out[1][0], np.ndarray)
 
-        with catch_drake_warnings(expected_count=4):
-            outputs = []
+        outputs = []
+        with catch_drake_warnings(expected_count=1):
             outputs.append(
                     mut.CalcPairwiseIntersections(
                             convex_sets_A=sets_A,
                             convex_sets_B=sets_B,
                             continuous_revolute_joints=[0],
                             preprocess_bbox=True))
+        with catch_drake_warnings(expected_count=1):
             outputs.append(
                     mut.CalcPairwiseIntersections(
                             convex_sets_A=sets_A,
@@ -1477,22 +1478,24 @@ class TestCspaceFreePolytope(unittest.TestCase):
                             continuous_revolute_joints=[0],
                             bboxes_A=bboxes_A,
                             bboxes_B=bboxes_B))
+        with catch_drake_warnings(expected_count=1):
             outputs.append(
                     mut.CalcPairwiseIntersections(
                             convex_sets=sets_A,
                             continuous_revolute_joints=[0],
                             preprocess_bbox=True))
+        with catch_drake_warnings(expected_count=1):
             outputs.append(
                     mut.CalcPairwiseIntersections(
                             convex_sets=sets_A,
                             continuous_revolute_joints=[0],
                             bboxes=bboxes_A))
-            for out in outputs:
-                print(out)
-                self.assertIsInstance(out, list)
-                for elt in out:
-                    self.assertIsInstance(elt, tuple)
-                    self.assertEqual(len(elt), 3)
-                    self.assertIsInstance(elt[0], int)
-                    self.assertIsInstance(elt[1], int)
-                    self.assertIsInstance(elt[2], np.ndarray)
+        for out in outputs:
+            print(out)
+            self.assertIsInstance(out, list)
+            for elt in out:
+                self.assertIsInstance(elt, tuple)
+                self.assertEqual(len(elt), 3)
+                self.assertIsInstance(elt[0], int)
+                self.assertIsInstance(elt[1], int)
+                self.assertIsInstance(elt[2], np.ndarray)
