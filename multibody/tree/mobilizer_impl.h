@@ -40,6 +40,15 @@ class MobilizerImpl : public Mobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl);
 
+  // Handy enum to grant specific implementations compile time sizes.
+  // static constexpr int i = 42; discouraged.  See answer in:
+  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
+  enum : int {
+    kNq = compile_time_num_positions,
+    kNv = compile_time_num_velocities,
+    kNx = compile_time_num_positions + compile_time_num_velocities
+  };
+
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is
   // provided here. Subclasses of %MobilizerImpl are therefore forced to
@@ -123,21 +132,7 @@ class MobilizerImpl : public Mobilizer<T> {
     random_state_distribution_->template tail<kNv>() = velocity;
   }
 
-  // For MultibodyTree internal use only.
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
-
  protected:
-  // Handy enum to grant specific implementations compile time sizes.
-  // static constexpr int i = 42; discouraged.  See answer in:
-  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
-  enum : int {
-    kNq = compile_time_num_positions,
-    kNv = compile_time_num_velocities,
-    kNx = compile_time_num_positions + compile_time_num_velocities
-  };
-
   // Returns the zero configuration for the mobilizer.
   virtual Vector<double, kNq> get_zero_position() const {
     return Vector<double, kNq>::Zero();
