@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -12,15 +13,11 @@ template <typename T>
 WeldMobilizer<T>::~WeldMobilizer() = default;
 
 template <typename T>
-math::RigidTransform<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>&) const { return X_FM_.cast<T>(); }
-
-template <typename T>
-SpatialVelocity<T> WeldMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& v) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>::Zero();
+std::unique_ptr<internal::BodyNode<T>> WeldMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, WeldMobilizer>>(
+      parent_node, body, mobilizer);
 }
 
 template <typename T>
