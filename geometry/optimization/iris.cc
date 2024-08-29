@@ -473,6 +473,8 @@ and should be automatically bounded. */
 std::vector<int> revolute_joint_index_offsets(
     const multibody::Joint<double>& joint) {
   if (joint.type_name() == "revolute") {
+    DRAKE_ASSERT(joint.num_positions() == 1);
+    // RevoluteJoints store their configuration as (θ)
     if (joint.position_lower_limits()[0] ==
             -std::numeric_limits<float>::infinity() &&
         joint.position_upper_limits()[0] ==
@@ -481,12 +483,29 @@ std::vector<int> revolute_joint_index_offsets(
     }
   }
   if (joint.type_name() == "planar") {
+    DRAKE_ASSERT(joint.num_positions() == 3);
+    // PlanarJoints store their configuration as (x, y, θ)
     if (joint.position_lower_limits()[2] ==
             -std::numeric_limits<float>::infinity() &&
         joint.position_upper_limits()[2] ==
             std::numeric_limits<float>::infinity()) {
       return std::vector<int>{2};
     }
+  }
+  if (joint.type_name() == "rpy_floating") {
+    DRAKE_ASSERT(joint.num_positions() == 6);
+    // RpyFloatingJoints store their configuration as (qx, qy, qz, x, y, z),
+    // i.e., the first three positions are the revolute components.
+    std::vector<int> continuous_revolute_indices;
+    for (int i = 0; i < 3; ++i) {
+      if (joint.position_lower_limits()[i] ==
+              -std::numeric_limits<float>::infinity() &&
+          joint.position_upper_limits()[i] ==
+              std::numeric_limits<float>::infinity()) {
+        continuous_revolute_indices.push_back(i);
+      }
+    }
+    return continuous_revolute_indices;
   }
   return std::vector<int>{};
 }
@@ -524,9 +543,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   if (lower_limits.array().isInf().any() ||
       upper_limits.array().isInf().any()) {
     throw std::runtime_error(
-        "IRIS requires that all joints (except for continuous revolute "
-        "joints or planar joints with a continuous rotational DoF) have "
-        "position limits.");
+        "IRIS requires that all joints have position limits (unless that joint "
+        "is a RevoluteJoint or the revolute component of a PlanarJoint or "
+        "RpyFloatingJoint.");
   }
 
   DRAKE_DEMAND(options.num_collision_infeasible_samples >= 0);
