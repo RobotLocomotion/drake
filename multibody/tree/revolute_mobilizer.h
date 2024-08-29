@@ -37,6 +37,10 @@ template <typename T>
 class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer);
+  using MobilizerBase = MobilizerImpl<T, 1, 1>;
+  using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  using typename MobilizerBase::HMatrix;
 
   // Constructor for a %RevoluteMobilizer between the inboard frame F
   // `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
@@ -56,6 +60,10 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   }
 
   ~RevoluteMobilizer() final;
+
+  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
+      const internal::BodyNode<T>* parent_node,
+      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -111,19 +119,25 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   // The generalized coordinate q for `this` mobilizer (the rotation angle) is
   // stored in `context`.
   // This method aborts in Debug builds if `v.size()` is not one.
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const override;
+  math::RigidTransform<T> calc_X_FM(const T* q) const {
+    return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_F_),
+                                   Vector3<T>::Zero());
+  }
 
-  // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
-  // M measured and expressed in frame F as a function of the rotation angle
-  // and input angular velocity `v` about this mobilizer's axis
-  // (@see revolute_axis()).
-  // The generalized coordinate q for `this` mobilizer (the rotation angle) is
-  // stored in `context`.
-  // This method aborts in Debug builds if `v.size()` is not one.
+  // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
+  // frame M measured and expressed in frame F as a function of the input
+  // angular velocity `v` about this mobilizer's axis (@see revolute_axis()).
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
+                               const T* v) const {
+    return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
+  }
+
+  math::RigidTransform<T> CalcAcrossMobilizerTransform(
+      const systems::Context<T>& context) const final;
+
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v) const override;
+      const Eigen::Ref<const VectorX<T>>& v) const final;
 
   // Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   // outboard frame M in the inboard frame F.
@@ -180,16 +194,6 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
-  typedef MobilizerImpl<T, 1, 1> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
-  using MobilizerBase::kNq;
-  using MobilizerBase::kNv;
-
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(

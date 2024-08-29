@@ -6,6 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -14,6 +15,16 @@ namespace internal {
 
 template <typename T>
 QuaternionFloatingMobilizer<T>::~QuaternionFloatingMobilizer() = default;
+
+template <typename T>
+std::unique_ptr<internal::BodyNode<T>>
+QuaternionFloatingMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<
+      internal::BodyNodeImpl<T, QuaternionFloatingMobilizer>>(parent_node, body,
+                                                              mobilizer);
+}
 
 template <typename T>
 std::string QuaternionFloatingMobilizer<T>::position_suffix(
@@ -228,24 +239,16 @@ QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-
-  // The first 4 elements in q contain a quaternion, ordered as w, x, y, z.
-  // The last 3 elements in q contain position from Fo to Mo.
-  const Vector4<T> wxyz(q.template head<4>());
-  const Vector3<T> p_FM = q.template tail<3>();  // position from Fo to Mo.
-  const Eigen::Quaternion<T> quaternion_FM(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
-  const math::RigidTransform<T> X_FM(quaternion_FM, p_FM);
-  return X_FM;
+  return calc_X_FM(q.data());
 }
 
 template <typename T>
 SpatialVelocity<T>
 QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&,
+    const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(v.template head<3>(),   // w_FM
-                            v.template tail<3>());  // v_FM
+  return calc_V_FM(context, v.data());
 }
 
 template <typename T>
