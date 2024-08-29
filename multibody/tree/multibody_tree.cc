@@ -1259,6 +1259,9 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   const FrameBodyPoseCache<T>& frame_body_pose_cache =
       EvalFrameBodyPoses(context);
 
+  const Eigen::VectorBlock<const VectorX<T>> q_block = get_positions(context);
+  const T* q = q_block.data();
+
   // With the kinematics information across mobilizers and the kinematics
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.
@@ -1271,8 +1274,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
       DRAKE_ASSERT(node.index() == mobod_index);
 
       // Update per-node kinematics.
-      node.CalcPositionKinematicsCache_BaseToTip(context, frame_body_pose_cache,
-                                                 pc);
+      node.CalcPositionKinematicsCache_BaseToTip(frame_body_pose_cache, q, pc);
     }
   }
 }
@@ -1294,6 +1296,9 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
 
+  const Eigen::VectorBlock<const VectorX<T>> v_block = get_velocities(context);
+  const T* v = v_block.data();
+
   // Performs a base-to-tip recursion computing body velocities.
   // This skips the world, level = 0.
   for (int level = 1; level < forest_height(); ++level) {
@@ -1303,17 +1308,9 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
       DRAKE_ASSERT(node.get_topology().level == level);
       DRAKE_ASSERT(node.index() == mobod_index);
 
-      // Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵐ with nm ∈ [0; 6] the
-      // number of mobilities for this node. Therefore, the return is a
-      // MatrixUpTo6 since the number of columns generally changes with the
-      // node.  It is returned as an Eigen::Map to the memory allocated in the
-      // std::vector H_PB_W_cache so that we can work with H_PB_W as with any
-      // other Eigen matrix object.
-      Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
-          node.GetJacobianFromArray(H_PB_W_cache);
-
-      // Update per-node kinematics.
-      node.CalcVelocityKinematicsCache_BaseToTip(context, pc, H_PB_W, vc);
+      // Update per-mobod kinematics.
+      node.CalcVelocityKinematicsCache_BaseToTip(context, pc, H_PB_W_cache,
+                                                 v, vc);
     }
   }
 }
@@ -2631,17 +2628,8 @@ void MultibodyTree<T>::CalcAcrossNodeJacobianWrtVExpressedInWorld(
        mobod_index < topology_.num_mobods(); ++mobod_index) {
     const BodyNode<T>& node = *body_nodes_[mobod_index];
 
-    // The body-node hinge matrix is H_PB_W ∈ ℝ⁶ˣⁿᵐ, with nm ∈ [0; 6] the number
-    // of mobilities for this node.
-    // Therefore, the return is a MatrixUpTo6 since the number of columns
-    // generally changes with the node.  It is returned as an Eigen::Map to the
-    // memory allocated in the std::vector H_PB_W_cache so that we can work
-    // with H_PB_W as with any other Eigen matrix object.
-    Eigen::Map<MatrixUpTo6<T>> H_PB_W =
-        node.GetMutableJacobianFromArray(H_PB_W_cache);
-
     node.CalcAcrossNodeJacobianWrtVExpressedInWorld(
-        context, frame_body_pose_cache, pc, &H_PB_W);
+        context, frame_body_pose_cache, pc, H_PB_W_cache);
   }
 }
 

@@ -25,6 +25,10 @@ template <typename T>
 class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldMobilizer);
+  typedef MobilizerImpl<T, 0, 0> MobilizerBase;
+  using MobilizerBase::kNq;
+  using MobilizerBase::kNv;
+  using MobilizerBase::kNx;
 
   // Constructor for a %WeldMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M`.
@@ -37,19 +41,38 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   ~WeldMobilizer() final;
 
+  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
+      const internal::BodyNode<T>* parent_node,
+      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
+
   // @retval X_FM The pose of the outboard frame M in the inboard frame F.
   const math::RigidTransform<double>& get_X_FM() const { return X_FM_; }
 
   // Computes the across-mobilizer transform `X_FM`, which for this mobilizer
   // is independent of the state stored in `context`.
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const final;
+      const systems::Context<T>&) const final {
+    return calc_X_FM(Eigen::Vector<T, 0>());
+  }
 
-  // Computes the across-mobilizer velocity `V_FM` which for this mobilizer is
-  // always zero since the outboard frame M is fixed to the inboard frame F.
+  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>&) const {
+    return X_FM_.cast<T>();
+  }
+
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v) const final;
+      const Eigen::Ref<const VectorX<T>>& v) const final {
+    DRAKE_ASSERT(v.size() == kNv);
+    return calc_V_FM(context,
+                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+  };
+
+  // Computes the across-mobilizer velocity V_FM which for this mobilizer is
+  // always zero since the outboard frame M is fixed to the inboard frame F.
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
+                               const Eigen::Vector<T, kNv>&) const {
+    return SpatialVelocity<T>::Zero();
+  }
 
   // Computes the across-mobilizer acceleration `A_FM` which for this mobilizer
   // is always zero since the outboard frame M is fixed to the inboard frame F.
@@ -101,16 +124,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  typedef MobilizerImpl<T, 0, 0> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
-  using MobilizerBase::kNq;
-  using MobilizerBase::kNv;
-
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
