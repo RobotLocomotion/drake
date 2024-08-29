@@ -532,6 +532,11 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   DRAKE_THROW_UNLESS(options.convexity_radius_stepback < M_PI_2);
   for (multibody::JointIndex index : plant.GetJointIndices()) {
     const multibody::Joint<double>& joint = plant.get_joint(index);
+    if (joint.type_name() == "quaternion_floating") {
+      throw std::runtime_error(
+          "IrisInConfigurationSpace does not support QuaternionFloatingJoint. "
+          "Consider using RpyFloatingJoint instead.");
+    }
     const std::vector<int> continuous_revolute_indices =
         revolute_joint_index_offsets(joint);
     for (const int i : continuous_revolute_indices) {
@@ -543,9 +548,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   if (lower_limits.array().isInf().any() ||
       upper_limits.array().isInf().any()) {
     throw std::runtime_error(
-        "IRIS requires that all joints have position limits (unless that joint "
-        "is a RevoluteJoint or the revolute component of a PlanarJoint or "
-        "RpyFloatingJoint.");
+        "IrisInConfigurationSpace requires that all joints have position "
+        "limits (unless that joint is a RevoluteJoint or the revolute "
+        "component of a PlanarJoint or RpyFloatingJoint.");
   }
 
   DRAKE_DEMAND(options.num_collision_infeasible_samples >= 0);

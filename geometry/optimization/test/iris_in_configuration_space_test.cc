@@ -12,6 +12,7 @@
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/solvers/ipopt_solver.h"
@@ -249,6 +250,26 @@ GTEST_TEST(IrisInConfigurationSpaceTest, RpyFloatingJoint) {
       IrisInConfigurationSpace(plant2, plant2.GetMyContextFromRoot(*context2),
                                options),
       ".*position limits.*");
+}
+
+// Check that IRIS throws an intuitive error message if the user supplies a
+// plant with a QuaternionFloatingJoint.
+GTEST_TEST(IrisInConfigurationSpaceTest, QuaternionFloatingJoint) {
+  systems::DiagramBuilder<double> builder;
+  multibody::MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const multibody::RigidBody<double>& body = plant.AddRigidBody("body");
+  plant.AddJoint<multibody::QuaternionFloatingJoint>(
+      "joint", plant.world_body(), {}, body, {});
+
+  plant.Finalize();
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  IrisOptions options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpace(plant, plant.GetMyContextFromRoot(*context),
+                               options),
+      ".*not support QuaternionFloatingJoint.*");
 }
 
 const char boxes_urdf[] = R"""(
