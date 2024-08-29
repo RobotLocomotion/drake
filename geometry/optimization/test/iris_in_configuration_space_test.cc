@@ -11,6 +11,9 @@
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -157,9 +160,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
   parser.AddModelsFromString(planar_urdf, "urdf");
 
   plant.get_mutable_joint(multibody::JointIndex(0))
-      .set_position_limits(
-          Eigen::Vector3d{-1.0, -1.0, -std::numeric_limits<double>::infinity()},
-          Eigen::Vector3d{1.0, 1.0, std::numeric_limits<double>::infinity()});
+      .set_position_limits(Eigen::Vector3d{-1.0, -1.0, -kInf},
+                           Eigen::Vector3d{1.0, 1.0, kInf});
 
   plant.Finalize();
   auto diagram = builder.Build();
@@ -186,6 +188,67 @@ GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
   // the prismatic components of the planar joint are unbounded.
   DRAKE_EXPECT_THROWS_MESSAGE(IrisFromUrdf(planar_urdf, sample, options),
                               ".*position limits.*");
+}
+
+// Check that IRIS correctly handles the continuous revolute component(s) of a
+// roll-pitch-yaw floating joint.
+GTEST_TEST(IrisInConfigurationSpaceTest, RpyFloatingJoint) {
+  systems::DiagramBuilder<double> builder;
+  multibody::MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const multibody::RigidBody<double>& body = plant.AddRigidBody("body");
+  plant.AddJoint<multibody::RpyFloatingJoint>("joint", plant.world_body(), {},
+                                              body, {});
+
+  plant.get_mutable_joint(multibody::JointIndex(0))
+      .set_position_limits(Vector6d(-kInf, -kInf, -kInf, -1.0, -1.0, -1.0),
+                           Vector6d(kInf, kInf, kInf, 1.0, 1.0, 1.0));
+
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  const Vector6d sample = Vector6d::Zero();
+  auto context = diagram->CreateDefaultContext();
+  plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()), sample);
+  IrisOptions options;
+  HPolyhedron region = IrisInConfigurationSpace(
+      plant, plant.GetMyContextFromRoot(*context), options);
+
+  EXPECT_EQ(region.ambient_dimension(), 6);
+  EXPECT_EQ(region.A().rows(), 12);
+
+  const double kTol = 1e-5;
+  double qmax = M_PI_2 - options.convexity_radius_stepback;
+  for (const int i : std::vector<int>{-1, 1}) {
+    for (const int j : std::vector<int>{-1, 1}) {
+      for (const int k : std::vector<int>{-1, 1}) {
+        Vector6d point_out(i * (qmax + kTol), j * (qmax + kTol),
+                           k * (qmax + kTol), 0.0, 0.0, 0.0);
+        Vector6d point_in(i * (qmax - kTol), j * (qmax - kTol),
+                          k * (qmax - kTol), 0.0, 0.0, 0.0);
+        EXPECT_TRUE(region.PointInSet(point_in));
+        EXPECT_FALSE(region.PointInSet(point_out));
+      }
+    }
+  }
+
+  systems::DiagramBuilder<double> builder2;
+  multibody::MultibodyPlant<double>& plant2 =
+      multibody::AddMultibodyPlantSceneGraph(&builder2, 0.0);
+  const multibody::RigidBody<double>& body2 = plant2.AddRigidBody("body");
+  plant2.AddJoint<multibody::RpyFloatingJoint>("joint", plant2.world_body(), {},
+                                               body2, {});
+
+  plant2.Finalize();
+  auto diagram2 = builder2.Build();
+
+  // If we don't set the position limits, then it should throw, since
+  // the prismatic components of the planar joint are unbounded.
+  auto context2 = diagram2->CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisInConfigurationSpace(plant2, plant2.GetMyContextFromRoot(*context2),
+                               options),
+      ".*position limits.*");
 }
 
 const char boxes_urdf[] = R"""(
