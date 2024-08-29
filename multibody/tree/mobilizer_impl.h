@@ -40,6 +40,22 @@ class MobilizerImpl : public Mobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl);
 
+  // Handy enum to grant specific implementations compile time sizes.
+  // static constexpr int i = 42; discouraged.  See answer in:
+  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
+  enum : int {
+    kNq = compile_time_num_positions,
+    kNv = compile_time_num_velocities,
+    kNx = compile_time_num_positions + compile_time_num_velocities
+  };
+
+  // Eigen by default 16-byte aligns vectors with even numbers of elements.
+  // We're going to overlay these on our 8-byte aligned arrays of q and v for
+  // the entire system, so can't guarantee 16-byte alignment.
+  using QVector = Eigen::Matrix<T, kNq, 1, Eigen::DontAlign>;
+  using VVector = Eigen::Matrix<T, kNv, 1, Eigen::DontAlign>;
+  using HMatrix = Eigen::Matrix<T, 6, kNv>;  // 16-byte alignment OK.
+
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is
   // provided here. Subclasses of %MobilizerImpl are therefore forced to
@@ -123,21 +139,57 @@ class MobilizerImpl : public Mobilizer<T> {
     random_state_distribution_->template tail<kNv>() = velocity;
   }
 
-  // For MultibodyTree internal use only.
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
+  // Given this mobilizer's position coordinates q as a T*, overlay with the
+  // appropriate-sized Eigen vector. See QVector comment re alignment.
+  static const QVector& to_q_vector(const T* q_ptr) {
+    if constexpr (kNq == 0) {  // Keep UBsan happy.
+      static const QVector q_vector{};
+      return q_vector;
+    } else {
+      // Sanity check to ensure that this reinterpret_cast is safe.
+      static_assert(sizeof(QVector) == kNq * sizeof(T));
+      return *reinterpret_cast<const QVector *>(q_ptr);
+    }
+  }
+
+  // Given this mobilizer's velocities v as a T*, overlay with the
+  // appropriate-sized Eigen vector. See VVector comment re alignment.
+  static const VVector& to_v_vector(const T* v_ptr) {
+    if constexpr (kNv == 0) {  // Keep UBsan happy.
+      static const VVector v_vector{};
+      return v_vector;
+    } else {
+      // Sanity check to ensure that this reinterpret_cast is safe.
+      static_assert(sizeof(VVector) == kNv * sizeof(T));
+      return *reinterpret_cast<const VVector *>(v_ptr);
+    }
+  }
+
+  // Given one of this mobilizer's H matrices as a Vector6* (i.e. a pointer
+  // to the first column), overlay with the appropriate-sized Eigen matrix.
+  static const HMatrix& to_h_matrix(const Vector6<T>* h_ptr) {
+    if constexpr (kNv == 0) {  // Keep UBsan happy.
+      static const HMatrix h_matrix{};
+      return h_matrix;
+    } else {
+      // Sanity check to ensure that this reinterpret_cast is safe.
+      static_assert(sizeof(HMatrix) == kNv * sizeof(Vector6<T>));
+      return *reinterpret_cast<const HMatrix *>(h_ptr);
+    }
+  }
+
+  static HMatrix& to_mutable_h_matrix(Vector6<T>* h_ptr) {
+    if constexpr (kNv == 0) {  // Keep UBsan happy.
+      static HMatrix h_matrix{};
+      return h_matrix;
+    } else {
+      // Sanity check to ensure that this reinterpret_cast is safe.
+      static_assert(sizeof(HMatrix) == kNv * sizeof(Vector6<T>));
+      return *reinterpret_cast<HMatrix *>(h_ptr);
+    }
+  }
 
  protected:
-  // Handy enum to grant specific implementations compile time sizes.
-  // static constexpr int i = 42; discouraged.  See answer in:
-  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
-  enum : int {
-    kNq = compile_time_num_positions,
-    kNv = compile_time_num_velocities,
-    kNx = compile_time_num_positions + compile_time_num_velocities
-  };
-
   // Returns the zero configuration for the mobilizer.
   virtual Vector<double, kNq> get_zero_position() const {
     return Vector<double, kNq>::Zero();

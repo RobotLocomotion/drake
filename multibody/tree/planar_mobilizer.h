@@ -36,6 +36,10 @@ template <typename T>
 class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarMobilizer);
+  typedef MobilizerImpl<T, 3, 3> MobilizerBase;
+  using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  using typename MobilizerBase::HMatrix;
 
   /* Constructor for a %PlanarMobilizer between an inboard frame F
    `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting two
@@ -47,6 +51,10 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
       : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   ~PlanarMobilizer() final;
+
+  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
+      const internal::BodyNode<T>* parent_node,
+      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -130,16 +138,31 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
    frame F and the outboard frame M as a function of the configuration q stored
    in `context`. */
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const override;
+      const systems::Context<T>& context) const final {
+    const auto& q = this->get_positions(context);
+    DRAKE_ASSERT(q.size() == kNq);
+    return calc_X_FM(this->to_q_vector(q.data()));
+  }
 
-  /* Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
-   M measured and expressed in frame F as a function of the configuration q
-   stored in `context` and of the input velocity v, formatted as described in
-   the class documentation.
-   This method aborts in Debug builds if `v.size()` is not three. */
+  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
+    return math::RigidTransform<T>(math::RotationMatrix<T>::MakeZRotation(q[2]),
+                                   Vector3<T>(q[0], q[1], 0.0));
+  }
+
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v) const override;
+      const Eigen::Ref<const VectorX<T>>& v) const final {
+    DRAKE_ASSERT(v.size() == kNv);
+    return calc_V_FM(context, this->to_v_vector(v.data()));
+  };
+
+  /* Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
+   M measured and expressed in frame F as a function of the input velocity v. */
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
+                               const VVector& v) const {
+    return SpatialVelocity<T>(Vector3<T>(0.0, 0.0, v[2]),
+                              Vector3<T>(v[0], v[1], 0.0));
+  }
 
   /* Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the outboard
    frame M in the inboard frame F.
@@ -198,16 +221,6 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
-  typedef MobilizerImpl<T, 3, 3> MobilizerBase;
-  /* Bring the handy number of position and velocities MobilizerImpl enums into
-   this class' scope. This is useful when writing mathematical expressions with
-   fixed-sized vectors since we can do things like Vector<T, nq>.
-   Operations with fixed-sized quantities can be optimized at compile time and
-   therefore they are highly preferred compared to the very slow dynamic sized
-   quantities. */
-  using MobilizerBase::kNq;
-  using MobilizerBase::kNv;
-
   /* Helper method to make a clone templated on ToScalar. */
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(

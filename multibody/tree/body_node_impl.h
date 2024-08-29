@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
@@ -23,12 +24,18 @@ namespace internal {
 // stack-allocated Eigen variables. For a more detailed discussion of the role
 // of a BodyNode in a MultibodyTree refer to the class documentation for
 // BodyNode.
-template <typename T, int  num_positions, int num_velocities>
-class BodyNodeImpl : public BodyNode<T> {
+template <typename T, template <typename> class ConcreteMobilizer>
+class BodyNodeImpl final : public BodyNode<T> {
  public:
-  // static constexpr int i = 42; discouraged.  See answer in:
-  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
-  enum : int {nq = num_positions, nv = num_velocities};
+  // Inherit sizes from the concrete mobilizer.
+  enum : int {
+    kNq = ConcreteMobilizer<T>::kNq,
+    kNv = ConcreteMobilizer<T>::kNv,
+    kNx = ConcreteMobilizer<T>::kNx
+  };
+  using QVector = typename ConcreteMobilizer<T>::QVector;
+  using VVector = typename ConcreteMobilizer<T>::VVector;
+  using HMatrix = typename ConcreteMobilizer<T>::HMatrix;
 
   // Given a body and its inboard mobilizer in a MultibodyTree this constructor
   // creates the corresponding %BodyNode. See the BodyNode class documentation
@@ -38,16 +45,84 @@ class BodyNodeImpl : public BodyNode<T> {
   //   the owning MultibodyTree. It can be a `nullptr` only when `body` **is**
   //   the **world** body, otherwise the parent class constructor will abort.
   // @param[in] body The body B associated with `this` node.
-  // @param[in] mobilizer The mobilizer associated with this `node`. It can
-  //                      only be a `nullptr` for the **world** body.
+  // @param[in] mobilizer The mobilizer associated with this `node`.
   BodyNodeImpl(const internal::BodyNode<T>* parent_node,
-               const RigidBody<T>* body, const Mobilizer<T>* mobilizer) :
-      BodyNode<T>(parent_node, body, mobilizer) {}
+               const RigidBody<T>* body, const Mobilizer<T>* mobilizer)
+      : BodyNode<T>(parent_node, body, mobilizer),
+        mobilizer_(dynamic_cast<const ConcreteMobilizer<T>*>(mobilizer)) {
+    DRAKE_DEMAND(mobilizer_ != nullptr);
+  }
 
-  ~BodyNodeImpl() override;
+  ~BodyNodeImpl() final;
 
-  // TODO(amcastro-tri): Implement methods for computing velocity kinematics
-  //  using fixed-size Eigen matrices.
+  // TODO(sherm1) Just a warm up -- move the rest of the kernel computations
+  //  here also.
+
+  void CalcPositionKinematicsCache_BaseToTip(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,
+      const T* positions,
+      PositionKinematicsCache<T>* pc) const final;
+
+  void CalcAcrossNodeJacobianWrtVExpressedInWorld(
+      const systems::Context<T>& context,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,
+      const PositionKinematicsCache<T>& pc,
+      std::vector<Vector6<T>>* H_PB_W_cache) const final;
+
+  void CalcVelocityKinematicsCache_BaseToTip(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<Vector6<T>>& H_PB_W_cache,
+      const T* velocities,
+      VelocityKinematicsCache<T>* vc) const final;
+
+ private:
+  // Given a pointer to the contiguous array of all q's in this system, returns
+  // a reference to just the ones for this mobilizer, as a fixed-size vector.
+  const QVector& my_q(const T* positions) const {
+    return ConcreteMobilizer<T>::to_q_vector(
+        &positions[mobilizer_->position_start_in_q()]);
+  }
+
+  // Given a pointer to the contiguous array of all v's in this system, returns
+  // a reference to just the ones for this mobilizer, as a fixed-size vector.
+  const VVector& my_v(const T* velocities) const {
+    return ConcreteMobilizer<T>::to_v_vector(
+        &velocities[mobilizer_->velocity_start_in_v()]);
+  }
+
+  // Given a complete array of hinge matrices H stored by contiguous columns,
+  // returns a const reference to H for this mobilizer, as a 6xnv fixed-size
+  // matrix.
+  const HMatrix& my_H(const std::vector<Vector6<T>>& H_cache) const {
+    return ConcreteMobilizer<T>::to_h_matrix(
+        &H_cache[mobilizer_->velocity_start_in_v()]);
+  }
+
+  // Given a pointer to a mutable complete array of hinge matrices H stored by
+  // contiguous columns, returns a mutable reference to H for this mobilizer,
+  // as a 6xnv fixed-size matrix.
+  HMatrix& my_mutable_H(std::vector<Vector6<T>>* H_cache) const {
+    DRAKE_ASSERT(H_cache != nullptr);
+    return ConcreteMobilizer<T>::to_mutable_h_matrix(
+        &(*H_cache)[mobilizer_->velocity_start_in_v()]);
+  }
+
+  SpatialVelocity<T>& get_mutable_V_WB(VelocityKinematicsCache<T>* vc) const {
+    return vc->get_mutable_V_WB(this->index());
+  }
+
+  SpatialVelocity<T>& get_mutable_V_FM(
+      VelocityKinematicsCache<T>* vc) const {
+    return vc->get_mutable_V_FM(this->index());
+  }
+
+  SpatialVelocity<T>& get_mutable_V_PB_W(
+      VelocityKinematicsCache<T>* vc) const {
+    return vc->get_mutable_V_PB_W(this->index());
+  }
+
+  const ConcreteMobilizer<T>* mobilizer_;
 };
 
 }  // namespace internal
