@@ -466,20 +466,29 @@ bool CheckTerminate(const IrisOptions& options, const HPolyhedron& P,
   return false;
 }
 
-bool is_continuous_revolute(const multibody::Joint<double>& joint) {
-  return joint.type_name() == "revolute" &&
-         joint.position_lower_limits()[0] ==
-             -std::numeric_limits<float>::infinity() &&
-         joint.position_upper_limits()[0] ==
-             std::numeric_limits<float>::infinity();
-}
-
-bool is_continuous_planar(const multibody::Joint<double>& joint) {
-  return joint.type_name() == "planar" &&
-         joint.position_lower_limits()[2] ==
-             -std::numeric_limits<float>::infinity() &&
-         joint.position_upper_limits()[2] ==
-             std::numeric_limits<float>::infinity();
+/* Given a joint, check if it is encompassed by the continuous revolute
+framework. If so, return a list of offsets i such that
+joint.position_start() + i is an angle-valued coordinate in configuration space,
+and should be automatically bounded. */
+std::vector<int> revolute_joint_index_offsets(
+    const multibody::Joint<double>& joint) {
+  if (joint.type_name() == "revolute") {
+    if (joint.position_lower_limits()[0] ==
+            -std::numeric_limits<float>::infinity() &&
+        joint.position_upper_limits()[0] ==
+            std::numeric_limits<float>::infinity()) {
+      return std::vector<int>{0};
+    }
+  }
+  if (joint.type_name() == "planar") {
+    if (joint.position_lower_limits()[2] ==
+            -std::numeric_limits<float>::infinity() &&
+        joint.position_upper_limits()[2] ==
+            std::numeric_limits<float>::infinity()) {
+      return std::vector<int>{2};
+    }
+  }
+  return std::vector<int>{};
 }
 
 }  // namespace
@@ -504,11 +513,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   DRAKE_THROW_UNLESS(options.convexity_radius_stepback < M_PI_2);
   for (multibody::JointIndex index : plant.GetJointIndices()) {
     const multibody::Joint<double>& joint = plant.get_joint(index);
-    const bool revolute = is_continuous_revolute(joint);
-    const bool planar = is_continuous_planar(joint);
-    if (revolute || planar) {
-      const int i =
-          revolute ? joint.position_start() : joint.position_start() + 2;
+    const std::vector<int> continuous_revolute_indices =
+        revolute_joint_index_offsets(joint);
+    for (const int i : continuous_revolute_indices) {
       lower_limits[i] = seed[i] - M_PI_2 + options.convexity_radius_stepback;
       upper_limits[i] = seed[i] + M_PI_2 - options.convexity_radius_stepback;
     }
