@@ -431,6 +431,9 @@ class Mobilizer : public MultibodyElement<T> {
   //
   // Additionally, `context` can provide any other parameters the mobilizer
   // could depend on.
+
+  // TODO(sherm1) Consider getting rid of this function altogether and
+  //  making use only of the concrete mobilizer's calc_X_FM() method.
   virtual math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const = 0;
 

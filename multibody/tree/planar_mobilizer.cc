@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -13,6 +14,14 @@ namespace internal {
 
 template <typename T>
 PlanarMobilizer<T>::~PlanarMobilizer() = default;
+
+template <typename T>
+std::unique_ptr<internal::BodyNode<T>> PlanarMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, PlanarMobilizer>>(
+      parent_node, body, mobilizer);
+}
 
 template <typename T>
 std::string PlanarMobilizer<T>::position_suffix(
@@ -112,25 +121,6 @@ const PlanarMobilizer<T>& PlanarMobilizer<T>::SetAngularRate(
   return *this;
 }
 
-template <typename T>
-math::RigidTransform<T> PlanarMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == kNq);
-  Vector3<T> X_FM_translation;
-  X_FM_translation << q[0], q[1], 0.0;
-  return math::RigidTransform<T>(math::RotationMatrix<T>::MakeZRotation(q[2]),
-                                 X_FM_translation);
-}
-
-template <typename T>
-SpatialVelocity<T> PlanarMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  Vector6<T> V_FM_vector;
-  V_FM_vector << 0.0, 0.0, v[2], v[0], v[1], 0.0;
-  return SpatialVelocity<T>(V_FM_vector);
-}
 
 template <typename T>
 SpatialAcceleration<T>
