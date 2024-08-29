@@ -22,14 +22,19 @@ WORKSPACE = os.path.dirname(os.path.dirname(os.path.dirname(
 def has_kcov_data(path):
     """Returns True iff the supplied path contains kcov data, either in a
     `kcov` subtree, or in a bazel-constructed zip file."""
+    print("has_kcov_data: ", path, file=sys.stderr)
+    print("  contents: ", glob.glob(os.path.join(path, '**')), file=sys.stderr)
     kcov_dir = os.path.join(path, 'kcov')
     if os.path.isdir(kcov_dir):
+        print(True, kcov_dir, file=sys.stderr)
         return True
     zip_path = os.path.join(path, 'outputs.zip')
     if not os.path.exists(zip_path):
         return False
     with zipfile.ZipFile(zip_path, 'r') as zf:
-        return 'kcov/' in zf.namelist()
+        found = any('kcov/' in name for name in zf.namelist())
+        print(found, zip_path, file=sys.stderr)
+        return found
 
 
 def maybe_expand_zipped_kcov_data(path):
@@ -69,6 +74,7 @@ def find_kcov_test_outputs():
     """
     dirs = glob.glob(os.path.join(WORKSPACE, 'bazel-testlogs/**/test.outputs'),
                      recursive=True)
+    print("search dirs: ", dirs, file=sys.stderr)
     return [d for d in dirs if has_kcov_data(d)]
 
 

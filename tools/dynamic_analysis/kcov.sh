@@ -1,7 +1,10 @@
-#!/bin/bash
+#!/bin/bash -vx
 
 me=$(python3 -c 'import os; print(os.path.realpath("'"$0"'"))')
 WORKSPACE=$(dirname $(dirname $(dirname "${me}")))
+
+kcov --version
+zip --version
 
 # There must be ${WORKSPACE}/WORKSPACE.
 if [ ! -f "${WORKSPACE}/WORKSPACE" ]; then
@@ -63,3 +66,5 @@ if [[ $(file -b --mime -L "$1") == *text/x-*python* ]]; then
 fi
 
 eval ${DRAKE_KCOV_COMMAND} "$@"
+
+exit 1  # XXX
