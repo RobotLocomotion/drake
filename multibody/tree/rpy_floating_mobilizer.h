@@ -63,6 +63,10 @@ template <typename T>
 class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyFloatingMobilizer);
+  using MobilizerBase = MobilizerImpl<T, 6, 6>;
+  using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  using typename MobilizerBase::HMatrix;
 
   // Constructor for an RpyFloatingMobilizer between an inboard frame F
   // inboard_frame_F and an outboard frame M outboard_frame_M.
@@ -72,6 +76,10 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
       : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   ~RpyFloatingMobilizer() final;
+
+  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
+      const internal::BodyNode<T>* parent_node,
+      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
 
   bool is_floating() const final { return true; }
 
@@ -216,13 +224,24 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // Computes the across-mobilizer transform X_FM(q) between the inboard
   // frame F and the outboard frame M as a function of the configuration q
   // stored in context.
+  math::RigidTransform<T> calc_X_FM(const T* q) const {
+    return math::RigidTransform<T>(math::RollPitchYaw<T>(q[0], q[1], q[2]),
+                                   Vector3<T>(q[3], q[4], q[5]));
+  }
+
+  // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame M
+  // measured and expressed in frame F as a function of the input generalized
+  // velocity v, packed as documented in get_generalized_velocities(). (That's
+  // conveniently just V_FM already.)
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
+                               const T* v) const {
+    const Eigen::Map<const VVector> V_FM(v);
+    return SpatialVelocity<T>(V_FM);  // w_FM, v_FM
+  }
+
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const final;
 
-  // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame M
-  // measured and expressed in frame F as a function of the configuration stored
-  // in context and of the input generalized velocity v, packed as documented
-  // in get_generalized_velocities().
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;
@@ -309,16 +328,6 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  typedef MobilizerImpl<T, 6, 6> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, kNq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
-  using MobilizerBase::kNq;
-  using MobilizerBase::kNv;
-
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
