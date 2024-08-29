@@ -17,6 +17,23 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+/* `get_screw_translation_from_rotation`,
+ `get_screw_rotation_from_translation` are used for position, velocity,
+ and acceleration conversions.  All of these are governed by
+ the same relation, depended on the `screw_pitch` of a screw mobilizer. */
+template <typename T>
+inline T get_screw_translation_from_rotation(const T& theta,
+                                             double screw_pitch) {
+  T revolution_amount{theta / (2 * M_PI)};
+  return screw_pitch * revolution_amount;
+}
+
+template <typename T>
+inline T get_screw_rotation_from_translation(const T& z, double screw_pitch) {
+  T revolution_amount{z / screw_pitch};
+  return revolution_amount * 2 * M_PI;
+}
+
 /* This mobilizer models a screw joint between an inboard frame F and an
  outboard frame M that enables translation along an axis while
  rotating about it, such that the axis is constant when measured
@@ -40,6 +57,12 @@ template <typename T>
 class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScrewMobilizer);
+  typedef MobilizerImpl<T, 1, 1> MobilizerBase;
+  using MobilizerBase::kNq;
+  using MobilizerBase::kNv;
+  using MobilizerBase::kNx;
+  using typename MobilizerBase::QVector;
+  using typename MobilizerBase::VVector;
 
   /* Constructor for a %ScrewMobilizer between an inboard frame F and
      an outboard frame M  granting one translational and one rotational degrees
@@ -69,6 +92,10 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   }
 
   ~ScrewMobilizer() final;
+
+  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
+      const internal::BodyNode<T>* parent_node,
+      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -164,17 +191,36 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    frame F and the outboard frame M as a function of the configuration q stored
    in `context`. */
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const final;
+      const systems::Context<T>& context) const final {
+    const auto& q = this->get_positions(context);
+    DRAKE_ASSERT(q.size() == kNq);
+    return calc_X_FM(this->to_q_vector(q.data()));
+  }
 
-  /* Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
-   M measured and expressed in frame F as a function of the configuration q
-   stored in `context` and of the input velocity v, formatted as described in
-   the class documentation.
-   This method aborts in Debug builds if `v.size()` is not one.
-   @pre v.size() == 1 */
+  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
+    const Vector3<T> p_FM(
+        axis_ * get_screw_translation_from_rotation(q[0], screw_pitch_));
+    return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
+  }
+
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v) const final;
+      const Eigen::Ref<const VectorX<T>>& v) const final {
+    DRAKE_ASSERT(v.size() == kNv);
+    return calc_V_FM(context, this->to_v_vector(v.data()));
+  };
+
+  /* Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
+   M measured and expressed in frame F as a function of the input velocity v,
+   which is the angular velocity. We scale that by the pitch to find the
+   related translational velocity. */
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
+                               const VVector& v) const {
+    const SpatialVelocity<T> V_FM(
+        axis_ * v[0],
+        axis_ * get_screw_translation_from_rotation(v[0], screw_pitch_));
+    return V_FM;
+  }
 
   /* Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the outboard
    frame M in the inboard frame F.
@@ -237,38 +283,11 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
 
-  typedef MobilizerImpl<T, 1, 1> MobilizerBase;
-  /* Bring the handy number of position and velocities MobilizerImpl enums into
-   this class' scope. This is useful when writing mathematical expressions with
-   fixed-sized vectors since we can do things like Vector<T, nq>.
-   Operations with fixed-sized quantities can be optimized at compile time and
-   therefore they are highly preferred compared to the very slow dynamic sized
-   quantities. */
-  using MobilizerBase::kNq;
-  using MobilizerBase::kNv;
-
   // Default joint axis expressed in the inboard frame F.
   Vector3<double> axis_;
 
   const double screw_pitch_;
 };
-
-/* `get_screw_translation_from_rotation`,
- `get_screw_rotation_from_translation` are used for position, velocity,
- and acceleration conversions.  All of these are governed by
- the same relation, depended on the `screw_pitch` of a screw mobilizer. */
-template <typename T>
-inline T get_screw_translation_from_rotation(const T& theta,
-                                             double screw_pitch) {
-  T revolution_amount{theta / (2 * M_PI)};
-  return screw_pitch * revolution_amount;
-}
-
-template <typename T>
-inline T get_screw_rotation_from_translation(const T& z, double screw_pitch) {
-  T revolution_amount{z / screw_pitch};
-  return revolution_amount * 2 * M_PI;
-}
 
 }  // namespace internal
 }  // namespace multibody

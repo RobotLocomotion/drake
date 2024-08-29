@@ -3,12 +3,22 @@
 #include <cmath>
 #include <limits>
 
+#include "drake/multibody/tree/body_node_impl.h"
+
 namespace drake {
 namespace multibody {
 namespace internal {
 
 template <typename T>
 ScrewMobilizer<T>::~ScrewMobilizer() = default;
+
+template <typename T>
+std::unique_ptr<internal::BodyNode<T>> ScrewMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, ScrewMobilizer>>(
+      parent_node, body, mobilizer);
+}
 
 template <typename T>
 std::string ScrewMobilizer<T>::position_suffix(
@@ -108,27 +118,6 @@ const ScrewMobilizer<T>& ScrewMobilizer<T>::SetAngularRate(
   DRAKE_ASSERT(v.size() == kNv);
   v[0] = theta_dot;
   return *this;
-}
-
-template <typename T>
-math::RigidTransform<T> ScrewMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == kNq);
-  const Vector3<T> p_FM(axis_ *
-      get_screw_translation_from_rotation(q[0], screw_pitch_));
-  return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
-}
-
-template <typename T>
-SpatialVelocity<T> ScrewMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  Vector6<T> V_FM_vector;
-  V_FM_vector <<
-    (axis_ * v[0]),
-    (axis_ * get_screw_translation_from_rotation(v[0], screw_pitch_));
-  return SpatialVelocity<T>(V_FM_vector);
 }
 
 template <typename T>
