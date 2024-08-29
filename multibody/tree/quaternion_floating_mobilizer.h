@@ -34,6 +34,10 @@ template <typename T>
 class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer);
+  using MobilizerBase = MobilizerImpl<T, 7, 6>;
+  using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  using typename MobilizerBase::HMatrix;
 
   // Constructor for a %QuaternionFloatingMobilizer granting six degrees of
   // freedom to an outboard frame M with respect to an inboard frame F. The
@@ -50,6 +54,10 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   ~QuaternionFloatingMobilizer() final;
+
+  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
+      const internal::BodyNode<T>* parent_node,
+      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
 
   bool is_floating() const final { return true; }
 
@@ -197,6 +205,20 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @name Mobilizer overrides
   // Refer to the Mobilizer class documentation for details.
   // @{
+
+  math::RigidTransform<T> calc_X_FM(const T* q) const {
+    // The first 4 elements in q contain a quaternion, ordered as w, x, y, z.
+    // The last 3 elements in q contain position from Fo to Mo.
+    return math::RigidTransform<T>(Eigen::Quaternion<T>(q[0], q[1], q[2], q[3]),
+                                   Vector3<T>(q[4], q[5], q[6]));
+  }
+
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
+                               const T* v) const {
+    const Eigen::Map<const VVector> V_FM(v);
+    return SpatialVelocity<T>(V_FM);  // w_FM, v_FM
+  }
+
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const final;
 
@@ -247,16 +269,6 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  typedef MobilizerImpl<T, 7, 6> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
-  using MobilizerBase::kNq;
-  using MobilizerBase::kNv;
-
   // Helper to compute the kinematic map N(q). L ∈ ℝ⁴ˣ³.
   static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
   // Helper to compute the kinematic map N(q) from angular velocity to
