@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include "drake/common/autodiff.h"
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -12,6 +13,14 @@ namespace internal {
 
 template <typename T>
 PrismaticMobilizer<T>::~PrismaticMobilizer() = default;
+
+template <typename T>
+std::unique_ptr<internal::BodyNode<T>> PrismaticMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, PrismaticMobilizer>>(
+      parent_node, body, mobilizer);
+}
 
 template <typename T>
 std::string PrismaticMobilizer<T>::position_suffix(
@@ -63,21 +72,6 @@ const PrismaticMobilizer<T>& PrismaticMobilizer<T>::SetTranslationRate(
   DRAKE_ASSERT(v.size() == kNv);
   v[0] = translation_dot;
   return *this;
-}
-
-template <typename T>
-math::RigidTransform<T> PrismaticMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  return math::RigidTransform<T>(
-      get_translation(context) * translation_axis());
-}
-
-template <typename T>
-SpatialVelocity<T> PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& v) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
 }
 
 template <typename T>

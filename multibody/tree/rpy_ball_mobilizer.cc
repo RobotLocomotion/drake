@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/rigid_body.h"
 
@@ -16,6 +17,14 @@ namespace internal {
 
 template <typename T>
 RpyBallMobilizer<T>::~RpyBallMobilizer() = default;
+
+template <typename T>
+std::unique_ptr<internal::BodyNode<T>> RpyBallMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, RpyBallMobilizer>>(
+      parent_node, body, mobilizer);
+}
 
 template <typename T>
 std::string RpyBallMobilizer<T>::position_suffix(
@@ -89,24 +98,6 @@ const RpyBallMobilizer<T>& RpyBallMobilizer<T>::SetAngularVelocity(
   DRAKE_ASSERT(v.size() == kNv);
   v = w_FM;
   return *this;
-}
-
-template <typename T>
-math::RigidTransform<T> RpyBallMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const Eigen::Matrix<T, 3, 1>& rpy = this->get_positions(context);
-  DRAKE_ASSERT(rpy.size() == kNq);
-  const math::RollPitchYaw<T> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
-  math::RigidTransform<T> X_FM(roll_pitch_yaw, Vector3<T>::Zero());
-  return X_FM;
-}
-
-template <typename T>
-SpatialVelocity<T> RpyBallMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& v) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(v, Vector3<T>::Zero());
 }
 
 template <typename T>
