@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -11,6 +12,14 @@ namespace internal {
 
 template <typename T>
 RevoluteMobilizer<T>::~RevoluteMobilizer() = default;
+
+template <typename T>
+std::unique_ptr<internal::BodyNode<T>> RevoluteMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, RevoluteMobilizer>>(
+      parent_node, body, mobilizer);
+}
 
 template <typename T>
 std::string RevoluteMobilizer<T>::position_suffix(
@@ -68,18 +77,16 @@ template <typename T>
 math::RigidTransform<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == 1);
-  const Eigen::AngleAxis<T> angle_axis(q[0], axis_F_);
-  const math::RigidTransform<T> X_FM(angle_axis, Vector3<T>::Zero());
-  return X_FM;
+  DRAKE_ASSERT(q.size() == kNq);
+  return calc_X_FM(q.data());
 }
 
 template <typename T>
 SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&,
+    const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
+  return calc_V_FM(context, v.data());
 }
 
 template <typename T>
