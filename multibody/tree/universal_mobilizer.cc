@@ -6,7 +6,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/body_node_impl.h"
+// #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {
@@ -17,6 +18,14 @@ using std::sin;
 
 template <typename T>
 UniversalMobilizer<T>::~UniversalMobilizer() = default;
+
+template <typename T>
+std::unique_ptr<internal::BodyNode<T>> UniversalMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, UniversalMobilizer>>(
+      parent_node, body, mobilizer);
+}
 
 template <typename T>
 std::string UniversalMobilizer<T>::position_suffix(
@@ -78,24 +87,6 @@ const UniversalMobilizer<T>& UniversalMobilizer<T>::SetAngularRates(
 }
 
 template <typename T>
-math::RigidTransform<T> UniversalMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == kNq);
-  const T s1 = sin(q[0]);
-  const T c1 = cos(q[0]);
-  const T s2 = sin(q[1]);
-  const T c2 = cos(q[1]);
-  Matrix3<T> R_FM_matrix;
-  R_FM_matrix << c2,     0.0, s2,
-                 s1*s2,  c1,  -s1*c2,
-                 -c1*s2, s1,  c1*c2;
-  const math::RotationMatrix<T> R_FM = math::RotationMatrix<T>(R_FM_matrix);
-  const math::RigidTransform<T> X_FM(R_FM);
-  return X_FM;
-}
-
-template <typename T>
 Eigen::Matrix<T, 3, 2> UniversalMobilizer<T>::CalcHwMatrix(
     const systems::Context<T>& context, Vector3<T>* Hw_dot) const {
   const Vector2<T>& q = this->get_positions(context);
@@ -115,15 +106,6 @@ Eigen::Matrix<T, 3, 2> UniversalMobilizer<T>::CalcHwMatrix(
     *Hw_dot =  Vector3<T>(0, -s * v[0], c * v[0]);
   }
   return H;
-}
-
-template <typename T>
-SpatialVelocity<T> UniversalMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(context);
-  return SpatialVelocity<T>(Hw * v, Vector3<T>::Zero());
 }
 
 template <typename T>
