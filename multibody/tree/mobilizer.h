@@ -734,9 +734,9 @@ class Mobilizer : public MultibodyElement<T> {
         this->DeclareAbstractParameter(tree_system, Value<bool>(false));
   }
 
-  // Implementation for MultibodyElement::DoDeclareParameters().
+  // Implementation for MultibodyElement::DoSetDefaultParameters().
   void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
-    // TODO(joemasterjonh): Consider exposing a default locked model value.
+    // TODO(joemasterjohn): Consider exposing a default locked model value.
     parameters->template get_mutable_abstract_parameter<bool>(
         is_locked_parameter_index_) = false;
   }

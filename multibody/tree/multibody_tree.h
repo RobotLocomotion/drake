@@ -1408,6 +1408,9 @@ class MultibodyTree {
   void CalcJointDamping(const systems::Context<T>& context,
                         VectorX<T>* joint_damping) const;
 
+  void CalcFrameBodyPoses(const systems::Context<T>& context,
+                          FrameBodyPoseCache<T>* frame_body_poses) const;
+
   // Computes the composite body inertia Mc_B_W(q) for each body B in the
   // model about its frame origin Bo and expressed in the world frame W.
   // The composite body inertia is the effective mass properties B would have
@@ -2320,6 +2323,15 @@ class MultibodyTree {
     // FinalizeInternals().
     tree_clone->FinalizeInternals();
     return tree_clone;
+  }
+
+  // Evaluates frame body poses cached in context, updating all frames'
+  // body poses if parameters have changed since last update.
+  // @returns a reference to the now-up-to-date cache entry
+  const FrameBodyPoseCache<T>& EvalFrameBodyPoses(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalFrameBodyPoses(context);
   }
 
   // Evaluates position kinematics cached in context.
