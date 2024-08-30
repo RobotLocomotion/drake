@@ -123,30 +123,17 @@ class logger {
   logger();
 
   template <typename... Args>
-  void trace(const char*, const Args&...) {}
+  void trace(const Args&...) {}
   template <typename... Args>
-  void debug(const char*, const Args&...) {}
+  void debug(const Args&...) {}
   template <typename... Args>
-  void info(const char*, const Args&...) {}
+  void info(const Args&...) {}
   template <typename... Args>
-  void warn(const char*, const Args&...) {}
+  void warn(const Args&...) {}
   template <typename... Args>
-  void error(const char*, const Args&...) {}
+  void error(const Args&...) {}
   template <typename... Args>
-  void critical(const char*, const Args&...) {}
-
-  template <typename T>
-  void trace(const T&) {}
-  template <typename T>
-  void debug(const T&) {}
-  template <typename T>
-  void info(const T&) {}
-  template <typename T>
-  void warn(const T&) {}
-  template <typename T>
-  void error(const T&) {}
-  template <typename T>
-  void critical(const T&) {}
+  void critical(const Args&...) {}
 };
 
 // A stubbed-out version of `spdlog::sinks::sink`.

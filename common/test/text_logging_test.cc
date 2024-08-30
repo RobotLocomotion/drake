@@ -72,7 +72,7 @@ GTEST_TEST(TextLoggingTest, ConstantTest) {
 // Check that the "warn once" idiom compiles and doesn't crash at runtime.
 GTEST_TEST(TextLoggingTest, WarnOnceTest) {
   static const drake::logging::Warn log_once(
-      "The log_once happened as expected.");
+      "The {} happened as expected.", "log_once");
 }
 
 // Abuse gtest internals to verify that logging actually prints when enabled,
