@@ -19,7 +19,9 @@ namespace test {
 namespace {
 using common_robotics_utilities::math::Distance;
 using common_robotics_utilities::math::Interpolate;
+using multibody::Joint; 
 using multibody::JointIndex;
+using multibody::JointActuatorIndex; 
 using multibody::QuaternionFloatingJoint;
 
 void DoFixedIiwaTest(const RobotDiagram<double>& model,
@@ -435,6 +437,38 @@ directives:
   EXPECT_EQ(provider.quaternion_dof_start_indices().size(), 1);
   EXPECT_EQ(provider.quaternion_dof_start_indices().at(0),
             cracker_floating_joint.position_start());
+}
+
+// Test to solve issue #21860
+GTEST_TEST(IterationTest, Test) {
+  const std::string& model_ext = "dmd.yaml";
+  const std::string& model_contents = R"""(
+directives:
+- add_model:
+    name: arm
+    file: package://drake_models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+- add_weld:
+    parent: world
+    child: arm::base
+)"""; 
+  auto builder = std::make_unique<RobotDiagramBuilder<double>>();
+  builder->parser().AddModelsFromString(model_contents, model_ext);
+  auto& plant = builder->plant();
+  
+  JointIndex joint_index(3); // picking an arbitrary number not at the start or the end
+  const Joint<double>& joint = plant.get_joint(joint_index);
+
+  JointActuatorIndex joint_actuator_index(2); // this is the actuator index associated with the joint 3
+  auto& actuator = plant.get_joint_actuator(joint_actuator_index);
+  plant.RemoveJointActuator(actuator);
+
+  plant.RemoveJoint(joint); 
+
+  const auto model = builder->Build();
+
+  const LinearDistanceAndInterpolationProvider provider(model->plant());
+
+  EXPECT_NO_THROW(provider.quaternion_dof_start_indices());
 }
 
 }  // namespace
