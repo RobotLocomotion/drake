@@ -53,8 +53,7 @@ class AffineSubspace final : public ConvexSet {
   `tol` sets the numerical precision of the computation. For each dimension, a
   pair of feasible points are constructed, so as to maximize the displacement in
   that dimension. If their displacement along that dimension is larger than tol,
-  then the vector connecting the points is added as a basis vector. If unset,
-  1e-12 is used.
+  then the vector connecting the points is added as a basis vector.
 
   @throws std::exception if `set` is empty.
   @throws std::exception if `tol < 0`.
@@ -67,7 +66,7 @@ class AffineSubspace final : public ConvexSet {
   - AffineSubspace: Equivalent to the copy-constructor, but needed since that
   method is not available in the Python bindings; `tol` is ignored.
   - CartesianProduct: Can compute the affine hull of each factor individually;
-  `tol` is propagated to the constituent calls. (This is not done of the
+  `tol` is propagated to the constituent calls. (This is not done if the
   Cartesian product has an associated affine transformation.)
   - Hyperellipsoid: Always equal to the whole ambient space; `tol` is ignored.
   - Hyperrectangle: Can be computed in closed-form; `tol` has the same meaning
