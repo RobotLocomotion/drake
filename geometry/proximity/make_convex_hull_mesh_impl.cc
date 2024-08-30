@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <map>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
@@ -11,31 +12,37 @@
 #include <libqhullcpp/Qhull.h>
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullVertexSet.h>
-#include <vtkGLTFImporter.h>  // vtkIOImport
-#include <vtkMapper.h>        // vtkCommonCore
-#include <vtkMatrix4x4.h>     // vtkCommonMath
-#include <vtkPolyData.h>      // vtkCommonDataModel
-#include <vtkRenderer.h>      // vtkRenderingCore
+#include <vtkGLTFDocumentLoader.h>  // vtkIOGeometry
+#include <vtkMapper.h>              // vtkCommonCore
+#include <vtkMatrix4x4.h>           // vtkCommonMath
+#include <vtkPolyData.h>            // vtkCommonDataModel
+#include <vtkRenderer.h>            // vtkRenderingCore
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/ssize.h"
+#include "drake/geometry/internal_gltf_helpers.h"
+#include "drake/geometry/internal_gltf_vtk.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/systems/sensors/vtk_diagnostic_event_observer.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace {
 
+using drake::internal::DiagnosticPolicy;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using systems::sensors::internal::VtkDiagnosticEventObserver;
 
 namespace fs = std::filesystem;
 
@@ -143,18 +150,47 @@ Vector3d VtkMultiply(vtkMatrix4x4* T_BA, const Vector3d& p_AQ) {
 
 std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
                                        double scale) {
-  DRAKE_DEMAND(gltf_source.IsPath());
-  vtkNew<vtkGLTFImporter> importer;
-  importer->SetFileName(gltf_source.path().c_str());
-  importer->Update();
+  const InMemoryMesh& mem_mesh =
+      gltf_source.is_path()
+          ? PreParseGltf(gltf_source.path(), /* include_images= */ false)
+          : gltf_source.in_memory();
 
-  auto* renderer = importer->GetRenderer();
-  DRAKE_DEMAND(renderer != nullptr);
+  const std::string& gltf_name = mem_mesh.mesh_file().filename_hint();
+  vtkSmartPointer<MeshMemoryLoader> uri_loader(new MeshMemoryLoader(&mem_mesh));
+  vtkNew<vtkGLTFDocumentLoader> loader;
+  loader->SetConfig({.include_animation = false,
+                     .include_images = false,
+                     .include_skins = false});
+  vtkNew<VtkDiagnosticEventObserver> observer;
+  DiagnosticPolicy diagnostic;
+  observer->set_diagnostic(&diagnostic);
+  loader->AddObserver(vtkCommand::ErrorEvent, observer);
+  loader->AddObserver(vtkCommand::WarningEvent, observer);
 
-  if (renderer->VisibleActorCount() == 0) {
+  vtkSmartPointer<vtkResourceStream> gltf_stream =
+      MakeStreamForString(&mem_mesh.mesh_file().contents());
+
+  if (!loader->LoadModelMetaDataFromStream(gltf_stream, uri_loader) ||
+      !loader->LoadModelData({}) || !loader->BuildModelVTKGeometry()) {
+    // Note: we don't generally expect this exception to be thrown. We expect
+    // the event observer will convert VTK errors to thrown exceptions for us.
+    // This is her on the off chance that VTK returns failure on any of the
+    // calls above without registering an error with the observer.
     throw std::runtime_error(
-        fmt::format("MakeConvexHull() found no vertices in the file '{}'.",
-                    gltf_source.description()));
+        fmt::format("Can't compute convex hull for in-memory glTF file '{}'. "
+                    "Unknown VTK error.",
+                    gltf_name));
+  }
+
+  // Now get the vertex data, transformed to the geometry frame G.
+  auto model = loader->GetInternalModel();
+  DRAKE_DEMAND(model != nullptr);
+
+  // TODO(SeanCurtis-TRI): This should use the same scene logic as found in
+  // GltfMeshExtractor::FindTargetRootNodes() to unify the scene/node semantics.
+  std::stack<int> nodes;
+  for (int node_id : model->Scenes[model->DefaultScene].Nodes) {
+    nodes.push(node_id);
   }
 
   // The relative transform from the file's frame F to the geometry's frame G.
@@ -162,21 +198,30 @@ std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
   const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
 
   std::vector<Vector3d> vertices;
-  auto* actors = renderer->GetActors();
-  actors->InitTraversal();
-  while (vtkActor* actor = actors->GetNextActor()) {
-    // 1. Extract PolyData from actor.
-    auto* poly_data =
-        dynamic_cast<vtkPolyData*>(actor->GetMapper()->GetInput());
-    DRAKE_DEMAND(poly_data != nullptr);
-    // 2. For each vertex, transform it to the file frame (based on the actors
-    // user transform), and then into the geometry frame using the scale and
-    // rotation.
-    vtkMatrix4x4* T_FA = actor->GetUserMatrix();
-    for (vtkIdType vi = 0; vi < poly_data->GetNumberOfPoints(); ++vi) {
-      const Vector3d p_AV(poly_data->GetPoint(vi));
-      const Vector3d p_FV = VtkMultiply(T_FA, p_AV);
-      vertices.emplace_back((X_GF * p_FV) * scale);
+  while (!nodes.empty()) {
+    const int node_id = nodes.top();
+    nodes.pop();
+    const auto& node = model->Nodes[node_id];
+
+    // Transform of the node in the file.
+    vtkMatrix4x4* T_FN = node.GlobalTransform;
+    if (node.Mesh >= 0) {
+      const auto& mesh = model->Meshes[node.Mesh];
+      for (const auto& primitive : mesh.Primitives) {
+        vtkSmartPointer<vtkPolyData> point_data = primitive.Geometry;
+        if (point_data == nullptr) {
+          continue;
+        }
+        for (vtkIdType vi = 0; vi < point_data->GetNumberOfPoints(); ++vi) {
+          const Vector3d p_NV(point_data->GetPoint(vi));
+          const Vector3d p_FV = VtkMultiply(T_FN, p_NV);
+          vertices.emplace_back((X_GF * p_FV) * scale);
+        }
+      }
+    }
+    for (int child_node_id : node.Children) {
+      // This is a *tree* not a graph, so we won't be revisiting nodes.
+      nodes.push(child_node_id);
     }
   }
   return vertices;

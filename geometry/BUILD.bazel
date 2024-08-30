@@ -286,6 +286,41 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "internal_gltf_helpers",
+    srcs = ["internal_gltf_helpers.cc"],
+    hdrs = ["internal_gltf_helpers.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__subpackages__",
+    ],
+    deps = [
+        ":in_memory_mesh",
+        "//common:file_source",
+        "//common:memory_file",
+        "//common:string_container",
+        "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_gltf_vtk",
+    srcs = ["internal_gltf_vtk.cc"],
+    hdrs = ["internal_gltf_vtk.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__subpackages__",
+    ],
+    deps = [
+        ":in_memory_mesh",
+        "//common:drake_export",
+        "//common:essential",
+        "//common:memory_file",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOCore",
+    ],
+)
+
+drake_cc_library(
     name = "make_mesh_for_deformable",
     srcs = ["make_mesh_for_deformable.cc"],
     hdrs = ["make_mesh_for_deformable.h"],
