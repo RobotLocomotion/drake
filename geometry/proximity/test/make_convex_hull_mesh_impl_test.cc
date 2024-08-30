@@ -584,14 +584,37 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromMeshSource) {
   const MeshSource vtk_source(InMemoryMesh{MemoryFile::Make(tet_path)});
   const PolyMesh expected_tet = GetTetrahedronWithMargin(kScale, kMargin);
 
+  // The rainbow_box.gltf has embedded data *and* has a non-trivial hierarchy
+  // with transformations.
+  const fs::path embedded_gltf_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf");
+  const MeshSource gltf_embedded_source(
+      InMemoryMesh{MemoryFile::Make(embedded_gltf_path)});
+
+  // The fully_textured_pyramid.gltf references external files. Specifically,
+  // the .bin file is necessary to know vertex positions.
+  const fs::path pyramid_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  const fs::path pyramid_bin_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.bin");
+  const MeshSource gltf_pyramid_source(InMemoryMesh{
+      MemoryFile::Make(pyramid_path),
+      {{"fully_textured_pyramid.bin", MemoryFile::Make(pyramid_bin_path)}}});
+  // The convex hull of the in-memory version should match that from disk.
+  const PolyMesh expected_pyramid =
+      MakeConvexHull(pyramid_path, kScale, kMargin);
+
   struct TestCase {
     const MeshSource* mesh_source{};
     const PolyMesh* expected_mesh{};
     std::string_view description;
   };
 
-  std::vector<TestCase> test_cases{{&obj_source, &expected_box, "Valid obj"},
-                                   {&vtk_source, &expected_tet, "Valid vtk"}};
+  std::vector<TestCase> test_cases{
+      {&obj_source, &expected_box, "Valid obj"},
+      {&vtk_source, &expected_tet, "Valid vtk"},
+      {&gltf_embedded_source, &expected_box, "Valid embedded gltf"},
+      {&gltf_pyramid_source, &expected_pyramid, "Distributed gltf"}};
   for (const TestCase& test_case : test_cases) {
     SCOPED_TRACE(test_case.description);
     const PolyMesh dut =
