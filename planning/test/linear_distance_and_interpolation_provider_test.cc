@@ -19,9 +19,9 @@ namespace test {
 namespace {
 using common_robotics_utilities::math::Distance;
 using common_robotics_utilities::math::Interpolate;
-using multibody::Joint; 
+using multibody::Joint;
+using multibody::JointActuatorIndex;
 using multibody::JointIndex;
-using multibody::JointActuatorIndex; 
 using multibody::QuaternionFloatingJoint;
 
 void DoFixedIiwaTest(const RobotDiagram<double>& model,
@@ -450,19 +450,21 @@ directives:
 - add_weld:
     parent: world
     child: arm::base
-)"""; 
+)""";
   auto builder = std::make_unique<RobotDiagramBuilder<double>>();
   builder->parser().AddModelsFromString(model_contents, model_ext);
   auto& plant = builder->plant();
-  
-  JointIndex joint_index(3); // picking an arbitrary number not at the start or the end
+
+  JointIndex joint_index(
+      3);  // picking an arbitrary number not at the start or the end
   const Joint<double>& joint = plant.get_joint(joint_index);
 
-  JointActuatorIndex joint_actuator_index(2); // this is the actuator index associated with the joint 3
+  JointActuatorIndex joint_actuator_index(
+      2);  // this is the actuator index associated with the joint 3
   auto& actuator = plant.get_joint_actuator(joint_actuator_index);
   plant.RemoveJointActuator(actuator);
 
-  plant.RemoveJoint(joint); 
+  plant.RemoveJoint(joint);
 
   const auto model = builder->Build();
 
