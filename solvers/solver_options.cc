@@ -78,11 +78,9 @@ void SolverOptions::SetOption(CommonSolverOption key, OptionValue value) {
       }
       const int int_value = std::get<int>(value);
       if (int_value <= 0) {
-        throw std::runtime_error(fmt::format(
-            "kMaxThreads must be >= 0, got {}",
-            int_value));
+        throw std::runtime_error(
+            fmt::format("kMaxThreads must be > 0, got {}", int_value));
       }
-      DRAKE_THROW_UNLESS(int_value > 0);
       common_solver_options_[key] = std::move(value);
       return;
     }
