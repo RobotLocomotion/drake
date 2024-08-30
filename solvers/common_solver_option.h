@@ -45,6 +45,9 @@ enum class CommonSolverOption {
    * result in a degraded performance. It is recommended to set this value lower
    * than or equal to Parallelsim.Max().num_threads().
    * @note A solver may choose to use fewer threads than the value specified.
+   * @note This options does NOT disable multi-threading in BLAS/LAPACK which is
+   * used by many solvers under the hood. Therefore, some internal operations of
+   * the solvers may still be multi-core.
    */
   kMaxThreads,
 };
