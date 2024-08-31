@@ -6,16 +6,11 @@
 #include <utility>
 #include <vector>
 
-// To ease build system upkeep, we annotate VTK includes with their deps.
 #include <fmt/format.h>
 #include <libqhullcpp/Qhull.h>
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullVertexSet.h>
-#include <vtkGLTFImporter.h>  // vtkIOImport
-#include <vtkMapper.h>        // vtkCommonCore
-#include <vtkMatrix4x4.h>     // vtkCommonMath
-#include <vtkPolyData.h>      // vtkCommonDataModel
-#include <vtkRenderer.h>      // vtkRenderingCore
+#include <tiny_gltf.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
@@ -32,6 +27,7 @@ namespace geometry {
 namespace internal {
 namespace {
 
+using Eigen::Matrix4d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
@@ -132,51 +128,86 @@ void ReadVtkVertices(const fs::path filename, double scale,
   *vertices = volume_mesh.vertices();
 }
 
-/* Multiplies the position vector p_AQ by the transform T_BA, returning p_BQ. */
-Vector3d VtkMultiply(vtkMatrix4x4* T_BA, const Vector3d& p_AQ) {
-  double p_in[] = {p_AQ.x(), p_AQ.y(), p_AQ.z(), 1};
-  double p_out[4];
-  T_BA->MultiplyPoint(p_in, p_out);
-  return Vector3d(p_out);
-}
-
 /* Returns the scaled vertices from the named glTF file.
  @pre `filename` references a glTF file. */
 void ReadGltfVertices(const fs::path filename, double scale,
                       std::vector<Vector3d>* vertices) {
-  vtkNew<vtkGLTFImporter> importer;
-  importer->SetFileName(filename.c_str());
-  importer->Update();
+  tinygltf::Model model;
+  tinygltf::TinyGLTF loader;
+  std::string error;
+  std::string warn;
 
-  auto* renderer = importer->GetRenderer();
-  DRAKE_DEMAND(renderer != nullptr);
-
-  if (renderer->VisibleActorCount() == 0) {
-    throw std::runtime_error(
-        fmt::format("MakeConvexHull() found no vertices in the file '{}'.",
-                    filename.string()));
+  const bool valid_parse =
+      loader.LoadASCIIFromFile(&model, &error, &warn, filename.string());
+  if (!valid_parse) {
+    throw std::runtime_error(fmt::format("Failed parsing the glTF file: {}: {}",
+                                         filename.string(), error));
   }
 
   // The relative transform from the file's frame F to the geometry's frame G.
   // (rotation from y-up to z-up). The scale is handled separately.
   const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
 
-  auto* actors = renderer->GetActors();
-  actors->InitTraversal();
-  while (vtkActor* actor = actors->GetNextActor()) {
-    // 1. Extract PolyData from actor.
-    auto* poly_data =
-        dynamic_cast<vtkPolyData*>(actor->GetMapper()->GetInput());
-    DRAKE_DEMAND(poly_data != nullptr);
-    // 2. For each vertex, transform it to the file frame (based on the actors
-    // user transform), and then into the geometry frame using the scale and
-    // rotation.
-    vtkMatrix4x4* T_FA = actor->GetUserMatrix();
-    for (vtkIdType vi = 0; vi < poly_data->GetNumberOfPoints(); ++vi) {
-      const Vector3d p_AV(poly_data->GetPoint(vi));
-      const Vector3d p_FV = VtkMultiply(T_FA, p_AV);
-      vertices->emplace_back((X_GF * p_FV) * scale);
+  bool found_vertices = false;
+  for (const auto& node_index : model.scenes[model.defaultScene].nodes) {
+    const auto& node = model.nodes[node_index];
+    // Compute the node's transform.
+    RigidTransformd X_MN;
+    if (!node.matrix.empty()) {
+      // Transformation is defined by a matrix.
+      Matrix4d X_MN_as_matrix;
+      for (int i = 0; i < 16; ++i) {
+        X_MN_as_matrix(i / 4, i % 4) = node.matrix[i];
+      }
+      X_MN = RigidTransformd(X_MN_as_matrix);
+    } else {
+      // Transformation is defined by separate translation, rotation, and
+      // scale.
+      if (!node.translation.empty()) {
+        X_MN.set_translation(Vector3d(node.translation[0], node.translation[1],
+                                      node.translation[2]));
+      }
+      if (!node.rotation.empty()) {
+        const Quaternion<double> quat(node.rotation[3], node.rotation[0],
+                                      node.rotation[1], node.rotation[2]);
+        X_MN.set_rotation(RotationMatrixd(quat));
+      }
+      if (!node.scale.empty()) {
+        // Apply scaling to the translation component.
+        X_MN.set_translation(X_MN.translation().cwiseProduct(
+            Vector3d(node.scale[0], node.scale[1], node.scale[2])));
+      }
     }
+
+    if (node.mesh > -1) {
+      const auto& mesh = model.meshes[node.mesh];
+      for (const auto& primitive : mesh.primitives) {
+        const auto& position_accessor_index =
+            primitive.attributes.at("POSITION");
+        const auto& position_accessor =
+            model.accessors[position_accessor_index];
+        const auto& position_buffer_view =
+            model.bufferViews[position_accessor.bufferView];
+        const auto& position_buffer =
+            model.buffers[position_buffer_view.buffer];
+
+        const float* positions = reinterpret_cast<const float*>(
+            &position_buffer.data[position_buffer_view.byteOffset +
+                                  position_accessor.byteOffset]);
+
+        for (size_t i = 0; i < position_accessor.count; ++i) {
+          const Vector3d p_NV(positions[i * 3], positions[i * 3 + 1],
+                              positions[i * 3 + 2]);
+          vertices->emplace_back((X_GF * X_MN * p_NV) * scale);
+          found_vertices = true;
+        }
+      }
+    }
+  }
+  if (!found_vertices) {
+    throw std::runtime_error(
+        fmt::format("MakeConvexHull() found no vertices in the file '{}'.",
+                    filename.string()));
   }
 }
 
