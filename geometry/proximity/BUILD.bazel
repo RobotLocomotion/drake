@@ -523,12 +523,9 @@ drake_cc_library(
         "//common:essential",
         "//common:find_resource",
         "//geometry:read_obj",
-        "//geometry:vtk_opengl_init",
         "//math:geometric_transform",
         "@qhull_internal//:qhull",
-        "@vtk_internal//:vtkCommonCore",
-        "@vtk_internal//:vtkIOImport",
-        "@vtk_internal//:vtkRenderingCore",
+        "@tinygltf_internal//:tinygltf",
     ],
 )
 
