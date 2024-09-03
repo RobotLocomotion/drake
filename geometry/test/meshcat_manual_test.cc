@@ -43,6 +43,43 @@ const char* ltrim(const char* message) {
   return message;
 }
 
+// Loads the fully_textured_pyramid.gltf file as an in-memory mesh.
+Mesh GetPyramidInMemory(double scale = 1.0) {
+  const std::filesystem::path gltf_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  const std::filesystem::path gltf_dir = gltf_path.parent_path();
+  string_map<FileSource> supporting_files;
+  // These are _all_ the files referenced in fully_textured_pyramid.gltf. Only
+  // the ktx2 images will render, but the console will complain about not being
+  // able to find the .png images if we don't include them as supporting files.
+  // We'll add the ktx2 files as path FileSources to test the both
+  // representations.
+  bool have_paths = false;
+  for (const auto* f :
+       {"fully_textured_pyramid_emissive.png",
+        "fully_textured_pyramid_normal.png", "fully_textured_pyramid_omr.png",
+        "fully_textured_pyramid_base_color.png",
+        "fully_textured_pyramid_emissive.ktx2",
+        "fully_textured_pyramid_normal.ktx2", "fully_textured_pyramid_omr.ktx2",
+        "fully_textured_pyramid_base_color.ktx2",
+        "fully_textured_pyramid.bin"}) {
+    const std::string f_name(f);
+    if (f_name.ends_with(".ktx2")) {
+      supporting_files.emplace(f, gltf_dir / f);
+      have_paths = true;
+    } else {
+      supporting_files.emplace(f, MemoryFile::Make(std::move(gltf_dir / f)));
+    }
+  }
+  // Make sure there's not some erroneous logic in putting the ktx2 files in as
+  // path FileSource.
+  DRAKE_DEMAND(have_paths);
+
+  return Mesh(
+      InMemoryMesh(MemoryFile::Make(gltf_path), std::move(supporting_files)),
+      scale);
+}
+
 int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
 
@@ -101,10 +138,15 @@ int do_main() {
   // The color and shininess properties come from PBR materials.
   meshcat->SetObject(
       "gltf",
-      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf"),
-           0.25));
+      Mesh(FindResourceOrThrow(
+               "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf"),
+           0.5));
   const Vector3d gltf_pose{++x, 0, 0};
   meshcat->SetTransform("gltf", RigidTransformd(gltf_pose));
+
+  meshcat->SetObject("gltf_in_memory", GetPyramidInMemory(0.5));
+  meshcat->SetTransform("gltf_in_memory",
+                        RigidTransformd(gltf_pose + Vector3d(0, 1.5, 0)));
 
   auto mustard_obj =
       FindRunfile("drake_models/ycb/meshes/006_mustard_bottle_textured.obj")
@@ -262,7 +304,8 @@ Ignore those for now; we'll need to circle back and fix them later.
     hull.
   - a teal capsule (long axis in z)
   - a red cone (expanding in +z, twice as wide in y than in x)
-  - a shiny, green, dented cube (created with a PBR material)
+  - two shiny, decaled pyramids (created with PBR materials); one read from disk,
+    the other loaded from memory.
   - a yellow mustard bottle w/ label
   - a dense rainbow point cloud in a box (long axis in z)
   - a blue line coiling up (in z).
@@ -368,9 +411,9 @@ Ignore those for now; we'll need to circle back and fix them later.
 
   std::cout << "- An environment map has been loaded from a png -- the Cornell "
             << "box.\n"
-            << "  The dented green box should reflect it (the camera has moved "
-            << "to focus on the box). This may not be apparent until after you "
-            << "move the mouse.\n";
+            << "  The shiny pyramids should reflect it (the camera has moved "
+            << "to focus on the pyramids). This may not be apparent until "
+            << "after you move the mouse.\n";
   MaybePauseForUser();
 
   meshcat->SetEnvironmentMap(

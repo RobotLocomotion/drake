@@ -1,5 +1,6 @@
 #include "drake/geometry/meshcat_internal.h"
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <utility>
@@ -81,6 +82,59 @@ GTEST_TEST(UnbundleGltfAssetsTest, DataUri) {
   // Make sure the new URI seems correct.
   EXPECT_THAT(json::parse(gltf_contents)["buffers"][0]["uri"],
               testing::EndsWith(expected_sha256.to_string()));
+}
+
+GTEST_TEST(UnbundleGltfAssetsTest, InMemoryData) {
+  const std::filesystem::path gltf_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  const std::filesystem::path gltf_dir = gltf_path.parent_path();
+  // We'll read the .bin file from in-memory.
+  string_map<FileSource> supporting_files{
+      {"fully_textured_pyramid.bin",
+       MemoryFile::Make(gltf_dir / "fully_textured_pyramid.bin")}};
+  // We'll read the images from disk. UnbundleGltfAssets doesn't vary its logic
+  // based on which array the URI comes from, so this is enough to test both
+  // cases: in-memory and on-disk.
+  for (const auto& f_name :
+       {"fully_textured_pyramid_emissive.png",
+        "fully_textured_pyramid_normal.png", "fully_textured_pyramid_omr.png",
+        "fully_textured_pyramid_base_color.png",
+        "fully_textured_pyramid_emissive.ktx2",
+        "fully_textured_pyramid_normal.ktx2", "fully_textured_pyramid_omr.ktx2",
+        "fully_textured_pyramid_base_color.ktx2"}) {
+    supporting_files.insert({f_name, gltf_dir / f_name});
+  }
+  const MeshSource source(
+      InMemoryMesh(MemoryFile::Make(gltf_path), std::move(supporting_files)));
+  DRAKE_DEMAND(source.is_in_memory());
+  // Unbundle it.
+  FileStorage storage;
+  std::string gltf_contents = source.in_memory().mesh_file().contents();
+
+  std::vector<std::shared_ptr<const MemoryFile>> assets =
+      UnbundleGltfAssets(source, &gltf_contents, &storage);
+
+  const json gltf_json = json::parse(gltf_contents);
+
+  // The in-memory file URI was updated in the gltf and placed into storage.
+  const Sha256 bin_sha = source.in_memory()
+                             .supporting_file("fully_textured_pyramid.bin")
+                             ->memory_file()
+                             .sha256();
+  // File storage provides a version-based prefix to the sha.
+  EXPECT_THAT(gltf_json["buffers"][0]["uri"],
+              testing::EndsWith(bin_sha.to_string()));
+  EXPECT_NE(storage.Find(bin_sha), nullptr);
+
+  // An on-disk file URI was likewise updated. We'll test one, and assume that
+  // they all got handled.
+  const Sha256 png_sha =
+      MemoryFile::Make(gltf_dir / "fully_textured_pyramid_emissive.png")
+          .sha256();
+  // We happen to know that the emissive texture is texture 0.
+  EXPECT_THAT(gltf_json["images"][0]["uri"],
+              testing::EndsWith(png_sha.to_string()));
+  EXPECT_NE(storage.Find(png_sha), nullptr);
 }
 
 std::string MakeGltfWithUri(std::string_view uri) {

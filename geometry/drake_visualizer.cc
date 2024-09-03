@@ -7,6 +7,9 @@
 #include <utility>
 #include <vector>
 
+#include <common_robotics_utilities/base64_helpers.hpp>
+#include <nlohmann/json.hpp>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/scope_exit.h"
@@ -378,7 +381,50 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.string_data = mesh.filename();
+    const MeshSource& mesh_source = mesh.source();
+    if (mesh_source.is_path()) {
+      geometry_data_.string_data = mesh_source.path().string();
+    } else {
+      using nlohmann::json;
+
+      auto json_memory_file = [](const MemoryFile& file) {
+        json mesh_file_j;
+        mesh_file_j["filename_hint"] = file.filename_hint();
+        mesh_file_j["extension"] = file.extension();
+        std::vector<uint8_t> bytes(file.contents().begin(),
+                                   file.contents().end());
+        mesh_file_j["contents"] =
+            common_robotics_utilities::base64_helpers::Encode(bytes);
+        return mesh_file_j;
+      };
+
+      auto json_file_source =
+          [&json_memory_file](const FileSource& file_source) {
+            json mesh_file_j;
+            if (file_source.is_path()) {
+              mesh_file_j["path"] = file_source.path().string();
+            } else {
+              DRAKE_DEMAND(file_source.is_memory_file());
+              const MemoryFile& file = file_source.memory_file();
+              mesh_file_j = json_memory_file(file);
+            }
+            return mesh_file_j;
+          };
+
+      DRAKE_DEMAND(mesh_source.is_in_memory());
+      const InMemoryMesh& mem_mesh = mesh_source.in_memory();
+      json in_memory;
+      in_memory["in_memory_mesh"]["mesh_file"] =
+          json_memory_file(mem_mesh.mesh_file());
+
+      for (const auto& name : mem_mesh.SupportingFileNames()) {
+        const FileSource* file_source = mem_mesh.supporting_file(name);
+        if (file_source == nullptr || file_source->empty()) continue;
+        in_memory["in_memory_mesh"]["supporting_files"][name] =
+            json_file_source(*file_source);
+      }
+      geometry_data_.string_data = in_memory.dump();
+    }
   }
 
   void ImplementGeometry(const Sphere& sphere, void*) override {
