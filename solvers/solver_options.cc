@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/common/parallelism.h"
 
 namespace drake {
 namespace solvers {
@@ -149,12 +150,11 @@ std::string SolverOptions::get_standalone_reproduction_file_name() const {
 
 int SolverOptions::get_max_threads() const {
   // N.B. SetOption sanity checks the value; we don't need to re-check here.
-  int result = -1;
   auto iter = common_solver_options_.find(CommonSolverOption::kMaxThreads);
   if (iter != common_solver_options_.end()) {
-    result = std::get<int>(iter->second);
+    return std::get<int>(iter->second);
   }
-  return result;
+  return Parallelism::Max().num_threads();
 }
 
 std::unordered_set<SolverId> SolverOptions::GetSolverIds() const {
