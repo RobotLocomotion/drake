@@ -958,7 +958,7 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
     if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS")) {
       const std::optional<int> maybe_num_threads = ParseInt(num_threads_str);
       if (maybe_num_threads.has_value()) {
-	num_threads = *maybe_num_threads;
+        num_threads = *maybe_num_threads;
         log()->debug("Using GUROBI_NUM_THREADS={}", num_threads);
       } else {
         static const logging::Warn log_once(
