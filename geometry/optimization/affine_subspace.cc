@@ -269,12 +269,12 @@ AffineSubspace::DoAddPointInNonnegativeScalingConstraints(
     const int p = t.size();
     VectorXDecisionVariable y = prog->NewContinuousVariables(m, "y");
     MatrixXd constraint_A(n, k + m + p);
-    constraint_A.leftCols(k) = A;
+    constraint_A.leftCols(k) = -A;
     constraint_A.block(0, k, n, m) = basis_;
     constraint_A.rightCols(p) = translation_ * c.transpose();
-    VectorXd constraint_b = b - translation_.transpose() * d;
+    VectorXd constraint_b = b - d * translation_;
     new_constraints.push_back(prog->AddLinearEqualityConstraint(
-        constraint_A, constraint_b, {x, y, Vector1<Variable>(t)}));
+        constraint_A, constraint_b, {x, y, t}));
   }
   return new_constraints;
 }
