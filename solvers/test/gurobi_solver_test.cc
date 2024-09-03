@@ -4,6 +4,8 @@
 #include <limits>
 #include <thread>
 
+#include <gflags/gflags.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/temp_directory.h"
@@ -770,6 +772,7 @@ int main(int argc, char** argv) {
   // test, so that we do not have to release and re-acquire the license for
   // every test.
   auto gurobi_license = drake::solvers::GurobiSolver::AcquireLicense();
-  ::testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleMock(&argc, argv);
+  ::google::ParseCommandLineFlags(&argc, &argv, true);
   return RUN_ALL_TESTS();
 }
