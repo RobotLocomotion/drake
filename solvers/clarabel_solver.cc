@@ -7,6 +7,7 @@
 
 #include <Clarabel>
 #include <Eigen/Eigen>
+#include <fmt/ranges.h>
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/name_value.h"

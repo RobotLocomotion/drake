@@ -3,11 +3,12 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/multibody/math/spatial_algebra.h"
-#include "drake/multibody/tree/frame_base.h"
+#include "drake/multibody/tree/frame_body_pose_cache.h"
+#include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/scoped_name.h"
@@ -23,38 +24,40 @@ std::string DeprecateWhenEmptyName(std::string name, std::string_view type);
 template<typename T> class RigidBody;
 
 /// %Frame is an abstract class representing a _material frame_ (also called a
-/// _physical frame_), meaning that the %Frame's origin is a material point of
-/// a Body.
+/// _physical frame_) of its underlying RigidBody. The %Frame's origin is a
+/// material point of its RigidBody, and its axes have fixed directions
+/// in that body. A %Frame's pose (position and orientation) with respect to its
+/// RigidBodyFrame may be parameterized, but is fixed (not time or state
+/// dependent) once parameters have been set.
 ///
-/// An important characteristic of a %Frame is that forces or torques applied
-/// to a %Frame are applied to the %Frame's underlying Body. Force-producing
+/// An important characteristic of a %Frame is that forces or torques applied to
+/// a %Frame are applied to the %Frame's underlying RigidBody. Force-producing
 /// elements like joints, actuators, and constraints usually employ two %Frames,
 /// with one %Frame connected to one body and the other connected to a different
-/// Body. Every %Frame object can report the RigidBody to which it is attached.
-/// Despite its name, %Frame is not the most general frame in Drake
-/// (see FrameBase for more information).
+/// body. Every %Frame F can report the RigidBody B to which it is attached and
+/// its pose X_BF with respect to B's RigidBodyFrame.
 ///
 /// A %Frame's pose in World (or relative to other frames) is always calculated
-/// starting with its pose relative to its underlying %Body's BodyFrame.
+/// starting with its pose relative to its underlying RigidBodyFrame.
 /// Subclasses derived from %Frame differ in how kinematic calculations are
 /// performed. For example, the angular velocity of a FixedOffsetFrame or
-/// BodyFrame is identical to the angular velocity of its underlying body,
+/// RigidBodyFrame is identical to the angular velocity of its underlying body,
 /// whereas the translational velocity of a FixedOffsetFrame differs from that
-/// of a BodyFrame. If a %Frame is associated with a soft body, kinematic
-/// calculations can depend on the soft body's deformation state variables.
+/// of a RigidBodyFrame.
 ///
-/// A %Frame object does _not_ store a Context (where Context means state that
-/// contains the %Frame's current orientation, position, motion, etc.).
-/// Instead, %Frame provides methods for calculating these %Frame-properties
-/// from a Context passed to %Frame methods.
+/// %Frame provides methods for obtaining its current orientation, position,
+/// motion, etc. from a Context passed to those methods.
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Frame : public FrameBase<T> {
+class Frame : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame);
 
   ~Frame() override;
+
+  /// Returns this %Frame's unique index.
+  FrameIndex index() const { return this->template index_impl<FrameIndex>(); }
 
   /// Returns a const reference to the body associated to this %Frame.
   const RigidBody<T>& body() const {
@@ -79,6 +82,19 @@ class Frame : public FrameBase<T> {
   /// Returns scoped name of this frame. Neither of the two pieces of the name
   /// will be empty (the scope name and the element name).
   ScopedName scoped_name() const;
+
+  /// Returns a reference to the body-relative pose X_BF giving the pose of this
+  /// Frame with respect to its body's RigidBodyFrame. This may depend on
+  /// parameters in the Context but not on time or state. The first time this is
+  /// called after a parameter change will precalculate offset poses for all
+  /// %Frames into the Context's cache; subsequent calls on any %Frame are very
+  /// fast.
+  const math::RigidTransform<T>& EvalPoseInBodyFrame(
+      const systems::Context<T>& context) const {
+    const internal::FrameBodyPoseCache<T>& frame_body_poses =
+        this->GetParentTreeSystem().EvalFrameBodyPoses(context);
+    return get_X_BF(frame_body_poses);
+  }
 
   /// Returns the pose `X_BF` of `this` frame F in the body frame B associated
   /// with this frame.
@@ -495,6 +511,54 @@ class Frame : public FrameBase<T> {
     return DoCloneToScalar(tree_clone);
   }
 
+  /// @name Internal use only
+  /// These functions work directly with the frame body pose cache entry.
+  //@{
+  /// (Internal use only) A %Frame's pose-in-parent X_PF can be parameterized,
+  /// the parent's pose may also be parameterized, and so on. Thus the
+  /// calculation of this frame's pose in its body (X_BF) can be expensive.
+  /// There is a cache entry that holds the calculated X_BF, evaluated
+  /// whenever parameters change. This allows us to grab X_BF as a const
+  /// reference rather than having to extract and reformat parameters, and
+  /// compose with parent and ancestor poses at runtime.
+  ///
+  /// At the time parameters are allocated we assign a slot in the body pose
+  /// cache entry to each %Frame and record its index using this function. (The
+  /// index for a RigidBodyFrame will refer to an identity transform.) Note that
+  /// the body pose index is not necessarily the same as the %Frame index
+  /// because all RigidBodyFrames can share an entry. (Of course if you know you
+  /// are working with a RigidBodyFrame you don't need to ask about its body
+  /// pose!)
+  void set_body_pose_index_in_cache(int body_pose_index) {
+    body_pose_index_in_cache_ = body_pose_index;
+  }
+
+  /// (Internal use only) Retrieve this %Frame's body pose index in the cache.
+  int get_body_pose_index_in_cache() const {
+    return body_pose_index_in_cache_;
+  }
+
+  /// (Internal use only) Given an already up-to-date frame body pose cache,
+  /// extract X_BF for this %Frame from it.
+  /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+  ///       since the last parameter change; we can't check here.
+  /// @retval X_BF pose of this frame in its body's frame
+  const math::RigidTransform<T>& get_X_BF(
+      const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
+    return frame_body_poses.get_X_BF(body_pose_index_in_cache_);
+  }
+
+  /// (Internal use only) Given an already up-to-date frame body pose cache,
+  /// extract X_FB (=X_BF⁻¹) for this %Frame from it.
+  /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+  ///       since the last parameter change; we can't check here.
+  /// @retval X_FB inverse of this frame's pose in its body's frame
+  const math::RigidTransform<T>& get_X_FB(
+      const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
+    return frame_body_poses.get_X_FB(body_pose_index_in_cache_);
+  }
+  //@}
+
  protected:
   /// Only derived classes can use this constructor. It creates a %Frame
   /// object attached to `body` and puts the frame in the body's model
@@ -502,7 +566,7 @@ class Frame : public FrameBase<T> {
   explicit Frame(
       const std::string& name, const RigidBody<T>& body,
       std::optional<ModelInstanceIndex> model_instance = {})
-      : FrameBase<T>(model_instance.value_or(body.model_instance())),
+      : MultibodyElement<T>(model_instance.value_or(body.model_instance())),
         name_(internal::DeprecateWhenEmptyName(name, "Frame")),
         body_(body) {}
 
@@ -586,6 +650,8 @@ class Frame : public FrameBase<T> {
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   internal::FrameTopology topology_;
+
+  int body_pose_index_in_cache_{-1};
 };
 
 }  // namespace multibody

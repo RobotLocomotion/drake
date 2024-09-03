@@ -60,7 +60,6 @@ drake_cc_library(
     ],
     hdrs = [
         "beam_model_params.h",
-        "gen/beam_model_params.h",
     ],
     deps = [
         "//common:dummy_value",

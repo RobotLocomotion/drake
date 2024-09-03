@@ -164,6 +164,10 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   // body frame B, X_BF = Id and this method should return the identity
   // transformation. Next, verify the method CalcRotationMatrixInBodyFrame()
   // returns an identity rotation matrix for the rotation matrix R_BF.
+
+  // Check the cached method for getting the body pose.
+  EXPECT_TRUE(frameB_->EvalPoseInBodyFrame(*context_).IsExactlyIdentity());
+
   EXPECT_TRUE(frameB_->CalcPoseInBodyFrame(*context_).IsExactlyIdentity());
   EXPECT_TRUE(
       frameB_->CalcRotationMatrixInBodyFrame(*context_).IsExactlyIdentity());
@@ -203,6 +207,11 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
   // Verify this method returns the pose X_BP of frame P in body frame B.
   // Similarly, verify the method CalcRotationMatrixInBodyFrame() returns R_BP.
   const math::RotationMatrix<double>& R_BP = X_BP_.rotation();
+
+  // Check the cached method for getting the body pose.
+  EXPECT_TRUE(
+      frameP_->EvalPoseInBodyFrame(*context_).IsNearlyEqualTo(X_BP_, kEpsilon));
+
   EXPECT_TRUE(
       frameP_->CalcPoseInBodyFrame(*context_).IsNearlyEqualTo(X_BP_, kEpsilon));
   EXPECT_TRUE(frameP_->CalcRotationMatrixInBodyFrame(*context_).IsNearlyEqualTo(
@@ -245,6 +254,11 @@ TEST_F(FrameTests, ChainedFixedOffsetFrames) {
   // Similarly verify the method CalcRotationMatrixInBodyFrame() returns R_BQ.
   const math::RigidTransform<double> X_BQ = X_BP_ * X_PQ_;
   const math::RotationMatrix<double> R_BQ = X_BQ.rotation();
+
+  // Check the cached method for getting the body pose.
+  EXPECT_TRUE(
+      frameQ_->EvalPoseInBodyFrame(*context_).IsNearlyEqualTo(X_BQ, kEpsilon));
+
   EXPECT_TRUE(
       frameQ_->CalcPoseInBodyFrame(*context_).IsNearlyEqualTo(X_BQ, kEpsilon));
   EXPECT_TRUE(frameQ_->CalcRotationMatrixInBodyFrame(*context_).IsNearlyEqualTo(
@@ -272,6 +286,39 @@ TEST_F(FrameTests, ChainedFixedOffsetFrames) {
       frameQ_->GetFixedOffsetPoseInBody(X_QG_).IsNearlyEqualTo(X_BG, kEpsilon));
   EXPECT_TRUE(frameQ_->GetFixedRotationMatrixInBody(R_QG).IsNearlyEqualTo(
       R_BG, kEpsilon));
+
+  // Change the poses of the parent P and frame Q and make sure those are
+  // noticed by the cached method. We're also going to do some digging to
+  // show that we don't recalculate unnecessarily. For that we'll find the
+  // cached value's serial number and show that it changes when we have
+  // to recalculate and doesn't when we don't.
+
+  const systems::CacheEntry& body_pose_cache_entry =
+      system_->frame_body_poses_cache_entry();
+  // This function just digs out the cached value; it doesn't compute anything.
+  const systems::CacheEntryValue& body_poses =
+      body_pose_cache_entry.get_cache_entry_value(*context_);
+  const int64_t starting_serial_number = body_poses.serial_number();
+
+  const math::RigidTransform<double> X_PQ2 = RigidTransformd(
+      AngleAxisd(1.23, Vector3d::UnitZ()) *
+      AngleAxisd(-1.45, Vector3d::UnitX()) * Translation3d(5.0, 6.0, -7.0));
+  dynamic_cast<const FixedOffsetFrame<double>*>(frameQ_)->SetPoseInParentFrame(
+      &*context_, X_PQ2);
+  EXPECT_TRUE(frameQ_->EvalPoseInBodyFrame(*context_).IsNearlyEqualTo(
+      X_BP_ * X_PQ2, kEpsilon));
+  EXPECT_EQ(body_poses.serial_number(), starting_serial_number + 1);
+
+  // Now change the parent P and make sure Q notices.
+  dynamic_cast<const FixedOffsetFrame<double>*>(frameP_)->SetPoseInParentFrame(
+      &*context_, X_PQ2);  // Re-using the same frame for convenience.
+  EXPECT_TRUE(frameP_->EvalPoseInBodyFrame(*context_).IsExactlyEqualTo(X_PQ2));
+  EXPECT_EQ(body_poses.serial_number(), starting_serial_number + 2);
+
+  // Looking at frameQ's pose now shouldn't require recomputation.
+  EXPECT_TRUE(frameQ_->EvalPoseInBodyFrame(*context_).IsNearlyEqualTo(
+      X_PQ2 * X_PQ2, kEpsilon));
+  EXPECT_EQ(body_poses.serial_number(), starting_serial_number + 2);
 }
 
 TEST_F(FrameTests, NamedFrame) {

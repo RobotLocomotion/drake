@@ -803,12 +803,12 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("used_in_transcription") = all_transcriptions,
             vertex_doc.GetConstraints.doc)
         .def("GetSolutionCost",
-            overload_cast_explicit<double,
+            overload_cast_explicit<std::optional<double>,
                 const solvers::MathematicalProgramResult&>(
                 &GraphOfConvexSets::Vertex::GetSolutionCost),
             py::arg("result"), vertex_doc.GetSolutionCost.doc_1args)
         .def("GetSolutionCost",
-            overload_cast_explicit<double,
+            overload_cast_explicit<std::optional<double>,
                 const solvers::MathematicalProgramResult&,
                 const solvers::Binding<solvers::Cost>&>(
                 &GraphOfConvexSets::Vertex::GetSolutionCost),
@@ -887,12 +887,12 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("used_in_transcription") = all_transcriptions,
             edge_doc.GetConstraints.doc)
         .def("GetSolutionCost",
-            overload_cast_explicit<double,
+            overload_cast_explicit<std::optional<double>,
                 const solvers::MathematicalProgramResult&>(
                 &GraphOfConvexSets::Edge::GetSolutionCost),
             py::arg("result"), edge_doc.GetSolutionCost.doc_1args)
         .def("GetSolutionCost",
-            overload_cast_explicit<double,
+            overload_cast_explicit<std::optional<double>,
                 const solvers::MathematicalProgramResult&,
                 const solvers::Binding<solvers::Cost>&>(
                 &GraphOfConvexSets::Edge::GetSolutionCost),

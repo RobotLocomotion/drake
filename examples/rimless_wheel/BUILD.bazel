@@ -15,8 +15,6 @@ drake_cc_library(
         "rimless_wheel_params.cc",
     ],
     hdrs = [
-        "gen/rimless_wheel_continuous_state.h",
-        "gen/rimless_wheel_params.h",
         "rimless_wheel_continuous_state.h",
         "rimless_wheel_params.h",
     ],
