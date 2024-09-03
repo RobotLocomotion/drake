@@ -7,8 +7,12 @@
 #include <utility>
 #include <vector>
 
+#include <common_robotics_utilities/base64_helpers.hpp>
+#include <nlohmann/json.hpp>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/value.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
@@ -80,9 +84,9 @@ lcmt_viewer_geometry_data MakeFacetedMeshDataForLcm(
 
   EigenMapView(geometry_data.color) = in_color.rgba().cast<float>();
 
-  // There are *two* ways to use the MESH geometry type. One is to set the
-  // string value with a path to a parseable mesh file (see
-  // ImplementGeometry(Mesh) below). The other is to leave the string empty and
+  // There are multiple ways to use the MESH geometry type. The legacy method is
+  // to set the string value with a path to a parseable mesh file (see
+  // ImplementGeometry(Mesh) below). Another is to leave the string empty and
   // define the mesh in the float data as:
   // V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
   // where
@@ -90,6 +94,7 @@ lcmt_viewer_geometry_data MakeFacetedMeshDataForLcm(
   //   T: The number of triangles.
   //   N: 3V, the number of floating point values for the V vertices.
   //   M: 3T, the number of vertex indices for the T triangles.
+  // (A third stores a json-encoded in-memory mesh in the string.)
   geometry_data.type = geometry_data.MESH;
 
   // TODO(SeanCurtis-TRI): It would be better if we could simply broadcast the
@@ -378,7 +383,43 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.string_data = mesh.filename();
+    const MeshSource& mesh_source = mesh.source();
+    if (mesh_source.is_path()) {
+      geometry_data_.string_data = mesh_source.path().string();
+    } else {
+      using nlohmann::json;
+
+      auto json_memory_file = [](const MemoryFile& file) {
+        json mesh_file_j;
+        mesh_file_j["filename_hint"] = file.filename_hint();
+        mesh_file_j["extension"] = file.extension();
+        std::vector<uint8_t> bytes(file.contents().begin(),
+                                   file.contents().end());
+        mesh_file_j["contents"] =
+            common_robotics_utilities::base64_helpers::Encode(bytes);
+        return mesh_file_j;
+      };
+
+      DRAKE_DEMAND(mesh_source.is_in_memory());
+      const InMemoryMesh& mem_mesh = mesh_source.in_memory();
+      json in_memory;
+      in_memory["in_memory_mesh"]["mesh_file"] =
+          json_memory_file(mem_mesh.mesh_file);
+
+      for (const auto& [name, file_source] : mem_mesh.supporting_files) {
+        in_memory["in_memory_mesh"]["supporting_files"][name] = std::visit(
+            overloaded{[](const std::filesystem::path& path) {
+                         json json_filesystem_file;
+                         json_filesystem_file["path"] = path.string();
+                         return json_filesystem_file;
+                       },
+                       [&json_memory_file](const MemoryFile& file) {
+                         return json_memory_file(file);
+                       }},
+            file_source);
+      }
+      geometry_data_.string_data = in_memory.dump();
+    }
   }
 
   void ImplementGeometry(const Sphere& sphere, void*) override {
