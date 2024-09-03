@@ -31,10 +31,7 @@ install_data(
 drake_cc_library(
     name = "acrobot_input",
     srcs = ["acrobot_input.cc"],
-    hdrs = [
-        "acrobot_input.h",
-        "gen/acrobot_input.h",
-    ],
+    hdrs = ["acrobot_input.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//common:dummy_value",
@@ -56,10 +53,7 @@ drake_py_library(
 drake_cc_library(
     name = "acrobot_params",
     srcs = ["acrobot_params.cc"],
-    hdrs = [
-        "acrobot_params.h",
-        "gen/acrobot_params.h",
-    ],
+    hdrs = ["acrobot_params.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//common:dummy_value",
@@ -73,10 +67,7 @@ drake_cc_library(
 drake_cc_library(
     name = "acrobot_state",
     srcs = ["acrobot_state.cc"],
-    hdrs = [
-        "acrobot_state.h",
-        "gen/acrobot_state.h",
-    ],
+    hdrs = ["acrobot_state.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//common:dummy_value",
@@ -90,10 +81,7 @@ drake_cc_library(
 drake_cc_library(
     name = "spong_controller_params",
     srcs = ["spong_controller_params.cc"],
-    hdrs = [
-        "gen/spong_controller_params.h",
-        "spong_controller_params.h",
-    ],
+    hdrs = ["spong_controller_params.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//common:dummy_value",

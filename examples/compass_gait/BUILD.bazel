@@ -17,8 +17,6 @@ drake_cc_library(
     hdrs = [
         "compass_gait_continuous_state.h",
         "compass_gait_params.h",
-        "gen/compass_gait_continuous_state.h",
-        "gen/compass_gait_params.h",
     ],
     visibility = ["//visibility:public"],
     deps = [

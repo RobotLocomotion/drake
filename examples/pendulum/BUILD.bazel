@@ -29,9 +29,6 @@ drake_cc_library(
         "pendulum_state.cc",
     ],
     hdrs = [
-        "gen/pendulum_input.h",
-        "gen/pendulum_params.h",
-        "gen/pendulum_state.h",
         "pendulum_input.h",
         "pendulum_params.h",
         "pendulum_state.h",
