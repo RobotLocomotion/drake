@@ -16,6 +16,60 @@ struct lcmt_viewer_geometry_data {
   float quaternion[4];  // w, x, y, z
   float color[4];  // r, g, b, a
 
+  // If type == MESH there are different ways of encoding the mesh:
+  //
+  //  - By path: string_data contains a file path to a mesh file.
+  //
+  //  - Raw triangle mesh: a triangle mesh is wholly contained within the
+  //    message. string_data will remain empty and the mesh is defined in
+  //    float data as:
+  //
+  //        V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
+  //
+  //    where
+  //
+  //      V: The number of vertices.
+  //      T: The number of triangles.
+  //      N: 3V, the number of floating point values for the V vertices.
+  //      M: 3T, the number of vertex indices for the T triangles.
+  //
+  //  - In-memory mesh: A json string stored in string_data which represents a
+  //    C++ InMemoryMesh instance with only a single mesh file of the form:
+  //
+  //        {
+  //          "in_memory_mesh": {
+  //            "mesh_file": {
+  //              "contents": "VGhpcyBpcyBhIHRlc3Q=,
+  //              "extension": ".txt",
+  //              "filename_hint": "not_a_real.mesh"
+  //            }
+  //          }
+  //        }
+  //
+  //    or an in-memory mesh with supporting files of the form:
+  //
+  //        {
+  //          "in_memory_mesh": {
+  //            "mesh_file": {
+  //              "contents": "VGhpcyBpcyBhIHRlc3Q=,
+  //              "extension": ".txt",
+  //              "filename_hint": "not_a_real.mesh"
+  //            },
+  //            "supporting_files": [
+  //              "embedded.png": {
+  //                "contents": "VGhpcyBpcyBhIHRlc3Q=,
+  //                "extension": ".png",
+  //                "filename_hint": "not_a_real.png"
+  //              },
+  //              "file_png": {
+  //                "path": "/file/to/image.png"
+  //              },
+  //            ]
+  //          }
+  //        }
+  //
+  //    Note: Where file contents are provided, they are base64-encoded.
+  //
   string string_data;
 
   int32_t num_float_data;

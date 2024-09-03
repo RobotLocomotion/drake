@@ -21,6 +21,8 @@ namespace drake {
 namespace geometry {
 namespace {
 
+namespace fs = std::filesystem;
+
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -342,8 +344,107 @@ GTEST_TEST(MeshcatTest, NumActive) {
   EXPECT_EQ(meshcat.GetNumActiveConnections(), 0);
 }
 
+// Note: The Mesh shape is special. It can reference on-disk or in-memory data
+// and they all need to be handled. This test runs through the various
+// permutations.
+GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
+  Meshcat meshcat;
+
+  using testing::HasSubstr;
+  using testing::Not;
+
+  // A .obj file with material library and image. The packed message should
+  // encode the .obj, the .mtl file, and the image.
+  const fs::path obj_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.obj");
+  const Mesh disk_obj(obj_path, 0.25);
+  const auto obj_file = MemoryFile::Make(obj_path);
+  const auto mtl_file = MemoryFile::Make(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.mtl"));
+  const auto png_file = MemoryFile::Make(FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/rainbow_stripes.png"));
+  const Mesh memory_obj(InMemoryMesh{
+      MemoryFile(obj_file.contents(), obj_file.extension(),
+                 "a hint; *not* a path"),
+      {{"rainbow_box.mtl", MemoryFile(mtl_file)},
+       {"rainbow_stripes.png", MemoryFile(png_file)}}});
+  // The "hetero" objs mix up the supporting files so that, in turn, one is
+  // in memory, and one is on-disk.
+  const Mesh hetero_obj1(InMemoryMesh{
+      MemoryFile(obj_file.contents(), obj_file.extension(), "hetero1_obj"),
+      {{"rainbow_box.mtl", fs::path(mtl_file.filename_hint())},
+       {"rainbow_stripes.png", MemoryFile(png_file)}}});
+  const Mesh hetero_obj2(InMemoryMesh{
+      MemoryFile(obj_file.contents(), obj_file.extension(), "hetero2_obj"),
+      {{"rainbow_box.mtl", MemoryFile(mtl_file)},
+       {"rainbow_stripes.png", fs::path(png_file.filename_hint())}}});
+  for (const auto* mesh_ptr :
+       {&disk_obj, &memory_obj, &hetero_obj1, &hetero_obj2}) {
+    const MeshSource& source = mesh_ptr->source();
+    const bool is_disk = source.is_path();
+    SCOPED_TRACE(fmt::format("Full obj from {} - {}",
+                             is_disk ? "disk" : "memory",
+                             is_disk ? std::string() : source.description()));
+    DRAKE_DEMAND(meshcat.GetPackedObject("obj_path").empty());
+    // Reading from disk should encode the obj, the .mtl file, and the image.
+    meshcat.SetObject("obj_path", *mesh_ptr);
+    const std::string packed_obj = meshcat.GetPackedObject("obj_path");
+    EXPECT_FALSE(packed_obj.empty());
+    // Evidence that the image got loaded.
+    EXPECT_THAT(packed_obj, testing::HasSubstr("data:image/png;base64"));
+    // Evidence that the material library got loaded.
+    EXPECT_THAT(packed_obj, testing::HasSubstr("newmtl Rainbow_Stripes"));
+    meshcat.Delete("obj_path");
+    ASSERT_TRUE(meshcat.GetPackedObject("obj_path").empty());
+  }
+
+  // Missing elements from the in-memory mesh should proceed (but with missing
+  // resources). Warnings are also spewed, but we can't test for those.
+
+  // Missing the mtl file (whether the png is present or not), means no mtl and
+  // no png.
+  for (const InMemoryMesh& mem_mesh :
+       {InMemoryMesh{obj_file},
+        InMemoryMesh{obj_file,
+                     {{"rainbow_stripes.png", MemoryFile(png_file)}}}}) {
+    SCOPED_TRACE(fmt::format("Partial OBJ with {} supporting files",
+                             mem_mesh.supporting_files.size()));
+    DRAKE_DEMAND(meshcat.GetPackedObject("obj_path").empty());
+    meshcat.SetObject("obj_path", Mesh(mem_mesh));
+    const std::string packed_obj = meshcat.GetPackedObject("obj_path");
+    EXPECT_FALSE(packed_obj.empty());
+    EXPECT_THAT(packed_obj, Not(HasSubstr("data:image/png;base64")));
+    EXPECT_THAT(packed_obj, Not(HasSubstr("newmtl Rainbow_Stripes")));
+    meshcat.Delete("obj_path");
+  }
+
+  // If only the texture is missing, we still have "success" - materials are
+  // loaded but the image is not.
+  {
+    DRAKE_DEMAND(meshcat.GetPackedObject("obj_path").empty());
+    meshcat.SetObject("obj_path",
+                      Mesh(InMemoryMesh{obj_file, {{"rainbow_box.mtl",
+                                                    MemoryFile(mtl_file)}}}));
+    const std::string packed_obj = meshcat.GetPackedObject("obj_path");
+    EXPECT_FALSE(packed_obj.empty());
+    EXPECT_THAT(packed_obj, Not(HasSubstr("data:image/png;base64")));
+    EXPECT_THAT(packed_obj, HasSubstr("newmtl Rainbow_Stripes"));
+    meshcat.Delete("obj_path");
+  }
+
+  // Meshcat defers to `meshcat_internal` logic for handling glTF files so
+  // it's enough to show that good things happen. Tests on the internal
+  // implementations are responsible for confirming it's the *right* thing.
+  meshcat.SetObject(
+      "gltf",
+      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf"),
+           0.25));
+  EXPECT_FALSE(meshcat.GetPackedObject("gltf").empty());
+}
+
 // The correctness of this is established with meshcat_manual_test.  Here we
 // simply aim to provide code coverage for CI (e.g., no segfaults).
+// Meshes are treated in SetObjectWithMesh.
 GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   Meshcat meshcat;
   EXPECT_TRUE(meshcat.GetPackedObject("sphere").empty());
@@ -361,16 +462,6 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_FALSE(meshcat.GetPackedObject("ellipsoid").empty());
   meshcat.SetObject("capsule", Capsule(0.25, 0.5));
   EXPECT_FALSE(meshcat.GetPackedObject("capsule").empty());
-  meshcat.SetObject(
-      "mesh",
-      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj"),
-           0.25));
-  EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
-  meshcat.SetObject(
-      "gltf",
-      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf"),
-           0.25));
-  EXPECT_FALSE(meshcat.GetPackedObject("gltf").empty());
   meshcat.SetObject(
       "convex",
       Convex(FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj"),
@@ -398,9 +489,9 @@ GTEST_TEST(MeshcatTest, ObjWithMissingMtl) {
   EXPECT_THAT(with_mtl_packed, testing::HasSubstr("mtl_library"));
 
   // Copy the .obj into a directory, without its .mtl file.
-  const std::filesystem::path dir = temp_directory();
-  const std::filesystem::path missing_mtl_path = dir / "box.obj";
-  std::filesystem::copy_file(obj_source, missing_mtl_path);
+  const fs::path dir = temp_directory();
+  const fs::path missing_mtl_path = dir / "box.obj";
+  fs::copy_file(obj_source, missing_mtl_path);
   meshcat.SetObject("missing_mtl", Mesh(missing_mtl_path.string()),
                     Rgba(1, 0.75, 0.5));
 
@@ -680,7 +771,7 @@ GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
   EXPECT_EQ(actual_value, "");
 
   // Set the map to a valid image.
-  const std::filesystem::path env_map(
+  const fs::path env_map(
       FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.png"));
   EXPECT_NO_THROW(meshcat.SetEnvironmentMap(env_map));
   EXPECT_TRUE(meshcat.HasPath(path));

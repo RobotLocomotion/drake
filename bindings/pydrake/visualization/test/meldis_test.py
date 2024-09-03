@@ -30,15 +30,22 @@ from drake import (
     lcmt_viewer_link_data,
     lcmt_viewer_load_robot,
 )
-
+from pydrake.common import MemoryFile
 from pydrake.geometry import (
     DrakeVisualizer,
     DrakeVisualizerParams,
+    GeometryInstance,
+    IllustrationProperties,
+    InMemoryMesh,
+    Mesh,
     MeshcatParams,
     Role,
 )
 from pydrake.lcm import (
     DrakeLcm,
+)
+from pydrake.math import (
+    RigidTransform,
 )
 from pydrake.multibody.parsing import (
     Parser,
@@ -388,6 +395,37 @@ class TestMeldis(unittest.TestCase):
         unsupported_hash = dut(message)
         self.assertNotEqual(unsupported_hash, empty_hash)
 
+        # Hashing in-memory meshes (transported as json).
+        def make_json(on_disk_file: str):
+            file_str = ""
+            if on_disk_file is not None:
+                file_str = f', "on_disk": {{"path": "{on_disk_file}"}}'
+            return f"""{{
+  "in_memory_mesh": {{
+    "mesh_file": {{
+      "contents": "Cm10",
+      "extension": ".ext",
+      "filename_hint": "hint"
+    }},
+    "supporting_files": {{
+      "in_memory.mtl": {{
+        "contents": "Cm10bGxp",
+        "extension": ".mtl",
+        "filename_hint": "mtl_hint"
+      }}{file_str}
+    }}
+  }}
+}}"""
+
+        # An in-memory mesh with only in-memory supporting files => empty hash.
+        mesh.string_data = make_json(on_disk_file=None)
+        self.assertEqual(dut(message), empty_hash)
+
+        # An in-memory mesh with on-disk supporting files => hash of file.
+        mesh.string_data = make_json(on_disk_file=obj_filename)
+        self.assertNotEqual(dut(message), empty_hash)
+        self.assertEqual(dut(message), mesh_hash_2)
+
     def test_viewer_applet_alpha_slider(self):
         # Create the device under test.
         dut = mut.Meldis()
@@ -444,6 +482,49 @@ class TestMeldis(unittest.TestCase):
         message = meshcat._GetPackedProperty(path, "modulated_opacity")
         parsed = umsgpack.unpackb(message)
         self.assertEqual(parsed['value'], new_alpha)
+
+    def test_viewer_applet_in_memory_mesh(self):
+        """This simply makes sure meldis doesn't crash for in-memory meshes.
+        This relies on the fact that most of the core logic has been tested
+        by the _GeometryFileHasher test code."""
+        dut = mut.Meldis()
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        obj_contents = """
+mtllib meldis_test.mtl
+v 0 0 0
+v 1 0 0
+v 0 1 0
+vn 0 0 1
+usemtl meldis_mat
+f 1 2 3
+"""
+        mtl_contents = """
+newmtl meldis_mat
+Kd 1 1 0
+"""
+        mesh = Mesh(mesh_data=InMemoryMesh(
+                        mesh_file=MemoryFile(obj_contents, ".obj",
+                                             "from_test.obj"),
+                    supporting_files={
+                        "meldis_test.mtl": MemoryFile(mtl_contents, ".mtl",
+                                                      "meldis_test.mtl")}))
+        g_id = scene_graph.RegisterAnchoredGeometry(
+            plant.get_source_id(),
+            GeometryInstance(X_PG=RigidTransform(), shape=mesh,
+                             name="in_memory"))
+        scene_graph.AssignRole(plant.get_source_id(), g_id,
+                               IllustrationProperties())
+        lcm = dut._lcm
+        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
+                                     params=DrakeVisualizerParams(), lcm=lcm)
+        plant.Finalize()
+        diagram = builder.Build()
+
+        diagram.ForcedPublish(diagram.CreateDefaultContext())
+        lcm.HandleSubscriptions(timeout_millis=0)
+        dut._invoke_subscriptions()
+        self.assertEqual(dut.meshcat.HasPath("/DRAKE_VIEWER"), True)
 
     def test_inertia_geometry(self):
         url = "package://drake_models/manipulation_station/sphere.sdf"
