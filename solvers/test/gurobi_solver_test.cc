@@ -528,12 +528,13 @@ GTEST_TEST(GurobiTest, MaxThreads) {
   GurobiSolver solver;
   if (solver.available()) {
     SolverOptions solver_options;
-    const std::string log_file = temp_directory() + "/max_threads.log";
+    std::string log_file = temp_directory() + "/max_threads.log";
     solver_options.SetOption(CommonSolverOption::kPrintFileName, log_file);
     auto read_log = [log_file]() {
       std::ifstream stream(log_file);
       std::stringstream buffer;
       buffer << stream.rdbuf();
+      std::filesystem::remove({log_file});
       return buffer.str();
     };
 
@@ -561,7 +562,7 @@ GTEST_TEST(GurobiTest, MaxThreads) {
     solver_options.SetOption(GurobiSolver::id(), "Threads", gurobi_option_max);
     result = solver.Solve(prog, {}, solver_options);
     EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
-                                "using up to {} threads", gurobi_env_max)));
+                                "using up to {} threads", gurobi_option_max)));
   }
 }
 
