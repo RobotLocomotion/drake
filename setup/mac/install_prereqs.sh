@@ -5,7 +5,7 @@
 
 set -euxo pipefail
 
-binary_distribution_args=()
+binary_distribution_args=(--without-python-dependencies)
 source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
@@ -48,3 +48,12 @@ source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
 # script should be run once per user who develops with source distributions.
 
 source "${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
+
+# Bootstrap the venv. The `setup` is required here (nothing else runs it), but
+# the `sync` is not strictly requied (bazel will run it for us). We do it here
+# anyway so that the user gets immediate, streaming feedback about problems
+# with internet downloads, or other kinds of glitches. (When run from Bazel,
+# stderr text is batched up until much later, not streamed.)
+
+"${BASH_SOURCE%/*}/../../tools/workspace/venv/setup"
+"${BASH_SOURCE%/*}/../../tools/workspace/venv/sync"
