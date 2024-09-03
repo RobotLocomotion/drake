@@ -10,7 +10,6 @@
 
 #include "drake/common/parallelism.h"
 #include "drake/geometry/meshcat.h"
-// #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/planning/collision_checker.h"
@@ -21,7 +20,7 @@ namespace planning {
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
 
-struct FastIrisOptions {
+struct IrisZOOptions {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background.
   Note: This only serializes options that are YAML built-in types. */
@@ -30,7 +29,7 @@ struct FastIrisOptions {
     a->Visit(DRAKE_NVP(num_particles));
     a->Visit(DRAKE_NVP(tau));
     a->Visit(DRAKE_NVP(delta));
-    a->Visit(DRAKE_NVP(admissible_proportion_in_collision));
+    a->Visit(DRAKE_NVP(epsilon));
     a->Visit(DRAKE_NVP(containment_points));
     a->Visit(DRAKE_NVP(force_containment_points));
     a->Visit(DRAKE_NVP(max_iterations));
@@ -47,7 +46,7 @@ struct FastIrisOptions {
     a->Visit(DRAKE_NVP(mixing_steps));
   }
 
-  FastIrisOptions() = default;
+  IrisZOOptions() = default;
 
   /** Number of particles used to estimate the closest collision*/
   int num_particles = 1e3;
@@ -60,7 +59,7 @@ struct FastIrisOptions {
   double delta = 5e-2;
 
   /** Admissible fraction of the region volume allowed to be in collision.*/
-  double admissible_proportion_in_collision = 1e-2;
+  double epsilon = 1e-2;
 
   /** Points that are guaranteed to be contained in the final region
    * provided their convex hull is collision free.*/
@@ -139,10 +138,10 @@ struct FastIrisOptions {
 /** Given a seed point and an initial ellipsoidal metric, use sampling based
 optimization to find a collision free polytope in cspace.*/
 
-HPolyhedron FastIris(const CollisionChecker& checker,
-                     const Hyperellipsoid& starting_ellipsoid,
-                     const HPolyhedron& domain,
-                     const FastIrisOptions& options = FastIrisOptions());
+HPolyhedron IrisZO(const CollisionChecker& checker,
+                   const Hyperellipsoid& starting_ellipsoid,
+                   const HPolyhedron& domain,
+                   const IrisZOOptions& options = IrisZOOptions());
 
 }  // namespace planning
 }  // namespace drake

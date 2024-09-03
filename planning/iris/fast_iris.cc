@@ -79,10 +79,9 @@ int unadaptive_test_samples(double p, double delta, double tau) {
 
 }  // namespace
 
-HPolyhedron FastIris(const planning::CollisionChecker& checker,
-                     const Hyperellipsoid& starting_ellipsoid,
-                     const HPolyhedron& domain,
-                     const FastIrisOptions& options) {
+HPolyhedron IrisZO(const planning::CollisionChecker& checker,
+                   const Hyperellipsoid& starting_ellipsoid,
+                   const HPolyhedron& domain, const IrisZOOptions& options) {
   auto start = std::chrono::high_resolution_clock::now();
   const auto parallelism = Parallelism::Max();
   const int num_threads_to_use =
@@ -152,15 +151,13 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
                      (M_PI * M_PI * options.max_iterations_separating_planes *
                       options.max_iterations_separating_planes);
 
-  int N_max = unadaptive_test_samples(
-      options.admissible_proportion_in_collision, delta_min, options.tau);
+  int N_max = unadaptive_test_samples(options.epsilon, delta_min, options.tau);
 
   if (options.verbose) {
     log()->info(
         "FastIris finding region that is {} collision free with {} certainty "
         "using {} particles.",
-        options.admissible_proportion_in_collision, 1 - options.delta,
-        options.num_particles);
+        options.epsilon, 1 - options.delta, options.num_particles);
     log()->info("FastIris worst case test requires {} samples.", N_max);
   }
 
@@ -216,8 +213,7 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
       int k_squared = num_iterations_separating_planes + 1;
       k_squared *= k_squared;
       double delta_k = outer_delta * 6 / (M_PI * M_PI * k_squared);
-      int N_k = unadaptive_test_samples(
-          options.admissible_proportion_in_collision, delta_k, options.tau);
+      int N_k = unadaptive_test_samples(options.epsilon, delta_k, options.tau);
 
       particles.at(0) = P.UniformSample(&generator, current_ellipsoid_center,
                                         options.mixing_steps);
@@ -253,14 +249,12 @@ HPolyhedron FastIris(const planning::CollisionChecker& checker,
       if (options.verbose) {
         log()->info("FastIris N_k {}, N_col {}, thresh {}", N_k,
                     number_particles_in_collision_unadaptive_test,
-                    (1 - options.tau) *
-                        options.admissible_proportion_in_collision * N_k);
+                    (1 - options.tau) * options.epsilon * N_k);
       }
 
       // break if threshold is passed
       if (number_particles_in_collision_unadaptive_test <=
-          (1 - options.tau) * options.admissible_proportion_in_collision *
-              N_k) {
+          (1 - options.tau) * options.epsilon * N_k) {
         break;
       }
 

@@ -25,7 +25,7 @@ drake_cc_package_library(
         ":robot_diagram_builder",
         ":scene_graph_collision_checker",
         ":unimplemented_collision_checker",
-        ":visibility_graph"
+        ":visibility_graph",
     ],
 )
 
