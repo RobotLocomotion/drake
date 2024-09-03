@@ -33,6 +33,11 @@ drake_jupyter_py_binary(
 
 drake_py_unittest(
     name = "jupyter_notebook_test",
+    data = ["@venv//:binaries"],
+    deps = [
+        "@rules_python//python/runfiles",
+        "@venv",
+    ],
 )
 
 # Add example failing notebook.
