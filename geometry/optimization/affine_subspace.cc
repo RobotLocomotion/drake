@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/optimization/point.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -216,30 +217,66 @@ AffineSubspace::DoAddPointInSetConstraints(
 
 std::vector<Binding<Constraint>>
 AffineSubspace::DoAddPointInNonnegativeScalingConstraints(
-    solvers::MathematicalProgram*,
-    const Eigen::Ref<const solvers::VectorXDecisionVariable>&,
-    const Variable&) const {
-  // This method of ConvexSet is currently only used in GraphOfConvexSets,
-  // and it's bad practice to include unbounded sets in such optimizations.
-  // "For GCS the boundedness of the sets is required because you want to
-  // be sure that if the perspective coefficient is zero, then the vector
-  // variable is constrained to be zero. If the set is unbounded, then the
-  // vector variables is only constrained in the recession cone of the set."
-  // -Tobia Marcucci
-  throw std::runtime_error(
-      "AffineSubspace::DoAddPointInNonnegativeScalingConstraints() is not "
-      "implemented yet.");
+    solvers::MathematicalProgram* prog,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+    const Variable& t) const {
+  // If the affine dimension is zero, then we have a point, so we just use the
+  // method from the Point class.
+  std::vector<Binding<Constraint>> new_constraints;
+  const int n = ambient_dimension();
+  const int m = basis_.cols();
+  if (m == 0) {
+    Point p(translation_);
+    new_constraints = p.AddPointInNonnegativeScalingConstraints(prog, x, t);
+  } else {
+    // Suppose the ambient dimension is n and the affine dimension is m. We add
+    // the new variable y∈Rᵐ and impose the constraints t≥0 and x∈tS⊕rec(S), via
+    // x=basis*y + translation*t This is explicitly written as
+    // [-I, basis, translation][x; y; t] = 0.
+    VectorXDecisionVariable y = prog->NewContinuousVariables(m, "y");
+    MatrixXd A(n, n + m + 1);
+    A.leftCols(n) = -MatrixXd::Identity(n, n);
+    A.block(0, n, n, m) = basis_;
+    A.rightCols(1) = translation_;
+    new_constraints.push_back(prog->AddLinearEqualityConstraint(
+        A, VectorXd::Zero(n), {x, y, Vector1<Variable>(t)}));
+  }
+  return new_constraints;
 }
 
 std::vector<Binding<Constraint>>
 AffineSubspace::DoAddPointInNonnegativeScalingConstraints(
-    solvers::MathematicalProgram*, const Eigen::Ref<const MatrixXd>&,
-    const Eigen::Ref<const VectorXd>&, const Eigen::Ref<const VectorXd>&,
-    double, const Eigen::Ref<const VectorXDecisionVariable>&,
-    const Eigen::Ref<const VectorXDecisionVariable>&) const {
-  throw std::runtime_error(
-      "AffineSubspace::DoAddPointInNonnegativeScalingConstraints() is not "
-      "implemented yet.");
+    solvers::MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A,
+    const Eigen::Ref<const VectorXd>& b, const Eigen::Ref<const VectorXd>& c,
+    double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const VectorXDecisionVariable>& t) const {
+  // If the affine dimension is zero, then we have a point, so we just use the
+  // method from the Point class.
+  std::vector<Binding<Constraint>> new_constraints;
+  const int n = ambient_dimension();
+  const int m = basis_.cols();
+  if (m == 0) {
+    Point p(translation_);
+    new_constraints =
+        p.AddPointInNonnegativeScalingConstraints(prog, A, b, c, d, x, t);
+  } else {
+    // Suppose the ambient dimension is n and the affine dimension is m. We add
+    // the new variable y∈Rᵐ and impose the constraints c'*t+d≥0 and
+    // Ax+b∈(c'*t+d)S⊕rec(S), via Ax+b=basis*y + translation*(c'*t+d). This is
+    // explicitly written as
+    // [-A, basis, translation*c'][x; y; t] = b - translation'*d.
+    const int k = x.size();
+    const int p = t.size();
+    VectorXDecisionVariable y = prog->NewContinuousVariables(m, "y");
+    MatrixXd constraint_A(n, k + m + p);
+    constraint_A.leftCols(k) = A;
+    constraint_A.block(0, k, n, m) = basis_;
+    constraint_A.rightCols(p) = translation_ * c.transpose();
+    VectorXd constraint_b = b - translation_.transpose() * d;
+    new_constraints.push_back(prog->AddLinearEqualityConstraint(
+        constraint_A, constraint_b, {x, y, Vector1<Variable>(t)}));
+  }
+  return new_constraints;
 }
 
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
