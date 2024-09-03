@@ -42,6 +42,9 @@ py_binary(
     data = [
         "cpplint/cpplint_test_header.h",
     ],
-    deps = ["cpplint_binary"],
+    deps = [
+        "cpplint_binary",
+        "@venv",
+    ],
     testonly = 1,
 )
