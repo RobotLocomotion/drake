@@ -6,6 +6,7 @@ py_test(
     size = "small",
     srcs = ["@styleguide//:cpplint_unittest"],
     tags = ["no_kcov"],
+    deps = ["@venv"],
 )
 
 add_lint_tests()

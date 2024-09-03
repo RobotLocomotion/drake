@@ -13,6 +13,7 @@ py_library(
     srcs = ["jupyter_bazel.py"],
     imports = ["."],
     visibility = ["//visibility:public"],
+    deps = ["@venv"],
 )
 
 # Note that we do NOT use drake_py_library here, so that this program is a
@@ -32,6 +33,11 @@ drake_jupyter_py_binary(
 
 drake_py_unittest(
     name = "jupyter_notebook_test",
+    data = ["@venv//:binaries"],
+    deps = [
+        "@rules_python//python/runfiles",
+        "@venv",
+    ],
 )
 
 # Add example failing notebook.
