@@ -375,12 +375,14 @@ b = [{}]
         out_file << "  clarabel.SecondOrderConeT(" << cone.nvars() << "),"
                  << std::endl;
         break;
-      case clarabel::SupportedConeT<double>::Tag::PSDTriangleConeT: {
-        const clarabel::PSDTriangleConeT<double>* psd_cone =
-            static_cast<const clarabel::PSDTriangleConeT<double>*>(&cone);
-        out_file << "  clarabel.PSDTriangleConeT(" << psd_cone->dimension()
-                 << ")," << std::endl;
-      } break;
+      case clarabel::SupportedConeT<double>::Tag::PSDTriangleConeT:
+        {
+          const clarabel::PSDTriangleConeT<double>* psd_cone =
+              static_cast<const clarabel::PSDTriangleConeT<double>*>(&cone);
+          out_file << "  clarabel.PSDTriangleConeT(" << psd_cone->dimension()
+                  << ")," << std::endl;
+        }
+        break;
       case clarabel::SupportedConeT<double>::Tag::ExponentialConeT:
         out_file << "  clarabel.ExponentialConeT()," << std::endl;
         break;
