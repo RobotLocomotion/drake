@@ -19,6 +19,8 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using solvers::Binding;
@@ -521,6 +523,63 @@ GTEST_TEST(AffineSubspaceTest, PointInNonnegativeScalingConstraints) {
         Eigen::MatrixXd::Identity(1, 1), Vector1d(t_val));
     auto result = Solve(prog);
     EXPECT_FALSE(result.is_success());
+  }
+
+  MatrixXd A(3, 2);
+  // clang-format off
+  A << 1, 0,
+       0, 1,
+       2, 0;
+  // clang-format on
+  Vector3d b = Vector3d::Zero();
+  Vector2d c(1, -1);
+  double d = 0;
+
+  MathematicalProgram prog2;
+  auto x2 = prog2.NewContinuousVariables(2, "x");
+  auto t2 = prog2.NewContinuousVariables(2, "t");
+
+  std::vector<Binding<Constraint>> constraints2 =
+      as.AddPointInNonnegativeScalingConstraints(&prog2, A, b, c, d, x2, t2);
+
+  EXPECT_EQ(constraints2.size(), 2);
+
+  Vector2d x2_test_value = Vector2d::Zero();
+  Vector2d t2_test_value = Vector2d::Zero();
+  auto x2_constraint = prog2.AddLinearEqualityConstraint(
+      Eigen::MatrixXd::Identity(2, 2), x2_test_value, x2);
+  auto t2_constraint = prog2.AddLinearEqualityConstraint(
+      Eigen::MatrixXd::Identity(2, 2), t2_test_value, t2);
+
+  std::vector<std::pair<Vector2d, Vector2d>> valid_x2_t2;
+  valid_x2_t2.emplace_back(Vector2d{1.0, 1.0}, Vector2d{2.0, 0.0});
+  valid_x2_t2.emplace_back(Vector2d(2.0, 1.0), Vector2d(4.0, 0.0));
+  valid_x2_t2.emplace_back(Vector2d(0.0, 1.0), Vector2d(0.0, 0.0));
+  valid_x2_t2.emplace_back(Vector2d(0.0, 1.0), Vector2d(1.0, 1.0));
+  valid_x2_t2.emplace_back(Vector2d(2.0, 1.0), Vector2d(0.0, -4.0));
+
+  std::vector<std::pair<Vector2d, Vector2d>> invalid_x2_t2;
+  invalid_x2_t2.emplace_back(Vector2d{1.0, 1.0}, Vector2d{0.0, 0.0});
+  invalid_x2_t2.emplace_back(Vector2d{1.0, 1.0}, Vector2d{1.0, 0.0});
+  invalid_x2_t2.emplace_back(Vector2d{-1.0, 1.0}, Vector2d{0.0, 2.0});
+  invalid_x2_t2.emplace_back(Vector2d{-1.0, 1.0}, Vector2d{-2.0, 0.0});
+
+  for (const auto& [x2_val, t2_val] : valid_x2_t2) {
+    x2_constraint.evaluator()->UpdateCoefficients(
+        Eigen::MatrixXd::Identity(2, 2), x2_val);
+    t2_constraint.evaluator()->UpdateCoefficients(
+        Eigen::MatrixXd::Identity(2, 2), t2_val);
+    auto result2 = Solve(prog2);
+    EXPECT_TRUE(result2.is_success());
+  }
+
+  for (const auto& [x2_val, t2_val] : invalid_x2_t2) {
+    x2_constraint.evaluator()->UpdateCoefficients(
+        Eigen::MatrixXd::Identity(2, 2), x2_val);
+    t2_constraint.evaluator()->UpdateCoefficients(
+        Eigen::MatrixXd::Identity(2, 2), t2_val);
+    auto result2 = Solve(prog2);
+    EXPECT_FALSE(result2.is_success());
   }
 }
 
