@@ -12,6 +12,7 @@
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/set_env.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 #include "drake/solvers/test/l2norm_cost_examples.h"
@@ -22,6 +23,9 @@
 namespace drake {
 namespace solvers {
 namespace test {
+
+using drake::test::SetEnv;
+
 const double kInf = std::numeric_limits<double>::infinity();
 
 TEST_P(LinearProgramTest, TestLP) {
@@ -510,35 +514,6 @@ GTEST_TEST(GurobiTest, LogFile) {
     }
   }
 }
-
-/* RAII to temporarily change an environment variable. */
-class SetEnv {
- public:
-  SetEnv(const std::string& var_name, std::optional<std::string> var_value)
-      : var_name_(var_name) {
-    const char* orig = std::getenv(var_name.c_str());
-    if (orig != nullptr) {
-      orig_value_ = orig;
-    }
-    if (var_value.has_value()) {
-      ::setenv(var_name.c_str(), var_value->c_str(), 1);
-    } else {
-      ::unsetenv(var_name.c_str());
-    }
-  }
-
-  ~SetEnv() {
-    if (orig_value_.has_value()) {
-      ::setenv(var_name_.c_str(), orig_value_->c_str(), 1);
-    } else {
-      ::unsetenv(var_name_.c_str());
-    }
-  }
-
- private:
-  std::string var_name_;
-  std::optional<std::string> orig_value_;
-};
 
 GTEST_TEST(GurobiTest, MaxThreads) {
   const int drake_max = 2;

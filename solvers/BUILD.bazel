@@ -1399,6 +1399,7 @@ drake_cc_googletest(
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:set_env",
     ],
 )
 

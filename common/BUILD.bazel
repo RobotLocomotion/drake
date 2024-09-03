@@ -953,6 +953,7 @@ drake_cc_googletest(
     deps = [
         ":find_cache",
         ":temp_directory",
+        "//common/test_utilities:set_env",
     ],
 )
 

@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":maybe_pause_for_user",
         ":measure_execution",
         ":random_polynomial_matrix",
+        ":set_env",
         ":symbolic_test_util",
     ],
 )
@@ -136,6 +137,12 @@ drake_cc_library(
     deps = [
         # Keep it simple and don't depend on any Drake code.
     ],
+)
+
+drake_cc_library(
+    name = "set_env",
+    testonly = 1,
+    hdrs = ["set_env.h"],
 )
 
 drake_cc_library(
