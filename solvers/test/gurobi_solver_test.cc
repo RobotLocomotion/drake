@@ -1,6 +1,7 @@
 #include "drake/solvers/gurobi_solver.h"
 
 #include <filesystem>
+#include <fstream>
 #include <limits>
 #include <thread>
 
@@ -507,6 +508,85 @@ GTEST_TEST(GurobiTest, LogFile) {
       EXPECT_TRUE(std::filesystem::exists({log_file}));
       EXPECT_FALSE(std::filesystem::exists({log_file_common}));
     }
+  }
+}
+
+/* RAII to temporarily change an environment variable. */
+class SetEnv {
+ public:
+  SetEnv(const std::string& var_name, std::optional<std::string> var_value)
+      : var_name_(var_name) {
+    const char* orig = std::getenv(var_name.c_str());
+    if (orig != nullptr) {
+      orig_value_ = orig;
+    }
+    if (var_value.has_value()) {
+      ::setenv(var_name.c_str(), var_value->c_str(), 1);
+    } else {
+      ::unsetenv(var_name.c_str());
+    }
+  }
+
+  ~SetEnv() {
+    if (orig_value_.has_value()) {
+      ::setenv(var_name_.c_str(), orig_value_->c_str(), 1);
+    } else {
+      ::unsetenv(var_name_.c_str());
+    }
+  }
+
+ private:
+  std::string var_name_;
+  std::optional<std::string> orig_value_;
+};
+
+GTEST_TEST(GurobiTest, MaxThreads) {
+  const int drake_max = 2;
+  const SetEnv guard1("DRAKE_NUM_THREADS", std::to_string(drake_max));
+  const SetEnv guard2("GUROBI_NUM_THREADS", std::nullopt);
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] == 1);
+  prog.AddQuadraticCost(x[0] * x[0] + x[1] * x[1]);
+
+  GurobiSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    const std::string log_file = temp_directory() + "/max_threads.log";
+    solver_options.SetOption(CommonSolverOption::kPrintFileName, log_file);
+    auto read_log = [log_file]() {
+      std::ifstream stream(log_file);
+      std::stringstream buffer;
+      buffer << stream.rdbuf();
+      return buffer.str();
+    };
+
+    // When no other options have been set, the DRAKE_NUM_THREADS governs.
+    auto result = solver.Solve(prog, {}, solver_options);
+    EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
+                                "using up to {} threads", drake_max)));
+
+    // The common solver option takes precedence.
+    const int common_max = drake_max + 1;
+    solver_options.SetOption(CommonSolverOption::kMaxThreads, common_max);
+    result = solver.Solve(prog, {}, solver_options);
+    EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
+                                "using up to {} threads", common_max)));
+
+    // The GUROBI_NUM_THREADS takes precedence.
+    const int gurobi_env_max = common_max + 1;
+    const SetEnv guard3("GUROBI_NUM_THREADS", std::to_string(gurobi_env_max));
+    result = solver.Solve(prog, {}, solver_options);
+    EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
+                                "using up to {} threads", gurobi_env_max)));
+
+    // The Gurobi-specific solver option takes precedence.
+    const int gurobi_option_max = gurobi_env_max + 1;
+    solver_options.SetOption(GurobiSolver::id(), "Threads", gurobi_option_max);
+    result = solver.Solve(prog, {}, solver_options);
+    EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
+                                "using up to {} threads", gurobi_env_max)));
   }
 }
 
