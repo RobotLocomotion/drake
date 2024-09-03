@@ -144,9 +144,12 @@ drake_cc_library(
         "//systems/framework:leaf_system",
     ],
     implementation_deps = [
+        ":read_gltf_to_memory",
         "//lcm:drake_lcm",
         "//lcmtypes:viewer",
         "//systems/lcm:lcm_system_graphviz",
+        "@common_robotics_utilities",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -558,6 +561,7 @@ drake_cc_library(
         ":scene_graph_inspector",
         ":shape_specification",
         "//common:essential",
+        "//common:memory_file",
         "//common:name_value",
         "//common:timer",
         "//geometry/proximity:triangle_surface_mesh",
@@ -876,12 +880,15 @@ drake_cc_googletest(
     data = ["//geometry/render:test_models"],
     deps = [
         ":drake_visualizer",
+        ":read_gltf_to_memory",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis:simulator",
+        "@common_robotics_utilities",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
