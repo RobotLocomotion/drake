@@ -1,7 +1,11 @@
+#include <memory>
+
 #include <gflags/gflags.h>
 
 #include "drake/examples/scene_graph/solar_system.h"
 #include "drake/geometry/drake_visualizer.h"
+#include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
@@ -31,7 +35,12 @@ int do_main() {
   builder.Connect(solar_system->get_geometry_pose_output_port(),
                   scene_graph->get_source_pose_port(solar_system->source_id()));
 
+  // Note: we can't use AddDefaultVisualization() because we don't have a plant
+  // in the Diagram.
   geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
+  auto meshcat = std::make_shared<geometry::Meshcat>();
+  geometry::MeshcatVisualizer<double>::AddToBuilder(&builder, *scene_graph,
+                                                    meshcat);
 
   auto diagram = builder.Build();
 
