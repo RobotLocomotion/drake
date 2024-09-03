@@ -1,5 +1,6 @@
 #include "drake/geometry/meshcat_internal.h"
 
+#include <functional>
 #include <stdexcept>
 #include <utility>
 
@@ -12,6 +13,7 @@
 #include "drake/common/drake_export.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -79,14 +81,27 @@ std::string UuidGenerator::GenerateRandom() {
 
 namespace {
 
+// The result of loading a URI: the URI's contents (maybe) and a description.
+using LoadedUri = std::pair<std::optional<std::string>, std::string>;
+
+// The function that attempts to load a URI. Failure to load the contents
+// produces null-valued contents, but there will always be a description for
+// error messages.
+using UriLoader = std::function<LoadedUri(std::string_view)>;
+
 // Load the given `uri` into `storage` and returns the storage handle.
 // On error, returns nullptr.
-// @param gltf_filename Only used for debugging and error messages.
 // @param array_hint The place where this URI occurred, e.g., "buffers[1]".
 //  Only used for debugging and error messages.
-std::shared_ptr<const MemoryFile> LoadGltfUri(
-    const fs::path& gltf_filename, std::string_view array_hint,
-    std::string_view uri, FileStorage* storage) {
+// @param uri_loader The function that attempts do read the file contents
+//  associated with the given `uri`.
+// @param description User-friendly string describing the glTF file the URI
+//  comes from. Only used for debugging and error messages.
+std::shared_ptr<const MemoryFile> LoadGltfUri(std::string_view array_hint,
+                                              std::string_view uri,
+                                              FileStorage* storage,
+                                              const UriLoader& uri_loader,
+                                              const std::string& description) {
   DRAKE_DEMAND(storage != nullptr);
   if (uri.substr(0, 5) == "data:") {
     constexpr std::string_view needle = ";base64,";
@@ -94,11 +109,13 @@ std::shared_ptr<const MemoryFile> LoadGltfUri(
     if (pos == std::string_view::npos) {
       log()->warn(
           "Meshcat ignoring malformed data URI while loading {} from '{}'",
-          array_hint, gltf_filename.string());
+          array_hint, description);
       return nullptr;
     }
     // TODO(jwnimmer-tri) Save the media type to http-serve later on.
-    // For now, we'll just skip ahead to the actual content.
+    // For now, we'll just skip ahead to the actual content. Note: for a data
+    // URI, glTF requires the mime type be specified. It's optional for a file
+    // URI and, if absent, we'd have to rely on the file URI's extension.
     std::string_view base64_content = uri.substr(pos + needle.size());
     // TODO(jwnimmer-tri) Use a decoder with a better types, to avoid all of
     // these extra copies.
@@ -108,38 +125,76 @@ std::shared_ptr<const MemoryFile> LoadGltfUri(
     std::string decoded(reinterpret_cast<const char*>(decoded_vec.data()),
                         decoded_vec.size());
     std::string filename_hint =
-        fmt::format("{} from {}", array_hint, gltf_filename.string());
+        fmt::format("{} from {}", array_hint, description);
     return storage->Insert(std::move(decoded), std::move(filename_hint));
   } else {
     // Not a data URI, so it must be a relative path.
-    fs::path asset_filename = gltf_filename.parent_path() / uri;
-    std::optional<std::string> asset_data = ReadFile(asset_filename);
-    if (!asset_data) {
+    LoadedUri asset_data = uri_loader(uri);
+    if (!asset_data.first.has_value()) {
       log()->warn(
-          "Meshcat could not open '{}' while loading {} from '{}'",
-          asset_filename.string(), array_hint, gltf_filename.string());
+          "Meshcat could not get data for the named uri '{}' while loading {} "
+          "from '{}'",
+          uri, array_hint, description);
       return nullptr;
     }
-    return storage->Insert(std::move(*asset_data), asset_filename.string());
+    return storage->Insert(std::move(*asset_data.first),
+                           std::move(asset_data.second));
   }
 }
 
 }  // namespace
 
 std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
-    const fs::path& gltf_filename, std::string* gltf_contents,
+    const MeshSource& mesh_source, std::string* gltf_contents,
     FileStorage* storage) {
   DRAKE_DEMAND(gltf_contents != nullptr);
   DRAKE_DEMAND(storage != nullptr);
   std::vector<std::shared_ptr<const MemoryFile>> assets;
+
   json gltf;
   try {
     gltf = json::parse(*gltf_contents);
   } catch (const json::exception& e) {
     log()->warn("Meshcat could not unbundle '{}': glTF parse error: {}",
-                gltf_filename.string(), e.what());
+                mesh_source.description(), e.what());
     return assets;
   }
+
+  // Resolving URIs depends on where the glTF specification resides.
+  UriLoader uri_loader;
+  if (mesh_source.is_path()) {
+    uri_loader = [gltf_dir =
+                      mesh_source.path().parent_path()](std::string_view uri) {
+      return std::make_pair(ReadFile(gltf_dir / uri),
+                            (gltf_dir / uri).string());
+    };
+  } else {
+    DRAKE_DEMAND(mesh_source.is_in_memory());
+    uri_loader = [&memory_mesh = mesh_source.in_memory()](
+                     std::string_view uri) -> LoadedUri {
+      const std::string description =
+          fmt::format("glTF '{}' supporting file with uri '{}'",
+                      memory_mesh.mesh_file.filename_hint(), uri);
+      std::optional<std::string> contents;
+
+      const auto file_source_iter = memory_mesh.supporting_files.find(uri);
+      if (file_source_iter != memory_mesh.supporting_files.end()) {
+        contents = std::visit<std::optional<std::string>>(overloaded{
+          [](const std::filesystem::path& path) {
+            // Either uri is absolute or meaningful w.r.t. cwd, otherwise, we'll
+            // respond appropriately to an otherwise unavailable uri.
+            return ReadFile(path);
+          },
+          [](const MemoryFile& file) {
+            return file.contents();
+          }},
+          file_source_iter->second);
+      }
+
+      return std::make_pair(contents, description);
+    };
+  }
+
   // In glTF 2.0, URIs can only appear in two places:
   //  "images": [ { "uri": "some.png" } ]
   //  "buffers": [ { "uri": "some.bin", "byteLength": 1024 } ]
@@ -152,8 +207,8 @@ std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
         const std::string_view uri =
             item["uri"].template get<std::string_view>();
         const std::string array_hint = fmt::format("{}[{}]", array_name, i);
-        std::shared_ptr<const MemoryFile> asset =
-            LoadGltfUri(gltf_filename, array_hint, uri, storage);
+        std::shared_ptr<const MemoryFile> asset = LoadGltfUri(
+            array_hint, uri, storage, uri_loader, mesh_source.description());
         if (asset != nullptr) {
           item["uri"] = FileStorage::GetCasUrl(*asset);
           assets.push_back(std::move(asset));
@@ -169,8 +224,8 @@ std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
 }
 
 template <typename T>
-std::string TransformGeometryName(
-    GeometryId geom_id, const SceneGraphInspector<T>& inspector) {
+std::string TransformGeometryName(GeometryId geom_id,
+                                  const SceneGraphInspector<T>& inspector) {
   std::string geometry_name = inspector.GetName(geom_id);
   size_t pos = 0;
   while ((pos = geometry_name.find("::", pos)) != std::string::npos) {
