@@ -96,6 +96,35 @@ class Cassie : public benchmark::Fixture {
     context_->NoteContinuousStateChange();
   }
 
+  // Runs the PositionKinematics benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoPositionKinematics(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    // A distal body. Asking for pose of one body calculates poses of all
+    // of them in the PositionKinematicsCache.
+    const RigidBody<T>& toe_right = plant_->GetBodyByName("toe_right");
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->EvalBodyPoseInWorld(*context_, toe_right);
+    }
+  }
+
+  // Runs the PosAndVelKinematics benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoPosAndVelKinematics(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    // A distal body. Asking for kinematics of one body calculates it for all
+    // of them in the PositionKinematicsCache and VelocityKinematicsCache.
+    const RigidBody<T>& toe_right = plant_->GetBodyByName("toe_right");
+    for (auto _ : state) {
+      InvalidateState();
+      // This requires both position and velocity kinematics.
+      plant_->EvalBodySpatialVelocityInWorld(*context_, toe_right);
+    }
+  }
+
   // Runs the MassMatrix benchmark.
   // NOLINTNEXTLINE(runtime/references)
   void DoMassMatrix(benchmark::State& state) {
@@ -267,6 +296,22 @@ void Cassie<Expression>::SetUpGradientsOrVariables(benchmark::State& state) {
 // For T=Expression, the range arg sets which variables to use, using a bitmask.
 
 // NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, PositionKinematics)(benchmark::State& state) {
+  DoPositionKinematics(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, PositionKinematics)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, PosAndVelKinematics)(benchmark::State& state) {
+  DoPosAndVelKinematics(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, PosAndVelKinematics)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieDouble, MassMatrix)(benchmark::State& state) {
   DoMassMatrix(state);
 }
@@ -289,6 +334,28 @@ BENCHMARK_DEFINE_F(CassieDouble, ForwardDynamics)(benchmark::State& state) {
 BENCHMARK_REGISTER_F(CassieDouble, ForwardDynamics)
   ->Unit(benchmark::kMicrosecond)
   ->Arg(kWantNoGrad);
+
+BENCHMARK_DEFINE_F(CassieAutoDiff, PositionKinematics)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoPositionKinematics(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, PositionKinematics)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ);
+
+BENCHMARK_DEFINE_F(CassieAutoDiff, PosAndVelKinematics)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoPosAndVelKinematics(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, PosAndVelKinematics)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ)
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradX);
 
 // NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieAutoDiff, MassMatrix)(benchmark::State& state) {
@@ -330,6 +397,28 @@ BENCHMARK_REGISTER_F(CassieAutoDiff, ForwardDynamics)
   ->Arg(kWantGradQ|kWantGradU)
   ->Arg(kWantGradV|kWantGradU)
   ->Arg(kWantGradX|kWantGradU);
+
+BENCHMARK_DEFINE_F(CassieExpression, PositionKinematics)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoPositionKinematics(state);
+}
+BENCHMARK_REGISTER_F(CassieExpression, PositionKinematics)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ);
+
+BENCHMARK_DEFINE_F(CassieExpression, PosAndVelKinematics)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoPosAndVelKinematics(state);
+}
+BENCHMARK_REGISTER_F(CassieExpression, PosAndVelKinematics)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ)
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradX);
 
 // NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieExpression, MassMatrix)(benchmark::State& state) {
