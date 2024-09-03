@@ -1,22 +1,27 @@
 #include "drake/geometry/drake_visualizer.h"
 
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <common_robotics_utilities/base64_helpers.hpp>
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/unused.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/read_gltf_to_memory.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
@@ -76,6 +81,9 @@ class DrakeVisualizerTester {
 };
 
 namespace {
+
+namespace fs = std::filesystem;
+
 /* Collection of data for reporting what is waiting in the LCM queue.  */
 struct MessageResults {
   int num_load{};
@@ -366,13 +374,45 @@ class DrakeVisualizerTest : public ::testing::Test {
    @param role         The role to assign to the test geometry -- should be
                        either kIllustrated or kProximity.
    @param expect_hull  If true, we expect the MeshType with the given `role`
-                       to be represented by its convex hull. */
+                       to be represented by its convex hull.
+   @param in_memory    If true, the mesh will be specified using in-memory
+                       resources. */
   template <typename MeshType>
-  void ExpectMeshInMessage(Role role, bool expect_hull) {
-    auto mesh = make_unique<MeshType>(
-        FindResourceOrThrow("drake/geometry/render/test/meshes/"
-                            "fully_textured_pyramid.gltf"));
-    SCOPED_TRACE(fmt::format("{} shape with {} role", mesh->type_name(), role));
+  void ExpectMeshInMessage(Role role, bool expect_hull,
+                           bool in_memory = false) {
+    std::unique_ptr<MeshType> mesh;
+    const std::string gltf_path = FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+
+    // The names of two supporting files. We'll poke the results by examining
+    // each of these two files when the Mesh is defined in memory.
+    const std::string kSupportingPngAsPath("fully_textured_pyramid_omr.png");
+    const std::string kSupportingPngAsMemory(
+        "fully_textured_pyramid_normal.png");
+
+    if (in_memory) {
+      const InMemoryMesh mesh_data = ReadGltfToMemory(fs::path(gltf_path));
+      // ReadGltfToMemory loads all supporting files as path file sources. We'll
+      // swap one to be MemoryFile so we can exercise both paths in dut.
+      string_map<FileSource> alt_files;
+      for (const auto& [name, file_source] : mesh_data.supporting_files) {
+        const auto* path = std::get_if<fs::path>(&file_source);
+        DRAKE_DEMAND(path != nullptr);
+        if (name == kSupportingPngAsMemory) {
+          alt_files[kSupportingPngAsMemory] = MemoryFile::Make(*path);
+        } else {
+          alt_files.insert({std::string(name), file_source});
+        }
+      }
+      mesh = make_unique<MeshType>(
+          InMemoryMesh{mesh_data.mesh_file, std::move(alt_files)});
+    } else {
+      mesh = make_unique<MeshType>(gltf_path);
+    }
+
+    SCOPED_TRACE(fmt::format("{} {} shape with {} role",
+                             in_memory ? "in-memory" : "on-disk",
+                             mesh->type_name(), role));
     this->ConfigureDiagram({.role = role});
 
     const FrameId f_id = this->scene_graph_->RegisterFrame(
@@ -381,7 +421,7 @@ class DrakeVisualizerTest : public ::testing::Test {
     const RigidTransformd X_PC(Vector3d(-1, 2, -3));
     const GeometryId g_id = this->scene_graph_->RegisterGeometry(
         this->pose_source_id_, f_id,
-        make_unique<GeometryInstance>(X_PC, std::move(mesh), "test"));
+        make_unique<GeometryInstance>(X_PC, mesh->Clone(), "test"));
 
     // We assign a diffuse color, because we expect it to come through when
     // `expect_hull` is true.
@@ -450,8 +490,64 @@ class DrakeVisualizerTest : public ::testing::Test {
       EXPECT_TRUE(CompareMatrices(X_PC.GetAsMatrix34(),
                                   X_PG_test.GetAsMatrix34(), 1e-7));
     } else {
-      EXPECT_THAT(geo_message.string_data,
-                  ::testing::HasSubstr("fully_textured_pyramid.gltf"));
+      if (in_memory) {
+        EXPECT_FALSE(geo_message.string_data.empty());
+        nlohmann::json json_root =
+            nlohmann::json::parse(geo_message.string_data);
+        ASSERT_TRUE(json_root.contains("in_memory_mesh"));
+        const auto& json_mesh = json_root["in_memory_mesh"];
+        ASSERT_TRUE(json_mesh.contains("mesh_file"));
+        ASSERT_TRUE(json_mesh["mesh_file"].contains("contents"));
+        ASSERT_TRUE(json_mesh["mesh_file"].contains("extension"));
+        ASSERT_TRUE(json_mesh["mesh_file"].contains("filename_hint"));
+        // Contents is a valid base64-encoded glTF file.
+        auto gltf_base64 =
+            json_mesh["mesh_file"]["contents"].get<std::string_view>();
+        const std::vector<uint8_t> decoded_gltf =
+            common_robotics_utilities::base64_helpers::Decode(
+                std::string{gltf_base64});
+        std::string gltf_content(
+            reinterpret_cast<const char*>(decoded_gltf.data()),
+            decoded_gltf.size());
+        EXPECT_FALSE(gltf_content.empty());
+        EXPECT_NO_THROW(unused(nlohmann::json::parse(gltf_content)));
+        EXPECT_EQ(json_mesh["mesh_file"]["extension"].get<std::string_view>(),
+                  mesh->source().extension());
+        EXPECT_EQ(
+            json_mesh["mesh_file"]["filename_hint"].get<std::string_view>(),
+            mesh->source().in_memory().mesh_file.filename_hint());
+
+        ASSERT_TRUE(json_mesh.contains("supporting_files"));
+        const nlohmann::json& files = json_mesh["supporting_files"];
+
+        // We won't explore *all* of the supporting files. We'll poke one that
+        // should be encoded as a path, and the other as a MemoryFile.
+        ASSERT_TRUE(files.contains(kSupportingPngAsPath));
+        ASSERT_TRUE(files[kSupportingPngAsPath].contains("path"));
+        EXPECT_EQ(
+            files[kSupportingPngAsPath]["path"].get<std::string_view>(),
+            std::get<fs::path>(mesh->source().in_memory().supporting_files.at(
+                kSupportingPngAsPath)));
+
+        ASSERT_TRUE(files.contains(kSupportingPngAsMemory));
+        const nlohmann::json& mem_file = files[kSupportingPngAsMemory];
+        EXPECT_EQ(mem_file["extension"].get<std::string_view>(), ".png");
+        EXPECT_TRUE(mem_file["filename_hint"].get<std::string_view>().ends_with(
+            kSupportingPngAsMemory));
+        const auto emissive_64 = mem_file["contents"].get<std::string_view>();
+        // We'll confirm that the contents indicate an encoded png.
+        const std::vector<uint8_t> decoded_png =
+            common_robotics_utilities::base64_helpers::Decode(
+                std::string{emissive_64});
+        // See http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html.
+        uint8_t kPngHeader[] = {137, 80, 78, 71, 13, 10, 26, 10};
+        for (int i = 0; i < 8; ++i) {
+          ASSERT_EQ(decoded_png[i], kPngHeader[i]);
+        }
+      } else {
+        EXPECT_THAT(geo_message.string_data,
+                    ::testing::HasSubstr("fully_textured_pyramid.gltf"));
+      }
     }
     /* We don't care about the draw message. */
   }
@@ -1191,6 +1287,12 @@ TYPED_TEST(DrakeVisualizerTest, ConvexIsHullAlways) {
                                              /* expect_hull = */ true);
   this->template ExpectMeshInMessage<Convex>(Role::kIllustration,
                                              /* expect_hull = */ true);
+  this->template ExpectMeshInMessage<Convex>(Role::kProximity,
+                                             /* expect_hull = */ true,
+                                             /* in_memory = */ true);
+  this->template ExpectMeshInMessage<Convex>(Role::kIllustration,
+                                             /* expect_hull = */ true,
+                                             /* in_memory = */ true);
 }
 
 /* This confirms that DrakeVisualizer dispatches a faceted convex hull for
@@ -1200,6 +1302,18 @@ TYPED_TEST(DrakeVisualizerTest, MeshIsHullForProximity) {
                                            /* expect_hull = */ true);
   this->template ExpectMeshInMessage<Mesh>(Role::kIllustration,
                                            /* expect_hull = */ false);
+}
+
+/* When a Mesh contains an in-memory representations, confirm that it encodes
+ as the expected json. */
+TYPED_TEST(DrakeVisualizerTest, InMemoryMesh) {
+  this->template ExpectMeshInMessage<Mesh>(Role::kProximity,
+                                           /* expect_hull = */ true,
+                                           /* in_memory = */ true);
+
+  this->template ExpectMeshInMessage<Mesh>(Role::kIllustration,
+                                           /* expect_hull = */ false,
+                                           /* in_memory = */ true);
 }
 
 /* Tests the AddToBuilder method that connects directly to a provided SceneGraph
