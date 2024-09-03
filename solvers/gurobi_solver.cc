@@ -953,7 +953,7 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
   // manually specified `Threads` then the common solver option will be
   // overwritten.
   if (!error) {
-    const int num_threads = static_cast<int>(merged_options.get_max_threads());
+    const int num_threads = merged_options.get_max_threads();
     if (num_threads > 0) {
       SetOptionOrThrow(model_env, "Threads", num_threads);
     }
