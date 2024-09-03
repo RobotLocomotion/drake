@@ -38,7 +38,7 @@ enum class CommonSolverOption {
    */
   kStandaloneReproductionFileName,
   /** Many solvers are multi-threaded. The user can request the maximum number
-   * of threads used by the solver with this option.
+   * of threads used by the solver with this `int` option.
    *
    * @pre The number of threads must be greater than 0.
    * @note Setting this value higher than the actual hardware concurrency may
