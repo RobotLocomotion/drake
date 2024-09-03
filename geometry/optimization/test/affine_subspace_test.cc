@@ -19,6 +19,15 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+using solvers::Binding;
+using solvers::Constraint;
+using solvers::MathematicalProgram;
+using solvers::Solve;
+using solvers::VectorXDecisionVariable;
+using symbolic::Variable;
+
 void CheckOrthogonalComplementBasis(const AffineSubspace& as) {
   Eigen::MatrixXd perpendicular_basis = as.OrthogonalComplementBasis();
   EXPECT_EQ(perpendicular_basis.cols(),
@@ -449,6 +458,70 @@ GTEST_TEST(AffineSubspaceTest, PointInSetConstraints) {
   EXPECT_TRUE(as.PointInSet(x_val, kTol));
   EXPECT_TRUE(
       CompareMatrices(x_val, as.basis() * new_vars_val + translation, kTol));
+}
+
+GTEST_TEST(AffineSubspaceTest, PointInNonnegativeScalingConstraints) {
+  Eigen::Matrix<double, 3, 2> basis;
+  // clang-format off
+  basis << 1, 0,
+           0, 1,
+           0, 0;
+  // clang-format on
+  Eigen::VectorXd translation(3);
+  translation << 0, 0, 1;
+  const AffineSubspace as(basis, translation);
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto t = prog.NewContinuousVariables(1, "t")[0];
+
+  std::vector<Binding<Constraint>> constraints =
+      as.AddPointInNonnegativeScalingConstraints(&prog, x, t);
+
+  EXPECT_EQ(constraints.size(), 2);
+
+  // Because the nonnegative scaling constraints rely on an additional (hidden)
+  // variable y, to check the constraint, we solve an optimization problem,
+  // fixing the values of x and t. Success implies a feasible value was found
+  // for the unconstrained variable y.
+
+  Vector3d x_test_value = Vector3d::Zero();
+  double t_test_value = 0;
+  auto x_constraint = prog.AddLinearEqualityConstraint(
+      Eigen::MatrixXd::Identity(3, 3), x_test_value, x);
+  auto t_constraint = prog.AddLinearEqualityConstraint(
+      Eigen::MatrixXd::Identity(1, 1), Vector1d(t_test_value),
+      Vector1<Variable>(t));
+
+  std::vector<std::pair<Vector3d, double>> valid_x_t;
+  valid_x_t.emplace_back(Vector3d(-43.0, 43.0, 0.0), 0.0);
+  valid_x_t.emplace_back(Vector3d(-43.0, 43.0, 0.5), 0.5);
+  valid_x_t.emplace_back(Vector3d(-43.0, 43.0, 3.0), 3.0);
+
+  std::vector<std::pair<Vector3d, double>> invalid_x_t;
+  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, -1.0), 0.0);
+  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, -1.0), 1.0);
+  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, 0.0), -1.0);
+  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, 5.0), 0.0);
+  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, 1.0), 0.5);
+
+  for (const auto& [x_val, t_val] : valid_x_t) {
+    x_constraint.evaluator()->UpdateCoefficients(
+        Eigen::MatrixXd::Identity(3, 3), x_val);
+    t_constraint.evaluator()->UpdateCoefficients(
+        Eigen::MatrixXd::Identity(1, 1), Vector1d(t_val));
+    auto result = Solve(prog);
+    EXPECT_TRUE(result.is_success());
+  }
+
+  for (const auto& [x_val, t_val] : invalid_x_t) {
+    x_constraint.evaluator()->UpdateCoefficients(
+        Eigen::MatrixXd::Identity(3, 3), x_val);
+    t_constraint.evaluator()->UpdateCoefficients(
+        Eigen::MatrixXd::Identity(1, 1), Vector1d(t_val));
+    auto result = Solve(prog);
+    EXPECT_FALSE(result.is_success());
+  }
 }
 
 // Check that the ConvexSet is contained in an AffineSubspace
