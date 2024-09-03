@@ -19,31 +19,30 @@ class BvhVisitor {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BvhVisitor);
 
-  static void CalcSquaredDistance(
+  static SquaredDistanceToTriangle CalcSquaredDistance(
       const Vector3d& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
       const Bvh<Obb, TriangleSurfaceMesh<double>>::NodeType& node_M,
-      int* triangle_index, SquaredDistanceToTriangle* squared_distance) {
-    BvhVisitor visitor{p_MQ, mesh_M};
+      const FeatureNormalSet& normal_set_M) {
+    BvhVisitor visitor{p_MQ, mesh_M, normal_set_M};
     visitor.Visit(node_M);
-    *triangle_index = visitor.closest_triangle_index_;
-    *squared_distance = visitor.closest_info_;
-    return;
+    return visitor.closest_info_;
   }
 
  private:
-  BvhVisitor(const Vector3d& p_MQ, const TriangleSurfaceMesh<double>& mesh_M)
-      : p_MQ_{p_MQ}, mesh_M_{mesh_M} {}
+  BvhVisitor(const Vector3d& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
+             const FeatureNormalSet& normal_set_M)
+      : p_MQ_{p_MQ}, mesh_M_{mesh_M}, normal_set_M_{normal_set_M} {}
 
   void Visit(const Bvh<Obb, TriangleSurfaceMesh<double>>::NodeType& node_M) {
     if (node_M.is_leaf()) {
       for (int i = 0; i < node_M.num_element_indices(); ++i) {
         const int triangle_index = node_M.element_index(i);
         const SquaredDistanceToTriangle squared_distance =
-            CalcSquaredDistanceToTriangle(p_MQ_, triangle_index, mesh_M_);
+            CalcSquaredDistanceToTriangle(p_MQ_, triangle_index, mesh_M_,
+                                          normal_set_M_);
         if (squared_distance.squared_distance <
             closest_info_.squared_distance) {
           closest_info_ = squared_distance;
-          closest_triangle_index_ = triangle_index;
         }
       }
       return;
@@ -79,8 +78,8 @@ class BvhVisitor {
  private:
   const Vector3<double>& p_MQ_;
   const TriangleSurfaceMesh<double>& mesh_M_;
+  const FeatureNormalSet& normal_set_M_;
 
-  int closest_triangle_index_{};
   SquaredDistanceToTriangle closest_info_{
       .squared_distance = std::numeric_limits<double>::infinity()};
 };
@@ -128,7 +127,8 @@ FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M)
 
 SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
     const Vector3<double>& p_MQ, int triangle_index,
-    const TriangleSurfaceMesh<double>& mesh_M) {
+    const TriangleSurfaceMesh<double>& mesh_M,
+    const FeatureNormalSet& normal_set_M) {
   // Barycentric coordinates of the projection of Q on the plane of the
   // triangle.
   Vector3d b_Q = mesh_M.CalcBarycentric(p_MQ, triangle_index);
@@ -148,7 +148,7 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
     const Vector3d p_MN =
         mesh_M.CalcCartesianFromBarycentric(triangle_index, b_Q);
     return {(p_MQ - p_MN).squaredNorm(), p_MN,
-            SquaredDistanceToTriangle::Projection::kInside, 0};
+            mesh_M.face_normal(triangle_index)};
   }
 
   const SurfaceTriangle& triangle = mesh_M.triangles()[triangle_index];
@@ -168,25 +168,22 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
     const double t = p_AB_M.dot(p_MQ - p_MA) / p_AB_M.squaredNorm();
     // N is the nearest point in the line segment.
     Vector3d p_MN;
-    SquaredDistanceToTriangle::Projection location;
-    int index;
+    Vector3d normal_M;
     if (t <= 0) {
       p_MN = p_MA;
-      location = SquaredDistanceToTriangle::Projection::kOutsideNearVertex;
-      index = i;
+      normal_M = normal_set_M.vertex_normal(triangle.vertex(i));
     } else if (t >= 1) {
       p_MN = p_MB;
-      location = SquaredDistanceToTriangle::Projection::kOutsideNearVertex;
-      index = (i + 1) % 3;
+      normal_M = normal_set_M.vertex_normal(triangle.vertex((i + 1) % 3));
     } else {
       p_MN = (1.0 - t) * p_MA + t * p_MB;
-      location = SquaredDistanceToTriangle::Projection::kOutsideNearEdge;
-      index = i;
+      normal_M = normal_set_M.edge_normal(
+          {triangle.vertex(i), triangle.vertex((i + 1) % 3)});
     }
 
     const double d = (p_MQ - p_MN).squaredNorm();
     if (d < result.squared_distance) {
-      result = SquaredDistanceToTriangle({d, p_MN, location, index});
+      result = SquaredDistanceToTriangle({d, p_MN, normal_M});
     }
   }
   return result;
@@ -195,37 +192,18 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
 SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
-    const FeatureNormalSet& mesh_normal_M) {
-  int tri_index;
-  SquaredDistanceToTriangle closest;
-  BvhVisitor::CalcSquaredDistance(p_MQ, mesh_M, bvh_M.root_node(), &tri_index,
-                                  &closest);
-
-  const SurfaceTriangle& tri = mesh_M.triangles().at(tri_index);
-  Vector3d normal_M;
-  {
-    const int v = closest.v;
-    switch (closest.location) {
-      case SquaredDistanceToTriangle::Projection::kInside:
-        normal_M = mesh_M.face_normal(tri_index);
-        break;
-      case SquaredDistanceToTriangle::Projection::kOutsideNearEdge:
-        normal_M =
-            mesh_normal_M.edge_normal({tri.vertex(v), tri.vertex((v + 1) % 3)});
-        break;
-      case SquaredDistanceToTriangle::Projection::kOutsideNearVertex:
-        normal_M = mesh_normal_M.vertex_normal(tri.vertex(v));
-    }
-  }
+    const FeatureNormalSet& feature_normals_M) {
+  SquaredDistanceToTriangle closest = BvhVisitor::CalcSquaredDistance(
+      p_MQ, mesh_M, bvh_M.root_node(), feature_normals_M);
   // N is the nearest point.
   const Vector3d p_MN = closest.closest_point;
   const Vector3d p_NQ_M = p_MQ - p_MN;
-  const double sign = p_NQ_M.dot(normal_M) >= 0 ? 1 : -1;
+  const double sign = p_NQ_M.dot(closest.feature_normal) >= 0 ? 1 : -1;
   const double unsigned_distance = std::sqrt(closest.squared_distance);
-  return {
-      .signed_distance = sign * unsigned_distance,
-      .nearest_point = p_MN,
-      .gradient = (p_NQ_M.isZero()) ? normal_M : sign * p_NQ_M.normalized()};
+  return {.signed_distance = sign * unsigned_distance,
+          .nearest_point = p_MN,
+          .gradient = (p_NQ_M.isZero()) ? closest.feature_normal
+                                        : sign * p_NQ_M.normalized()};
 }
 
 }  // namespace internal

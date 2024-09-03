@@ -82,19 +82,31 @@ TEST_F(FeatureNormalSetTest, VertexNormalIsAngleWeightedAverage) {
 }
 
 class CalcSquaredDistanceToTriangleTest : public ::testing::Test {
+ public:
+  CalcSquaredDistanceToTriangleTest()
+      :  //
+         //              Mz
+         //              ┆
+         //           v3 ● 0.1
+         //              ┆
+         //              ┆
+         //           v1 ●┄┄┄┄┄┄┄0.1┄┄┄┄ My
+         //             ╱
+         //            ╱
+         //        v2 ●┄┄┄┄┄┄┄● v0
+         //         ╱
+         //        Mx
+         //
+        mesh_M_(
+            std::vector<SurfaceTriangle>{
+                {0, 2, 1}, {0, 1, 3}, {0, 3, 2}, {1, 2, 3}},
+            {Vector3d(0.1, 0.1, 0), Vector3d::Zero(), Vector3d(0.1, 0, 0),
+             Vector3d(0, 0, 0.1)}),
+        normal_set_M_{mesh_M_} {}
+
  protected:
-  //                   My
-  //                   ┆
-  //                   0.1           v0
-  //                   ┆            🮠│
-  //                   ┆         🮠   │
-  //                   ┆      🮠      │
-  //                   ┆   🮠         │
-  //                  v1 ┄┄┄┄┄┄┄┄┄┄┄┄0.1┄┄┄┄┄┄┄┄ Mx
-  //                                 v2
-  const TriangleSurfaceMesh<double> mesh_M_{
-      {SurfaceTriangle{0, 1, 2}},
-      {Vector3d(0.1, 0.1, 0), Vector3d::Zero(), Vector3d(0.1, 0, 0)}};
+  const TriangleSurfaceMesh<double> mesh_M_;
+  const FeatureNormalSet normal_set_M_;
   const double kEps_{std::numeric_limits<double>::epsilon()};
 };
 
@@ -103,12 +115,13 @@ TEST_F(CalcSquaredDistanceToTriangleTest, Inside) {
   //
   //                   My
   //                   ┆
-  //                   0.1            ●
+  //                   0.1            v0
   //                   ┆            🮠
   //                   ┆         🮠   │
   //                   ┆      🮠
   //                   ┆   🮠 Q'      │
-  //                   0 ┄ ┄ ┄ ┄ ┄ ┄ 0.1┄┄┄┄┄┄┄┄ Mx
+  //                  v1 ┄ ┄ ┄ ┄ ┄ ┄ 0.1┄┄┄┄┄┄┄┄ Mx
+  //                                 v2
   //
   // Q is 15 meters above the triangle.
   const Vector3d p_MQ(0.04, 0.02, 15);
@@ -116,11 +129,10 @@ TEST_F(CalcSquaredDistanceToTriangleTest, Inside) {
   const Vector3d kClosest(0.04, 0.02, 0);
 
   const SquaredDistanceToTriangle dut =
-      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_);
+      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_, normal_set_M_);
   EXPECT_NEAR(dut.squared_distance, (p_MQ - kClosest).squaredNorm(), kEps_);
   EXPECT_TRUE(CompareMatrices(dut.closest_point, kClosest, kEps_));
-  EXPECT_EQ(dut.location, SquaredDistanceToTriangle::Projection::kInside);
-  EXPECT_EQ(dut.v, 0);
+  EXPECT_TRUE(CompareMatrices(dut.feature_normal, -Vector3d::UnitZ(), kEps_));
 }
 
 TEST_F(CalcSquaredDistanceToTriangleTest, OutsideNearEdge) {
@@ -147,13 +159,11 @@ TEST_F(CalcSquaredDistanceToTriangleTest, OutsideNearEdge) {
   const Vector3d kClosest(0.04, 0, 0);
 
   const SquaredDistanceToTriangle dut =
-      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_);
+      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_, normal_set_M_);
   EXPECT_NEAR(dut.squared_distance, (p_MQ - kClosest).squaredNorm(), kEps_);
   EXPECT_TRUE(CompareMatrices(dut.closest_point, kClosest, kEps_));
-  EXPECT_EQ(dut.location,
-            SquaredDistanceToTriangle::Projection::kOutsideNearEdge);
-  // dut.v = 1 represents the edge v1v2.
-  EXPECT_EQ(dut.v, 1);
+  EXPECT_TRUE(CompareMatrices(dut.feature_normal,
+                              normal_set_M_.edge_normal({1, 2}), kEps_));
 }
 
 TEST_F(CalcSquaredDistanceToTriangleTest, OutsideNearVertex) {
@@ -177,15 +187,13 @@ TEST_F(CalcSquaredDistanceToTriangleTest, OutsideNearVertex) {
   // Q is 5 meters above the triangle.
   const Vector3d p_MQ(-0.08, -0.02, 5);
   const SquaredDistanceToTriangle dut =
-      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_);
+      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_, normal_set_M_);
 
   EXPECT_NEAR(dut.squared_distance, (p_MQ - mesh_M_.vertex(1)).squaredNorm(),
               kEps_);
   EXPECT_TRUE(CompareMatrices(dut.closest_point, mesh_M_.vertex(1), kEps_));
-  EXPECT_EQ(dut.location,
-            SquaredDistanceToTriangle::Projection::kOutsideNearVertex);
-  // dut.v = 1 represents the vertex v1.
-  EXPECT_EQ(dut.v, 1);
+  EXPECT_TRUE(CompareMatrices(dut.feature_normal,
+                              normal_set_M_.vertex_normal(1), kEps_));
 }
 
 // Test a special case that the query point Q is in an edge.
@@ -203,15 +211,13 @@ TEST_F(CalcSquaredDistanceToTriangleTest, SpecialCasePointInEdge) {
   // Q is in the edge v1v2.
   const Vector3d p_MQ(0.04, 0, 0);
   const SquaredDistanceToTriangle dut =
-      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_);
+      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_, normal_set_M_);
 
   EXPECT_NEAR(dut.squared_distance, 0, kEps_);
   // Q is its own closest point.
   EXPECT_TRUE(CompareMatrices(dut.closest_point, p_MQ, kEps_));
-  EXPECT_EQ(dut.location,
-            SquaredDistanceToTriangle::Projection::kOutsideNearEdge);
-  // dut.v = 1 represents the edge v1v2.
-  EXPECT_EQ(dut.v, 1);
+  EXPECT_TRUE(CompareMatrices(dut.feature_normal,
+                              normal_set_M_.edge_normal({1, 2}), kEps_));
 }
 
 // Test a special case that the query point Q is at a vertex.
@@ -229,15 +235,13 @@ TEST_F(CalcSquaredDistanceToTriangleTest, SpecialCasePointAtVertex) {
   // Q is at v2.
   const Vector3d p_MQ = mesh_M_.vertex(2);
   const SquaredDistanceToTriangle dut =
-      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_);
+      CalcSquaredDistanceToTriangle(p_MQ, 0, mesh_M_, normal_set_M_);
 
   EXPECT_NEAR(dut.squared_distance, 0, kEps_);
   // Q is its own closest point.
   EXPECT_TRUE(CompareMatrices(dut.closest_point, p_MQ, kEps_));
-  EXPECT_EQ(dut.location,
-            SquaredDistanceToTriangle::Projection::kOutsideNearVertex);
-  // dut.v = 2 represents the vertex v2.
-  EXPECT_EQ(dut.v, 2);
+  EXPECT_TRUE(CompareMatrices(dut.feature_normal,
+                              normal_set_M_.vertex_normal(2), kEps_));
 }
 
 // The document of CalcSignedDistanceToSurfaceMesh() shows a table of many
