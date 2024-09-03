@@ -949,29 +949,24 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
     SetOptionOrThrow(model_env, "LogToConsole",
                      static_cast<int>(merged_options.get_print_to_console()));
   }
-  // Handle maximum threads via the common solver options. If the user has
-  // manually specified `Threads` then the common solver option will be
-  // overwritten.
-  if (!error) {
-    const int num_threads = merged_options.get_max_threads();
-    if (num_threads > 0) {
-      SetOptionOrThrow(model_env, "Threads", num_threads);
-    }
-  }
-  // Default the option for number of threads based on an environment variable
-  // (but only if the user hasn't set the option directly already).
+  // Here's our priority order for selecting the number of threads:
+  // - Gurobi-specific solver option "Threads".
+  // - GUROBI_NUM_THREADS environment variable.
+  // - Common solver option.
   if (!merged_options.GetOptionsInt(id()).contains("Threads")) {
+    int num_threads = merged_options.get_max_threads();
     if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS")) {
-      const std::optional<int> num_threads = ParseInt(num_threads_str);
-      if (num_threads.has_value()) {
-        SetOptionOrThrow(model_env, "Threads", *num_threads);
-        log()->debug("Using GUROBI_NUM_THREADS={}", *num_threads);
+      const std::optional<int> maybe_num_threads = ParseInt(num_threads_str);
+      if (maybe_num_threads.has_value()) {
+	num_threads = *maybe_num_threads;
+        log()->debug("Using GUROBI_NUM_THREADS={}", num_threads);
       } else {
         static const logging::Warn log_once(
             "Ignoring unparseable value '{}' for GUROBI_NUM_THREADS",
             num_threads_str);
       }
     }
+    SetOptionOrThrow(model_env, "Threads", num_threads);
   }
 
   for (const auto& it : merged_options.GetOptionsDouble(id())) {
