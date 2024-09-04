@@ -516,9 +516,8 @@ GTEST_TEST(GurobiTest, LogFile) {
 }
 
 GTEST_TEST(GurobiTest, MaxThreads) {
-  const int drake_max = 2;
-  const SetEnv guard1("DRAKE_NUM_THREADS", std::to_string(drake_max));
-  const SetEnv guard2("GUROBI_NUM_THREADS", std::nullopt);
+  const int drake_max = 2;  // Matches our BUILD.bazel test declaration.
+  const SetEnv guard("GUROBI_NUM_THREADS", std::nullopt);
 
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -538,7 +537,9 @@ GTEST_TEST(GurobiTest, MaxThreads) {
       return buffer.str();
     };
 
-    // When no other options have been set, the DRAKE_NUM_THREADS governs.
+    // When no other options have been set, the DRAKE_NUM_THREADS governs.  For
+    // this unit test, that variable is set by the `num_threads` option in our
+    // BUILD file.
     auto result = solver.Solve(prog, {}, solver_options);
     EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
                                 "using up to {} threads", drake_max)));
@@ -552,7 +553,7 @@ GTEST_TEST(GurobiTest, MaxThreads) {
 
     // The GUROBI_NUM_THREADS takes precedence.
     const int gurobi_env_max = common_max + 1;
-    const SetEnv guard3("GUROBI_NUM_THREADS", std::to_string(gurobi_env_max));
+    const SetEnv guard2("GUROBI_NUM_THREADS", std::to_string(gurobi_env_max));
     result = solver.Solve(prog, {}, solver_options);
     EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
                                 "using up to {} threads", gurobi_env_max)));

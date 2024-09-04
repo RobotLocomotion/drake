@@ -1384,6 +1384,7 @@ drake_cc_optional_googletest(
 
 drake_cc_googletest(
     name = "gurobi_solver_test",
+    num_threads = 2,
     tags = gurobi_test_tags(),
     use_default_main = False,
     deps = [
