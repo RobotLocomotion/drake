@@ -68,8 +68,8 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
 
   // We will either throw or return a mesh here (courtesy of ReadObj).
   return ReadObjToTriangleSurfaceMesh(
-      InMemoryMesh(MemoryFile(std::move(content).str(), ".obj",
-                              std::string(description))),
+      InMemoryMesh{MemoryFile(std::move(content).str(), ".obj",
+                              std::string(description))},
       scale, on_warning);
 }
 

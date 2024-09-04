@@ -21,12 +21,12 @@ MeshSource::MeshSource(std::filesystem::path path)
 
 MeshSource::MeshSource(InMemoryMesh&& mesh)
     : source_(std::move(mesh)),
-      extension_(in_memory().mesh_file().extension()) {}
+      extension_(in_memory().mesh_file.extension()) {}
 
 MeshSource::~MeshSource() = default;
 
 std::string MeshSource::description() const {
-  return is_path() ? path().string() : in_memory().mesh_file().filename_hint();
+  return is_path() ? path().string() : in_memory().mesh_file.filename_hint();
 }
 
 }  // namespace geometry
