@@ -288,13 +288,41 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init<MemoryFile>(), py::arg("mesh_file"),
-            cls_doc.ctor.doc_1args)
+        .def(py::init<MemoryFile, string_map<FileSource>>(),
+            py::arg("mesh_file"),
+            py::arg("supporting_files") = string_map<FileSource>(),
+            cls_doc.ctor.doc_2args)
         .def("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
+        .def("AddSupportingFile", &Class::AddSupportingFile, py::arg("name"),
+            py::arg("file_source"), cls_doc.AddSupportingFile.doc)
+        .def(
+            "AddSupportingFile",
+            [](Class& self, std::string_view name, MemoryFile file) {
+              self.AddSupportingFile(name, file);
+            },
+            py::arg("name"), py::arg("memory_file"),
+            cls_doc.AddSupportingFile.doc)
+        .def(
+            "AddSupportingFile",
+            [](Class& self, std::string_view name, std::string path) {
+              self.AddSupportingFile(name, path);
+            },
+            py::arg("name"), py::arg("filepath"), cls_doc.AddSupportingFile.doc)
+        .def("SupportingFileNames", &Class::SupportingFileNames,
+            py_rvp::reference_internal, cls_doc.SupportingFileNames.doc)
+        .def("num_supporting_files", &Class::num_supporting_files,
+            cls_doc.num_supporting_files.doc)
+        .def("file", &Class::file, py::arg("name"), py_rvp::reference,
+            cls_doc.file.doc)
         .def("empty", &Class::empty, cls_doc.empty.doc)
         .def("__repr__", [](const Class& self) {
-          return py::str("InMemoryMesh(mesh_file={})")
-              .format(py::repr(py::cast(self.mesh_file())));
+          py::str support;
+          if (self.num_supporting_files() > 0) {
+            support = py::str(", supporting_files={}")
+                          .format(py::repr(py::cast(self.supporting_files())));
+          }
+          return py::str("InMemoryMesh(mesh_file={}{})")
+              .format(py::repr(py::cast(self.mesh_file())), support);
         });
     DefCopyAndDeepCopy(&cls);
   }

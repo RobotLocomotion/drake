@@ -277,6 +277,7 @@ drake_cc_library(
     srcs = ["in_memory_mesh.cc"],
     hdrs = ["in_memory_mesh.h"],
     deps = [
+        "//common:file_source",
         "//common:memory_file",
         "//common:string_container",
     ],

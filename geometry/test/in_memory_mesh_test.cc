@@ -16,6 +16,44 @@ GTEST_TEST(InMemoryMeshTest, Constructor) {
   const InMemoryMesh just_mesh(MemoryFile("body", ".ext", "hint"));
   ASSERT_FALSE(just_mesh.empty());
   EXPECT_EQ(just_mesh.mesh_file().contents(), "body");
+  EXPECT_EQ(just_mesh.num_supporting_files(), 0);
+
+  const InMemoryMesh full_mesh(MemoryFile("body", ".ext", "hint"),
+                               {{"a", MemoryFile("aa", ".a", "aa")},
+                                {"b", "b/path"}});
+  EXPECT_FALSE(full_mesh.empty());
+  EXPECT_EQ(full_mesh.num_supporting_files(), 2);
+  EXPECT_EQ(full_mesh.file("unknown"), nullptr);
+  ASSERT_NE(full_mesh.file("a"), nullptr);
+  ASSERT_TRUE(full_mesh.file("a")->is_in_memory());
+  EXPECT_EQ(full_mesh.file("a")->memory_file().contents(), "aa");
+  ASSERT_NE(full_mesh.file("b"), nullptr);
+  ASSERT_TRUE(full_mesh.file("b")->is_path());
+  EXPECT_EQ(full_mesh.file("b")->path(), "b/path");
+}
+
+GTEST_TEST(InMemoryMeshTest, SupportingFiles) {
+  InMemoryMesh mesh(MemoryFile("body", ".ext", "hint"));
+  EXPECT_EQ(mesh.num_supporting_files(), 0);
+
+  mesh.AddSupportingFile("first", MemoryFile("1", ".1", "1"));
+  EXPECT_EQ(mesh.num_supporting_files(), 1);
+  ASSERT_NE(mesh.file("first"), nullptr);
+  EXPECT_EQ(mesh.file("first")->memory_file().contents(), "1");
+
+  mesh.AddSupportingFile("alpha", MemoryFile("A", ".A", "A"));
+  EXPECT_EQ(mesh.num_supporting_files(), 2);
+  ASSERT_NE(mesh.file("alpha"), nullptr);
+  EXPECT_EQ(mesh.file("alpha")->memory_file().contents(), "A");
+
+  std::vector<std::string_view> names = mesh.SupportingFileNames();
+  for (const auto name : names) {
+    EXPECT_NE(mesh.file(name), nullptr);
+  }
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      mesh.AddSupportingFile("first", MemoryFile("2", ".2", "2")),
+      ".*that name has already been used for file '1'.");
 }
 
 GTEST_TEST(MeshSourceTest, PathConstructor) {

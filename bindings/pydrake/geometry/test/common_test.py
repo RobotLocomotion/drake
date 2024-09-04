@@ -7,7 +7,10 @@ import unittest
 
 import numpy as np
 
-from pydrake.common import MemoryFile
+from pydrake.common import (
+    FileSource,
+    MemoryFile,
+)
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
@@ -230,6 +233,8 @@ class TestGeometryCore(unittest.TestCase):
         only_mesh = mut.InMemoryMesh(mesh_file=file)
         self.assertEqual(only_mesh.mesh_file().contents(),
                          file.contents())
+        self.assertEqual(only_mesh.num_supporting_files(), 0)
+        self.assertEqual(len(only_mesh.SupportingFileNames()), 0)
 
         representation = repr(only_mesh)
         # repr correctness is determined in two ways:
@@ -240,6 +245,46 @@ class TestGeometryCore(unittest.TestCase):
                                     "MemoryFile": MemoryFile}),
                               mut.InMemoryMesh)
         self.assertRegex(representation, ".*mesh_file=MemoryFile.*stuff.*")
+        self.assertNotIn("supporting_files=", representation)
+
+        supporting_files = {
+            "file": FileSource(MemoryFile(contents="a", extension=".a",
+                                          filename_hint="a"))
+        }
+        full_mesh = mut.InMemoryMesh(mesh_file=file,
+                                     supporting_files=supporting_files)
+        self.assertEqual(full_mesh.mesh_file().contents(),
+                         file.contents())
+        self.assertIsNotNone(full_mesh.file("file"))
+        full_mesh.AddSupportingFile(
+            name="fileb", file_source=FileSource(MemoryFile("b", ".b", "bb")))
+        self.assertIsNotNone(full_mesh.file("fileb"))
+        self.assertEqual(full_mesh.num_supporting_files(), 2)
+        self.assertIsNone(full_mesh.file("c"))
+
+        representation = repr(full_mesh)
+        self.assertIsInstance(eval(representation,
+                                   {"InMemoryMesh": mut.InMemoryMesh,
+                                    "MemoryFile": MemoryFile,
+                                    "FileSource": FileSource}),
+                              mut.InMemoryMesh)
+        self.assertRegex(representation, ".*mesh_file=MemoryFile.*stuff.*")
+        self.assertRegex(representation, ".*supporting_files=.*\\.a")
+
+        copy.copy(full_mesh)
+        copy.deepcopy(full_mesh)
+
+        # Testing against the various spellings of AddSupportingFile.
+        mesh = mut.InMemoryMesh(mesh_file=file)
+        # Without keyword arguments, the right overload is found.
+        mesh.AddSupportingFile("a", 'a.txt')
+        mesh.AddSupportingFile("b", file)
+        mesh.AddSupportingFile("c", FileSource('b.txt'))
+        # The right keyword arguments go with the right parameter types.
+        mesh.AddSupportingFile(name="a2", filepath='a.txt')
+        mesh.AddSupportingFile(name="b2", memory_file=file)
+        mesh.AddSupportingFile(name="c2",
+                               file_source=FileSource('b.txt'))
 
     def test_mesh_source(self):
         source = mut.MeshSource(path="/a/path.obj")
