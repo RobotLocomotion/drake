@@ -12,7 +12,8 @@ namespace drake {
 namespace planning {
 namespace internal {
 
-struct IrisViaCollisionsAndEllipsoidInterfaceOptions : IrisInterfaceOptions {
+struct IrisViaCollisionsAndEllipsoidInterfaceOptions
+    : public IrisInterfaceOptions {
   /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
   between iterations is less that this threshold. This termination condition can
   be disabled by setting to a negative value.

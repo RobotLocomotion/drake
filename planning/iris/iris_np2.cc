@@ -3,21 +3,20 @@
 namespace drake {
 namespace planning {
 
-IrisNp2::IrisNp2(const CollisionChecker& checker)
-    : IrisViaCollisionsAndEllipsoidInterface<IrisNp2Options>(checker);
+IrisNp2::IrisNp2(const SceneGraphCollisionChecker& checker)
+    : IrisViaCollisionsAndEllipsoidInterface<IrisNp2Options>(checker){};
 
-IrisNp2::FindCollisionPoints(
-    const IrisViaCollisionsAndEllipsoidInterfaceOptions& options,
+Eigen::MatrixXd IrisNp2::FindCollisionPoints(
+    const IrisNp2Options& options,
     const geometry::optimization::HPolyhedron& set) {
-  unused(options);
-  unused(set);
+  unused(options, set);
   throw std::logic_error("unimplemented");
-  return Eigen::VectorXd::Zeros(checker_->plant().num_positions());
+  return Eigen::VectorXd::Zero(checker_->plant().num_positions());
 }
 
-IrisNp2::AddHyperplanesAtPoints(
-    const Eigen::Ref<const Eigen::VectorXd>& points,
-    const IrisViaCollisionsAndEllipsoidInterfaceOptions& options,
+void IrisNp2::AddHyperplanesAtPoints(
+    const Eigen::Ref<const Eigen::MatrixXd>& points,
+    const IrisNp2Options& options,
     geometry::optimization::HPolyhedron* set) const {
   unused(points, options, set);
   throw std::logic_error("unimplemented");
