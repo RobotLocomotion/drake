@@ -61,7 +61,7 @@ GTEST_TEST(VtkToVolumeMeshTest, FromMemory) {
   const fs::path test_file =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
   VolumeMesh<double> volume_mesh = internal::ReadVtkToVolumeMesh(
-      InMemoryMesh(MemoryFile::Make(test_file)), kScale);
+      InMemoryMesh{MemoryFile::Make(test_file)}, kScale);
 
   const VolumeMesh<double> expected_mesh{
       {{0, 1, 2, 3}},

@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/common/sha256.h"
 
@@ -61,6 +62,11 @@ class MemoryFile final {
   /** Returns the notional "filename" for this file`. */
   const std::string& filename_hint() const { return filename_hint_; }
 
+  /** Returns a string representation. Note: the file contents will be limited
+   to `contents_limit` number of characters. To include the full contents, pass
+   any number less than or equal to zero. */
+  std::string to_string(int contents_limit = 100) const;
+
  private:
   reset_after_move<std::string> contents_;
 
@@ -78,3 +84,5 @@ class MemoryFile final {
 };
 
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(, drake, MemoryFile, x, x.to_string())

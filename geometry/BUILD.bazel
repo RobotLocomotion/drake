@@ -278,7 +278,9 @@ drake_cc_library(
     srcs = ["in_memory_mesh.cc"],
     hdrs = ["in_memory_mesh.h"],
     deps = [
+        "//common:file_source",
         "//common:memory_file",
+        "//common:string_container",
     ],
 )
 
@@ -865,13 +867,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "in_memory_mesh_test",
-    deps = [
-        ":in_memory_mesh",
-    ],
-)
-
-drake_cc_googletest(
     name = "mesh_source_test",
     deps = [
         ":in_memory_mesh",
@@ -959,6 +954,13 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//geometry/proximity:make_sphere_mesh",
         "//geometry/test_utilities:dummy_render_engine",
+    ],
+)
+
+drake_cc_googletest(
+    name = "in_memory_mesh_test",
+    deps = [
+        ":in_memory_mesh",
     ],
 )
 

@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":dummy_value",
         ":essential",
         ":extract_double",
+        ":file_source",
         ":find_resource",
         ":find_runfiles",
         ":fmt",
@@ -180,6 +181,16 @@ drake_cc_library(
     hdrs = ["extract_double.h"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "file_source",
+    srcs = ["file_source.cc"],
+    hdrs = ["file_source.h"],
+    deps = [
+        ":memory_file",
+        ":overloaded",
     ],
 )
 
@@ -960,6 +971,13 @@ drake_cc_googletest(
         ":essential",
         ":extract_double",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "file_source_test",
+    deps = [
+        ":file_source",
     ],
 )
 
