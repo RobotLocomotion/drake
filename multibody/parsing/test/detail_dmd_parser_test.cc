@@ -65,7 +65,6 @@ class DmdParserTest : public test::DiagnosticPolicyTestBase {
  protected:
   ParsingOptions options_;
   PackageMap package_map_;
-  DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.01};
 };
 
@@ -198,6 +197,12 @@ directives:
     default_free_body_pose:
         base_offset:
             translation: {offset_str}
+- add_model:
+    name: pose_canonical_body_to_world_10
+    file: package://drake/multibody/parsing/test/process_model_directives_test/simple_model.sdf
+    default_free_body_pose:
+        "":
+            translation: {offset_str}
 )""",
                                           fmt::arg("offset_str", offset_str),
                                           fmt::arg("sphere_sdf", sphere_sdf)),
@@ -271,7 +276,10 @@ directives:
       {"pose_frame_to_frame_7::dummy", "WorldModelInstance::world",
        "pose_frame_to_frame_7::dummy"},
       {"pose_frame_to_world_9::dummy", "WorldModelInstance::world",
-       "pose_frame_to_world_9::dummy"}};
+       "pose_frame_to_world_9::dummy"},
+      {"pose_canonical_body_to_world_10::base", "WorldModelInstance::world",
+       "pose_canonical_body_to_world_10::base"},
+  };
   // clang-format on
   EXPECT_THAT(joints_actual, testing::ContainerEq(joints_expected));
 
@@ -326,6 +334,9 @@ directives:
       {"pose_frame_to_world_9::__model__",              p_PC * -1},
       {"pose_frame_to_world_9::base_offset",            p_PC * 0},
       {"pose_frame_to_world_9::dummy_offset",           p_PC * 1},
+      {"pose_canonical_body_to_world_10::base",         p_PC * 1},
+      {"pose_canonical_body_to_world_10::__model__",    p_PC * 1},
+      {"pose_canonical_body_to_world_10::frame",        p_PC * 2},
   };
   // clang-format on
   EXPECT_THAT(poses_actual, testing::ContainerEq(poses_expected));
@@ -362,6 +373,31 @@ directives:
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseModelDirectives(directives),
       ".*already has.*joint.*connecting.*dummy.*ball.*");
+}
+
+/* When a model contains multiple bodies, it is an error not to specify which
+body to posture. */
+TEST_F(DmdParserTest, DefaultFreeBodyPoseMultipleBodies) {
+  const std::string sphere_sdf =
+      "file://" + MakeSphereSdf(Vector3d::Zero()).string();
+  const ModelDirectives directives =
+      LoadYamlString<ModelDirectives>(fmt::format(
+                                          R"""(
+directives:
+- add_model:
+    name: two_bodies
+    file: {sphere_sdf}
+    default_free_body_pose:
+      "":
+        translation: [1, 2, 3]
+)""",
+                                          fmt::arg("sphere_sdf", sphere_sdf)),
+                                      {}, ModelDirectives());
+
+  ParseModelDirectives(directives);
+  EXPECT_THAT(TakeError(),
+              testing::MatchesRegex(
+                  ".*two_bodies.*default_free_body_pose.*2.*bodies.*"));
 }
 
 }  // namespace

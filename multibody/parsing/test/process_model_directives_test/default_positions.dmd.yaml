@@ -7,9 +7,15 @@ directives:
     name: simple_model
     file: package://process_model_directives_test/simple_model.sdf
     default_free_body_pose:
-      base:
+      base: &simple_model_transform
         translation: [1, 2, 3]
         rotation: !Rpy { deg: [5, 6, 7] }
+
+- add_model:
+    name: simple_model_again
+    file: package://process_model_directives_test/simple_model.sdf
+    default_free_body_pose:
+      "": *simple_model_transform
 
 - add_model:
     name: joint_parsing_test
