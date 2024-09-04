@@ -13,6 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/file_source.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/memory_file.h"
 #include "drake/common/nice_type_name.h"
