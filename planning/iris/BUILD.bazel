@@ -193,12 +193,4 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name="tmp",
-    deps=[
-        ":iris_via_collisions_and_ellipsoid_interface",
-        ":iris_np2"
-    ]
-)
-
 add_lint_tests()
