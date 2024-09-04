@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -94,6 +95,18 @@ GTEST_TEST(MemoryFileTest, MoveSemantics) {
   EXPECT_EQ(moved_from.sha256(), empty.sha256());
   EXPECT_EQ(moved_from.filename_hint(), empty.filename_hint());
   EXPECT_NE(moved_from.sha256(), original.sha256());
+}
+
+GTEST_TEST(MemoryFileTest, ToString) {
+  const MemoryFile file("0123456789", ".ext", "hint");
+
+  EXPECT_THAT(file.to_string(), testing::HasSubstr("\"0123456789\""));
+  EXPECT_THAT(file.to_string(10), testing::HasSubstr("\"0123456789\""));
+  EXPECT_THAT(file.to_string(0), testing::HasSubstr("\"0123456789\""));
+  EXPECT_THAT(file.to_string(-10), testing::HasSubstr("\"0123456789\""));
+  EXPECT_THAT(file.to_string(5), testing::HasSubstr("\"<01234...>\""));
+
+  EXPECT_THAT(fmt::to_string(file), testing::HasSubstr("\"0123456789\""));
 }
 
 }  // namespace
