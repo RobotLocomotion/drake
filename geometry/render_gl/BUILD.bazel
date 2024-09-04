@@ -76,6 +76,8 @@ drake_cc_library_linux_only(
         ":internal_texture_library",
         ":render_engine_gl_params",
         "//common:diagnostic_policy",
+        "//common:string_container",
+        "//geometry:internal_gltf_helpers",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
@@ -189,6 +191,7 @@ drake_cc_library_linux_only(
     deps = [
         ":internal_opengl_context",
         "//common:essential",
+        "//common:string_container",
     ],
     implementation_deps = [
         "//systems/sensors:image_io",
@@ -242,6 +245,7 @@ drake_cc_googletest_linux_only(
         "//common:temp_directory",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:internal_gltf_vtk",
         "//geometry/render:render_label",
         "//systems/sensors:image_io",
         "//systems/sensors/test_utilities:image_compare",
