@@ -1,38 +1,33 @@
 #include "drake/geometry/in_memory_mesh.h"
 
+#include <fmt/format.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace drake {
 namespace geometry {
 namespace {
 
-GTEST_TEST(InMemoryMeshTest, BasicApi) {
-  const InMemoryMesh empty;
-  EXPECT_TRUE(empty.empty());
+GTEST_TEST(InMemoryMeshTest, ToString) {
+  const MemoryFile file("a", ".a", "aa");
+  const std::string file_str = fmt::to_string(file);
+  InMemoryMesh mesh{file};
 
-  const InMemoryMesh just_mesh(MemoryFile("body", ".ext", "hint"));
-  ASSERT_FALSE(just_mesh.empty());
-  EXPECT_EQ(just_mesh.mesh_file().contents(), "body");
-}
+  EXPECT_EQ(mesh.to_string(),
+            fmt::format("InMemoryMesh(mesh_file={})", file_str));
 
-GTEST_TEST(InMemorymeshTest, CopySemantics) {
-  const InMemoryMesh source(MemoryFile("body", ".ext", "hint"));
-  ASSERT_FALSE(source.empty());
-  EXPECT_EQ(source.mesh_file().contents(), "body");
+  mesh.supporting_files.emplace("name", file);
+  EXPECT_EQ(mesh.to_string(),
+            fmt::format("InMemoryMesh(mesh_file={file}, "
+                        "supporting_files={{\"name\": {file}}})",
+                        fmt::arg("file", file_str)));
 
-  const InMemoryMesh copy_ctor(source);
-  ASSERT_FALSE(copy_ctor.empty());
-  EXPECT_EQ(copy_ctor.mesh_file().contents(), "body");
-  ASSERT_FALSE(source.empty());
-  EXPECT_EQ(source.mesh_file().contents(), "body");
-
-  InMemoryMesh copy_assign;
-  EXPECT_TRUE(copy_assign.empty());
-  copy_assign = source;
-  ASSERT_FALSE(copy_assign.empty());
-  EXPECT_EQ(copy_assign.mesh_file().contents(), "body");
-  ASSERT_FALSE(source.empty());
-  EXPECT_EQ(source.mesh_file().contents(), "body");
+  mesh.supporting_files.emplace("name2", file);
+  EXPECT_EQ(mesh.to_string(),
+            fmt::format("InMemoryMesh(mesh_file={file}, "
+                        "supporting_files={{\"name\": {file}, "
+                        "\"name2\": {file}}})",
+                        fmt::arg("file", file_str)));
 }
 
 }  // namespace

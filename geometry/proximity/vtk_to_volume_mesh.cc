@@ -32,7 +32,7 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
     reader->SetFileName(mesh_source.path().c_str());
   } else {
     DRAKE_DEMAND(mesh_source.is_in_memory());
-    const MemoryFile& file = mesh_source.in_memory().mesh_file();
+    const MemoryFile& file = mesh_source.in_memory().mesh_file;
     // Note: The contents will be copied by VTK.
     reader->SetInputString(file.contents().c_str(), file.contents().size());
     reader->SetReadFromInputString(true);

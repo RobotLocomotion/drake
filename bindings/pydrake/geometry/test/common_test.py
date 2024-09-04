@@ -228,12 +228,13 @@ class TestGeometryCore(unittest.TestCase):
 
     def test_in_memory_mesh(self):
         empty_mesh = mut.InMemoryMesh()
-        self.assertTrue(empty_mesh.empty())
+        self.assertEqual(len(empty_mesh.mesh_file.contents()), 0)
 
         file = MemoryFile(contents="stuff", extension=".ext",
                           filename_hint="some_hint")
         only_mesh = mut.InMemoryMesh(mesh_file=file)
-        self.assertEqual(only_mesh.mesh_file().contents(), file.contents())
+        self.assertEqual(only_mesh.mesh_file.contents(), file.contents())
+        self.assertEqual(len(only_mesh.supporting_files), 0)
 
         representation = repr(only_mesh)
         # repr correctness is determined in two ways:
@@ -248,21 +249,54 @@ class TestGeometryCore(unittest.TestCase):
         self.assertRegex(representation,
                          re.compile("mesh_file=MemoryFile.+stuff",
                                     re.DOTALL))
+        self.assertNotIn("supporting_files=", representation)
 
         copy.copy(only_mesh)
         copy.deepcopy(only_mesh)
-        mesh_copy = mut.InMemoryMesh(other=only_mesh)
-        self.assertEqual(mesh_copy.mesh_file().contents(), file.contents())
 
         assert_pickle(self, only_mesh, repr)
-        # Check that data pickled as InMemoryMesh in Drake v1.33.0 can be
+        # Check that data pickled as InMemoryMesh in Drake v1.34.0 can be
         # unpickled in newer versions. The data should produce a InMemoryMesh
         # identical to `only_mesh` above.
         legacy_data = b"\x80\x04\x95\xa2\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\x0cInMemoryMesh\x94\x93\x94)\x81\x94}\x94\x8c\tmesh_file\x94\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x05stuff\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\tsome_hint\x94ubsb."  # noqa
         obj = pickle.loads(legacy_data)
         self.assertIsInstance(obj, mut.InMemoryMesh)
-        self.assertEqual(obj.mesh_file().contents(),
-                         only_mesh.mesh_file().contents())
+        self.assertEqual(obj.mesh_file.contents(),
+                         only_mesh.mesh_file.contents())
+
+        supporting_files = {
+            "file": MemoryFile(contents="a", extension=".a", filename_hint="a")
+        }
+        full_mesh = mut.InMemoryMesh(mesh_file=file,
+                                     supporting_files=supporting_files)
+        self.assertEqual(full_mesh.mesh_file.contents(),
+                         file.contents())
+        self.assertIn("file", full_mesh.supporting_files)
+        self.assertNotIn("c", full_mesh.supporting_files)
+
+        representation = repr(full_mesh)
+        self.assertIsInstance(eval(representation,
+                                   {"InMemoryMesh": mut.InMemoryMesh,
+                                    "MemoryFile": MemoryFile}),
+                              mut.InMemoryMesh)
+        self.assertRegex(representation,
+                         re.compile("mesh_file=MemoryFile.*stuff", re.DOTALL))
+        self.assertRegex(representation,
+                         re.compile("supporting_files=.*\\.a", re.DOTALL))
+
+        copy.copy(full_mesh)
+        copy.deepcopy(full_mesh)
+
+        assert_pickle(self, full_mesh, repr)
+        # Check that data pickled as InMemoryMesh in Drake v1.34.0 can be
+        # unpickled in newer versions. The data should produce a InMemoryMesh
+        # identical to `only_mesh` above.
+        legacy_data = b"\x80\x04\x95\xfc\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\x0cInMemoryMesh\x94\x93\x94)\x81\x94}\x94(\x8c\tmesh_file\x94\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x05stuff\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\tsome_hint\x94ub\x8c\x10supporting_files\x94}\x94\x8c\x04file\x94h\x08)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x01a\x94\x8c\textension\x94\x8c\x02.a\x94\x8c\rfilename_hint\x94h\x17ubsub."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.InMemoryMesh)
+        self.assertEqual(obj.mesh_file.contents(),
+                         full_mesh.mesh_file.contents())
+        self.assertIn("file", obj.supporting_files)
 
     def test_mesh_source(self):
         source = mut.MeshSource(path="/a/path.obj")
@@ -286,7 +320,7 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(source_copy.description(), "/a/path.obj")
 
         assert_pickle(self, source, repr)
-        # Check that data pickled as MeshSource in Drake v1.33.0 can be
+        # Check that data pickled as MeshSource in Drake v1.34.0 can be
         # unpickled in newer versions. The data should produce a MeshSource
         # identical to `source` above. We'll do it for one with a path source
         # and once with an in-memory source (below).
@@ -321,8 +355,8 @@ class TestGeometryCore(unittest.TestCase):
         obj = pickle.loads(legacy_data)
         self.assertIsInstance(obj, mut.MeshSource)
         self.assertEqual(obj.is_in_memory(), source.is_in_memory())
-        self.assertEqual(obj.in_memory().mesh_file().contents(),
-                         source.in_memory().mesh_file().contents())
+        self.assertEqual(obj.in_memory().mesh_file.contents(),
+                         source.in_memory().mesh_file.contents())
 
     def test_proximity_properties(self):
         """
