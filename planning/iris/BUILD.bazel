@@ -37,6 +37,75 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "iris_interface_options",
+    srcs = ["iris_interface_options.cc"],
+    hdrs = ["iris_interface_options.h"],
+    deps = [
+        "//geometry/optimization:convex_set",
+        "//solvers:solver_options",
+        "//geometry:meshcat",
+        "//common:random"
+    ],
+    implementation_deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "iris_interface",
+    srcs = ["iris_interface.cc"],
+    hdrs = ["iris_interface.h"],
+    deps = [
+        "//planning:collision_checker",
+        ":iris_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "iris_np",
+    srcs = ["iris_np.cc"],
+    hdrs = ["iris_np.h"],
+    deps = [
+        "//planning:collision_checker",
+        "//planning/iris/internal:iris_via_collisions_and_ellipsoid_interface",
+        "//planning/iris/internal:iris_via_collisions_and_ellipsoid_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "iris_np2",
+    srcs = ["iris_np2.cc"],
+    hdrs = ["iris_np2.h"],
+    deps = [
+        "//planning:collision_checker",
+        "//planning/iris/internal:iris_via_collisions_and_ellipsoid_interface",
+        "//planning/iris/internal:iris_via_collisions_and_ellipsoid_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "iris_zo",
+    srcs = ["iris_zo.cc"],
+    hdrs = ["iris_zo.h"],
+    deps = [
+        "//planning:collision_checker",
+        "//planning/iris/internal:iris_via_collisions_and_ellipsoid_interface",
+        "//planning/iris/internal:iris_via_collisions_and_ellipsoid_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
 drake_cc_googletest(
     name = "iris_from_clique_cover_test",
     timeout = "moderate",
