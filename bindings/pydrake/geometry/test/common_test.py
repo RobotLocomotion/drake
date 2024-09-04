@@ -13,6 +13,7 @@ from pydrake.common import (
     MemoryFile,
 )
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.common.yaml import yaml_load_typed
@@ -563,20 +564,6 @@ class TestGeometryCore(unittest.TestCase):
         assert_pickle(
             self, capsule, lambda shape: [shape.radius(), shape.length()])
 
-        junk_path = "arbitrary/path.ext"
-        convex = mut.Convex(filename=junk_path, scale=1.0)
-        assert_shape_api(convex)
-        self.assertIn(junk_path, convex.filename())
-        self.assertEqual(".ext", convex.extension())
-        self.assertEqual(convex.scale(), 1.0)
-        with self.assertRaisesRegex(RuntimeError,
-                                    "MakeConvexHull only applies to"):
-            # We just need evidence that it invokes convex hull machinery; the
-            # exception for a bad extension suffices.
-            convex.GetConvexHull()
-        assert_pickle(
-            self, convex, lambda shape: [shape.filename(), shape.scale()])
-
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
         assert_shape_api(cylinder)
         cylinder = mut.Cylinder(measures=(1.0, 2.0))
@@ -597,6 +584,7 @@ class TestGeometryCore(unittest.TestCase):
         X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
         self.assertIsInstance(X_FH, RigidTransform)
 
+        junk_path = "arbitrary/path.ext"
         for dut_mesh in [mut.Mesh(filename=junk_path, scale=1.5),
                          mut.Mesh(mesh_data=mut.InMemoryMesh(
                                       MemoryFile("#junk", ".ext", "test")),
@@ -609,13 +597,14 @@ class TestGeometryCore(unittest.TestCase):
             self.assertEqual(".ext", dut_mesh.extension())
             self.assertEqual(dut_mesh.scale(), 1.5)
             self.assertIsInstance(dut_mesh.source(), mut.MeshSource)
+            with self.assertRaisesRegex(RuntimeError,
+                                        "MakeConvexHull only applies to"):
+                # We just need evidence that it invokes convex hull
+                # machinery; the exception for a bad extension suffices.
+                dut_mesh.GetConvexHull()
             if dut_mesh.source().is_path():
-                with self.assertRaisesRegex(RuntimeError,
-                                            "MakeConvexHull only applies to"):
-                    # We just need evidence that it invokes convex hull
-                    # machinery; the exception for a bad extension suffices.
-                    dut_mesh.GetConvexHull()
-                self.assertIn(junk_path, dut_mesh.filename())
+                with catch_drake_warnings(expected_count=1):
+                    self.assertIn(junk_path, dut_mesh.filename())
                 # TODO(SeanCurtis-TRI) Also test pickle when in-memory meshes
                 # support it.
                 assert_pickle(

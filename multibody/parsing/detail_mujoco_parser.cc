@@ -451,10 +451,13 @@ class MujocoParser {
         try {  // TODO(21666), remove the try-catch.
           M_GGo_G_unitDensity = CalcSpatialInertia(mesh, 1.0 /* density */);
         } catch (const std::exception& e) {
+          // TODO(SeanCurtis-TRI): Add construction from mesh.source() to
+          // support in-memory mesh.
+          DRAKE_DEMAND(mesh.source().is_path());
           // As with mujoco, failure leads to using the convex hull.
           // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
           M_GGo_G_unitDensity = CalcSpatialInertia(
-              geometry::Convex(mesh.filename(), mesh.scale()),
+              geometry::Convex(mesh.source().path(), mesh.scale()),
               1.0 /* density */);
           used_convex_hull_fallback_ = true;
         }

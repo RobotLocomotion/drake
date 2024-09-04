@@ -475,7 +475,10 @@ GTEST_TEST(ShapeTest, Constructors) {
   EXPECT_EQ(convex.source().description(), kFilename);
   EXPECT_EQ(convex.extension(), ".obj");
   EXPECT_EQ(convex.scale(), 1.5);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(convex.filename(), kFilename);
+#pragma GCC diagnostic pop
 
   const Cylinder cylinder{1, 2};
   EXPECT_EQ(cylinder.radius(), 1);
@@ -502,7 +505,10 @@ GTEST_TEST(ShapeTest, Constructors) {
   EXPECT_EQ(mesh.source().description(), kFilename);
   EXPECT_EQ(mesh.extension(), ".obj");
   EXPECT_EQ(mesh.scale(), 1.4);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(mesh.filename(), kFilename);
+#pragma GCC diagnostic pop
 
   const MeshcatCone cone{1.2, 3.4, 5.6};
   EXPECT_EQ(cone.height(), 1.2);
@@ -627,7 +633,10 @@ GTEST_TEST(ShapeTest, ConvexFromMemory) {
   EXPECT_EQ(source.in_memory().mesh_file().filename_hint(), mesh_name);
   EXPECT_NE(source.in_memory().supporting_file("fake.txt"), nullptr);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_THROW(convex.filename(), std::exception);
+#pragma GCC diagnostic pop
 
   // Also confirm that we can compute the convex hull from the in-memory
   // representation. We don't test all file formats; we trust that visual
@@ -663,7 +672,10 @@ GTEST_TEST(ShapeTest, MeshFromMemory) {
   EXPECT_EQ(source.in_memory().mesh_file().filename_hint(), mesh_name);
   EXPECT_NE(source.in_memory().supporting_file("fake.txt"), nullptr);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_THROW(mesh.filename(), std::exception);
+#pragma GCC diagnostic pop
 
   // Also confirm that we can compute the convex hull from the in-memory
   // representation. We don't test all file formats; we trust that visual
@@ -846,21 +858,21 @@ GTEST_TEST(ShapeTest, Volume) {
 
 GTEST_TEST(ShapeTest, Pathname) {
   const Mesh abspath_mesh("/absolute_path.obj");
-  EXPECT_TRUE(std::filesystem::path(abspath_mesh.filename()).is_absolute());
-  EXPECT_EQ(abspath_mesh.filename(), "/absolute_path.obj");
+  EXPECT_TRUE(abspath_mesh.source().path().is_absolute());
+  EXPECT_EQ(abspath_mesh.source().path(), "/absolute_path.obj");
 
   const Convex abspath_convex("/absolute_path.obj");
-  EXPECT_TRUE(std::filesystem::path(abspath_convex.filename()).is_absolute());
-  EXPECT_EQ(abspath_convex.filename(), "/absolute_path.obj");
+  EXPECT_TRUE(abspath_convex.source().path().is_absolute());
+  EXPECT_EQ(abspath_convex.source().path(), "/absolute_path.obj");
 
   const Mesh relpath_mesh("relative_path.obj");
-  EXPECT_TRUE(std::filesystem::path(relpath_mesh.filename()).is_absolute());
-  EXPECT_EQ(relpath_mesh.filename(),
+  EXPECT_TRUE(relpath_mesh.source().path().is_absolute());
+  EXPECT_EQ(relpath_mesh.source().path(),
             std::filesystem::current_path() / "relative_path.obj");
 
   const Convex relpath_convex("relative_path.obj");
-  EXPECT_TRUE(std::filesystem::path(relpath_convex.filename()).is_absolute());
-  EXPECT_EQ(relpath_convex.filename(),
+  EXPECT_TRUE(relpath_convex.source().path().is_absolute());
+  EXPECT_EQ(relpath_convex.source().path(),
             std::filesystem::current_path() / "relative_path.obj");
 }
 
@@ -886,16 +898,16 @@ GTEST_TEST(ShapeTest, MeshExtensions) {
 GTEST_TEST(ShapeTest, MoveConstructor) {
   // Create an original mesh.
   Mesh orig("foo.obj");
-  const std::string orig_filename = orig.filename();
+  const std::string orig_filename = orig.source().description();
   EXPECT_EQ(orig.extension(), ".obj");
 
   // Move it into a different mesh.
   Mesh next(std::move(orig));
-  EXPECT_EQ(next.filename(), orig_filename);
+  EXPECT_EQ(next.source().description(), orig_filename);
   EXPECT_EQ(next.extension(), ".obj");
 
-  // The moved-from mesh is in a valid by indeterminate state.
-  EXPECT_EQ(orig.filename().empty(), orig.extension().empty());
+  // The moved-from mesh is in a valid but indeterminate state.
+  EXPECT_EQ(orig.source().description().empty(), orig.extension().empty());
 }
 
 }  // namespace
