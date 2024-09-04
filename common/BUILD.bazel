@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":dummy_value",
         ":essential",
         ":extract_double",
+        ":file_source",
         ":find_resource",
         ":find_runfiles",
         ":fmt",
@@ -180,6 +181,14 @@ drake_cc_library(
     hdrs = ["extract_double.h"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "file_source",
+    hdrs = ["file_source.h"],
+    deps = [
+        ":memory_file",
     ],
 )
 

@@ -17,15 +17,15 @@ GTEST_TEST(MeshSourceTest, PathConstructor) {
 }
 
 GTEST_TEST(MeshSourceTest, InMemoryMeshConstructor) {
-  const MeshSource s(InMemoryMesh(MemoryFile("contents", ".ext", "hint")));
+  const MeshSource s(InMemoryMesh{MemoryFile("contents", ".ext", "hint")});
   EXPECT_EQ(s.description(), "hint");
   EXPECT_FALSE(s.is_path());
   ASSERT_TRUE(s.is_in_memory());
-  EXPECT_EQ(s.in_memory().mesh_file().contents(), "contents");
+  EXPECT_EQ(s.in_memory().mesh_file.contents(), "contents");
 }
 
 GTEST_TEST(MeshSourceTest, CopySemantics) {
-  const MeshSource source(InMemoryMesh(MemoryFile("body", ".ext", "hint")));
+  const MeshSource source(InMemoryMesh{MemoryFile("body", ".ext", "hint")});
   EXPECT_TRUE(source.is_in_memory());
   EXPECT_EQ(source.description(), "hint");
 
@@ -55,7 +55,7 @@ GTEST_TEST(MeshSourceTest, MovedFrom) {
 
   // The moved-from source now reports as an empty in-memory mesh.
   ASSERT_TRUE(s.is_in_memory());
-  EXPECT_TRUE(s.in_memory().empty());
+  EXPECT_TRUE(s.in_memory().mesh_file.contents().empty());
   EXPECT_EQ(s.extension(), "");
 }
 
@@ -66,7 +66,7 @@ void ConsumeMeshSource(const MeshSource&) {}
 Successful compilation implies test success. */
 GTEST_TEST(MeshSourceTest, ImplicitConversion) {
   ConsumeMeshSource(std::filesystem::path("path"));
-  ConsumeMeshSource(InMemoryMesh(MemoryFile("contents", ".ext", "hint")));
+  ConsumeMeshSource(InMemoryMesh{MemoryFile("contents", ".ext", "hint")});
 }
 }  // namespace
 }  // namespace geometry

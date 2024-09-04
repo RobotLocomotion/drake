@@ -275,10 +275,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "in_memory_mesh",
-    srcs = ["in_memory_mesh.cc"],
     hdrs = ["in_memory_mesh.h"],
     deps = [
+        "//common:file_source",
         "//common:memory_file",
+        "//common:string_container",
     ],
 )
 
@@ -861,13 +862,6 @@ drake_cc_googletest(
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "in_memory_mesh_test",
-    deps = [
-        ":in_memory_mesh",
     ],
 )
 
