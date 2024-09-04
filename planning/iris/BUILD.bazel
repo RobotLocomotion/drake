@@ -147,6 +147,20 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "vanilla_iris",
+    srcs = ["vanilla_iris.cc"],
+    hdrs = ["vanilla_iris.h"],
+    deps = [
+        "//planning:collision_checker",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
 drake_cc_googletest(
     name = "iris_from_clique_cover_test",
     timeout = "moderate",
