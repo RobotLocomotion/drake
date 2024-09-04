@@ -22,12 +22,12 @@ class IrisViaCollisionsAndEllipsoidInterface
     : public IrisInterface<
           IrisViaCollisionsAndEllipsoidInterfaceOptionsSubclass> {
  public:
-  explicit IrisViaCollisionsAndEllipsoidInterface(
-      const CollisionChecker& checker);
-
   virtual ~IrisViaCollisionsAndEllipsoidInterface();
 
  protected:
+  explicit IrisViaCollisionsAndEllipsoidInterface(
+      const CollisionChecker& checker);
+
   /** Each column of the returned matrix is a point in set which contains a
    * collision */
   virtual Eigen::MatrixXd FindCollisionPoints(
