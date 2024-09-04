@@ -13,6 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/file_source.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/memory_file.h"
 #include "drake/common/nice_type_name.h"
@@ -117,6 +118,27 @@ void InitLowLevelModules(py::module m) {
 
   internal::MaybeRedirectPythonLogging();
   m.def("_use_native_cpp_logging", &internal::UseNativeCppLogging);
+
+  {
+    using Class = FileSource;
+    constexpr auto& cls_doc = doc.FileSource;
+    py::class_<Class> cls(m, "FileSource", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>([](const std::string& path) { return Class(path); }),
+            py::arg("path"), cls_doc.ctor.doc_1args_path)
+        .def(py::init<MemoryFile>(), py::arg("file"),
+            cls_doc.ctor.doc_1args_file)
+        .def("is_path", &Class::is_path, cls_doc.is_path.doc)
+        .def("is_memory_file", &Class::is_memory_file,
+            cls_doc.is_memory_file.doc)
+        .def("description", &Class::description, cls_doc.description.doc)
+        .def("path", &Class::path, cls_doc.path.doc)
+        .def("memory_file", &Class::memory_file, cls_doc.memory_file.doc)
+        .def("clear", &Class::clear, cls_doc.clear.doc)
+        .def("empty", &Class::empty, cls_doc.empty.doc);
+    // Note: __repr__ is defined in _common_extra.py.
+    DefCopyAndDeepCopy(&cls);
+  }
 
   {
     using Class = Parallelism;

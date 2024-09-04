@@ -305,6 +305,18 @@ def _add_extraneous_repr_functions():
         )
     MemoryFile.__repr__ = mem_file_repr
 
+    def file_source_repr(source):
+        if source.is_path():
+            parameter = f"path={repr(str(source.path()))}"
+        else:
+            parameter = f"file={repr(source.memory_file())}"
+        return (
+            f"FileSource(\n"
+            f"  {parameter}\n"
+            f")"
+        )
+    FileSource.__repr__ = file_source_repr
+
 
 _add_extraneous_repr_functions()
 
