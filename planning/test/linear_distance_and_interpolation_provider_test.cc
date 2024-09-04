@@ -455,11 +455,11 @@ directives:
   builder->parser().AddModelsFromString(model_contents, model_ext);
   auto& plant = builder->plant();
 
-  JointIndex joint_index(
+  const JointIndex joint_index(
       3);  // picking an arbitrary number not at the start or the end
   const Joint<double>& joint = plant.get_joint(joint_index);
 
-  JointActuatorIndex joint_actuator_index(
+  const JointActuatorIndex joint_actuator_index(
       2);  // this is the actuator index associated with the joint 3
   auto& actuator = plant.get_joint_actuator(joint_actuator_index);
   plant.RemoveJointActuator(actuator);
