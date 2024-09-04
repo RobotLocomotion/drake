@@ -515,6 +515,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//geometry:__subpackages__"],
     deps = [
+        "//geometry:in_memory_mesh",
         "//geometry/proximity:polygon_surface_mesh",
     ],
     implementation_deps = [
@@ -1367,6 +1368,7 @@ drake_cc_googletest(
     deps = [
         ":make_convex_hull_mesh_impl",
         "//common:find_resource",
+        "//common:memory_file",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
         "@nlohmann_internal//:nlohmann",
