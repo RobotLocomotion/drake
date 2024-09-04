@@ -1,5 +1,6 @@
 import copy
 import os
+from pathlib import Path
 import pickle
 import unittest
 
@@ -48,6 +49,63 @@ class TestCommon(unittest.TestCase):
 
         copy.copy(not_empty)
         copy.deepcopy(not_empty)
+
+    def test_file_source(self):
+        source = mut.FileSource(path="/a/path.TXT")
+        self.assertTrue(source.is_path())
+        self.assertFalse(source.is_memory_file())
+        self.assertEqual(source.description(), "/a/path.TXT")
+        self.assertEqual(source.extension(), ".txt")
+        self.assertEqual(source.path(), Path("/a/path.TXT"))
+        with self.assertRaises(RuntimeError):
+            source.memory_file()
+        self.assertIsInstance(eval(repr(source),
+                                   {"FileSource": mut.FileSource}),
+                              mut.FileSource)
+        self.assertRegex(repr(source), "path=(['\"])/a/path.TXT\\1")
+        copy.copy(source)
+        copy.deepcopy(source)
+        source_copy = mut.FileSource(other=source)
+        self.assertEqual(source_copy.is_path(), source.is_path())
+        self.assertEqual(source_copy.is_memory_file(), source.is_memory_file())
+
+        assert_pickle(self, source, repr)
+        # Check that data pickled as FileSource in Drake v1.33.0 can be
+        # unpickled in newer versions. The data should produce a FileSource
+        # identical to `source` above. We'll do it for one with a path source
+        # and once with an in-memory source (below).
+        legacy_data = b"\x80\x04\x95^\x00\x00\x00\x00\x00\x00\x00\x8c\x0epydrake.common\x94\x8c\nFileSource\x94\x93\x94)\x81\x94}\x94\x8c\x04path\x94\x8c\x07pathlib\x94\x8c\tPosixPath\x94\x93\x94\x8c\x01/\x94\x8c\x01a\x94\x8c\x08path.TXT\x94\x87\x94R\x94sb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.FileSource)
+        self.assertEqual(obj.is_path(), source.is_path())
+        self.assertEqual(obj.path(), source.path())
+
+        file = mut.MemoryFile(contents="a", extension=".ext",
+                              filename_hint="hint")
+        source = mut.FileSource(file=file)
+        self.assertFalse(source.is_path())
+        self.assertTrue(source.is_memory_file())
+        self.assertEqual(source.description(), "hint")
+        self.assertEqual(source.extension(), ".ext")
+        self.assertIsInstance(source.memory_file(), mut.MemoryFile)
+        with self.assertRaises(RuntimeError):
+            source.path()
+        self.assertRegex(repr(source), "file=MemoryFile")
+        self.assertIsInstance(eval(repr(source),
+                                   {"FileSource": mut.FileSource,
+                                    "MemoryFile": mut.MemoryFile}),
+                              mut.FileSource)
+        copy.copy(source)
+        copy.deepcopy(source)
+
+        # Again for a source with an in-memory file.
+        assert_pickle(self, source, repr)
+        legacy_data = b"\x80\x04\x95\x81\x00\x00\x00\x00\x00\x00\x00\x8c\x0epydrake.common\x94\x8c\nFileSource\x94\x93\x94)\x81\x94}\x94\x8c\x04file\x94h\x00\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x01a\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\x04hint\x94ubsb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.FileSource)
+        self.assertEqual(obj.is_memory_file(), source.is_memory_file())
+        self.assertEqual(obj.memory_file().contents(),
+                         source.memory_file().contents())
 
     def test_memory_file(self):
         content_bytes = b"Some string"

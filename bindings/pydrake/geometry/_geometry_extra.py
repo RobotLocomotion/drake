@@ -78,8 +78,17 @@ def _add_extraneous_repr_functions():
     in python is simply more convenient.
     """
     def in_memory_mesh_repr(mesh):
+        # If defined, the supporting string has to provide the preceding comma,
+        # and space, along with the parameter name and its value.
+        supporting_string = ""
+        if mesh.num_supporting_files() > 0:
+            file_items = {}
+            for f_name in mesh.SupportingFileNames():
+                file_items[f_name] = mesh.supporting_file(f_name)
+            supporting_string = f", supporting_files={file_items}"
         return (
-            f"InMemoryMesh(mesh_file={repr(mesh.mesh_file())})"
+            f"InMemoryMesh(mesh_file={repr(mesh.mesh_file())}"
+            f"{supporting_string})"
         )
     InMemoryMesh.__repr__ = in_memory_mesh_repr
 
