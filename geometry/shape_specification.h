@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/geometry/in_memory_mesh.h"
@@ -266,9 +267,6 @@ class Convex final : public Shape {
                                 considering revisiting the model itself. */
   explicit Convex(const std::string& filename, double scale = 1.0);
 
-  // We're intentionally omitting these new in-memory APIs from doxygen until
-  // we have a minimum level of support.
-#ifndef DRAKE_DOXYGEN_CXX
   /** Constructs a convex shape specification from the contents of a
    Drake-supported mesh file type.
 
@@ -282,26 +280,36 @@ class Convex final : public Shape {
                              data for this shape.
    @param scale              An optional scale to coordinates. */
   explicit Convex(InMemoryMesh mesh_data, double scale = 1.0);
-#endif
 
   ~Convex() final;
 
-#ifndef DRAKE_DOXYGEN_CXX
   /** Returns the source for this specification's mesh data. When working with
    %Convex, this API should only be used for introspection. The contract for
    %Convex is that the convex hull is always used in place of whatever
    underlying mesh declaration is provided. For all functional geometric
    usage, exclusively use the convex hull returned by GetConvexHull(). */
   const MeshSource& source() const { return source_; }
-#endif
 
+  /** Returns the filename passed to the constructor.
+   @throws std::exception if `this` %Convex was constructed using in-memory file
+                          contents.
+   @see source().IsPath(). */
+  DRAKE_DEPRECATED(
+      "2025-01-01",
+      "Convex shapes can be defined from a file path or in memory data. Use "
+      "Convex::source() to determine if a filename is available.")
   std::string filename() const;
 
-  /** Returns the extension of the mesh filename -- all lower case and including
-   the dot. In other words /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both
-   report the ".obj" extension. The "extension" portion of the filename is
-   defined as in std::filesystem::path::extension(). */
+  /** Returns the extension of the convex type -- all lower case and including
+   the dot. If `this` is constructed from a file path, the extension is
+   extracted from the path. I.e., /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would
+   both report the ".obj" extension. The "extension" portion of the filename is
+   defined as in std::filesystem::path::extension().
+
+   If `this` is constructed using in-memory file contents, it is the extension
+   of the MemoryFile passed to the constructor. */
   const std::string& extension() const { return source_.extension(); }
+
   double scale() const { return scale_; }
 
   /** Reports the convex hull of the named mesh.
@@ -491,9 +499,6 @@ class Mesh final : public Shape {
                                 considering revisiting the model itself. */
   explicit Mesh(const std::string& filename, double scale = 1.0);
 
-  // We're intentionally omitting these new in-memory APIs from doxygen until
-  // we have a minimum level of support.
-#ifndef DRAKE_DOXYGEN_CXX
   /** Constructs a mesh shape specification from the contents of a
    Drake-supported mesh file type.
 
@@ -506,21 +511,30 @@ class Mesh final : public Shape {
                              data for this shape.
    @param scale              An optional scale to coordinates. */
   explicit Mesh(InMemoryMesh mesh_data, double scale = 1.0);
-#endif
 
   ~Mesh() final;
 
-#ifndef DRAKE_DOXYGEN_CXX
   /** Returns the source for this specification's mesh data. */
   const MeshSource& source() const { return source_; }
-#endif
 
+  /** Returns the filename passed to the constructor.
+   @throws std::exception if `this` %Mesh was constructed using in-memory file
+                          contents.
+   @see source().IsPath(). */
+  DRAKE_DEPRECATED(
+      "2025-01-01",
+      "Meshes can be defined from a file path or in memory data. Use "
+      "Mesh::source() to determine if a filename is available.")
   std::string filename() const;
 
-  /** Returns the extension of the mesh filename -- all lower case and including
-   the dot. In other words /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both
-   report the ".obj" extension. The "extension" portion of the filename is
-   defined as in std::filesystem::path::extension(). */
+  /** Returns the extension of the mesh type -- all lower case and including
+   the dot. If `this` is constructed from a file path, the extension is
+   extracted from the path. I.e., /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would
+   both report the ".obj" extension. The "extension" portion of the filename is
+   defined as in std::filesystem::path::extension().
+
+   If `this` is constructed using in-memory file contents, it is the extension
+   of the MemoryFile passed to the constructor. */
   const std::string& extension() const { return source_.extension(); }
 
   double scale() const { return scale_; }
