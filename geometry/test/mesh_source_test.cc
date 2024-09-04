@@ -21,7 +21,7 @@ GTEST_TEST(MeshSourceTest, InMemoryMeshConstructor) {
   EXPECT_EQ(s.description(), "hint");
   EXPECT_FALSE(s.is_path());
   ASSERT_TRUE(s.is_in_memory());
-  EXPECT_EQ(s.in_memory().mesh_file().contents(), "contents");
+  EXPECT_EQ(s.in_memory().mesh_file.contents(), "contents");
 }
 
 GTEST_TEST(MeshSourceTest, CopySemantics) {
@@ -55,7 +55,7 @@ GTEST_TEST(MeshSourceTest, MovedFrom) {
 
   // The moved-from source now reports as an empty in-memory mesh.
   ASSERT_TRUE(s.is_in_memory());
-  EXPECT_TRUE(s.in_memory().empty());
+  EXPECT_TRUE(s.in_memory().mesh_file.contents().empty());
   EXPECT_EQ(s.extension(), "");
 }
 
