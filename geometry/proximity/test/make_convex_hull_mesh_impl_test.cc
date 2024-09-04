@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <string>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -10,6 +12,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/memory_file.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
@@ -507,12 +510,10 @@ GTEST_TEST(MakeConvexHullMeshTest, NonZeroMargin) {
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
 
-// This test is sensitive to the OrderPolyVertices() function in ways the
-// previous tests are not, therefore providing greater test coverage.
-GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
-  const double margin = 0.01;
-  const double scale = 2.0;
-
+namespace {
+// Create a polygon mesh which is the equivalent of the tet defined in
+// one_tetrahedron.vtk, but with the faces offset by the given margin.
+PolyMesh GetTetrahedronWithMargin(double scale, double margin) {
   // We look at the one tilted face on the original mesh.
   Vector3d c(scale / 3.0, scale / 3.0, scale / 3.0);  // Face's centroid.
   const double d = c.norm();                          // Distance to the origin.
@@ -530,7 +531,7 @@ GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
   // one_tetrahedron.vtk.
 
   // clang-format off
-  const PolyMesh expected({
+  return PolyMesh({
       3, 0, 1, 3,
       3, 0, 2, 1,
       3, 0, 3, 2,
@@ -542,12 +543,70 @@ GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
       Vector3d(-margin, -margin,  length)
     });
   // clang-format on
+}
+
+}  // namespace
+
+// This test is sensitive to the OrderPolyVertices() function in ways the
+// previous tests are not, therefore providing greater test coverage.
+GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
+  const double kMargin = 0.01;
+  const double kScale = 2.0;
+
+  // Create an inflated surface mesh corresponding to the tet in
+  // one_tetrahedron.vtk.
+  const PolyMesh expected = GetTetrahedronWithMargin(kScale, kMargin);
 
   const PolyMesh dut = MakeConvexHull(
-      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), scale,
-      margin);
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), kScale,
+      kMargin);
 
   MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
+/* Simple regression test against passing a MeshSource to MakeConvexHull
+ directly. The core functionality has already been tested above. */
+GTEST_TEST(MakeConvexHullMeshTest, MakeFromMeshSource) {
+  const double kScale = 2.0;
+  const double kMargin = 1.0;
+  // The box in box.obj has edge length of 2 m. We'll scale it by s = kScale and
+  // then inflate it δ = kMargin. The effective size will be 2s + 2δ. The cube
+  // is a scaled unit cube; so we need to scale by (2s + 2δ) / 2 = s + δ.
+  const std::string box_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
+  const MeshSource obj_source(InMemoryMesh(MemoryFile::Make(box_path)));
+  const PolyMesh expected_box = MakeCube(kScale + kMargin);
+
+  // The tet in one_tetrahedron.vtk has vertices at origin and unit positions
+  // along all axes.
+  const std::string tet_path =
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
+  const MeshSource vtk_source(InMemoryMesh(MemoryFile::Make(tet_path)));
+  const PolyMesh expected_tet = GetTetrahedronWithMargin(kScale, kMargin);
+
+  struct TestCase {
+    const MeshSource* mesh_source{};
+    const PolyMesh* expected_mesh{};
+    std::string_view description;
+  };
+
+  std::vector<TestCase> test_cases{{&obj_source, &expected_box, "Valid obj"},
+                                   {&vtk_source, &expected_tet, "Valid vtk"}};
+  for (const TestCase& test_case : test_cases) {
+    SCOPED_TRACE(test_case.description);
+    const PolyMesh dut =
+        MakeConvexHull(*test_case.mesh_source, kScale, kMargin);
+    MeshesAreEquivalent(dut, *test_case.expected_mesh, 1e-14);
+  }
+
+  // Unsupported extension.
+  {
+    SCOPED_TRACE("Unsupported extension");
+    const MeshSource bad_source(InMemoryMesh(MemoryFile::Make(
+        FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj.mtl"))));
+    DRAKE_EXPECT_THROWS_MESSAGE(MakeConvexHull(bad_source, kScale, kMargin),
+                                ".*unsupported extension '.mtl'.*");
+  }
 }
 
 }  // namespace
