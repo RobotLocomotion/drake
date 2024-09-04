@@ -101,6 +101,14 @@ systems::DiscreteStateIndex PhysicalModel<T>::DeclareDiscreteState(
 }
 
 template <typename T>
+systems::AbstractParameterIndex PhysicalModel<T>::DeclareAbstractParameter(
+    const AbstractValue& model_value) {
+  DRAKE_THROW_UNLESS(owning_plant_ != nullptr);
+  return internal::MultibodyPlantModelAttorney<T>::DeclareAbstractParameter(
+      owning_plant_, model_value);
+}
+
+template <typename T>
 systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareAbstractOutputPort(
     std::string name,
     typename systems::LeafOutputPort<T>::AllocCallback alloc_function,
