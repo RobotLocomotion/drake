@@ -6,6 +6,8 @@ import subprocess
 import sys
 import time
 
+from python import runfiles
+
 
 def _make_read_only(path):
     current = stat.S_IMODE(os.lstat(path).st_mode)
@@ -72,6 +74,11 @@ def get_python_executable():
     """Use the same Python executable as this test program. Especially on
     macOS, we must use Bazel (Homebrew) Python -- not Apple Python.
     """
+    manifest = runfiles.Create()
+    python = manifest.Rlocation("venv/bin/python3")
+    if os.path.exists(python):
+        return python
+
     return sys.executable
 
 
