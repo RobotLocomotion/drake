@@ -13,8 +13,8 @@ drake_cc_package_library(
     name = "iris",
     visibility = ["//visibility:public"],
     deps = [
-        ":fast_iris",
         ":iris_from_clique_cover",
+        ":iris_zo",
     ],
 )
 
@@ -39,9 +39,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "fast_iris",
-    srcs = ["fast_iris.cc"],
-    hdrs = ["fast_iris.h"],
+    name = "iris_zo",
+    srcs = ["iris_zo.cc"],
+    hdrs = ["iris_zo.h"],
     deps = [
         "//common:parallelism",
         "//geometry:meshcat",
@@ -89,7 +89,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "fast_iris_test",
+    name = "iris_zo_test",
     timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
     num_threads = 8,
@@ -100,7 +100,7 @@ drake_cc_googletest(
         "no_memcheck",
     ],
     deps = [
-        ":fast_iris",
+        ":iris_zo",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry:meshcat",

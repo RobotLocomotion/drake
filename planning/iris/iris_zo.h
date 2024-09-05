@@ -20,7 +20,7 @@ namespace planning {
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
 
-struct IrisZOOptions {
+struct IrisZoOptions {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background.
   Note: This only serializes options that are YAML built-in types. */
@@ -46,7 +46,7 @@ struct IrisZOOptions {
     a->Visit(DRAKE_NVP(mixing_steps));
   }
 
-  IrisZOOptions() = default;
+  IrisZoOptions() = default;
 
   /** Number of particles used to estimate the closest collision*/
   int num_particles = 1e3;
@@ -141,7 +141,6 @@ optimization to find a collision free polytope in cspace.*/
 HPolyhedron IrisZO(const CollisionChecker& checker,
                    const Hyperellipsoid& starting_ellipsoid,
                    const HPolyhedron& domain,
-                   const IrisZOOptions& options = IrisZOOptions());
-
+                   const IrisZoOptions& options = IrisZoOptions());
 }  // namespace planning
 }  // namespace drake

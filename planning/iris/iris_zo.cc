@@ -1,4 +1,4 @@
-#include "drake/planning/iris/fast_iris.h"
+#include "drake/planning/iris/iris_zo.h"
 
 #include <algorithm>
 #include <iostream>
@@ -81,7 +81,7 @@ int unadaptive_test_samples(double p, double delta, double tau) {
 
 HPolyhedron IrisZO(const planning::CollisionChecker& checker,
                    const Hyperellipsoid& starting_ellipsoid,
-                   const HPolyhedron& domain, const IrisZOOptions& options) {
+                   const HPolyhedron& domain, const IrisZoOptions& options) {
   auto start = std::chrono::high_resolution_clock::now();
   const auto parallelism = Parallelism::Max();
   const int num_threads_to_use =

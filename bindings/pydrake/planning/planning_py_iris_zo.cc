@@ -1,7 +1,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/planning/iris/fast_iris.h"
+#include "drake/planning/iris/iris_zo.h"
 
 namespace drake {
 namespace pydrake {
@@ -12,52 +12,52 @@ void DefinePlanningIrisZO(py::module m) {
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc.drake.planning;
 
-  // IrisZOOptions
-  const auto& cls_doc = doc.IrisZOOptions;
-  py::class_<IrisZOOptions>(m, "IrisZOOptions", cls_doc.doc)
+  // IrisZoOptions
+  const auto& cls_doc = doc.IrisZoOptions;
+  py::class_<IrisZoOptions>(m, "IrisZoOptions", cls_doc.doc)
       .def(py::init<>())
-      .def_readwrite("num_particles", &IrisZOOptions::num_particles,
+      .def_readwrite("num_particles", &IrisZoOptions::num_particles,
           cls_doc.num_particles.doc)
-      .def_readwrite("tau", &IrisZOOptions::tau, cls_doc.tau.doc)
-      .def_readwrite("delta", &IrisZOOptions::delta, cls_doc.delta.doc)
-      .def_readwrite("epsilon", &IrisZOOptions::epsilon, cls_doc.epsilon.doc)
-      .def_readwrite("containment_points", &IrisZOOptions::containment_points,
+      .def_readwrite("tau", &IrisZoOptions::tau, cls_doc.tau.doc)
+      .def_readwrite("delta", &IrisZoOptions::delta, cls_doc.delta.doc)
+      .def_readwrite("epsilon", &IrisZoOptions::epsilon, cls_doc.epsilon.doc)
+      .def_readwrite("containment_points", &IrisZoOptions::containment_points,
           cls_doc.containment_points.doc)
       .def_readwrite("force_containment_points",
-          &IrisZOOptions::force_containment_points,
+          &IrisZoOptions::force_containment_points,
           cls_doc.force_containment_points.doc)
-      .def_readwrite("max_iterations", &IrisZOOptions::max_iterations,
+      .def_readwrite("max_iterations", &IrisZoOptions::max_iterations,
           cls_doc.max_iterations.doc)
       .def_readwrite("max_iterations_separating_planes",
-          &IrisZOOptions::max_iterations_separating_planes,
+          &IrisZoOptions::max_iterations_separating_planes,
           cls_doc.max_iterations_separating_planes.doc)
       .def_readwrite("max_separating_planes_per_iteration",
-          &IrisZOOptions::max_separating_planes_per_iteration,
+          &IrisZoOptions::max_separating_planes_per_iteration,
           cls_doc.max_separating_planes_per_iteration.doc)
-      .def_readwrite("bisection_steps", &IrisZOOptions::bisection_steps,
+      .def_readwrite("bisection_steps", &IrisZoOptions::bisection_steps,
           cls_doc.bisection_steps.doc)
       .def_readwrite(
-          "parallelize", &IrisZOOptions::parallelize, cls_doc.parallelize.doc)
-      .def_readwrite("verbose", &IrisZOOptions::verbose, cls_doc.verbose.doc)
+          "parallelize", &IrisZoOptions::parallelize, cls_doc.parallelize.doc)
+      .def_readwrite("verbose", &IrisZoOptions::verbose, cls_doc.verbose.doc)
       .def_readwrite("require_sample_point_is_contained",
-          &IrisZOOptions::require_sample_point_is_contained,
+          &IrisZoOptions::require_sample_point_is_contained,
           cls_doc.require_sample_point_is_contained.doc)
       .def_readwrite("configuration_space_margin",
-          &IrisZOOptions::configuration_space_margin,
+          &IrisZoOptions::configuration_space_margin,
           cls_doc.configuration_space_margin.doc)
       .def_readwrite("termination_threshold",
-          &IrisZOOptions::termination_threshold,
+          &IrisZoOptions::termination_threshold,
           cls_doc.termination_threshold.doc)
       .def_readwrite("relative_termination_threshold",
-          &IrisZOOptions::relative_termination_threshold,
+          &IrisZoOptions::relative_termination_threshold,
           cls_doc.relative_termination_threshold.doc)
       .def_readwrite(
-          "random_seed", &IrisZOOptions::random_seed, cls_doc.random_seed.doc)
-      .def_readwrite("mixing_steps", &IrisZOOptions::mixing_steps,
+          "random_seed", &IrisZoOptions::random_seed, cls_doc.random_seed.doc)
+      .def_readwrite("mixing_steps", &IrisZoOptions::mixing_steps,
           cls_doc.mixing_steps.doc)
-      .def("__repr__", [](const IrisZOOptions& self) {
+      .def("__repr__", [](const IrisZoOptions& self) {
         return py::str(
-            "IrisZOOptions("
+            "IrisZoOptions("
             "num_particles={}, "
             "tau={}, "
             "delta={}, "
@@ -89,7 +89,7 @@ void DefinePlanningIrisZO(py::module m) {
       });
 
   m.def("IrisZO", &IrisZO, py::arg("checker"), py::arg("starting_ellipsoid"),
-      py::arg("domain"), py::arg("options") = IrisZOOptions(), doc.IrisZO.doc);
+      py::arg("domain"), py::arg("options") = IrisZoOptions(), doc.IrisZO.doc);
 }
 
 }  // namespace internal

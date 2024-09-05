@@ -1,4 +1,4 @@
-#include "drake/planning/iris/fast_iris.h"
+#include "drake/planning/iris/iris_zo.h"
 
 #include <chrono>
 #include <thread>
@@ -35,7 +35,7 @@ const double kInf = std::numeric_limits<double>::infinity();
 // Helper method for testing FastIris from a urdf string.
 HPolyhedron IrisZOFromUrdf(const std::string urdf,
                            const Hyperellipsoid& starting_ellipsoid,
-                           const IrisZOOptions& options) {
+                           const IrisZoOptions& options) {
   CollisionCheckerParams params;
   RobotDiagramBuilder<double> builder(0.0);
 
@@ -80,7 +80,7 @@ GTEST_TEST(IrisZOTest, JointLimits) {
   const Vector1d sample = Vector1d::Zero();
   Hyperellipsoid starting_ellipsoid =
       Hyperellipsoid::MakeHypersphere(1e-2, sample);
-  IrisZOOptions options;
+  IrisZoOptions options;
   options.verbose = true;
   HPolyhedron region = IrisZOFromUrdf(limits_urdf, starting_ellipsoid, options);
 
@@ -148,7 +148,7 @@ GTEST_TEST(IrisZOTest, DoublePendulum) {
   const Vector2d sample = Vector2d::Zero();
   std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
   meshcat->Delete("face_pt");
-  IrisZOOptions options;
+  IrisZoOptions options;
   options.verbose = true;
   options.meshcat = meshcat;
   Hyperellipsoid starting_ellipsoid =
@@ -245,7 +245,7 @@ GTEST_TEST(IrisZOTest, BlockOnGround) {
   const Vector2d sample{1.0, 0.0};
   std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
   meshcat->Delete("face_pt");
-  IrisZOOptions options;
+  IrisZoOptions options;
   options.verbose = true;
   options.meshcat = meshcat;
   Hyperellipsoid starting_ellipsoid =
@@ -357,7 +357,7 @@ GTEST_TEST(IrisZOTest, ConvexConfigurationSpace) {
       fmt::arg("l", l), fmt::arg("r", r));
 
   const Vector2d sample{-0.5, 0.0};
-  IrisZOOptions options;
+  IrisZoOptions options;
 
   // This point should be outside of the configuration space (in collision).
   // The particular value was found by visual inspection using meshcat.
@@ -511,7 +511,7 @@ GTEST_TEST(IrisZOTest, ForceContainmentPointsTest) {
                         yw, yw, -yw, -yw,
                         0,  0,  0,  0;
   // clang-format on
-  IrisZOOptions options;
+  IrisZoOptions options;
   options.verbose = true;
   options.meshcat = meshcat;
   options.configuration_space_margin = 0.04;
