@@ -48,7 +48,7 @@ GTEST_TEST(DefaultValueTest, Access) {
   EXPECT_EQ(ForceInt(x_value_ref), 2);
 }
 
-// For the next test.
+// For the next two tests.
 struct Thing {
   int i{};
 };
@@ -82,6 +82,36 @@ GTEST_TEST(DefaultValueTest, Pointers) {
   thing_ptr->i = 10;
   EXPECT_EQ(thing_ptr->i, 10);
   EXPECT_EQ((*thing_ptr).i, 10);
+}
+
+// When the thing being reset after move is a struct/class with members/methods,
+// that we want to operate on directly (when all we have access to is the
+// reset_after_move wrapper).
+GTEST_TEST(DefaultValueTest, Classes) {
+  reset_after_move<Thing> dut = Thing{17};
+  EXPECT_EQ(dut->i, 17);
+  EXPECT_EQ((*dut).i, 17);
+  dut->i = 18;
+  EXPECT_EQ(dut->i, 18);
+
+  const reset_after_move<Thing> const_dut(dut);
+  EXPECT_EQ(const_dut->i, 18);
+  EXPECT_EQ((*const_dut).i, 18);
+  // We also want to make sure that dereferencing a const reset_after_move only
+  // gives us const access to the contained value.
+  static_assert(
+      std::is_const_v<std::remove_reference_t<
+          decltype(std::declval<const reset_after_move<Thing>>().operator*())>>,
+      "*const_thing must return const Thing&.");
+  static_assert(
+      std::is_const_v<std::remove_pointer_t<
+          decltype(std::declval<const reset_after_move<Thing>>().
+                   operator->())>>,
+      "const_thing-> must return const Thing*.");
+
+  const reset_after_move<Thing*> thing_ptr(&*dut);
+  // This really shouldn't work.
+  thing_ptr->i = 19;
 }
 
 GTEST_TEST(DefaultValueTest, Copy) {

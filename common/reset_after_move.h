@@ -91,7 +91,6 @@ class reset_after_move {
 
   /// @name Dereference operators if T is a pointer type.
   /// If type T is a pointer, these exist and return the pointed-to object.
-  /// For non-pointer types these methods are not instantiated.
   //@{
   template <typename T1 = T>
   std::enable_if_t<std::is_pointer_v<T1>, T> operator->() const {
@@ -102,6 +101,35 @@ class reset_after_move {
                    std::add_lvalue_reference_t<std::remove_pointer_t<T>>>
   operator*() const {
     return *value_;
+  }
+  //@}
+
+  /// @name Dereference operators if T is _not_ a pointer type.
+  /// If type T is _not_ pointer, we still want to support operations such as:
+  /// class Foo;
+  /// reset_on_move<Foo> foo;
+  /// foo->do_bar();
+  /// (*foo).do_bar();
+  //@{
+  template <typename T1 = T>
+  std::enable_if_t<!std::is_pointer_v<T1>, const T*> operator->() const {
+    return &value_;
+  }
+  template <typename T1 = T>
+  std::enable_if_t<!std::is_pointer_v<T1>, T*> operator->() {
+    return &value_;
+  }
+  template <typename T1 = T>
+  std::enable_if_t<!std::is_pointer_v<T1>,
+                   std::add_lvalue_reference_t<const T>>
+  operator*() const {
+    return value_;
+  }
+  template <typename T1 = T>
+  std::enable_if_t<!std::is_pointer_v<T1>,
+                   std::add_lvalue_reference_t<T>>
+  operator*()  {
+    return value_;
   }
   //@}
 
