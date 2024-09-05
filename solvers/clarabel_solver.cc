@@ -161,8 +161,7 @@ class SettingsConverter {
     // TODO(jwnimmer-tri) Handle get_print_file_name().
 
     // Clarabel does not support setting the number of threads so we ignore
-    // the kMaxNumThreads option. Some of the linear solvers in Clarabel may be
-    // multithreaded.
+    // the kMaxNumThreads option.
 
     // Copy the Clarabel-specific `solver_options` to pending maps.
     pending_options_double_ =

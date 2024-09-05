@@ -607,6 +607,8 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
   SetScsSettings(&input_solver_options_int,
                  merged_options.get_print_to_console(), scs_stgs);
   SetScsSettings(&input_solver_options_double, scs_stgs);
+  // SCS does not support setting the number of threads so we ignore
+  // the kMaxNumThreads option.
 
   ScsInfo scs_info{0};
 

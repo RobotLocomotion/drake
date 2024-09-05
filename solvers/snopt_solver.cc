@@ -1429,6 +1429,8 @@ void SnoptSolver::DoSolve(const MathematicalProgram& prog,
     int_options[kTimingLevel] = 0;
   }
 
+  // SNOPT does not support setting the number of threads so we ignore
+  // the kMaxNumThreads option.
   SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
                         int_options, merged_options.GetOptionsDouble(id()),
                         merged_options.get_print_file_name(), result);
