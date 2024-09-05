@@ -24,27 +24,25 @@ MemoryFile MemoryFile::Make(const std::filesystem::path& path) {
 MemoryFile::MemoryFile() = default;
 
 MemoryFile::MemoryFile(std::string contents, std::string extension,
-                       std::string filename_hint)
-    : contents_(std::move(contents)),
-      extension_(std::move(extension)),
-      filename_hint_(std::move(filename_hint)) {
-  std::string& ext = extension_;
-  if (!(ext.empty() || ext.starts_with("."))) {
+                       std::string filename_hint) {
+  if (!(extension.empty() || extension.starts_with("."))) {
     throw std::runtime_error(
         fmt::format("MemoryFile given invalid extension. Must be empty or of "
                     "the form '.foo'; given '{}'.",
-                    ext));
+                    extension));
   }
-  std::transform(ext.begin(), ext.end(), ext.begin(),
+  DRAKE_THROW_UNLESS(filename_hint.find_first_of("\n") == std::string::npos);
+
+  std::transform(extension.begin(), extension.end(), extension.begin(),
                  [](unsigned char c) {
                    return std::tolower(c);
                  });
 
   EmptySha256& wrapper = sha256_;
-  const std::string& bytes = contents_;
-  wrapper.value = Sha256::Checksum(bytes);
-  const std::string& hint = filename_hint_;
-  DRAKE_THROW_UNLESS(hint.find_first_of("\n") == std::string::npos);
+  wrapper.value = Sha256::Checksum(contents);
+  contents_ = std::move(contents);
+  extension_ = std::move(extension);
+  filename_hint_ = std::move(filename_hint);
 }
 
 
