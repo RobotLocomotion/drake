@@ -10,6 +10,12 @@ def _impl(repo_ctx):
         "BUILD.bazel",
     )
 
+    # Only macOS uses a venv at the moment.
+    os_name = repo_ctx.os.name  # "linux" or "mac os x"
+    if os_name != "mac os x":
+        execute_or_fail(repo_ctx, ["mkdir", "bin", "site-packages"])
+        return
+
     # Symlink some paths that we need.
     venv_dir = repo_ctx.path(Label("@drake//:bazel-venv/venv.drake")).realpath
     repo_ctx.symlink("{}/bin".format(venv_dir), "bin")
