@@ -873,6 +873,8 @@ def install_test(
         deps = [
             "//tools/install:install_test_helper",
             "//tools/install:otool",
+            "@rules_python//python/runfiles",
+            "@venv",
         ],
         # Several install tests need some network access.
         allow_network = ["meshcat", "package_map"],

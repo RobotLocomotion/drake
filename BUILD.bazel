@@ -109,6 +109,7 @@ install_test(
     )],
     data = [
         ":install",
+        "@venv//:binaries",
         _INSTALL_TEST_COMMANDS,
     ],
     tags = [
