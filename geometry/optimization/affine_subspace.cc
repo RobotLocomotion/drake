@@ -42,12 +42,12 @@ AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
 namespace {
 AffineSubspace AffineBallAffineHull(const AffineBall& affine_ball,
                                     std::optional<double> tol) {
-  Eigen::ColPivHouseholderQR<MatrixXd> qr(affine_ball.B());
+  Eigen::FullPivHouseholderQR<MatrixXd> qr(affine_ball.B());
   if (tol) {
     qr.setThreshold(tol.value());
   }
   Eigen::MatrixXd basis =
-      qr.householderQ() *
+      qr.matrixQ() *
       MatrixXd::Identity(affine_ball.ambient_dimension(), qr.rank());
   return AffineSubspace(basis, affine_ball.center());
 }
@@ -55,8 +55,9 @@ AffineSubspace AffineBallAffineHull(const AffineBall& affine_ball,
 AffineSubspace CartesianProductAffineHull(
     const CartesianProduct& cartesian_product, std::optional<double> tol) {
   // TODO(cohnt): Support affine transformations of Cartesian products.
-  DRAKE_THROW_UNLESS(cartesian_product.A() == std::nullopt);
-  DRAKE_THROW_UNLESS(cartesian_product.b() == std::nullopt);
+  // This pre-condition is currently checked in the base method.
+  DRAKE_DEMAND(cartesian_product.A() == std::nullopt);
+  DRAKE_DEMAND(cartesian_product.b() == std::nullopt);
   // Compute the affine hull of each factor of cartesian_product and combine.
 
   // The basis will be a block diagonal matrix, whose blocks correspond to the
@@ -85,14 +86,16 @@ AffineSubspace CartesianProductAffineHull(
 }
 
 AffineSubspace HyperrectangleAffineHull(const Hyperrectangle& hyperrectangle,
-                                        double tol) {
+                                        std::optional<double> tol) {
   Eigen::MatrixXd basis = Eigen::MatrixXd::Zero(
       hyperrectangle.ambient_dimension(), hyperrectangle.ambient_dimension());
-  Eigen::VectorXd translation(hyperrectangle.ambient_dimension());
   int current_dimension = 0;
   int num_basis_vectors = 0;
   for (int i = 0; i < hyperrectangle.ambient_dimension(); ++i) {
-    if (hyperrectangle.ub()[i] - hyperrectangle.lb()[i] > tol) {
+    // If the numerical tolerance was not specified, we use a reasonable
+    // default.
+    if (hyperrectangle.ub()[i] - hyperrectangle.lb()[i] >
+        (tol ? tol.value() : 1e-12)) {
       basis(current_dimension, num_basis_vectors) = 1;
       ++num_basis_vectors;
     }
@@ -171,10 +174,7 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
         Eigen::VectorXd::Zero(maybe_hyperellipsoid->ambient_dimension()));
     return;
   } else if (maybe_hyperrectangle) {
-    // If the numerical tolerance was not specified, we use a reasonable
-    // default.
-    *this = HyperrectangleAffineHull(*maybe_hyperrectangle,
-                                     tol ? tol.value() : 1e-12);
+    *this = HyperrectangleAffineHull(*maybe_hyperrectangle, tol);
     return;
   } else if (maybe_vpolytope) {
     *this = VPolytopeAffineHull(*maybe_vpolytope, tol);
