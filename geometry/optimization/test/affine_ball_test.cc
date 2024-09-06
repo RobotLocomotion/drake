@@ -27,6 +27,9 @@ using internal::CheckAddPointInSetConstraints;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
+using solvers::Binding;
+using solvers::Constraint;
+using solvers::MathematicalProgram;
 using std::sqrt;
 
 GTEST_TEST(AffineBallTest, DefaultCtor) {
@@ -465,6 +468,112 @@ GTEST_TEST(AffineBallTest, MakeAffineBallFromLineSegment) {
   EXPECT_NEAR(a_1.CalcVolume(),
               4.0 / 3 * M_PI * segment_length / 2.0 * std::pow(epsilon, 2),
               1e-6);
+}
+
+GTEST_TEST(AffineBallTest, PointInNonnegativeScalingConstraints) {
+  // Unit circle in the x-y plane, translated along the z-axis two units.
+  Eigen::Matrix<double, 3, 3> B;
+  // clang-format off
+  B << 1, 0, 0,
+       0, 1, 0,
+       0, 0, 0;
+  // clang-format on
+  Vector3d center(0.0, 0.0, 2.0);
+  const AffineBall ab(B, center);
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto t = prog.NewContinuousVariables(1, "t")[0];
+
+  std::vector<Binding<Constraint>> constraints =
+      ab.AddPointInNonnegativeScalingConstraints(&prog, x, t);
+
+  // Extract the slack variables. According to the method implementation, the
+  // constraint in index 1 will be the Lorentz cone constraint, whose variables
+  // are [t, y].
+  const int constraint_idx = 1;
+  ASSERT_EQ(ssize(constraints), 3);
+  ASSERT_TRUE(dynamic_cast<const solvers::LorentzConeConstraint*>(
+                  constraints[constraint_idx].evaluator().get()) != nullptr);
+  ASSERT_TRUE(constraints[constraint_idx].ContainsVariable(t));
+  ASSERT_FALSE(constraints[constraint_idx].ContainsVariable(x[0]));
+  ASSERT_EQ(constraints[constraint_idx].variables().size(), 4);
+  ASSERT_EQ(constraints[constraint_idx].variables()[0], t);
+  const auto y = constraints[constraint_idx].variables().tail(3);
+
+  // Test values for x, y, t, and whether the constraint is satisfied.
+  const std::vector<std::tuple<Vector3d, Vector3d, double, bool>> test_x_y_t{
+      {Vector3d(1.0, 0.0, 2.0), Vector3d(1.0, 0.0, 0.0), 1.0, true},
+      {Vector3d(0.0, -1.0, 2.0), Vector3d(0.0, -1.0, 0.0), 1.0, true},
+      {Vector3d(0.0, 2.0, 4.0), Vector3d(0.0, 2.0, 0.0), 2.0, true},
+      {Vector3d(0.0, 0.0, 6.0), Vector3d(0.0, 0.0, 1.0), 3.0, true},
+      {Vector3d(0.0, 0.0, 6.0), Vector3d(0.0, 0.0, -3.0), 3.0, true},
+      {Vector3d(0.0, 0.0, 0.0), Vector3d(0.0, 0.0, 0.0), 0.0, true},
+      {Vector3d(0.0, 0.0, 0.0), Vector3d(0.0, 0.0, 0.0), 1.0, false},
+      {Vector3d(1.0, 0.0, 0.0), Vector3d(0.0, 0.0, 0.0), 0.0, false},
+      {Vector3d(1.0, 0.0, 2.0), Vector3d(1.0, 0.0, 0.0), 2.0, false},
+      {Vector3d(0.0, 2.0, 2.0), Vector3d(0.0, 2.0, 0.0), 2.0, false},
+      {Vector3d(0.0, 2.0, 4.0), Vector3d(0.0, 2.0, 0.0), 1.0, false}};
+
+  const double kTol = 0;
+  for (const auto& [x_val, y_val, t_val, expect_success] : test_x_y_t) {
+    prog.SetInitialGuess(x, x_val);
+    prog.SetInitialGuess(y, y_val);
+    prog.SetInitialGuess(t, t_val);
+    EXPECT_EQ(prog.CheckSatisfiedAtInitialGuess(constraints, kTol),
+              expect_success);
+  }
+
+  Eigen::Matrix<double, 3, 2> A;
+  // clang-format off
+  A << 1, 0,
+       0, 1,
+       2, 0;
+  // clang-format on
+  Vector3d b = Vector3d::Zero();
+  Vector2d c(1, -1);
+  double d = 0;
+
+  MathematicalProgram prog2;
+  auto x2 = prog2.NewContinuousVariables(2, "x");
+  auto t2 = prog2.NewContinuousVariables(2, "t");
+
+  std::vector<Binding<Constraint>> constraints2 =
+      ab.AddPointInNonnegativeScalingConstraints(&prog2, A, b, c, d, x2, t2);
+
+  // Extract the slack variables. According to the method implementation, the
+  // constraint in index 2 will be the Lorentz cone constraint, whose variables
+  // are [s, y].
+  const int constraint2_idx = 2;
+  ASSERT_EQ(ssize(constraints2), 4);
+  ASSERT_TRUE(dynamic_cast<const solvers::LorentzConeConstraint*>(
+                  constraints2[constraint2_idx].evaluator().get()) != nullptr);
+  ASSERT_FALSE(constraints2[constraint2_idx].ContainsVariable(t2[0]));
+  ASSERT_FALSE(constraints2[constraint2_idx].ContainsVariable(x2[0]));
+  ASSERT_EQ(constraints2[constraint2_idx].variables().size(), 4);
+  const auto s2 = constraints2[constraint2_idx].variables().head(1)[0];
+  const auto y2 = constraints2[constraint2_idx].variables().tail(3);
+
+  // Test values for x, y, s, t, and whether the constraint is satisfied.
+  const std::vector<std::tuple<Vector2d, Vector3d, double, Vector2d, bool>>
+      test_x_y_s_t{
+          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(1, 0), true},
+          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(0, -1), true},
+          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(2, 1), true},
+          {Vector2d(2, 0), Vector3d(2, 0, 0), 2, Vector2d(1, -1), true},
+          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(1, -1), false},
+          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(0, 1), false},
+          {Vector2d(2, 0), Vector3d(2, 0, 0), 2, Vector2d(1, -2), false}};
+
+  for (const auto& [x2_val, y2_val, s2_val, t2_val, expect_success] :
+       test_x_y_s_t) {
+    prog2.SetInitialGuess(x2, x2_val);
+    prog2.SetInitialGuess(y2, y2_val);
+    prog2.SetInitialGuess(s2, s2_val);
+    prog2.SetInitialGuess(t2, t2_val);
+    EXPECT_EQ(prog2.CheckSatisfiedAtInitialGuess(constraints2, kTol),
+              expect_success);
+  }
 }
 
 }  // namespace optimization

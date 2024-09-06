@@ -195,7 +195,7 @@ AffineBall::DoAddPointInSetConstraints(
   std::vector<Binding<Constraint>> new_constraints;
   const int n = ambient_dimension();
   VectorXDecisionVariable y = prog->NewContinuousVariables(n, "y");
-  // ||y||^2 <= 1, represented as 0.5yᵀIy + 0ᵀy + (-0.5) <= 0.
+  // ||y||² ≤ 1, represented as 0.5yᵀIy + 0ᵀy + (-0.5) ≤ 0.
   new_constraints.push_back(prog->AddQuadraticAsRotatedLorentzConeConstraint(
       MatrixXd::Identity(n, n), VectorXd::Zero(n), -0.5, y));
   // x = By + center_, represented as [I, -B_] * [x; y] = center_
@@ -209,22 +209,70 @@ AffineBall::DoAddPointInSetConstraints(
 
 std::vector<Binding<Constraint>>
 AffineBall::DoAddPointInNonnegativeScalingConstraints(
-    MathematicalProgram*, const Eigen::Ref<const VectorXDecisionVariable>&,
-    const Variable&) const {
-  throw std::runtime_error(
-      "AffineBall::DoAddPointInNonnegativeScalingConstraints() is not "
-      "implemented yet.");
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Variable& t) const {
+  std::vector<Binding<Constraint>> new_constraints;
+  const int n = ambient_dimension();
+  // The constraint is x∈tS, which can be written x=t(By+c), or equiavlently,
+  // x-tc=By and ||y||² ≤ t².
+  VectorXDecisionVariable y = prog->NewContinuousVariables(n, "y");
+
+  // The first constraint is the linear equality constraint
+  // [-I, B, center_] * [x; y; t] = 0.
+  MatrixXd constraint_A(n, n + n + 1);
+  constraint_A.leftCols(n) = -MatrixXd::Identity(n, n);
+  constraint_A.block(0, n, n, n) = B_;
+  constraint_A.rightCols(1) = center_;
+  new_constraints.push_back(prog->AddLinearEqualityConstraint(
+      constraint_A, VectorXd::Zero(n), {x, y, Vector1<Variable>(t)}));
+
+  // The second constraint is that [t, y] be in the Lorentz cone.
+  new_constraints.push_back(prog->AddLorentzConeConstraint(
+      MatrixXd::Identity(n + 1, n + 1), VectorXd::Zero(n + 1),
+      {Vector1<Variable>(t), y}));
+
+  return new_constraints;
 }
 
 std::vector<Binding<Constraint>>
 AffineBall::DoAddPointInNonnegativeScalingConstraints(
-    MathematicalProgram*, const Eigen::Ref<const MatrixXd>&,
-    const Eigen::Ref<const VectorXd>&, const Eigen::Ref<const VectorXd>&,
-    double, const Eigen::Ref<const VectorXDecisionVariable>&,
-    const Eigen::Ref<const VectorXDecisionVariable>&) const {
-  throw std::runtime_error(
-      "AffineBall::DoAddPointInNonnegativeScalingConstraints() is not "
-      "implemented yet.");
+    MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A,
+    const Eigen::Ref<const VectorXd>& b, const Eigen::Ref<const VectorXd>& c,
+    double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const VectorXDecisionVariable>& t) const {
+  std::vector<Binding<Constraint>> new_constraints;
+  const int n = ambient_dimension();
+  // The constraint is Ax+b∈(c't+d)S, which can be written Ax+b=(c't+d)(By+C),
+  // where we use C to refer to the center of the AffineBall, which simplifies
+  // to -Ax+By+Cs=b, s=c't+d, and ||y||² ≤ s².
+  VectorXDecisionVariable y = prog->NewContinuousVariables(n, "y");
+  VectorXDecisionVariable s = prog->NewContinuousVariables(1, "s");
+
+  // The first constraint is the linear equality constraint
+  // [-A, B, center_] * [x; y; s] = b.
+  const int m = x.size();
+  MatrixXd constraint_A(n, m + n + 1);
+  constraint_A.leftCols(m) = -A;
+  constraint_A.block(0, m, n, n) = B_;
+  constraint_A.rightCols(1) = center_;
+  new_constraints.push_back(
+      prog->AddLinearEqualityConstraint(constraint_A, b, {x, y, s}));
+
+  // The second constraint is the linear equality constraint
+  // [1, -c'] * [s; t] = [d]
+  const int k = c.size();
+  Eigen::RowVectorXd constraint_a(k + 1);
+  constraint_a(0) = 1;
+  constraint_a.tail(k) = -c.transpose();
+  new_constraints.push_back(
+      prog->AddLinearEqualityConstraint(constraint_a, d, {s, t}));
+
+  // The third constraint is that [s, y] be in the Lorentz cone.
+  new_constraints.push_back(prog->AddLorentzConeConstraint(
+      MatrixXd::Identity(n + 1, n + 1), VectorXd::Zero(n + 1), {s, y}));
+
+  return new_constraints;
 }
 
 void AffineBall::CheckInvariants() const {
