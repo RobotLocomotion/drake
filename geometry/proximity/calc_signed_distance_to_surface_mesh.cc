@@ -21,10 +21,10 @@ class BvhVisitor {
 
   static SquaredDistanceToTriangle CalcSquaredDistance(
       const Vector3d& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
-      const Bvh<Obb, TriangleSurfaceMesh<double>>::NodeType& node_M,
+      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
       const FeatureNormalSet& normal_set_M) {
     BvhVisitor visitor{p_MQ, mesh_M, normal_set_M};
-    visitor.Visit(node_M);
+    visitor.Visit(bvh_M.root_node());
     return visitor.closest_info_;
   }
 
@@ -34,22 +34,7 @@ class BvhVisitor {
       : p_MQ_{p_MQ}, mesh_M_{mesh_M}, normal_set_M_{normal_set_M} {}
 
   void Visit(const Bvh<Obb, TriangleSurfaceMesh<double>>::NodeType& node_M) {
-    if (node_M.is_leaf()) {
-      for (int i = 0; i < node_M.num_element_indices(); ++i) {
-        const int triangle_index = node_M.element_index(i);
-        const SquaredDistanceToTriangle squared_distance =
-            CalcSquaredDistanceToTriangle(p_MQ_, triangle_index, mesh_M_,
-                                          normal_set_M_);
-        if (squared_distance.squared_distance <
-            closest_info_.squared_distance) {
-          closest_info_ = squared_distance;
-        }
-      }
-      return;
-    }
-
-    // The rest of this function is for the subtree of the internal node rooted
-    // at node_M with its bounding box B, expressed in frame B.
+    // Evaluate distance to this node's bounding box B, expressed in frame B.
     const RigidTransformd& X_MB = node_M.bv().pose();
     const Vector3d p_BQ = X_MB.inverse() * p_MQ_;
     // Cb and grad_B are the closest point and signed-distance gradient to the
@@ -62,12 +47,26 @@ class BvhVisitor {
 
     // Check for possible pruning.
     if (phi_BQ > 0) {
-      // The query point is outside, so we can get the lower bound.
+      // The query point is outside box B, so we can get the lower bound.
       const double squared_distance_from_node = phi_BQ * phi_BQ;
       // Use the lower bound to possibly prune this subtree.
-      if (squared_distance_from_node > closest_info_.squared_distance) {
+      if (squared_distance_from_node >= closest_info_.squared_distance) {
         return;
       }
+    }
+
+    if (node_M.is_leaf()) {
+      for (int i = 0; i < node_M.num_element_indices(); ++i) {
+        const int triangle_index = node_M.element_index(i);
+        const SquaredDistanceToTriangle squared_distance =
+            CalcSquaredDistanceToTriangle(p_MQ_, triangle_index, mesh_M_,
+                                          normal_set_M_);
+        if (squared_distance.squared_distance <
+            closest_info_.squared_distance) {
+          closest_info_ = squared_distance;
+        }
+      }
+      return;
     }
 
     // We couldn't prune the subtree, recursively search both children.
@@ -114,14 +113,12 @@ FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M)
         edge_normals_[edge] = face_normal;
       } else {
         it->second += face_normal;
+        it->second.stableNormalize();
       }
     }
   }
   for (auto& v_normal : vertex_normals_) {
     v_normal.stableNormalize();
-  }
-  for (auto& [_, e_normal] : edge_normals_) {
-    e_normal.stableNormalize();
   }
 }
 
@@ -139,9 +136,11 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
   // its boundary edges.
   const double kEps = std::numeric_limits<double>::epsilon();
 
-  // Check whether Q projects into the interior of the triangle. Treat the
-  // case where the projection is at a vertex or on an edge the same as being
-  // outside the triangle.
+  // Check whether Q projects into the triangle but neither its edges nor
+  // vertices. If so, the projection is the closest point, and we return
+  // the face normal. Notice that if Q projects into an edge or a vertex of
+  // the triangle, the projection is also the closest point, but we want
+  // to return the edge normal or the vertex normal, not the face normal.
   if (b_Q(0) > kEps && b_Q(1) > kEps && b_Q(2) > kEps) {
     // The projection of Q onto the plane of the triangle is in the triangle,
     // so the nearest point is at the projection.
@@ -156,8 +155,8 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
                                         mesh_M.vertex(triangle.vertex(1)),
                                         mesh_M.vertex(triangle.vertex(2))};
 
-  // The projection is outside the triangle, so the closest point is either
-  // in an edge or at a vertex. We will search the three edges.
+  // The closest point is either in an edge or at a vertex. We will search
+  // the three edges.
   SquaredDistanceToTriangle result;
   // Iterate over three edges, call each edge AB.
   for (int i = 0; i < 3; ++i) {
@@ -181,9 +180,9 @@ SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
           {triangle.vertex(i), triangle.vertex((i + 1) % 3)});
     }
 
-    const double d = (p_MQ - p_MN).squaredNorm();
-    if (d < result.squared_distance) {
-      result = SquaredDistanceToTriangle({d, p_MN, normal_M});
+    const double d_squared = (p_MQ - p_MN).squaredNorm();
+    if (d_squared < result.squared_distance) {
+      result = SquaredDistanceToTriangle({d_squared, p_MN, normal_M});
     }
   }
   return result;
@@ -193,8 +192,8 @@ SignedDistanceToSurfaceMesh CalcSignedDistanceToSurfaceMesh(
     const Vector3<double>& p_MQ, const TriangleSurfaceMesh<double>& mesh_M,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
     const FeatureNormalSet& feature_normals_M) {
-  SquaredDistanceToTriangle closest = BvhVisitor::CalcSquaredDistance(
-      p_MQ, mesh_M, bvh_M.root_node(), feature_normals_M);
+  SquaredDistanceToTriangle closest =
+      BvhVisitor::CalcSquaredDistance(p_MQ, mesh_M, bvh_M, feature_normals_M);
   // N is the nearest point.
   const Vector3d p_MN = closest.closest_point;
   const Vector3d p_NQ_M = p_MQ - p_MN;

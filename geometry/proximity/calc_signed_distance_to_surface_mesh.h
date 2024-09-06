@@ -90,8 +90,13 @@ struct SquaredDistanceToTriangle {
 };
 
 /* Calculates the squared distance and the closest point from the query point
- Q to a triangle in a mesh. It also provides the normal at the closest point
- suitable for the inside-outside test (see FeatureNormalSet).  */
+ Q to a triangle in a mesh.
+
+ It also provides the normal at the closest point suitable for the
+ inside-outside test (see FeatureNormalSet) as follows:
+ - return the vertex normal if the closest point is at a vertex, otherwise
+ - return the edge normal if the closest point is in an edge, otherwise
+ - return the face normal of the triangle.  */
 SquaredDistanceToTriangle CalcSquaredDistanceToTriangle(
     const Vector3<double>& p_MQ, int triangle_index,
     const TriangleSurfaceMesh<double>& mesh_M,
@@ -123,14 +128,15 @@ struct SignedDistanceToSurfaceMesh {
                            edges of the surface mesh, expressed in frame M.
 
  @pre  The surface mesh is a closed manifold with neither coincident
- vertices nor self-intersection, and every triangle has its face winding
- that gives an outward face normal. If the mesh has coincident vertices, the
- signs and gradients may flipped abruptly far from the surface, creating a
- region of query points with negative distance outside the enclosed volume
- or a region of query points with positive distance inside the enclosed volume.
- If the mesh is not closed, the regions of query points with positive and
- negative signed distances may appear arbitrarily, even though the non-closed
- mesh has neither inside nor outside.
+ vertices nor self-intersection, and every triangle's face winding
+ gives an outward face normal. Otherwise, some regions of query points that
+ get the wrong signs and unreliable gradients may appear. In other words, some
+ query points outside the enclosed volume might get negative distances and
+ gradients in the direction towards the surface, and some query points inside
+ the enclosed volume might get positive distances and gradients in the
+ direction away from the surface. If the mesh is not closed, the regions of
+ query points with positive and negative signed distances may appear, even
+ though the non-closed mesh has neither inside nor outside.
 
  @note If p_MQ is on the surface, the returned signed distance is zero,
  the nearest point is p_MQ itself, and the gradient is the normal
