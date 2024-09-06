@@ -6,6 +6,7 @@ drake_py_binary(
     name = "upgrade",
     srcs = ["upgrade.py"],
     data = [
+        "@openusd_internal//:cmake_macros",
         "@openusd_internal//:cmakelists",
     ],
     tags = [
