@@ -358,11 +358,25 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
   const auto png_file = MemoryFile::Make(FindResourceOrThrow(
       "drake/geometry/render/test/meshes/rainbow_stripes.png"));
   const Mesh memory_obj(InMemoryMesh(
-      obj_file,
+      MemoryFile(obj_file.contents(), obj_file.extension(), "memory_obj"),
       {{"rainbow_box.mtl", mtl_file}, {"rainbow_stripes.png", png_file}}));
-  for (const auto* mesh_ptr : {&disk_obj, &memory_obj}) {
-    SCOPED_TRACE(fmt::format("Full obj from {}",
-                             mesh_ptr == &disk_obj ? "disk" : "memory"));
+  // The "hetero" objs mix up the supporting files so that, in turn, one is
+  // in memory, and one is on-disk.
+  const Mesh hetero_obj1(InMemoryMesh(
+      MemoryFile(obj_file.contents(), obj_file.extension(), "hetero1_obj"),
+      {{"rainbow_box.mtl", mtl_file.description()},
+       {"rainbow_stripes.png", png_file}}));
+  const Mesh hetero_obj2(InMemoryMesh(
+      MemoryFile(obj_file.contents(), obj_file.extension(), "hetero2_obj"),
+      {{"rainbow_box.mtl", mtl_file},
+       {"rainbow_stripes.png", png_file.description()}}));
+  for (const auto* mesh_ptr :
+       {&disk_obj, &memory_obj, &hetero_obj1, &hetero_obj2}) {
+    const MeshSource& source = mesh_ptr->source();
+    const bool is_disk = source.IsPath();
+    SCOPED_TRACE(fmt::format("Full obj from {} - {}",
+                             is_disk ? "disk" : "memory",
+                             is_disk ? std::string() : source.description()));
     DRAKE_DEMAND(meshcat.GetPackedObject("obj_path").empty());
     // Reading from disk should encode the obj, the .mtl file, and the image.
     meshcat.SetObject("obj_path", *mesh_ptr);

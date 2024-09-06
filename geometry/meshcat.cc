@@ -337,10 +337,14 @@ class MeshcatShapeReifier : public ShapeReifier {
 
     std::string format = mesh.extension();
     format.erase(0, 1);  // remove the . from the extension
+
     const MeshSource& mesh_source = mesh.source();
 
     // MeshSource::description() *is* the file path if, mesh_source.IsPath().
     const fs::path filename = mesh_source.description();
+    // Precompute the basedir which we'll only use if source.IsPath().
+    const std::filesystem::path basedir_if_path = filename.parent_path();
+
     // We simply dump the binary contents of the file into the data field of the
     // message. The javascript meshcat takes care of the rest, but first we
     // need to acquire a copy -- either from a file or from an in-memory string.
@@ -384,11 +388,11 @@ class MeshcatShapeReifier : public ShapeReifier {
 
       const std::string mtllib = matches.str(1);
 
+
       std::optional<std::string> maybe_mtl_data;
       if (mesh_source.IsPath()) {
         // Use filename path as the base directory for textures.
-        const std::filesystem::path basedir = filename.parent_path();
-        maybe_mtl_data = ReadFile(basedir / mtllib);
+        maybe_mtl_data = ReadFile(basedir_if_path / mtllib);
       } else {
         const FileSource* mtl_source = mesh_source.mesh_data().file(mtllib);
         if (mtl_source != nullptr && !mtl_source->empty()) {
@@ -403,7 +407,6 @@ class MeshcatShapeReifier : public ShapeReifier {
 
       // Read .mtl file into geometry.mtl_library.
       if (maybe_mtl_data.has_value()) {
-        const std::filesystem::path basedir = filename.parent_path();
         meshfile_object.mtl_library = std::move(*maybe_mtl_data);
 
         // Scan .mtl file for map_ lines.  For each, load the file and add
@@ -447,7 +450,7 @@ class MeshcatShapeReifier : public ShapeReifier {
             }
           } else {
             DRAKE_DEMAND(mesh_source.IsPath());
-            maybe_map_path = basedir / map;
+            maybe_map_path = basedir_if_path / map;
           }
 
           // maybe_map_path is non-empty only if one of the paths above
@@ -474,7 +477,8 @@ class MeshcatShapeReifier : public ShapeReifier {
             drake::log()->warn(
                 "Meshcat: Failed to load texture. \"{}\" references '{}', but "
                 "Meshcat could not open filename \"{}\"",
-                (basedir / mtllib).string(), map, maybe_map_path.string());
+                (basedir_if_path / mtllib).string(), map,
+                maybe_map_path.string());
           }
         }
       } else if (!mtllib.empty()) {
