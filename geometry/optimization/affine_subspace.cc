@@ -230,7 +230,7 @@ AffineSubspace::DoAddPointInNonnegativeScalingConstraints(
     new_constraints = p.AddPointInNonnegativeScalingConstraints(prog, x, t);
   } else {
     // Suppose the ambient dimension is n and the affine dimension is m. We add
-    // the new variable y∈Rᵐ and impose the constraints t≥0 and x∈tS⊕rec(S), via
+    // the new variable y∈Rᵐ and impose the constraint x∈tS⊕rec(S), via
     // x=basis*y + translation*t This is explicitly written as
     // [-I, basis, translation][x; y; t] = 0.
     VectorXDecisionVariable y = prog->NewContinuousVariables(m, "y");
@@ -261,9 +261,8 @@ AffineSubspace::DoAddPointInNonnegativeScalingConstraints(
         p.AddPointInNonnegativeScalingConstraints(prog, A, b, c, d, x, t);
   } else {
     // Suppose the ambient dimension is n and the affine dimension is m. We add
-    // the new variable y∈Rᵐ and impose the constraints c'*t+d≥0 and
-    // Ax+b∈(c'*t+d)S⊕rec(S), via Ax+b=basis*y + translation*(c'*t+d). This is
-    // explicitly written as
+    // the new variable y∈Rᵐ and impose the constraint Ax+b∈(c'*t+d)S⊕rec(S),
+    // via Ax+b=basis*y + translation*(c'*t+d). This is explicitly written as
     // [-A, basis, translation*c'][x; y; t] = b - translation'*d.
     const int k = x.size();
     const int p = t.size();
