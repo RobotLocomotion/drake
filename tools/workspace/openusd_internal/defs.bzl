@@ -53,7 +53,11 @@ def pxr_library(
         srcs = srcs,
         hdrs = hdrs,
         defines = defines,
-        copts = ["-w"],
+        copts = [
+            # Special treatment for pxr/base/gf/nanocolor.{h,c}.
+            "-DNCAPI='__attribute__((visibility(\"hidden\")))'",
+            "-w",
+        ],
         alwayslink = alwayslink,
         linkstatic = True,
         data = data,
