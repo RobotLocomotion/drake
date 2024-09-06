@@ -3,8 +3,11 @@ Upgrades the lockfile for OpenUSD.
 """
 
 import argparse
+import functools
 from pathlib import Path
 import re
+import subprocess
+import tempfile
 
 from python import runfiles
 
@@ -32,54 +35,115 @@ SUBDIRS = [
     "pxr/usd/usdUtils",
 ]
 
+# This code block is crafted to work with the code scraped from
+# OpenUSD/cmake/macros/Public.cmake. It is the replacement code for
+# pxr_library(), that instead of building the library, reports selected
+# arguments. If any of the parsed arguments reported here go missing or change
+# spelling, this block will need to be updated. See _compose_cmake_prelude().
+PXR_LIBRARY_FUNCTION_STUB_EPILOG = """
+      # This order of keys matches the traditional order of the Drake
+      # lock file.
+      message("NAME = ${NAME}")
+      message("LIBRARIES = ${args_LIBRARIES}")
+      message("PUBLIC_CLASSES = ${args_PUBLIC_CLASSES}")
+      message("PUBLIC_HEADERS = ${args_PUBLIC_HEADERS}")
+      message("PRIVATE_CLASSES = ${args_PRIVATE_CLASSES}")
+      message("PRIVATE_HEADERS = ${args_PRIVATE_HEADERS}")
+      message("CPPFILES = ${args_CPPFILES}")
+endfunction()
+"""
 
-def _scrape(subdir: str) -> dict[str, str | list[str]]:
-    """Scrapes the pxr_library() call from the given subdir's CMakeLists.txt
-    and returns its arguments as more Pythonic data structure. (Refer to the
-    `result` dict inline below, for details.)
-    """
 
-    # Slurp the file
+def _slurp_file_from_runfiles(path: str) -> str:
+    """Returns the contents of a file from within the runfiles tree."""
     manifest = runfiles.Create()
-    found = manifest.Rlocation(f"openusd_internal/{subdir}/CMakeLists.txt")
-    cmake = Path(found).read_text(encoding="utf-8")
+    found = manifest.Rlocation(path)
+    return Path(found).read_text(encoding="utf-8")
 
-    # Find the arguments and split into tokens.
-    match = re.search(r"pxr_library\((.*?)\)", cmake, flags=re.DOTALL)
-    assert match, subdir
-    text, = match.groups()
-    text = re.sub(r'#.*', "", text)
-    text = text.replace("\n", " ")
-    tokens = text.split()
 
-    # Set up a skeleton result with the args we want.
-    name = tokens.pop(0)
-    result = dict(
-        NAME=name,
-        LIBRARIES=[],
-        PUBLIC_CLASSES=[],
-        PUBLIC_HEADERS=[],
-        PRIVATE_CLASSES=[],
-        PRIVATE_HEADERS=[],
-        CPPFILES=[],
-    )
+def _expand_stub(function: str) -> str:
+    """Returns cmake source code of a no-op function, with the given name."""
+    return f"""
+function({function})
+endfunction()
+"""
 
-    # File the tokens into collections. They are currently in a list, e.g.,
-    #   [FOO, bar, baz, QUUX, alpha, bravo]
-    # and we want them in a dict, e.g.,
-    #   {FOO: [bar, baz], QUUX: [alpha, bravo]}
-    current_collection = None
-    for token in tokens:
-        if token.isupper():
-            current_collection = token
+
+@functools.cache
+def _compose_cmake_prelude() -> str:
+    """Scrapes the contents of the cmake/macros/Public.cmake file from OpenUSD.
+    Compose a prelude of redefined (mostly stubbed-out) functions to use when
+    interpreting each library's CMakeLists.txt file.
+    """
+    # Slurp the upstream macros file.
+    public = _slurp_file_from_runfiles(
+        "openusd_internal/cmake/macros/Public.cmake")
+
+    # Build the list of functions to provide as no-op stubs.
+    functions = re.findall(r'.*\bfunction\b *\( *([^) ]+)[) ]', public)
+    assert functions
+    functions.remove("pxr_library")
+
+    # Make source code stubs for all those functions.
+    stubs = "\n\n".join([_expand_stub(function) for function in functions])
+
+    # TODO: scrape out the pxr_library() arg parsing.
+    match = re.search(
+        r'.*(\bfunction\b *\( *pxr_library.*?cmake_parse_arguments *\(.*?\))',
+        public, flags=re.DOTALL)
+    assert match
+    pxr_library_parsing = match.group(1)
+
+    # Combine pxr library parsing with our custom code, and the function stubs.
+    return "\n\n".join([pxr_library_parsing, PXR_LIBRARY_FUNCTION_STUB_EPILOG,
+                        stubs])
+
+
+def _interpret(cmake: str) -> dict[str, str | list[str]]:
+    """Uses the cmake interpreter to extract the arguments of the
+    pxr_library() call in the given cmake source code string."""
+    prelude = _compose_cmake_prelude()
+    script = "\n\n".join([prelude, cmake])
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        f.write(script.encode("utf8"))
+        f.flush()
+        command = ["cmake", "-P", f.name]
+        output = subprocess.check_output(
+            command, stderr=subprocess.STDOUT).decode("utf8")
+
+    result = dict()
+    for line in output.splitlines():
+        if " = " not in line:
             continue
-        assert current_collection is not None, subdir
-        if "$" in token:
-            # Skip over CMake substitutions.
-            continue
-        if current_collection in result:
-            result[current_collection].append(token)
+        k, v = line.split(" = ")
+        if k == "NAME":
+            result[k] = v
+        else:
+            vlist = [e for e in v.split(";") if e]
+            result[k] = vlist
+    return result
 
+
+def _extract(subdir: str) -> dict[str, str | list[str]]:
+    """Extracts the pxr_library() call from the given subdir's CMakeLists.txt
+    and returns its arguments as more Pythonic data structure. (Refer to the
+    `result` dict sanity checking inline below, for details.)
+    """
+    cmake = _slurp_file_from_runfiles(
+        f"openusd_internal/{subdir}/CMakeLists.txt")
+    result = _interpret(cmake)
+
+    # Result dict must contain these keys.
+    assert set(result.keys()) == {"NAME", "PUBLIC_CLASSES", "PUBLIC_HEADERS",
+                                  "PRIVATE_CLASSES", "PRIVATE_HEADERS",
+                                  "CPPFILES", "LIBRARIES"}
+    # NAME has a string-type value, all the rest are lists.
+    for key in result.keys():
+        if key == "NAME":
+            required_type = str
+        else:
+            required_type = list
+        assert isinstance(result[key], required_type)
     return result
 
 
@@ -91,8 +155,8 @@ def _generate() -> str:
     lines.append("FILES = {")
     for subdir in SUBDIRS:
         lines.append(f'    "{subdir}": {{')
-        scraped = _scrape(subdir)
-        for name, value in scraped.items():
+        extracted = _extract(subdir)
+        for name, value in extracted.items():
             if isinstance(value, str):
                 lines.append(f'        "{name}": "{value}",')
                 continue
