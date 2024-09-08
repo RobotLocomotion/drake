@@ -1,6 +1,7 @@
 #include <fstream>
 #include <sstream>
 
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

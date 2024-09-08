@@ -3069,37 +3069,56 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// number of degrees of freedom in accordance to the physical specification.
   /// In this regard, the modeling representation can be seen as a forest of
   /// tree structures each of which contains a single body at the root of the
-  /// tree. If the root body has six degrees of freedom with respect to the
-  /// world, it is called a "free body" (sometimes called a "floating body").
-  /// A user can request the set of all free bodies with a call to
+  /// tree. The root body's parent is always the world body. If a body has _six_
+  /// degrees of freedom with respect to its parent, it is called a "free body".
+  /// If it also the root of a tree, such that its parent is the world body,
+  /// it is a "floating base" body. Free bodies that are added to the plant
+  /// without specifying a joint become floating base bodies after
+  /// finalization. It is possible (and sometimes recommended) to explicitly
+  /// create a 6-dof joint between two bodies. The child body would be free,
+  /// because it has six degrees of freedom, but it would _not_ be a "floating
+  /// base body" because its parent is not the world. The effects of the various
+  /// APIs below depend on the distinction between "free" and "floating base
+  /// bodies". Read carefully.
+  /// A user can request the set of all floating base bodies with a call to
   /// GetFloatingBaseBodies(). Alternatively, a user can query whether a
-  /// RigidBody is free (floating) or not with RigidBody::is_floating().
+  /// RigidBody is a floating base body or not with RigidBody::is_floating().
   /// For many applications, a user might need to work with indices in the
   /// multibody state vector. For such applications,
   /// RigidBody::floating_positions_start() and
   /// RigidBody::floating_velocities_start_in_v() offer the additional level of
-  /// introspection needed.
+  /// introspection needed. These APIs only apply to floating base bodies and
+  /// _not_ 6-dof free bodies generally.
   ///
-  /// It is sometimes convenient for users to perform operations on Bodies
-  /// ubiquitously through the APIs of the Joint class. For that reason we
-  /// implicitly construct a 6-dof joint, QuaternionFloatingJoint, for all free
-  /// bodies at the time of Finalize(). Using Joint APIs to affect a free body
-  /// (setting  state, changing parameters, etc.) has the same effect as using
-  /// the free body APIs below. Each implicitly created joint is named the same
-  /// as the free body, as reported by `RigidBody::name()`. In the rare case
-  /// that there is already some (unrelated) joint with that name, we'll prepend
-  /// underscores to the name until it is unique.
+  /// It is sometimes convenient for users to perform operations on RigidBodies
+  /// uniformly through the APIs of the Joint class. For that reason the
+  /// plant implicitly constructs a 6-dof joint, QuaternionFloatingJoint,
+  /// between the body and the world for all bodies otherwise without declared
+  /// inboard joints at the time of Finalize(). Using Joint APIs to affect a
+  /// free body (setting  state, changing parameters, etc.) has the same effect
+  /// as using the free body APIs below. Each implicitly created joint is named
+  /// the same as the free body, as reported by `RigidBody::name()`. In the rare
+  /// case that there is already some (unrelated) joint with that name, we'll
+  /// prepend underscores to the name until it is unique.
+  ///
+  /// The APIs below provide affordances for working with free bodies without
+  /// explicitly accessing the corresponding floating joint. The pose of a free
+  /// body (as it is represented in %MultibodyPlant's state) is *always* the
+  /// pose of the free body relative to its parent frame. That is _not_
+  /// necessarily the body's pose in the world (unless the parent frame is the
+  /// world frame).
   /// @{
 
-  /// Returns the set of body indices corresponding to the free (floating)
+  /// Returns the set of body indices corresponding to the floating base
   /// bodies in the model, in no particular order.
   /// @throws std::exception if called pre-finalize, see Finalize().
   std::unordered_set<BodyIndex> GetFloatingBaseBodies() const;
 
-  /// Gets the pose of a given `body` in the world frame W.
-  /// @note In general getting the pose of a body in the model would involve
-  /// solving the kinematics. This method allows us to simplify this process
-  /// when we know the body is free in space.
+  /// Gets the pose of a given `body` in the parent frame P.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details". To acquire X_WB,
+  /// regardless of what P is, kinematics need to be evaluated by calling
+  /// EvalBodyPoseInWorld().
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   math::RigidTransform<T> GetFreeBodyPose(const systems::Context<T>& context,
@@ -3108,91 +3127,94 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetFreeBodyPoseOrThrow(context, body);
   }
 
-  /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
-  /// frame W.
-  /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allows us
-  /// to simplify this process when we know the body is free in space.
+  /// Sets `context` to store the pose `X_PB` of a given `body` B in the parent
+  /// frame P.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyPose(systems::Context<T>* context, const RigidBody<T>& body,
-                       const math::RigidTransform<T>& X_WB) const {
+                       const math::RigidTransform<T>& X_PB) const {
     this->ValidateContext(context);
-    internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
+    internal_tree().SetFreeBodyPoseOrThrow(body, X_PB, context);
   }
 
-  /// Sets `state` to store the pose `X_WB` of a given `body` B in the world
-  /// frame W, for a given `context` of `this` model.
-  /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allows us
-  /// to simplify this process when we know the body is free in space.
+  /// Sets `state` to store the pose `X_PB` of a given `body` B in its parent
+  /// frame P, for a given `context` of `this` model.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   /// @pre `state` comes from this MultibodyPlant.
   void SetFreeBodyPose(const systems::Context<T>& context,
                        systems::State<T>* state, const RigidBody<T>& body,
-                       const math::RigidTransform<T>& X_WB) const {
+                       const math::RigidTransform<T>& X_PB) const {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
-    internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
+    internal_tree().SetFreeBodyPoseOrThrow(body, X_PB, context, state);
   }
 
   /// Sets the default pose of `body`. If `body.is_floating()` is true, this
   /// will affect subsequent calls to SetDefaultState(); otherwise, the only
   /// effect of the call is that the value will be echoed back in
   /// GetDefaultFreeBodyPose().
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
   /// @param[in] body
   ///   RigidBody whose default pose will be set.
-  /// @param[in] X_WB
+  /// @param[in] X_PB
   ///   Default pose of the body.
   void SetDefaultFreeBodyPose(const RigidBody<T>& body,
-                              const math::RigidTransform<double>& X_WB) {
-    this->mutable_tree().SetDefaultFreeBodyPose(body, X_WB);
+                              const math::RigidTransform<double>& X_PB) {
+    this->mutable_tree().SetDefaultFreeBodyPose(body, X_PB);
   }
 
   /// Gets the default pose of `body` as set by SetDefaultFreeBodyPose(). If no
   /// pose is specified for the body, returns the identity pose.
   /// @param[in] body
   ///   RigidBody whose default pose will be retrieved.
+  /// @retval X_PB The pose of the free body relative to its parent frame.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
   math::RigidTransform<double> GetDefaultFreeBodyPose(
       const RigidBody<T>& body) const {
     return internal_tree().GetDefaultFreeBodyPose(body);
   }
 
-  /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
-  /// the world frame W.
-  /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allows us
-  /// to simplify this process when we know the body is free in space.
+  /// Sets `context` to store the spatial velocity `V_PB` of a given `body` B in
+  /// its parent frame P.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodySpatialVelocity(systems::Context<T>* context,
                                   const RigidBody<T>& body,
-                                  const SpatialVelocity<T>& V_WB) const {
+                                  const SpatialVelocity<T>& V_PB) const {
     this->ValidateContext(context);
-    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_WB, context);
+    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_PB, context);
   }
 
-  /// Sets `state` to store the spatial velocity `V_WB` of a given `body` B in
-  /// the world frame W, for a given `context` of `this` model.
-  /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allows us
-  /// to simplify this process when we know the body is free in space.
+  /// Sets `state` to store the spatial velocity `V_PB` of a given `body` B in
+  /// its parent frame P, for a given `context` of `this` model.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   /// @pre `state` comes from this MultibodyPlant.
   void SetFreeBodySpatialVelocity(const systems::Context<T>& context,
                                   systems::State<T>* state,
                                   const RigidBody<T>& body,
-                                  const SpatialVelocity<T>& V_WB) const {
+                                  const SpatialVelocity<T>& V_PB) const {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
-    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_WB, context,
+    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_PB, context,
                                                       state);
   }
 
   /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's x-y-z `translation` with respect to World.
+  /// body's x-y-z `translation` with respect to its parent frame P.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyRandomTranslationDistribution(
@@ -3203,7 +3225,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's `rotation` with respect to World.
+  /// body's `rotation` with respect to its parent frame.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyRandomRotationDistribution(
@@ -3214,24 +3238,32 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's rotation with respect to World using uniformly random rotations.
+  /// body's rotation with respect to its parent frame using uniformly random
+  /// rotations.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyRandomRotationDistributionToUniform(const RigidBody<T>& body);
 
-  /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
-  /// frame W.
+  /// Sets `context` to store the pose `X_WB` of a given _floating base_ `body`
+  /// B in the world frame W.
   /// @param[in] context
   ///   The context to store the pose `X_WB` of `body_B`.
   /// @param[in] body_B
-  ///   The body B corresponding to the pose `X_WB` to be stored in `context`.
+  ///   The _floating base_ body B corresponding to the pose `X_WB` to be stored
+  ///   in `context`.
   /// @retval X_WB
   ///   The pose of body frame B in the world frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
   /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
+  /// @warning This method only applies to "floating base" bodies; i.e.,
+  /// `body.is_floating()` returns `true`. I.e., not just any free body, despite
+  /// the method name.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body.is_floating()` returns `false`.
   void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
                                    const RigidBody<T>& body,
                                    const math::RigidTransform<T>& X_WB) const;

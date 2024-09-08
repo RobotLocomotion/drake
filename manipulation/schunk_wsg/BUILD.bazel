@@ -54,7 +54,6 @@ drake_cc_library(
         "schunk_wsg_trajectory_generator_state_vector.cc",
     ],
     hdrs = [
-        "gen/schunk_wsg_trajectory_generator_state_vector.h",
         "schunk_wsg_trajectory_generator_state_vector.h",
     ],
     visibility = [":__subpackages__"],

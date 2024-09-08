@@ -4,7 +4,9 @@ load("//tools/skylark:py.bzl", "py_test")
 py_test(
     name = "cpplint_unittest",
     size = "small",
-    srcs = ["@styleguide//:cpplint_unittest"],
+    srcs = ["@styleguide//:test_files"],
+    data = ["@styleguide//:test_files"],
+    main = "@styleguide//:cpplint/cpplint_unittest.py",
     tags = ["no_kcov"],
     deps = ["@venv"],
 )

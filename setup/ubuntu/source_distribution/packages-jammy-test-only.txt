@@ -16,3 +16,4 @@ python3-uritemplate
 python3-websockets
 valgrind
 valgrind-dbg
+zip

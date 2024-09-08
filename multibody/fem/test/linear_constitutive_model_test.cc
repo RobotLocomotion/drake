@@ -10,26 +10,24 @@ namespace fem {
 namespace internal {
 namespace test {
 
-constexpr int kNumLocations = 1;
-
 GTEST_TEST(LinearConstitutiveModelTest, Parameters) {
-  TestParameters<LinearConstitutiveModel<double, kNumLocations>>();
-  TestParameters<LinearConstitutiveModel<AutoDiffXd, kNumLocations>>();
-  LinearConstitutiveModel<double, kNumLocations> model(100, 0.4);
+  TestParameters<LinearConstitutiveModel<double>>();
+  TestParameters<LinearConstitutiveModel<AutoDiffXd>>();
+  LinearConstitutiveModel<double> model(100, 0.4);
   EXPECT_TRUE(model.is_linear);
 }
 
 GTEST_TEST(LinearConstitutiveModelTest, UndeformedState) {
-  TestUndeformedState<LinearConstitutiveModel<double, kNumLocations>>();
-  TestUndeformedState<LinearConstitutiveModel<AutoDiffXd, kNumLocations>>();
+  TestUndeformedState<LinearConstitutiveModel<double>>();
+  TestUndeformedState<LinearConstitutiveModel<AutoDiffXd>>();
 }
 
 GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
-  TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd, kNumLocations>>();
+  TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd>>();
 }
 
 GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
-  TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd, kNumLocations>>();
+  TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd>>();
 }
 
 }  // namespace test

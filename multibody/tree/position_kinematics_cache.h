@@ -147,9 +147,6 @@ class PositionKinematicsCache {
     X_FM_pool_.resize(num_mobods_);
     X_FM_pool_[world_mobod_index()] = NaNPose();  // It should never be used.
 
-    X_MB_pool_.resize(num_mobods_);
-    X_MB_pool_[world_mobod_index()] = NaNPose();  // It should never be used.
-
     p_PoBo_W_pool_.resize(num_mobods_);
     // p_PoBo_W for the world body should never be used.
     p_PoBo_W_pool_[world_mobod_index()].setConstant(
@@ -173,7 +170,6 @@ class PositionKinematicsCache {
   X_PoolType X_WB_pool_;
   X_PoolType X_PB_pool_;
   X_PoolType X_FM_pool_;
-  X_PoolType X_MB_pool_;
   Vector3PoolType p_PoBo_W_pool_;
 };
 

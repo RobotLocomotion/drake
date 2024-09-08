@@ -73,6 +73,14 @@ class CartesianProduct final : public ConvexSet {
   product. */
   const ConvexSet& factor(int i) const;
 
+  /** Returns a copy of the matrix A if it has been set, or nullopt otherwise.
+   */
+  std::optional<Eigen::MatrixXd> A() const { return A_; }
+
+  /** Returns a copy of the vector b if it has been set, or nullopt otherwise.
+   */
+  std::optional<Eigen::VectorXd> b() const { return b_; }
+
   /** Returns true if each subvector is in its corresponding set with tolerance
   `tol`.  Note: Tolerance support for this query varies in the different convex
   set implementations. */

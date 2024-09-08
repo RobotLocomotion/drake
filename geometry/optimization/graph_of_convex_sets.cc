@@ -137,13 +137,13 @@ Vertex::Vertex(VertexId id, const ConvexSet& set, std::string name)
 
 Vertex::~Vertex() = default;
 
-std::pair<Variable, Binding<Cost>> Vertex::AddCost(
+Binding<Cost> Vertex::AddCost(
     const symbolic::Expression& e,
     const std::unordered_set<Transcription>& use_in_transcription) {
   return AddCost(solvers::internal::ParseCost(e), use_in_transcription);
 }
 
-std::pair<Variable, Binding<Cost>> Vertex::AddCost(
+Binding<Cost> Vertex::AddCost(
     const Binding<Cost>& binding,
     const std::unordered_set<Transcription>& use_in_transcription) {
   DRAKE_THROW_UNLESS(
@@ -153,7 +153,12 @@ std::pair<Variable, Binding<Cost>> Vertex::AddCost(
   ell_.conservativeResize(n + 1);
   ell_[n] = Variable(fmt::format("v_ell{}", n), Variable::Type::CONTINUOUS);
   costs_.push_back({binding, use_in_transcription});
-  return std::pair<Variable, Binding<Cost>>(ell_[n], binding);
+  // Note: The ell_ variable is a slack variable used e.g. SolveShortestPath,
+  // but not e.g. SolveConvexRestriction. It is an implementation detail, and
+  // should not leak into the public interface, otherwise people could expect
+  // to call e.g. prog.GetSolution(ell_), and get different answers based on
+  // which solution method they used.
+  return binding;
 }
 
 Binding<Constraint> Vertex::AddConstraint(
@@ -210,12 +215,57 @@ std::vector<solvers::Binding<solvers::Constraint>> Vertex::GetConstraints(
   return constraints;
 }
 
-double Vertex::GetSolutionCost(const MathematicalProgramResult& result) const {
-  return result.GetSolution(ell_).sum();
+std::optional<double> Vertex::GetSolutionCost(
+    const MathematicalProgramResult& result) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::nullopt;
+  }
+  double sum = 0.0;
+  for (int i = 0; i < ssize(ell_); ++i) {
+    if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
+      sum += result.GetSolution(ell_[i]);
+    }
+  }
+  return sum;
 }
 
-VectorXd Vertex::GetSolution(const MathematicalProgramResult& result) const {
-  return result.GetSolution(placeholder_x_);
+std::optional<double> Vertex::GetSolutionCost(
+    const MathematicalProgramResult& result,
+    const solvers::Binding<solvers::Cost>& cost) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::nullopt;
+  }
+  for (int i = 0; i < ssize(costs_); ++i) {
+    if (costs_[i].first == cost) {
+      if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
+        return result.GetSolution(ell_[i]);
+      } else {
+        return 0.0;
+      }
+    }
+  }
+  throw std::runtime_error(fmt::format(
+      "Vertex::GetSolutionCost: cost {} was not registered with this vertex.",
+      cost.to_string()));
+}
+
+std::optional<VectorXd> Vertex::GetSolution(
+    const MathematicalProgramResult& result) const {
+  if (result.get_decision_variable_index() &&
+      result.get_decision_variable_index()->contains(
+          placeholder_x_[0].get_id())) {
+    VectorXd x = result.GetSolution(placeholder_x_);
+    // SolveShortestPath writes NaN into the solution if Phi is approximately
+    // zero, so we handle that case here.
+    if (x.array().isNaN().any()) {
+      return std::nullopt;
+    }
+    return x;
+  } else {
+    return std::nullopt;
+  }
 }
 
 void Vertex::AddIncomingEdge(Edge* e) {
@@ -284,13 +334,13 @@ VectorXDecisionVariable Edge::NewSlackVariables(int rows,
   return s;
 }
 
-std::pair<Variable, Binding<Cost>> Edge::AddCost(
+Binding<Cost> Edge::AddCost(
     const symbolic::Expression& e,
     const std::unordered_set<Transcription>& use_in_transcription) {
   return AddCost(solvers::internal::ParseCost(e), use_in_transcription);
 }
 
-std::pair<Variable, Binding<Cost>> Edge::AddCost(
+Binding<Cost> Edge::AddCost(
     const Binding<Cost>& binding,
     const std::unordered_set<Transcription>& use_in_transcription) {
   DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
@@ -300,7 +350,12 @@ std::pair<Variable, Binding<Cost>> Edge::AddCost(
   ell_[n] =
       Variable(fmt::format("{}ell{}", name_, n), Variable::Type::CONTINUOUS);
   costs_.push_back({binding, use_in_transcription});
-  return std::pair<Variable, Binding<Cost>>(ell_[n], binding);
+  // Note: The ell_ variable is a slack variable used e.g. SolveShortestPath,
+  // but not e.g. SolveConvexRestriction. It is an implementation detail, and
+  // should not leak into the public interface, otherwise people could expect
+  // to call e.g. prog.GetSolution(ell_), and get different answers based on
+  // which solution method they used.
+  return binding;
 }
 
 Binding<Constraint> Edge::AddConstraint(
@@ -365,18 +420,60 @@ void Edge::ClearPhiConstraints() {
   phi_value_ = std::nullopt;
 }
 
-double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
-  return result.GetSolution(ell_).sum();
+std::optional<double> Edge::GetSolutionCost(
+    const MathematicalProgramResult& result) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::nullopt;
+  }
+  double sum = 0.0;
+  for (int i = 0; i < ssize(ell_); ++i) {
+    if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
+      sum += result.GetSolution(ell_[i]);
+    }
+  }
+  return sum;
 }
 
-Eigen::VectorXd Edge::GetSolutionPhiXu(
-    const solvers::MathematicalProgramResult& result) const {
-  return result.GetSolution(y_);
+std::optional<double> Edge::GetSolutionCost(
+    const MathematicalProgramResult& result,
+    const solvers::Binding<solvers::Cost>& cost) const {
+  if (!result.get_decision_variable_index()) {
+    // Then there were no results.
+    return std::nullopt;
+  }
+  for (int i = 0; i < ssize(costs_); ++i) {
+    if (costs_[i].first == cost) {
+      if (result.get_decision_variable_index()->contains(ell_[i].get_id())) {
+        return result.GetSolution(ell_[i]);
+      } else {
+        return 0.0;
+      }
+    }
+  }
+  throw std::runtime_error(fmt::format(
+      "Edge::GetSolutionCost: cost {} was not registered with this edge.",
+      cost.to_string()));
 }
 
-Eigen::VectorXd Edge::GetSolutionPhiXv(
+std::optional<Eigen::VectorXd> Edge::GetSolutionPhiXu(
     const solvers::MathematicalProgramResult& result) const {
-  return result.GetSolution(z_);
+  if (result.get_decision_variable_index() &&
+      result.get_decision_variable_index()->contains(y_[0].get_id())) {
+    return result.GetSolution(y_);
+  } else {
+    return std::nullopt;
+  }
+}
+
+std::optional<Eigen::VectorXd> Edge::GetSolutionPhiXv(
+    const solvers::MathematicalProgramResult& result) const {
+  if (result.get_decision_variable_index() &&
+      result.get_decision_variable_index()->contains(z_[0].get_id())) {
+    return result.GetSolution(z_);
+  } else {
+    return std::nullopt;
+  }
 }
 
 Vertex* GraphOfConvexSets::AddVertex(const ConvexSet& set, std::string name) {
@@ -499,10 +596,16 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
       if (options.show_vars) {
-        graphviz << "\nx = [" << result->GetSolution(v->x()).transpose() << "]";
+        std::optional<VectorXd> x = v->GetSolution(*result);
+        if (x.has_value()) {
+          graphviz << "\nx = [" << x->transpose() << "]";
+        }
       }
       if (options.show_costs) {
-        graphviz << "\ncost = " << v->GetSolutionCost(*result);
+        std::optional<double> cost = v->GetSolutionCost(*result);
+        if (cost.has_value()) {
+          graphviz << "\ncost = " << *cost;
+        }
       }
     }
     graphviz << "\"]\n";
@@ -513,25 +616,20 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << " [label=\"" << e->name();
     if (result) {
       if (options.show_costs) {
-        graphviz << "\n";
-        if (e->ell_.size() > 0) {
-          // SolveConvexRestriction does not yet return the rewritten costs.
-          if (result->get_decision_variable_index()->contains(
-                  e->ell_[0].get_id())) {
-            graphviz << "cost = " << e->GetSolutionCost(*result);
-          }
-        } else {
-          graphviz << "cost = 0";
+        std::optional<double> cost = e->GetSolutionCost(*result);
+        if (cost.has_value()) {
+          graphviz << "\ncost = " << *cost;
         }
       }
-      if (options.show_slacks) {
+      if (options.show_slacks && result->get_decision_variable_index()) {
         graphviz << "\n";
-        if (result->get_decision_variable_index()->contains(
-                e->y_[0].get_id())) {
-          graphviz << "ϕ xᵤ = [" << e->GetSolutionPhiXu(*result).transpose()
-                   << "],\n";
-          graphviz << "ϕ xᵥ = [" << e->GetSolutionPhiXv(*result).transpose()
-                   << "]";
+        std::optional<VectorXd> phixu = e->GetSolutionPhiXu(*result);
+        if (phixu.has_value()) {
+          graphviz << "ϕ xᵤ = [" << phixu->transpose() << "],\n";
+        }
+        std::optional<VectorXd> phixv = e->GetSolutionPhiXv(*result);
+        if (phixv.has_value()) {
+          graphviz << "ϕ xᵥ = [" << phixv->transpose() << "]";
         }
       }
       if (options.show_flows) {
@@ -1316,11 +1414,17 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     int num_placeholder_vars = relaxed_phi.size();
     for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
          vertices_) {
-      num_placeholder_vars += vpair.second->ambient_dimension();
-      num_placeholder_vars += vpair.second->ell_.size();
+      const Vertex* v = vpair.second.get();
+      num_placeholder_vars += v->ambient_dimension();
+      for (int i = 0; i < v->ell_.size(); ++i) {
+        const auto& [b, transcriptions] = v->costs_[i];
+        if (IncludesCurrentTranscription(transcriptions)) {
+          num_placeholder_vars += 1;
+        }
+      }
     }
     for (const Edge* e : excluded_edges) {
-      num_placeholder_vars += e->y_.size() + e->z_.size() + e->ell_.size() + 1;
+      num_placeholder_vars += e->y_.size() + e->z_.size() + 1;
     }
     num_placeholder_vars += excluded_phi.size();
     std::unordered_map<symbolic::Variable::Id, int> decision_variable_index =
@@ -1329,16 +1433,14 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     Eigen::VectorXd x_val(count + num_placeholder_vars);
     x_val.head(count) = result.get_x_val();
     for (const Edge* e : excluded_edges) {
+      // TODO(russt): Consider not adding y_ and z_ for the excluded edges;
+      // GetSolutionPhiXu() and GetSolutionPhiXv() should handle this.
       for (int i = 0; i < e->y_.size(); ++i) {
         decision_variable_index.emplace(e->y_[i].get_id(), count);
         x_val[count++] = 0;
       }
       for (int i = 0; i < e->z_.size(); ++i) {
         decision_variable_index.emplace(e->z_[i].get_id(), count);
-        x_val[count++] = 0;
-      }
-      for (int i = 0; i < e->ell_.size(); ++i) {
-        decision_variable_index.emplace(e->ell_[i].get_id(), count);
         x_val[count++] = 0;
       }
       decision_variable_index.emplace(e->phi_.get_id(), count);
@@ -1382,14 +1484,12 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       }
       int active_ell = 0;
       for (int i = 0; i < v->ell_.size(); ++i) {
-        decision_variable_index.emplace(v->ell_[i].get_id(), count);
         const auto& [b, transcriptions] = v->costs_[i];
         if (IncludesCurrentTranscription(transcriptions)) {
+          decision_variable_index.emplace(v->ell_[i].get_id(), count);
           x_val[count++] =
               result.GetSolution(vertex_edge_ell.at(v->id())[active_ell++])
                   .sum();
-        } else {
-          x_val[count++] = 0.0;
         }
       }
     }
@@ -1826,15 +1926,31 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
 
   // TODO(russt): Add the dual variables back in for the rewritten costs.
 
-  // Add phi vars.
+  // In order to access to the results that is comparable with the other GCS
+  // transcriptions, we add a few extra values to the result:
+  // - flow variables (phi) for all of the edges,
+  // - slack variables corresponding the (active) vertex and edge costs: they
+  //   are not used in the restriction, but are the only way to retrieve the
+  //   cost from the MIP and/or its convex relaxation.
+
+  // Add phi vars for all edges.
   int num_excluded_vars = edges_.size();
-  // Add any excluded vertices to the result.
-  std::vector<const Vertex*> excluded_vertices;
-  for (const auto& pair : vertices_) {
-    const Vertex* v = pair.second.get();
-    if (!vertices.contains(v)) {
-      num_excluded_vars += v->x().size();
-      excluded_vertices.emplace_back(v);
+  // Add edge cost slack variables for active_edges.
+  for (const Edge* e : active_edges) {
+    for (int i = 0; i < e->ell_.size(); ++i) {
+      const auto& [b, transcriptions] = e->costs_[i];
+      if (transcriptions.contains(Transcription::kRestriction)) {
+        num_excluded_vars += 1;
+      }
+    }
+  }
+  for (const auto* v : vertices) {
+    // Add the vertex cost slack variables.
+    for (int i = 0; i < v->ell_.size(); ++i) {
+      const auto& [b, transcriptions] = v->costs_[i];
+      if (transcriptions.contains(Transcription::kRestriction)) {
+        num_excluded_vars += 1;
+      }
     }
   }
   int count = result.get_x_val().size();
@@ -1844,16 +1960,33 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
       prog.decision_variable_index();
   for (const auto& pair : edges_) {
     const Edge* e = pair.second.get();
-    decision_variable_index.emplace(e->phi_.get_id(), count);
-    x_val[count++] = std::find(active_edges.begin(), active_edges.end(), e) !=
-                             active_edges.end()
-                         ? 1.0
-                         : 0.0;
+    if (std::find(active_edges.begin(), active_edges.end(), e) !=
+        active_edges.end()) {
+      // phi.
+      decision_variable_index.emplace(e->phi_.get_id(), count);
+      x_val[count++] = 1.0;
+      // edge cost slack variables.
+      for (int i = 0; i < e->ell_.size(); ++i) {
+        const auto& [b, transcriptions] = e->costs_[i];
+        if (transcriptions.contains(Transcription::kRestriction)) {
+          decision_variable_index.emplace(e->ell_[i].get_id(), count);
+          x_val[count++] = result.EvalBinding(b)[0];
+        }
+      }
+    } else {
+      // phi.
+      decision_variable_index.emplace(e->phi_.get_id(), count);
+      x_val[count++] = 0.0;
+    }
   }
-  for (const Vertex* v : excluded_vertices) {
-    for (int i = 0; i < v->x().size(); ++i) {
-      decision_variable_index.emplace(v->x()[i].get_id(), count);
-      x_val[count++] = std::numeric_limits<double>::quiet_NaN();
+  for (const auto* v : vertices) {
+    // vertex cost slack variables.
+    for (int i = 0; i < v->ell_.size(); ++i) {
+      const auto& [b, transcriptions] = v->costs_[i];
+      if (transcriptions.contains(Transcription::kRestriction)) {
+        decision_variable_index.emplace(v->ell_[i].get_id(), count);
+        x_val[count++] = result.EvalBinding(b)[0];
+      }
     }
   }
   result.set_decision_variable_index(decision_variable_index);

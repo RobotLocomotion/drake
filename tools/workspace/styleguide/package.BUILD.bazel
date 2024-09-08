@@ -30,18 +30,12 @@ alias(
     actual = ":cpplint_binary",
 )
 
-# We use py_binary here because externals' tests are not run by
-# default during `bazel test //...`, so `py_test` here would be
-# misleading.  We can't even `alias()` the test into Drake due to
-# https://github.com/bazelbuild/bazel/issues/10893
-py_binary(
-    name = "cpplint_unittest",
-    srcs = ["cpplint/cpplint_unittest.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    data = [
+filegroup(
+    name = "test_files",
+    testonly = True,
+    srcs = [
+        "cpplint/cpplint.py",
         "cpplint/cpplint_test_header.h",
+        "cpplint/cpplint_unittest.py",
     ],
-    deps = ["cpplint_binary"],
-    testonly = 1,
 )

@@ -148,6 +148,32 @@ TEST_F(MeshParserTest, ModelInstanceNameTest) {
   EXPECT_TRUE(plant_.HasBodyNamed("test_box", prefix_geom_box_model_instance));
 }
 
+// Confirms that multiple objects are acceptable. It can't be arbitrary multiple
+// objects; they must be triangles that will produce a spatial inertia that
+// won't trip over the physically valid test.
+TEST_F(MeshParserTest, MultiObjects) {
+  // Reset the diagnostic policy to actually throw on errors.
+  diagnostic_policy_ = DiagnosticPolicy();
+
+  const std::filesystem::path temp_dir = temp_directory();
+  const std::filesystem::path file = temp_dir / "two_objects.obj";
+  {
+    std::ofstream f(file.string());
+    ASSERT_TRUE(f);
+    // Two identical triangles displaced from the origin with normals pointing
+    // away from the origin are sufficient to produce a physically valid-ish
+    // spatial inertia.
+    f << "v 0 0 1\n"
+      << "v 1 0 1\n"
+      << "v 0 1 1\n"
+      << "o one\n"  // Create first object.
+      << "f 1 2 3\n"
+      << "o two\n"  // Create a second object.
+      << "f 1 2 3\n";
+  }
+  EXPECT_NO_THROW(AddModelFromMeshFile(file.string(), ""));
+}
+
 // Various means by which we end up getting an exception.
 TEST_F(MeshParserTest, ErrorModes) {
   // Reset the diagnostic policy to actually throw on errors.
@@ -165,24 +191,9 @@ TEST_F(MeshParserTest, ErrorModes) {
     }
 
     DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromMeshFile(file.string(), ""),
-                                ".* has no faces.*");
+                                ".*file parsed contains no objects.*");
   }
-  // 2. Two objects.
-  {
-    const std::filesystem::path file = temp_dir / "two_objects.obj";
-    {
-      std::ofstream f(file.string());
-      ASSERT_TRUE(f);
-      f << "v 0 0 0\n"
-        << "o one\n"   // Create first object.
-        << "f 1 1 1\n"
-        << "o two\n"    // Create a second object.
-        << "f 1 1 1\n";
-    }
-    DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromMeshFile(file.string(), ""),
-                                ".* 2 unique shapes; only 1 allowed.*");
-  }
-  // 3. Not an OBJ.
+  // 2. Not an OBJ.
   {
     const std::filesystem::path file = temp_dir / "empty.obj";
     {
@@ -191,9 +202,9 @@ TEST_F(MeshParserTest, ErrorModes) {
       f << "Non-OBJ gibberish";
     }
     DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromMeshFile(file.string(), ""),
-                                ".* has no faces.*");
+                                ".*file parsed contains no objects.*");
   }
-  // 4. Called with obj data in a string.
+  // 3. Called with obj data in a string.
   {
     const std::string data("Just some text");
     const DataSource data_source{DataSource::kContents, &data};

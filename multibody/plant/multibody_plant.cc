@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <fmt/ranges.h>
+
 #include "drake/common/drake_throw.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -1152,6 +1154,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context, const RigidBody<T>& body,
     const math::RigidTransform<T>& X_WB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(body.is_floating());
   this->ValidateContext(context);
   internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
 }

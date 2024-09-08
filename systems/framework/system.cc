@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "drake/common/unused.h"
 #include "drake/systems/framework/system_visitor.h"
