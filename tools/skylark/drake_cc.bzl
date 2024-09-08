@@ -392,6 +392,7 @@ def _raw_drake_cc_library(
         tags = None,
         testonly = None,
         visibility = None,
+        compile_once_per_scalar = False,
         declare_installed_headers = None,
         install_hdrs_exclude = None,
         deprecation = None):
@@ -423,6 +424,42 @@ def _raw_drake_cc_library(
             visibility = ["//visibility:public"],
         )
 
+    # When compiling using once_per_scalar, we need to replace the srcs with
+    # small stub files that prescribe the scalar type. (This will crash if the
+    # srcs uses a `select`; that usage is not supported.)
+    textual_hdrs = None
+    if compile_once_per_scalar:
+        new_srcs = []
+        for src in srcs:
+            for i in range(3):
+                stub_name = "{}_{}".format(i, src)
+                generate_file(
+                    name = stub_name,
+                    content = (
+                        ("#define DRAKE_ONCE_PER_SCALAR_PHASE {}\n" +
+                         "#include \"{}/{}\"\n").format(
+                            i,
+                            native.package_name(),
+                            src,
+                        )
+                    ),
+                    visibility = ["//visibility:private"],
+                )
+                new_srcs.append(stub_name)
+
+        # Don't lint the stubs; instead, use a dummy rule to own the linting.
+        cc_library(
+            name = "{}_for_linting".format(name),
+            hdrs = (hdrs or []) + (srcs or []),
+            tags = ["manual", "exclude_from_package"],
+            visibility = ["//visibility:private"],
+        )
+        tags = (tags or []) + ["nolint"]
+
+        # The old srcs convert to textual_hdrs; the stubs are the new srcs.
+        textual_hdrs = srcs
+        srcs = new_srcs
+
     # If we're using implementation_deps, then the result of compiling our srcs
     # needs to use an intermediate label name. The actual `name` label will be
     # used for the "implementation sandwich", below.
@@ -441,6 +478,7 @@ def _raw_drake_cc_library(
         name = compiled_name,
         srcs = srcs,
         hdrs = hdrs,
+        textual_hdrs = textual_hdrs,
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
         copts = copts,
@@ -538,6 +576,7 @@ def drake_cc_library(
         gcc_copts = [],
         linkstatic = 1,
         internal = False,
+        compile_once_per_scalar = False,
         declare_installed_headers = 1,
         install_hdrs_exclude = [],
         **kwargs):
@@ -625,6 +664,7 @@ def drake_cc_library(
         linkstatic = linkstatic,
         declare_installed_headers = declare_installed_headers,
         install_hdrs_exclude = install_hdrs_exclude,
+        compile_once_per_scalar = compile_once_per_scalar,
         tags = new_tags,
         **kwargs
     )
