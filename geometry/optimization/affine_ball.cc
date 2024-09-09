@@ -196,7 +196,7 @@ std::optional<std::pair<MatrixXd, VectorXd>> AffineBall::DoAffineHullShortcut(
   }
   MatrixXd basis =
       qr.matrixQ() * MatrixXd::Identity(ambient_dimension(), qr.rank());
-  return std::make_pair(std::move(basis), std::move(center_));
+  return std::make_pair(std::move(basis), center_);
 }
 
 std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>

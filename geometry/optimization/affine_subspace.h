@@ -183,9 +183,7 @@ class AffineSubspace final : public ConvexSet {
       const final;
 
   std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
-  DoAffineHullShortcut(std::optional<double>) const final {
-    return std::make_pair(basis_, translation_);
-  }
+      DoAffineHullShortcut(std::optional<double>) const final;
 
   double DoCalcVolume() const final;
 

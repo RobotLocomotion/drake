@@ -444,6 +444,11 @@ double ConvexSet::DoCalcVolume() const {
                   NiceTypeName::Get(*this)));
 }
 
+std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
+ConvexSet::DoAffineHullShortcut(std::optional<double>) const {
+  return std::nullopt;
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

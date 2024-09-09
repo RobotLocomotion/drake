@@ -270,6 +270,11 @@ AffineSubspace::DoToShapeWithPose() const {
       "ToShapeWithPose is not supported by AffineSubspace.");
 }
 
+std::optional<std::pair<MatrixXd, VectorXd>>
+AffineSubspace::DoAffineHullShortcut(std::optional<double>) const {
+  return std::make_pair(basis_, translation_);
+}
+
 double AffineSubspace::DoCalcVolume() const {
   if (AffineDimension() < ambient_dimension()) {
     // An AffineSubspace has zero volume if it has a lower affine dimension than
