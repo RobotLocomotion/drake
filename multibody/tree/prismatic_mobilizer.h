@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <limits>
 #include <memory>
 #include <string>
@@ -122,10 +123,10 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(*reinterpret_cast<const std::array<T, kNq>*>(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, 1>& q) const {
+  math::RigidTransform<T> calc_X_FM(const std::array<T, 1>& q) const {
     return math::RigidTransform<T>(q[0] * translation_axis());
   }
 
@@ -134,7 +135,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
     return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+                     *reinterpret_cast<const std::array<T, kNv>*>(v.data()));
   };
 
   // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
@@ -142,7 +143,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // translational velocity v along this mobilizer's axis (see
   // translation_axis()).
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>& v) const {
+                               const std::array<T, kNv>& v) const {
     return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
   }
 

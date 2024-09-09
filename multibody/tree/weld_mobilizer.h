@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <limits>
 #include <memory>
 
@@ -52,25 +53,24 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   // is independent of the state stored in `context`.
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>&) const final {
-    return calc_X_FM(Eigen::Vector<T, 0>());
+    return calc_X_FM(std::array<T, 0>());
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>&) const {
+  math::RigidTransform<T> calc_X_FM(const std::array<T, kNq>&) const {
     return X_FM_.cast<T>();
   }
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
-      const systems::Context<T>& context,
+      const systems::Context<T>&,
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
-    return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+    return SpatialVelocity<T>::Zero();
   };
 
   // Computes the across-mobilizer velocity V_FM which for this mobilizer is
   // always zero since the outboard frame M is fixed to the inboard frame F.
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>&) const {
+                               const std::array<T, kNv>&) const {
     return SpatialVelocity<T>::Zero();
   }
 

@@ -77,16 +77,17 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
     const Vector3<T>& p_MB_M = X_MB.translation();
     const Vector3<T> p_MB_F = R_FM * p_MB_M;
 
-    Eigen::Vector<T, kNv> v = Eigen::Vector<T, kNv>::Zero();
+    std::array<T, kNv> v;
+    for (int i=0; i < kNv; ++i) v[i] = 0.0;
     Eigen::Matrix<T, 6, kNv>& H_PB_W = my_mutable_H(H_PB_W_cache);
     // We compute H_FM(q) one column at a time by calling the multiplication by
     // H_FM operation on a vector of generalized velocities which is zero except
     // for its imob-th component, which is one.
     for (int imob = 0; imob < kNv; ++imob) {
-      v(imob) = 1.0;
+      v[imob] = 1.0;
       // Compute the imob-th column of H_FM:
       const SpatialVelocity<T> Himob_FM = mobilizer_->calc_V_FM(context, v);
-      v(imob) = 0.0;
+      v[imob] = 0.0;
       // V_PB_W = V_PFb_W + V_FMb_W + V_MB_W = V_FMb_W =
       //         = R_WF * V_FM.Shift(p_MoBo_F)
       H_PB_W.col(imob) = (R_WF * Himob_FM.Shift(p_MB_F)).get_coeffs();
@@ -160,7 +161,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   // Jain (2010)) where p_MoBo_F = 0 and thus V_PB_W = V_FM_W.
 
   // Generalized velocities local to this node's mobilizer.
-  const Eigen::Vector<T, kNv>& vm = my_v(velocities);
+  const std::array<T, kNv>& vm = my_v(velocities);
 
   // =========================================================================
   // Computation of V_PB_W in Eq. (1). See summary at the top of this method.
@@ -180,7 +181,8 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
     // Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵛ with nv ∈ [0; 6] the
     // number of mobilities for this node.
     const Eigen::Matrix<T, 6, kNv>& H_PB_W = my_H(H_PB_W_cache);
-    V_PB_W.get_coeffs() = H_PB_W * vm;
+    const Vector<T, kNv> vmx(&vm[0]);  // Alignment prevents direct use of vm.
+    V_PB_W.get_coeffs() = H_PB_W * vmx;
   } else {
     V_PB_W.get_coeffs().setZero();
   }

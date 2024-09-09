@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <string>
 
@@ -179,10 +180,10 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(*reinterpret_cast<const std::array<T, kNq>*>(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>& q) const {
+  math::RigidTransform<T> calc_X_FM(const std::array<T, kNq>& q) const {
     return math::RigidTransform<T>(math::RollPitchYaw<T>(q[0], q[1], q[2]),
                                    Vector3<T>::Zero());
   }
@@ -192,7 +193,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
     return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+                     *reinterpret_cast<const std::array<T, kNv>*>(v.data()));
   };
 
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
@@ -200,8 +201,9 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // velocity v which contains the components of the angular velocity w_FM
   // expressed in frame F. The translational velocity is always zero.
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>& v) const {
-    return SpatialVelocity<T>(v, Vector3<T>::Zero());
+                               const std::array<T, kNv>& v) const {
+    const Vector3<T>& w_FM = *reinterpret_cast<const Vector3<T>*>(&v[0]);
+    return SpatialVelocity<T>(w_FM, Vector3<T>::Zero());
   }
 
   // Computes the across-mobilizer acceleration A_FM(q, v, v̇) of the

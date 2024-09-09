@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <string>
 
@@ -210,14 +211,15 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(*reinterpret_cast<const std::array<T, kNq>*>(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>& q) const {
+  math::RigidTransform<T> calc_X_FM(const std::array<T, kNq>& q) const {
     // The first 4 elements in q contain a quaternion, ordered as w, x, y, z.
     // The last 3 elements in q contain position from Fo to Mo.
+    const Vector3<T>& p_FM = *reinterpret_cast<const Vector3<T>*>(&q[4]);
     return math::RigidTransform<T>(Eigen::Quaternion<T>(q[0], q[1], q[2], q[3]),
-                                   q.template tail<3>());
+                                   p_FM);
   }
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
@@ -225,13 +227,14 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
     return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+                     *reinterpret_cast<const std::array<T, kNv>*>(v.data()));
   };
 
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>& v) const {
-    return SpatialVelocity<T>(v.template head<3>(),   // w_FM
-                              v.template tail<3>());  // v_FM
+                               const std::array<T, kNv>& v) const {
+    const Vector3<T>& w_FM = *reinterpret_cast<const Vector3<T>*>(&v[0]);
+    const Vector3<T>& v_FM = *reinterpret_cast<const Vector3<T>*>(&v[3]);
+    return SpatialVelocity<T>(w_FM, v_FM);
   }
 
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(

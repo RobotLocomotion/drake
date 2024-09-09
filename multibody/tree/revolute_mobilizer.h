@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <limits>
 #include <memory>
 #include <string>
@@ -123,10 +124,10 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(*reinterpret_cast<const std::array<T, kNq>*>(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>& q) const {
+  math::RigidTransform<T> calc_X_FM(const std::array<T, kNq>& q) const {
     return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_F_),
                                    Vector3<T>::Zero());
   }
@@ -136,14 +137,14 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
     return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+                     *reinterpret_cast<const std::array<T, kNv>*>(v.data()));
   };
 
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
   // frame M measured and expressed in frame F as a function of the input
   // angular velocity `v` about this mobilizer's axis (@see revolute_axis()).
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>& v) const {
+                               const std::array<T, kNv>& v) const {
     return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
   }
 

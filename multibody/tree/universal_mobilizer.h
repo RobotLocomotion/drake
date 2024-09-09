@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <string>
 
@@ -119,10 +120,10 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(*reinterpret_cast<const std::array<T, kNq>*>(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>& q) const {
+  math::RigidTransform<T> calc_X_FM(const std::array<T, kNq>& q) const {
     const T s1 = sin(q[0]), c1 = cos(q[0]);
     const T s2 = sin(q[1]), c2 = cos(q[1]);
     Matrix3<T> R_FM_matrix;
@@ -139,7 +140,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
     return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+                     *reinterpret_cast<const std::array<T, kNv>*>(v.data()));
   };
 
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
@@ -148,9 +149,10 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // in get_angular_rates().
   // TODO(sherm1) Should not have to recalculate H_FM(q) here.
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>& context,
-                               const Eigen::Vector<T, kNv>& v) const {
+                               const std::array<T, kNv>& v) const {
+    const Eigen::Vector<T, 2> vv(v[0], v[1]);  // Alignment issue.
     const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(context);
-    return SpatialVelocity<T>(Hw * v, Vector3<T>::Zero());
+    return SpatialVelocity<T>(Hw * vv, Vector3<T>::Zero());
   }
 
   // Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the

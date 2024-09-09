@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -78,21 +79,37 @@ class BodyNodeImpl final : public BodyNode<T> {
 
   // Given a pointer to the contiguous array of all q's in this system, returns
   // a reference to just the ones for this mobilizer, as a fixed-size vector.
-  const Eigen::Vector<T, kNq>& my_q(const T* positions) const {
-    return *reinterpret_cast<const Eigen::Vector<T, kNq>*>(
-        &positions[mobilizer_->position_start_in_q()]);
+  // N.B. Can't use an Eigen fixed-size vector because even-sized ones require
+  // 16 byte alignment and we can't guarantee that.
+  const std::array<T, kNq>& my_q(const T* positions) const {
+    if constexpr(kNq == 0) {  // Silence ubsan.
+      static const std::array<T, 0> nothing;
+      return nothing;
+    } else {
+      return *reinterpret_cast<const std::array<T, kNq> *>(
+          &positions[mobilizer_->position_start_in_q()]);
+    }
   }
 
   // Given a pointer to the contiguous array of all v's in this system, returns
   // a reference to just the ones for this mobilizer, as a fixed-size vector.
-  const Eigen::Vector<T, kNv>& my_v(const T* velocities) const {
-    return *reinterpret_cast<const Eigen::Vector<T, kNv>*>(
-        &velocities[mobilizer_->velocity_start_in_v()]);
+  // N.B. Can't use an Eigen fixed-size vector because even-sized ones require
+  // 16 byte alignment and we can't guarantee that.
+  const std::array<T, kNv>& my_v(const T* velocities) const {
+    if constexpr(kNq == 0) {  // Silence ubsan.
+      static const std::array<T, 0> nothing;
+      return nothing;
+    } else {
+      return *reinterpret_cast<const std::array<T, kNv> *>(
+          &velocities[mobilizer_->velocity_start_in_v()]);
+    }
   }
 
   // Given a complete array of hinge matrices H stored by contiguous columns,
   // returns a const reference to H for this mobilizer, as a 6xnv fixed-size
   // matrix.
+  // N.B. No alignment issue here since every (6 entry) column begins on
+  // a 16 byte boundary.
   const Eigen::Matrix<T, 6, kNv>& my_H(
       const std::vector<Vector6<T>>& H_cache) const {
     return *reinterpret_cast<const Eigen::Matrix<T, 6, kNv>*>(

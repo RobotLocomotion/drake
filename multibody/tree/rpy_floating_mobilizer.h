@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <string>
 
@@ -228,12 +229,13 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(*reinterpret_cast<const std::array<T, kNq>*>(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>& q) const {
+  math::RigidTransform<T> calc_X_FM(const std::array<T, kNq>& q) const {
+    const Vector3<T>& p_FM = *reinterpret_cast<const Vector3<T>*>(&q[3]);
     return math::RigidTransform<T>(math::RollPitchYaw<T>(q[0], q[1], q[2]),
-                                   q.template tail<3>());
+                                   p_FM);
   }
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
@@ -241,7 +243,7 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
     return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+                     *reinterpret_cast<const std::array<T, kNv>*>(v.data()));
   };
 
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame M
@@ -249,9 +251,10 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // velocity v, packed as documented in get_generalized_velocities(). (That's
   // conveniently just V_FM already.)
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>& v) const {
-    return SpatialVelocity<T>(v.template head<3>(),   // w_FM
-                              v.template tail<3>());  // v_FM
+                               const std::array<T, kNv>& v) const {
+    const Vector3<T>& w_FM = *reinterpret_cast<const Vector3<T>*>(&v[0]);
+    const Vector3<T>& v_FM = *reinterpret_cast<const Vector3<T>*>(&v[3]);
+    return SpatialVelocity<T>(w_FM, v_FM);
   }
 
   // Computes the across-mobilizer acceleration A_FM(q, v, v̇) of the
