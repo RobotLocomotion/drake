@@ -263,7 +263,7 @@ AffineSubspace::DoAddPointInNonnegativeScalingConstraints(
     // Suppose the ambient dimension is n and the affine dimension is m. We add
     // the new variable y∈Rᵐ and impose the constraint Ax+b∈(c'*t+d)S⊕rec(S),
     // via Ax+b=basis*y + translation*(c'*t+d). This is explicitly written as
-    // [-A, basis, translation*c'][x; y; t] = b - translation'*d.
+    // [-A, basis, translation*c'][x; y; t] = b - translation*d.
     const int k = x.size();
     const int p = t.size();
     VectorXDecisionVariable y = prog->NewContinuousVariables(m, "y");

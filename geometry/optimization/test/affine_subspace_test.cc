@@ -495,34 +495,24 @@ GTEST_TEST(AffineSubspaceTest, PointInNonnegativeScalingConstraints) {
       Eigen::MatrixXd::Identity(1, 1), Vector1d(t_test_value),
       Vector1<Variable>(t));
 
-  std::vector<std::pair<Vector3d, double>> valid_x_t;
-  valid_x_t.emplace_back(Vector3d(-43.0, 43.0, 0.0), 0.0);
-  valid_x_t.emplace_back(Vector3d(-43.0, 43.0, 0.5), 0.5);
-  valid_x_t.emplace_back(Vector3d(-43.0, 43.0, 3.0), 3.0);
+  // Test values for x, t, and whether the constraint is satisfied.
+  const std::vector<std::tuple<Vector3d, double, bool>> test_x_t{
+      {Vector3d(-43.0, 43.0, 0.0), 0.0, true},
+      {Vector3d(-43.0, 43.0, 0.5), 0.5, true},
+      {Vector3d(-43.0, 43.0, 3.0), 3.0, true},
+      {Vector3d(-43.0, 43.0, -1.0), 0.0, false},
+      {Vector3d(-43.0, 43.0, -1.0), 1.0, false},
+      {Vector3d(-43.0, 43.0, 0.0), -1.0, false},
+      {Vector3d(-43.0, 43.0, 5.0), 0.0, false},
+      {Vector3d(-43.0, 43.0, 1.0), 0.5, false}};
 
-  std::vector<std::pair<Vector3d, double>> invalid_x_t;
-  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, -1.0), 0.0);
-  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, -1.0), 1.0);
-  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, 0.0), -1.0);
-  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, 5.0), 0.0);
-  invalid_x_t.emplace_back(Vector3d(-43.0, 43.0, 1.0), 0.5);
-
-  for (const auto& [x_val, t_val] : valid_x_t) {
+  for (const auto& [x_val, t_val, expect_success] : test_x_t) {
     x_constraint.evaluator()->UpdateCoefficients(
         Eigen::MatrixXd::Identity(3, 3), x_val);
     t_constraint.evaluator()->UpdateCoefficients(
         Eigen::MatrixXd::Identity(1, 1), Vector1d(t_val));
     auto result = Solve(prog);
-    EXPECT_TRUE(result.is_success());
-  }
-
-  for (const auto& [x_val, t_val] : invalid_x_t) {
-    x_constraint.evaluator()->UpdateCoefficients(
-        Eigen::MatrixXd::Identity(3, 3), x_val);
-    t_constraint.evaluator()->UpdateCoefficients(
-        Eigen::MatrixXd::Identity(1, 1), Vector1d(t_val));
-    auto result = Solve(prog);
-    EXPECT_FALSE(result.is_success());
+    EXPECT_EQ(result.is_success(), expect_success);
   }
 
   MatrixXd A(3, 2);
@@ -551,35 +541,24 @@ GTEST_TEST(AffineSubspaceTest, PointInNonnegativeScalingConstraints) {
   auto t2_constraint = prog2.AddLinearEqualityConstraint(
       Eigen::MatrixXd::Identity(2, 2), t2_test_value, t2);
 
-  std::vector<std::pair<Vector2d, Vector2d>> valid_x2_t2;
-  valid_x2_t2.emplace_back(Vector2d{1.0, 1.0}, Vector2d{2.0, 0.0});
-  valid_x2_t2.emplace_back(Vector2d(2.0, 1.0), Vector2d(4.0, 0.0));
-  valid_x2_t2.emplace_back(Vector2d(0.0, 1.0), Vector2d(0.0, 0.0));
-  valid_x2_t2.emplace_back(Vector2d(0.0, 1.0), Vector2d(1.0, 1.0));
-  valid_x2_t2.emplace_back(Vector2d(2.0, 1.0), Vector2d(0.0, -4.0));
+  const std::vector<std::tuple<Vector2d, Vector2d, bool>> test_x2_t2{
+      {Vector2d{1.0, 1.0}, Vector2d{2.0, 0.0}, true},
+      {Vector2d(2.0, 1.0), Vector2d(4.0, 0.0), true},
+      {Vector2d(0.0, 1.0), Vector2d(0.0, 0.0), true},
+      {Vector2d(0.0, 1.0), Vector2d(1.0, 1.0), true},
+      {Vector2d(2.0, 1.0), Vector2d(0.0, -4.0), true},
+      {Vector2d{1.0, 1.0}, Vector2d{0.0, 0.0}, false},
+      {Vector2d{1.0, 1.0}, Vector2d{1.0, 0.0}, false},
+      {Vector2d{-1.0, 1.0}, Vector2d{0.0, 2.0}, false},
+      {Vector2d{-1.0, 1.0}, Vector2d{-2.0, 0.0}, false}};
 
-  std::vector<std::pair<Vector2d, Vector2d>> invalid_x2_t2;
-  invalid_x2_t2.emplace_back(Vector2d{1.0, 1.0}, Vector2d{0.0, 0.0});
-  invalid_x2_t2.emplace_back(Vector2d{1.0, 1.0}, Vector2d{1.0, 0.0});
-  invalid_x2_t2.emplace_back(Vector2d{-1.0, 1.0}, Vector2d{0.0, 2.0});
-  invalid_x2_t2.emplace_back(Vector2d{-1.0, 1.0}, Vector2d{-2.0, 0.0});
-
-  for (const auto& [x2_val, t2_val] : valid_x2_t2) {
+  for (const auto& [x2_val, t2_val, expect_success] : test_x2_t2) {
     x2_constraint.evaluator()->UpdateCoefficients(
         Eigen::MatrixXd::Identity(2, 2), x2_val);
     t2_constraint.evaluator()->UpdateCoefficients(
         Eigen::MatrixXd::Identity(2, 2), t2_val);
     auto result2 = Solve(prog2);
-    EXPECT_TRUE(result2.is_success());
-  }
-
-  for (const auto& [x2_val, t2_val] : invalid_x2_t2) {
-    x2_constraint.evaluator()->UpdateCoefficients(
-        Eigen::MatrixXd::Identity(2, 2), x2_val);
-    t2_constraint.evaluator()->UpdateCoefficients(
-        Eigen::MatrixXd::Identity(2, 2), t2_val);
-    auto result2 = Solve(prog2);
-    EXPECT_FALSE(result2.is_success());
+    EXPECT_EQ(result2.is_success(), expect_success);
   }
 }
 
