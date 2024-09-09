@@ -17,7 +17,6 @@ drake_cc_package_library(
         ":calc_distance_and_time_derivative",
         ":constraint_specs",
         ":contact_jacobians",
-        ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
         ":deformable_ids",
@@ -26,7 +25,6 @@ drake_cc_package_library(
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
         ":force_density_field",
-        ":hydroelastic_traction_calculator",
         ":internal_geometry_names",
         ":multibody_plant_config",
         ":multibody_plant_config_functions",
@@ -125,14 +123,12 @@ drake_cc_library(
     deps = [
         ":constraint_specs",
         ":contact_jacobians",
-        ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
         ":deformable_ids",
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
-        ":hydroelastic_traction_calculator",
         ":multibody_plant_config",
         ":slicing_and_indexing",
         ":tamsi_solver",
@@ -151,6 +147,10 @@ drake_cc_library(
         "//multibody/tree",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
+    ],
+    implementation_deps = [
+        ":contact_properties",
+        ":hydroelastic_traction_calculator",
     ],
 )
 
@@ -330,6 +330,8 @@ drake_cc_library(
     hdrs = [
         "hydroelastic_traction_calculator.h",
     ],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":contact_results",
         "//geometry/proximity:mesh_field",
@@ -344,10 +346,8 @@ alias(
     name = "hydroelastic_traction",
     actual = ":hydroelastic_traction_calculator",
     deprecation = """
-To access this header file, change your deps to
- @drake//multibody/plant:hydroelastic_traction_calculator
-to avoid this warning.
-This target will be removed from Drake on or after 2024-11-01.
+This library is for Drake internal use only. Don't list it as a dependency in
+your project. This target will be removed from Drake on or after 2024-11-01.
 """.strip(),
     tags = ["manual"],
 )
@@ -463,6 +463,8 @@ drake_cc_library(
     hdrs = [
         "contact_properties.h",
     ],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         "//common:default_scalars",
         "//geometry:scene_graph_inspector",
