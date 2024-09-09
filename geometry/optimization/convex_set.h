@@ -19,10 +19,6 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-#ifndef DRAKE_DOXYGEN_CXX
-class AffineSubspace;  // Forward declaration from affine_subspace.h.
-#endif
-
 /** @defgroup geometry_optimization Geometry Optimization
 @ingroup geometry
 @brief Provides an abstraction for reasoning about geometry in optimization
@@ -462,13 +458,15 @@ class ConvexSet {
   exists, returns null. The default base class implementation returns null. This
   method is used by the AffineSubspace constructor to short-circuit the generic
   iterative approach. (This function is static to allow calling it from the
-  AffineSubspace constructor, but is conceptially a normal member function.) */
-  static std::unique_ptr<AffineSubspace> AffineHullShortcut(
+  AffineSubspace constructor, but is conceptially a normal member function.)
+  The return type is ConvexSet to avoid a forward declaration; any non-null
+  result must always have the AffineSubspace as its runtime type. */
+  static std::unique_ptr<ConvexSet> AffineHullShortcut(
       const ConvexSet& self, std::optional<double> tol);
 
   /** NVI implementation of DoAffineHullShortcut, which trivially returns null.
   Derived classes that have efficient algorithms should override this method. */
-  virtual std::unique_ptr<AffineSubspace> DoAffineHullShortcut(
+  virtual std::unique_ptr<ConvexSet> DoAffineHullShortcut(
       std::optional<double> tol) const;
 
  private:

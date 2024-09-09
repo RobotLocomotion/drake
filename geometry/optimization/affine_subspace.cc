@@ -55,10 +55,12 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
   // If the set is of a ConvexSet subclass that has an efficient algorithm for
   // computing the affine hull, we use it. Otherwise, we use the generic
   // iterative approach.
-  std::unique_ptr<AffineSubspace> maybe_shortcut =
-      ConvexSet::AffineHullShortcut(set, tol);
-  if (maybe_shortcut != nullptr) {
-    *this = std::move(*maybe_shortcut);
+  std::unique_ptr<ConvexSet> shortcut = ConvexSet::AffineHullShortcut(set, tol);
+  if (shortcut != nullptr) {
+    // This downcast is per the post-condition of the AffineHullShortcut API.
+    AffineSubspace* downcast = dynamic_cast<AffineSubspace*>(shortcut.get());
+    DRAKE_THROW_UNLESS(downcast != nullptr);
+    *this = std::move(*downcast);
     return;
   }
 
@@ -270,7 +272,7 @@ AffineSubspace::DoToShapeWithPose() const {
       "ToShapeWithPose is not supported by AffineSubspace.");
 }
 
-std::unique_ptr<AffineSubspace> AffineSubspace::DoAffineHullShortcut(
+std::unique_ptr<ConvexSet> AffineSubspace::DoAffineHullShortcut(
     std::optional<double>) const {
   return std::make_unique<AffineSubspace>(*this);
 }

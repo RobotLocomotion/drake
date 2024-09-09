@@ -137,7 +137,7 @@ class VPolytope final : public ConvexSet, private ShapeReifier {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
-  std::unique_ptr<AffineSubspace> DoAffineHullShortcut(
+  std::unique_ptr<ConvexSet> DoAffineHullShortcut(
       std::optional<double> tol) const final;
 
   double DoCalcVolume() const final;

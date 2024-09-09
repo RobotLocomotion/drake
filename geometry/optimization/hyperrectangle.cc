@@ -209,7 +209,7 @@ Hyperrectangle::DoToShapeWithPose() const {
                         math::RigidTransformd(Center()));
 }
 
-std::unique_ptr<AffineSubspace> Hyperrectangle::DoAffineHullShortcut(
+std::unique_ptr<ConvexSet> Hyperrectangle::DoAffineHullShortcut(
     std::optional<double> tol) const {
   MatrixXd basis = MatrixXd::Zero(ambient_dimension(), ambient_dimension());
   int current_dimension = 0;

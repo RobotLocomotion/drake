@@ -363,7 +363,7 @@ CartesianProduct::DoToShapeWithPose() const {
       "ToShapeWithPose is not implemented yet for CartesianProduct.");
 }
 
-std::unique_ptr<AffineSubspace> CartesianProduct::DoAffineHullShortcut(
+std::unique_ptr<ConvexSet> CartesianProduct::DoAffineHullShortcut(
     std::optional<double> tol) const {
   // TODO(cohnt): Support affine transformations of Cartesian products. For now,
   // we just return std::nullopt and use the generic affine hull computation.

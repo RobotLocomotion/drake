@@ -445,12 +445,12 @@ double ConvexSet::DoCalcVolume() const {
                   NiceTypeName::Get(*this)));
 }
 
-std::unique_ptr<AffineSubspace> ConvexSet::AffineHullShortcut(
+std::unique_ptr<ConvexSet> ConvexSet::AffineHullShortcut(
     const ConvexSet& self, std::optional<double> tol) {
   return self.DoAffineHullShortcut(tol);
 }
 
-std::unique_ptr<AffineSubspace> ConvexSet::DoAffineHullShortcut(
+std::unique_ptr<ConvexSet> ConvexSet::DoAffineHullShortcut(
     std::optional<double>) const {
   return nullptr;
 }

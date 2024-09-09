@@ -588,7 +588,7 @@ VPolytope::DoToShapeWithPose() const {
       "class (to support in-memory mesh data, or file I/O).");
 }
 
-std::unique_ptr<AffineSubspace> VPolytope::DoAffineHullShortcut(
+std::unique_ptr<ConvexSet> VPolytope::DoAffineHullShortcut(
     std::optional<double> tol) const {
   DRAKE_THROW_UNLESS(vertices_.size() > 0);
   Eigen::JacobiSVD<MatrixXd> svd;

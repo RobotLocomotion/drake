@@ -397,7 +397,7 @@ void Hyperellipsoid::ImplementGeometry(const Sphere& sphere, void* data) {
   *A = Eigen::Matrix3d::Identity() / sphere.radius();
 }
 
-std::unique_ptr<AffineSubspace> Hyperellipsoid::DoAffineHullShortcut(
+std::unique_ptr<ConvexSet> Hyperellipsoid::DoAffineHullShortcut(
     std::optional<double> tol) const {
   // Hyperellipsoids are always positive volume, so we can trivially construct
   // their affine hull as the whole vector space.

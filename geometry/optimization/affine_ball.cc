@@ -188,7 +188,7 @@ AffineBall::DoToShapeWithPose() const {
       "ToShapeWithPose is not yet supported by AffineBall.");
 }
 
-std::unique_ptr<AffineSubspace> AffineBall::DoAffineHullShortcut(
+std::unique_ptr<ConvexSet> AffineBall::DoAffineHullShortcut(
     std::optional<double> tol) const {
   Eigen::FullPivHouseholderQR<MatrixXd> qr(B_);
   if (tol) {
