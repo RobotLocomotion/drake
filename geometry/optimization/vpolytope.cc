@@ -14,6 +14,7 @@
 #include <libqhullcpp/QhullVertexSet.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/solvers/solve.h"
 
@@ -587,7 +588,7 @@ VPolytope::DoToShapeWithPose() const {
       "class (to support in-memory mesh data, or file I/O).");
 }
 
-std::optional<std::pair<MatrixXd, VectorXd>> VPolytope::DoAffineHullShortcut(
+std::unique_ptr<AffineSubspace> VPolytope::DoAffineHullShortcut(
     std::optional<double> tol) const {
   DRAKE_THROW_UNLESS(vertices_.size() > 0);
   Eigen::JacobiSVD<MatrixXd> svd;
@@ -597,8 +598,8 @@ std::optional<std::pair<MatrixXd, VectorXd>> VPolytope::DoAffineHullShortcut(
   if (tol) {
     svd.setThreshold(tol.value());
   }
-  return std::make_pair(std::move(svd.matrixU().leftCols(svd.rank())),
-                        vertices_.col(0));
+  return std::make_unique<AffineSubspace>(
+      std::move(svd.matrixU().leftCols(svd.rank())), vertices_.col(0));
 }
 
 double VPolytope::DoCalcVolume() const {

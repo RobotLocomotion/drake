@@ -13,6 +13,7 @@
 #include <Eigen/Eigenvalues>
 #include <fmt/format.h>
 
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/solvers/solve.h"
 
@@ -208,8 +209,8 @@ Hyperrectangle::DoToShapeWithPose() const {
                         math::RigidTransformd(Center()));
 }
 
-std::optional<std::pair<MatrixXd, VectorXd>>
-Hyperrectangle::DoAffineHullShortcut(std::optional<double> tol) const {
+std::unique_ptr<AffineSubspace> Hyperrectangle::DoAffineHullShortcut(
+    std::optional<double> tol) const {
   MatrixXd basis = MatrixXd::Zero(ambient_dimension(), ambient_dimension());
   int current_dimension = 0;
   int num_basis_vectors = 0;
@@ -222,7 +223,8 @@ Hyperrectangle::DoAffineHullShortcut(std::optional<double> tol) const {
     }
     ++current_dimension;
   }
-  return std::make_pair(std::move(basis.leftCols(num_basis_vectors)), lb_);
+  return std::make_unique<AffineSubspace>(
+      std::move(basis.leftCols(num_basis_vectors)), lb_);
 }
 
 double Hyperrectangle::DoCalcVolume() const {

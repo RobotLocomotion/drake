@@ -111,8 +111,8 @@ class Hyperrectangle final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
-  std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
-  DoAffineHullShortcut(std::optional<double> tol) const final;
+  std::unique_ptr<AffineSubspace> DoAffineHullShortcut(
+      std::optional<double> tol) const final;
 
   // TODO(Alexandre.Amice) Implement DoProjectionShortcut.
 

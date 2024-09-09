@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/solution_result.h"
@@ -444,9 +445,14 @@ double ConvexSet::DoCalcVolume() const {
                   NiceTypeName::Get(*this)));
 }
 
-std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
-ConvexSet::DoAffineHullShortcut(std::optional<double>) const {
-  return std::nullopt;
+std::unique_ptr<AffineSubspace> ConvexSet::AffineHullShortcut(
+    const ConvexSet& self, std::optional<double> tol) {
+  return self.DoAffineHullShortcut(tol);
+}
+
+std::unique_ptr<AffineSubspace> ConvexSet::DoAffineHullShortcut(
+    std::optional<double>) const {
+  return nullptr;
 }
 
 }  // namespace optimization

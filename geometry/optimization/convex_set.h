@@ -19,6 +19,10 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+#ifndef DRAKE_DOXYGEN_CXX
+class AffineSubspace;  // Forward declaration from affine_subspace.h.
+#endif
+
 /** @defgroup geometry_optimization Geometry Optimization
 @ingroup geometry
 @brief Provides an abstraction for reasoning about geometry in optimization
@@ -454,20 +458,18 @@ class ConvexSet {
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
 
   /** When there is a more efficient strategy to compute the affine hull of this
-  set, returns the basis and translation of the affine hull. When no efficient
-  conversion exists, returns std::nullopt. The default base class implementation
-  returns std::nullopt. This method is used by the AffineSubspace constructor to
-  short-circuit the generic iterative approach. */
-  static std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
-  AffineHullShortcut(const ConvexSet& set, std::optional<double> tol) {
-    return set.DoAffineHullShortcut(tol);
-  }
+  set, returns affine hull as an AffineSubspace. When no efficient conversion
+  exists, returns null. The default base class implementation returns null. This
+  method is used by the AffineSubspace constructor to short-circuit the generic
+  iterative approach. (This function is static to allow calling it from the
+  AffineSubspace constructor, but is conceptially a normal member function.) */
+  static std::unique_ptr<AffineSubspace> AffineHullShortcut(
+      const ConvexSet& self, std::optional<double> tol);
 
-  /** Base-class implementation of DoAffineHullShortcut, which trivially returns
-  std::nullopt. Derived classes which have efficient algorithms should override
-  this method. */
-  virtual std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
-  DoAffineHullShortcut(std::optional<double> tol) const;
+  /** NVI implementation of DoAffineHullShortcut, which trivially returns null.
+  Derived classes that have efficient algorithms should override this method. */
+  virtual std::unique_ptr<AffineSubspace> DoAffineHullShortcut(
+      std::optional<double> tol) const;
 
  private:
   /** Generic implementation for IsBounded() -- applicable for all convex sets.

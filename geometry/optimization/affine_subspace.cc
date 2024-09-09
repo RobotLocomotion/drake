@@ -55,11 +55,11 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
   // If the set is of a ConvexSet subclass that has an efficient algorithm for
   // computing the affine hull, we use it. Otherwise, we use the generic
   // iterative approach.
-  std::optional<std::pair<MatrixXd, VectorXd>> maybe_basis_translation =
+  std::unique_ptr<AffineSubspace> maybe_shortcut =
       ConvexSet::AffineHullShortcut(set, tol);
-  if (maybe_basis_translation) {
-    *this = AffineSubspace(maybe_basis_translation->first,
-                           maybe_basis_translation->second);
+  if (maybe_shortcut != nullptr) {
+    *this = std::move(*maybe_shortcut);
+    return;
   }
 
   // If the set is not clearly a singleton, we find a feasible point and
@@ -270,9 +270,9 @@ AffineSubspace::DoToShapeWithPose() const {
       "ToShapeWithPose is not supported by AffineSubspace.");
 }
 
-std::optional<std::pair<MatrixXd, VectorXd>>
-AffineSubspace::DoAffineHullShortcut(std::optional<double>) const {
-  return std::make_pair(basis_, translation_);
+std::unique_ptr<AffineSubspace> AffineSubspace::DoAffineHullShortcut(
+    std::optional<double>) const {
+  return std::make_unique<AffineSubspace>(*this);
 }
 
 double AffineSubspace::DoCalcVolume() const {

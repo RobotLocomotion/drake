@@ -188,7 +188,7 @@ AffineBall::DoToShapeWithPose() const {
       "ToShapeWithPose is not yet supported by AffineBall.");
 }
 
-std::optional<std::pair<MatrixXd, VectorXd>> AffineBall::DoAffineHullShortcut(
+std::unique_ptr<AffineSubspace> AffineBall::DoAffineHullShortcut(
     std::optional<double> tol) const {
   Eigen::FullPivHouseholderQR<MatrixXd> qr(B_);
   if (tol) {
@@ -196,7 +196,7 @@ std::optional<std::pair<MatrixXd, VectorXd>> AffineBall::DoAffineHullShortcut(
   }
   MatrixXd basis =
       qr.matrixQ() * MatrixXd::Identity(ambient_dimension(), qr.rank());
-  return std::make_pair(std::move(basis), center_);
+  return std::make_unique<AffineSubspace>(std::move(basis), center_);
 }
 
 std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>

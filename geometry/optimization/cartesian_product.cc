@@ -363,12 +363,12 @@ CartesianProduct::DoToShapeWithPose() const {
       "ToShapeWithPose is not implemented yet for CartesianProduct.");
 }
 
-std::optional<std::pair<MatrixXd, VectorXd>>
-CartesianProduct::DoAffineHullShortcut(std::optional<double> tol) const {
+std::unique_ptr<AffineSubspace> CartesianProduct::DoAffineHullShortcut(
+    std::optional<double> tol) const {
   // TODO(cohnt): Support affine transformations of Cartesian products. For now,
   // we just return std::nullopt and use the generic affine hull computation.
   if (A_ != std::nullopt || b_ != std::nullopt) {
-    return std::nullopt;
+    return nullptr;
   }
 
   // The basis will be a block diagonal matrix, whose blocks correspond to the
@@ -391,8 +391,8 @@ CartesianProduct::DoAffineHullShortcut(std::optional<double> tol) const {
     current_dimension += a.ambient_dimension();
     num_basis_vectors += a.AffineDimension();
   }
-  return std::make_pair(std::move(basis.leftCols(num_basis_vectors)),
-                        std::move(translation));
+  return std::make_unique<AffineSubspace>(
+      std::move(basis.leftCols(num_basis_vectors)), std::move(translation));
 }
 
 double CartesianProduct::DoCalcVolume() const {
