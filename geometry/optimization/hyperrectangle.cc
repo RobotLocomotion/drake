@@ -208,6 +208,23 @@ Hyperrectangle::DoToShapeWithPose() const {
                         math::RigidTransformd(Center()));
 }
 
+std::optional<std::pair<MatrixXd, VectorXd>>
+Hyperrectangle::DoAffineHullShortcut(std::optional<double> tol) const {
+  MatrixXd basis = MatrixXd::Zero(ambient_dimension(), ambient_dimension());
+  int current_dimension = 0;
+  int num_basis_vectors = 0;
+  for (int i = 0; i < ambient_dimension(); ++i) {
+    // If the numerical tolerance was not specified, we use a reasonable
+    // default.
+    if (ub_[i] - lb_[i] > (tol ? tol.value() : 1e-12)) {
+      basis(current_dimension, num_basis_vectors) = 1;
+      ++num_basis_vectors;
+    }
+    ++current_dimension;
+  }
+  return std::make_pair(std::move(basis.leftCols(num_basis_vectors)), lb_);
+}
+
 double Hyperrectangle::DoCalcVolume() const {
   return (ub_ - lb_).prod();
 }

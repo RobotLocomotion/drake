@@ -188,6 +188,17 @@ AffineBall::DoToShapeWithPose() const {
       "ToShapeWithPose is not yet supported by AffineBall.");
 }
 
+std::optional<std::pair<MatrixXd, VectorXd>> AffineBall::DoAffineHullShortcut(
+    std::optional<double> tol) const {
+  Eigen::FullPivHouseholderQR<MatrixXd> qr(B_);
+  if (tol) {
+    qr.setThreshold(tol.value());
+  }
+  MatrixXd basis =
+      qr.matrixQ() * MatrixXd::Identity(ambient_dimension(), qr.rank());
+  return std::make_pair(std::move(basis), std::move(center_));
+}
+
 std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
 AffineBall::DoAddPointInSetConstraints(
     MathematicalProgram* prog,

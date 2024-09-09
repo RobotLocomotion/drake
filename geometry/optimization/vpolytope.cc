@@ -587,6 +587,20 @@ VPolytope::DoToShapeWithPose() const {
       "class (to support in-memory mesh data, or file I/O).");
 }
 
+std::optional<std::pair<MatrixXd, VectorXd>> VPolytope::DoAffineHullShortcut(
+    std::optional<double> tol) const {
+  DRAKE_THROW_UNLESS(vertices_.size() > 0);
+  Eigen::JacobiSVD<MatrixXd> svd;
+  MatrixXd centered_points =
+      vertices_.rightCols(vertices_.cols() - 1).colwise() - vertices_.col(0);
+  svd.compute(centered_points, Eigen::DecompositionOptions::ComputeThinU);
+  if (tol) {
+    svd.setThreshold(tol.value());
+  }
+  return std::make_pair(std::move(svd.matrixU().leftCols(svd.rank())),
+                        vertices_.col(0));
+}
+
 double VPolytope::DoCalcVolume() const {
   orgQhull::Qhull qhull;
   try {

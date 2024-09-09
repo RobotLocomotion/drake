@@ -453,6 +453,25 @@ class ConvexSet {
       solvers::MathematicalProgram* prog, const ConvexSet& set,
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
 
+  /** When there is a more efficient strategy to compute the affine hull of this
+  set, return the basis and translation of the affine hull. When no efficient
+  conversion exists, returns std::nullopt. The default base class implementation
+  returns std::nullpot. This method is used by the AffineSubspace constructor to
+  short-circuit the generic iterative approach. */
+  static std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
+  AffineHullShortcut(const ConvexSet& set, std::optional<double> tol) {
+    return set.DoAffineHullShortcut(tol);
+  }
+
+  /** Base-class implementation of DoAffineHullShortcut, which trivially returns
+  std::nullopt. Derived classes which have efficient algorithms should override
+  this method. */
+  virtual std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
+  DoAffineHullShortcut(std::optional<double> tol) const {
+    unused(tol);
+    return std::nullopt;
+  }
+
  private:
   /** Generic implementation for IsBounded() -- applicable for all convex sets.
   @pre ambient_dimension() >= 0 */

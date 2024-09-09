@@ -177,6 +177,16 @@ class Hyperellipsoid final : public ConvexSet, private ShapeReifier {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
+  std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
+  DoAffineHullShortcut(std::optional<double> tol) const final {
+    // Hyperellipsoids are always positive volume, so we can trivially construct
+    // their affine hull as the whole vector space.
+    unused(tol);
+    const int n = ambient_dimension();
+    return std::make_pair(Eigen::MatrixXd::Identity(n, n),
+                          Eigen::VectorXd::Zero(n));
+  }
+
   double DoCalcVolume() const final;
 
   void CheckInvariants() const;

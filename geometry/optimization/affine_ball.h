@@ -163,6 +163,9 @@ class AffineBall final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
+  std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
+  DoAffineHullShortcut(std::optional<double> tol) const final;
+
   void CheckInvariants() const;
 
   double DoCalcVolume() const final;

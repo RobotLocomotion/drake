@@ -38,92 +38,6 @@ AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
   }
 }
 
-// Internal namespace for better numerical computations of affine hulls.
-namespace {
-AffineSubspace AffineBallAffineHull(const AffineBall& affine_ball,
-                                    std::optional<double> tol) {
-  Eigen::FullPivHouseholderQR<MatrixXd> qr(affine_ball.B());
-  if (tol) {
-    qr.setThreshold(tol.value());
-  }
-  Eigen::MatrixXd basis =
-      qr.matrixQ() *
-      MatrixXd::Identity(affine_ball.ambient_dimension(), qr.rank());
-  return AffineSubspace(basis, affine_ball.center());
-}
-
-AffineSubspace CartesianProductAffineHull(
-    const CartesianProduct& cartesian_product, std::optional<double> tol) {
-  // TODO(cohnt): Support affine transformations of Cartesian products.
-  // This pre-condition is currently checked in the base method.
-  DRAKE_DEMAND(cartesian_product.A() == std::nullopt);
-  DRAKE_DEMAND(cartesian_product.b() == std::nullopt);
-  // Compute the affine hull of each factor of cartesian_product and combine.
-
-  // The basis will be a block diagonal matrix, whose blocks correspond to the
-  // bases of the affine subspace of each factor. Not all blocks will be square,
-  // and some of the columns on the right will be skipped, since the affine hull
-  // may be a proper subspace.
-  Eigen::MatrixXd basis =
-      Eigen::MatrixXd::Zero(cartesian_product.ambient_dimension(),
-                            cartesian_product.ambient_dimension());
-  // The translation will be a vector, concatenating all of the translations of
-  // each factor. Zero-initialization is not needed, since all entries will be
-  // overwritten in the following loop.
-  Eigen::VectorXd translation(cartesian_product.ambient_dimension());
-  int current_dimension = 0;
-  int num_basis_vectors = 0;
-  for (int i = 0; i < cartesian_product.num_factors(); ++i) {
-    AffineSubspace a(cartesian_product.factor(i), tol);
-    basis.block(current_dimension, num_basis_vectors, a.ambient_dimension(),
-                a.AffineDimension()) = a.basis();
-    translation.segment(current_dimension, a.ambient_dimension()) =
-        a.translation();
-    current_dimension += a.ambient_dimension();
-    num_basis_vectors += a.AffineDimension();
-  }
-  return AffineSubspace(basis.leftCols(num_basis_vectors), translation);
-}
-
-AffineSubspace HyperrectangleAffineHull(const Hyperrectangle& hyperrectangle,
-                                        std::optional<double> tol) {
-  Eigen::MatrixXd basis = Eigen::MatrixXd::Zero(
-      hyperrectangle.ambient_dimension(), hyperrectangle.ambient_dimension());
-  int current_dimension = 0;
-  int num_basis_vectors = 0;
-  for (int i = 0; i < hyperrectangle.ambient_dimension(); ++i) {
-    // If the numerical tolerance was not specified, we use a reasonable
-    // default.
-    if (hyperrectangle.ub()[i] - hyperrectangle.lb()[i] >
-        (tol ? tol.value() : 1e-12)) {
-      basis(current_dimension, num_basis_vectors) = 1;
-      ++num_basis_vectors;
-    }
-    ++current_dimension;
-  }
-  return AffineSubspace(basis.leftCols(num_basis_vectors), hyperrectangle.lb());
-}
-
-AffineSubspace VPolytopeAffineHull(const VPolytope& vpolytope,
-                                   std::optional<double> tol) {
-  DRAKE_THROW_UNLESS(vpolytope.vertices().size() > 0);
-  // Eigen::JacobiSVD<MatrixXd, Eigen::DecompositionOptions::ComputeThinU>
-  // svd(vpolytope.vertices());
-  Eigen::JacobiSVD<MatrixXd> svd;
-  Eigen::MatrixXd centered_points =
-      vpolytope.vertices()
-          .rightCols(vpolytope.vertices().cols() - 1)
-          .colwise() -
-      vpolytope.vertices().col(0);
-  svd.compute(centered_points, Eigen::DecompositionOptions::ComputeThinU);
-  if (tol) {
-    svd.setThreshold(tol.value());
-  }
-  return AffineSubspace(svd.matrixU().leftCols(svd.rank()),
-                        vpolytope.vertices().col(0));
-}
-}  // namespace
-
 AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
     : ConvexSet(0, true) {
   if (tol) {
@@ -138,47 +52,14 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
     return;
   }
 
-  const AffineBall* const maybe_affine_ball =
-      dynamic_cast<const AffineBall* const>(&set);
-  const AffineSubspace* const maybe_affine_subspace =
-      dynamic_cast<const AffineSubspace* const>(&set);
-  const CartesianProduct* const maybe_cartesian_product =
-      dynamic_cast<const CartesianProduct* const>(&set);
-  const Hyperellipsoid* const maybe_hyperellipsoid =
-      dynamic_cast<const Hyperellipsoid* const>(&set);
-  const Hyperrectangle* const maybe_hyperrectangle =
-      dynamic_cast<const Hyperrectangle* const>(&set);
-  const VPolytope* const maybe_vpolytope =
-      dynamic_cast<const VPolytope* const>(&set);
-  if (maybe_affine_ball) {
-    *this = AffineBallAffineHull(*maybe_affine_ball, tol);
-    return;
-  } else if (maybe_affine_subspace) {
-    // We can directly copy the object.
-    *this = *maybe_affine_subspace;
-    return;
-  } else if (maybe_cartesian_product) {
-    // TODO(cohnt): Handle the case where the CartesianProduct has an associated
-    // affine transformation.
-    if (maybe_cartesian_product->A() == std::nullopt &&
-        maybe_cartesian_product->b() == std::nullopt) {
-      *this = CartesianProductAffineHull(*maybe_cartesian_product, tol);
-      return;
-    }
-  } else if (maybe_hyperellipsoid) {
-    // Hyperellipsoids are always positive volume, so we can trivially construct
-    // their affine hull as the whole vector space.
-    *this = AffineSubspace(
-        Eigen::MatrixXd::Identity(maybe_hyperellipsoid->ambient_dimension(),
-                                  maybe_hyperellipsoid->ambient_dimension()),
-        Eigen::VectorXd::Zero(maybe_hyperellipsoid->ambient_dimension()));
-    return;
-  } else if (maybe_hyperrectangle) {
-    *this = HyperrectangleAffineHull(*maybe_hyperrectangle, tol);
-    return;
-  } else if (maybe_vpolytope) {
-    *this = VPolytopeAffineHull(*maybe_vpolytope, tol);
-    return;
+  // If the set is of a ConvexSet subclass that has an efficient algorithm for
+  // computing the affine hull, we use it. Otherwise, we use the generic
+  // iterative approach.
+  std::optional<std::pair<MatrixXd, VectorXd>> maybe_basis_translation =
+      ConvexSet::AffineHullShortcut(set, tol);
+  if (maybe_basis_translation) {
+    *this = AffineSubspace(maybe_basis_translation->first,
+                           maybe_basis_translation->second);
   }
 
   // If the set is not clearly a singleton, we find a feasible point and

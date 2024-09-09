@@ -918,7 +918,11 @@ GTEST_TEST(AffineSubspaceTest, AffineHullMinkowskiSum) {
 GTEST_TEST(AffineSubspaceTest, AffineHullPoint) {
   const Eigen::Vector3d p_value{4.2, 2.7, 0.0};
   Point p(p_value);
-  AffineSubspace as(p);
+
+  // The tolerance is ignored, but including it verifies that we can call the
+  // constructor with a double (instead of std::optional<double>).
+  double kTol = 43.0;
+  AffineSubspace as(p, kTol);
 
   EXPECT_EQ(as.basis().cols(), 0);
   EXPECT_EQ(as.basis().rows(), 3);

@@ -63,8 +63,7 @@ class AffineSubspace final : public ConvexSet {
   - AffineBall: Can be computed via a rank-revealing decomposition; `tol` is
   used as the numerical tolerance for the rank of the matrix. Pass
   `std::nullopt` for `tol` to use Eigen's automatic tolerance computation.
-  - AffineSubspace: Equivalent to the copy-constructor, but needed since that
-  method is not available in the Python bindings; `tol` is ignored.
+  - AffineSubspace: Equivalent to the copy-constructor; `tol` is ignored.
   - CartesianProduct: Can compute the affine hull of each factor individually;
   `tol` is propagated to the constituent calls. (This is not done if the
   Cartesian product has an associated affine transformation.)
@@ -182,6 +181,11 @@ class AffineSubspace final : public ConvexSet {
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
+
+  std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
+  DoAffineHullShortcut(std::optional<double>) const final {
+    return std::make_pair(basis_, translation_);
+  }
 
   double DoCalcVolume() const final;
 

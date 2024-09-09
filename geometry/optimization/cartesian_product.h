@@ -135,6 +135,9 @@ class CartesianProduct final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
+  std::optional<std::pair<Eigen::MatrixXd, Eigen::VectorXd>>
+  DoAffineHullShortcut(std::optional<double> tol) const final;
+
   // The member variables are not const in order to support move semantics.
   ConvexSets sets_{};
 

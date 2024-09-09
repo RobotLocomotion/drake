@@ -4,6 +4,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/solvers/solve.h"
@@ -360,6 +361,38 @@ CartesianProduct::DoToShapeWithPose() const {
   // TODO(russt): Consider handling Cylinder as a (very) special case.
   throw std::runtime_error(
       "ToShapeWithPose is not implemented yet for CartesianProduct.");
+}
+
+std::optional<std::pair<MatrixXd, VectorXd>>
+CartesianProduct::DoAffineHullShortcut(std::optional<double> tol) const {
+  // TODO(cohnt): Support affine transformations of Cartesian products. For now,
+  // we just return std::nullopt and use the generic affine hull computation.
+  if (A_ != std::nullopt || b_ != std::nullopt) {
+    return std::nullopt;
+  }
+
+  // The basis will be a block diagonal matrix, whose blocks correspond to the
+  // bases of the affine subspace of each factor. Not all blocks will be square,
+  // and some of the columns on the right will be skipped, since the affine hull
+  // may be a proper subspace.
+  MatrixXd basis = MatrixXd::Zero(ambient_dimension(), ambient_dimension());
+  // The translation will be a vector, concatenating all of the translations of
+  // each factor. Zero-initialization is not needed, since all entries will be
+  // overwritten in the following loop.
+  VectorXd translation(ambient_dimension());
+  int current_dimension = 0;
+  int num_basis_vectors = 0;
+  for (int i = 0; i < num_factors(); ++i) {
+    AffineSubspace a(factor(i), tol);
+    basis.block(current_dimension, num_basis_vectors, a.ambient_dimension(),
+                a.AffineDimension()) = a.basis();
+    translation.segment(current_dimension, a.ambient_dimension()) =
+        a.translation();
+    current_dimension += a.ambient_dimension();
+    num_basis_vectors += a.AffineDimension();
+  }
+  return std::make_pair(std::move(basis.leftCols(num_basis_vectors)),
+                        std::move(translation));
 }
 
 double CartesianProduct::DoCalcVolume() const {
