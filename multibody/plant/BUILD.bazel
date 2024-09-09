@@ -119,6 +119,7 @@ drake_cc_library(
         "scalar_convertible_component.h",
         "tamsi_driver.h",
     ],
+    compile_once_per_scalar = True,
     visibility = ["//visibility:private"],
     deps = [
         ":constraint_specs",
