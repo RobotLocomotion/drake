@@ -51,17 +51,18 @@ apt-get remove bazel || true
 
 # Install bazelisk.
 #
-# TODO(jeremy.nimmer) Once there's a bazelisk >= 1.20 that incorporates
-# https://github.com/bazelbuild/bazelisk/pull/563, we should switch to
-# official release downloads instead of our Drake-custom Debian packages.
+# TODO(jeremy.nimmer) Once there's a bazelisk > 1.21 that incorporates
+# https://github.com/bazelbuild/bazelisk/pull/608 to publish Debian packages as
+# release attachments, we should switch to official release downloads instead of
+# our own build of their source release tags.
 if [[ $(arch) = "aarch64" ]]; then
   dpkg_install_from_wget \
-    bazelisk 1.19.0-9-g58a850f \
-    https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/pr563/bazelisk_1.19.0-9-g58a850f_arm64.deb \
-    5501a44ba1f51298d186e4e66966b0556d03524381a967667696f032e292d719
+    bazelisk 1.21.0 \
+    https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/bazelisk_1.21.0_arm64.deb \
+    7f75b16ac4061bc1e76e4c066ebd13ac3aba39c8e5779cd3a623ed5a66024622
 else
   dpkg_install_from_wget \
-    bazelisk 1.19.0-9-g58a850f \
-    https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/pr563/bazelisk_1.19.0-9-g58a850f_amd64.deb \
-    c2bfd15d6c3422ae540cda9facc0ac395005e2701c09dbb15d40447b53e831d4
+    bazelisk 1.21.0 \
+    https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/bazelisk_1.21.0_amd64.deb \
+    3b74a3eacbf4df24f997c6dbb23af8990e7c11907bff6cb48d0c0704a6b9be95
 fi
