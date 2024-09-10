@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -183,12 +184,18 @@ class Meshcat {
   @param shape a Shape that specifies the geometry of the object.
   @param rgba an Rgba that specifies the (solid) color of the object.
   @note If `shape` is a mesh, the file referred to can be either an .obj file
-  or an _embedded_ .gltf file (it has all geometry data and texture data
-  contained within the single .gltf file).
+  or a .gltf file.
+  @returns A set of all on-disk assets associated with the `shape` that Meshcat
+  makes available to a meshcat client. This may include more files than the
+  client actually uses. This will be empty for every Shape except for Mesh.
+  The Convex shape will send the convex hull polytope directly; the client will
+  never know about the convex hull's originating file.
   @pydrake_mkdoc_identifier{shape}
   */
-  void SetObject(std::string_view path, const Shape& shape,
-                 const Rgba& rgba = Rgba(.9, .9, .9, 1.));
+  std::set<std::filesystem::path> SetObject(std::string_view path,
+                                            const Shape& shape,
+                                            const Rgba& rgba = Rgba(.9, .9, .9,
+                                                                    1.));
 
   // TODO(russt): SetObject with texture map.
 

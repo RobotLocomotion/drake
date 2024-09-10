@@ -64,8 +64,9 @@ GTEST_TEST(UnbundleGltfAssetsTest, DataUri) {
 
   // Unbundle it.
   FileStorage storage;
+  std::set<std::filesystem::path> asset_paths;
   std::vector<std::shared_ptr<const FileStorage::Handle>> assets =
-      UnbundleGltfAssets(gltf_filename, &gltf_contents, &storage);
+      UnbundleGltfAssets(gltf_filename, &gltf_contents, &storage, &asset_paths);
 
   // The contents got smaller due to unbundling (but not too small).
   DRAKE_DEMAND(orig_size >= 4096);
@@ -77,6 +78,8 @@ GTEST_TEST(UnbundleGltfAssetsTest, DataUri) {
       FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.bin")));
   ASSERT_EQ(assets.size(), 1);
   EXPECT_EQ(assets.front()->sha256, expected_sha256);
+  // The created .bin file.
+  EXPECT_EQ(asset_paths.size(), 1);
 
   // Make sure the new URI seems correct.
   EXPECT_THAT(json::parse(gltf_contents)["buffers"][0]["uri"],
@@ -102,10 +105,13 @@ GTEST_TEST(UnbundleGltfAssetsTest, DataUriBad) {
   std::string gltf_contents = MakeGltfWithUri(uri);
   const std::string orig = gltf_contents;
   FileStorage storage;
-  auto assets = UnbundleGltfAssets("foo.gltf", &gltf_contents, &storage);
+  std::set<std::filesystem::path> asset_paths;
+  auto assets =
+      UnbundleGltfAssets("foo.gltf", &gltf_contents, &storage, &asset_paths);
   EXPECT_EQ(assets.size(), 0);
   EXPECT_EQ(storage.size(), 0);
   EXPECT_EQ(gltf_contents, orig);
+  EXPECT_EQ(asset_paths.size(), 0);
 }
 
 GTEST_TEST(UnbundleGltfAssetsTest, RelativeUri) {
@@ -116,14 +122,17 @@ GTEST_TEST(UnbundleGltfAssetsTest, RelativeUri) {
 
   // Unbundle it.
   FileStorage storage;
+  std::set<std::filesystem::path> asset_paths;
   std::vector<std::shared_ptr<const FileStorage::Handle>> assets =
-      UnbundleGltfAssets(gltf_filename, &gltf_contents, &storage);
+      UnbundleGltfAssets(gltf_filename, &gltf_contents, &storage, &asset_paths);
 
   // One asset was added to storage, identical to cube2.bin.
   const Sha256 expected_sha256 = Sha256::Checksum(ReadFileOrThrow(
       FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.bin")));
   ASSERT_EQ(assets.size(), 1);
   EXPECT_EQ(assets.front()->sha256, expected_sha256);
+  // The referenced .bin file.
+  EXPECT_EQ(asset_paths.size(), 1);
 
   // Make sure the new URI seems correct.
   EXPECT_THAT(json::parse(gltf_contents)["buffers"][0]["uri"],
@@ -135,20 +144,26 @@ GTEST_TEST(UnbundleGltfAssetsTest, RelativeUriBad) {
   std::string gltf_contents = MakeGltfWithUri(uri);
   const std::string orig = gltf_contents;
   FileStorage storage;
-  auto assets = UnbundleGltfAssets("foo.gltf", &gltf_contents, &storage);
+  std::set<std::filesystem::path> asset_paths;
+  auto assets =
+      UnbundleGltfAssets("foo.gltf", &gltf_contents, &storage, &asset_paths);
   EXPECT_EQ(assets.size(), 0);
   EXPECT_EQ(storage.size(), 0);
   EXPECT_EQ(gltf_contents, orig);
+  EXPECT_EQ(asset_paths.size(), 0);
 }
 
 GTEST_TEST(UnbundleGltfAssetsTest, JsonParseError) {
   std::string gltf_contents = "Hello, world!";
   const std::string orig = gltf_contents;
   FileStorage storage;
-  auto assets = UnbundleGltfAssets("foo.gltf", &gltf_contents, &storage);
+  std::set<std::filesystem::path> asset_paths;
+  auto assets =
+      UnbundleGltfAssets("foo.gltf", &gltf_contents, &storage, &asset_paths);
   EXPECT_EQ(assets.size(), 0);
   EXPECT_EQ(storage.size(), 0);
   EXPECT_EQ(gltf_contents, orig);
+  EXPECT_EQ(asset_paths.size(), 0);
 }
 
 GTEST_TEST(TransformGeometryNameTest, SampledResults) {

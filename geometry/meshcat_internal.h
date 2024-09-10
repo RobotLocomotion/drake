@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -69,10 +70,15 @@ original file has disappeared in the meantime.
 
 @param[in,out] storage The database where assets should be stored.
 
+@param[in, out] asset_paths The paths to the on-disk assets (.bin and image
+files) stored in the file storage. This does not include the glTF file as it
+is not stored.
+
 @returns The handles for all assets cited by `gltf_contents`. */
 [[nodiscard]] std::vector<std::shared_ptr<const FileStorage::Handle>>
 UnbundleGltfAssets(const std::filesystem::path& gltf_filename,
-                   std::string* gltf_contents, FileStorage* storage);
+                   std::string* gltf_contents, FileStorage* storage,
+                   std::set<std::filesystem::path>* asset_paths);
 
 /* Converts a geometry name into a meshcat path. So, a geometry named
 `my_scope::Mesh` becomes my_scope/Mesh.

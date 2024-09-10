@@ -321,6 +321,7 @@ class MeshcatShapeReifier : public ShapeReifier {
   struct Output {
     internal::LumpedObjectData& lumped;
     std::vector<std::shared_ptr<const FileStorage::Handle>>& assets;
+    std::set<std::filesystem::path>& asset_paths;
   };
 
   using ShapeReifier::ImplementGeometry;
@@ -343,6 +344,9 @@ class MeshcatShapeReifier : public ShapeReifier {
       drake::log()->warn("Meshcat: Could not open mesh filename {}", filename);
       return;
     }
+
+    output.asset_paths.emplace(
+        std::filesystem::path(filename).lexically_normal());
 
     // We simply dump the binary contents of the file into the data field of the
     // message.  The javascript meshcat takes care of the rest.
@@ -381,6 +385,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       // Read .mtl file into geometry.mtl_library.
       if (std::optional<std::string> maybe_mtl_data =
               ReadFile(basedir / mtllib)) {
+        output.asset_paths.emplace((basedir / mtllib).lexically_normal());
         meshfile_object.mtl_library = std::move(*maybe_mtl_data);
 
         // Scan .mtl file for map_ lines.  For each, load the file and add
@@ -403,6 +408,7 @@ class MeshcatShapeReifier : public ShapeReifier {
           std::ifstream map_stream(basedir / map,
                                    std::ios::binary | std::ios::ate);
           if (map_stream.is_open()) {
+            output.asset_paths.emplace((basedir / map).lexically_normal());
             int map_size = map_stream.tellg();
             map_stream.seekg(0, std::ios::beg);
             std::vector<uint8_t> map_data;
@@ -427,8 +433,8 @@ class MeshcatShapeReifier : public ShapeReifier {
             filename, mtllib, (basedir / mtllib).string());
       }
     } else if (format == "gltf") {
-      output.assets =
-          internal::UnbundleGltfAssets(filename, &mesh_data, &file_storage_);
+      output.assets = internal::UnbundleGltfAssets(
+          filename, &mesh_data, &file_storage_, &output.asset_paths);
       auto& meshfile_object =
           lumped.object.emplace<internal::MeshfileObjectData>();
       meshfile_object.uuid = uuid_generator_.GenerateRandom();
@@ -901,7 +907,10 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
+  std::set<std::filesystem::path> SetObject(std::string_view path,
+                                            const Shape& shape,
+                                            const Rgba& rgba) {
+    std::set<std::filesystem::path> asset_paths;
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetObjectData data;
@@ -915,13 +924,14 @@ class Meshcat::Impl {
     MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_, rgba);
     std::vector<std::shared_ptr<const FileStorage::Handle>> assets;
     MeshcatShapeReifier::Output reifier_output{.lumped = data.object,
-                                               .assets = assets};
+                                               .assets = assets,
+                                               .asset_paths = asset_paths};
     shape.Reify(&reifier, &reifier_output);
 
     if (std::holds_alternative<std::monostate>(data.object.object)) {
       // Then this shape is not supported, and I should not send the message,
       // nor add the object to the tree.
-      return;
+      return asset_paths;
     }
     if (std::holds_alternative<internal::MeshData>(data.object.object)) {
       auto& meshfile_object = std::get<internal::MeshData>(data.object.object);
@@ -969,6 +979,8 @@ class Meshcat::Impl {
       e.object().emplace() = std::move(message);
       e.object()->assets = std::move(assets);
     });
+
+    return asset_paths;
   }
 
   // This function is public via the PIMPL.
@@ -2466,9 +2478,10 @@ void Meshcat::Flush() const {
   impl().Flush();
 }
 
-void Meshcat::SetObject(std::string_view path, const Shape& shape,
-                        const Rgba& rgba) {
-  impl().SetObject(path, shape, rgba);
+std::set<std::filesystem::path> Meshcat::SetObject(std::string_view path,
+                                                   const Shape& shape,
+                                                   const Rgba& rgba) {
+  return impl().SetObject(path, shape, rgba);
 }
 
 void Meshcat::SetObject(std::string_view path,
