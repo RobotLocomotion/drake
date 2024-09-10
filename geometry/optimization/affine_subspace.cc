@@ -1,7 +1,12 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/optimization/affine_ball.h"
+#include "drake/geometry/optimization/cartesian_product.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/point.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -34,8 +39,11 @@ AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
   }
 }
 
-AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
+AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
     : ConvexSet(0, true) {
+  if (tol) {
+    DRAKE_THROW_UNLESS(tol >= 0);
+  }
   // If the set is clearly a singleton, we can easily compute its affine hull.
   const auto singleton_maybe = set.MaybeGetPoint();
   if (singleton_maybe.has_value()) {
@@ -45,9 +53,26 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
     return;
   }
 
-  // If the set is not clearly a singleton, we find a feasible point and
-  // iteratively compute a basis of the affine hull. If no feasible point
-  // exists, the set is empty, so we throw an error.
+  // If the set is of a ConvexSet subclass that has an efficient algorithm for
+  // computing the affine hull, we use it. Otherwise, we use the generic
+  // iterative approach.
+  std::unique_ptr<ConvexSet> shortcut = ConvexSet::AffineHullShortcut(set, tol);
+  if (shortcut != nullptr) {
+    // This downcast is per the post-condition of the AffineHullShortcut API.
+    AffineSubspace* downcast = dynamic_cast<AffineSubspace*>(shortcut.get());
+    DRAKE_THROW_UNLESS(downcast != nullptr);
+    *this = std::move(*downcast);
+    return;
+  }
+
+  // If the set is not clearly a singleton and there's no obviously more
+  // efficient algorithm based on the type of the set, we find a feasible point
+  // and iteratively compute a basis of the affine hull. If the numerical
+  // tolerance was not specified, we use a reasonable default.
+  if (!tol) {
+    tol = 1e-12;
+  }
+  // If no feasible point exists, the set is empty, so we throw an error.
   const auto translation_maybe = set.MaybeGetFeasiblePoint();
   if (!translation_maybe.has_value()) {
     throw std::runtime_error(
@@ -138,7 +163,7 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
                       result.get_solution_result()));
     }
 
-    if (result.get_optimal_cost() < -tol) {
+    if (result.get_optimal_cost() < -tol.value()) {
       // x is in the affine hull, and is added to the basis.
       VectorXd new_basis_vector = result.GetSolution(x);
       basis.col(affine_dimension++) =
@@ -282,6 +307,11 @@ std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 AffineSubspace::DoToShapeWithPose() const {
   throw std::runtime_error(
       "ToShapeWithPose is not supported by AffineSubspace.");
+}
+
+std::unique_ptr<ConvexSet> AffineSubspace::DoAffineHullShortcut(
+    std::optional<double>) const {
+  return std::make_unique<AffineSubspace>(*this);
 }
 
 double AffineSubspace::DoCalcVolume() const {

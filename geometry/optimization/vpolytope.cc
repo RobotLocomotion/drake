@@ -15,6 +15,7 @@
 #include <libqhullcpp/QhullVertexSet.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/solvers/solve.h"
 
@@ -586,6 +587,20 @@ VPolytope::DoToShapeWithPose() const {
       "ToShapeWithPose is not implemented yet for VPolytope.  Implementing "
       "this will likely require additional support from the Convex shape "
       "class (to support in-memory mesh data, or file I/O).");
+}
+
+std::unique_ptr<ConvexSet> VPolytope::DoAffineHullShortcut(
+    std::optional<double> tol) const {
+  DRAKE_THROW_UNLESS(vertices_.size() > 0);
+  Eigen::JacobiSVD<MatrixXd> svd;
+  MatrixXd centered_points =
+      vertices_.rightCols(vertices_.cols() - 1).colwise() - vertices_.col(0);
+  svd.compute(centered_points, Eigen::DecompositionOptions::ComputeThinU);
+  if (tol) {
+    svd.setThreshold(tol.value());
+  }
+  return std::make_unique<AffineSubspace>(svd.matrixU().leftCols(svd.rank()),
+                                          vertices_.col(0));
 }
 
 double VPolytope::DoCalcVolume() const {

@@ -8,6 +8,7 @@
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/geometry/optimization/point.h"
@@ -644,6 +645,15 @@ void CheckAffineHullTightness(const AffineSubspace& as, const ConvexSet& set,
   }
 }
 
+GTEST_TEST(AffineSubspaceTest, AffineHulToleranceAPI) {
+  // Don't accept a negative tolerance (even if it will be ignored by the
+  // function based on the subclass of ConvexSet).
+  Point p(Vector1d(1.0));
+  HPolyhedron h = HPolyhedron::MakeUnitBox(1);
+  EXPECT_THROW(AffineSubspace(p, -1.0), std::exception);
+  EXPECT_THROW(AffineSubspace(h, -1.0), std::exception);
+}
+
 GTEST_TEST(AffineSubspaceTest, AffineHullCartesianProduct) {
   // Point VPolytope
   VPolytope point(Vector2d(2, -1));
@@ -759,6 +769,23 @@ GTEST_TEST(AffineSubspaceTest, AffineHullHyperellipsoid) {
 
   EXPECT_TRUE(CheckAffineSubspaceSetContainment(as, E));
   CheckAffineHullTightness(as, E);
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullHyperrectangle) {
+  const Eigen::Vector3d lb{0, -1, -1};
+  const Eigen::Vector3d ub{0, 1, 1};
+
+  Hyperrectangle H(lb, ub);
+  AffineSubspace as(H);
+
+  EXPECT_EQ(as.basis().cols(), 2);
+  EXPECT_EQ(as.basis().rows(), 3);
+  EXPECT_EQ(as.translation().size(), 3);
+  EXPECT_EQ(as.ambient_dimension(), 3);
+
+  const double kTol = 1e-15;
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as, H, kTol));
+  CheckAffineHullTightness(as, H);
 }
 
 GTEST_TEST(AffineSubspaceTest, AffineHullIntersection) {
@@ -1000,7 +1027,11 @@ GTEST_TEST(AffineSubspaceTest, AffineHullMinkowskiSum) {
 GTEST_TEST(AffineSubspaceTest, AffineHullPoint) {
   const Vector3d p_value{4.2, 2.7, 0.0};
   Point p(p_value);
-  AffineSubspace as(p);
+
+  // The tolerance is ignored, but including it verifies that we can call the
+  // constructor with a double (instead of std::optional<double>).
+  double kTol = 43.0;
+  AffineSubspace as(p, kTol);
 
   EXPECT_EQ(as.basis().cols(), 0);
   EXPECT_EQ(as.basis().rows(), 3);
