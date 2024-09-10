@@ -353,6 +353,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     // TODO(russt): Make this mtllib parsing more robust (right now commented
     // mtllib lines will match, too, etc).
     size_t mtllib_pos;
+    bool replace_with_meshfile_geometry = false;
     if (format == "obj" &&
         (mtllib_pos = mesh_data.find("mtllib ")) != std::string::npos) {
       mtllib_pos += 7;  // Advance to after the actual "mtllib " string.
@@ -425,6 +426,14 @@ class MeshcatShapeReifier : public ShapeReifier {
             "Meshcat: Failed to load texture. {} references {}, but Meshcat "
             "could not open filename \"{}\"",
             filename, mtllib, (basedir / mtllib).string());
+
+        // If we can't load the mtl file, we'll just send the obj file as if it
+        // did not specify the mtl. MuJoCo often ships obj files that reference
+        // missing mtl files (see #20444).
+        replace_with_meshfile_geometry = true;
+        // Move the data back.
+        format = std::move(meshfile_object.format);
+        mesh_data = std::move(meshfile_object.data);
       }
     } else if (format == "gltf") {
       output.assets =
@@ -439,7 +448,10 @@ class MeshcatShapeReifier : public ShapeReifier {
       // mesh file *geometry* instead of mesh file *object*. This will most
       // typically be a Collada .dae file, an .stl, or simply an .obj that
       // doesn't reference an .mtl.
+      replace_with_meshfile_geometry = true;
+    }
 
+    if (replace_with_meshfile_geometry) {
       // TODO(SeanCurtis-TRI): This doesn't work for STL even though meshcat
       // supports STL. Meshcat treats STL differently from obj or dae.
       // https://github.com/meshcat-dev/meshcat/blob/4b4f8ffbaa5f609352ea6227bd5ae8207b579c70/src/index.js#L130-L146.
