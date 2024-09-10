@@ -48,7 +48,7 @@ bool RigidBodyTopology::operator==(const RigidBodyTopology& other) const {
   if (body_frame != other.body_frame) return false;
   if (level != other.level) return false;
   if (mobod_index != other.mobod_index) return false;
-  if (is_floating != other.is_floating) return false;
+  if (is_floating_base != other.is_floating_base) return false;
   if (has_quaternion_dofs != other.has_quaternion_dofs) return false;
   if (floating_positions_start != other.floating_positions_start) return false;
   if (floating_velocities_start_in_v != other.floating_velocities_start_in_v)
@@ -308,7 +308,7 @@ void MultibodyTreeTopology::Finalize(const LinkJointGraph& graph) {
   // Update position/velocity indexes for free rigid bodies so that they are
   // easily accessible.
   for (RigidBodyTopology& rigid_body : rigid_bodies_) {
-    if (rigid_body.is_floating) {
+    if (rigid_body.is_floating_base) {
       DRAKE_DEMAND(rigid_body.inboard_mobilizer.is_valid());
       const MobilizerTopology& mobilizer =
           get_mobilizer(rigid_body.inboard_mobilizer);

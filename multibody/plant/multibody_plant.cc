@@ -1187,7 +1187,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
   }
 
   // Pose of frame F in its parent body frame P.
-  const RigidTransform<T> X_PF = frame_F.GetFixedPoseInBodyFrame();
+  const RigidTransform<T>& X_PF = frame_F.EvalPoseInBodyFrame(*context);
   // Pose of frame F's parent body P in the world.
   const RigidTransform<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
   // Pose of "body" B in the world frame.
@@ -1276,6 +1276,49 @@ void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
       }
     }
   }
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetBaseBodyJointType(
+    BaseBodyJointType joint_type,
+    std::optional<ModelInstanceIndex> model_instance) {
+  std::optional<internal::ForestBuildingOptions> options;
+  switch (joint_type) {
+    case BaseBodyJointType::kQuaternionFloatingJoint:
+      options = internal::ForestBuildingOptions::kDefault;
+      break;
+    case BaseBodyJointType::kRpyFloatingJoint:
+      options = internal::ForestBuildingOptions::kUseRpyFloatingJoints;
+      break;
+    case BaseBodyJointType::kWeldJoint:
+      options = internal::ForestBuildingOptions::kUseFixedBase;
+      break;
+  }
+  DRAKE_DEMAND(options.has_value());
+  DRAKE_THROW_UNLESS(!is_finalized());
+  internal::LinkJointGraph& graph = mutable_tree().mutable_graph();
+  if (model_instance.has_value()) {
+    graph.SetForestBuildingOptions(*model_instance, *options);
+  } else {
+    graph.SetGlobalForestBuildingOptions(*options);
+  }
+}
+
+template <typename T>
+BaseBodyJointType MultibodyPlant<T>::GetBaseBodyJointType(
+    std::optional<ModelInstanceIndex> model_instance) const {
+  const internal::LinkJointGraph& graph = internal_tree().graph();
+  const internal::ForestBuildingOptions options =
+      model_instance.has_value()
+          ? graph.get_forest_building_options_in_use(*model_instance)
+          : graph.get_global_forest_building_options();
+  if (static_cast<bool>(options &
+                        internal::ForestBuildingOptions::kUseRpyFloatingJoints))
+    return BaseBodyJointType::kRpyFloatingJoint;
+  if (static_cast<bool>(options &
+                        internal::ForestBuildingOptions::kUseFixedBase))
+    return BaseBodyJointType::kWeldJoint;
+  return BaseBodyJointType::kQuaternionFloatingJoint;
 }
 
 template <typename T>
