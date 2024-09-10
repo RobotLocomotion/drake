@@ -7,6 +7,7 @@ import copy
 import numpy as np
 
 from pydrake.common import RandomGenerator, temp_directory
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Convex, Ellipsoid, FramePoseVector, GeometryFrame,
@@ -1429,30 +1430,72 @@ class TestCspaceFreePolytope(unittest.TestCase):
             self.assertTrue(bbox_B is not None)
         outputs = []
         outputs.append(
-                mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
-                                              convex_sets_B=sets_B,
-                                              continuous_revolute_joints=[0],
-                                              preprocess_bbox=True))
+                mut.ComputePairwiseIntersections(
+                        convex_sets_A=sets_A,
+                        convex_sets_B=sets_B,
+                        continuous_revolute_joints=[0],
+                        preprocess_bbox=True))
         outputs.append(
-                mut.CalcPairwiseIntersections(convex_sets_A=sets_A,
-                                              convex_sets_B=sets_B,
-                                              continuous_revolute_joints=[0],
-                                              bboxes_A=bboxes_A,
-                                              bboxes_B=bboxes_B))
+                mut.ComputePairwiseIntersections(
+                        convex_sets_A=sets_A,
+                        convex_sets_B=sets_B,
+                        continuous_revolute_joints=[0],
+                        bboxes_A=bboxes_A,
+                        bboxes_B=bboxes_B))
+        outputs.append(
+                mut.ComputePairwiseIntersections(
+                        convex_sets=sets_A,
+                        continuous_revolute_joints=[0],
+                        preprocess_bbox=True))
+        outputs.append(
+                mut.ComputePairwiseIntersections(
+                        convex_sets=sets_A,
+                        continuous_revolute_joints=[0],
+                        bboxes=bboxes_A))
         for out in outputs:
+            self.assertIsInstance(out, tuple)
+            self.assertIsInstance(out[0], list)
+            self.assertTrue(len(out[0]) > 0)
+            self.assertEqual(len(out[0]), 2)
+            self.assertIsInstance(out[0][0][0], int)
+            self.assertIsInstance(out[0][0][1], int)
+            self.assertTrue(len(out[1]) > 0)
+            self.assertIsInstance(out[1][0], np.ndarray)
+
+        outputs = []
+        with catch_drake_warnings(expected_count=1):
+            outputs.append(
+                    mut.CalcPairwiseIntersections(
+                            convex_sets_A=sets_A,
+                            convex_sets_B=sets_B,
+                            continuous_revolute_joints=[0],
+                            preprocess_bbox=True))
+        with catch_drake_warnings(expected_count=1):
+            outputs.append(
+                    mut.CalcPairwiseIntersections(
+                            convex_sets_A=sets_A,
+                            convex_sets_B=sets_B,
+                            continuous_revolute_joints=[0],
+                            bboxes_A=bboxes_A,
+                            bboxes_B=bboxes_B))
+        with catch_drake_warnings(expected_count=1):
+            outputs.append(
+                    mut.CalcPairwiseIntersections(
+                            convex_sets=sets_A,
+                            continuous_revolute_joints=[0],
+                            preprocess_bbox=True))
+        with catch_drake_warnings(expected_count=1):
+            outputs.append(
+                    mut.CalcPairwiseIntersections(
+                            convex_sets=sets_A,
+                            continuous_revolute_joints=[0],
+                            bboxes=bboxes_A))
+        for out in outputs:
+            print(out)
             self.assertIsInstance(out, list)
-            self.assertEqual(len(out), 2)
-            self.assertIsInstance(out[0], tuple)
-        outputs2 = []
-        outputs2.append(
-                mut.CalcPairwiseIntersections(convex_sets=sets_A,
-                                              continuous_revolute_joints=[0],
-                                              preprocess_bbox=True))
-        outputs2.append(
-                mut.CalcPairwiseIntersections(convex_sets=sets_A,
-                                              continuous_revolute_joints=[0],
-                                              bboxes=bboxes_A))
-        for out in outputs2:
-            self.assertIsInstance(out, list)
-            self.assertEqual(len(out), 2)
-            self.assertIsInstance(out[0], tuple)
+            for elt in out:
+                self.assertIsInstance(elt, tuple)
+                self.assertEqual(len(elt), 3)
+                self.assertIsInstance(elt[0], int)
+                self.assertIsInstance(elt[1], int)
+                self.assertIsInstance(elt[2], np.ndarray)
