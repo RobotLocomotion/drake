@@ -582,7 +582,19 @@ struct Impl {
           }),
               py::arg("segments"), cls_doc.ctor.doc)
           .def("segment", &Class::segment, py::arg("segment_index"),
-              py_rvp::reference_internal, cls_doc.segment.doc);
+              py_rvp::reference_internal, cls_doc.segment.doc)
+          .def_static(
+              "AlignAndConcatenate",
+              [](std::vector<const Trajectory<T>*> py_segments) {
+                std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
+                segments.reserve(py_segments.size());
+                for (const Trajectory<T>* py_segment : py_segments) {
+                  segments.emplace_back(
+                      py_segment ? py_segment->Clone() : nullptr);
+                }
+                return CompositeTrajectory<T>::AlignAndConcatenate(segments);
+              },
+              py::arg("segments"), cls_doc.AlignAndConcatenate.doc);
       DefCopyAndDeepCopy(&cls);
     }
 

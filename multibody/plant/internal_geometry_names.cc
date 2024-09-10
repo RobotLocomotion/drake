@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include <fmt/ranges.h>
+
 #include "drake/common/default_scalars.h"
 
 namespace drake {

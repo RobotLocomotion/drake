@@ -57,7 +57,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/kuka_iiwa_robot",
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
-    "//multibody/constraint",
     "//multibody/contact_solvers",
     "//multibody/contact_solvers/sap",
     "//multibody/fem",

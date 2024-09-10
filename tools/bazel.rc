@@ -1,4 +1,5 @@
 # Don't use bzlmod yet.
+common --enable_workspace=true
 common --enable_bzlmod=false
 
 # Default to an optimized build.

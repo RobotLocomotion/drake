@@ -3,6 +3,8 @@
 #include <utility>
 
 #include "drake/common/text_logging.h"
+#include "drake/common/trajectories/path_parameterized_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
 
 namespace drake {
@@ -20,8 +22,10 @@ std::vector<T> ExtractBreaks(
   }
 
   for (int i = 0; i < static_cast<int>(segments.size()); ++i) {
+    DRAKE_THROW_UNLESS(segments[i].get() != nullptr);
     if (i > 0) {
-      DRAKE_DEMAND(segments[i]->start_time() == segments[i - 1]->end_time());
+      DRAKE_THROW_UNLESS(segments[i]->start_time() ==
+                         segments[i - 1]->end_time());
     }
     breaks[i] = segments[i]->start_time();
   }
@@ -36,7 +40,8 @@ CompositeTrajectory<T>::CompositeTrajectory(
     std::vector<copyable_unique_ptr<Trajectory<T>>> segments)
     : PiecewiseTrajectory<T>(ExtractBreaks(segments)),
       segments_(std::move(segments)) {
-  for (int i = 1; i < static_cast<int>(segments_.size()); ++i) {
+  for (int i = 1; i < ssize(segments_); ++i) {
+    // segments_[i] is checked for nullptr in ExtractBreaks.
     DRAKE_DEMAND(segments_[i]->rows() == segments_[0]->rows());
     DRAKE_DEMAND(segments_[i]->cols() == segments_[0]->cols());
   }
@@ -103,6 +108,33 @@ std::unique_ptr<Trajectory<T>> CompositeTrajectory<T>::DoMakeDerivative(
     derivative_curves[i] = segments_[i]->MakeDerivative(derivative_order);
   }
   return std::make_unique<CompositeTrajectory<T>>(std::move(derivative_curves));
+}
+
+template <typename T>
+CompositeTrajectory<T> CompositeTrajectory<T>::AlignAndConcatenate(
+    const std::vector<copyable_unique_ptr<Trajectory<T>>>& segments) {
+  DRAKE_THROW_UNLESS(segments.size() > 0);
+  DRAKE_THROW_UNLESS(segments[0].get() != nullptr);
+  for (int i = 1; i < ssize(segments); ++i) {
+    DRAKE_THROW_UNLESS(segments[i].get() != nullptr);
+    DRAKE_THROW_UNLESS(segments[i]->rows() == segments[0]->rows());
+    DRAKE_THROW_UNLESS(segments[i]->cols() == segments[0]->cols());
+  }
+  std::vector<copyable_unique_ptr<Trajectory<T>>> aligned_segments;
+  aligned_segments.emplace_back(segments[0]);
+  for (int i = 1; i < ssize(segments); ++i) {
+    const T new_start = aligned_segments.back()->end_time();
+    const T duration = segments[i]->end_time() - segments[i]->start_time();
+    const std::vector<T> breaks = {new_start, new_start + duration};
+    const std::vector<Eigen::MatrixX<T>> samples = {
+        Vector1<T>(segments[i]->start_time()),
+        Vector1<T>(segments[i]->end_time())};
+    const PiecewisePolynomial<T> time_traj =
+        PiecewisePolynomial<T>::FirstOrderHold(breaks, samples);
+    aligned_segments.emplace_back(copyable_unique_ptr(
+        PathParameterizedTrajectory(*segments[i], time_traj)));
+  }
+  return CompositeTrajectory<T>(aligned_segments);
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

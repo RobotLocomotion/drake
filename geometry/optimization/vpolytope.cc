@@ -10,6 +10,7 @@
 #include <string>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <libqhullcpp/Qhull.h>
 #include <libqhullcpp/QhullVertexSet.h>
 

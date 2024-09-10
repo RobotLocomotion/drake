@@ -369,24 +369,22 @@ class GraphOfConvexSets {
             Transcription::kMIP, Transcription::kRelaxation,
             Transcription::kRestriction}) const;
 
-    /** Returns the sum of the costs associated with this vertex in a
-    solvers::MathematicalProgramResult. */
-    double GetSolutionCost(
+    /** Returns the sum of the costs associated with this vertex in `result`, or
+    std::nullopt if no solution for this vertex is available. */
+    std::optional<double> GetSolutionCost(
         const solvers::MathematicalProgramResult& result) const;
 
-    /** Returns the cost associated with the `cost` binding on this vertex in a
-    solvers::MathematicalProgramResult.
+    /** Returns the cost associated with the `cost` binding on this vertex in
+    `result`, or std::nullopt if no solution for this vertex is available.
     @throws std::exception if cost is not associated with this vertex. */
-    double GetSolutionCost(const solvers::MathematicalProgramResult& result,
-                           const solvers::Binding<solvers::Cost>& cost) const;
+    std::optional<double> GetSolutionCost(
+        const solvers::MathematicalProgramResult& result,
+        const solvers::Binding<solvers::Cost>& cost) const;
 
-    /** Returns the solution of x() in a MathematicalProgramResult.  This
-    solution is NaN if the vertex is not in the shortest path (or if we are
-    solving the the convex relaxation and the total flow through this vertex at
-    the solution is numerically close to zero).  We prefer to return NaN than a
-    value not contained in set().
-    */
-    Eigen::VectorXd GetSolution(
+    /** Returns the solution of x() in `result`, or std::nullopt if no solution
+    for this vertex is available. std::nullopt can happen if the vertex is
+    deactivated (e.g. not in the shorest path) in the solution. */
+    std::optional<Eigen::VectorXd> GetSolution(
         const solvers::MathematicalProgramResult& result) const;
 
     const std::vector<Edge*>& incoming_edges() const { return incoming_edges_; }
@@ -603,29 +601,33 @@ class GraphOfConvexSets {
             Transcription::kMIP, Transcription::kRelaxation,
             Transcription::kRestriction}) const;
 
-    /** Returns the sum of the costs associated with this edge in a
-    solvers::MathematicalProgramResult. */
-    double GetSolutionCost(
+    /** Returns the sum of the costs associated with this edge in `result`, or
+    std::nullopt if no solution for this edge is available. */
+    std::optional<double> GetSolutionCost(
         const solvers::MathematicalProgramResult& result) const;
 
-    /** Returns the cost associated with the `cost` binding on this edge in a
-    solvers::MathematicalProgramResult.
+    /** Returns the cost associated with the `cost` binding on this edge in
+    `result`, or std::nullopt if no solution for this edge is available.
     @throws std::exception if cost is not associated with this edge. */
-    double GetSolutionCost(const solvers::MathematicalProgramResult& result,
-                           const solvers::Binding<solvers::Cost>& cost) const;
+    std::optional<double> GetSolutionCost(
+        const solvers::MathematicalProgramResult& result,
+        const solvers::Binding<solvers::Cost>& cost) const;
 
     /** Returns the vector value of the slack variables associated with ϕxᵤ in
-    a solvers::MathematicalProgramResult. This can obtain a different value
-    than `result.GetSolution(edge->xu())`, which is equivalent to
-    `result.GetSolution(edge->u()->x())`; in the case of a loose convex
-    relaxation `result.GetSolution(edge->xu())` will be the *averaged* value of
-    the edge slacks for all non-zero-flow edges. */
-    Eigen::VectorXd GetSolutionPhiXu(
+    `result`, or std::nullopt if no solution for this edge is available. This
+    can obtain a different value than the Vertex::GetSolution(), e.g. from
+    `edge->xu().GetSolution(result)`. First, a deactivated edge (defined by Phi
+    ~= 0) will return the zero vector here, while Vertex::GetSolution() will
+    return std::nullopt (rather than divide by zero to recover Xu). Second, in
+    the case of a loose convex relaxation, the vertex version will return the
+    *averaged* value of the edge slacks for all non-zero-flow edges. */
+    std::optional<Eigen::VectorXd> GetSolutionPhiXu(
         const solvers::MathematicalProgramResult& result) const;
 
     /** Returns the vector value of the slack variables associated with ϕxᵥ in
-    a solvers::MathematicalProgramResult. See GetSolutionPhiXu(). */
-    Eigen::VectorXd GetSolutionPhiXv(
+    `result`, or std::nullopt if no solution for this edge is available.
+    See GetSolutionPhiXu() for more details. */
+    std::optional<Eigen::VectorXd> GetSolutionPhiXv(
         const solvers::MathematicalProgramResult& result) const;
 
    private:

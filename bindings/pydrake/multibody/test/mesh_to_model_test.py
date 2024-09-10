@@ -120,7 +120,8 @@ class TestModelMaker(unittest.TestCase):
         not_an_obj = self._temp_dir / "not_an_obj.txt"
         with open(not_an_obj, 'w') as f:
             f.write("Just some text\n")
-        with self.assertRaisesRegex(RuntimeError, ".+obj data has no.+"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    ".+file parsed contains no objects.+"):
             dut.mesh_path = not_an_obj
             dut.make_model()
         self.assertFalse(self._sdf_path.exists())

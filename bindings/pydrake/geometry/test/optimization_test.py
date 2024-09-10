@@ -547,6 +547,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(sum.PointInSet(sum.MaybeGetFeasiblePoint()))
         self.assertEqual(sum.ambient_dimension(), 6)
         self.assertEqual(sum.num_factors(), 2)
+        self.assertIsNone(sum.A())
+        self.assertIsNone(sum.b())
         sum2 = mut.CartesianProduct(sets=[point, h_box])
         self.assertEqual(sum2.ambient_dimension(), 6)
         self.assertEqual(sum2.num_factors(), 2)
@@ -556,6 +558,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(sum2.ambient_dimension(), 3)
         self.assertEqual(sum2.num_factors(), 2)
         self.assertIsInstance(sum2.factor(1), mut.HPolyhedron)
+        self.assertIsInstance(sum2.A(), np.ndarray)
+        self.assertIsInstance(sum2.b(), np.ndarray)
 
     def test_convex_hull(self):
         point = mut.Point(np.array([0.0, 2.0]))

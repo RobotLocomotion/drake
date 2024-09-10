@@ -13,6 +13,7 @@
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
+#include "drake/multibody/tree/frame_body_pose_cache.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -91,6 +92,15 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   ~MultibodyTreeSystem() override;
 
   bool is_discrete() const { return is_discrete_; }
+
+  /* Returns a reference to the up-to-date FrameBodyPoseCache in the
+  given Context, recalculating it first if necessary. */
+  const FrameBodyPoseCache<T>& EvalFrameBodyPoses(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return frame_body_poses_cache_entry()
+        .template Eval<FrameBodyPoseCache<T>>(context);
+  }
 
   /* Returns a reference to the up-to-date PositionKinematicsCache in the
   given Context, recalculating it first if necessary. */
@@ -239,6 +249,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     this->ValidateContext(context);
     return this->get_cache_entry(cache_indexes_.across_node_jacobians)
         .template Eval<std::vector<Vector6<T>>>(context);
+  }
+
+  /* Returns the cache entry that holds frame body poses X_BF. */
+  const systems::CacheEntry& frame_body_poses_cache_entry() const {
+    return this->get_cache_entry(cache_indexes_.frame_body_poses);
   }
 
   /* Returns the cache entry that holds position kinematics results. */
@@ -409,6 +424,12 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     internal_tree().CalcJointDamping(context, joint_damping);
   }
 
+  void CalcFrameBodyPoses(
+      const systems::Context<T>& context,
+      FrameBodyPoseCache<T>* frame_body_poses) const {
+    internal_tree().CalcFrameBodyPoses(context, frame_body_poses);
+  }
+
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* composite_body_inertias) const {
@@ -501,7 +522,15 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // This method is called during Finalize(). It tells each MultibodyElement
   // owned by `this` system to declare their system parameters on `this`.
-  void DeclareMultibodyElementParameters();
+  // Returns the number of frame body pose slots we need to allocate in the
+  // frame body pose cache entry.
+  // TODO(sherm1) This should return information needed for allocating
+  //  parameter cache entries, such as which parameters affect which
+  //  objects. For now we assume dependence on all parameters.
+  //  Alternatively, consider restructuring this so that the parameter
+  //  allocation and matching cache resources can be obtained at the
+  //  same time by the element that needs them.
+  void DeclareMultibodyElementParameters(int* num_frame_body_pose_slots_needed);
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -513,6 +542,9 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // This struct stores in one single place all indexes related to
   // MultibodyTreeSystem specific cache entries.
   struct CacheIndexes {
+    systems::CacheIndex reflected_inertia;
+    systems::CacheIndex joint_damping;
+    systems::CacheIndex frame_body_poses;
     systems::CacheIndex abi_cache_index;
     systems::CacheIndex acceleration_kinematics;
     systems::CacheIndex across_node_jacobians;
@@ -524,8 +556,6 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex composite_body_inertia_in_world;
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
-    systems::CacheIndex reflected_inertia;
-    systems::CacheIndex joint_damping;
   };
 
   // This is the one real constructor. From the public API, a null tree is

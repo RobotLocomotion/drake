@@ -7,6 +7,7 @@
 #include <utility>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
