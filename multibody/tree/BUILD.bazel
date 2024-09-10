@@ -169,6 +169,7 @@ drake_cc_library(
         "weld_joint.h",
         "weld_mobilizer.h",
     ],
+    compile_once_per_scalar = True,
     # Hide this library outside of this package; users should depend on
     # "//multibody/tree" broadly, not just ":multibody_tree_core".
     visibility = ["//visibility:private"],
