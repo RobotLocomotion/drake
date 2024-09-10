@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -64,8 +65,6 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
-
-  bool is_floating() const final { return true; }
 
   bool has_quaternion_dofs() const final { return true; }
 
@@ -265,12 +264,25 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   void MapQDotToVelocity(const systems::Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& qdot,
                          EigenPtr<VectorX<T>> v) const final;
+
+  // This mobilizer can't use the default implementaion because it is
+  // required to preserve bit-identical state.
+  std::pair<Eigen::Quaternion<T>, Vector3<T>> GetPosePair(
+      const systems::Context<T>& context) const final;
   // @}
 
  protected:
   // Sets `state` to store a configuration in which M coincides with F (i.e.
   // q_FM is the identity quaternion).
   QVector<double> get_zero_position() const final;
+
+  QVector<T> DoPoseToPositions(const Eigen::Quaternion<T> orientation,
+                               const Vector3<T>& translation) const final;
+
+  VVector<T> DoSpatialVelocityToVelocities(
+      const SpatialVelocity<T>& velocity) const final {
+    return velocity.get_coeffs();
+  }
 
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
