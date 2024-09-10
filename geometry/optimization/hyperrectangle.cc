@@ -223,8 +223,8 @@ std::unique_ptr<ConvexSet> Hyperrectangle::DoAffineHullShortcut(
     }
     ++current_dimension;
   }
-  return std::make_unique<AffineSubspace>(
-      std::move(basis.leftCols(num_basis_vectors)), lb_);
+  return std::make_unique<AffineSubspace>(basis.leftCols(num_basis_vectors),
+                                          lb_);
 }
 
 double Hyperrectangle::DoCalcVolume() const {

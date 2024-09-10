@@ -391,8 +391,8 @@ std::unique_ptr<ConvexSet> CartesianProduct::DoAffineHullShortcut(
     current_dimension += a.ambient_dimension();
     num_basis_vectors += a.AffineDimension();
   }
-  return std::make_unique<AffineSubspace>(
-      std::move(basis.leftCols(num_basis_vectors)), std::move(translation));
+  return std::make_unique<AffineSubspace>(basis.leftCols(num_basis_vectors),
+                                          std::move(translation));
 }
 
 double CartesianProduct::DoCalcVolume() const {

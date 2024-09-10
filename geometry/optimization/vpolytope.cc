@@ -598,8 +598,8 @@ std::unique_ptr<ConvexSet> VPolytope::DoAffineHullShortcut(
   if (tol) {
     svd.setThreshold(tol.value());
   }
-  return std::make_unique<AffineSubspace>(
-      std::move(svd.matrixU().leftCols(svd.rank())), vertices_.col(0));
+  return std::make_unique<AffineSubspace>(svd.matrixU().leftCols(svd.rank()),
+                                          vertices_.col(0));
 }
 
 double VPolytope::DoCalcVolume() const {
