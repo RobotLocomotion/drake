@@ -87,8 +87,6 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
       const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
-  bool is_floating() const final { return true; }
-
   bool has_quaternion_dofs() const final { return false; }
 
   // Overloads to define the suffix names for the position and velocity
@@ -324,6 +322,14 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
                          EigenPtr<VectorX<T>> v) const final;
 
  protected:
+  QVector<T> DoPoseToPositions(const Eigen::Quaternion<T> orientation,
+                               const Vector3<T>& translation) const final;
+
+  VVector<T> DoSpatialVelocityToVelocities(
+      const SpatialVelocity<T>& velocity) const final {
+    return velocity.get_coeffs();
+  }
+
   // Implements Mobilizer's NVI, see Mobilizer::CalcNMatrix() for details.
   // @warning The mapping from angular velocity to Euler angle's rates is
   // singular for angle θ₁ such that θ₁ = π/2 + kπ, ∀ k ∈ ℤ. To avoid

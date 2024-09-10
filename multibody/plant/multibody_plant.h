@@ -228,6 +228,14 @@ enum class DiscreteContactApproximation {
   kLagged,
 };
 
+/// The kind of joint to be used to connect free bodies to world at Finalize().
+/// @see SetBaseBodyJointType() for details.
+enum class BaseBodyJointType {
+  kQuaternionFloatingJoint,  ///< 6 dofs, unrestricted orientation.
+  kRpyFloatingJoint,         ///< 6 dofs using 3 angles; has singularity.
+  kWeldJoint,                ///< 0 dofs, fixed to World.
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -1666,6 +1674,39 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if HasModelInstanceNamed(`name`) is true.
   void RenameModelInstance(ModelInstanceIndex model_instance,
                            const std::string& name);
+
+  /// Sets the type of joint to be used by Finalize() to connect any otherwise
+  /// unconnected bodies to World. Bodies connected by a joint to World are
+  /// called _base bodies_ and are determined during Finalize() when we build
+  /// a forest structure to model the multibody system for efficient
+  /// computation.
+  ///
+  /// This can be set globally or for a particular model instance. Global
+  /// options are used for any model elements that belong to model instances for
+  /// which no options have been set explicitly. The default is to use a
+  /// quaternion floating joint.
+  ///
+  /// | BaseBodyJointType::      | Notes                                  |
+  /// | ------------------------ | -------------------------------------- |
+  /// | kQuaternionFloatingJoint | 6 dofs, unrestricted orientation       |
+  /// | kRpyFloatingJoint †      | 6 dofs, uses 3 angles for orientation  |
+  /// | kWeldJoint               | 0 dofs, welded to World ("anchored")   |
+  ///
+  /// † The 3-angle orientation representation used by RpyFloatingJoint can be
+  ///   easier to work with than a quaternion (especially for optimization) but
+  ///   has a singular orientation which must be avoided (pitch angle near 90°).
+  ///
+  /// @note Reminder: if you aren't satisfied with the automatic choice of
+  /// base body or the particular selection of joints here, you can always
+  /// add an explicit joint to World with AddJoint().
+  ///
+  /// @param[in] joint_type The joint type to be used for base bodies.
+  /// @param[in] model_instance (optional) the index of the model instance to
+  ///   which `joint_type` is to be applied.
+  /// @throws std::exception if called after Finalize().
+  void SetBaseBodyJointType(
+      BaseBodyJointType joint_type,
+      std::optional<ModelInstanceIndex> model_instance = {});
 
   /// This method must be called after all elements in the model (joints,
   /// bodies, force elements, constraints, etc.) are added and before any
@@ -3217,11 +3258,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's `rotation` with respect to its parent frame.
+  /// body's orientation with respect to its parent frame, expressed as a
+  /// quaternion. Requires that the free body is modeled using a
+  /// QuaternionFloatingJoint.
   /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
+  ///   @ref mbp_working_with_free_bodies "above for details".
+  /// @note This distribution is not uniform over the sphere reachable by
+  ///   the quaternion. See SetFreeBodyRandomRotationDistributionToUniform()
+  ///   for a uniform alternative.
   /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if the free body is not modeled with a
+  ///   QuaternionFloatingJoint.
   /// @throws std::exception if called pre-finalize.
+  /// @see SetFreeBodyRandomAnglesDistribution() for a free body that is
+  ///   modeled using an RpyFloatingJoint.
+  /// @see SetBaseBodyJointType() for control over the type of automatically-
+  ///   added joints.
   void SetFreeBodyRandomRotationDistribution(
       const RigidBody<T>& body,
       const Eigen::Quaternion<symbolic::Expression>& rotation) {
@@ -3230,13 +3282,44 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's rotation with respect to its parent frame using uniformly random
-  /// rotations.
+  /// body's orientation with respect to its parent frame using uniformly random
+  /// rotations (expressed as a quaternion). Requires that the free body is
+  /// modeled using a QuaternionFloatingJoint.
   /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
+  ///   @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if the free body is not modeled with a
+  ///   QuaternionFloatingJoint.
   /// @throws std::exception if called pre-finalize.
+  /// @see SetFreeBodyRandomAnglesDistribution() for a free body that is
+  ///   modeled using an RpyFloatingJoint.
+  /// @see SetBaseBodyJointType() for control over the type of automatically-
+  ///   added joints.
   void SetFreeBodyRandomRotationDistributionToUniform(const RigidBody<T>& body);
+
+  /// Sets the distribution used by SetRandomState() to populate the free
+  /// body's orientation with respect to its parent frame, expressed with
+  /// roll-pitch-yaw angles. Requires that the free body is modeled using an
+  /// RpyFloatingJoint.
+  /// @note The parent frame is not necessarily the world frame. See
+  ///   @ref mbp_working_with_free_bodies "above for details".
+  /// @note This distribution is not uniform over the sphere reachable by
+  ///   the three angles. See SetFreeBodyRandomRotationDistributionToUniform()
+  ///   for a uniform alternative.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if the free body is not modeled with an
+  ///   RpyFloatingJoint.
+  /// @throws std::exception if called pre-finalize.
+  /// @see SetFreeBodyRandomRotationDistribution() for a free body that is
+  ///   modeled using a QuaternionFloatingJoint.
+  /// @see SetBaseBodyJointType() for control over the type of automatically-
+  ///   added joints.
+  void SetFreeBodyRandomAnglesDistribution(
+      const RigidBody<T>& body,
+      const math::RollPitchYaw<symbolic::Expression>& angles) {
+    this->mutable_tree().SetFreeBodyRandomAnglesDistributionOrThrow(body,
+                                                                    angles);
+  }
 
   /// Sets `context` to store the pose `X_WB` of a given _floating base_ `body`
   /// B in the world frame W.

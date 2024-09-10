@@ -1175,7 +1175,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
   }
 
   // Pose of frame F in its parent body frame P.
-  const RigidTransform<T> X_PF = frame_F.GetFixedPoseInBodyFrame();
+  const RigidTransform<T>& X_PF = frame_F.EvalPoseInBodyFrame(*context);
   // Pose of frame F's parent body P in the world.
   const RigidTransform<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
   // Pose of "body" B in the world frame.
@@ -1263,6 +1263,27 @@ void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
         }
       }
     }
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetBaseBodyJointType(
+    BaseBodyJointType joint_type,
+    std::optional<ModelInstanceIndex> model_instance) {
+  static const std::map<BaseBodyJointType, internal::ForestBuildingOptions>
+      option_map{{BaseBodyJointType::kQuaternionFloatingJoint,
+                  internal::ForestBuildingOptions::kDefault},
+                 {BaseBodyJointType::kRpyFloatingJoint,
+                  internal::ForestBuildingOptions::kUseRpyFloatingJoints},
+                 {BaseBodyJointType::kWeldJoint,
+                  internal::ForestBuildingOptions::kUseFixedBase}};
+  DRAKE_DEMAND(option_map.contains(joint_type));
+  DRAKE_THROW_UNLESS(!is_finalized());
+  internal::LinkJointGraph& graph = mutable_tree().mutable_graph();
+  if (model_instance.has_value()) {
+    graph.SetForestBuildingOptions(*model_instance, option_map.at(joint_type));
+  } else {
+    graph.SetGlobalForestBuildingOptions(option_map.at(joint_type));
   }
 }
 

@@ -82,6 +82,49 @@ TEST_F(QuaternionFloatingMobilizerTest, ZeroState) {
   EXPECT_TRUE(X_WB.IsExactlyIdentity());
 }
 
+// Our documentation guarantees that this joint will represent a
+// (quaternion, translation) pair exactly. Make sure it does.
+TEST_F(QuaternionFloatingMobilizerTest, SetGetPosePair) {
+  const Quaterniond set_quaternion(RollPitchYawd(0.1, 0.2, 0.3).ToQuaternion());
+  const Vector3d set_translation(1.0, 2.0, 3.0);
+  const RigidTransformd set_pose(set_quaternion, set_translation);
+
+  // Make sure we don't accidentally match.
+  const std::pair<Quaterniond, Vector3d> before =
+      mobilizer_->GetPosePair(*context_);
+  EXPECT_FALSE(math::RigidTransform(before.first, before.second)
+                   .IsNearlyEqualTo(set_pose, 1e-8));
+
+  mobilizer_->SetPosePair(*context_, set_quaternion, set_translation,
+                          &context_->get_mutable_state());
+
+  const std::pair<Quaterniond, Vector3d> after =
+      mobilizer_->GetPosePair(*context_);
+
+  // Check for bit-identical match.
+  EXPECT_EQ(after.first.coeffs(), set_quaternion.coeffs());
+  EXPECT_EQ(after.second, set_translation);
+}
+
+TEST_F(QuaternionFloatingMobilizerTest, SetGetSpatialVelocity) {
+  const SpatialVelocity<double> set_V(Vector3d(1.0, 2.0, 3.0),
+                                      Vector3d(4.0, 5.0, 6.0));
+
+  // Make sure we don't accidentally match.
+  const SpatialVelocity<double> before =
+      mobilizer_->GetSpatialVelocity(*context_);
+  EXPECT_FALSE(before.IsApprox(set_V, 1e-8));
+
+  mobilizer_->SetSpatialVelocity(*context_, set_V,
+                                 &context_->get_mutable_state());
+
+  const SpatialVelocity<double> after =
+      mobilizer_->GetSpatialVelocity(*context_);
+
+  // We don't promise, but this should be a bit-identical match.
+  EXPECT_EQ(after.get_coeffs(), set_V.get_coeffs());
+}
+
 TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   RandomGenerator generator;
   std::uniform_real_distribution<symbolic::Expression> uniform;
