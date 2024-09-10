@@ -62,7 +62,7 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   }
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
-      const systems::Context<T>& context,
+      const systems::Context<T>&,
       const Eigen::Ref<const VectorX<T>>&) const final {
     return SpatialVelocity<T>::Zero();
   };
