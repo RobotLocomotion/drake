@@ -65,9 +65,10 @@ AffineSubspace::AffineSubspace(const ConvexSet& set, std::optional<double> tol)
     return;
   }
 
-  // If the set is not clearly a singleton, we find a feasible point and
-  // iteratively compute a basis of the affine hull. If the numerical tolerance
-  // was not specified, we use a reasonable default.
+  // If the set is not clearly a singleton and there's no obviously more
+  // efficient algorithm based on the type of the set, we find a feasible point
+  // and iteratively compute a basis of the affine hull. If the numerical
+  // tolerance was not specified, we use a reasonable default.
   if (!tol) {
     tol = 1e-12;
   }

@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "drake/common/is_approx_equal_abstol.h"
-#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/solution_result.h"
