@@ -4008,7 +4008,209 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance));
 }
 
-GTEST_TEST(SetRandomTest, FloatingBodies) {
+// Verify that we can control what kind of joint is used to connect an
+// unconnected body to World, globally or per-model instance. The default
+// should be QuaternionFloatingJoint, with RpyFloating and Weld as options.
+//
+// We'll also verify that we can set state (q & v), pose, and velocity using the
+// generic Joint API applied to the floating joints. We'll also check that we
+// get reasonable messages when we misuse the API on a non-floating joint.
+// Note: Set/GetPose() are just calls to Set/GetPosePair() so the latter aren't
+// tested separately except to verify for a QuaternionFloatingJoint that
+// the quaternion and translation are preserved bit-identically.
+GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
+  // Plant will contain a free body in the default model instance and one
+  // in a specific model instance. We need fresh plants for each case below.
+  std::unique_ptr<MultibodyPlant<double>> plant;
+  ModelInstanceIndex model_instance;
+  const RigidBody<double>* default_body{};
+  const RigidBody<double>* instance_body{};
+  const auto make_plant = [&]() {
+    plant = std::make_unique<MultibodyPlant<double>>(0.0);
+    model_instance = plant->AddModelInstance("instance");
+    default_body = &plant->AddRigidBody("DefaultBody", default_model_instance(),
+                                        SpatialInertia<double>::MakeUnitary());
+    instance_body = &plant->AddRigidBody("InstanceBody", model_instance,
+                                         SpatialInertia<double>::MakeUnitary());
+  };
+
+  {  // Case 1: all defaults.
+    make_plant();
+
+    // Check the default global and model instance setting.
+    EXPECT_EQ(plant->GetBaseBodyJointType(),
+              BaseBodyJointType::kQuaternionFloatingJoint);
+    EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
+              BaseBodyJointType::kQuaternionFloatingJoint);
+
+    plant->Finalize();  // Two quaternion floating joints.
+    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->has_quaternion_dofs());
+    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->has_quaternion_dofs());
+    EXPECT_EQ(plant->num_joints(), 2);
+    EXPECT_EQ(plant->num_positions(), 14);
+    EXPECT_EQ(plant->num_velocities(), 12);
+
+    // When base joints are added they are named after the base body.
+    const Joint<double>& quaternion_joint =
+        plant->GetJointByName("InstanceBody");
+    auto context = plant->CreateDefaultContext();
+    Eigen::Vector<double, 7> set_q;
+    set_q << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
+    Vector6d set_v;
+    set_v << 1.1, 1.2, 1.3, 1.4, 1.5, 1.6;
+    quaternion_joint.SetPositions(&*context, set_q);
+    quaternion_joint.SetVelocities(&*context, set_v);
+    EXPECT_EQ(quaternion_joint.GetPositions(*context), set_q);
+    EXPECT_EQ(quaternion_joint.GetVelocities(*context), set_v);
+
+    EXPECT_FALSE(quaternion_joint.GetPose(*context).IsNearlyIdentity(1e-8));
+    quaternion_joint.SetPose(&*context, RigidTransformd::Identity());
+    EXPECT_TRUE(quaternion_joint.GetPose(*context).IsNearlyIdentity(1e-14));
+
+    // Check that a quaternion floating joint preserves given
+    // (quaternion, translation) bit-identically.
+    const Eigen::Quaternion<double> set_quaternion(
+        RollPitchYawd(0.01, 0.02, 0.03).ToQuaternion());
+    const Vector3d set_translation(1.0, 2.0, 3.0);
+    const RigidTransformd set_pose(set_quaternion, set_translation);
+    quaternion_joint.SetPosePair(&*context, set_quaternion, set_translation);
+    const std::pair<Eigen::Quaternion<double>, Vector3d> actual_pose =
+        quaternion_joint.GetPosePair(*context);
+    EXPECT_EQ(actual_pose.first.coeffs(), set_quaternion.coeffs());
+    EXPECT_EQ(actual_pose.second, set_translation);
+
+    const SpatialVelocity<double> zero(Vector6d::Zero());
+    EXPECT_NE(quaternion_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+    quaternion_joint.SetSpatialVelocity(&*context, zero);
+    EXPECT_EQ(quaternion_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+  }
+
+  {  // Case 2: globally choose RpyFloating.
+    make_plant();
+    plant->SetBaseBodyJointType(BaseBodyJointType::kRpyFloatingJoint);
+    plant->Finalize();  // Two rpy floating joints.
+
+    // Check the default global and model instance setting. (Post finalize
+    // here for a sanity check -- doesn't change anything.)
+    EXPECT_EQ(plant->GetBaseBodyJointType(),
+              BaseBodyJointType::kRpyFloatingJoint);
+    EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
+              BaseBodyJointType::kRpyFloatingJoint);
+
+    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_FALSE(default_body->has_quaternion_dofs());
+    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_FALSE(instance_body->has_quaternion_dofs());
+    EXPECT_EQ(plant->num_joints(), 2);
+    EXPECT_EQ(plant->num_positions(), 12);
+    EXPECT_EQ(plant->num_velocities(), 12);
+
+    // When base joints are added they are named after the base body.
+    const Joint<double>& instance_joint = plant->GetJointByName("InstanceBody");
+    auto context = plant->CreateDefaultContext();
+    Vector6d set_q;
+    set_q << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+    Vector6d set_v;
+    set_v << 1.1, 1.2, 1.3, 1.4, 1.5, 1.6;
+    instance_joint.SetPositions(&*context, set_q);
+    instance_joint.SetVelocities(&*context, set_v);
+    EXPECT_EQ(instance_joint.GetPositions(*context), set_q);
+    EXPECT_EQ(instance_joint.GetVelocities(*context), set_v);
+
+    EXPECT_FALSE(instance_joint.GetPose(*context).IsNearlyIdentity(1e-8));
+    instance_joint.SetPose(&*context, RigidTransformd::Identity());
+    EXPECT_TRUE(instance_joint.GetPose(*context).IsNearlyIdentity(1e-14));
+
+    const SpatialVelocity<double> zero(Vector6d::Zero());
+    EXPECT_NE(instance_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+    instance_joint.SetSpatialVelocity(&*context, zero);
+    EXPECT_EQ(instance_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+  }
+
+  {  // Case 3: choose RpyFloating only for model_instance.
+    make_plant();
+    plant->SetBaseBodyJointType(BaseBodyJointType::kRpyFloatingJoint,
+                                model_instance);
+
+    EXPECT_EQ(plant->GetBaseBodyJointType(),
+              BaseBodyJointType::kQuaternionFloatingJoint);
+    EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
+              BaseBodyJointType::kRpyFloatingJoint);
+
+    plant->Finalize();  // One quaternion and one rpy floating joint.
+    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->has_quaternion_dofs());
+    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_FALSE(instance_body->has_quaternion_dofs());
+    EXPECT_EQ(plant->num_joints(), 2);
+    EXPECT_EQ(plant->num_positions(), 13);
+    EXPECT_EQ(plant->num_velocities(), 12);
+  }
+
+  {  // Case 4: choose Weld globally but override with QuaternionFloating for
+     // model_instance.
+    make_plant();
+    plant->SetBaseBodyJointType(BaseBodyJointType::kWeldJoint);
+    plant->SetBaseBodyJointType(BaseBodyJointType::kQuaternionFloatingJoint,
+                                model_instance);
+
+    EXPECT_EQ(plant->GetBaseBodyJointType(), BaseBodyJointType::kWeldJoint);
+    EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
+              BaseBodyJointType::kQuaternionFloatingJoint);
+
+    plant->Finalize();  // One weld and one quaternion floating joint.
+    EXPECT_FALSE(default_body->is_floating());
+    EXPECT_FALSE(default_body->has_quaternion_dofs());
+    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->has_quaternion_dofs());
+    EXPECT_EQ(plant->num_joints(), 2);
+    EXPECT_EQ(plant->num_positions(), 7);
+    EXPECT_EQ(plant->num_velocities(), 6);
+
+    // We'll use the weld joint to generate some Joint API errors.
+    const Joint<double>& weld_joint = plant->GetJointByName("DefaultBody");
+    EXPECT_EQ(weld_joint.type_name(), "weld");
+    auto context = plant->CreateDefaultContext();
+
+    // SetPositions() and SetVelocities() should work for every joint as
+    // long as the given vector is the right size (0 for Welds). They should
+    // fail with a reasonable message for a wrong-sized vector.
+    const Eigen::Vector<double, 0> nothing;
+    EXPECT_NO_THROW(weld_joint.SetPositions(&*context, nothing));
+    EXPECT_NO_THROW(weld_joint.SetVelocities(&*context, nothing));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        weld_joint.SetPositions(&*context, Vector3d(1.0, 2.0, 3.0)),
+        ".*SetPositions.*positions.size.*num_positions.*failed.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        weld_joint.SetVelocities(&*context, Vector3d(1.0, 2.0, 3.0)),
+        ".*SetVelocities.*velocities.size.*num_velocities.*failed.*");
+
+    // GetPose() and GetSpatialVelocity() should work, but currently the
+    // Sets are only for floating joints.
+    const SpatialVelocity<double> zero(Vector6d::Zero());
+    EXPECT_TRUE(weld_joint.GetPose(*context).IsExactlyIdentity());
+    EXPECT_EQ(weld_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        weld_joint.SetPose(&*context, RigidTransformd::Identity()),
+        ".*SetPose\\(\\).*weld joint does not implement.*"
+        "joint 'DefaultBody'.*");
+
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        weld_joint.SetSpatialVelocity(&*context, zero),
+        ".*SetSpatialVelocity\\(\\).*weld joint does not implement.*"
+        "joint 'DefaultBody'.*");
+  }
+}
+
+GTEST_TEST(SetRandomTest, QuaternionFloatingBody) {
   // Create a model that contains a single body B.
   MultibodyPlant<double> plant(0.0);
 
@@ -4026,6 +4228,11 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
 
   plant.SetFreeBodyRandomTranslationDistribution(body, xyz);
   plant.SetFreeBodyRandomRotationDistributionToUniform(body);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.SetFreeBodyRandomAnglesDistribution(
+          body, math::RollPitchYaw<symbolic::Expression>(1.0, 2.0, 3.0)),
+      ".*Requires an rpy.*but free body LoneBody uses a quaternion.*");
 
   auto context = plant.CreateDefaultContext();
 
@@ -4056,16 +4263,83 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
 
   // Check that we can set the rotation to a specific distribution (in this
   // case it's just constant).
-  const math::RotationMatrix<double> X_WB_new(RollPitchYawd(0.3, 0.4, 0.5));
+  const math::RotationMatrix<double> R_WB_new(RollPitchYawd(0.3, 0.4, 0.5));
   plant.SetFreeBodyRandomRotationDistribution(
-      body, X_WB_new.cast<symbolic::Expression>().ToQuaternion());
+      body, R_WB_new.cast<symbolic::Expression>().ToQuaternion());
 
   plant.SetRandomContext(context.get(), &generator);
   X_WB = plant.GetFreeBodyPose(*context, body);
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_WB_new.matrix(), X_WB.rotation().matrix(),
+  EXPECT_TRUE(CompareMatrices(R_WB_new.matrix(), X_WB.rotation().matrix(),
                               kTolerance, MatrixCompareType::relative));
+}
+
+// Repeat the above test but with an RpyFloatingJoint rather than a
+// QuaternionFloatingJoint. Translation is the same but orientation must
+// be handled differently.
+GTEST_TEST(SetRandomTest, RpyFloatingBody) {
+  // Create a model that contains a single body B.
+  MultibodyPlant<double> plant(0.0);
+
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  const RigidBody<double>& body =
+      plant.AddRigidBody("LoneBody", SpatialInertia<double>::MakeUnitary());
+  plant.SetBaseBodyJointType(BaseBodyJointType::kRpyFloatingJoint);
+  plant.Finalize();
+
+  RandomGenerator generator;
+  std::uniform_real_distribution<symbolic::Expression> uniform;
+  Vector3<symbolic::Expression> xyz(1.0 + uniform(generator),
+                                    2.0 + uniform(generator),
+                                    3.0 + uniform(generator));
+
+  plant.SetFreeBodyRandomTranslationDistribution(body, xyz);
+  plant.SetFreeBodyRandomAnglesDistribution(
+      body, math::RollPitchYaw<symbolic::Expression>(xyz));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.SetFreeBodyRandomRotationDistribution(
+          body, math::RollPitchYaw<symbolic::Expression>(xyz).ToQuaternion()),
+      ".*Requires a quaternion.*but free body LoneBody uses an rpy.*");
+
+  auto context = plant.CreateDefaultContext();
+
+  const math::RigidTransform<double> X_WB_default =
+      plant.GetFreeBodyPose(*context, body);
+
+  plant.SetRandomContext(context.get(), &generator);
+  math::RigidTransform<double> X_WB = plant.GetFreeBodyPose(*context, body);
+
+  // Just make sure that the rotation matrices have changed.
+  EXPECT_FALSE(CompareMatrices(X_WB_default.rotation().matrix(),
+                               X_WB.rotation().matrix()));
+
+  // x is drawn from [1, 2).
+  EXPECT_GE(X_WB.translation()[0], 1.0);
+  EXPECT_LT(X_WB.translation()[0], 2.0);
+
+  // y is drawn from [2, 3).
+  EXPECT_GE(X_WB.translation()[1], 2.0);
+  EXPECT_LT(X_WB.translation()[1], 3.0);
+
+  // z is drawn from [3, 4).
+  EXPECT_GE(X_WB.translation()[2], 3.0);
+  EXPECT_LT(X_WB.translation()[2], 4.0);
+
+  // Check that we can set the rotation to a specific distribution (in this
+  // case it's just constant).
+  const RollPitchYawd dist(0.3, 0.4, 0.5);
+  const math::RollPitchYaw<symbolic::Expression> dist_symbolic(dist.vector());
+  plant.SetFreeBodyRandomAnglesDistribution(body, dist_symbolic);
+
+  plant.SetRandomContext(context.get(), &generator);
+  X_WB = plant.GetFreeBodyPose(*context, body);
+
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(X_WB.rotation().matrix(),
+                              dist.ToRotationMatrix().matrix(), kTolerance,
+                              MatrixCompareType::relative));
 }
 
 // The random positions generated by MbP should fall back to the default
