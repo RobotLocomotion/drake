@@ -468,6 +468,8 @@ directives:
 
   const auto model = builder->Build();
 
+  EXPECT_NO_THROW(LinearDistanceAndInterpolationProvider(model->plant()));
+
   const LinearDistanceAndInterpolationProvider provider(model->plant());
 
   EXPECT_NO_THROW(provider.quaternion_dof_start_indices());
