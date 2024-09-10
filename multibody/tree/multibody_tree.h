@@ -961,6 +961,8 @@ class MultibodyTree {
     return link_joint_graph_;
   }
 
+  [[nodiscard]] LinkJointGraph& mutable_graph() { return link_joint_graph_; }
+
   [[nodiscard]] const SpanningForest& forest() const {
     DRAKE_ASSERT(graph().forest_is_valid());
     return graph().forest();
@@ -983,7 +985,7 @@ class MultibodyTree {
   //
   // @throws std::exception if called post-finalize.
   // TODO(amcastro-tri): Consider making this method private and calling it
-  // automatically when CreateDefaultContext() is called.
+  //  automatically when CreateDefaultContext() is called.
   void Finalize();
 
   // (Advanced) Allocates a new context for this %MultibodyTree uniquely
@@ -1108,6 +1110,11 @@ class MultibodyTree {
   void SetFreeBodyRandomRotationDistributionOrThrow(
       const RigidBody<T>& body,
       const Eigen::Quaternion<symbolic::Expression>& rotation);
+
+  // See MultibodyPlant::SetFreeBodyRandomRotationDistribution.
+  void SetFreeBodyRandomAnglesDistributionOrThrow(
+      const RigidBody<T>& body,
+      const math::RollPitchYaw<symbolic::Expression>& angles);
 
   // @name Kinematic computations
   // Kinematics computations are concerned with the motion of bodies in the
@@ -2713,21 +2720,18 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const std::vector<BodyIndex>& body_indexes) const;
 
-  // Helper method to access the mobilizer of a free body.
-  // If `body` is a free body in the model, this method will return the
-  // QuaternionFloatingMobilizer for the body. If the body is not free but it
-  // is connected to the model by a Joint, this method will throw a
-  // std::exception.
-  // The returned mobilizer provides a user-facing API to set the state for
-  // this body including both pose and spatial velocity.
-  // @note In general setting the pose and/or velocity of a body in the model
-  // would involve a complex inverse kinematics problem. It is possible however
-  // to do this directly for free bodies and the QuaternionFloatingMobilizer
-  // user-facing API allows us to do exactly that.
-  // @throws std::exception if `body` is not free in the model.
+  // Helper method to access the mobilizer of a free body (that is, a
+  // body connected to its parent by a 6-dof joint). If `body` is free, this
+  // method will return the Mobilizer for the body, which will
+  // be one of the 6-dof mobilizers. Otherwise this method will throw
+  // std::exception. The Mobilizer API supports the ability to set the
+  // mobilizer's state including both pose and spatial velocity; 6-dof
+  // mobilizers have the unique property of being able to represent _any_ pose
+  // and spatial velocity.
+  // @throws std::exception if `body` is not a free body.
   // @throws std::exception if called pre-finalize.
-  // @throws std::exception if called on the world body.
-  const QuaternionFloatingMobilizer<T>& GetFreeBodyMobilizerOrThrow(
+  // @pre `body` is not World
+  const Mobilizer<T>& GetFreeBodyMobilizerOrThrow(
       const RigidBody<T>& body) const;
 
   // Helper method for throwing an exception within public methods that should
