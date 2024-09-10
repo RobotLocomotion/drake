@@ -467,11 +467,11 @@ bool CheckTerminate(const IrisOptions& options, const HPolyhedron& P,
 }
 
 /* Given a joint, check if it is encompassed by the continuous revolute
-framework. If so, return a list of offsets i such that
-joint.position_start() + i is an angle-valued coordinate in configuration space,
-and should be automatically bounded. */
-std::vector<int> revolute_joint_index_offsets(
-    const multibody::Joint<double>& joint) {
+framework. If so, return a vector of indices i that represent an angle-valued
+coordinate in configuration space, and should be automatically bounded. If the
+joint is not encompassed by the continuous revolute framework, return an empty
+vector. */
+std::vector<int> revolute_joint_indices(const multibody::Joint<double>& joint) {
   if (joint.type_name() == "revolute") {
     DRAKE_ASSERT(joint.num_positions() == 1);
     // RevoluteJoints store their configuration as (θ)
@@ -479,7 +479,7 @@ std::vector<int> revolute_joint_index_offsets(
             -std::numeric_limits<float>::infinity() &&
         joint.position_upper_limits()[0] ==
             std::numeric_limits<float>::infinity()) {
-      return std::vector<int>{0};
+      return std::vector<int>{joint.position_start() + 0};
     }
   }
   if (joint.type_name() == "planar") {
@@ -489,7 +489,7 @@ std::vector<int> revolute_joint_index_offsets(
             -std::numeric_limits<float>::infinity() &&
         joint.position_upper_limits()[2] ==
             std::numeric_limits<float>::infinity()) {
-      return std::vector<int>{2};
+      return std::vector<int>{joint.position_start() + 2};
     }
   }
   if (joint.type_name() == "rpy_floating") {
@@ -502,7 +502,7 @@ std::vector<int> revolute_joint_index_offsets(
               -std::numeric_limits<float>::infinity() &&
           joint.position_upper_limits()[i] ==
               std::numeric_limits<float>::infinity()) {
-        continuous_revolute_indices.push_back(i);
+        continuous_revolute_indices.push_back(joint.position_start() + i);
       }
     }
     return continuous_revolute_indices;
@@ -538,7 +538,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           "Consider using RpyFloatingJoint instead.");
     }
     const std::vector<int> continuous_revolute_indices =
-        revolute_joint_index_offsets(joint);
+        revolute_joint_indices(joint);
     for (const int i : continuous_revolute_indices) {
       lower_limits[i] = seed[i] - M_PI_2 + options.convexity_radius_stepback;
       upper_limits[i] = seed[i] + M_PI_2 - options.convexity_radius_stepback;
