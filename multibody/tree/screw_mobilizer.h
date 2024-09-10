@@ -61,6 +61,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
   using MobilizerBase::kNx;
+  using typename MobilizerBase::QVector;
+  using typename MobilizerBase::VVector;
 
   /* Constructor for a %ScrewMobilizer between an inboard frame F and
      an outboard frame M  granting one translational and one rotational degrees
@@ -192,10 +194,10 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>& q) const {
+  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
     const Vector3<T> p_FM(
         axis_ * get_screw_translation_from_rotation(q[0], screw_pitch_));
     return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
@@ -205,8 +207,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
-    return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+    return calc_V_FM(context, this->to_v_vector(v.data()));
   };
 
   /* Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
@@ -214,7 +215,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    which is the angular velocity. We scale that by the pitch to find the
    related translational velocity. */
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>& v) const {
+                               const VVector& v) const {
     const SpatialVelocity<T> V_FM(
         axis_ * v[0],
         axis_ * get_screw_translation_from_rotation(v[0], screw_pitch_));

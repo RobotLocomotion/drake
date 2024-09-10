@@ -33,6 +33,9 @@ class BodyNodeImpl final : public BodyNode<T> {
     kNx = ConcreteMobilizer<T>::kNx
   };
 
+  using QVector = typename ConcreteMobilizer<T>::QVector;
+  using VVector = typename ConcreteMobilizer<T>::VVector;
+
   // Given a body and its inboard mobilizer in a MultibodyTree this constructor
   // creates the corresponding %BodyNode. See the BodyNode class documentation
   // for details on how a BodyNode is defined.
@@ -76,23 +79,24 @@ class BodyNodeImpl final : public BodyNode<T> {
  private:
   const ConcreteMobilizer<T>* mobilizer_;
 
+
   // Given a pointer to the contiguous array of all q's in this system, returns
   // a reference to just the ones for this mobilizer, as a fixed-size vector.
-  const Eigen::Vector<T, kNq>& my_q(const T* positions) const {
-    return *reinterpret_cast<const Eigen::Vector<T, kNq>*>(
+  const QVector& my_q(const T* positions) const {
+    return ConcreteMobilizer<T>::to_q_vector(
         &positions[mobilizer_->position_start_in_q()]);
   }
 
   // Given a pointer to the contiguous array of all v's in this system, returns
   // a reference to just the ones for this mobilizer, as a fixed-size vector.
-  const Eigen::Vector<T, kNv>& my_v(const T* velocities) const {
-    return *reinterpret_cast<const Eigen::Vector<T, kNv>*>(
+  const VVector& my_v(const T* velocities) const {
+    return ConcreteMobilizer<T>::to_v_vector(
         &velocities[mobilizer_->velocity_start_in_v()]);
   }
 
   // Given a complete array of hinge matrices H stored by contiguous columns,
   // returns a const reference to H for this mobilizer, as a 6xnv fixed-size
-  // matrix.
+  // matrix. 16-byte alignment is OK here.
   const Eigen::Matrix<T, 6, kNv>& my_H(
       const std::vector<Vector6<T>>& H_cache) const {
     return *reinterpret_cast<const Eigen::Matrix<T, 6, kNv>*>(
@@ -101,7 +105,7 @@ class BodyNodeImpl final : public BodyNode<T> {
 
   // Given a pointer to a mutable complete array of hinge matrices H stored by
   // contiguous columns, returns a mutable reference to H for this mobilizer,
-  // as a 6xnv fixed-size matrix.
+  // as a 6xnv fixed-size matrix. 16-byte alignment is OK here.
   Eigen::Matrix<T, 6, kNv>& my_mutable_H(
       std::vector<Vector6<T>>* H_cache) const {
     DRAKE_ASSERT(H_cache != nullptr);

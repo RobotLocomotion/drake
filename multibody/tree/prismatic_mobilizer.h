@@ -39,6 +39,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
   using MobilizerBase::kNx;
+  using typename MobilizerBase::QVector;
+  using typename MobilizerBase::VVector;
 
   // Constructor for a %PrismaticMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M` granting a single translational degree of freedom along
@@ -122,10 +124,10 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, 1>& q) const {
+  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
     return math::RigidTransform<T>(q[0] * translation_axis());
   }
 
@@ -133,8 +135,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
-    return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+    return calc_V_FM(context, this->to_v_vector(v.data()));
   };
 
   // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
@@ -142,7 +143,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // translational velocity v along this mobilizer's axis (see
   // translation_axis()).
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>& v) const {
+                               const VVector& v) const {
     return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
   }
 

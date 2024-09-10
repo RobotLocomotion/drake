@@ -49,6 +49,9 @@ class MobilizerImpl : public Mobilizer<T> {
     kNx = compile_time_num_positions + compile_time_num_velocities
   };
 
+  using QVector = Eigen::Matrix<T, kNq, 1, Eigen::DontAlign>;
+  using VVector = Eigen::Matrix<T, kNv, 1, Eigen::DontAlign>;
+
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is
   // provided here. Subclasses of %MobilizerImpl are therefore forced to
@@ -130,6 +133,32 @@ class MobilizerImpl : public Mobilizer<T> {
     }
 
     random_state_distribution_->template tail<kNv>() = velocity;
+  }
+
+  // Given this mobilizer's position coordinates q as a T*, overlay with the
+  // appropriate-sized Eigen vector.
+  // N.B. Eigen would try to 16-byte align any even-sized Vectors, causing
+  //      a seg fault when placed at an 8-byte aligned location.
+  static const QVector& to_q_vector(const T* q_ptr) {
+    if constexpr (kNq == 0) {  // Keep UBsan happy.
+      static QVector q_vector{};
+      return q_vector;
+    } else {
+      return *reinterpret_cast<const QVector *>(q_ptr);
+    }
+  }
+
+  // Given this mobilizer's velocities v as a T*, overlay with the
+  // appropriate-sized Eigen vector.
+  // N.B. Eigen would try to 16-byte align any even-sized Vectors, causing
+  //      a seg fault when placed at an 8-byte aligned location.
+  static const VVector& to_v_vector(const T* v_ptr) {
+    if constexpr (kNv == 0) {  // Keep UBsan happy.
+      static VVector v_vector{};
+      return v_vector;
+    } else {
+      return *reinterpret_cast<const VVector *>(v_ptr);
+    }
   }
 
  protected:

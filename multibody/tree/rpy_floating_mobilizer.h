@@ -67,6 +67,8 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
   using MobilizerBase::kNx;
+  using typename MobilizerBase::QVector;
+  using typename MobilizerBase::VVector;
 
   // Constructor for an RpyFloatingMobilizer between an inboard frame F
   // inboard_frame_F and an outboard frame M outboard_frame_M.
@@ -228,10 +230,10 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>& q) const {
+  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
     return math::RigidTransform<T>(math::RollPitchYaw<T>(q[0], q[1], q[2]),
                                    q.template tail<3>());
   }
@@ -240,8 +242,7 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
-    return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+    return calc_V_FM(context, this->to_v_vector(v.data()));
   };
 
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame M
@@ -249,7 +250,7 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // velocity v, packed as documented in get_generalized_velocities(). (That's
   // conveniently just V_FM already.)
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>& v) const {
+                               const VVector& v) const {
     return SpatialVelocity<T>(v.template head<3>(),   // w_FM
                               v.template tail<3>());  // v_FM
   }

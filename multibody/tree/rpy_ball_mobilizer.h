@@ -66,6 +66,8 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
   using MobilizerBase::kNx;
+  using typename MobilizerBase::QVector;
+  using typename MobilizerBase::VVector;
 
   // Constructor for an RpyBallMobilizer between an inboard frame F
   // inboard_frame_F and an outboard frame M outboard_frame_M granting
@@ -179,10 +181,10 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
       const systems::Context<T>& context) const final {
     const auto& q = this->get_positions(context);
     DRAKE_ASSERT(q.size() == kNq);
-    return calc_X_FM(*reinterpret_cast<const Eigen::Vector<T, kNq>*>(q.data()));
+    return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const Eigen::Vector<T, kNq>& q) const {
+  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
     return math::RigidTransform<T>(math::RollPitchYaw<T>(q[0], q[1], q[2]),
                                    Vector3<T>::Zero());
   }
@@ -191,8 +193,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final {
     DRAKE_ASSERT(v.size() == kNv);
-    return calc_V_FM(context,
-                     *reinterpret_cast<const Eigen::Vector<T, kNv>*>(v.data()));
+    return calc_V_FM(context, this->to_v_vector(v.data()));
   };
 
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
@@ -200,7 +201,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // velocity v which contains the components of the angular velocity w_FM
   // expressed in frame F. The translational velocity is always zero.
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const Eigen::Vector<T, kNv>& v) const {
+                               const VVector& v) const {
     return SpatialVelocity<T>(v, Vector3<T>::Zero());
   }
 
