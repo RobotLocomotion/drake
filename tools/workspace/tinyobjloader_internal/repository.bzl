@@ -13,5 +13,6 @@ def tinyobjloader_internal_repository(
         patches = [
             ":patches/faster_float_parsing.patch",
             ":patches/default_texture_color.patch",
+            ":patches/silence_materials.patch",
         ],
     )

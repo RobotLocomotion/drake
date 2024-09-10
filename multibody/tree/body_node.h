@@ -185,8 +185,11 @@ class BodyNode : public MultibodyElement<T> {
   // @pre CalcPositionKinematicsCache_BaseToTip() must have already been called
   // for the parent node (and, by recursive precondition, all predecessor nodes
   // in the tree.)
+
+  // TODO(sherm1) This function should not take a context.
   void CalcPositionKinematicsCache_BaseToTip(
       const systems::Context<T>& context,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,
       PositionKinematicsCache<T>* pc) const {
     // This method must not be called for the "world" body node.
     DRAKE_ASSERT(topology_.rigid_body != world_index());
@@ -203,7 +206,7 @@ class BodyNode : public MultibodyElement<T> {
     // mobilizer. q(W:P) denotes all generalized positions in the kinematics
     // path between World and the parent body P. It assumes we are in a
     // base-to-tip recursion and therefore `X_WP` has already been updated.
-    CalcAcrossMobilizerBodyPoses_BaseToTip(context, pc);
+    CalcAcrossMobilizerBodyPoses_BaseToTip(frame_body_pose_cache, pc);
 
     // TODO(amcastro-tri):
     // Update Body specific kinematics. These include:
@@ -241,6 +244,8 @@ class BodyNode : public MultibodyElement<T> {
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcVelocityKinematicsCache().
+
+  // TODO(sherm1) This function should not take a context.
   void CalcVelocityKinematicsCache_BaseToTip(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -379,8 +384,11 @@ class BodyNode : public MultibodyElement<T> {
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcAccelerationKinematicsCache().
+
+  // TODO(sherm1) This function should not take a context.
   void CalcSpatialAcceleration_BaseToTip(
       const systems::Context<T>& context,
+      const FrameBodyPoseCache<T>& frame_body_poses_cache,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>* vc,
       const VectorX<T>& mbt_vdot,
@@ -456,12 +464,11 @@ class BodyNode : public MultibodyElement<T> {
     // =========================================================================
     // Computation of A_PB = DtP(V_PB), Eq. (4).
 
-    // TODO(amcastro-tri): consider caching these. Also used in velocity
-    //  kinematics.
-    const math::RotationMatrix<T> R_PF =
-        frame_F.CalcRotationMatrixInBodyFrame(context);
-    const math::RigidTransform<T> X_MB =
-        frame_M.CalcPoseInBodyFrame(context).inverse();
+    const math::RigidTransform<T>& X_PF =
+        frame_F.get_X_BF(frame_body_poses_cache);  // B==P
+    const math::RotationMatrix<T>& R_PF = X_PF.rotation();
+    const math::RigidTransform<T>& X_MB =
+        frame_M.get_X_FB(frame_body_poses_cache);  // F==M
 
     // Form the rotation matrix relating the world frame W and parent body P.
     // Available since we are called within a base-to-tip recursion.
@@ -593,8 +600,11 @@ class BodyNode : public MultibodyElement<T> {
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcInverseDynamics().
+
+  // TODO(sherm1) This function should not take a context.
   void CalcInverseDynamics_TipToBase(
       const systems::Context<T>& context,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,
       const PositionKinematicsCache<T>& pc,
       const std::vector<SpatialInertia<T>>& M_B_W_cache,
       const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
@@ -675,7 +685,8 @@ class BodyNode : public MultibodyElement<T> {
     // Compute shift vector from Bo to Mo expressed in the world frame W.
     const Frame<T>& frame_M = outboard_frame();
     DRAKE_DEMAND(frame_M.body().index() == body_B.index());
-    const math::RigidTransform<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
+    const math::RigidTransform<T>& X_BM =
+        frame_M.get_X_BF(frame_body_pose_cache);  // F==M
     const Vector3<T>& p_BoMo_B = X_BM.translation();
     const math::RigidTransform<T>& X_WB = get_X_WB(pc);
     const math::RotationMatrix<T>& R_WB = X_WB.rotation();
@@ -700,8 +711,8 @@ class BodyNode : public MultibodyElement<T> {
       // p_CoMc_W:
       const Frame<T>& frame_Mc = child_node->outboard_frame();
       const math::RotationMatrix<T>& R_WC = child_node->get_X_WB(pc).rotation();
-      const math::RigidTransform<T> X_CMc =
-          frame_Mc.CalcPoseInBodyFrame(context);
+      const math::RigidTransform<T>& X_CMc =
+          frame_Mc.get_X_BF(frame_body_pose_cache);  // B==C, F==Mc
       const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();
 
       // Shift position vector from child C outboard mobilizer frame Mc to body
@@ -773,8 +784,11 @@ class BodyNode : public MultibodyElement<T> {
   //
   // @pre The position kinematics cache `pc` was already updated to be in sync
   // with `context` by MultibodyTree::CalcPositionKinematicsCache().
+
+  // TODO(sherm1) This function should not take a context.
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,
       const PositionKinematicsCache<T>& pc,
       EigenPtr<MatrixX<T>> H_PB_W) const {
     // Checks on the input arguments.
@@ -788,10 +802,11 @@ class BodyNode : public MultibodyElement<T> {
     // Outboard frame M of this node's mobilizer.
     const Frame<T>& frame_M = outboard_frame();
 
-    const math::RotationMatrix<T> R_PF =
-        frame_F.CalcRotationMatrixInBodyFrame(context);
-    const math::RigidTransform<T> X_MB =
-        frame_M.CalcPoseInBodyFrame(context).inverse();
+    const math::RigidTransform<T>& X_PF =
+        frame_F.get_X_BF(frame_body_pose_cache);  // B==P
+    const math::RotationMatrix<T>& R_PF = X_PF.rotation();
+    const math::RigidTransform<T>& X_MB =
+        frame_M.get_X_FB(frame_body_pose_cache);  // F==M
 
     // Form the rotation matrix relating the world frame W and parent body P.
     const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
@@ -900,6 +915,8 @@ class BodyNode : public MultibodyElement<T> {
   //  - Revolute: [x y z 0 0 0]
   //  - Prismatic: [0 0 0 x y z]
   //  - Ball: 3x3 blocks of zeroes.
+
+  // TODO(sherm1) This function should not take a context.
   void CalcArticulatedBodyInertiaCache_TipToBase(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -1094,6 +1111,8 @@ class BodyNode : public MultibodyElement<T> {
   //
   // @throws when called on the _root_ node or `aba_force_cache` is
   // nullptr.
+
+  // TODO(sherm1) This function should not take a context.
   void CalcArticulatedBodyForceCache_TipToBase(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -1186,6 +1205,8 @@ class BodyNode : public MultibodyElement<T> {
   // called for the parent node (and, by recursive precondition, all
   // predecessor nodes in the tree.)
   // @throws when called on the _root_ node of `ac` or `vdot` is nullptr.
+
+  // TODO(sherm1) This function should not take a context.
   void CalcArticulatedBodyAccelerations_BaseToTip(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -1296,10 +1317,14 @@ class BodyNode : public MultibodyElement<T> {
   // @pre pc and vc previously computed to be in sync with `context.
   //
   // @throws when `Ab_WB` is nullptr.
-  void CalcSpatialAccelerationBias(const systems::Context<T>& context,
-                                   const PositionKinematicsCache<T>& pc,
-                                   const VelocityKinematicsCache<T>& vc,
-                                   SpatialAcceleration<T>* Ab_WB) const {
+
+  // TODO(sherm1) This function should not take a context.
+  void CalcSpatialAccelerationBias(
+      const systems::Context<T>& context,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      SpatialAcceleration<T>* Ab_WB) const {
     DRAKE_THROW_UNLESS(Ab_WB != nullptr);
     // As a guideline for developers, please refer to @ref
     // abi_computing_accelerations for a detailed description and derivation of
@@ -1311,10 +1336,11 @@ class BodyNode : public MultibodyElement<T> {
     const Frame<T>& frame_M = outboard_frame();
 
     // Compute R_PF and X_MB.
-    const math::RotationMatrix<T> R_PF =
-        frame_F.CalcRotationMatrixInBodyFrame(context);
-    const math::RigidTransform<T> X_MB =
-        frame_M.CalcPoseInBodyFrame(context).inverse();
+    const math::RigidTransform<T>& X_PF =
+        frame_F.get_X_BF(frame_body_pose_cache);  // B==P
+    const math::RotationMatrix<T>& R_PF = X_PF.rotation();
+    const math::RigidTransform<T>& X_MB =
+        frame_M.get_X_FB(frame_body_pose_cache);  // F==M
 
     // Parent position in the world is available from the position kinematics.
     const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
@@ -1733,7 +1759,7 @@ class BodyNode : public MultibodyElement<T> {
   // between the world and the parent body P. It assumes we are in a base-to-tip
   // recursion and therefore `X_WP` has already been updated.
   void CalcAcrossMobilizerBodyPoses_BaseToTip(
-      const systems::Context<T>& context,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,
       PositionKinematicsCache<T>* pc) const {
     // RigidBody for this node.
     const RigidBody<T>& body_B = body();
@@ -1753,8 +1779,10 @@ class BodyNode : public MultibodyElement<T> {
     // - X_FM(q_B)
     // - X_WP(q(W:B)), where q(W:B) includes all positions in the kinematics
     //                 path from body B to the world W.
-    const math::RigidTransform<T> X_MB =
-        frame_M.CalcPoseInBodyFrame(context).inverse();
+    const math::RigidTransform<T>& X_MB =
+        frame_M.get_X_FB(frame_body_pose_cache);  // F==M
+    const math::RigidTransform<T>& X_PF =
+        frame_F.get_X_BF(frame_body_pose_cache);  // B==P
     const math::RigidTransform<T>& X_FM =
         get_X_FM(*pc);  // mobilizer.Eval_X_FM(ctx)
     const math::RigidTransform<T>& X_WP =
@@ -1771,12 +1799,7 @@ class BodyNode : public MultibodyElement<T> {
     //  In that case X_FB = X_FM as suggested by setting X_MB = Identity.
     const math::RigidTransform<T> X_FB = X_FM * X_MB;
 
-    // Given the pose X_FB of body frame B measured in the mobilizer inboard
-    // frame F, we can ask frame F (who's parent body is P) for the pose of body
-    // B measured in the frame of the parent body P.
-    // In the particular case F = B, this method directly returns X_FB.
-    X_PB = frame_F.CalcOffsetPoseInBody(context, X_FB);
-
+    X_PB = X_PF * X_FB;
     X_WB = X_WP * X_PB;
 
     // Compute shift vector p_PoBo_W from the parent origin to the body origin.
@@ -1803,6 +1826,8 @@ class BodyNode : public MultibodyElement<T> {
   // quantities associated with `this` mobilizer. MultibodyTree will always
   // provide a valid PositionKinematicsCache pointer, otherwise this method
   // aborts in Debug builds.
+
+  // TODO(sherm1) This function should not take a context.
   void CalcAcrossMobilizerPositionKinematicsCache(
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const {

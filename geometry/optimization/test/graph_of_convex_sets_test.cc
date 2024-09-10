@@ -143,7 +143,7 @@ GTEST_TEST(GraphOfConvexSetsTest, GetVertexSolution) {
   }
   result.set_decision_variable_index(map);
   result.set_x_val(p.x());
-  EXPECT_TRUE(CompareMatrices(v->GetSolution(result), p.x()));
+  EXPECT_TRUE(CompareMatrices(v->GetSolution(result).value(), p.x()));
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, AddEdge) {
@@ -730,9 +730,12 @@ class ThreePoints : public ::testing::Test {
     EXPECT_TRUE(restriction_result.is_success());
     EXPECT_NEAR(result.get_optimal_cost(),
                 restriction_result.get_optimal_cost(), 1e-4);
-    for (const auto* v : {source_, target_, sink_}) {
-      EXPECT_TRUE(CompareMatrices(v->GetSolution(result),
-                                  v->GetSolution(restriction_result), 1e-6));
+    EXPECT_FALSE(sink_->GetSolution(result).has_value());
+    EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
+    for (const auto* v : {source_, target_}) {
+      EXPECT_TRUE(CompareMatrices(v->GetSolution(result).value(),
+                                  v->GetSolution(restriction_result).value(),
+                                  1e-6));
     }
   }
 
@@ -781,56 +784,56 @@ TEST_F(ThreePoints, LinearCost1) {
   auto source_cost = source_->AddCost(1.0);
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), 1.0, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), 1.0, 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(), 1.0, 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
 
   // Check GetSolutionCost overloads which take the binding.
-  EXPECT_NEAR(e_on_->GetSolutionCost(result, e_on_cost), 1.0, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result, e_off_cost), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result, source_cost), 1.0, 1e-6);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result, e_on_cost).value(), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result, e_off_cost).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result, source_cost).value(), 1.0, 1e-6);
   DRAKE_EXPECT_THROWS_MESSAGE(e_on_->GetSolutionCost(result, e_off_cost),
                               ".*not registered with this edge.*");
   DRAKE_EXPECT_THROWS_MESSAGE(target_->GetSolutionCost(result, source_cost),
                               ".*not registered with this vertex.*");
 
-  EXPECT_TRUE(
-      CompareMatrices(e_on_->GetSolutionPhiXu(result), p_source_.x(), 1e-6));
-  EXPECT_TRUE(
-      CompareMatrices(e_on_->GetSolutionPhiXv(result), p_target_.x(), 1e-6));
-  EXPECT_TRUE(CompareMatrices(e_off_->GetSolutionPhiXu(result),
+  EXPECT_TRUE(CompareMatrices(e_on_->GetSolutionPhiXu(result).value(),
+                              p_source_.x(), 1e-6));
+  EXPECT_TRUE(CompareMatrices(e_on_->GetSolutionPhiXv(result).value(),
+                              p_target_.x(), 1e-6));
+  EXPECT_TRUE(CompareMatrices(e_off_->GetSolutionPhiXu(result).value(),
                               0 * p_source_.x(), 1e-6));
-  EXPECT_TRUE(
-      CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
+  EXPECT_TRUE(CompareMatrices(e_off_->GetSolutionPhiXv(result).value(),
+                              0 * p_sink_.x(), 1e-6));
   CheckConvexRestriction(result);
 
   options_.solver_options = SolverOptions();
   auto result4 = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result4.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result4), 1.0, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result4), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result4), 1.0, 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result4), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result4), 0.0, 1e-6);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result4).value(), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result4).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result4).value(), 1.0, 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result4).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result4).value(), 0.0, 1e-6);
 
-  EXPECT_TRUE(
-      CompareMatrices(source_->GetSolution(result4), p_source_.x(), 1e-6));
-  EXPECT_TRUE(
-      CompareMatrices(target_->GetSolution(result4), p_target_.x(), 1e-6));
-  EXPECT_TRUE(sink_->GetSolution(result4).hasNaN());
+  EXPECT_TRUE(CompareMatrices(source_->GetSolution(result4).value(),
+                              p_source_.x(), 1e-6));
+  EXPECT_TRUE(CompareMatrices(target_->GetSolution(result4).value(),
+                              p_target_.x(), 1e-6));
+  EXPECT_FALSE(sink_->GetSolution(result4).has_value());
 
   if (solvers::ClpSolver::is_available()) {
     solvers::ClpSolver clp;
     options_.solver = &clp;
     auto result3 = g_.SolveShortestPath(*source_, *target_, options_);
     ASSERT_TRUE(result3.is_success());
-    EXPECT_NEAR(e_on_->GetSolutionCost(result3), 1.0, 1e-6);
-    EXPECT_NEAR(e_off_->GetSolutionCost(result3), 0.0, 1e-6);
-    EXPECT_NEAR(source_->GetSolutionCost(result3), 1.0, 1e-6);
-    EXPECT_NEAR(target_->GetSolutionCost(result3), 0.0, 1e-6);
-    EXPECT_NEAR(sink_->GetSolutionCost(result3), 0.0, 1e-6);
+    EXPECT_NEAR(e_on_->GetSolutionCost(result3).value(), 1.0, 1e-6);
+    EXPECT_NEAR(e_off_->GetSolutionCost(result3).value(), 0.0, 1e-6);
+    EXPECT_NEAR(source_->GetSolutionCost(result3).value(), 1.0, 1e-6);
+    EXPECT_NEAR(target_->GetSolutionCost(result3).value(), 0.0, 1e-6);
+    EXPECT_NEAR(sink_->GetSolutionCost(result3).value(), 0.0, 1e-6);
   }
 }
 
@@ -855,16 +858,16 @@ TEST_F(ThreePoints, ConvexRelaxation) {
   EXPECT_NEAR(result2.GetSolution(e_on_->phi()), 1.0, 1e-6);
   EXPECT_NEAR(result2.GetSolution(e_off_->phi()), 0.0, 1e-6);
 
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), e_on_->GetSolutionCost(result2),
-              1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), e_off_->GetSolutionCost(result2),
-              1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result),
-              source_->GetSolutionCost(result2), 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result),
-              target_->GetSolutionCost(result2), 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), sink_->GetSolutionCost(result2),
-              1e-6);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(),
+              e_on_->GetSolutionCost(result2).value(), 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(),
+              e_off_->GetSolutionCost(result2).value(), 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              source_->GetSolutionCost(result2).value(), 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(),
+              target_->GetSolutionCost(result2).value(), 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(),
+              sink_->GetSolutionCost(result2).value(), 1e-6);
 }
 
 TEST_F(ThreePoints, LinearCost2) {
@@ -876,11 +879,11 @@ TEST_F(ThreePoints, LinearCost2) {
   source_->AddCost(solvers::Binding(cost, {}));
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), b, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), b, 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), b, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(), b, 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -892,11 +895,13 @@ TEST_F(ThreePoints, LinearCost3) {
   source_->AddCost(a.dot(source_->x()) + b);
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), a.dot(p_source_.x()) + b, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), a.dot(p_source_.x()) + b, 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), a.dot(p_source_.x()) + b,
+              1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              a.dot(p_source_.x()) + b, 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -933,13 +938,13 @@ TEST_F(ThreePoints, QuadraticCost) {
     return;  // See IpoptTest for details.
   }
   ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result),
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(),
               (p_source_.x() - p_target_.x()).squaredNorm(), 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), p_source_.x().squaredNorm(),
-              1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              p_source_.x().squaredNorm(), 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -964,12 +969,12 @@ TEST_F(ThreePoints, QuadraticCost2) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 2e-5);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), vertex_cost.Evaluate(env),
-              2e-5);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), cost.Evaluate(env), 2e-5);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 4e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              vertex_cost.Evaluate(env), 2e-5);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -991,12 +996,12 @@ TEST_F(ThreePoints, QuadraticCost3) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 5e-5);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), vertex_cost.Evaluate(env),
-              2e-4);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), cost.Evaluate(env), 5e-5);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 4e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              vertex_cost.Evaluate(env), 2e-4);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -1019,12 +1024,13 @@ TEST_F(ThreePoints, QuadraticCost4) {
   ASSERT_TRUE(result.is_success());
   Vector4d x;
   x << p_source_.x(), p_target_.x();
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), (R * x + d).squaredNorm(), 2e-5);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result),
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), (R * x + d).squaredNorm(),
+              2e-5);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
               (R_v * p_source_.x() + d_v).squaredNorm(), 1e-5);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -1065,12 +1071,13 @@ TEST_F(ThreePoints, L1NormCost) {
     return;  // See IpoptTest for details.
   }
   ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result),
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(),
               (p_source_.x() - p_target_.x()).cwiseAbs().sum(), 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), abs(A_v * p_source_.x()), 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              abs(A_v * p_source_.x()), 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -1095,15 +1102,16 @@ TEST_F(ThreePoints, L1NormCost2) {
   }
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(
-      e_on_->GetSolutionCost(result),
+      e_on_->GetSolutionCost(result).value(),
       (A.leftCols(2) * p_source_.x() + A.rightCols(2) * p_target_.x() + b)
           .cwiseAbs()
           .sum(),
       1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), abs(A_v * p_source_.x()), 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              abs(A_v * p_source_.x()), 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -1124,13 +1132,13 @@ TEST_F(ThreePoints, L2NormCost) {
     return;  // See IpoptTest for details.
   }
   ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result),
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(),
               (p_source_.x() - p_target_.x()).norm(), 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), (A_v * p_source_.x()).norm(),
-              1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              (A_v * p_source_.x()).norm(), 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -1155,15 +1163,15 @@ TEST_F(ThreePoints, L2NormCost2) {
   }
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(
-      e_on_->GetSolutionCost(result),
+      e_on_->GetSolutionCost(result).value(),
       (A.leftCols(2) * p_source_.x() + A.rightCols(2) * p_target_.x() + b)
           .norm(),
       1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), (A_v * p_source_.x()).norm(),
-              1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              (A_v * p_source_.x()).norm(), 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -1184,12 +1192,13 @@ TEST_F(ThreePoints, LInfNormCost) {
     return;  // See IpoptTest for details.
   }
   ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result),
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(),
               (p_source_.x() - p_target_.x()).cwiseAbs().maxCoeff(), 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), abs(A_v * p_source_.x()), 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              abs(A_v * p_source_.x()), 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -1214,15 +1223,16 @@ TEST_F(ThreePoints, LInfNormCost2) {
   }
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(
-      e_on_->GetSolutionCost(result),
+      e_on_->GetSolutionCost(result).value(),
       (A.leftCols(2) * p_source_.x() + A.rightCols(2) * p_target_.x() + b)
           .cwiseAbs()
           .maxCoeff(),
       1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result), abs(A_v * p_source_.x()), 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(),
+              abs(A_v * p_source_.x()), 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
 }
 
@@ -1249,14 +1259,15 @@ TEST_F(ThreePoints, PerspectiveQuadraticCost) {
   const double expected_cost =
       std::pow(p_target_.x()(0) + p_target_.x()(1) + b(1), 2) /
       (p_source_.x()(1) - p_source_.x()(0) + b(0));
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), expected_cost, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), expected_cost, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 1e-6);
   const double vertex_expected_cost =
       std::pow(p_source_.x()(0) + p_source_.x()(1) + b(1), 2) /
       (p_source_.x()(1) - p_source_.x()(0) + b(0));
-  EXPECT_NEAR(source_->GetSolutionCost(result), vertex_expected_cost, 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result).value(), vertex_expected_cost,
+              1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   if (result.get_solver_id() == solvers::CsdpSolver::id()) {
     // CSDP 6.2.0 gets the wrong cost -- but correct solution -- in the convex
     // restriction (on linux only).
@@ -1318,9 +1329,12 @@ class ThreeBoxes : public ::testing::Test {
     EXPECT_TRUE(restriction_result.is_success());
     EXPECT_NEAR(result.get_optimal_cost(),
                 restriction_result.get_optimal_cost(), 1e-6);
-    for (const auto* v : {source_, target_, sink_}) {
-      EXPECT_TRUE(CompareMatrices(v->GetSolution(result),
-                                  v->GetSolution(restriction_result), 1e-6));
+    EXPECT_FALSE(sink_->GetSolution(result).has_value());
+    EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
+    for (const auto* v : {source_, target_}) {
+      EXPECT_TRUE(CompareMatrices(v->GetSolution(result).value(),
+                                  v->GetSolution(restriction_result).value(),
+                                  1e-6));
     }
   }
 
@@ -1575,12 +1589,13 @@ TEST_F(ThreeBoxes, NonConvexRounding) {
   EXPECT_EQ(result.get_solver_id(), solvers::IpoptSolver::id());
 
   const double kExpectedDistance = 0.2;
-  const double distance =
-      (source_->GetSolution(result) - target_->GetSolution(result)).norm();
+  const double distance = (source_->GetSolution(result).value() -
+                           target_->GetSolution(result).value())
+                              .norm();
   EXPECT_NEAR(distance, kExpectedDistance, 1e-6);
 
   // Verify that the solution includes source to target.
-  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
 }
 
 TEST_F(ThreeBoxes, LinearEqualityConstraint) {
@@ -1590,9 +1605,9 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint) {
   source_->AddConstraint(source_->x() == -b);
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
-  EXPECT_TRUE(CompareMatrices(source_->GetSolution(result), -b, 1e-6));
-  EXPECT_TRUE(CompareMatrices(target_->GetSolution(result), b, 1e-6));
-  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+  EXPECT_TRUE(CompareMatrices(source_->GetSolution(result).value(), -b, 1e-6));
+  EXPECT_TRUE(CompareMatrices(target_->GetSolution(result).value(), b, 1e-6));
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
   CheckConvexRestriction(result);
 }
 
@@ -1616,12 +1631,13 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint2) {
   source_->AddConstraint(solvers::Binding(vertex_constraint, source_->x()));
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
-  EXPECT_TRUE(CompareMatrices(Aeq_v * source_->GetSolution(result), beq, 1e-6));
   EXPECT_TRUE(
-      CompareMatrices(Aeq.leftCols(2) * source_->GetSolution(result) +
-                          Aeq.rightCols(2) * target_->GetSolution(result),
-                      beq, 1e-6));
-  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+      CompareMatrices(Aeq_v * source_->GetSolution(result).value(), beq, 1e-6));
+  EXPECT_TRUE(CompareMatrices(
+      Aeq.leftCols(2) * source_->GetSolution(result).value() +
+          Aeq.rightCols(2) * target_->GetSolution(result).value(),
+      beq, 1e-6));
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
   CheckConvexRestriction(result);
 }
 
@@ -1639,9 +1655,11 @@ TEST_F(ThreeBoxes, LinearConstraint) {
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(
-      (source_->GetSolution(result).array() <= -b.array() + 1e-6).all());
-  EXPECT_TRUE((target_->GetSolution(result).array() >= b.array() - 1e-6).all());
-  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+      (source_->GetSolution(result).value().array() <= -b.array() + 1e-6)
+          .all());
+  EXPECT_TRUE(
+      (target_->GetSolution(result).value().array() >= b.array() - 1e-6).all());
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
   CheckConvexRestriction(result);
 }
 
@@ -1664,27 +1682,27 @@ TEST_F(ThreeBoxes, LinearConstraint2) {
   source_->AddConstraint(solvers::Binding(vertex_constraint, source_->x()));
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
-  EXPECT_TRUE(
-      ((A_v * source_->GetSolution(result)).array() <= ub.array() + 1e-6)
-          .all());
-  EXPECT_TRUE(
-      ((A_v * source_->GetSolution(result)).array() >= lb.array() - 1e-6)
-          .all());
-  EXPECT_TRUE(((A.leftCols(2) * source_->GetSolution(result) +
-                A.rightCols(2) * target_->GetSolution(result))
+  EXPECT_TRUE(((A_v * source_->GetSolution(result).value()).array() <=
+               ub.array() + 1e-6)
+                  .all());
+  EXPECT_TRUE(((A_v * source_->GetSolution(result).value()).array() >=
+               lb.array() - 1e-6)
+                  .all());
+  EXPECT_TRUE(((A.leftCols(2) * source_->GetSolution(result).value() +
+                A.rightCols(2) * target_->GetSolution(result).value())
                    .array() <= ub.array() + 1e-6)
                   .all());
-  EXPECT_TRUE(((A.leftCols(2) * source_->GetSolution(result) +
-                A.rightCols(2) * target_->GetSolution(result))
+  EXPECT_TRUE(((A.leftCols(2) * source_->GetSolution(result).value() +
+                A.rightCols(2) * target_->GetSolution(result).value())
                    .array() >= lb.array() - 1e-6)
                   .all());
-  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
 
   // Confirm that my linear constraint resulted in a non-trivial solution.
-  EXPECT_FALSE(
-      CompareMatrices(source_->GetSolution(result), Vector2d::Zero(), 1e-6));
-  EXPECT_FALSE(
-      CompareMatrices(target_->GetSolution(result), Vector2d::Zero(), 1e-6));
+  EXPECT_FALSE(CompareMatrices(source_->GetSolution(result).value(),
+                               Vector2d::Zero(), 1e-6));
+  EXPECT_FALSE(CompareMatrices(target_->GetSolution(result).value(),
+                               Vector2d::Zero(), 1e-6));
   CheckConvexRestriction(result);
 }
 
@@ -1705,9 +1723,11 @@ TEST_F(ThreeBoxes, LinearConstraint3) {
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(
-      (source_->GetSolution(result).array() <= -b.array() + 1e-6).all());
-  EXPECT_TRUE((target_->GetSolution(result).array() >= b.array() - 1e-6).all());
-  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+      (source_->GetSolution(result).value().array() <= -b.array() + 1e-6)
+          .all());
+  EXPECT_TRUE(
+      (target_->GetSolution(result).value().array() >= b.array() - 1e-6).all());
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
   CheckConvexRestriction(result);
 }
 
@@ -1759,7 +1779,8 @@ TEST_F(ThreeBoxes, LorentzConeConstraint) {
   ASSERT_TRUE(result.is_success());
 
   Eigen::VectorXd res(4);
-  res << source_->GetSolution(result), target_->GetSolution(result);
+  res << source_->GetSolution(result).value(),
+      target_->GetSolution(result).value();
   auto z = A * res + b;
   EXPECT_GE(z[0], std::sqrt(std::pow(z[1], 2) + std::pow(z[2], 2) +
                             std::pow(z[3], 2) + std::pow(z[4], 2)));
@@ -1787,12 +1808,14 @@ TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint1) {
   ASSERT_TRUE(result.is_success());
 
   Eigen::Matrix2d mat;
-  mat << source_->GetSolution(result)[0], source_->GetSolution(result)[1],
-      source_->GetSolution(result)[1], target_->GetSolution(result)[0];
+  mat << source_->GetSolution(result).value()[0],
+      source_->GetSolution(result).value()[1],
+      source_->GetSolution(result).value()[1],
+      target_->GetSolution(result).value()[0];
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver(mat);
   EXPECT_GE(solver.eigenvalues()[0], 0);
   EXPECT_GE(solver.eigenvalues()[1], 0);
-  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
 }
 
 // This test has linear constraints to prevent the matrix from being positive
@@ -1815,7 +1838,7 @@ TEST_F(ThreeBoxes, PositiveSemidefiniteConstraint2) {
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_FALSE(result.is_success());
 
-  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
 }
 
 TEST_F(ThreeBoxes, NewSlackVariablesConstruction) {
@@ -1888,11 +1911,11 @@ TEST_F(ThreeBoxes, NewSlackVariablesCost) {
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
 
-  auto source_res = source_->GetSolution(result);
+  auto source_res = source_->GetSolution(result).value();
   // Both coordinates should be pushed towards 1
   ASSERT_TRUE(source_res.isApproxToConstant(1.0, 1e-5));
 
-  auto target_res = target_->GetSolution(result);
+  auto target_res = target_->GetSolution(result).value();
   // We expect that the cost will only push one of the coordinates to the
   // positive side of the set.
   ASSERT_NEAR(target_res.maxCoeff(), 1, 1e-5);
@@ -1905,11 +1928,13 @@ TEST_F(ThreeBoxes, NewSlackVariablesCost) {
   auto restriction_result = g_.SolveConvexRestriction({e_on_});
   ASSERT_TRUE(restriction_result.is_success());
 
-  auto restriction_source_res = source_->GetSolution(restriction_result);
+  auto restriction_source_res =
+      source_->GetSolution(restriction_result).value();
   // Both coordinates should be pushed towards 1
   ASSERT_TRUE(restriction_source_res.isApproxToConstant(1.0, 1e-4));
 
-  auto restriction_target_res = target_->GetSolution(restriction_result);
+  auto restriction_target_res =
+      target_->GetSolution(restriction_result).value();
   // We expect that the cost will only push one of the coordinates to the
   // positive side of the set.
   ASSERT_NEAR(restriction_target_res.maxCoeff(), 1, 1e-4);
@@ -1942,7 +1967,8 @@ TEST_F(ThreeBoxes, RotatedLorentzConeConstraint) {
   ASSERT_TRUE(result.is_success());
 
   Eigen::VectorXd res(4);
-  res << source_->GetSolution(result), target_->GetSolution(result);
+  res << source_->GetSolution(result).value(),
+      target_->GetSolution(result).value();
   auto z = A * res + b;
   EXPECT_GE(z[0] * z[1], std::sqrt(std::pow(z[2], 2) + std::pow(z[3], 2) +
                                    std::pow(z[4], 2)));
@@ -1976,9 +2002,12 @@ TEST_F(ThreeBoxes, SolveConvexRestriction) {
 
   EXPECT_NEAR(result.get_optimal_cost(), restriction_result.get_optimal_cost(),
               1e-6);
-  for (const auto* v : g_.Vertices()) {
-    EXPECT_TRUE(CompareMatrices(v->GetSolution(result),
-                                v->GetSolution(restriction_result), 1e-6));
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
+  EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
+  for (const auto* v : {source_, target_}) {
+    EXPECT_TRUE(CompareMatrices(v->GetSolution(result).value(),
+                                v->GetSolution(restriction_result).value(),
+                                1e-6));
   }
 }
 
@@ -2027,7 +2056,7 @@ GTEST_TEST(ShortestPathTest, ClassicalShortestPath) {
     } else if (e == v2_to_v4) {
       expected_cost = 3.0;
     }
-    EXPECT_NEAR(e->GetSolutionCost(result), expected_cost, 1e-6);
+    EXPECT_NEAR(e->GetSolutionCost(result).value(), expected_cost, 1e-6);
   }
 
   // Now we artificially change the binaries in the result to cause
@@ -2188,16 +2217,16 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
       return;  // See IpoptTest for details.
     }
     EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result),
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result).value(),
                                 0.5 * Vector2d(1, -1), 1e-6));
-    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result).value(),
                                 0.5 * Vector2d(2, 0), 1e-6));
     // Gurobi's error is *slightly* larger than 1e-6. This puts in a healthy
     // margin to account for it.
-    EXPECT_NEAR(edge_13->GetSolutionCost(result), 1.0, 1.1e-6);
+    EXPECT_NEAR(edge_13->GetSolutionCost(result).value(), 1.0, 1.1e-6);
     EXPECT_NEAR(result.GetSolution(edge_13->phi()), 0.5, 1e-6);
-    EXPECT_TRUE(
-        CompareMatrices(v[1]->GetSolution(result), Vector2d(1, -1), 1e-6));
+    EXPECT_TRUE(CompareMatrices(v[1]->GetSolution(result).value(),
+                                Vector2d(1, -1), 1e-6));
   }
 
   // Confirm that variables for edges that are turned off are properly set.
@@ -2207,11 +2236,11 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
   {
     auto result = spp.SolveShortestPath(*v[0], *v[3], options);
     EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result),
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result).value(),
                                 Vector2d::Zero(), 1e-6));
-    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result).value(),
                                 Vector2d::Zero(), 1e-6));
-    EXPECT_NEAR(edge_13->GetSolutionCost(result), 0, 1e-6);
+    EXPECT_NEAR(edge_13->GetSolutionCost(result).value(), 0, 1e-6);
     EXPECT_NEAR(result.GetSolution(edge_13->phi()), 0, 1e-6);
   }
 
@@ -2223,11 +2252,11 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
       return;  // See IpoptTest for details.
     }
     EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result),
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result).value(),
                                 Vector2d(1, -1), 1e-6));
-    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result).value(),
                                 Vector2d(2, 0), 1e-6));
-    EXPECT_NEAR(edge_13->GetSolutionCost(result), 2.0, 1e-4);
+    EXPECT_NEAR(edge_13->GetSolutionCost(result).value(), 2.0, 1e-4);
     EXPECT_NEAR(result.GetSolution(edge_13->phi()), 1.0, 1e-6);
   }
 }
@@ -2309,8 +2338,8 @@ TEST_F(PreprocessShortestPathTest, CheckResults) {
                                 result2.GetSolution(e->xu()), 1e-12));
     EXPECT_TRUE(CompareMatrices(result1.GetSolution(e->xv()),
                                 result2.GetSolution(e->xv()), 1e-12));
-    EXPECT_NEAR(e->GetSolutionCost(result1), e->GetSolutionCost(result2),
-                1e-10);
+    EXPECT_NEAR(e->GetSolutionCost(result1).value(),
+                e->GetSolutionCost(result2).value(), 1e-10);
   }
 }
 
@@ -2963,9 +2992,9 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
     auto iter = std::find(shortest_path.begin(), shortest_path.end(), &e->u());
     if (iter != shortest_path.end() && &e->v() == *(++iter)) {
       // Then it's on the shortest path; cost should be non-zero.
-      EXPECT_GE(e->GetSolutionCost(result), 1.0);
+      EXPECT_GE(e->GetSolutionCost(result).value(), 1.0);
     } else {
-      EXPECT_NEAR(e->GetSolutionCost(result), 0.0, 1e-5);
+      EXPECT_NEAR(e->GetSolutionCost(result).value(), 0.0, 1e-5);
     }
   }
 
@@ -3076,11 +3105,13 @@ GTEST_TEST(ShortestPathTest, Figure9) {
   EXPECT_NEAR(result.GetSolution(e23->phi()), 0.5, kTol);
   EXPECT_NEAR(result.GetSolution(e34->phi()), 1.0, kTol);
 
-  EXPECT_TRUE(CompareMatrices(v1->GetSolution(result), Vector2d(0, 2), kTol));
-  EXPECT_TRUE(CompareMatrices(v2->GetSolution(result), Vector2d(0, -2), kTol));
-  EXPECT_TRUE(v3->GetSolution(result)[0] > 2.0 - kTol);
-  EXPECT_TRUE(v3->GetSolution(result)[0] < 4.0 - kTol);
-  EXPECT_NEAR(v3->GetSolution(result)[1], 0, kTol);
+  EXPECT_TRUE(
+      CompareMatrices(v1->GetSolution(result).value(), Vector2d(0, 2), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(v2->GetSolution(result).value(), Vector2d(0, -2), kTol));
+  EXPECT_TRUE(v3->GetSolution(result).value()[0] > 2.0 - kTol);
+  EXPECT_TRUE(v3->GetSolution(result).value()[0] < 4.0 - kTol);
+  EXPECT_NEAR(v3->GetSolution(result).value()[1], 0, kTol);
 
   // Test that rounding returns the convex relaxation when relaxation is
   // feasible but integer solution is not.
@@ -3109,8 +3140,8 @@ GTEST_TEST(ShortestPathTest, Figure9) {
                                 rounded_result.GetSolution(e->xu()), 1e-12));
     EXPECT_TRUE(CompareMatrices(relaxed_result.GetSolution(e->xv()),
                                 rounded_result.GetSolution(e->xv()), 1e-12));
-    EXPECT_NEAR(e->GetSolutionCost(relaxed_result),
-                e->GetSolutionCost(rounded_result), 1e-10);
+    EXPECT_NEAR(e->GetSolutionCost(relaxed_result).value(),
+                e->GetSolutionCost(rounded_result).value(), 1e-10);
   }
 }
 
@@ -3182,8 +3213,9 @@ GTEST_TEST(ShortestPathTest, SavvaBoxExample) {
                                    result.GetSolution(e->xv()).head<2>(),
                                    1e-4));
       // But the underlying edge decision variables *are* equal.
-      EXPECT_TRUE(CompareMatrices(e->GetSolutionPhiXu(result).tail<2>(),
-                                  e->GetSolutionPhiXv(result).head<2>(), 1e-4));
+      EXPECT_TRUE(CompareMatrices(e->GetSolutionPhiXu(result).value().tail<2>(),
+                                  e->GetSolutionPhiXv(result).value().head<2>(),
+                                  1e-4));
     }
   }
 }
@@ -3291,6 +3323,26 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   EXPECT_THAT(g.GetGraphvizString(result, viz_options, active_edges),
               AllOf(HasSubstr("color=\"#ff0000\"")));
 #pragma GCC diagnostic pop
+}
+
+// Confirm that GetGraphvizString works even if the result was (barely)
+// populated due to an early termination error.
+GTEST_TEST(ShortestPathTest, Issue21839) {
+  GraphOfConvexSets gcs;
+  Vertex* source = gcs.AddVertex(Point(Vector1d{0.1}));
+  Vertex* target = gcs.AddVertex(Point(Vector1d{0.2}));
+
+  auto result = gcs.SolveShortestPath(*source, *target);
+  // The solve returns with an early error and doesn't even set any decision
+  // variables in the result.
+  EXPECT_FALSE(result.get_decision_variable_index());
+
+  GcsGraphvizOptions options;
+  options.show_slacks = true;
+  options.show_vars = true;
+  options.show_flows = true;
+  options.show_costs = true;
+  EXPECT_NO_THROW(gcs.GetGraphvizString(&result, options));
 }
 
 }  // namespace optimization

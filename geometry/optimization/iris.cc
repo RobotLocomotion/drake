@@ -18,6 +18,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/joint.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
@@ -465,6 +466,22 @@ bool CheckTerminate(const IrisOptions& options, const HPolyhedron& P,
   return false;
 }
 
+bool is_continuous_revolute(const multibody::Joint<double>& joint) {
+  return joint.type_name() == "revolute" &&
+         joint.position_lower_limits()[0] ==
+             -std::numeric_limits<float>::infinity() &&
+         joint.position_upper_limits()[0] ==
+             std::numeric_limits<float>::infinity();
+}
+
+bool is_continuous_planar(const multibody::Joint<double>& joint) {
+  return joint.type_name() == "planar" &&
+         joint.position_lower_limits()[2] ==
+             -std::numeric_limits<float>::infinity() &&
+         joint.position_upper_limits()[2] ==
+             std::numeric_limits<float>::infinity();
+}
+
 }  // namespace
 
 HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
@@ -476,9 +493,35 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   const Eigen::VectorXd seed = plant.GetPositions(context);
   const int nc = static_cast<int>(options.configuration_obstacles.size());
   // Note: We require finite joint limits to define the bounding box for the
-  // IRIS algorithm.
-  DRAKE_DEMAND(plant.GetPositionLowerLimits().array().isFinite().all());
-  DRAKE_DEMAND(plant.GetPositionUpperLimits().array().isFinite().all());
+  // IRIS algorithm. The exception is revolute joints -- continuous revolute
+  // joints will have their lower boundary set to seed - π/2 +
+  // options.convexity_radius_stepback and their upper boundary set to seed
+  // + π/2 - options.convexity_radius_stepback.
+
+  Eigen::VectorXd lower_limits = plant.GetPositionLowerLimits();
+  Eigen::VectorXd upper_limits = plant.GetPositionUpperLimits();
+
+  DRAKE_THROW_UNLESS(options.convexity_radius_stepback < M_PI_2);
+  for (multibody::JointIndex index : plant.GetJointIndices()) {
+    const multibody::Joint<double>& joint = plant.get_joint(index);
+    const bool revolute = is_continuous_revolute(joint);
+    const bool planar = is_continuous_planar(joint);
+    if (revolute || planar) {
+      const int i =
+          revolute ? joint.position_start() : joint.position_start() + 2;
+      lower_limits[i] = seed[i] - M_PI_2 + options.convexity_radius_stepback;
+      upper_limits[i] = seed[i] + M_PI_2 - options.convexity_radius_stepback;
+    }
+  }
+
+  if (lower_limits.array().isInf().any() ||
+      upper_limits.array().isInf().any()) {
+    throw std::runtime_error(
+        "IRIS requires that all joints (except for continuous revolute "
+        "joints or planar joints with a continuous rotational DoF) have "
+        "position limits.");
+  }
+
   DRAKE_DEMAND(options.num_collision_infeasible_samples >= 0);
   for (int i = 0; i < nc; ++i) {
     DRAKE_DEMAND(options.configuration_obstacles[i]->ambient_dimension() == nq);
@@ -494,8 +537,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   }
 
   // Make the polytope and ellipsoid.
-  HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
-                                       plant.GetPositionUpperLimits());
+  HPolyhedron P = HPolyhedron::MakeBox(lower_limits, upper_limits);
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
 
   if (options.bounding_region) {
@@ -534,9 +576,10 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   std::map<std::pair<GeometryId, GeometryId>, std::vector<VectorXd>>
       counter_examples;
 
-  // As a surrogate for the true objective, the pairs are sorted by the distance
-  // between each collision pair from the seed point configuration. This could
-  // improve computation times and produce regions with fewer faces.
+  // As a surrogate for the true objective, the pairs are sorted by the
+  // distance between each collision pair from the seed point configuration.
+  // This could improve computation times and produce regions with fewer
+  // faces.
   std::vector<GeometryPairWithDistance> sorted_pairs;
   for (const auto& [geomA, geomB] : pairs) {
     const double distance =
@@ -552,9 +595,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   }
   std::sort(sorted_pairs.begin(), sorted_pairs.end());
 
-  // On each iteration, we will build the collision-free polytope represented as
-  // {x | A * x <= b}.  Here we pre-allocate matrices with a generous maximum
-  // size.
+  // On each iteration, we will build the collision-free polytope represented
+  // as {x | A * x <= b}.  Here we pre-allocate matrices with a generous
+  // maximum size.
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
       P.A().rows() + 2 * n + nc, nq);
   VectorXd b(P.A().rows() + 2 * n + nc);
@@ -579,8 +622,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
             "seed point. The seed point must be feasible.");
       }
     }
-    // Handle bounding box and linear constraints as a special case (extracting
-    // them from the additional_constraint_bindings).
+    // Handle bounding box and linear constraints as a special case
+    // (extracting them from the additional_constraint_bindings).
     auto AddConstraint = [&](const Eigen::MatrixXd& new_A,
                              const Eigen::VectorXd& new_b,
                              const solvers::VectorXDecisionVariable& vars) {
@@ -688,8 +731,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
       std::sort(scaling.begin(), scaling.end());
 
       for (int i = 0; i < nc; ++i) {
-        // Only add a constraint if this obstacle still has overlap with the set
-        // that has been constructed so far on this iteration.
+        // Only add a constraint if this obstacle still has overlap with the
+        // set that has been constructed so far on this iteration.
         if (HPolyhedron(A.topRows(num_constraints), b.head(num_constraints))
                 .IntersectsWith(*obstacles[scaling[i].second])) {
           const VectorXd point = closest_points.col(scaling[i].second);
