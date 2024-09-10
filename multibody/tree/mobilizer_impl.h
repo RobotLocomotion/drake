@@ -80,10 +80,8 @@ class MobilizerImpl : public Mobilizer<T> {
 
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is
-  // provided here. Subclasses of %MobilizerImpl are therefore forced to
+  // provided here. Subclasses of MobilizerImpl are therefore forced to
   // provide this information in their respective constructors.
-  // TODO(sherm1) This is a bad idea -- only the base class should have to
-  //  deal with these parameters that are common to all Mobilizers.
   MobilizerImpl(const SpanningForest::Mobod& mobod,
                 const Frame<T>& inboard_frame, const Frame<T>& outboard_frame)
       : Mobilizer<T>(mobod, inboard_frame, outboard_frame) {}
@@ -98,6 +96,22 @@ class MobilizerImpl : public Mobilizer<T> {
     get_mutable_velocities(state).setZero();
   };
 
+  bool SetPosePair(const systems::Context<T>&, const Eigen::Quaternion<T> q_FM,
+                   const Vector3<T>& p_FM,
+                   systems::State<T>* state) const final {
+    const std::optional<QVector<T>> q = DoPoseToPositions(q_FM, p_FM);
+    if (q.has_value()) get_mutable_positions(&*state) = *q;
+    return q.has_value();
+  }
+
+  bool SetSpatialVelocity(const systems::Context<T>&,
+                          const SpatialVelocity<T>& V_FM,
+                          systems::State<T>* state) const final {
+    const std::optional<VVector<T>> v = DoSpatialVelocityToVelocities(V_FM);
+    if (v.has_value()) get_mutable_velocities(&*state) = *v;
+    return v.has_value();
+  }
+
   // Sets the elements of the `state` associated with this Mobilizer to the
   // _default_ state.  See Mobilizer::set_default_state().
   void set_default_state(const systems::Context<T>&,
@@ -108,9 +122,7 @@ class MobilizerImpl : public Mobilizer<T> {
 
   // Sets the default position of this Mobilizer to be used in subsequent
   // calls to set_default_state().
-  void set_default_position(
-      const Eigen::Ref<const Vector<double, compile_time_num_positions>>&
-          position) {
+  void set_default_position(const Eigen::Ref<const QVector<double>>& position) {
     default_position_.emplace(position);
   }
 
@@ -133,8 +145,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // Defines the distribution used to draw random samples from this
   // mobilizer, using a symbolic::Expression that contains random variables.
   void set_random_position_distribution(
-      const Eigen::Ref<const Vector<symbolic::Expression,
-                                    compile_time_num_positions>>& position) {
+      const Eigen::Ref<const QVector<symbolic::Expression>>& position) {
     if (!random_state_distribution_) {
       random_state_distribution_.emplace(
           Vector<symbolic::Expression, kNx>::Zero());
@@ -150,8 +161,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // Defines the distribution used to draw random samples from this
   // mobilizer, using a symbolic::Expression that contains random variables.
   void set_random_velocity_distribution(
-      const Eigen::Ref<const Vector<symbolic::Expression,
-                                    compile_time_num_velocities>>& velocity) {
+      const Eigen::Ref<const VVector<symbolic::Expression>>& velocity) {
     if (!random_state_distribution_) {
       random_state_distribution_.emplace(Vector<symbolic::Expression, kNx>());
       // Maintain the default behavior for position.
@@ -163,18 +173,36 @@ class MobilizerImpl : public Mobilizer<T> {
 
  protected:
   // Returns the zero configuration for the mobilizer.
-  virtual Vector<double, kNq> get_zero_position() const {
-    return Vector<double, kNq>::Zero();
+  virtual QVector<double> get_zero_position() const {
+    return QVector<double>::Zero();
+  }
+
+  // A mobilizer is free to take its time finding a reasonable approximation
+  // to this pose. 6-dof mobilizers are required to represent it as close to
+  // bit-exactly as possible. In particular, QuaternionFloatingMobilizer must
+  // represent this perfectly to guarantee consistent pose representation
+  // pre- and post-finalize for floating base bodies.
+  virtual std::optional<QVector<T>> DoPoseToPositions(
+      const Eigen::Quaternion<T> orientation,
+      const Vector3<T>& translation) const {
+    unused(orientation, translation);
+    return {};
+  }
+
+  // A mobilizer is free to take its time finding a reasonable approximation
+  // to this spatial velocity. 6 dof mobilizers are required to represent it
+  // as close to bit-exactly as possible.
+  virtual std::optional<VVector<T>> DoSpatialVelocityToVelocities(
+      const SpatialVelocity<T>& velocity) const {
+    unused(velocity);
+    return {};
   }
 
   // Returns the default configuration for the mobilizer.  The default
   // configuration is the configuration used to populate the context in
   // MultibodyPlant::SetDefaultContext().
-  Vector<double, kNq> get_default_position() const {
-    if (default_position_) {
-      return *default_position_;
-    }
-    return get_zero_position();
+  QVector<double> get_default_position() const {
+    return default_position_.value_or(get_zero_position());
   }
 
   // Returns the current distribution governing the random samples drawn
@@ -251,7 +279,7 @@ class MobilizerImpl : public Mobilizer<T> {
     return forest.num_positions();
   }
 
-  std::optional<Vector<double, kNq>> default_position_{};
+  std::optional<QVector<double>> default_position_{};
 
   // Note: this is maintained as a concatenated vector so that the evaluation
   // method can share the sampled values of any random variables that are

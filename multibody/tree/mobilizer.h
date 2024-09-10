@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -266,7 +267,7 @@ class Mobilizer : public MultibodyElement<T> {
 
   ~Mobilizer() override;
 
-  /// Returns this element's unique index.
+  // Returns this element's unique index.
   MobodIndex index() const { return this->template index_impl<MobodIndex>(); }
 
   // Returns the number of generalized coordinates granted by this mobilizer.
@@ -302,8 +303,8 @@ class Mobilizer : public MultibodyElement<T> {
   // system.
   int velocity_start_in_v() const { return mobod_.v_start(); }
 
-  /// Returns a string suffix (e.g. to be appended to the name()) to identify
-  /// the `k`th position in this mobilizer. Mobilizers with more than one
+  // Returns a string suffix (e.g. to be appended to the name()) to identify
+  // the `k`th position in this mobilizer. Mobilizers with more than one
   // position or that don't want to use the default `q`, must override this
   // method.
   virtual std::string position_suffix(int position_index_in_mobilizer) const {
@@ -314,8 +315,8 @@ class Mobilizer : public MultibodyElement<T> {
     return "q";
   }
 
-  /// Returns a string suffix (e.g. to be appended to the name()) to identify
-  /// the `k`th velocity in this mobilizer. Mobilizers with more than one
+  // Returns a string suffix (e.g. to be appended to the name()) to identify
+  // the `k`th velocity in this mobilizer. Mobilizers with more than one
   // velocity or that don't want to use the default 'v' must override this
   // method.
   virtual std::string velocity_suffix(int velocity_index_in_mobilizer) const {
@@ -351,12 +352,16 @@ class Mobilizer : public MultibodyElement<T> {
   const RigidBody<T>& outboard_body() const { return outboard_frame().body(); }
 
   // Returns `true` if `this` mobilizer grants 6-dofs to the outboard frame.
-  virtual bool is_floating() const { return false; }
+  // Ignoring joint limits, this means this mobilizer can represent any pose
+  // and any spatial velocity to machine precision.
+  bool has_six_dofs() const { return num_velocities() == 6; }
 
-  // Returns `true` if `this` uses a quaternion parametrization of rotations.
+  // Returns `true` if `this` uses a quaternion parameterization of rotations.
   virtual bool has_quaternion_dofs() const { return false; }
 
-  // @name Methods that define a %Mobilizer
+  // @name         Methods that define the Mobilizer abstraction
+  // For inner-loop computations, don't use this API. Use the templatized
+  // APIs of the concrete mobilizers.
   // @{
 
   // Sets the `state` to what will be considered to be the _zero_ state
@@ -382,10 +387,57 @@ class Mobilizer : public MultibodyElement<T> {
   // [1, 0, 0, 0].
   //
   // Note that the zero state may fall outside of the limits for any joints
-  // associated with this mobilizer.
+  // associated with this type of mobilizer.
   // @see set_default_state().
   virtual void SetZeroState(const systems::Context<T>& context,
                             systems::State<T>* state) const = 0;
+
+  // Sets the state for this mobilizer in the given State to some
+  // approximation of this pose. It's up to the concrete mobilizer to figure out
+  // what to do. (Only QuaternionFloatingMobilizer can represent this pose
+  // bit-exactly.)
+  // Returns false if this mobilizer doesn't implement this feature.
+  // TODO(sherm1) Currently this is only implemented for 6dof mobilizers.
+  //  It's still useful for other joints; broaden support.
+  virtual bool SetPosePair(const systems::Context<T>& context,
+                           const Eigen::Quaternion<T> q_FM,
+                           const Vector3<T>& p_FM,
+                           systems::State<T>* state) const = 0;
+
+  // Given the generalized positions q for this Mobilizer in the given
+  // `context`, returns the cross-mobilizer pose X_FM as a (quaternion, vec3)
+  // pair. Most mobilizers can use the default implementation here, but
+  // quaternion floating mobilizer is required to return bit-identical data
+  // so must override.
+  // @returns (q_FM, p_FM)
+  virtual std::pair<Eigen::Quaternion<T>, Vector3<T>> GetPosePair(
+      const systems::Context<T>& context) const {
+    const math::RigidTransform<T> X_FM = CalcAcrossMobilizerTransform(context);
+    return std::pair(X_FM.rotation().ToQuaternion(), X_FM.translation());
+  }
+
+  // Sets the velocity state v for this mobilizer in the given State to some
+  // approximation of the given spatial velocity. It's up to the concrete
+  // mobilizer to figure out what to do. 6-dof mobilizers can represent this
+  // velocity exactly; others must project.
+  // Note: there is no SetDefaultSpatialVelocity() because that is always zero.
+  // Returns false if this mobilizer doesn't implement this feature.
+  // TODO(sherm1) Currently this is only implemented for 6dof mobilizers.
+  //  It's still useful for other joints; broaden support.
+  virtual bool SetSpatialVelocity(const systems::Context<T>& context,
+                                  const SpatialVelocity<T>& V_FM,
+                                  systems::State<T>* state) const = 0;
+
+  // Given the generalized positions q and generalized velocities v for this
+  // Mobilizer in the given `context`, returns the cross-mobilizer spatial
+  // velocity V_FM. (Not virtual)
+  SpatialVelocity<T> GetSpatialVelocity(
+      const systems::Context<T>& context) const {
+    const Eigen::VectorBlock<const VectorX<T>> all_v =
+        this->get_parent_tree().get_velocities(context);
+    const Eigen::Ref<const VectorX<T>> my_v = get_velocities_from_array(all_v);
+    return CalcAcrossMobilizerSpatialVelocity(context, my_v);
+  }
 
   // Sets the `state` to the _default_ state (position and velocity) for
   // `this` mobilizer.  For example, the zero state for our standard IIWA
