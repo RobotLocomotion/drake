@@ -228,6 +228,15 @@ enum class DiscreteContactApproximation {
   kLagged,
 };
 
+/// The kind of joint to be used to attach an unattached RigidBody to World.
+/// Supply one of these values to SetBaseBodyJointType() to override the
+/// default choice (QuaternionFloatingJoint).
+enum class BaseBodyJointType {
+  kQuaternionFloatingJoint,  ///< 6 dofs, unrestricted orientation.
+  kRpyFloatingJoint,         ///< 6 dofs using 3 angles; has singularity.
+  kWeldJoint,                ///< 0 dofs, fixed to World.
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -1666,6 +1675,35 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if HasModelInstanceNamed(`name`) is true.
   void RenameModelInstance(ModelInstanceIndex model_instance,
                            const std::string& name);
+
+  /// Sets the type of joint to be used by Finalize() to attach any otherwise
+  /// unattached bodies to World. (Bodies attached to World are called _base
+  /// bodies_.) This can be set globally or for a particular model instance.
+  /// Global options are used for any model elements that belong to model
+  /// instances for which no options have been set explicitly. The default
+  /// is to use a quaternion floating joint.
+  ///
+  /// | BaseBodyJointType::      | Notes                                  |
+  /// | ------------------------ | -------------------------------------- |
+  /// | kQuaternionFloatingJoint | 6 dofs, unrestricted orientation       |
+  /// | kRpyFloatingJoint †      | 6 dofs, uses 3 angles for orientation  |
+  /// | kWeldJoint               | 0 dofs, welded to World ("anchored")   |
+  ///
+  /// † The 3-angle orientation representation used by RpyFloatingJoint can be
+  ///   easier to work with than a quaternion (especially for optimization) but
+  ///   has a singular orientation which must be avoided (2nd angle near 90°).
+  ///
+  /// @note Reminder: if you aren't satisfied with the automatic choice of
+  /// base body or the particular selection of joints here, you can always
+  /// specify an explicit joint to World.
+  ///
+  /// @param[in] joint_type The joint type to be used for base bodies.
+  /// @param[in] model_instance (optional) the index of the model instance to
+  ///   which `joint_type` is to be applied.
+  /// @throws std::exception if called after Finalize().
+  void SetBaseBodyJointType(
+      BaseBodyJointType joint_type,
+      std::optional<ModelInstanceIndex> model_instance = {});
 
   /// This method must be called after all elements in the model (joints,
   /// bodies, force elements, constraints, etc.) are added and before any

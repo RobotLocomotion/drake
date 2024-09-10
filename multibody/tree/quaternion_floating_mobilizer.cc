@@ -232,6 +232,19 @@ auto QuaternionFloatingMobilizer<T>::get_zero_position() const
   return q;
 }
 
+// QuaternionFloatingMobilizer is required to represent the pose
+// bit-exactly. (Every other mobilizer can approximate.)
+template <typename T>
+auto QuaternionFloatingMobilizer<T>::DoPoseToState(
+    const Eigen::Quaternion<T> orientation, const Vector3<T>& translation) const
+    -> QVector<T> {
+  QVector<T> q;
+  q[0] = orientation.w();
+  q.template segment<3>(1) = orientation.vec();
+  q.template tail<3>() = translation;
+  return q;
+}
+
 template <typename T>
 math::RigidTransform<T>
 QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(

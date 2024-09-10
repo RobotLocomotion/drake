@@ -123,8 +123,6 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
   // frame F and the outboard frame M as a function of the translation distance
   // along this mobilizer's axis (see translation_axis().)
-  // The generalized coordinate q for `this` mobilizer (the translation
-  // distance) is read from in `context`.
   math::RigidTransform<T> calc_X_FM(const T* q) const {
     return math::RigidTransform<T>(q[0] * translation_axis());
   }
