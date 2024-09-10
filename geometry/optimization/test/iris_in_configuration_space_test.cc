@@ -82,52 +82,72 @@ GTEST_TEST(IrisInConfigurationSpaceTest, JointLimits) {
   EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
 }
 
-// One revolute joint without limits.  Iris should return the interval
-// [θ - π/2 + convexity_radius_stepback, θ + π/2 - convexity_radius_stepback]
+// Two revolute joints, the first of which has limits [-1.0, 1.0], and the
+// second of which is without limits. Iris should return the box
+// [-1.0, 1.0] x [θ - π/2 + c, θ + π/2 - c], where c is the convexity radius
+// stepback.
 GTEST_TEST(IrisInConfigurationSpaceTest, ContinuousRevoluteJoint) {
   const std::string continuous_urdf = R"(
 <robot name="limits">
-  <link name="movable">
+  <link name="movable1">
     <collision>
       <geometry><box size="1 1 1"/></geometry>
     </collision>
   </link>
-  <joint name="movable" type="continuous">
+  <link name="movable2">
+    <collision>
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint1" type="revolute">
     <axis xyz="1 0 0"/>
     <parent link="world"/>
-    <child link="movable"/>
+    <child link="movable1"/>
+    <limit lower="-1" upper="1"/>
+  </joint>
+  <joint name="joint2" type="continuous">
+    <axis xyz="1 0 0"/>
+    <parent link="movable1"/>
+    <child link="movable2"/>
   </joint>
 </robot>
 )";
 
-  const Vector1d sample = Vector1d::Zero();
+  const Vector2d sample = Vector2d::Zero();
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(continuous_urdf, sample, options);
 
-  EXPECT_EQ(region.ambient_dimension(), 1);
-  EXPECT_EQ(region.A().rows(), 2);
+  EXPECT_EQ(region.ambient_dimension(), 2);
+  EXPECT_EQ(region.A().rows(), 4);
 
   const double kTol = 1e-5;
-  double qmin = -M_PI_2 + options.convexity_radius_stepback;
-  double qmax = M_PI_2 - options.convexity_radius_stepback;
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  double q1min = -1.0;
+  double q1max = 1.0;
+  EXPECT_TRUE(region.PointInSet(Vector2d{q1min + kTol, 0.0}));
+  EXPECT_TRUE(region.PointInSet(Vector2d{q1max - kTol, 0.0}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{q1min - kTol, 0.0}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{q1max + kTol, 0.0}));
+
+  double q2min = -M_PI_2 + options.convexity_radius_stepback;
+  double q2max = M_PI_2 - options.convexity_radius_stepback;
+  EXPECT_TRUE(region.PointInSet(Vector2d{0.0, q2min + kTol}));
+  EXPECT_TRUE(region.PointInSet(Vector2d{0.0, q2max - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{0.0, q2min - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{0.0, q2max + kTol}));
 
   // Negative convexity radius stepback is allowed.
   options.convexity_radius_stepback = -0.25;
   region = IrisFromUrdf(continuous_urdf, sample, options);
 
-  EXPECT_EQ(region.ambient_dimension(), 1);
-  EXPECT_EQ(region.A().rows(), 2);
+  EXPECT_EQ(region.ambient_dimension(), 2);
+  EXPECT_EQ(region.A().rows(), 4);
 
-  qmin = -M_PI_2 + options.convexity_radius_stepback;
-  qmax = M_PI_2 - options.convexity_radius_stepback;
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  q2min = -M_PI_2 + options.convexity_radius_stepback;
+  q2max = M_PI_2 - options.convexity_radius_stepback;
+  EXPECT_TRUE(region.PointInSet(Vector2d{0.0, q2min + kTol}));
+  EXPECT_TRUE(region.PointInSet(Vector2d{0.0, q2max - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{0.0, q2min - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{0.0, q2max + kTol}));
 
   // Convexity radius must be strictly less than π/2
   options.convexity_radius_stepback = M_PI_2;
