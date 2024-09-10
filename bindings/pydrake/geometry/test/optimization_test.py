@@ -566,13 +566,13 @@ class TestGeometryOptimization(unittest.TestCase):
         h_box = mut.HPolyhedron.MakeBox(lb=[-1, 0], ub=[1, 1])
         empty_hpolyhedron = mut.HPolyhedron(np.array([[1, 0], [-1, 0]]),
                                             np.array([1, -2]))
-        convex_hull = mut.ConvexHull([point, h_box, empty_hpolyhedron],
+        convex_hull = mut.ConvexHull(sets=[point, h_box, empty_hpolyhedron],
                                      remove_empty_sets=False)
         self.assertFalse(convex_hull.IsEmpty())
         self.assertFalse(convex_hull.MaybeGetFeasiblePoint() is None)
         self.assertEqual(convex_hull.ambient_dimension(), 2)
         self.assertEqual(convex_hull.num_elements(), 3)
-        self.assertIsInstance(convex_hull.element(0), mut.Point)
+        self.assertIsInstance(convex_hull.element(index=0), mut.Point)
         self.assertIsInstance(convex_hull.element(1), mut.HPolyhedron)
         self.assertEqual(len(convex_hull.sets()), 3)
         self.assertEqual(len(convex_hull.participating_sets()), 3)
