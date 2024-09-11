@@ -453,6 +453,22 @@ class ConvexSet {
       solvers::MathematicalProgram* prog, const ConvexSet& set,
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
 
+  /** When there is a more efficient strategy to compute the affine hull of this
+  set, returns affine hull as an AffineSubspace. When no efficient conversion
+  exists, returns null. The default base class implementation returns null. This
+  method is used by the AffineSubspace constructor to short-circuit the generic
+  iterative approach. (This function is static to allow calling it from the
+  AffineSubspace constructor, but is conceptially a normal member function.)
+  The return type is ConvexSet to avoid a forward declaration; any non-null
+  result must always have the AffineSubspace as its runtime type. */
+  static std::unique_ptr<ConvexSet> AffineHullShortcut(
+      const ConvexSet& self, std::optional<double> tol);
+
+  /** NVI implementation of DoAffineHullShortcut, which trivially returns null.
+  Derived classes that have efficient algorithms should override this method. */
+  virtual std::unique_ptr<ConvexSet> DoAffineHullShortcut(
+      std::optional<double> tol) const;
+
  private:
   /** Generic implementation for IsBounded() -- applicable for all convex sets.
   @pre ambient_dimension() >= 0 */

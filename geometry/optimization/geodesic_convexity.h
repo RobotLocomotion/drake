@@ -15,6 +15,7 @@ of robots. */
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
@@ -130,16 +131,49 @@ geometry::optimization::ConvexSets PartitionConvexSet(
     const std::vector<int>& continuous_revolute_joints,
     const double epsilon = 1e-5);
 
-/** Computes the pairwise intersections edges between two lists of convex sets.
-Each edge is a tuple in the form [index_A, index_B, offset_A_to_B], where
-Each is a tuple in the form [index_A, index_B, offset_A_to_B],
-where index_A is the index of the list in `convex_sets_A`, index_B is the
-index of the list in `convex_sets_B`, and offset_A_to_B is is the translation
-to applied to all the points in the index_A'th set in `convex_sets_A` to align
-them with the index_B'th set in `convex_sets_B`. This translation may only have
-non-zero entries along the dimensions corresponding to @p
-continuous_revolute_joints. All non-zero entries are integer multiples of 2π as
-the translation of the sets still represents the same configurations for the
+/** Computes the pairwise intersections between two lists of convex sets,
+returning a list of edges, and a list of their corresponding offsets. Each edge
+is a tuple in the form [index_A, index_B], where index_A is the index of the set
+in `convex_sets_A` and index_B is the index of the set in `convex_sets_B`. The
+corresponding entry in the list of offsets (i.e., the entry at the same index)
+is the translation that is applied to all the points in the index_A'th set in
+`convex_sets_A` to align them with the index_B'th set in `convex_sets_B`. This
+translation may only have non-zero entries along the dimensions corresponding to
+`continuous_revolute_joints`. All non-zero entries are integer multiples of 2π
+as the translation of the sets still represents the same configurations for the
+indices in `continuous_revolute_joints`.
+
+@param convex_sets_A is a vector of convex sets. Pairwise intersections will be
+computed between `convex_sets_A` and `convex_sets_B`.
+@param convex_sets_B is the other vector of convex sets.
+@param continuous_revolute_joints is a list of joint indices corresponding to
+continuous revolute joints.
+@param preprocess_bbox is a flag for whether the function should precompute
+axis-aligned bounding boxes (AABBs) for every set. This can speed up the
+pairwise intersection checks, by determining some sets to be disjoint without
+needing to solve an optimization problem. However, it does require some overhead
+to compute those bounding boxes.
+
+@throws if `continuous_revolute_joints` has repeated entries, or if any entry
+is outside the interval [0, ambient_dimension), where ambient_dimension is the
+ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
+@throws if `convex_sets_A` or `convex_sets_B` are empty.
+*/
+std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
+ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
+                             const ConvexSets& convex_sets_B,
+                             const std::vector<int>& continuous_revolute_joints,
+                             bool preprocess_bbox = true);
+
+/** Computes the pairwise intersections between two lists of convex sets,
+returning a list of edges. Each edge is a tuple in the form [index_A, index_B,
+offset_A_to_B], where index_A is the index of the list in `convex_sets_A`,
+index_B is the index of the list in `convex_sets_B`, and offset_A_to_B is is the
+translation to applied to all the points in the index_A'th set in
+`convex_sets_A` to align them with the index_B'th set in `convex_sets_B`. This
+translation may only have non-zero entries along the dimensions corresponding to
+`continuous_revolute_joints`. All non-zero entries are integer multiples of 2π
+as the translation of the sets still represents the same configurations for the
 indices in `continuous_revolute_joints`.
 
 @param convex_sets_A is a vector of convex sets. Pairwise intersections will be
@@ -157,10 +191,36 @@ to compute those bounding boxes.
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
 ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
 @throws if `convex_sets_A` or `convex_sets_B` are empty. */
+DRAKE_DEPRECATED("2024-12-01",
+                 "Instead use ComputePairwiseIntersections, with return type "
+                 "std::pair<std::vector<std::pair<int, int>>, "
+                 "std::vector<Eigen::VectorXd>>.")
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints,
     bool preprocess_bbox = true);
+
+/** Overload of `ComputePairwiseIntersections` allowing the user to supply axis-
+aligned bounding boxes if they're known a priori, to save on computation time.
+
+@param bboxes_A is a vector of Hyperrectangles, allowing the user to manually
+pass in the AABBs of each set in `convex_sets_A` to avoid recomputation.
+@param bboxes_B serves the same role to `convex_sets_B` as `bboxes_A` does to
+`convex_sets_A`.
+
+@warning The function does not check that the entries of bboxes_A are indeed the
+AABBs corresponding to the sets in `convex_sets_A` (and likewise for bboxes_B).
+
+@throws if `convex_sets_A.size() != bboxes_A.size()`
+@throws if `convex_sets_B.size() != bboxes_B.size()`
+@throws if not all entries of `convex_sets_A`, `convex_sets_B`, `bboxes_A`, and
+`bboxes_B` have the same ambient dimension. */
+std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
+ComputePairwiseIntersections(
+    const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
+    const std::vector<int>& continuous_revolute_joints,
+    const std::vector<geometry::optimization::Hyperrectangle>& bboxes_A,
+    const std::vector<geometry::optimization::Hyperrectangle>& bboxes_B);
 
 /** Overload of `CalcPairwiseIntersections` allowing the user to supply axis-
 aligned bounding boxes if they're known a priori, to save on computation time.
@@ -177,11 +237,38 @@ AABBs corresponding to the sets in `convex_sets_A` (and likewise for bboxes_B).
 @throws if `convex_sets_B.size() != bboxes_B.size()`
 @throws if not all entries of `convex_sets_A`, `convex_sets_B`, `bboxes_A`, and
 `bboxes_B` have the same ambient dimension. */
+DRAKE_DEPRECATED("2024-12-01",
+                 "Instead use ComputePairwiseIntersections, with return type "
+                 "std::pair<std::vector<std::pair<int, int>>, "
+                 "std::vector<Eigen::VectorXd>>.")
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints,
     const std::vector<geometry::optimization::Hyperrectangle>& bboxes_A,
     const std::vector<geometry::optimization::Hyperrectangle>& bboxes_B);
+
+/** Convenience overload to compute pairwise intersections within a list of
+convex sets. Equivalent to calling ComputePairwiseIntersections(convex_sets,
+convex_sets, continuous_revolute_joints).
+
+@param convex_sets is a vector of convex sets. Pairwise intersections will be
+computed within `convex_sets`.
+@param continuous_revolute_joints is a list of joint indices corresponding to
+continuous revolute joints.
+@param preprocess_bbox is a flag for whether the function should precompute
+axis-aligned bounding boxes for every set. This can speed up the pairwise
+intersection checks, by determining some sets to be disjoint without needing
+to solve an optimization problem.
+
+@throws if `continuous_revolute_joints` has repeated entries, or if any entry
+is outside the interval [0, ambient_dimension), where ambient_dimension is the
+ambient dimension of the convex sets in `convex_sets`.
+@throws if `convex_sets` is empty.
+*/
+std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
+ComputePairwiseIntersections(const ConvexSets& convex_sets,
+                             const std::vector<int>& continuous_revolute_joints,
+                             bool preprocess_bbox = true);
 
 /** Convenience overload to compute pairwise intersections within a list of
 convex sets. Equivalent to calling CalcPairwiseIntersections(convex_sets,
@@ -200,10 +287,32 @@ to solve an optimization problem.
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
 ambient dimension of the convex sets in `convex_sets`.
 @throws if `convex_sets` is empty. */
+DRAKE_DEPRECATED("2024-12-01",
+                 "Instead use ComputePairwiseIntersections, with return type "
+                 "std::pair<std::vector<std::pair<int, int>>, "
+                 "std::vector<Eigen::VectorXd>>.")
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
     bool preprocess_bbox = true);
+
+/** Overload of `ComputePairwiseIntersections` allowing the user to supply axis-
+aligned bounding boxes if they're known a priori, to save on computation time.
+
+@param bboxes is a vector of Hyperrectangles, allowing the user to manually pass
+in the AABBs of each set in `convex_sets` to avoid recomputation.
+
+@warning The function does not check that the entries are indeed the AABBs
+corresponding to the sets in `convex_sets`.
+
+@throws if `convex_sets.size() != bboxes.size()`
+@throws if not all entries of `convex_sets` and `bboxes` have the same
+ambient dimension.*/
+std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
+ComputePairwiseIntersections(
+    const ConvexSets& convex_sets,
+    const std::vector<int>& continuous_revolute_joints,
+    const std::vector<geometry::optimization::Hyperrectangle>& bboxes);
 
 /** Overload of `CalcPairwiseIntersections` allowing the user to supply axis-
 aligned bounding boxes if they're known a priori, to save on computation time.
@@ -217,6 +326,10 @@ corresponding to the sets in `convex_sets`.
 @throws if `convex_sets.size() != bboxes.size()`
 @throws if not all entries of `convex_sets` and `bboxes` have the same
 ambient dimension. */
+DRAKE_DEPRECATED("2024-12-01",
+                 "Instead use ComputePairwiseIntersections, with return type "
+                 "std::pair<std::vector<std::pair<int, int>>, "
+                 "std::vector<Eigen::VectorXd>>.")
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,

@@ -113,7 +113,10 @@ def decide_which_bazel_version_to_use():
         bazelversion_path = os.path.join(workspace_root, ".bazelversion")
         if os.path.exists(bazelversion_path):
             with open(bazelversion_path, "r") as f:
-                return f.read().strip()
+                for ln in f.readlines():
+                    ln = ln.strip()
+                    if ln:
+                        return ln
 
     return "latest"
 

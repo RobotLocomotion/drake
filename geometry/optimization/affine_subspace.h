@@ -43,19 +43,41 @@ class AffineSubspace final : public ConvexSet {
                           const Eigen::Ref<const Eigen::VectorXd>& translation);
 
   /** Constructs an affine subspace as the affine hull of another convex set.
-  This is done by finding a feasible point in the set, and then iteratively
-  computing feasible vectors until we have a basis that spans the set. If you
-  pass in a convex set whose points are matrix-valued (e.g. a Spectrahedron),
-  then the affine subspace will work over a flattened representation of those
-  coordinates. (So a Spectrahedron with n-by-n matrices will output an
-  AffineSubspace with ambient dimension (n * (n+1)) / 2.)
+  The generic approach is to find a feasible point in the set, and then
+  iteratively compute feasible vectors until we have a basis that spans the set.
+  If you pass in a convex set whose points are matrix-valued (e.g. a
+  Spectrahedron), then the affine subspace will work over a flattened
+  representation of those coordinates. (So a Spectrahedron with n-by-n matrices
+  will output an AffineSubspace with ambient dimension (n * (n+1)) / 2.)
 
   `tol` sets the numerical precision of the computation. For each dimension, a
   pair of feasible points are constructed, so as to maximize the displacement in
   that dimension. If their displacement along that dimension is larger than tol,
   then the vector connecting the points is added as a basis vector.
-  @pre !set.IsEmpty() */
-  explicit AffineSubspace(const ConvexSet& set, double tol = 1e-12);
+
+  @throws std::exception if `set` is empty.
+  @throws std::exception if `tol < 0`.
+
+  For several subclasses of ConvexSet, there is a closed-form computation (or
+  more efficient numerical computation) that is preferred.
+  - AffineBall: Can be computed via a rank-revealing decomposition; `tol` is
+  used as the numerical tolerance for the rank of the matrix. Pass
+  `std::nullopt` for `tol` to use Eigen's automatic tolerance computation.
+  - AffineSubspace: Equivalent to the copy-constructor; `tol` is ignored.
+  - CartesianProduct: Can compute the affine hull of each factor individually;
+  `tol` is propagated to the constituent calls. (This is not done if the
+  Cartesian product has an associated affine transformation.)
+  - Hyperellipsoid: Always equal to the whole ambient space; `tol` is ignored.
+  - Hyperrectangle: Can be computed in closed-form; `tol` has the same meaning
+  as in the generic affine hull computation.
+  - Point: Can be computed in closed-form; `tol` is ignored. This also
+  encompasses sets which are obviously a singleton point, as determined via
+  MaybeGetPoint.
+  - VPolytope: Can be computed via a singular value decomposition; `tol` is
+  used as the numerical tolerance for the rank of the matrix. Pass
+  `std::nullopt` for `tol` to use Eigen's automatic tolerance computation. */
+  explicit AffineSubspace(const ConvexSet& set,
+                          std::optional<double> tol = std::nullopt);
 
   ~AffineSubspace() final;
 
@@ -159,6 +181,9 @@ class AffineSubspace final : public ConvexSet {
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
+
+  std::unique_ptr<ConvexSet> DoAffineHullShortcut(
+      std::optional<double>) const final;
 
   double DoCalcVolume() const final;
 

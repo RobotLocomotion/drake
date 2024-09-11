@@ -24,8 +24,7 @@ std::vector<int> GetQuaternionDofStartIndices(
     const MultibodyPlant<double>& plant) {
   std::vector<int> quaternion_dof_start_indices;
 
-  for (JointIndex joint_index(0); joint_index < plant.num_joints();
-       ++joint_index) {
+  for (JointIndex joint_index : plant.GetJointIndices()) {
     const Joint<double>& joint = plant.get_joint(joint_index);
     if (joint.type_name() == QuaternionFloatingJoint<double>::kTypeName) {
       quaternion_dof_start_indices.push_back(joint.position_start());
