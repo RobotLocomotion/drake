@@ -111,6 +111,9 @@ class Hyperrectangle final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
+  std::unique_ptr<ConvexSet> DoAffineHullShortcut(
+      std::optional<double> tol) const final;
+
   // TODO(Alexandre.Amice) Implement DoProjectionShortcut.
 
   double DoCalcVolume() const final;
