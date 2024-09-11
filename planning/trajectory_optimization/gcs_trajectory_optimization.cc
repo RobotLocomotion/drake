@@ -19,6 +19,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -55,6 +56,7 @@ using multibody::JointIndex;
 using multibody::MultibodyPlant;
 using multibody::PlanarJoint;
 using multibody::RevoluteJoint;
+using multibody::RpyFloatingJoint;
 using solvers::Binding;
 using solvers::ConcatenateVariableRefList;
 using solvers::Constraint;
@@ -2039,7 +2041,7 @@ std::vector<int> GetContinuousRevoluteJointIndices(
     const Joint<double>& joint = plant.get_joint(i);
     // The first possibility we check for is a revolute joint with no joint
     // limits.
-    if (joint.type_name() == "revolute") {
+    if (joint.type_name() == RevoluteJoint<double>::kTypeName) {
       if (joint.position_lower_limits()[0] == -kInf &&
           joint.position_upper_limits()[0] == kInf) {
         indices.push_back(joint.position_start());
@@ -2049,7 +2051,7 @@ std::vector<int> GetContinuousRevoluteJointIndices(
     // The second possibility we check for is a planar joint. If it is (and
     // the angle component has no joint limits), we only add the third entry
     // of the position vector, corresponding to theta.
-    if (joint.type_name() == "planar") {
+    if (joint.type_name() == PlanarJoint<double>::kTypeName) {
       if (joint.position_lower_limits()[2] == -kInf &&
           joint.position_upper_limits()[2] == kInf) {
         indices.push_back(joint.position_start() + 2);
@@ -2059,7 +2061,7 @@ std::vector<int> GetContinuousRevoluteJointIndices(
     // The third possibility we check for is a roll-pitch-yaw floating joint. If
     // it is, we check each of its three revolute components (stored in the
     // first three indices) for unbounded joint limits.
-    if (joint.type_name() == "rpy_floating") {
+    if (joint.type_name() == RpyFloatingJoint<double>::kTypeName) {
       for (int j = 0; j < 3; ++j) {
         if (joint.position_lower_limits()[j] == -kInf &&
             joint.position_upper_limits()[j] == kInf) {
