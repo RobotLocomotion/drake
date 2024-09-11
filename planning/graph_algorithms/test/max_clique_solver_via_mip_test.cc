@@ -77,6 +77,20 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, TestConstructorSettersAndGetters) {
   EXPECT_TRUE(solver2.GetSolverOptions().get_print_to_console());
 }
 
+GTEST_TEST(MaxCliqueSolverViaGreedyTest, TestClone) {
+  const Eigen::Vector2d initial_guess = Eigen::Vector2d::Ones();
+  solvers::SolverOptions options{};
+  options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 1);
+  MaxCliqueSolverViaMip solver{initial_guess, options};
+  std::unique_ptr<MaxCliqueSolverBase> solver_clone = solver.Clone();
+  auto solver_clone_mip =
+      dynamic_cast<MaxCliqueSolverViaMip*>(solver_clone.get());
+  EXPECT_FALSE(solver_clone_mip == nullptr);
+  EXPECT_TRUE(CompareMatrices(solver.GetInitialGuess().value(),
+                              solver_clone_mip->GetInitialGuess().value()));
+  EXPECT_EQ(solver_clone_mip->GetSolverOptions().get_print_to_console(), 1);
+}
+
 GTEST_TEST(MaxCliqueSolverViaMipTest, CompleteGraph) {
   for (const auto n : {3, 8}) {
     // The entire graph forms a clique.
@@ -154,7 +168,7 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, FullyConnectedPlusFullBipartiteGraph) {
       internal::FullyConnectedPlusFullBipartiteGraph();
   VectorX<bool> solution(9);
 
-  // The max cliuqe solutions are pairs of vertices on the bipartite graph.
+  // The max clique solutions are pairs of vertices on the bipartite graph.
   solution << true, true, true, false, false, false, false, false, false;
 
   std::vector<VectorX<bool>> possible_solutions;

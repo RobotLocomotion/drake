@@ -100,3 +100,39 @@ class TestGraphAlgorithms(unittest.TestCase):
         max_clique = solver.SolveMaxClique(graph)
         # Butteryfly graph has a max clique of 3.
         self.assertEqual(max_clique.sum(), 3)
+
+    def test_min_clique_cover_solver_base_subclassable(self):
+        class DummyMinCliqueCoverSolver(mut.MinCliqueCoverSolverBase):
+            def __init__(self, name):
+                mut.MinCliqueCoverSolverBase.__init__(self)
+                self.name = name
+
+            def DoSolveMinCliqueCover(self, adjacency_matrix, partition):
+                # returns all points are in a clique
+                return [set(i for i in range(adjacency_matrix.shape[0]))]
+
+        name = "dummy"
+        solver = DummyMinCliqueCoverSolver(name=name)
+        graph = self._butteryfly_graph()
+        self.assertEqual(name, solver.name)
+        self.assertEqual(
+            solver.SolveMinCliqueCover(adjacency_matrix=graph),
+            [set(i for i in range(5))]
+        )
+
+    def test_min_clique_cover_solver_via_greedy_methods(self):
+        graph = self._butteryfly_graph()
+
+        # Test the default constructor.
+        max_clique_solver = mut.MaxCliqueSolverViaGreedy()
+        solver = mut.MinCliqueCoverSolverViaGreedy(
+            max_clique_solver=max_clique_solver, min_clique_size=3)
+
+        # Test solve min clique cover.
+        min_clique_cover = solver.SolveMinCliqueCover(adjacency_matrix=graph,
+                                                      partition=False)
+        self.assertEqual(len(min_clique_cover), 2)
+
+        self.assertEqual(solver.get_min_clique_size(), 3)
+        solver.set_min_clique_size(min_clique_size=1)
+        self.assertEqual(solver.get_min_clique_size(), 1)
