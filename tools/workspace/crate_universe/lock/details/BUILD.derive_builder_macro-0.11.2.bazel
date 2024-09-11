@@ -38,7 +38,7 @@ rust_proc_macro(
     name = "derive_builder_macro",
     srcs = glob(
         include = ["**/*.rs"],
-        allow_empty = False,
+        allow_empty = True,
     ),
     compile_data = glob(
         include = ["**"],

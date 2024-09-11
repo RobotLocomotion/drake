@@ -35,7 +35,7 @@ rust_proc_macro(
     name = "darling_macro",
     srcs = glob(
         include = ["**/*.rs"],
-        allow_empty = False,
+        allow_empty = True,
     ),
     compile_data = glob(
         include = ["**"],
@@ -101,7 +101,7 @@ rust_proc_macro(
     version = "0.14.4",
     deps = [
         "@crate__darling_core-0.14.4//:darling_core",
-        "@crate__quote-1.0.36//:quote",
+        "@crate__quote-1.0.37//:quote",
         "@crate__syn-1.0.109//:syn",
     ],
 )
