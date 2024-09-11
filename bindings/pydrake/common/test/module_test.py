@@ -1,11 +1,13 @@
 import copy
 import os
+import pickle
 import unittest
 
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 import pydrake.common as mut
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 import pydrake.common._testing as mut_testing
 
 
@@ -42,6 +44,8 @@ class TestCommon(unittest.TestCase):
         not_empty2 = mut.Sha256.Parse(str_value)
         self.assertTrue(not_empty == not_empty2)
 
+        assert_pickle(self, not_empty, lambda sha: sha)
+
         copy.copy(not_empty)
         copy.deepcopy(not_empty)
 
@@ -55,6 +59,18 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(file.contents(), content_bytes)
         self.assertEqual(file.extension(), ext)
         self.assertEqual(file.filename_hint(), hint)
+
+        assert_pickle(self, file, repr)
+
+        # Check that data pickled as MemoryFile in Drake v1.33.0 can be
+        # unpickeled in newer versions. The data should produce a MemoryFile
+        # identical to `file` above.
+        legacy_data = b"\x80\x04\x95l\x00\x00\x00\x00\x00\x00\x00\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x0bSome string\x94\x8c\textension\x94\x8c\x04.bob\x94\x8c\rfilename_hint\x94\x8c\x04hint\x94ub."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.MemoryFile)
+        self.assertEqual(obj.contents(), file.contents())
+        self.assertEqual(obj.extension(), file.extension())
+        self.assertEqual(obj.filename_hint(), file.filename_hint())
 
         def string_regex(s):
             """Confirm that the string is surrounded by quotes (either double
