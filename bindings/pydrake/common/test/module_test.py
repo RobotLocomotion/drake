@@ -6,6 +6,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 import pydrake.common as mut
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 import pydrake.common._testing as mut_testing
 
 
@@ -42,6 +43,8 @@ class TestCommon(unittest.TestCase):
         not_empty2 = mut.Sha256.Parse(str_value)
         self.assertTrue(not_empty == not_empty2)
 
+        assert_pickle(self, not_empty, lambda sha: sha)
+
         copy.copy(not_empty)
         copy.deepcopy(not_empty)
 
@@ -55,6 +58,9 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(file.contents(), content_bytes)
         self.assertEqual(file.extension(), ext)
         self.assertEqual(file.filename_hint(), hint)
+
+        assert_pickle(self, file, lambda f: [f.contents(), f.extension(),
+                                             f.sha256(), f.filename_hint()])
 
         def string_regex(s):
             """Confirm that the string is surrounded by quotes (either double

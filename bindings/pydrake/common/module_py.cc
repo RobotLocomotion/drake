@@ -153,7 +153,13 @@ void InitLowLevelModules(py::module m) {
         .def("to_string", &Class::to_string, cls_doc.to_string.doc)
         .def(py::self == py::self)
         .def(py::self != py::self)
-        .def(py::self < py::self);
+        .def(py::self < py::self)
+        .def(py::pickle([](const Sha256& self) { return self.to_string(); },
+            [](const std::string& ascii_hash) {
+              std::optional<Sha256> sha_maybe = Sha256::Parse(ascii_hash);
+              DRAKE_DEMAND(sha_maybe.has_value());
+              return *sha_maybe;
+            }));
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -176,7 +182,21 @@ void InitLowLevelModules(py::module m) {
             cls_doc.sha256.doc)
         .def("filename_hint", &Class::filename_hint, py_rvp::reference_internal,
             cls_doc.filename_hint.doc)
-        .def_static("Make", &Class::Make, py::arg("path"), cls_doc.Make.doc);
+        .def_static("Make", &Class::Make, py::arg("path"), cls_doc.Make.doc)
+        .def(py::pickle(
+            [](const MemoryFile& self) {
+              // TODO(SeanCurtis-TRI): Should we be including the sha256 as we
+              // can't construct from that value? Currently, we're simply
+              // validating against it.
+              return py::make_tuple(self.contents(), self.extension(),
+                  self.sha256(), self.filename_hint());
+            },
+            [](py::tuple t) {
+              MemoryFile file(t[0].cast<std::string>(),
+                  t[1].cast<std::string>(), t[3].cast<std::string>());
+              DRAKE_DEMAND(file.sha256() == t[2].cast<Sha256>());
+              return file;
+            }));
     // Note: __repr__ is defined in _common_extra.py.
     DefCopyAndDeepCopy(&cls);
   }

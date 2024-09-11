@@ -474,6 +474,7 @@ drake_py_unittest(
     num_threads = 2,
     deps = [
         ":common",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
