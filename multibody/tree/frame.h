@@ -3,10 +3,10 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <vector>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/multibody/tree/frame_base.h"
 #include "drake/multibody/tree/frame_body_pose_cache.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -50,14 +50,11 @@ template<typename T> class RigidBody;
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Frame : public MultibodyElement<T> {
+class Frame : public FrameBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame);
 
   ~Frame() override;
-
-  /// Returns this %Frame's unique index.
-  FrameIndex index() const { return this->template index_impl<FrameIndex>(); }
 
   /// Returns a const reference to the body associated to this %Frame.
   const RigidBody<T>& body() const {
@@ -566,7 +563,7 @@ class Frame : public MultibodyElement<T> {
   explicit Frame(
       const std::string& name, const RigidBody<T>& body,
       std::optional<ModelInstanceIndex> model_instance = {})
-      : MultibodyElement<T>(model_instance.value_or(body.model_instance())),
+      : FrameBase<T>(model_instance.value_or(body.model_instance())),
         name_(internal::DeprecateWhenEmptyName(name, "Frame")),
         body_(body) {}
 
