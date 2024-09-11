@@ -105,6 +105,13 @@ class reset_after_move {
   }
   //@}
 
+  /// @name Direct access to the T value.
+  //@{
+  T& value() { return value_; }
+
+  const T& value() const { return value_; }
+  //@}
+
  private:
   T value_{};
 };

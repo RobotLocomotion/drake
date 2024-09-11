@@ -284,6 +284,30 @@ def pretty_class_name(cls: type, *, use_qualname: bool = False) -> str:
     return _MangledName.demangle(name)
 
 
+def _add_extraneous_repr_functions():
+    """Defines repr functions for various classes in common where defining it
+    in python is simply more convenient.
+    """
+    def mem_file_repr(file):
+        # We only want to show the first k bytes. Showing the whole contents
+        # wouldn't be practical and we assume that one can confirm the file
+        # contents from the first 100 bytes or so.
+        limit = 100
+        if len(file.contents()) > limit:
+            repr_contents = f"<{file.contents()[:limit]}...>"
+        else:
+            repr_contents = repr(file.contents())
+        return (
+            f"MemoryFile(\n"
+            f"  contents={repr_contents},\n"
+            f"  extension={repr(file.extension())},\n"
+            f"  filename_hint={repr(file.filename_hint())})"
+        )
+    MemoryFile.__repr__ = mem_file_repr
+
+
+_add_extraneous_repr_functions()
+
 # We must be able to do `from pydrake.symbolic import _symbolic_sympy` so we
 # need `pydrake.symbolic` to be a Python package, not merely a module. (See
 # https://docs.python.org/3/tutorial/modules.html for details.) The way to

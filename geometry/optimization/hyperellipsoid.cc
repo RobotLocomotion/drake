@@ -6,6 +6,7 @@
 #include <Eigen/Eigenvalues>
 #include <fmt/format.h>
 
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/choose_best_solver.h"
@@ -394,6 +395,16 @@ void Hyperellipsoid::ImplementGeometry(const Ellipsoid& ellipsoid, void* data) {
 void Hyperellipsoid::ImplementGeometry(const Sphere& sphere, void* data) {
   auto* A = static_cast<Eigen::Matrix3d*>(data);
   *A = Eigen::Matrix3d::Identity() / sphere.radius();
+}
+
+std::unique_ptr<ConvexSet> Hyperellipsoid::DoAffineHullShortcut(
+    std::optional<double> tol) const {
+  // Hyperellipsoids are always positive volume, so we can trivially construct
+  // their affine hull as the whole vector space.
+  unused(tol);
+  const int n = ambient_dimension();
+  return std::make_unique<AffineSubspace>(Eigen::MatrixXd::Identity(n, n),
+                                          Eigen::VectorXd::Zero(n));
 }
 
 }  // namespace optimization
