@@ -340,7 +340,7 @@ namespace geometry {
      specified in that material will be applied. Note: cases where an .obj
      references a material name, but the material is not defined in the .mtl
      file, or the .mtl file is missing, will be treated as if no material is
-     specified and the next step will be applied.
+     specified and we proceed to step 2.
      - If diffuse properties are *also* defined in the mesh's
        GeometryProperties, a warning will be written to the console.
      - If the material specifies a texture, but the mesh doesn't have texture
