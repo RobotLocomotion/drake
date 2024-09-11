@@ -20,6 +20,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/planar_joint.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/solvers/choose_best_solver.h"
@@ -38,6 +39,7 @@ using math::RigidTransform;
 using multibody::Frame;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyPlant;
+using multibody::QuaternionFloatingJoint;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
@@ -537,7 +539,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   DRAKE_THROW_UNLESS(options.convexity_radius_stepback < M_PI_2);
   for (multibody::JointIndex index : plant.GetJointIndices()) {
     const multibody::Joint<double>& joint = plant.get_joint(index);
-    if (joint.type_name() == "quaternion_floating") {
+    if (joint.type_name() == QuaternionFloatingJoint<double>::kTypeName) {
       throw std::runtime_error(
           "IrisInConfigurationSpace does not support QuaternionFloatingJoint. "
           "Consider using RpyFloatingJoint instead.");
