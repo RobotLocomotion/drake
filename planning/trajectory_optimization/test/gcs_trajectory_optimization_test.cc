@@ -18,6 +18,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/snopt_solver.h"
@@ -48,6 +49,7 @@ using multibody::MultibodyPlant;
 using multibody::PlanarJoint;
 using multibody::RevoluteJoint;
 using multibody::RigidBody;
+using multibody::RpyFloatingJoint;
 using solvers::MathematicalProgram;
 
 bool GurobiOrMosekSolverUnavailableDuringMemoryCheck() {
@@ -2337,12 +2339,16 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
   const RigidBody<double>& second_body = plant.AddRigidBody("second_body");
   const RigidBody<double>& third_body = plant.AddRigidBody("third_body");
   const RigidBody<double>& fourth_body = plant.AddRigidBody("fourth_body");
+  const RigidBody<double>& floating_body_1 =
+      plant.AddRigidBody("floating_body_1");
+  const RigidBody<double>& floating_body_2 =
+      plant.AddRigidBody("floating_body_2");
 
-  // Add a planar joint without limits
+  // Add a planar joint without limits.
   plant.AddJoint<PlanarJoint>("first_joint", plant.world_body(), {}, first_body,
                               {}, Eigen::Matrix<double, 3, 1>::Zero());
 
-  // Add a planar joint with limits
+  // Add a planar joint with limits.
   std::unique_ptr<PlanarJoint<double>> second_joint_ptr(new PlanarJoint<double>(
       "second_joint", first_body.body_frame(), second_body.body_frame(),
       Eigen::Matrix<double, 3, 1>::Zero()));
@@ -2350,22 +2356,64 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
                                         Eigen::Vector3d{1.0, 1.0, 1.0});
   plant.AddJoint<PlanarJoint>(std::move(second_joint_ptr));
 
-  // Add a revolute joint without limits
+  // Add a revolute joint without limits.
   plant.AddJoint<RevoluteJoint>("third_joint", second_body, {}, third_body, {},
                                 Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0});
 
-  // Add a revolute joint with limits
+  // Add a revolute joint with limits.
   plant.AddJoint<RevoluteJoint>("fourth_joint", third_body, {}, fourth_body, {},
                                 Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0},
                                 -1.0, 1.0);
 
+  // Add a floating body with a RpyFloatingJoint, without limits.
+  plant.AddJoint<RpyFloatingJoint>("floating_joint_1", plant.world_body(), {},
+                                   floating_body_1, {});
+
+  // Add a floating body with a RpyFloatingJoint, with some limits.
+  std::unique_ptr<RpyFloatingJoint<double>> floating_joint_2_ptr(
+      new RpyFloatingJoint<double>("floating_joint_2", plant.world_frame(),
+                                   floating_body_2.body_frame()));
+  floating_joint_2_ptr->set_position_limits(
+      Vector6d(-1.0, -std::numeric_limits<double>::infinity(), -1.0, -1.0, -1.0,
+               -1.0),
+      Vector6d(1.0, std::numeric_limits<double>::infinity(), 1.0, 1.0, 1.0,
+               1.0));
+  plant.AddJoint<RpyFloatingJoint>(std::move(floating_joint_2_ptr));
+
   plant.Finalize();
 
+  // clang-format off
+  // Index | Joint
+  //   0   | planar 1 x
+  //   1   | planar 1 y
+  //   2   | planar 1 θ (continuous revolute)
+  //   3   | planar 2 x
+  //   4   | planar 2 y
+  //   5   | planar 2 θ (not continuous revolute)
+  //   6   | revolute 1 θ (continuous revolute)
+  //   7   | revolute 2 θ (not continuous revolute)
+  //   8   | floating 1 qx (continuous revolute)
+  //   9   | floating 1 qy (continuous revolute)
+  //  10   | floating 1 qz (continuous revolute)
+  //  11   | floating 1 x
+  //  12   | floating 1 y
+  //  13   | floating 1 z
+  //  14   | floating 2 qx (not continuous revolute)
+  //  15   | floating 2 qy (continuous revolute)
+  //  16   | floating 2 qz (not continuous revolute)
+  //  17   | floating 2 x
+  //  18   | floating 2 y
+  //  19   | floating 2 z
+  // clang-format on
   const std::vector<int> continuous_joint_indices =
       trajectory_optimization::GetContinuousRevoluteJointIndices(plant);
-  ASSERT_EQ(continuous_joint_indices.size(), 2);
+  ASSERT_EQ(continuous_joint_indices.size(), 6);
   EXPECT_EQ(continuous_joint_indices[0], 2);
   EXPECT_EQ(continuous_joint_indices[1], 6);
+  EXPECT_EQ(continuous_joint_indices[2], 8);
+  EXPECT_EQ(continuous_joint_indices[3], 9);
+  EXPECT_EQ(continuous_joint_indices[4], 10);
+  EXPECT_EQ(continuous_joint_indices[5], 15);
 }
 
 // Confirm that NonlinearDerivativeConstraint supports symbolic.

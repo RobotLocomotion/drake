@@ -2040,10 +2040,8 @@ std::vector<int> GetContinuousRevoluteJointIndices(
     // The first possibility we check for is a revolute joint with no joint
     // limits.
     if (joint.type_name() == "revolute") {
-      if (joint.position_lower_limits()[0] ==
-              -std::numeric_limits<float>::infinity() &&
-          joint.position_upper_limits()[0] ==
-              std::numeric_limits<float>::infinity()) {
+      if (joint.position_lower_limits()[0] == -kInf &&
+          joint.position_upper_limits()[0] == kInf) {
         indices.push_back(joint.position_start());
       }
       continue;
@@ -2052,11 +2050,21 @@ std::vector<int> GetContinuousRevoluteJointIndices(
     // the angle component has no joint limits), we only add the third entry
     // of the position vector, corresponding to theta.
     if (joint.type_name() == "planar") {
-      if (joint.position_lower_limits()[2] ==
-              -std::numeric_limits<float>::infinity() &&
-          joint.position_upper_limits()[2] ==
-              std::numeric_limits<float>::infinity()) {
+      if (joint.position_lower_limits()[2] == -kInf &&
+          joint.position_upper_limits()[2] == kInf) {
         indices.push_back(joint.position_start() + 2);
+      }
+      continue;
+    }
+    // The third possibility we check for is a roll-pitch-yaw floating joint. If
+    // it is, we check each of its three revolute components (stored in the
+    // first three indices) for unbounded joint limits.
+    if (joint.type_name() == "rpy_floating") {
+      for (int j = 0; j < 3; ++j) {
+        if (joint.position_lower_limits()[j] == -kInf &&
+            joint.position_upper_limits()[j] == kInf) {
+          indices.push_back(joint.position_start() + j);
+        }
       }
       continue;
     }
