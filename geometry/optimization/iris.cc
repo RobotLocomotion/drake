@@ -19,6 +19,9 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/joint.h"
+#include "drake/multibody/tree/planar_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
@@ -472,7 +475,7 @@ coordinate in configuration space, and should be automatically bounded. If the
 joint is not encompassed by the continuous revolute framework, return an empty
 vector. */
 std::vector<int> revolute_joint_indices(const multibody::Joint<double>& joint) {
-  if (joint.type_name() == "revolute") {
+  if (joint.type_name() == multibody::RevoluteJoint<double>::kTypeName) {
     DRAKE_ASSERT(joint.num_positions() == 1);
     // RevoluteJoints store their configuration as (θ)
     if (joint.position_lower_limits()[0] ==
@@ -482,7 +485,7 @@ std::vector<int> revolute_joint_indices(const multibody::Joint<double>& joint) {
       return std::vector<int>{joint.position_start() + 0};
     }
   }
-  if (joint.type_name() == "planar") {
+  if (joint.type_name() == multibody::PlanarJoint<double>::kTypeName) {
     DRAKE_ASSERT(joint.num_positions() == 3);
     // PlanarJoints store their configuration as (x, y, θ)
     if (joint.position_lower_limits()[2] ==
@@ -492,7 +495,7 @@ std::vector<int> revolute_joint_indices(const multibody::Joint<double>& joint) {
       return std::vector<int>{joint.position_start() + 2};
     }
   }
-  if (joint.type_name() == "rpy_floating") {
+  if (joint.type_name() == multibody::RpyFloatingJoint<double>::kTypeName) {
     DRAKE_ASSERT(joint.num_positions() == 6);
     // RpyFloatingJoints store their configuration as (qx, qy, qz, x, y, z),
     // i.e., the first three positions are the revolute components.
