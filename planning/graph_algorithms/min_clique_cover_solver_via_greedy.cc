@@ -1,9 +1,6 @@
 #include "drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h"
 
-#include <iostream>
 #include <utility>
-
-#include "drake/common/fmt_eigen.h"
 
 namespace drake {
 namespace planning {
@@ -16,8 +13,6 @@ namespace {
 // mat(i,j) to false.
 void MakeFalseRowsAndColumns(const VectorX<bool>& mask, bool partition,
                              SparseMatrix<bool>* mat) {
-  std::cout << fmt::format("Mask = {}", fmt_eigen(mask.transpose()))
-            << std::endl;
   if (partition) {
     for (int j = 0; j < mat->outerSize(); ++j) {
       for (SparseMatrix<bool>::InnerIterator it(*mat, j); it; ++it) {
@@ -44,15 +39,12 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask, bool partition,
 MinCliqueCoverSolverViaGreedy::MinCliqueCoverSolverViaGreedy(
     const MaxCliqueSolverBase& max_clique_solver, int min_clique_size)
     : MinCliqueCoverSolverBase(),
-      max_clique_solver_(std::move(max_clique_solver.Clone())),
+      max_clique_solver_(max_clique_solver.Clone()),
       min_clique_size_(min_clique_size) {}
 
 std::vector<std::set<int>> MinCliqueCoverSolverViaGreedy::DoSolveMinCliqueCover(
     const Eigen::SparseMatrix<bool>& original_matrix, bool partition) {
   Eigen::SparseMatrix<bool> adjacency_matrix = original_matrix;
-  std::cout << fmt::format("Original matrix:\n{}",
-                           fmt_eigen(adjacency_matrix.toDense()))
-            << std::endl;
   std::vector<std::set<int>> ret;
   std::vector<bool> covered(original_matrix.cols(), false);
   while (adjacency_matrix.sum() > 0) {
@@ -70,9 +62,6 @@ std::vector<std::set<int>> MinCliqueCoverSolverViaGreedy::DoSolveMinCliqueCover(
     }
     ret.emplace_back(std::move(new_clique));
     MakeFalseRowsAndColumns(max_clique, partition, &adjacency_matrix);
-    std::cout << fmt::format("adjacency_matrix:\n{}\n",
-                             fmt_eigen(adjacency_matrix.toDense()))
-              << std::endl;
   }
   // Edge case where cliques of size 1 cannot be found by the max clique solver
   // since the adjacency matrix only contains false for that row and column.

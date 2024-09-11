@@ -1,7 +1,6 @@
 #include "drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h"
 
 #include <exception>
-#include <iostream>
 
 #include <gtest/gtest.h>
 
@@ -23,23 +22,6 @@ using clique_solution_type = std::vector<std::set<int>>;
 // Make the clique cover a set of sets to simplify comparison.
 using comparable_clique_solution_type = std::set<std::set<int>>;
 
-// Print the set on one line
-void PrintSet(const std::set<int>& mySet) {
-  std::cout << "{ ";
-  for (const auto& elem : mySet) {
-    std::cout << elem << " ";
-  }
-  std::cout << "}" << std::endl;
-}
-void PrintSetSet(const std::set<std::set<int>>& mySet) {
-  std::cout << "{ ";
-  for (const auto& elem : mySet) {
-    PrintSet(elem);
-    std::cout << std::endl;
-  }
-  std::cout << "}" << std::endl;
-}
-
 // Call SolveMinCliqueCover for the given solver with the given adjacency matrix
 // and partition argument and checks whether the returned solution is one of the
 // possible solutions.
@@ -60,9 +42,6 @@ void TestMinCliqueCover(
   bool solution_match_found =
       possible_solutions.empty() && min_clique_cover_vect.empty();
   for (const auto& possible_solution : possible_solutions) {
-    PrintSetSet(min_clique_cover);
-    PrintSetSet(possible_solution);
-    std::cout << std::endl;
     if (min_clique_cover == possible_solution) {
       solution_match_found = true;
       break;
