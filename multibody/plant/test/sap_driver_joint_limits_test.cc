@@ -290,7 +290,7 @@ class KukaIiwaArmTests : public ::testing::Test {
     for (JointIndex joint_index : plant.GetJointIndices()) {
       const Joint<double>& joint = plant.get_joint(joint_index);
       // This model only has weld, prismatic, and revolute joints.
-      if (joint.type_name() == "revolute") {
+      if (joint.type_name() == RevoluteJoint<double>::kTypeName) {
         const RevoluteJoint<double>& revolute_joint =
             dynamic_cast<const RevoluteJoint<double>&>(joint);
         // Arbitrary position within position limits.
@@ -305,7 +305,7 @@ class KukaIiwaArmTests : public ::testing::Test {
         // Set damping.
         revolute_joint.SetDamping(
             context, kJointDamping(revolute_joint.velocity_start()));
-      } else if (joint.type_name() == "prismatic") {
+      } else if (joint.type_name() == PrismaticJoint<double>::kTypeName) {
         const PrismaticJoint<double>& prismatic_joint =
             dynamic_cast<const PrismaticJoint<double>&>(joint);
         // Arbitrary position within position limits.

@@ -160,13 +160,13 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
     for (JointIndex joint_index : plant.GetJointIndices()) {
       const Joint<double>& joint = plant.get_joint(joint_index);
       // This model only has weld, prismatic, and revolute joints.
-      if (joint.type_name() == "revolute") {
+      if (joint.type_name() == RevoluteJoint<double>::kTypeName) {
         const RevoluteJoint<double>& revolute_joint =
             dynamic_cast<const RevoluteJoint<double>&>(joint);
         // Arbitrary angle and angular rate.
         revolute_joint.set_angle(context, 0.5 * joint_index);
         revolute_joint.set_angular_rate(context, 0.5 * joint_index);
-      } else if (joint.type_name() == "prismatic") {
+      } else if (joint.type_name() == PrismaticJoint<double>::kTypeName) {
         const PrismaticJoint<double>& prismatic_joint =
             dynamic_cast<const PrismaticJoint<double>&>(joint);
         // Arbitrary joint translation and translation rate.

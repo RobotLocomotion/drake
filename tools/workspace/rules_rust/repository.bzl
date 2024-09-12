@@ -11,8 +11,8 @@ def rules_rust_repository(
     github_archive(
         name = name,
         repository = "bazelbuild/rules_rust",  # License: Apache-2.0
-        commit = "0.48.0",
-        sha256 = "a4b8ede7723088dff1e909632c4282e51ddbe0e44c38eea013ee0f12d348b1c7",  # noqa
+        commit = "0.49.3",
+        sha256 = "d57f0351e2405e9ac248c25d03888ae5407d74461145cbd03fc29b5df0a0c673",  # noqa
         patches = [
             ":patches/import_cycle.patch",
         ] + (extra_patches or []),

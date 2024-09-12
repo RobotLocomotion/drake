@@ -38,7 +38,7 @@ rust_library(
     name = "lapack",
     srcs = glob(
         include = ["**/*.rs"],
-        allow_empty = False,
+        allow_empty = True,
     ),
     compile_data = glob(
         include = ["**"],
@@ -104,7 +104,7 @@ rust_library(
     version = "0.19.0",
     deps = [
         "@crate__lapack-sys-0.14.0//:lapack_sys",
-        "@crate__libc-0.2.155//:libc",
+        "@crate__libc-0.2.158//:libc",
         "@crate__num-complex-0.4.6//:num_complex",
     ],
 )

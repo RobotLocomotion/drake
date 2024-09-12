@@ -14,8 +14,8 @@ def rules_python_repository(
     github_archive(
         name = name,
         repository = "bazelbuild/rules_python",  # License: Apache-2.0,
-        commit = "0.34.0",
-        sha256 = "778aaeab3e6cfd56d681c89f5c10d7ad6bf8d2f1a72de9de55b23081b2d31618",  # noqa
+        commit = "0.35.0",
+        sha256 = "be04b635c7be4604be1ef20542e9870af3c49778ce841ee2d92fcb42f9d9516a",  # noqa
         patches = [
             ":patches/internal_config_repo.patch",
         ],

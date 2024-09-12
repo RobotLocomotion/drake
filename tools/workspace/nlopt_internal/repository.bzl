@@ -6,12 +6,11 @@ def nlopt_internal_repository(
     github_archive(
         name = name,
         repository = "stevengj/nlopt",
-        commit = "v2.7.1",
-        sha256 = "db88232fa5cef0ff6e39943fc63ab6074208831dc0031cf1545f6ecd31ae2a1a",  # noqa
+        commit = "v2.8.0",
+        sha256 = "e02a4956a69d323775d79fdaec7ba7a23ed912c7d45e439bc933d991ea3193fd",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/remove_luksan.patch",
-            ":patches/stogo.patch",
             ":patches/vendor.patch",
         ],
         mirrors = mirrors,

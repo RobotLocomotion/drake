@@ -38,7 +38,7 @@ rust_proc_macro(
     name = "thiserror_impl",
     srcs = glob(
         include = ["**/*.rs"],
-        allow_empty = False,
+        allow_empty = True,
     ),
     compile_data = glob(
         include = ["**"],
@@ -104,7 +104,7 @@ rust_proc_macro(
     version = "1.0.63",
     deps = [
         "@crate__proc-macro2-1.0.86//:proc_macro2",
-        "@crate__quote-1.0.36//:quote",
-        "@crate__syn-2.0.72//:syn",
+        "@crate__quote-1.0.37//:quote",
+        "@crate__syn-2.0.77//:syn",
     ],
 )
