@@ -259,7 +259,7 @@ AffineBall::DoAddPointInNonnegativeScalingConstraints(
   new_constraints.push_back(
       prog->AddLinearEqualityConstraint(constraint_A, b, {x, y, t}));
 
-  // The third constraint is that ||y||² ≤ (c't+d)², which can be written as
+  // The second constraint is that ||y||² ≤ (c't+d)², which can be written as
   // [c', 0; 0, I]*[t; y]+[d; 0] is in the Lorentz cone
   MatrixXd A_lorentz = MatrixXd::Zero(1 + n, k + n);
   A_lorentz.row(0).head(k) = c.transpose();
