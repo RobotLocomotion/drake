@@ -11,6 +11,7 @@
 #include <msgpack.hpp>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/timer.h"
@@ -381,6 +382,33 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   // Bad filename (file doesn't exist).  Should only log a warning.
   meshcat.SetObject("bad", Mesh("test.obj"));
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
+}
+
+// Confirms that an OBJ with a missing material becomes a MeshData instead of a
+// MeshfileObjectData.
+GTEST_TEST(MeshcatTest, ObjWithMissingMtl) {
+  Meshcat meshcat;
+
+  // The baseline .obj with .mtl file.
+  const std::string obj_source =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
+  meshcat.SetObject("with_mtl", Mesh(obj_source), Rgba(1, 0, 1));
+  const std::string with_mtl_packed = meshcat.GetPackedObject("with_mtl");
+  EXPECT_THAT(with_mtl_packed, testing::HasSubstr("_meshfile_object"));
+  EXPECT_THAT(with_mtl_packed, testing::HasSubstr("mtl_library"));
+
+  // Copy the .obj into a directory, without its .mtl file.
+  const std::filesystem::path dir = temp_directory();
+  const std::filesystem::path missing_mtl_path = dir / "box.obj";
+  std::filesystem::copy_file(obj_source, missing_mtl_path);
+  meshcat.SetObject("missing_mtl", Mesh(missing_mtl_path.string()),
+                    Rgba(1, 0.75, 0.5));
+
+  const std::string missing_mtl_packed = meshcat.GetPackedObject("missing_mtl");
+  EXPECT_THAT(missing_mtl_packed, testing::HasSubstr("_meshfile_geometry"));
+  EXPECT_THAT(missing_mtl_packed, testing::HasSubstr("MeshPhongMaterial"));
+  // The Rgba value above gets hex encoded as follows:
+  EXPECT_THAT(missing_mtl_packed, testing::HasSubstr("\0\xFF\xBF\x7F"));
 }
 
 GTEST_TEST(MeshcatTest, SetObjectWithPointCloud) {

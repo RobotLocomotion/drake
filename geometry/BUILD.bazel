@@ -586,6 +586,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":meshcat",
+        "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@msgpack_internal//:msgpack",
