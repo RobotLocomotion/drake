@@ -15,6 +15,7 @@ std::string DeprecateWhenEmptyName(std::string name, std::string_view type) {
   }
   return name;
 }
+#endif
 
 }  // namespace internal
 
