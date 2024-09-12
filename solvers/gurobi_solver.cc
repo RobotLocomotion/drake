@@ -955,9 +955,6 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
   // - The value of CommonSolverOptions::kMaxThreads if set.
   // - GUROBI_NUM_THREADS environment variable.
   // - Drake's maximum parallelism.
-  // Note that the case of the Gurobi-specific solver option "Threads". is
-  // handled in the all int options loop later.
-  // Try using specific solver option
   std::optional<int> num_threads = std::nullopt;
   if (merged_options.GetOptionsInt(id()).contains("Threads")) {
     num_threads = merged_options.GetOptionsInt(id()).at("Threads");
