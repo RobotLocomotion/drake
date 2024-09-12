@@ -32,8 +32,9 @@ class Cost : public EvaluatorBase {
    * @param num_vars Number of input variables.
    * @param description Human-friendly description.
    */
-  explicit Cost(int num_vars, const std::string& description = "")
-      : EvaluatorBase(1, num_vars, description) {}
+  explicit Cost(int num_vars, const std::string& description = "",
+                bool thread_safe = false)
+      : EvaluatorBase(1, num_vars, description, thread_safe) {}
 };
 
 /**
@@ -52,7 +53,7 @@ class LinearCost : public Cost {
    */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   LinearCost(const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0.)
-      : Cost(a.rows()), a_(a), b_(b) {}
+      : Cost(a.rows(), "", true), a_(a), b_(b) {}
 
   ~LinearCost() override {}
 
@@ -130,7 +131,7 @@ class QuadraticCost : public Cost {
   QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
                 const Eigen::MatrixBase<Derivedb>& b, double c = 0.,
                 std::optional<bool> is_hessian_psd = std::nullopt)
-      : Cost(Q.rows()), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
+      : Cost(Q.rows(), "", true), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
     DRAKE_THROW_UNLESS(Q_.rows() == Q_.cols());
     DRAKE_THROW_UNLESS(Q_.cols() == b_.rows());
     if (is_hessian_psd.has_value()) {
@@ -511,7 +512,10 @@ class EvaluatorCost : public Cost {
    */
   EvaluatorCost(const std::shared_ptr<EvaluatorType>& evaluator,
                 const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0)
-      : Cost(evaluator->num_vars()), evaluator_(evaluator), a_{a}, b_{b} {
+      : Cost(evaluator->num_vars(), "", evaluator->is_thread_safe()),
+        evaluator_(evaluator),
+        a_{a},
+        b_{b} {
     DRAKE_THROW_UNLESS(evaluator->num_outputs() == a_->rows());
   }
 

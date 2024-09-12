@@ -449,6 +449,7 @@ Binding<VisualizationCallback> MathematicalProgram::AddVisualizationCallback(
 Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
   // See AddConstraint(const Binding<Constraint>&) for explanation
   Cost* cost = binding.evaluator().get();
+  is_thread_safe_ = is_thread_safe_ && cost->is_thread_safe();
   if (dynamic_cast<QuadraticCost*>(cost)) {
     return AddCost(internal::BindingDynamicCast<QuadraticCost>(binding));
   } else if (dynamic_cast<LinearCost*>(cost)) {
@@ -754,6 +755,7 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
   // constraint. Determine correct container. As last resort, add to generic
   // constraints.
   Constraint* constraint = binding.evaluator().get();
+  is_thread_safe_ = is_thread_safe_ && constraint->is_thread_safe();
   // Check constraints types in reverse order, such that classes that inherit
   // from other classes will not be prematurely added to less specific (or
   // incorrect) container.
@@ -2070,6 +2072,15 @@ void MathematicalProgram::UpdateRequiredCapability(
 
 int MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
   Cost* cost_evaluator = cost.evaluator().get();
+  // If this cost is not thread safe, we need to check whether we need to
+  // change the value of is_thread_safe_.
+  if (!is_thread_safe_) {
+    const std::vector<Binding<Cost>> costs = GetAllCosts();
+    is_thread_safe_ = std::all_of(costs.begin(), costs.end(),
+                                  [](const Binding<Cost>& c) {
+                                    return c.evaluator()->is_thread_safe();
+                                  });
+  }
   // TODO(hongkai.dai): Remove the dynamic cast as part of #8349.
   if (dynamic_cast<QuadraticCost*>(cost_evaluator)) {
     return RemoveCostOrConstraintImpl(
@@ -2093,6 +2104,15 @@ int MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
 int MathematicalProgram::RemoveConstraint(
     const Binding<Constraint>& constraint) {
   Constraint* constraint_evaluator = constraint.evaluator().get();
+  // If this constraint is not thread safe, we need to check whether we need to
+  // change the value of is_thread_safe_.
+  if (!is_thread_safe_) {
+    const std::vector<Binding<Constraint>> constraints = GetAllConstraints();
+    is_thread_safe_ = std::all_of(constraints.begin(), constraints.end(),
+                                  [](const Binding<Constraint>& c) {
+                                    return c.evaluator()->is_thread_safe();
+                                  });
+  }
   // TODO(hongkai.dai): Remove the dynamic cast as part of #8349.
   // Check constraints types in reverse order, such that classes that inherit
   // from other classes will not be prematurely added to less specific (or

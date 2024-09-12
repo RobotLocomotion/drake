@@ -2104,8 +2104,8 @@ class MathematicalProgram {
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const symbolic::Formula& f,
       LorentzConeConstraint::EvalType eval_type =
-          LorentzConeConstraint::EvalType::kConvexSmooth, double psd_tol = 1e-8,
-                                    double coefficient_tol = 1e-8);
+          LorentzConeConstraint::EvalType::kConvexSmooth,
+      double psd_tol = 1e-8, double coefficient_tol = 1e-8);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
@@ -3943,6 +3943,11 @@ class MathematicalProgram {
   ProgramAttributes required_capabilities_;
 
   std::unordered_map<int, double> var_scaling_map_{};
+
+  // Whether all the costs and constraints are thread safe and therefore this
+  // mathematical program can safely be solved concurrently with other
+  // MathematicalPrograms.
+  bool is_thread_safe_;
 };
 
 std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog);

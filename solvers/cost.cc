@@ -372,7 +372,7 @@ std::string PerspectiveQuadraticCost::DoToLatex(
 }
 
 ExpressionCost::ExpressionCost(const symbolic::Expression& e)
-    : Cost(e.GetVariables().size()),
+    : Cost(e.GetVariables().size(), "", true),
       /* We reuse the Constraint evaluator's implementation. */
       evaluator_(std::make_unique<ExpressionConstraint>(
           Vector1<symbolic::Expression>{e},

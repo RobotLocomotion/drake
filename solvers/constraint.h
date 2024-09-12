@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -58,16 +59,46 @@ class Constraint : public EvaluatorBase {
    * cannot contain NAN.
    * @param ub Upper bound, which must be a `num_constraints` x 1 vector, ub
    * cannot contain NAN.
+   * @param is_thread_safe True if it is safe to evaluate this constraint in
+   * parallel.
    * @see Eval(...)
    */
   template <typename DerivedLB, typename DerivedUB>
   Constraint(int num_constraints, int num_vars,
              const Eigen::MatrixBase<DerivedLB>& lb,
              const Eigen::MatrixBase<DerivedUB>& ub,
-             const std::string& description = "")
-      : EvaluatorBase(num_constraints, num_vars, description),
+             const std::string& description = "", bool is_thread_safe = false)
+      : EvaluatorBase(num_constraints, num_vars, description, is_thread_safe),
         lower_bound_(lb),
         upper_bound_(ub) {
+          std::cout << "IN 6 arg" << std::endl;
+    check(num_constraints);
+    DRAKE_THROW_UNLESS(!lower_bound_.array().isNaN().any());
+    DRAKE_THROW_UNLESS(!upper_bound_.array().isNaN().any());
+  }
+
+  /**
+   * Constructs a constraint which has `num_constraints` rows, with an input
+   * `num_vars` x 1 vector.
+   * @param num_constraints. The number of rows in the constraint output.
+   * @param num_vars. The number of rows in the input.
+   * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
+   * @param lb Lower bound, which must be a `num_constraints` x 1 vector, lb
+   * cannot contain NAN.
+   * @param ub Upper bound, which must be a `num_constraints` x 1 vector, ub
+   * cannot contain NAN.
+   * @param is_thread_safe True if it is safe to evaluate this constraint in
+   * parallel.
+   * @see Eval(...)
+   */
+  template <typename DerivedLB, typename DerivedUB>
+  Constraint(int num_constraints, int num_vars,
+             const Eigen::MatrixBase<DerivedLB>& lb,
+             const Eigen::MatrixBase<DerivedUB>& ub, bool is_thread_safe)
+      : EvaluatorBase(num_constraints, num_vars, is_thread_safe),
+        lower_bound_(lb),
+        upper_bound_(ub) {
+          std::cout << "IN 5 arg" << std::endl;
     check(num_constraints);
     DRAKE_THROW_UNLESS(!lower_bound_.array().isNaN().any());
     DRAKE_THROW_UNLESS(!upper_bound_.array().isNaN().any());
@@ -81,13 +112,14 @@ class Constraint : public EvaluatorBase {
    * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
    * @see Eval(...)
    */
-  Constraint(int num_constraints, int num_vars)
+  Constraint(int num_constraints, int num_vars, bool is_thread_safe = false)
       : Constraint(
             num_constraints, num_vars,
             Eigen::VectorXd::Constant(num_constraints,
                                       -std::numeric_limits<double>::infinity()),
-            Eigen::VectorXd::Constant(
-                num_constraints, std::numeric_limits<double>::infinity())) {}
+            Eigen::VectorXd::Constant(num_constraints,
+                                      std::numeric_limits<double>::infinity()),
+            is_thread_safe) {}
 
   /**
    * Return whether this constraint is satisfied by the given value, `x`.
@@ -234,7 +266,7 @@ class QuadraticConstraint : public Constraint {
                       double ub,
                       std::optional<HessianType> hessian_type = std::nullopt)
       : Constraint(kNumConstraints, Q0.rows(), drake::Vector1d::Constant(lb),
-                   drake::Vector1d::Constant(ub)),
+                   drake::Vector1d::Constant(ub), true),
         Q_((Q0 + Q0.transpose()) / 2),
         b_(b) {
     UpdateHessianType(hessian_type);
@@ -451,7 +483,8 @@ class RotatedLorentzConeConstraint : public Constraint {
                                const Eigen::Ref<const Eigen::VectorXd>& b)
       : Constraint(
             3, A.cols(), Eigen::Vector3d::Constant(0.0),
-            Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
+            Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
+            true),
         A_(A.sparseView()),
         A_dense_(A),
         b_(b) {
@@ -875,7 +908,7 @@ class LinearComplementarityConstraint : public Constraint {
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
-      : Constraint(q.rows(), M.cols()), M_(M), q_(q) {}
+      : Constraint(q.rows(), M.cols(), true), M_(M), q_(q) {}
 
   ~LinearComplementarityConstraint() override {}
 

@@ -143,6 +143,11 @@ class EvaluatorBase {
     return gradient_sparsity_pattern_;
   }
 
+  /**
+   * Returns whether it is safe to call Eval in parallel.
+   */
+  bool is_thread_safe() const { return is_thread_safe_; }
+
  protected:
   /**
    * Constructs a evaluator.
@@ -150,13 +155,30 @@ class EvaluatorBase {
    * @param num_vars. The number of rows in the input.
    * If the input dimension is not known, then set `num_vars` to Eigen::Dynamic.
    * @param description A human-friendly description.
+   * @param is_thread_safe Whether is it is safe to call Eval concurrently.
    * @see Eval(...)
    */
   EvaluatorBase(int num_outputs, int num_vars,
-                const std::string& description = "")
+                const std::string& description = "",
+                bool is_thread_safe = false)
       : num_vars_(num_vars),
         num_outputs_(num_outputs),
-        description_(description) {}
+        description_(description),
+        is_thread_safe_(is_thread_safe) {}
+
+  /**
+   * Constructs a evaluator.
+   * @param num_outputs. The number of rows in the output.
+   * @param num_vars. The number of rows in the input.
+   * If the input dimension is not known, then set `num_vars` to Eigen::Dynamic.
+   * @param is_thread_safe Whether is it is safe to call Eval concurrently.
+   * @see Eval(...)
+   */
+  EvaluatorBase(int num_outputs, int num_vars, bool is_thread_safe)
+      : num_vars_(num_vars),
+        num_outputs_(num_outputs),
+        description_(""),
+        is_thread_safe_(is_thread_safe) {}
 
   /**
    * Implements expression evaluation for scalar type double.
@@ -219,6 +241,7 @@ class EvaluatorBase {
   // false, the gradient matrix is regarded as non-sparse, i.e., every entry of
   // the gradient matrix can be non-zero.
   std::optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
+  bool is_thread_safe_{};
 };
 
 /**
