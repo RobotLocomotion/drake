@@ -245,32 +245,29 @@ AffineBall::DoAddPointInNonnegativeScalingConstraints(
   const int n = ambient_dimension();
   // The constraint is Ax+b∈(c't+d)S, which can be written Ax+b=(c't+d)(By+C),
   // where we use C to refer to the center of the AffineBall, which simplifies
-  // to -Ax+By+Cs=b, s=c't+d, and ||y||² ≤ s².
+  // to -Ax+By+(Cc')t=b-Cd and ||y||² ≤ (c't+d)².
   VectorXDecisionVariable y = prog->NewContinuousVariables(n, "y");
-  VectorXDecisionVariable s = prog->NewContinuousVariables(1, "s");
 
   // The first constraint is the linear equality constraint
-  // [-A, B, center_] * [x; y; s] = b.
+  // [-A, B, Cc'] * [x; y; t] = b - Cd.
   const int m = x.size();
-  MatrixXd constraint_A(n, m + n + 1);
+  const int k = c.size();
+  MatrixXd constraint_A(n, m + n + k);
   constraint_A.leftCols(m) = -A;
   constraint_A.block(0, m, n, n) = B_;
-  constraint_A.rightCols(1) = center_;
+  constraint_A.rightCols(k) = center_ * c.transpose();
   new_constraints.push_back(
-      prog->AddLinearEqualityConstraint(constraint_A, b, {x, y, s}));
+      prog->AddLinearEqualityConstraint(constraint_A, b, {x, y, t}));
 
-  // The second constraint is the linear equality constraint
-  // [1, -c'] * [s; t] = [d]
-  const int k = c.size();
-  Eigen::RowVectorXd constraint_a(k + 1);
-  constraint_a(0) = 1;
-  constraint_a.tail(k) = -c.transpose();
+  // The third constraint is that ||y||² ≤ (c't+d)², which can be written as
+  // [c', 0; 0, I]*[t; y]+[d; 0] is in the Lorentz cone
+  MatrixXd A_lorentz = MatrixXd::Zero(1 + n, k + n);
+  A_lorentz.row(0).head(k) = c.transpose();
+  A_lorentz.block(1, k, n, n) = MatrixXd::Identity(n, n);
+  VectorXd b_lorentz = VectorXd::Zero(1 + n);
+  b_lorentz[0] = d;
   new_constraints.push_back(
-      prog->AddLinearEqualityConstraint(constraint_a, d, {s, t}));
-
-  // The third constraint is that [s, y] be in the Lorentz cone.
-  new_constraints.push_back(prog->AddLorentzConeConstraint(
-      MatrixXd::Identity(n + 1, n + 1), VectorXd::Zero(n + 1), {s, y}));
+      prog->AddLorentzConeConstraint(A_lorentz, b_lorentz, {t, y}));
 
   return new_constraints;
 }

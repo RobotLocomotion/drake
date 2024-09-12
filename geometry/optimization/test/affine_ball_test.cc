@@ -542,34 +542,31 @@ GTEST_TEST(AffineBallTest, PointInNonnegativeScalingConstraints) {
       ab.AddPointInNonnegativeScalingConstraints(&prog2, A, b, c, d, x2, t2);
 
   // Extract the slack variables. According to the method implementation, the
-  // constraint in index 2 will be the Lorentz cone constraint, whose variables
-  // are [s, y].
-  const int constraint2_idx = 2;
-  ASSERT_EQ(ssize(constraints2), 4);
+  // constraint in index 1 will be the Lorentz cone constraint, whose variables
+  // are [t, y].
+  const int constraint2_idx = 1;
+  ASSERT_EQ(ssize(constraints2), 3);
   ASSERT_TRUE(dynamic_cast<const solvers::LorentzConeConstraint*>(
                   constraints2[constraint2_idx].evaluator().get()) != nullptr);
-  ASSERT_FALSE(constraints2[constraint2_idx].ContainsVariable(t2[0]));
+  ASSERT_TRUE(constraints2[constraint2_idx].ContainsVariable(t2[0]));
   ASSERT_FALSE(constraints2[constraint2_idx].ContainsVariable(x2[0]));
-  ASSERT_EQ(constraints2[constraint2_idx].variables().size(), 4);
-  const auto s2 = constraints2[constraint2_idx].variables().head(1)[0];
+  ASSERT_EQ(constraints2[constraint2_idx].variables().size(), 5);
   const auto y2 = constraints2[constraint2_idx].variables().tail(3);
 
-  // Test values for x, y, s, t, and whether the constraint is satisfied.
-  const std::vector<std::tuple<Vector2d, Vector3d, double, Vector2d, bool>>
-      test_x_y_s_t{
-          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(1, 0), true},
-          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(0, -1), true},
-          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(2, 1), true},
-          {Vector2d(2, 0), Vector3d(2, 0, 0), 2, Vector2d(1, -1), true},
-          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(1, -1), false},
-          {Vector2d(1, 0), Vector3d(1, 0, 0), 1, Vector2d(0, 1), false},
-          {Vector2d(2, 0), Vector3d(2, 0, 0), 2, Vector2d(1, -2), false}};
+  // Test values for x, y, t, and whether the constraint is satisfied.
+  const std::vector<std::tuple<Vector2d, Vector3d, Vector2d, bool>>
+      test_x2_y2_t2{
+          {Vector2d(1, 0), Vector3d(1, 0, 0), Vector2d(1, 0), true},
+          {Vector2d(1, 0), Vector3d(1, 0, 0), Vector2d(0, -1), true},
+          {Vector2d(1, 0), Vector3d(1, 0, 0), Vector2d(2, 1), true},
+          {Vector2d(2, 0), Vector3d(2, 0, 0), Vector2d(1, -1), true},
+          {Vector2d(1, 0), Vector3d(1, 0, 0), Vector2d(1, -1), false},
+          {Vector2d(1, 0), Vector3d(1, 0, 0), Vector2d(0, 1), false},
+          {Vector2d(2, 0), Vector3d(2, 0, 0), Vector2d(1, -2), false}};
 
-  for (const auto& [x2_val, y2_val, s2_val, t2_val, expect_success] :
-       test_x_y_s_t) {
+  for (const auto& [x2_val, y2_val, t2_val, expect_success] : test_x2_y2_t2) {
     prog2.SetInitialGuess(x2, x2_val);
     prog2.SetInitialGuess(y2, y2_val);
-    prog2.SetInitialGuess(s2, s2_val);
     prog2.SetInitialGuess(t2, t2_val);
     EXPECT_EQ(prog2.CheckSatisfiedAtInitialGuess(constraints2, kTol),
               expect_success);
