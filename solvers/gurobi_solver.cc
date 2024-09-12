@@ -960,8 +960,9 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
   if (!merged_options.GetOptionsInt(id()).contains("Threads")) {
     int num_threads{merged_options.get_max_threads().value_or(
         Parallelism::Max().num_threads())};
-    if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS") &&
-                                !merged_options.get_max_threads().has_value()) {
+    if (static_cast<bool>(char* num_threads_str =
+                              std::getenv("GUROBI_NUM_THREADS")) &&
+        !merged_options.get_max_threads().has_value()) {
       const std::optional<int> maybe_num_threads = ParseInt(num_threads_str);
       if (maybe_num_threads.has_value()) {
         num_threads = *maybe_num_threads;

@@ -7,7 +7,6 @@
 #include <fmt/format.h>
 
 #include "drake/common/never_destroyed.h"
-#include "drake/common/parallelism.h"
 
 namespace drake {
 namespace solvers {

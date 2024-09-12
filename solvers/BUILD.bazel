@@ -311,7 +311,6 @@ drake_cc_library(
     ],
     deps = [
         ":solver_id",
-        "//common:parallelism",
     ],
 )
 
@@ -852,7 +851,6 @@ drake_cc_variant_library(
     ],
     implementation_deps_enabled = [
         ":mosek_solver_internal",
-        "//common:parallelism",
         "//common:scope_exit",
         "//common:scoped_singleton",
         "@mosek",
@@ -868,6 +866,7 @@ drake_cc_optional_library(
     implementation_deps = [
         ":aggregate_costs_constraints",
         ":mathematical_program",
+        "//common:parallelism",
         "//math:quadratic_form",
         "@mosek",
     ],
