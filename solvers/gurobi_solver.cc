@@ -957,24 +957,35 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
   // - Drake's maximum parallelism.
   // Note that the case of the Gurobi-specific solver option "Threads". is
   // handled in the all int options loop later.
-  if (!merged_options.GetOptionsInt(id()).contains("Threads")) {
-    int num_threads{merged_options.get_max_threads().value_or(
-        Parallelism::Max().num_threads())};
-    const char* num_threads_str = std::getenv("GUROBI_NUM_THREADS");
-    if (num_threads_str != nullptr &&
-        !merged_options.get_max_threads().has_value()) {
-      const std::optional<int> maybe_num_threads = ParseInt(num_threads_str);
-      if (maybe_num_threads.has_value()) {
-        num_threads = *maybe_num_threads;
-        log()->debug("Using GUROBI_NUM_THREADS={}", num_threads);
+  // Try using specific solver option
+  std::optional<int> num_threads = std::nullopt;
+  if (merged_options.GetOptionsInt(id()).contains("Threads")) {
+    num_threads = merged_options.GetOptionsInt(id()).at("Threads");
+  }
+  if (!num_threads.has_value()) {
+    // If unset, check CommonSolverOptions::kMaxThreads.
+    num_threads = merged_options.get_max_threads();
+  }
+  if (!num_threads.has_value()) {
+    // If unset, use GUROBI_NUM_THREADS. We attempt to read the value of
+    // GUROBI_NUM_THREADS and warn the user if it is not parseable.
+    if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS")) {
+      num_threads = ParseInt(num_threads_str);
+      if (num_threads.has_value()) {
+        log()->debug("Using GUROBI_NUM_THREADS={}", num_threads.value());
       } else {
         static const logging::Warn log_once(
             "Ignoring unparseable value '{}' for GUROBI_NUM_THREADS",
             num_threads_str);
       }
     }
-    SetOptionOrThrow(model_env, "Threads", num_threads);
   }
+  if (!num_threads.has_value()) {
+    // If unset, use max parallelism.
+    num_threads = Parallelism::Max().num_threads();
+  }
+  DRAKE_DEMAND(num_threads.has_value());
+  SetOptionOrThrow(model_env, "Threads", num_threads.value());
 
   for (const auto& it : merged_options.GetOptionsDouble(id())) {
     if (!error) {
@@ -1086,7 +1097,8 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
                        GRBgeterrormsg(env));
     solver_details.error_code = error;
   } else {
-    // Always set the primal and dual solution for any non-error gurobi status.
+    // Always set the primal and dual solution for any non-error gurobi
+    // status.
     SetSolution(model, model_env, prog, is_new_variable, num_prog_vars, is_mip,
                 num_gurobi_linear_constraints, constant_cost,
                 constraint_dual_start_row, bb_con_dual_indices, result,
