@@ -66,6 +66,8 @@ struct SortedTriplet {
   std::array<T, 3> objects_{};
 };
 
+// TODO(jwnimmer-tri) Rewrite the below using spaceship after we drop Ventura.
+
 // Two triplets of the same type are equal iff their members are equal after
 // sorting.
 template <class T>

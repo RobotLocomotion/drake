@@ -40,6 +40,7 @@ class Sha256 final {
   std::string to_string() const;
 
   // Offer typical comparison operations.
+  // TODO(jwnimmer-tri) Rewrite as spaceship after we drop Ventura.
   bool operator==(const Sha256& other) const { return bytes_ == other.bytes_; }
   bool operator!=(const Sha256& other) const { return bytes_ != other.bytes_; }
   bool operator<(const Sha256& other) const { return bytes_ < other.bytes_; }

@@ -26,10 +26,6 @@ using std::set;
 using std::shared_ptr;
 using std::string;
 
-bool operator<(FormulaKind k1, FormulaKind k2) {
-  return static_cast<int>(k1) < static_cast<int>(k2);
-}
-
 Formula::Formula(std::shared_ptr<const FormulaCell> ptr)
     : ptr_{std::move(ptr)} {}
 

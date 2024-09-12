@@ -124,6 +124,8 @@ struct SortedPair {
   T second_{};  // The second of the two objects, according to operator<.
 };
 
+// TODO(jwnimmer-tri) Rewrite the below using spaceship after we drop Ventura.
+
 /// Two pairs of the same type are equal iff their members are equal after
 /// sorting.
 template <class T>
