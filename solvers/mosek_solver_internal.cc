@@ -1500,12 +1500,10 @@ MSKrescodee MosekSolverProgram::UpdateOptions(
   MSKrescodee rescode{MSK_RES_OK};
   // Set the maximum number of threads used by Mosek via the CommonSolverOptions
   // first, so that solver-specific options can overwrite this later.
-
-  rescode = MSK_putnaintparam(task_, "MSK_IPAR_NUM_THREADS",
-                              merged_options.get_max_threads().value_or(
-                                  Parallelism::MaxThreads().num_threads()));
-  ThrowForInvalidOption(rescode, "MSK_IPAR_NUM_THREADS",
-                        merged_options.get_max_threads());
+  const int num_threads = merged_options.get_max_threads().value_or(
+      Parallelism::Max().num_threads());
+  rescode = MSK_putnaintparam(task_, "MSK_IPAR_NUM_THREADS", num_threads);
+  ThrowForInvalidOption(rescode, "MSK_IPAR_NUM_THREADS", num_threads);
   for (const auto& double_options : merged_options.GetOptionsDouble(mosek_id)) {
     if (rescode == MSK_RES_OK) {
       rescode = MSK_putnadouparam(task_, double_options.first.c_str(),

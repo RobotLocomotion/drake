@@ -809,6 +809,7 @@ drake_cc_variant_library(
     implementation_deps_enabled = [
         ":gurobi_solver_internal",
         "//common:find_resource",
+        "//common:parallelism",
         "//common:scope_exit",
         "//common:scoped_singleton",
         "//math:eigen_sparse_triplet",
@@ -851,6 +852,7 @@ drake_cc_variant_library(
     ],
     implementation_deps_enabled = [
         ":mosek_solver_internal",
+        "//common:parallelism",
         "//common:scope_exit",
         "//common:scoped_singleton",
         "@mosek",

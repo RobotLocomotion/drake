@@ -13,7 +13,7 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
   EXPECT_EQ(dut.get_print_file_name(), "");
   EXPECT_EQ(dut.get_print_to_console(), false);
   EXPECT_EQ(dut.get_standalone_reproduction_file_name(), "");
-  EXPECT_EQ(dut.get_max_threads(), 2);  // Per num_threads in our BUILD file.
+  EXPECT_EQ(dut.get_max_threads(), std::nullopt);  // The value is unset.
 
   const SolverId id1("id1");
   const SolverId id2("id2");
