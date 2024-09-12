@@ -245,6 +245,8 @@ class DrakeGymEnv(gym.Env):
             truncated = True
             terminated = False
             reward = 0
+            info["timestamp"] = context.get_time()
+
             return prev_observation, reward, terminated, truncated, info
 
         observation = self.observation_port.Eval(context)
@@ -253,6 +255,7 @@ class DrakeGymEnv(gym.Env):
             not truncated
             and (status.reason()
                  == SimulatorStatus.ReturnReason.kReachedTerminationCondition))
+        info["timestamp"] = context.get_time()
 
         return observation, reward, terminated, truncated, info
 
