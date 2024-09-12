@@ -80,6 +80,7 @@ def clean(args):
 
 def do_merge(output_dir):
     """Merges the kcov data of individual test runs into output_dir."""
+    subprocess.run(["zip", "--version"])
     dirs = find_kcov_test_outputs()
     if not dirs:
         sys.exit("Error: no kcov data to merge")
