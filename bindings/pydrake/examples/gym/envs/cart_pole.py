@@ -30,6 +30,10 @@ from pydrake.multibody.plant import (
     MultibodyPlant,
     MultibodyPlantConfig,
 )
+from pydrake.multibody.tree import (
+    PrismaticJoint,
+    RevoluteJoint,
+)
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.drawing import plot_graphviz, plot_system_graphviz
 from pydrake.systems.framework import (
@@ -338,14 +342,14 @@ def reset_handler(simulator, diagram_context, seed):
     # Ensure the positions are within the joint limits.
     for pair in home_positions:
         joint = plant.GetJointByName(pair[0])
-        if joint.type_name() == "revolute":
+        if joint.type_name() == RevoluteJoint.kTypeName:
             joint.set_angle(plant_context,
                             np.clip(pair[1],
                                     joint.position_lower_limit(),
                                     joint.position_upper_limit()
                                     )
                             )
-        if joint.type_name() == "prismatic":
+        if joint.type_name() == PrismaticJoint.kTypeName:
             joint.set_translation(plant_context,
                                   np.clip(pair[1],
                                           joint.position_lower_limit(),
@@ -354,7 +358,7 @@ def reset_handler(simulator, diagram_context, seed):
                                   )
     for pair in home_velocities:
         joint = plant.GetJointByName(pair[0])
-        if joint.type_name() == "revolute":
+        if joint.type_name() == RevoluteJoint.kTypeName:
             joint.set_angular_rate(plant_context,
                                    np.clip(pair[1],
                                            joint.velocity_lower_limit(),
