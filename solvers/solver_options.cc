@@ -148,13 +148,13 @@ std::string SolverOptions::get_standalone_reproduction_file_name() const {
   return result;
 }
 
-int SolverOptions::get_max_threads() const {
+std::optional<int> SolverOptions::get_max_threads() const {
   // N.B. SetOption sanity checks the value; we don't need to re-check here.
   auto iter = common_solver_options_.find(CommonSolverOption::kMaxThreads);
   if (iter != common_solver_options_.end()) {
     return std::get<int>(iter->second);
   }
-  return Parallelism::Max().num_threads();
+  return std::nullopt;
 }
 
 std::unordered_set<SolverId> SolverOptions::GetSolverIds() const {

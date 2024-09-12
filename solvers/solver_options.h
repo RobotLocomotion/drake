@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <ostream>
 #include <string>
 #include <unordered_map>
@@ -131,8 +132,9 @@ class SolverOptions {
    * else an empty string if the option has not been set. */
   std::string get_standalone_reproduction_file_name() const;
 
-  /** Returns the kMaxThreads set via CommonSolverOption. */
-  int get_max_threads() const;
+  /** Returns the kMaxThreads set via CommonSolverOption. Returns nullopt if
+   * kMaxThreads is unset. */
+  std::optional<int> get_max_threads() const;
 
   template <typename T>
   const std::unordered_map<std::string, T>& GetOptions(

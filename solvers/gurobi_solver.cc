@@ -25,6 +25,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/scoped_singleton.h"
 #include "drake/common/text_logging.h"
@@ -950,14 +951,17 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
                      static_cast<int>(merged_options.get_print_to_console()));
   }
   // Here's our priority order for selecting the number of threads:
-  // - Gurobi-specific solver option "Threads".
+  // - Gurobi-specific solver option "Threads" or the value of
+  // CommonSolverOptions::kMaxThreads if set.
   // - GUROBI_NUM_THREADS environment variable.
-  // - Common solver option.
+  // - Drake's maximum parallelism.
   // Note that the case of the Gurobi-specific solver option "Threads". is
   // handled in the all int options loop later.
   if (!merged_options.GetOptionsInt(id()).contains("Threads")) {
-    int num_threads = merged_options.get_max_threads();
-    if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS")) {
+    int num_threads { 0 }
+    if (merged_options.get_max_threads().has_value()) {
+      num_threads = merged_options.get_max_threads().value();
+    }; else if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS")) {
       const std::optional<int> maybe_num_threads = ParseInt(num_threads_str);
       if (maybe_num_threads.has_value()) {
         num_threads = *maybe_num_threads;
@@ -967,6 +971,8 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
             "Ignoring unparseable value '{}' for GUROBI_NUM_THREADS",
             num_threads_str);
       }
+    } else {
+      num_threads = Parallelism::MaxThreads().num_threads();
     }
     SetOptionOrThrow(model_env, "Threads", num_threads);
   }
