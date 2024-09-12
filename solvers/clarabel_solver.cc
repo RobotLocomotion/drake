@@ -160,6 +160,9 @@ class SettingsConverter {
     settings_.verbose = solver_options.get_print_to_console();
     // TODO(jwnimmer-tri) Handle get_print_file_name().
 
+    // Clarabel does not support setting the number of threads so we ignore
+    // the kMaxNumThreads option.
+
     // Copy the Clarabel-specific `solver_options` to pending maps.
     pending_options_double_ =
         solver_options.GetOptionsDouble(ClarabelSolver::id());

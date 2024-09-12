@@ -61,9 +61,19 @@ struct GurobiSolverDetails {
 ///    setting GRBwrite to "FILENAME.ilp" to write IIS to a file with extension
 ///    "ilp". Default is not to compute IIS.
 ///
-/// If the "Threads" integer solver option has not been set by the user, then
-/// %GurobiSolver uses environment variable GUROBI_NUM_THREADS (if set) as a
+/// GurobiSolver supports parallelization during Solve().
+/// If both the "Threads" integer solver option and
+/// CommonSolverOption::kMaxThreads have been set by the user, then the value in
+/// "Threads" will be used as the number of threads.
+///
+/// If neither the "Threads" integer solver option nor
+/// CommonSolverOption::kMaxThreads has been set by the user, then
+/// %GurobiSolver uses the environment variable GUROBI_NUM_THREADS (if set) as a
 /// default value for "Threads".
+///
+/// If none of "Threads",
+/// CommonSolverOption::kMaxThreads, or GUROBI_NUM_THREADS are set, then
+/// Drake's default maximum parallelism will be used.
 class GurobiSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver);

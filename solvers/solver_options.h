@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <ostream>
 #include <string>
 #include <unordered_map>
@@ -61,6 +62,9 @@ namespace solvers {
  * https://oxfordcontrol.github.io/ClarabelDocs/stable/api_settings/
  * Note that `direct_solve_method` is not supported in Drake yet.
  * Clarabel's boolean options should be passed as integers (0 or 1).
+ *
+ * "CSDP" -- Parameter name and values as specified at
+ * https://manpages.ubuntu.com/manpages/focal/en/man1/csdp-randgraph.1.html
  */
 class SolverOptions {
  public:
@@ -127,6 +131,10 @@ class SolverOptions {
   /** Returns the kStandaloneReproductionFileName set via CommonSolverOption, or
    * else an empty string if the option has not been set. */
   std::string get_standalone_reproduction_file_name() const;
+
+  /** Returns the kMaxThreads set via CommonSolverOption. Returns nullopt if
+   * kMaxThreads is unset. */
+  std::optional<int> get_max_threads() const;
 
   template <typename T>
   const std::unordered_map<std::string, T>& GetOptions(
