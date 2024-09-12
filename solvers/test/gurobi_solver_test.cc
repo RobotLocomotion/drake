@@ -552,14 +552,14 @@ GTEST_TEST(GurobiTest, MaxThreads) {
                                 "using up to {} threads", gurobi_env_max)));
 
     // The common solver option takes precedence.
-    const int kMaxThreadsValue = 7;
+    const int kMaxThreadsValue = 4;
     solver_options.SetOption(CommonSolverOption::kMaxThreads, kMaxThreadsValue);
     result = solver.Solve(prog, {}, solver_options);
     EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
                                 "using up to {} threads", kMaxThreadsValue)));
 
     // The Gurobi-specific solver option takes precedence.
-    const int gurobi_option_max = 9;
+    const int gurobi_option_max = 5;
     solver_options.SetOption(GurobiSolver::id(), "Threads", gurobi_option_max);
     result = solver.Solve(prog, {}, solver_options);
     EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
