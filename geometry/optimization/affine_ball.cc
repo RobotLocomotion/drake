@@ -214,7 +214,7 @@ AffineBall::DoAddPointInNonnegativeScalingConstraints(
     const Variable& t) const {
   std::vector<Binding<Constraint>> new_constraints;
   const int n = ambient_dimension();
-  // The constraint is x∈tS, which can be written x=t(By+c), or equiavlently,
+  // The constraint is x∈tS, which can be written x=t(By+c), or equivalently,
   // x-tc=By and ||y||² ≤ t².
   VectorXDecisionVariable y = prog->NewContinuousVariables(n, "y");
 
@@ -259,7 +259,7 @@ AffineBall::DoAddPointInNonnegativeScalingConstraints(
   new_constraints.push_back(
       prog->AddLinearEqualityConstraint(constraint_A, b, {x, y, t}));
 
-  // The third constraint is that ||y||² ≤ (c't+d)², which can be written as
+  // The second constraint is that ||y||² ≤ (c't+d)², which can be written as
   // [c', 0; 0, I]*[t; y]+[d; 0] is in the Lorentz cone
   MatrixXd A_lorentz = MatrixXd::Zero(1 + n, k + n);
   A_lorentz.row(0).head(k) = c.transpose();
