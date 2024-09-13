@@ -1,6 +1,7 @@
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <optional>
 #include <string>
@@ -25,6 +26,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/read_gltf_to_memory.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -688,6 +690,77 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
     PerformCenterShapeTest(
         __LINE__, renderer_.get(),
         fmt::format("Mesh test {}", use_texture ? "textured" : "rgba").c_str());
+  }
+}
+
+// Repeats various mesh-based tests, but this time the meshes are loaded from
+// memory. We render the scene twice: once with the on-disk mesh and once with
+// the in-memory mesh to confirm they are rendered the same.
+TEST_F(RenderEngineVtkTest, InMemoryMesh) {
+  // Pose the camera so we can see three sides of the cubes.
+  const RotationMatrixd R_WR(math::RollPitchYawd(-0.75 * M_PI, 0, M_PI_4));
+  const RigidTransformd X_WR(R_WR,
+                             R_WR * -Vector3d(0, 0, 1.5 * kDefaultDistance));
+  Init(X_WR, true);
+
+  const GeometryId id = GeometryId::get_new_id();
+  PerceptionProperties props;
+  props.AddProperty("label", "id", RenderLabel(17));
+  auto do_test = [this, id, &props](std::string_view file_prefix,
+                                    const Mesh& file_mesh,
+                                    const Mesh& memory_mesh) {
+    renderer_->RemoveGeometry(id);
+    renderer_->RegisterVisual(id, file_mesh, props, RigidTransformd::Identity(),
+                              false);
+    ImageRgba8U file_image(kWidth, kHeight);
+    Render(__LINE__, fmt::format("{}_file", file_prefix), nullptr, nullptr,
+           &file_image, nullptr, nullptr);
+
+    renderer_->RemoveGeometry(id);
+    renderer_->RegisterVisual(id, memory_mesh, props,
+                              RigidTransformd::Identity(), false);
+    ImageRgba8U memory_image(kWidth, kHeight);
+    Render(__LINE__, fmt::format("{}_memory", file_prefix), nullptr, nullptr,
+           &memory_image, nullptr, nullptr);
+
+    EXPECT_TRUE(file_image == memory_image) << fmt::format(
+        "The glTF file loaded from disk didn't match that loaded from memory. "
+        "Check the bazel-testlogs for the saved images with the prefix '{}'.",
+        file_prefix);
+  };
+
+  // cube1.gltf has all internal data; this confirms that data uris are
+  // preserved.
+  {
+    const fs::path path =
+        FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf");
+    InMemoryMesh mesh_data = ReadGltfToMemory(path);
+    do_test("embedded_gltf", Mesh(path.string()), Mesh(std::move(mesh_data)));
+  }
+
+  // cube2.gltf uses all external files; confirming that file uris work.
+  {
+    const fs::path path =
+        FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.gltf");
+    InMemoryMesh mesh_data = ReadGltfToMemory(path);
+    do_test("file_uri_gltf", Mesh(path.string()), Mesh(std::move(mesh_data)));
+  }
+
+  // rainbow_box.obj has some faces colored by texture, some by material. The
+  // rendering includes faces of both types so we can tell if the right
+  // materials and textures are getting loaded in the right way.
+  {
+    const fs::path obj_path = FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/rainbow_box.obj");
+    const fs::path mtl_path = FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/rainbow_box.mtl");
+    const fs::path png_path = FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/rainbow_stripes.png");
+    do_test("textured_obj", Mesh(obj_path.string()),
+            Mesh(InMemoryMesh{
+                MemoryFile::Make(obj_path),
+                {{"rainbow_box.mtl", MemoryFile::Make(mtl_path)},
+                 {"rainbow_stripes.png", MemoryFile::Make(png_path)}}}));
   }
 }
 
