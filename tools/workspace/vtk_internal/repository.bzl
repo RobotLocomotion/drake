@@ -180,6 +180,7 @@ def vtk_internal_repository(
             ":patches/common_core_version.patch",
             ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_selected_load.patch",
+            ":patches/gltf_importer_from_stream.patch",
             ":patches/io_image_formats.patch",
             ":patches/mr11117.patch",
             ":patches/nerf_pegtl.patch",
