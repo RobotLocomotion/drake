@@ -8,14 +8,18 @@
 #include <set>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
+#include <common_robotics_utilities/base64_helpers.hpp>
 #include <vtkCamera.h>         // vtkRenderingCore
 #include <vtkGLTFExporter.h>   // vtkIOExport
 #include <vtkMatrix4x4.h>      // vtkCommonMath
 #include <vtkVersionMacros.h>  // vtkCommonCore
 
+#include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 
@@ -164,8 +168,8 @@ std::string GetSceneFileName(ImageType image_type, int64_t scene_id) {
  translation, *and* scale components. */
 std::map<int, Matrix4<double>> FindRootNodes(const nlohmann::json& gltf) {
   std::map<int, Matrix4<double>> roots;
-  std::set<int> indices;
   if (gltf.contains("nodes")) {
+    std::set<int> indices;
     // Cull children.
     const nlohmann::json& nodes = gltf["nodes"];
     const int node_count = ssize(nodes);
@@ -490,7 +494,7 @@ void RenderEngineGltfClient::ExportScene(const std::string& export_path,
       const Rgba color = RenderEngine::MakeRgbFromLabel(record.label);
       ChangeToLabelMaterials(&temp, color);
     }
-    MergeGltf(&gltf, std::move(temp), record.path.string(), &merge_record);
+    MergeGltf(&gltf, std::move(temp), record.name, &merge_record);
   }
 
   // TODO(SeanCurtis-TRI): Update materials for label images. Because the gltf
@@ -531,37 +535,106 @@ bool RenderEngineGltfClient::DoRemoveGeometry(GeometryId id) {
   }
 }
 
-void RenderEngineGltfClient::ImplementGeometry(const Convex& convex,
-                                               void* user_data) {
-  ImplementMesh(convex.filename(), convex.scale(), user_data);
-}
-
 void RenderEngineGltfClient::ImplementGeometry(const Mesh& mesh,
                                                void* user_data) {
-  ImplementMesh(mesh.filename(), mesh.scale(), user_data);
-}
-
-void RenderEngineGltfClient::ImplementMesh(
-    const std::filesystem::path& mesh_path, double scale, void* user_data) {
   auto& data = *static_cast<RegistrationData*>(user_data);
-  const std::string extension = Mesh(mesh_path.string()).extension();
+  const std::string extension = mesh.extension();
   if (extension == ".obj") {
-    data.accepted = ImplementObj(mesh_path, scale, data);
+    // This invokes RenderEngineVtk::ImplementObj().
+    data.accepted = ImplementObj(mesh, data);
   } else if (extension == ".gltf") {
-    data.accepted = ImplementGltf(mesh_path, scale, data);
+    data.accepted = ImplementGltf(mesh, data);
   } else {
     static const logging::Warn one_time(
-        "RenderEngineGltfClient only supports Mesh/Convex specifications which "
-        "use .obj or .gltf files. Mesh specifications using other mesh types "
+        "RenderEngineGltfClient only supports Mesh specifications which use "
+        ".obj or .gltf files. Mesh specifications using other mesh types "
         "(e.g., .stl, .dae, etc.) will be ignored.");
     data.accepted = false;
   }
 }
 
+namespace {
+
+// If `item_inout` has a field named `uri` and it is not a `data:` URI, replaces
+// the field's value with a base64-encoded `data:` URI.
+//
+// In glTF 2.0, URIs can only appear in two places:
+//  "images": [ { "uri": "some.png" } ]
+//  "buffers": [ { "uri": "some.bin", "byteLength": 1024 } ]
+//
+// As documented on MergeGltf(), this is how RenderEngineGltfClient converts
+// external resources to embedded ata URIs.
+void MaybeEmbedDataUri(nlohmann::json* item_inout,
+                       const MeshSource& mesh_source,
+                       std::string_view array_name) {
+  DRAKE_DEMAND(item_inout != nullptr);
+  nlohmann::json& item = *item_inout;
+  if (!item.contains("uri")) {
+    return;
+  }
+  const std::string_view uri = item["uri"].template get<std::string_view>();
+  if (uri.substr(0, 5) == "data:") {
+    return;
+  }
+  std::string content;
+  if (mesh_source.is_path()) {
+    content = ReadFileOrThrow(mesh_source.path().parent_path() / uri);
+  } else {
+    DRAKE_DEMAND(mesh_source.is_in_memory());
+    const auto file_source_iter =
+        mesh_source.in_memory().supporting_files.find(uri);
+    if (file_source_iter == mesh_source.in_memory().supporting_files.end()) {
+      throw std::runtime_error(fmt::format(
+          "RenderEngineGltfClient cannot add an in-memory Mesh. The Mesh's "
+          "glTF ('{}') file names an item in {} that is not contained within "
+          "the supporting files.",
+          mesh_source.in_memory().mesh_file.filename_hint(), array_name));
+    }
+    content = std::visit<std::string>(overloaded{[](const fs::path& path) {
+                                                   return ReadFileOrThrow(path);
+                                                 },
+                                                 [](const MemoryFile& file) {
+                                                   return file.contents();
+                                                 }},
+                                      file_source_iter->second);
+  }
+
+  if (content.empty()) {
+    // A file that is ostensibly "present" but holding no content is
+    // functionally the same as simply missing. It gets the same response.
+    throw std::runtime_error(fmt::format(
+        "RenderEngineGltfClient cannot add an in-memory Mesh. The Mesh's glTF "
+        "('{}') file names an item in {} that is an empty file.",
+        mesh_source.in_memory().mesh_file.filename_hint(), array_name));
+  }
+
+  item["uri"] =
+      fmt::format("data:application/octet-stream;base64,{}",
+                  common_robotics_utilities::base64_helpers::Encode(
+                      std::vector<uint8_t>(content.begin(), content.end())));
+}
+
+void EmbedFileUris(nlohmann::json* gltf_ptr, const MeshSource& mesh_source) {
+  nlohmann::json& gltf = *gltf_ptr;
+  // Iterate through buffers and images.
+  for (std::string_view array_name : {"buffers", "images"}) {
+    auto& array = gltf[array_name];
+    for (size_t i = 0; i < array.size(); ++i) {
+      MaybeEmbedDataUri(&array[i], mesh_source, array_name);
+    }
+  }
+}
+
+}  // namespace
+
 bool RenderEngineGltfClient::ImplementGltf(
-    const std::filesystem::path& gltf_path, double scale,
-    const RenderEngineVtk::RegistrationData& data) {
-  nlohmann::json mesh_data = ReadJsonFile(gltf_path);
+    const Mesh& mesh, const RenderEngineVtk::RegistrationData& data) {
+  nlohmann::json mesh_data = ReadJsonFile(mesh.source());
+
+  // We'll end up merging this glTF into the VTK-generated glTF and broadcasting
+  // it over a wire. The idea of "file-relative" URIs becomes meaningless at
+  // that point. So, we'll simply convert all file URIs to data URIs.
+  EmbedFileUris(&mesh_data, mesh.source());
 
   // TODO(SeanCurtis-TRI) What to do about a gltf that has no materials? We need
   // to apply the same logic of the data.properties as we do to OBJ. We'll
@@ -569,12 +642,14 @@ bool RenderEngineGltfClient::ImplementGltf(
   // of materials.
 
   std::map<int, Matrix4<double>> root_nodes = FindRootNodes(mesh_data);
-  SetRootPoses(&mesh_data, root_nodes, data.X_WG, scale, true);
+  SetRootPoses(&mesh_data, root_nodes, data.X_WG, mesh.scale(), true);
 
   DRAKE_DEMAND(!gltfs_.contains(data.id));
+  const MeshSource& mesh_source = mesh.source();
+  const std::string gltf_name = mesh_source.description();
   gltfs_.insert({data.id,
-                 {gltf_path, std::move(mesh_data), std::move(root_nodes), scale,
-                  GetRenderLabelOrThrow(data.properties)}});
+                 {gltf_name, std::move(mesh_data), std::move(root_nodes),
+                  mesh.scale(), GetRenderLabelOrThrow(data.properties)}});
   return true;
 }
 
