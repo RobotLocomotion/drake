@@ -1,6 +1,7 @@
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <optional>
 #include <string>
@@ -25,6 +26,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/read_gltf_to_memory.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -689,6 +691,52 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
         __LINE__, renderer_.get(),
         fmt::format("Mesh test {}", use_texture ? "textured" : "rgba").c_str());
   }
+}
+
+// Repeats various mesh-based tests, but this time the meshes are loaded from
+// memory. We render the scene twice: once with the on-disk mesh and once with
+// the in-memory mesh to confirm they are rendered the same.
+TEST_F(RenderEngineVtkTest, InMemoryMesh) {
+  Init(X_WC_, true);
+  const GeometryId id = GeometryId::get_new_id();
+  auto do_test = [this, id](std::string_view file_prefix, const Mesh& file_mesh,
+                            const Mesh& memory_mesh) {
+    renderer_->RemoveGeometry(id);
+    renderer_->RegisterVisual(id, file_mesh, PerceptionProperties{},
+                              RigidTransformd::Identity(), false);
+    ImageRgba8U file_image(kWidth, kHeight);
+    Render(__LINE__, fmt::format("{}_file", file_prefix), nullptr, nullptr,
+           &file_image, nullptr, nullptr);
+
+    renderer_->RemoveGeometry(id);
+    renderer_->RegisterVisual(id, memory_mesh, PerceptionProperties{},
+                              RigidTransformd::Identity(), false);
+    ImageRgba8U memory_image(kWidth, kHeight);
+    Render(__LINE__, fmt::format("{}_memory", file_prefix), nullptr, nullptr,
+           &memory_image, nullptr, nullptr);
+
+    EXPECT_TRUE(file_image == memory_image) << fmt::format(
+        "The glTF file loaded from disk didn't match that loaded from memory. "
+        "Check the bazel-testlogs for the saved images with the prefix '{}'.",
+        file_prefix);
+  };
+
+  // TODO(SeanCurtis-TRI): This is a LIE! This single gltf does not have both
+  // kind of URIs. Make one that is.
+
+  // cube2.gltf uses file uris for images and data uris for geometry. This is
+  // sufficient, because we just want to see that the different kinds of uris
+  // get handled properly and assume the mesh and its supporting files has been
+  // instantiated correctly.
+  {
+    const std::filesystem::path path =
+        FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.gltf");
+    InMemoryMesh mesh_data = ReadGltfToMemory(path);
+    do_test("data_and_file_uri_gltf", Mesh(path.string()),
+            Mesh(std::move(mesh_data)));
+  }
+
+  // TODO(SeanCurtis-TRI): Do the same for .obj.
 }
 
 // A simple regression test to make sure that we are supporting all of the
