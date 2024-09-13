@@ -1,5 +1,4 @@
-# PyPI packages to make available as Drake's bazel `@venv` repository or to
-# install via pip for binary Drake distributions.
+# PyPI packages to make available as Drake's bazel `@venv` repository.
 
 # WARNING: If you change this file, then it is up to you to regenerate
 # the "locked" requirements-with[out]-test.txt files via:
@@ -9,11 +8,8 @@
 # Packages that we are happy to take the most recent version any time we
 # update requirements.  The versions of these packages are "locked" in the
 # requirements-with[out]-test.txt files and change any time it updates.  This
-# should be the overwhelming majority of our requirements.
+# should be the overwhelming majority of our requirements.  Note that these are
+# in addition to anything listed in requirements-binary.in
 
-ipywidgets
-matplotlib
-notebook
-Pillow
-pydot
-PyYAML
+
+# The following are constrained or pinned version of packages.

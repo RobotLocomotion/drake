@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# Python venv set-up script for Drake.
+#
+# Most users do NOT need to run this manually:
+# - The drake/setup/install_prereqs.sh runs this automatically.
+# - The Bazel repository.bzl logic ensures the sync is fresh.
+
+set -eux -o pipefail
+
+# Chdir to the Drake root.
+cd $(dirname $0)/../../..
+
+# Determine what platform we are on.
+if [[ "$(uname)" == "Darwin" ]]; then
+  readonly platform=mac
+else
+  readonly platform=ubuntu
+fi
+
+# Choose where everything should go.
+readonly venv_base=$(cd bazel-venv && pwd)
+readonly venv_jazzband="${venv_base}/venv.jazzband"
+readonly venv_drake="${venv_base}/venv.drake"
+
+# Run the pip-sync tool.
+"${venv_jazzband}/bin/pip-sync" \
+    --verbose \
+    --python-executable="${venv_drake}/bin/python3" \
+    "${venv_base}/requirements.txt"

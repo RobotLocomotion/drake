@@ -89,6 +89,7 @@ drake_py_library(
     srcs = ["test/hardware_sim_test_common.py"],
     deps = [
         "@rules_python//python/runfiles",
+        "@venv",
     ],
 )
 
