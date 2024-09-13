@@ -11,7 +11,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/polynomial.h"
@@ -150,9 +149,6 @@ class EvaluatorBase {
   bool is_thread_safe() const { return is_thread_safe_; }
 
  protected:
-  // TODO(Alexandre.Amice) When this constructor is deprecated, ensure that the
-  // constructor which specifies the thread-safety gives a default argument for
-  // description. For now, doing so causes ambiguity.
   /**
    * Constructs a evaluator.
    * @param num_outputs. The number of rows in the output.
@@ -161,28 +157,9 @@ class EvaluatorBase {
    * @param description A human-friendly description.
    * @see Eval(...)
    */
-  DRAKE_DEPRECATED("2024-12-01",
-                   "Please use the constructor which specifies the thread "
-                   "safety of this Evaluator. Calling this constructor marks "
-                   "this Evaluator as unsafe to evaluate in parallel.")
   EvaluatorBase(int num_outputs, int num_vars,
-                const std::string& description = "")
-      : num_vars_(num_vars),
-        num_outputs_(num_outputs),
-        description_(description),
-        is_thread_safe_(false) {}
-
-  /**
-   * Constructs a evaluator.
-   * @param num_outputs. The number of rows in the output.
-   * @param num_vars. The number of rows in the input.
-   * If the input dimension is not known, then set `num_vars` to Eigen::Dynamic.
-   * @param is_thread_safe Whether is it is safe to call Eval concurrently.
-   * @param description A human-friendly description.
-   * @see Eval(...)
-   */
-  EvaluatorBase(int num_outputs, int num_vars, bool is_thread_safe,
-                const std::string& description)
+                const std::string& description = "",
+                bool is_thread_safe = false)
       : num_vars_(num_vars),
         num_outputs_(num_outputs),
         description_(description),
@@ -278,7 +255,7 @@ class PolynomialEvaluator : public EvaluatorBase {
    */
   PolynomialEvaluator(const VectorXPoly& polynomials,
                       const std::vector<Polynomiald::VarType>& poly_vars)
-      : EvaluatorBase(polynomials.rows(), poly_vars.size(), true, ""),
+      : EvaluatorBase(polynomials.rows(), poly_vars.size(), "", true),
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
 
@@ -392,8 +369,10 @@ class VisualizationCallback : public EvaluatorBase {
       CallbackFunction;
 
   VisualizationCallback(int num_inputs, const CallbackFunction& callback,
-                        const std::string& description = "")
-      : EvaluatorBase(0, num_inputs, false, description), callback_(callback) {}
+                        const std::string& description = "",
+                        bool is_thread_safe = false)
+      : EvaluatorBase(0, num_inputs, description, is_thread_safe),
+        callback_(callback) {}
 
   void EvalCallback(const Eigen::Ref<const Eigen::VectorXd>& x) const {
     DRAKE_ASSERT(x.size() == num_vars());

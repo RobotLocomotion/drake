@@ -888,7 +888,7 @@ class SimpleEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator);
   explicit SimpleEvaluator(bool is_thread_safe)
-      : EvaluatorBase(2, 3, is_thread_safe, "") {
+      : EvaluatorBase(2, 3, "", is_thread_safe) {
     c_.resize(2, 3);
     // clang-format off
     c_ << 1, 2, 3,

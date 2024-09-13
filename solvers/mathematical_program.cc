@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <ostream>
@@ -2076,7 +2075,6 @@ int MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
   // If this cost is not thread safe, we need to check whether we need to
   // change the value of is_thread_safe_.
   if (!cost_evaluator->is_thread_safe()) {
-    const std::vector<Binding<Cost>> costs = GetAllCosts();
     ResetIsThreadSafe();
   }
   // TODO(hongkai.dai): Remove the dynamic cast as part of #8349.
@@ -2105,8 +2103,6 @@ int MathematicalProgram::RemoveConstraint(
   // If this constraint is not thread safe, we need to check whether we need to
   // change the value of is_thread_safe_.
   if (!constraint_evaluator->is_thread_safe()) {
-    const std::vector<Binding<Constraint>> constraints = GetAllConstraints();
-    // If the constraints vector is empty, we want this to be true.
     ResetIsThreadSafe();
   }
   // TODO(hongkai.dai): Remove the dynamic cast as part of #8349.
@@ -2260,26 +2256,15 @@ void MathematicalProgram::ResetIsThreadSafe() {
   // If there are no costs and constraints, we want is_thread_safe_ to be true.
   std::vector<Binding<Cost>> costs = GetAllCosts();
   std::vector<Binding<Constraint>> constraints = GetAllConstraints();
-  std::cout << "WE HAVE " << costs.size() << " COSTS" << std::endl;
-  std::cout << "WE HAVE " << constraints.size() << " CONSTRAINTS" << std::endl;
   bool costs_are_thread_safe =
       std::all_of(costs.begin(), costs.end(), [](const Binding<Cost>& c) {
         return c.evaluator()->is_thread_safe();
       });
-  std::cout << "Costs are thread safe: " << costs_are_thread_safe << std::endl;
   bool constraints_are_thread_safe = std::all_of(
       constraints.begin(), constraints.end(), [](const Binding<Constraint>& c) {
         return c.evaluator()->is_thread_safe();
       });
-  std::cout << "Constraints are thread safe: " << constraints_are_thread_safe
-            << std::endl;
-  for(const auto& c: constraints) {
-      std::cout << c << std::endl;
-      std::cout  << c.evaluator()->is_thread_safe() << std::endl << std::endl;
-  }
-
   is_thread_safe_ = costs_are_thread_safe && constraints_are_thread_safe;
-  ;
 }
 
 }  // namespace solvers

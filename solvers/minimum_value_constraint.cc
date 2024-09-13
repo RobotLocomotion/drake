@@ -207,33 +207,13 @@ void QuadraticallySmoothedHingeLoss(double x, double* penalty,
 
 MinimumValueLowerBoundConstraint::MinimumValueLowerBoundConstraint(
     int num_vars, double minimum_value_lower, double influence_value_offset,
-    int max_num_values, bool is_thread_safe,
-    std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&, double)>
-        value_function,
-    std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
-                                  double)>
-        value_function_double)
-    : Constraint(1, num_vars, Vector1d(-kInf), Vector1d(1), is_thread_safe, ""),
-      value_function_{std::move(value_function)},
-      value_function_double_{std::move(value_function_double)},
-      minimum_value_lower_{minimum_value_lower},
-      influence_value_{influence_value_offset + minimum_value_lower},
-      max_num_values_{max_num_values} {
-  DRAKE_DEMAND(std::isfinite(minimum_value_lower_));
-  DRAKE_DEMAND(std::isfinite(influence_value_offset));
-  DRAKE_DEMAND(influence_value_offset > 0);
-  this->set_penalty_function(QuadraticallySmoothedHingeLoss);
-}
-
-MinimumValueLowerBoundConstraint::MinimumValueLowerBoundConstraint(
-    int num_vars, double minimum_value_lower, double influence_value_offset,
     int max_num_values,
     std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&, double)>
         value_function,
     std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
                                   double)>
         value_function_double)
-    : Constraint(1, num_vars, Vector1d(-kInf), Vector1d(1), false, ""),
+    : Constraint(1, num_vars, Vector1d(-kInf), Vector1d(1)),
       value_function_{std::move(value_function)},
       value_function_double_{std::move(value_function_double)},
       minimum_value_lower_{minimum_value_lower},
@@ -282,27 +262,7 @@ MinimumValueUpperBoundConstraint::MinimumValueUpperBoundConstraint(
     std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
                                   double)>
         value_function_double)
-    : Constraint(1, num_vars, Vector1d(1), Vector1d(kInf), false, ""),
-      value_function_{std::move(value_function)},
-      value_function_double_{std::move(value_function_double)},
-      minimum_value_upper_{minimum_value_upper},
-      influence_value_{influence_value_offset + minimum_value_upper},
-      max_num_values_{max_num_values} {
-  DRAKE_DEMAND(std::isfinite(minimum_value_upper_));
-  DRAKE_DEMAND(std::isfinite(influence_value_offset));
-  DRAKE_DEMAND(influence_value_offset > 0);
-  this->set_penalty_function(QuadraticallySmoothedHingeLoss);
-}
-
-MinimumValueUpperBoundConstraint::MinimumValueUpperBoundConstraint(
-    int num_vars, double minimum_value_upper, double influence_value_offset,
-    int max_num_values, bool is_thread_safe,
-    std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&, double)>
-        value_function,
-    std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
-                                  double)>
-        value_function_double)
-    : Constraint(1, num_vars, Vector1d(1), Vector1d(kInf), is_thread_safe, ""),
+    : Constraint(1, num_vars, Vector1d(1), Vector1d(kInf)),
       value_function_{std::move(value_function)},
       value_function_double_{std::move(value_function_double)},
       minimum_value_upper_{minimum_value_upper},

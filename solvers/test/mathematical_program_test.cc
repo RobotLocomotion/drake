@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
-#include <iostream>
 #include <limits>
 #include <map>
 #include <memory>
@@ -1102,8 +1101,8 @@ GTEST_TEST(TestMathematicalProgram, AddCostTest) {
 class EmptyConstraint final : public Constraint {
  public:
   EmptyConstraint(bool is_thread_safe = true)
-      : Constraint(0, 2, Eigen::VectorXd(0), Eigen::VectorXd(0), is_thread_safe,
-                   "empty_constraint") {}
+      : Constraint(0, 2, Eigen::VectorXd(0), Eigen::VectorXd(0),
+                   "empty_constraint", is_thread_safe) {}
 
   ~EmptyConstraint() {}
 
@@ -3032,7 +3031,8 @@ GTEST_TEST(TestMathematicalProgram,
   // clang-format on
 
   auto psd_cnstr =
-      prog.AddPrincipalSubmatrixIsPsdConstraint(X, minor_indices).evaluator();
+      prog.AddPrincipalSubmatrixIsPsdConstraint(X, minor_indices)
+          .evaluator();
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
   EXPECT_EQ(prog.GetAllConstraints().size(), 1);
   const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();

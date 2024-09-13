@@ -170,7 +170,7 @@ class SimpleEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator);
   explicit SimpleEvaluator(bool is_thread_safe = false)
-      : EvaluatorBase(2, 3, is_thread_safe, "") {
+      : EvaluatorBase(2, 3, "", is_thread_safe) {
     c_.resize(2, 3);
     c_ << 1, 2, 3, 4, 5, 6;
   }
@@ -251,7 +251,7 @@ class DynamicSizedEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DynamicSizedEvaluator);
 
-  DynamicSizedEvaluator() : EvaluatorBase(1, Eigen::Dynamic, false) {}
+  DynamicSizedEvaluator() : EvaluatorBase(1, Eigen::Dynamic, "", false) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

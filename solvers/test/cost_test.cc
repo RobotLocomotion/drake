@@ -702,7 +702,7 @@ class Evaluator2In1Out : public EvaluatorBase {
 
 class Evaluator3In2Out : public EvaluatorBase {
  public:
-  Evaluator3In2Out() : EvaluatorBase(3, 2, true, "") {}
+  Evaluator3In2Out() : EvaluatorBase(3, 2, "", true) {}
 
   ~Evaluator3In2Out() override {}
 
@@ -759,8 +759,8 @@ GTEST_TEST(EvaluatorCost, Eval) {
 }
 
 GTEST_TEST(ExpressionCost, Basic) {
-  using std::cos;
   using std::sin;
+  using std::cos;
   Variable x("x"), y("y");
   symbolic::Expression e = x * sin(y);
   ExpressionCost cost(e);
@@ -779,7 +779,7 @@ GTEST_TEST(ExpressionCost, Basic) {
 
   AutoDiffVecXd x_ad = math::InitializeAutoDiff(x_d);
   AutoDiffVecXd y_ad;
-  RowVector2d y_deriv_expected(sin(3.5), 1.2 * cos(3.5));
+  RowVector2d y_deriv_expected(sin(3.5), 1.2*cos(3.5));
   cost.Eval(x_ad, &y_ad);
   EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_ad), y_expected));
   EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_ad), y_deriv_expected));

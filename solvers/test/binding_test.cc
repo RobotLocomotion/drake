@@ -166,7 +166,7 @@ class DummyEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyEvaluator);
 
-  DummyEvaluator() : EvaluatorBase(2, 3, true, "") {}
+  DummyEvaluator() : EvaluatorBase(2, 3, "", true) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

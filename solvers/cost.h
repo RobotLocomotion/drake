@@ -27,30 +27,14 @@ class Cost : public EvaluatorBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Cost);
 
  protected:
-  // TODO(Alexandre.Amice) When this constructor is deprecated, ensure that the
-  // constructor which specifies the thread-safety gives a default argument for
-  // description. For now, doing so causes ambiguity.
   /**
    * Constructs a cost evaluator.
    * @param num_vars Number of input variables.
    * @param description Human-friendly description.
    */
-  DRAKE_DEPRECATED("2024-12-01",
-                   "Please use the constructor which specifies the thread "
-                   "safety of this Cost. Calling this constructor marks this "
-                   "Cost as unsafe to evaluate in parallel.")
-  explicit Cost(int num_vars, const std::string& description = "")
-      : EvaluatorBase(1, num_vars, false, description) {}
-
-  /**
-   * Constructs a cost evaluator.
-   * @param num_vars Number of input variables.
-   * @param is_thread_safe Whether it is safe to call the Eval method
-   * concurrently.
-   * @param description Human-friendly description.
-   */
-  explicit Cost(int num_vars, bool thread_safe, const std::string& description)
-      : EvaluatorBase(1, num_vars, thread_safe, description) {}
+  explicit Cost(int num_vars, const std::string& description = "",
+                bool is_thread_safe = false)
+      : EvaluatorBase(1, num_vars, description, is_thread_safe) {}
 };
 
 /**
@@ -69,7 +53,7 @@ class LinearCost : public Cost {
    */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   LinearCost(const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0.)
-      : Cost(a.rows(), true, ""), a_(a), b_(b) {}
+      : Cost(a.rows(), "", true), a_(a), b_(b) {}
 
   ~LinearCost() override {}
 
@@ -147,7 +131,7 @@ class QuadraticCost : public Cost {
   QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
                 const Eigen::MatrixBase<Derivedb>& b, double c = 0.,
                 std::optional<bool> is_hessian_psd = std::nullopt)
-      : Cost(Q.rows(), true, ""), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
+      : Cost(Q.rows(), "", true), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
     DRAKE_THROW_UNLESS(Q_.rows() == Q_.cols());
     DRAKE_THROW_UNLESS(Q_.cols() == b_.rows());
     if (is_hessian_psd.has_value()) {
@@ -515,8 +499,8 @@ class EvaluatorCost : public Cost {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorCost);
 
   explicit EvaluatorCost(const std::shared_ptr<EvaluatorType>& evaluator)
-      : Cost(evaluator->num_vars(), evaluator->is_thread_safe(),
-             evaluator->get_description()),
+      : Cost(evaluator->num_vars(), evaluator->get_description(),
+             evaluator->is_thread_safe()),
         evaluator_{evaluator},
         a_{std::nullopt},
         b_{0} {
@@ -529,8 +513,8 @@ class EvaluatorCost : public Cost {
    */
   EvaluatorCost(const std::shared_ptr<EvaluatorType>& evaluator,
                 const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0)
-      : Cost(evaluator->num_vars(), evaluator->is_thread_safe(),
-             evaluator->get_description()),
+      : Cost(evaluator->num_vars(), evaluator->get_description(),
+             evaluator->is_thread_safe()),
         evaluator_(evaluator),
         a_{a},
         b_{b} {

@@ -48,9 +48,6 @@ class Constraint : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint);
 
-  // TODO(Alexandre.Amice) When this constructor is deprecated, ensure that the
-  // constructor which specifies the thread-safety gives a default argument for
-  // description. For now, doing so causes ambiguity.
   /**
    * Constructs a constraint which has `num_constraints` rows, with an input
    * `num_vars` x 1 vector.
@@ -63,44 +60,12 @@ class Constraint : public EvaluatorBase {
    * cannot contain NAN.
    * @see Eval(...)
    */
-
   template <typename DerivedLB, typename DerivedUB>
-  DRAKE_DEPRECATED("2024-12-01",
-                   "Please use the constructor which specifies the thread "
-                   "safety of this Constraint. Calling this constructor marks "
-                   "this Constraint as unsafe to evaluate in parallel.")
   Constraint(int num_constraints, int num_vars,
              const Eigen::MatrixBase<DerivedLB>& lb,
              const Eigen::MatrixBase<DerivedUB>& ub,
-             const std::string& description = "")
-      : EvaluatorBase(num_constraints, num_vars, false, description),
-        lower_bound_(lb),
-        upper_bound_(ub) {
-    check(num_constraints);
-    DRAKE_THROW_UNLESS(!lower_bound_.array().isNaN().any());
-    DRAKE_THROW_UNLESS(!upper_bound_.array().isNaN().any());
-  }
-
-  /**
-   * Constructs a constraint which has `num_constraints` rows, with an input
-   * `num_vars` x 1 vector.
-   * @param num_constraints. The number of rows in the constraint output.
-   * @param num_vars. The number of rows in the input.
-   * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
-   * @param lb Lower bound, which must be a `num_constraints` x 1 vector, lb
-   * cannot contain NAN.
-   * @param ub Upper bound, which must be a `num_constraints` x 1 vector, ub
-   * cannot contain NAN.
-   * @param is_thread_safe True if it is safe to both call methods from this
-   * constraint in parallel.
-   * @see Eval(...)
-   */
-  template <typename DerivedLB, typename DerivedUB>
-  explicit Constraint(int num_constraints, int num_vars,
-                      const Eigen::MatrixBase<DerivedLB>& lb,
-                      const Eigen::MatrixBase<DerivedUB>& ub,
-                      bool is_thread_safe, const std::string& description)
-      : EvaluatorBase(num_constraints, num_vars, is_thread_safe, description),
+             const std::string& description = "", bool is_thread_safe = false)
+      : EvaluatorBase(num_constraints, num_vars, description, is_thread_safe),
         lower_bound_(lb),
         upper_bound_(ub) {
     check(num_constraints);
@@ -116,9 +81,6 @@ class Constraint : public EvaluatorBase {
    * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
    * @see Eval(...)
    */
-  DRAKE_DEPRECATED("2024-12-01",
-                   "Please use the constructor which specifies the thread "
-                   "safety of this Constraint.")
   Constraint(int num_constraints, int num_vars)
       : Constraint(
             num_constraints, num_vars,
@@ -126,24 +88,7 @@ class Constraint : public EvaluatorBase {
                                       -std::numeric_limits<double>::infinity()),
             Eigen::VectorXd::Constant(num_constraints,
                                       std::numeric_limits<double>::infinity()),
-            false, "") {}
-
-  /**
-   * Constructs a constraint which has `num_constraints` rows, with an input
-   * `num_vars` x 1 vector, with no bounds.
-   * @param num_constraints. The number of rows in the constraint output.
-   * @param num_vars. The number of rows in the input.
-   * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
-   * @see Eval(...)
-   */
-  Constraint(int num_constraints, int num_vars, bool is_thread_safe)
-      : Constraint(
-            num_constraints, num_vars,
-            Eigen::VectorXd::Constant(num_constraints,
-                                      -std::numeric_limits<double>::infinity()),
-            Eigen::VectorXd::Constant(num_constraints,
-                                      std::numeric_limits<double>::infinity()),
-            is_thread_safe, "") {}
+            "", false) {}
 
   /**
    * Return whether this constraint is satisfied by the given value, `x`.
@@ -290,7 +235,7 @@ class QuadraticConstraint : public Constraint {
                       double ub,
                       std::optional<HessianType> hessian_type = std::nullopt)
       : Constraint(kNumConstraints, Q0.rows(), drake::Vector1d::Constant(lb),
-                   drake::Vector1d::Constant(ub), true, ""),
+                   drake::Vector1d::Constant(ub), "", true),
         Q_((Q0 + Q0.transpose()) / 2),
         b_(b) {
     UpdateHessianType(hessian_type);
@@ -508,7 +453,7 @@ class RotatedLorentzConeConstraint : public Constraint {
       : Constraint(
             3, A.cols(), Eigen::Vector3d::Constant(0.0),
             Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
-            true, ""),
+            "", true),
         A_(A.sparseView()),
         A_dense_(A),
         b_(b) {
@@ -586,8 +531,8 @@ class EvaluatorConstraint : public Constraint {
   EvaluatorConstraint(const std::shared_ptr<EvaluatorType>& evaluator,
                       Args&&... args)
       : Constraint(evaluator->num_outputs(), evaluator->num_vars(),
-                   std::forward<Args>(args)..., evaluator->is_thread_safe(),
-                   evaluator->get_description()),
+                   std::forward<Args>(args)..., evaluator->get_description(), evaluator->is_thread_safe(),
+                   ),
         evaluator_(evaluator) {}
 
   using Constraint::set_bounds;
@@ -933,7 +878,7 @@ class LinearComplementarityConstraint : public Constraint {
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
-      : Constraint(q.rows(), M.cols(), true), M_(M), q_(q) {}
+      : Constraint(q.rows(), M.cols(), "", true), M_(M), q_(q) {}
 
   ~LinearComplementarityConstraint() override {}
 

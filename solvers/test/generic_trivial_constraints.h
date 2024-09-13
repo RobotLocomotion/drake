@@ -25,7 +25,7 @@ class GenericTrivialConstraint1 : public Constraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialConstraint1);
 
   GenericTrivialConstraint1()
-      : Constraint(2, 3, Eigen::Vector2d(-1, -2), Eigen::Vector2d(2, 1), false, ""),
+      : Constraint(2, 3, Eigen::Vector2d(-1, -2), Eigen::Vector2d(2, 1), "", false),
         private_val_{2} {}
 
  protected:

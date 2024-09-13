@@ -131,9 +131,9 @@ class PyFunctionCost : public Cost {
   using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
   using AutoDiffFunc = std::function<AutoDiffXd(const VectorX<AutoDiffXd>&)>;
 
-  PyFunctionCost(int num_vars, const py::function& func, bool is_thread_safe,
-      const std::string& description)
-      : Cost(num_vars, is_thread_safe, description),
+  PyFunctionCost(int num_vars, const py::function& func,
+      const std::string& description, bool is_thread_safe)
+      : Cost(num_vars, description, is_thread_safe),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
 
@@ -176,9 +176,9 @@ class PyFunctionConstraint : public Constraint {
       std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>&)>;
 
   PyFunctionConstraint(int num_vars, const py::function& func,
-      const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, bool is_thread_safe,
-      const std::string& description)
-      : Constraint(lb.size(), num_vars, lb, ub, is_thread_safe, description),
+      const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
+      const std::string& description, bool is_thread_safe)
+      : Constraint(lb.size(), num_vars, lb, ub, description, is_thread_safe),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
 
@@ -710,24 +710,7 @@ void BindMathematicalProgram(py::module m) {
               const VisualizationCallback::CallbackFunction&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddVisualizationCallback),
-          doc.MathematicalProgram.AddVisualizationCallback.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  prog_cls.def(
-      "AddCost",
-      [](MathematicalProgram* self, py::function func,
-          const Eigen::Ref<const VectorXDecisionVariable>& vars,
-          std::string& description) {
-        return self->AddCost(std::make_shared<PyFunctionCost>(
-                                 vars.size(), func, false, description),
-            vars);
-      },
-      py::arg("func"), py::arg("vars"), py::arg("description") = "",
-      // N.B. There is no corresponding C++ method, so the docstring here
-      // is a literal, not a reference to documentation_pybind.h
-      "Adds a cost function.");
-#pragma GCC diagnostic pop
-  prog_cls
+          doc.MathematicalProgram.AddVisualizationCallback.doc)
       .def(
           "AddCost",
           [](MathematicalProgram* self, py::function func,
@@ -737,8 +720,8 @@ void BindMathematicalProgram(py::module m) {
                                      func, is_thread_safe, description),
                 vars);
           },
-          py::arg("func"), py::arg("vars"), py::arg("is_thread_safe"),
-          py::arg("description") = "",
+          py::arg("func"), py::arg("vars"),
+          py::arg("description") = "",py::arg("is_thread_safe") = false,
           // N.B. There is no corresponding C++ method, so the docstring here
           // is a literal, not a reference to documentation_pybind.h
           "Adds a cost function.")
@@ -856,38 +839,20 @@ void BindMathematicalProgram(py::module m) {
               const Eigen::Ref<const VectorX<symbolic::Variable>>&, double>(
               &MathematicalProgram::AddMaximizeGeometricMeanCost),
           py::arg("x"), py::arg("c"),
-          doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_2args);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  prog_cls.def(
-      "AddConstraint",
-      [](MathematicalProgram* self, py::function func,
-          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
-          const Eigen::Ref<const VectorXDecisionVariable>& vars,
-          std::string& description) {
-        return self->AddConstraint(
-            std::make_shared<PyFunctionConstraint>(
-                vars.size(), func, lb, ub, false, description),
-            vars);
-      },
-      py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
-      py::arg("description") = "",
-      "Adds a constraint using a Python function.");
-#pragma GCC diagnostic pop
-  prog_cls
+          doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_2args)
       .def(
           "AddConstraint",
           [](MathematicalProgram* self, py::function func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
-              const Eigen::Ref<const VectorXDecisionVariable>& vars,
-              bool is_thread_safe, std::string& description) {
+              const Eigen::Ref<const VectorXDecisionVariable>& vars, std::string& description,
+              bool is_thread_safe) {
             return self->AddConstraint(
                 std::make_shared<PyFunctionConstraint>(
-                    vars.size(), func, lb, ub, is_thread_safe, description),
+                    vars.size(), func, lb, ub, description, is_thread_safe),
                 vars);
           },
-          py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
-          py::arg("is_thread_safe"), py::arg("description") = "",
+          py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"), py::arg("description") = "",
+          py::arg("is_thread_safe") = false,
           "Adds a constraint using a Python function.")
       .def("AddConstraint",
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
