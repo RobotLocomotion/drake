@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <string>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -10,6 +12,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/memory_file.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
@@ -24,6 +27,10 @@ using PolyMesh = PolygonSurfaceMesh<double>;
 using std::vector;
 
 namespace fs = std::filesystem;
+
+fs::path FindPathOrThrow(const std::string& resource_file) {
+  return FindResourceOrThrow(resource_file);
+}
 
 /* To compare polygon meshes we will produce "canonical" representations. The
  canonical mesh is the same manifold as the input mesh but has the following
@@ -286,7 +293,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MeshIsHull) {
   const PolyMesh expected = MakeCube(scale);
 
   const PolyMesh dut = MakeConvexHull(
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj"), scale);
+      FindPathOrThrow("drake/geometry/render/test/meshes/box.obj"), scale);
 
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
@@ -297,7 +304,7 @@ GTEST_TEST(MakeConvexHullMeshTest, HullIsSubset) {
   const PolyMesh expected = MakeCube(scale);
 
   const PolyMesh dut = MakeConvexHull(
-      FindResourceOrThrow("drake/geometry/test/cube_with_hole.obj"), scale);
+      FindPathOrThrow("drake/geometry/test/cube_with_hole.obj"), scale);
 
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
@@ -308,7 +315,7 @@ GTEST_TEST(MakeConvexHullMeshTest, DisjointMesh) {
   const PolyMesh expected = MakeCube(scale);
 
   const PolyMesh dut = MakeConvexHull(
-      FindResourceOrThrow("drake/geometry/test/cube_corners.obj"), scale);
+      FindPathOrThrow("drake/geometry/test/cube_corners.obj"), scale);
 
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
@@ -332,7 +339,7 @@ GTEST_TEST(MakeConvexHullMeshTest, VolumeMesh) {
   // clang-format on
 
   const PolyMesh dut = MakeConvexHull(
-      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), scale);
+      FindPathOrThrow("drake/geometry/test/one_tetrahedron.vtk"), scale);
 
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
@@ -361,12 +368,12 @@ GTEST_TEST(MakeConvexHullMeshTest, GltfMesh) {
   const fs::path dir_path(temp_directory());
 
   const fs::path bin_source =
-      FindResourceOrThrow("drake/geometry/test/cube_with_hole.bin");
+      FindPathOrThrow("drake/geometry/test/cube_with_hole.bin");
   const fs::path bin_target = dir_path / bin_source.filename();
   fs::copy_file(bin_source, bin_target);
 
   const fs::path gltf_source =
-      FindResourceOrThrow("drake/geometry/test/cube_with_hole.gltf");
+      FindPathOrThrow("drake/geometry/test/cube_with_hole.gltf");
   const fs::path gltf_target = dir_path / gltf_source.filename();
   {
     std::ifstream in_gltf(gltf_source);
@@ -452,7 +459,7 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
   };
 
   // Too few vertices
-  const std::string too_few_obj = make_obj("too_few.obj", R"""(# Generated
+  const fs::path too_few_obj = make_obj("too_few.obj", R"""(# Generated
   v 0 0 0
   v 0 1 1
   f 1 1 2
@@ -462,7 +469,7 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
       ".*fewer than three vertices; found 2 .*too_few.obj.");
 
   // Coincident points
-  const std::string coincident_obj = make_obj("coincident.obj", R"""(# Generated
+  const fs::path coincident_obj = make_obj("coincident.obj", R"""(# Generated
   v 0 0 0
   v 9e-13 0 0
   v 0 9e-13 0
@@ -475,7 +482,7 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
   EXPECT_NO_THROW(MakeConvexHull(coincident_obj, 2));
 
   // Colinear points.
-  const std::string colinear_obj = make_obj("colinear.obj", R"""(# Generated
+  const fs::path colinear_obj = make_obj("colinear.obj", R"""(# Generated
   v 0 0 0
   v -1 0 0
   v 1 0 0
@@ -501,18 +508,16 @@ GTEST_TEST(MakeConvexHullMeshTest, NonZeroMargin) {
   const PolyMesh expected = MakeCube(scale + margin);
 
   const PolyMesh dut = MakeConvexHull(
-      FindResourceOrThrow("drake/geometry/test/cube_with_hole.obj"), scale,
-      margin);
+      FindPathOrThrow("drake/geometry/test/cube_with_hole.obj"), scale, margin);
 
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
 
-// This test is sensitive to the OrderPolyVertices() function in ways the
-// previous tests are not, therefore providing greater test coverage.
-GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
-  const double margin = 0.01;
-  const double scale = 2.0;
+namespace {
 
+// Create a polygon mesh which is the equivalent of the tet defined in
+// one_tetrahedron.vtk, but with the faces offset by the given margin.
+PolyMesh GetTetrahedronWithMargin(double scale, double margin) {
   // We look at the one tilted face on the original mesh.
   Vector3d c(scale / 3.0, scale / 3.0, scale / 3.0);  // Face's centroid.
   const double d = c.norm();                          // Distance to the origin.
@@ -530,7 +535,7 @@ GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
   // one_tetrahedron.vtk.
 
   // clang-format off
-  const PolyMesh expected({
+  return PolyMesh({
       3, 0, 1, 3,
       3, 0, 2, 1,
       3, 0, 3, 2,
@@ -542,12 +547,70 @@ GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
       Vector3d(-margin, -margin,  length)
     });
   // clang-format on
+}
 
-  const PolyMesh dut = MakeConvexHull(
-      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), scale,
-      margin);
+}  // namespace
+
+// This test is sensitive to the OrderPolyVertices() function in ways the
+// previous tests are not, therefore providing greater test coverage.
+GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
+  const double kMargin = 0.01;
+  const double kScale = 2.0;
+
+  // Create an inflated surface mesh corresponding to the tet in
+  // one_tetrahedron.vtk.
+  const PolyMesh expected = GetTetrahedronWithMargin(kScale, kMargin);
+
+  const PolyMesh dut =
+      MakeConvexHull(FindPathOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+                     kScale, kMargin);
 
   MeshesAreEquivalent(dut, expected, 1e-14);
+}
+
+/* Simple regression test against passing a MeshSource to MakeConvexHull
+ directly. The core functionality has already been tested above. */
+GTEST_TEST(MakeConvexHullMeshTest, MakeFromMeshSource) {
+  const double kScale = 2.0;
+  const double kMargin = 1.0;
+  // The box in box.obj has edge length of 2 m. We'll scale it by s = kScale and
+  // then inflate it δ = kMargin. The effective size will be 2s + 2δ. The cube
+  // is a scaled unit cube; so we need to scale by (2s + 2δ) / 2 = s + δ.
+  const fs::path box_path =
+      FindPathOrThrow("drake/geometry/render/test/meshes/box.obj");
+  const MeshSource obj_source(InMemoryMesh{MemoryFile::Make(box_path)});
+  const PolyMesh expected_box = MakeCube(kScale + kMargin);
+
+  // The tet in one_tetrahedron.vtk has vertices at origin and unit positions
+  // along all axes.
+  const fs::path tet_path =
+      FindPathOrThrow("drake/geometry/test/one_tetrahedron.vtk");
+  const MeshSource vtk_source(InMemoryMesh{MemoryFile::Make(tet_path)});
+  const PolyMesh expected_tet = GetTetrahedronWithMargin(kScale, kMargin);
+
+  struct TestCase {
+    const MeshSource* mesh_source{};
+    const PolyMesh* expected_mesh{};
+    std::string_view description;
+  };
+
+  std::vector<TestCase> test_cases{{&obj_source, &expected_box, "Valid obj"},
+                                   {&vtk_source, &expected_tet, "Valid vtk"}};
+  for (const TestCase& test_case : test_cases) {
+    SCOPED_TRACE(test_case.description);
+    const PolyMesh dut =
+        MakeConvexHull(*test_case.mesh_source, kScale, kMargin);
+    MeshesAreEquivalent(dut, *test_case.expected_mesh, 1e-14);
+  }
+
+  // Unsupported extension.
+  {
+    SCOPED_TRACE("Unsupported extension");
+    const MeshSource bad_source(InMemoryMesh{MemoryFile::Make(
+        FindPathOrThrow("drake/geometry/render/test/meshes/box.obj.mtl"))});
+    DRAKE_EXPECT_THROWS_MESSAGE(MakeConvexHull(bad_source, kScale, kMargin),
+                                ".*unsupported extension '.mtl'.*");
+  }
 }
 
 }  // namespace

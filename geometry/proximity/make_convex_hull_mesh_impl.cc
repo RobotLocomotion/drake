@@ -37,8 +37,6 @@ using Eigen::Vector4d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
-namespace fs = std::filesystem;
-
 /* Used for ordering polygon vertices according to their angular distance from
  a reference direction. See OrderPolyVertices(). */
 struct VertexScore {
@@ -112,23 +110,25 @@ struct VertexCloud {
   Vector3d interior_point;
 };
 
-/* Returns the scaled vertices from the named obj file.
- @pre `filename` references an obj file. */
-void ReadObjVertices(const fs::path& filename, double scale,
-                     std::vector<Vector3d>* vertices) {
-  const auto [tinyobj_vertices, _1, _2] = geometry::internal::ReadObj(
-      filename, scale, /* triangulate = */ false, /* vertices_only = */ true);
-  *vertices = std::move(*tinyobj_vertices);
+/* Returns the scaled vertices from the contents of an obj file.
+ @pre `obj_source` contains obj geometry data. */
+std::vector<Vector3d> ReadObjVertices(const MeshSource& obj_source,
+                                      double scale) {
+  const auto [tinyobj_vertices_ptr, _1, _2] =
+      geometry::internal::ReadObj(obj_source, scale,
+                                  /* triangulate = */ false,
+                                  /* vertices_only = */ true);
+  return std::move(*tinyobj_vertices_ptr);
 }
 
-/* Returns the scaled vertices from the named vtk file.
- @pre `filename` references a vtk file (with a volume mesh). */
-void ReadVtkVertices(const fs::path& filename, double scale,
-                     std::vector<Vector3d>* vertices) {
-  const VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(filename, scale);
+/* Returns the scaled vertices from the contents of a vtk file.
+ @pre `vtk_source` contains vtk geometry data. */
+std::vector<Vector3d> ReadVtkVertices(const MeshSource& vtk_source,
+                                      double scale) {
+  const VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(vtk_source, scale);
 
   // It would be nice if we could simply steal the vertices rather than copy.
-  *vertices = volume_mesh.vertices();
+  return volume_mesh.vertices();
 }
 
 /* Multiplies the position vector p_AQ by the transform T_BA, returning p_BQ. */
@@ -139,12 +139,14 @@ Vector3d VtkMultiply(vtkMatrix4x4* T_BA, const Vector3d& p_AQ) {
   return Vector3d(p_out);
 }
 
-/* Returns the scaled vertices from the named glTF file.
- @pre `filename` references a glTF file. */
-void ReadGltfVertices(const fs::path& filename, double scale,
-                      std::vector<Vector3d>* vertices) {
+/* Returns the scaled vertices from the contents of a glTF file.
+ @pre `gltf_source` contains glTF geometry data.
+ @pre `gltf_source.is_path()` is `true`. */
+std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
+                                       double scale) {
+  DRAKE_DEMAND(gltf_source.is_path());
   vtkNew<vtkGLTFImporter> importer;
-  importer->SetFileName(filename.c_str());
+  importer->SetFileName(gltf_source.path().c_str());
   importer->Update();
 
   auto* renderer = importer->GetRenderer();
@@ -153,13 +155,14 @@ void ReadGltfVertices(const fs::path& filename, double scale,
   if (renderer->VisibleActorCount() == 0) {
     throw std::runtime_error(
         fmt::format("MakeConvexHull() found no vertices in the file '{}'.",
-                    filename.string()));
+                    gltf_source.description()));
   }
 
   // The relative transform from the file's frame F to the geometry's frame G.
   // (rotation from y-up to z-up). The scale is handled separately.
   const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
 
+  std::vector<Vector3d> vertices;
   auto* actors = renderer->GetActors();
   actors->InitTraversal();
   while (vtkActor* actor = actors->GetNextActor()) {
@@ -174,9 +177,10 @@ void ReadGltfVertices(const fs::path& filename, double scale,
     for (vtkIdType vi = 0; vi < poly_data->GetNumberOfPoints(); ++vi) {
       const Vector3d p_AV(poly_data->GetPoint(vi));
       const Vector3d p_FV = VtkMultiply(T_FA, p_AV);
-      vertices->emplace_back((X_GF * p_FV) * scale);
+      vertices.emplace_back((X_GF * p_FV) * scale);
     }
   }
+  return vertices;
 }
 
 /* Given a set of vertices, attempts to find a plane that reliably spans three
@@ -186,7 +190,7 @@ void ReadGltfVertices(const fs::path& filename, double scale,
  @throws if the vertices span a severely degenerate space in R3 (e.g.,
          co-linear or coincident). */
 Vector3d FindNormal(const std::vector<Vector3d>& vertices,
-                    const fs::path& filename) {
+                    const std::string_view description) {
   // Note: this isn't an exhaustive search. We assign i = 0 and then
   // sequentially search for j and k. This may fail but possibly succeed for
   // a different value of i. That risk seems small. Any mesh that depends on
@@ -204,9 +208,8 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
   if (v == ssize(vertices)) {
     throw std::runtime_error(
         fmt::format("MakeConvexHull failed because all vertices in the mesh "
-                    "were within a "
-                    "sphere with radius 1e-12 for file: {}.",
-                    filename.string()));
+                    "were within a sphere with radius 1e-12 for geometry: {}.",
+                    description));
   }
   a.normalize();
 
@@ -224,43 +227,37 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
     throw std::runtime_error(fmt::format(
         "MakeConvexHull failed because all vertices in the mesh appear to be "
         "co-linear for file: {}.",
-        filename.string()));
+        description));
   }
   return n_candidate.normalized();
 }
 
-/* Simply reads the vertices from an OBJ, VTK or glTF file referred to by name.
- */
-VertexCloud ReadVertices(const fs::path& filename, double scale) {
-  std::string extension = filename.extension();
-  std::transform(extension.begin(), extension.end(), extension.begin(),
-                 [](unsigned char c) {
-                   return std::tolower(c);
-                 });
-
+/* Simply reads the vertices from an OBJ, VTK or glTF file indicated by the
+ given `mesh_source`. */
+VertexCloud ReadVertices(const MeshSource& mesh_source, double scale) {
   VertexCloud cloud;
-  if (extension == ".obj") {
-    ReadObjVertices(filename, scale, &cloud.vertices);
-  } else if (extension == ".vtk") {
-    ReadVtkVertices(filename, scale, &cloud.vertices);
-  } else if (extension == ".gltf") {
-    ReadGltfVertices(filename, scale, &cloud.vertices);
+  if (mesh_source.extension() == ".obj") {
+    cloud.vertices = ReadObjVertices(mesh_source, scale);
+  } else if (mesh_source.extension() == ".vtk") {
+    cloud.vertices = ReadVtkVertices(mesh_source, scale);
+  } else if (mesh_source.extension() == ".gltf") {
+    cloud.vertices = ReadGltfVertices(mesh_source, scale);
   } else {
     throw std::runtime_error(
-        fmt::format("MakeConvexHull only applies to obj, vtk, and gltf "
-                    "meshes; given file: {}.",
-                    filename.string()));
+        fmt::format("MakeConvexHull only applies to .obj, .vtk, and .gltf "
+                    "meshes; unsupported extension '{}' for geometry data: {}.",
+                    mesh_source.extension(), mesh_source.description()));
   }
 
   if (cloud.vertices.size() < 3) {
-    throw std::runtime_error(
-        fmt::format("MakeConvexHull() cannot be used on a mesh with fewer "
-                    "than three vertices; found {} vertices in file: {}.",
-                    cloud.vertices.size(), filename.string()));
+    throw std::runtime_error(fmt::format(
+        "MakeConvexHull() cannot be used on a mesh with fewer "
+        "than three vertices; found {} vertices in geometry data: {}.",
+        cloud.vertices.size(), mesh_source.description()));
   }
 
   /* Characterizes planarity. */
-  cloud.n = FindNormal(cloud.vertices, filename);
+  cloud.n = FindNormal(cloud.vertices, mesh_source.description());
   double d = cloud.n.dot(cloud.vertices[0]);
   cloud.interior_point = cloud.vertices[0];
   /* Assume planarity and look for evidence to the contrary. */
@@ -495,11 +492,11 @@ class ConvexHull {
 
 }  // namespace
 
-PolygonSurfaceMesh<double> MakeConvexHull(const fs::path& mesh_file,
+PolygonSurfaceMesh<double> MakeConvexHull(const MeshSource& mesh_source,
                                           double scale, double margin) {
   DRAKE_THROW_UNLESS(scale > 0);
   DRAKE_THROW_UNLESS(margin >= 0);
-  VertexCloud cloud = ReadVertices(mesh_file, scale);
+  VertexCloud cloud = ReadVertices(mesh_source, scale);
 
   // Hull of the input cloud of vertices.
   const ConvexHull hull(std::move(cloud));

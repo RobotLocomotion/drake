@@ -29,14 +29,14 @@ namespace {
 // shape_specification_thread_test.cc.
 void ComputeConvexHullAsNecessary(
     std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
-    std::string_view filename, double scale) {
+    const MeshSource& mesh_source, double scale) {
   std::shared_ptr<PolygonSurfaceMesh<double>> check =
       std::atomic_load(hull_ptr);
   if (check == nullptr) {
     // Note: This approach means that multiple threads *may* redundantly compute
     // the convex hull; but only the first one will set the hull.
     auto new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(filename, scale));
+        internal::MakeConvexHull(mesh_source, scale));
     std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
   }
 }
@@ -144,12 +144,7 @@ std::string Convex::filename() const {
 }
 
 const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
-  if (source_.is_in_memory()) {
-    throw std::runtime_error(
-        "In-memory meshes are still being implemented. Convex::GetConvexHull() "
-        "still requires a filesystem path specification.");
-  }
-  ComputeConvexHullAsNecessary(&hull_, source_.path().string(), scale_);
+  ComputeConvexHullAsNecessary(&hull_, source_, scale_);
   return *hull_;
 }
 
@@ -252,12 +247,7 @@ std::string Mesh::filename() const {
 }
 
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
-  if (source_.is_in_memory()) {
-    throw std::runtime_error(
-        "In-memory meshes are still being implemented. Mesh::GetConvexHull() "
-        "still requires a filesystem path specification.");
-  }
-  ComputeConvexHullAsNecessary(&hull_, source_.path().string(), scale_);
+  ComputeConvexHullAsNecessary(&hull_, source_, scale_);
   return *hull_;
 }
 
@@ -344,14 +334,15 @@ namespace {
 
 double CalcMeshVolume(const Mesh& mesh) {
   // TODO(russt): Support .vtk files.
-  if (mesh.extension() != ".obj") {
+  const MeshSource& mesh_source = mesh.source();
+  if (mesh_source.extension() != ".obj") {
     throw std::runtime_error(fmt::format(
         "CalcVolume currently only supports .obj files for mesh geometries; "
         "but the volume of '{}' was requested.",
-        mesh.filename()));
+        mesh_source.description()));
   }
   TriangleSurfaceMesh<double> surface_mesh =
-      ReadObjToTriangleSurfaceMesh(mesh.filename(), mesh.scale());
+      ReadObjToTriangleSurfaceMesh(mesh_source, mesh.scale());
   return internal::CalcEnclosedVolume(surface_mesh);
 }
 
