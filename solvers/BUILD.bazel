@@ -80,6 +80,7 @@ drake_cc_package_library(
         ":solver_type_converter",
         ":sos_basis_generator",
         ":sparse_and_dense_matrix",
+        ":specific_options",
         ":unrevised_lemke_solver",
     ],
 )
@@ -315,6 +316,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "specific_options",
+    srcs = ["specific_options.cc"],
+    hdrs = ["specific_options.h"],
+    deps = [
+        ":solver_id",
+        ":solver_options",
+        "//common:name_value",
+        "//common:overloaded",
+        "//common:string_container",
+    ],
+)
+
+drake_cc_library(
     name = "indeterminate",
     srcs = ["indeterminate.cc"],
     hdrs = ["indeterminate.h"],
@@ -322,7 +336,7 @@ drake_cc_library(
         "//common/symbolic:expression",
     ],
     implementation_deps = [
-        "//solvers:decision_variable",
+        ":decision_variable",
     ],
 )
 
@@ -715,6 +729,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program",
         ":solver_interface",
+        ":specific_options",
     ],
 )
 
@@ -866,6 +881,7 @@ drake_cc_optional_library(
     implementation_deps = [
         ":aggregate_costs_constraints",
         ":mathematical_program",
+        ":specific_options",
         "//common:parallelism",
         "//math:quadratic_form",
         "@mosek",
