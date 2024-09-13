@@ -789,14 +789,16 @@ class TestGeometryOptimization(unittest.TestCase):
         options.solver_options = SolverOptions()
         options.solver_options.SetOption(ClpSolver.id(), "scaling", 2)
         options.restriction_solver_options = SolverOptions()
-        options.restriction_solver_options.SetOption(ClpSolver.id(), "dual", 0)
+        options.restriction_solver_options.SetOption(
+            ClpSolver.id(), "log_level", 1)
         options.preprocessing_solver_options = SolverOptions()
-        options.preprocessing_solver_options.SetOption(ClpSolver.id(),
-                                                       "dual", 0)
+        options.preprocessing_solver_options.SetOption(
+            ClpSolver.id(), "log_level", 3)
         self.assertIn("scaling",
                       options.solver_options.GetOptions(ClpSolver.id()))
-        self.assertIn("dual", options.restriction_solver_options.GetOptions(
-            ClpSolver.id()))
+        self.assertIn("log_level",
+                      options.restriction_solver_options.GetOptions(
+                          ClpSolver.id()))
         self.assertIn("convex_relaxation", repr(options))
 
         spp = mut.GraphOfConvexSets()
