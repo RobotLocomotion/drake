@@ -14,7 +14,7 @@ AngleBetweenVectorsCost::AngleBetweenVectorsCost(
     const Eigen::Ref<const Eigen::Vector3d>& a_A, const Frame<double>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& b_B, double c,
     systems::Context<double>* plant_context)
-    : solvers::Cost(RefFromPtrOrThrow(plant).num_positions()),
+    : solvers::Cost(RefFromPtrOrThrow(plant).num_positions(), false, ""),
       constraint_(
           plant, frameA, a_A, frameB, b_B, 0, M_PI,
           PtrOrThrow(plant_context,
@@ -27,7 +27,7 @@ AngleBetweenVectorsCost::AngleBetweenVectorsCost(
     const Frame<AutoDiffXd>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& b_B, double c,
     systems::Context<AutoDiffXd>* plant_context)
-    : solvers::Cost(RefFromPtrOrThrow(plant).num_positions()),
+    : solvers::Cost(RefFromPtrOrThrow(plant).num_positions(), false, ""),
       constraint_(
           plant, frameA, a_A, frameB, b_B, 0, M_PI,
           PtrOrThrow(plant_context,

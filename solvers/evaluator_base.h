@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/polynomial.h"
@@ -155,16 +156,18 @@ class EvaluatorBase {
    * @param num_vars. The number of rows in the input.
    * If the input dimension is not known, then set `num_vars` to Eigen::Dynamic.
    * @param description A human-friendly description.
-   * @param is_thread_safe Whether is it is safe to call Eval concurrently.
    * @see Eval(...)
    */
+  DRAKE_DEPRECATED("2024-12-01",
+                   "Please use the constructor which specifies the thread "
+                   "safety of this Evaluator. Calling this constructor marks "
+                   "this Evaluator as unsafe to evaluate in parallel.");
   EvaluatorBase(int num_outputs, int num_vars,
-                const std::string& description = "",
-                bool is_thread_safe = false)
+                const std::string& description = "")
       : num_vars_(num_vars),
         num_outputs_(num_outputs),
         description_(description),
-        is_thread_safe_(is_thread_safe) {}
+        is_thread_safe_(false) {}
 
   /**
    * Constructs a evaluator.
@@ -172,12 +175,14 @@ class EvaluatorBase {
    * @param num_vars. The number of rows in the input.
    * If the input dimension is not known, then set `num_vars` to Eigen::Dynamic.
    * @param is_thread_safe Whether is it is safe to call Eval concurrently.
+   * @param description A human-friendly description.
    * @see Eval(...)
    */
-  EvaluatorBase(int num_outputs, int num_vars, bool is_thread_safe)
+  EvaluatorBase(int num_outputs, int num_vars, bool is_thread_safe,
+                const std::string& description = "")
       : num_vars_(num_vars),
         num_outputs_(num_outputs),
-        description_(""),
+        description_(description),
         is_thread_safe_(is_thread_safe) {}
 
   /**
@@ -270,7 +275,7 @@ class PolynomialEvaluator : public EvaluatorBase {
    */
   PolynomialEvaluator(const VectorXPoly& polynomials,
                       const std::vector<Polynomiald::VarType>& poly_vars)
-      : EvaluatorBase(polynomials.rows(), poly_vars.size()),
+      : EvaluatorBase(polynomials.rows(), poly_vars.size(), true),
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
 
@@ -373,7 +378,7 @@ std::shared_ptr<EvaluatorBase> MakeFunctionEvaluator(FF&& f) {
 
 /**
  * Defines a simple evaluator with no outputs that takes a callback function
- * pointer.  This is intended for debugging / visualization of intermediate
+ * pointer. This is intended for debugging / visualization of intermediate
  * results during an optimization (for solvers that support it).
  */
 class VisualizationCallback : public EvaluatorBase {
@@ -385,7 +390,7 @@ class VisualizationCallback : public EvaluatorBase {
 
   VisualizationCallback(int num_inputs, const CallbackFunction& callback,
                         const std::string& description = "")
-      : EvaluatorBase(0, num_inputs, description), callback_(callback) {}
+      : EvaluatorBase(0, num_inputs, false, description), callback_(callback) {}
 
   void EvalCallback(const Eigen::Ref<const Eigen::VectorXd>& x) const {
     DRAKE_ASSERT(x.size() == num_vars());

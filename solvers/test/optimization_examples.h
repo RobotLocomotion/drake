@@ -889,7 +889,7 @@ class EmptyGradientProblem {
  private:
   class EmptyGradientCost : public Cost {
    public:
-    EmptyGradientCost() : Cost(2) {}
+    EmptyGradientCost() : Cost(2, true, "") {}
 
    private:
     template <typename T>

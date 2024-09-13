@@ -22,7 +22,7 @@ class GenericTrivialCost1 : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1);
 
-  GenericTrivialCost1() : Cost(3), private_val_(2) {}
+  GenericTrivialCost1() : Cost(3, true, ""), private_val_(2) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

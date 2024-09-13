@@ -159,7 +159,9 @@ void BindEvaluatorsAndBindings(py::module m) {
             py::arg("gradient_sparsity_pattern"),
             cls_doc.SetGradientSparsityPattern.doc)
         .def("gradient_sparsity_pattern", &Class::gradient_sparsity_pattern,
-            cls_doc.gradient_sparsity_pattern.doc);
+            cls_doc.gradient_sparsity_pattern.doc)
+        .def("is_thread_safe", &Class::is_thread_safe,
+            cls_doc.is_thread_safe.doc);
     auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
       using T_x = decltype(dummy_x);
       using T_y = decltype(dummy_y);

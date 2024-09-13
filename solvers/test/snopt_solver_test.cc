@@ -387,17 +387,17 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
         *contents = std::regex_replace(
             *contents, std::regex(".Printer........................\\d"),
             "(Printer)..............      ####");
+      }
+      EXPECT_EQ(contents_single, contents_multi);
     }
-    EXPECT_EQ(contents_single, contents_multi);
   }
-}
 }
 
 class AutoDiffOnlyCost final : public drake::solvers::Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutoDiffOnlyCost);
 
-  AutoDiffOnlyCost() : drake::solvers::Cost(1) {}
+  AutoDiffOnlyCost() : drake::solvers::Cost(1, true, "") {}
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -624,7 +624,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
 
 class ThrowCost final : public Cost {
  public:
-  ThrowCost() : Cost(1, "ThrowCost") {}
+  ThrowCost() : Cost(1, true, "ThrowCost") {}
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
