@@ -1,0 +1,154 @@
+vtkGLTFDocumentLoader can "load" a glTF from a stream (with the appropriate
+URI loader). vtkGLTFImporter cannot. This changes the importer so its source
+can be configured to be an input stream; it *does* potentially require a custom
+vtkURILoader to resolve file URIs in the glTF file, though.
+
+While it is clearly desirable to upstream this feature, it is not clear if this
+adheres to how kitware would accomplish the same end.
+
+--- IO/Import/vtkGLTFImporter.h
++++ IO/Import/vtkGLTFImporter.h
+@@ -48,7 +48,9 @@
+ 
+ #include "vtkIOImportModule.h" // For export macro
+ #include "vtkImporter.h"
++#include "vtkResourceStream.h"
+ #include "vtkSmartPointer.h" // For SmartPointer
++#include "vtkURILoader.h"
+ 
+ #include <map>    // For map
+ #include <vector> // For vector
+@@ -75,6 +77,23 @@ public:
+   vtkGetFilePathMacro(FileName);
+   ///@}
+ 
++  /**
++   * Sets the glTF source from a stream. If the stream and filename are set, the
++   * FileName is ignored. If a stream is provided, the `uri_loader` must be
++   * capable of resolving URIs. Note: if the stream contains only data URIs, no
++   * a default vtkUriLoader is sufficient.
++   * 
++   * Setting both `stream` and `uri_loader` to null will revert the importer to
++   * use FileName.
++   * 
++   * @param stream      The data stream of the main .gltf/glb file.
++   * @param uri_loader  The loader to resolve non-data URIs in the glTF file.
++   * @param binary      If true, the data stream contains the contents of a .glb
++   *                    file. Value doesn't matter when the other parameters are
++   *                    null.
++   */
++  void SetInputStream(vtkResourceStream* stream, vtkURILoader* uri_loader, bool binary);
++
+   /**
+    * glTF defines multiple camera objects, but no default behavior for which camera should be
+    * used. The importer will by default apply the asset's first camera. This accessor lets you use
+@@ -156,6 +175,9 @@ protected:
+   void ApplySkinningMorphing();
+ 
+   char* FileName = nullptr;
++  vtkSmartPointer<vtkResourceStream> FileStream;
++  vtkSmartPointer<vtkURILoader> StreamURILoader;
++  bool StreamIsBinary{};
+ 
+   std::map<int, vtkSmartPointer<vtkCamera>> Cameras;
+   std::map<int, vtkSmartPointer<vtkTexture>> Textures;
+
+--- IO/Import/vtkGLTFImporter.cxx
++++ IO/Import/vtkGLTFImporter.cxx
+@@ -375,13 +375,26 @@ void vtkGLTFImporter::InitializeLoader()
+   this->Loader = vtkSmartPointer<vtkGLTFDocumentLoader>::New();
+ }
+ 
++//------------------------------------------------------------------------------
++void vtkGLTFImporter::SetInputStream(vtkResourceStream* stream,
++                                     vtkURILoader* uri_loader, bool binary) {
++  this->FileStream = stream;
++  this->StreamURILoader = uri_loader;
++  this->StreamIsBinary = binary;
++  // Both should be null or not null.
++  if ((this->FileStream == nullptr) != (this->StreamURILoader == nullptr)) {
++    vtkErrorMacro("When setting the input stream, the stream and the uri "
++                  "loader must be set or cleared simultaneously.");
++  }
++}
++
+ //------------------------------------------------------------------------------
+ int vtkGLTFImporter::ImportBegin()
+ {
+   // Make sure we have a file to read.
+-  if (!this->FileName)
++  if (!this->FileStream && !this->FileName)
+   {
+-    vtkErrorMacro("A FileName must be specified.");
++    vtkErrorMacro("Neither FileName nor FileStream has been specified.");
+     return 0;
+   }
+ 
+@@ -398,21 +411,44 @@ int vtkGLTFImporter::ImportBegin()
+ 
+   // Check extension
+   std::vector<char> glbBuffer;
+-  std::string extension = vtksys::SystemTools::GetFilenameLastExtension(this->FileName);
+-  if (extension == ".glb")
++  if (this->FileName != nullptr)
+   {
+-    if (!this->Loader->LoadFileBuffer(this->FileName, glbBuffer))
++    // this->FileName is defined.
++    std::string extension = vtksys::SystemTools::GetFilenameLastExtension(this->FileName);
++    if (extension == ".glb")
+     {
+-      vtkErrorMacro("Error loading binary data");
++      if (!this->Loader->LoadFileBuffer(this->FileName, glbBuffer))
++      {
++        vtkErrorMacro("Error loading binary data");
++        return 0;
++      }
++    }
++
++    if (!this->Loader->LoadModelMetaDataFromFile(this->FileName))
++    {
++      vtkErrorMacro("Error loading model metadata");
+       return 0;
+     }
+   }
+-
+-  if (!this->Loader->LoadModelMetaDataFromFile(this->FileName))
++  else
+   {
+-    vtkErrorMacro("Error loading model metadata");
+-    return 0;
++    // this->FileStream is defined.
++    if (this->StreamIsBinary)
++    {
++      if (!this->Loader->LoadStreamBuffer(this->FileStream, glbBuffer))
++      {
++        vtkErrorMacro("Error loading binary data");
++        return 0;
++      }
++    }
++
++    if (!this->Loader->LoadModelMetaDataFromStream(this->FileStream, this->StreamURILoader))
++    {
++      vtkErrorMacro("Error loading model metadata");
++      return 0;
++    }
+   }
++
+   if (!this->Loader->LoadModelData(glbBuffer))
+   {
+     vtkErrorMacro("Error loading model data");
+@@ -936,7 +972,13 @@ bool vtkGLTFImporter::GetTemporalInformation(vtkIdType animationIndex, double fr
+ void vtkGLTFImporter::PrintSelf(ostream& os, vtkIndent indent)
+ {
+   this->Superclass::PrintSelf(os, indent);
+-  os << indent << "File Name: " << (this->FileName ? this->FileName : "(none)") << "\n";
++  os << indent;
++  if (this->FileStream != nullptr) {
++    os << "FileStream (" << (this->StreamIsBinary ? "binary" : "ascii") << ")";
++  } else {
++    os << "File Name: " << (this->FileName ? this->FileName : "(none)");
++  }
++  os << "\n";
+ }
+ 
+ //------------------------------------------------------------------------------

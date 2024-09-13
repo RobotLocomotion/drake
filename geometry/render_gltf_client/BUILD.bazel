@@ -117,9 +117,11 @@ drake_cc_library(
         ":internal_merge_gltf",
         ":internal_render_client",
         "//common:essential",
+        "//common:find_resource",
         "//geometry/render:render_camera",
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//systems/sensors:image",
+        "@common_robotics_utilities",
         "@nlohmann_internal//:nlohmann",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonMath",
@@ -138,7 +140,7 @@ drake_cc_library(
         "//common:drake_export",
         "//common:essential",
         "//common:find_resource",
-        "@common_robotics_utilities",
+        "//geometry:mesh_source",
         "@nlohmann_internal//:nlohmann",
     ],
 )
@@ -236,6 +238,7 @@ drake_cc_googletest(
     name = "internal_render_engine_gltf_client_test",
     data = [
         ":test_resources",
+        "//geometry/render:test_models",
     ],
     tags = vtk_test_tags(),
     deps = [
