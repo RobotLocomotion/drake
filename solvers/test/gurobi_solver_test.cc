@@ -1,14 +1,18 @@
 #include "drake/solvers/gurobi_solver.h"
 
 #include <filesystem>
+#include <fstream>
 #include <limits>
 #include <thread>
 
+#include <gflags/gflags.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/set_env.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 #include "drake/solvers/test/l2norm_cost_examples.h"
@@ -19,6 +23,9 @@
 namespace drake {
 namespace solvers {
 namespace test {
+
+using drake::test::SetEnv;
+
 const double kInf = std::numeric_limits<double>::infinity();
 
 TEST_P(LinearProgramTest, TestLP) {
@@ -508,6 +515,58 @@ GTEST_TEST(GurobiTest, LogFile) {
   }
 }
 
+GTEST_TEST(GurobiTest, MaxThreads) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] == 1);
+  prog.AddQuadraticCost(x[0] * x[0] + x[1] * x[1]);
+
+  GurobiSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    std::string log_file = temp_directory() + "/max_threads.log";
+    solver_options.SetOption(CommonSolverOption::kPrintFileName, log_file);
+    auto read_log = [log_file]() {
+      std::ifstream stream(log_file);
+      std::stringstream buffer;
+      buffer << stream.rdbuf();
+      std::filesystem::remove({log_file});
+      return buffer.str();
+    };
+
+    const int drake_max = 2;  // Matches our BUILD.bazel test declaration.
+    const SetEnv guard("GUROBI_NUM_THREADS", std::nullopt);
+
+    // When no other options have been set, the DRAKE_NUM_THREADS governs.  For
+    // this unit test, that variable is set by the `num_threads` option in our
+    // BUILD file.
+    auto result = solver.Solve(prog, {}, solver_options);
+    EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
+                                "using up to {} threads", drake_max)));
+
+    // The GUROBI_NUM_THREADS takes precedence.
+    const int gurobi_env_max = 3;
+    const SetEnv guard2("GUROBI_NUM_THREADS", std::to_string(gurobi_env_max));
+    result = solver.Solve(prog, {}, solver_options);
+    EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
+                                "using up to {} threads", gurobi_env_max)));
+
+    // The common solver option takes precedence.
+    const int kMaxThreadsValue = 4;
+    solver_options.SetOption(CommonSolverOption::kMaxThreads, kMaxThreadsValue);
+    result = solver.Solve(prog, {}, solver_options);
+    EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
+                                "using up to {} threads", kMaxThreadsValue)));
+
+    // The Gurobi-specific solver option takes precedence.
+    const int gurobi_option_max = 5;
+    solver_options.SetOption(GurobiSolver::id(), "Threads", gurobi_option_max);
+    result = solver.Solve(prog, {}, solver_options);
+    EXPECT_THAT(read_log(), testing::ContainsRegex(fmt::format(
+                                "using up to {} threads", gurobi_option_max)));
+  }
+}
+
 GTEST_TEST(GurobiTest, WriteModel) {
   // Test writing Gurobi model to a file.
   MathematicalProgram prog;
@@ -770,6 +829,7 @@ int main(int argc, char** argv) {
   // test, so that we do not have to release and re-acquire the license for
   // every test.
   auto gurobi_license = drake::solvers::GurobiSolver::AcquireLicense();
-  ::testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleMock(&argc, argv);
+  ::google::ParseCommandLineFlags(&argc, &argv, true);
   return RUN_ALL_TESTS();
 }

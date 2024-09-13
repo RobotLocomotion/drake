@@ -71,6 +71,19 @@ void SolverOptions::SetOption(CommonSolverOption key, OptionValue value) {
       common_solver_options_[key] = std::move(value);
       return;
     }
+    case CommonSolverOption::kMaxThreads: {
+      if (!std::holds_alternative<int>(value)) {
+        throw std::runtime_error(fmt::format(
+            "SolverOptions::SetOption support {} only with int value.", key));
+      }
+      const int int_value = std::get<int>(value);
+      if (int_value <= 0) {
+        throw std::runtime_error(
+            fmt::format("kMaxThreads must be > 0, got {}", int_value));
+      }
+      common_solver_options_[key] = std::move(value);
+      return;
+    }
   }
   DRAKE_UNREACHABLE();
 }
@@ -132,6 +145,15 @@ std::string SolverOptions::get_standalone_reproduction_file_name() const {
     result = std::get<std::string>(iter->second);
   }
   return result;
+}
+
+std::optional<int> SolverOptions::get_max_threads() const {
+  // N.B. SetOption sanity checks the value; we don't need to re-check here.
+  auto iter = common_solver_options_.find(CommonSolverOption::kMaxThreads);
+  if (iter != common_solver_options_.end()) {
+    return std::get<int>(iter->second);
+  }
+  return std::nullopt;
 }
 
 std::unordered_set<SolverId> SolverOptions::GetSolverIds() const {

@@ -654,6 +654,7 @@ class TestPlant(unittest.TestCase):
         self._test_multibody_tree_element_mixin(T, joint)
         self.assertIsInstance(joint.name(), str)
         self.assertIsInstance(joint.type_name(), str)
+        self.assertEqual(joint.type_name(), joint.kTypeName)
         self.assertIsInstance(joint.parent_body(), Body)
         self.assertIsInstance(joint.child_body(), Body)
         self.assertIsInstance(joint.frame_on_parent(), Frame)

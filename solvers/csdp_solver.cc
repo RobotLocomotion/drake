@@ -412,6 +412,8 @@ std::string MaybeWriteCsdpParams(const SolverOptions& options) {
   if (options.get_print_to_console()) {
     all_csdp_params += "printlevel=1\n";
   }
+  // CSDP does not support setting the number of threads so we ignore
+  // the kMaxNumThreads option.
 
   // Add the specific options next (so they trump the common options).
   for (const auto& [key, value] : options.GetOptionsInt(CsdpSolver::id())) {

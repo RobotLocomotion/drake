@@ -808,6 +808,7 @@ drake_cc_variant_library(
     implementation_deps_enabled = [
         ":gurobi_solver_internal",
         "//common:find_resource",
+        "//common:parallelism",
         "//common:scope_exit",
         "//common:scoped_singleton",
         "//math:eigen_sparse_triplet",
@@ -865,6 +866,7 @@ drake_cc_optional_library(
     implementation_deps = [
         ":aggregate_costs_constraints",
         ":mathematical_program",
+        "//common:parallelism",
         "//math:quadratic_form",
         "@mosek",
     ],
@@ -1383,6 +1385,7 @@ drake_cc_optional_googletest(
 
 drake_cc_googletest(
     name = "gurobi_solver_test",
+    num_threads = 2,
     tags = gurobi_test_tags(),
     use_default_main = False,
     deps = [
@@ -1394,9 +1397,11 @@ drake_cc_googletest(
         ":mixed_integer_optimization_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
+        "//common:add_text_logging_gflags",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:set_env",
     ],
 )
 
@@ -2011,6 +2016,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "solver_options_test",
+    num_threads = 2,
     deps = [
         ":solver_options",
         "//common/test_utilities:expect_no_throw",

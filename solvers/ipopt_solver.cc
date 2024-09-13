@@ -58,6 +58,9 @@ void SetAppOptions(const SolverOptions& options, Ipopt::IpoptApplication* app) {
     app->Options()->SetIntegerValue("file_print_level", verbose_level);
   }
 
+  // IPOPT does not support setting the number of threads so we ignore
+  // the kMaxNumThreads option.
+
   // The solver-specific options will trump our defaults.
   const SolverId self = IpoptSolver::id();
   for (const auto& [name, value] : options.GetOptionsDouble(self)) {

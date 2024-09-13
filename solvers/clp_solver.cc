@@ -364,6 +364,9 @@ void ClpSolver::DoSolve(const MathematicalProgram& prog,
   // for the discussion.
   model.scaling(ChooseScaling(merged_options));
 
+  // CLP Simplex solver does not support multithreaded solves so we can ignore
+  // the kMaxNumThreads option.
+
   // Solve
   model.primal();
 

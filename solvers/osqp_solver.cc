@@ -240,6 +240,10 @@ void SetOsqpSolverSettings(const SolverOptions& solver_options,
   int verbose_console = solver_options.get_print_to_console() != 0;
   SetOsqpSolverSettingWithDefaultValue(options_int, "verbose",
                                        &(settings->verbose), verbose_console);
+
+  // OSQP does not support setting the number of threads so we ignore
+  // the kMaxNumThreads option.
+
   SetOsqpSolverSetting(options_int, "scaled_termination",
                        &(settings->scaled_termination));
   SetOsqpSolverSetting(options_int, "check_termination",
