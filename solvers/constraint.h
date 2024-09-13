@@ -63,11 +63,12 @@ class Constraint : public EvaluatorBase {
    * cannot contain NAN.
    * @see Eval(...)
    */
+
+  template <typename DerivedLB, typename DerivedUB>
   DRAKE_DEPRECATED("2024-12-01",
                    "Please use the constructor which specifies the thread "
                    "safety of this Constraint. Calling this constructor marks "
-                   "this Constraint as unsafe to evaluate in parallel.");
-  template <typename DerivedLB, typename DerivedUB>
+                   "this Constraint as unsafe to evaluate in parallel.")
   Constraint(int num_constraints, int num_vars,
              const Eigen::MatrixBase<DerivedLB>& lb,
              const Eigen::MatrixBase<DerivedUB>& ub,
@@ -117,7 +118,7 @@ class Constraint : public EvaluatorBase {
    */
   DRAKE_DEPRECATED("2024-12-01",
                    "Please use the constructor which specifies the thread "
-                   "safety of this Constraint.");
+                   "safety of this Constraint.")
   Constraint(int num_constraints, int num_vars)
       : Constraint(
             num_constraints, num_vars,

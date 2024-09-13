@@ -197,6 +197,11 @@ class MathematicalProgram {
    */
   [[nodiscard]] std::string to_string() const;
 
+  /*
+   * Returns whether it is safe to solve this mathematical program concurrently.
+   */
+  bool is_thread_safe() const { return is_thread_safe_; }
+
   /** Returns a string representation of this program in LaTeX.
    *
    * This can be particularly useful e.g. in a Jupyter (python) notebook:
@@ -3892,6 +3897,13 @@ class MathematicalProgram {
 
   void CheckVariableType(VarType var_type);
 
+  /*
+   * Resets the is_thread_safe variable by checking if all the costs and
+   * constraints are thread safe. This MUST be called when calling RemoveCosts
+   * and RemoveConstraints.
+   */
+  void ResetIsThreadSafe();
+
   // maps the ID of a symbolic variable to the index of the variable stored
   // in the optimization program.
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
@@ -3947,7 +3959,7 @@ class MathematicalProgram {
   // Whether all the costs and constraints are thread safe and therefore this
   // mathematical program can safely be solved concurrently with other
   // MathematicalPrograms.
-  bool is_thread_safe_;
+  bool is_thread_safe_{true};
 };
 
 std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog);

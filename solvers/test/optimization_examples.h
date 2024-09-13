@@ -340,7 +340,7 @@ class LowerBoundedProblem {
     LowerBoundTestConstraint(int i1, int i2)
         : Constraint(
               1, Eigen::Dynamic, Vector1d::Constant(4),
-              Vector1d::Constant(std::numeric_limits<double>::infinity())),
+              Vector1d::Constant(std::numeric_limits<double>::infinity()), true, ""),
           i1_(i1),
           i2_(i2) {}
 

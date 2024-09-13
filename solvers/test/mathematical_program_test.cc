@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <iostream>
 #include <limits>
 #include <map>
 #include <memory>
@@ -1100,8 +1101,8 @@ GTEST_TEST(TestMathematicalProgram, AddCostTest) {
 
 class EmptyConstraint final : public Constraint {
  public:
-  EmptyConstraint()
-      : Constraint(0, 2, Eigen::VectorXd(0), Eigen::VectorXd(0), true,
+  EmptyConstraint(bool is_thread_safe = true)
+      : Constraint(0, 2, Eigen::VectorXd(0), Eigen::VectorXd(0), is_thread_safe,
                    "empty_constraint") {}
 
   ~EmptyConstraint() {}
@@ -4888,6 +4889,52 @@ GTEST_TEST(MathematicalProgramTest, AddLogDeterminantLowerBoundConstraint) {
   }
   EXPECT_EQ(prog.exponential_cone_constraints().size(), 3);
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
+}
+
+class EmptyCost final : public Cost {
+ public:
+  EmptyCost(bool is_thread_safe = true)
+      : Cost(0, is_thread_safe, "empty_cost") {}
+
+  ~EmptyCost() {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&, VectorXd*) const {}
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>&, AutoDiffVecXd*) const {}
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const {}
+};
+
+GTEST_TEST(MathematicalProgramIsThreadSafe, MathematicalProgramIsThreadSafe) {
+  MathematicalProgram prog;
+  EXPECT_TRUE(prog.is_thread_safe());
+
+  auto x = prog.NewContinuousVariables<2>();
+  auto linear_constraint = prog.AddLinearConstraint(x[0] <= 0);
+  EXPECT_TRUE(prog.is_thread_safe());
+
+  // A constraint marked as non-thread safe.
+  auto empty_constraint = std::make_shared<EmptyConstraint>(false);
+  auto empty_constraint_binding = Binding<Constraint>(empty_constraint, x);
+  auto non_thread_safe_constraint_binding =
+      prog.AddConstraint(empty_constraint_binding);
+  EXPECT_FALSE(prog.is_thread_safe());
+
+  prog.RemoveConstraint(linear_constraint);
+  EXPECT_FALSE(prog.is_thread_safe());
+
+  prog.RemoveConstraint(non_thread_safe_constraint_binding);
+  EXPECT_TRUE(prog.is_thread_safe());
+
+  auto linear_cost = prog.AddLinearCost(x[0]);
+  EXPECT_TRUE(prog.is_thread_safe());
+
+  // A cost marked as non-thread safe.
+  auto empty_cost = std::make_shared<EmptyCost>(false);
+  auto empty_cost_binding =
+      Binding<Cost>(empty_cost, VectorXDecisionVariable{0});
+  auto non_thread_safe_binding = prog.AddCost(empty_cost_binding);
+  EXPECT_FALSE(prog.is_thread_safe());
 }
 }  // namespace test
 }  // namespace solvers

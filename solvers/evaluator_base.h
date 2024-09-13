@@ -150,6 +150,9 @@ class EvaluatorBase {
   bool is_thread_safe() const { return is_thread_safe_; }
 
  protected:
+  // TODO(Alexandre.Amice) When this constructor is deprecated, ensure that the
+  // constructor which specifies the thread-safety gives a default argument for
+  // description. For now, doing so causes ambiguity.
   /**
    * Constructs a evaluator.
    * @param num_outputs. The number of rows in the output.
@@ -161,7 +164,7 @@ class EvaluatorBase {
   DRAKE_DEPRECATED("2024-12-01",
                    "Please use the constructor which specifies the thread "
                    "safety of this Evaluator. Calling this constructor marks "
-                   "this Evaluator as unsafe to evaluate in parallel.");
+                   "this Evaluator as unsafe to evaluate in parallel.")
   EvaluatorBase(int num_outputs, int num_vars,
                 const std::string& description = "")
       : num_vars_(num_vars),
@@ -179,7 +182,7 @@ class EvaluatorBase {
    * @see Eval(...)
    */
   EvaluatorBase(int num_outputs, int num_vars, bool is_thread_safe,
-                const std::string& description = "")
+                const std::string& description)
       : num_vars_(num_vars),
         num_outputs_(num_outputs),
         description_(description),
@@ -275,7 +278,7 @@ class PolynomialEvaluator : public EvaluatorBase {
    */
   PolynomialEvaluator(const VectorXPoly& polynomials,
                       const std::vector<Polynomiald::VarType>& poly_vars)
-      : EvaluatorBase(polynomials.rows(), poly_vars.size(), true),
+      : EvaluatorBase(polynomials.rows(), poly_vars.size(), true, ""),
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
 

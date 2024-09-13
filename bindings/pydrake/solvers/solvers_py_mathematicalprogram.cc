@@ -578,6 +578,8 @@ void BindMathematicalProgram(py::module m) {
   prog_cls  // BR
       .def("__str__", &MathematicalProgram::to_string,
           doc.MathematicalProgram.to_string.doc)
+      .def("is_thread_safe", &MathematicalProgram::is_thread_safe,
+          doc.MathematicalProgram.is_thread_safe.doc)
       .def("ToLatex", &MathematicalProgram::ToLatex, py::arg("precision") = 3,
           doc.MathematicalProgram.ToLatex.doc)
       .def("NewContinuousVariables",
