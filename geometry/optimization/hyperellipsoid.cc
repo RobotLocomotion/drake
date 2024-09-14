@@ -6,6 +6,7 @@
 #include <Eigen/Eigenvalues>
 #include <fmt/format.h>
 
+#include "drake/common/overloaded.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
@@ -46,10 +47,24 @@ Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
                                GeometryId geometry_id,
                                std::optional<FrameId> reference_frame)
     : ConvexSet(3, true) {
-  Eigen::Matrix3d A_G;
-  query_object.inspector().GetShape(geometry_id).Reify(this, &A_G);
+  const Shape& shape = query_object.inspector().GetShape(geometry_id);
+  const Eigen::Matrix3d A_G = shape.Visit<Eigen::Matrix3d>(overloaded{
+      // We only handle certain shape types.
+      [](const Ellipsoid& ellipsoid) {
+        // x²/a² + y²/b² + z²/c² = 1 in quadratic form is
+        // xᵀ * diag(1/a^2, 1/b^2, 1/c^2) * x = 1 and A is the square root.
+        return Eigen::DiagonalMatrix<double, 3>(
+            1.0 / ellipsoid.a(), 1.0 / ellipsoid.b(), 1.0 / ellipsoid.c());
+      },
+      [](const Sphere& sphere) {
+        return Eigen::Matrix3d::Identity() / sphere.radius();
+      },
+      [&geometry_id](const auto& unsupported) -> Eigen::Matrix3d {
+        throw std::logic_error(fmt::format(
+            "{} (geometry_id={}) cannot be converted to a Hyperellipsoid",
+            unsupported, geometry_id));
+      }});
   // p_GG_varᵀ * A_Gᵀ * A_G * p_GG_var ≤ 1
-
   const RigidTransformd X_WE =
       reference_frame ? query_object.GetPoseInWorld(*reference_frame)
                       : RigidTransformd::Identity();
@@ -382,19 +397,6 @@ void Hyperellipsoid::CheckInvariants() const {
   DRAKE_THROW_UNLESS(this->ambient_dimension() == A_.cols());
   DRAKE_THROW_UNLESS(A_.cols() == center_.size());
   DRAKE_THROW_UNLESS(A_.allFinite());  // to ensure the set is non-empty.
-}
-
-void Hyperellipsoid::ImplementGeometry(const Ellipsoid& ellipsoid, void* data) {
-  // x²/a² + y²/b² + z²/c² = 1 in quadratic form is
-  // xᵀ * diag(1/a^2, 1/b^2, 1/c^2) * x = 1 and A is the square root.
-  auto* A = static_cast<Eigen::Matrix3d*>(data);
-  *A = Eigen::DiagonalMatrix<double, 3>(
-      1.0 / ellipsoid.a(), 1.0 / ellipsoid.b(), 1.0 / ellipsoid.c());
-}
-
-void Hyperellipsoid::ImplementGeometry(const Sphere& sphere, void* data) {
-  auto* A = static_cast<Eigen::Matrix3d*>(data);
-  *A = Eigen::Matrix3d::Identity() / sphere.radius();
 }
 
 std::unique_ptr<ConvexSet> Hyperellipsoid::DoAffineHullShortcut(

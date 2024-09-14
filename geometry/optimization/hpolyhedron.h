@@ -22,7 +22,7 @@ class VPolytope;
 By convention, we treat a zero-dimensional HPolyhedron as nonempty.
 
 @ingroup geometry_optimization */
-class HPolyhedron final : public ConvexSet, private ShapeReifier {
+class HPolyhedron final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron);
 
@@ -374,13 +374,6 @@ class HPolyhedron final : public ConvexSet, private ShapeReifier {
   // using the AH polytope representation to project it to 3D."
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
-
-  // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Box& box, void* data) final;
-  void ImplementGeometry(const HalfSpace&, void* data) final;
-  // TODO(russt): Support ImplementGeometry(const Convex& convex, ...);
-  // it is already supported by VPolytope.
 
   void CheckInvariants() const;
 
