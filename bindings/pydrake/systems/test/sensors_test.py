@@ -6,9 +6,9 @@ import tempfile
 import unittest
 
 import numpy as np
-
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -466,16 +466,42 @@ class TestSensors(unittest.TestCase):
 
         for constructor in [construct, construct_single]:
             sensor = constructor(parent_id, X_WB)
-            check_info(sensor.color_camera_info())
-            check_info(sensor.depth_camera_info())
-            self.assertIsInstance(sensor.X_PB(),
-                                  RigidTransform)
-            self.assertIsInstance(sensor.X_BC(),
-                                  RigidTransform)
-            self.assertIsInstance(sensor.X_BD(),
-                                  RigidTransform)
-            self.assertEqual(sensor.parent_frame_id(), parent_id)
+            check_info(sensor.default_color_render_camera()
+                       .core().intrinsics())
+            with catch_drake_warnings(expected_count=1):
+                check_info(sensor.color_camera_info())
+            check_info(sensor.default_depth_render_camera()
+                       .core().intrinsics())
+            with catch_drake_warnings(expected_count=1):
+                check_info(sensor.depth_camera_info())
+            self.assertIsInstance(sensor.default_X_PB(), RigidTransform)
+            with catch_drake_warnings(expected_count=1):
+                self.assertIsInstance(sensor.X_PB(), RigidTransform)
+            self.assertIsInstance(sensor.default_X_BC(), RigidTransform)
+            with catch_drake_warnings(expected_count=1):
+                self.assertIsInstance(sensor.X_BC(), RigidTransform)
+            self.assertIsInstance(sensor.default_X_BD(), RigidTransform)
+            with catch_drake_warnings(expected_count=1):
+                self.assertIsInstance(sensor.X_BD(), RigidTransform)
+            self.assertEqual(sensor.default_parent_frame_id(), parent_id)
+            sensor.set_default_parent_frame_id(parent_id)
+            with catch_drake_warnings(expected_count=1):
+                self.assertEqual(sensor.parent_frame_id(), parent_id)
             check_ports(sensor)
+            # Check parameter API.
+            context = sensor.CreateDefaultContext()
+            self.assertIsInstance(sensor.GetColorRenderCamera(context),
+                                  ColorRenderCamera)
+            color_camera = sensor.default_color_render_camera()
+            sensor.SetColorRenderCamera(context, color_camera)
+            self.assertIsInstance(sensor.GetDepthRenderCamera(context),
+                                  DepthRenderCamera)
+            depth_camera = sensor.default_depth_render_camera()
+            sensor.SetDepthRenderCamera(context, depth_camera)
+            self.assertIsInstance(sensor.GetX_PB(context), RigidTransform)
+            sensor.SetX_PB(context, X_WB)
+            self.assertEqual(sensor.GetParentFrameId(context), parent_id)
+            sensor.SetParentFrameId(context, parent_id)
 
         # Test discrete camera. We'll simply use the last sensor constructed.
 

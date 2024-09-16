@@ -124,6 +124,9 @@ class RgbdSensorAsync final : public LeafSystem<double> {
       std::optional<geometry::render::DepthRenderCamera> depth_camera = {},
       bool render_label_image = false);
 
+  // TODO(#21872): update the APIs for parent id, X_PB, and the cameras to be
+  // mutable defaults that back mutable context parameters.
+
   /** Returns the `parent_id` passed to the constructor. */
   geometry::FrameId parent_id() const { return parent_id_; }
 
