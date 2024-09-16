@@ -38,7 +38,7 @@ void Serialize(Archive* a, DefaultSettings<double>& settings) {
   DRAKE_VISIT(min_switch_step_length);
   DRAKE_VISIT(min_terminate_step_length);
   DRAKE_VISIT(direct_kkt_solver);
-  DRAKE_VISIT(direct_solve_method);
+  // skipped: direct_solve_method
   DRAKE_VISIT(static_regularization_enable);
   DRAKE_VISIT(static_regularization_constant);
   DRAKE_VISIT(static_regularization_proportional);
@@ -52,7 +52,7 @@ void Serialize(Archive* a, DefaultSettings<double>& settings) {
   DRAKE_VISIT(iterative_refinement_stop_ratio);
   DRAKE_VISIT(presolve_enable);
   DRAKE_VISIT(chordal_decomposition_enable);
-  DRAKE_VISIT(chordal_decomposition_merge_method);
+  // skipped: chordal_decomposition_merge_method
   DRAKE_VISIT(chordal_decomposition_compact);
   DRAKE_VISIT(chordal_decomposition_complete_dual);
 #undef DRAKE_VISIT
