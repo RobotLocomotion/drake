@@ -219,34 +219,46 @@ class RgbdSensorTest : public ::testing::Test {
   ::testing::AssertionResult ValidateConstruction(
       FrameId parent_id, const RigidTransformd& X_WC_expected,
       std::function<void()> pre_render_callback = {}) const {
-    if (sensor_->parent_frame_id() != parent_id) {
+    if (sensor_->default_parent_frame_id() != parent_id) {
       return ::testing::AssertionFailure()
-             << "The sensor's parent id (" << sensor_->parent_frame_id()
+             << "The sensor's default parent id ("
+             << sensor_->default_parent_frame_id()
              << ") does not match the expected id (" << parent_id << ")";
     }
+    EXPECT_EQ(sensor_->GetParentFrameId(*sensor_context_), parent_id);
     ::testing::AssertionResult result = ::testing::AssertionSuccess();
-    result = CompareCameraInfo(sensor_->color_camera_info(),
-                               color_camera_.core().intrinsics());
+    result = CompareCameraInfo(
+        sensor_->default_color_render_camera().core().intrinsics(),
+        color_camera_.core().intrinsics());
     if (!result) return result;
 
-    result = Compare(sensor_->color_render_camera(), color_camera_);
+    result = Compare(sensor_->default_color_render_camera(), color_camera_);
+    if (!result) return result;
+    EXPECT_TRUE(Compare(sensor_->GetColorRenderCamera(*sensor_context_),
+                        color_camera_));
+
+    result = CompareCameraInfo(
+        sensor_->default_depth_render_camera().core().intrinsics(),
+        depth_camera_.core().intrinsics());
     if (!result) return result;
 
-    result = CompareCameraInfo(sensor_->depth_camera_info(),
-                               depth_camera_.core().intrinsics());
+    result = Compare(sensor_->default_depth_render_camera(), depth_camera_);
     if (!result) return result;
-
-    result = Compare(sensor_->depth_render_camera(), depth_camera_);
-    if (!result) return result;
+    EXPECT_TRUE(Compare(sensor_->GetDepthRenderCamera(*sensor_context_),
+                        depth_camera_));
 
     // The poses of color and depth frames w.r.t. the camera body are defined
     // by the render cameras; RgbdSensor merely exposes those values.
     EXPECT_TRUE(CompareMatrices(
-        sensor_->X_BC().GetAsMatrix4(),
+        sensor_->default_X_BC().GetAsMatrix4(),
         color_camera_.core().sensor_pose_in_camera_body().GetAsMatrix4()));
     EXPECT_TRUE(CompareMatrices(
-        sensor_->X_BD().GetAsMatrix4(),
+        sensor_->default_X_BD().GetAsMatrix4(),
         depth_camera_.core().sensor_pose_in_camera_body().GetAsMatrix4()));
+
+    EXPECT_TRUE(
+        CompareMatrices(sensor_->default_X_PB().GetAsMatrix4(),
+                        sensor_->GetX_PB(*sensor_context_).GetAsMatrix4()));
 
     // Confirm the pose used by the renderer is the expected X_WC pose. We do
     // this by invoking a render (the dummy render engine will cache the last
@@ -307,7 +319,7 @@ TEST_F(RgbdSensorTest, ConstructAnchoredCamera) {
   };
   MakeCameraDiagram(make_sensor);
 
-  const RigidTransformd& X_BC = sensor_->X_BC();
+  const RigidTransformd& X_BC = sensor_->default_X_BC();
   const RigidTransformd X_WC_expected = X_WB * X_BC;
   EXPECT_TRUE(
       ValidateConstruction(scene_graph_->world_frame_id(), X_WC_expected));
@@ -337,7 +349,7 @@ TEST_F(RgbdSensorTest, ConstructFrameFixedCamera) {
   };
   MakeCameraDiagram(make_sensor);
 
-  const RigidTransformd& X_BC = sensor_->X_BC();
+  const RigidTransformd& X_BC = sensor_->default_X_BC();
   // NOTE: This *particular* factorization eliminates the need for a tolerance
   // in the matrix comparison -- it is the factorization that is implicit in
   // the code path for rendering.
@@ -369,10 +381,102 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsets) {
   const RigidTransformd X_WB;
   const RgbdSensor sensor(scene_graph_->world_frame_id(), X_WB, color_camera,
                           depth_camera);
+  EXPECT_TRUE(CompareMatrices(sensor.default_X_BC().GetAsMatrix4(),
+                              X_BC.GetAsMatrix4()));
+  EXPECT_TRUE(CompareMatrices(sensor.default_X_BD().GetAsMatrix4(),
+                              X_BD.GetAsMatrix4()));
+}
+
+TEST_F(RgbdSensorTest, Parameters) {
+  // Construct an arbitrary sensor diagram, then change the sensor's defaults
+  // and context parameters independently.
+  const Vector3d p_WB(1, 2, 3);
+  const RollPitchYawd rpy_WB(M_PI / 2, 0, 0);
+  const RigidTransformd X_WB(rpy_WB, p_WB);
+
+  auto make_sensor = [this, &X_WB](SceneGraph<double>*) {
+    return make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(), X_WB,
+                                   color_camera_, depth_camera_);
+  };
+  MakeCameraDiagram(make_sensor);
+  const RigidTransformd& X_BC = sensor_->default_X_BC();
+  const RigidTransformd X_WC_expected = X_WB * X_BC;
+  // ValidateConstruction checks that defaults and parameters are the same.
   EXPECT_TRUE(
-      CompareMatrices(sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
-  EXPECT_TRUE(
-      CompareMatrices(sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
+      ValidateConstruction(scene_graph_->world_frame_id(), X_WC_expected));
+
+  // Prepare some replacement value items.
+  SourceId source_id;
+  const GeometryFrame frame("some_frame");
+  source_id = scene_graph_->RegisterSource("source");
+  scene_graph_->RegisterFrame(source_id, frame);
+  // Replacement cameras have arbitrary tiny width and height.
+  ColorRenderCamera tiny_color_camera({kRendererName,
+                                       {64, 48, M_PI / 4},
+                                       {0.1, 10.0},
+                                       RigidTransformd{Vector3d{1, 0, 0}}},
+                                      false);
+  DepthRenderCamera tiny_depth_camera({kRendererName,
+                                       {32, 24, M_PI / 6},
+                                       {0.1, 10.0},
+                                       RigidTransformd{Vector3d{-1, 0, 0}}},
+                                      {0.1, 10});
+
+  // Define some local sugar to extract camera intrinsics width.
+  auto width = [](const auto& camera) {
+    return camera.core().intrinsics().width();
+  };
+
+  // Change the default values.
+  sensor_->set_default_color_render_camera(tiny_color_camera);
+  sensor_->set_default_depth_render_camera(tiny_depth_camera);
+  sensor_->set_default_X_PB(RigidTransformd::Identity());
+  sensor_->set_default_parent_frame_id(frame.id());
+
+  // Defaults now differ from the parameters in the context created above.
+  EXPECT_NE(width(sensor_->default_color_render_camera()),
+            width(sensor_->GetColorRenderCamera(*sensor_context_)));
+  EXPECT_NE(width(sensor_->default_depth_render_camera()),
+            width(sensor_->GetDepthRenderCamera(*sensor_context_)));
+  EXPECT_NE(sensor_->default_parent_frame_id(),
+            sensor_->GetParentFrameId(*sensor_context_));
+  EXPECT_FALSE(
+      CompareMatrices(sensor_->default_X_PB().GetAsMatrix4(),
+                      sensor_->GetX_PB(*sensor_context_).GetAsMatrix4()));
+
+  // Create a new context with the changed default values.
+  auto other_context = sensor_->CreateDefaultContext();
+
+  // The new context matches the changed defaults.
+  EXPECT_EQ(width(sensor_->default_color_render_camera()),
+            width(sensor_->GetColorRenderCamera(*other_context)));
+  EXPECT_EQ(width(sensor_->default_depth_render_camera()),
+            width(sensor_->GetDepthRenderCamera(*other_context)));
+  EXPECT_EQ(sensor_->default_parent_frame_id(),
+            sensor_->GetParentFrameId(*other_context));
+  EXPECT_TRUE(CompareMatrices(sensor_->default_X_PB().GetAsMatrix4(),
+                              sensor_->GetX_PB(*other_context).GetAsMatrix4()));
+
+  // Push the parameter values from the original context into the new context,
+  // to test parameter mutating methods.
+  sensor_->SetColorRenderCamera(
+      other_context.get(), sensor_->GetColorRenderCamera(*sensor_context_));
+  sensor_->SetDepthRenderCamera(
+      other_context.get(), sensor_->GetDepthRenderCamera(*sensor_context_));
+  sensor_->SetParentFrameId(other_context.get(),
+                            sensor_->GetParentFrameId(*sensor_context_));
+  sensor_->SetX_PB(other_context.get(), sensor_->GetX_PB(*sensor_context_));
+
+  // Now, the new context differs from the changed defaults.
+  EXPECT_NE(width(sensor_->default_color_render_camera()),
+            width(sensor_->GetColorRenderCamera(*other_context)));
+  EXPECT_NE(width(sensor_->default_depth_render_camera()),
+            width(sensor_->GetDepthRenderCamera(*other_context)));
+  EXPECT_NE(sensor_->default_parent_frame_id(),
+            sensor_->GetParentFrameId(*other_context));
+  EXPECT_FALSE(
+      CompareMatrices(sensor_->default_X_PB().GetAsMatrix4(),
+                      sensor_->GetX_PB(*other_context).GetAsMatrix4()));
 }
 
 TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
@@ -402,10 +506,28 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
       depth_camera_.depth_range());
   const RgbdSensor sensor(scene_graph_->world_frame_id(), X_WB, color_camera,
                           depth_camera);
-  EXPECT_TRUE(
-      CompareMatrices(sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
-  EXPECT_TRUE(
-      CompareMatrices(sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
+  EXPECT_TRUE(CompareMatrices(sensor.default_X_BC().GetAsMatrix4(),
+                              X_BC.GetAsMatrix4()));
+  EXPECT_TRUE(CompareMatrices(sensor.default_X_BD().GetAsMatrix4(),
+                              X_BD.GetAsMatrix4()));
+}
+
+TEST_F(RgbdSensorTest, DeprecatedMethods) {
+  RgbdSensor sensor(SceneGraph<double>::world_frame_id(),
+                    RigidTransformd::Identity(), depth_camera_);
+  // Just test that deprecated methods can be called and are vaguely
+  // sane. These tests will be deleted when the deprecated methods are removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_GT(sensor.color_camera_info().width(), 0);
+  EXPECT_GT(sensor.depth_camera_info().width(), 0);
+  EXPECT_FALSE(sensor.color_render_camera().show_window());
+  EXPECT_GT(sensor.depth_render_camera().depth_range().min_depth(), 0);
+  EXPECT_EQ(sensor.X_PB().translation().size(), 3);
+  EXPECT_EQ(sensor.X_BC().translation().size(), 3);
+  EXPECT_EQ(sensor.X_BD().translation().size(), 3);
+  EXPECT_TRUE(sensor.parent_frame_id().is_valid());
+#pragma GCC diagnostic pop
 }
 
 // We don't explicitly test any of the image outputs. The image outputs simply

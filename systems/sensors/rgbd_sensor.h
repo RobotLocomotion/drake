@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_camera.h"
@@ -99,56 +100,86 @@ class RgbdSensor final : public LeafSystem<double> {
              geometry::render::ColorRenderCamera color_camera,
              geometry::render::DepthRenderCamera depth_camera);
 
-  /** Constructs an %RgbdSensor with fully specified render camera models for
-   both the depth camera. The color camera in inferred from the `depth_camera`;
-   it shares the same geometry::render::RenderCameraCore and is configured to
-   show the window based on the value of `show_color_window`.
-   @pydrake_mkdoc_identifier{combined_intrinsics}  */
+  /** Constructs an %RgbdSensor using a fully specified depth render camera,
+   inferring the color settings based on depth. The color camera in inferred
+   from the `depth_camera`; it shares the same
+   geometry::render::RenderCameraCore and is configured to show the window
+   based on the value of `show_color_window`.
+   @pydrake_mkdoc_identifier{combined_intrinsics} */
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
              const geometry::render::DepthRenderCamera& depth_camera,
              bool show_color_window = false);
 
-  ~RgbdSensor() = default;
+  ~RgbdSensor();
 
-  // TODO(eric.cousineau): Expose which renderer color / depth uses?
+  /** Returns the default render camera for color/label renderings. */
+  const geometry::render::ColorRenderCamera& default_color_render_camera()
+      const;
 
-  // TODO(SeanCurtis-TRI): Deprecate this in favor of the color render camera.
-  /** Returns the intrinsics properties of the color camera model.  */
-  const CameraInfo& color_camera_info() const {
-    return color_camera_.core().intrinsics();
-  }
+  /** Sets the default render camera for color/label renderings. */
+  void set_default_color_render_camera(
+      geometry::render::ColorRenderCamera color_camera);
 
-  // TODO(SeanCurtis-TRI): Deprecate this in favor of the depth render camera.
-  /** Returns the intrinsics properties of the depth camera model.  */
-  const CameraInfo& depth_camera_info() const {
-    return depth_camera_.core().intrinsics();
-  }
+  /** Returns the context dependent render camera for color/label renderings. */
+  geometry::render::ColorRenderCamera GetColorRenderCamera(
+      const Context<double>& context) const;
 
-  /** Returns the render camera for color/label renderings.  */
-  const geometry::render::ColorRenderCamera& color_render_camera() const {
-    return color_camera_;
-  }
+  /** Sets the render camera for color/label renderings, as stored as
+   parameters in `context`. */
+  void SetColorRenderCamera(
+      Context<double>* context,
+      geometry::render::ColorRenderCamera color_camera) const;
 
-  /** Returns the render camera for depth renderings.  */
-  const geometry::render::DepthRenderCamera& depth_render_camera() const {
-    return depth_camera_;
-  }
+  /** Returns the default render camera for depth renderings.  */
+  const geometry::render::DepthRenderCamera& default_depth_render_camera()
+      const;
 
-  /** Returns `X_PB`.  */
-  const math::RigidTransformd& X_PB() const { return X_PB_; }
+  /** Sets the default render camera for depth renderings. */
+  void set_default_depth_render_camera(
+      geometry::render::DepthRenderCamera depth_camera);
 
-  /** Returns `X_BC`.  */
-  const math::RigidTransformd& X_BC() const {
-    return color_camera_.core().sensor_pose_in_camera_body();
-  }
+  /** Returns the context dependent render camera for depth renderings. */
+  geometry::render::DepthRenderCamera GetDepthRenderCamera(
+      const Context<double>& context) const;
 
-  /** Returns `X_BD`.  */
-  const math::RigidTransformd& X_BD() const {
-    return depth_camera_.core().sensor_pose_in_camera_body();
-  }
+  /** Sets the render camera for depth renderings, as stored as parameters in
+   `context`. */
+  void SetDepthRenderCamera(
+      Context<double>* context,
+      geometry::render::DepthRenderCamera depth_camera) const;
 
-  /** Returns the id of the frame to which the body is affixed.  */
-  geometry::FrameId parent_frame_id() const { return parent_frame_id_; }
+  /** Returns the default `X_PB`.  */
+  const math::RigidTransformd& default_X_PB() const;
+
+  /** Sets the default `X_PB`.  */
+  void set_default_X_PB(math::RigidTransformd sensor_pose);
+
+  /** Returns the context dependent `X_PB`. */
+  math::RigidTransformd GetX_PB(const Context<double>& context) const;
+
+  /** Sets the `X_PB`, as stored as parameters in `context`. */
+  void SetX_PB(Context<double>* context,
+               math::RigidTransformd sensor_pose) const;
+
+  /** Returns the default color camera's `X_BC`.  */
+  const math::RigidTransformd& default_X_BC() const;
+
+  /** Returns the default depth camera's `X_BD`.  */
+  const math::RigidTransformd& default_X_BD() const;
+
+  /** Returns the default id of the frame to which the body is affixed.  */
+  geometry::FrameId default_parent_frame_id() const;
+
+  /** Sets the default id of the frame to which the body is affixed.  */
+  void set_default_parent_frame_id(geometry::FrameId id);
+
+  /** Returns the context dependent id of the frame to which the body is
+   affixed. */
+  geometry::FrameId GetParentFrameId(const Context<double>& context) const;
+
+  /** Sets the id of the frame to which the body is affixed, as stored as
+   parameters in `context`. */
+  void SetParentFrameId(Context<double>* context, geometry::FrameId id) const;
 
   /** Returns the geometry::QueryObject<double>-valued input port.  */
   const InputPort<double>& query_object_input_port() const;
@@ -178,6 +209,34 @@ class RgbdSensor final : public LeafSystem<double> {
    the current time). */
   const OutputPort<double>& image_time_output_port() const;
 
+  DRAKE_DEPRECATED(
+      "2025-01-01",
+      "Use default_color_render_camera().core().intrinsics() instead.")
+  const CameraInfo& color_camera_info() const;
+
+  DRAKE_DEPRECATED(
+      "2025-01-01",
+      "Use default_depth_render_camera().core().intrinsics() instead.")
+  const CameraInfo& depth_camera_info() const;
+
+  DRAKE_DEPRECATED("2025-01-01", "Use default_color_render_camera() instead.")
+  const geometry::render::ColorRenderCamera& color_render_camera() const;
+
+  DRAKE_DEPRECATED("2025-01-01", "Use default_depth_render_camera() instead.")
+  const geometry::render::DepthRenderCamera& depth_render_camera() const;
+
+  DRAKE_DEPRECATED("2025-01-01", "Use default_X_PB() instead.")
+  const math::RigidTransformd& X_PB() const;
+
+  DRAKE_DEPRECATED("2025-01-01", "Use default_X_BC() instead.")
+  const math::RigidTransformd& X_BC() const;
+
+  DRAKE_DEPRECATED("2025-01-01", "Use default_X_BD() instead.")
+  const math::RigidTransformd& X_BD() const;
+
+  DRAKE_DEPRECATED("2025-01-01", "Use default_parent_frame_id() instead.")
+  geometry::FrameId parent_frame_id() const;
+
  private:
   // The calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
@@ -192,13 +251,14 @@ class RgbdSensor final : public LeafSystem<double> {
                 math::RigidTransformd* X_WB) const;
   void CalcImageTime(const Context<double>&, BasicVector<double>*) const;
 
-  // Extract the query object from the given context (via the appropriate input
-  // port.
+  // Writes the current default values to the context's parameters.
+  void SetDefaultParameters(const Context<double>& context,
+                            Parameters<double>* parameters) const override;
+
+  // Extracts the query object from the given context (via the appropriate
+  // input port.
   const geometry::QueryObject<double>& get_query_object(
-      const Context<double>& context) const {
-    return query_object_input_port().Eval<geometry::QueryObject<double>>(
-        context);
-  }
+      const Context<double>& context) const;
 
   const InputPort<double>* query_object_input_port_{};
   const OutputPort<double>* color_image_port_{};
@@ -208,14 +268,23 @@ class RgbdSensor final : public LeafSystem<double> {
   const OutputPort<double>* body_pose_in_world_output_port_{};
   const OutputPort<double>* image_time_output_port_{};
 
-  // The identifier for the parent frame `P`.
-  const geometry::FrameId parent_frame_id_;
+  struct DefaultParameters {
+    // The default identifier for the parent frame `P`.
+    geometry::FrameId parent_frame_id;
 
-  // The camera specifications for color/label and depth.
-  const geometry::render::ColorRenderCamera color_camera_;
-  const geometry::render::DepthRenderCamera depth_camera_;
-  // The position of the camera's B frame relative to its parent frame P.
-  const math::RigidTransformd X_PB_;
+    // The camera specifications for color/label and depth.
+    geometry::render::ColorRenderCamera color_camera;
+    geometry::render::DepthRenderCamera depth_camera;
+    // The position of the camera's B frame relative to its parent frame P.
+    math::RigidTransformd X_PB;
+  } defaults_;
+
+  struct ParameterIndices {
+    AbstractParameterIndex parent_frame_id;
+    AbstractParameterIndex color_camera;
+    AbstractParameterIndex depth_camera;
+    AbstractParameterIndex X_PB;
+  } parameter_indices_;
 };
 
 }  // namespace sensors
