@@ -1165,56 +1165,7 @@ void DefineGeometryOptimization(py::module m) {
     const auto& cls_doc = doc.CspaceFreePolytope;
     py::class_<Class, BaseClass> cspace_free_polytope_cls(
         m, "CspaceFreePolytope", cls_doc.doc);
-    cspace_free_polytope_cls
-        .def(py::init<const multibody::MultibodyPlant<double>*,
-                 const geometry::SceneGraph<double>*, SeparatingPlaneOrder,
-                 const Eigen::Ref<const Eigen::VectorXd>&,
-                 const Class::Options&>(),
-            py::arg("plant"), py::arg("scene_graph"), py::arg("plane_order"),
-            py::arg("q_star"), py::arg("options") = Class::Options(),
-            // Keep alive, reference: `self` keeps `plant` alive.
-            py::keep_alive<1, 2>(),
-            // Keep alive, reference: `self` keeps `scene_graph` alive.
-            py::keep_alive<1, 3>(), cls_doc.ctor.doc)
-        .def(
-            "FindSeparationCertificateGivenPolytope",
-            [](const CspaceFreePolytope* self,
-                const Eigen::Ref<const Eigen::MatrixXd>& C,
-                const Eigen::Ref<const Eigen::VectorXd>& d,
-                const CspaceFreePolytope::IgnoredCollisionPairs&
-                    ignored_collision_pairs,
-                const CspaceFreePolytope::
-                    FindSeparationCertificateGivenPolytopeOptions& options) {
-              std::unordered_map<SortedPair<geometry::GeometryId>,
-                  CspaceFreePolytope::SeparationCertificateResult>
-                  certificates;
-              bool success = self->FindSeparationCertificateGivenPolytope(
-                  C, d, ignored_collision_pairs, options, &certificates);
-              return std::pair(success, certificates);
-            },
-            py::arg("C"), py::arg("d"), py::arg("ignored_collision_pairs"),
-            py::arg("options"),
-            // The `options` contains a `Parallelism`; we must release the GIL.
-            py::call_guard<py::gil_scoped_release>(),
-            cls_doc.FindSeparationCertificateGivenPolytope.doc)
-        .def("SearchWithBilinearAlternation",
-            &Class::SearchWithBilinearAlternation,
-            py::arg("ignored_collision_pairs"), py::arg("C_init"),
-            py::arg("d_init"), py::arg("options"),
-            cls_doc.SearchWithBilinearAlternation.doc)
-        .def("BinarySearch", &Class::BinarySearch,
-            py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
-            py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc)
-        .def("MakeIsGeometrySeparableProgram",
-            &Class::MakeIsGeometrySeparableProgram, py::arg("geometry_pair"),
-            py::arg("C"), py::arg("d"),
-            cls_doc.MakeIsGeometrySeparableProgram.doc)
-        .def("SolveSeparationCertificateProgram",
-            &Class::SolveSeparationCertificateProgram,
-            py::arg("certificate_program"), py::arg("options"),
-            // The `options` contains a `Parallelism`; we must release the GIL.
-            py::call_guard<py::gil_scoped_release>(),
-            cls_doc.SolveSeparationCertificateProgram.doc);
+
     py::class_<Class::SeparatingPlaneLagrangians>(cspace_free_polytope_cls,
         "SeparatingPlaneLagrangians", cls_doc.SeparatingPlaneLagrangians.doc)
         .def(py::init<int, int>(), py::arg("C_rows"), py::arg("s_size"),
@@ -1351,6 +1302,57 @@ void DefineGeometryOptimization(py::module m) {
             "convergence_tol", &Class::BinarySearchOptions::convergence_tol)
         .def_readonly("find_lagrangian_options",
             &Class::BinarySearchOptions::find_lagrangian_options);
+
+    cspace_free_polytope_cls
+        .def(py::init<const multibody::MultibodyPlant<double>*,
+                 const geometry::SceneGraph<double>*, SeparatingPlaneOrder,
+                 const Eigen::Ref<const Eigen::VectorXd>&,
+                 const Class::Options&>(),
+            py::arg("plant"), py::arg("scene_graph"), py::arg("plane_order"),
+            py::arg("q_star"), py::arg("options") = Class::Options(),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `scene_graph` alive.
+            py::keep_alive<1, 3>(), cls_doc.ctor.doc)
+        .def(
+            "FindSeparationCertificateGivenPolytope",
+            [](const CspaceFreePolytope* self,
+                const Eigen::Ref<const Eigen::MatrixXd>& C,
+                const Eigen::Ref<const Eigen::VectorXd>& d,
+                const CspaceFreePolytope::IgnoredCollisionPairs&
+                    ignored_collision_pairs,
+                const CspaceFreePolytope::
+                    FindSeparationCertificateGivenPolytopeOptions& options) {
+              std::unordered_map<SortedPair<geometry::GeometryId>,
+                  CspaceFreePolytope::SeparationCertificateResult>
+                  certificates;
+              bool success = self->FindSeparationCertificateGivenPolytope(
+                  C, d, ignored_collision_pairs, options, &certificates);
+              return std::pair(success, certificates);
+            },
+            py::arg("C"), py::arg("d"), py::arg("ignored_collision_pairs"),
+            py::arg("options"),
+            // The `options` contains a `Parallelism`; we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
+            cls_doc.FindSeparationCertificateGivenPolytope.doc)
+        .def("SearchWithBilinearAlternation",
+            &Class::SearchWithBilinearAlternation,
+            py::arg("ignored_collision_pairs"), py::arg("C_init"),
+            py::arg("d_init"), py::arg("options"),
+            cls_doc.SearchWithBilinearAlternation.doc)
+        .def("BinarySearch", &Class::BinarySearch,
+            py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
+            py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc)
+        .def("MakeIsGeometrySeparableProgram",
+            &Class::MakeIsGeometrySeparableProgram, py::arg("geometry_pair"),
+            py::arg("C"), py::arg("d"),
+            cls_doc.MakeIsGeometrySeparableProgram.doc)
+        .def("SolveSeparationCertificateProgram",
+            &Class::SolveSeparationCertificateProgram,
+            py::arg("certificate_program"), py::arg("options"),
+            // The `options` contains a `Parallelism`; we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
+            cls_doc.SolveSeparationCertificateProgram.doc);
   }
 
   using drake::geometry::optimization::ConvexSet;
