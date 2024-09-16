@@ -146,10 +146,16 @@ void DefineGeometryOptimization(py::module m) {
         .def("Projection", &ConvexSet::Projection, py::arg("points"),
             cls_doc.Projection.doc);
   }
-  // There is a dependency cycle between Hyperellipsoid and AffineBall, so we
+
+  // There is a dependency cycle between Hyperellipsoid <=> AffineBall, so we
   // need to "forward declare" the Hyperellipsoid class here.
   py::class_<Hyperellipsoid, ConvexSet> hyperellipsoid_cls(
       m, "Hyperellipsoid", doc.Hyperellipsoid.doc);
+
+  // There is a dependency cycle between VPolytope <=> HPolyhedron, so we
+  // need to "forward declare" the VPolytope class here.
+  py::class_<VPolytope, ConvexSet> vpolytope_cls(
+      m, "VPolytope", doc.VPolytope.doc);
 
   // AffineBall
   {
@@ -502,7 +508,7 @@ void DefineGeometryOptimization(py::module m) {
   // VPolytope
   {
     const auto& cls_doc = doc.VPolytope;
-    py::class_<VPolytope, ConvexSet>(m, "VPolytope", cls_doc.doc)
+    vpolytope_cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(),
             py::arg("vertices"), cls_doc.ctor.doc_vertices)
