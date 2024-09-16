@@ -13,8 +13,10 @@ namespace sensors {
 RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
                                        double period, bool render_label_image)
     : camera_(camera.get()), period_(period) {
-  const auto& color_camera_info = camera->color_camera_info();
-  const auto& depth_camera_info = camera->depth_camera_info();
+  const auto& color_camera_info =
+      camera->default_color_render_camera().core().intrinsics();
+  const auto& depth_camera_info =
+      camera->default_depth_render_camera().core().intrinsics();
 
   DiagramBuilder<double> builder;
   builder.AddSystem(std::move(camera));
