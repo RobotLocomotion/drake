@@ -1167,6 +1167,7 @@ PYBIND11_MODULE(tree, m) {
 
   py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.multibody.math");
+  py::module::import("pydrake.systems.framework");
 
   internal::DefineTreeInertia(m);
   DoScalarIndependentDefinitions(m);
