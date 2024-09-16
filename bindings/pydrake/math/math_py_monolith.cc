@@ -39,8 +39,9 @@ using symbolic::Monomial;
 using symbolic::Variable;
 
 namespace {
-template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+template <template <typename> typename PyClass, typename T>
+// NOLINTNEXTLINE(runtime/references)
+void DefineRigidTransform(py::module m, py::class_<PyClass<T>>& cls) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -52,8 +53,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = RigidTransform<T>;
     constexpr auto& cls_doc = doc.RigidTransform;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "RigidTransform", param, cls_doc.doc);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -158,13 +157,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
   }
+}
+
+template <template <typename> typename PyClass, typename T>
+// NOLINTNEXTLINE(runtime/references)
+void DefineRotationMatrix(py::module m, py::class_<PyClass<T>>& cls) {
+  py::tuple param = GetPyParam<T>();
+
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::math;
+  constexpr auto& doc = pydrake_doc.drake.math;
 
   {
     using Class = RotationMatrix<T>;
     constexpr auto& cls_doc = doc.RotationMatrix;
-
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "RotationMatrix", param, cls_doc.doc);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -243,12 +249,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
   }
+}
+
+template <template <typename> typename PyClass, typename T>
+// NOLINTNEXTLINE(runtime/references)
+void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
+  py::tuple param = GetPyParam<T>();
+
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::math;
+  constexpr auto& doc = pydrake_doc.drake.math;
 
   {
     using Class = RollPitchYaw<T>;
     constexpr auto& cls_doc = doc.RollPitchYaw;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "RollPitchYaw", param, cls_doc.doc);
     cls  // BR
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const Vector3<T>>(), py::arg("rpy"),
@@ -300,7 +314,65 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCopyAndDeepCopy(&cls);
     // N.B. `RollPitchYaw::cast` is not defined in C++.
   }
+}
 
+void DefineRigidTransformRotationMatrixRollPitchYaw(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::math;
+  constexpr auto& doc = pydrake_doc.drake.math;
+
+  // The two rotation classes (RotationMatrix, RollPitchYaw) cyclically depend
+  // on each other, so we must declare them both before defining them. Also,
+  // both RotationMatrix and RigidTransform have `cast[U]` operators so require
+  // all three scalar types to be declared before any methods are defined.
+  py::tuple param_double = GetPyParam<double>();
+  py::tuple param_autodiff = GetPyParam<AutoDiffXd>();
+  py::tuple param_expression = GetPyParam<Expression>();
+  auto cls_rotation_matrix_double =
+      DefineTemplateClassWithDefault<RotationMatrix<double>>(
+          m, "RotationMatrix", param_double, doc.RotationMatrix.doc);
+  auto cls_rotation_matrix_autodiff =
+      DefineTemplateClassWithDefault<RotationMatrix<AutoDiffXd>>(
+          m, "RotationMatrix", param_autodiff, doc.RotationMatrix.doc);
+  auto cls_rotation_matrix_expression =
+      DefineTemplateClassWithDefault<RotationMatrix<Expression>>(
+          m, "RotationMatrix", param_expression, doc.RotationMatrix.doc);
+  auto cls_roll_pitch_yaw_double =
+      DefineTemplateClassWithDefault<RollPitchYaw<double>>(
+          m, "RollPitchYaw", param_double, doc.RollPitchYaw.doc);
+  auto cls_roll_pitch_yaw_autodiff =
+      DefineTemplateClassWithDefault<RollPitchYaw<AutoDiffXd>>(
+          m, "RollPitchYaw", param_autodiff, doc.RollPitchYaw.doc);
+  auto cls_roll_pitch_yaw_expression =
+      DefineTemplateClassWithDefault<RollPitchYaw<Expression>>(
+          m, "RollPitchYaw", param_expression, doc.RollPitchYaw.doc);
+  auto cls_rigid_transform_double =
+      DefineTemplateClassWithDefault<RigidTransform<double>>(
+          m, "RigidTransform", param_double, doc.RigidTransform.doc);
+  auto cls_rigid_transform_autodiff =
+      DefineTemplateClassWithDefault<RigidTransform<AutoDiffXd>>(
+          m, "RigidTransform", param_autodiff, doc.RigidTransform.doc);
+  auto cls_rigid_transform_expression =
+      DefineTemplateClassWithDefault<RigidTransform<Expression>>(
+          m, "RigidTransform", param_expression, doc.RigidTransform.doc);
+  DefineRotationMatrix(m, cls_rotation_matrix_double);
+  DefineRotationMatrix(m, cls_rotation_matrix_autodiff);
+  DefineRotationMatrix(m, cls_rotation_matrix_expression);
+  DefineRollPitchYaw(cls_roll_pitch_yaw_double);
+  DefineRollPitchYaw(cls_roll_pitch_yaw_autodiff);
+  DefineRollPitchYaw(cls_roll_pitch_yaw_expression);
+  DefineRigidTransform(m, cls_rigid_transform_double);
+  DefineRigidTransform(m, cls_rigid_transform_autodiff);
+  DefineRigidTransform(m, cls_rigid_transform_expression);
+}
+
+template <typename T>
+void DoMiscScalarDependentDefinitions(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
+
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::math;
+  constexpr auto& doc = pydrake_doc.drake.math;
   {
     using Class = BsplineBasis<T>;
     constexpr auto& cls_doc = doc.BsplineBasis;
@@ -460,25 +532,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.kClampedUniform.doc);
   }
 
-  // Random Rotations
-  m  // BR
-      .def("UniformlyRandomQuaternion",
-          overload_cast_explicit<Eigen::Quaternion<T>, RandomGenerator*>(
-              &UniformlyRandomQuaternion),
-          py::arg("generator"), doc.UniformlyRandomQuaternion.doc)
-      .def("UniformlyRandomAngleAxis",
-          overload_cast_explicit<Eigen::AngleAxis<T>, RandomGenerator*>(
-              &UniformlyRandomAngleAxis),
-          py::arg("generator"), doc.UniformlyRandomAngleAxis.doc)
-      .def("UniformlyRandomRotationMatrix",
-          overload_cast_explicit<RotationMatrix<T>, RandomGenerator*>(
-              &UniformlyRandomRotationMatrix),
-          py::arg("generator"), doc.UniformlyRandomRotationMatrix.doc)
-      .def("UniformlyRandomRPY",
-          overload_cast_explicit<Vector3<T>, RandomGenerator*>(
-              &UniformlyRandomRPY),
-          py::arg("generator"), doc.UniformlyRandomRPY.doc);
-
   // Matrix Util.
   m  // BR
       .def(
@@ -633,12 +686,42 @@ void DoNonsymbolicScalarDefinitions(py::module m, T) {
           py::arg("alpha") = 1.0, doc.SoftUnderMin.doc);
 }
 
+// Bindings for math/random_rotation.h.
+void DefineRandomRotation(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::math;
+  constexpr auto& doc = pydrake_doc.drake.math;
+  using T = double;
+
+  // Random Rotations
+  m  // BR
+      .def("UniformlyRandomQuaternion",
+          overload_cast_explicit<Eigen::Quaternion<T>, RandomGenerator*>(
+              &UniformlyRandomQuaternion),
+          py::arg("generator"), doc.UniformlyRandomQuaternion.doc)
+      .def("UniformlyRandomAngleAxis",
+          overload_cast_explicit<Eigen::AngleAxis<T>, RandomGenerator*>(
+              &UniformlyRandomAngleAxis),
+          py::arg("generator"), doc.UniformlyRandomAngleAxis.doc)
+      .def("UniformlyRandomRotationMatrix",
+          overload_cast_explicit<RotationMatrix<T>, RandomGenerator*>(
+              &UniformlyRandomRotationMatrix),
+          py::arg("generator"), doc.UniformlyRandomRotationMatrix.doc)
+      .def("UniformlyRandomRPY",
+          overload_cast_explicit<Vector3<T>, RandomGenerator*>(
+              &UniformlyRandomRPY),
+          py::arg("generator"), doc.UniformlyRandomRPY.doc);
+}
+
 }  // namespace
 
 void DefineMathMonolith(py::module m) {
+  DefineRigidTransformRotationMatrixRollPitchYaw(m);
+  DefineRandomRotation(m);
+
   DoScalarIndependentDefinitions(m);
 
-  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+  type_visit([m](auto dummy) { DoMiscScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
 
   type_visit([m](auto dummy) { DoNonsymbolicScalarDefinitions(m, dummy); },
