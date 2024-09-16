@@ -91,7 +91,7 @@ if [[ "${with_test_only}" -eq 1 ]]; then
     "${venv_base}/requirements.txt"
 else
   ln -nsf \
-    "${setup}/requirements-without-test.txt" \
+    "${setup}/requirements.txt" \
     "${venv_base}/requirements.txt"
 fi
 

@@ -63,7 +63,7 @@ httpcore==1.0.5
     # via httpx
 httpx==0.27.2
     # via jupyterlab
-idna==3.8
+idna==3.10
     # via
     #   anyio
     #   httpx
@@ -76,7 +76,7 @@ ipython==8.27.0
     #   ipykernel
     #   ipywidgets
 ipywidgets==8.1.5
-    # via -r requirements-binary.in
+    # via -r ../binary_distribution/requirements.txt
 isoduration==20.11.0
     # via jsonschema
 jedi==0.19.1
@@ -142,7 +142,7 @@ markupsafe==2.1.5
     #   jinja2
     #   nbconvert
 matplotlib==3.9.2
-    # via -r requirements-binary.in
+    # via -r ../binary_distribution/requirements.txt
 matplotlib-inline==0.1.7
     # via
     #   ipykernel
@@ -161,7 +161,7 @@ nbformat==5.10.4
 nest-asyncio==1.6.0
     # via ipykernel
 notebook==7.2.2
-    # via -r requirements-binary.in
+    # via -r ../binary_distribution/requirements.txt
 notebook-shim==0.2.4
     # via
     #   jupyterlab
@@ -188,9 +188,9 @@ pexpect==4.9.0
     # via ipython
 pillow==10.4.0
     # via
-    #   -r requirements-binary.in
+    #   -r ../binary_distribution/requirements.txt
     #   matplotlib
-platformdirs==4.3.2
+platformdirs==4.3.3
     # via jupyter-core
 prometheus-client==0.20.0
     # via jupyter-server
@@ -207,7 +207,7 @@ pure-eval==0.2.3
 pycparser==2.22
     # via cffi
 pydot==3.0.1
-    # via -r requirements-binary.in
+    # via -r ../binary_distribution/requirements.txt
 pygments==2.18.0
     # via
     #   ipython
@@ -225,7 +225,7 @@ python-json-logger==2.0.7
     # via jupyter-events
 pyyaml==6.0.2
     # via
-    #   -r requirements-binary.in
+    #   -r ../binary_distribution/requirements.txt
     #   jupyter-events
 pyzmq==26.2.0
     # via
