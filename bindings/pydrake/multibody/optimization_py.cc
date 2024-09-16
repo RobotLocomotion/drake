@@ -24,6 +24,7 @@ PYBIND11_MODULE(optimization, m) {
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.solvers");
+  py::module::import("pydrake.trajectories");
 
   {
     using Class = CalcGridPointsOptions;
