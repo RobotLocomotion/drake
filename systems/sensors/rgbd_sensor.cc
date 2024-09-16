@@ -60,6 +60,10 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
   image_time_output_port_ = &this->DeclareVectorOutputPort(
       "image_time", 1, &RgbdSensor::CalcImageTime, {this->time_ticket()});
 
+  // XXX declare parameters.
+  parent_frame_id_index_ =
+      this->DeclareAbstractParameter(Value<geometry::FrameId>());
+
   // The depth_16U represents depth in *millimeters*. With 16 bits there is
   // an absolute limit on the farthest distance it can register. This tests to
   // see if the user has specified a maximum depth value that exceeds that
@@ -145,6 +149,13 @@ void RgbdSensor::CalcX_WB(const Context<double>& context,
 void RgbdSensor::CalcImageTime(const Context<double>& context,
                                BasicVector<double>* output) const {
   output->SetFromVector(Vector1d{context.get_time()});
+}
+
+void RgbdSensor::SetDefaultParameters(const Context<double>& context,
+                                      Parameters<double>* parameters) const {
+  LeafSystem<double>::SetDefaultParameters(context, parameters);
+  parameters->get_mutable_abstract_parameter(parent_frame_id_index_)
+      .set_value(default_parent_frame_id());
 }
 
 }  // namespace sensors

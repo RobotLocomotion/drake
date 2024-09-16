@@ -219,9 +219,9 @@ class RgbdSensorTest : public ::testing::Test {
   ::testing::AssertionResult ValidateConstruction(
       FrameId parent_id, const RigidTransformd& X_WC_expected,
       std::function<void()> pre_render_callback = {}) const {
-    if (sensor_->parent_frame_id() != parent_id) {
+    if (sensor_->default_parent_frame_id() != parent_id) {
       return ::testing::AssertionFailure()
-             << "The sensor's parent id (" << sensor_->parent_frame_id()
+             << "The sensor's parent id (" << sensor_->default_parent_frame_id()
              << ") does not match the expected id (" << parent_id << ")";
     }
     ::testing::AssertionResult result = ::testing::AssertionSuccess();

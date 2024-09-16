@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/camera_info.h"
@@ -100,8 +101,23 @@ void DefineSensorsRgbd(py::module m) {
       .def("X_PB", &RgbdSensor::X_PB, doc.RgbdSensor.X_PB.doc)
       .def("X_BC", &RgbdSensor::X_BC, doc.RgbdSensor.X_BC.doc)
       .def("X_BD", &RgbdSensor::X_BD, doc.RgbdSensor.X_BD.doc)
-      .def("parent_frame_id", &RgbdSensor::parent_frame_id,
-          py_rvp::reference_internal, doc.RgbdSensor.parent_frame_id.doc);
+      .def("default_parent_frame_id", &RgbdSensor::default_parent_frame_id,
+          doc.RgbdSensor.default_parent_frame_id.doc)
+      .def("GetParentFrameId", &RgbdSensor::GetParentFrameId,
+          py::arg("context"), doc.RgbdSensor.GetParentFrameId.doc)
+      .def("set_default_parent_frame_id",
+          &RgbdSensor::set_default_parent_frame_id, py::arg("id"),
+          doc.RgbdSensor.set_default_parent_frame_id.doc)
+      .def("SetParentFrameId", &RgbdSensor::SetParentFrameId,
+          py::arg("context"), py::arg("id"),
+          doc.RgbdSensor.SetParentFrameId.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  rgbd_sensor.def("parent_frame_id",
+      WrapDeprecated(doc.RgbdSensor.parent_frame_id.doc_deprecated,
+          &RgbdSensor::parent_frame_id),
+      doc.RgbdSensor.parent_frame_id.doc_deprecated);
+#pragma GCC diagnostic pop
   def_camera_ports(&rgbd_sensor, doc.RgbdSensor);
 
   py::class_<RgbdSensorDiscrete, Diagram<double>> rgbd_camera_discrete(

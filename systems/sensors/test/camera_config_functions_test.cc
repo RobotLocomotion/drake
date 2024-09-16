@@ -135,7 +135,7 @@ TEST_F(CameraConfigFunctionsTest, ParentBaseFrameDefaultToWorld) {
 
   const auto& sensor = builder_.GetDowncastSubsystemByName<RgbdSensor>(
       "rgbd_sensor_preview_camera");
-  EXPECT_EQ(sensor.parent_frame_id(), scene_graph_->world_frame_id());
+  EXPECT_EQ(sensor.default_parent_frame_id(), scene_graph_->world_frame_id());
 }
 
 /* If base frame *is* given in X_PB, the sensor must be posed relative to
@@ -150,7 +150,7 @@ TEST_F(CameraConfigFunctionsTest, ParentBaseFrameSpecified) {
   // Although we've declared it to be relative to a *frame*, there is no
   // geometry::FrameId associated with the frame. So, instead, RgbdSensor
   // references the body to which the named frame is affixed.
-  EXPECT_EQ(sensor.parent_frame_id(), body_frame_id_);
+  EXPECT_EQ(sensor.default_parent_frame_id(), body_frame_id_);
   // We don't test that the camera is posed relative to the *body* frame
   // correctly because that is covered by the tests for `SimRgbdSensor`.
 }

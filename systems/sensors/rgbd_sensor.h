@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_camera.h"
@@ -147,8 +148,31 @@ class RgbdSensor final : public LeafSystem<double> {
     return depth_camera_.core().sensor_pose_in_camera_body();
   }
 
-  /** Returns the id of the frame to which the body is affixed.  */
-  geometry::FrameId parent_frame_id() const { return parent_frame_id_; }
+  /** Returns the default id of the frame to which the body is affixed.  */
+  geometry::FrameId default_parent_frame_id() const { return parent_frame_id_; }
+  DRAKE_DEPRECATED("2025-01-01", "Use default_parent_frame_id() instead.")
+  geometry::FrameId parent_frame_id() const {
+    return default_parent_frame_id();
+  }
+
+  /** Returns the context dependent id of the frame to which the body is
+   affixed. */
+  geometry::FrameId GetParentFrameId(const Context<double>& context) const {
+    return context.get_abstract_parameter(parent_frame_id_index_)
+        .get_value<geometry::FrameId>();
+  }
+
+  /** Sets the id of the frame to which the body is affixed.  */
+  void set_default_parent_frame_id(geometry::FrameId id) {
+    parent_frame_id_ = id;
+  }
+
+  /** Sets the id of the frame to which the body is affixed, as stored as
+   parameters in `context`. */
+  void SetParentFrameId(Context<double>* context, geometry::FrameId id) const {
+    context->get_mutable_abstract_parameter(parent_frame_id_index_)
+        .set_value(id);
+  }
 
   /** Returns the geometry::QueryObject<double>-valued input port.  */
   const InputPort<double>& query_object_input_port() const;
@@ -192,8 +216,12 @@ class RgbdSensor final : public LeafSystem<double> {
                 math::RigidTransformd* X_WB) const;
   void CalcImageTime(const Context<double>&, BasicVector<double>*) const;
 
-  // Extract the query object from the given context (via the appropriate input
-  // port.
+  // Writes the current default values to the context's parameters.
+  void SetDefaultParameters(const Context<double>& context,
+                            Parameters<double>* parameters) const override;
+
+  // Extracts the query object from the given context (via the appropriate
+  // input port.
   const geometry::QueryObject<double>& get_query_object(
       const Context<double>& context) const {
     return query_object_input_port().Eval<geometry::QueryObject<double>>(
@@ -208,14 +236,17 @@ class RgbdSensor final : public LeafSystem<double> {
   const OutputPort<double>* body_pose_in_world_output_port_{};
   const OutputPort<double>* image_time_output_port_{};
 
-  // The identifier for the parent frame `P`.
-  const geometry::FrameId parent_frame_id_;
+  // The default identifier for the parent frame `P`.
+  geometry::FrameId parent_frame_id_;
 
   // The camera specifications for color/label and depth.
   const geometry::render::ColorRenderCamera color_camera_;
   const geometry::render::DepthRenderCamera depth_camera_;
   // The position of the camera's B frame relative to its parent frame P.
   const math::RigidTransformd X_PB_;
+
+  // System parameter indices.
+  int parent_frame_id_index_{-1};
 };
 
 }  // namespace sensors

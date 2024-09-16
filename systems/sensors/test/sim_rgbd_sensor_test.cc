@@ -191,7 +191,7 @@ TEST_F(SimRgbdSensorTest, SimRgbdSensorValues) {
  to the expected *geometry* frame with the expected pose. */
 TEST_F(SimRgbdSensorTest, AddSensorWithBodyFrameSpecification) {
   auto [sensor, rgbd] = MakeSensorOrThrow();
-  EXPECT_EQ(rgbd->parent_frame_id(),
+  EXPECT_EQ(rgbd->default_parent_frame_id(),
             plant_->GetBodyFrameIdOrThrow(bodyA_->index()));
 
   auto diagram = builder_.Build();
@@ -215,7 +215,7 @@ TEST_F(SimRgbdSensorTest, AddSensorWithBodyFrameSpecification) {
  and with a pose that accounts for both X_PB and X_AP. */
 TEST_F(SimRgbdSensorTest, AddSensorWithBodyOffsetFrameSpecification) {
   auto [sensor, rgbd] = MakeSensorOrThrow(frame_F_);
-  EXPECT_EQ(rgbd->parent_frame_id(),
+  EXPECT_EQ(rgbd->default_parent_frame_id(),
             plant_->GetBodyFrameIdOrThrow(bodyA_->index()));
 
   auto diagram = builder_.Build();
