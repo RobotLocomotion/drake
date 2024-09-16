@@ -87,7 +87,7 @@ def do_merge(output_dir):
     for d in dirs:
         maybe_expand_zipped_kcov_data(d)
 
-    cmd = ['kcov', '--merge', output_dir]
+    cmd = ['kcov_fake_command', '--merge', output_dir]
     cmd.extend([os.path.join(d, 'kcov') for d in dirs])
     subprocess.run(cmd, check=True)
 
