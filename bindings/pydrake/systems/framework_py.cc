@@ -19,6 +19,7 @@ PYBIND11_MODULE(framework, m) {
   DefineFrameworkPyValues(m);
   DefineFrameworkPySemantics(m);
   DefineFrameworkPySystems(m);
+  DefineFrameworkDiagramBuilder(m);
 }
 
 }  // namespace pydrake
