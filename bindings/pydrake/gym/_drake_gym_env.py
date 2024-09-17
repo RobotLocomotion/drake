@@ -166,7 +166,7 @@ class DrakeGymEnv(gym.Env):
             self.info_handler = info_handler
         else:
             raise ValueError("info_handler is not callable.")
-        
+
         self.hardware = hardware
 
         if self.simulator:
