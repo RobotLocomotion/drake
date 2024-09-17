@@ -524,7 +524,7 @@ void DefineGeometryVisualizers(py::module m) {
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.lcm");
 
-  // This list must remain in topological order.
+  // This list must remain in bottom-up dependency order.
   DefineMeshcatParams(m);
   DefineDrakeVisualizerParams(m);
   DefineMeshcatVisualizerParams(m);

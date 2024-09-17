@@ -668,7 +668,7 @@ void def_testing_module(py::module m) {
 void DefineGeometryCommon(py::module m) {
   m.doc() = "Bindings for `drake::geometry`";
 
-  // This list must remain in topological order.
+  // This list must remain in bottom-up dependency order.
   DefineIdentifiers(m);
   DefineRole(m);
   DefineRoleAssign(m);

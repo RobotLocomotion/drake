@@ -1683,7 +1683,7 @@ void BindFreeFunctions(py::module m) {
 
 namespace internal {
 void DefineSolversMathematicalProgram(py::module m) {
-  // This list must remain in topological order.
+  // This list must remain in bottom-up dependency order.
   BindPyFunctionConstraint(m);
   BindSolverIdAndType(m);
   BindSolverOptions(m);

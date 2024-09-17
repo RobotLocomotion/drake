@@ -300,7 +300,7 @@ discussion), use e.g.
 
   // =========================================================================
   // Now we'll starting defining other modules.
-  // The following needs to proceed in topological dependency order.
+  // The following needs to proceed in bottom-up dependency dependency order.
   // =========================================================================
 
   // Define `_testing` submodule.
