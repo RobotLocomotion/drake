@@ -35,6 +35,8 @@ class EvaluatorBase {
 
   virtual ~EvaluatorBase() {}
 
+  static enum class ThreadSafety { kUnsafe, kSafe };
+
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
   /**
@@ -146,7 +148,7 @@ class EvaluatorBase {
   /**
    * Returns whether it is safe to call Eval in parallel.
    */
-  bool is_thread_safe() const { return is_thread_safe_; }
+  ThreadSafety is_thread_safe() const { return is_thread_safe_; }
 
  protected:
   /**
@@ -159,7 +161,7 @@ class EvaluatorBase {
    */
   EvaluatorBase(int num_outputs, int num_vars,
                 const std::string& description = "",
-                bool is_thread_safe = false)
+                ThreadSafety is_thread_safe = ThreadSafety::kUnsafe)
       : num_vars_(num_vars),
         num_outputs_(num_outputs),
         description_(description),
@@ -218,7 +220,7 @@ class EvaluatorBase {
   // derived classes to change the thread safety after construction so this
   // protected method is available for internal use, but should not be exposed
   // to end users.
-  void set_is_thread_safe(bool is_thread_safe) {
+  void set_is_thread_safe(ThreadSafety is_thread_safe) {
     is_thread_safe_ = is_thread_safe;
   }
 
@@ -234,7 +236,7 @@ class EvaluatorBase {
   // false, the gradient matrix is regarded as non-sparse, i.e., every entry of
   // the gradient matrix can be non-zero.
   std::optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
-  bool is_thread_safe_{};
+  ThreadSafety is_thread_safe_{};
 };
 
 /**
@@ -266,7 +268,7 @@ class PolynomialEvaluator : public EvaluatorBase {
       : EvaluatorBase(
             polynomials.rows(), poly_vars.size(), "",
             false  // This is not thread safe due to the mutable members.
-            ), // NOLINT
+            ),     // NOLINT
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
 
@@ -381,7 +383,7 @@ class VisualizationCallback : public EvaluatorBase {
 
   VisualizationCallback(int num_inputs, const CallbackFunction& callback,
                         const std::string& description = "",
-                        bool is_thread_safe = false)
+                        ThreadSafety is_thread_safe = ThreadSafety::kUnsafe)
       : EvaluatorBase(0, num_inputs, description, is_thread_safe),
         callback_(callback) {}
 

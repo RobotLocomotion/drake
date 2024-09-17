@@ -64,7 +64,9 @@ class Constraint : public EvaluatorBase {
   Constraint(int num_constraints, int num_vars,
              const Eigen::MatrixBase<DerivedLB>& lb,
              const Eigen::MatrixBase<DerivedUB>& ub,
-             const std::string& description = "", bool is_thread_safe = false)
+             const std::string& description = "",
+             EvaluatorBase::ThreadSafety is_thread_safe =
+                 EvaluatorBase::ThreadSafety::kUnsafe)
       : EvaluatorBase(num_constraints, num_vars, description, is_thread_safe),
         lower_bound_(lb),
         upper_bound_(ub) {
