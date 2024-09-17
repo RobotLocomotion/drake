@@ -72,21 +72,21 @@ string MathematicalProgram::to_string() const {
 }
 
 bool MathematicalProgram::IsThreadSafe() const {
-  std::vector<Binding<Cost>> costs = GetAllCosts();
-  std::vector<Binding<Constraint>> constraints = GetAllConstraints();
-  const bool costs_are_thread_safe =
-      std::all_of(costs.begin(), costs.end(), [](const Binding<Cost>& c) {
-        return c.evaluator()->is_thread_safe();
-      });
-  if (!costs_are_thread_safe) {
-    // Fail early if the costs are not thread safe.
-    return false;
-  }
-  const bool constraints_are_thread_safe = std::all_of(
-      constraints.begin(), constraints.end(), [](const Binding<Constraint>& c) {
-        return c.evaluator()->is_thread_safe();
-      });
-  return costs_are_thread_safe && constraints_are_thread_safe;
+  const std::vector<Binding<Cost>> costs = GetAllCosts();
+  const std::vector<Binding<Constraint>> constraints = GetAllConstraints();
+  return std::all_of(visualization_callbacks_.begin(),
+                     visualization_callbacks_.end(),
+                     [](const Binding<VisualizationCallback>& c) {
+                       return c.evaluator()->is_thread_safe();
+                     }) &&
+         std::all_of(costs.begin(), costs.end(),
+                     [](const Binding<Cost>& c) {
+                       return c.evaluator()->is_thread_safe();
+                     }) &&
+         std::all_of(constraints.begin(), constraints.end(),
+                     [](const Binding<Constraint>& c) {
+                       return c.evaluator()->is_thread_safe();
+                     });
 }
 
 std::string MathematicalProgram::ToLatex(int precision) {

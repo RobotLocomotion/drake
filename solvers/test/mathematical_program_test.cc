@@ -4908,11 +4908,11 @@ class EmptyCost final : public Cost {
 
 GTEST_TEST(MathematicalProgramIsThreadSafe, MathematicalProgramIsThreadSafe) {
   MathematicalProgram prog;
-  //  EXPECT_TRUE(prog.IsThreadSafe());
+  EXPECT_TRUE(prog.IsThreadSafe());
 
   auto x = prog.NewContinuousVariables<2>();
   auto linear_constraint = prog.AddLinearConstraint(x[0] <= 0);
-  //  EXPECT_TRUE(prog.IsThreadSafe());
+  EXPECT_TRUE(prog.IsThreadSafe());
 
   // A constraint marked as non-thread safe.
   auto non_thread_safe_constraint_binding =
@@ -4930,7 +4930,20 @@ GTEST_TEST(MathematicalProgramIsThreadSafe, MathematicalProgramIsThreadSafe) {
   EXPECT_TRUE(prog.IsThreadSafe());
 
   // A cost marked as non-thread safe.
-  auto non_thread_safe_binding = prog.AddCost(x[0] * x[1] * x[1]);
+  auto non_thread_safe_cost_binding = prog.AddCost(x[0] * x[1] * x[1]);
+  EXPECT_FALSE(prog.IsThreadSafe());
+
+  // The only cost and constraint is the thread-safe linear cost.
+  prog.RemoveCost(non_thread_safe_cost_binding);
+  EXPECT_TRUE(prog.IsThreadSafe());
+
+  auto my_callback = [](const Eigen::Ref<const Eigen::VectorXd>& v) {
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(v(0), 1.);
+    EXPECT_EQ(v(1), 2.);
+  };
+  auto b = prog.AddVisualizationCallback(my_callback, x);
+  // Programs with visualization call backs are not thread safe.
   EXPECT_FALSE(prog.IsThreadSafe());
 }
 }  // namespace test
