@@ -182,7 +182,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
     return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
+  math::RigidTransform<T> calc_X_FM(Eigen::Map<const QVector> q) const {
     return math::RigidTransform<T>(math::RollPitchYaw<T>(q[0], q[1], q[2]),
                                    Vector3<T>::Zero());
   }
@@ -199,7 +199,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // velocity v which contains the components of the angular velocity w_FM
   // expressed in frame F. The translational velocity is always zero.
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const VVector& v) const {
+                               Eigen::Map<const VVector> v) const {
     return SpatialVelocity<T>(v, Vector3<T>::Zero());
   }
 

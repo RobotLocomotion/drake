@@ -195,7 +195,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
     return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
+  math::RigidTransform<T> calc_X_FM(Eigen::Map<const QVector> q) const {
     const Vector3<T> p_FM(
         axis_ * get_screw_translation_from_rotation(q[0], screw_pitch_));
     return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
@@ -213,7 +213,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    which is the angular velocity. We scale that by the pitch to find the
    related translational velocity. */
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const VVector& v) const {
+                               Eigen::Map<const VVector> v) const {
     const SpatialVelocity<T> V_FM(
         axis_ * v[0],
         axis_ * get_screw_translation_from_rotation(v[0], screw_pitch_));

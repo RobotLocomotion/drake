@@ -213,7 +213,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
     return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
+  math::RigidTransform<T> calc_X_FM(Eigen::Map<const QVector> q) const {
     // The first 4 elements in q contain a quaternion, ordered as w, x, y, z.
     // The last 3 elements in q contain position from Fo to Mo.
     return math::RigidTransform<T>(Eigen::Quaternion<T>(q[0], q[1], q[2], q[3]),
@@ -228,7 +228,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   };
 
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const VVector& v) const {
+                               Eigen::Map<const VVector> v) const {
     return SpatialVelocity<T>(v.template head<3>(),   // w_FM
                               v.template tail<3>());  // v_FM
   }

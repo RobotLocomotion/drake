@@ -122,7 +122,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
     return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
+  math::RigidTransform<T> calc_X_FM(Eigen::Map<const QVector> q) const {
     const T s1 = sin(q[0]), c1 = cos(q[0]);
     const T s2 = sin(q[1]), c2 = cos(q[1]);
     Matrix3<T> R_FM_matrix;
@@ -147,7 +147,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // in get_angular_rates().
   // TODO(sherm1) Should not have to recalculate H_FM(q) here.
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>& context,
-                               const VVector& v) const {
+                               Eigen::Map<const VVector> v) const {
     const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(context);
     return SpatialVelocity<T>(Hw * v, Vector3<T>::Zero());
   }

@@ -144,7 +144,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
     return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
+  math::RigidTransform<T> calc_X_FM(Eigen::Map<const QVector> q) const {
     return math::RigidTransform<T>(math::RotationMatrix<T>::MakeZRotation(q[2]),
                                    Vector3<T>(q[0], q[1], 0.0));
   }
@@ -159,7 +159,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
   /* Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
    M measured and expressed in frame F as a function of the input velocity v. */
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const VVector& v) const {
+                               Eigen::Map<const VVector> v) const {
     return SpatialVelocity<T>(Vector3<T>(0.0, 0.0, v[2]),
                               Vector3<T>(v[0], v[1], 0.0));
   }

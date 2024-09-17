@@ -125,7 +125,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
     return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
+  math::RigidTransform<T> calc_X_FM(Eigen::Map<const QVector> q) const {
     return math::RigidTransform<T>(q[0] * translation_axis());
   }
 
@@ -141,7 +141,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // translational velocity v along this mobilizer's axis (see
   // translation_axis()).
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const VVector& v) const {
+                               Eigen::Map<const VVector> v) const {
     return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
   }
 

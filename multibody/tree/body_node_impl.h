@@ -84,14 +84,14 @@ class BodyNodeImpl final : public BodyNode<T> {
  private:
   // Given a pointer to the contiguous array of all q's in this system, returns
   // a reference to just the ones for this mobilizer, as a fixed-size vector.
-  const QVector& get_q(const T* positions) const {
+  Eigen::Map<const QVector> get_q(const T* positions) const {
     return ConcreteMobilizer<T>::to_q_vector(
         &positions[mobilizer_->position_start_in_q()]);
   }
 
   // Given a pointer to the contiguous array of all v's in this system, returns
   // a reference to just the ones for this mobilizer, as a fixed-size vector.
-  const VVector& get_v(const T* velocities) const {
+  Eigen::Map<const VVector> get_v(const T* velocities) const {
     return ConcreteMobilizer<T>::to_v_vector(
         &velocities[mobilizer_->velocity_start_in_v()]);
   }
@@ -99,7 +99,8 @@ class BodyNodeImpl final : public BodyNode<T> {
   // Given a complete array of hinge matrices H stored by contiguous columns,
   // returns a const reference to H for this mobilizer, as a 6xnv fixed-size
   // matrix.
-  const HMatrix& get_H(const std::vector<Vector6<T>>& H_cache) const {
+  Eigen::Map<const HMatrix> get_H(
+      const std::vector<Vector6<T>>& H_cache) const {
     return ConcreteMobilizer<T>::to_h_matrix(
         &H_cache[mobilizer_->velocity_start_in_v()]);
   }
@@ -107,7 +108,7 @@ class BodyNodeImpl final : public BodyNode<T> {
   // Given a pointer to a mutable complete array of hinge matrices H stored by
   // contiguous columns, returns a mutable reference to H for this mobilizer,
   // as a 6xnv fixed-size matrix.
-  HMatrix& get_mutable_H(std::vector<Vector6<T>>* H_cache) const {
+  Eigen::Map<HMatrix> get_mutable_H(std::vector<Vector6<T>>* H_cache) const {
     DRAKE_ASSERT(H_cache != nullptr);
     return ConcreteMobilizer<T>::to_mutable_h_matrix(
         &(*H_cache)[mobilizer_->velocity_start_in_v()]);

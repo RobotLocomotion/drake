@@ -126,7 +126,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
     return calc_X_FM(this->to_q_vector(q.data()));
   }
 
-  math::RigidTransform<T> calc_X_FM(const QVector& q) const {
+  math::RigidTransform<T> calc_X_FM(Eigen::Map<const QVector> q) const {
     return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_F_),
                                    Vector3<T>::Zero());
   }
@@ -142,7 +142,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   // frame M measured and expressed in frame F as a function of the input
   // angular velocity `v` about this mobilizer's axis (@see revolute_axis()).
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const VVector& v) const {
+                               Eigen::Map<const VVector> v) const {
     return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
   }
 

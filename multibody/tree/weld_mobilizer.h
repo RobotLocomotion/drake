@@ -55,7 +55,7 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
     return X_FM_.cast<T>();
   }
 
-  math::RigidTransform<T> calc_X_FM(const QVector&) const {
+  math::RigidTransform<T> calc_X_FM(Eigen::Map<const QVector>) const {
     return X_FM_.cast<T>();
   }
 
@@ -68,7 +68,7 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   // Computes the across-mobilizer velocity V_FM which for this mobilizer is
   // always zero since the outboard frame M is fixed to the inboard frame F.
   SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const VVector&) const {
+                               Eigen::Map<const VVector>) const {
     return SpatialVelocity<T>::Zero();
   }
 
