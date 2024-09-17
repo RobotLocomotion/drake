@@ -78,7 +78,7 @@ def make_sim(meshcat=None,
         time_step=sim_time_step,
         contact_model=contact_model,
         discrete_contact_approximation=contact_approximation,
-        )
+    )
 
     plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
 
@@ -411,6 +411,7 @@ def DrakeCartPoleEnv(
         action_port_id="actions",
         observation_port_id="observations",
         reset_handler=reset_handler,
+        info_handler=lambda _: dict(),
         render_rgb_port_id="color_image" if monitoring_camera else None)
 
     # Expose parameters that could be useful for learning.
