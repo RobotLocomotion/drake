@@ -114,11 +114,19 @@ FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M)
       } else {
         it->second += face_normal;
         {
-          // Consider two triangles sharing an edge making a small
-          // dihedral angle theta. The squared length of the sum of
-          // the two face normals is 2(1 - cos(theta)).
+          // To guard against normalizing a near-zero vector of numerical
+          // noises, which could happen when two triangles sharing
+          // an edge make a near-zero dihedral angle, we will check the
+          // squared norm of the sum of the two face normals against the
+          // threshold derived from this very small dihedral angle in degrees.
           constexpr double kThetaDegree = 1;
-          constexpr double kThresholdSquaredNorm =
+          // Two triangles making a small dihedral angle θ has their
+          // face-normal sum with the squared norm 2(1-cos(θ)). For
+          // example, one normal is (1, 0, 0) and another one is
+          // (-cos(θ), -sin(θ), 0). Their sum is (1-cos(θ), -sin(θ), 0) with
+          // the squared norm (1-cos(θ))² + sin(θ)² = 2(1-cos(θ)).
+          // For θ = 1 degree, this threshold is about 3e-4.
+          static const double kThresholdSquaredNorm =
               2 * (1 - std::cos(kThetaDegree * M_PI / 180));
           if (it->second.squaredNorm() < kThresholdSquaredNorm) {
             throw std::runtime_error(
@@ -133,6 +141,50 @@ FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M)
     }
   }
   for (auto& v_normal : vertex_normals_) {
+    // It is possible that a vertex has a near-zero angle-weighted sum of
+    // face normals with all incident edges passing the above guard.
+    // To guard against such vertices, we will check the squared norm of
+    // the angle-weighted sum against the threshold derived from this very
+    // small face angle in degrees.
+    constexpr double kFaceAngleDegree = 1;
+    constexpr double kFaceAngleRadian = kFaceAngleDegree * M_PI / 180;
+    // At the apex vertex shared by four congruent isosceles triangles
+    // forming a square pyramid, the squared norm of the angle-weighted
+    // sum of their face normals is 16 (α tan(α/2))², where α is the
+    // face angle at the apex.
+    //     For example, a square pyramid has its apex at (0, 0, h) and the
+    // other four vertices at (±r, ±r, 0). Its height is h, its side length
+    // is 2r, and its slant height (height of the isosceles triangle) is
+    // s = √(r² + h²). Each triangle has slope h/r, so each face normal
+    // has slope r/h. Therefore, each face normal nᵢ has its Z component
+    // equals r/√(r² + h²) = r/s. It follows that the sum of the face
+    // normal is:
+    //                    ∑nᵢ = (0, 0, 4r/s)
+    // because by symmetry, the X-Y components cancel out.
+    // The angle-weighted sum of the face normals is:
+    //                   ∑αnᵢ = (0, 0, 4αr/s).
+    // The line from the apex to the midpoint of the base of the isosceles
+    // triangle cut it into two congruent right triangles with
+    // angle α/2 at the apex. In this right triangle, the angle α/2 is
+    // opposite to the base r and next to the height s, so we have:
+    //               tan(α/2) = r/s.
+    // Substituting r/s by tan(α/2) in the angle-weighted sum:
+    //                   ∑αnᵢ = (0, 0, 4α tan(α/2)),
+    // and its squared norm is:
+    //                ‖∑αnᵢ‖² = (4α tan(α/2))².
+    // This quantity is independent of the frame and the scale of the pyramid.
+    //
+    // For the one-degree face angle threshold, this squared norm threshold
+    // is about 3e-7.
+    static const double kAngleWeightedSumSquaredNorm =
+        std::pow(4 * kFaceAngleRadian * std::tan(kFaceAngleRadian / 2), 2);
+    if (v_normal.squaredNorm() < kAngleWeightedSumSquaredNorm) {
+      throw std::runtime_error(
+          "FeatureNormalSet: Cannot compute a vertex normal possibly "
+          "because the triangles sharing the vertex form a very pointy "
+          "feature. For example, an apex of a right square pyramid with "
+          "each of the four face angles less than one degree.");
+    }
     v_normal.normalize();
   }
 }

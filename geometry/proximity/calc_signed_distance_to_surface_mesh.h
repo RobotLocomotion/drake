@@ -82,11 +82,9 @@ class FeatureNormalSet {
 struct SquaredDistanceToTriangle {
   double squared_distance{std::numeric_limits<double>::infinity()};
   // The point in the triangle closest to the query point Q.
-  Vector3<double> closest_point{};
+  Vector3<double> closest_point;
   // The normal at the closest feature (vertex, edge, or triangle).
-  Vector3<double> feature_normal{};
-
-  auto operator<=>(const SquaredDistanceToTriangle&) const = default;
+  Vector3<double> feature_normal;
 };
 
 /* Calculates the squared distance and the closest point from the query point
@@ -110,8 +108,6 @@ struct SignedDistanceToSurfaceMesh {
   // The gradient is also discontinuous at the query point with multiple
   // nearest points.
   Vector3<double> gradient;
-
-  auto operator<=>(const SignedDistanceToSurfaceMesh&) const = default;
 };
 
 /* Calculates the signed distance, the nearest point, and the signed-distance
