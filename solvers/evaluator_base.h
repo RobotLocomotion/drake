@@ -214,6 +214,14 @@ class EvaluatorBase {
   // matrix in the linear constraint is resized.
   void set_num_outputs(int num_outputs) { num_outputs_ = num_outputs; }
 
+  // Changes the thread safety of this constraint. It may be necessary for
+  // derived classes to change the thread safety after construction so this
+  // protected method is available for internal use, but should not be exposed
+  // to end users.
+  void set_is_thread_safe(bool is_thread_safe) {
+    is_thread_safe_ = is_thread_safe;
+  }
+
  private:
   int num_vars_{};
   int num_outputs_{};
@@ -255,7 +263,10 @@ class PolynomialEvaluator : public EvaluatorBase {
    */
   PolynomialEvaluator(const VectorXPoly& polynomials,
                       const std::vector<Polynomiald::VarType>& poly_vars)
-      : EvaluatorBase(polynomials.rows(), poly_vars.size(), "", true),
+      : EvaluatorBase(
+            polynomials.rows(), poly_vars.size(), "",
+            false  // This is not thread safe due to the mutable members.
+            ), // NOLINT
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
 

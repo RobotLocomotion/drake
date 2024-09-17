@@ -578,8 +578,8 @@ void BindMathematicalProgram(py::module m) {
   prog_cls  // BR
       .def("__str__", &MathematicalProgram::to_string,
           doc.MathematicalProgram.to_string.doc)
-      .def("is_thread_safe", &MathematicalProgram::is_thread_safe,
-          doc.MathematicalProgram.is_thread_safe.doc)
+      .def("IsThreadSafe", &MathematicalProgram::IsThreadSafe,
+          doc.MathematicalProgram.IsThreadSafe.doc)
       .def("ToLatex", &MathematicalProgram::ToLatex, py::arg("precision") = 3,
           doc.MathematicalProgram.ToLatex.doc)
       .def("NewContinuousVariables",
@@ -715,13 +715,13 @@ void BindMathematicalProgram(py::module m) {
           "AddCost",
           [](MathematicalProgram* self, py::function func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
-              bool is_thread_safe, std::string& description) {
+              std::string& description, bool is_thread_safe) {
             return self->AddCost(std::make_shared<PyFunctionCost>(vars.size(),
-                                     func, is_thread_safe, description),
+                                     func, description, is_thread_safe),
                 vars);
           },
-          py::arg("func"), py::arg("vars"),
-          py::arg("description") = "",py::arg("is_thread_safe") = false,
+          py::arg("func"), py::arg("vars"), py::arg("description") = "",
+          py::arg("is_thread_safe") = false,
           // N.B. There is no corresponding C++ method, so the docstring here
           // is a literal, not a reference to documentation_pybind.h
           "Adds a cost function.")
@@ -844,15 +844,15 @@ void BindMathematicalProgram(py::module m) {
           "AddConstraint",
           [](MathematicalProgram* self, py::function func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
-              const Eigen::Ref<const VectorXDecisionVariable>& vars, std::string& description,
-              bool is_thread_safe) {
+              const Eigen::Ref<const VectorXDecisionVariable>& vars,
+              std::string& description, bool is_thread_safe) {
             return self->AddConstraint(
                 std::make_shared<PyFunctionConstraint>(
                     vars.size(), func, lb, ub, description, is_thread_safe),
                 vars);
           },
-          py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"), py::arg("description") = "",
-          py::arg("is_thread_safe") = false,
+          py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
+          py::arg("description") = "", py::arg("is_thread_safe") = false,
           "Adds a constraint using a Python function.")
       .def("AddConstraint",
           static_cast<Binding<Constraint> (MathematicalProgram::*)(

@@ -81,14 +81,14 @@ class Constraint : public EvaluatorBase {
    * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
    * @see Eval(...)
    */
-  Constraint(int num_constraints, int num_vars)
+  Constraint(int num_constraints, int num_vars, bool is_thread_safe = false)
       : Constraint(
             num_constraints, num_vars,
             Eigen::VectorXd::Constant(num_constraints,
                                       -std::numeric_limits<double>::infinity()),
             Eigen::VectorXd::Constant(num_constraints,
                                       std::numeric_limits<double>::infinity()),
-            "", false) {}
+            "", is_thread_safe) {}
 
   /**
    * Return whether this constraint is satisfied by the given value, `x`.
@@ -531,8 +531,8 @@ class EvaluatorConstraint : public Constraint {
   EvaluatorConstraint(const std::shared_ptr<EvaluatorType>& evaluator,
                       Args&&... args)
       : Constraint(evaluator->num_outputs(), evaluator->num_vars(),
-                   std::forward<Args>(args)..., evaluator->get_description(), evaluator->is_thread_safe(),
-                   ),
+                   std::forward<Args>(args)..., evaluator->get_description(),
+                   evaluator->is_thread_safe()),
         evaluator_(evaluator) {}
 
   using Constraint::set_bounds;
@@ -878,7 +878,7 @@ class LinearComplementarityConstraint : public Constraint {
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
-      : Constraint(q.rows(), M.cols(), "", true), M_(M), q_(q) {}
+      : Constraint(q.rows(), M.cols(), true), M_(M), q_(q) {}
 
   ~LinearComplementarityConstraint() override {}
 

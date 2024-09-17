@@ -387,10 +387,10 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
         *contents = std::regex_replace(
             *contents, std::regex(".Printer........................\\d"),
             "(Printer)..............      ####");
-      }
-      EXPECT_EQ(contents_single, contents_multi);
     }
+    EXPECT_EQ(contents_single, contents_multi);
   }
+}
 }
 
 class AutoDiffOnlyCost final : public drake::solvers::Cost {

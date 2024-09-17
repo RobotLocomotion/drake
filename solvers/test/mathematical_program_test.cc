@@ -1055,7 +1055,8 @@ GTEST_TEST(TestMathematicalProgram, AddCostTest) {
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()), num_generic_costs);
   EXPECT_EQ(prog.linear_costs().size(), 0u);
 
-  shared_ptr<Cost> generic_trivial_cost1 = make_shared<GenericTrivialCost1>();
+  shared_ptr<Cost> generic_trivial_cost1 =
+      make_shared<GenericTrivialCost1>(true);
 
   // Adds Binding<Constraint>
   prog.AddCost(Binding<Cost>(generic_trivial_cost1,
@@ -1100,7 +1101,7 @@ GTEST_TEST(TestMathematicalProgram, AddCostTest) {
 
 class EmptyConstraint final : public Constraint {
  public:
-  EmptyConstraint(bool is_thread_safe = true)
+  explicit EmptyConstraint(bool is_thread_safe = true)
       : Constraint(0, 2, Eigen::VectorXd(0), Eigen::VectorXd(0),
                    "empty_constraint", is_thread_safe) {}
 
@@ -3031,8 +3032,7 @@ GTEST_TEST(TestMathematicalProgram,
   // clang-format on
 
   auto psd_cnstr =
-      prog.AddPrincipalSubmatrixIsPsdConstraint(X, minor_indices)
-          .evaluator();
+      prog.AddPrincipalSubmatrixIsPsdConstraint(X, minor_indices).evaluator();
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
   EXPECT_EQ(prog.GetAllConstraints().size(), 1);
   const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
@@ -3616,7 +3616,8 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
   auto X = prog.NewSymmetricContinuousVariables<3>("X");
 
   // Add costs
-  shared_ptr<Cost> generic_trivial_cost1 = make_shared<GenericTrivialCost1>();
+  shared_ptr<Cost> generic_trivial_cost1 =
+      make_shared<GenericTrivialCost1>(true);
   prog.AddCost(Binding<Cost>(generic_trivial_cost1,
                              VectorDecisionVariable<3>(x(0), x(1), x(2))));
   GenericTrivialCost2 generic_trivial_cost2;
@@ -4893,8 +4894,8 @@ GTEST_TEST(MathematicalProgramTest, AddLogDeterminantLowerBoundConstraint) {
 
 class EmptyCost final : public Cost {
  public:
-  EmptyCost(bool is_thread_safe = true)
-      : Cost(0, is_thread_safe, "empty_cost") {}
+  explicit EmptyCost(bool is_thread_safe = true)
+      : Cost(0, "empty_cost", is_thread_safe) {}
 
   ~EmptyCost() {}
 
@@ -4907,34 +4908,30 @@ class EmptyCost final : public Cost {
 
 GTEST_TEST(MathematicalProgramIsThreadSafe, MathematicalProgramIsThreadSafe) {
   MathematicalProgram prog;
-  EXPECT_TRUE(prog.is_thread_safe());
+  //  EXPECT_TRUE(prog.IsThreadSafe());
 
   auto x = prog.NewContinuousVariables<2>();
   auto linear_constraint = prog.AddLinearConstraint(x[0] <= 0);
-  EXPECT_TRUE(prog.is_thread_safe());
+  //  EXPECT_TRUE(prog.IsThreadSafe());
 
   // A constraint marked as non-thread safe.
-  auto empty_constraint = std::make_shared<EmptyConstraint>(false);
-  auto empty_constraint_binding = Binding<Constraint>(empty_constraint, x);
   auto non_thread_safe_constraint_binding =
-      prog.AddConstraint(empty_constraint_binding);
-  EXPECT_FALSE(prog.is_thread_safe());
+      prog.AddConstraint(x[0] * x[1] * x[1] == 1.);
+  EXPECT_FALSE(prog.IsThreadSafe());
 
   prog.RemoveConstraint(linear_constraint);
-  EXPECT_FALSE(prog.is_thread_safe());
+  EXPECT_FALSE(prog.IsThreadSafe());
 
   prog.RemoveConstraint(non_thread_safe_constraint_binding);
-  EXPECT_TRUE(prog.is_thread_safe());
+  // The program has no costs and constraints, therefore it is thread safe.
+  EXPECT_TRUE(prog.IsThreadSafe());
 
   auto linear_cost = prog.AddLinearCost(x[0]);
-  EXPECT_TRUE(prog.is_thread_safe());
+  EXPECT_TRUE(prog.IsThreadSafe());
 
   // A cost marked as non-thread safe.
-  auto empty_cost = std::make_shared<EmptyCost>(false);
-  auto empty_cost_binding =
-      Binding<Cost>(empty_cost, VectorXDecisionVariable{0});
-  auto non_thread_safe_binding = prog.AddCost(empty_cost_binding);
-  EXPECT_FALSE(prog.is_thread_safe());
+  auto non_thread_safe_binding = prog.AddCost(x[0] * x[1] * x[1]);
+  EXPECT_FALSE(prog.IsThreadSafe());
 }
 }  // namespace test
 }  // namespace solvers

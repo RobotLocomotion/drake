@@ -150,7 +150,7 @@ shared_ptr<QuadraticCost> Make2NormSquaredCost(
 
 L1NormCost::L1NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                        const Eigen::Ref<const Eigen::VectorXd>& b)
-    : Cost(A.cols(),"", true), A_(A), b_(b) {
+    : Cost(A.cols(), "", true), A_(A), b_(b) {
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
 
@@ -199,13 +199,13 @@ std::string L1NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
 
 L2NormCost::L2NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                        const Eigen::Ref<const Eigen::VectorXd>& b)
-    : Cost(A.cols(),"", true), A_(A), b_(b) {
+    : Cost(A.cols(), "", true), A_(A), b_(b) {
   DRAKE_THROW_UNLESS(A_.get_as_sparse().rows() == b_.rows());
 }
 
 L2NormCost::L2NormCost(const Eigen::SparseMatrix<double>& A,
                        const Eigen::Ref<const Eigen::VectorXd>& b)
-    : Cost(A.cols(),"", true), A_(A), b_(b) {
+    : Cost(A.cols(), "", true), A_(A), b_(b) {
   DRAKE_THROW_UNLESS(A_.get_as_sparse().rows() == b_.rows());
 }
 
@@ -267,7 +267,7 @@ std::string L2NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
 
 LInfNormCost::LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                            const Eigen::Ref<const Eigen::VectorXd>& b)
-    : Cost(A.cols(),"", true), A_(A), b_(b) {
+    : Cost(A.cols(), "", true), A_(A), b_(b) {
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
 
@@ -318,7 +318,7 @@ std::string LInfNormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
 PerspectiveQuadraticCost::PerspectiveQuadraticCost(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b)
-    : Cost(A.cols(),"", true), A_(A), b_(b) {
+    : Cost(A.cols(), "", true), A_(A), b_(b) {
   DRAKE_THROW_UNLESS(A_.rows() >= 2);
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
@@ -372,12 +372,16 @@ std::string PerspectiveQuadraticCost::DoToLatex(
 }
 
 ExpressionCost::ExpressionCost(const symbolic::Expression& e)
-    : Cost(e.GetVariables().size(),"", true),
+    : Cost(e.GetVariables().size(), "",
+           false  // see ExpressionConstraint for why this is false.
+           ),     // NOLINT
       /* We reuse the Constraint evaluator's implementation. */
       evaluator_(std::make_unique<ExpressionConstraint>(
           Vector1<symbolic::Expression>{e},
           /* The ub, lb are unused but still required. */
-          Vector1d(0.0), Vector1d(0.0))) {}
+          Vector1d(0.0), Vector1d(0.0))) {
+  set_is_thread_safe(evaluator_->is_thread_safe());
+}
 
 const VectorXDecisionVariable& ExpressionCost::vars() const {
   return dynamic_cast<const ExpressionConstraint&>(*evaluator_).vars();

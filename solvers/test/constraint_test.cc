@@ -840,7 +840,7 @@ GTEST_TEST(TestConstraint, ExpressionConstraintIsThreadSafe) {
   Vector3<Variable> vars{x0, x1, x2};
   Vector2<Expression> e{1. + x0 * x0, x1 * x1 + x2};
   ExpressionConstraint constraint(e, Vector2d::Zero(), 2. * Vector2d::Ones());
-  EXPECT_TRUE(constraint.is_thread_safe());
+  EXPECT_FALSE(constraint.is_thread_safe());
 }
 
 // Test that the Eval() method of LinearComplementarityConstraint correctly

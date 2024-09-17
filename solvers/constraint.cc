@@ -413,7 +413,7 @@ std::string RotatedLorentzConeConstraint::DoToLatex(
 LinearConstraint::LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                                    const Eigen::Ref<const Eigen::VectorXd>& ub)
-    : Constraint(A.rows(), A.cols(), lb, ub,"", true), A_(A) {
+    : Constraint(A.rows(), A.cols(), lb, ub, "", true), A_(A) {
   DRAKE_THROW_UNLESS(A.rows() == lb.rows());
   DRAKE_THROW_UNLESS(A.array().allFinite());
 }
@@ -421,7 +421,7 @@ LinearConstraint::LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
 LinearConstraint::LinearConstraint(const Eigen::SparseMatrix<double>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                                    const Eigen::Ref<const Eigen::VectorXd>& ub)
-    : Constraint(A.rows(), A.cols(), lb, ub,"", true), A_(A) {
+    : Constraint(A.rows(), A.cols(), lb, ub, "", true), A_(A) {
   DRAKE_THROW_UNLESS(A.rows() == lb.rows());
   DRAKE_THROW_UNLESS(A_.IsFinite());
 }
@@ -654,7 +654,7 @@ PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint(int rows)
     : Constraint(rows, rows * rows, Eigen::VectorXd::Zero(rows),
                  Eigen::VectorXd::Constant(
                      rows, std::numeric_limits<double>::infinity()),
-                "", true),
+                 "", true),
       matrix_rows_(rows) {
   // TODO(hongkai.dai): remove the warning when we change the solver backend.
   if (matrix_rows_ == 1) {
@@ -778,7 +778,7 @@ ExpressionConstraint::ExpressionConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub)
-    : Constraint(v.rows(), GetDistinctVariables(v).size(), lb, ub,"", true),
+    : Constraint(v.rows(), GetDistinctVariables(v).size(), lb, ub, "", false),
       expressions_(v) {
   // Setup map_var_to_index_ and vars_ so that
   //   map_var_to_index_[vars_(i).get_id()] = i.
@@ -874,7 +874,7 @@ ExponentialConeConstraint::ExponentialConeConstraint(
     : Constraint(
           2, A.cols(), Eigen::Vector2d::Zero(),
           Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
-         "", true),
+          "", true),
       A_{A},
       b_{b} {
   DRAKE_THROW_UNLESS(A.rows() == 3);

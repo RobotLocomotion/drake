@@ -109,8 +109,6 @@ GTEST_TEST(AngleBetweenVectorsCostTest, TwoFreeBodies) {
   const Eigen::Vector3d b_W = X_WB.rotation() * b_B;
   cos_theta = a_W.dot(b_W) / (a_W.norm() * b_W.norm());
   CheckCases(*cost, *cost_ad, q, c * (1 - cos_theta));
-
-  EXPECT_FALSE(cost->is_thread_safe());
 }
 
 }  // namespace

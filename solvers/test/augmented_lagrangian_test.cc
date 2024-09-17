@@ -137,7 +137,7 @@ class DummyConstraint final : public solvers::Constraint {
  public:
   DummyConstraint()
       : Constraint(4, 2, Eigen::Vector4d(1, 2, 3, 4),
-                   Eigen::Vector4d(1, 2, 3, 4), "", false) {}
+                   Eigen::Vector4d(1, 2, 3, 4)) {}
   using Constraint::set_bounds;
 
  protected:

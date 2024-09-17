@@ -135,6 +135,13 @@ class TestCost(unittest.TestCase):
         self.assertEqual(hash(cost1_binding1), hash(cost1_binding2))
         self.assertNotEqual(hash(cost1_binding1), hash(cost2_binding))
 
+    def test_is_thread_safe(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e1 = np.sin(x) + y
+        cost1 = mp.ExpressionCost(e=e1)
+        self.assertFalse(cost1.is_thread_safe())
+
 
 class TestConstraints(unittest.TestCase):
     def test_bounding_box_constraint(self):

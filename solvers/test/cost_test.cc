@@ -366,8 +366,8 @@ GTEST_TEST(testCost, testFunctionCost) {
   VerifyFunctionCost(GenericTrivialCost2(), x);
   // Ensure that we explicitly call the default constructor for a const class.
   // @ref http://stackoverflow.com/a/28338123/7829525
-  const GenericTrivialCost2 obj_cost{};
-  VerifyFunctionCost(obj_cost, x);
+  const GenericTrivialCost2 obj_const{};
+  VerifyFunctionCost(obj_const, x);
   VerifyFunctionCost(make_shared<GenericTrivialCost2>(), x);
   VerifyFunctionCost(make_unique<GenericTrivialCost2>(), x);
 }
@@ -803,6 +803,7 @@ GTEST_TEST(ToLatex, GenericCost) {
   Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
   EXPECT_EQ(c.ToLatex(vars),
             "\\text{GenericTrivialCost1}(x_{0}, x_{1}, x_{2}) \\tag{test}");
+  EXPECT_FALSE(c.is_thread_safe());
 }
 
 GTEST_TEST(ToLatex, LinearCost) {
@@ -867,9 +868,9 @@ GTEST_TEST(ToLatex, ExpressionCost) {
 }
 
 GTEST_TEST(IsThreadSafe, GenericCost) {
-  test::GenericTrivialCost1 c1{false};
-  test::GenericTrivialCost1 c2{true};
+  test::GenericTrivialCost1 c1{true};
   EXPECT_TRUE(c1.is_thread_safe());
+  test::GenericTrivialCost1 c2{false};
   EXPECT_FALSE(c2.is_thread_safe());
 }
 
@@ -907,7 +908,7 @@ GTEST_TEST(IsThreadSafe, ExpressionCost) {
   Variable x("x"), y("y");
   Expression e = x * sin(y);
   ExpressionCost c(e);
-  EXPECT_TRUE(c.is_thread_safe());
+  EXPECT_FALSE(c.is_thread_safe());
 }
 
 }  // namespace

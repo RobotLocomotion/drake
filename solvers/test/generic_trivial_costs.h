@@ -22,7 +22,8 @@ class GenericTrivialCost1 : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1);
 
-  GenericTrivialCost1(bool is_thread_safe) : Cost(3, "", is_thread_safe), private_val_(2) {}
+  explicit GenericTrivialCost1(bool is_thread_safe = false)
+      : Cost(3, "", is_thread_safe), private_val_(2) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
