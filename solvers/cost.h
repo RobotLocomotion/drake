@@ -53,7 +53,7 @@ class LinearCost : public Cost {
    */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   LinearCost(const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0.)
-      : Cost(a.rows(), "", true), a_(a), b_(b) {}
+      : Cost(a.rows(), /*description=*/"", /*is_thread_safe=*/true), a_(a), b_(b) {}
 
   ~LinearCost() override {}
 
@@ -131,7 +131,7 @@ class QuadraticCost : public Cost {
   QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
                 const Eigen::MatrixBase<Derivedb>& b, double c = 0.,
                 std::optional<bool> is_hessian_psd = std::nullopt)
-      : Cost(Q.rows(), "", true), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
+      : Cost(Q.rows(), /*description=*/"", /*is_thread_safe=*/true), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
     DRAKE_THROW_UNLESS(Q_.rows() == Q_.cols());
     DRAKE_THROW_UNLESS(Q_.cols() == b_.rows());
     if (is_hessian_psd.has_value()) {

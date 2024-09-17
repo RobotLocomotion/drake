@@ -81,14 +81,15 @@ class Constraint : public EvaluatorBase {
    * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
    * @see Eval(...)
    */
-  Constraint(int num_constraints, int num_vars, bool is_thread_safe = false)
+  Constraint(int num_constraints, int num_vars,
+             const std::string& description = "", bool is_thread_safe = false)
       : Constraint(
             num_constraints, num_vars,
             Eigen::VectorXd::Constant(num_constraints,
                                       -std::numeric_limits<double>::infinity()),
             Eigen::VectorXd::Constant(num_constraints,
                                       std::numeric_limits<double>::infinity()),
-            "", is_thread_safe) {}
+            description, is_thread_safe) {}
 
   /**
    * Return whether this constraint is satisfied by the given value, `x`.
@@ -235,7 +236,8 @@ class QuadraticConstraint : public Constraint {
                       double ub,
                       std::optional<HessianType> hessian_type = std::nullopt)
       : Constraint(kNumConstraints, Q0.rows(), drake::Vector1d::Constant(lb),
-                   drake::Vector1d::Constant(ub), "", true),
+                   drake::Vector1d::Constant(ub), /*description=*/"",
+                   /*is_thread_safe=*/true),
         Q_((Q0 + Q0.transpose()) / 2),
         b_(b) {
     UpdateHessianType(hessian_type);
@@ -453,7 +455,7 @@ class RotatedLorentzConeConstraint : public Constraint {
       : Constraint(
             3, A.cols(), Eigen::Vector3d::Constant(0.0),
             Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
-            "", true),
+            /*description=*/"", /*is_thread_safe=*/true),
         A_(A.sparseView()),
         A_dense_(A),
         b_(b) {
@@ -878,7 +880,10 @@ class LinearComplementarityConstraint : public Constraint {
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
-      : Constraint(q.rows(), M.cols(), true), M_(M), q_(q) {}
+      : Constraint(q.rows(), M.cols(), /*description=*/"",
+                   /*is_thread_safe=*/true),
+        M_(M),
+        q_(q) {}
 
   ~LinearComplementarityConstraint() override {}
 
