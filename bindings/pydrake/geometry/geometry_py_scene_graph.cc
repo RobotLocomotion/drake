@@ -20,12 +20,14 @@ namespace {
 using systems::Context;
 using systems::LeafSystem;
 
+// NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+using namespace drake::geometry;
+constexpr auto& doc = pydrake_doc.drake.geometry;
+
+// TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
+// indentation.
+
 void DoScalarIndependentDefinitions(py::module m) {
-  constexpr auto& doc = pydrake_doc.drake.geometry;
-
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::geometry;
-
   // HydroelasticContactRepresentation enumeration
   {
     using Class = HydroelasticContactRepresentation;
@@ -59,13 +61,8 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DefineSceneGraphInspector(py::module m, T) {
   py::tuple param = GetPyParam<T>();
-  constexpr auto& doc = pydrake_doc.drake.geometry;
-
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::geometry;
-
   //  SceneGraphInspector
   {
     using Class = SceneGraphInspector<T>;
@@ -181,7 +178,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("geometry_version", &Class::geometry_version,
             py_rvp::reference_internal, cls_doc.geometry_version.doc);
   }
+}
 
+template <typename T>
+void DefineSceneGraph(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   //  SceneGraph
   {
     using Class = SceneGraph<T>;
@@ -422,8 +423,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("world_frame_id", &Class::world_frame_id,
             cls_doc.world_frame_id.doc);
   }
+}
 
-  //  FramePoseVector
+template <typename T>
+void DefineFramePoseVector(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   {
     using Class = FramePoseVector<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
@@ -448,8 +452,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("ids", &FramePoseVector<T>::ids, doc.KinematicsVector.ids.doc);
     AddValueInstantiation<FramePoseVector<T>>(m);
   }
+}
 
-  //  QueryObject
+template <typename T>
+void DefineQueryObject(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   {
     using Class = QueryObject<T>;
     constexpr auto& cls_doc = doc.QueryObject;
@@ -552,8 +559,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
     AddValueInstantiation<QueryObject<T>>(m);
   }
+}
 
-  // SignedDistancePair
+template <typename T>
+void DefineSignedDistancePair(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   {
     using Class = SignedDistancePair<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
@@ -576,8 +586,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             return_value_policy_for_scalar_type<T>(),
             doc.SignedDistancePair.nhat_BA_W.doc);
   }
+}
 
-  // SignedDistanceToPoint
+template <typename T>
+void DefineSignedDistanceToPoint(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   {
     using Class = SignedDistanceToPoint<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
@@ -595,8 +608,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             return_value_policy_for_scalar_type<T>(),
             doc.SignedDistanceToPoint.grad_W.doc);
   }
+}
 
-  // PenetrationAsPointPair
+template <typename T>
+void DefinePenetrationAsPointPair(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   {
     using Class = PenetrationAsPointPair<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
@@ -616,8 +632,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_readwrite("depth", &PenetrationAsPointPair<T>::depth,
             doc.PenetrationAsPointPair.depth.doc);
   }
+}
 
-  // ContactSurface
+template <typename T>
+void DefineContactSurface(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   // Currently we do not bind the constructor because users do not need to
   // construct it directly yet. We can get it from ComputeContactSurface*().
   if constexpr (scalar_predicate<T>::is_bool) {
@@ -661,13 +680,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Equal", &Class::Equal, py::arg("surface"), cls_doc.Equal.doc);
     DefCopyAndDeepCopy(&cls);
   }
-}  // NOLINT(readability/fn_size)
+}
 }  // namespace
 
 void DefineGeometrySceneGraph(py::module m) {
   py::module::import("pydrake.systems.framework");
   DoScalarIndependentDefinitions(m);
-  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+  type_visit(
+      [m](auto dummy) {
+        // This list must remain in topological order.
+        DefineFramePoseVector(m, dummy);
+        DefineContactSurface(m, dummy);
+        DefinePenetrationAsPointPair(m, dummy);
+        DefineSignedDistancePair(m, dummy);
+        DefineSignedDistanceToPoint(m, dummy);
+        DefineSceneGraphInspector(m, dummy);
+        DefineQueryObject(m, dummy);
+        DefineSceneGraph(m, dummy);
+      },
       CommonScalarPack{});
 }
 }  // namespace pydrake

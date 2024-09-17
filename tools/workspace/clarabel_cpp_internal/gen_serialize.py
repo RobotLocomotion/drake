@@ -7,6 +7,12 @@ from pathlib import Path
 
 from python import runfiles
 
+_FIELDS_TO_SKIP = {
+    # These are enums, which we don't support yet.
+    "chordal_decomposition_merge_method",
+    "direct_solve_method",
+}
+
 _PROLOGUE = """\
 #pragma once
 
@@ -75,7 +81,10 @@ def _settings_names():
 def _create_header_text():
     result = _PROLOGUE
     for name in _settings_names():
-        result += f"  DRAKE_VISIT({name});\n"
+        if name in _FIELDS_TO_SKIP:
+            result += f"  // skipped: {name}\n"
+        else:
+            result += f"  DRAKE_VISIT({name});\n"
     result += _EPILOGUE
     return result
 

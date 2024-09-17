@@ -44,6 +44,7 @@ PYBIND11_MODULE(analysis, m) {
 
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.solvers");
+  py::module::import("pydrake.trajectories");
 
   {
     using Class = SimulatorConfig;

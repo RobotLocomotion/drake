@@ -161,6 +161,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        ":tree_py",
     ],
 )
 
@@ -198,6 +199,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":plant_py",
+        "//bindings/pydrake/planning",
         "//bindings/pydrake/solvers",
     ],
 )
@@ -217,6 +219,7 @@ drake_pybind_library(
         ":module_py",
         ":plant_py",
         "//bindings/pydrake/solvers",
+        "//bindings/pydrake:trajectories_py",
     ],
 )
 

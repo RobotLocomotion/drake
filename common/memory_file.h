@@ -10,7 +10,7 @@
 namespace drake {
 
 /** A virtual file, stored in memory. */
-class MemoryFile {
+class MemoryFile final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MemoryFile);
 
@@ -44,6 +44,8 @@ class MemoryFile {
                           isn't '.'. */
   MemoryFile(std::string contents, std::string extension,
              std::string filename_hint);
+
+  ~MemoryFile();
 
   /** Returns the file's contents. */
   const std::string& contents() const { return contents_; }

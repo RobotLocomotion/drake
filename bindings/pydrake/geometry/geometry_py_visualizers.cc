@@ -22,17 +22,16 @@ using math::RigidTransformd;
 using systems::Context;
 using systems::LeafSystem;
 
+// NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+using namespace drake::geometry;
+constexpr auto& doc = pydrake_doc.drake.geometry;
+
+// TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
+// indentation.
+
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DefineDrakeVisualizer(py::module m, T) {
   py::tuple param = GetPyParam<T>();
-  constexpr auto& doc = pydrake_doc.drake.geometry;
-
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::geometry;
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.lcm");
-
-  // DrakeVisualizer
   {
     using Class = DrakeVisualizer<T>;
     constexpr auto& cls_doc = doc.DrakeVisualizer;
@@ -76,8 +75,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("lcm"), py::arg("params") = DrakeVisualizerParams{},
             cls_doc.DispatchLoadMessage.doc);
   }
+}
 
-  // MeshcatPointCloudVisualizer
+template <typename T>
+void DefineMeshcatPointCloudVisualizer(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   {
     using Class = MeshcatPointCloudVisualizer<T>;
     constexpr auto& cls_doc = doc.MeshcatPointCloudVisualizer;
@@ -99,8 +101,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("pose_input_port", &Class::pose_input_port,
             py_rvp::reference_internal, cls_doc.pose_input_port.doc);
   }
+}
 
-  // MeshcatVisualizer
+template <typename T>
+void DefineMeshcatVisualizer(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   {
     using Class = MeshcatVisualizer<T>;
     constexpr auto& cls_doc = doc.MeshcatVisualizer;
@@ -147,7 +152,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference,
             cls_doc.AddToBuilder
                 .doc_4args_builder_query_object_port_meshcat_params);
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR
@@ -159,12 +163,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
-
-  // DrakeVisualizerParams
+void DefineDrakeVisualizerParams(py::module m) {
   {
     using Class = DrakeVisualizerParams;
     constexpr auto& cls_doc = doc.DrakeVisualizerParams;
@@ -176,8 +175,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
+}
 
-  // MeshcatParams
+void DefineMeshcatParams(py::module m) {
   {
     using Class = MeshcatParams;
     constexpr auto& cls_doc = doc.MeshcatParams;
@@ -198,8 +198,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
+}
 
-  // Meshcat
+void DefineMeshcat(py::module m) {
   {
     using Class = Meshcat;
     constexpr auto& cls_doc = doc.Meshcat;
@@ -216,6 +217,35 @@ void DoScalarIndependentDefinitions(py::module m) {
             side_doc.kBackSide.doc)
         .value("kDoubleSide", Meshcat::SideOfFaceToRender::kDoubleSide,
             side_doc.kDoubleSide.doc);
+
+    const auto& perspective_camera_doc = doc.Meshcat.PerspectiveCamera;
+    py::class_<Meshcat::PerspectiveCamera> perspective_camera_cls(
+        meshcat, "PerspectiveCamera", perspective_camera_doc.doc);
+    perspective_camera_cls  // BR
+        .def(ParamInit<Meshcat::PerspectiveCamera>());
+    DefAttributesUsingSerialize(
+        &perspective_camera_cls, perspective_camera_doc);
+    DefReprUsingSerialize(&perspective_camera_cls);
+    DefCopyAndDeepCopy(&perspective_camera_cls);
+
+    const auto& orthographic_camera_doc = doc.Meshcat.OrthographicCamera;
+    py::class_<Meshcat::OrthographicCamera> orthographic_camera_cls(
+        meshcat, "OrthographicCamera", orthographic_camera_doc.doc);
+    orthographic_camera_cls  // BR
+        .def(ParamInit<Meshcat::OrthographicCamera>());
+    DefAttributesUsingSerialize(
+        &orthographic_camera_cls, orthographic_camera_doc);
+    DefReprUsingSerialize(&orthographic_camera_cls);
+    DefCopyAndDeepCopy(&orthographic_camera_cls);
+
+    const auto& gamepad_doc = doc.Meshcat.Gamepad;
+    py::class_<Meshcat::Gamepad> gamepad_cls(
+        meshcat, "Gamepad", gamepad_doc.doc);
+    gamepad_cls  // BR
+        .def(ParamInit<Meshcat::Gamepad>());
+    DefAttributesUsingSerialize(&gamepad_cls, gamepad_doc);
+    DefReprUsingSerialize(&gamepad_cls);
+    DefCopyAndDeepCopy(&gamepad_cls);
 
     meshcat  // BR
         .def(py::init<std::optional<int>>(), py::arg("port") = std::nullopt,
@@ -412,42 +442,25 @@ void DoScalarIndependentDefinitions(py::module m) {
               self.InjectWebsocketMessage(message_view);
             },
             py::arg("message"));
-
-    const auto& perspective_camera_doc = doc.Meshcat.PerspectiveCamera;
-    py::class_<Meshcat::PerspectiveCamera> perspective_camera_cls(
-        meshcat, "PerspectiveCamera", perspective_camera_doc.doc);
-    perspective_camera_cls  // BR
-        .def(ParamInit<Meshcat::PerspectiveCamera>());
-    DefAttributesUsingSerialize(
-        &perspective_camera_cls, perspective_camera_doc);
-    DefReprUsingSerialize(&perspective_camera_cls);
-    DefCopyAndDeepCopy(&perspective_camera_cls);
-
-    const auto& orthographic_camera_doc = doc.Meshcat.OrthographicCamera;
-    py::class_<Meshcat::OrthographicCamera> orthographic_camera_cls(
-        meshcat, "OrthographicCamera", orthographic_camera_doc.doc);
-    orthographic_camera_cls  // BR
-        .def(ParamInit<Meshcat::OrthographicCamera>());
-    DefAttributesUsingSerialize(
-        &orthographic_camera_cls, orthographic_camera_doc);
-    DefReprUsingSerialize(&orthographic_camera_cls);
-    DefCopyAndDeepCopy(&orthographic_camera_cls);
-
-    const auto& gamepad_doc = doc.Meshcat.Gamepad;
-    py::class_<Meshcat::Gamepad> gamepad_cls(
-        meshcat, "Gamepad", gamepad_doc.doc);
-    gamepad_cls  // BR
-        .def(ParamInit<Meshcat::Gamepad>());
-    DefAttributesUsingSerialize(&gamepad_cls, gamepad_doc);
-    DefReprUsingSerialize(&gamepad_cls);
-    DefCopyAndDeepCopy(&gamepad_cls);
   }
+}
 
-  // MeshcatAnimation
+void DefineMeshcatAnimation(py::module m) {
   {
     using Class = MeshcatAnimation;
     constexpr auto& cls_doc = doc.MeshcatAnimation;
     py::class_<Class> cls(m, "MeshcatAnimation", cls_doc.doc);
+
+    // MeshcatAnimation::LoopMode enumeration
+    constexpr auto& loop_doc = doc.MeshcatAnimation.LoopMode;
+    py::enum_<MeshcatAnimation::LoopMode>(cls, "LoopMode", loop_doc.doc)
+        .value("kLoopOnce", MeshcatAnimation::LoopMode::kLoopOnce,
+            loop_doc.kLoopOnce.doc)
+        .value("kLoopRepeat", MeshcatAnimation::LoopMode::kLoopRepeat,
+            loop_doc.kLoopRepeat.doc)
+        .value("kLoopPingPong", MeshcatAnimation::LoopMode::kLoopPingPong,
+            loop_doc.kLoopPingPong.doc);
+
     cls  // BR
         .def(py::init<double>(), py::arg("frames_per_second") = 64.0,
             cls_doc.ctor.doc)
@@ -488,19 +501,10 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("value"), cls_doc.SetProperty.doc_vector_double);
     // Note: We don't bind get_key_frame and get_javascript_type (at least
     // not yet); they are meant primarily for testing.
-
-    // MeshcatAnimation::LoopMode enumeration
-    constexpr auto& loop_doc = doc.MeshcatAnimation.LoopMode;
-    py::enum_<MeshcatAnimation::LoopMode>(cls, "LoopMode", loop_doc.doc)
-        .value("kLoopOnce", MeshcatAnimation::LoopMode::kLoopOnce,
-            loop_doc.kLoopOnce.doc)
-        .value("kLoopRepeat", MeshcatAnimation::LoopMode::kLoopRepeat,
-            loop_doc.kLoopRepeat.doc)
-        .value("kLoopPingPong", MeshcatAnimation::LoopMode::kLoopPingPong,
-            loop_doc.kLoopPingPong.doc);
   }
+}
 
-  // MeshcatVisualizerParams
+void DefineMeshcatVisualizerParams(py::module m) {
   {
     using Class = MeshcatVisualizerParams;
     constexpr auto& cls_doc = doc.MeshcatVisualizerParams;
@@ -517,9 +521,23 @@ void DoScalarIndependentDefinitions(py::module m) {
 }  // namespace
 
 void DefineGeometryVisualizers(py::module m) {
-  DoScalarIndependentDefinitions(m);
-  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+  py::module::import("pydrake.systems.framework");
+  py::module::import("pydrake.systems.lcm");
+
+  // This list must remain in topological order.
+  DefineMeshcatParams(m);
+  DefineDrakeVisualizerParams(m);
+  DefineMeshcatVisualizerParams(m);
+  DefineMeshcatAnimation(m);
+  DefineMeshcat(m);
+  type_visit(
+      [m](auto dummy) {
+        DefineDrakeVisualizer(m, dummy);
+        DefineMeshcatPointCloudVisualizer(m, dummy);
+        DefineMeshcatVisualizer(m, dummy);
+      },
       NonSymbolicScalarPack{});
 }
+
 }  // namespace pydrake
 }  // namespace drake

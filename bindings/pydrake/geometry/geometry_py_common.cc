@@ -18,6 +18,8 @@
 #include "drake/geometry/geometry_properties.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_version.h"
+#include "drake/geometry/in_memory_mesh.h"
+#include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -25,12 +27,14 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-void DoScalarIndependentDefinitions(py::module m) {
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
+// NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+using namespace drake::geometry;
+constexpr auto& doc = pydrake_doc.drake.geometry;
 
-  // CollisionFilterDeclaration.
+// TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
+// indentation.
+
+void DefineCollisionFilterDeclaration(py::module m) {
   {
     using Class = CollisionFilterDeclaration;
     constexpr auto& cls_doc = doc.CollisionFilterDeclaration;
@@ -46,8 +50,9 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("ExcludeWithin", &Class::ExcludeWithin, py::arg("geometry_set"),
             py_rvp::reference, cls_doc.ExcludeWithin.doc);
   }
+}
 
-  // CollisionFilterManager
+void DefineCollisionFilterManager(py::module m) {
   {
     using Class = CollisionFilterManager;
     constexpr auto& cls_doc = doc.CollisionFilterManager;
@@ -62,8 +67,9 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("IsActive", &Class::IsActive, py::arg("filter_id"),
             cls_doc.IsActive.doc);
   }
+}
 
-  // GeometryFrame
+void DefineGeometryFrame(py::module m) {
   {
     using Class = GeometryFrame;
     constexpr auto& cls_doc = doc.GeometryFrame;
@@ -76,8 +82,9 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("frame_group", &Class::frame_group, cls_doc.frame_group.doc);
     DefCopyAndDeepCopy(&cls);
   }
+}
 
-  // GeometryInstance
+void DefineGeometryInstance(py::module m) {
   {
     using Class = GeometryInstance;
     constexpr auto& cls_doc = doc.GeometryInstance;
@@ -118,8 +125,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             py_rvp::reference_internal, cls_doc.perception_properties.doc);
     DefCopyAndDeepCopy(&cls);
   }
+}
 
-  // GeometryProperties
+void DefineGeometryProperties(py::module m) {
   {
     using Class = GeometryProperties;
     constexpr auto& cls_doc = doc.GeometryProperties;
@@ -203,8 +211,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             },
             "Returns formatted string.");
   }
+}
 
-  // GeometrySet
+void DefineGeometrySet(py::module m) {
   {
     using Class = GeometrySet;
     constexpr auto& cls_doc = doc.GeometrySet;
@@ -258,8 +267,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             },
             py::arg("geometry_ids"), py::arg("frame_ids"), extra_ctor_doc);
   }
+}
 
-  // GeometryVersion
+void DefineGeometryVersion(py::module m) {
   {
     using Class = GeometryVersion;
     constexpr auto& cls_doc = doc.GeometryVersion;
@@ -271,16 +281,44 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.IsSameAs.doc);
     DefCopyAndDeepCopy(&cls);
   }
+}
 
-  // Identifiers.
+void DefineIdentifiers(py::module m) {
   {
     BindIdentifier<FilterId>(m, "FilterId", doc.FilterId.doc);
     BindIdentifier<SourceId>(m, "SourceId", doc.SourceId.doc);
     BindIdentifier<FrameId>(m, "FrameId", doc.FrameId.doc);
     BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
   }
+}
 
-  // IllustrationProperties
+void DefineInMemoryMesh(py::module m) {
+  {
+    using Class = InMemoryMesh;
+    constexpr auto& cls_doc = doc.InMemoryMesh;
+    py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
+    py::object ctor = m.attr("InMemoryMesh");
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<MemoryFile>(), py::arg("mesh_file"),
+            cls_doc.ctor.doc_1args)
+        .def(py::init<const InMemoryMesh&>(), py::arg("other"))
+        .def("mesh_file", &Class::mesh_file, py_rvp::reference_internal,
+            cls_doc.mesh_file.doc)
+        .def("empty", &Class::empty, cls_doc.empty.doc)
+        .def(py::pickle(
+            [](const InMemoryMesh& self) {
+              return py::dict(py::arg("mesh_file") = self.mesh_file());
+            },
+            [ctor](const py::dict& kwargs) {
+              return ctor(**kwargs).cast<InMemoryMesh>();
+            }));
+    // Note: __repr__ is defined in _geometry_extra.py.
+    DefCopyAndDeepCopy(&cls);
+  }
+}
+
+void DefineGeometryPropertiesSubclasses(py::module m) {
   {
     py::class_<IllustrationProperties, GeometryProperties> cls(
         m, "IllustrationProperties", doc.IllustrationProperties.doc);
@@ -289,8 +327,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             "Creates a copy of the properties");
     DefCopyAndDeepCopy(&cls);
   }
-
-  // PerceptionProperties
   {
     py::class_<PerceptionProperties, GeometryProperties> cls(
         m, "PerceptionProperties", doc.PerceptionProperties.doc);
@@ -299,8 +335,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             "Creates a copy of the properties");
     DefCopyAndDeepCopy(&cls);
   }
-
-  // ProximityProperties
   {
     py::class_<ProximityProperties, GeometryProperties> cls(
         m, "ProximityProperties", doc.ProximityProperties.doc);
@@ -309,8 +343,44 @@ void DoScalarIndependentDefinitions(py::module m) {
             "Creates a copy of the properties");
     DefCopyAndDeepCopy(&cls);
   }
+}
 
-  // Rgba
+void DefineMeshSource(py::module m) {
+  {
+    using Class = MeshSource;
+    constexpr auto& cls_doc = doc.MeshSource;
+    py::class_<Class> cls(m, "MeshSource", cls_doc.doc);
+    py::object ctor = m.attr("MeshSource");
+    cls  // BR
+        .def(py::init<std::filesystem::path>(), py::arg("path"),
+            cls_doc.ctor.doc_1args_path)
+        .def(py::init<InMemoryMesh>(), py::arg("mesh"),
+            cls_doc.ctor.doc_1args_mesh)
+        .def(py::init<const MeshSource&>(), py::arg("other"))
+        .def("is_path", &Class::is_path, cls_doc.is_path.doc)
+        .def("is_in_memory", &Class::is_in_memory, cls_doc.is_in_memory.doc)
+        .def("description", &Class::description, cls_doc.description.doc)
+        .def("extension", &Class::extension, cls_doc.extension.doc)
+        .def("path", &Class::path, cls_doc.path.doc)
+        .def("in_memory", &Class::in_memory, py_rvp::reference_internal,
+            cls_doc.in_memory.doc)
+        .def(py::pickle(
+            [](const MeshSource& self) {
+              if (self.is_path()) {
+                return py::dict(py::arg("path") = self.path());
+              }
+              DRAKE_DEMAND(self.is_in_memory());
+              return py::dict(py::arg("mesh") = self.in_memory());
+            },
+            [ctor](const py::dict& kwargs) {
+              return ctor(**kwargs).cast<MeshSource>();
+            }));
+    // Note: __repr__ is defined in _geometry_extra.py.
+    DefCopyAndDeepCopy(&cls);
+  }
+}
+
+void DefineRgba(py::module m) {
   {
     using Class = Rgba;
     constexpr auto& cls_doc = doc.Rgba;
@@ -355,8 +425,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Rgba>(m);
   }
+}
 
-  // Role enumeration
+void DefineRole(py::module m) {
   {
     constexpr auto& cls_doc = doc.Role;
     py::enum_<Role>(m, "Role", py::arithmetic(), cls_doc.doc)
@@ -365,8 +436,9 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kIllustration", Role::kIllustration, cls_doc.kIllustration.doc)
         .value("kPerception", Role::kPerception, cls_doc.kPerception.doc);
   }
+}
 
-  // RoleAssign enumeration
+void DefineRoleAssign(py::module m) {
   {
     constexpr auto& cls_doc = doc.RoleAssign;
     using Class = RoleAssign;
@@ -374,7 +446,9 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kNew", Class::kNew, cls_doc.kNew.doc)
         .value("kReplace", Class::kReplace, cls_doc.kReplace.doc);
   }
+}
 
+void DefineShapes(py::module m) {
   // Shape constructors - ordered alphabetically and not in the order given in
   // shape_specification.h
   {
@@ -510,7 +584,9 @@ void DoScalarIndependentDefinitions(py::module m) {
                   std::get<2>(params));
             }));
   }
+}
 
+void DefineMiscFunctions(py::module m) {
   m.def("CalcVolume", &CalcVolume, py::arg("shape"), doc.CalcVolume.doc);
 
   m.def("MakePhongIllustrationProperties", &MakePhongIllustrationProperties,
@@ -536,6 +612,9 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("properties"), py::arg("dissipation") = std::nullopt,
       py::arg("point_stiffness") = std::nullopt,
       py::arg("friction") = std::nullopt, doc.AddContactMaterial.doc);
+
+  // TODO(SeanCurtis-TRI): Decompose this in some meaningful way.
+  // NOLINTNEXTLINE(readability/fn_size)
 }
 
 // Test-only code.
@@ -589,7 +668,24 @@ void def_testing_module(py::module m) {
 void DefineGeometryCommon(py::module m) {
   m.doc() = "Bindings for `drake::geometry`";
 
-  DoScalarIndependentDefinitions(m);
+  // This list must remain in topological order.
+  DefineIdentifiers(m);
+  DefineRole(m);
+  DefineRoleAssign(m);
+  DefineRgba(m);
+  DefineGeometryFrame(m);
+  DefineGeometryProperties(m);
+  DefineGeometryPropertiesSubclasses(m);
+  DefineInMemoryMesh(m);
+  DefineMeshSource(m);
+  DefineShapes(m);
+  DefineGeometrySet(m);
+  DefineCollisionFilterDeclaration(m);
+  DefineCollisionFilterManager(m);
+  DefineGeometryInstance(m);
+  DefineGeometryVersion(m);
+  DefineMiscFunctions(m);
+
   testing::def_testing_module(m.def_submodule("_testing"));
 }
 
