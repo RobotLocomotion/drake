@@ -157,10 +157,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "calc_signed_distance_to_surface_mesh",
-    srcs = ["calc_signed_distance_to_surface_mesh.cc",],
-    hdrs = ["calc_signed_distance_to_surface_mesh.h",],
+    srcs = ["calc_signed_distance_to_surface_mesh.cc"],
+    hdrs = ["calc_signed_distance_to_surface_mesh.h"],
     internal = True,
-    visibility = ["//geometry:__pkg__",],
+    visibility = ["//geometry:__pkg__"],
     deps = [
         ":bv",
         ":bvh",
