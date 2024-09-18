@@ -2111,8 +2111,8 @@ class MathematicalProgram {
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const symbolic::Formula& f,
       LorentzConeConstraint::EvalType eval_type =
-          LorentzConeConstraint::EvalType::kConvexSmooth,
-      double psd_tol = 1e-8, double coefficient_tol = 1e-8);
+          LorentzConeConstraint::EvalType::kConvexSmooth, double psd_tol = 1e-8,
+                                    double coefficient_tol = 1e-8);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the

@@ -887,8 +887,11 @@ GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
 class SimpleEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator);
-  explicit SimpleEvaluator(bool is_thread_safe)
-      : EvaluatorBase(2, 3, "", is_thread_safe) {
+  // This evaluator is thread safe in general. However, for the sake of testing
+  // we allow the constructor argument which changes the value of
+  // is_thread_safe.
+  explicit SimpleEvaluator(bool is_thread_safe = false) : EvaluatorBase(2, 3) {
+    set_is_thread_safe(is_thread_safe);
     c_.resize(2, 3);
     // clang-format off
     c_ << 1, 2, 3,
@@ -925,8 +928,8 @@ class SimpleEvaluator : public EvaluatorBase {
 GTEST_TEST(testConstraint, testEvaluatorConstraint) {
   const VectorXd lb = VectorXd::Constant(2, -1);
   const VectorXd ub = VectorXd::Constant(2, 1);
-  EvaluatorConstraint<> constraint(std::make_shared<SimpleEvaluator>(false),
-                                   lb, ub);
+  EvaluatorConstraint<> constraint(std::make_shared<SimpleEvaluator>(false), lb,
+                                   ub);
   EXPECT_FALSE(constraint.is_thread_safe());
   EXPECT_EQ(3, constraint.num_vars());
   EXPECT_EQ(2, constraint.num_constraints());

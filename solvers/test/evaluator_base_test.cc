@@ -169,8 +169,11 @@ GTEST_TEST(EvaluatorBaseTest, FunctionEvaluatorTest) {
 class SimpleEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator);
-  explicit SimpleEvaluator(bool is_thread_safe = false)
-      : EvaluatorBase(2, 3, "", is_thread_safe) {
+  // This evaluator is thread safe in general. However, for the sake of testing
+  // we allow the constructor argument which changes the value of
+  // is_thread_safe.
+  explicit SimpleEvaluator(bool is_thread_safe = false) : EvaluatorBase(2, 3) {
+    set_is_thread_safe(is_thread_safe);
     c_.resize(2, 3);
     c_ << 1, 2, 3, 4, 5, 6;
   }
@@ -251,7 +254,7 @@ class DynamicSizedEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DynamicSizedEvaluator);
 
-  DynamicSizedEvaluator() : EvaluatorBase(1, Eigen::Dynamic, "", false) {}
+  DynamicSizedEvaluator() : EvaluatorBase(1, Eigen::Dynamic) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

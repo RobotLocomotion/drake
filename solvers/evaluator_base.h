@@ -263,10 +263,7 @@ class PolynomialEvaluator : public EvaluatorBase {
    */
   PolynomialEvaluator(const VectorXPoly& polynomials,
                       const std::vector<Polynomiald::VarType>& poly_vars)
-      : EvaluatorBase(
-            polynomials.rows(), poly_vars.size(), "",
-            false  // This is not thread safe due to the mutable members.
-            ),     // NOLINT
+      : EvaluatorBase(polynomials.rows(), poly_vars.size()),
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
 
@@ -380,10 +377,8 @@ class VisualizationCallback : public EvaluatorBase {
       CallbackFunction;
 
   VisualizationCallback(int num_inputs, const CallbackFunction& callback,
-                        const std::string& description = "",
-                        ThreadSafety is_thread_safe = ThreadSafety::kUnsafe)
-      : EvaluatorBase(0, num_inputs, description, is_thread_safe),
-        callback_(callback) {}
+                        const std::string& description = "")
+      : EvaluatorBase(0, num_inputs, description), callback_(callback) {}
 
   void EvalCallback(const Eigen::Ref<const Eigen::VectorXd>& x) const {
     DRAKE_ASSERT(x.size() == num_vars());

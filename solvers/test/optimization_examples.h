@@ -340,8 +340,7 @@ class LowerBoundedProblem {
     LowerBoundTestConstraint(int i1, int i2)
         : Constraint(
               1, Eigen::Dynamic, Vector1d::Constant(4),
-              Vector1d::Constant(std::numeric_limits<double>::infinity()), "",
-              true),
+              Vector1d::Constant(std::numeric_limits<double>::infinity())),
           i1_(i1),
           i2_(i2) {}
 
@@ -890,7 +889,7 @@ class EmptyGradientProblem {
  private:
   class EmptyGradientCost : public Cost {
    public:
-    EmptyGradientCost() : Cost(2, "", true) {}
+    EmptyGradientCost() : Cost(2) {}
 
    private:
     template <typename T>

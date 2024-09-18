@@ -1101,9 +1101,14 @@ GTEST_TEST(TestMathematicalProgram, AddCostTest) {
 
 class EmptyConstraint final : public Constraint {
  public:
+  // This evaluator is thread safe in general. However, for the sake of testing
+  // we allow the constructor argument which changes the value of
+  // is_thread_safe.
   explicit EmptyConstraint(bool is_thread_safe = true)
       : Constraint(0, 2, Eigen::VectorXd(0), Eigen::VectorXd(0),
-                   "empty_constraint", is_thread_safe) {}
+                   "empty_constraint") {
+    set_is_thread_safe(is_thread_safe);
+  }
 
   ~EmptyConstraint() {}
 
@@ -4894,8 +4899,12 @@ GTEST_TEST(MathematicalProgramTest, AddLogDeterminantLowerBoundConstraint) {
 
 class EmptyCost final : public Cost {
  public:
-  explicit EmptyCost(bool is_thread_safe = true)
-      : Cost(0, "empty_cost", is_thread_safe) {}
+  // This cost is thread safe in general. However, for the sake of testing
+  // we allow the constructor argument which changes the value of
+  // is_thread_safe.
+  explicit EmptyCost(bool is_thread_safe = true) : Cost(0) {
+    set_is_thread_safe(is_thread_safe);
+  }
 
   ~EmptyCost() {}
 

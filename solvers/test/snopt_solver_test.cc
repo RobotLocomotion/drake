@@ -397,7 +397,7 @@ class AutoDiffOnlyCost final : public drake::solvers::Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutoDiffOnlyCost);
 
-  AutoDiffOnlyCost() : drake::solvers::Cost(1, "", true) {}
+  AutoDiffOnlyCost() : drake::solvers::Cost(1) {}
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

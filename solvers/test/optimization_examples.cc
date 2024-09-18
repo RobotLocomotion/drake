@@ -905,7 +905,7 @@ class DummyConstraint : public Constraint {
 class DummyCost : public Cost {
   // -x²-2xy - 2xz - y² - 3z²
  public:
-  DummyCost() : Cost(3, "", true) {}
+  DummyCost() : Cost(3) {}
 
  protected:
   template <typename T>

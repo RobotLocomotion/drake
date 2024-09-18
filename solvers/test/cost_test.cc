@@ -702,7 +702,7 @@ class Evaluator2In1Out : public EvaluatorBase {
 
 class Evaluator3In2Out : public EvaluatorBase {
  public:
-  Evaluator3In2Out() : EvaluatorBase(3, 2, "", true) {}
+  Evaluator3In2Out() : EvaluatorBase(3, 2) {}
 
   ~Evaluator3In2Out() override {}
 

@@ -131,9 +131,11 @@ class PyFunctionCost : public Cost {
   using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
   using AutoDiffFunc = std::function<AutoDiffXd(const VectorX<AutoDiffXd>&)>;
 
-  PyFunctionCost(int num_vars, const py::function& func,
-      const std::string& description, bool is_thread_safe)
-      : Cost(num_vars, description, is_thread_safe),
+  // Note that we do not allow Python implementations of Cost to be declared as
+  // thread safe.
+  PyFunctionCost(
+      int num_vars, const py::function& func, const std::string& description)
+      : Cost(num_vars, description),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
 
@@ -175,10 +177,12 @@ class PyFunctionConstraint : public Constraint {
   using AutoDiffFunc =
       std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>&)>;
 
+  // Note that we do not allow Python implementations of Constraint to be
+  // declared as thread safe.
   PyFunctionConstraint(int num_vars, const py::function& func,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
-      const std::string& description, bool is_thread_safe)
-      : Constraint(lb.size(), num_vars, lb, ub, description, is_thread_safe),
+      const std::string& description)
+      : Constraint(lb.size(), num_vars, lb, ub, description),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
 
@@ -715,13 +719,12 @@ void BindMathematicalProgram(py::module m) {
           "AddCost",
           [](MathematicalProgram* self, py::function func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
-              std::string& description, bool is_thread_safe) {
-            return self->AddCost(std::make_shared<PyFunctionCost>(vars.size(),
-                                     func, description, is_thread_safe),
+              std::string& description) {
+            return self->AddCost(std::make_shared<PyFunctionCost>(
+                                     vars.size(), func, description),
                 vars);
           },
           py::arg("func"), py::arg("vars"), py::arg("description") = "",
-          py::arg("is_thread_safe") = false,
           // N.B. There is no corresponding C++ method, so the docstring here
           // is a literal, not a reference to documentation_pybind.h
           "Adds a cost function.")
@@ -845,14 +848,14 @@ void BindMathematicalProgram(py::module m) {
           [](MathematicalProgram* self, py::function func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
-              std::string& description, bool is_thread_safe) {
+              std::string& description) {
             return self->AddConstraint(
                 std::make_shared<PyFunctionConstraint>(
-                    vars.size(), func, lb, ub, description, is_thread_safe),
+                    vars.size(), func, lb, ub, description),
                 vars);
           },
           py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
-          py::arg("description") = "", py::arg("is_thread_safe") = false,
+          py::arg("description") = "",
           "Adds a constraint using a Python function.")
       .def("AddConstraint",
           static_cast<Binding<Constraint> (MathematicalProgram::*)(

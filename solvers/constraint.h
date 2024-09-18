@@ -452,13 +452,13 @@ class RotatedLorentzConeConstraint : public Constraint {
                                const Eigen::Ref<const Eigen::VectorXd>& b)
       : Constraint(
             3, A.cols(), Eigen::Vector3d::Constant(0.0),
-            Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
-            /*description=*/"", /*is_thread_safe=*/true),
+            Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
         A_(A.sparseView()),
         A_dense_(A),
         b_(b) {
     DRAKE_THROW_UNLESS(A_.rows() >= 3);
     DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
+    set_is_thread_safe(true);
   }
 
   /** Getter for A. */
@@ -531,9 +531,10 @@ class EvaluatorConstraint : public Constraint {
   EvaluatorConstraint(const std::shared_ptr<EvaluatorType>& evaluator,
                       Args&&... args)
       : Constraint(evaluator->num_outputs(), evaluator->num_vars(),
-                   std::forward<Args>(args)..., evaluator->get_description(),
-                   evaluator->is_thread_safe()),
-        evaluator_(evaluator) {}
+                   std::forward<Args>(args)...),
+        evaluator_(evaluator) {
+    set_is_thread_safe(evaluator->is_thread_safe());
+  }
 
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
@@ -878,10 +879,9 @@ class LinearComplementarityConstraint : public Constraint {
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
-      : Constraint(q.rows(), M.cols(), /*description=*/"",
-                   /*is_thread_safe=*/true),
-        M_(M),
-        q_(q) {}
+      : Constraint(q.rows(), M.cols()), M_(M), q_(q) {
+    set_is_thread_safe(true);
+  }
 
   ~LinearComplementarityConstraint() override {}
 
