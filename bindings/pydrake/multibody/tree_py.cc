@@ -350,6 +350,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_mass.doc)
         .def("CalcCenterOfMassInBodyFrame", &Class::CalcCenterOfMassInBodyFrame,
             py::arg("context"), cls_doc.CalcCenterOfMassInBodyFrame.doc)
+        .def("CalcCenterOfMassTranslationalVelocityInWorld",
+            &Class::CalcCenterOfMassTranslationalVelocityInWorld,
+            py::arg("context"),
+            cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc)
+        .def("CalcCenterOfMassTranslationalAccelerationInWorld",
+            &Class::CalcCenterOfMassTranslationalAccelerationInWorld,
+            py::arg("context"),
+            cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld.doc)
         .def("CalcSpatialInertiaInBodyFrame",
             &Class::CalcSpatialInertiaInBodyFrame, py::arg("context"),
             cls_doc.CalcSpatialInertiaInBodyFrame.doc)

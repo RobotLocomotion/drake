@@ -498,7 +498,7 @@ class RigidBody : public MultibodyElement<T> {
   /// @returns p_BoBcm_B position vector from Bo (this rigid body B's origin)
   /// to Bcm (B's center of mass), expressed in B.
   /// @pre the context makes sense for use by this %RigidBody.
-  const Vector3<T> CalcCenterOfMassInBodyFrame(
+  Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const {
     const systems::BasicVector<T>& spatial_inertia_parameter =
         context.get_numeric_parameter(spatial_inertia_parameter_index_);
