@@ -64,10 +64,8 @@ class Constraint : public EvaluatorBase {
   Constraint(int num_constraints, int num_vars,
              const Eigen::MatrixBase<DerivedLB>& lb,
              const Eigen::MatrixBase<DerivedUB>& ub,
-             const std::string& description = "",
-             EvaluatorBase::ThreadSafety is_thread_safe =
-                 EvaluatorBase::ThreadSafety::kUnsafe)
-      : EvaluatorBase(num_constraints, num_vars, description, is_thread_safe),
+             const std::string& description = "")
+      : EvaluatorBase(num_constraints, num_vars, description),
         lower_bound_(lb),
         upper_bound_(ub) {
     check(num_constraints);
@@ -83,15 +81,13 @@ class Constraint : public EvaluatorBase {
    * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
    * @see Eval(...)
    */
-  Constraint(int num_constraints, int num_vars,
-             const std::string& description = "", bool is_thread_safe = false)
+  Constraint(int num_constraints, int num_vars)
       : Constraint(
             num_constraints, num_vars,
             Eigen::VectorXd::Constant(num_constraints,
                                       -std::numeric_limits<double>::infinity()),
-            Eigen::VectorXd::Constant(num_constraints,
-                                      std::numeric_limits<double>::infinity()),
-            description, is_thread_safe) {}
+            Eigen::VectorXd::Constant(
+                num_constraints, std::numeric_limits<double>::infinity())) {}
 
   /**
    * Return whether this constraint is satisfied by the given value, `x`.
@@ -238,10 +234,10 @@ class QuadraticConstraint : public Constraint {
                       double ub,
                       std::optional<HessianType> hessian_type = std::nullopt)
       : Constraint(kNumConstraints, Q0.rows(), drake::Vector1d::Constant(lb),
-                   drake::Vector1d::Constant(ub), /*description=*/"",
-                   /*is_thread_safe=*/true),
+                   drake::Vector1d::Constant(ub)),
         Q_((Q0 + Q0.transpose()) / 2),
         b_(b) {
+    set_is_thread_safe(true);
     UpdateHessianType(hessian_type);
     DRAKE_THROW_UNLESS(Q_.rows() == Q_.cols());
     DRAKE_THROW_UNLESS(Q_.cols() == b_.rows());

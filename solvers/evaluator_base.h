@@ -35,8 +35,6 @@ class EvaluatorBase {
 
   virtual ~EvaluatorBase() {}
 
-  static enum class ThreadSafety { kUnsafe, kSafe };
-
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
   /**
@@ -148,7 +146,7 @@ class EvaluatorBase {
   /**
    * Returns whether it is safe to call Eval in parallel.
    */
-  ThreadSafety is_thread_safe() const { return is_thread_safe_; }
+  bool is_thread_safe() const { return is_thread_safe_; }
 
  protected:
   /**
@@ -160,12 +158,11 @@ class EvaluatorBase {
    * @see Eval(...)
    */
   EvaluatorBase(int num_outputs, int num_vars,
-                const std::string& description = "",
-                ThreadSafety is_thread_safe = ThreadSafety::kUnsafe)
+                const std::string& description = "")
       : num_vars_(num_vars),
         num_outputs_(num_outputs),
         description_(description),
-        is_thread_safe_(is_thread_safe) {}
+        is_thread_safe_(false) {}
 
   /**
    * Implements expression evaluation for scalar type double.
@@ -216,11 +213,12 @@ class EvaluatorBase {
   // matrix in the linear constraint is resized.
   void set_num_outputs(int num_outputs) { num_outputs_ = num_outputs; }
 
-  // Changes the thread safety of this constraint. It may be necessary for
-  // derived classes to change the thread safety after construction so this
-  // protected method is available for internal use, but should not be exposed
-  // to end users.
-  void set_is_thread_safe(ThreadSafety is_thread_safe) {
+  // Changes the thread safety of this constraint. Subclasses for which it is
+  // threadsafe to call Eval should use this method to change the value of
+  // is_thread_safe_ in the constructor. It should not be possible to change the
+  // thread-safety of the constraint after construction, so this method is
+  // intentionally protected.
+  void set_is_thread_safe(bool is_thread_safe) {
     is_thread_safe_ = is_thread_safe;
   }
 
@@ -236,7 +234,7 @@ class EvaluatorBase {
   // false, the gradient matrix is regarded as non-sparse, i.e., every entry of
   // the gradient matrix can be non-zero.
   std::optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
-  ThreadSafety is_thread_safe_{};
+  bool is_thread_safe_{};
 };
 
 /**

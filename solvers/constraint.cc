@@ -241,12 +241,12 @@ LorentzConeConstraint::LorentzConeConstraint(
           get_lorentz_cone_constraint_size(eval_type), A.cols(),
           Eigen::VectorXd::Zero(get_lorentz_cone_constraint_size(eval_type)),
           Eigen::VectorXd::Constant(get_lorentz_cone_constraint_size(eval_type),
-                                    kInf),
-          /*description=*/"", /*is_thread_safe=*/true),
+                                    kInf)),
       A_(A.sparseView()),
       A_dense_(A),
       b_(b),
       eval_type_{eval_type} {
+  set_is_thread_safe(true);
   DRAKE_THROW_UNLESS(A_.rows() >= 2);
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
@@ -413,9 +413,8 @@ std::string RotatedLorentzConeConstraint::DoToLatex(
 LinearConstraint::LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                                    const Eigen::Ref<const Eigen::VectorXd>& ub)
-    : Constraint(A.rows(), A.cols(), lb, ub, /*description=*/"",
-                 /*is_thread_safe=*/true),
-      A_(A) {
+    : Constraint(A.rows(), A.cols(), lb, ub), A_(A) {
+  set_is_thread_safe(true);
   DRAKE_THROW_UNLESS(A.rows() == lb.rows());
   DRAKE_THROW_UNLESS(A.array().allFinite());
 }
@@ -423,9 +422,8 @@ LinearConstraint::LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
 LinearConstraint::LinearConstraint(const Eigen::SparseMatrix<double>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                                    const Eigen::Ref<const Eigen::VectorXd>& ub)
-    : Constraint(A.rows(), A.cols(), lb, ub, /*description=*/"",
-                 /*is_thread_safe=*/true),
-      A_(A) {
+    : Constraint(A.rows(), A.cols(), lb, ub), A_(A) {
+  set_is_thread_safe(true);
   DRAKE_THROW_UNLESS(A.rows() == lb.rows());
   DRAKE_THROW_UNLESS(A_.IsFinite());
 }
@@ -657,8 +655,7 @@ std::string LinearComplementarityConstraint::DoToLatex(
 PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint(int rows)
     : Constraint(rows, rows * rows, Eigen::VectorXd::Zero(rows),
                  Eigen::VectorXd::Constant(
-                     rows, std::numeric_limits<double>::infinity()),
-                 /*description=*/"", /*is_thread_safe=*/true),
+                     rows, std::numeric_limits<double>::infinity())),
       matrix_rows_(rows) {
   // TODO(hongkai.dai): remove the warning when we change the solver backend.
   if (matrix_rows_ == 1) {
@@ -672,6 +669,7 @@ PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint(int rows)
         "reformulating this as a rotated Lorentz cone constraint for better "
         "speed/numerics.");
   }
+  set_is_thread_safe(true);
 }
 
 void PositiveSemidefiniteConstraint::DoEval(
@@ -740,8 +738,8 @@ void LinearMatrixInequalityConstraint::DoEval(
 
 LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
     std::vector<Eigen::MatrixXd> F, double symmetry_tolerance)
-    : Constraint(F.empty() ? 0 : F.front().rows(), F.empty() ? 0 : F.size() - 1,
-                 /*description=*/"", /*is_thread_safe=*/true),
+    : Constraint(F.empty() ? 0 : F.front().rows(),
+                 F.empty() ? 0 : F.size() - 1),
       F_{std::move(F)},
       matrix_rows_(F_.empty() ? 0 : F_.front().rows()) {
   DRAKE_THROW_UNLESS(!F_.empty());
@@ -767,6 +765,7 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
     DRAKE_THROW_UNLESS(Fi.rows() == matrix_rows_);
     DRAKE_THROW_UNLESS(math::IsSymmetric(Fi, symmetry_tolerance));
   }
+  set_is_thread_safe(true);
 }
 
 std::string LinearMatrixInequalityConstraint::DoToLatex(
@@ -782,8 +781,7 @@ ExpressionConstraint::ExpressionConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub)
-    : Constraint(v.rows(), GetDistinctVariables(v).size(), lb, ub,
-                 /*description=*/"", /*is_thread_safe=*/false),
+    : Constraint(v.rows(), GetDistinctVariables(v).size(), lb, ub),
       expressions_(v) {
   // Setup map_var_to_index_ and vars_ so that
   //   map_var_to_index_[vars_(i).get_id()] = i.
@@ -878,11 +876,11 @@ ExponentialConeConstraint::ExponentialConeConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& b)
     : Constraint(
           2, A.cols(), Eigen::Vector2d::Zero(),
-          Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
-          /*description=*/"", /*is_thread_safe=*/true),
+          Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
       A_{A},
       b_{b} {
   DRAKE_THROW_UNLESS(A.rows() == 3);
+  set_is_thread_safe(true);
 }
 
 template <typename DerivedX, typename ScalarY>
