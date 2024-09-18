@@ -392,6 +392,7 @@ def _raw_drake_cc_library(
         tags = None,
         testonly = None,
         visibility = None,
+        compile_once_per_scalar = False,
         declare_installed_headers = None,
         install_hdrs_exclude = None,
         deprecation = None):
@@ -423,6 +424,44 @@ def _raw_drake_cc_library(
             visibility = ["//visibility:public"],
         )
 
+    # When compiling using once_per_scalar, we need to replace the srcs with
+    # small stub files that set the scalar type first. (Note that this block of
+    # code will crash if srcs uses a `select`; that usage is not supported.)
+    textual_hdrs = None
+    if compile_once_per_scalar:
+        new_srcs = []
+        for src in srcs:
+            for i in range(3):
+                stub_name = "{}_{}".format(i, src)
+                generate_file(
+                    name = stub_name,
+                    content = (
+                        ("#define DRAKE_ONCE_PER_SCALAR_PHASE {}\n" +
+                         "#include \"{}/{}\"\n").format(
+                            i,
+                            native.package_name(),
+                            src,
+                        )
+                    ),
+                    visibility = ["//visibility:private"],
+                )
+                new_srcs.append(stub_name)
+
+        # Don't lint the stubs; instead, use a dummy rule to do the linting.
+        # We use hdrs for everything so that the linter can see it but nothing
+        # will actually be compiled.
+        cc_library(
+            name = "{}_for_linting".format(name),
+            hdrs = (hdrs or []) + (srcs or []),
+            tags = ["manual", "exclude_from_package"],
+            visibility = ["//visibility:private"],
+        )
+        tags = (tags or []) + ["nolint"]
+
+        # The old srcs convert to textual_hdrs; the stubs are the new srcs.
+        textual_hdrs = srcs
+        srcs = new_srcs
+
     # If we're using implementation_deps, then the result of compiling our srcs
     # needs to use an intermediate label name. The actual `name` label will be
     # used for the "implementation sandwich", below.
@@ -441,6 +480,7 @@ def _raw_drake_cc_library(
         name = compiled_name,
         srcs = srcs,
         hdrs = hdrs,
+        textual_hdrs = textual_hdrs,
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
         copts = copts,
@@ -464,6 +504,7 @@ def _raw_drake_cc_library(
         cc_library(
             name = headers_name,
             hdrs = hdrs,
+            textual_hdrs = None,
             strip_include_prefix = strip_include_prefix,
             include_prefix = include_prefix,
             defines = defines,
@@ -538,6 +579,7 @@ def drake_cc_library(
         gcc_copts = [],
         linkstatic = 1,
         internal = False,
+        compile_once_per_scalar = False,
         declare_installed_headers = 1,
         install_hdrs_exclude = [],
         **kwargs):
@@ -579,6 +621,13 @@ def drake_cc_library(
     Libraries marked with `internal = True` should generally be listed only as
     deps of _other_ libraries marked as internal, or as "implementation deps"
     (see paragraphs above) of non-internal libraries.
+
+    Setting `compile_once_per_scalar = True` shards the library rule to build
+    each file three times (once per scalar, as separate translation units),
+    instead of compiling all scalars within the same translation unit. This
+    reduces build latency for especially large source files. Code in cc files
+    that is not templated (and therefore should be not be compiled three times)
+    should be surrounded with `#if DRAKE_ONCE_PER_SCALAR_PHASE == 0`.
     """
     new_copts = _platform_copts(copts, gcc_copts, clang_copts)
     new_tags = kwargs.pop("tags", None) or []
@@ -625,6 +674,7 @@ def drake_cc_library(
         linkstatic = linkstatic,
         declare_installed_headers = declare_installed_headers,
         install_hdrs_exclude = install_hdrs_exclude,
+        compile_once_per_scalar = compile_once_per_scalar,
         tags = new_tags,
         **kwargs
     )

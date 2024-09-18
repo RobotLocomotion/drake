@@ -119,6 +119,7 @@ drake_cc_library(
         "exponential_plus_piecewise_polynomial.h",
         "piecewise_polynomial.h",
     ],
+    compile_once_per_scalar = True,
     deps = [
         ":piecewise_trajectory",
         "//common:default_scalars",
