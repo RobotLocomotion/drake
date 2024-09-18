@@ -27,6 +27,10 @@ PYBIND11_MODULE(rational, m) {
   m.doc() = "RationalForwardKinematics module";
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");
+
+  type_pack<symbolic::Polynomial, symbolic::RationalFunction> sym_pack;
+  type_visit([m](auto dummy) { DoPoseDeclaration(m, dummy); }, sym_pack);
+
   {
     using Class = drake::multibody::RationalForwardKinematics;
     constexpr auto& cls_doc = doc.RationalForwardKinematics;
@@ -91,9 +95,6 @@ PYBIND11_MODULE(rational, m) {
             },
             py::arg("s_val"), py::arg("q_star_val"), cls_doc.ComputeQValue.doc);
   }
-
-  type_pack<symbolic::Polynomial, symbolic::RationalFunction> sym_pack;
-  type_visit([m](auto dummy) { DoPoseDeclaration(m, dummy); }, sym_pack);
 }
 }  // namespace
 }  // namespace pydrake
