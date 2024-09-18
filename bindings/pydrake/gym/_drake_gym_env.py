@@ -305,7 +305,7 @@ class DrakeGymEnv(gym.Env):
         # Note: The output port will be evaluated without fixing the input
         # port.
         observations = self.observation_port.Eval(context)
-        info = dict() if self.info_handler is None else self.info_handler(self.simulator)
+        info = self.info_handler(self.simulator)
 
         return observations, info
 
