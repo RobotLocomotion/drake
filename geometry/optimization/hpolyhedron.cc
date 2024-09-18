@@ -17,6 +17,7 @@
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullFacetList.h>
 
+#include "drake/common/overloaded.h"
 #include "drake/common/ssize.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/vpolytope.h"
@@ -131,17 +132,42 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
                          GeometryId geometry_id,
                          std::optional<FrameId> reference_frame)
     : ConvexSet(3, false) {
-  std::pair<MatrixXd, VectorXd> Ab_G;
-  query_object.inspector().GetShape(geometry_id).Reify(this, &Ab_G);
-
+  const Shape& shape = query_object.inspector().GetShape(geometry_id);
+  MatrixXd A_G;
+  VectorXd b_G;
+  std::tie(A_G, b_G) = shape.Visit<std::pair<MatrixXd, VectorXd>>(overloaded{
+      // We only handle certain shape types.
+      // TODO(russt): Support [](const Convex& convex); it is already supported
+      // by VPolytope.
+      [](const Box& box) {
+        Eigen::Matrix<double, 6, 3> A;
+        A << Eigen::Matrix3d::Identity(), -Eigen::Matrix3d::Identity();
+        Vector6d b;
+        // clang-format off
+        b << box.width()/2.0, box.depth()/2.0, box.height()/2.0,
+             box.width()/2.0, box.depth()/2.0, box.height()/2.0;
+        // clang-format on
+        return std::make_pair(A, b);
+      },
+      [](const HalfSpace&) {
+        // z <= 0.0.
+        Eigen::RowVector3d A{0.0, 0.0, 1.0};
+        Vector1d b{0.0};
+        return std::make_pair(A, b);
+      },
+      [&geometry_id](const auto& unsupported) -> std::pair<MatrixXd, VectorXd> {
+        throw std::logic_error(fmt::format(
+            "{} (geometry_id={}) cannot be converted to a HPolyhedron",
+            unsupported, geometry_id));
+      }});
   const RigidTransformd X_WE =
       reference_frame ? query_object.GetPoseInWorld(*reference_frame)
                       : RigidTransformd::Identity();
   const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
   const RigidTransformd X_GE = X_WG.InvertAndCompose(X_WE);
   // A_G*(p_GE + R_GE*p_EE_var) ≤ b_G
-  A_ = Ab_G.first * X_GE.rotation().matrix();
-  b_ = Ab_G.second - Ab_G.first * X_GE.translation();
+  A_ = A_G * X_GE.rotation().matrix();
+  b_ = b_G - A_G * X_GE.translation();
 }
 
 HPolyhedron::HPolyhedron(const VPolytope& vpoly, double tol)
@@ -1209,26 +1235,6 @@ HPolyhedron::DoToShapeWithPose() const {
       "ToShapeWithPose is not implemented yet for HPolyhedron.  Implementing "
       "this will likely require additional support from the Convex shape "
       "class (to support in-memory mesh data, or file I/O).");
-}
-
-void HPolyhedron::ImplementGeometry(const Box& box, void* data) {
-  Eigen::Matrix<double, 6, 3> A;
-  A << Eigen::Matrix3d::Identity(), -Eigen::Matrix3d::Identity();
-  Vector6d b;
-  // clang-format off
-  b << box.width()/2.0, box.depth()/2.0, box.height()/2.0,
-        box.width()/2.0, box.depth()/2.0, box.height()/2.0;
-  // clang-format on
-  auto* Ab = static_cast<std::pair<MatrixXd, VectorXd>*>(data);
-  Ab->first = A;
-  Ab->second = b;
-}
-
-void HPolyhedron::ImplementGeometry(const HalfSpace&, void* data) {
-  auto* Ab = static_cast<std::pair<MatrixXd, VectorXd>*>(data);
-  // z <= 0.0.
-  Ab->first = Eigen::RowVector3d{0.0, 0.0, 1.0};
-  Ab->second = Vector1d{0.0};
 }
 
 HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {

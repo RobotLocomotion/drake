@@ -12,6 +12,7 @@
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace geometry {
@@ -27,6 +28,10 @@ using internal::CheckAddPointInSetConstraints;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
+using solvers::Binding;
+using solvers::Constraint;
+using solvers::MathematicalProgram;
+using solvers::Solve;
 using std::sqrt;
 
 GTEST_TEST(AffineBallTest, DefaultCtor) {
@@ -465,6 +470,100 @@ GTEST_TEST(AffineBallTest, MakeAffineBallFromLineSegment) {
   EXPECT_NEAR(a_1.CalcVolume(),
               4.0 / 3 * M_PI * segment_length / 2.0 * std::pow(epsilon, 2),
               1e-6);
+}
+
+GTEST_TEST(AffineBallTest, PointInNonnegativeScalingConstraints) {
+  // Unit circle in the x-y plane, translated along the z-axis two units.
+  Eigen::Matrix<double, 3, 3> B;
+  // clang-format off
+  B << 1, 0, 0,
+       0, 1, 0,
+       0, 0, 0;
+  // clang-format on
+  Vector3d center(0.0, 0.0, 2.0);
+  const AffineBall ab(B, center);
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto t = prog.NewContinuousVariables(1, "t");
+
+  std::vector<Binding<Constraint>> constraints =
+      ab.AddPointInNonnegativeScalingConstraints(&prog, x, t[0]);
+
+  Vector3d x_test_value = Vector3d::Zero();
+  double t_test_value = 0;
+
+  auto x_constraint = prog.AddLinearEqualityConstraint(MatrixXd::Identity(3, 3),
+                                                       x_test_value, x);
+  auto t_constraint = prog.AddLinearEqualityConstraint(MatrixXd::Identity(1, 1),
+                                                       t_test_value, t);
+
+  // Test values for x, t, and whether the constraint is satisfied.
+  const std::vector<std::tuple<Vector3d, double, bool>> test_x_t{
+      {Vector3d(1.0, 0.0, 2.0), 1.0, true},
+      {Vector3d(0.0, -1.0, 2.0), 1.0, true},
+      {Vector3d(0.0, 2.0, 4.0), 2.0, true},
+      {Vector3d(0.0, 0.0, 6.0), 3.0, true},
+      {Vector3d(0.0, 0.0, 6.0), 3.0, true},
+      {Vector3d(0.0, 0.0, 0.0), 0.0, true},
+      {Vector3d(0.0, 0.0, 0.0), 1.0, false},
+      {Vector3d(1.0, 0.0, 0.0), 0.0, false},
+      {Vector3d(1.0, 0.0, 2.0), 2.0, false},
+      {Vector3d(0.0, 2.0, 2.0), 2.0, false},
+      {Vector3d(0.0, 2.0, 4.0), 1.0, false}};
+
+  for (const auto& [x_val, t_val, expect_success] : test_x_t) {
+    x_constraint.evaluator()->UpdateCoefficients(MatrixXd::Identity(3, 3),
+                                                 x_val);
+    t_constraint.evaluator()->UpdateCoefficients(MatrixXd::Identity(1, 1),
+                                                 Vector1d(t_val));
+    auto result = Solve(prog);
+    EXPECT_EQ(result.is_success(), expect_success);
+  }
+
+  Eigen::Matrix<double, 3, 2> A;
+  // clang-format off
+  A << 1, 0,
+       0, 1,
+       2, 0;
+  // clang-format on
+  Vector3d b = Vector3d::Zero();
+  Vector2d c(1, -1);
+  double d = 0;
+
+  MathematicalProgram prog2;
+  auto x2 = prog2.NewContinuousVariables(2, "x");
+  auto t2 = prog2.NewContinuousVariables(2, "t");
+
+  std::vector<Binding<Constraint>> constraints2 =
+      ab.AddPointInNonnegativeScalingConstraints(&prog2, A, b, c, d, x2, t2);
+
+  Vector2d x2_test_value = Vector2d::Zero();
+  Vector2d t2_test_value = Vector2d::Zero();
+
+  auto x2_constraint = prog2.AddLinearEqualityConstraint(
+      MatrixXd::Identity(2, 2), x2_test_value, x2);
+  auto t2_constraint = prog2.AddLinearEqualityConstraint(
+      MatrixXd::Identity(2, 2), t2_test_value, t2);
+
+  // Test values for x, t, and whether the constraint is satisfied.
+  const std::vector<std::tuple<Vector2d, Vector2d, bool>> test_x2_t2{
+      {Vector2d(1, 0), Vector2d(1, 0), true},
+      {Vector2d(1, 0), Vector2d(0, -1), true},
+      {Vector2d(1, 0), Vector2d(2, 1), true},
+      {Vector2d(2, 0), Vector2d(1, -1), true},
+      {Vector2d(1, 0), Vector2d(1, -1), false},
+      {Vector2d(1, 0), Vector2d(0, 1), false},
+      {Vector2d(2, 0), Vector2d(1, -2), false}};
+
+  for (const auto& [x2_val, t2_val, expect_success] : test_x2_t2) {
+    x2_constraint.evaluator()->UpdateCoefficients(MatrixXd::Identity(2, 2),
+                                                  x2_val);
+    t2_constraint.evaluator()->UpdateCoefficients(MatrixXd::Identity(2, 2),
+                                                  t2_val);
+    auto result = Solve(prog2);
+    EXPECT_EQ(result.is_success(), expect_success);
+  }
 }
 
 }  // namespace optimization

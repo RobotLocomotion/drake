@@ -206,7 +206,7 @@ AffineBall::DoAddPointInSetConstraints(
   std::vector<Binding<Constraint>> new_constraints;
   const int n = ambient_dimension();
   VectorXDecisionVariable y = prog->NewContinuousVariables(n, "y");
-  // ||y||^2 <= 1, represented as 0.5yᵀIy + 0ᵀy + (-0.5) <= 0.
+  // ||y||² ≤ 1, represented as 0.5yᵀIy + 0ᵀy + (-0.5) ≤ 0.
   new_constraints.push_back(prog->AddQuadraticAsRotatedLorentzConeConstraint(
       MatrixXd::Identity(n, n), VectorXd::Zero(n), -0.5, y));
   // x = By + center_, represented as [I, -B_] * [x; y] = center_
@@ -220,22 +220,67 @@ AffineBall::DoAddPointInSetConstraints(
 
 std::vector<Binding<Constraint>>
 AffineBall::DoAddPointInNonnegativeScalingConstraints(
-    MathematicalProgram*, const Eigen::Ref<const VectorXDecisionVariable>&,
-    const Variable&) const {
-  throw std::runtime_error(
-      "AffineBall::DoAddPointInNonnegativeScalingConstraints() is not "
-      "implemented yet.");
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Variable& t) const {
+  std::vector<Binding<Constraint>> new_constraints;
+  const int n = ambient_dimension();
+  // The constraint is x∈tS, which can be written x=t(By+c), or equivalently,
+  // x-tc=By and ||y||² ≤ t².
+  VectorXDecisionVariable y = prog->NewContinuousVariables(n, "y");
+
+  // The first constraint is the linear equality constraint
+  // [-I, B, center_] * [x; y; t] = 0.
+  MatrixXd constraint_A(n, n + n + 1);
+  constraint_A.leftCols(n) = -MatrixXd::Identity(n, n);
+  constraint_A.block(0, n, n, n) = B_;
+  constraint_A.rightCols(1) = center_;
+  new_constraints.push_back(prog->AddLinearEqualityConstraint(
+      constraint_A, VectorXd::Zero(n), {x, y, Vector1<Variable>(t)}));
+
+  // The second constraint is that [t, y] be in the Lorentz cone.
+  new_constraints.push_back(prog->AddLorentzConeConstraint(
+      MatrixXd::Identity(n + 1, n + 1), VectorXd::Zero(n + 1),
+      {Vector1<Variable>(t), y}));
+
+  return new_constraints;
 }
 
 std::vector<Binding<Constraint>>
 AffineBall::DoAddPointInNonnegativeScalingConstraints(
-    MathematicalProgram*, const Eigen::Ref<const MatrixXd>&,
-    const Eigen::Ref<const VectorXd>&, const Eigen::Ref<const VectorXd>&,
-    double, const Eigen::Ref<const VectorXDecisionVariable>&,
-    const Eigen::Ref<const VectorXDecisionVariable>&) const {
-  throw std::runtime_error(
-      "AffineBall::DoAddPointInNonnegativeScalingConstraints() is not "
-      "implemented yet.");
+    MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A,
+    const Eigen::Ref<const VectorXd>& b, const Eigen::Ref<const VectorXd>& c,
+    double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const VectorXDecisionVariable>& t) const {
+  std::vector<Binding<Constraint>> new_constraints;
+  const int n = ambient_dimension();
+  // The constraint is Ax+b∈(c't+d)S, which can be written Ax+b=(c't+d)(By+C),
+  // where we use C to refer to the center of the AffineBall, which simplifies
+  // to -Ax+By+(Cc')t=b-Cd and ||y||² ≤ (c't+d)².
+  VectorXDecisionVariable y = prog->NewContinuousVariables(n, "y");
+
+  // The first constraint is the linear equality constraint
+  // [-A, B, Cc'] * [x; y; t] = b - Cd.
+  const int m = x.size();
+  const int k = c.size();
+  MatrixXd constraint_A(n, m + n + k);
+  constraint_A.leftCols(m) = -A;
+  constraint_A.block(0, m, n, n) = B_;
+  constraint_A.rightCols(k) = center_ * c.transpose();
+  new_constraints.push_back(
+      prog->AddLinearEqualityConstraint(constraint_A, b, {x, y, t}));
+
+  // The second constraint is that ||y||² ≤ (c't+d)², which can be written as
+  // [c', 0; 0, I]*[t; y]+[d; 0] is in the Lorentz cone
+  MatrixXd A_lorentz = MatrixXd::Zero(1 + n, k + n);
+  A_lorentz.row(0).head(k) = c.transpose();
+  A_lorentz.block(1, k, n, n) = MatrixXd::Identity(n, n);
+  VectorXd b_lorentz = VectorXd::Zero(1 + n);
+  b_lorentz[0] = d;
+  new_constraints.push_back(
+      prog->AddLorentzConeConstraint(A_lorentz, b_lorentz, {t, y}));
+
+  return new_constraints;
 }
 
 void AffineBall::CheckInvariants() const {

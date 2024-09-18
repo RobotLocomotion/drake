@@ -688,7 +688,7 @@ void DefineGeometrySceneGraph(py::module m) {
   DoScalarIndependentDefinitions(m);
   type_visit(
       [m](auto dummy) {
-        // This list must remain in topological order.
+        // This list must remain in topological dependency order.
         DefineFramePoseVector(m, dummy);
         DefineContactSurface(m, dummy);
         DefinePenetrationAsPointPair(m, dummy);

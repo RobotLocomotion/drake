@@ -30,7 +30,7 @@ A hyperellipsoid can never be empty -- it always contains its center. This
 includes the zero-dimensional case.
 
 @ingroup geometry_optimization */
-class Hyperellipsoid final : public ConvexSet, private ShapeReifier {
+class Hyperellipsoid final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperellipsoid);
 
@@ -183,11 +183,6 @@ class Hyperellipsoid final : public ConvexSet, private ShapeReifier {
   double DoCalcVolume() const final;
 
   void CheckInvariants() const;
-
-  // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) final;
-  void ImplementGeometry(const Sphere& sphere, void* data) final;
 
   Eigen::MatrixXd A_{};
   Eigen::VectorXd center_{};
