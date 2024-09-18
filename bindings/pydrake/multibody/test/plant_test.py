@@ -625,6 +625,13 @@ class TestPlant(unittest.TestCase):
             dut.CalcCenterOfMassInBodyFrame(context=context),
             np.ndarray)
         self.assertIsInstance(
+            dut.CalcCenterOfMassTranslationalVelocityInWorld(context=context),
+            np.ndarray)
+        self.assertIsInstance(
+            dut.CalcCenterOfMassTranslationalAccelerationInWorld(
+                context=context),
+            np.ndarray)
+        self.assertIsInstance(
             dut.CalcSpatialInertiaInBodyFrame(context=context),
             SpatialInertia_[T])
         self.assertIsInstance(
