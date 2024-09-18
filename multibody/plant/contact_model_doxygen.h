@@ -745,12 +745,11 @@ The precise value of margin is therefore determined as a trade-off between
 accuracy/stability and performance. Section @ref margin_how_much discusses how
 we determine values of margin in detail.
 
-@note Margin is not a model of action-at-a-distance. Normal contact forces are
-always repulsive as dictated by physics. You can think of margin as a
-_predictor-corrector_ scheme, in which we first _predict_ which features will be
-in contact in the next time step. Then the contact resolution phase determines,
-based on physics, which subset of the predicted constraints must be active (the
-_correction_).
+@note Margin does not introduce action-at-a-distance effects. The speculative
+contact constraints only come into play (producing non-zero forces) if the
+solver finds they would make contact within the discrete time step being solved
+and the force associated with that point is requisite to the nature of
+anticipated contact.
 
 @section margin_for_hydroelastics Hydroelastic Contact
 
@@ -846,7 +845,9 @@ penetration in each state. In the discrete setting, the rod is assumed to go
 back and forth between these two states in a single time step. The states are
 assumed symmetric, with the rod rotated an angle θ in State I and an angle -θ in
 State II. Due to this symmetry, the angular velocity to go from State II to
-State I is ω and the angular velocity to go from State I to State II is -ω.
+State I is ω and the angular velocity to go from State I to State II is -ω. This
+analysis omits dissipation, but we believe the conclusions are still applicable
+in the presence of dissipation.
 
 @image html drake/multibody/plant/images/margin_stability.png "Figure 6: Simplified system for stability analysis." width=50%
 
@@ -884,30 +885,62 @@ This is a very important result, because if it holds for more complex and
 arbitrary geometries, it tells us that we can use a single value of the margin δ
 for all of our simulations (for as long as we are on the same planet).
 
+@note The independence of (3) on stiffness is predicated on the assumption that
+only one of the points is in contact at a given time. As stiffness is decreased,
+the oscillating rod would essentially _sink_ into the ground. As this happens,
+both contact points could come into contact at the same time. Eventually,
+oscillations would no longer persist due to this effect. We observed this to be
+generally true in more complex systems involving more complex geometries;
+compliance helps to mitigate these oscillations as more points come into
+contact, though it may require unphysically low values of compliance.
+
 @subsection margin_its_effect The Effect of Margin
 
-For non-zero margin, we now expect that if these vibrations are in the order of
-the margin δ, they'll be mitigated. We test this by running the same simulation
-shown in Fig. 1, with a wide range of margin values. To test a very adversarial
-situation we use E = 10⁹ Pa ("softer" compliance mitigates these instabilities).
-Fig. 7 characterizes the amplitude of the vibrations once again using σ(|ϕ|) /
-(h²⋅g) as a metric, as a function of margin made dimensionless with h²⋅g. We
-observe in Fig. 7 that indeed for `δ / (h²⋅g) > 1` the instabilities die off.
+In the analysis of the simple rod system in Fig. 6, we realize that these
+oscillations can be mitigated completely if at each time step we consider both
+the left and right contact points when solving the contact problem at each time
+step. Moreover, the analysis tells us that for more complex systems, it is not
+really necessary to consider all O(n²) geometry pairs in the scene, but really
+only those that are within a distance in the order of the estimated amplitude of
+the vibrations, i.e. O(h²⋅g).
+
+With this in mind, we then expect that if δ = O(h²⋅g), then this spurious
+oscillations will be mitigated. We verify this idea in the original system of
+Fig. 1, with a wide range of margin values. To test a very adversarial situation
+we use E = 10⁹ Pa (as explained above, compliance helps mitigate these
+instabilities). For each contact constraint we measure the signed distance ϕ and
+compute its standard deviation σ(|ϕ|) as a metric to characterize the amplitude
+of these spurious oscillations. Since h² changes several orders of magnitude,
+and guided by (3), we plot in Fig. 7 the dimensionless amplitude σ(|ϕ|) /
+(h²⋅g). 
+
+@note Theoretically, for the rod, the dimensionless amplitude σ(|ϕ|) / (h²⋅g)
+should equal one. For more complex geometries, we do not expect this to be true.
+However we do expect this quantity to be of _order_ one. This explains why we do
+not even need a logarithmic scale in Fig. 7 while being a nice confirmation of
+(3).
+
+Finally, notice we use `δ / (h²⋅g)` for the horizontal axis. This is again
+guided by (3), which predicts that values of margin δ effective at mitigating
+oscillations are order h². We observe in Fig. 7 that indeed for `δ / (h²⋅g) ≳ 1`
+the instabilities die off.
 
 @image html drake/multibody/plant/images/instability_vs_margin.png "Figure 7: Standard deviation of the vibrations vs. margin." width=30%
 
-Notice how remarkable these results are. Time step h spans two orders (h²,
-used for dimensionless quantities spans four order of magnitude), and we make
-margin span seven order of magnitude (from 10⁻¹² to 10⁻⁴ meters). The fact these
-curves collapse in such tight regions is an excellent confirmation of the
-scaling law from Eq. (3). Moreover, additional experimentation with complex
-geometries such as those in Figs. 3 and 5 provide additional confirmation.
+Once again, keep in mind that the rod analysis is very simplified. For instance,
+notice in Fig. 7 tat at larger time steps margin δ is more effective yet
+(requiring only `δ / (h²⋅g) ≳ 0.01` for oscillations to die off). This can be
+explained by the _numerical dissipation_ introduced by discrete schemes, which
+is not taken into account in our simplified analysis, and goes away as time step
+is decreased.
 
-Finally, based on this plot, we can say that setting `δ = h²⋅g` is quite
-conservative and will mitigate instabilities effectively. The largest time step
-typically expected in simulations of robotics system seldom exceeds 10 ms.
-Therefore a value of `δ = 10⁻⁴ m` will be more than enough in all robotics
-applications. While incredibly effective, notice how small this value is.
+Using Fig. 7 as a guide, lets compute the value of δ at which oscillations die
+off for these curves. We see the worst case is for the red line (h = 10⁻² s) at
+`δ / (h²⋅g) ≈ 0.01`, which results in `δ ≈ 10⁻⁵ m`. To account for factors not
+included in our analysis, we in general choose the very conservative value of `δ
+= 10⁻⁴ m`. We confirmed the effectiveness of this value over and over again with
+additional experimentation on more complex systems as those in Figs. 3 and 5.
+While incredibly effective, notice how small this value is.
 
 @section margin_contact_results Contact Results
 
