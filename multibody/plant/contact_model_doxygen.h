@@ -727,11 +727,11 @@ h is the time step size. With this approximation the normal force is modeled as
 </pre>
 where, to be more precise, we added the condition for speculative constraints,
 with δ a pre-specified margin value. Large enough values of δ allow to recover
-the original model (1). In practice however, we cannot have δ = ∞ since this
-would incur in expensive 𝒪(n²) geometry queries. Moreover, the linear
-approximation used for ϕ is no longer accurate for large extrapolations.
-Notice that with δ = 0 (no margin) we only consider a subset of all
-desired contact constraints.
+the original model (1) (with the approximation ϕ ≈ ϕ₀ + h⋅vₙ). In practice
+however, we cannot have δ = ∞ since this would incur in expensive 𝒪(n²)
+geometry queries. Moreover, the linear approximation used for ϕ is no longer
+accurate for large extrapolations. Notice that with δ = 0 (no margin) we only
+consider a subset of all desired contact constraints.
 
 Speculative constraints come from finding more "contact" points. When margin is
 zero, only those points actually in contact are reported. As margin grows, we
@@ -882,6 +882,46 @@ This is a very important result, because if it holds for more complex and
 arbitrary geometries, it tells us that we can use a single value of the margin δ
 for all of our simulations (for as long as we are on the same planet).
 
+@subsection margin_its_effect The Effect of Margin
+
+For non-zero margin, we now expect that if these vibrations are in the order of
+the margin δ, they'll be mitigated. We test this by running the same simulation
+this time scanning a wide range of margin values. To test a very adversarial
+situation we use E = 10⁹ Pa (higher compliance mitigates these instabilities).
+Fig. 7 characterizes the amplitude of the vibrations once again using σ(|ϕ|) /
+(h²⋅g) as a metric, as a function of margin made dimensionless with h²⋅g. We
+observe in Fig. 7 that indeed for `δ / (h²⋅g) > 1` the instabilities die off.
+
+@image html drake/multibody/plant/images/instability_vs_margin.png "Figure 7: Standard deviation of the vibrations vs. margin." width=30%
+
+Notice how remarkable these results are. Time step h spans two orders (h²,
+used for dimensionless quantities spans four order of magnitude), and we make
+margin span seven order of magnitude (from 10⁻¹² to 10⁻⁴ meters). The fact these
+curves collapse in such tight regions is an excellent confirmation of the
+scaling law from Eq. (3). Moreover, additional experimentation with complex
+geometries such as those in Figs. 3 and 5 provide additional confirmation.
+
+Finally, based on this plots, we can say that setting `δ = h²⋅g` is quite
+conservative and will mitigate instabilities effectively. The largest time step
+typically expected in simulations of robotics system seldom exceeds 10 ms.
+Therefore a value of `δ = 10⁻⁴ m` will be more than enough in all robotics
+applications. While incredibly effective, notice how small this value is.
+
+@section margin_contact_results Contact Results
+
+TODO: write.
+
+@section margin_appendices Appendix
+
+The following sections cover more advanced material not really essential for the
+general understanding and effective use of margin and speculative contact
+constraints in Drake. We provide this material for completeness since many
+advanced users might find it useful.
+
+@subsection margin_non_convex Non-Convex Geometries
+
+TODO: Write this.
+
 @subsection margin_scaling_confirmation Numerical Confirmation of the Scaling Law
 
 The result in (3) predicts the magnitude of contact oscillations in the absence
@@ -905,7 +945,7 @@ We set the hydroelastic modulus to span a wide range of values, from 10⁴ Pa to
 a non-zero Hunt & Crossley dissipation `d = 20 s/m` to keep the rattling
 instability somewhat under control to avoid the upper box from drifting and
 falling to the side. In addition, we run a set of simulations with different box
-sizes (square symbols in Fig. 7, with modulus E=10⁹ Pa). We scale the size by
+sizes (square symbols in Fig. 8, with modulus E=10⁹ Pa). We scale the size by
 factors of 2 and 4, keeping density constant and thus changing the total mass by
 factors 8 and 64 respectively.  An additional case only scales the x-length of
 the boxes by a factor of 4, effectively changing the aspect ratio of the boxes
@@ -913,14 +953,14 @@ and contact area.
 
 We monitor the amount of interpenetration and compute its standard deviation (of
 its absolute value) as a means to characterize the amplitude of the rattling
-instabilities. We denote this with σ(|ϕ|). We plot σ(|ϕ|) / (h²⋅g) in Fig. 7,
+instabilities. We denote this with σ(|ϕ|). We plot σ(|ϕ|) / (h²⋅g) in Fig. 8,
 which should be constant if the prediction from Eq. (3) holds. On the horizontal
 axes with plot a "semi-dimensionless" time step. With that we mean that if the
 hydroelastic modulus E (with units of Pa) was a point contact stiffness k (with
 units of N/m), this quantity would be dimensionless. It is not, but it still
 scales data properly such that curves collapse within a single region.
 
-For data to the right of Fig. 7, even though σ(|ϕ|) / (h²⋅g) is not exactly
+For data to the right of Fig. 8, even though σ(|ϕ|) / (h²⋅g) is not exactly
 constant, values fall within a range between 0.1 to 0.6. For reference, a dashed
 line shows a function that scales as `y ~ x⁰ᐧ¹`. This is an excellent
 confirmation of the scaling predicted by Eq. (3) considering the wide range of
@@ -935,39 +975,6 @@ steady state; compliance is so low that with the dissipation used boxes are
 still settling. This is amplified by the fact that we are monitoring values very
 close to zero.
 
-@image html drake/multibody/plant/images/box_on_box_std_penetration.png "Figure7: Scaling of the vibration with problem parameters. No margin, δ = 0." width=30%
-
-@subsection margin_its_effect The Effect of Margin
-
-For non-zero margin, we now expect that if these vibrations are in the order of
-the margin δ, they'll be mitigated. We test this by running the same simulation
-this time scanning a wide range of margin values. To test a very adversarial
-situation we use E = 10⁹ Pa (higher compliance mitigates these instabilities).
-Fig. 8 characterizes the amplitude of the vibrations once again using σ(|ϕ|) /
-(h²⋅g) as a metric, as a function of margin made dimensionless with h²⋅g. We
-observe in Fig. 8 that indeed for `δ / (h²⋅g) > 1` the instabilities die off.
-
-@image html drake/multibody/plant/images/instability_vs_margin.png "Figure 8: Standard deviation of the vibrations vs. margin." width=30%
-
-Notice how remarkable these results are. Time step h spans two orders (h²,
-used for dimensionless quantities spans four order of magnitude), and we make
-margin span seven order of magnitude (from 10⁻¹² to 10⁻⁴ meters). The fact these
-curves collapse in such tight regions is an excellent confirmation of the
-scaling law from Eq. (3). Moreover, additional experimentation with complex
-geometries such as those in Figs. 3 and 5 provide additional confirmation.
-
-Finally, based on this plots, we can say that setting `δ = h²⋅g` is quite
-conservative and will mitigate instabilities effectively. The largest time step
-typically expected in simulations of robotics system seldom exceeds 10 ms.
-Therefore a value of `δ = 10⁻⁴ m` will be more than enough in all robotics
-applications. While incredibly effective, notice how small this value is.
-
-@section margin_contact_results Contact Results
-
-TODO: write.
-
-@section margin_non_convex Non-Convex Geometries
-
-TODO: Write this.
+@image html drake/multibody/plant/images/box_on_box_std_penetration.png "Figure 8: Scaling of the vibration with problem parameters. No margin, δ = 0." width=30%
 
 */
