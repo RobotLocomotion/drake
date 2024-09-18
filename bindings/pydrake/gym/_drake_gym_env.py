@@ -162,10 +162,11 @@ class DrakeGymEnv(gym.Env):
         else:
             raise ValueError("reset_handler is not callable.")
 
-        if info_handler is None or callable(info_handler):
+        # Default return value of `info_handler()` is an empty `dict`.
+        if info_handler is callable(info_handler):
             self.info_handler = info_handler
         else:
-            raise ValueError("info_handler is not callable.")
+            self.info_handler = lambda _: dict()
 
         self.hardware = hardware
 
@@ -253,7 +254,7 @@ class DrakeGymEnv(gym.Env):
             truncated = True
             terminated = False
             reward = 0
-            info = dict() if self.info_handler is None else self.info_handler(self.simulator)
+            info = self.info_handler(self.simulator)
 
             return prev_observation, reward, terminated, truncated, info
 
@@ -263,7 +264,7 @@ class DrakeGymEnv(gym.Env):
             not truncated
             and (status.reason()
                  == SimulatorStatus.ReturnReason.kReachedTerminationCondition))
-        info = dict() if self.info_handler is None else self.info_handler(self.simulator)
+        info = self.info_handler(self.simulator)
 
         return observation, reward, terminated, truncated, info
 
