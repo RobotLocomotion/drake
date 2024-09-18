@@ -620,7 +620,7 @@ convergence guarantees.
 
 /** @addtogroup hydro_margin Margin for Hydroelastic Contact
 
-In Drake multibody systems with frictional contact are simulated via a discrete
+In Drake, multibody systems with frictional contact are simulated via a discrete
 approximation, see @ref mbp_discrete "Discrete Models for Simulation" (while
 Drake also offers @ref mbp_continuous "Continuous Models for Simulation",
 currently the discrete approximation performs best.) The accuracy of these
@@ -637,7 +637,7 @@ introduce margin mostly as a mechanism to mitigate pass through problems that
 can arise when objects move at high speeds and/or the simulation time step sizes
 are large in order to meet real-time requirements within a limited computational
 budget. In Drake however, margin is used to mitigate instability problems
-inherent of discrete schemes with a fixed time step size.
+inherent to discrete schemes with a fixed time step size.
 
 @note As mentioned, the concepts of margin and speculative constraints discussed
 below are not new. What is new and unique to Drake, is the extension of these
@@ -656,18 +656,17 @@ kg) are stacked on top of each other. Their dynamics is simulated at a
 relatively large time step of 10 ms (large for robotics applications). Only
 their surface meshes are shown as wire frames so that we can appreciate the
 contact surface, colored by pressure. While we'd expect the upper box to rest
-stably on top of the box at the bottom, we observe a wobbling instability where
-the contact surface shifts back and forth between two corners.
+stably on the lower box, we observe a wobbling instability where the contact
+surface shifts back and forth between two corners.
 
 @image html drake/multibody/plant/images/unstable_box_box_contact.gif "Figure 1: Unstable flat-on-flat contact." width=50%
 
 This wobbling is not physical, but rather a numerical instability. To gain
 insight into this problem, we analyze the simplified system in Fig. 2. In this
 case, contact takes place between a single box and a ground plane in 2D.
-Moreover, the contact geometry is simplified from the continuous contact patches
-in Fig. 1 to discrete points in Fig. 2. In Fig. 2, we see the box at three
-consecutive time steps, labeled tₙ, tₙ₊₁, and , tₙ₊₂. In this simplified system
-we use a point contact model in which only the corners marked in red can make
+In Fig. 2, we see the box at three consecutive time steps, labeled tₙ, tₙ₊₁,
+and, tₙ₊₂. In this simplified system, we've also simplified the contact model to
+a point contact model in which only the corners marked in red can make
 contact with the ground. At time tₙ only the left corner is in penetration. For
 such a configuration the contact resolution phase will predict a contact force
 that will attempt to minimize this interpenetration. If the time step size is
@@ -675,14 +674,14 @@ large enough, the box's configuration can actually overshoot into the state
 sketched for tₙ₊₁. Now the box is in a new state where the right corner is in
 contact and the left corner is out of contact. In this configuration, the box
 can overshoot once again to the state at tₙ₊₂. Even more, the motion of the box
-can fall into a limit cycle with intermittent contact between the two corners.
+can fall into a limit cycle with oscillating contact between the two corners.
 
-The situation is more complex in Fig. 1, but the underlying principle of this
-instability remains.
+The situation is more complex in Fig. 1, but the same underlying principle
+applies.
 
-@image html drake/multibody/plant/images/discrete_instabilities.png "Figure 2: Intermittent contact results in wobbling instabilities." width=35%
+@image html drake/multibody/plant/images/discrete_instabilities.png "Figure 2: Oscillating contact results in wobbling instabilities." width=35%
 
-The stability arises when the stable contact between two object has a large
+The instability arises when the stable contact between two object has a large
 cross-sectional area on a plane (i.e., it really doesn't happen between spheres
 and planes). Figure 3 shows an example of this instability for the contact
 between a mug placed on top of a plate. When the visuals for the geometries are
@@ -706,7 +705,7 @@ leads to the instability.  We are essentially adding contact constraints before
 contact actually happens. Whether these constraints become active or not, will
 ultimately depend on the contact resolution phase, which considers balance of
 momentum and the physics of contact. We refer to this new set of constraints as
-"speculative contact constraints", @ref Catto2013 "[Catto, 2013]. Speculative
+"speculative contact constraints", @ref Catto2013 "[Catto, 2013]". Speculative
 constraints are highlighted with blue boxes in Fig. 2.
 
 To provide more context, we'll discuss briefly how the solver can use
@@ -716,7 +715,7 @@ a compliant contact with stiffness k, the normal force is modeled according to:
 <pre>
   fₙ = k (-ϕ)₊,                                                             (1)
 </pre>
-where (a)₊ = max(0, a). Notice that fₙ > 0 (i.e. repulsive) always, even if ϕ >
+where (a)₊ = max(0, a). Notice that fₙ ≥ 0 (i.e. repulsive) always, even if ϕ >
 0 (speculative constraint). At each time step Drake solvers use a first order
 approximation of the signed distance function as ϕ ≈ ϕ₀ + h⋅vₙ, where ϕ₀ is the
 signed distance from the previous time step, vₙ the normal component of the
@@ -725,21 +724,22 @@ h is the time step size. With this approximation the normal force is modeled as
 <pre>
   fₙ ≈ k (-ϕ₀ - h⋅vₙ)₊,  ϕ₀ < δ,                                           (2)
 </pre>
-where, to be more precise, we added the condition for speculative constraints,
-with δ a pre-specified margin value. Large enough values of δ allow to recover
-the original model (1) (with the approximation ϕ ≈ ϕ₀ + h⋅vₙ). In practice
-however, we cannot have δ = ∞ since this would incur in expensive 𝒪(n²)
+where, to be more precise, we've added the condition for speculative
+constraints, with δ a pre-specified margin value. Large enough values of δ allow
+to recover the original model (1) (with the approximation ϕ ≈ ϕ₀ + h⋅vₙ). In
+practice however, we cannot have δ = ∞ since this would incur in expensive O(n²)
 geometry queries. Moreover, the linear approximation used for ϕ is no longer
 accurate for large extrapolations. Notice that with δ = 0 (no margin) we only
 consider a subset of all desired contact constraints.
 
-Speculative constraints come from finding more "contact" points. When margin is
-zero, only those points actually in contact are reported. As margin grows, we
-also need to find points that are outside of contact, but within margin distance
-of contact. There is an increased computational cost for positive margin values
-in both finding those additional points as well as handling the constraints that
-arise from them. Tuned well, the impact of this additional computation can be
-negligible compared to the benefits of increased stability.
+Speculative contact constraints come from finding more "contact" points. When
+margin is zero, only those points actually in contact are reported. As margin
+grows, we also need to find points that are outside of contact, but within
+margin distance of contact. There is an increased computational cost for
+positive margin values in both finding those additional points as well as
+handling the constraints that arise from them. Tuned well, the impact of this
+additional computation can be negligible compared to the benefits of increased
+stability.
 
 The precise value of margin is therefore determined as a trade-off between
 accuracy/stability and performance. Section @ref margin_how_much discusses how
@@ -754,14 +754,14 @@ _correction_).
 
 @section margin_for_hydroelastics Hydroelastic Contact
 
-Speculative constraints for contacts within a given margin fit well within a
+Speculative contact constraints within a given margin fit well within a
 framework in terms of distance constraints — contact pairs with a distance
 within the margin threshold are included in the contact resolution phase. In
 contrast, how to introduce margin within the hydroelastic contact framework is
 not as straightforward.
 
 In the @ref hydro_contact "hydroelastic contact model", each geometry is
-assigned a body centric _pressure field_. The contact surface between two
+assigned a body-centric _pressure field_. The contact surface between two
 overlapping geometries is computed as the surface of equal hydroelastic
 pressure. Historically, the pressure field is defined to be zero at the surface
 of the geometry (no contact implies no contact pressure). Contact surfaces
@@ -782,12 +782,14 @@ replace the specified compliant hydroelastic geometry with an alternative
 representation whose surface is an approximation of the offset surface of the
 original geometry's surface (extended outward by margin distance). The
 pressure field defined within this "inflated" geometry is defined such that the
-zero level set of the pressure field is a good approximation to the original
+zero level set of the pressure field is a good approximation of the original
 geometry's surface (where reasonably possible, it is an exact reproduction).
 
-It's worth noting that offset surfaces are reasonably well defined for convex
-shapes. Non-convex shapes require additional consideration and are discussed in
-further detail in @ref margin_non_convex.
+It's worth noting that only in a few cases are we truly producing an offset
+surface (spheres and capsules). For other convex primitives we approximate the
+offset surface of a shape with a larger shape of the same type. Non-convex
+shapes require additional consideration and are discussed in further detail in
+@ref margin_non_convex.
 
 Figure 4 exemplifies this process for the case of a cylinder. Iso-surfaces of
 constant pressure, colored by pressure, are shown. The extended pressure is
@@ -838,13 +840,13 @@ quantity scale or depend on problem parameters such stiffness, size, etc.?
 
 To answer this question we consider the simplified two-dimensional system in
 Fig. 6. This is a massless rod of length `L` connecting two points of mass
-`m/2`. We assume the rod to be in a limit cycle between two states, left (State
-I) and right (State II). Only one point is in penetration in each
-state. In the discrete setting, the rod is assumed to go back and forth between
-these two states in a single time step. The states are assumed symmetric, with
-the rod rotated an angle θ in State I and an angle -θ in State II. Due to this
-symmetry, the angular velocity to go from State II to State I is ω and the
-angular velocity to go from State I to State II is -ω.
+`m/2`. We assume the rod to be in a limit cycle between two states, State I
+(shown on the left) and State II (shown on the right). Only one point is in
+penetration in each state. In the discrete setting, the rod is assumed to go
+back and forth between these two states in a single time step. The states are
+assumed symmetric, with the rod rotated an angle θ in State I and an angle -θ in
+State II. Due to this symmetry, the angular velocity to go from State II to
+State I is ω and the angular velocity to go from State I to State II is -ω.
 
 @image html drake/multibody/plant/images/margin_stability.png "Figure 6: Simplified system for stability analysis." width=50%
 
@@ -886,8 +888,8 @@ for all of our simulations (for as long as we are on the same planet).
 
 For non-zero margin, we now expect that if these vibrations are in the order of
 the margin δ, they'll be mitigated. We test this by running the same simulation
-this time scanning a wide range of margin values. To test a very adversarial
-situation we use E = 10⁹ Pa (higher compliance mitigates these instabilities).
+shown in Fig. 1, with a wide range of margin values. To test a very adversarial
+situation we use E = 10⁹ Pa ("softer" compliance mitigates these instabilities).
 Fig. 7 characterizes the amplitude of the vibrations once again using σ(|ϕ|) /
 (h²⋅g) as a metric, as a function of margin made dimensionless with h²⋅g. We
 observe in Fig. 7 that indeed for `δ / (h²⋅g) > 1` the instabilities die off.
@@ -901,7 +903,7 @@ curves collapse in such tight regions is an excellent confirmation of the
 scaling law from Eq. (3). Moreover, additional experimentation with complex
 geometries such as those in Figs. 3 and 5 provide additional confirmation.
 
-Finally, based on this plots, we can say that setting `δ = h²⋅g` is quite
+Finally, based on this plot, we can say that setting `δ = h²⋅g` is quite
 conservative and will mitigate instabilities effectively. The largest time step
 typically expected in simulations of robotics system seldom exceeds 10 ms.
 Therefore a value of `δ = 10⁻⁴ m` will be more than enough in all robotics
