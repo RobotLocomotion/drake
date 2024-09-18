@@ -88,8 +88,8 @@ class DrakeGymEnv(gym.Env):
                 (e.g. ``joint.set_random_pose_distribution()``
                 using the ``reset()`` seed), (otherwise) using
                 ``reset_handler()``.
-            info_handler: A function that returns a ``dict[str, Any]`` 
-                containing auxiliary diagnostic information (helpful for 
+            info_handler: A function that returns a ``dict[str, Any]``
+                containing auxiliary diagnostic information (helpful for
                 debugging, learning, and logging).
             hardware: If True, it prevents from setting random context at
                 ``reset()`` when using ``random_generator``, but it does
