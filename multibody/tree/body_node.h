@@ -187,10 +187,7 @@ class BodyNode : public MultibodyElement<T> {
   virtual void CalcPositionKinematicsCache_BaseToTip(
       const FrameBodyPoseCache<T>& frame_body_pose_cache,
       const T* positions,
-      PositionKinematicsCache<T>* pc) const {
-    unused(frame_body_pose_cache, positions, pc);
-    DRAKE_DEMAND(false);  // Must be overridden.
-  }
+      PositionKinematicsCache<T>* pc) const = 0;
 
   // Calculates the hinge matrix H_PB_W.
   // @param[in] context
@@ -211,10 +208,7 @@ class BodyNode : public MultibodyElement<T> {
       const systems::Context<T>& context,
       const FrameBodyPoseCache<T>& frame_body_pose_cache,
       const PositionKinematicsCache<T>& pc,
-      std::vector<Vector6<T>>* H_PB_W_cache) const {
-    unused(context, frame_body_pose_cache, pc, H_PB_W_cache);
-    DRAKE_DEMAND(false);  // Must be overridden.
-  }
+      std::vector<Vector6<T>>* H_PB_W_cache) const = 0;
 
   // This method is used by MultibodyTree within a base-to-tip loop to compute
   // this node's kinematics that depend on the generalized velocities.
@@ -246,10 +240,7 @@ class BodyNode : public MultibodyElement<T> {
       const PositionKinematicsCache<T>& pc,
       const std::vector<Vector6<T>>& H_PB_W_cache,
       const T* velocities,
-      VelocityKinematicsCache<T>* vc) const {
-    unused(context, velocities, pc, H_PB_W_cache, vc);
-    DRAKE_DEMAND(false);  // Must be overridden.
-  }
+      VelocityKinematicsCache<T>* vc) const = 0;
 
   // This method is used by MultibodyTree within a base-to-tip loop to compute
   // this node's kinematics that depend on the generalized accelerations, i.e.

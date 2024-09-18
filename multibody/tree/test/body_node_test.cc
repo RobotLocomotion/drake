@@ -60,6 +60,38 @@ class DummyBody : public RigidBody<double> {
   }
 };
 
+// Non-abstract definition of a BodyNode.
+class DummyBodyNode : public BodyNode<double> {
+ public:
+  using T = double;
+
+  using BodyNode::BodyNode;
+
+  void CalcPositionKinematicsCache_BaseToTip(
+      const FrameBodyPoseCache<T>& /* frame_body_pose_cache */,
+      const T* /* positions */,
+      PositionKinematicsCache<T>* /* pc */) const override {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcAcrossNodeJacobianWrtVExpressedInWorld(
+      const systems::Context<T>& /* context */,
+      const FrameBodyPoseCache<T>& /* frame_body_pose_cache */,
+      const PositionKinematicsCache<T>& /* pc */,
+      std::vector<Vector6<T>>* /* H_PB_W_cache */) const override {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcVelocityKinematicsCache_BaseToTip(
+      const systems::Context<T>& /* context */,
+      const PositionKinematicsCache<T>& /* pc */,
+      const std::vector<Vector6<T>>& /* H_PB_W_cache */,
+      const T* /* velocities */,
+      VelocityKinematicsCache<T>* /* vc */) const override {
+    DRAKE_UNREACHABLE();
+  }
+};
+
 // This test validates the exception message thrown in
 // BodyNode::CalcArticulatedBodyHingeInertiaMatrixFactorization(). There are two
 // aspects of the message that are not simply *literal*:
@@ -75,7 +107,7 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
   // Construct enough of a node so we can invoke the dut with known body names.
   const DummyBody parent("parent", world_index());
   const DummyBody child("child", BodyIndex(1));
-  const BodyNode<double> parent_node(nullptr, &parent, nullptr);
+  const DummyBodyNode parent_node(nullptr, &parent, nullptr);
 
   // A 1x1 articulated body hinge inertia matrix.
   MatrixUpTo6<double> one_by_one(1, 1);
@@ -87,7 +119,7 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
     const RevoluteMobilizer<double> mobilizer(
         dummy_mobod, parent.body_frame(), child.body_frame(),
         Vector3d{0, 0, 1});
-    const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
+    const DummyBodyNode body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
         "An internal mass matrix associated with the joint that connects body "
@@ -102,7 +134,7 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
     const PrismaticMobilizer<double> mobilizer(
         dummy_mobod, parent.body_frame(), child.body_frame(),
         Vector3d{0, 0, 1});
-    const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
+    const DummyBodyNode body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
         "An internal mass matrix associated with the joint that connects body "
@@ -118,7 +150,7 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
     // space is irrelevant.
     const PlanarMobilizer<double> mobilizer(dummy_mobod, parent.body_frame(),
                                             child.body_frame());
-    const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
+    const DummyBodyNode body_node(&parent_node, &child, &mobilizer);
     // In this case, we don't need to examine the full exception message since
     // the message is a concatenation of the text in the previous messages. We
     // look for evidence of concatenation with "rotation" and "translation".
@@ -146,8 +178,8 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
   const SpanningForest::Mobod dummy_mobod(MobodIndex(0), LinkOrdinal(0));
   const RevoluteMobilizer<double> mobilizer(
       dummy_mobod, world.body_frame(), body.body_frame(), Vector3d{0, 0, 1});
-  const BodyNode<double> world_node(nullptr, &world, nullptr);
-  const BodyNode<double> body_node(&world_node, &body, &mobilizer);
+  const DummyBodyNode world_node(nullptr, &world, nullptr);
+  const DummyBodyNode body_node(&world_node, &body, &mobilizer);
 
   // 1x1 hinge matrix.
   Matrix one_by_one(1, 1);
