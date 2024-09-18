@@ -4,6 +4,7 @@
 #include "drake/common/string_set.h"
 #include "drake/common/string_unordered_map.h"
 #include "drake/common/string_unordered_set.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 
 namespace drake {
@@ -61,6 +62,27 @@ GTEST_TEST(StringContainerTest, string_map) {
   EXPECT_EQ(dut.count("hello"), count);
   EXPECT_EQ(dut.count(std::string{"hello"}), count);
   EXPECT_EQ(dut.count(std::string_view{"hello"}), count);
+
+  // Implicit addition.
+  EXPECT_EQ(dut["missing_cstr"], 0);
+  EXPECT_EQ(dut[std::string_view("missing_view")], 0);
+  EXPECT_EQ(dut[std::string("missing_str")], 0);
+
+  // Using non std::string to look up present values.
+  EXPECT_EQ(dut["hello"], 1);
+  EXPECT_EQ(dut[std::string_view("hello")], 1);
+
+  // Using look up constant values.
+  EXPECT_EQ(dut.at("hello"), 1);
+  EXPECT_EQ(dut.at(std::string{"hello"}), 1);
+  EXPECT_EQ(dut.at(std::string_view{"hello"}), 1);
+
+  // Using look up failed.
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.at("nope"), ".*string_map::at.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.at(std::string("nope")),
+                              ".*string_map::at.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.at(std::string_view("nope")),
+                              ".*string_map::at.*");
 }
 
 GTEST_TEST(StringContainerTest, string_multimap) {

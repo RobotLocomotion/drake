@@ -1152,6 +1152,7 @@ drake_cc_googletest(
     name = "string_container_test",
     deps = [
         ":string_container",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:limit_malloc",
     ],
 )
