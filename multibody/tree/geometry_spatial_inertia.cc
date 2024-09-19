@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -127,7 +128,19 @@ SpatialInertia<double> CalcSpatialInertia(
     accum_com += (p + q + r) * tet_vol_times_six;
   }
 
+  // Volume should be inherently positive.
   const double volume = vol_times_six / 6.0;
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  if (volume <= kEpsilon) {
+    const std::string error_message = fmt::format(
+        "{}(): The calculated volume of a triangle surface mesh is {} whereas "
+        "a reasonable positive value was expected. The mesh may have bad "
+        "geometry, e.g., the winding (order of the vertices) of some faces do "
+        "not produce outward normals.", __func__, volume);
+    throw std::logic_error(error_message);
+    // Note: In a Wavefront .obj file, each face's vertices should be stored
+    // in a counter-clockwise order by default.
+  }
   const double mass = density * volume;
   const Vector3d p_GoGcm = accum_com / (vol_times_six * 4);
   // We can compute I = C.trace * 1₃ - C. Two key points:
