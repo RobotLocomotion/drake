@@ -48,13 +48,13 @@ class MobilizerTester : public ::testing::Test {
 
     // We are done adding modeling elements. Transfer tree to system,
     // finalize, and get a Context.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(
-        std::move(owned_tree_));
+    system_ =
+        std::make_unique<MultibodyTreeSystem<double>>(std::move(owned_tree_));
     context_ = system_->CreateDefaultContext();
 
     const Mobilizer<double>& mobilizer = joint_ref.GetMobilizerInUse();
     const auto* typed_mobilizer =
-      dynamic_cast<const MobilizerType<double>*>(&mobilizer);
+        dynamic_cast<const MobilizerType<double>*>(&mobilizer);
     DRAKE_DEMAND(typed_mobilizer != nullptr);
     return *typed_mobilizer;
   }
@@ -70,8 +70,8 @@ class MobilizerTester : public ::testing::Test {
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(
-        std::move(owned_tree_));
+    system_ =
+        std::make_unique<MultibodyTreeSystem<double>>(std::move(owned_tree_));
     context_ = system_->CreateDefaultContext();
 
     return mobilizer_ref;

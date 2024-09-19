@@ -10,7 +10,6 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/spatial_inertia.h"
-#include "drake/multibody/tree/unit_inertia.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -18,9 +17,9 @@ namespace multibody {
 namespace internal {
 namespace {
 
-using math::RotationMatrixd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using math::RotationMatrixd;
 using systems::Context;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -53,8 +52,8 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const double r = 0.2, L = 0.3;
   const double mass_cylinder = 0.8;
   const SpatialInertia<double> M_Ccm =
-      SpatialInertia<double>::SolidCylinderWithMass(
-          mass_cylinder, r, L, Vector3d::UnitX());
+      SpatialInertia<double>::SolidCylinderWithMass(mass_cylinder, r, L,
+                                                    Vector3d::UnitX());
 
   // Create an empty model.
   auto tree_owned = std::make_unique<MultibodyTree<double>>();
@@ -62,20 +61,18 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Add box body and gimbal (BallRpy) joint.
   const RigidBody<double>& box_link = tree.AddRigidBody("box", M_Bcm);
-  tree.AddJoint<BallRpyJoint>("ball", tree.world_body(), {},
-                              box_link, {});
+  tree.AddJoint<BallRpyJoint>("ball", tree.world_body(), {}, box_link, {});
 
   // Add a massless body that can rotate about x.
   const RigidBody<double>& massless_link =
       tree.AddRigidBody("massless", SpatialInertia<double>::Zero());
-  tree.AddJoint<RevoluteJoint>(
-      "revolute", box_link, {}, massless_link, {}, Vector3d(1, 0, 0));
+  tree.AddJoint<RevoluteJoint>("revolute", box_link, {}, massless_link, {},
+                               Vector3d(1, 0, 0));
 
   // Add cylinder body and let it translate along y.
-  const RigidBody<double>& cylinder_link =
-      tree.AddRigidBody("cylinder", M_Ccm);
-  tree.AddJoint<PrismaticJoint>("prismatic", massless_link, {},
-                                cylinder_link, {}, Vector3d(0, 1, 0));
+  const RigidBody<double>& cylinder_link = tree.AddRigidBody("cylinder", M_Ccm);
+  tree.AddJoint<PrismaticJoint>("prismatic", massless_link, {}, cylinder_link,
+                                {}, Vector3d(0, 1, 0));
 
   // Transfer tree to system and get a Context.
   MultibodyTreeSystem<double> system(std::move(tree_owned));
@@ -111,7 +108,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& Pplus_M_W_actual =
       abc.get_Pplus_PB_W(massless_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(Pplus_M_W_expected_mat,
-      Pplus_M_W_actual.CopyToFullMatrix6(), kEpsilon));
+                              Pplus_M_W_actual.CopyToFullMatrix6(), kEpsilon));
 
   // Get expected projected articulated body inertia of the articulated body
   // consisting of the box and cylinder.
@@ -124,7 +121,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_B_W_actual =
       abc.get_Pplus_PB_W(box_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(Pplus_B_W_expected_mat,
-      P_B_W_actual.CopyToFullMatrix6(), kEpsilon));
+                              P_B_W_actual.CopyToFullMatrix6(), kEpsilon));
 }
 
 // This helper function projects a body's ABI P across its inboard mobilizer
@@ -162,8 +159,8 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   const double r = 0.3, L = 0.3;
   const double mass_cylinder = 0.6;
   const SpatialInertia<double> M_Ccm =
-      SpatialInertia<double>::SolidCylinderWithMass(
-          mass_cylinder, r, L, Vector3d::UnitX());
+      SpatialInertia<double>::SolidCylinderWithMass(mass_cylinder, r, L,
+                                                    Vector3d::UnitX());
 
   // Create an empty model.
   auto tree_owned = std::make_unique<MultibodyTree<double>>();
@@ -181,8 +178,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
       "revolute", box_link, {}, massless_link, {}, Vector3d(1, 0, 0));
 
   // Add cylinder body and let it translate along y.
-  const RigidBody<double>& cylinder_link =
-      tree.AddRigidBody("cylinder", M_Ccm);
+  const RigidBody<double>& cylinder_link = tree.AddRigidBody("cylinder", M_Ccm);
   const auto& MC_joint = tree.AddJoint<PrismaticJoint>(
       "prismatic", massless_link, {}, cylinder_link, {}, Vector3d(0, 1, 0));
 
@@ -205,7 +201,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Compute articulated body cache.
   ArticulatedBodyInertiaCache<double> abc(tree.get_topology());
-  tree.CalcArticulatedBodyInertiaCache(*context,  &abc);
+  tree.CalcArticulatedBodyInertiaCache(*context, &abc);
 
   // Find the rotation R_WC from World to the Cylinder frame.
   // We have R_WB = -π/2 about y, R_BM = π/4 about x, R_MC = identity.
@@ -239,7 +235,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   // the translation amount to get it back to the massless body's frame.
   Matrix6<double> P_M_W_expected_mat(
       Pplus_C_W_expected.Shift(R_WC * Vector3d(0.0, -0.2, 0.0))
-      .CopyToFullMatrix6());
+          .CopyToFullMatrix6());
 
   // Verify that we get the right P_M.
   const ArticulatedBodyInertia<double>& P_M_W_actual =
@@ -249,7 +245,8 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Need to project P_M to Pplus_M. We'll use the local Project() function
   // to remove the inertia about the massless body's x-axis revolute joint.
-  Vector6d H_M_M; H_M_M << 1, 0, 0, 0, 0, 0;  // rotates about x
+  Vector6d H_M_M;
+  H_M_M << 1, 0, 0, 0, 0, 0;             // rotates about x
   const Vector6d H_M_W = R6_WM * H_M_M;  // re-express in W
   Matrix6<double> Pplus_M_W_expected_mat = Project(P_M_W_expected_mat, H_M_W);
 
@@ -278,7 +275,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   const ArticulatedBodyInertia<double>& Pplus_B_W_actual =
       abc.get_Pplus_PB_W(box_link.mobod_index());
   EXPECT_TRUE(CompareMatrices(Pplus_B_W_expected_mat,
-      Pplus_B_W_actual.CopyToFullMatrix6(), kEpsilon));
+                              Pplus_B_W_actual.CopyToFullMatrix6(), kEpsilon));
 }
 
 }  // namespace

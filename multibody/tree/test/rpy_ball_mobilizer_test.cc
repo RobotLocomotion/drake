@@ -29,14 +29,14 @@ using systems::Context;
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
 // Fixture to setup a simple MBT model containing a space xyz mobilizer.
-class RpyBallMobilizerTest :  public MobilizerTester {
+class RpyBallMobilizerTest : public MobilizerTester {
  public:
   // Creates a simple model consisting of a single body with a space xyz
   // mobilizer connecting it to the world.
   void SetUp() override {
     mobilizer_ = &AddJointAndFinalize<BallRpyJoint, RpyBallMobilizer>(
-        std::make_unique<BallRpyJoint<double>>("joint0",
-            tree().world_body().body_frame(), body_->body_frame()));
+        std::make_unique<BallRpyJoint<double>>(
+            "joint0", tree().world_body().body_frame(), body_->body_frame()));
   }
 
  protected:
@@ -58,9 +58,8 @@ TEST_F(RpyBallMobilizerTest, StateAccess) {
   const RollPitchYawd rpy(M_PI / 5, -M_PI / 7, M_PI / 3);
   const RotationMatrixd R_WB(rpy);
   mobilizer_->SetFromRotationMatrix(context_.get(), R_WB);
-  EXPECT_TRUE(CompareMatrices(
-    mobilizer_->get_angles(*context_), rpy.vector(),
-    kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer_->get_angles(*context_), rpy.vector(),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(RpyBallMobilizerTest, ZeroState) {
@@ -98,12 +97,10 @@ TEST_F(RpyBallMobilizerTest, KinematicMapping) {
   MatrixX<double> N_x_Nplus = N * Nplus;
   MatrixX<double> Nplus_x_N = Nplus * N;
 
-  EXPECT_TRUE(CompareMatrices(
-      N_x_Nplus, Matrix3d::Identity(),
-      kTolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(
-      Nplus_x_N, Matrix3d::Identity(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(N_x_Nplus, Matrix3d::Identity(), kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(Nplus_x_N, Matrix3d::Identity(), kTolerance,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(RpyBallMobilizerTest, MapUsesN) {

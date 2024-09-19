@@ -7,11 +7,9 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
-#include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
-#include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/context.h"
 
@@ -39,15 +37,13 @@ class SpringTester : public ::testing::Test {
                                math::RigidTransform<double>::Identity());
 
     // Allow body B to translate along the z axis.
-    joint_ = &model->AddJoint<PrismaticJoint>("joint_AB", *bodyA_,
-                                              std::nullopt, *bodyB_,
-                                              std::nullopt,
+    joint_ = &model->AddJoint<PrismaticJoint>("joint_AB", *bodyA_, std::nullopt,
+                                              *bodyB_, std::nullopt,
                                               Vector3<double>::UnitZ());
 
     // Add spring
-    spring_ = &model->AddForceElement<PrismaticSpring>(*joint_,
-                                                      nominal_position_,
-                                                      stiffness_);
+    spring_ = &model->AddForceElement<PrismaticSpring>(
+        *joint_, nominal_position_, stiffness_);
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
@@ -102,7 +98,7 @@ TEST_F(SpringTester, NominalPosition) {
   CalcSpringForces();
   const VectorX<double>& generalized_forces = forces_->generalized_forces();
   EXPECT_TRUE(CompareMatrices(generalized_forces, VectorX<double>::Zero(1),
-      kTolerance, MatrixCompareType::relative));
+                              kTolerance, MatrixCompareType::relative));
 
   // Verify the potential energy is zero.
   const double potential_energy = spring_->CalcPotentialEnergy(
@@ -125,9 +121,9 @@ TEST_F(SpringTester, DeltaPosition) {
                               kTolerance, MatrixCompareType::relative));
 
   // Verify the value of the potential energy.
-  const double potential_energy_expected =
-      0.5 * stiffness_ * (position - nominal_position_) *
-      (position - nominal_position_);
+  const double potential_energy_expected = 0.5 * stiffness_ *
+                                           (position - nominal_position_) *
+                                           (position - nominal_position_);
   const double potential_energy = spring_->CalcPotentialEnergy(
       *context_, tree().EvalPositionKinematics(*context_));
   EXPECT_NEAR(potential_energy, potential_energy_expected, kTolerance);
