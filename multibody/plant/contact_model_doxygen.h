@@ -928,19 +928,21 @@ the instabilities die off.
 @image html drake/multibody/plant/images/instability_vs_margin.png "Figure 7: Standard deviation of the vibrations vs. margin." width=30%
 
 Once again, keep in mind that the rod analysis is very simplified. For instance,
-notice in Fig. 7 tat at larger time steps margin δ is more effective yet
+notice in Fig. 7 that at larger time steps margin δ is more effective yet
 (requiring only `δ / (h²⋅g) ≳ 0.01` for oscillations to die off). This can be
 explained by the _numerical dissipation_ introduced by discrete schemes, which
 is not taken into account in our simplified analysis, and goes away as time step
 is decreased.
 
-Using Fig. 7 as a guide, lets compute the value of δ at which oscillations die
-off for these curves. We see the worst case is for the red line (h = 10⁻² s) at
-`δ / (h²⋅g) ≈ 0.01`, which results in `δ ≈ 10⁻⁵ m`. To account for factors not
-included in our analysis, we in general choose the very conservative value of `δ
-= 10⁻⁴ m`. We confirmed the effectiveness of this value over and over again with
-additional experimentation on more complex systems as those in Figs. 3 and 5.
-While incredibly effective, notice how small this value is.
+Figure 7 indicates that for time steps [10⁻², 10⁻³, 2×10⁻⁴] (seconds) that the
+oscillation disappeared with δ / (h²⋅g) ≈ [10⁻², 10⁻¹, 10⁻¹], respectively.
+Given those values, we can solve for margin values of δ = [10⁻⁵, 10⁻⁶, 4×10⁻⁸]
+(meters), respectively. The worst case comes from the largest margin, 10⁻⁵ m
+(most expensive computation). To account for factors not included in our
+analysis, we in general choose the very conservative value of `δ = 10⁻⁴ m`. We
+confirmed the effectiveness of this value over and over again with additional
+experimentation on more complex systems as those in Figs. 3 and 5. While
+incredibly effective, notice how small this value is.
 
 @section margin_contact_results Contact Results
 
@@ -961,19 +963,19 @@ TODO: Write this.
 
 The result in (3) predicts the magnitude of contact oscillations in the absence
 of margin (δ = 0) for the simplified system of Fig. 6. The estimation predicts
-`Δϕ = h²⋅g`. This estimation will not hold exactly for arbitrary geometries and
+`Δϕ = h²⋅g`. This estimate will not hold exactly for arbitrary geometries and
 mass distributions. The expectation, however, is that the scaling `Δϕ ~ h²⋅g`
-still does provide a good estimation of the magnitude of these spurious
+still does provide a good estimate of the magnitude of these spurious
 oscillations.
 
-The aim of this section is to verify to what extend this scaling does provide a
-good estimation of the amplitude of these oscillations in a more complex case.
-We are particularly interested not only to understand to what extent the scaling
+The aim of this section is to verify to what extent this scaling does provide a
+good estimate of the amplitude of these oscillations in a more complex case. We
+are particularly interested not only to understand to what extent the scaling
 law applies to this system but even more so, to verify the independence of these
 results with parameters such as stiffness and mass (the simplified case was
 actually shown to be independent of these parameters). If (3) happens to provide
-a good estimation, then we have a very good chance of success at choosing a
-value of margin δ for arbitrary simulation cases.
+a good estimate, then we have a very good chance of success at choosing a value
+of margin δ for arbitrary simulation cases.
 
 For a general contact problem, many physical and numerical parameters are
 involved:
@@ -991,11 +993,11 @@ tractable we resource the incredibly powerful tool of dimensional analysis. This
 method reduces the dimension of the parameter space by finding an alternative
 (smaller) set of dimensionless parameters. The underlying method is described by
 Buckingham π theorem, though in practice selecting these parameters often
-requires a great deal of experience and physical intuition. We won't go in
-detail here, but consider an example for sure you are familiar with. While the
+requires a great deal of experience and physical intuition. We won't go into
+detail here, but let's consider a common example in fluid dynamics. While the
 drag force a fluid exerts on an object is an incredibly complex function of
 density, viscosity, flow speed, geometry and size, engineers make very useful
-plots involving two (now very popular) dimensionless quantities; drag
+plots involving two (now very popular) dimensionless quantities: drag
 coefficient vs. Reynolds number. We therefore use the same procedure to find two
 dimensionless parameters that can succinctly capture the physics (and numerics
 in this case) of the problem at hand.
@@ -1004,10 +1006,10 @@ We start by defining an _effective spring stiffness_ as `k = E⋅A/H`, with E th
 hydroelastic modulus, A the area of contact (in our case the area of the base of
 the box), and H the _Elastic Foundation_ depth (in our case half of the boxes
 minimum side length). With this, we can define the (angular) frequency `ω =
-(k/m)¹⁄₂`, similarly to a spring-mass system, where `m` is the mass of the box.
+(k/m)¹ᐟ²`, similar to a spring-mass system, where `m` is the mass of the box.
 This frequency characterizes the dynamics of the compliant contact, and our
 intuition tells us it should be an important quantity in the analysis. With
-this, we define our first dimensionless parameter: `π₁ = h⋅ω = h⋅(k/m)¹⁄₂`.
+this, we define our first dimensionless parameter: `π₁ = h⋅ω = h⋅(k/m)¹ᐟ²`.
 
 Our second parameter must involve the amplitude of the oscillations. Guided by
 our estimation in (3), we define `π₂ = σ(|ϕ|) / (h²⋅g)`, where to characterize
@@ -1015,7 +1017,7 @@ the amplitude of the oscillations we measure the standard deviation `σ(|ϕ|)` o
 the penetrations.
 
 Having identified these two dimensionless parameters, we now run a large number
-of simulations, scanning the parameter space (E, m, sizes, h). We then measure
+of simulations, sampling the parameter space (E, m, sizes, h). We then measure
 `σ(|ϕ|)` for each, compute π₁ and π₂ and plot them with the hope to find a clear
 relationship among them.
 
@@ -1032,9 +1034,9 @@ the rattling instability somewhat under control to avoid the upper box from
 drifting and falling to the side.
 
 We plot `σ(|ϕ|) / (h²⋅g)` in Fig. 8. Labels correspond to hydroelastic modulus
-`E`, and in parenthesis to size and shape changes. The very first thing we
+`E`, and in parentheses to size and shape changes. The very first thing we
 observe clearly is that oscillations die off below a frequency close to the
-Nyquist frequency (= 1/(2h), or h⋅(k/m)¹⁄₂ = π). This makes sense, as the
+Nyquist frequency (= 1/(2h), or h⋅(k/m)¹ᐟ² = π). This makes sense, as the
 dynamics of contact is resolved by the simulation time step, the numerical
 method is able to recover from this spurious oscillatory behavior. We note that
 the increase we observe at the smaller values of `π₁ = h⋅ω` is only an artifact
