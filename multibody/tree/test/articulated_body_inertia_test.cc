@@ -14,8 +14,8 @@ namespace multibody {
 namespace internal {
 namespace {
 
-using Eigen::Vector3d;
 using Eigen::MatrixXd;
+using Eigen::Vector3d;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
@@ -24,10 +24,9 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 GTEST_TEST(ArticulatedBodyInertia, DefaultConstructor) {
   ArticulatedBodyInertia<double> P;
   const Matrix6<double> P_matrix = P.CopyToFullMatrix6();
-  ASSERT_TRUE(std::all_of(
-      P_matrix.data(),
-      P_matrix.data() + 36,
-      [](double x) { return std::isnan(x); }));
+  ASSERT_TRUE(std::all_of(P_matrix.data(), P_matrix.data() + 36, [](double x) {
+    return std::isnan(x);
+  }));
 }
 
 // Construct a non-trivial articulated body inertia from a spatial inertia,
@@ -35,8 +34,8 @@ GTEST_TEST(ArticulatedBodyInertia, DefaultConstructor) {
 GTEST_TEST(ArticulatedBodyInertia, ConstructionNonTrivial) {
   const double mass = 2.5;
   const Vector3d com(0.1, -0.2, 0.3);
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  const Vector3d m(2.0, 2.3, 2.4);               // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);              // p for products.
   const UnitInertia<double> G(m(0), m(1), m(2),  /* moments of inertia */
                               p(0), p(1), p(2)); /* products of inertia */
   const SpatialInertia<double> M(mass, com, G);
@@ -57,11 +56,11 @@ GTEST_TEST(ArticulatedBodyInertia, ConstructionNonTrivial) {
 GTEST_TEST(ArticulatedBodyInertia, CastToAutoDiff) {
   const double mass_double = 2.5;
   const Vector3d com_double(0.1, -0.2, 0.3);
-  const Vector3d m_double(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d m_double(2.0, 2.3, 2.4);   // m for moments.
   const Vector3d p_double(0.1, -0.1, 0.2);  // p for products.
   const UnitInertia<double> G_double(
-      m_double(0), m_double(1), m_double(2), /* moments of inertia */
-      p_double(0), p_double(1), p_double(2));/* products of inertia */
+      m_double(0), m_double(1), m_double(2),  /* moments of inertia */
+      p_double(0), p_double(1), p_double(2)); /* products of inertia */
   const SpatialInertia<double> M_double(mass_double, com_double, G_double);
   ASSERT_TRUE(M_double.IsPhysicallyValid());
 
@@ -87,8 +86,8 @@ GTEST_TEST(ArticulatedBodyInertia, CastToAutoDiff) {
 GTEST_TEST(ArticulatedBodyInertia, Shift) {
   const double mass = 2.5;
   const Vector3d com(0.1, -0.2, 0.3);
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  const Vector3d m(2.0, 2.3, 2.4);               // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);              // p for products.
   const UnitInertia<double> G(m(0), m(1), m(2),  /* moments of inertia */
                               p(0), p(1), p(2)); /* products of inertia */
   const SpatialInertia<double> M(mass, com, G);
@@ -106,8 +105,9 @@ GTEST_TEST(ArticulatedBodyInertia, Shift) {
 
   // Shift the articulated body inertia back and ensure that it is close to the
   // original articulated body inertia.
-  EXPECT_TRUE(P_shifted.Shift(-shift_vector).CopyToFullMatrix6().isApprox(
-      P.CopyToFullMatrix6(), kEpsilon));
+  EXPECT_TRUE(P_shifted.Shift(-shift_vector)
+                  .CopyToFullMatrix6()
+                  .isApprox(P.CopyToFullMatrix6(), kEpsilon));
 }
 
 // Test the plus equal operator for adding articulated body inertias.
@@ -140,8 +140,8 @@ GTEST_TEST(ArticulatedBodyInertia, PlusEqualOperator) {
   P_SP_E += P_DP_E;
 
   // Ensure both inertias are the same.
-  EXPECT_TRUE(P_SP_E.CopyToFullMatrix6().isApprox(
-      M_SP_E.CopyToFullMatrix6(), kEpsilon));
+  EXPECT_TRUE(P_SP_E.CopyToFullMatrix6().isApprox(M_SP_E.CopyToFullMatrix6(),
+                                                  kEpsilon));
 }
 
 // Test the times equal for operator for multiplying on the left and right
@@ -162,12 +162,14 @@ GTEST_TEST(ArticulatedBodyInertia, TimesOperator) {
   // Verify that multiplying by a matrix on the left and right works as
   // expected.
   Matrix6<double> H1;
+  // clang-format off
   H1 << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6,
         1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
         1.7, 1.8, 1.9, 2.1, 2.2, 2.3,
         -2.4, -2.5, -2.6, -2.7, -2.8, -2.9,
         -3.1, -3.2, -3.3, -3.4, -3.5, -3.6,
         -3.7, -3.8, -3.9, -4.1, -4.2, -4.3;
+  // clang-format on
   EXPECT_TRUE((H1 * P_matrix).isApprox(H1 * P, kEpsilon));
   EXPECT_TRUE((P_matrix * H1).isApprox(P * H1, kEpsilon));
 
@@ -178,8 +180,8 @@ GTEST_TEST(ArticulatedBodyInertia, TimesOperator) {
 
   // Ensure that the results of multiplying by H transpose and H on the left and
   // right are the same as operating directly on the matrix.
-  EXPECT_TRUE((H2.transpose() * P_matrix * H2).isApprox(
-      H2.transpose() * P * H2, kEpsilon));
+  EXPECT_TRUE((H2.transpose() * P_matrix * H2)
+                  .isApprox(H2.transpose() * P * H2, kEpsilon));
 }
 
 // Tests support (though limited) for symbolic::Expression.

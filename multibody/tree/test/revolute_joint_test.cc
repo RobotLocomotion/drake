@@ -172,7 +172,6 @@ TEST_F(RevoluteJointTest, AddInTorques) {
   joint1_->AddInTorque(*context_, some_value, &forces1);
   joint1_->AddInTorque(*context_, some_value, &forces1);
 
-
   MultibodyForces<double> forces2(tree());
   // Add value only once:
   joint1_->AddInTorque(*context_, some_value, &forces2);

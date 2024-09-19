@@ -48,9 +48,8 @@ TEST_F(RevoluteMobilizerTest, CanRotateOrTranslate) {
 
 // Verify that RevoluteMobilizer normalizes its axis on construction.
 TEST_F(RevoluteMobilizerTest, AxisIsNormalizedAtConstruction) {
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer_->revolute_axis(), axis_F_.normalized(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer_->revolute_axis(), axis_F_.normalized(),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 // Verifies method to mutate and access the context.
@@ -150,15 +149,15 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
   // introduce no translations at all.
   EXPECT_EQ(X_FM.translation(), Vector3d::Zero());
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
-                              X_FM_expected.GetAsMatrix34(),
-                              kTolerance, MatrixCompareType::relative));
+                              X_FM_expected.GetAsMatrix34(), kTolerance,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
   const double angular_rate = 1.5;
   const SpatialVelocity<double> V_FM =
-      mobilizer_->CalcAcrossMobilizerSpatialVelocity(
-          *context_, Vector1d(angular_rate));
+      mobilizer_->CalcAcrossMobilizerSpatialVelocity(*context_,
+                                                     Vector1d(angular_rate));
 
   const SpatialVelocity<double> V_FM_expected(
       axis_F_.normalized() * angular_rate, Vector3d::Zero());
@@ -212,8 +211,9 @@ TEST_F(RevoluteMobilizerTest, MapVelocityToQDotAndBack) {
 TEST_F(RevoluteMobilizerTest, KinematicMapping) {
   // For this joint, Nplus = 1 independently of the state. We therefore set the
   // state to NaN in order to verify this.
-  tree().GetMutablePositionsAndVelocities(context_.get()).
-      setConstant(std::numeric_limits<double>::quiet_NaN());
+  tree()
+      .GetMutablePositionsAndVelocities(context_.get())
+      .setConstant(std::numeric_limits<double>::quiet_NaN());
 
   // Compute N.
   MatrixX<double> N(1, 1);

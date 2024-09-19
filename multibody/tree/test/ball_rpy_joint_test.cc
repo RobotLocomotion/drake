@@ -60,7 +60,7 @@ class BallRpyJointTest : public ::testing::Test {
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
     system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
-        std::move(model), true/* is_discrete */);
+        std::move(model), true /* is_discrete */);
     context_ = system_->CreateDefaultContext();
   }
 
@@ -271,8 +271,7 @@ TEST_F(BallRpyJointTest, DefaultAngles) {
 
   // Setting the default angle out of the bounds of the position limits
   // should NOT throw an exception
-  EXPECT_NO_THROW(
-      mutable_joint_->set_default_angles(out_of_bounds_low_angles));
+  EXPECT_NO_THROW(mutable_joint_->set_default_angles(out_of_bounds_low_angles));
   EXPECT_NO_THROW(
       mutable_joint_->set_default_angles(out_of_bounds_high_angles));
 }

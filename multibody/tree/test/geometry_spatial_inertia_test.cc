@@ -32,8 +32,7 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
 // Asserts that the given spatial inertia is equivalent to the given mass
 // properties, i.e., mass, position vector, and unit inertia.
 ::testing::AssertionResult SpatialInertiasEqual(
-    const SpatialInertia<double>& dut,
-    const SpatialInertia<double>& M_expected,
+    const SpatialInertia<double>& dut, const SpatialInertia<double>& M_expected,
     double tolerance = 0.0) {
   const double mass = M_expected.get_mass();
   const Vector3<double> p_BoBcm_B = M_expected.get_com();
@@ -64,7 +63,6 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
   return ::testing::AssertionSuccess();
 }
 
-
 // Note: Some tests below validate using SpatialInertia::SolidFooWithDensity()
 // or UnitInertia::SolidFoo(). The *implementations* use similar logic, so,
 // these tests would seem to be a tautology. This is intentional. The goal is
@@ -79,8 +77,8 @@ GTEST_TEST(GeometrySpatialInertiaTest, Box) {
   const geometry::Box box(Lx, Ly, Lz);
   const SpatialInertia<double> M_BBo_B =
       SpatialInertia<double>::SolidBoxWithDensity(kDensity, Lx, Ly, Lz);
-  EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(box, kDensity),
-                                   M_BBo_B, /* tolerance = */ 0.0));
+  EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(box, kDensity), M_BBo_B,
+                                   /* tolerance = */ 0.0));
 }
 
 GTEST_TEST(GeometrySpatialInertiaTest, Capsule) {
@@ -88,8 +86,8 @@ GTEST_TEST(GeometrySpatialInertiaTest, Capsule) {
   const double L = 2;
   const geometry::Capsule capsule(r, L);
   const SpatialInertia<double> M_BBo_B =
-      SpatialInertia<double>::SolidCapsuleWithDensity(
-          kDensity, r, L, Vector3<double>::UnitZ());
+      SpatialInertia<double>::SolidCapsuleWithDensity(kDensity, r, L,
+                                                      Vector3<double>::UnitZ());
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(capsule, kDensity),
                                    M_BBo_B, /* tolerance = */ 0.0));
 }
@@ -181,8 +179,8 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
 
   const std::string valid_obj_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/meshes/box.obj");
-  const std::string valid_vtk_path = FindResourceOrThrow(
-      "drake/geometry/test/one_tetrahedron.vtk");
+  const std::string valid_vtk_path =
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
   const MeshType unit_scale_obj(valid_obj_path, 1.0);
   const MeshType double_scale_obj(valid_obj_path, 2.0);
   const MeshType unit_scale_vtk(valid_vtk_path, 1.0);
@@ -206,7 +204,7 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
       DRAKE_EXPECT_THROWS_MESSAGE(
           CalcSpatialInertia(nonexistent, kDensity),
           ".*only supports .obj or .*.vtk .* given '.*nonexistent.stl'.*");
-      }
+    }
   }
 
   {
@@ -260,7 +258,7 @@ GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
   const double Lz = 3;
   const geometry::Box box(Lx, Ly, Lz);
   const SpatialInertia<double> M_BBo_B =
-    SpatialInertia<double>::SolidBoxWithDensity(kDensity, Lx, Ly, Lz);
+      SpatialInertia<double>::SolidBoxWithDensity(kDensity, Lx, Ly, Lz);
 
   {
     // Mesh posed in its frame the same as the solid box is in its own frame.
@@ -297,8 +295,7 @@ GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
     const double mass = M_BBo_B.get_mass();
     const UnitInertia<double> G_BBo_B = M_BBo_B.get_unit_inertia();
     const UnitInertia<double> G_BBo_M = G_BBo_B.ReExpress(R_MB);
-    const UnitInertia<double> G_MMo_M =
-        G_BBo_M.ShiftFromCenterOfMass(p_BcmMcm);
+    const UnitInertia<double> G_MMo_M = G_BBo_M.ShiftFromCenterOfMass(p_BcmMcm);
 
     // The vertex transformation introduces precision loss, requiring a larger
     // tolerance.
