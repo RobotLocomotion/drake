@@ -275,6 +275,21 @@ each of the properties and then discuss how they can be specified.
     - Remember, as this value increases, your simulation will lose energy at a
       higher rate.
   - See @ref mbp_dissipation_model "Modeling Dissipation" for details.
+- Margin (m), see @ref hydro_margin
+  - A non-negative real value.
+  - Used in discrete mode to mitigate spurious oscillations in the contact of
+    nearly flat surfaces.
+  - Notes on choosing a value:
+    - For typical simulations in robotics, a good start is a margin value of δ =
+      10⁻⁴ m.
+    - How to estimate margin is thoroughly explained in @ref margin_how_much.
+    - The scale of the system matters. For small mechanical components, a new
+      value might need to be estimated based on the analysis in
+      @ref margin_how_much.
+    - A value of zero means that no speculative constraints are added, see
+      @ref speculative_constraints.
+    - The default value is set in
+      drake::geometry::DefaultProximityProperties::margin.
 - Slab thickness
   - A positive real value in meters
   - Only used for compliant half spaces. Declaring a half space to be compliant
