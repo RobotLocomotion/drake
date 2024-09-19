@@ -54,8 +54,8 @@ struct IrisZoOptions {
   /** Descision threshold for unadaptive test.*/
   double tau = 0.5;
 
-  /** Upper bound on the error probability that the admissible_proportion in
-   * collision is not met.*/
+  /** Upper bound on the error probability that the fraction-in-collision
+   * `epsilon` is not met.*/
   double delta = 5e-2;
 
   /** Admissible fraction of the region volume allowed to be in collision.*/
@@ -92,16 +92,12 @@ struct IrisZoOptions {
   bool verbose{false};
 
   /** The initial polytope is guaranteed to contain the point if that point is
-  collision-free. However, the IRIS alternation objectives do not include (and
-  can not easily include) a constraint that the original sample point is
-  contained. Therefore, the IRIS paper recommends that if containment is a
-  requirement, then the algorithm should simply terminate early if alternations
-  would ever cause the set to not contain the point. */
+  collision-free. */
   bool require_sample_point_is_contained{true};
 
-  /** For IRIS in configuration space, we retreat by this margin from each
-  C-space obstacle in order to avoid the possibility of requiring an infinite
-  number of faces to approximate a curved boundary.
+  /** We retreat by this margin from each C-space obstacle in order to avoid the
+  possibility of requiring an infinite number of faces to approximate a curved
+  boundary.
   */
   double configuration_space_margin{1e-2};
 
@@ -135,8 +131,39 @@ struct IrisZoOptions {
   std::shared_ptr<geometry::Meshcat> meshcat{};
 };
 
-/** Given a seed point and an initial ellipsoidal metric, use sampling based
-optimization to find a collision free polytope in cspace.*/
+/** The IRIS-ZO (Iterative Regional Inflation by Semidefinite programming - Zero
+Order) algorithm, as described in
+
+P. Werner, T. Cohn, R. H. Jiang, T. Seyde, M. Simchowitz, R. Tedrake, and D.
+Rus, "Faster Algorithms for Growing Collision-Free Convex Polytopes in Robot
+Configuration Space,"
+
+https://groups.csail.mit.edu/robotics-center/public_papers/Werner24.pdf
+
+This algorithm constructs probabilistically collision-free polytopes, in robot
+configuration space while only relying on a collision checker. The sets are
+constructed using a simple parallel zero-order optimization strategy. The
+produced polytope P is probabilistically collision-free in the sense that one
+gets to control the probability δ that the fraction of the volume-in-collision
+is larger than ε
+
+Pr[λ(P\Cfree)/λ(P) > ε] ⋞ δ.
+
+@param starting_ellipsoid provides the initial ellipsoid around which to grow
+the region. This is typically a small ball around a collision-free
+configuration. The center of this ellipsoid is required to be collision-free.
+@param domain describes the total region of interest; computed IRIS regions will
+be inside this domain. It must be bounded, and is typically a simple bounding
+box representing joint limits (e.g. from HPolyhedron::MakeBox).
+@param options contains algorithm parameters such as the desired collision-free
+fraction, confidence level, and various algorithmic settings.
+
+The @p starting_ellipsoid and @p domain must describe elements in the same
+ambient dimension as the configuration space of the robot.
+@return A HPolyhedron representing the computed collision-free region in
+configuration space.
+@ingroup robot_planning
+*/
 
 HPolyhedron IrisZO(const CollisionChecker& checker,
                    const Hyperellipsoid& starting_ellipsoid,
