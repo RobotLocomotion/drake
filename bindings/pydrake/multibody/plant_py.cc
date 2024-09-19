@@ -796,6 +796,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
         .def("get_body", &Class::get_body, py::arg("body_index"),
             py_rvp::reference_internal, cls_doc.get_body.doc)
+        .def("IsAnchored", &Class::IsAnchored, py::arg("body"),
+            cls_doc.IsAnchored.doc)
+        .def("NumBodiesWithName", &Class::NumBodiesWithName, py::arg("name"),
+            cls_doc.NumBodiesWithName.doc)
         .def("has_joint", &Class::has_joint, py::arg("joint_index"),
             cls_doc.has_joint.doc)
         .def("get_joint", &Class::get_joint, py::arg("joint_index"),
