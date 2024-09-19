@@ -246,7 +246,7 @@ class ScrewJoint final : public Joint<T> {
   /// Gets the default position for `this` joint.
   /// @retval z The default position of `this` joint.
   double get_default_translation() const {
-    return internal::get_screw_translation_from_rotation(
+    return internal::GetScrewTranslationFromRotation(
         this->default_positions()[0], screw_pitch());
   }
 
@@ -255,8 +255,8 @@ class ScrewJoint final : public Joint<T> {
   /// @param[in] z The desired default translation of the joint
   /// @throws std::exception if pitch is very near zero.
   void set_default_translation(const double& z) {
-    Vector1<double> state(internal::get_screw_rotation_from_translation(
-        z, screw_pitch()));
+    Vector1<double> state(
+        internal::GetScrewRotationFromTranslation(z, screw_pitch()));
     this->set_default_positions(state);
   }
 
