@@ -23,9 +23,9 @@ namespace internal {
 namespace {
 
 using Eigen::AngleAxisd;
-using math::RigidTransformd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
+using math::RigidTransformd;
 using std::unique_ptr;
 using systems::Context;
 
@@ -52,9 +52,8 @@ class FrameTests : public ::testing::Test {
     frameB_ = &bodyB_->body_frame();
 
     // Joint connecting bodyB to the world.
-    model->AddJoint<RevoluteJoint>("joint0",
-        model->world_body(), {}, *bodyB_, {},
-        Vector3d::UnitZ() /*revolute axis*/);
+    model->AddJoint<RevoluteJoint>("joint0", model->world_body(), {}, *bodyB_,
+                                   {}, Vector3d::UnitZ() /*revolute axis*/);
 
     // Some arbitrary pose of frame P in the body frame B.
     X_BP_ = RigidTransformd(AngleAxisd(M_PI / 6.0, Vector3d::UnitZ()) *
@@ -69,8 +68,7 @@ class FrameTests : public ::testing::Test {
                             AngleAxisd(M_PI / 7.0, Vector3d::UnitX()) *
                             Translation3d(0.5, 1.0, -2.0));
     // Frame Q is rigidly attached to P with pose X_PQ.
-    frameQ_ =
-        &model->AddFrame<FixedOffsetFrame>("Q", *frameP_, X_PQ_);
+    frameQ_ = &model->AddFrame<FixedOffsetFrame>("Q", *frameP_, X_PQ_);
 
     // Frame R is arbitrary, but named.
     frameR_ = &model->AddFrame<FixedOffsetFrame>(
@@ -85,13 +83,12 @@ class FrameTests : public ::testing::Test {
     // Ensure that the model instance propagates implicitly.
     frameSChild_ = &model->AddFrame<FixedOffsetFrame>(
         "SChild", *frameS_, math::RigidTransformd::Identity());
-    EXPECT_EQ(frameSChild_->scoped_name().get_full(),
-              "extra_instance::SChild");
+    EXPECT_EQ(frameSChild_->scoped_name().get_full(), "extra_instance::SChild");
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
-    system_ = std::make_unique<
-        internal::MultibodyTreeSystem<double>>(std::move(model));
+    system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
+        std::move(model));
     context_ = system_->CreateDefaultContext();
 
     // An arbitrary pose of an arbitrary frame G in an arbitrary frame F.
@@ -336,8 +333,7 @@ TEST_F(FrameTests, ModelInstanceOverride) {
 TEST_F(FrameTests, HasFrameNamed) {
   for (FrameIndex i{0}; i < tree().num_frames(); ++i) {
     auto& frame = tree().get_frame(i);
-    EXPECT_TRUE(
-        tree().HasFrameNamed(frame.name(), frame.model_instance()))
+    EXPECT_TRUE(tree().HasFrameNamed(frame.name(), frame.model_instance()))
         << frame.name();
   }
 }

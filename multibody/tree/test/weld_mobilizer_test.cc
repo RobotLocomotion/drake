@@ -25,12 +25,13 @@ using systems::Context;
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
 // Fixture to setup a simple MBT model containing a weld mobilizer.
-class WeldMobilizerTest :  public MobilizerTester {
+class WeldMobilizerTest : public MobilizerTester {
  public:
   void SetUp() override {
     weld_body_to_world_ = &AddJointAndFinalize<WeldJoint, WeldMobilizer>(
         std::make_unique<WeldJoint<double>>("joint0",
-            tree().world_body().body_frame(), body_->body_frame(), X_WB_));
+                                            tree().world_body().body_frame(),
+                                            body_->body_frame(), X_WB_));
   }
 
  protected:
@@ -52,8 +53,7 @@ TEST_F(WeldMobilizerTest, ZeroSizedState) {
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
   const math::RigidTransformd X_FM(
       weld_body_to_world_->CalcAcrossMobilizerTransform(*context_));
-  EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
-                              X_WB_.GetAsMatrix34(),
+  EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(), X_WB_.GetAsMatrix34(),
                               kTolerance, MatrixCompareType::relative));
 }
 
@@ -78,8 +78,8 @@ TEST_F(WeldMobilizerTest, ProjectSpatialForce) {
   // Value not important for this test.
   const SpatialForce<double> F_Mo_F(Vector6d::Zero());
   // No-op, just tests we can call it with a zero sized vector.
-  weld_body_to_world_->ProjectSpatialForce(
-      *context_, F_Mo_F, zero_sized_vector);
+  weld_body_to_world_->ProjectSpatialForce(*context_, F_Mo_F,
+                                           zero_sized_vector);
 }
 
 TEST_F(WeldMobilizerTest, MapVelocityToQDotAndBack) {
@@ -88,10 +88,10 @@ TEST_F(WeldMobilizerTest, MapVelocityToQDotAndBack) {
   VectorXd zero_sized_vector(0);
   // These methods are no-ops, just test we can call them with zero sized
   // vectors.
-  weld_body_to_world_->MapVelocityToQDot(*context_,
-                                         zero_sized_vector, &zero_sized_vector);
-  weld_body_to_world_->MapQDotToVelocity(*context_,
-                                         zero_sized_vector, &zero_sized_vector);
+  weld_body_to_world_->MapVelocityToQDot(*context_, zero_sized_vector,
+                                         &zero_sized_vector);
+  weld_body_to_world_->MapQDotToVelocity(*context_, zero_sized_vector,
+                                         &zero_sized_vector);
 }
 
 TEST_F(WeldMobilizerTest, KinematicMapping) {

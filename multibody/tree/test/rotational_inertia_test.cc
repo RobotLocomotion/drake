@@ -60,8 +60,8 @@ GTEST_TEST(RotationalInertia, TestIsZeroAndIsNanFunctions) {
 // Test constructor for a diagonal rotational inertia with all elements equal.
 GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   const double I_diagonal = 3.14;
-  RotationalInertia<double> I = RotationalInertia<double>::
-                                            TriaxiallySymmetric(I_diagonal);
+  RotationalInertia<double> I =
+      RotationalInertia<double>::TriaxiallySymmetric(I_diagonal);
   Vector3d moments_expected;
   moments_expected.setConstant(I_diagonal);
   Vector3d products_expected = Vector3d::Zero();
@@ -69,78 +69,78 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   EXPECT_EQ(I.get_products(), products_expected);
 }
 
-
 // Test rotational inertia factory method set via a 3x3 matrix.
 GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
-    // Form an arbitrary (but valid) rotational inertia.
-    const double Ixx = 17, Iyy = 13, Izz = 10;
-    const double Ixy = -3, Ixz = -3, Iyz = -6;
+  // Form an arbitrary (but valid) rotational inertia.
+  const double Ixx = 17, Iyy = 13, Izz = 10;
+  const double Ixy = -3, Ixz = -3, Iyz = -6;
 
-    RotationalInertia<double> I =
-        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false);
-    EXPECT_TRUE(I.CouldBePhysicallyValid());
+  RotationalInertia<double> I =
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false);
+  EXPECT_TRUE(I.CouldBePhysicallyValid());
 
-    // Ensure an invalid rotational inertia always throws an exception if the
-    // 2nd argument of MakeFromMomentsAndProductsOfInertia is false or missing.
-    EXPECT_THROW(RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-        2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
-        std::exception);
-    EXPECT_THROW(RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-        2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz),
-        std::exception);
-
-    // Ensure an invalid rotational inertia does not throw an exception if the
-    // 2nd argument of MakeFromMomentsAndProductsOfInertia is true.
-    EXPECT_NO_THROW(
-        I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz,
-            /* skip_validity_check = */ true));
-    EXPECT_FALSE(I.CouldBePhysicallyValid());
-
-    // Check for a thrown exception with proper error message when creating an
-    // invalid rotational inertia (a principal moment of inertia is negative).
-    std::string expected_message =
-        "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
-        "\\[ 1  -3  -3\\]\n"
-        "\\[-3  13  -6\\]\n"
-        "\\[-3  -6  10\\]\n"
-        "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
-    expected_message += fmt::format(
-        "\nThe associated principal moments of inertia:"
-        "\n-1.583957883\\d+  7.881702629\\d+  17.702255254\\d+"
-        "\nare invalid since at least one is negative.");
-    // Note: The principal moments of inertia (with more significant digits)
-    // are: -1.583957883490135  7.881702629192435  17.702255254297697.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          1.0, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
-          expected_message);
-
-    // Check for a thrown exception with proper error message when creating a
-    // rotational inertia that violates the triangle inequality.
-    expected_message =
-      "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
-        "\\[34  -3  -3\\]\n"
-        "\\[-3  13  -6\\]\n"
-        "\\[-3  -6  10\\]\n"
-        "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
-    expected_message += fmt::format(
-        "\nThe associated principal moments of inertia:"
-        "\n4.70955263953\\d+  17.66953281\\d+  34.6209145475\\d+"
-        "\ndo not satisfy the triangle inequality.");
-    // Note: The principal moments of inertia (with more significant digits)
-    // are:  4.709552639531104  17.66953281292159  34.620914547547315.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+  // Ensure an invalid rotational inertia always throws an exception if the
+  // 2nd argument of MakeFromMomentsAndProductsOfInertia is false or missing.
+  EXPECT_THROW(
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
           2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
-          expected_message);
+      std::exception);
+  EXPECT_THROW(RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+                   2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz),
+               std::exception);
+
+  // Ensure an invalid rotational inertia does not throw an exception if the
+  // 2nd argument of MakeFromMomentsAndProductsOfInertia is true.
+  EXPECT_NO_THROW(
+      I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz,
+          /* skip_validity_check = */ true));
+  EXPECT_FALSE(I.CouldBePhysicallyValid());
+
+  // Check for a thrown exception with proper error message when creating an
+  // invalid rotational inertia (a principal moment of inertia is negative).
+  std::string expected_message =
+      "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
+      "\\[ 1  -3  -3\\]\n"
+      "\\[-3  13  -6\\]\n"
+      "\\[-3  -6  10\\]\n"
+      "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
+  expected_message += fmt::format(
+      "\nThe associated principal moments of inertia:"
+      "\n-1.583957883\\d+  7.881702629\\d+  17.702255254\\d+"
+      "\nare invalid since at least one is negative.");
+  // Note: The principal moments of inertia (with more significant digits)
+  // are: -1.583957883490135  7.881702629192435  17.702255254297697.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          1.0, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
+      expected_message);
+
+  // Check for a thrown exception with proper error message when creating a
+  // rotational inertia that violates the triangle inequality.
+  expected_message =
+      "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
+      "\\[34  -3  -3\\]\n"
+      "\\[-3  13  -6\\]\n"
+      "\\[-3  -6  10\\]\n"
+      "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
+  expected_message += fmt::format(
+      "\nThe associated principal moments of inertia:"
+      "\n4.70955263953\\d+  17.66953281\\d+  34.6209145475\\d+"
+      "\ndo not satisfy the triangle inequality.");
+  // Note: The principal moments of inertia (with more significant digits)
+  // are:  4.709552639531104  17.66953281292159  34.620914547547315.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
+      expected_message);
 }
 
 // Test constructor for a principal axes rotational inertia matrix (products
 // of inertia are zero).
 GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
-  const Vector3d moments(2.0,  2.3, 2.4);
+  const Vector3d moments(2.0, 2.3, 2.4);
   RotationalInertia<double> I(moments(0), moments(1), moments(2));
   EXPECT_EQ(I.get_moments(), moments);
   EXPECT_EQ(I.get_products(), Vector3d::Zero());
@@ -150,10 +150,10 @@ GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
 // off-diagonal elements for which the six entries need to be specified.
 // Also test SetZero() and SetNaN() methods.
 GTEST_TEST(RotationalInertia, GeneralConstructor) {
-  const Vector3d moments(2.0,  2.3, 2.4);
+  const Vector3d moments(2.0, 2.3, 2.4);
   const Vector3d product(0.1, -0.1, 0.2);
-  RotationalInertia<double> I(moments(0), moments(1), moments(2),
-                              product(0), product(1), product(2));
+  RotationalInertia<double> I(moments(0), moments(1), moments(2), product(0),
+                              product(1), product(2));
   EXPECT_EQ(I.get_moments(), moments);
   EXPECT_EQ(I.get_products(), product);
 
@@ -168,7 +168,7 @@ GTEST_TEST(RotationalInertia, GeneralConstructor) {
 
 // Test calculation of trace of rotational inertia (sum of diagonal elements).
 GTEST_TEST(RotationalInertia, TraceIsSumOfDiagonalElements) {
-  const Vector3d moments(2.0,  2.3, 2.4);
+  const Vector3d moments(2.0, 2.3, 2.4);
   const Vector3d product(0.1, -0.1, 0.2);
   const RotationalInertia<double> I(moments(0), moments(1), moments(2),
                                     product(0), product(1), product(2));
@@ -178,8 +178,8 @@ GTEST_TEST(RotationalInertia, TraceIsSumOfDiagonalElements) {
 
 // Test access by (i, j) indexes.
 GTEST_TEST(RotationalInertia, AccessByIndexes) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  const Vector3d m(2.0, 2.3, 2.4);                     // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);                    // p for products.
   const RotationalInertia<double> I(m(0), m(1), m(2),  /* moments of inertia */
                                     p(0), p(1), p(2)); /* products of inertia */
 
@@ -202,8 +202,8 @@ GTEST_TEST(RotationalInertia, AccessByIndexes) {
 // Tests that even when the underlying dense Eigen representation holds NaN
 // entries for unused entries, RotationalInertia behaves as a symmetric matrix.
 GTEST_TEST(RotationalInertia, Symmetry) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  const Vector3d m(2.0, 2.3, 2.4);                     // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);                    // p for products.
   const RotationalInertia<double> I(m(0), m(1), m(2),  /* moments of inertia */
                                     p(0), p(1), p(2)); /* products of inertia */
 
@@ -236,17 +236,16 @@ GTEST_TEST(RotationalInertia, IsNearlyEqualTo) {
   const double Iyz = -6.539290790868233;
   const double trace = Ixx + Iyy + Izz;
   const double epsilonI = kEpsilon * trace / 2;
-  const RotationalInertia<double> I1(Ixx, Iyy, Izz,
-                                     Ixy, Ixz, Iyz);
-  const RotationalInertia<double> I2(Ixx, Iyy, Izz,
-                                     Ixy, Ixz, Iyz + 3*epsilonI);
-  const RotationalInertia<double> I3(Ixx, Iyy, Izz,
-                                     Ixy, Ixz, Iyz + 8*epsilonI);
+  const RotationalInertia<double> I1(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+  const RotationalInertia<double> I2(Ixx, Iyy, Izz, Ixy, Ixz,
+                                     Iyz + 3 * epsilonI);
+  const RotationalInertia<double> I3(Ixx, Iyy, Izz, Ixy, Ixz,
+                                     Iyz + 8 * epsilonI);
 
   // Ensure rotational inertias I1 and I2 are nearly equal.
   // Ensure rotational inertias I1 and I3 are not equal.
-  EXPECT_TRUE(I1.IsNearlyEqualTo(I2, 4*kEpsilon));
-  EXPECT_FALSE(I1.IsNearlyEqualTo(I3, 7*kEpsilon));
+  EXPECT_TRUE(I1.IsNearlyEqualTo(I2, 4 * kEpsilon));
+  EXPECT_FALSE(I1.IsNearlyEqualTo(I3, 7 * kEpsilon));
 }
 
 // TestA: Rotational inertia expressed in frame R then re-expressed in frame E.
@@ -285,8 +284,9 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameA) {
 GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   // Rotate rigid-body B from frame A by a Euler body-fixed sequence
   // characterized by BodyXYZ q1, q2, q3.  Calculations from MotionGenesis.
-  const double deg_to_rad = M_PI/180;
-  const double q1 = 30*deg_to_rad,  q2 = 70*deg_to_rad,  q3 = -70*deg_to_rad;
+  const double deg_to_rad = M_PI / 180;
+  const double q1 = 30 * deg_to_rad, q2 = 70 * deg_to_rad,
+               q3 = -70 * deg_to_rad;
   const double R_BAxx = cos(q2) * cos(q3);
   const double R_BAxy = sin(q3) * cos(q1) + sin(q1) * sin(q2) * cos(q3);
   const double R_BAxz = sin(q1) * sin(q3) - sin(q2) * cos(q1) * cos(q3);
@@ -297,8 +297,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   const double R_BAzy = -sin(q1) * cos(q2);
   const double R_BAzz = cos(q1) * cos(q2);
   const RotationMatrixd R_BA = RotationMatrixd::MakeFromOrthonormalRows(
-      Vector3d(R_BAxx, R_BAxy, R_BAxz),
-      Vector3d(R_BAyx, R_BAyy, R_BAyz),
+      Vector3d(R_BAxx, R_BAxy, R_BAxz), Vector3d(R_BAyx, R_BAyy, R_BAyz),
       Vector3d(R_BAzx, R_BAzy, R_BAzz));
 
   // Form an arbitrary (but valid) rotational inertia for B about-point Bo,
@@ -327,9 +326,8 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   const double I_BBo_Bxy = 1.134877977228511;
   const double I_BBo_Bxz = 6.018249975302059;
   const double I_BBo_Byz = -0.6136491084717202;
-  const RotationalInertia<double>
-      expected_I_BBo_B(I_BBo_Bxx, I_BBo_Byy, I_BBo_Bzz,
-                       I_BBo_Bxy, I_BBo_Bxz, I_BBo_Byz);
+  const RotationalInertia<double> expected_I_BBo_B(
+      I_BBo_Bxx, I_BBo_Byy, I_BBo_Bzz, I_BBo_Bxy, I_BBo_Bxz, I_BBo_Byz);
 
   // Compare Drake results versus MotionGenesis results using a comparison
   // that tests moments/products of inertia to within kEpsilon multiplied
@@ -340,8 +338,8 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
 // Test the method ShiftFromCenterOfMass for a body B's rotational inertia
 // about-point Bcm (B's center of mass) to about-point Q.
 GTEST_TEST(RotationalInertia, ShiftFromCenterOfMass) {
-  const double I_BBcm_Bxx = 2,  I_BBcm_Byy = 3,  I_BBcm_Bzz = 4;
-  const double I_BBcm_Bxy = 0,  I_BBcm_Bxz = 0,  I_BBcm_Byz = 0;
+  const double I_BBcm_Bxx = 2, I_BBcm_Byy = 3, I_BBcm_Bzz = 4;
+  const double I_BBcm_Bxy = 0, I_BBcm_Bxz = 0, I_BBcm_Byz = 0;
   const RotationalInertia<double> I_BBcm_B(I_BBcm_Bxx, I_BBcm_Byy, I_BBcm_Bzz,
                                            I_BBcm_Bxy, I_BBcm_Bxz, I_BBcm_Byz);
   const double mass = 1.1, xQ = 2.234, yQ = 3.14, zQ = 0.56;
@@ -350,47 +348,47 @@ GTEST_TEST(RotationalInertia, ShiftFromCenterOfMass) {
       I_BBcm_B.ShiftFromCenterOfMass(mass, p_BcmQ_B);
 
   // Compare Drake results versus by-hand results.
-  const double Ixx = I_BBcm_Bxx + mass * (yQ*yQ + zQ*zQ);
-  const double Iyy = I_BBcm_Byy + mass * (xQ*xQ + zQ*zQ);
-  const double Izz = I_BBcm_Bzz + mass * (xQ*xQ + yQ*yQ);
-  const double Ixy = I_BBcm_Bxy - mass * xQ*yQ;
-  const double Ixz = I_BBcm_Bxz - mass * xQ*zQ;
-  const double Iyz = I_BBcm_Byz - mass * yQ*zQ;
+  const double Ixx = I_BBcm_Bxx + mass * (yQ * yQ + zQ * zQ);
+  const double Iyy = I_BBcm_Byy + mass * (xQ * xQ + zQ * zQ);
+  const double Izz = I_BBcm_Bzz + mass * (xQ * xQ + yQ * yQ);
+  const double Ixy = I_BBcm_Bxy - mass * xQ * yQ;
+  const double Ixz = I_BBcm_Bxz - mass * xQ * zQ;
+  const double Iyz = I_BBcm_Byz - mass * yQ * zQ;
   const RotationalInertia<double> expected_I_BQ_B(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon));
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2 * kEpsilon));
 }
 
 // Test the method ShiftToCenterOfMass for a body B's rotational inertia
 // about-point P to about-point Bcm (B's center of mass).
 GTEST_TEST(RotationalInertia, ShiftToCenterOfMass) {
-  const double I_BP_Bxx = 13.2,  I_BP_Byy = 8.8,   I_BP_Bzz = 20.3;
-  const double I_BP_Bxy = -7.7,  I_BP_Bxz = -1.3,  I_BP_Byz = -1.9;
-  const RotationalInertia<double> I_BP_B(I_BP_Bxx, I_BP_Byy, I_BP_Bzz,
-                                         I_BP_Bxy, I_BP_Bxz, I_BP_Byz);
+  const double I_BP_Bxx = 13.2, I_BP_Byy = 8.8, I_BP_Bzz = 20.3;
+  const double I_BP_Bxy = -7.7, I_BP_Bxz = -1.3, I_BP_Byz = -1.9;
+  const RotationalInertia<double> I_BP_B(I_BP_Bxx, I_BP_Byy, I_BP_Bzz, I_BP_Bxy,
+                                         I_BP_Bxz, I_BP_Byz);
   const double mass = 1.1, xBcm = 2.234, yBcm = 3.14, zBcm = 0.56;
   const Vector3d p_PBcm_B(xBcm, yBcm, zBcm);
   const RotationalInertia<double> I_BBcm_B =
       I_BP_B.ShiftToCenterOfMass(mass, p_PBcm_B);
 
   // Compare Drake results versus by-hand results.
-  const double Ixx = I_BP_Bxx - mass * (yBcm*yBcm + zBcm*zBcm);
-  const double Iyy = I_BP_Byy - mass * (xBcm*xBcm + zBcm*zBcm);
-  const double Izz = I_BP_Bzz - mass * (xBcm*xBcm + yBcm*yBcm);
-  const double Ixy = I_BP_Bxy + mass * xBcm*yBcm;
-  const double Ixz = I_BP_Bxz + mass * xBcm*zBcm;
-  const double Iyz = I_BP_Byz + mass * yBcm*zBcm;
-  const RotationalInertia<double> expected_I_BBcm_B(
-      Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 4*kEpsilon));
+  const double Ixx = I_BP_Bxx - mass * (yBcm * yBcm + zBcm * zBcm);
+  const double Iyy = I_BP_Byy - mass * (xBcm * xBcm + zBcm * zBcm);
+  const double Izz = I_BP_Bzz - mass * (xBcm * xBcm + yBcm * yBcm);
+  const double Ixy = I_BP_Bxy + mass * xBcm * yBcm;
+  const double Ixz = I_BP_Bxz + mass * xBcm * zBcm;
+  const double Iyz = I_BP_Byz + mass * yBcm * zBcm;
+  const RotationalInertia<double> expected_I_BBcm_B(Ixx, Iyy, Izz, Ixy, Ixz,
+                                                    Iyz);
+  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 4 * kEpsilon));
 }
 
 // Test the method ShiftToThenAwayFromCenterOfMass for a body B's
 // rotational inertia from about-point P to about-point Q.
 GTEST_TEST(RotationalInertia, ShiftToThenAwayFromCenterOfMass) {
-  const double I_BP_xx = 13.2,  I_BP_yy = 8.8,   I_BP_zz = 20.3;
-  const double I_BP_xy = -7.7,  I_BP_xz = -1.3,  I_BP_yz = -1.9;
-  const RotationalInertia<double> I_BP_B(I_BP_xx, I_BP_yy, I_BP_zz,
-                                         I_BP_xy, I_BP_xz, I_BP_yz);
+  const double I_BP_xx = 13.2, I_BP_yy = 8.8, I_BP_zz = 20.3;
+  const double I_BP_xy = -7.7, I_BP_xz = -1.3, I_BP_yz = -1.9;
+  const RotationalInertia<double> I_BP_B(I_BP_xx, I_BP_yy, I_BP_zz, I_BP_xy,
+                                         I_BP_xz, I_BP_yz);
   const double mass = 1.1, xBcm = 2.234, yBcm = 3.14, zBcm = 0.56;
   const double xP = -1.234, yP = -2.11, zP = 1.98;
   const Vector3d p_PBcm(xBcm, yBcm, zBcm);
@@ -408,26 +406,25 @@ GTEST_TEST(RotationalInertia, ShiftToThenAwayFromCenterOfMass) {
   // Calculate with single method that does it slightly more efficiently.
   const RotationalInertia<double> I_BQ_B =
       I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, p_PBcm, p_QBcm);
-  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon));
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2 * kEpsilon));
 
   // Test that negating position vectors have no affect on results.
   EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(
-              I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2*kEpsilon));
+      I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2 * kEpsilon));
   EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
-              I_BBcm_B.ShiftFromCenterOfMass(mass, -p_QBcm),
-              2*kEpsilon));
+      I_BBcm_B.ShiftFromCenterOfMass(mass, -p_QBcm), 2 * kEpsilon));
   EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
-              I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, -p_PBcm, -p_QBcm),
-              2*kEpsilon));
+      I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, -p_PBcm, -p_QBcm),
+      2 * kEpsilon));
 }
 
 // Test the method CouldBePhysicallyValid after a body B's rotational inertia
 // is shifted from about-point P to about-point Bcm (B's center of mass).
 GTEST_TEST(RotationalInertia, CouldBePhysicallyValidA) {
-  const double I_BP_xx = 2,   I_BP_yy = 3,   I_BP_zz = 4;
-  const double I_BP_xy = 0,   I_BP_xz = 0,   I_BP_yz = 0;
-  const RotationalInertia<double> I_BP(I_BP_xx, I_BP_yy, I_BP_zz,
-                                       I_BP_xy, I_BP_xz, I_BP_yz);
+  const double I_BP_xx = 2, I_BP_yy = 3, I_BP_zz = 4;
+  const double I_BP_xy = 0, I_BP_xz = 0, I_BP_yz = 0;
+  const RotationalInertia<double> I_BP(I_BP_xx, I_BP_yy, I_BP_zz, I_BP_xy,
+                                       I_BP_xz, I_BP_yz);
   const double mass = 1.1, xBcm = 2.234, yBcm = 3.14, zBcm = 0.56;
   const Vector3d p_PBcm(xBcm, yBcm, zBcm);
 
@@ -455,7 +452,7 @@ GTEST_TEST(RotationalInertia, CouldBePhysicallyValidB) {
 // Test the method CouldBePhysicallyValid to violate triangle inequality.
 GTEST_TEST(RotationalInertia, CouldBePhysicallyValidC) {
   EXPECT_THROW_IF_ARMED(RotationalInertia<double> bad_inertia(10, 10, 30),
-                std::logic_error);
+                        std::logic_error);
 }
 
 // Test the method CouldBePhysicallyValid for bad product of inertia
@@ -469,8 +466,9 @@ GTEST_TEST(RotationalInertia, CouldBePhysicallyValidD) {
 // (i.e., eigenvalues of the inertia matrix) that violate triangle inequality.
 // This test is courtesy of Steve Peters via Michael Sherman.
 GTEST_TEST(RotationalInertia, CouldBePhysicallyValidE) {
-  EXPECT_THROW_IF_ARMED(RotationalInertia<double>
-                       bad_inertia(2, 2, 2, -0.8, 0, -0.8), std::logic_error);
+  EXPECT_THROW_IF_ARMED(
+      RotationalInertia<double> bad_inertia(2, 2, 2, -0.8, 0, -0.8),
+      std::logic_error);
 }
 
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() that
@@ -483,17 +481,17 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaEtc) {
   const double Lz = 5.0;
 
   // Rotational inertia of a box B computed about Bcm (B's center of mass).
-  const double Imed = mass * (Ly*Ly + Lz*Lz) / 12.0;  // Ixx is medium.
-  const double Imax = mass * (Lx*Lx + Lz*Lz) / 12.0;  // Iyy is largest.
-  const double Imin = mass * (Lx*Lx + Ly*Ly) / 12.0;  // Izz is smallest.
+  const double Imed = mass * (Ly * Ly + Lz * Lz) / 12.0;  // Ixx is medium.
+  const double Imax = mass * (Lx * Lx + Lz * Lz) / 12.0;  // Iyy is largest.
+  const double Imin = mass * (Lx * Lx + Ly * Ly) / 12.0;  // Izz is smallest.
   double Ixx = Imed, Iyy = Imax, Izz = Imin;
   RotationalInertia<double> I_BBcm_Q(Ixx, Iyy, Izz);
 
   // Orient a frame Q relative to a frame W by subjecting frame Q to a SpaceXYZ
   // rotation sequence of 20, 25, 30 degrees (i.e., BodyZYX by 30, 25, 20).
   const double deg_to_rad = M_PI / 180.0;
-  const drake::math::RollPitchYaw<double>
-      rpy(20 * deg_to_rad, 25 * deg_to_rad, 30 * deg_to_rad);
+  const drake::math::RollPitchYaw<double> rpy(20 * deg_to_rad, 25 * deg_to_rad,
+                                              30 * deg_to_rad);
   const drake::math::RotationMatrix<double> R_WQ(rpy);
 
   // Compute B's rotational inertia about-point Bcm, expressed-in frame W.
@@ -510,12 +508,13 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaEtc) {
   // return from RotationalInertia::CalcPrincipalMomentsOfInertia() is sorted
   // in ascending order. Therefore reorder before performing the comparison.
   Vector3d expected_principal_moments = I_BBcm_Q.get_moments();
-  std::sort(expected_principal_moments.data(),
-            expected_principal_moments.data() +
-                expected_principal_moments.size());
+  std::sort(
+      expected_principal_moments.data(),
+      expected_principal_moments.data() + expected_principal_moments.size());
 
   // Verify principal moments against their expected value.
-  const double inertia_tolerance = 4 * std::numeric_limits<double>::epsilon() *
+  const double inertia_tolerance =
+      4 * std::numeric_limits<double>::epsilon() *
       I_BBcm_W.CalcMaximumPossibleMomentOfInertia();
   EXPECT_TRUE(CompareMatrices(expected_principal_moments, principal_moments,
                               inertia_tolerance, MatrixCompareType::absolute));
@@ -547,11 +546,13 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaEtc) {
   // due to tiny numbers instead of zeroes and reordering of columns.
   drake::math::RotationMatrix<double> R_QP = I_BBcm_P.second;
   Matrix3<double> m_expected;
+  // clang-format off
   m_expected << 0, 1, 0,  // Izz is smallest moment of inertia (1st column).
                 0, 0, 1,  // Ixx is intermediate moment of inertia (2nd column).
                 1, 0, 0;  // Iyy is largest moment of inertia (3rd column).
-  EXPECT_TRUE(CompareMatrices(R_QP.matrix(), m_expected,
-                              0.0, MatrixCompareType::absolute));
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(R_QP.matrix(), m_expected, 0.0,
+                              MatrixCompareType::absolute));
 
   // Create a test that makes a rotation matrix whose 3rd column is [0 0 -1].
   Ixx = Imed, Iyy = Imin, Izz = Imax;
@@ -563,11 +564,13 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaEtc) {
   EXPECT_TRUE(CompareMatrices(expected_principal_moments, principal_moments,
                               inertia_tolerance, MatrixCompareType::absolute));
   R_QP = I_BBcm_P.second;
-  m_expected << 0, 1,  0,  // Iyy is smallest moment of inertia (1st column).
-                1, 0,  0,  // Ixx is intermediate moment of inertia (2nd column)
+  // clang-format off
+  m_expected << 0, 1, 0,   // Iyy is smallest moment of inertia (1st column).
+                1, 0, 0,   // Ixx is intermediate moment of inertia (2nd column)
                 0, 0, -1;  // Izz is largest moment of inertia (3rd column).
-  EXPECT_TRUE(CompareMatrices(R_QP.matrix(), m_expected,
-                              0.0, MatrixCompareType::absolute));
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(R_QP.matrix(), m_expected, 0.0,
+                              MatrixCompareType::absolute));
 
   // Create a test that ideally makes an identity rotation matrix.
   Ixx = Imax + 0.5 * inertia_tolerance;  // Intermediate moment of inertia.
@@ -580,11 +583,13 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaEtc) {
   EXPECT_TRUE(CompareMatrices(Vector3<double>(Iyy, Ixx, Izz), principal_moments,
                               inertia_tolerance, MatrixCompareType::absolute));
   R_QP = I_BBcm_P.second;
+  // clang-format off
   m_expected << 1, 0, 0,  // Since Ixx ≈ Iyy ≈ Izz (triaxially symmetric), it is
                 0, 1, 0,  // ideal ("canonical") if the rotation matrix for
                 0, 0, 1;  // principal axes is the identity matrix..
-  EXPECT_TRUE(CompareMatrices(R_QP.matrix(), m_expected,
-                              0.0, MatrixCompareType::absolute));
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(R_QP.matrix(), m_expected, 0.0,
+                              MatrixCompareType::absolute));
 
   // TODO(Mitiguy) Add more tests after adding canonical calculations for
   //  principal directions associated with axially symmetric shapes and shapes
@@ -597,9 +602,12 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   // of mass) for principal directions Bx, By, Bz.
   const double a = 5.0, b = 4.0, c = 3.0;
   const double mass = 3.0;
-  const double Imin = 0.2 * mass * (b*b + c*c);  // Ixx = 1/5 m (b² + c²) small
-  const double Imed = 0.2 * mass * (a*a + c*c);  // Iyy = 1/5 m (a² + c²) medium
-  const double Imax = 0.2 * mass * (a*a + b*b);  // Izz = 1/5 m (a² + b²) large
+  const double Imin =
+      0.2 * mass * (b * b + c * c);  // Ixx = 1/5 m (b² + c²) small
+  const double Imed =
+      0.2 * mass * (a * a + c * c);  // Iyy = 1/5 m (a² + c²) medium
+  const double Imax =
+      0.2 * mass * (a * a + b * b);  // Izz = 1/5 m (a² + b²) large
   constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
 
   // Verify a special case of a RotationalInertia with zero products of inertia,
@@ -610,8 +618,8 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
       RotationalInertia<double>(Imed, Imed, Imed);
   std::pair<Vector3<double>, drake::math::RotationMatrix<double>> I_BBcm_P =
       I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia();
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imed, Imed, Imed),
-                              I_BBcm_P.first, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imed, Imed, Imed), I_BBcm_P.first,
+                              kTolerance));
   drake::math::RotationMatrix<double> R_BP = I_BBcm_P.second;
   drake::math::RotationMatrix<double> R_BP_expected =
       drake::math::RotationMatrix<double>::Identity();
@@ -622,8 +630,8 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   // Calculate I_BBcm_P, which contains B's principal inertia moments and axes.
   I_BBcm_B = RotationalInertia<double>(Imin, Imed, Imax);
   I_BBcm_P = I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia();
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
-                              I_BBcm_P.first, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax), I_BBcm_P.first,
+                              kTolerance));
   R_BP = I_BBcm_P.second;  // Columns of R_BP are eigenvectors (principal axes).
   R_BP_expected = drake::math::RotationMatrix<double>::Identity();
   EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
@@ -632,8 +640,8 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   // with principal moments of inertia having Imed < Imin (must reorder).
   I_BBcm_B = RotationalInertia<double>(Imed, Imin, Imax);
   I_BBcm_P = I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia();
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
-                              I_BBcm_P.first, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax), I_BBcm_P.first,
+                              kTolerance));
   R_BP = I_BBcm_P.second;  // Columns of R_BP are eigenvectors (principal axes).
   Vector3<double> col_min(0.0, 1.0, 0.0);  // Direction for minimum axis.
   Vector3<double> col_med(1.0, 0.0, 0.0);  // Direction for intermediate axis.
@@ -647,8 +655,8 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   // with principal moments of inertia having Imax < Imin (must reorder).
   I_BBcm_B = RotationalInertia<double>(Imax, Imin, Imed);
   I_BBcm_P = I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia();
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
-                              I_BBcm_P.first, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax), I_BBcm_P.first,
+                              kTolerance));
   R_BP = I_BBcm_P.second;  // Columns of R_BP are eigenvectors (principal axes).
   col_min = Vector3<double>(0.0, 1.0, 0.0);  // Direction for minimum axis.
   col_med = Vector3<double>(0.0, 0.0, 1.0);  // Direction for intermediate axis.
@@ -665,8 +673,8 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
       drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
   RotationalInertia<double> I_BBcm_C = I_BBcm_B.ReExpress(R_BC);
   I_BBcm_P = I_BBcm_C.CalcPrincipalMomentsAndAxesOfInertia();
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
-                              I_BBcm_P.first, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax), I_BBcm_P.first,
+                              kTolerance));
   // The orthogonal unit length eigenvectors Px_B, Py_B, Pz_B stored in the
   // columns of R_BP are parallel to the principal axes (lines). Since lines
   // do not have a fully-qualified direction (they lack sense), all we can check
@@ -695,8 +703,8 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
 // and has eigenvalues lambda = [2 - sqrt(2), 2, 2 + sqrt(2)] which do not
 // satisfy the triangle inequality.
 GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaLaplacianTest) {
-  const double Idiag =  2.0;  // The diagonal entries.
-  const double Ioff  = -1.0;  // The off-diagonal entries.
+  const double Idiag = 2.0;  // The diagonal entries.
+  const double Ioff = -1.0;  // The off-diagonal entries.
 
   // Although the inertia matrix is symmetric and positive definite, it does not
   // satisfy the triangle inequality. Hence the constructor throws an exception.
@@ -707,8 +715,8 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaLaplacianTest) {
 
 // Test the correctness of multiplication with a scalar from the left.
 GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  const Vector3d m(2.0, 2.3, 2.4);                     // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);                    // p for products.
   const RotationalInertia<double> I(m(0), m(1), m(2),  /* moments of inertia */
                                     p(0), p(1), p(2)); /* products of inertia */
   const double scalar = 3.0;
@@ -737,8 +745,8 @@ GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
 //  - operator*=(const T&)
 //  - operator/=(const T&)
 GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  const Vector3d m(2.0, 2.3, 2.4);                // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);               // p for products.
   RotationalInertia<double> Ia(m(0), m(1), m(2),  /* moments of inertia */
                                p(0), p(1), p(2)); /* products of inertia */
   // A second inertia.
@@ -801,9 +809,9 @@ GTEST_TEST(RotationalInertia, ShiftOperator) {
   RotationalInertia<double> I(1, 2.718, 3.14);
   stream << std::fixed << std::setprecision(4) << I;
   std::string expected_string =
-                  "[1.0000  0.0000  0.0000]\n"
-                  "[0.0000  2.7180  0.0000]\n"
-                  "[0.0000  0.0000  3.1400]\n";
+      "[1.0000  0.0000  0.0000]\n"
+      "[0.0000  2.7180  0.0000]\n"
+      "[0.0000  0.0000  3.1400]\n";
   EXPECT_EQ(expected_string, stream.str());
 }
 
@@ -836,8 +844,8 @@ GTEST_TEST(RotationalInertia, CastToAutoDiff) {
 GTEST_TEST(RotationalInertia, AutoDiff) {
   // Helper lambda to extract from a matrix of auto-diff scalar's the matrix of
   // values and the matrix of derivatives.
-  auto extract_derivatives = [](
-      const Matrix3<AutoDiffXd>& M, Matrix3d& Mvalue, Matrix3d& Mdot) {
+  auto extract_derivatives = [](const Matrix3<AutoDiffXd>& M, Matrix3d& Mvalue,
+                                Matrix3d& Mdot) {
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 3; ++j) {
         Mvalue(i, j) = M(i, j).value();
@@ -876,9 +884,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
   // Therefore we have [w] = Rdot * R.transpose().
   Matrix3<double> wcross = Rdot_WB * Rvalue_WB.transpose();
   Matrix3<double> wcross_expected;
-  wcross_expected << 0.0,  -wz, 0.0,
-                      wz,  0.0, 0.0,
-                     0.0,  0.0, 0.0;
+  wcross_expected << 0.0, -wz, 0.0, wz, 0.0, 0.0, 0.0, 0.0, 0.0;
   EXPECT_TRUE(wcross.isApprox(wcross_expected, kEpsilon));
 
   // Re-express inertia into another frame.

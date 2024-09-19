@@ -12,9 +12,9 @@ namespace drake {
 namespace multibody {
 namespace {
 
-using math::RigidTransformd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
+using math::RigidTransformd;
 using systems::Context;
 
 class WeldJointTest : public ::testing::Test {
@@ -38,7 +38,7 @@ class WeldJointTest : public ::testing::Test {
     // We are done adding modeling elements. Transfer tree to system for
     // computation.
     system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
-        std::move(model), true/* is_discrete */);
+        std::move(model), true /* is_discrete */);
   }
 
   const internal::MultibodyTree<double>& tree() const {

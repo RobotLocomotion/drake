@@ -21,7 +21,7 @@ namespace test {
 /// its axis of revolution.
 ///
 /// @tparam_default_scalar
-template<typename T>
+template <typename T>
 class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeRotatingBodyPlant);
@@ -52,8 +52,8 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Stores in `context` the value of the angular velocity `w_WB` of the body
   /// in the world frame W.
-  void set_angular_velocity(
-      systems::Context<T>* context, const Vector3<T>& w_WB) const;
+  void set_angular_velocity(systems::Context<T>* context,
+                            const Vector3<T>& w_WB) const;
 
   /// Computes the pose `X_WB` of the body in the world frame.
   math::RigidTransform<T> CalcPoseInWorldFrame(

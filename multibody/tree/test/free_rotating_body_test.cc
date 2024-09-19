@@ -40,9 +40,8 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
 
   // Instantiate a benchmark object with analytical solution for comparison with
   // our numerical solution.
-  FreeBody benchmark_(
-      Quaterniond::Identity(), Vector3d::Zero(),
-      p0_WBcm, v0_WBcm, gravity_W);
+  FreeBody benchmark_(Quaterniond::Identity(), Vector3d::Zero(), p0_WBcm,
+                      v0_WBcm, gravity_W);
 
   // Instantiate the model for the free body in space.
   FreeRotatingBodyPlant<double> free_body_plant(benchmark_.get_I(),
@@ -81,7 +80,7 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
 
   simulator.Initialize();
   RungeKutta3Integrator<double>& integrator =
-          simulator.reset_integrator<RungeKutta3Integrator<double>>();
+      simulator.reset_integrator<RungeKutta3Integrator<double>>();
   integrator.set_maximum_step_size(kMaxDt);
   EXPECT_FALSE(integrator.get_fixed_step_mode());
   EXPECT_TRUE(integrator.supports_error_estimation());

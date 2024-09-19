@@ -64,8 +64,8 @@ TEST_F(ScrewMobilizerTest, ExceptionRaisingWhenZeroPitch) {
   EXPECT_THROW(
       zero_pitch_screw_mobilizer.SetTranslation(context_.get(), translation_z),
       std::exception);
-  EXPECT_THROW(zero_pitch_screw_mobilizer.SetTranslationRate(
-          context_.get(), velocity_z),
+  EXPECT_THROW(
+      zero_pitch_screw_mobilizer.SetTranslationRate(context_.get(), velocity_z),
       std::exception);
 }
 
@@ -74,7 +74,7 @@ TEST_F(ScrewMobilizerTest, StateAccess) {
   // context.
   const double translation_z_first{1.0};
   const double translation_z_second{2.0};
-  const double angle_z_second{translation_z_second  * 2 * M_PI / kScrewPitch};
+  const double angle_z_second{translation_z_second * 2 * M_PI / kScrewPitch};
 
   mobilizer_->SetTranslation(context_.get(), translation_z_first);
   EXPECT_EQ(mobilizer_->get_translation(*context_), translation_z_first);
@@ -93,8 +93,8 @@ TEST_F(ScrewMobilizerTest, StateAccess) {
 
   const double velocity_z_first{1.0};
   const double velocity_z_second{2.0};
-  const double angular_velocity_z_second{
-    velocity_z_second * 2 * M_PI / kScrewPitch};
+  const double angular_velocity_z_second{velocity_z_second * 2 * M_PI /
+                                         kScrewPitch};
 
   // Verify we can set a screw mobilizer velocities given the model's context.
   mobilizer_->SetTranslationRate(context_.get(), velocity_z_first);
@@ -163,7 +163,7 @@ TEST_F(ScrewMobilizerTest, RandomState) {
 
   // Default behavior is to set to zero.
   mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+                               &generator);
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0.0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0.0);
 
@@ -171,7 +171,7 @@ TEST_F(ScrewMobilizerTest, RandomState) {
   mutable_mobilizer->set_random_position_distribution(
       Vector1<symbolic::Expression>(uniform(generator) + 1.0));
   mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
-      &generator);
+                               &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 1.0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0.0);
 
@@ -179,21 +179,21 @@ TEST_F(ScrewMobilizerTest, RandomState) {
   mutable_mobilizer->set_random_velocity_distribution(
       Vector1<symbolic::Expression>(uniform(generator) - 1.0));
   mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
-      &generator);
+                               &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 1.0);
   EXPECT_GE(mobilizer_->get_angular_rate(*context_), -1.0);
 
   // Check that they change on a second draw from the distribution.
   const double last_translation = mobilizer_->get_translation(*context_);
-  const double last_translational_rate = mobilizer_->get_translation_rate(
-      *context_);
+  const double last_translational_rate =
+      mobilizer_->get_translation_rate(*context_);
   const double last_angle = mobilizer_->get_angle(*context_);
   const double last_angular_rate = mobilizer_->get_angular_rate(*context_);
   mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+                               &generator);
   EXPECT_NE(mobilizer_->get_translation(*context_), last_translation);
   EXPECT_NE(mobilizer_->get_translation_rate(*context_),
-    last_translational_rate);
+            last_translational_rate);
   EXPECT_NE(mobilizer_->get_angle(*context_), last_angle);
   EXPECT_NE(mobilizer_->get_angular_rate(*context_), last_angular_rate);
 }
@@ -207,8 +207,7 @@ TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerTransform) {
   Vector3d X_FM_translation;
   X_FM_translation << kScrewAxis * angle / (2 * M_PI) * kScrewPitch;
   const RigidTransformd X_FM_expected(
-      Eigen::AngleAxis<double>(angle, kScrewAxis),
-      X_FM_translation);
+      Eigen::AngleAxis<double>(angle, kScrewAxis), X_FM_translation);
 
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
                               X_FM_expected.GetAsMatrix34(), kTolerance,
@@ -225,7 +224,7 @@ TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
 
   VectorXd v_expected(6);
   v_expected << kScrewAxis * angular_velocity[0],
-                kScrewAxis * angular_velocity[0] / (2 * M_PI) * kScrewPitch;
+      kScrewAxis * angular_velocity[0] / (2 * M_PI) * kScrewPitch;
   const SpatialVelocity<double> V_FM_expected(v_expected);
 
   EXPECT_TRUE(V_FM.IsApprox(V_FM_expected, kTolerance));
@@ -244,7 +243,7 @@ TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
 
   VectorXd a_expected(6);
   a_expected << kScrewAxis * angle_acceleration[0],
-                kScrewAxis * angle_acceleration[0] / (2 * M_PI) * kScrewPitch;
+      kScrewAxis * angle_acceleration[0] / (2 * M_PI) * kScrewPitch;
   const SpatialAcceleration<double> A_FM_expected(a_expected);
 
   EXPECT_TRUE(A_FM.IsApprox(A_FM_expected, kTolerance));
@@ -262,9 +261,9 @@ TEST_F(ScrewMobilizerTest, ProjectSpatialForce) {
   Vector1d tau;
   mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
 
-  const Vector1d tau_expected(
-      torque_Mo_F.dot(kScrewAxis) +
-      force_Mo_F.dot(kScrewAxis) / (2 * M_PI) * kScrewPitch);
+  const Vector1d tau_expected(torque_Mo_F.dot(kScrewAxis) +
+                              force_Mo_F.dot(kScrewAxis) / (2 * M_PI) *
+                                  kScrewPitch);
   EXPECT_TRUE(CompareMatrices(tau, tau_expected, kTolerance,
                               MatrixCompareType::relative));
 

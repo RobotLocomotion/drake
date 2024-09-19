@@ -26,8 +26,8 @@ class MultibodyElementTester {
 namespace internal {
 
 using Eigen::AngleAxisd;
-using Eigen::MatrixXd;
 using Eigen::Matrix3d;
+using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using math::RotationMatrix;
 using systems::Context;
@@ -84,9 +84,9 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
   const SpanningForest::Mobod dummy_mobod(MobodIndex(0), LinkOrdinal(0));
   {
     // Rotation only.
-    const RevoluteMobilizer<double> mobilizer(
-        dummy_mobod, parent.body_frame(), child.body_frame(),
-        Vector3d{0, 0, 1});
+    const RevoluteMobilizer<double> mobilizer(dummy_mobod, parent.body_frame(),
+                                              child.body_frame(),
+                                              Vector3d{0, 0, 1});
     const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
@@ -99,9 +99,9 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
 
   {
     // Translation only.
-    const PrismaticMobilizer<double> mobilizer(
-        dummy_mobod, parent.body_frame(), child.body_frame(),
-        Vector3d{0, 0, 1});
+    const PrismaticMobilizer<double> mobilizer(dummy_mobod, parent.body_frame(),
+                                               child.body_frame(),
+                                               Vector3d{0, 0, 1});
     const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
