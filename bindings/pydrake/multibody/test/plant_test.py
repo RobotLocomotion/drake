@@ -3348,6 +3348,17 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(dut.GetBodyId(geometry_id), body_id)
         dut.SetWallBoundaryCondition(body_id, [1, 1, -1], [0, 0, 1])
 
+        spatial_inertia = SpatialInertia_[float].SolidBoxWithDensity(
+            density=1000, lx=0.1, ly=0.2, lz=0.3)
+        rigid_body = plant.AddRigidBody("rigid_body", spatial_inertia)
+        box = Box(1., 1., 1.)
+        X_BA = RigidTransform()
+        X_BG = RigidTransform()
+        dut.AddFixedConstraint(body_A_id=body_id,
+                               body_B=rigid_body,
+                               X_BA=X_BA, shape=box,
+                               X_BG=X_BG)
+
         # Verify that a body has been added to the model.
         self.assertEqual(dut.num_bodies(), 1)
         self.assertIsInstance(dut.GetReferencePositions(body_id), np.ndarray)
