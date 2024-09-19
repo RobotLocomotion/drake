@@ -160,7 +160,8 @@ class PositionKinematicsCache {
   static RigidTransform<T> NaNPose() {
     // Note: RotationMatrix will throw in Debug builds if values are NaN. For
     // our purposes, it is enough the translation has NaN values.
-    return RigidTransform<T>(math::RotationMatrix<T>::Identity(),
+    return RigidTransform<T>(
+        math::RotationMatrix<T>::Identity(),
         Vector3<T>::Constant(Eigen::NumTraits<double>::quiet_NaN()));
   }
 

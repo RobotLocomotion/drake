@@ -21,7 +21,8 @@ std::string DeprecateWhenEmptyName(std::string name, std::string_view type);
 }  // namespace internal
 
 // Forward declarations.
-template<typename T> class RigidBody;
+template <typename T>
+class RigidBody;
 
 /// %Frame is an abstract class representing a _material frame_ (also called a
 /// _physical frame_) of its underlying RigidBody. The %Frame's origin is a
@@ -57,14 +58,10 @@ class Frame : public FrameBase<T> {
   ~Frame() override;
 
   /// Returns a const reference to the body associated to this %Frame.
-  const RigidBody<T>& body() const {
-    return body_;
-  }
+  const RigidBody<T>& body() const { return body_; }
 
   /// Returns true if `this` is the world frame.
-  bool is_world_frame() const {
-    return this->index() == world_frame_index();
-  }
+  bool is_world_frame() const { return this->index() == world_frame_index(); }
 
   /// Returns true if `this` is the body frame.
   bool is_body_frame() const {
@@ -72,9 +69,7 @@ class Frame : public FrameBase<T> {
   }
 
   /// Returns the name of this frame. The name will never be empty.
-  const std::string& name() const {
-    return name_;
-  }
+  const std::string& name() const { return name_; }
 
   /// Returns scoped name of this frame. Neither of the two pieces of the name
   /// will be empty (the scope name and the element name).
@@ -126,8 +121,8 @@ class Frame : public FrameBase<T> {
   virtual math::RigidTransform<T> GetFixedPoseInBodyFrame() const {
     throw std::logic_error(
         "Attempting to retrieve a fixed pose from a frame of type '" +
-            drake::NiceTypeName::Get(*this) +
-            "', which does not support this operation.");
+        drake::NiceTypeName::Get(*this) +
+        "', which does not support this operation.");
   }
 
   /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
@@ -141,8 +136,8 @@ class Frame : public FrameBase<T> {
   virtual math::RotationMatrix<T> GetFixedRotationMatrixInBodyFrame() const {
     throw std::logic_error(
         "Unable to retrieve a fixed rotation matrix from a frame of type '" +
-            drake::NiceTypeName::Get(*this) +
-            "', which does not support this method.");
+        drake::NiceTypeName::Get(*this) +
+        "', which does not support this method.");
   }
 
   // TODO(jwnimmer-tri) These next four functions only exist so that BodyFrame
@@ -228,18 +223,18 @@ class Frame : public FrameBase<T> {
   /// Computes and returns the pose `X_MF` of `this` frame F in measured in
   /// `frame_M` as a function of the state of the model stored in `context`.
   /// @see CalcPoseInWorld().
-  math::RigidTransform<T> CalcPose(
-      const systems::Context<T>& context, const Frame<T>& frame_M) const {
-    return this->get_parent_tree().CalcRelativeTransform(
-        context, frame_M, *this);
+  math::RigidTransform<T> CalcPose(const systems::Context<T>& context,
+                                   const Frame<T>& frame_M) const {
+    return this->get_parent_tree().CalcRelativeTransform(context, frame_M,
+                                                         *this);
   }
 
   /// Calculates and returns the rotation matrix `R_MF` that relates `frame_M`
   /// and `this` frame F as a function of the state stored in `context`.
-  math::RotationMatrix<T> CalcRotationMatrix(
-      const systems::Context<T>& context, const Frame<T>& frame_M) const {
-    return this->get_parent_tree().CalcRelativeRotationMatrix(
-        context, frame_M, *this);
+  math::RotationMatrix<T> CalcRotationMatrix(const systems::Context<T>& context,
+                                             const Frame<T>& frame_M) const {
+    return this->get_parent_tree().CalcRelativeRotationMatrix(context, frame_M,
+                                                              *this);
   }
 
   /// Calculates and returns the rotation matrix `R_WF` that relates the world
@@ -277,10 +272,9 @@ class Frame : public FrameBase<T> {
   /// expressed in frame E.
   /// @see EvalAngularVelocityInWorld() to evaluate ω_WF_W (`this` frame F's
   /// angular velocity ω measured and expressed in the world frame W).
-  Vector3<T> CalcAngularVelocity(
-      const systems::Context<T>& context,
-      const Frame<T>& measured_in_frame,
-      const Frame<T>& expressed_in_frame) const;
+  Vector3<T> CalcAngularVelocity(const systems::Context<T>& context,
+                                 const Frame<T>& measured_in_frame,
+                                 const Frame<T>& expressed_in_frame) const;
 
   /// Calculates `this` frame F's spatial velocity measured and expressed in
   /// the world frame W.
@@ -309,10 +303,9 @@ class Frame : public FrameBase<T> {
   /// frame F's origin point Fo, measured in frame M, expressed in frame E).
   /// @see CalcSpatialVelocityInWorld(), CalcRelativeSpatialVelocity(), and
   /// CalcSpatialAcceleration().
-  SpatialVelocity<T> CalcSpatialVelocity(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_M,
-      const Frame<T>& frame_E) const;
+  SpatialVelocity<T> CalcSpatialVelocity(const systems::Context<T>& context,
+                                         const Frame<T>& frame_M,
+                                         const Frame<T>& frame_E) const;
 
   /// Calculates `this` frame C's spatial velocity relative to another frame B,
   /// measured and expressed in the world frame W.
@@ -332,8 +325,7 @@ class Frame : public FrameBase<T> {
   /// coherent if any of `this`, other_frame, or the world frame W are the same.
   /// @see CalcSpatialVelocityInWorld() and CalcRelativeSpatialVelocity().
   SpatialVelocity<T> CalcRelativeSpatialVelocityInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& other_frame) const {
+      const systems::Context<T>& context, const Frame<T>& other_frame) const {
     const Frame<T>& frame_B = other_frame;
     const SpatialVelocity<T> V_WB_W =
         frame_B.CalcSpatialVelocityInWorld(context);
@@ -368,8 +360,7 @@ class Frame : public FrameBase<T> {
   /// @see CalcSpatialVelocityInWorld(), CalcSpatialVelocity(), and
   /// CalcRelativeSpatialVelocityInWorld().
   SpatialVelocity<T> CalcRelativeSpatialVelocity(
-      const systems::Context<T>& context,
-      const Frame<T>& other_frame,
+      const systems::Context<T>& context, const Frame<T>& other_frame,
       const Frame<T>& measured_in_frame,
       const Frame<T>& expressed_in_frame) const {
     const Frame<T>& frame_B = other_frame;
@@ -419,8 +410,7 @@ class Frame : public FrameBase<T> {
   /// </pre>
   /// @see CalcSpatialAccelerationInWorld() and CalcSpatialVelocity().
   SpatialAcceleration<T> CalcSpatialAcceleration(
-      const systems::Context<T>& context,
-      const Frame<T>& measured_in_frame,
+      const systems::Context<T>& context, const Frame<T>& measured_in_frame,
       const Frame<T>& expressed_in_frame) const;
 
   /// Calculates `this` frame C's spatial acceleration relative to another
@@ -445,8 +435,7 @@ class Frame : public FrameBase<T> {
   /// coherent if any of `this`, other_frame, or the world frame W are the same.
   /// @see CalcSpatialAccelerationInWorld(), CalcRelativeSpatialAcceleration().
   SpatialAcceleration<T> CalcRelativeSpatialAccelerationInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& other_frame) const {
+      const systems::Context<T>& context, const Frame<T>& other_frame) const {
     const Frame<T>& frame_B = other_frame;
     const SpatialAcceleration<T> A_WB_W =
         frame_B.CalcSpatialAccelerationInWorld(context);
@@ -482,8 +471,7 @@ class Frame : public FrameBase<T> {
   /// @see CalcSpatialAccelerationInWorld(), CalcSpatialAcceleration(), and
   /// CalcRelativeSpatialAccelerationInWorld().
   SpatialAcceleration<T> CalcRelativeSpatialAcceleration(
-      const systems::Context<T>& context,
-      const Frame<T>& other_frame,
+      const systems::Context<T>& context, const Frame<T>& other_frame,
       const Frame<T>& measured_in_frame,
       const Frame<T>& expressed_in_frame) const {
     const Frame<T>& frame_B = other_frame;
@@ -531,9 +519,7 @@ class Frame : public FrameBase<T> {
   }
 
   /// (Internal use only) Retrieve this %Frame's body pose index in the cache.
-  int get_body_pose_index_in_cache() const {
-    return body_pose_index_in_cache_;
-  }
+  int get_body_pose_index_in_cache() const { return body_pose_index_in_cache_; }
 
   /// (Internal use only) Given an already up-to-date frame body pose cache,
   /// extract X_BF for this %Frame from it.
@@ -560,9 +546,8 @@ class Frame : public FrameBase<T> {
   /// Only derived classes can use this constructor. It creates a %Frame
   /// object attached to `body` and puts the frame in the body's model
   /// instance.
-  explicit Frame(
-      const std::string& name, const RigidBody<T>& body,
-      std::optional<ModelInstanceIndex> model_instance = {})
+  explicit Frame(const std::string& name, const RigidBody<T>& body,
+                 std::optional<ModelInstanceIndex> model_instance = {})
       : FrameBase<T>(model_instance.value_or(body.model_instance())),
         name_(internal::DeprecateWhenEmptyName(name, "Frame")),
         body_(body) {}
@@ -623,8 +608,8 @@ class Frame : public FrameBase<T> {
 
  private:
   // Implementation for MultibodyElement::DoSetTopology().
-  void DoSetTopology(const internal::MultibodyTreeTopology& tree_topology)
-  final {
+  void DoSetTopology(
+      const internal::MultibodyTreeTopology& tree_topology) final {
     topology_ = tree_topology.get_frame(this->index());
     DRAKE_ASSERT(topology_.index == this->index());
   }

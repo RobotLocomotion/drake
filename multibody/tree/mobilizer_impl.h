@@ -52,8 +52,8 @@ Users should not need to interact with this class directly unless they need
 to implement a custom Mobilizer class.
 
 @tparam_default_scalar */
-template <typename T,
-    int compile_time_num_positions, int compile_time_num_velocities>
+template <typename T, int compile_time_num_positions,
+          int compile_time_num_velocities>
 class MobilizerImpl : public Mobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl);
@@ -100,8 +100,9 @@ class MobilizerImpl : public Mobilizer<T> {
 
   // Sets the default position of this Mobilizer to be used in subsequent
   // calls to set_default_state().
-  void set_default_position(const Eigen::Ref<const Vector<double,
-      compile_time_num_positions>>& position) {
+  void set_default_position(
+      const Eigen::Ref<const Vector<double, compile_time_num_positions>>&
+          position) {
     default_position_.emplace(position);
   }
 
@@ -144,8 +145,7 @@ class MobilizerImpl : public Mobilizer<T> {
       const Eigen::Ref<const Vector<symbolic::Expression,
                                     compile_time_num_velocities>>& velocity) {
     if (!random_state_distribution_) {
-      random_state_distribution_.emplace(
-          Vector<symbolic::Expression, kNx>());
+      random_state_distribution_.emplace(Vector<symbolic::Expression, kNx>());
       // Maintain the default behavior for position.
       random_state_distribution_->template head<kNq>() = get_zero_position();
     }
@@ -212,8 +212,8 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
       const systems::Context<T>& context) const {
-    return this->get_parent_tree().template get_state_segment<kNv>(context,
-        num_qs_in_state() + this->velocity_start_in_v());
+    return this->get_parent_tree().template get_state_segment<kNv>(
+        context, num_qs_in_state() + this->velocity_start_in_v());
   }
 
   // Helper to return a mutable fixed-size Eigen::VectorBlock referencing the

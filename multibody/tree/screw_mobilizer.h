@@ -23,8 +23,7 @@ conversions. All of these are governed by the same relation, depended on the
 ScrewJoint for which this is the implementation. */
 
 template <typename T>
-T GetScrewTranslationFromRotation(const T& theta,
-                                             double screw_pitch) {
+T GetScrewTranslationFromRotation(const T& theta, double screw_pitch) {
   const T revolution_amount{theta / (2 * M_PI)};
   return screw_pitch * revolution_amount;
 }
@@ -60,8 +59,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScrewMobilizer);
   using MobilizerBase = MobilizerImpl<T, 1, 1>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
   using typename MobilizerBase::HMatrix;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
 
   /* Constructor for a %ScrewMobilizer between an inboard frame F and
      an outboard frame M  granting one translational and one rotational degrees
@@ -81,8 +80,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    machine epsilon. */
   ScrewMobilizer(const SpanningForest::Mobod& mobod,
                  const Frame<T>& inboard_frame_F,
-                 const Frame<T>& outboard_frame_M,
-                 const Vector3<double>& axis, double screw_pitch)
+                 const Frame<T>& outboard_frame_M, const Vector3<double>& axis,
+                 double screw_pitch)
       : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M),
         screw_pitch_(screw_pitch) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -93,8 +92,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   ~ScrewMobilizer() final;
 
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
+      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+      const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -190,8 +189,8 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    frame F and the outboard frame M as a function of the configuration q stored
    in `context`. */
   math::RigidTransform<T> calc_X_FM(const T* q) const {
-    const Vector3<T> p_FM(
-        axis_ * GetScrewTranslationFromRotation(q[0], screw_pitch_));
+    const Vector3<T> p_FM(axis_ *
+                          GetScrewTranslationFromRotation(q[0], screw_pitch_));
     return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
   }
 
@@ -199,8 +198,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    M measured and expressed in frame F as a function of the input velocity v,
    which is the angular velocity. We scale that by the pitch to find the
    related translational velocity. */
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
     const SpatialVelocity<T> V_FM(
         axis_ * v[0],
         axis_ * GetScrewTranslationFromRotation(v[0], screw_pitch_));

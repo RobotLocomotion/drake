@@ -24,7 +24,7 @@ std::unique_ptr<internal::BodyNode<T>> PrismaticMobilizer<T>::CreateBodyNode(
 
 template <typename T>
 std::string PrismaticMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+    int position_index_in_mobilizer) const {
   if (position_index_in_mobilizer == 0) {
     return "x";
   }
@@ -33,7 +33,7 @@ std::string PrismaticMobilizer<T>::position_suffix(
 
 template <typename T>
 std::string PrismaticMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+    int velocity_index_in_mobilizer) const {
   if (velocity_index_in_mobilizer == 0) {
     return "v";
   }
@@ -102,8 +102,7 @@ PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void PrismaticMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&,
-    const SpatialForce<T>& F_Mo_F,
+    const systems::Context<T>&, const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
   // Computes tau = H_FMᵀ * F_Mo_F where H_FM ∈ ℝ⁶ is:
@@ -113,8 +112,8 @@ void PrismaticMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-void PrismaticMobilizer<T>::DoCalcNMatrix(
-    const systems::Context<T>&, EigenPtr<MatrixX<T>> N) const {
+void PrismaticMobilizer<T>::DoCalcNMatrix(const systems::Context<T>&,
+                                          EigenPtr<MatrixX<T>> N) const {
   (*N)(0, 0) = 1.0;
 }
 
@@ -126,8 +125,7 @@ void PrismaticMobilizer<T>::DoCalcNplusMatrix(
 
 template <typename T>
 void PrismaticMobilizer<T>::MapVelocityToQDot(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& v,
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
@@ -137,8 +135,7 @@ void PrismaticMobilizer<T>::MapVelocityToQDot(
 
 template <typename T>
 void PrismaticMobilizer<T>::MapQDotToVelocity(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& qdot,
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);
   DRAKE_ASSERT(v != nullptr);

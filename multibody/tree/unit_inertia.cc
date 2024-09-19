@@ -19,8 +19,8 @@ template <typename T>
 UnitInertia<T> UnitInertia<T>::PointMass(const Vector3<T>& p_FQ) {
   // Square each coefficient in p_FQ, perhaps better with p_FQ.array().square()?
   const Vector3<T> p2m = p_FQ.cwiseAbs2();  // [x²  y²  z²].
-  const T mp0 = -p_FQ(0);  // -x
-  const T mp1 = -p_FQ(1);  // -y
+  const T mp0 = -p_FQ(0);                   // -x
+  const T mp1 = -p_FQ(1);                   // -y
   return UnitInertia<T>(
       // Gxx = y² + z²,  Gyy = x² + z²,  Gzz = x² + y²
       p2m[1] + p2m[2], p2m[0] + p2m[2], p2m[0] + p2m[1],
@@ -29,8 +29,8 @@ UnitInertia<T> UnitInertia<T>::PointMass(const Vector3<T>& p_FQ) {
 }
 
 template <typename T>
-UnitInertia<T> UnitInertia<T>::SolidEllipsoid(
-    const T& a, const T& b, const T& c) {
+UnitInertia<T> UnitInertia<T>::SolidEllipsoid(const T& a, const T& b,
+                                              const T& c) {
   const T a2 = a * a;
   const T b2 = b * b;
   const T c2 = c * c;
@@ -38,8 +38,8 @@ UnitInertia<T> UnitInertia<T>::SolidEllipsoid(
 }
 
 template <typename T>
-UnitInertia<T> UnitInertia<T>::SolidCylinder(
-    const T& radius, const T& length, const Vector3<T>& unit_vector) {
+UnitInertia<T> UnitInertia<T>::SolidCylinder(const T& radius, const T& length,
+                                             const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
   math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
@@ -58,14 +58,15 @@ UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(
   math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   const T rsq = radius * radius;
   const T lsq = length * length;
-  const T J = 0.5 * rsq;                // Axial moment of inertia J = ½ r².
-  const T K = 0.25 * rsq  + lsq / 3.0;  // Transverse moment K = ¼ r² + ⅓ l².
+  const T J = 0.5 * rsq;               // Axial moment of inertia J = ½ r².
+  const T K = 0.25 * rsq + lsq / 3.0;  // Transverse moment K = ¼ r² + ⅓ l².
   return AxiallySymmetric(J, K, unit_vector);
 }
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
-    const T& moment_perpendicular, const Vector3<T>& unit_vector) {
+                                                const T& moment_perpendicular,
+                                                const Vector3<T>& unit_vector) {
   const T& J = moment_parallel;
   const T& K = moment_perpendicular;
   DRAKE_THROW_UNLESS(moment_parallel >= 0.0);       // Ensure J ≥ 0.
@@ -99,7 +100,7 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::StraightLine(const T& moment_perpendicular,
-    const Vector3<T>& unit_vector) {
+                                            const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(moment_perpendicular > 0.0);
   math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   return AxiallySymmetric(0.0, moment_perpendicular, unit_vector);
@@ -107,7 +108,7 @@ UnitInertia<T> UnitInertia<T>::StraightLine(const T& moment_perpendicular,
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::ThinRod(const T& length,
-    const Vector3<T>& unit_vector) {
+                                       const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(length > 0.0);
   math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   return StraightLine(length * length / 12.0, unit_vector);
@@ -126,7 +127,7 @@ UnitInertia<T> UnitInertia<T>::SolidBox(const T& Lx, const T& Ly, const T& Lz) {
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& radius, const T& length,
-    const Vector3<T>& unit_vector) {
+                                            const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
   math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
@@ -156,9 +157,9 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& radius, const T& length,
   // Denoting mc as the mass of cylinder C and mh as the mass of half-sphere H,
   // and knowing the capsule has a uniform density and the capsule's mass is 1
   // (for unit inertia), calculate mc and mh.
-  const T v = vc + 2 * vh;    // Volume of capsule.
-  const T mc = vc / v;        // Mass in the cylinder (relates to volume).
-  const T mh = vh / v;        // Mass in each half-sphere (relates to volume).
+  const T v = vc + 2 * vh;  // Volume of capsule.
+  const T mc = vc / v;      // Mass in the cylinder (relates to volume).
+  const T mh = vh / v;      // Mass in each half-sphere (relates to volume).
 
   // The distance dH between Hcm (half-sphere H's center of mass) and Ccm
   // (cylinder C's center of mass) is given in [Kane, Figure A23, pg. 369] as
@@ -187,8 +188,9 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& radius, const T& length,
   // The previous algorithm for Ixx and Izz is algebraically manipulated to a
   // more efficient result by factoring on mh and mc and computing numbers as
   const T lsq = length * length;
-  const T Ixx = mc * (lsq/12.0 + 0.25*rsq) + mh * (0.51875*rsq + 2*dH*dH);
-  const T Izz = (0.5*mc + 0.8*mh) * rsq;  // Axial moment of inertia.
+  const T Ixx =
+      mc * (lsq / 12.0 + 0.25 * rsq) + mh * (0.51875 * rsq + 2 * dH * dH);
+  const T Izz = (0.5 * mc + 0.8 * mh) * rsq;  // Axial moment of inertia.
   return UnitInertia<T>::AxiallySymmetric(Izz, Ixx, unit_vector);
 }
 
@@ -201,13 +203,15 @@ namespace {
 // @note This function is an efficient way to calculate outer-products that
 //   contribute via a sum to a symmetric matrix.
 template <typename T>
-Matrix3<T> UpperTriangularOuterProduct(
-    const Eigen::Ref<const Vector3<T>>& a,
-    const Eigen::Ref<const Vector3<T>>& b) {
+Matrix3<T> UpperTriangularOuterProduct(const Eigen::Ref<const Vector3<T>>& a,
+                                       const Eigen::Ref<const Vector3<T>>& b) {
   Matrix3<T> M;
-  M(0, 0) = a(0) * b(0);  M(0, 1) = a(0) * b(1);  M(0, 2) = a(0) * b(2);
-                          M(1, 1) = a(1) * b(1);  M(1, 2) = a(1) * b(2);
-                                                  M(2, 2) = a(2) * b(2);
+  M(0, 0) = a(0) * b(0);
+  M(0, 1) = a(0) * b(1);
+  M(0, 2) = a(0) * b(2);
+  M(1, 1) = a(1) * b(1);
+  M(1, 2) = a(1) * b(2);
+  M(2, 2) = a(2) * b(2);
   return M;
 }
 }  // namespace
@@ -249,15 +253,15 @@ UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
   const Vector3<T>& r = p3;  // Position from vertex B0 to vertex R.
   const Vector3<T> q_plus_r = q + r;
   const T p_dot_pqr = p.dot(p + q_plus_r);
-  const T q_dot_qr  = q.dot(q_plus_r);
-  const T r_dot_r   = r.dot(r);
+  const T q_dot_qr = q.dot(q_plus_r);
+  const T r_dot_r = r.dot(r);
   const T scalar = 0.1 * (p_dot_pqr + q_dot_qr + r_dot_r);
   const Vector3<T> p_half = 0.5 * p;
   const Vector3<T> q_half = 0.5 * q;
   const Vector3<T> r_half = 0.5 * r;
-  const Matrix3<T> G = UpperTriangularOuterProduct<T>(p, p + q_half + r_half)
-                     + UpperTriangularOuterProduct<T>(q, p_half + q + r_half)
-                     + UpperTriangularOuterProduct<T>(r, p_half + q_half + r);
+  const Matrix3<T> G = UpperTriangularOuterProduct<T>(p, p + q_half + r_half) +
+                       UpperTriangularOuterProduct<T>(q, p_half + q + r_half) +
+                       UpperTriangularOuterProduct<T>(r, p_half + q_half + r);
   const T Ixx = scalar - 0.1 * G(0, 0);
   const T Iyy = scalar - 0.1 * G(1, 1);
   const T Izz = scalar - 0.1 * G(2, 2);

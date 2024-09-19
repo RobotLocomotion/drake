@@ -20,38 +20,32 @@ namespace internal {
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(
-    std::unique_ptr<MultibodyTree<T>> tree,
-    bool is_discrete)
-    : MultibodyTreeSystem(
-          systems::SystemTypeTag<MultibodyTreeSystem>{},
-          false,  // Null tree is not allowed here.
-          std::move(tree), is_discrete) {}
+    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete)
+    : MultibodyTreeSystem(systems::SystemTypeTag<MultibodyTreeSystem>{},
+                          false,  // Null tree is not allowed here.
+                          std::move(tree), is_discrete) {}
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(bool is_discrete)
-    : MultibodyTreeSystem(
-          systems::SystemTypeTag<MultibodyTreeSystem>{},
-          true,  // Null tree is OK.
-          nullptr, is_discrete) {}
+    : MultibodyTreeSystem(systems::SystemTypeTag<MultibodyTreeSystem>{},
+                          true,  // Null tree is OK.
+                          nullptr, is_discrete) {}
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(
     systems::SystemScalarConverter converter,
-    std::unique_ptr<MultibodyTree<T>> tree,
-    bool is_discrete)
-    : MultibodyTreeSystem(
-          std::move(converter),
-          true,  // Null tree is OK.
-          std::move(tree), is_discrete) {}
+    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete)
+    : MultibodyTreeSystem(std::move(converter),
+                          true,  // Null tree is OK.
+                          std::move(tree), is_discrete) {}
 
 template <typename T>
 template <typename U>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(const MultibodyTreeSystem<U>& other)
-    : MultibodyTreeSystem(
-          systems::SystemTypeTag<MultibodyTreeSystem>{},
-          false,  // Null tree isn't allowed (or possible).
-          other.internal_tree().template CloneToScalar<T>(),
-          other.is_discrete()) {}
+    : MultibodyTreeSystem(systems::SystemTypeTag<MultibodyTreeSystem>{},
+                          false,  // Null tree isn't allowed (or possible).
+                          other.internal_tree().template CloneToScalar<T>(),
+                          other.is_discrete()) {}
 
 // This is the one true constructor.
 template <typename T>
@@ -82,8 +76,8 @@ void MultibodyTreeSystem<T>::SetDefaultParameters(
   LeafSystem<T>::SetDefaultParameters(context, parameters);
 
   // Mobilizers.
-  for (MobodIndex mobilizer_index(0);
-       mobilizer_index < tree_->num_mobilizers(); ++mobilizer_index) {
+  for (MobodIndex mobilizer_index(0); mobilizer_index < tree_->num_mobilizers();
+       ++mobilizer_index) {
     internal_tree()
         .get_mobilizer(mobilizer_index)
         .SetDefaultParameters(parameters);
@@ -102,16 +96,12 @@ void MultibodyTreeSystem<T>::SetDefaultParameters(
   // Bodies.
   for (BodyIndex body_index(0); body_index < tree_->num_bodies();
        ++body_index) {
-    internal_tree()
-        .get_body(body_index)
-        .SetDefaultParameters(parameters);
+    internal_tree().get_body(body_index).SetDefaultParameters(parameters);
   }
   // Frames.
   for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
        ++frame_index) {
-    internal_tree()
-        .get_frame(frame_index)
-        .SetDefaultParameters(parameters);
+    internal_tree().get_frame(frame_index).SetDefaultParameters(parameters);
   }
   // Force Elements.
   for (ForceElementIndex force_element_index(0);
@@ -143,8 +133,8 @@ template <typename T>
 void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters(
     int* num_frame_body_pose_slots_needed) {
   // Mobilizers.
-  for (MobodIndex mobilizer_index(0);
-       mobilizer_index < tree_->num_mobilizers(); ++mobilizer_index) {
+  for (MobodIndex mobilizer_index(0); mobilizer_index < tree_->num_mobilizers();
+       ++mobilizer_index) {
     mutable_tree()
         .get_mutable_mobilizer(mobilizer_index)
         .DeclareParameters(this);
@@ -207,8 +197,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   } else {
     this->DeclareContinuousState(BasicVector<T>(tree_->num_states()),
                                  tree_->num_positions(),
-                                 tree_->num_velocities(),
-                                 0 /* num_z */);
+                                 tree_->num_velocities(), 0 /* num_z */);
   }
 
   // Declare cache entries dependent only on parameters.
@@ -232,11 +221,11 @@ void MultibodyTreeSystem<T>::Finalize() {
           .cache_index();
 
   cache_indexes_.frame_body_poses =
-      this->DeclareCacheEntry(std::string("frame pose in body frame"),
-                              FrameBodyPoseCache<T>(
-                                  num_frame_body_poses_needed),
-                              &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
-                              {this->all_parameters_ticket()})
+      this->DeclareCacheEntry(
+              std::string("frame pose in body frame"),
+              FrameBodyPoseCache<T>(num_frame_body_poses_needed),
+              &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
+              {this->all_parameters_ticket()})
           .cache_index();
 
   const DependencyTicket position_ticket =
@@ -376,7 +365,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   already_finalized_ = true;
 }
 
-template<typename T>
+template <typename T>
 void MultibodyTreeSystem<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
@@ -388,7 +377,8 @@ void MultibodyTreeSystem<T>::DoCalcTimeDerivatives(
   if (internal_tree().num_states() == 0) return;
 
   const VectorX<T>& x = dynamic_cast<const systems::BasicVector<T>&>(
-      context.get_continuous_state_vector()).value();
+                            context.get_continuous_state_vector())
+                            .value();
   const auto v = x.bottomRows(internal_tree().num_velocities());
 
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
@@ -401,7 +391,7 @@ void MultibodyTreeSystem<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
-template<typename T>
+template <typename T>
 void MultibodyTreeSystem<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
@@ -419,7 +409,7 @@ void MultibodyTreeSystem<T>::DoMapQDotToVelocity(
   generalized_velocity->SetFromVector(v);
 }
 
-template<typename T>
+template <typename T>
 void MultibodyTreeSystem<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
@@ -468,8 +458,9 @@ void MultibodyTreeSystem<T>::DoCalcImplicitTimeDerivativesResidual(
   //              static_cast in Release builds.
   const VectorX<T>& qvdot_proposed =
       dynamic_cast<const systems::BasicVector<T>&>(
-          proposed_derivatives.get_vector()).value();
-  DRAKE_ASSERT(qvdot_proposed.size() == nq+nv);
+          proposed_derivatives.get_vector())
+          .value();
+  DRAKE_ASSERT(qvdot_proposed.size() == nq + nv);
 
   auto qdot_residual = residual->head(nq);
   // N(q)⋅v
@@ -518,8 +509,8 @@ void MultibodyTreeSystem<T>::CalcForwardDynamicsContinuous(
 
   // Perform the last base-to-tip pass to compute accelerations using the O(n)
   // ABA.
-  internal_tree().CalcArticulatedBodyAccelerations(context,
-                                                   aba_force_cache, ac);
+  internal_tree().CalcArticulatedBodyAccelerations(context, aba_force_cache,
+                                                   ac);
 }
 
 }  // namespace internal

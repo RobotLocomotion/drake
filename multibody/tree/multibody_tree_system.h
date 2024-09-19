@@ -98,8 +98,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   const FrameBodyPoseCache<T>& EvalFrameBodyPoses(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
-    return frame_body_poses_cache_entry()
-        .template Eval<FrameBodyPoseCache<T>>(context);
+    return frame_body_poses_cache_entry().template Eval<FrameBodyPoseCache<T>>(
+        context);
   }
 
   /* Returns a reference to the up-to-date PositionKinematicsCache in the
@@ -214,8 +214,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   particularly expensive when performing O(n) forward dynamics with different
   applied forces but with the same multibody state x = [q, v] and therefore it
   is worth caching. */
-  const std::vector<SpatialForce<T>>&
-  EvalArticulatedBodyForceBiasCache(
+  const std::vector<SpatialForce<T>>& EvalArticulatedBodyForceBiasCache(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
     return this->get_cache_entry(cache_indexes_.articulated_body_force_bias)
@@ -225,8 +224,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   /* When using the articulated body algorithm, this cache entry holds the
   per-body and per-dof propagated forces. These include the effects of both
   the velocity-dependent bias forces and applied forces. */
-  const ArticulatedBodyForceCache<T>&
-  EvalArticulatedBodyForceCache(const systems::Context<T>& context) const {
+  const ArticulatedBodyForceCache<T>& EvalArticulatedBodyForceCache(
+      const systems::Context<T>& context) const {
     this->ValidateContext(context);
     return this->get_cache_entry(cache_indexes_.articulated_body_forces)
         .template Eval<ArticulatedBodyForceCache<T>>(context);
@@ -243,8 +242,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   all the body-node hinge matrices in the tree as a vector of the columns of
   these matrices. Therefore the returned `std::vector` of columns has as many
   entries as number of generalized velocities in the tree. */
-  const std::vector<Vector6<T>>&
-  EvalAcrossNodeJacobianWrtVExpressedInWorld(
+  const std::vector<Vector6<T>>& EvalAcrossNodeJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
     return this->get_cache_entry(cache_indexes_.across_node_jacobians)
@@ -312,8 +310,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
                       bool is_discrete = false);
 
   template <typename U>
-  friend const MultibodyTree<U>& GetInternalTree(
-      const MultibodyTreeSystem<U>&);
+  friend const MultibodyTree<U>& GetInternalTree(const MultibodyTreeSystem<U>&);
 
   /* Returns a const reference to the MultibodyTree owned by this class. */
   const MultibodyTree<T>& internal_tree() const {
@@ -395,8 +392,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     return internal_tree().CalcConservativePower(context);
   }
 
-  T DoCalcNonConservativePower(
-      const systems::Context<T>& context) const final {
+  T DoCalcNonConservativePower(const systems::Context<T>& context) const final {
     return internal_tree().CalcNonConservativePower(context);
   }
 
@@ -424,9 +420,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     internal_tree().CalcJointDamping(context, joint_damping);
   }
 
-  void CalcFrameBodyPoses(
-      const systems::Context<T>& context,
-      FrameBodyPoseCache<T>* frame_body_poses) const {
+  void CalcFrameBodyPoses(const systems::Context<T>& context,
+                          FrameBodyPoseCache<T>* frame_body_poses) const {
     internal_tree().CalcFrameBodyPoses(context, frame_body_poses);
   }
 
@@ -456,8 +451,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   void CalcVelocityKinematicsCache(
       const systems::Context<T>& context,
       VelocityKinematicsCache<T>* velocity_cache) const {
-    internal_tree().CalcVelocityKinematicsCache(context,
-        EvalPositionKinematics(context), velocity_cache);
+    internal_tree().CalcVelocityKinematicsCache(
+        context, EvalPositionKinematics(context), velocity_cache);
   }
 
   void CalcDynamicBiasForces(
@@ -512,9 +507,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // Discrete mode forward dynamics must be implemented by a derived class
   // (likely MultibodyPlant).
-  void CalcForwardDynamicsDiscrete(
-      const systems::Context<T>& context,
-      AccelerationKinematicsCache<T>* ac) const {
+  void CalcForwardDynamicsDiscrete(const systems::Context<T>& context,
+                                   AccelerationKinematicsCache<T>* ac) const {
     DRAKE_DEMAND(ac != nullptr);
     DRAKE_DEMAND(is_discrete());
     DoCalcForwardDynamicsDiscrete(context, ac);
@@ -565,8 +559,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // already been finalized.
   MultibodyTreeSystem(systems::SystemScalarConverter converter,
                       bool null_tree_is_ok,
-                      std::unique_ptr<MultibodyTree<T>> tree,
-                      bool is_discrete);
+                      std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete);
 
   const bool is_discrete_;
 

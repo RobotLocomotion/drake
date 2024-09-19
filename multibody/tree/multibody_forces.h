@@ -11,8 +11,10 @@ namespace drake {
 namespace multibody {
 
 namespace internal {
-template <typename T> class MultibodyTree;
-template <typename T> class MultibodyTreeSystem;
+template <typename T>
+class MultibodyTree;
+template <typename T>
+class MultibodyTreeSystem;
 }  // namespace internal
 
 /// A class to hold a set of forces applied to a MultibodyTree system. Forces

@@ -52,7 +52,7 @@ class ScrewJointTest : public ::testing::Test {
         Vector1d::Constant(kAccelerationUpperLimit));
 
     system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
-        std::move(model), true/* is_discrete */);
+        std::move(model), true /* is_discrete */);
     context_ = system_->CreateDefaultContext();
   }
 

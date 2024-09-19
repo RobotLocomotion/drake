@@ -54,8 +54,8 @@ class ScopedName final {
   Returns nullopt if `namespace_name` starts or ends with "::", or if
   `element_name` contains "::" or is empty.
   @see ScopedName::Join() for automatic coalescing of "::" tokens. */
-  static std::optional<ScopedName> Make(
-      std::string_view namespace_name, std::string_view element_name);
+  static std::optional<ScopedName> Make(std::string_view namespace_name,
+                                        std::string_view element_name);
 
   /** Creates a %ScopedName for the given `name1::name2`. Unlike the constructor
   or ScopedName::Make(), this function allows "::" in either name. Any leading

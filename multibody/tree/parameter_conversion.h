@@ -33,15 +33,14 @@ systems::BasicVector<T> ToBasicVector(
     const SpatialInertia<T>& spatial_inertia) {
   const Vector3<T>& com = spatial_inertia.get_com();
   const UnitInertia<T>& unit_inertia = spatial_inertia.get_unit_inertia();
-  return systems::BasicVector<T>(
-      {
-      // mass
-      spatial_inertia.get_mass(),
-      // center of mass
-      com(0), com(1), com(2),
-      // unit inertia
-      unit_inertia(0, 0), unit_inertia(1, 1), unit_inertia(2, 2),
-      unit_inertia(0, 1), unit_inertia(0, 2), unit_inertia(1, 2)});
+  return systems::BasicVector<T>({// mass
+                                  spatial_inertia.get_mass(),
+                                  // center of mass
+                                  com(0), com(1), com(2),
+                                  // unit inertia
+                                  unit_inertia(0, 0), unit_inertia(1, 1),
+                                  unit_inertia(2, 2), unit_inertia(0, 1),
+                                  unit_inertia(0, 2), unit_inertia(1, 2)});
 }
 
 // Extracts the mass from the BasicVector<T> representing a SpatialInertia<T> as
@@ -60,10 +59,9 @@ Vector3<T> GetCenterOfMass(
     const systems::BasicVector<T>& spatial_inertia_vector) {
   DRAKE_DEMAND(spatial_inertia_vector.size() ==
                SpatialInertiaIndex::k_num_coordinates);
-  return Vector3<T>(
-      spatial_inertia_vector[SpatialInertiaIndex::k_com_x],
-      spatial_inertia_vector[SpatialInertiaIndex::k_com_y],
-      spatial_inertia_vector[SpatialInertiaIndex::k_com_z]);
+  return Vector3<T>(spatial_inertia_vector[SpatialInertiaIndex::k_com_x],
+                    spatial_inertia_vector[SpatialInertiaIndex::k_com_y],
+                    spatial_inertia_vector[SpatialInertiaIndex::k_com_z]);
 }
 
 // Converts a BasicVector<T> to a SpatialInertia<T>
