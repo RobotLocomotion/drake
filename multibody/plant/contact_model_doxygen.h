@@ -651,13 +651,13 @@ its limitations.
 @section discrete_contact_instabilities Discrete Contact Instabilities
 
 We motivate the concept of margin by considering an instability problem with the
-simulation in Fig. 1. Two boxes (of 0.083 m x 0.23 m x 0.15 m and mass of 0.2
-kg) are stacked on top of each other. Their dynamics is simulated at a
-relatively large time step of 10 ms (large for robotics applications). Only
-their surface meshes are shown as wire frames so that we can appreciate the
-contact surface, colored by pressure. While we'd expect the upper box to rest
-stably on the lower box, we observe a wobbling instability where the contact
-surface shifts back and forth between two corners.
+simulation in Fig. 1. Two boxes (of 0.2 m x 0.15 m x 0.08 m and mass of 0.2 kg)
+are stacked on top of each other. Their dynamics is simulated at a relatively
+large time step of 10 ms (large for robotics applications). Only their surface
+meshes are shown as wire frames so that we can appreciate the contact surface,
+colored by pressure. While we'd expect the upper box to rest stably on the lower
+box, we observe a wobbling instability where the contact surface shifts back and
+forth between two corners.
 
 @image html drake/multibody/plant/images/unstable_box_box_contact.gif "Figure 1: Unstable flat-on-flat contact." width=50%
 
@@ -960,56 +960,97 @@ TODO: Write this.
 @subsection margin_scaling_confirmation Numerical Confirmation of the Scaling Law
 
 The result in (3) predicts the magnitude of contact oscillations in the absence
-of margin (δ = 0) for the simplified system of Fig. 6. In this section we aim to
-show that this scaling law also provides a good approximation to the magnitude
-of contact instabilities for the original and more complex system of Fig. 1.
-Notice the system in Fig. 1 is three-dimensional, with contact modeled using the
-hydroelastic contact model instead of point contact (providing continuous
-surfaces rather than discrete points), and with two rigid bodies rather than a
-single rod.
+of margin (δ = 0) for the simplified system of Fig. 6. The estimation predicts
+`Δϕ = h²⋅g`. This estimation will not hold exactly for arbitrary geometries and
+mass distributions. The expectation, however, is that the scaling `Δϕ ~ h²⋅g`
+still does provide a good estimation of the magnitude of these spurious
+oscillations.
 
-We first run the simulation with the boxes stacked on top of each other, no
-margin, and let the system reach its limit cycle in which the boxes rattle back
-and forth. Unlike the simplified system of Fig. 6, the limit cycle typically
-includes several time steps and the boxes rotate about an axes usually not
-aligned with any of their axes of symmetry.
+The aim of this section is to verify to what extend this scaling does provide a
+good estimation of the amplitude of these oscillations in a more complex case.
+We are particularly interested not only to understand to what extent the scaling
+law applies to this system but even more so, to verify the independence of these
+results with parameters such as stiffness and mass (the simplified case was
+actually shown to be independent of these parameters). If (3) happens to provide
+a good estimation, then we have a very good chance of success at choosing a
+value of margin δ for arbitrary simulation cases.
 
-We set the hydroelastic modulus to span a wide range of values, from 10⁴ Pa to
-10⁹ Pa. For each modulus, we run a set of simulations with time steps h ∈
-[6.25×10⁻⁴, 1.25×10⁻³, 2.5×10⁻³, 5×10⁻³, 10⁻²], in seconds. All simulations use
-a non-zero Hunt & Crossley dissipation `d = 20 s/m` to keep the rattling
-instability somewhat under control to avoid the upper box from drifting and
-falling to the side. In addition, we run a set of simulations with different box
-sizes (square symbols in Fig. 8, with modulus E=10⁹ Pa). We scale the size by
-factors of 2 and 4, keeping density constant and thus changing the total mass by
-factors 8 and 64 respectively.  An additional case only scales the x-length of
-the boxes by a factor of 4, effectively changing the aspect ratio of the boxes
-and contact area.
+For a general contact problem, many physical and numerical parameters are
+involved:
+  1. Hydroelastic modulus E.
+  2. Mass (or density).
+  3. Sizes and aspect ratios.
+  4. Shape and mass distribution
+  5. Time step.
+  6. Hunt & Crossley dissipation.
 
-We monitor the amount of interpenetration and compute its standard deviation (of
-its absolute value) as a means to characterize the amplitude of the rattling
-instabilities. We denote this with σ(|ϕ|). We plot σ(|ϕ|) / (h²⋅g) in Fig. 8,
-which should be constant if the prediction from Eq. (3) holds. On the horizontal
-axes with plot a "semi-dimensionless" time step. With that we mean that if the
-hydroelastic modulus E (with units of Pa) was a point contact stiffness k (with
-units of N/m), this quantity would be dimensionless. It is not, but it still
-scales data properly such that curves collapse within a single region.
+To start somewhere, we fix the shapes we use, and choose as our first study case
+the stack of boxes we started with, Fig. 1. To verify (3), we'd need to scan
+this high dimensional space of parameters, a daunting task. To make this
+tractable we resource the incredibly powerful tool of dimensional analysis. This
+method reduces the dimension of the parameter space by finding an alternative
+(smaller) set of dimensionless parameters. The underlying method is described by
+Buckingham π theorem, though in practice selecting these parameters often
+requires a great deal of experience and physical intuition. We won't go in
+detail here, but consider an example for sure you are familiar with. While the
+drag force a fluid exerts on an object is an incredibly complex function of
+density, viscosity, flow speed, geometry and size, engineers make very useful
+plots involving two (now very popular) dimensionless quantities; drag
+coefficient vs. Reynolds number. We therefore use the same procedure to find two
+dimensionless parameters that can succinctly capture the physics (and numerics
+in this case) of the problem at hand.
 
-For data to the right of Fig. 8, even though σ(|ϕ|) / (h²⋅g) is not exactly
-constant, values fall within a range between 0.1 to 0.6. For reference, a dashed
-line shows a function that scales as `y ~ x⁰ᐧ¹`. This is an excellent
-confirmation of the scaling predicted by Eq. (3) considering the wide range of
-problem parameters tested and the significantly more complex dynamics and
-contact interactions. Towards low values of h⋅(E/m)¹⁄₂, vibrations die off,
-starting to increase once again for the three lowest values of E. Vibrations die
-off at smaller time steps since the overshooting that happens with discrete time
-stepping decreases. Similarly, smaller values of E make the penetration due to
-compliance comparable to these vibrations. The increase we observe at the
-smaller values of E is only an artifact of the simulations  not reaching yet a
-steady state; compliance is so low that with the dissipation used boxes are
-still settling. This is amplified by the fact that we are monitoring values very
-close to zero.
+We start by defining an _effective spring stiffness_ as `k = E⋅A/H`, with E the
+hydroelastic modulus, A the area of contact (in our case the area of the base of
+the box), and H the _Elastic Foundation_ depth (in our case half of the boxes
+minimum side length). With this, we can define the (angular) frequency `ω =
+(k/m)¹⁄₂`, similarly to a spring-mass system, where `m` is the mass of the box.
+This frequency characterizes the dynamics of the compliant contact, and our
+intuition tells us it should be an important quantity in the analysis. With
+this, we define our first dimensionless parameter: `π₁ = h⋅ω = h⋅(k/m)¹⁄₂`.
 
-@image html drake/multibody/plant/images/box_on_box_std_penetration.png "Figure 8: Scaling of the vibration with problem parameters. No margin, δ = 0." width=30%
+Our second parameter must involve the amplitude of the oscillations. Guided by
+our estimation in (3), we define `π₂ = σ(|ϕ|) / (h²⋅g)`, where to characterize
+the amplitude of the oscillations we measure the standard deviation `σ(|ϕ|)` of
+the penetrations.
+
+Having identified these two dimensionless parameters, we now run a large number
+of simulations, scanning the parameter space (E, m, sizes, h). We then measure
+`σ(|ϕ|)` for each, compute π₁ and π₂ and plot them with the hope to find a clear
+relationship among them.
+
+The parameters we sweep are:
+ 1. Hydroelastic modulus E, from 10⁴ Pa to 10⁹ Pa.
+ 2. Time step, h ∈ [6.25×10⁻⁴, 1.25×10⁻³, 2.5×10⁻³, 5×10⁻³, 10⁻²], in seconds.
+ 3. Size. We scale the size by factors of 2 and 4.
+ 4. Shape. We scale only along the x-axis of the box.
+ 5. Mass. Density is kept constant, changing accordingly as the size of the box
+    changes.
+
+All simulations use a non-zero Hunt & Crossley dissipation `d = 20 s/m` to keep
+the rattling instability somewhat under control to avoid the upper box from
+drifting and falling to the side.
+
+We plot `σ(|ϕ|) / (h²⋅g)` in Fig. 8. Labels correspond to hydroelastic modulus
+`E`, and in parenthesis to size and shape changes. The very first thing we
+observe clearly is that oscillations die off below a frequency close to the
+Nyquist frequency (= 1/(2h), or h⋅(k/m)¹⁄₂ = π). This makes sense, as the
+dynamics of contact is resolved by the simulation time step, the numerical
+method is able to recover from this spurious oscillatory behavior. We note that
+the increase we observe at the smaller values of `π₁ = h⋅ω` is only an artifact
+of the simulations  not reaching yet a steady state; compliance is so low that
+with the dissipation used boxes are still settling.
+
+Second, we observe that oscillations develop at frequencies higher than the
+Nyquist frequency; time step is not small enough to resolve the dynamics of the
+compliant contact. While (3) predicts a constant value in this regime, we
+observe for this case (dimensionless) amplitudes in the range π₂ ∈ (0.1, 0.6).
+This might seem like a large discrepancy with the simplified analysis, but it's
+quite the opposite! Keep in mind this is a significantly more complex system
+than the one in Fig. 6 and that parameters change order of magnitude over a wide
+range. Even for this case, estimating the amplitude of these vibrations with
+~h²⋅g, provides a good approximation.
+
+@image html drake/multibody/plant/images/box_on_box_std_penetration_with_notations.png "Figure 8: Amplitude of the oscillations with problem parameters. No margin, δ = 0." width=35%
 
 */
