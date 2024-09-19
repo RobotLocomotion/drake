@@ -66,10 +66,9 @@ class ScrewJoint final : public Joint<T> {
   ///   default_damping() for details on modelling of the damping torque.
   /// @throws std::exception if damping is negative.
   ScrewJoint(const std::string& name, const Frame<T>& frame_on_parent,
-             const Frame<T>& frame_on_child, double screw_pitch,
-             double damping) :
-      ScrewJoint<T>(name, frame_on_parent, frame_on_child,
-                    Vector3<double>::UnitZ(), screw_pitch, damping) {}
+             const Frame<T>& frame_on_child, double screw_pitch, double damping)
+      : ScrewJoint<T>(name, frame_on_parent, frame_on_child,
+                      Vector3<double>::UnitZ(), screw_pitch, damping) {}
 
   /// Constructor to create a screw joint between two bodies so that frame F
   /// attached to the parent body P and frame M attached to the child body B
@@ -115,9 +114,7 @@ class ScrewJoint final : public Joint<T> {
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frame definitions) then,
   /// `axis = axis_F = axis_M`.
-  const Vector3<double>& screw_axis() const {
-    return axis_;
-  }
+  const Vector3<double>& screw_axis() const { return axis_; }
 
   /// Returns `this` joint's amount of translation in meters
   /// occurring over a one full revolution.
@@ -148,8 +145,7 @@ class ScrewJoint final : public Joint<T> {
   /// @param[in] z The desired translation in meters to be stored in `context`
   ///              as (z). See class documentation for details.
   /// @returns a constant reference to `this` joint.
-  const ScrewJoint<T>& set_translation(Context<T>* context,
-                                       const T& z) const {
+  const ScrewJoint<T>& set_translation(Context<T>* context, const T& z) const {
     get_mobilizer()->SetTranslation(context, z);
     return *this;
   }
@@ -170,7 +166,7 @@ class ScrewJoint final : public Joint<T> {
   ///                  See class documentation for details.
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_rotation(systems::Context<T>* context,
-                                     const T& theta) const {
+                                    const T& theta) const {
     get_mobilizer()->SetAngle(context, theta);
     return *this;
   }
@@ -191,8 +187,8 @@ class ScrewJoint final : public Joint<T> {
   /// @param[in] vz The desired translational velocity of `this` joint in meters
   ///               per second along F frame's â-axis.
   /// @returns a constant reference to `this` joint.
-  const ScrewJoint<T>& set_translational_velocity(
-      systems::Context<T>* context, const T& vz) const {
+  const ScrewJoint<T>& set_translational_velocity(systems::Context<T>* context,
+                                                  const T& vz) const {
     get_mobilizer()->SetTranslationRate(context, vz);
     return *this;
   }
@@ -217,7 +213,7 @@ class ScrewJoint final : public Joint<T> {
   ///                      angle in radians per second.
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_angular_velocity(systems::Context<T>* context,
-                                             const T& theta_dot) const {
+                                            const T& theta_dot) const {
     get_mobilizer()->SetAngularRate(context, theta_dot);
     return *this;
   }

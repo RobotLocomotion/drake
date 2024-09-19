@@ -23,7 +23,7 @@ std::unique_ptr<internal::BodyNode<T>> RevoluteMobilizer<T>::CreateBodyNode(
 
 template <typename T>
 std::string RevoluteMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+    int position_index_in_mobilizer) const {
   if (position_index_in_mobilizer == 0) {
     return "q";
   }
@@ -32,7 +32,7 @@ std::string RevoluteMobilizer<T>::position_suffix(
 
 template <typename T>
 std::string RevoluteMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+    int velocity_index_in_mobilizer) const {
   if (velocity_index_in_mobilizer == 0) {
     return "w";
   }
@@ -100,8 +100,7 @@ RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void RevoluteMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&,
-    const SpatialForce<T>& F_Mo_F,
+    const systems::Context<T>&, const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
   // Computes tau = H_FMᵀ * F_Mo_F where H_FM ∈ ℝ⁶ is:
@@ -111,21 +110,20 @@ void RevoluteMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-void RevoluteMobilizer<T>::DoCalcNMatrix(
-    const systems::Context<T>&, EigenPtr<MatrixX<T>> N) const {
+void RevoluteMobilizer<T>::DoCalcNMatrix(const systems::Context<T>&,
+                                         EigenPtr<MatrixX<T>> N) const {
   (*N)(0, 0) = 1.0;
 }
 
 template <typename T>
-void RevoluteMobilizer<T>::DoCalcNplusMatrix(
-      const systems::Context<T>&, EigenPtr<MatrixX<T>> Nplus) const {
+void RevoluteMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>&,
+                                             EigenPtr<MatrixX<T>> Nplus) const {
   (*Nplus)(0, 0) = 1.0;
 }
 
 template <typename T>
 void RevoluteMobilizer<T>::MapVelocityToQDot(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& v,
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
@@ -135,8 +133,7 @@ void RevoluteMobilizer<T>::MapVelocityToQDot(
 
 template <typename T>
 void RevoluteMobilizer<T>::MapQDotToVelocity(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& qdot,
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);
   DRAKE_ASSERT(v != nullptr);

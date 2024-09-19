@@ -186,10 +186,9 @@ class RotationalInertia {
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
   /// @throws std::exception for Debug builds if not CouldBePhysicallyValid().
-  RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
-                    const T& Ixy, const T& Ixz, const T& Iyz) {
-    set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
-                                               Ixy, Ixz, Iyz);
+  RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz, const T& Ixy,
+                    const T& Ixz, const T& Iyz) {
+    set_moments_and_products_no_validity_check(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
     DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
   }
 
@@ -224,12 +223,10 @@ class RotationalInertia {
   /// @throws std::exception if skip_validity_check is false and
   /// CouldBePhysicallyValid() fails.
   static RotationalInertia<T> MakeFromMomentsAndProductsOfInertia(
-      const T& Ixx, const T& Iyy, const T& Izz,
-      const T& Ixy, const T& Ixz, const T& Iyz,
-      bool skip_validity_check = false) {
+      const T& Ixx, const T& Iyy, const T& Izz, const T& Ixy, const T& Ixz,
+      const T& Iyz, bool skip_validity_check = false) {
     RotationalInertia<T> I;
-    I.set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
-                                                 Ixy, Ixz, Iyz);
+    I.set_moments_and_products_no_validity_check(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
     if (!skip_validity_check) I.ThrowIfNotPhysicallyValid(__func__);
     return I;
   }
@@ -465,7 +462,7 @@ class RotationalInertia {
   /// This helps quickly detect uninitialized moments/products of inertia.
   void SetToNaN() {
     I_SP_E_.setConstant(std::numeric_limits<
-        typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
+                        typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
   /// Sets `this` rotational inertia so all its moments/products of inertia
@@ -490,9 +487,9 @@ class RotationalInertia {
     static_assert(is_lower_triangular_order(1, 1), "Invalid indices");
     static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
     static_assert(is_lower_triangular_order(2, 2), "Invalid indices");
-    return isnan(I_SP_E_(0, 0)) ||
-        isnan(I_SP_E_(1, 0)) || isnan(I_SP_E_(1, 1)) ||
-        isnan(I_SP_E_(2, 0)) || isnan(I_SP_E_(2, 1)) || isnan(I_SP_E_(2, 2));
+    return isnan(I_SP_E_(0, 0)) || isnan(I_SP_E_(1, 0)) ||
+           isnan(I_SP_E_(1, 1)) || isnan(I_SP_E_(2, 0)) ||
+           isnan(I_SP_E_(2, 1)) || isnan(I_SP_E_(2, 2));
   }
 
   /// Returns `true` if all moments and products of inertia are exactly zero.
@@ -505,9 +502,9 @@ class RotationalInertia {
     static_assert(is_lower_triangular_order(1, 1), "Invalid indices");
     static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
     static_assert(is_lower_triangular_order(2, 2), "Invalid indices");
-    return I_SP_E_(0, 0) == 0.0 &&
-    I_SP_E_(1, 0) == 0.0 && I_SP_E_(1, 1) == 0.0 &&
-    I_SP_E_(2, 0) == 0.0 && I_SP_E_(2, 1) == 0.0 && I_SP_E_(2, 2) == 0.0;
+    return I_SP_E_(0, 0) == 0.0 && I_SP_E_(1, 0) == 0.0 &&
+           I_SP_E_(1, 1) == 0.0 && I_SP_E_(2, 0) == 0.0 &&
+           I_SP_E_(2, 1) == 0.0 && I_SP_E_(2, 2) == 0.0;
   }
 
   /// Returns a new %RotationalInertia object templated on `Scalar` initialized
@@ -607,8 +604,8 @@ class RotationalInertia {
     const Vector3<double> p = CalcPrincipalMomentsOfInertia();
 
     return !IsNaN() &&
-        AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-            p(0), p(1), p(2), epsilon);
+           AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+               p(0), p(1), p(2), epsilon);
   }
 
   /// Re-expresses `this` rotational inertia `I_BP_E` in place to `I_BP_A`.
@@ -730,8 +727,8 @@ class RotationalInertia {
   void ShiftToThenAwayFromCenterOfMassInPlace(const T& mass,
                                               const Vector3<T>& p_PBcm_E,
                                               const Vector3<T>& p_QBcm_E) {
-    *this += mass * ShiftUnitMassBodyToThenAwayFromCenterOfMass(p_PBcm_E,
-                                                                p_QBcm_E);
+    *this +=
+        mass * ShiftUnitMassBodyToThenAwayFromCenterOfMass(p_PBcm_E, p_QBcm_E);
   }
 
   /// Calculates the rotational inertia that results from shifting `this`
@@ -788,7 +785,8 @@ class RotationalInertia {
   // RotationalInertia<T>::cast<Scalar>() can make use of the private
   // constructor RotationalInertia<Scalar>(const Eigen::MatrixBase&) for an
   // Eigen expression templated on Scalar.
-  template <typename> friend class RotationalInertia;
+  template <typename>
+  friend class RotationalInertia;
 
   // Constructs a rotational inertia for a particle Q whose position vector
   // from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
@@ -807,11 +805,11 @@ class RotationalInertia {
     const T& x = p_PQ_E(0);
     const T& y = p_PQ_E(1);
     const T& z = p_PQ_E(2);
-    const T mxx = mx*x;
-    const T myy = my*y;
-    const T mzz = mz*z;
+    const T mxx = mx * x;
+    const T myy = my * y;
+    const T mzz = mz * z;
     set_moments_and_products_no_validity_check(myy + mzz, mxx + mzz, mxx + myy,
-                                               -mx * y,   -mx * z,   -my * z);
+                                               -mx * y, -mx * z, -my * z);
     DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
   }
 
@@ -839,15 +837,19 @@ class RotationalInertia {
   // intentionally avoids testing CouldBePhysicallyValid().  Some methods need
   // to be able to form non-physical rotational inertias (which are to be
   // subtracted or added to other rotational inertias to form valid ones).
-  void set_moments_and_products_no_validity_check(
-      const T& Ixx, const T& Iyy, const T& Izz,
-      const T& Ixy, const T& Ixz, const T& Iyz) {
+  void set_moments_and_products_no_validity_check(const T& Ixx, const T& Iyy,
+                                                  const T& Izz, const T& Ixy,
+                                                  const T& Ixz, const T& Iyz) {
     // Note: The three upper off-diagonal matrix elements remain equal to NaN.
     static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
     static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
     static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
-    I_SP_E_(0, 0) = Ixx;  I_SP_E_(1, 1) = Iyy;  I_SP_E_(2, 2) = Izz;
-    I_SP_E_(1, 0) = Ixy;  I_SP_E_(2, 0) = Ixz;  I_SP_E_(2, 1) = Iyz;
+    I_SP_E_(0, 0) = Ixx;
+    I_SP_E_(1, 1) = Iyy;
+    I_SP_E_(2, 2) = Izz;
+    I_SP_E_(1, 0) = Ixy;
+    I_SP_E_(2, 0) = Ixz;
+    I_SP_E_(2, 1) = Iyz;
   }
 
   // Calculates the rotational inertia that must be added to account for
@@ -969,11 +971,10 @@ class RotationalInertia {
   //       rotational inertia (e.g., Ixx + Iyy + Izz), one can prove:
   //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
   //       If Imin == 0, then Imed == Imax == tr / 2.
-  static boolean<T>
-  AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+  static boolean<T> AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
       const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
-    const auto are_moments_near_positive = AreMomentsOfInertiaNearPositive(
-        Ixx, Iyy, Izz, epsilon);
+    const auto are_moments_near_positive =
+        AreMomentsOfInertiaNearPositive(Ixx, Iyy, Izz, epsilon);
     const auto is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
                                                    Ixx + Iyy + epsilon >= Iyy &&
                                                    Iyy + Izz + epsilon >= Ixx;
@@ -988,9 +989,10 @@ class RotationalInertia {
   // @param epsilon Real positive number that is significantly smaller than the
   //        largest possible element in a valid rotational inertia.
   //        Heuristically, `epsilon` is a small multiplier of Trace() / 2.
-  static boolean<T> AreMomentsOfInertiaNearPositive(
-      const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
-    return Ixx + epsilon >= 0  &&  Iyy + epsilon >= 0  &&  Izz + epsilon >= 0;
+  static boolean<T> AreMomentsOfInertiaNearPositive(const T& Ixx, const T& Iyy,
+                                                    const T& Izz,
+                                                    const T& epsilon) {
+    return Ixx + epsilon >= 0 && Iyy + epsilon >= 0 && Izz + epsilon >= 0;
   }
 
   // ==========================================================================
@@ -1009,10 +1011,8 @@ class RotationalInertia {
   typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfNotPhysicallyValid(const char* func_name) {
     DRAKE_DEMAND(func_name != nullptr);
-    if (!CouldBePhysicallyValid())
-      ThrowNotPhysicallyValid(func_name);
+    if (!CouldBePhysicallyValid()) ThrowNotPhysicallyValid(func_name);
   }
-
 
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
@@ -1028,8 +1028,9 @@ class RotationalInertia {
   static typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfMultiplyByNegativeScalar(const T& nonnegative_scalar) {
     if (nonnegative_scalar < 0) {
-      throw std::logic_error("Error: Rotational inertia is multiplied by a "
-                             "negative number.");
+      throw std::logic_error(
+          "Error: Rotational inertia is multiplied by a "
+          "negative number.");
     }
   }
 
@@ -1047,8 +1048,9 @@ class RotationalInertia {
     if (positive_scalar == 0)
       throw std::logic_error("Error: Rotational inertia is divided by 0.");
     if (positive_scalar < 0) {
-      throw std::logic_error("Error: Rotational inertia is divided by a "
-                             "negative number");
+      throw std::logic_error(
+          "Error: Rotational inertia is divided by a "
+          "negative number");
     }
   }
 
@@ -1067,8 +1069,8 @@ class RotationalInertia {
   // Since the inertia matrix is symmetric, only the lower-triangular part of
   // the matrix is used.  All elements of the inertia matrix are initially set
   // to NaN which helps ensure the upper-triangular part is not used.
-  Matrix3<T> I_SP_E_{Matrix3<T>::Constant(std::numeric_limits<
-      typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
+  Matrix3<T> I_SP_E_{Matrix3<T>::Constant(
+      std::numeric_limits<typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };
 
 /// Writes an instance of RotationalInertia into a std::ostream.
@@ -1143,26 +1145,38 @@ void RotationalInertia<T>::ReExpressInPlace(
 
   // We're going to write back into this lower triangle.
   T& a = I_SP_E_(0, 0);
-  T& d = I_SP_E_(1, 0); T& b = I_SP_E_(1, 1);
-  T& e = I_SP_E_(2, 0); T& f = I_SP_E_(2, 1); T& c = I_SP_E_(2, 2);
+  T& d = I_SP_E_(1, 0);
+  T& b = I_SP_E_(1, 1);
+  T& e = I_SP_E_(2, 0);
+  T& f = I_SP_E_(2, 1);
+  T& c = I_SP_E_(2, 2);
 
   // Avoid use of Eigen's comma initializer since the compilers don't
   // reliably inline it.
   Eigen::Matrix<T, 3, 2> L;
-  L(0, 0) = a-c; L(0, 1) = d;
-  L(1, 0) = d;   L(1, 1) = b-c;
-  L(2, 0) = 2*e; L(2, 1) = 2*f;
+  L(0, 0) = a - c;
+  L(0, 1) = d;
+  L(1, 0) = d;
+  L(1, 1) = b - c;
+  L(2, 0) = 2 * e;
+  L(2, 1) = 2 * f;
 
   // For convenience below, the first two rows of Rᵀ.
   Eigen::Matrix<T, 2, 3> Rt;
-  Rt(0, 0) = R(0, 0); Rt(0, 1) = R(1, 0); Rt(0, 2) = R(2, 0);
-  Rt(1, 0) = R(0, 1); Rt(1, 1) = R(1, 1); Rt(1, 2) = R(2, 1);
+  Rt(0, 0) = R(0, 0);
+  Rt(0, 1) = R(1, 0);
+  Rt(0, 2) = R(2, 0);
+  Rt(1, 0) = R(0, 1);
+  Rt(1, 1) = R(1, 1);
+  Rt(1, 2) = R(2, 1);
 
   const Vector3<T> Rv(e * Rt.row(1) - f * Rt.row(0));
 
   Matrix2<T> Y;
-  Y(0, 0) = R.row(1).dot(L.col(0)); Y(0, 1) = R.row(1).dot(L.col(1));
-  Y(1, 0) = R.row(2).dot(L.col(0)); Y(1, 1) = R.row(2).dot(L.col(1));
+  Y(0, 0) = R.row(1).dot(L.col(0));
+  Y(0, 1) = R.row(1).dot(L.col(1));
+  Y(1, 0) = R.row(2).dot(L.col(0));
+  Y(1, 1) = R.row(2).dot(L.col(1));
 
   // We'll do Z elementwise due to element interdependence.
   const T Z11 = Y.row(0) * Rt.col(1);
@@ -1175,8 +1189,11 @@ void RotationalInertia<T>::ReExpressInPlace(
   // Assign result back into lower triangle. Don't set c until we're done
   // with the previous value!
   a = Z00 + c;
-  d = Z10 + Rv[2]; b = Z11 + c;
-  e = Z20 - Rv[1]; f = Z21 + Rv[0]; c += Z22;
+  d = Z10 + Rv[2];
+  b = Z11 + c;
+  e = Z20 - Rv[1];
+  f = Z21 + Rv[0];
+  c += Z22;
 
   // If both `this` and `R_AE` were valid upon entry to this method, the
   // returned rotational inertia should be valid.  Otherwise, it may not be.

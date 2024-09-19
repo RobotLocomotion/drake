@@ -14,8 +14,11 @@
 namespace drake {
 namespace multibody {
 
-template <typename T> class RigidBody;
+template <typename T>
+class RigidBody;
 
+// Don't let clang-format wrap long @image lines.
+// clang-format off
 /// This ForceElement models a massless flexible bushing that connects a frame A
 /// of a link (body) L0 to a frame C of a link (body) L1.  The bushing can apply
 /// a torque and force due to stiffness (spring) and dissipation (damper)
@@ -316,6 +319,7 @@ template <typename T> class RigidBody;
 /// @note Per issue #12982, do not directly or indirectly call the following
 /// methods as they have not yet been implemented and throw an exception:
 /// CalcPotentialEnergy(), CalcConservativePower(), CalcNonConservativePower().
+// clang-format on
 template <typename T>
 class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // TODO(Mitiguy) Add gimbal picture at "Relationship of 𝐭 to τ".
@@ -626,7 +630,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @throws std::exception if pitch angle is near gimbal-lock.  For more info,
   // @see RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().
   static void ThrowPitchAngleViolatesGimbalLockTolerance(
-    const T& pitch_angle, const char* function_name);
+      const T& pitch_angle, const char* function_name);
 
   // The efficient algorithm CalcR_AB() above is verified in debug builds by
   // calculating the `θ λ` AngleAxis from R_AC and then forming R_AB_expected
@@ -705,7 +709,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @note `w_AC_A ≠ [q̇₀ q̇₁ q̇₂]`
   // @see CalcBushingRollPitchYawAngleRates() for `[q̇₀ q̇₁ q̇₂]`.
   Vector3<T> Calcw_AC_A(const systems::Context<T>& context) const {
-    return frameC().CalcSpatialVelocity(context, frameA(), frameA())
+    return frameC()
+        .CalcSpatialVelocity(context, frameA(), frameA())
         .rotational();
   }
 
@@ -799,7 +804,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   systems::NumericParameterIndex force_stiffness_parameter_index_;
   systems::NumericParameterIndex force_damping_parameter_index_;
 };
-
 
 }  // namespace multibody
 }  // namespace drake

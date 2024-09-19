@@ -90,7 +90,7 @@ PrismaticSpring<T>::TemplatedDoCloneToScalar(
   // reference, which might not be available during cloning.
   std::unique_ptr<PrismaticSpring<ToScalar>> spring_clone(
       new PrismaticSpring<ToScalar>(this->model_instance(), joint_index_,
-                                   nominal_position(), stiffness()));
+                                    nominal_position(), stiffness()));
   return spring_clone;
 }
 

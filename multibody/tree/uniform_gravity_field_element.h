@@ -51,9 +51,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
 
   /// Sets the acceleration of gravity vector, expressed in the world frame
   /// W in m/s².
-  void set_gravity_vector(const Vector3<double>& g_W) {
-    g_W_ = g_W;
-  }
+  void set_gravity_vector(const Vector3<double>& g_W) { g_W_ = g_W; }
 
   /// @returns `true` iff gravity is enabled for `model_instance`.
   /// @see enable(), disable().

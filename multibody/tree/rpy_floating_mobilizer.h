@@ -65,8 +65,8 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyFloatingMobilizer);
   using MobilizerBase = MobilizerImpl<T, 6, 6>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
   using typename MobilizerBase::HMatrix;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
 
   // Constructor for an RpyFloatingMobilizer between an inboard frame F
   // inboard_frame_F and an outboard frame M outboard_frame_M.
@@ -78,8 +78,8 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   ~RpyFloatingMobilizer() final;
 
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
+      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+      const Mobilizer<T>* mobilizer) const final;
 
   bool is_floating() const final { return true; }
 
@@ -90,7 +90,7 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  bool can_rotate() const final    { return true; }
+  bool can_rotate() const final { return true; }
   bool can_translate() const final { return true; }
 
   // Returns the generalized positions for this mobilizer stored in context.
@@ -163,8 +163,8 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   //   θ₀, θ₁, θ₂, described in this class's documentation, at entries
   //   angles(0), angles(1) and angles(2), respectively.
   // @returns a constant reference to this mobilizer.
-  const RpyFloatingMobilizer<T>& SetAngles(
-      systems::Context<T>* context, const Vector3<T>& angles) const;
+  const RpyFloatingMobilizer<T>& SetAngles(systems::Context<T>* context,
+                                           const Vector3<T>& angles) const;
 
   // Stores in context the position p_FM of M in F.
   //
@@ -173,8 +173,8 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // @param[in] p_FM
   //   Position of F in M.
   // @returns a constant reference to this mobilizer.
-  const RpyFloatingMobilizer<T>& SetTranslation(
-      systems::Context<T>* context, const Vector3<T>& p_FM) const;
+  const RpyFloatingMobilizer<T>& SetTranslation(systems::Context<T>* context,
+                                                const Vector3<T>& p_FM) const;
 
   // Sets the distribution governing the random samples of the rpy angles
   // component of the mobilizer state.
@@ -233,8 +233,7 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // measured and expressed in frame F as a function of the input generalized
   // velocity v, packed as documented in get_generalized_velocities(). (That's
   // conveniently just V_FM already.)
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
     const Eigen::Map<const VVector> V_FM(v);
     return SpatialVelocity<T>(V_FM);  // w_FM, v_FM
   }

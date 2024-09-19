@@ -13,8 +13,10 @@ namespace drake {
 namespace multibody {
 
 // Forward declarations.
-template <class T> class RigidBodyFrame;
-template <class T> class RigidBody;
+template <class T>
+class RigidBodyFrame;
+template <class T>
+class RigidBody;
 
 /// %FixedOffsetFrame represents a material frame F whose pose is fixed with
 /// respect to a _parent_ material frame P. The pose offset is given by a
@@ -49,10 +51,9 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @param[in] model_instance
   ///   The model instance to which this frame belongs to. If unspecified, will
   ///   use P.body().model_instance().
-  FixedOffsetFrame(
-      const std::string& name, const Frame<T>& P,
-      const math::RigidTransform<double>& X_PF,
-      std::optional<ModelInstanceIndex> model_instance = {});
+  FixedOffsetFrame(const std::string& name, const Frame<T>& P,
+                   const math::RigidTransform<double>& X_PF,
+                   std::optional<ModelInstanceIndex> model_instance = {});
 
   /// Creates a material Frame F whose pose is fixed with respect to the
   /// RigidBodyFrame B of the given RigidBody, which serves as F's parent frame.
@@ -63,9 +64,8 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @param[in] bodyB The body whose RigidBodyFrame B is to be F's parent
   ///                  frame.
   /// @param[in] X_BF  The transform giving the pose of F in B.
-  FixedOffsetFrame(
-      const std::string& name, const RigidBody<T>& bodyB,
-      const math::RigidTransform<double>& X_BF);
+  FixedOffsetFrame(const std::string& name, const RigidBody<T>& bodyB,
+                   const math::RigidTransform<double>& X_BF);
 
   ~FixedOffsetFrame() override;
 

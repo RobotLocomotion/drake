@@ -76,7 +76,8 @@ class RevoluteSpring final : public ForceElement<T> {
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
-  template <typename U> friend class RevoluteSpring;
+  template <typename U>
+  friend class RevoluteSpring;
 
   RevoluteSpring(ModelInstanceIndex model_instance, JointIndex joint_index,
                  double nominal_angle, double stiffness);

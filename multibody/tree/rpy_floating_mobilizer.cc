@@ -44,8 +44,7 @@ std::string RpyFloatingMobilizer<T>::position_suffix(
     case 5:
       return "z";
   }
-  throw std::runtime_error(
-      "RpyFloatingMobilizer has only 6 positions.");
+  throw std::runtime_error("RpyFloatingMobilizer has only 6 positions.");
 }
 
 template <typename T>
@@ -65,8 +64,7 @@ std::string RpyFloatingMobilizer<T>::velocity_suffix(
     case 5:
       return "vz";
   }
-  throw std::runtime_error(
-      "RpyFloatingMobilizer has only 6 velocities.");
+  throw std::runtime_error("RpyFloatingMobilizer has only 6 velocities.");
 }
 
 template <typename T>
@@ -114,17 +112,15 @@ const RpyFloatingMobilizer<T>& RpyFloatingMobilizer<T>::SetAngles(
 }
 
 template <typename T>
-const RpyFloatingMobilizer<T>&
-RpyFloatingMobilizer<T>::SetTranslation(systems::Context<T>* context,
-                                        const Vector3<T>& p_FM) const {
+const RpyFloatingMobilizer<T>& RpyFloatingMobilizer<T>::SetTranslation(
+    systems::Context<T>* context, const Vector3<T>& p_FM) const {
   auto q = this->GetMutablePositions(context).template tail<3>();
   q = p_FM;
   return *this;
 }
 
 template <typename T>
-const RpyFloatingMobilizer<T>&
-RpyFloatingMobilizer<T>::SetAngularVelocity(
+const RpyFloatingMobilizer<T>& RpyFloatingMobilizer<T>::SetAngularVelocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
   auto v = this->GetMutableVelocities(context).template head<3>();
   v = w_FM;
@@ -141,8 +137,7 @@ RpyFloatingMobilizer<T>::SetTranslationalVelocity(
 }
 
 template <typename T>
-const RpyFloatingMobilizer<T>&
-RpyFloatingMobilizer<T>::SetFromRigidTransform(
+const RpyFloatingMobilizer<T>& RpyFloatingMobilizer<T>::SetFromRigidTransform(
     systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
   SetAngles(context, math::RollPitchYaw<T>(X_FM.rotation()).vector());
   SetTranslation(context, X_FM.translation());
@@ -209,8 +204,8 @@ void RpyFloatingMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-void RpyFloatingMobilizer<T>::DoCalcNMatrix(
-    const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
+void RpyFloatingMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
+                                            EigenPtr<MatrixX<T>> N) const {
   using std::abs;
   using std::cos;
   using std::sin;
@@ -474,15 +469,13 @@ RpyFloatingMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<double>>
-RpyFloatingMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<double>> RpyFloatingMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>>
-RpyFloatingMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<AutoDiffXd>> RpyFloatingMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }

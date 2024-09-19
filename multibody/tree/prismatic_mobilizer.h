@@ -37,8 +37,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticMobilizer);
   using MobilizerBase = MobilizerImpl<T, 1, 1>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
   using typename MobilizerBase::HMatrix;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
 
   // Constructor for a %PrismaticMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M` granting a single translational degree of freedom along
@@ -51,8 +51,9 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   PrismaticMobilizer(const SpanningForest::Mobod& mobod,
                      const Frame<T>& inboard_frame_F,
                      const Frame<T>& outboard_frame_M,
-                     const Vector3<double>& axis_F) :
-      MobilizerBase(mobod, inboard_frame_F, outboard_frame_M), axis_F_(axis_F) {
+                     const Vector3<double>& axis_F)
+      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M),
+        axis_F_(axis_F) {
     double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_DEMAND(!axis_F.isZero(kEpsilon));
     axis_F_.normalize();
@@ -61,15 +62,15 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   ~PrismaticMobilizer() final;
 
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
+      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+      const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  bool can_rotate() const final    { return false; }
+  bool can_rotate() const final { return false; }
   bool can_translate() const final { return true; }
 
   // @retval axis_F The translation axis as a unit vector expressed in the
@@ -89,8 +90,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   //                    belongs to.
   // @param[in] translation The desired translation in meters.
   // @returns a constant reference to `this` mobilizer.
-  const PrismaticMobilizer<T>& SetTranslation(
-      systems::Context<T>* context, const T& translation) const;
+  const PrismaticMobilizer<T>& SetTranslation(systems::Context<T>* context,
+                                              const T& translation) const;
 
   // Gets the rate of change, in meters per second, of `this` mobilizer's
   // translation (see get_translation()) from `context`. See class
@@ -99,7 +100,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   //                    belongs to.
   // @returns The rate of change of `this` mobilizer's translation in the
   // `context`.
-  const T& get_translation_rate(const systems::Context<T> &context) const;
+  const T& get_translation_rate(const systems::Context<T>& context) const;
 
   // Sets the rate of change, in meters per second, of `this` mobilizer's
   // translation to `translation_dot`. The new rate of change `translation_dot`
@@ -111,7 +112,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // mobilizer's translation in meters per second.
   // @returns a constant reference to `this` mobilizer.
   const PrismaticMobilizer<T>& SetTranslationRate(
-      systems::Context<T> *context, const T& translation_dot) const;
+      systems::Context<T>* context, const T& translation_dot) const;
 
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
   // frame F and the outboard frame M as a function of the translation distance
@@ -126,8 +127,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // M measured and expressed in frame F as a function of the input
   // translational velocity v along this mobilizer's axis (see
   // translation_axis()).
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
     return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
   }
 
@@ -158,34 +158,30 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // Therefore, the result of this method is the scalar value of the linear
   // force along the axis of `this` mobilizer.
   // This method aborts in Debug builds if `tau.size()` is not one.
-  void ProjectSpatialForce(
-      const systems::Context<T>& context,
-      const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const final;
+  void ProjectSpatialForce(const systems::Context<T>& context,
+                           const SpatialForce<T>& F_Mo_F,
+                           Eigen::Ref<VectorX<T>> tau) const final;
 
   bool is_velocity_equal_to_qdot() const override { return true; }
 
   // Computes the kinematic mapping from generalized velocities v to time
   // derivatives of the generalized positions `q̇`. For this mobilizer `q̇ = v`.
-  void MapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v,
-      EigenPtr<VectorX<T>> qdot) const final;
+  void MapVelocityToQDot(const systems::Context<T>& context,
+                         const Eigen::Ref<const VectorX<T>>& v,
+                         EigenPtr<VectorX<T>> qdot) const final;
 
   // Computes the kinematic mapping from time derivatives of the generalized
   // positions `q̇` to generalized velocities v. For this mobilizer `v = q̇`.
-  void MapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      EigenPtr<VectorX<T>> v) const final;
+  void MapQDotToVelocity(const systems::Context<T>& context,
+                         const Eigen::Ref<const VectorX<T>>& qdot,
+                         EigenPtr<VectorX<T>> v) const final;
 
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
-  void DoCalcNplusMatrix(
-      const systems::Context<T>& context,
-      EigenPtr<MatrixX<T>> Nplus) const final;
+  void DoCalcNplusMatrix(const systems::Context<T>& context,
+                         EigenPtr<MatrixX<T>> Nplus) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;

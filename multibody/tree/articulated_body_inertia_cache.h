@@ -30,29 +30,27 @@ namespace internal {
 // - The Kalman gain `g_PB_W = P_B_W * H_PB_W * D_B⁻¹`.
 //
 // @tparam_default_scalar
-template<typename T>
+template <typename T>
 class ArticulatedBodyInertiaCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache);
 
   // Constructs an articulated body cache entry for the given
   // MultibodyTreeTopology.
-  explicit ArticulatedBodyInertiaCache(const MultibodyTreeTopology& topology) :
-      num_mobods_(topology.num_mobods()) {
+  explicit ArticulatedBodyInertiaCache(const MultibodyTreeTopology& topology)
+      : num_mobods_(topology.num_mobods()) {
     Allocate();
   }
 
   // Articulated body inertia `P_B_W` of the body taken about Bo and expressed
   // in W.
-  const ArticulatedBodyInertia<T>& get_P_B_W(
-      MobodIndex mobod_index) const {
+  const ArticulatedBodyInertia<T>& get_P_B_W(MobodIndex mobod_index) const {
     DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
     return P_B_W_[mobod_index];
   }
 
   // Mutable version of get_P_B_W().
-  ArticulatedBodyInertia<T>& get_mutable_P_B_W(
-      MobodIndex mobod_index) {
+  ArticulatedBodyInertia<T>& get_mutable_P_B_W(MobodIndex mobod_index) {
     DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
     return P_B_W_[mobod_index];
   }
@@ -67,8 +65,7 @@ class ArticulatedBodyInertiaCache {
   }
 
   // Mutable version of get_Pplus_PB_W().
-  ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(
-      MobodIndex mobod_index) {
+  ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(MobodIndex mobod_index) {
     DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
     return Pplus_PB_W_[mobod_index];
   }
@@ -88,15 +85,13 @@ class ArticulatedBodyInertiaCache {
   }
 
   // The Kalman gain `g_PB_W` of the body.
-  const Matrix6xUpTo6<T>& get_g_PB_W(
-      MobodIndex mobod_index) const {
+  const Matrix6xUpTo6<T>& get_g_PB_W(MobodIndex mobod_index) const {
     DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
     return g_PB_W_[mobod_index];
   }
 
   // Mutable version of get_g_PB_W().
-  Matrix6xUpTo6<T>& get_mutable_g_PB_W(
-      MobodIndex mobod_index) {
+  Matrix6xUpTo6<T>& get_mutable_g_PB_W(MobodIndex mobod_index) {
     DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
     return g_PB_W_[mobod_index];
   }

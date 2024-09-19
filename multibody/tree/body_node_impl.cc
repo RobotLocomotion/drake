@@ -29,8 +29,7 @@ BodyNodeImpl<T, ConcreteMobilizer>::~BodyNodeImpl() = default;
 
 template <typename T, template <typename> class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
-    const FrameBodyPoseCache<T>& frame_body_pose_cache,
-    const T* positions,
+    const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
     PositionKinematicsCache<T>* pc) const {
   // This method must not be called for the "world" body node.
   DRAKE_ASSERT(this->index() != world_mobod_index());
@@ -107,10 +106,8 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 
 template <typename T, template <typename> class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const std::vector<Vector6<T>>& H_PB_W_cache,
-    const T* velocities,
+    const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
+    const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
     VelocityKinematicsCache<T>* vc) const {
   // This method must not be called for the "world" body node.
   DRAKE_ASSERT(this->index() != world_mobod_index());

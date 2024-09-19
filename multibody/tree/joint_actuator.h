@@ -18,7 +18,8 @@ namespace drake {
 namespace multibody {
 
 // Forward declaration for JointActuator<T>.
-template<typename T> class Joint;
+template <typename T>
+class Joint;
 
 /// PD controller gains. This enables the modeling of a simple low level PD
 /// controllers, see JointActuator::set_controller_gains().
@@ -99,11 +100,8 @@ class JointActuator final : public MultibodyElement<T> {
   ///   `forces` is `nullptr` or if `forces` doest not have the right sizes to
   ///   accommodate a set of forces for the model to which this actuator
   ///   belongs.
-  void AddInOneForce(
-      const systems::Context<T>& context,
-      int joint_dof,
-      const T& tau,
-      MultibodyForces<T>* forces) const;
+  void AddInOneForce(const systems::Context<T>& context, int joint_dof,
+                     const T& tau, MultibodyForces<T>* forces) const;
 
   /// Gets the actuation values for `this` actuator from the actuation vector u
   /// for the entire plant model.
@@ -132,9 +130,8 @@ class JointActuator final : public MultibodyElement<T> {
   /// @throws std::exception if u is nullptr.
   /// @throws std::exception if
   ///   `u.size() != this->GetParentPlant().num_actuated_dofs()`.
-  void set_actuation_vector(
-      const Eigen::Ref<const VectorX<T>>& u_actuator,
-      EigenPtr<VectorX<T>> u) const;
+  void set_actuation_vector(const Eigen::Ref<const VectorX<T>>& u_actuator,
+                            EigenPtr<VectorX<T>> u) const;
 
   /// Returns the index to the first element for this joint actuator / within
   /// the vector of actuation inputs for the full multibody / system.
@@ -150,6 +147,8 @@ class JointActuator final : public MultibodyElement<T> {
   /// Returns the actuator effort limit.
   double effort_limit() const { return effort_limit_; }
 
+  // Don't let clang-format wrap long @image lines.
+  // clang-format off
   /// @anchor reflected_inertia
   /// @name                 Reflected Inertia
   ///
@@ -197,6 +196,7 @@ class JointActuator final : public MultibodyElement<T> {
   /// The gear ratio is defined ρ ≝ wR / vB (units of 1/m). Typically, ρ >> 1.
   /// For the gear-motor here, reflected inertia Iᵣᵢ = ρ² ⋅ Iᵣ (units of kg).
   ///@{
+  // clang-format on
 
   /// Gets the default value for this actuator's rotor inertia.
   /// See @ref reflected_inertia.
@@ -321,7 +321,7 @@ class JointActuator final : public MultibodyElement<T> {
   // MultibodyTree::CloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<JointActuator<ToScalar>> CloneToScalar(
-  const internal::MultibodyTree<ToScalar>& cloned_tree) const {
+      const internal::MultibodyTree<ToScalar>& cloned_tree) const {
     return DoCloneToScalar(cloned_tree);
   }
   /// @endcond
@@ -329,7 +329,8 @@ class JointActuator final : public MultibodyElement<T> {
  private:
   // Allow different specializations to access each other's private constructor
   // for scalar conversion.
-  template <typename U> friend class JointActuator;
+  template <typename U>
+  friend class JointActuator;
 
   // Private constructor used for cloning.
   JointActuator(const std::string& name, JointIndex joint_index,

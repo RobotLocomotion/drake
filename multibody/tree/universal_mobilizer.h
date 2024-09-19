@@ -50,8 +50,8 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniversalMobilizer);
   using MobilizerBase = MobilizerImpl<T, 2, 2>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
   using typename MobilizerBase::HMatrix;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
 
   // Constructor for a %UniversalMobilizer between an inboard frame F
   // `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting
@@ -65,15 +65,15 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   ~UniversalMobilizer() final;
 
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
+      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+      const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  bool can_rotate() const final    { return true; }
+  bool can_rotate() const final { return true; }
   bool can_translate() const final { return false; }
 
   // Retrieves from `context` the two angles, (θ₁, θ₂) which describe the state
@@ -119,9 +119,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
     const T s1 = sin(q[0]), c1 = cos(q[0]);
     const T s2 = sin(q[1]), c2 = cos(q[1]);
     Matrix3<T> R_FM_matrix;
-    R_FM_matrix <<   c2,    0.0,  s2,
-                   s1 * s2, c1,  -s1 * c2,
-                  -c1 * s2, s1,   c1 * c2;
+    R_FM_matrix << c2, 0.0, s2, s1 * s2, c1, -s1 * c2, -c1 * s2, s1, c1 * c2;
     return math::RigidTransform<T>(
         math::RotationMatrix<T>::MakeUnchecked(R_FM_matrix),
         Vector3<T>::Zero());

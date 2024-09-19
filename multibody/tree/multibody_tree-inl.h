@@ -74,24 +74,24 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
 }
 
 template <typename T>
-template<template<typename Scalar> class FrameType, typename... Args>
+template <template <typename Scalar> class FrameType, typename... Args>
 const FrameType<T>& MultibodyTree<T>::AddFrame(Args&&... args) {
   static_assert(std::is_convertible_v<FrameType<T>*, Frame<T>*>,
                 "FrameType must be a sub-class of Frame<T>.");
-  return AddFrame(
-      std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
+  return AddFrame(std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
 }
 
 template <typename T>
-template <template<typename Scalar> class MobilizerType>
+template <template <typename Scalar> class MobilizerType>
 const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
     std::unique_ptr<MobilizerType<T>> mobilizer) {
   static_assert(std::is_convertible_v<MobilizerType<T>*, Mobilizer<T>*>,
                 "MobilizerType must be a sub-class of mobilizer<T>.");
   if (topology_is_valid()) {
-    throw std::logic_error("This MultibodyTree is finalized already. "
-                           "Therefore adding more mobilizers is not allowed. "
-                           "See documentation for Finalize() for details.");
+    throw std::logic_error(
+        "This MultibodyTree is finalized already. "
+        "Therefore adding more mobilizers is not allowed. "
+        "See documentation for Finalize() for details.");
   }
   if (mobilizer == nullptr) {
     throw std::logic_error("Input mobilizer is a nullptr.");
@@ -103,8 +103,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   mobilizer->inboard_frame().HasThisParentTreeOrThrow(this);
   mobilizer->outboard_frame().HasThisParentTreeOrThrow(this);
   MobodIndex mobilizer_index = topology_.add_mobilizer(
-      mobilizer->mobod(),
-      mobilizer->inboard_frame().index(),
+      mobilizer->mobod(), mobilizer->inboard_frame().index(),
       mobilizer->outboard_frame().index());
 
   // This DRAKE_DEMAND MUST be performed BEFORE mobilizers_.push_back()
@@ -140,7 +139,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
 }
 
 template <typename T>
-template<template<typename Scalar> class MobilizerType, typename... Args>
+template <template <typename Scalar> class MobilizerType, typename... Args>
 const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(Args&&... args) {
   static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
                 "MobilizerType must be a sub-class of Mobilizer<T>.");
@@ -149,12 +148,11 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(Args&&... args) {
 }
 
 template <typename T>
-template <template<typename Scalar> class ForceElementType>
+template <template <typename Scalar> class ForceElementType>
 const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
     std::unique_ptr<ForceElementType<T>> force_element) {
-  static_assert(
-      std::is_convertible_v<ForceElementType<T>*, ForceElement<T>*>,
-      "ForceElementType<T> must be a sub-class of ForceElement<T>.");
+  static_assert(std::is_convertible_v<ForceElementType<T>*, ForceElement<T>*>,
+                "ForceElementType<T> must be a sub-class of ForceElement<T>.");
   if (topology_is_valid()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. Therefore adding more "
@@ -165,8 +163,8 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
     throw std::logic_error("Input force element is a nullptr.");
   }
 
-  auto gravity_element = dynamic_cast<UniformGravityFieldElement<T>*>(
-      force_element.get());
+  auto gravity_element =
+      dynamic_cast<UniformGravityFieldElement<T>*>(force_element.get());
   if (gravity_element) {
     if (gravity_field_) {
       throw std::runtime_error(
@@ -186,9 +184,8 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
 }
 
 template <typename T>
-template<template<typename Scalar> class ForceElementType, typename... Args>
-const ForceElementType<T>&
-MultibodyTree<T>::AddForceElement(Args&&... args) {
+template <template <typename Scalar> class ForceElementType, typename... Args>
+const ForceElementType<T>& MultibodyTree<T>::AddForceElement(Args&&... args) {
   static_assert(std::is_base_of_v<ForceElement<T>, ForceElementType<T>>,
                 "ForceElementType<T> must be a sub-class of "
                 "ForceElement<T>.");
@@ -197,7 +194,7 @@ MultibodyTree<T>::AddForceElement(Args&&... args) {
 }
 
 template <typename T>
-template <template<typename Scalar> class JointType>
+template <template <typename Scalar> class JointType>
 const JointType<T>& MultibodyTree<T>::AddJoint(
     std::unique_ptr<JointType<T>> joint, bool is_ephemeral_joint) {
   static_assert(std::is_convertible_v<JointType<T>*, Joint<T>*>,
@@ -212,9 +209,10 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   }
 
   if (topology_is_valid()) {
-    throw std::logic_error("This MultibodyTree is finalized already. "
-                           "Therefore adding more joints is not allowed. "
-                           "See documentation for Finalize() for details.");
+    throw std::logic_error(
+        "This MultibodyTree is finalized already. "
+        "Therefore adding more joints is not allowed. "
+        "See documentation for Finalize() for details.");
   }
   if (joint == nullptr) {
     throw std::logic_error("Input joint is a nullptr.");
@@ -237,8 +235,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
 
   // User joints need to be registered with the LinkJointGraph but joints added
   // during modeling are already in the graph.
-  if (!is_ephemeral_joint)
-    RegisterJointAndMaybeJointTypeInGraph(*joint.get());
+  if (!is_ephemeral_joint) RegisterJointAndMaybeJointTypeInGraph(*joint.get());
 
   joint->set_parent_tree(this, joints_.next_index());
   joint->set_ordinal(joints_.num_elements());
@@ -248,14 +245,12 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
 }
 
 template <typename T>
-template<template<typename> class JointType, typename... Args>
+template <template <typename> class JointType, typename... Args>
 const JointType<T>& MultibodyTree<T>::AddJoint(
-    const std::string& name,
-    const RigidBody<T>& parent,
+    const std::string& name, const RigidBody<T>& parent,
     const std::optional<math::RigidTransform<double>>& X_PF,
     const RigidBody<T>& child,
-    const std::optional<math::RigidTransform<double>>& X_BM,
-    Args&&... args) {
+    const std::optional<math::RigidTransform<double>>& X_BM, Args&&... args) {
   static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                 "JointType<T> must be a sub-class of Joint<T>.");
 
@@ -285,16 +280,15 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
 // This is internal use only so doesn't need the error checking provided
 // by the AddJoint() signature.
 template <typename T>
-template<template<typename> class JointType, typename... Args>
+template <template <typename> class JointType, typename... Args>
 const JointType<T>& MultibodyTree<T>::AddEphemeralJoint(
-    const std::string& name,
-    const RigidBody<T>& parent,
-    const RigidBody<T>& child,
-    Args&&... args) {
-
-  const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
-  name, parent.body_frame(), child.body_frame(), std::forward<Args>(args)...),
-                                        true /*ephemeral joint*/);
+    const std::string& name, const RigidBody<T>& parent,
+    const RigidBody<T>& child, Args&&... args) {
+  const JointType<T>& result =
+      AddJoint(std::make_unique<JointType<T>>(name, parent.body_frame(),
+                                              child.body_frame(),
+                                              std::forward<Args>(args)...),
+               true /*ephemeral joint*/);
   return result;
 }
 
@@ -309,9 +303,10 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
   }
 
   if (topology_is_valid()) {
-    throw std::logic_error("This MultibodyTree is finalized already. "
-                           "Therefore adding more actuators is not allowed. "
-                           "See documentation for Finalize() for details.");
+    throw std::logic_error(
+        "This MultibodyTree is finalized already. "
+        "Therefore adding more actuators is not allowed. "
+        "See documentation for Finalize() for details.");
   }
 
   // Create the JointActuator before making any changes to our member fields, so
@@ -328,14 +323,15 @@ ModelInstanceIndex MultibodyTree<T>::AddModelInstance(const std::string& name) {
   if (HasModelInstanceNamed(name)) {
     throw std::logic_error(
         "This model already contains a model instance named '" + name +
-            "'. Model instance names must be unique within a given model.");
+        "'. Model instance names must be unique within a given model.");
   }
 
   if (topology_is_valid()) {
-    throw std::logic_error("This MultibodyTree is finalized already. "
-                           "Therefore adding more model instances is not "
-                           "allowed. See documentation for Finalize() for "
-                           "details.");
+    throw std::logic_error(
+        "This MultibodyTree is finalized already. "
+        "Therefore adding more model instances is not "
+        "allowed. See documentation for Finalize() for "
+        "details.");
   }
   const ModelInstanceIndex index = model_instances_.next_index();
   auto element = std::make_unique<internal::ModelInstance<T>>(index, name);
@@ -348,18 +344,21 @@ template <typename T>
 void MultibodyTree<T>::RenameModelInstance(ModelInstanceIndex model_instance,
                                            const std::string& name) {
   const auto old_name = this->GetModelInstanceName(model_instance);
-  if (old_name == name) { return; }
+  if (old_name == name) {
+    return;
+  }
   if (HasModelInstanceNamed(name)) {
     throw std::logic_error(
         "This model already contains a model instance named '" + name +
-            "'. Model instance names must be unique within a given model.");
+        "'. Model instance names must be unique within a given model.");
   }
 
   if (topology_is_valid()) {
-    throw std::logic_error("This MultibodyTree is finalized already. "
-                           "Therefore renaming model instances is not "
-                           "allowed. See documentation for Finalize() for "
-                           "details.");
+    throw std::logic_error(
+        "This MultibodyTree is finalized already. "
+        "Therefore renaming model instances is not "
+        "allowed. See documentation for Finalize() for "
+        "details.");
   }
 
   model_instances_.Rename(model_instance, name);
@@ -454,7 +453,6 @@ template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_positions_and_velocities(
     const systems::Context<T>& context) const {
-
   // Note that we can't currently count on MultibodyPlant's API to have
   // validated this Context. The extract_qv_from_continuous() call
   // below depends on this being a LeafContext. We'll just verify that this
@@ -606,7 +604,7 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
   systems::BasicVector<T>& discrete_state_vector =
       state->get_mutable_discrete_state(discrete_state_index_);
   DRAKE_ASSERT(discrete_state_vector.size() ==
-      num_positions() + num_velocities());
+               num_positions() + num_velocities());
   return discrete_state_vector.get_mutable_value();
 }
 

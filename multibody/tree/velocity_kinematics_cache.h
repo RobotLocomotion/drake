@@ -55,8 +55,7 @@ class VelocityKinematicsCache {
   // Initializes `this` %VelocityKinematicsCache as if all generalized
   // velocities of the corresponding MultibodyTree model were zero.
   void InitializeToZero() {
-    for (MobodIndex mobod_index(0); mobod_index < num_mobods_;
-         ++mobod_index) {
+    for (MobodIndex mobod_index(0); mobod_index < num_mobods_; ++mobod_index) {
       V_WB_pool_[mobod_index].SetZero();
       V_FM_pool_[mobod_index].SetZero();
       V_PB_W_pool_[mobod_index].SetZero();
@@ -126,8 +125,7 @@ class VelocityKinematicsCache {
   // Initializes all pools to have NaN values to ease bug detection when entries
   // are accidentally left uninitialized.
   void InitializeToNaN() {
-    for (MobodIndex mobod_index(0); mobod_index < num_mobods_;
-         ++mobod_index) {
+    for (MobodIndex mobod_index(0); mobod_index < num_mobods_; ++mobod_index) {
       V_WB_pool_[mobod_index].SetNaN();
       V_FM_pool_[mobod_index].SetNaN();
       V_PB_W_pool_[mobod_index].SetNaN();

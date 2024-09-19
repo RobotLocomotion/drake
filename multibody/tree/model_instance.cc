@@ -55,7 +55,7 @@ VectorX<T> ModelInstance<T>::GetActuationFromArray(
   for (const JointActuator<T>* actuator : joint_actuators_) {
     const int num_dofs = actuator->joint().num_velocities();
     u_instance.segment(u_instance_offset, num_dofs) =
-       actuator->get_actuation_vector(u);
+        actuator->get_actuation_vector(u);
     u_instance_offset += num_dofs;
     DRAKE_DEMAND(u_instance_offset <= u.size());
   }
@@ -94,8 +94,7 @@ VectorX<T> ModelInstance<T>::GetPositionsFromArray(
 
 template <typename T>
 void ModelInstance<T>::GetPositionsFromArray(
-    const Eigen::Ref<const VectorX<T>>& q,
-    EigenPtr<VectorX<T>> q_out) const {
+    const Eigen::Ref<const VectorX<T>>& q, EigenPtr<VectorX<T>> q_out) const {
   DRAKE_DEMAND(q_out != nullptr);
   if (q.size() != this->get_parent_tree().num_positions())
     throw std::logic_error("Passed in array is not properly sized.");
@@ -141,8 +140,7 @@ VectorX<T> ModelInstance<T>::GetVelocitiesFromArray(
 
 template <typename T>
 void ModelInstance<T>::GetVelocitiesFromArray(
-    const Eigen::Ref<const VectorX<T>>& v,
-    EigenPtr<VectorX<T>> v_out) const {
+    const Eigen::Ref<const VectorX<T>>& v, EigenPtr<VectorX<T>> v_out) const {
   DRAKE_DEMAND(v_out != nullptr);
   if (v.size() != this->get_parent_tree().num_velocities())
     throw std::logic_error("Passed in array is not properly sized.");

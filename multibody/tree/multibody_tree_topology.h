@@ -136,17 +136,18 @@ struct MobilizerTopology {
   // Constructs a MobilizerTopology from the corresponding Mobod, plus the
   // connected RigidBodies and the Frame geometric information from the
   // modeled Joint.
-  MobilizerTopology(
-      MobodIndex mobilizer_index,
-      FrameIndex in_frame, FrameIndex out_frame,
-      BodyIndex in_body, BodyIndex out_body,
-      const SpanningForest::Mobod& mobod) :
-      index(mobilizer_index),
-      inboard_frame(in_frame), outboard_frame(out_frame),
-      inboard_body(in_body), outboard_body(out_body),
-      num_positions(mobod.nq()),
-      positions_start(mobod.q_start()),
-      num_velocities(mobod.nv()), velocities_start_in_v(mobod.v_start()) {}
+  MobilizerTopology(MobodIndex mobilizer_index, FrameIndex in_frame,
+                    FrameIndex out_frame, BodyIndex in_body, BodyIndex out_body,
+                    const SpanningForest::Mobod& mobod)
+      : index(mobilizer_index),
+        inboard_frame(in_frame),
+        outboard_frame(out_frame),
+        inboard_body(in_body),
+        outboard_body(out_body),
+        num_positions(mobod.nq()),
+        positions_start(mobod.q_start()),
+        num_velocities(mobod.nv()),
+        velocities_start_in_v(mobod.v_start()) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
@@ -235,20 +236,20 @@ struct BodyNodeTopology {
   // @param parent_rigid_body_in The parent body, in a tree structure sense, to
   //     `rigid_body_in`. In other words, `parent_rigid_body_in` is the body
   //     associated with node `parent_node_in`.
-  BodyNodeTopology(
-      MobodIndex index_in, int level_in,
-      MobodIndex parent_node_in,
-      BodyIndex rigid_body_in, BodyIndex parent_rigid_body_in)
-      : index(index_in), level(level_in),
+  BodyNodeTopology(MobodIndex index_in, int level_in, MobodIndex parent_node_in,
+                   BodyIndex rigid_body_in, BodyIndex parent_rigid_body_in)
+      : index(index_in),
+        level(level_in),
         parent_body_node(parent_node_in),
-        rigid_body(rigid_body_in), parent_rigid_body(parent_rigid_body_in) {}
+        rigid_body(rigid_body_in),
+        parent_rigid_body(parent_rigid_body_in) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
   bool operator==(const BodyNodeTopology& other) const;
 
   // Returns the number of children to this node.
-  int get_num_children() const { return ssize(child_nodes);}
+  int get_num_children() const { return ssize(child_nodes); }
 
   // Index of this node in the SpanningForest (0 for World). There
   // is an associated Mobilizer with the same index.
@@ -312,9 +313,7 @@ class MultibodyTreeTopology {
   int num_mobods() const { return ssize(body_nodes_); }
 
   // Returns the number of joint actuators in the topology.
-  int num_joint_actuators() const {
-    return ssize(joint_actuators_);
-  }
+  int num_joint_actuators() const { return ssize(joint_actuators_); }
 
   // Returns the number of levels in the forest topology.
   int forest_height() const { return forest_height_; }
