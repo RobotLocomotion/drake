@@ -161,6 +161,29 @@ GTEST_TEST(GeometrySpatialInertiaTest, Convex) {
       /* tolerance = */ 1e-1));
 }
 
+// Check exception messages when CalcSpatialInertia(Shape) is called on a file
+// with bad geometry (e.g. not watertight or bad outward normals, or ...).
+GTEST_TEST(GeometrySpatialInertiaTest, ExceptionOnBadGeometry) {
+  std::string geometry_file_path = FindResourceOrThrow(
+      "drake/geometry/test/bad_geometryA.obj");
+  const geometry::Mesh bad_geometryA_obj(geometry_file_path, 1.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(bad_geometryA_obj, kDensity),
+      ".*volume of a triangle surface mesh is.* whereas a reasonable "
+      "positive value was expected. The mesh may have bad geometry.*");
+
+  geometry_file_path = FindResourceOrThrow(
+      "drake/geometry/test/bad_geometryB.obj");
+  const geometry::Mesh bad_geometryB_obj(geometry_file_path, 1.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(bad_geometryB_obj, kDensity),
+      ".*volume of a triangle surface mesh is.* whereas a reasonable "
+      "positive value was expected. The mesh may have bad geometry.*");
+
+  geometry_file_path = FindResourceOrThrow(
+      "drake/geometry/test/bad_geometry_corrected.obj");
+  const geometry::Mesh ok_geometry_obj(geometry_file_path, 1.0);
+  EXPECT_NO_THROW(CalcSpatialInertia(ok_geometry_obj, kDensity));
+}
+
 // Exercises the common code paths for Mesh and Convex (i.e., "MeshTypes").
 template <typename MeshType>
 class MeshTypeSpatialInertaTest : public testing::Test {};
