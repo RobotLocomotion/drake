@@ -29,7 +29,7 @@ namespace internal {
                          vectors of mesh vertices are expressed in the
                          ellipsoid's frame E.
  @param hydroelastic_modulus  Scale extent to pressure.
- @param margin           The magnitude of the margin δ.
+ @param margin           The magnitude of the margin δ, see @ref hydro_margin.
  @return                 The pressure field defined on the tetrahedral mesh.
  @pre                    `hydroelastic_modulus` is strictly positive.
                          `mesh_E` represents the ellipsoid and has enough
