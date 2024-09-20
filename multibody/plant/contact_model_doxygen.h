@@ -709,28 +709,42 @@ momentum and the physics of contact. We refer to this new set of constraints as
 constraints are highlighted with blue boxes in Fig. 2.
 
 To provide more context, we'll discuss briefly how the solver can use
-information from speculative constraints. Each contact pair will be
-associated with a signed distance ϕ (defined negative if objects overlap). For
-a compliant contact with stiffness k, the normal force is modeled according to:
+information from speculative constraints. Each contact pair will be associated
+with a signed distance ϕ (defined negative if objects overlap). For a compliant
+point contact (we discuss hydroelastic contact below) with stiffness k (we can
+ignore dissipation for this discussion), the normal force is modeled according
+to `fₙ = k (-ϕ)₊`, where (a)₊ = max(0, a). Notice that fₙ ≥ 0 (i.e. repulsive)
+always. At each time step Drake's geometry engine is invoked to compute all
+contact pairs at the (previous) time step before contact resolution (where a
+solver uses physics to determine the next state) takes place. Without margin,
+the geometry engine only reports contact pairs of geometry in penetration, with
+signed distances ϕ₀ < 0 (penetration) at the previous time step, before contact
+resolution. To estimate the signed distance function ϕ (from ϕ₀) at the next
+state, Drake's solvers use a first order approximation as ϕ ≈ ϕ₀ + h⋅vₙ, where
+ϕ₀ is the signed distance from the previous time step, vₙ the normal component
+of the relative velocity between the two participating bodies at the contact
+point and h is the time step size. Using this approximation for each of the
+contact pairs reported by the geometry engine, Drake solvers set constraints to
+model the contact force as
 <pre>
-  fₙ = k (-ϕ)₊,                                                             (1)
+  fₙ ≈ k (-ϕ₀ - h⋅vₙ)₊,  ϕ₀ < 0,                                           (1)
 </pre>
-where (a)₊ = max(0, a). Notice that fₙ ≥ 0 (i.e. repulsive) always, even if ϕ >
-0 (speculative constraint). At each time step Drake solvers use a first order
-approximation of the signed distance function as ϕ ≈ ϕ₀ + h⋅vₙ, where ϕ₀ is the
-signed distance from the previous time step, vₙ the normal component of the
-relative velocity between the two participating bodies at the contact point and
-h is the time step size. With this approximation the normal force is modeled as
+where condition ϕ₀ < 0 is actually implicit by the fact that the geometry engine
+only reports pairs in penetration, with ϕ₀ < 0.
+
+To include speculative constraints, we need to allow the geometry engine to
+report pairs with ϕ₀ > 0 (i.e. before contact happens, as in the blue boxes in
+Fig. 2). We could ask for all pairs possibly in contact, but this computation is
+O(n²) and prohibitively expensive. Instead, we ask for a subset that only
+contains geometry pairs within a _margin_ distance δ. That is, we set
+constraints to model forces as:
 <pre>
   fₙ ≈ k (-ϕ₀ - h⋅vₙ)₊,  ϕ₀ < δ,                                           (2)
 </pre>
-where, to be more precise, we've added the condition for speculative
-constraints, with δ a pre-specified margin value. Large enough values of δ allow
-to recover the original model (1) (with the approximation ϕ ≈ ϕ₀ + h⋅vₙ). In
-practice however, we cannot have δ = ∞ since this would incur in expensive O(n²)
-geometry queries. Moreover, the linear approximation used for ϕ is no longer
-accurate for large extrapolations. Notice that with δ = 0 (no margin) we only
-consider a subset of all desired contact constraints.
+
+In the limit to δ = ∞, we'd include all pairs possibly in contact, though at a
+significant increase of the computational cost due to geometry. With δ = 0, no
+speculative constraints are considered.
 
 Speculative contact constraints come from finding more "contact" points. When
 margin is zero, only those points actually in contact are reported. As margin
@@ -904,7 +918,7 @@ really necessary to consider all O(n²) geometry pairs in the scene, but really
 only those that are within a distance in the order of the estimated amplitude of
 the vibrations, i.e. O(h²⋅g).
 
-With this in mind, we then expect that if δ = O(h²⋅g), then this spurious
+With this in mind, we then expect that if δ = O(h²⋅g), then these spurious
 oscillations will be mitigated. We verify this idea in the original system of
 Fig. 1, with a wide range of margin values. To test a very adversarial situation
 we use E = 10⁹ Pa (as explained above, compliance helps mitigate these
