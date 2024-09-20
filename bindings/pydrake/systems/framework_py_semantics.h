@@ -11,5 +11,10 @@ namespace pydrake {
 
 void DefineFrameworkPySemantics(py::module m);
 
+// The DiagramBuilder really should be part of framework_py_systems.cc but for
+// historical reasons is part of framework_py_semantics.cc. We'll provide a
+// standalone function to bind it so framework_py.cc can sequence it properly.
+void DefineFrameworkDiagramBuilder(py::module m);
+
 }  // namespace pydrake
 }  // namespace drake
