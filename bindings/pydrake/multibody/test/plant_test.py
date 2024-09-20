@@ -530,6 +530,9 @@ class TestPlant(unittest.TestCase):
             plant.get_contact_results_output_port(), OutputPort)
         self.assertIsInstance(plant.num_frames(), int)
         self.assertIsInstance(plant.get_body(body_index=world_index()), Body)
+        self.assertEqual(
+            plant.IsAnchored(plant.get_body(body_index=world_index())), True)
+        self.assertEqual(plant.NumBodiesWithName("Link1"), 1)
         self.assertIs(shoulder, plant.get_joint(joint_index=JointIndex(0)))
         self.assertIs(shoulder, plant.get_mutable_joint(
             joint_index=JointIndex(0)))
