@@ -61,6 +61,11 @@ class MemoryFile final {
   /** Returns the notional "filename" for this file`. */
   const std::string& filename_hint() const { return filename_hint_; }
 
+  /** Returns a string representation of this shape. Note: the file contents
+   will be limited to `content_limit` number of characters. To include the full
+   contents, pass any number less than or equal to zero. */
+  std::string to_string(int content_limit = 100) const;
+
  private:
   reset_after_move<std::string> contents_;
 

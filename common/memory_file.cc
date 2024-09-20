@@ -46,4 +46,18 @@ MemoryFile::MemoryFile(std::string contents, std::string extension,
 
 MemoryFile::~MemoryFile() = default;
 
+std::string MemoryFile::to_string(int content_limit) const {
+  // Note: This would not be appropriate to use in the python __repr__
+  // implementation because it doesn't properly escape the appropriate
+  // characters in the strings.
+  const std::string content_str =
+      content_limit <= 0 || content_limit >= ssize(contents_.value())
+          ? contents_.value()
+          : fmt::format("<{}...>", contents_.value().substr(0, content_limit));
+
+  return fmt::format(
+      "MemoryFile(content='{}', extension='{}', filename_hint='{}')",
+      content_str, extension_.value(), filename_hint_.value());
+}
+
 }  // namespace drake

@@ -24,6 +24,9 @@ struct InMemoryMesh final {
 
   /** The optional collection of supporting files. */
   string_map<FileSource> supporting_files;
+
+  /** Returns a string representation of this shape. */
+  std::string to_string() const;
 };
 
 }  // namespace geometry
