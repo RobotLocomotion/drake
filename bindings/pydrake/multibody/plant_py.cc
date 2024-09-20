@@ -1697,6 +1697,9 @@ PYBIND11_MODULE(plant, m) {
         .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,
             py::arg("id"), py::arg("p_WQ"), py::arg("n_W"),
             cls_doc.SetWallBoundaryCondition.doc)
+        .def("AddFixedConstraint", &Class::AddFixedConstraint,
+            py::arg("body_A_id"), py::arg("body_B"), py::arg("X_BA"),
+            py::arg("shape"), py::arg("X_BG"), cls_doc.AddFixedConstraint.doc)
         .def("GetDiscreteStateIndex", &Class::GetDiscreteStateIndex,
             py::arg("id"), cls_doc.GetDiscreteStateIndex.doc)
         .def("GetReferencePositions", &Class::GetReferencePositions,
