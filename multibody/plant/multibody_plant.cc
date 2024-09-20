@@ -3575,8 +3575,10 @@ void MultibodyPlant<T>::CalcInstanceGeneralizedContactForcesOutput(
   DRAKE_DEMAND(tau_contact != nullptr);
 
   // Generalized velocities and generalized forces are ordered in the same way.
-  // Thus we can call GetVelocitiesFromArray().
-  output->SetFromVector(GetVelocitiesFromArray(model_instance, *tau_contact));
+  // Thus we can call GetVelocitiesFromArray(). Make sure we only take the
+  // rigid body dofs.
+  output->SetFromVector(GetVelocitiesFromArray(
+      model_instance, (*tau_contact).head(num_velocities())));
 }
 
 template <typename T>
