@@ -715,29 +715,43 @@ point contact (we discuss hydroelastic contact below) with stiffness k (we can
 ignore dissipation for this discussion), the normal force is modeled according
 to `fₙ = k (-ϕ)₊`, where (a)₊ = max(0, a). Notice that fₙ ≥ 0 (i.e. repulsive)
 always. At each time step Drake's geometry engine is invoked to compute all
-contact pairs at the (previous) time step before contact resolution (where a
-solver uses physics to determine the next state) takes place. Without margin,
-the geometry engine only reports contact pairs of geometry in penetration, with
-signed distances ϕ₀ < 0 (penetration) at the previous time step, before contact
+contact pairs at the (current) time step before contact resolution takes place
+(where a solver uses physics to determine the next state). Without margin, the
+geometry engine only reports contact pairs of geometry in penetration, with
+signed distances ϕ₀ < 0 (penetration) at the current time step, before contact
 resolution. To estimate the signed distance function ϕ (from ϕ₀) at the next
 state, Drake's solvers use a first order approximation as ϕ ≈ ϕ₀ + h⋅vₙ, where
-ϕ₀ is the signed distance from the previous time step, vₙ the normal component
-of the relative velocity between the two participating bodies at the contact
-point and h is the time step size. Using this approximation for each of the
-contact pairs reported by the geometry engine, Drake solvers set constraints to
-model the contact force as
+ϕ₀ is the signed distance at the current time step, vₙ the normal component of
+the (next time step) relative velocity between the two participating bodies at
+the contact point and h is the time step size. Using this approximation for each
+of the contact pairs reported by the geometry engine, Drake solvers set
+constraints to model the contact force as
 <pre>
   fₙ ≈ k (-ϕ₀ - h⋅vₙ)₊,  ϕ₀ < 0,                                           (1)
 </pre>
 where condition ϕ₀ < 0 is actually implicit by the fact that the geometry engine
-only reports pairs in penetration, with ϕ₀ < 0.
+only reports pairs in penetration, with ϕ₀ < 0. System velocities, along with
+normal velocities `vₙ` in (1) are unknown. These are determined during the
+contact resolution phase along with the contact forces that satisfy the
+equations of motion.
 
 To include speculative constraints, we need to allow the geometry engine to
 report pairs with ϕ₀ > 0 (i.e. before contact happens, as in the blue boxes in
-Fig. 2). We could ask for all pairs possibly in contact, but this computation is
-O(n²) and prohibitively expensive. Instead, we ask for a subset that only
-contains geometry pairs within a _margin_ distance δ. That is, we set
-constraints to model forces as:
+Fig. 2). To be thorough, we'd include all geometry pairs that might possibly
+make contact in the next time step, no matter how long distances ϕ₀ at the
+current step might be. However, there are good reasons to limit the set of
+speculative constraints:
+  1. Given distance ϕ₀ and relative velocity, most pairs will not make contact
+     within the next time step.
+  2. The linear approximation ϕ ≈ ϕ₀ + h⋅vₙ starts loosing accuracy the farther
+     points are.
+
+Therfore speculative constraints between distant points are generally useless.
+Moreover, we'd be paying a higher O(n²) computational cost to compute and track
+this useless information.
+
+Therefore, in practice we ask for a subset that only contains geometry pairs
+within a _margin_ distance δ. That is, we set constraints to model forces as:
 <pre>
   fₙ ≈ k (-ϕ₀ - h⋅vₙ)₊,  ϕ₀ < δ,                                           (2)
 </pre>
