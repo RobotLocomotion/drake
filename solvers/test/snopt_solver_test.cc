@@ -547,26 +547,28 @@ GTEST_TEST(SnoptSolverTest, EckhardtDualSolution) {
 GTEST_TEST(SnoptSolverTest, BadIntegerParameter) {
   SnoptSolver solver;
   MathematicalProgram prog;
-  prog.SetSolverOption(solver.solver_id(), "not an option", 15);
+  prog.SetSolverOption(solver.solver_id(), "not_an_option", 15);
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver.Solve(prog),
-      "Error setting Snopt integer parameter not an option");
+      "Error setting Snopt integer parameter not_an_option=15");
 }
 
 GTEST_TEST(SnoptSolverTest, BadDoubleParameter) {
   SnoptSolver solver;
   MathematicalProgram prog;
-  prog.SetSolverOption(solver.solver_id(), "not an option", 15.0);
+  prog.SetSolverOption(solver.solver_id(), "not_an_option", 15.1);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver.Solve(prog), "Error setting Snopt double parameter not an option");
+      solver.Solve(prog),
+      "Error setting Snopt double parameter not_an_option=15.1");
 }
 
 GTEST_TEST(SnoptSolverTest, BadStringParameter) {
   SnoptSolver solver;
   MathematicalProgram prog;
-  prog.SetSolverOption(solver.solver_id(), "not an option", "test");
+  prog.SetSolverOption(solver.solver_id(), "not_an_option", "test");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver.Solve(prog), "Error setting Snopt string parameter not an option");
+      solver.Solve(prog),
+      "Error setting Snopt string parameter not_an_option=test");
 }
 
 GTEST_TEST(SnoptSolverTest, TestNonconvexQP) {
