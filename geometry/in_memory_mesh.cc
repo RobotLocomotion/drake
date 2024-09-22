@@ -50,6 +50,7 @@ std::string InMemoryMesh::to_string() const {
           : fmt::format(
                 ", supporting_files={{{}}}",
                 fmt::join(supporting_files |
+                              // NOLINTNEXTLINE(build/include_what_you_use)
                               std::views::transform([](const auto& key_value) {
                                 return FormattableSupportingFileMapEntry{
                                     key_value.first, key_value.second};
