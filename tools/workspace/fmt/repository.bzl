@@ -50,6 +50,7 @@ install(name = "install")
         "extra_strip_prefix": attr.string(),
         "mirrors": attr.string_list_dict(),
     },
+    environ = ["DRAKE_OS"],
     local = True,
     configure = True,
     implementation = _impl,
