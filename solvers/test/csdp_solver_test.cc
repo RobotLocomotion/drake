@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/test/csdp_test_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
@@ -512,6 +513,18 @@ TEST_F(TrivialSDP1, SolveVerbose) {
   CsdpSolver solver;
   if (solver.available()) {
     solver.Solve(*prog_, {}, options);
+  }
+}
+
+// This is a code coverage test of reporting malformed options.
+TEST_F(TrivialSDP1, UnknownRemoveFreeVariableMethod) {
+  SolverOptions options;
+  CsdpSolver solver;
+  SolverOptions solver_options;
+  solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod", 222);
+  if (solver.available()) {
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(*prog_, {}, solver_options),
+                                ".*Bad.*RemoveFreeVariableMethod.*");
   }
 }
 
