@@ -457,7 +457,6 @@ MODULE_SETTINGS = {
             "VTK_DEFAULT_RENDER_WINDOW_OFFSCREEN",
             "VTK_OPENGL_ENABLE_STREAM_ANNOTATIONS",
             "VTK_OPENGL_HAS_EGL",
-            "VTK_OPENGL_HAS_OSMESA",
             "VTK_REPORT_OPENGL_ERRORS",
             "VTK_REPORT_OPENGL_ERRORS_IN_RELEASE_BUILDS",
             "VTK_USE_CORE_GRAPHICS",
@@ -485,7 +484,6 @@ MODULE_SETTINGS = {
             # ones using with srcs_extra immediately below.
             "**/vtkCocoa*",
             "**/vtkEGL*",
-            "**/vtkOSOpenGL*",
             "**/vtkSDL2OpenGL*",
             "**/vtkWebAssembly*",
             "**/vtkWin32OpenGL*",
@@ -566,11 +564,6 @@ MODULE_SETTINGS = {
             "@nlohmann_internal//:nlohmann",
         ],
     },
-    "VTK::opengl": {
-        "deps_extra": [
-            "@opengl",
-        ],
-    },
     "VTK::png": {
         "cmake_defines": [
             "VTK_MODULE_USE_EXTERNAL_vtkpng=1",
@@ -621,19 +614,22 @@ MODULE_SETTINGS = {
             "VTK_MODULE_USE_EXTERNAL_vtkfast_float",
         ],
     },
-    "VTK::glew": {
+    "VTK::glad": {
         "cmake_undefines": [
-            "VTK_GLEW_SHARED",
-            "VTK_MODULE_USE_EXTERNAL_vtkglew",
-            "VTK_MODULE_vtkglew_GLES3",
+            "VTK_MODULE_vtkglad_GLES3",
         ],
-        "srcs_extra": [
-            "ThirdParty/glew/vtkglew/src/glew.c",
+        "srcs_glob_exclude": [
+            # No windows.
+            "**/wgl.c",
+        ],
+        "srcs_glob_extra": [
+            "ThirdParty/glad/vtkglad/src/*.c",
         ],
         "copts_extra": [
-            "-Iexternal/vtk_internal/ThirdParty/glew/vtkglew/include",
-            # Match the target_compile_definitions() from CMakeLists.txt.
-            "-DGLEW_NO_GLU",
+            "-Iexternal/vtk_internal/ThirdParty/glad/vtkglad/include",
+        ],
+        "deps_extra": [
+            "@opengl",
         ],
         "linkopts_extra": select({
             ":osx": [],
