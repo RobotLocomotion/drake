@@ -272,12 +272,14 @@ GTEST_TEST(TestExponentialConeProgram, MatrixLogDeterminantLower) {
 }
 
 GTEST_TEST(MosekTest, TestLogging) {
-  // Test if we can print the logging info to a log file.
+  // Test if we can print the logging info to a log file. We will also set a
+  // solution filename to test option handling for std::string values.
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearConstraint(x(0) + x(1) == 1);
 
   const std::string log_file = temp_directory() + "/mosek_logging.log";
+  const std::string bas_file = temp_directory() + "/mosek_logging.bas";
   EXPECT_FALSE(std::filesystem::exists({log_file}));
   MosekSolver solver;
   MathematicalProgramResult result;
@@ -290,8 +292,10 @@ GTEST_TEST(MosekTest, TestLogging) {
   solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
   solver.Solve(prog, {}, solver_options, &result);
   solver_options.SetOption(CommonSolverOption::kPrintToConsole, 0);
-  // Output the logging to the console
+  // Output the logging to a log file and the solution to a bas file.
   solver_options.SetOption(CommonSolverOption::kPrintFileName, log_file);
+  solver_options.SetOption(MosekSolver::id(), "MSK_SPAR_BAS_SOL_FILE_NAME",
+                           bas_file);
   solver.Solve(prog, {}, solver_options, &result);
   EXPECT_TRUE(std::filesystem::exists({log_file}));
   // Now set both print to console and the log file. This will cause an error.
