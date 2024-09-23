@@ -8,6 +8,7 @@ import typing
 
 import numpy as np
 import yaml
+import yaml.representer
 
 from pydrake.common import pretty_class_name
 
@@ -139,7 +140,15 @@ class _SchemaDumper(yaml.dumper.SafeDumper):
         else:
             return super().represent_dict(data)
 
+    def _represent_undefined(self, data):
+        if getattr(type(data), "__module__", "").startswith("pydrake"):
+            raise yaml.representer.RepresenterError(
+                "yaml_dump does not operate on pydrake objects; "
+                "use yaml_dump_typed instead", data)
+        return super().represent_undefined(data)
 
+
+_SchemaDumper.add_representer(None, _SchemaDumper._represent_undefined)
 _SchemaDumper.add_representer(dict, _SchemaDumper._represent_dict)
 _SchemaDumper.add_representer(
     _SchemaDumper.ExplicitScalar,
