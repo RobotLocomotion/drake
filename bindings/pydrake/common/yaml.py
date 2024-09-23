@@ -572,6 +572,19 @@ def yaml_load_typed(*, schema=None,
     return result
 
 
+def _yaml_dump_get_attribute(*, obj, name):
+    """Given an object ``obj`` and attribute name ``name``, gets and returns
+    the value of the given attribute, akin to ``getattr`. The difference is
+    that for bound C++ types sometimes the Serialize function does non-standard
+    tricks, so the yaml dictionary key name in __fields__ differs from the
+    attribute name. This function provides a protocol for the bound type to
+    communicate that distinction during yaml_dump_typed.
+    """
+    if hasattr(obj, "_rewrite_yaml_dump_attr_name"):
+        name = obj._rewrite_yaml_dump_attr_name(name)
+    return getattr(obj, name)
+
+
 def _yaml_dump_typed_item(*, obj, schema):
     """Given an object ``obj`` and its type ``schema``, returns the plain YAML
     object that should be serialized. Objects that are already primitive types
@@ -668,7 +681,7 @@ def _yaml_dump_typed_item(*, obj, schema):
     # dump its fields one by one.
     result = dict()
     for name, item_schema in _enumerate_field_types(schema).items():
-        item_obj = getattr(obj, name)
+        item_obj = _yaml_dump_get_attribute(obj=obj, name=name)
         item_plain = _yaml_dump_typed_item(obj=item_obj, schema=item_schema)
         if item_plain is None:
             if _get_nested_optional_type(item_schema) is not None:
