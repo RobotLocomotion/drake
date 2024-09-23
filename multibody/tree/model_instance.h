@@ -116,8 +116,7 @@ class ModelInstance final : public MultibodyElement<T> {
   // increasing JointActuatorIndex within this model instance.
   // @throws std::exception if `u` is not of size
   //         MultibodyTree::num_actuators().
-  VectorX<T> GetActuationFromArray(
-      const Eigen::Ref<const VectorX<T>>& u) const;
+  VectorX<T> GetActuationFromArray(const Eigen::Ref<const VectorX<T>>& u) const;
 
   // Given the actuation values `u_instance` for all actuators in `this` model
   // instance, updates the portion of the actuation vector `u` corresponding to
@@ -137,26 +136,23 @@ class ModelInstance final : public MultibodyElement<T> {
   //   is not of size equal to the number of degrees of freedom of all of the
   //   actuated joints in the entire MultibodyTree model to which `this`
   //   actuator belongs to.
-  void SetActuationInArray(
-      const Eigen::Ref<const VectorX<T>>& u_instance,
-      EigenPtr<VectorX<T>> u) const;
+  void SetActuationInArray(const Eigen::Ref<const VectorX<T>>& u_instance,
+                           EigenPtr<VectorX<T>> u) const;
 
   // Returns an Eigen vector of the generalized positions
   // for `this` model instance from a vector `q` of generalized
   // positions for the entire MultibodyTree model.
   // @throws std::exception if `q` is not of size
   //         MultibodyTree::num_positions().
-  VectorX<T> GetPositionsFromArray(
-      const Eigen::Ref<const VectorX<T>>& q) const;
+  VectorX<T> GetPositionsFromArray(const Eigen::Ref<const VectorX<T>>& q) const;
 
   // (Advanced) Takes an output vector q_out and populates it with the
   // generalized positions for `this` model instance from a vector `q` of
   // generalized positions for the entire MultibodyTree model.
   // @throws std::exception if `q` is not of size
   //         MultibodyTree::num_positions().
-  void GetPositionsFromArray(
-      const Eigen::Ref<const VectorX<T>>& q,
-      EigenPtr<VectorX<T>> q_out) const;
+  void GetPositionsFromArray(const Eigen::Ref<const VectorX<T>>& q,
+                             EigenPtr<VectorX<T>> q_out) const;
 
   // Sets the vector of generalized positions for `this` model instance in
   // the relevant locations of an array that corresponds to the positions for
@@ -167,9 +163,8 @@ class ModelInstance final : public MultibodyElement<T> {
   // @throws std::exception if `q` is not of size
   //         MultibodyTree::num_positions() or `q_instance` is not of size
   //         num_positions().
-  void SetPositionsInArray(
-      const Eigen::Ref<const VectorX <T>>& q_instance,
-      EigenPtr<VectorX<T>> q) const;
+  void SetPositionsInArray(const Eigen::Ref<const VectorX<T>>& q_instance,
+                           EigenPtr<VectorX<T>> q) const;
 
   // Returns an Eigen vector of the generalized velocities
   // for `this` mobilizer from a vector `v` of generalized velocities for
@@ -184,9 +179,8 @@ class ModelInstance final : public MultibodyElement<T> {
   // generalized velocities for the entire MultibodyTree model.
   // @throws std::exception if `v` is not of size
   //         MultibodyTree::num_velocities().
-  void GetVelocitiesFromArray(
-      const Eigen::Ref<const VectorX<T>>& v,
-      EigenPtr<VectorX<T>> v_out) const;
+  void GetVelocitiesFromArray(const Eigen::Ref<const VectorX<T>>& v,
+                              EigenPtr<VectorX<T>> v_out) const;
 
   // Sets the vector of generalized velocities for `this` model instance in
   // the relevant locations of an array corresponding to the velocities for the
@@ -197,9 +191,8 @@ class ModelInstance final : public MultibodyElement<T> {
   // @throws std::exception if `v` is not of size
   //         MultibodyTree::num_velocities() or `v_instance` is not of size
   //         num_velocities().
-  void SetVelocitiesInArray(
-      const Eigen::Ref<const VectorX<T>>& v_instance,
-      EigenPtr<VectorX<T>> v) const;
+  void SetVelocitiesInArray(const Eigen::Ref<const VectorX<T>>& v_instance,
+                            EigenPtr<VectorX<T>> v) const;
 
  private:
   void DoSetTopology(const MultibodyTreeTopology&) final {}

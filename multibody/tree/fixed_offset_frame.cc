@@ -15,9 +15,10 @@ template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
     const std::string& name, const Frame<T>& P,
     const math::RigidTransform<double>& X_PF,
-    std::optional<ModelInstanceIndex> model_instance) :
-    Frame<T>(name, P.body(), model_instance.value_or(P.model_instance())),
-    parent_frame_(P), X_PF_(X_PF) {}
+    std::optional<ModelInstanceIndex> model_instance)
+    : Frame<T>(name, P.body(), model_instance.value_or(P.model_instance())),
+      parent_frame_(P),
+      X_PF_(X_PF) {}
 
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(const std::string& name,
@@ -27,7 +28,6 @@ FixedOffsetFrame<T>::FixedOffsetFrame(const std::string& name,
 
 template <typename T>
 FixedOffsetFrame<T>::~FixedOffsetFrame() = default;
-
 
 template <typename T>
 void FixedOffsetFrame<T>::SetPoseInParentFrame(

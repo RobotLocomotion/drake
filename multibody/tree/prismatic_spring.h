@@ -38,10 +38,8 @@ class PrismaticSpring final : public ForceElement<T> {
   /// @param[in] stiffness
   /// The stiffness k of the spring in N/m.
   /// @throws std::exception if `stiffness` is (strictly) negative.
-  PrismaticSpring(
-      const PrismaticJoint<T>& joint,
-      double nominal_position,
-      double stiffness);
+  PrismaticSpring(const PrismaticJoint<T>& joint, double nominal_position,
+                  double stiffness);
 
   ~PrismaticSpring() override;
 
@@ -83,11 +81,12 @@ class PrismaticSpring final : public ForceElement<T> {
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
-  template <typename U> friend class PrismaticSpring;
+  template <typename U>
+  friend class PrismaticSpring;
 
   // Private constructor for internal use in TemplatedDoCloneToScalar()
   PrismaticSpring(ModelInstanceIndex model_instance, JointIndex joint_index,
-                 double nominal_position, double stiffness);
+                  double nominal_position, double stiffness);
 
   // Helper method to make a clone templated on ToScalar().
   template <typename ToScalar>

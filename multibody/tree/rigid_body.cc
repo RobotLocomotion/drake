@@ -59,7 +59,8 @@ RigidBody<T>::RigidBody(const std::string& body_name,
                         const SpatialInertia<double>& M)
     : MultibodyElement<T>(default_model_instance()),
       name_(internal::DeprecateWhenEmptyName(body_name, "RigidBody")),
-      body_frame_(*this), default_spatial_inertia_(M) {}
+      body_frame_(*this),
+      default_spatial_inertia_(M) {}
 
 template <typename T>
 RigidBody<T>::RigidBody(const std::string& body_name,
@@ -67,7 +68,8 @@ RigidBody<T>::RigidBody(const std::string& body_name,
                         const SpatialInertia<double>& M)
     : MultibodyElement<T>(model_instance),
       name_(internal::DeprecateWhenEmptyName(body_name, "RigidBody")),
-      body_frame_(*this), default_spatial_inertia_(M) {}
+      body_frame_(*this),
+      default_spatial_inertia_(M) {}
 
 template <typename T>
 void RigidBody<T>::SetCenterOfMassInBodyFrameNoModifyInertia(
@@ -89,8 +91,7 @@ void RigidBody<T>::SetCenterOfMassInBodyFrameNoModifyInertia(
 
 template <typename T>
 void RigidBody<T>::SetUnitInertiaAboutBodyOrigin(
-    systems::Context<T>* context,
-    const UnitInertia<T>& G_BBo_B) const {
+    systems::Context<T>* context, const UnitInertia<T>& G_BBo_B) const {
   DRAKE_THROW_UNLESS(context != nullptr);
   const T& Gxx = G_BBo_B(0, 0);
   const T& Gyy = G_BBo_B(1, 1);
@@ -123,8 +124,7 @@ void RigidBody<T>::SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
   // Get B's initial spatial inertia about Bo (before Bcm changes location).
   // Get pi_BoBcm_B position from Bo to Bcm before Bcm changes location.
   // Get Gi_BBo_B (B's initial unit inertia about Bo, before Bcm changes).
-  const SpatialInertia<T> Mi_BBo_B =
-      CalcSpatialInertiaInBodyFrame(*context);
+  const SpatialInertia<T> Mi_BBo_B = CalcSpatialInertiaInBodyFrame(*context);
   const Vector3<T>& pi_BoBcm_B = Mi_BBo_B.get_com();
   const UnitInertia<T>& Gi_BBo_B = Mi_BBo_B.get_unit_inertia();
 

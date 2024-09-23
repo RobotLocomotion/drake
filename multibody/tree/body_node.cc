@@ -60,17 +60,20 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
     const std::string& outboard_body_name = outboard_body.name();
     std::stringstream message;
     message << "An internal mass matrix associated with the joint that "
-               "connects body " << inboard_body_name << " to body "
-               << outboard_body_name << " is not positive-definite.";
+               "connects body "
+            << inboard_body_name << " to body " << outboard_body_name
+            << " is not positive-definite.";
     if (mobilizer.can_rotate()) {
       message << " Since the joint allows rotation, ensure body "
-              << outboard_body_name << " (combined with other outboard bodies) "
+              << outboard_body_name
+              << " (combined with other outboard bodies) "
                  "has reasonable non-zero moments of inertia about the joint "
                  "rotation axes.";
     }
     if (mobilizer.can_translate()) {
       message << " Since the joint allows translation, ensure body "
-              << outboard_body_name << " (combined with other outboard bodies) "
+              << outboard_body_name
+              << " (combined with other outboard bodies) "
                  "has a reasonable non-zero mass.";
     }
     throw std::runtime_error(message.str());

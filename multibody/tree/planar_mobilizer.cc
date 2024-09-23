@@ -25,7 +25,7 @@ std::unique_ptr<internal::BodyNode<T>> PlanarMobilizer<T>::CreateBodyNode(
 
 template <typename T>
 std::string PlanarMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+    int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {
     case 0:
       return "x";
@@ -39,7 +39,7 @@ std::string PlanarMobilizer<T>::position_suffix(
 
 template <typename T>
 std::string PlanarMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+    int velocity_index_in_mobilizer) const {
   switch (velocity_index_in_mobilizer) {
     case 0:
       return "vx";

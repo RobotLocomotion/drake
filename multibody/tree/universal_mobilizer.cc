@@ -29,7 +29,7 @@ std::unique_ptr<internal::BodyNode<T>> UniversalMobilizer<T>::CreateBodyNode(
 
 template <typename T>
 std::string UniversalMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+    int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {
     case 0:
       return "qx";
@@ -41,15 +41,14 @@ std::string UniversalMobilizer<T>::position_suffix(
 
 template <typename T>
 std::string UniversalMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+    int velocity_index_in_mobilizer) const {
   switch (velocity_index_in_mobilizer) {
     case 0:
       return "wx";
     case 1:
       return "wy";
   }
-  throw std::runtime_error(
-    "UniversalMobilizer has only 2 velocities.");
+  throw std::runtime_error("UniversalMobilizer has only 2 velocities.");
 }
 
 template <typename T>
@@ -103,7 +102,7 @@ Eigen::Matrix<T, 3, 2> UniversalMobilizer<T>::CalcHwMatrix(
     // Since only the second column of Hw evolves with time, we only return that
     // column as a vector. The vector is the time derivative of My_F.
     const Vector2<T>& v = this->get_velocities(context);
-    *Hw_dot =  Vector3<T>(0, -s * v[0], c * v[0]);
+    *Hw_dot = Vector3<T>(0, -s * v[0], c * v[0]);
   }
   return H;
 }

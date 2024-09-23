@@ -11,7 +11,7 @@ namespace multibody {
 /** Computes the SpatialInertia of a body made up of a homogeneous material
  (of given `density` in kg/m³) uniformly distributed in the volume of the given
  `shape`.
- 
+
  The `shape` is defined in its canonical frame S and the body in frame B. The
  two frames are coincident and aligned (i.e., X_SB = I).
 
@@ -34,7 +34,7 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
 /** Computes the SpatialInertia of a body made up of a homogeneous material
  (of given `density` in kg/m³) uniformly distributed in the volume of the given
  `mesh`.
- 
+
  The `mesh` is defined in its canonical frame M and the body in frame B. The two
  frames are coincident and aligned (i.e., X_MB = I).
 

@@ -38,8 +38,8 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarMobilizer);
   using MobilizerBase = MobilizerImpl<T, 3, 3>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
   using typename MobilizerBase::HMatrix;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
 
   /* Constructor for a %PlanarMobilizer between an inboard frame F
    `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting two
@@ -53,15 +53,15 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
   ~PlanarMobilizer() final;
 
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
+      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+      const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  bool can_rotate() const final    { return true; }
+  bool can_rotate() const final { return true; }
   bool can_translate() const final { return true; }
 
   /* Retrieves from `context` the two translations (x, y) which describe the
@@ -132,7 +132,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
                         in radians per second.
    @returns A constant reference to `this` mobilizer. */
   const PlanarMobilizer<T>& SetAngularRate(systems::Context<T>* context,
-                                            const T& theta_dot) const;
+                                           const T& theta_dot) const;
 
   /* Computes the across-mobilizer transform `X_FM(q)` between the inboard
   frame F and the outboard frame M as a function of the configuration q stored
@@ -144,8 +144,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   /* Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
    M measured and expressed in frame F as a function of the input velocity v. */
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
     return SpatialVelocity<T>(Vector3<T>(0.0, 0.0, v[2]),
                               Vector3<T>(v[0], v[1], 0.0));
   }

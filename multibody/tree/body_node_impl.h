@@ -62,8 +62,7 @@ class BodyNodeImpl final : public BodyNode<T> {
   //  here also.
 
   void CalcPositionKinematicsCache_BaseToTip(
-      const FrameBodyPoseCache<T>& frame_body_pose_cache,
-      const T* positions,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       PositionKinematicsCache<T>* pc) const final;
 
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
@@ -73,10 +72,8 @@ class BodyNodeImpl final : public BodyNode<T> {
       std::vector<Vector6<T>>* H_PB_W_cache) const final;
 
   void CalcVelocityKinematicsCache_BaseToTip(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const std::vector<Vector6<T>>& H_PB_W_cache,
-      const T* velocities,
+      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
+      const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const final;
 
  private:
@@ -119,13 +116,11 @@ class BodyNodeImpl final : public BodyNode<T> {
     return vc->get_mutable_V_WB(this->index());
   }
 
-  SpatialVelocity<T>& get_mutable_V_FM(
-      VelocityKinematicsCache<T>* vc) const {
+  SpatialVelocity<T>& get_mutable_V_FM(VelocityKinematicsCache<T>* vc) const {
     return vc->get_mutable_V_FM(this->index());
   }
 
-  SpatialVelocity<T>& get_mutable_V_PB_W(
-      VelocityKinematicsCache<T>* vc) const {
+  SpatialVelocity<T>& get_mutable_V_PB_W(VelocityKinematicsCache<T>* vc) const {
     return vc->get_mutable_V_PB_W(this->index());
   }
 

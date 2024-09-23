@@ -28,7 +28,7 @@ QuaternionFloatingMobilizer<T>::CreateBodyNode(
 
 template <typename T>
 std::string QuaternionFloatingMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+    int position_index_in_mobilizer) const {
   // Note: The order of variables here is documented in get_quaternion().
   switch (position_index_in_mobilizer) {
     case 0:
@@ -46,13 +46,12 @@ std::string QuaternionFloatingMobilizer<T>::position_suffix(
     case 6:
       return "z";
   }
-  throw std::runtime_error(
-    "QuaternionFloatingMobilizer has only 7 positions.");
+  throw std::runtime_error("QuaternionFloatingMobilizer has only 7 positions.");
 }
 
 template <typename T>
 std::string QuaternionFloatingMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+    int velocity_index_in_mobilizer) const {
   switch (velocity_index_in_mobilizer) {
     case 0:
       return "wx";
@@ -68,7 +67,7 @@ std::string QuaternionFloatingMobilizer<T>::velocity_suffix(
       return "vz";
   }
   throw std::runtime_error(
-    "QuaternionFloatingMobilizer has only 6 velocities.");
+      "QuaternionFloatingMobilizer has only 6 velocities.");
 }
 
 template <typename T>
@@ -98,8 +97,8 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_translation(
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::SetQuaternion(
-    systems::Context<T>* context, const Quaternion<T>& q_FM) const {
+QuaternionFloatingMobilizer<T>::SetQuaternion(systems::Context<T>* context,
+                                              const Quaternion<T>& q_FM) const {
   DRAKE_DEMAND(context != nullptr);
   SetQuaternion(*context, q_FM, &context->get_mutable_state());
   return *this;
@@ -107,9 +106,9 @@ QuaternionFloatingMobilizer<T>::SetQuaternion(
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::SetQuaternion(
-    const systems::Context<T>&, const Quaternion<T>& q_FM,
-    systems::State<T>* state) const {
+QuaternionFloatingMobilizer<T>::SetQuaternion(const systems::Context<T>&,
+                                              const Quaternion<T>& q_FM,
+                                              systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   auto q = this->get_mutable_positions(state);
   DRAKE_ASSERT(q.size() == kNq);
@@ -130,9 +129,9 @@ QuaternionFloatingMobilizer<T>::SetTranslation(systems::Context<T>* context,
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::SetTranslation(
-    const systems::Context<T>&, const Vector3<T>& p_FM,
-    systems::State<T>* state) const {
+QuaternionFloatingMobilizer<T>::SetTranslation(const systems::Context<T>&,
+                                               const Vector3<T>& p_FM,
+                                               systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   auto q = this->get_mutable_positions(&*state);
   DRAKE_ASSERT(q.size() == kNq);
@@ -156,7 +155,7 @@ void QuaternionFloatingMobilizer<T>::set_random_translation_distribution(
 
 template <typename T>
 void QuaternionFloatingMobilizer<T>::set_random_quaternion_distribution(
-        const Eigen::Quaternion<symbolic::Expression>& q_FM) {
+    const Eigen::Quaternion<symbolic::Expression>& q_FM) {
   Vector<symbolic::Expression, kNq> positions;
   if (this->get_random_state_distribution()) {
     positions = this->get_random_state_distribution()->template head<kNq>();
@@ -224,8 +223,7 @@ QuaternionFloatingMobilizer<T>::SetTranslationalVelocity(
 }
 
 template <typename T>
-Vector<double, 7> QuaternionFloatingMobilizer<T>::get_zero_position()
-    const {
+Vector<double, 7> QuaternionFloatingMobilizer<T>::get_zero_position() const {
   Vector<double, 7> q = Vector<double, 7>::Zero();
   const Quaternion<double> quaternion = Quaternion<double>::Identity();
   q[0] = quaternion.w();
@@ -345,7 +343,8 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
   // N⁺(q_tilde) = L(2 q_FM_tilde)ᵀ
   return CalcLMatrix({2.0 * q_FM_tilde[0], 2.0 * q_FM_tilde[1],
                       2.0 * q_FM_tilde[2], 2.0 * q_FM_tilde[3]})
-      .transpose() * dqnorm_dq;
+             .transpose() *
+         dqnorm_dq;
 }
 
 template <typename T>
@@ -378,8 +377,8 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusMatrix(
 
 template <typename T>
 void QuaternionFloatingMobilizer<T>::MapVelocityToQDot(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v, EigenPtr<VectorX<T>> qdot) const {
+    const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
+    EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
   DRAKE_ASSERT(qdot->size() == kNq);

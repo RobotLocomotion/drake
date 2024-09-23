@@ -79,9 +79,7 @@ class PrismaticJoint final : public Joint<T> {
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frame definitions) then,
   /// `axis = axis_F = axis_M`.
-  const Vector3<double>& translation_axis() const {
-    return axis_;
-  }
+  const Vector3<double>& translation_axis() const { return axis_; }
 
   /// Returns `this` joint's default damping constant in N⋅s/m.
   double default_damping() const { return this->default_damping_vector()[0]; }
@@ -145,8 +143,8 @@ class PrismaticJoint final : public Joint<T> {
   /// @param[in] translation
   ///   The desired translation in meters to be stored in `context`.
   /// @returns a constant reference to `this` joint.
-  const PrismaticJoint<T>& set_translation(
-      Context<T>* context, const T& translation) const {
+  const PrismaticJoint<T>& set_translation(Context<T>* context,
+                                           const T& translation) const {
     get_mobilizer()->SetTranslation(context, translation);
     return *this;
   }
@@ -223,10 +221,8 @@ class PrismaticJoint final : public Joint<T> {
   /// positive in the direction along this joint's axis.
   /// That is, a positive force causes a positive translational acceleration
   /// along the joint's axis.
-  void AddInForce(
-      const systems::Context<T>& context,
-      const T& force,
-      MultibodyForces<T>* multibody_forces) const {
+  void AddInForce(const systems::Context<T>& context, const T& force,
+                  MultibodyForces<T>* multibody_forces) const {
     DRAKE_DEMAND(multibody_forces != nullptr);
     DRAKE_DEMAND(
         multibody_forces->CheckHasRightSizeForModel(this->get_parent_tree()));
@@ -242,11 +238,9 @@ class PrismaticJoint final : public Joint<T> {
   /// child (according to the prismatic joint's constructor) at the origin of
   /// the child frame (which is coincident with the origin of the parent frame
   /// at all times).
-  void DoAddInOneForce(
-      const systems::Context<T>&,
-      int joint_dof,
-      const T& joint_tau,
-      MultibodyForces<T>* forces) const final {
+  void DoAddInOneForce(const systems::Context<T>&, int joint_dof,
+                       const T& joint_tau,
+                       MultibodyForces<T>* forces) const final {
     // Right now we assume all the forces in joint_tau go into a single
     // mobilizer.
     Eigen::Ref<VectorX<T>> tau_mob =
@@ -330,7 +324,8 @@ class PrismaticJoint final : public Joint<T> {
   // Make PrismaticJoint templated on every other scalar type a friend of
   // PrismaticJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of PrismaticJoint<T>.
-  template <typename> friend class PrismaticJoint;
+  template <typename>
+  friend class PrismaticJoint;
 
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
@@ -364,7 +359,8 @@ class PrismaticJoint final : public Joint<T> {
   Vector3<double> axis_;
 };
 
-template <typename T> const char PrismaticJoint<T>::kTypeName[] = "prismatic";
+template <typename T>
+const char PrismaticJoint<T>::kTypeName[] = "prismatic";
 
 }  // namespace multibody
 }  // namespace drake

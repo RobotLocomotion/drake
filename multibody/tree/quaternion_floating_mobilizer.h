@@ -36,8 +36,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer);
   using MobilizerBase = MobilizerImpl<T, 7, 6>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
   using typename MobilizerBase::HMatrix;
+  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
 
   // Constructor for a %QuaternionFloatingMobilizer granting six degrees of
   // freedom to an outboard frame M with respect to an inboard frame F. The
@@ -50,14 +50,14 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   //   the outboard frame M which can move freely with respect to frame F.
   QuaternionFloatingMobilizer(const SpanningForest::Mobod& mobod,
                               const Frame<T>& inboard_frame_F,
-                              const Frame<T>& outboard_frame_M) :
-      MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
+                              const Frame<T>& outboard_frame_M)
+      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   ~QuaternionFloatingMobilizer() final;
 
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
+      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+      const Mobilizer<T>* mobilizer) const final;
 
   bool is_floating() const final { return true; }
 
@@ -68,7 +68,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  bool can_rotate() const final    { return true; }
+  bool can_rotate() const final { return true; }
   bool can_translate() const final { return true; }
 
   // @name Methods to get and set the state for a QuaternionFloatingMobilizer
@@ -108,8 +108,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // Alternative signature to SetQuaternion(context, q_FM) to set `state` to
   // store the orientation of M in F given by the quaternion `q_FM`.
   const QuaternionFloatingMobilizer<T>& SetQuaternion(
-      const systems::Context<T>& context,
-      const Quaternion<T>& q_FM, systems::State<T>* state) const;
+      const systems::Context<T>& context, const Quaternion<T>& q_FM,
+      systems::State<T>* state) const;
 
   // Sets the distribution governing the random samples of the rotation
   // component of the mobilizer state.
@@ -135,8 +135,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   // Sets the distribution governing the random samples of the position
   // component of the mobilizer state.
-  void set_random_translation_distribution(const Vector3<symbolic::Expression>&
-      position);
+  void set_random_translation_distribution(
+      const Vector3<symbolic::Expression>& position);
 
   // Sets `context` so this mobilizer's generalized coordinates (its quaternion
   // q_FM) are consistent with the given `R_FM` rotation matrix.
@@ -213,8 +213,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
                                    Vector3<T>(q[4], q[5], q[6]));
   }
 
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
-                               const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
     const Eigen::Map<const VVector> V_FM(v);
     return SpatialVelocity<T>(V_FM);  // w_FM, v_FM
   }
@@ -230,22 +229,19 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const final;
 
-  void ProjectSpatialForce(
-      const systems::Context<T>& context,
-      const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const final;
+  void ProjectSpatialForce(const systems::Context<T>& context,
+                           const SpatialForce<T>& F_Mo_F,
+                           Eigen::Ref<VectorX<T>> tau) const final;
 
   bool is_velocity_equal_to_qdot() const final { return false; }
 
-  void MapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v,
-      EigenPtr<VectorX<T>> qdot) const final;
+  void MapVelocityToQDot(const systems::Context<T>& context,
+                         const Eigen::Ref<const VectorX<T>>& v,
+                         EigenPtr<VectorX<T>> qdot) const final;
 
-  void MapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      EigenPtr<VectorX<T>> v) const final;
+  void MapQDotToVelocity(const systems::Context<T>& context,
+                         const Eigen::Ref<const VectorX<T>>& qdot,
+                         EigenPtr<VectorX<T>> v) const final;
   // @}
 
  protected:
