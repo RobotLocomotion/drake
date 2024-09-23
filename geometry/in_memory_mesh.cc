@@ -1,6 +1,7 @@
 #include "drake/geometry/in_memory_mesh.h"
 
-#include <ranges>
+#include <algorithm>
+#include <vector>
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -43,19 +44,18 @@ namespace drake {
 namespace geometry {
 
 std::string InMemoryMesh::to_string() const {
-  return fmt::format(
-      "InMemoryMesh(mesh_file={}{})", mesh_file,
-      supporting_files.empty()
-          ? std::string{}
-          : fmt::format(
-                ", supporting_files={{{}}}",
-                fmt::join(supporting_files |
-                              // NOLINTNEXTLINE(build/include_what_you_use)
-                              std::views::transform([](const auto& key_value) {
-                                return FormattableSupportingFileMapEntry{
-                                    key_value.first, key_value.second};
-                              }),
-                          ", ")));
+  std::vector<std::string> supporting_encoded;
+  std::transform(
+      supporting_files.cbegin(), supporting_files.cend(),
+      std::back_inserter(supporting_encoded), [](const auto& key_value) {
+        return fmt::format("{}", FormattableSupportingFileMapEntry{
+                                     key_value.first, key_value.second});
+      });
+  return fmt::format("InMemoryMesh(mesh_file={}{})", mesh_file,
+                     supporting_files.empty()
+                         ? std::string{}
+                         : fmt::format(", supporting_files={{{}}}",
+                                       fmt::join(supporting_encoded, ", ")));
 }
 }  // namespace geometry
 }  // namespace drake
