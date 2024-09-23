@@ -52,7 +52,9 @@ class LinearCost : public Cost {
    */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   LinearCost(const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0.)
-      : Cost(a.rows()), a_(a), b_(b) {}
+      : Cost(a.rows()), a_(a), b_(b) {
+    set_is_thread_safe(true);
+  }
 
   ~LinearCost() override {}
 
@@ -131,6 +133,7 @@ class QuadraticCost : public Cost {
                 const Eigen::MatrixBase<Derivedb>& b, double c = 0.,
                 std::optional<bool> is_hessian_psd = std::nullopt)
       : Cost(Q.rows()), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
+    set_is_thread_safe(true);
     DRAKE_THROW_UNLESS(Q_.rows() == Q_.cols());
     DRAKE_THROW_UNLESS(Q_.cols() == b_.rows());
     if (is_hessian_psd.has_value()) {
@@ -502,6 +505,7 @@ class EvaluatorCost : public Cost {
         evaluator_{evaluator},
         a_{std::nullopt},
         b_{0} {
+    set_is_thread_safe(evaluator->is_thread_safe());
     DRAKE_THROW_UNLESS(evaluator->num_outputs() == 1);
   }
 
@@ -512,6 +516,7 @@ class EvaluatorCost : public Cost {
   EvaluatorCost(const std::shared_ptr<EvaluatorType>& evaluator,
                 const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0)
       : Cost(evaluator->num_vars()), evaluator_(evaluator), a_{a}, b_{b} {
+    set_is_thread_safe(true);
     DRAKE_THROW_UNLESS(evaluator->num_outputs() == a_->rows());
   }
 

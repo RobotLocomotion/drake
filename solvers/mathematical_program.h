@@ -197,6 +197,13 @@ class MathematicalProgram {
    */
   [[nodiscard]] std::string to_string() const;
 
+  /**
+   * Returns whether it is safe to solve this mathematical program concurrently.
+   * A mathematical program is safe to solve concurrently if all of its cost,
+   * constraints, and visualization callbacks are marked as thread safe.
+   */
+  bool IsThreadSafe() const;
+
   /** Returns a string representation of this program in LaTeX.
    *
    * This can be particularly useful e.g. in a Jupyter (python) notebook:

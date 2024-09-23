@@ -21,8 +21,13 @@ namespace test {
 class GenericTrivialCost1 : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1);
-
-  GenericTrivialCost1() : Cost(3), private_val_(2) {}
+  // This cost is thread safe in general. However, for the sake of testing
+  // we allow the constructor argument which changes the value of
+  // is_thread_safe.
+  explicit GenericTrivialCost1(bool is_thread_safe = false)
+      : Cost(3), private_val_(2) {
+    set_is_thread_safe(is_thread_safe);
+  }
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

@@ -131,6 +131,8 @@ class PyFunctionCost : public Cost {
   using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
   using AutoDiffFunc = std::function<AutoDiffXd(const VectorX<AutoDiffXd>&)>;
 
+  // Note that we do not allow Python implementations of Cost to be declared as
+  // thread safe.
   PyFunctionCost(
       int num_vars, const py::function& func, const std::string& description)
       : Cost(num_vars, description),
@@ -175,6 +177,8 @@ class PyFunctionConstraint : public Constraint {
   using AutoDiffFunc =
       std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>&)>;
 
+  // Note that we do not allow Python implementations of Constraint to be
+  // declared as thread safe.
   PyFunctionConstraint(int num_vars, const py::function& func,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const std::string& description)
@@ -588,6 +592,8 @@ void BindMathematicalProgram(py::module m) {
   prog_cls  // BR
       .def("__str__", &MathematicalProgram::to_string,
           doc.MathematicalProgram.to_string.doc)
+      .def("IsThreadSafe", &MathematicalProgram::IsThreadSafe,
+          doc.MathematicalProgram.IsThreadSafe.doc)
       .def("ToLatex", &MathematicalProgram::ToLatex, py::arg("precision") = 3,
           doc.MathematicalProgram.ToLatex.doc)
       .def("NewContinuousVariables",

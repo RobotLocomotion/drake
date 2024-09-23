@@ -43,6 +43,12 @@ template <typename Constraint>
              << " vs. " << binding2.variables()(i) << ")";
     }
   }
+
+  if (binding1.evaluator()->is_thread_safe() !=
+      binding2.evaluator()->is_thread_safe()) {
+    return ::testing::AssertionFailure() << "Thread safety mismatch.";
+  }
+
   return ::testing::AssertionSuccess() << "Same binding.";
 }
 

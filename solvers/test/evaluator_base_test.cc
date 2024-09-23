@@ -169,7 +169,11 @@ GTEST_TEST(EvaluatorBaseTest, FunctionEvaluatorTest) {
 class SimpleEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator);
-  SimpleEvaluator() : EvaluatorBase(2, 3) {
+  // This evaluator is thread safe in general. However, for the sake of testing
+  // we allow the constructor argument which changes the value of
+  // is_thread_safe.
+  explicit SimpleEvaluator(bool is_thread_safe = false) : EvaluatorBase(2, 3) {
+    set_is_thread_safe(is_thread_safe);
     c_.resize(2, 3);
     c_ << 1, 2, 3, 4, 5, 6;
   }
@@ -234,6 +238,13 @@ GTEST_TEST(EvaluatorBaseTest, SetGradientSparsityPattern) {
     EXPECT_THROW(evaluator.SetGradientSparsityPattern({{0, 0}, {0, 0}}),
                  std::invalid_argument);
   }
+}
+
+GTEST_TEST(EvaluatorBaseTest, IsThreadSafe) {
+  SimpleEvaluator evaluator(false);
+  EXPECT_FALSE(evaluator.is_thread_safe());
+  SimpleEvaluator evaluator2(true);
+  EXPECT_TRUE(evaluator2.is_thread_safe());
 }
 
 /**

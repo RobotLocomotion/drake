@@ -111,6 +111,12 @@ GTEST_TEST(TestConstraint, LinearConstraintInfiniteEntries) {
                               ".*allFinite().*");
 }
 
+GTEST_TEST(TestConstraint, LinearConstraintIsThreadSafe) {
+  LinearConstraint dut(Eigen::Matrix3d::Identity(), Eigen::Vector3d(1., 2, -3.),
+                       Eigen::Vector3d(2., 3, 4.));
+  EXPECT_TRUE(dut.is_thread_safe());
+}
+
 GTEST_TEST(TestConstraint, LinearEqualityConstraintSparse) {
   std::vector<Eigen::Triplet<double>> A_triplets;
   A_triplets.emplace_back(0, 1, 0.5);
@@ -155,6 +161,12 @@ GTEST_TEST(TestConstraint, LinearEqualityConstraintInfiniteEntries) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       LinearEqualityConstraint(A_sparse_bad.toDense().row(2), 0),
       ".*allFinite().*");
+}
+
+GTEST_TEST(TestConstraint, LinearEqualityConstraintIsThreadSafe) {
+  LinearEqualityConstraint dut(Eigen::Matrix3d::Identity(),
+                               Eigen::Vector3d(1., 2, 3.));
+  EXPECT_TRUE(dut.is_thread_safe());
 }
 
 GTEST_TEST(TestConstraint, testLinearConstraintUpdate) {
@@ -349,6 +361,18 @@ GTEST_TEST(testConstraint, QudraticConstraintLDLtFailute) {
             QuadraticConstraint::HessianType::kIndefinite);
 }
 
+GTEST_TEST(TestConstraint, QuadraticConstraintIsThreadSafe) {
+  Eigen::Matrix2d Q;
+  Eigen::Vector2d b;
+  // clang-format off
+  Q << 1, 0,
+       0, 1;
+  // clang-format on
+  b << 1, 2;
+  QuadraticConstraint constraint(Q, b, 0, 1);
+  EXPECT_TRUE(constraint.is_thread_safe());
+}
+
 void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                const Eigen::Ref<const Eigen::VectorXd>& b,
                                const VectorXd& x_test) {
@@ -533,6 +557,19 @@ GTEST_TEST(testConstraint, testLorentzConeConstraint) {
   TestLorentzConeEvalNonconvex(A4, b4, x4, false);
 }
 
+GTEST_TEST(TestConstraint, LorentzConeConstraintIsThreadSafe) {
+  Eigen::Matrix<double, 4, 2> A;
+  // clang-format off
+  A << 1, 0,
+       1, 1,
+       -1, 1,
+       1, -2;
+  // clang-format on
+  Eigen::Vector4d b(2, -2, 0, 6);
+  LorentzConeConstraint constraint(A, b);
+  EXPECT_TRUE(constraint.is_thread_safe());
+}
+
 GTEST_TEST(testConstraint, testLorentzConeConstraintAtZeroZ) {
   // Test LorentzConeConstraint with smoothed approximated gradient  evaluated
   // at z = 0
@@ -647,6 +684,19 @@ GTEST_TEST(testConstraint, RotatedLorentzConeConstraintUpdateCoefficients) {
       "with 2 variables.");
 }
 
+GTEST_TEST(TestConstraint, RotatedLorentzConeConstraintIsThreadSafe) {
+  Eigen::Matrix<double, 4, 2> A;
+  // clang-format off
+  A << 1, 0,
+       1, 1,
+       -1, 1,
+       1, -2;
+  // clang-format on
+  Eigen::Vector4d b(2, -2, 0, 6);
+  RotatedLorentzConeConstraint constraint(A, b);
+  EXPECT_TRUE(constraint.is_thread_safe());
+}
+
 GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
   PositiveSemidefiniteConstraint cnstr(3);
 
@@ -680,6 +730,11 @@ GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
   VectorX<Expression> y_sym;
   EXPECT_THROW(cnstr.Eval(x_sym, &y_sym), std::logic_error);
   EXPECT_THROW(cnstr.CheckSatisfied(x_sym), std::logic_error);
+}
+
+GTEST_TEST(TestConstraint, PositiveSemidefiniteConstraintIsThreadSafe) {
+  PositiveSemidefiniteConstraint constraint(5);
+  EXPECT_TRUE(constraint.is_thread_safe());
 }
 
 GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
@@ -717,6 +772,12 @@ GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
   VectorX<Expression> y_sym;
   EXPECT_THROW(cnstr.Eval(x_sym, &y_sym), std::logic_error);
   EXPECT_THROW(cnstr.CheckSatisfied(x_sym), std::logic_error);
+}
+
+GTEST_TEST(TestConstraint, LinearMatrixInequalityConstraintIsThreadSafe) {
+  Eigen::Matrix2d F0 = 2 * Eigen::Matrix2d::Identity();
+  LinearMatrixInequalityConstraint constraint({F0});
+  EXPECT_TRUE(constraint.is_thread_safe());
 }
 
 GTEST_TEST(testConstraint, testExpressionConstraint) {
@@ -771,6 +832,17 @@ GTEST_TEST(testConstraint, testExpressionConstraint) {
                0 <= e[0] && e[0] <= 2 && 0 <= e[1] && e[1] <= 2);
 }
 
+GTEST_TEST(TestConstraint, ExpressionConstraintIsThreadSafe) {
+  Variable x0{"x0"};
+  Variable x1{"x1"};
+  Variable x2{"x2"};
+
+  Vector3<Variable> vars{x0, x1, x2};
+  Vector2<Expression> e{1. + x0 * x0, x1 * x1 + x2};
+  ExpressionConstraint constraint(e, Vector2d::Zero(), 2. * Vector2d::Ones());
+  EXPECT_FALSE(constraint.is_thread_safe());
+}
+
 // Test that the Eval() method of LinearComplementarityConstraint correctly
 // returns the slack.
 GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
@@ -808,12 +880,18 @@ GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
   EXPECT_PRED2(FormulaEqual, c.CheckSatisfied(x_sym),
                x_0 - 1.0 >= 0 && x_1 - 1.0 >= 0 && x_0 >= 0.0 && x_1 >= 0.0 &&
                    x_0 * (x_0 - 1.0) + x_1 * (x_1 - 1.0) == 0.0);
+
+  EXPECT_TRUE(c.is_thread_safe());
 }
 
 class SimpleEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator);
-  SimpleEvaluator() : EvaluatorBase(2, 3) {
+  // This evaluator is thread safe in general. However, for the sake of testing
+  // we allow the constructor argument which changes the value of
+  // is_thread_safe.
+  explicit SimpleEvaluator(bool is_thread_safe = false) : EvaluatorBase(2, 3) {
+    set_is_thread_safe(is_thread_safe);
     c_.resize(2, 3);
     // clang-format off
     c_ << 1, 2, 3,
@@ -850,7 +928,9 @@ class SimpleEvaluator : public EvaluatorBase {
 GTEST_TEST(testConstraint, testEvaluatorConstraint) {
   const VectorXd lb = VectorXd::Constant(2, -1);
   const VectorXd ub = VectorXd::Constant(2, 1);
-  EvaluatorConstraint<> constraint(std::make_shared<SimpleEvaluator>(), lb, ub);
+  EvaluatorConstraint<> constraint(std::make_shared<SimpleEvaluator>(false), lb,
+                                   ub);
+  EXPECT_FALSE(constraint.is_thread_safe());
   EXPECT_EQ(3, constraint.num_vars());
   EXPECT_EQ(2, constraint.num_constraints());
   EXPECT_EQ(lb, constraint.lower_bound());
@@ -917,6 +997,7 @@ GTEST_TEST(testConstraint, testExponentialConeConstraint) {
   EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff), y_expected, tol));
   EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
                               math::ExtractGradient(y_autodiff_expected), tol));
+  EXPECT_TRUE(constraint.is_thread_safe());
 }
 
 /* Note: To render the latex string output with the most relevant engine, open
