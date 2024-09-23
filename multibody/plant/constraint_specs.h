@@ -6,6 +6,7 @@
 /// are later on used by our discrete solvers to build a model.
 
 #include <limits>
+#include <optional>
 #include <vector>
 
 #include "drake/math/rigid_transform.h"
@@ -89,10 +90,15 @@ struct BallConstraintSpec {
   //   body_A != body_B.
   bool IsValid() const { return body_A != body_B; }
 
-  BodyIndex body_A;          // Index of body A.
-  Vector3<double> p_AP;      // Position of point P in body frame A.
-  BodyIndex body_B;          // Index of body B.
-  Vector3<double> p_BQ;      // Position of point Q in body frame B.
+  BodyIndex body_A;      // Index of body A.
+  Vector3<double> p_AP;  // Position of point P in body frame A.
+  BodyIndex body_B;      // Index of body B.
+
+  // Position of point Q in body frame B. Pre-finalize this may be
+  // std::nullopt; if so, then during Finalize() it will be set so that the
+  // constraint is satisfied in the default context.
+  std::optional<Vector3<double>> p_BQ;
+
   MultibodyConstraintId id;  // Id of this constraint in the plant.
 };
 

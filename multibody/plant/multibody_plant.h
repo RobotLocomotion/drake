@@ -1927,7 +1927,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] body_A RigidBody to which point P is rigidly attached.
   /// @param[in] p_AP Position of point P in body A's frame.
   /// @param[in] body_B RigidBody to which point Q is rigidly attached.
-  /// @param[in] p_BQ Position of point Q in body B's frame.
+  /// @param[in] p_BQ (optional) Position of point Q in body B's frame. If p_BQ
+  /// is std::nullopt, then p_BQ will be computed so that the constraint is
+  /// satisfied for the default configuration at Finalize() time; subsequent
+  /// changes to the default configuration will not change the computed p_BQ.
   /// @returns the id of the newly added constraint.
   ///
   /// @throws std::exception if bodies A and B are the same body.
@@ -1937,10 +1940,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
-  MultibodyConstraintId AddBallConstraint(const RigidBody<T>& body_A,
-                                          const Vector3<double>& p_AP,
-                                          const RigidBody<T>& body_B,
-                                          const Vector3<double>& p_BQ);
+  MultibodyConstraintId AddBallConstraint(
+      const RigidBody<T>& body_A, const Vector3<double>& p_AP,
+      const RigidBody<T>& body_B,
+      const std::optional<Vector3<double>>& p_BQ = {});
 
   /// Defines a constraint such that frame P affixed to body A is coincident at
   /// all times with frame Q affixed to body B, effectively modeling a weld
@@ -5508,6 +5511,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // corresponds to the largest penalty parameter (smaller violation errors)
   // that still guarantees stability.
   void SetUpJointLimitsParameters();
+
+  // Some constraints support std::optional specs, which implies that the
+  // kinematics should be used to compute values such that the constraint is
+  // satisfied by the default context at the moment Finalize() is called. This
+  // method computes those values and stores them in the constraint specs.
+  void FinalizeConstraints();
 
   // Declares any input ports that haven't yet been declared.
   // This happens during Finalize().
