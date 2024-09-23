@@ -795,11 +795,11 @@ drake_cc_library(
     deps = [
         ":triangle_surface_mesh",
         "//common:diagnostic_policy",
+        "//geometry:mesh_source",
     ],
     implementation_deps = [
         "//common:essential",
         "//geometry:read_obj",
-        "@fmt",
     ],
 )
 
@@ -1624,6 +1624,7 @@ drake_cc_googletest(
     deps = [
         ":obj_to_surface_mesh",
         "//common:find_resource",
+        "//common/test_utilities:diagnostic_policy_test_base",
         "//common/test_utilities:expect_throws_message",
     ],
 )

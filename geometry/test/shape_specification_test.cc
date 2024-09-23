@@ -725,10 +725,10 @@ GTEST_TEST(ShapeTest, Volume) {
   // error along -- those terminate in new lines and has to be handled in the
   // matching expression explicitly.
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex("fakename.obj")),
-                              ".*file parsed contains no objects[^]*");
+                              ".*cannot read the file[^]*");
   // Error thrown in ReadObjToTriangleSurfaceMesh() (obj_to_surface_mesh.cc).
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh("fakename.obj")),
-                              "Cannot open file.*");
+                              ".*cannot read the file[^]*");
 
   const std::string non_obj = "only_extension_matters.not_obj";
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex(non_obj)),
