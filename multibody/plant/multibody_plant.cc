@@ -586,7 +586,7 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
 template <typename T>
 MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
     const RigidBody<T>& body_A, const Vector3<double>& p_AP,
-    const RigidBody<T>& body_B, const Vector3<double>& p_BQ) {
+    const RigidBody<T>& body_B, const std::optional<Vector3<double>>& p_BQ) {
   // N.B. The manager is set up at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
@@ -1380,6 +1380,21 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
 }
 
 template <typename T>
+void MultibodyPlant<T>::FinalizeConstraints() {
+  for (auto& [constraint_id, spec] : ball_constraints_specs_) {
+    if (!spec.p_BQ.has_value()) {
+      // Then compute p_BQ using the default context.
+      Vector3<T> p_BQ;
+      auto context = this->CreateDefaultContext();
+      CalcPointsPositions(*context, get_body(spec.body_A).body_frame(),
+                          spec.p_AP.template cast<T>(),
+                          get_body(spec.body_B).body_frame(), &p_BQ);
+      spec.p_BQ = ExtractDoubleOrThrow(p_BQ);
+    }
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareInputPorts();
   DeclareParameters();
@@ -1399,6 +1414,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
         std::make_unique<AccelerationKinematicsCache<T>>(
             internal_tree().get_topology());
   }
+  FinalizeConstraints();
   scene_graph_ = nullptr;  // must not be used after Finalize().
 }
 

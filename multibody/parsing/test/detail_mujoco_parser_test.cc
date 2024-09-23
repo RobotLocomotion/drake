@@ -1775,6 +1775,87 @@ TEST_F(MujocoParserTest, ContactThrows) {
       ".*no RigidBody named 'QQQ' anywhere.*");
 }
 
+TEST_F(MujocoParserTest, EqualityTest) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="body1" pos="-1 0 0">
+      <geom type="box" size="0.1 0.2 0.3"/>
+      <joint type="hinge"/>
+    </body>
+    <body name="body2" pos="1 0 0">
+      <geom type="box" size="0.1 0.2 0.3"/>
+      <joint type="hinge"/>
+    </body>
+  </worldbody>
+  <equality>
+    <connect body1="body1" anchor="1 2 3" body2="body2"/>
+    <connect body1="body1" anchor="4 5 6"/>
+  </equality>
+</mujoco>
+)""";
+
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  AddModelFromString(xml, "test");
+  plant_.Finalize();
+
+  const auto constraint_ids = plant_.GetConstraintIds();
+  EXPECT_EQ(constraint_ids.size(), 2);
+
+  const auto& spec1 = plant_.get_ball_constraint_specs(constraint_ids[0]);
+  EXPECT_EQ(spec1.body_A, plant_.GetBodyByName("body1").index());
+  EXPECT_EQ(spec1.body_B, plant_.GetBodyByName("body2").index());
+  Vector3d p_AP(1, 2, 3);
+  EXPECT_TRUE(CompareMatrices(spec1.p_AP, p_AP));
+  RigidTransformd X_WA(Vector3d(-1, 0, 0)), X_WB(Vector3d(1, 0, 0));
+  Vector3d p_BQ = X_WB.inverse() * X_WA * p_AP;  // since Q == P.
+  ASSERT_TRUE(spec1.p_BQ.has_value());
+  EXPECT_TRUE(CompareMatrices(spec1.p_BQ.value(), p_BQ, 1e-14));
+
+  auto context = plant_.CreateDefaultContext();
+  plant_.CalcPointsPositions(
+      *context, plant_.get_body(spec1.body_A).body_frame(),
+      Vector3d::Zero(), plant_.get_body(spec1.body_B).body_frame(), &p_BQ);
+  const auto& spec2 = plant_.get_ball_constraint_specs(constraint_ids[1]);
+  EXPECT_EQ(spec2.body_A, plant_.GetBodyByName("body1").index());
+  EXPECT_EQ(spec2.body_B, plant_.world_body().index());
+  p_AP = Vector3d(4, 5, 6);
+  EXPECT_TRUE(CompareMatrices(spec2.p_AP, p_AP));
+  Vector3d p_WQ = X_WA * p_AP;
+  ASSERT_TRUE(spec2.p_BQ.has_value());
+  EXPECT_TRUE(CompareMatrices(spec2.p_BQ.value(), p_WQ, 1e-14));
+}
+
+TEST_F(MujocoParserTest, BadEqualityTest) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="body1">
+      <geom type="box" size="0.1 0.2 0.3"/>
+      <joint type="hinge" pos="-1 0 0"/>
+    </body>
+    <body name="body2">
+      <geom type="box" size="0.1 0.2 0.3"/>
+      <joint type="hinge" pos="1 0 0"/>
+    </body>
+  </worldbody>
+  <equality>
+    <connect body1="body1" body2="body2"/>
+    <connect/>
+    <connect site1="site1" site2="site2"/>
+  </equality>
+</mujoco>
+)""";
+
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*anchor.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*body1.*anchor.*site1.*site2.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*site1.*site2.*"));
+  const auto constraint_ids = plant_.GetConstraintIds();
+  EXPECT_EQ(constraint_ids.size(), 0);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

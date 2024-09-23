@@ -1937,10 +1937,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
-  MultibodyConstraintId AddBallConstraint(const RigidBody<T>& body_A,
-                                          const Vector3<double>& p_AP,
-                                          const RigidBody<T>& body_B,
-                                          const Vector3<double>& p_BQ);
+  MultibodyConstraintId AddBallConstraint(
+      const RigidBody<T>& body_A, const Vector3<double>& p_AP,
+      const RigidBody<T>& body_B,
+      const std::optional<Vector3<double>>& p_BQ = {});
 
   /// Defines a constraint such that frame P affixed to body A is coincident at
   /// all times with frame Q affixed to body B, effectively modeling a weld
@@ -5508,6 +5508,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // corresponds to the largest penalty parameter (smaller violation errors)
   // that still guarantees stability.
   void SetUpJointLimitsParameters();
+
+  // Some constraints support std::optional specs, which implies that the
+  // kinematics should be used to compute values such that the constraint is
+  // satisfied by the default context. This method computes those values and
+  // stores them in the constraint specs.
+  void FinalizeConstraints();
 
   // Declares any input ports that haven't yet been declared.
   // This happens during Finalize().

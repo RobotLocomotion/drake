@@ -278,6 +278,30 @@ GTEST_TEST(BallConstraintsTests, VerifyIdMapping) {
   EXPECT_THROW(plant.get_weld_constraint_specs(ball_id), std::exception);
 }
 
+// Ensure that SAP runs on a constraint specified with p_BQ = std::nullopt.
+GTEST_TEST(BallConstraintTests, FinalizedConstraint) {
+  MultibodyPlant<double> plant{0.1};
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  const RigidBody<double>& bodyA =
+      plant.AddRigidBody("A", SpatialInertia<double>::MakeUnitary());
+  const RigidBody<double>& bodyB =
+      plant.AddRigidBody("B", SpatialInertia<double>::MakeUnitary());
+  plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
+                          /* p_BQ = */ std::nullopt);
+  plant.Finalize();
+
+  auto contact_manager = std::make_unique<CompliantContactManager<double>>();
+  const CompliantContactManager<double>* contact_manager_ptr =
+      contact_manager.get();
+  plant.SetDiscreteUpdateManager(std::move(contact_manager));
+
+  auto context = plant.CreateDefaultContext();
+
+  contact_solvers::internal::ContactSolverResults<double> contact_results;
+  EXPECT_NO_THROW(contact_manager_ptr->CalcContactSolverResults(
+      *context, &contact_results));
+}
+
 GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(

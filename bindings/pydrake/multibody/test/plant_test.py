@@ -2681,6 +2681,9 @@ class TestPlant(unittest.TestCase):
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
         ball_id = plant.AddBallConstraint(
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ)
+        # Add a second ball constraint using the default (unspecified) p_BQ.
+        ball_id2 = plant.AddBallConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B)
         weld_id = plant.AddWeldConstraint(
             body_A=body_A, X_AP=X_AP, body_B=body_B, X_BQ=X_BQ)
 
@@ -2704,7 +2707,7 @@ class TestPlant(unittest.TestCase):
         # are the same up to a permutation.
         self.assertTrue(
             collections.Counter(ids) == collections.Counter(
-                [distance_id, ball_id, weld_id, coupler_id]))
+                [distance_id, ball_id, ball_id2, weld_id, coupler_id]))
 
         # Default context.
         context = plant.CreateDefaultContext()
@@ -2717,6 +2720,8 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
         self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=ball_id2))
+        self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=weld_id))
 
         # Set all constraints to inactive.
@@ -2726,6 +2731,8 @@ class TestPlant(unittest.TestCase):
             context=context, id=distance_id, status=False)
         plant.SetConstraintActiveStatus(
             context=context, id=ball_id, status=False)
+        plant.SetConstraintActiveStatus(
+            context=context, id=ball_id2, status=False)
         plant.SetConstraintActiveStatus(
             context=context, id=weld_id, status=False)
 
@@ -2737,6 +2744,8 @@ class TestPlant(unittest.TestCase):
         self.assertFalse(
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
         self.assertFalse(
+            plant.GetConstraintActiveStatus(context=context, id=ball_id2))
+        self.assertFalse(
             plant.GetConstraintActiveStatus(context=context, id=weld_id))
 
         # Set all constraints to back to active.
@@ -2747,6 +2756,8 @@ class TestPlant(unittest.TestCase):
         plant.SetConstraintActiveStatus(
             context=context, id=ball_id, status=True)
         plant.SetConstraintActiveStatus(
+            context=context, id=ball_id2, status=True)
+        plant.SetConstraintActiveStatus(
             context=context, id=weld_id, status=True)
 
         # Verify all constraints are active in the context.
@@ -2756,6 +2767,8 @@ class TestPlant(unittest.TestCase):
             plant.GetConstraintActiveStatus(context=context, id=distance_id))
         self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=ball_id2))
         self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=weld_id))
 

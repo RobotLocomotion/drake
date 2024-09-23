@@ -1051,6 +1051,7 @@ class MujocoParser {
     parse_class_defaults("geom", &default_geometry_);
     parse_class_defaults("joint", &default_joint_);
     parse_class_defaults("mesh", &default_mesh_);
+    parse_class_defaults("equality", &default_equality_);
 
     // Parse child defaults.
     for (XMLElement* default_node = node->FirstChildElement("default");
@@ -1064,7 +1065,6 @@ class MujocoParser {
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "pair");
-    WarnUnsupportedElement(*node, "equality");
     WarnUnsupportedElement(*node, "tendon");
     WarnUnsupportedElement(*node, "general");
     WarnUnsupportedElement(*node, "motor");
@@ -1472,6 +1472,81 @@ class MujocoParser {
     }
   }
 
+  void ParseEquality(XMLElement* node) {
+    // Per the mujoco docs: "The actual equality constraints have types
+    // depending on the sub-element used to define them. However here we are
+    // setting attributes common to all equality constraint types, which is why
+    // we do not make a distinction between types." This helper method applies
+    // supports apply the default_equality to each sub-element.
+    auto apply_defaults = [&](XMLElement* node_on_which_to_apply) {
+      std::string class_name;
+      if (!ParseStringAttribute(node_on_which_to_apply, "class", &class_name)) {
+        class_name = "main";
+      }
+      if (default_equality_.contains(class_name)) {
+        ApplyDefaultAttributes(*default_equality_.at(class_name),
+                               node_on_which_to_apply);
+      }
+    };
+
+    for (XMLElement* connect_node = node->FirstChildElement("connect");
+         connect_node;
+         connect_node = connect_node->NextSiblingElement("connect")) {
+      apply_defaults(connect_node);
+
+      log()->info("got connect node");
+
+      // Per the mujoco docs: connect can be specified with either "body1",
+      // "anchor", (both required) and optionally "body2" OR "site1" and
+      // "site2" (both required).
+      std::string body1;
+      if (ParseStringAttribute(connect_node, "body1", &body1)) {
+        // Then "body1", "anchor", and optionally "body2".
+        Vector3d p_AP;
+        if (!ParseVectorAttribute(connect_node, "anchor", &p_AP)) {
+          Error(*node,
+                "connect specified body1 but does not have the required anchor "
+                "attribute.");
+          continue;
+        }
+        const RigidBody<double>& body_A = plant_->GetBodyByName(body1);
+        const RigidBody<double>* body_B = &plant_->world_body();
+        std::string body2;
+        if (ParseStringAttribute(connect_node, "body2", &body2)) {
+          body_B = &plant_->GetBodyByName(body2);
+        }
+        plant_->AddBallConstraint(body_A, p_AP, *body_B);
+      } else {
+        std::string site1, site2;
+        if (!ParseStringAttribute(connect_node, "site1", &site1) ||
+            !ParseStringAttribute(connect_node, "site2", &site2)) {
+          Error(*connect_node,
+                "connect must specify body1 and anchor OR site1 and site2.");
+          continue;
+        } else {
+          Warning(*connect_node,
+                  "connect node uses the site1 and site2 specification, which "
+                  "is not supported yet. This constraint will be ignored.");
+          continue;
+        }
+      }
+
+      WarnUnsupportedAttribute(*connect_node, "active");
+      WarnUnsupportedAttribute(*connect_node, "solref");
+      WarnUnsupportedAttribute(*connect_node, "solimp");
+    }
+
+    // TODO(russt): "weld" and "distance" constraints are already supported by
+    // MultibodyPlant and should be easy to add. But note that "distance"
+    // constraints were removed in MuJoCo version 2.2.2.
+    WarnUnsupportedElement(*node, "weld");
+    WarnUnsupportedElement(*node, "distance");
+
+    WarnUnsupportedElement(*node, "joint");
+    WarnUnsupportedElement(*node, "tendon");
+    WarnUnsupportedElement(*node, "flex");
+  }
+
   // Updates node by recursively replacing any <include> elements under it with
   // the children of the named file's root element.
   void ExpandIncludeTags(XMLElement* node,
@@ -1627,11 +1702,17 @@ class MujocoParser {
       ParseContact(contact_node);
     }
 
+    // Parses the model's equality elements.
+    for (XMLElement* equality_node = node->FirstChildElement("equality");
+         equality_node;
+         equality_node = equality_node->NextSiblingElement("equality")) {
+      ParseEquality(equality_node);
+    }
+
     WarnUnsupportedElement(*node, "size");
     WarnUnsupportedElement(*node, "visual");
     WarnUnsupportedElement(*node, "statistic");
     WarnUnsupportedElement(*node, "custom");
-    WarnUnsupportedElement(*node, "equality");
     WarnUnsupportedElement(*node, "tendon");
     WarnUnsupportedElement(*node, "sensor");
     WarnUnsupportedElement(*node, "keyframe");
@@ -1670,6 +1751,7 @@ class MujocoParser {
   std::map<std::string, XMLElement*> default_geometry_{};
   std::map<std::string, XMLElement*> default_joint_{};
   std::map<std::string, XMLElement*> default_mesh_{};
+  std::map<std::string, XMLElement*> default_equality_{};
   enum InertiaFromGeometry { kFalse, kTrue, kAuto };
   InertiaFromGeometry inertia_from_geom_{kAuto};
   std::map<std::string, XMLElement*> material_{};

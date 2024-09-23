@@ -4503,6 +4503,35 @@ GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
       ".*Post-finalize calls to .*RemoveConstraint.* are not allowed.*");
 }
 
+GTEST_TEST(MultibodyPlantTests, FinalizeConstraints) {
+  // Set up a plant with partially specified constraints that must be finalized.
+  MultibodyPlant<double> plant(0.01);
+  // N.B. This feature is only supported by the SAP solver. Therefore we
+  // arbitrarily choose one model approximation that uses the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  const Body<double>& body_A =
+      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
+  const Body<double>& body_B =
+      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
+  RigidTransformd X_WA(Vector3d(-1.0, -2.0, -3.0));
+  plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), X_WA, body_A,
+                                std::nullopt, Vector3d::UnitZ());
+  RigidTransformd X_WB(Vector3d(1.2, 3.4, 5.6));
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("body_B"), X_WB);
+
+  Vector3d p_AP = Vector3d(4.0, 5.0, 6.0);
+  MultibodyConstraintId ball_id = plant.AddBallConstraint(
+      body_A, p_AP, body_B, std::nullopt /* p_BQ is left unspecified */);
+  EXPECT_FALSE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
+
+  plant.Finalize();
+
+  Vector3d p_BQ = X_WB.inverse() * X_WA * p_AP;  // since Q == P.
+  ASSERT_TRUE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
+  EXPECT_TRUE(CompareMatrices(
+      plant.get_ball_constraint_specs(ball_id).p_BQ.value(), p_BQ, 1e-12));
+}
+
 GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   MultibodyPlant<double> plant(0.0);
   const RigidBody<double>& body_B =
