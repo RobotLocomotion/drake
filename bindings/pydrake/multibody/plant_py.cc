@@ -293,7 +293,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("damping") = 0.0, py_rvp::reference_internal,
             cls_doc.AddDistanceConstraint.doc)
         .def("AddBallConstraint", &Class::AddBallConstraint, py::arg("body_A"),
-            py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ"),
+            py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ") = std::nullopt,
             py_rvp::reference_internal, cls_doc.AddBallConstraint.doc)
         .def("AddWeldConstraint", &Class::AddWeldConstraint, py::arg("body_A"),
             py::arg("X_AP"), py::arg("body_B"), py::arg("X_BQ"),
