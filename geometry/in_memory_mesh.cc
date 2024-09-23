@@ -1,9 +1,12 @@
 #include "drake/geometry/in_memory_mesh.h"
 
-#include <ranges>
+#include <algorithm>
+#include <vector>
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+
+#include "drake/common/drake_assert.h"
 
 // Drake currently supports a wide range of fmt versions (8..11), which vary
 // heavily in terms of how they format maps (i.e., range-of-pairs) and variant.
@@ -19,6 +22,7 @@ namespace drake {
 namespace {
 struct FormattableSupportingFileMapEntry {
   std::string to_string() const {
+    DRAKE_DEMAND(key != nullptr && value != nullptr);
     return fmt::format(
 #if FMT_VERSION >= 90000
         "{:?}: {}",  // Use '?' specifier to format the key as a string literal.
@@ -29,10 +33,10 @@ struct FormattableSupportingFileMapEntry {
         // them anyway.
         "\"{}\": {}",
 #endif
-        key, value);
+        *key, *value);
   }
-  const std::string& key;
-  const FileSource& value;
+  const std::string* key{};
+  const FileSource* value{};
 };
 }  // namespace
 }  // namespace drake
@@ -43,18 +47,19 @@ namespace drake {
 namespace geometry {
 
 std::string InMemoryMesh::to_string() const {
+  std::vector<FormattableSupportingFileMapEntry> supporting_encoded;
+  std::transform(supporting_files.begin(), supporting_files.end(),
+                 supporting_encoded.begin(), [](const auto& key_value) {
+                   return FormattableSupportingFileMapEntry{&key_value.first,
+                                                            &key_value.second};
+                 });
   return fmt::format(
       "InMemoryMesh(mesh_file={}{})", mesh_file,
       supporting_files.empty()
           ? std::string{}
           : fmt::format(
                 ", supporting_files={{{}}}",
-                fmt::join(supporting_files |
-                              // NOLINTNEXTLINE(build/include_what_you_use)
-                              std::views::transform([](const auto& key_value) {
-                                return FormattableSupportingFileMapEntry{
-                                    key_value.first, key_value.second};
-                              }),
+                fmt::join(supporting_encoded,
                           ", ")));
 }
 }  // namespace geometry
