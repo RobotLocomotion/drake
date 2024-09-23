@@ -4,13 +4,13 @@
 load("//tools/install:install.bzl", "install", "install_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:py.bzl", "py_library")
-load("//tools/workspace:generate_file.bzl", "generate_file")
 
-package(default_visibility = ["//visibility:private"])
+package(
+    default_visibility = ["//visibility:public"],
+)
 
 exports_files([
     "CPPLINT.cfg",
-    "LICENSE.TXT",
     ".bazelproject",
     ".clang-format",
     ".drake-find_resource-sentinel",
@@ -23,7 +23,6 @@ exports_files([
 py_library(
     name = "module_py",
     srcs = ["__init__.py"],
-    visibility = ["//visibility:public"],
 )
 
 # Expose shared library for (a) installed binaries, (b) Drake Python bindings,
@@ -89,7 +88,6 @@ install(
     install_tests_script = _INSTALL_TEST_COMMANDS,
     data = ["package.xml"],
     docs = ["LICENSE.TXT"],
-    visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake:install",
         "//common:install",
@@ -104,34 +102,15 @@ install(
     ],
 )
 
-generate_file(
-    name = "empty.txt",
-    content = "",
-)
-
 install_test(
     name = "install_test",
-    args = select({
-        "//tools/cc_toolchain:apple_debug": [
-            # The install_test on a CI macOS debug build uses too much disk
-            # space, so we'll skip it in that case.
-            "--install_tests_filename=$(location :empty.txt)",
-        ],
-        "//conditions:default": [
-            "--install_tests_filename=$(location :{})".format(
-                _INSTALL_TEST_COMMANDS,
-            ),
-        ],
-    }),
-    data = select({
-        "//tools/cc_toolchain:apple_debug": [
-            ":empty.txt",
-        ],
-        "//conditions:default": [
-            ":install",
-            _INSTALL_TEST_COMMANDS,
-        ],
-    }),
+    args = ["--install_tests_filename=$(location :{})".format(
+        _INSTALL_TEST_COMMANDS,
+    )],
+    data = [
+        ":install",
+        _INSTALL_TEST_COMMANDS,
+    ],
     tags = [
         # Running acceptance tests under coverage (kcov) probably burns more CI
         # time and flakiness compared to any upside.
