@@ -299,16 +299,14 @@ void DefineInMemoryMesh(py::module m) {
     py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
     py::object ctor = m.attr("InMemoryMesh");
     cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init<MemoryFile>(), py::arg("mesh_file"),
-            cls_doc.ctor.doc_1args)
-        .def(py::init<const InMemoryMesh&>(), py::arg("other"))
-        .def("mesh_file", &Class::mesh_file, py_rvp::reference_internal,
-            cls_doc.mesh_file.doc)
-        .def("empty", &Class::empty, cls_doc.empty.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
+        .def_readwrite("supporting_files", &Class::supporting_files,
+            cls_doc.supporting_files.doc)
         .def(py::pickle(
             [](const InMemoryMesh& self) {
-              return py::dict(py::arg("mesh_file") = self.mesh_file());
+              return py::dict(py::arg("mesh_file") = self.mesh_file,
+                  py::arg("supporting_files") = self.supporting_files);
             },
             [ctor](const py::dict& kwargs) {
               return ctor(**kwargs).cast<InMemoryMesh>();

@@ -98,7 +98,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, MeshSource) {
   const std::string filename =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   MeshSource disk_source(filename);
-  MeshSource memory_source(InMemoryMesh(MemoryFile::Make(filename)));
+  MeshSource memory_source(InMemoryMesh{MemoryFile::Make(filename)});
   const TriangleSurfaceMesh<double> disk_surface =
       ReadObjToTriangleSurfaceMesh(disk_source, kUnitScale);
   const TriangleSurfaceMesh<double> memory_surface =
@@ -115,7 +115,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionInvalidFilePath) {
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyFile) {
-  const MeshSource empty(InMemoryMesh(MemoryFile("", ".obj", "empty")));
+  const MeshSource empty(InMemoryMesh{MemoryFile("", ".obj", "empty")});
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(empty),
                               ".*OBJ data parsed contains no objects.*");
 }
@@ -128,14 +128,14 @@ GTEST_TEST(ObjToSurfaceMeshTest, WarningCallback) {
   // *One* source of a warning is a degenerate face (fewer than three vertices).
   // We'll show that the warning callback gets invoked for this one warning and
   // consider that as representative for all tinyobj warnings.
-  const MeshSource obj(InMemoryMesh(MemoryFile(R"""(
+  const MeshSource obj(InMemoryMesh{MemoryFile(R"""(
   v 1 0 0
   v 0 1 0
   v 0 0 1
   f 1 2 3
   f 2 3
   )""",
-                                               ".obj", "trigger warning")));
+                                               ".obj", "trigger warning")});
 
   // By not setting the callback, the default warning behavior won't throw.
   EXPECT_NO_THROW(ReadObjToTriangleSurfaceMesh(obj));
@@ -148,12 +148,12 @@ GTEST_TEST(ObjToSurfaceMeshTest, WarningCallback) {
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionFileHasNoFaces) {
   const MeshSource no_faces(
-      InMemoryMesh(MemoryFile(R"""(
+      InMemoryMesh{MemoryFile(R"""(
 v 1.0 0.0 0.0
 v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 )""",
-                              ".obj", "Obj with no faces")));
+                              ".obj", "Obj with no faces")});
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(no_faces),
                               ".*OBJ data parsed contains no objects.*");
 }
@@ -162,13 +162,13 @@ v 0.0 0.0 1.0
 // objects (o lines).
 GTEST_TEST(ObjToSurfaceMeshTest, AcceptFacesWithoutObject) {
   const MeshSource faces_without_objects(
-      InMemoryMesh(MemoryFile(R"""(
+      InMemoryMesh{MemoryFile(R"""(
 v 1.0 0.0 0.0
 v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 f 1 2 3
 )""",
-                              ".obj", "faces without objects")));
+                              ".obj", "faces without objects")});
   TriangleSurfaceMesh<double> surface =
       ReadObjToTriangleSurfaceMesh(faces_without_objects);
   ASSERT_EQ(3, surface.num_vertices());
@@ -186,7 +186,7 @@ f 1 2 3
 
 // Confirms that we can accept multiple objects in one obj file.
 GTEST_TEST(ObjToSurfaceMeshTest, AcceptMultipleObjects) {
-  const MeshSource two_objects(InMemoryMesh(MemoryFile(R"""(
+  const MeshSource two_objects(InMemoryMesh{MemoryFile(R"""(
 o first_object
 v 1.0 0.0 0.0
 v 0.0 1.0 0.0
@@ -199,7 +199,7 @@ v 0.0 2.0 0.0
 v 0.0 0.0 2.0
 f 4 5 6
 )""",
-                                                       ".obj", "two objects")));
+                                                       ".obj", "two objects")});
   TriangleSurfaceMesh<double> surface =
       ReadObjToTriangleSurfaceMesh(two_objects);
   ASSERT_EQ(6, surface.num_vertices());
@@ -231,7 +231,7 @@ TEST_F(ObjToMeshDiagnosticsTest, ErrorModes) {
   v 1 1 0
   )""";
   const MeshSource source(
-      InMemoryMesh(MemoryFile(no_face_obj, ".obj", "no_faces")));
+      InMemoryMesh{MemoryFile(no_face_obj, ".obj", "no_faces")});
   auto maybe_mesh =
       internal::DoReadObjToSurfaceMesh(source, 1.0, diagnostic_policy_);
   ASSERT_FALSE(maybe_mesh.has_value());

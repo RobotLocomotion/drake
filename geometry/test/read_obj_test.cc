@@ -176,13 +176,13 @@ GTEST_TEST(ReadObjTest, MultipleObjects) {
 GTEST_TEST(ReadObjTest, MeshSourceRegression) {
   // In-memory source.
   {
-    const MeshSource source(InMemoryMesh(MemoryFile(R"""(v 0 0 0
+    const MeshSource source(InMemoryMesh{MemoryFile(R"""(v 0 0 0
                                                          v 0 1 0
                                                          v 1 0 0
                                                          v 1 1 0
                                                          f 1 2 3 4
                                                        )""",
-                                                    ".obj", "test")));
+                                                    ".obj", "test")});
     const auto [vertices, faces, num_faces] =
         ReadObj(source, 2.0, /* triangulate= */ true);
     EXPECT_EQ(vertices->size(), 4);
@@ -204,12 +204,12 @@ GTEST_TEST(ReadObjTest, MeshSourceRegression) {
 // vertices from an obj that would ordinarily throw if we asked for the face
 // data (see ErrorModes, below).
 GTEST_TEST(ReadObjTest, VertexOnly) {
-  const MeshSource source(InMemoryMesh(MemoryFile(R"""(v 0 0 0
+  const MeshSource source(InMemoryMesh{MemoryFile(R"""(v 0 0 0
                                                        v 0 1 0
                                                        v 1 0 0
                                                        v 1 1 0
                                                      )""",
-                                                  ".obj", "no_faces")));
+                                                  ".obj", "no_faces")});
   const auto [vertices, faces, num_faces] =
       ReadObj(source, 2.0, /* triangulate= */ true, /* vertices_only= */ true);
   EXPECT_EQ(vertices->size(), 4);
@@ -232,7 +232,7 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
     f 0 1 2
     )""";
     const MeshSource source(
-        InMemoryMesh(MemoryFile(bad_index_obj, ".obj", "bad indices")));
+        InMemoryMesh{MemoryFile(bad_index_obj, ".obj", "bad indices")});
     auto [verts, _1, _2] =
         ReadObj(source, 2.0, /* triangulate= */ false,
                 /* vertices_only= */ true, diagnostic_policy_);
@@ -254,7 +254,7 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
     f 1 2 4
     )""";
     const MeshSource source(
-        InMemoryMesh(MemoryFile(bad_index_obj, ".obj", "group")));
+        InMemoryMesh{MemoryFile(bad_index_obj, ".obj", "group")});
     auto [verts, _1, _2] =
         ReadObj(source, 2.0, /* triangulate= */ false,
                 /* vertices_only= */ true, diagnostic_policy_);
@@ -275,7 +275,7 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
   )""";
   {
     const MeshSource source(
-        InMemoryMesh(MemoryFile(no_face_obj, ".obj", "no_faces")));
+        InMemoryMesh{MemoryFile(no_face_obj, ".obj", "no_faces")});
     auto [verts, _1, _2] =
         ReadObj(source, 2.0, /* triangulate= */ false,
                 /* vertices_only= */ false, diagnostic_policy_);
@@ -289,7 +289,7 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
   // Not an .obj - from memory.
   {
     const MeshSource source(
-        InMemoryMesh(MemoryFile(no_face_obj, ".bad", "wrong_extension")));
+        InMemoryMesh{MemoryFile(no_face_obj, ".bad", "wrong_extension")});
     auto [verts, _1, _2] =
         ReadObj(source, 2.0, /* triangulate= */ false,
                 /* vertices_only= */ true, diagnostic_policy_);

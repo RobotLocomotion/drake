@@ -70,7 +70,7 @@ NamedMesh DoGetObjMesh(const DiagnosticPolicy& diagnostic,
     // expect this to be exercised, because there's no simple mechanism for
     // exercising this function with an in-memory mesh source.
     input_stream = std::make_unique<std::istringstream>(
-        obj_source.in_memory().mesh_file().contents());
+        obj_source.in_memory().mesh_file.contents());
   }
 
   const bool result =
