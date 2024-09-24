@@ -325,8 +325,130 @@ class MeshcatShapeReifier : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  // TODO(SeanCurtis-TRI): In follow up commit, move this down in alphabetical
-  // order.
+  void ImplementGeometry(const Box& box, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& output = *static_cast<Output*>(data);
+    auto& lumped = output.lumped;
+    lumped.object = internal::MeshData();
+
+    auto geometry = std::make_unique<internal::BoxGeometryData>();
+    geometry->uuid = uuid_generator_.GenerateRandom();
+    geometry->width = box.width();
+    // Three.js uses height for the y axis; Drake uses depth.
+    geometry->height = box.depth();
+    geometry->depth = box.height();
+    lumped.geometry = std::move(geometry);
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& output = *static_cast<Output*>(data);
+    auto& lumped = output.lumped;
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::CapsuleGeometryData>();
+    geometry->uuid = uuid_generator_.GenerateRandom();
+    geometry->radius = capsule.radius();
+    geometry->length = capsule.length();
+    lumped.geometry = std::move(geometry);
+
+    // Meshcat cylinders have their long axis in y.
+    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
+        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
+            .GetAsMatrix4();
+  }
+
+  void ImplementGeometry(const Convex& mesh, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& output = *static_cast<Output*>(data);
+
+    const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
+    const TriangleSurfaceMesh<double> tri_hull =
+        internal::MakeTriangleFromPolygonMesh(hull);
+
+    Eigen::Matrix3Xd vertices(3, tri_hull.num_vertices());
+    for (int i = 0; i < tri_hull.num_vertices(); ++i) {
+      vertices.col(i) = tri_hull.vertex(i);
+    }
+    Eigen::Matrix3Xi faces(3, tri_hull.num_triangles());
+    for (int i = 0; i < tri_hull.num_triangles(); ++i) {
+      const auto& e = tri_hull.element(i);
+      for (int j = 0; j < 3; ++j) {
+        faces(j, i) = e.vertex(j);
+      }
+    }
+    SetLumpedObjectFromTriangleMesh(&output.lumped, vertices, faces, rgba_,
+                                    /* wireframe =*/false, 1.0,
+                                    Meshcat::SideOfFaceToRender::kDoubleSide,
+                                    &uuid_generator_);
+  }
+
+  void ImplementGeometry(const Cylinder& cylinder, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& output = *static_cast<Output*>(data);
+    auto& lumped = output.lumped;
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::CylinderGeometryData>();
+    geometry->uuid = uuid_generator_.GenerateRandom();
+    geometry->radiusBottom = cylinder.radius();
+    geometry->radiusTop = cylinder.radius();
+    geometry->height = cylinder.length();
+    lumped.geometry = std::move(geometry);
+
+    // Meshcat cylinders have their long axis in y.
+    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
+        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
+            .GetAsMatrix4();
+  }
+
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) override {
+    // Implemented as a Sphere stretched by a diagonal transform.
+    DRAKE_DEMAND(data != nullptr);
+    auto& output = *static_cast<Output*>(data);
+    auto& lumped = output.lumped;
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::SphereGeometryData>();
+    geometry->uuid = uuid_generator_.GenerateRandom();
+    geometry->radius = 1;
+    lumped.geometry = std::move(geometry);
+
+    Eigen::Map<Eigen::Matrix4d> matrix(mesh.matrix);
+    matrix(0, 0) = ellipsoid.a();
+    matrix(1, 1) = ellipsoid.b();
+    matrix(2, 2) = ellipsoid.c();
+  }
+
+  void ImplementGeometry(const HalfSpace&, void*) override {
+    // TODO(russt): Use PlaneGeometry with fields width, height,
+    // widthSegments, heightSegments
+    drake::log()->warn("Meshcat does not display HalfSpace geometry (yet).");
+  }
+
+  void ImplementGeometry(const MeshcatCone& cone, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& output = *static_cast<Output*>(data);
+    auto& lumped = output.lumped;
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::CylinderGeometryData>();
+    geometry->uuid = uuid_generator_.GenerateRandom();
+    geometry->radiusBottom = 0;
+    geometry->radiusTop = 1.0;
+    geometry->height = cone.height();
+    lumped.geometry = std::move(geometry);
+
+    // Meshcat cylinders have their long axis in y and are centered at the
+    // origin.  A cone is just a cylinder with radiusBottom=0.  So we transform
+    // here, in addition to scaling to support non-uniform principle axes.
+    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
+        Eigen::Vector4d{cone.a(), cone.b(), 1.0, 1.0}.asDiagonal() *
+        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0),
+                        Eigen::Vector3d{0, 0, cone.height() / 2.0})
+            .GetAsMatrix4();
+  }
+
   void ImplementGeometry(const Mesh& mesh, void* data) override {
     DRAKE_DEMAND(data != nullptr);
     auto& output = *static_cast<Output*>(data);
@@ -559,130 +681,6 @@ class MeshcatShapeReifier : public ShapeReifier {
                      matrix(2, 2) = scale;
                    }},
         lumped.object);
-  }
-
-  void ImplementGeometry(const Box& box, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& output = *static_cast<Output*>(data);
-    auto& lumped = output.lumped;
-    lumped.object = internal::MeshData();
-
-    auto geometry = std::make_unique<internal::BoxGeometryData>();
-    geometry->uuid = uuid_generator_.GenerateRandom();
-    geometry->width = box.width();
-    // Three.js uses height for the y axis; Drake uses depth.
-    geometry->height = box.depth();
-    geometry->depth = box.height();
-    lumped.geometry = std::move(geometry);
-  }
-
-  void ImplementGeometry(const Capsule& capsule, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& output = *static_cast<Output*>(data);
-    auto& lumped = output.lumped;
-    auto& mesh = lumped.object.emplace<internal::MeshData>();
-
-    auto geometry = std::make_unique<internal::CapsuleGeometryData>();
-    geometry->uuid = uuid_generator_.GenerateRandom();
-    geometry->radius = capsule.radius();
-    geometry->length = capsule.length();
-    lumped.geometry = std::move(geometry);
-
-    // Meshcat cylinders have their long axis in y.
-    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
-        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
-            .GetAsMatrix4();
-  }
-
-  void ImplementGeometry(const Convex& mesh, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& output = *static_cast<Output*>(data);
-
-    const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
-    const TriangleSurfaceMesh<double> tri_hull =
-        internal::MakeTriangleFromPolygonMesh(hull);
-
-    Eigen::Matrix3Xd vertices(3, tri_hull.num_vertices());
-    for (int i = 0; i < tri_hull.num_vertices(); ++i) {
-      vertices.col(i) = tri_hull.vertex(i);
-    }
-    Eigen::Matrix3Xi faces(3, tri_hull.num_triangles());
-    for (int i = 0; i < tri_hull.num_triangles(); ++i) {
-      const auto& e = tri_hull.element(i);
-      for (int j = 0; j < 3; ++j) {
-        faces(j, i) = e.vertex(j);
-      }
-    }
-    SetLumpedObjectFromTriangleMesh(&output.lumped, vertices, faces, rgba_,
-                                    /* wireframe =*/false, 1.0,
-                                    Meshcat::SideOfFaceToRender::kDoubleSide,
-                                    &uuid_generator_);
-  }
-
-  void ImplementGeometry(const Cylinder& cylinder, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& output = *static_cast<Output*>(data);
-    auto& lumped = output.lumped;
-    auto& mesh = lumped.object.emplace<internal::MeshData>();
-
-    auto geometry = std::make_unique<internal::CylinderGeometryData>();
-    geometry->uuid = uuid_generator_.GenerateRandom();
-    geometry->radiusBottom = cylinder.radius();
-    geometry->radiusTop = cylinder.radius();
-    geometry->height = cylinder.length();
-    lumped.geometry = std::move(geometry);
-
-    // Meshcat cylinders have their long axis in y.
-    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
-        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
-            .GetAsMatrix4();
-  }
-
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) override {
-    // Implemented as a Sphere stretched by a diagonal transform.
-    DRAKE_DEMAND(data != nullptr);
-    auto& output = *static_cast<Output*>(data);
-    auto& lumped = output.lumped;
-    auto& mesh = lumped.object.emplace<internal::MeshData>();
-
-    auto geometry = std::make_unique<internal::SphereGeometryData>();
-    geometry->uuid = uuid_generator_.GenerateRandom();
-    geometry->radius = 1;
-    lumped.geometry = std::move(geometry);
-
-    Eigen::Map<Eigen::Matrix4d> matrix(mesh.matrix);
-    matrix(0, 0) = ellipsoid.a();
-    matrix(1, 1) = ellipsoid.b();
-    matrix(2, 2) = ellipsoid.c();
-  }
-
-  void ImplementGeometry(const HalfSpace&, void*) override {
-    // TODO(russt): Use PlaneGeometry with fields width, height,
-    // widthSegments, heightSegments
-    drake::log()->warn("Meshcat does not display HalfSpace geometry (yet).");
-  }
-
-  void ImplementGeometry(const MeshcatCone& cone, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& output = *static_cast<Output*>(data);
-    auto& lumped = output.lumped;
-    auto& mesh = lumped.object.emplace<internal::MeshData>();
-
-    auto geometry = std::make_unique<internal::CylinderGeometryData>();
-    geometry->uuid = uuid_generator_.GenerateRandom();
-    geometry->radiusBottom = 0;
-    geometry->radiusTop = 1.0;
-    geometry->height = cone.height();
-    lumped.geometry = std::move(geometry);
-
-    // Meshcat cylinders have their long axis in y and are centered at the
-    // origin.  A cone is just a cylinder with radiusBottom=0.  So we transform
-    // here, in addition to scaling to support non-uniform principle axes.
-    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
-        Eigen::Vector4d{cone.a(), cone.b(), 1.0, 1.0}.asDiagonal() *
-        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0),
-                        Eigen::Vector3d{0, 0, cone.height() / 2.0})
-            .GetAsMatrix4();
   }
 
   void ImplementGeometry(const Sphere& sphere, void* data) override {
