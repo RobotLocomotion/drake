@@ -26,7 +26,11 @@ MeshSource::MeshSource(InMemoryMesh&& mesh)
 MeshSource::~MeshSource() = default;
 
 std::string MeshSource::description() const {
-  return is_path() ? path().string() : in_memory().mesh_file.filename_hint();
+  return is_path()
+             ? (path().empty() ? std::string("<empty path>") : path().string())
+             : (in_memory().mesh_file.filename_hint().empty()
+                    ? std::string("<no filename hint given>")
+                    : in_memory().mesh_file.filename_hint());
 }
 
 }  // namespace geometry
