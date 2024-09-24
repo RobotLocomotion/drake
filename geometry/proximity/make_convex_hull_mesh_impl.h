@@ -28,7 +28,7 @@ namespace internal {
  @param mesh_file   A path to a valid mesh file to bound.
  @param scale       All vertices will be multiplied by this value prior to
                     computation.
- @param margin      The margin amount δ.
+ @param margin      The margin amount δ, see @ref hydro_margin.
 
  @throws if `mesh_file` references anything but an .obj, .vtk volume mesh, or
          .gltf.
