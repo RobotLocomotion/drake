@@ -44,7 +44,7 @@ namespace internal {
                          vectors of mesh vertices are expressed in the
                          cylinder's frame C.
  @param[in] hydroelastic_modulus  Scale extent to pressure.
- @param margin           The magnitude of the margin δ.
+ @param margin           The magnitude of the margin δ, see @ref hydro_margin.
  @return                 The pressure field defined on the tetrahedral mesh.
  @pre                    `hydroelastic_modulus` is strictly positive.
                          `mesh_C` represents the cylinder and has enough

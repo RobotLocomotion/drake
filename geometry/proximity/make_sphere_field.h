@@ -27,7 +27,7 @@ namespace internal {
                          alive as long as the field. The position vectors of
                          mesh vertices are expressed in the sphere's frame S.
  @param hydroelastic_modulus  Scale extent to pressure.
- @param margin           The magnitude of the margin δ.
+ @param margin           The magnitude of the margin δ, see @ref hydro_margin.
  @return                 The pressure field defined on the tetrahedral mesh.
  @pre                    `hydroelastic_modulus` is strictly positive.
                          `mesh_S` represents the sphere and has enough

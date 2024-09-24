@@ -387,7 +387,7 @@ class ConvexHull {
    @param c A point inside the H-polytope. While the half-spaces fully
    represent the polytope, an interior point is needed to construct the dual.
    @param h The half-spaces defining the polytope.
-   @param margin The margin value.
+   @param margin The margin value, see @ref hydro_margin.
    @pre The intersection of the half spaces forms a closed polytope.
    @pre The polytope includes vertex c. */
   ConvexHull(const Vector3d& c, std::vector<Vector4d> h, double margin) {
