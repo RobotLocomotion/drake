@@ -109,10 +109,11 @@ void MaybeWarnForRedundantMaterial(
      ("phong", "diffuse").
    - Otherwise, if an image can be located with a "compatible name" (e.g.,
      foo.png for the mesh foo.obj), a material with an unmodulated texture is
-     created. An existing foo.png that can't be read or an empty `mesh_path`
+     created. An existing foo.png that can't be read and an empty `mesh_path`
      are both treated as "no compatible png could be found" and will fall
      through to the next condition. If the mesh is in-memory, there is, by
-     definition, no compatible png.
+     definition, no compatible png and that should be signaled with an empty
+     `mesh_path`.
    - Otherwise, if a default_diffuse value is provided, a material is created
      with the given default_diffuse color value.
    - Finally, if no material is defined, std::nullopt is returned. In such a
@@ -123,8 +124,8 @@ void MaybeWarnForRedundantMaterial(
  References to textures will be included in the material iff they can be read
  and the `uv_state` is full. Otherwise, a warning will be dispatched.
 
- @pre The mesh (named by `mesh_filename`) is a valid mesh and did not have an
-      acceptable material definition). */
+ This doesn't account for any material properties that may or may not exist in
+ a mesh. Its invocation assumes no such material exists. */
 std::optional<RenderMaterial> MaybeMakeMeshFallbackMaterial(
     const GeometryProperties& props, const std::filesystem::path& mesh_path,
     const std::optional<Rgba>& default_diffuse,
