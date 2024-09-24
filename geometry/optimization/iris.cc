@@ -54,7 +54,6 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   for (int i = 0; i < N; ++i) {
     DRAKE_DEMAND(obstacles[i]->ambient_dimension() == dim);
   }
-  DRAKE_DEMAND(domain.IsBounded());
   const double kEpsilonEllipsoid = 1e-2;
   Hyperellipsoid E = options.starting_ellipse.value_or(
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
@@ -69,6 +68,10 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   if (options.bounding_region) {
     DRAKE_DEMAND(options.bounding_region->ambient_dimension() == dim);
     P = P.Intersection(*options.bounding_region);
+  }
+
+  if (!options.skip_domain_boundedness_check) {
+    DRAKE_DEMAND(P.IsBounded());
   }
 
   const int num_initial_constraints = P.A().rows();
@@ -552,14 +555,6 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     }
   }
 
-  if (lower_limits.array().isInf().any() ||
-      upper_limits.array().isInf().any()) {
-    throw std::runtime_error(
-        "IrisInConfigurationSpace requires that all joints have position "
-        "limits (unless that joint is a RevoluteJoint or the revolute "
-        "component of a PlanarJoint or RpyFloatingJoint.");
-  }
-
   DRAKE_DEMAND(options.num_collision_infeasible_samples >= 0);
   for (int i = 0; i < nc; ++i) {
     DRAKE_DEMAND(options.configuration_obstacles[i]->ambient_dimension() == nq);
@@ -575,12 +570,50 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   }
 
   // Make the polytope and ellipsoid.
-  HPolyhedron P = HPolyhedron::MakeBox(lower_limits, upper_limits);
-  DRAKE_DEMAND(P.A().rows() == 2 * nq);
+  MatrixXd A_init = MatrixXd::Zero(2 * ssize(lower_limits), nq);
+  VectorXd b_init = VectorXd::Zero(2 * ssize(lower_limits));
+  int row_count = 0;
+  for (int i = 0; i < ssize(upper_limits); ++i) {
+    if (std::isfinite(upper_limits[i])) {
+      A_init(row_count, i) = 1;
+      b_init(row_count) = upper_limits[i];
+      ++row_count;
+    }
+    if (std::isfinite(lower_limits[i])) {
+      A_init(row_count, i) = -1;
+      b_init(row_count) = -lower_limits[i];
+      ++row_count;
+    }
+  }
+  A_init.conservativeResize(row_count, nq);
+  b_init.conservativeResize(row_count);
+  HPolyhedron P(A_init, b_init);
 
   if (options.bounding_region) {
     DRAKE_DEMAND(options.bounding_region->ambient_dimension() == nq);
     P = P.Intersection(*options.bounding_region);
+    if (!options.skip_domain_boundedness_check) {
+      if (!P.IsBounded()) {
+        throw std::runtime_error(
+            "IrisInConfigurationSpace requires that the initial domain be "
+            "bounded. Make sure all joints have position limits (unless that "
+            "joint is a RevoluteJoint or the revolute component of a "
+            "PlanarJoint or RpyFloatingJoint), or ensure that the "
+            "intersection of the joint limits and options.bounding_region is "
+            "bounded.");
+      }
+    }
+  } else {
+    if (lower_limits.array().isInf().any() ||
+        upper_limits.array().isInf().any()) {
+      throw std::runtime_error(
+          "IrisInConfigurationSpace requires that the initial domain be "
+          "bounded. Make sure all joints have position limits (unless that "
+          "joint is a RevoluteJoint or the revolute component of a "
+          "PlanarJoint or RpyFloatingJoint), or ensure that the "
+          "intersection of the joint limits and options.bounding_region is "
+          "bounded.");
+    }
   }
 
   const double kEpsilonEllipsoid = 1e-2;
@@ -734,11 +767,13 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   bool do_debugging_visualization = options.meshcat && nq <= 3;
 
   const std::string seed_point_error_msg =
-      "IrisInConfigurationSpace: require_sample_point_is_contained is true but "
+      "IrisInConfigurationSpace: require_sample_point_is_contained is true "
+      "but "
       "the seed point exited the initial region. Does the provided "
       "options.starting_ellipse not contain the seed point?";
   const std::string seed_point_msg =
-      "IrisInConfigurationSpace: terminating iterations because the seed point "
+      "IrisInConfigurationSpace: terminating iterations because the seed "
+      "point "
       "is no longer in the region.";
   const std::string termination_error_msg =
       "IrisInConfigurationSpace: the termination function returned false on "
@@ -900,7 +935,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                 10 * options.num_collision_infeasible_samples) {
           warned_many_searches = true;
           log()->info(
-              " Checking {} against {} has already required {} counter-example "
+              " Checking {} against {} has already required {} "
+              "counter-example "
               "searches; still searching...",
               inspector.GetName(pair_w_distance.geomA),
               inspector.GetName(pair_w_distance.geomB),

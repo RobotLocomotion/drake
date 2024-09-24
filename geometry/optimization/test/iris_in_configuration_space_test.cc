@@ -209,6 +209,35 @@ GTEST_TEST(IrisInConfigurationSpaceTest, PlanarJoint) {
   // the prismatic components of the planar joint are unbounded.
   DRAKE_EXPECT_THROWS_MESSAGE(IrisFromUrdf(planar_urdf, sample, options),
                               ".*position limits.*");
+
+  // If we add an initial bounding region that bounds the planar degrees of
+  // freedom, it shouldn't error.
+  Eigen::MatrixXd A(4, 3);
+  Eigen::VectorXd b(4);
+  // clang-format off
+  A <<  1,  0, 0,
+       -1,  0, 0,
+        0,  1, 0,
+        0, -1, 0;
+  // clang-format on
+  b << 1, 1, 1, 1;
+  options.bounding_region = HPolyhedron{A, b};
+  EXPECT_NO_THROW(IrisFromUrdf(planar_urdf, sample, options));
+
+  // It still shouldn't error if we disable the boundedness check.
+  options.skip_domain_boundedness_check = true;
+  EXPECT_NO_THROW(IrisFromUrdf(planar_urdf, sample, options));
+
+  // If the initial bounding region doesn't actually bound the planar degrees of
+  // freedom, it should error.
+  Eigen::MatrixXd A2(1, 3);
+  Eigen::VectorXd b2(1);
+  A2 << 1, 0, 0;
+  b2 << 1;
+  options.bounding_region = HPolyhedron{A2, b2};
+  options.skip_domain_boundedness_check = false;
+  DRAKE_EXPECT_THROWS_MESSAGE(IrisFromUrdf(planar_urdf, sample, options),
+                              ".*position limits.*");
 }
 
 // Check that IRIS correctly handles the continuous revolute component(s) of a

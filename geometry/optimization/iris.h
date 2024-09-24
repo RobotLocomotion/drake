@@ -36,6 +36,7 @@ struct IrisOptions {
     a->Visit(DRAKE_NVP(random_seed));
     a->Visit(DRAKE_NVP(mixing_steps));
     a->Visit(DRAKE_NVP(convexity_radius_stepback));
+    a->Visit(DRAKE_NVP(skip_domain_boundedness_check));
   }
 
   /** The initial polytope is guaranteed to contain the point if that point is
@@ -93,6 +94,13 @@ struct IrisOptions {
   specified, IRIS regions will be confined to the intersection between the
   domain and `bounding_region` */
   std::optional<HPolyhedron> bounding_region{};
+
+  /** If the user knows the intersection of bounding_region and the domain (for
+  IRIS) or plant joint limits (for IrisInConfigurationSpace) is bounded,
+  setting this flag to `true` will skip the boundedness check that IRIS and
+  IrisInConfigurationSpace perform. If the intersection turns out to be
+  unbounded, this will lead to undefined behavior. */
+  bool skip_domain_boundedness_check{false};
 
   /** By default, IRIS in configuration space certifies regions for collision
   avoidance constraints and joint limits. This option can be used to pass
