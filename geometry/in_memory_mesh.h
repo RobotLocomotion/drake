@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/common/file_source.h"
+#include "drake/common/fmt.h"
 #include "drake/common/memory_file.h"
 #include "drake/common/string_map.h"
 
@@ -33,3 +34,5 @@ struct InMemoryMesh final {
 
 }  // namespace geometry
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(, drake::geometry, InMemoryMesh, x, x.to_string())
