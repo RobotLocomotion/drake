@@ -210,6 +210,40 @@ GTEST_TEST(IrisTest, BoundingRegion) {
   EXPECT_FALSE(region_w_bounding.PointInSet(Vector2d(0.11, 0.51)));
 }
 
+GTEST_TEST(IrisTest, BoundingRegion2) {
+  const Vector2d sample{0, 0};
+
+  // The domain is defined by -1 <= x <= 1, with no bounds on y.
+  Eigen::MatrixXd domain_A(2, 2);
+  Eigen::VectorXd domain_b(2);
+  domain_A << 1, 0, -1, 0;
+  domain_b << 1, 1;
+  const HPolyhedron domain{domain_A, domain_b};
+
+  // The additional bounding region is defined by -1 <= y <= 1, with no bounds
+  // on x.
+  Eigen::MatrixXd bounding_A(2, 2);
+  Eigen::VectorXd bounding_b(2);
+  bounding_A << 0, 1, 0, -1;
+  bounding_b << 1, 1;
+
+  IrisOptions options;
+  options.bounding_region = HPolyhedron{bounding_A, bounding_b};
+
+  // Check both with and without the options.verify_domain_boundedness flag.
+  ConvexSets obstacles;
+  std::vector<HPolyhedron> regions;
+  regions.push_back(Iris(obstacles, sample, domain, options));
+  options.verify_domain_boundedness = false;
+  regions.push_back(Iris(obstacles, sample, domain, options));
+  for (const auto& region : regions) {
+    EXPECT_TRUE(region.PointInSet(Vector2d(0.99, 0.99)));
+    EXPECT_TRUE(region.PointInSet(Vector2d(-0.99, 0.99)));
+    EXPECT_TRUE(region.PointInSet(Vector2d(0.99, -0.99)));
+    EXPECT_TRUE(region.PointInSet(Vector2d(-0.99, -0.99)));
+  }
+}
+
 GTEST_TEST(IrisTest, TerminationConditions) {
   ConvexSets obstacles;
   obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
