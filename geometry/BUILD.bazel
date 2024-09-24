@@ -285,6 +285,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "internal_gltf_helpers",
+    srcs = ["internal_gltf_helpers.cc"],
+    hdrs = ["internal_gltf_helpers.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__subpackages__",
+    ],
+    deps = [
+        ":in_memory_mesh",
+        "//common:file_source",
+        "//common:memory_file",
+        "//common:string_container",
+        "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+drake_cc_library(
     name = "make_mesh_for_deformable",
     srcs = ["make_mesh_for_deformable.cc"],
     hdrs = ["make_mesh_for_deformable.h"],
@@ -964,6 +981,18 @@ drake_cc_googletest(
     name = "in_memory_mesh_test",
     deps = [
         ":in_memory_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_gltf_helpers_test",
+    data = [
+        "//geometry/render:test_models",
+    ],
+    deps = [
+        ":internal_gltf_helpers",
+        "//common:find_resource",
+        "//common:temp_directory",
     ],
 )
 
