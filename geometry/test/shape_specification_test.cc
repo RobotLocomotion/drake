@@ -643,6 +643,14 @@ GTEST_TEST(ShapeTest, ConvexFromMemory) {
   EXPECT_EQ(from_source.source().in_memory().mesh_file.filename_hint(),
             mesh_name);
   EXPECT_EQ(from_source.scale(), 3);
+
+  // Also confirm that we can compute the convex hull from the in-memory
+  // representation. We don't test all file formats; we trust that visual
+  // inspection of the code under test shows that it doesn't depend on file
+  // format.
+  const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
+  EXPECT_EQ(hull.num_vertices(), 8);
+  EXPECT_EQ(hull.num_elements(), 6);
 }
 
 GTEST_TEST(ShapeTest, MeshFromMemory) {
@@ -675,6 +683,14 @@ GTEST_TEST(ShapeTest, MeshFromMemory) {
   EXPECT_EQ(from_source.source().in_memory().mesh_file.filename_hint(),
             mesh_name);
   EXPECT_EQ(from_source.scale(), 3);
+
+  // Also confirm that we can compute the convex hull from the in-memory
+  // representation. We don't test all file formats; we trust that visual
+  // inspection of the code under test shows that it doesn't depend on file
+  // format.
+  const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
+  EXPECT_EQ(hull.num_vertices(), 8);
+  EXPECT_EQ(hull.num_elements(), 6);
 }
 
 class DefaultReifierTest : public ShapeReifier, public ::testing::Test {};
@@ -832,7 +848,7 @@ GTEST_TEST(ShapeTest, Volume) {
 
   const std::string non_obj = "only_extension_matters.not_obj";
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex(non_obj)),
-                              ".*only applies to obj, vtk.*");
+                              ".*only applies to .obj, .vtk.*");
   // We only support obj but should eventually support vtk.
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh(non_obj)),
                               ".*only supports .obj files.*");
