@@ -13,17 +13,18 @@ namespace {
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
 using geometry::GeometryProperties;
-using geometry::ProximityProperties;
 using geometry::internal::HydroelasticType;
 using geometry::internal::kComplianceType;
-using geometry::internal::kRelaxationTime;
 using geometry::internal::kElastic;
 using geometry::internal::kFriction;
 using geometry::internal::kHcDissipation;
-using geometry::internal::kPointStiffness;
 using geometry::internal::kHydroGroup;
+using geometry::internal::kMargin;
 using geometry::internal::kMaterialGroup;
+using geometry::internal::kPointStiffness;
+using geometry::internal::kRelaxationTime;
 using geometry::internal::kRezHint;
+using geometry::ProximityProperties;
 using std::optional;
 using testing::MatchesRegex;
 
@@ -102,25 +103,16 @@ template<typename T>
   return ::testing::AssertionSuccess();
 }
 
-class ParseProximityPropertiesTest : public ::testing::Test {
+class ParseProximityPropertiesTest : public test::DiagnosticPolicyTestBase {
  public:
-  ParseProximityPropertiesTest() {
-    // Don't let warnings leak into spdlog; tests should always specifically
-    // handle any warnings that appear.
-    diagnostic_.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-  }
-
   // This shadows the namespace-scoped free function under test in order to
   // bind the `diagnostic` argument.
   geometry::ProximityProperties ParseProximityProperties(
     const std::function<std::optional<double>(const char*)>& read_double,
     bool is_rigid, bool is_compliant) {
     return internal::ParseProximityProperties(
-        diagnostic_, read_double, is_rigid, is_compliant);
+        diagnostic_policy_, read_double, is_rigid, is_compliant);
   }
-
- protected:
-  DiagnosticPolicy diagnostic_;
 };
 
 // Confirms that an "empty" <drake:proximity_properties> tag produces an empty
@@ -233,7 +225,7 @@ TEST_F(ParseProximityPropertiesTest, HydroelasticModulus) {
 // Confirms ignored parsing of hydroelastic modulus for explicit rigid geometry.
 TEST_F(ParseProximityPropertiesTest, RigidHydroelasticModulusIgnored) {
   DiagnosticDetail warning;
-  diagnostic_.SetActionForWarnings([&](const DiagnosticDetail& detail) {
+  diagnostic_policy_.SetActionForWarnings([&](const DiagnosticDetail& detail) {
     warning = detail;
   });
   const double kValue = 1.75;
@@ -263,17 +255,52 @@ TEST_F(ParseProximityPropertiesTest, Dissipation) {
   EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
 }
 
-// Confirms successful parsing of linear dissipation.
-TEST_F(ParseProximityPropertiesTest, LinearDissipation) {
+// Confirms successful parsing of margin.
+TEST_F(ParseProximityPropertiesTest, Margin) {
+  const double kValue = 1.25;
+  ProximityProperties properties = ParseProximityProperties(
+      param_read_double("drake:hydroelastic_margin", kValue), !rigid,
+      !compliant);
+  EXPECT_TRUE(ExpectScalar(kHydroGroup, kMargin, kValue, properties));
+  // Margin is the only property.
+  EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
+  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+}
+
+// Confirms successful rejection of negative margin.
+TEST_F(ParseProximityPropertiesTest, BadMargin) {
+  const double kValue = -25;
+  ProximityProperties properties = ParseProximityProperties(
+      param_read_double("drake:hydroelastic_margin", kValue), !rigid,
+      !compliant);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*margin.*negative.*"));
+  EXPECT_FALSE(ExpectScalar(kHydroGroup, kMargin, kValue, properties));
+  EXPECT_EQ(properties.num_groups(), 1);  // Default group only.
+}
+
+// Confirms successful parsing of relaxation time.
+TEST_F(ParseProximityPropertiesTest, RelaxationTime) {
   const double kValue = 1.25;
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:relaxation_time", kValue), !rigid,
       !compliant);
   EXPECT_TRUE(
       ExpectScalar(kMaterialGroup, kRelaxationTime, kValue, properties));
-  // Dissipation is the only property.
+  // Relaxation time is the only property.
   EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
   EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+}
+
+// Confirms successful rejection of negative relaxation time.
+TEST_F(ParseProximityPropertiesTest, BadRelaxationTime) {
+  const double kValue = -10;
+  ProximityProperties properties = ParseProximityProperties(
+      param_read_double("drake:relaxation_time", kValue), !rigid,
+      !compliant);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*relaxation.*negative.*"));
+  EXPECT_FALSE(
+      ExpectScalar(kMaterialGroup, kRelaxationTime, kValue, properties));
+  EXPECT_EQ(properties.num_groups(), 1);  // Default group only.
 }
 
 // Confirms successful parsing of stiffness.
