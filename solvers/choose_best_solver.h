@@ -19,6 +19,15 @@ namespace solvers {
 [[nodiscard]] SolverId ChooseBestSolver(const MathematicalProgram& prog);
 
 /**
+ * Choose the best solver given the formulation in the optimization programs and
+ * the availability of the solvers.
+ * @throws std::exception if there is no available solver which can solve all of
+ * @p progs.
+ */
+[[nodiscard]] SolverId ChooseBestSolver(
+    const std::vector<const MathematicalProgram*>& progs);
+
+/**
  * Returns the set of solvers known to ChooseBestSolver.
  */
 [[nodiscard]] const std::set<SolverId>& GetKnownSolvers();
