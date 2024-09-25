@@ -151,7 +151,7 @@ def _setup_local_archive(repo_ctx, snopt_path):
 
 def _impl(repo_ctx):
     updated_attrs = None
-    snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
+    snopt_path = repo_ctx.getenv("SNOPT_PATH", "")
 
     if len(snopt_path) == 0:
         # When SNOPT is enabled (e.g., with `--config snopt`), then SNOPT_PATH

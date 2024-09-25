@@ -336,6 +336,7 @@ _do_pkg_config_repository = repository_rule(
         "extra_deprecation": attr.string(),
         "defer_error_os_names": attr.string_list(),
     },
+    environ = ["DRAKE_OS"],
     local = True,
     configure = True,
     implementation = _impl,

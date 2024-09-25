@@ -40,7 +40,7 @@ def _gurobi_impl(repo_ctx):
         # /opt/gurobi100*/linux64. If the user does not use the default
         # directory, the he/she should set GUROBI_HOME environment variable to
         # the gurobi file location.
-        gurobi_home = repo_ctx.os.environ.get("GUROBI_HOME", "")
+        gurobi_home = repo_ctx.getenv("GUROBI_HOME", "")
         repo_ctx.symlink(
             gurobi_home or _find_latest(
                 repo_ctx,
@@ -67,7 +67,7 @@ def _gurobi_impl(repo_ctx):
     )
 
     # Capture whether or not Gurobi tests can run in parallel.
-    license_unlimited_int = repo_ctx.os.environ.get("DRAKE_GUROBI_LICENSE_UNLIMITED", "0")  # noqa: E501
+    license_unlimited_int = repo_ctx.getenv("DRAKE_GUROBI_LICENSE_UNLIMITED", "0")  # noqa: E501
     license_unlimited = bool(int(license_unlimited_int) == 1)
     repo_ctx.file(
         "defs.bzl",
@@ -77,7 +77,6 @@ def _gurobi_impl(repo_ctx):
     )
 
 gurobi_repository = repository_rule(
-    environ = ["GUROBI_HOME", "DRAKE_GUROBI_LICENSE_UNLIMITED"],
     local = True,
     implementation = _gurobi_impl,
 )
