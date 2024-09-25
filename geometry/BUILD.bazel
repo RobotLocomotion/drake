@@ -46,6 +46,7 @@ drake_cc_package_library(
         ":meshcat_visualizer_params",
         ":proximity_engine",
         ":proximity_properties",
+        ":read_gltf_to_memory",
         ":read_obj",
         ":rgba",
         ":scene_graph",
@@ -281,6 +282,21 @@ drake_cc_library(
         "//common:file_source",
         "//common:memory_file",
         "//common:string_container",
+    ],
+)
+
+drake_cc_library(
+    name = "read_gltf_to_memory",
+    srcs = ["read_gltf_to_memory.cc"],
+    hdrs = ["read_gltf_to_memory.h"],
+    deps = [
+        ":in_memory_mesh",
+    ],
+    implementation_deps = [
+        "//common:file_source",
+        "//common:memory_file",
+        "//common:string_container",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -964,6 +980,20 @@ drake_cc_googletest(
     name = "in_memory_mesh_test",
     deps = [
         ":in_memory_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "read_gltf_to_memory_test",
+    data = [
+        "//geometry:test_gltf_files",
+        "//geometry/render:test_models",
+    ],
+    deps = [
+        ":read_gltf_to_memory",
+        "//common:find_resource",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
