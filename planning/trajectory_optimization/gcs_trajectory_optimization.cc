@@ -230,8 +230,28 @@ Subgraph::Subgraph(
   DRAKE_THROW_UNLESS(order >= 0);
   DRAKE_THROW_UNLESS(!regions_.empty());
 
+  std::vector<VectorXd> maybe_edge_offsets;
+
   if (edge_offsets) {
     DRAKE_THROW_UNLESS(edge_offsets->size() == edges_between_regions.size());
+  } else {
+    std::vector<std::vector<std::pair<double, double>>> continuous_bboxes;
+    continuous_bboxes.reserve(ssize(regions));
+    for (int i = 0; i < ssize(regions); ++i) {
+      continuous_bboxes.push_back(
+          geometry::optimization::internal::
+              GetMinimumAndMaximumValueAlongDimension(
+                  *(regions[i]), continuous_revolute_joints()));
+    }
+    maybe_edge_offsets.reserve(edges_between_regions.size());
+    for (const auto& [i, j] : edges_between_regions) {
+      maybe_edge_offsets.push_back(
+          geometry::optimization::internal::
+              ComputeOffsetContinuousRevoluteJoints(
+                  num_positions(), continuous_revolute_joints(),
+                  continuous_bboxes[i], continuous_bboxes[j]));
+    }
+    edge_offsets = &maybe_edge_offsets;
   }
 
   // Make sure all regions have the same ambient dimension.
@@ -252,7 +272,6 @@ Subgraph::Subgraph(
       HPolyhedron::MakeBox(Vector1d(h_min), Vector1d(h_max));
 
   // Add Regions with time scaling set.
-  Eigen::VectorXd this_edge_offset = Eigen::VectorXd::Zero(num_positions());
   for (int i = 0; i < ssize(regions_); ++i) {
     ConvexSets vertex_set;
     // Assign each control point to a separate set.
@@ -289,16 +308,12 @@ Subgraph::Subgraph(
 
     edges_.emplace_back(uv_edge);
 
-    // Add path continuity constraints.
-    if (edge_offsets) {
-      // In this case, we instead enforce the constraint
-      // GetControlPoints(u).col(order) - GetControlPoints(v).col(0) =
-      // -tau_uv.value(), via Ax = -edge_offsets.value()[idx], A = [I, -I],
-      // x = [u_controls.col(order); v_controls.col(0)].
-      this_edge_offset = -edge_offsets->at(idx);
-    }
+    // Add path continuity constraints. To handle edge offsets, we enforce the
+    // constraint GetControlPoints(u).col(order) - GetControlPoints(v).col(0) =
+    // -tau_uv.value(), via Ax = -edge_offsets->at(idx), A = [I, -I],
+    // x = [u_controls.col(order); v_controls.col(0)].
     const auto path_continuity_constraint =
-        std::make_shared<LinearEqualityConstraint>(A, this_edge_offset);
+        std::make_shared<LinearEqualityConstraint>(A, -edge_offsets->at(idx));
     uv_edge->AddConstraint(Binding<Constraint>(
         path_continuity_constraint,
         {GetControlPoints(*u).col(order), GetControlPoints(*v).col(0)}));
