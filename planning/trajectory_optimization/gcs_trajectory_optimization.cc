@@ -794,6 +794,38 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
       DRAKE_THROW_UNLESS(0 <= i && 0 <= j && i < from_subgraph_.size() &&
                          j < to_subgraph_.size());
     }
+
+    if (!edge_offsets) {
+      // Compute bounding boxes for the regions along dimensions corresponding
+      // to continuous revolute joints, and use them to determine the edge
+      // offsets.
+      std::vector<std::vector<std::pair<double, double>>> continuous_bboxes_A;
+      continuous_bboxes_A.reserve(ssize(from_subgraph.regions()));
+      for (int i = 0; i < ssize(from_subgraph.regions()); ++i) {
+        continuous_bboxes_A.push_back(
+            geometry::optimization::internal::
+                GetMinimumAndMaximumValueAlongDimension(
+                    *(from_subgraph.regions()[i]),
+                    continuous_revolute_joints()));
+      }
+      std::vector<std::vector<std::pair<double, double>>> continuous_bboxes_B;
+      continuous_bboxes_B.reserve(ssize(to_subgraph.regions()));
+      for (int i = 0; i < ssize(to_subgraph.regions()); ++i) {
+        continuous_bboxes_B.push_back(
+            geometry::optimization::internal::
+                GetMinimumAndMaximumValueAlongDimension(
+                    *(to_subgraph.regions()[i]), continuous_revolute_joints()));
+      }
+      maybe_edge_offsets.reserve(edges_between_regions->size());
+      for (const auto& [i, j] : *edges_between_regions) {
+        maybe_edge_offsets.push_back(
+            geometry::optimization::internal::
+                ComputeOffsetContinuousRevoluteJoints(
+                    num_positions(), continuous_revolute_joints(),
+                    continuous_bboxes_A[i], continuous_bboxes_B[j]));
+      }
+      edge_offsets = &maybe_edge_offsets;
+    }
   } else {
     std::tie(maybe_edges_between_regions, maybe_edge_offsets) =
         ComputePairwiseIntersections(from_subgraph.regions(),
@@ -811,9 +843,7 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     // If the user specified edges_between_regions but not edge_offsets, then
     // edge_offsets are implicitly assumed to be zero. That is indicated here by
     // edge_offsets being nullptr.
-    const Eigen::VectorXd& edge_offset =
-        edge_offsets ? (*edge_offsets)[edge_idx]
-                     : Eigen::VectorXd::Zero(num_positions());
+    const Eigen::VectorXd& edge_offset = (*edge_offsets)[edge_idx];
 
     // Check if the overlap between the sets is contained in the subspace.
     if (subspace != nullptr) {
