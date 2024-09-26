@@ -514,6 +514,9 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
       for (const auto& source_part : source_prop.parts) {
         vtkNew<vtkActor> target_actor;
         target_actor->ShallowCopy(source_part.actor);
+        vtkNew<vtkOpenGLPolyDataMapper> target_mapper;
+        target_mapper->ShallowCopy(source_part.actor->GetMapper());
+        target_actor->SetMapper(target_mapper);
         renderer.AddActor(target_actor);
         target_prop.parts.push_back(
             Part{.actor = std::move(target_actor), .T_GA = source_part.T_GA});
