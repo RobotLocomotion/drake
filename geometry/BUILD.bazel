@@ -880,6 +880,7 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/env_256_brick_room.jpg",
+        "test/env_256_cornell_box.hdr",
         "test/env_256_cornell_box.png",
         "test/env_256_six_color_room.hdr",
         "test/env_256_six_color_room.png",
