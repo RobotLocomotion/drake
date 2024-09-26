@@ -1,0 +1,14 @@
+Add a missing linkopts setting to a library, so the subsequent patch
+command to set all libraries to static linking will indeed find all
+libraries.  This patch could be upstreamed.
+
+--- absl/time/internal/cctz/BUILD.bazel
++++ absl/time/internal/cctz/BUILD.bazel
+@@ -34,6 +34,7 @@ cc_library(
+     hdrs = [
+         "include/cctz/civil_time.h",
+     ],
++    linkopts = [],
+     textual_hdrs = ["include/cctz/civil_time_detail.h"],
+     visibility = ["//visibility:public"],
+     deps = ["//absl/base:config"],
