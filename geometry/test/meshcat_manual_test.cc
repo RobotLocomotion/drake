@@ -436,10 +436,28 @@ Ignore those for now; we'll need to circle back and fix them later.
   MaybePauseForUser();
 
   meshcat->SetEnvironmentMap(
+      FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.hdr"));
+
+  std::cout << "- The environment map has been changed for an hdr version of "
+            << "the Cornell box. The scene will get brighter as the hdr "
+            << "texture contains much more radiant energy\n";
+  MaybePauseForUser();
+
+  meshcat->SetProperty("/Render Settings/<object>", "exposure", 0.25);
+  std::cout << "- To accommodate the extra radiant energy in the hdr "
+            << "environment map, we've changed /Render Settings/<object>'s "
+            << "exposure value to 0.25. Open that control, and play with the "
+            << "exposure yourself. Lower values will make the scene darker, "
+            << "higher values brighter.\n";
+  MaybePauseForUser();
+
+  meshcat->SetProperty("/Render Settings/<object>", "exposure", 1.0);
+  meshcat->SetEnvironmentMap(
       FindResourceOrThrow("drake/geometry/test/env_256_brick_room.jpg"));
 
   std::cout << "- The Cornell box has been replaced by a room with brick walls "
-            << "loaded from a jpg.\n";
+            << "loaded from a jpg. The exposure value has been reset to its "
+            << "default value of 1.\n";
   MaybePauseForUser();
 
   std::cout << ltrim(R"""(
@@ -578,7 +596,8 @@ Ignore those for now; we'll need to circle back and fix them later.
                "\n";
 
   meshcat->SetEnvironmentMap(
-      FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.png"));
+      FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.hdr"));
+  meshcat->SetProperty("/Render Settings/<object>", "exposure", 0.25);
   meshcat->SetCameraTarget(Vector3d{-0.4, 0, 0});
 
   meshcat->SetObject("gltf_in_memory", GetPyramidInMemory(0.1));
@@ -598,6 +617,7 @@ Ignore those for now; we'll need to circle back and fix them later.
          "- the iiwa is visible,\n"
          "- the mustard bottle visible including its texture (front label),\n"
          "- the animation plays,\n"
+         "- the exposure has been set to 0.25,\n"
          "- the environment map is present, and\n"
          "- the browser Console has no warnings nor errors\n"
          "  (use F12 to open the panel with the Console).\n\n";
@@ -606,6 +626,7 @@ Ignore those for now; we'll need to circle back and fix them later.
   MaybePauseForUser();
 
   meshcat->SetEnvironmentMap("");
+  meshcat->SetProperty("/Render Settings/<object>", "exposure", 1.0);
   meshcat->SetCameraPose(Vector3d{-1.0, -1.0, 1.5}, Vector3d{0, 0, 0.5});
 
   meshcat->AddButton("ButtonTest");
