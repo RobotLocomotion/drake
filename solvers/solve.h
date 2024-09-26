@@ -46,11 +46,12 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
 
 /**
  * Solves progs[i] into result[i], optionally using initial_guess[i] and
- * solver_options[i] if given, by invoking solvers[i] if provided.  If
- * solvers[i] is nullptr then the best available solver is constructed for each
- * progs[i] individually depending on the availability of the solver and the
- * problem formulation. If solvers == nullptr then this is done for every
- * progs[i]. Uses at most parallelism cores, with dynamic scheduling by default.
+ * solver_options[i] if given, by invoking the solver at solver_ids[i] if
+ * provided.  If solver_ids[i] is nullopt then the best available solver is
+ * selected for each progs[i] individually depending on the availability of
+ * the solver and the problem formulation. If solver_ids == nullptr then this is
+ * done for every progs[i]. Uses at most parallelism cores, with dynamic
+ * scheduling by default.
  *
  * @note only programs which are thread safe are solved concurrently. Programs
  * which are not thread safe will be solved sequentially in a thread safe
@@ -61,68 +62,13 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
  *
  * @throws if any of the progs are nullptr.
  *
- * @throws if solvers[i] cannot solve progs[i].
+ * @throws if the solver specified by solver_ids[i] cannot solve progs[i].
  */
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses = nullptr,
     const std::vector<const SolverOptions*>* solver_options = nullptr,
-    const std::vector<const SolverInterface*>* solvers = nullptr,
-    const Parallelism parallelism = Parallelism::Max(),
-    bool dynamic_schedule = true);
-
-/**
- * Solves progs[i] into result[i], optionally using initial_guesses[i] and
- * solver_options if given, by invoking solvers[i] if provided.  If
- * solvers[i] is nullptr then the best available solver is constructed for each
- * progs[i] individually depending on the availability of the solver and the
- * problem formulation. If solvers == nullptr then this is done for every
- * progs[i]. Uses at most parallelism cores, with dynamic scheduling by default.
- *
- * @note only programs which are thread safe are solved concurrently. Programs
- * which are not thread safe will be solved sequentially in a thread safe
- * manner.
- *
- * @throws if initial_guesses and solver_options are provided and not the same
- * size as progs.
- *
- * @throws if any of the progs are nullptr.
- *
- * @throws if solvers[i] cannot solve progs[i].
- */
-std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::vector<const MathematicalProgram*>& progs,
-    const std::vector<const Eigen::VectorXd*>* initial_guesses = nullptr,
-    const std::optional<SolverOptions>& solver_options = std::nullopt,
-    const std::vector<const SolverInterface*>* solvers = nullptr,
-    const Parallelism parallelism = Parallelism::Max(),
-    bool dynamic_schedule = true);
-
-/**
- * Solves progs[i] into result[i], optionally using initial_guesses[i] and
- * solver_options[i] if given, by invoking the solver if provided. If
- * solvers is not provided then the best available solver is constructed which
- * can solve all of progs. Uses at most parallelism cores, with dynamic
- * scheduling by default.
- *
- * @note only programs which are thread safe are solved concurrently. Programs
- * which are not thread safe will be solved sequentially in a thread safe
- * manner.
- *
- * @throws if the provided solver cannot solve all of progs or if the solver_id
- * is not provided and there is not a single solver which can solve all of
- * progs.
- *
- * @throws if initial_guesses and solver_options are provided and not the same
- * size as progs.
- *
- * @throws if any of the progs are nullptr.
- */
-std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::vector<const MathematicalProgram*>& progs,
-    const std::vector<const Eigen::VectorXd*>* initial_guesses = nullptr,
-    const std::vector<const SolverOptions*>* solver_options = nullptr,
-    const std::optional<SolverId>& solver_id = std::nullopt,
+    const std::vector<std::optional<SolverId>>* solver_ids = nullptr,
     const Parallelism parallelism = Parallelism::Max(),
     bool dynamic_schedule = true);
 

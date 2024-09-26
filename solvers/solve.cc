@@ -1,14 +1,15 @@
 #include "drake/solvers/solve.h"
 
 #include <memory>
+#include <unordered_map>
 #include <utility>
+#include <variant>
 
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/choose_best_solver.h"
-#include "drake/solvers/get_program_type.h"
 #include "drake/solvers/solver_interface.h"
 
 namespace drake {
@@ -42,89 +43,87 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog) {
 }
 
 namespace {
-// Returns the initial guess and solver options stored at the given index if
-// avaible otherwise std::nullopt. The returned solver option has
-// CommonSolverOption::kMaxThreads set to 1 regardless of the value of
-// solver_options[i].CommonSolverOption::kMaxThreads since the return of this
-// will be used by SolveInParallel.
-std::pair<std::optional<Eigen::VectorXd>, SolverOptions>
-GetInitialGuessAndSolveOptionsAtIndexForParallel(
-    int index, const std::vector<const Eigen::VectorXd*>* initial_guesses,
-    const std::vector<const SolverOptions*>* solver_options) {
-  SolverOptions options;
-  if (solver_options->at(index)) {
-    options = *(solver_options->at(index));
-  }
-  // Copy the solver options and make sure that they solve with only 1
-  // thread. This is achieved by setting the
-  // CommonSolverOption.kMaxThreads to 1. If the solver options
-  // explicitly specify to use more threads using a solver specific
-  // option, then more threads than 1 may be used.
-  options.SetOption(CommonSolverOption::kMaxThreads, 1);
-  std::optional<Eigen::VectorXd> initial_guess{std::nullopt};
-  if (initial_guesses->at(index) != nullptr) {
-    initial_guess = *(initial_guesses->at(index));
-  }
-  return std::make_pair(initial_guess, options);
-}
-
-// Returns the initial guess and solver options stored at the given index if
-// avaible otherwise std::nullopt. The returned solver option has
-// CommonSolverOption::kMaxThreads set to 1 regardless of the value of
-// solver_options[i].CommonSolverOption::kMaxThreads since the return of this
-// will be used by SolveInParallel.
-std::pair<std::optional<Eigen::VectorXd>, SolverOptions>
-GetInitialGuessAndSolveOptionsAtIndexForParallel(
-    int index, const std::vector<const Eigen::VectorXd*>* initial_guesses,
-    const std::optional<SolverOptions>& solver_options) {
-  SolverOptions options;
-  if (solver_options.has_value()) {
-    options = solver_options.value();
-  }
-  // Copy the solver options and make sure that they solve with only 1
-  // thread. This is achieved by setting the
-  // CommonSolverOption.kMaxThreads to 1. If the solver options
-  // explicitly specify to use more threads using a solver specific
-  // option, then more threads than 1 may be used.
-  options.SetOption(CommonSolverOption::kMaxThreads, 1);
-  std::optional<Eigen::VectorXd> initial_guess{std::nullopt};
-  if (initial_guesses->at(index) != nullptr) {
-    initial_guess = *(initial_guesses->at(index));
-  }
-  return std::make_pair(initial_guess, options);
-}
-
-template <typename T,
-          typename = std::enable_if_t<
-              std::is_same_v<T, const std::vector<const SolverOptions*>*> ||
-              std::is_same_v<T, const std::optional<SolverOptions>&>>>
+using SolverOptionValue = std::variant<const std::vector<const SolverOptions*>*,
+                                       const std::optional<SolverOptions>*>;
 std::vector<MathematicalProgramResult> SolveInParallelImpl(
     const std::vector<const MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
-    const T solver_options, const std::vector<const SolverInterface*>* solvers,
-    bool use_thread_index_for_solver, const Parallelism parallelism,
-    bool dynamic_schedule) {
+    const SolverOptionValue solver_options,
+    const std::vector<std::optional<SolverId>>* solver_ids,
+    const Parallelism parallelism, bool dynamic_schedule) {
   std::vector<std::optional<MathematicalProgramResult>> results_parallel{
       progs.size(), std::nullopt};
 
+  std::unordered_map<SolverId, std::unique_ptr<SolverInterface>> solvers;
+  for (int i = 0; i < ssize(progs); ++i) {
+    // Identity the best solver for the program and store it in the map of
+    // available solvers.
+    const SolverId solver_id =
+        solver_ids->at(i).value_or(ChooseBestSolver(*(progs.at(i))));
+    if (!solvers.contains(solver_id)) {
+      solvers.insert({solver_id, MakeSolver(solver_id)});
+    }
+    DRAKE_THROW_UNLESS(
+        solvers.at(solver_id)->AreProgramAttributesSatisfied(*(progs.at(i))));
+  }
+
+  // Extracts the options from the variant and sets the maximum thread number to
+  // 1 if set_max_threads_to_one is true.
+  auto GetOptions = [&solver_options](const int64_t i,
+                                      bool set_max_threads_to_one) {
+    SolverOptions options{};
+    int variant_index = solver_options.index();
+    if (variant_index == 0) {
+      const SolverOptions* maybe_options =
+          std::get<const std::vector<const SolverOptions*>*>(solver_options)
+              ->at(i);
+      if (maybe_options != nullptr) {
+        options = *maybe_options;
+      }
+    } else {
+      const std::optional<SolverOptions> maybe_options =
+          *std::get<const std::optional<SolverOptions>*>(solver_options);
+      if (maybe_options.has_value()) {
+        options = maybe_options.value();
+      }
+    }
+    // Copy the solver options and make sure that they solve with only 1
+    // thread. This is achieved by setting the
+    // CommonSolverOption.kMaxThreads to 1. If the solver options
+    // explicitly specify to use more threads using a solver specific
+    // option, then more threads than 1 may be used.
+    if (set_max_threads_to_one) {
+      options.SetOption(CommonSolverOption::kMaxThreads, 1);
+    }
+    return options;
+  };
+
   auto DoSolveParallel = [&](const int thread_num, const int64_t i) {
     unused(thread_num);
-    if (!progs[i]->IsThreadSafe()) {
-      results_parallel[i] = std::nullopt;
-    }
-    auto [initial_guess, options] =
-        GetInitialGuessAndSolveOptionsAtIndexForParallel(i, initial_guesses,
-                                                         solver_options);
 
-    if (solvers == nullptr || solvers->at(i) == nullptr) {
-      results_parallel[i] = Solve(*(progs.at(i)), initial_guess, options);
-    } else {
-      MathematicalProgramResult* result_local{nullptr};
-      const int solver_index = use_thread_index_for_solver ? thread_num : i;
-      solvers->at(solver_index)
-          ->Solve(*(progs.at(i)), initial_guess, options, result_local);
-      results_parallel[i] = std::move(*result_local);
+    if (!progs[i]->IsThreadSafe()) {
+      // If this program is not thread safe, exit after identifying the
+      // necessary solver and solve it later.
+      return;
     }
+
+    // Convert the initial guess into the requisite optional.
+    std::optional<Eigen::VectorXd> initial_guess{std::nullopt};
+    if (initial_guesses->at(i) != nullptr) {
+      initial_guess = *(initial_guesses->at(i));
+    }
+
+    const SolverOptions options = GetOptions(i, true /* solving_in_parallel */);
+
+    // Solve the program.
+    MathematicalProgramResult* result_local{nullptr};
+    // Identity the best solver for the program and store it in the map of
+    // available solvers.
+    const SolverId solver_id =
+        solver_ids->at(i).value_or(ChooseBestSolver(*(progs.at(i))));
+    solvers.at(solver_id)->Solve(*(progs.at(i)), initial_guess, options,
+                                 result_local);
+    results_parallel[i] = std::move(*result_local);
   };
 
   if (dynamic_schedule) {
@@ -142,15 +141,21 @@ std::vector<MathematicalProgramResult> SolveInParallelImpl(
   std::vector<MathematicalProgramResult> results(progs.size());
   for (int i = 0; i < ssize(progs); ++i) {
     if (results_parallel[i] == std::nullopt) {
-      auto [initial_guess, options] =
-          GetInitialGuessAndSolveOptionsAtIndexForParallel(i, initial_guesses,
-                                                           solver_options);
-      if (solvers == nullptr || solvers->at(i) == nullptr) {
-        results[i] = Solve(*(progs.at(i)), initial_guess, options);
-      } else {
-        solvers->at(i)->Solve(*(progs.at(i)), initial_guess, options,
-                              &(results.at(i)));
+      // Convert the initial guess into the requisite optional.
+      std::optional<Eigen::VectorXd> initial_guess{std::nullopt};
+      if (initial_guesses->at(i) != nullptr) {
+        initial_guess = *(initial_guesses->at(i));
       }
+
+      const SolverOptions options =
+          GetOptions(i, false /* solving_in_parallel */);
+
+      // The best solver was identified and constructed in the parallel phase,
+      // so we can just select the best solver from the solver map.
+      const SolverId solver_id =
+          solver_ids->at(i).value_or(ChooseBestSolver(*(progs.at(i))));
+      solvers.at(solver_id)->Solve(*(progs.at(i)), initial_guess, options,
+                                   &(results.at(i)));
     } else {
       results[i] = *results_parallel[i];
     }
@@ -164,7 +169,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
     const std::vector<const SolverOptions*>* solver_options,
-    const std::vector<const SolverInterface*>* solvers,
+    const std::vector<std::optional<SolverId>>* solvers,
     const Parallelism parallelism, bool dynamic_schedule) {
   DRAKE_THROW_UNLESS(std::all_of(progs.begin(), progs.end(), [](auto prog) {
     return prog != nullptr;
@@ -178,61 +183,18 @@ std::vector<MathematicalProgramResult> SolveInParallel(
 
   if (solvers != nullptr) {
     DRAKE_THROW_UNLESS(progs.size() == solvers->size());
-    for (int i = 0; i < ssize(progs); ++i) {
-      DRAKE_THROW_UNLESS(
-          solvers->at(i) == nullptr ||
-          solvers->at(i)->AreProgramAttributesSatisfied(*(progs.at(i))));
-    }
   }
 
-  return SolveInParallelImpl<const std::vector<const SolverOptions*>*>(
-      progs, initial_guesses, solver_options, solvers,
-      false, /* use_thread_index_for_solver is false since a unique solver is
-               used for every program */
-      parallelism, dynamic_schedule);
+  return SolveInParallelImpl(progs, initial_guesses, solver_options, solvers,
+                             parallelism, dynamic_schedule);
 }
 
-// std::vector<MathematicalProgramResult> SolveInParallel(
-//    const std::vector<const MathematicalProgram*>& progs,
-//    const std::vector<const Eigen::VectorXd*>* initial_guesses = nullptr,
-//    const std::vector<const SolverOptions*>* solver_options = nullptr,
-//    const std::optional<SolverId>& solver_id = std::nullopt,
-//    const Parallelism parallelism = Parallelism::Max(),
-//    bool dynamic_schedule = true) {
-//  DRAKE_THROW_UNLESS(std::all_of(progs.begin(), progs.end(), [](auto prog) {
-//    return prog != nullptr;
-//  }));
-//  if (initial_guesses != nullptr) {
-//    DRAKE_THROW_UNLESS(progs.size() == initial_guesses->size());
-//  }
-//  if (solver_options != nullptr) {
-//    DRAKE_THROW_UNLESS(progs.size() == solver_options->size());
-//  }
-//
-//  std::vector<std::unique_ptr<SolverInterface>> solvers;
-//  // This is used for passing to SolveInParallelImpl. This should not outlive
-//  // solvers.
-//  std::vector<const SolverInterface*> solvers_bare_pointer;
-//  solvers.reserve(parallelism.num_threads());
-//  solvers_bare_pointer.reserve(parallelism.num_threads());
-//  for (int i = 0; i < parallelism.num_threads(); ++i) {
-//    solvers.push_back(MakeSolver(solver_id.value_or(ChooseBestSolver(progs))));
-//    solvers_bare_pointer.push_back(solvers.back().get());
-//  }
-//  return SolveInParallelImpl<const std::optional<SolverId>>(
-//      progs, initial_guesses, solver_options, solvers,
-//      true, /* use_thread_index_for_solver is false since
-//               a unique solver is used in every thread */
-//      parallelism, dynamic_schedule);
-//}
-
- std::vector<MathematicalProgramResult> SolveInParallel(
+std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const MathematicalProgram*>& progs,
-    const std::vector<const Eigen::VectorXd*>* initial_guesses = nullptr,
+    const std::vector<const Eigen::VectorXd*>* initial_guesses,
     const std::optional<SolverOptions>& solver_options,
-    const std::optional<SolverId>& solver_id = std::nullopt,
-    const Parallelism parallelism = Parallelism::Max(),
-    bool dynamic_schedule = true) {
+    const std::optional<SolverId>& solver_id, const Parallelism parallelism,
+    bool dynamic_schedule) {
   DRAKE_THROW_UNLESS(std::all_of(progs.begin(), progs.end(), [](auto prog) {
     return prog != nullptr;
   }));
@@ -240,22 +202,9 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     DRAKE_THROW_UNLESS(progs.size() == initial_guesses->size());
   }
 
-  std::vector<std::unique_ptr<SolverInterface>> solvers;
-  // This is used for passing to SolveInParallelImpl. This should not outlive
-  // solvers.
-  std::vector<const SolverInterface*> solvers_bare_pointer;
-  solvers.reserve(parallelism.num_threads());
-  solvers_bare_pointer.reserve(parallelism.num_threads());
-  for (int i = 0; i < parallelism.num_threads(); ++i) {
-    solvers.push_back(MakeSolver(solver_id.value_or(ChooseBestSolver(progs))));
-    solvers_bare_pointer.push_back(solvers.back().get());
-  }
-  return SolveInParallelImpl(progs, initial_guesses, solver_options, solvers,
-                             true, /* use_thread_index_for_solver is false
-                             since
-                                      a unique solver is used in every thread
-                                      */
-                             parallelism, dynamic_schedule);
+  std::vector<std::optional<SolverId>> solver_ids{progs.size(), solver_id};
+  return SolveInParallelImpl(progs, initial_guesses, &solver_options,
+                             &solver_ids, parallelism, dynamic_schedule);
 }
 
 }  // namespace solvers
