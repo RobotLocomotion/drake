@@ -14,10 +14,12 @@ def abseil_cpp_internal_repository(
             ":patches/inline_namespace.patch",
         ],
         patch_cmds = [
+            # Back-fill a linkopts key missing in the upstream build system.
+            "sed -i -e 's|name = .civil_time.,|name = \"civil_time\", linkopts = [],|' absl/time/internal/cctz/BUILD.bazel",  # noqa
             # Force linkstatic = 1 everywhere. First, remove the few existing
             # uses so that we don't get "duplicate kwarg" errors. Then, add it
             # anywhere that linkopts already appears.
-            "sed -i -e 's|linkstatic = 1,||; s|linkopts = |linkstatic = 1, linkopts =|' absl/*/BUILD.bazel",  # noqa
+            "sed -i -e 's|linkstatic = 1,||; s|linkopts = |linkstatic = 1, linkopts = |' $(find absl -name BUILD.bazel)",  # noqa
         ],
         mirrors = mirrors,
     )
