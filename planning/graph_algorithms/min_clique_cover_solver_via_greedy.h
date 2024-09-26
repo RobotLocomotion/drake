@@ -21,7 +21,7 @@ namespace graph_algorithms {
  * clique is solved again. This loop continues until a clique is found which is
  * smaller than the min clique size.
  *
- * @note if min clique size > 1, then this class will note strictly compute a
+ * @note if min clique size > 1, then this class will not strictly compute a
  * clique cover since not all vertices will be covered.
  */
 class MinCliqueCoverSolverViaGreedy final : public MinCliqueCoverSolverBase {
