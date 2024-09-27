@@ -144,6 +144,8 @@ GTEST_TEST(MinCliqueCoverSolverViaGreedyTestTest, ButterflyGraph) {
   solution.clear();
   solution.insert(std::initializer_list<int>{0, 3, 4});
   solution.insert(std::initializer_list<int>{1, 2});
+  possible_solutions.push_back(solution);
+  EXPECT_EQ(ssize(possible_solutions), 2);
   TestMinCliqueCover(graph, true, possible_solutions, &solver);
 
   // If we make the minimum clique size 3, then the solution is only one of
@@ -155,6 +157,8 @@ GTEST_TEST(MinCliqueCoverSolverViaGreedyTestTest, ButterflyGraph) {
   possible_solutions.push_back(solution);
   solution.clear();
   solution.insert(std::initializer_list<int>{0, 3, 4});
+  possible_solutions.push_back(solution);
+  EXPECT_EQ(ssize(possible_solutions), 2);
   TestMinCliqueCover(graph, true, possible_solutions, &solver);
 }
 

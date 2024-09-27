@@ -77,7 +77,7 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, TestConstructorSettersAndGetters) {
   EXPECT_TRUE(solver2.GetSolverOptions().get_print_to_console());
 }
 
-GTEST_TEST(MaxCliqueSolverViaGreedyTest, TestClone) {
+GTEST_TEST(MaxCliqueSolverViaMipTest, TestClone) {
   const Eigen::Vector2d initial_guess = Eigen::Vector2d::Ones();
   solvers::SolverOptions options{};
   options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 1);
@@ -85,7 +85,7 @@ GTEST_TEST(MaxCliqueSolverViaGreedyTest, TestClone) {
   std::unique_ptr<MaxCliqueSolverBase> solver_clone = solver.Clone();
   auto solver_clone_mip =
       dynamic_cast<MaxCliqueSolverViaMip*>(solver_clone.get());
-  EXPECT_FALSE(solver_clone_mip == nullptr);
+  ASSERT_FALSE(solver_clone_mip == nullptr);
   EXPECT_TRUE(CompareMatrices(solver.GetInitialGuess().value(),
                               solver_clone_mip->GetInitialGuess().value()));
   EXPECT_EQ(solver_clone_mip->GetSolverOptions().get_print_to_console(), 1);

@@ -16,7 +16,7 @@ class MinCliqueCoverSolverBase {
   virtual ~MinCliqueCoverSolverBase() {}
 
   /**
-   * Given the adjacency matrix of an undirected graph, finds a (pontentially
+   * Given the adjacency matrix of an undirected graph, finds a (potentially
    * approximate) minimum clique cover of the graph. A clique is a collection of
    * vertices in a graph such that each pair of vertices is connected by an edge
    * (i.e. a fully connected subgraph). A clique cover is a collection of
