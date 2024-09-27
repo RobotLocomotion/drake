@@ -756,7 +756,10 @@ drake_cc_library(
     name = "vtk_opengl_init",
     srcs = ["vtk_opengl_init.cc"],
     internal = True,
-    visibility = ["//geometry:__subpackages__"],
+    visibility = [
+        "//geometry:__subpackages__",
+        "@vtk_internal//:__subpackages__",
+    ],
     deps = [
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkRenderingOpenGL2",
