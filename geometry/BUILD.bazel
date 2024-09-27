@@ -752,18 +752,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "vtk_opengl_init",
-    srcs = ["vtk_opengl_init.cc"],
-    internal = True,
-    visibility = ["//geometry:__subpackages__"],
-    deps = [
-        "@vtk_internal//:vtkCommonCore",
-        "@vtk_internal//:vtkRenderingOpenGL2",
-    ],
-    alwayslink = True,
-)
-
 drake_cc_googletest(
     name = "meshcat_visualizer_test",
     data = [
