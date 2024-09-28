@@ -109,7 +109,7 @@ std::vector<MathematicalProgramResult> SolveInParallelImpl(
 
     // Convert the initial guess into the requisite optional.
     std::optional<Eigen::VectorXd> initial_guess{std::nullopt};
-    if (initial_guesses->at(i) != nullptr) {
+    if (initial_guesses != nullptr && initial_guesses->at(i) != nullptr) {
       initial_guess = *(initial_guesses->at(i));
     }
 
@@ -147,7 +147,7 @@ std::vector<MathematicalProgramResult> SolveInParallelImpl(
     if (results_parallel[i] == std::nullopt) {
       // Convert the initial guess into the requisite optional.
       std::optional<Eigen::VectorXd> initial_guess{std::nullopt};
-      if (initial_guesses->at(i) != nullptr) {
+      if (initial_guesses != nullptr && initial_guesses->at(i) != nullptr) {
         initial_guess = *(initial_guesses->at(i));
       }
 
