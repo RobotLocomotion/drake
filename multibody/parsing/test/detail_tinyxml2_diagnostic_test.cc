@@ -28,6 +28,7 @@ class TinyXml2DiagnosticTest : public test::DiagnosticPolicyTestBase {
   <warning unsupported_attribute='10'>
     <unsupported_element/>
   </warning>
+  <warning unsupported_attribute='20'/>
 </stuff>
 )""";
   }
@@ -121,19 +122,27 @@ TEST_F(TinyXml2DiagnosticContentsTest, PolicyForNode) {
 }
 
 TEST_F(TinyXml2DiagnosticContentsTest, Unsuppported) {
-  diagnostic_.WarnUnsupportedElement(
-      GetFirstChildNamed("warning"), "unsupported_element");
+  const XMLElement& warning_node = GetFirstChildNamed("warning");
+  diagnostic_.WarnUnsupportedElement(warning_node, "unsupported_element");
   EXPECT_EQ(TakeWarning(),
             "<literal-string>.stuff:6: warning: The tag 'unsupported_element'"
             " found as a child of 'warning' is currently unsupported and will"
             " be ignored.");
 
-  diagnostic_.WarnUnsupportedAttribute(
-      GetFirstChildNamed("warning"), "unsupported_attribute");
+  diagnostic_.WarnUnsupportedAttribute(warning_node, "unsupported_attribute");
   EXPECT_EQ(TakeWarning(),
             "<literal-string>.stuff:5: warning: The attribute"
             " 'unsupported_attribute' found in a 'warning' tag is currently"
             " unsupported and will be ignored.");
+
+  // Repeat the warning for the second instance of unsupported_element. This
+  // should *not* produce an additional warning, since it would produce a
+  // message that was identical except for the location in the file.
+  const XMLElement* repeated_warning_node =
+      warning_node.NextSiblingElement("warning");
+  ASSERT_NE(repeated_warning_node, nullptr);
+  diagnostic_.WarnUnsupportedAttribute(*repeated_warning_node,
+                                       "unsupported_attribute");
 }
 
 }  // namespace

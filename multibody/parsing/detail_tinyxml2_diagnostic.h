@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_set>
 
 #include <tinyxml2.h>
 
@@ -56,6 +57,8 @@ class TinyXml2Diagnostic {
   const drake::internal::DiagnosticPolicy* diagnostic_{};
   const DataSource* data_source_{};
   const std::string file_extension_;
+  // Keep a history to avoid duplicate warnings.
+  mutable std::unordered_set<std::string> warnings_;
 };
 
 }  // namespace internal

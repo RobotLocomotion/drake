@@ -36,7 +36,10 @@ DiagnosticDetail TinyXml2Diagnostic::MakeDetail(
 
 void TinyXml2Diagnostic::Warning(
     const XMLNode& location, const std::string& message) const {
-  diagnostic_->Warning(MakeDetail(location, message));
+  // Avoid warnings with exactly the same message string.
+  if (warnings_.insert(message).second) {
+    diagnostic_->Warning(MakeDetail(location, message));
+  }
 }
 
 void TinyXml2Diagnostic::Error(
