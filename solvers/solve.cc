@@ -126,15 +126,19 @@ std::vector<MathematicalProgramResult> SolveInParallelImpl(
     results_parallel[i] = std::move(*result_local);
   };
 
-  if (dynamic_schedule) {
-    DynamicParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()),
-                                0, ssize(progs), DoSolveParallel,
-                                ParallelForBackend::BEST_AVAILABLE);
-  } else {
-    StaticParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()),
-                               0, ssize(progs), DoSolveParallel,
-                               ParallelForBackend::BEST_AVAILABLE);
-  }
+  // if (dynamic_schedule) {
+  //   DynamicParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()),
+  //                               0, ssize(progs), DoSolveParallel,
+  //                               ParallelForBackend::BEST_AVAILABLE);
+  // } else {
+  //   StaticParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()),
+  //                              0, ssize(progs), DoSolveParallel,
+  //                              ParallelForBackend::BEST_AVAILABLE);
+  // }
+
+  unused(DoSolveParallel);
+  unused(parallelism);
+  unused(dynamic_schedule);
 
   // Now finish solving the programs which cannot be solved in parallel and
   // write the final results to the results vector.
