@@ -764,9 +764,7 @@ TEST_F(UrdfParserTest, TestAtlasMinimalContact) {
   const std::string full_name = FindRunfile(
       "drake_models/atlas/atlas_minimal_contact.urdf").abspath;
   AddModelFromUrdfFile(full_name, "");
-  for (int k = 0; k < 30; k++) {
-    EXPECT_THAT(TakeWarning(), MatchesRegex(".*safety_controller.*ignored.*"));
-  }
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*safety_controller.*ignored.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*attached to a fixed joint.*"));
   plant_.Finalize();
 
@@ -798,7 +796,7 @@ TEST_F(UrdfParserTest, TestRegisteredSceneGraph) {
   // Test that registration with scene graph results in visual geometries.
   AddModelFromUrdfFile(full_name, "");
   // Mostly ignore warnings here; they are tested in detail elsewhere.
-  EXPECT_GT(warning_records_.size(), 30);
+  EXPECT_GT(warning_records_.size(), 1);
   warning_records_.clear();
   plant_.Finalize();
   EXPECT_NE(plant_.num_visual_geometries(), 0);

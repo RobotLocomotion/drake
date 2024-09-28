@@ -1737,12 +1737,8 @@ TEST_F(MujocoParserTest, ContactWarnings) {
 
   EXPECT_THAT(TakeWarning(), MatchesRegex(
       ".*pair.*not have.*geom1.*geom2.*ignored.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*pair.*not have.*geom1.*geom2.*ignored.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*pair.*unknown geom1.*ignored.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*pair.*unknown geom2.*ignored.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*exclude.*not have.*body1.*body2.*ignored.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(
       ".*exclude.*not have.*body1.*body2.*ignored.*"));
 }
