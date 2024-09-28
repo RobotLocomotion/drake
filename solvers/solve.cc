@@ -116,14 +116,14 @@ std::vector<MathematicalProgramResult> SolveInParallelImpl(
     const SolverOptions options = GetOptions(i, true /* solving_in_parallel */);
 
     // Solve the program.
-    MathematicalProgramResult* result_local{nullptr};
+    MathematicalProgramResult result_local;
     // Identity the best solver for the program and store it in the map of
     // available solvers.
     const SolverId solver_id =
         solver_ids->at(i).value_or(ChooseBestSolver(*(progs.at(i))));
     solvers.at(solver_id)->Solve(*(progs.at(i)), initial_guess, options,
-                                 result_local);
-    results_parallel[i] = std::move(*result_local);
+                                 &result_local);
+    results_parallel[i] = std::move(result_local);
   };
 
   if (dynamic_schedule) {
