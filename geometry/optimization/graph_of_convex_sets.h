@@ -13,6 +13,7 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/solvers/mathematical_program_result.h"
@@ -126,6 +127,9 @@ struct GraphOfConvexSetsOptions {
   not from the many smaller preprocessing optimizations. */
   std::optional<solvers::SolverOptions> preprocessing_solver_options{
       std::nullopt};
+
+  /** Degree of parallelism to use when performing the preprocessing. */
+  Parallelism preprocessing_parallelism{Parallelism::Max()};
 };
 
 struct GcsGraphvizOptions {

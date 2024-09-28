@@ -794,6 +794,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.preprocessing_solver_options = SolverOptions()
         options.preprocessing_solver_options.SetOption(
             ClpSolver.id(), "log_level", 3)
+        options.preprocessing_parallelism = True
         self.assertIn("scaling",
                       options.solver_options.GetOptions(ClpSolver.id()))
         self.assertIn("log_level",

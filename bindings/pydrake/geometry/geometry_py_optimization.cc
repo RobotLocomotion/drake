@@ -734,6 +734,8 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
                       std::move(preprocessing_solver_options);
                 }),
             cls_doc.preprocessing_solver_options.doc)
+        .def_readwrite("preprocessing_parallelism",
+            &GraphOfConvexSetsOptions::preprocessing_parallelism)
         .def("__repr__", [](const GraphOfConvexSetsOptions& self) {
           return py::str(
               "GraphOfConvexSetsOptions("

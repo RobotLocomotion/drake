@@ -13,13 +13,13 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/create_constraint.h"
 #include "drake/solvers/create_cost.h"
 #include "drake/solvers/get_program_type.h"
 #include "drake/solvers/mosek_solver.h"
-#include "drake/common/parallelism.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -57,13 +57,13 @@ using solvers::ProgramType;
 using solvers::QuadraticCost;
 using solvers::RotatedLorentzConeConstraint;
 using solvers::SolutionResult;
+using solvers::SolveInParallel;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 using solvers::internal::CreateBinding;
 using symbolic::Expression;
 using symbolic::Variable;
 using symbolic::Variables;
-using solvers::SolveInParallel;
 
 namespace {
 MathematicalProgramResult Solve(const MathematicalProgram& prog,
@@ -744,19 +744,23 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
         // Conservation of flow for f: ∑ f_in - ∑ f_out = -δ(is_source).
         if (vertex_id == source_id) {
           conservation_f.insert(
-              {vertex_id, progs[i]->AddLinearEqualityConstraint(A_flow, -1, fv)});
+              {vertex_id,
+               progs[i]->AddLinearEqualityConstraint(A_flow, -1, fv)});
         } else {
           conservation_f.insert(
-              {vertex_id, progs[i]->AddLinearEqualityConstraint(A_flow, 0, fv)});
+              {vertex_id,
+               progs[i]->AddLinearEqualityConstraint(A_flow, 0, fv)});
         }
 
         // Conservation of flow for g: ∑ g_in - ∑ g_out = δ(is_target).
         if (vertex_id == target_id) {
           conservation_g.insert(
-              {vertex_id, progs[i]->AddLinearEqualityConstraint(A_flow, 1, gv)});
+              {vertex_id,
+               progs[i]->AddLinearEqualityConstraint(A_flow, 1, gv)});
         } else {
           conservation_g.insert(
-              {vertex_id, progs[i]->AddLinearEqualityConstraint(A_flow, 0, gv)});
+              {vertex_id,
+               progs[i]->AddLinearEqualityConstraint(A_flow, 0, gv)});
         }
       }
 
@@ -818,11 +822,12 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
   } else {
     maybe_solver_id = std::nullopt;
   }
-  std::vector<MathematicalProgramResult> results = SolveInParallel(prog_ptrs,
-    nullptr, options.preprocessing_solver ? options.preprocessing_solver_options : std::nullopt,
-    maybe_solver_id,
-    Parallelism::Max(), false);
-  
+  std::vector<MathematicalProgramResult> results = SolveInParallel(
+      prog_ptrs, nullptr,
+      options.preprocessing_solver ? options.preprocessing_solver_options
+                                   : std::nullopt,
+      maybe_solver_id, options.preprocessing_parallelism, false);
+
   for (int i = 0; i < nE; ++i) {
     const auto& result = results[i];
     if (!result.is_success()) {
