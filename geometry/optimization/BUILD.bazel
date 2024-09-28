@@ -198,6 +198,7 @@ drake_cc_library(
         "//solvers:mathematical_program_result",
         "//solvers:mosek_solver",
         "//solvers:solver_interface",
+        "//solvers:solve"
     ],
 )
 

@@ -19,6 +19,8 @@
 #include "drake/solvers/create_cost.h"
 #include "drake/solvers/get_program_type.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/common/parallelism.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace geometry {
@@ -61,6 +63,7 @@ using solvers::internal::CreateBinding;
 using symbolic::Expression;
 using symbolic::Variable;
 using symbolic::Variables;
+using solvers::SolveInParallel;
 
 namespace {
 MathematicalProgramResult Solve(const MathematicalProgram& prog,
@@ -697,72 +700,78 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
 
   // Given an edge (u,v) check if a path from source to u and another from v to
   // target exist without sharing edges.
-  MathematicalProgram prog;
-
-  // Flow for each edge is between 0 and 1 for both paths.
-  VectorXDecisionVariable f = prog.NewContinuousVariables(nE, "flow_su");
-  Binding<solvers::BoundingBoxConstraint> f_limits =
-      prog.AddBoundingBoxConstraint(0, 1, f);
-  VectorXDecisionVariable g = prog.NewContinuousVariables(nE, "flow_vt");
-  Binding<solvers::BoundingBoxConstraint> g_limits =
-      prog.AddBoundingBoxConstraint(0, 1, g);
-
-  std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_f;
-  std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_g;
-  std::map<VertexId, Binding<LinearConstraint>> degree;
-  for (const auto& [vertex_id, v] : vertices_) {
-    std::vector<int> Ev_in = incoming_edges[vertex_id];
-    std::vector<int> Ev_out = outgoing_edges[vertex_id];
-    std::vector<int> Ev = Ev_in;
-    Ev.insert(Ev.end(), Ev_out.begin(), Ev_out.end());
-
-    if (Ev.size() > 0) {
-      RowVectorXd A_flow(Ev.size());
-      A_flow << RowVectorXd::Ones(Ev_in.size()),
-          -1 * RowVectorXd::Ones(Ev_out.size());
-      VectorXDecisionVariable fv(Ev.size());
-      VectorXDecisionVariable gv(Ev.size());
-      for (size_t ii = 0; ii < Ev.size(); ++ii) {
-        fv(ii) = f(Ev[ii]);
-        gv(ii) = g(Ev[ii]);
-      }
-
-      // Conservation of flow for f: ∑ f_in - ∑ f_out = -δ(is_source).
-      if (vertex_id == source_id) {
-        conservation_f.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, -1, fv)});
-      } else {
-        conservation_f.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, fv)});
-      }
-
-      // Conservation of flow for g: ∑ g_in - ∑ g_out = δ(is_target).
-      if (vertex_id == target_id) {
-        conservation_g.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 1, gv)});
-      } else {
-        conservation_g.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, gv)});
-      }
-    }
-
-    // Degree constraints (redundant if indegree of w is 0):
-    // 0 <= ∑ f_in + ∑ g_in <= 1
-    if (Ev_in.size() > 0) {
-      RowVectorXd A_degree = RowVectorXd::Ones(2 * Ev_in.size());
-      VectorXDecisionVariable fgin(2 * Ev_in.size());
-      for (size_t ii = 0; ii < Ev_in.size(); ++ii) {
-        fgin(ii) = f(Ev_in[ii]);
-        fgin(Ev_in.size() + ii) = g(Ev_in[ii]);
-      }
-      degree.insert(
-          {vertex_id, prog.AddLinearConstraint(A_degree, 0, 1, fgin)});
-    }
+  std::vector<copyable_unique_ptr<MathematicalProgram>> progs;
+  std::vector<EdgeId> idx_to_edge_id;
+  progs.reserve(nE);
+  idx_to_edge_id.reserve(nE);
+  for (const auto& [edge_id, e] : edges_) {
+    idx_to_edge_id.push_back(edge_id);
+    progs.push_back(copyable_unique_ptr(MathematicalProgram()));
   }
 
-  for (const auto& [edge_id, e] : edges_) {
-    if (unusable_edges.contains(edge_id)) {
-      continue;
+  for (int i = 0; i < nE; ++i) {
+    EdgeId edge_id = idx_to_edge_id[i];
+    const auto& e = edges_.at(edge_id);
+
+    // Flow for each edge is between 0 and 1 for both paths.
+    VectorXDecisionVariable f = progs[i]->NewContinuousVariables(nE, "flow_su");
+    Binding<solvers::BoundingBoxConstraint> f_limits =
+        progs[i]->AddBoundingBoxConstraint(0, 1, f);
+    VectorXDecisionVariable g = progs[i]->NewContinuousVariables(nE, "flow_vt");
+    Binding<solvers::BoundingBoxConstraint> g_limits =
+        progs[i]->AddBoundingBoxConstraint(0, 1, g);
+
+    std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_f;
+    std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_g;
+    std::map<VertexId, Binding<LinearConstraint>> degree;
+    for (const auto& [vertex_id, v] : vertices_) {
+      std::vector<int> Ev_in = incoming_edges[vertex_id];
+      std::vector<int> Ev_out = outgoing_edges[vertex_id];
+      std::vector<int> Ev = Ev_in;
+      Ev.insert(Ev.end(), Ev_out.begin(), Ev_out.end());
+
+      if (Ev.size() > 0) {
+        RowVectorXd A_flow(Ev.size());
+        A_flow << RowVectorXd::Ones(Ev_in.size()),
+            -1 * RowVectorXd::Ones(Ev_out.size());
+        VectorXDecisionVariable fv(Ev.size());
+        VectorXDecisionVariable gv(Ev.size());
+        for (size_t ii = 0; ii < Ev.size(); ++ii) {
+          fv(ii) = f(Ev[ii]);
+          gv(ii) = g(Ev[ii]);
+        }
+
+        // Conservation of flow for f: ∑ f_in - ∑ f_out = -δ(is_source).
+        if (vertex_id == source_id) {
+          conservation_f.insert(
+              {vertex_id, progs[i]->AddLinearEqualityConstraint(A_flow, -1, fv)});
+        } else {
+          conservation_f.insert(
+              {vertex_id, progs[i]->AddLinearEqualityConstraint(A_flow, 0, fv)});
+        }
+
+        // Conservation of flow for g: ∑ g_in - ∑ g_out = δ(is_target).
+        if (vertex_id == target_id) {
+          conservation_g.insert(
+              {vertex_id, progs[i]->AddLinearEqualityConstraint(A_flow, 1, gv)});
+        } else {
+          conservation_g.insert(
+              {vertex_id, progs[i]->AddLinearEqualityConstraint(A_flow, 0, gv)});
+        }
+      }
+
+      // Degree constraints (redundant if indegree of w is 0):
+      // 0 <= ∑ f_in + ∑ g_in <= 1
+      if (Ev_in.size() > 0) {
+        RowVectorXd A_degree = RowVectorXd::Ones(2 * Ev_in.size());
+        VectorXDecisionVariable fgin(2 * Ev_in.size());
+        for (size_t ii = 0; ii < Ev_in.size(); ++ii) {
+          fgin(ii) = f(Ev_in[ii]);
+          fgin(Ev_in.size() + ii) = g(Ev_in[ii]);
+        }
+        degree.insert(
+            {vertex_id, progs[i]->AddLinearConstraint(A_degree, 0, 1, fgin)});
+      }
     }
 
     // Update bounds of conservation of flow:
@@ -791,37 +800,36 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
 
     // Update bounds of degree constraints:
     // ∑ f_in,v + ∑ g_in,v = 0.
-    degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
-
-    // Check if edge e = (u,v) could be on a path from start to goal.
-    auto result = Solve(prog, options, /* preprocessing= */ true);
-    if (!result.is_success()) {
-      unusable_edges.insert(edge_id);
+    if (degree.contains(e->v().id())) {
+      degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
     }
-
-    // Reset constraint bounds.
-    if (e->u().id() == source_id) {
-      f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(-1), Vector1d(-1));
-    } else {
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    }
-    if (e->v().id() == target_id) {
-      g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(1), Vector1d(1));
-    } else {
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    }
-    degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(1));
   }
+
+  // Check if edge e = (u,v) could be on a path from start to goal.
+  std::vector<const MathematicalProgram*> prog_ptrs(progs.size());
+  for (int i = 0; i < ssize(progs); ++i) {
+    prog_ptrs[i] = progs[i].get();
+  }
+  std::optional<solvers::SolverId> maybe_solver_id;
+  if (options.preprocessing_solver) {
+    maybe_solver_id = options.preprocessing_solver->solver_id();
+  } else if (options.solver) {
+    maybe_solver_id = options.solver->solver_id();
+  } else {
+    maybe_solver_id = std::nullopt;
+  }
+  std::vector<MathematicalProgramResult> results = SolveInParallel(prog_ptrs,
+    nullptr, options.preprocessing_solver ? options.preprocessing_solver_options : std::nullopt,
+    maybe_solver_id,
+    Parallelism::Max(), false);
+  
+  for (int i = 0; i < nE; ++i) {
+    const auto& result = results[i];
+    if (!result.is_success()) {
+      unusable_edges.insert(idx_to_edge_id[i]);
+    }
+  }
+
   return unusable_edges;
 }
 
