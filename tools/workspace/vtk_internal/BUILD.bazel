@@ -1,5 +1,21 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_library")
 
 exports_files(glob(["gen/**"]))
+
+drake_cc_library(
+    name = "vtk_opengl_init",
+    srcs = ["vtk_opengl_init.cc"],
+    internal = True,
+    visibility = [
+        "//:__subpackages__",
+        "@vtk_internal//:__subpackages__",
+    ],
+    deps = [
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
+    ],
+    alwayslink = True,
+)
 
 add_lint_tests()

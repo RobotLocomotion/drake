@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -55,6 +56,12 @@ GTEST_TEST(NloptSolverTest, SetAlgorithm) {
   const auto result =
       solver.Solve(prog, Eigen::VectorXd::Ones(2), solver_options);
   ASSERT_TRUE(result.is_success());
+
+  solver_options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
+                           "FOO_BAR");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog, Eigen::VectorXd::Ones(2), solver_options),
+      ".*Unknown.*algorithm.*");
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, Test) {

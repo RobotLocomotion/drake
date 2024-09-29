@@ -302,7 +302,7 @@ GTEST_TEST(MosekTest, TestLogging) {
 }
 
 GTEST_TEST(MosekTest, SolverOptionsTest) {
-  // We test that passing solver options change the behavior of
+  // We test that passing solver options changes the behavior of
   // MosekSolver::Solve().
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -311,10 +311,18 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   prog.AddConstraint(x(1) >= 0);
   prog.AddLinearCost(1E5 * x(0) + x(1));
 
-  SolverOptions solver_options;
-  solver_options.SetOption(MosekSolver::id(), "MSK_DPAR_DATA_TOL_C_HUGE", 1E3);
-  MathematicalProgramResult result;
   MosekSolver mosek_solver;
+  SolverOptions solver_options;
+  MathematicalProgramResult result;
+
+  // Set a string option, to at least make sure nothing crashes. Unfortunately,
+  // there is no MOSEK string option that affects the output or logging, so we
+  // cannot actually test that the option is propagated correctly.
+  solver_options.SetOption(MosekSolver::id(), "MSK_SPAR_BAS_SOL_FILE_NAME",
+                           "/tmp/mosek.bas");
+
+  // Solve with 1e3 => failed.
+  solver_options.SetOption(MosekSolver::id(), "MSK_DPAR_DATA_TOL_C_HUGE", 1E3);
   mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_FALSE(result.is_success());
   // This response code is defined in
@@ -322,6 +330,8 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   const int MSK_RES_ERR_HUGE_C{1375};
   EXPECT_EQ(result.get_solver_details<MosekSolver>().rescode,
             MSK_RES_ERR_HUGE_C);
+
+  // Solve with 1e6 => success.
   solver_options.SetOption(MosekSolver::id(), "MSK_DPAR_DATA_TOL_C_HUGE", 1E6);
   mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_TRUE(result.is_success());
@@ -332,14 +342,35 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearConstraint(x(0) + x(1) >= 0);
-
   MathematicalProgramResult result;
   MosekSolver mosek_solver;
-  SolverOptions solver_options;
-  solver_options.SetOption(MosekSolver::id(), "non-existing options", 42);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      mosek_solver.Solve(prog, {}, solver_options, &result),
-      ".*cannot set Mosek option \'non-existing options\' to value \'42\'.*");
+
+  // Test `int`.
+  {
+    SolverOptions solver_options;
+    solver_options.SetOption(MosekSolver::id(), "no_such_option", 42);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        mosek_solver.Solve(prog, {}, solver_options, &result),
+        ".*cannot set Mosek option \'no_such_option\' to value \'42\'.*");
+  }
+
+  // Test `double`.
+  {
+    SolverOptions solver_options;
+    solver_options.SetOption(MosekSolver::id(), "no_such_option", 0.5);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        mosek_solver.Solve(prog, {}, solver_options, &result),
+        ".*cannot set Mosek option \'no_such_option\' to value \'0.5\'.*");
+  }
+
+  // Test `string`.
+  {
+    SolverOptions solver_options;
+    solver_options.SetOption(MosekSolver::id(), "no_such_option", "foo");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        mosek_solver.Solve(prog, {}, solver_options, &result),
+        ".*cannot set Mosek option \'no_such_option\' to value \'foo\'.*");
+  }
 }
 
 GTEST_TEST(MosekTest, Write) {
