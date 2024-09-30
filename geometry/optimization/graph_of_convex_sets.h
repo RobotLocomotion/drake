@@ -11,7 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -716,19 +715,6 @@ class GraphOfConvexSets {
       const solvers::MathematicalProgramResult* result = nullptr,
       const GcsGraphvizOptions& options = GcsGraphvizOptions(),
       const std::vector<const Edge*>* active_path = nullptr) const;
-
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "result should be of type const solvers::MathematicalProgramResult*.")
-  std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result,
-      const geometry::optimization::GcsGraphvizOptions& options =
-          GcsGraphvizOptions(),
-      const std::optional<std::vector<const Edge*>>& active_path = {}) const {
-    return GetGraphvizString(
-        result ? std::addressof(result.value()) : nullptr, options,
-        active_path ? std::addressof(active_path.value()) : nullptr);
-  }
 
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the graph, as discussed in detail in

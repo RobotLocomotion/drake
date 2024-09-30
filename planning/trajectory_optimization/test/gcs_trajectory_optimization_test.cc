@@ -140,11 +140,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
 
   EXPECT_NO_THROW(gcs.GetGraphvizString(
       &new_result, geometry::optimization::GcsGraphvizOptions()));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_NO_THROW(gcs.GetGraphvizString(
-      new_result, geometry::optimization::GcsGraphvizOptions()));
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, PathLengthCost) {
@@ -2569,18 +2564,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
   EXPECT_THROW(gcs.AddEdges(new_subgraph2, goal, nullptr, &edges_2_goal,
                             &offsets_2_goal),
                std::exception);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_NO_THROW(gcs.AddEdges(start, new_subgraph1, nullptr, edges_start_1,
-                               offsets_start_1));
-#pragma GCC diagnostic pop
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_NO_THROW(gcs.AddRegions(sets1, edges_1, 1, 1e-6, 20,
-                                 "sets1_deprecation", offsets_1));
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroTimeTrajectory) {
