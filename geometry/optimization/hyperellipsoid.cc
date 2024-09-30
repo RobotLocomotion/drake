@@ -176,7 +176,7 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
 }
 
 Hyperellipsoid Hyperellipsoid::Scale(double scale) const {
-  assert(scale > 0);
+  DRAKE_THROW_UNLESS(scale > 0);
   return Hyperellipsoid(A_ / scale, center_);
 }
 
