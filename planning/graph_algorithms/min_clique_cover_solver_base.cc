@@ -1,4 +1,4 @@
-#include "drake/planning/graph_algorithms/max_clique_solver_base.h"
+#include "drake/planning/graph_algorithms/min_clique_cover_solver_base.h"
 
 #include "drake/common/drake_throw.h"
 
@@ -6,15 +6,11 @@ namespace drake {
 namespace planning {
 namespace graph_algorithms {
 
-VectorX<bool> MaxCliqueSolverBase::SolveMaxClique(
-    const Eigen::SparseMatrix<bool>& adjacency_matrix) const {
+std::vector<std::set<int>> MinCliqueCoverSolverBase::SolveMinCliqueCover(
+    const Eigen::SparseMatrix<bool>& adjacency_matrix, bool partition) {
   DRAKE_THROW_UNLESS(adjacency_matrix.rows() == adjacency_matrix.cols());
   DRAKE_THROW_UNLESS(adjacency_matrix.isApprox(adjacency_matrix.transpose()));
-  return DoSolveMaxClique(adjacency_matrix);
-}
-
-std::unique_ptr<MaxCliqueSolverBase> MaxCliqueSolverBase::Clone() const {
-  return DoClone();
+  return DoSolveMinCliqueCover(adjacency_matrix, partition);
 }
 
 }  // namespace graph_algorithms

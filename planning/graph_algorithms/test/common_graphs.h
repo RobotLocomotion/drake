@@ -27,7 +27,7 @@ Eigen::SparseMatrix<bool> ButterflyGraph();
 
 // Construct the PetersenGraph https://en.wikipedia.org/wiki/Petersen_graph. The
 // vertices of the internal star labelled 0-4, with 0 the top of the star and
-// the nodes labelled counter clockwise. The vertices of the external pentagon
+// the nodes labelled counter-clockwise. The vertices of the external pentagon
 // labeled 5-9, with the top of the pentagon labelled 5 and the nodes labelled
 // counter-clockwise.
 Eigen::SparseMatrix<bool> PetersenGraph();
