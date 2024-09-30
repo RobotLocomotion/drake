@@ -110,5 +110,20 @@ std::string SolverBase::ExplainUnsatisfiedProgramAttributes(
                      ShortName(*this), to_string(prog.required_capabilities()));
 }
 
+void SolverBase::DoSolve(const MathematicalProgram& prog,
+                         const Eigen::VectorXd& initial_guess,
+                         const SolverOptions& merged_options,
+                         MathematicalProgramResult* result) const {
+  internal::SpecificOptions options{&solver_id_, &merged_options};
+  DoSolve2(prog, initial_guess, &options, result);
+}
+
+void SolverBase::DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
+                          internal::SpecificOptions*,
+                          MathematicalProgramResult*) const {
+  throw std::logic_error(fmt::format("{} failed to override any DoSolve method",
+                                     ShortName(*this)));
+}
+
 }  // namespace solvers
 }  // namespace drake

@@ -299,38 +299,52 @@ void ParseModelExceptLinearConstraints(
   }
 }
 
-int ChooseLogLevel(const SolverOptions& options) {
-  if (options.get_print_to_console()) {
-    // Documented as "factorizations plus a bit more" in ClpModel.hpp.
-    return 3;
-  }
-  return 0;
+struct KnownOptions {
+  int log_level{0};
+
+  // As suggested by the CLP author, we should call scaling() to handle tiny (or
+  // huge) number in program data. See https://github.com/coin-or/Clp/issues/217
+  // for the discussion.
+  int scaling{1};
+};
+
+void Serialize(internal::SpecificOptions* archive,
+               // NOLINTNEXTLINE(runtime/references) to match Serialize concept.
+               KnownOptions& options) {
+  archive->Visit(MakeNameValue("log_level", &options.log_level));
+  archive->Visit(MakeNameValue("scaling", &options.scaling));
 }
 
-int ChooseScaling(const SolverOptions& options) {
-  const auto& clp_options = options.GetOptionsInt(ClpSolver::id());
-  auto it = clp_options.find("scaling");
-  if (it == clp_options.end()) {
-    // Default scaling is 1.
-    return 1;
-  } else {
-    return it->second;
-  }
+KnownOptions ParseOptions(internal::SpecificOptions* options) {
+  KnownOptions result;
+  options->Respell([](const auto& common) {
+    string_unordered_map<SolverOptions::OptionValue> respelled;
+    // '3' is documented as "factorizations plus a bit more" in ClpModel.hpp.
+    respelled.emplace("log_level", common.print_to_console ? 3 : 0);
+    // CLP Simplex solver does not support multithreaded solves so we can ignore
+    // the kMaxThreads option.
+    return respelled;
+  });
+  options->CopyToSerializableStruct(&result);
+  return result;
 }
+
 }  // namespace
 
 bool ClpSolver::is_available() {
   return true;
 }
 
-void ClpSolver::DoSolve(const MathematicalProgram& prog,
-                        const Eigen::VectorXd& initial_guess,
-                        const SolverOptions& merged_options,
-                        MathematicalProgramResult* result) const {
+void ClpSolver::DoSolve2(const MathematicalProgram& prog,
+                         const Eigen::VectorXd& initial_guess,
+                         internal::SpecificOptions* options,
+                         MathematicalProgramResult* result) const {
   // TODO(hongkai.dai): use initial guess and more of the merged options.
   unused(initial_guess);
+  const KnownOptions known_options = ParseOptions(options);
+
   ClpSimplex model;
-  model.setLogLevel(ChooseLogLevel(merged_options));
+  model.setLogLevel(known_options.log_level);
   Eigen::VectorXd xlow(prog.num_vars());
   Eigen::VectorXd xupp(prog.num_vars());
   Eigen::VectorXd objective_coeff = Eigen::VectorXd::Zero(prog.num_vars());
@@ -359,13 +373,7 @@ void ClpSolver::DoSolve(const MathematicalProgram& prog,
                                         &bb_con_dual_variable_indices);
   }
 
-  // As suggested by the CLP author, we should call scaling() to handle tiny (or
-  // huge) number in program data. See https://github.com/coin-or/Clp/issues/217
-  // for the discussion.
-  model.scaling(ChooseScaling(merged_options));
-
-  // CLP Simplex solver does not support multithreaded solves so we can ignore
-  // the kMaxNumThreads option.
+  model.scaling(known_options.scaling);
 
   // Solve
   model.primal();
