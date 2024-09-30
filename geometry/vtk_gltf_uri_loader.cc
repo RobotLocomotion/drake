@@ -118,8 +118,8 @@ vtkSmartPointer<vtkResourceStream> VtkGltfUriLoader::DoLoad(const vtkURI& uri) {
 
       return std::visit<vtkSmartPointer<vtkResourceStream>>(
           overloaded{[this, name](const fs::path& source_path) {
-                       return OpenFileStream(source_path, source_->description(),
-                                             name);
+                       return OpenFileStream(source_path,
+                                             source_->description(), name);
                      },
                      [](const MemoryFile& file) {
                        return OpenStringStream(&file.contents());

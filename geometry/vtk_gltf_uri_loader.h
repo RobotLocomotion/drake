@@ -1,8 +1,5 @@
 #pragma once
 
-/* @file
- A collection of utilities for working with VTK and glTF files. */
-
 #include <filesystem>
 #include <string>
 
@@ -27,7 +24,8 @@ class VtkGltfUriLoader final : public vtkURILoader {
   /* The VTK boilerplate to make a successfully reference-counted object. */
   static VtkGltfUriLoader* New();
 
-  /* Sets the source fo this URI loader. It must be called before any other API.
+  /* Sets the source for this URI loader. It must be called before any other
+   API.
    @throws if `source` is null.*/
   void SetMeshSource(const MeshSource* source);
 
@@ -38,8 +36,8 @@ class VtkGltfUriLoader final : public vtkURILoader {
   ~VtkGltfUriLoader() final;
 
  private:
- /* Constructs the loader without a source. Necessary for VTK's reference
-  counting infrastructure. */
+  /* Constructs the loader without a source. Necessary for VTK's reference
+   counting infrastructure. */
   VtkGltfUriLoader();
 
   vtkSmartPointer<vtkResourceStream> DoLoad(const vtkURI& uri) final;
