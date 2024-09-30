@@ -230,11 +230,12 @@ Subgraph::Subgraph(
   DRAKE_THROW_UNLESS(order >= 0);
   DRAKE_THROW_UNLESS(!regions_.empty());
 
-  std::vector<VectorXd> maybe_edge_offsets;
+  std::optional<std::vector<VectorXd>> maybe_edge_offsets = std::nullopt;
 
   if (edge_offsets) {
     DRAKE_THROW_UNLESS(edge_offsets->size() == edges_between_regions.size());
   } else {
+    maybe_edge_offsets = std::vector<VectorXd>{};
     std::vector<std::vector<std::pair<double, double>>> continuous_bboxes;
     continuous_bboxes.reserve(ssize(regions));
     for (int i = 0; i < ssize(regions); ++i) {
@@ -243,15 +244,15 @@ Subgraph::Subgraph(
               GetMinimumAndMaximumValueAlongDimension(
                   *(regions[i]), continuous_revolute_joints()));
     }
-    maybe_edge_offsets.reserve(edges_between_regions.size());
+    maybe_edge_offsets->reserve(edges_between_regions.size());
     for (const auto& [i, j] : edges_between_regions) {
-      maybe_edge_offsets.push_back(
+      maybe_edge_offsets->push_back(
           geometry::optimization::internal::
               ComputeOffsetContinuousRevoluteJoints(
                   num_positions(), continuous_revolute_joints(),
                   continuous_bboxes[i], continuous_bboxes[j]));
     }
-    edge_offsets = &maybe_edge_offsets;
+    edge_offsets = std::addressof(maybe_edge_offsets.value());
   }
 
   // Make sure all regions have the same ambient dimension.
@@ -801,8 +802,9 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
   }
 
   // These will hold the edge data if they weren't given as arguments.
-  std::vector<std::pair<int, int>> maybe_edges_between_regions;
-  std::vector<Eigen::VectorXd> maybe_edge_offsets;
+  std::optional<std::vector<std::pair<int, int>>> maybe_edges_between_regions =
+      std::nullopt;
+  std::optional<std::vector<Eigen::VectorXd>> maybe_edge_offsets = std::nullopt;
 
   if (edges_between_regions) {
     for (const auto& [i, j] : *edges_between_regions) {
@@ -831,25 +833,26 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
                 GetMinimumAndMaximumValueAlongDimension(
                     *(to_subgraph.regions()[i]), continuous_revolute_joints()));
       }
-      maybe_edge_offsets.reserve(edges_between_regions->size());
+      maybe_edge_offsets = std::vector<VectorXd>{};
+      maybe_edge_offsets->reserve(edges_between_regions->size());
       for (const auto& [i, j] : *edges_between_regions) {
-        maybe_edge_offsets.push_back(
+        maybe_edge_offsets->push_back(
             geometry::optimization::internal::
                 ComputeOffsetContinuousRevoluteJoints(
                     num_positions(), continuous_revolute_joints(),
                     continuous_bboxes_A[i], continuous_bboxes_B[j]));
       }
-      edge_offsets = &maybe_edge_offsets;
+      edge_offsets = std::addressof(maybe_edge_offsets.value());
     }
   } else {
     std::tie(maybe_edges_between_regions, maybe_edge_offsets) =
         ComputePairwiseIntersections(from_subgraph.regions(),
                                      to_subgraph.regions(),
                                      continuous_revolute_joints());
-    DRAKE_DEMAND(maybe_edges_between_regions.size() ==
-                 maybe_edge_offsets.size());
-    edges_between_regions = &maybe_edges_between_regions;
-    edge_offsets = &maybe_edge_offsets;
+    DRAKE_DEMAND(maybe_edges_between_regions->size() ==
+                 maybe_edge_offsets->size());
+    edges_between_regions = std::addressof(maybe_edges_between_regions.value());
+    edge_offsets = std::addressof(maybe_edge_offsets.value());
   }
 
   for (int edge_idx = 0; edge_idx < ssize(*edges_between_regions); ++edge_idx) {
