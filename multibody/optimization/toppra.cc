@@ -602,21 +602,20 @@ Toppra::ComputeForwardPass(double s_dot_0,
   return std::make_pair(xstar, ustar);
 }
 
-std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization() {
-  const double s_dot_0 = 0;
-  const double s_dot_N = 0;
-
+std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization(
+    const double s_dot_start, const double s_dot_end) {
   // Clp appears to outperform Mosek for these optimizations.
   // TODO(mpetersen94) Add Gurobi in the correct ordering
   auto solver = solvers::MakeFirstAvailableSolver(
       {solvers::ClpSolver::id(), solvers::MosekSolver::id()});
 
   const std::optional<Eigen::Matrix2Xd> K =
-      ComputeBackwardPass(s_dot_0, s_dot_N, *solver);
+      ComputeBackwardPass(s_dot_start, s_dot_end, *solver);
   if (!K) {  // Error occurred in backpass, return nothing
     return std::nullopt;
   }
-  const auto forward_results = ComputeForwardPass(s_dot_0, K.value(), *solver);
+  const auto forward_results =
+      ComputeForwardPass(s_dot_start, K.value(), *solver);
   if (!forward_results) {  // Error occurred in forward pass, return nothing
     return std::nullopt;
   }
