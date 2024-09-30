@@ -74,6 +74,13 @@ class Hyperellipsoid final : public ConvexSet {
   std::pair<double, Eigen::VectorXd> MinimumUniformScalingToTouch(
       const ConvexSet& other) const;
 
+  /** Results a new Hyperellipsoid that is a scaled version of `this` about the
+  center. Any point on the boundary of the ellipsoid, x, is now translated to a
+  new point, x*, such that ||x - center|| = ||x* - center|| * scale
+  @pre `scale` > 0.
+  */
+  [[nodiscard]] Hyperellipsoid Scale(double scale) const;
+
   /** Constructs a Ellipsoid shape description of this set.  Note that the
   choice of ellipsoid is not unique.  This method chooses to order the Ellipsoid
   parameters a ≥ b ≥ c.

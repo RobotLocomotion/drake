@@ -175,6 +175,11 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
                                      result.GetSolution(x));
 }
 
+Hyperellipsoid Hyperellipsoid::Scale(double scale) const {
+  assert(scale > 0);
+  return Hyperellipsoid(A_ / scale, center_);
+}
+
 Hyperellipsoid Hyperellipsoid::MakeAxisAligned(
     const Eigen::Ref<const VectorXd>& radius,
     const Eigen::Ref<const VectorXd>& center) {
