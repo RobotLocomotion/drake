@@ -47,14 +47,6 @@ SpatialInertia<double> MakeArbitrarySpatialInertia() {
                                                         I_Bcm_W);
 }
 
-GTEST_TEST(SpatialInertia, DefaultConstructor) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  SpatialInertia<double> I;
-#pragma GCC diagnostic pop
-  ASSERT_TRUE(I.IsNaN());
-}
-
 GTEST_TEST(SpatialInertia, ZeroFactory) {
   auto I = SpatialInertia<double>::Zero();
   EXPECT_EQ(I.get_mass(), 0);
