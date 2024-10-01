@@ -90,7 +90,10 @@ class DrakeGymEnv(gym.Env):
                 ``reset_handler()``.
             info_handler: A function that returns a ``dict[str, Any]``
                 containing auxiliary diagnostic information (helpful for
-                debugging, learning, and logging).
+                debugging, learning, and logging). Note: if ``step()``
+                terminates with a ``RuntimeError``, then, to avoid
+                unexpected behavior, `info_handler()`` will not be called
+                and an empty info will be returned instead.
             hardware: If True, it prevents from setting random context at
                 ``reset()`` when using ``random_generator``, but it does
                 execute ``reset_handler()`` if given.
@@ -254,7 +257,8 @@ class DrakeGymEnv(gym.Env):
             truncated = True
             terminated = False
             reward = 0
-            info = self.info_handler(self.simulator)
+            # Do not call info handler, as the simulator has faulted.
+            info = dict()
 
             return prev_observation, reward, terminated, truncated, info
 
