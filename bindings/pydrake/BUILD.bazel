@@ -392,6 +392,16 @@ drake_py_unittest(
     tags = ["lint"],
 )
 
+# TODO(jwnimmer-tri) Once this a real test, switch it to drake_py_unittest.
+drake_py_binary(
+    name = "memory_leak_test",
+    srcs = ["test/memory_leak_test.py"],
+    add_test_rule = True,
+    deps = [
+        ":all_py",
+    ],
+)
+
 drake_py_binary(
     name = "stubgen",
     srcs = ["stubgen.py"],
