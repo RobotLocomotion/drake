@@ -130,17 +130,25 @@ SpatialInertia<double> CalcSpatialInertia(
 
   // Volume should be inherently positive.
   const double volume = vol_times_six / 6.0;
-  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  // Throw an exception if volume is negative or nearly zero. This test of
+  // "reasonably positive" volume is more stringent than the mass ≥ 0 test in
+  // SpatialInertia::IsPhysicallyValid(). Reminder: The volume of a mesh can be
+  // calculated (and should be positive) whereas spatial inertia does not deal
+  // with volume. Instead, spatial inertia deals with mass, including idealized
+  // zero volume massive objects such as particles, rods, and plates.
+  constexpr double kEpsilon = 8 * std::numeric_limits<double>::epsilon();
   if (volume <= kEpsilon) {
     const std::string error_message = fmt::format(
         "{}(): The calculated volume of a triangle surface mesh is {} whereas "
         "a reasonable positive value was expected. The mesh may have bad "
-        "geometry, e.g., the winding (order of the vertices) of some faces do "
-        "not produce outward normals.", __func__, volume);
+        "geometry, e.g., it is an open mesh or the winding (order of vertices) "
+        "of one or more faces do not produce outward normals.",
+        __func__, volume);
     throw std::logic_error(error_message);
     // Note: In a Wavefront .obj file, each face's vertices should be stored
     // in a counter-clockwise order by default.
   }
+
   const double mass = density * volume;
   const Vector3d p_GoGcm = accum_com / (vol_times_six * 4);
   // We can compute I = C.trace * 1₃ - C. Two key points:
