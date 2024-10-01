@@ -246,8 +246,8 @@ Subgraph::Subgraph(
     maybe_edge_offsets->reserve(edges_between_regions.size());
     for (const auto& [i, j] : edges_between_regions) {
       maybe_edge_offsets->push_back(ComputeOffsetContinuousRevoluteJoints(
-          num_positions(), continuous_revolute_joints(), continuous_bboxes[i],
-          continuous_bboxes[j]));
+          num_positions(), continuous_revolute_joints(),
+          continuous_bboxes.at(i), continuous_bboxes.at(j)));
     }
     edge_offsets = &(maybe_edge_offsets.value());
   }
