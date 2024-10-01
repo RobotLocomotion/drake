@@ -400,5 +400,6 @@ class TestToppra(unittest.TestCase):
         toppra = Toppra(path=path, plant=plant, gridpoints=gridpoints)
 
         toppra.AddJointAccelerationLimit([-1.], [1.])
-        trajectory = toppra.SolvePathParameterization()
+        trajectory = toppra.SolvePathParameterization(
+            s_dot_start=0, s_dot_end=0)
         self.assertIsInstance(trajectory, PiecewisePolynomial)
