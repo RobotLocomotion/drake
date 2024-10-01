@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!-- This is a side-by-side comparison of what it might look like to define an
+ alternative/override geometry for Drake to use in a particular visual role. -->
+<sdf version="1.7">
+  <model name="visual_model">
+
+    <!-- In both links, the default visual geometry is the indicated mesh. We
+     replace the mesh with a box for the illustration role. The box is offset
+     relative to the visual frame V in the +Vx direction. -->
+
+    <!-- Example of defining the override geometry nested under illustration
+     properties, re-using sdformat elements. -->
+    <link name="alternate_geometry_nested">
+      <visual name="visual">
+        <!-- The mesh gets offset and rotated. -->
+        <pose>1 0 0 0 1.57 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <drake:illustration_properties>
+          <!-- This pose is relative to the visual pose. -->
+          <pose>1 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1 2 3</size>
+            </box>
+          </geometry>
+        </drake:illustration_properties>
+      </visual>
+    </link>
+
+    <!-- Example of using a parallel <drake:visual> tree using all drake-branced
+     elements. -->
+    <link name="alternate_geometry_parallel">
+      <visual name="visual">
+        <!-- The mesh gets offset and rotated. -->
+        <pose>1 0 0 0 1.57 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <drake:illustration_properties enabled="false"/>
+      </visual>
+      <drake:visual name="visual">
+        <!-- This pose is relative to the link frame. So, to offset the box
+         relative to the mesh, we need to combine the offset with the mesh's
+         pose in the link frame. -->
+        <drake:pose>2 0 0 90 0 0</drake:pose>
+        <drake:geometry>
+          <geometry>
+            <box>
+              <size>1 2 3</size>
+            </box>
+        </drake:geometry>
+        <drake:perception_properties enabled="false"/>
+      </drake:visual>
+    </link>
+
+  </model>
+</sdf>

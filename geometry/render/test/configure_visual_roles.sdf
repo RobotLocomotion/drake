@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<!-- This contains multiple examples of configuring visual roles for Drake. -->
+<sdf version="1.7">
+  <model name="visual_model">
+
+    <link name="both_roles_by_default">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <!-- Saying nothing opts in to both roles. -->
+      </visual>
+    </link>
+
+    <link name="both_roles_with_redundant_specification">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <!-- This is redundant; illustration_properties is still enabled.
+         However, it will *not* generate any warning.  -->
+        <drake:perception_properties enabled="true"/>
+      </visual>
+    </link>
+
+    <link name="illustration_only">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <!-- This opts out of the perception role. Change this to
+        drake:illustration_properties to opt out of the illustration role. -->
+        <drake:perception_properties enabled="false"/>
+      </visual>
+    </link>
+
+    <link name="disabled_geometry_warning">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <!-- Opt out of both roles; parsing this should print a warning about
+        an unused geomtery. -->
+        <drake:perception_properties enabled="false"/>
+        <drake:illustration_properties enabled="false"/>
+      </visual>
+    </link>
+
+    <link name="different_colors">
+      <visual name="visual">
+        <!-- The box geometry has different colors based on role. In non-Drake
+         loaders, sdformat's default white would be used and the Drake-specific
+         colors would be ignored. -->
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        <drake:illustration_properties>
+          <drake:diffuse>1 0 0</drake:diffuse>
+        </drake:illustration_properties>
+        <drake:perception_properties>
+          <drake:diffuse>0 1 0</drake:diffuse>
+        </drake:perception_properties>
+      </visual>
+    </link>
+
+    <link name="alternate_geometry">
+      <visual name="visual">
+        <!-- The default geometry is the mesh, but gets replaced with a sphere
+         for illustration. The illustration sphere is offset relative to the
+         visual frame V in the +Vx direction.-->
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <drake:illustration_properties>
+          <pose>1 0 0 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>0.5</radius>
+            </sphere>
+          </geometry>
+        </drake:illustration_properties>
+      </visual>
+    </link>
+
+    <link name="alternate_geometry_warning">
+      <visual name="visual">
+        <!-- The <visual><geometry> has been replaced in both role declarations.
+         Parsing this generates a warning about the unused geometry. -->
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <drake:illustration_properties>
+          <pose>1 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
+        </drake:illustration_properties>
+        <drake:perception_properties>
+          <geometry>
+            <sphere>
+              <radius>0.5</radius>
+            </sphere>
+          </geometry>
+        </drake:perception_properties>
+      </visual>
+    </link>
+
+  </model>
+</sdf>
