@@ -555,7 +555,8 @@ class GcsTrajectoryOptimization final {
   continuous revolute joint. This edge offset corresponds to the translation
   component of the affine map τ_uv in equation (11) of "Non-Euclidean Motion
   Planning with Graphs of Geodesically-Convex Sets", and per the discussion in
-  Subsection VI A, τ_uv has no rotation component.
+  Subsection VI A, τ_uv has no rotation component. If edge_offsets is nullptr,
+  it will instead be computed automatically.
   @throws std::exception if any index referenced in `edges_between_regions` is
   outside the range [0, ssize(regions)).
   */
@@ -639,7 +640,8 @@ class GcsTrajectoryOptimization final {
   continuous revolute joint. This edge offset corresponds to the translation
   component of the affine map τ_uv in equation (11) of "Non-Euclidean Motion
   Planning with Graphs of Geodesically-Convex Sets", and per the discussion in
-  Subsection VI A, τ_uv has no rotation component.
+  Subsection VI A, τ_uv has no rotation component. If edge_offsets is nullptr,
+  it will instead be computed automatically.
   @throws std::exception if `edge_offsets` is provided, but `edge_offsets.size()
   != edges_between_regions.size()`.
   */
