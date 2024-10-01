@@ -513,9 +513,6 @@ class TestPlant(unittest.TestCase):
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
             plant.get_geometry_pose_output_port(), OutputPort)
-        with catch_drake_warnings(expected_count=1) as w:
-            self.assertIsInstance(
-                plant.get_geometry_poses_output_port(), OutputPort)
         self.assertIsInstance(
             plant.get_net_actuation_output_port(), OutputPort)
         self.assertIsInstance(
@@ -876,8 +873,6 @@ class TestPlant(unittest.TestCase):
         if T != Expression:
             self.assertTrue(zero.IsZero())
         SpatialInertia.NaN()
-        with catch_drake_warnings(expected_count=1) as w:
-            SpatialInertia()
         SpatialInertia.MakeFromCentralInertia(
             mass=1.3, p_PScm_E=[0.1, -0.2, 0.3],
             I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))

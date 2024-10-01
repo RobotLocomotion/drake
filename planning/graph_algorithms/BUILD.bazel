@@ -16,6 +16,8 @@ drake_cc_package_library(
         ":max_clique_solver_base",
         ":max_clique_solver_via_greedy",
         ":max_clique_solver_via_mip",
+        ":min_clique_cover_solver_base",
+        ":min_clique_cover_solver_via_greedy",
     ],
 )
 
@@ -50,6 +52,34 @@ drake_cc_library(
     hdrs = ["max_clique_solver_via_greedy.h"],
     deps = [
         ":max_clique_solver_base",
+    ],
+)
+
+drake_cc_library(
+    name = "min_clique_cover_solver_base",
+    srcs = ["min_clique_cover_solver_base.cc"],
+    hdrs = [
+        "min_clique_cover_solver_base.h",
+    ],
+    deps = [
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "min_clique_cover_solver_via_greedy",
+    srcs = ["min_clique_cover_solver_via_greedy.cc"],
+    hdrs = [
+        "min_clique_cover_solver_via_greedy.h",
+    ],
+    deps = [
+        ":max_clique_solver_base",
+        ":max_clique_solver_via_greedy",
+        ":max_clique_solver_via_mip",
+        ":min_clique_cover_solver_base",
+        "//common:essential",
+        "@eigen",
     ],
 )
 
@@ -98,6 +128,17 @@ drake_cc_googletest(
     deps = [
         ":common_graphs",
         ":max_clique_solver_via_greedy",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "min_clique_cover_solver_via_greedy_test",
+    srcs = ["test/min_clique_cover_solver_via_greedy_test.cc"],
+    deps = [
+        ":common_graphs",
+        ":min_clique_cover_solver_via_greedy",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],

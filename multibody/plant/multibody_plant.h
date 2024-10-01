@@ -1251,17 +1251,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// SceneGraph.
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "Use get_geometry_pose_output_port() instead (note no 's' plural). "
-      "If you were only using this port to connect it to a SceneGraph, "
-      "instead should you should use the AddMultibodyPlantSceneGraph() or "
-      "AddMultibodyPlant(MultibodyPlantConfig) to add the plant and scene "
-      "graph to a DiagramBuilder, already wired up correctly.")
-  const systems::OutputPort<T>& get_geometry_poses_output_port() const {
-    return get_geometry_pose_output_port();
-  }
-
   /// Returns the output port for vertex positions (configurations), measured
   /// and expressed in the World frame, of the deformable bodies in `this` plant
   /// as a GeometryConfigurationVector.
@@ -3354,23 +3343,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// once evaluated, successive calls to this method are inexpensive.
   const SpatialAcceleration<T>& EvalBodySpatialAccelerationInWorld(
       const systems::Context<T>& context, const RigidBody<T>& body_B) const;
-
-  /// Evaluates all point pairs of contact for a given state of the model stored
-  /// in `context`.
-  /// Each entry in the returned vector corresponds to a single point pair
-  /// corresponding to two interpenetrating bodies A and B. The size of the
-  /// returned vector corresponds to the total number of contact penetration
-  /// pairs. If no geometry was registered, the output vector is empty.
-  /// @see @ref mbp_geometry "Geometry" for geometry registration.
-  /// @see PenetrationAsPointPair for further details on the returned data.
-  /// @throws std::exception if called pre-finalize. See Finalize().
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "We anticipate that after the deprecation date, MultibodyPlant will no "
-      "longer provide public access access to its cached contact information. "
-      "To inquire about collisions, ask the SceneGraph's QueryObject directly.")
-  const std::vector<geometry::PenetrationAsPointPair<T>>&
-  EvalPointPairPenetrations(const systems::Context<T>& context) const;
 
   /// Calculates the rigid transform (pose) `X_AB` relating frame A and frame B.
   /// @param[in] context

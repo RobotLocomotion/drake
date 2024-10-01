@@ -672,12 +672,6 @@ class AcrobotPlantTests : public ::testing::Test {
     DRAKE_EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
     DRAKE_EXPECT_NO_THROW(plant_->get_geometry_pose_output_port());
 
-    // Also sanity check the deprecated getter (2024-10-01).
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    DRAKE_EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
-#pragma GCC diagnostic push
-
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_state_output_port(),
         /* Verify this method is throwing for the right reasons. */
@@ -1747,9 +1741,7 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
       {"state", false},
       {"body_poses", false},
       {"body_spatial_velocities", false},
-      {"spatial_velocities", false},  // Deprecated synonym 2024-10-01.
       {"body_spatial_accelerations", !is_sampled},
-      {"spatial_accelerations", !is_sampled},  // Deprecated synonym 2024-10-01.
       {"generalized_acceleration", !is_sampled},
       {"net_actuation", !is_sampled},
       {"reaction_forces", !is_sampled},
@@ -2088,30 +2080,6 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
               "empty.png");
   }
 }
-
-// Deprecated for removal on 2024-10-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
-  PendulumParameters parameters;
-  unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
-  unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
-
-  // We connect a SceneGraph to the pendulum plant in order to enforce the
-  // creation of geometry input/output ports. This ensures the call to
-  // CalcPointPairPenetrations evaluates appropriately.
-  geometry::SceneGraph<double> scene_graph;
-  pendulum->RegisterAsSourceForSceneGraph(&scene_graph);
-
-  auto autodiff_pendulum =
-      drake::systems::System<double>::ToAutoDiffXd(*pendulum.get());
-  auto autodiff_context = autodiff_pendulum->CreateDefaultContext();
-
-  // This test case contains no collisions, and hence we should not throw.
-  DRAKE_EXPECT_NO_THROW(
-      autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
-}
-#pragma GCC diagnostic pop
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();

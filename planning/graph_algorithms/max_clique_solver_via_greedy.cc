@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <list>
+#include <memory>
 #include <numeric>
 #include <vector>
 
@@ -81,6 +82,10 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
     is_clique_member(i) = true;
   }
   return is_clique_member;
+}
+
+std::unique_ptr<MaxCliqueSolverBase> MaxCliqueSolverViaGreedy::DoClone() const {
+  return std::make_unique<MaxCliqueSolverViaGreedy>(*this);
 }
 
 }  // namespace graph_algorithms
