@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/rigid_body.h"
 
@@ -18,8 +19,16 @@ template <typename T>
 RpyBallMobilizer<T>::~RpyBallMobilizer() = default;
 
 template <typename T>
+std::unique_ptr<internal::BodyNode<T>> RpyBallMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, RpyBallMobilizer>>(
+      parent_node, body, mobilizer);
+}
+
+template <typename T>
 std::string RpyBallMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+    int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {
     case 0:
       return "qx";
@@ -33,7 +42,7 @@ std::string RpyBallMobilizer<T>::position_suffix(
 
 template <typename T>
 std::string RpyBallMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+    int velocity_index_in_mobilizer) const {
   switch (velocity_index_in_mobilizer) {
     case 0:
       return "wx";
@@ -42,8 +51,7 @@ std::string RpyBallMobilizer<T>::velocity_suffix(
     case 2:
       return "wz";
   }
-  throw std::runtime_error(
-    "RpyBallMobilizer has only 3 velocities.");
+  throw std::runtime_error("RpyBallMobilizer has only 3 velocities.");
 }
 
 template <typename T>
@@ -94,19 +102,17 @@ const RpyBallMobilizer<T>& RpyBallMobilizer<T>::SetAngularVelocity(
 template <typename T>
 math::RigidTransform<T> RpyBallMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
-  const Eigen::Matrix<T, 3, 1>& rpy = this->get_positions(context);
-  DRAKE_ASSERT(rpy.size() == kNq);
-  const math::RollPitchYaw<T> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
-  math::RigidTransform<T> X_FM(roll_pitch_yaw, Vector3<T>::Zero());
-  return X_FM;
+  const auto& q = this->get_positions(context);
+  DRAKE_ASSERT(q.size() == kNq);
+  return calc_X_FM(q.data());
 }
 
 template <typename T>
 SpatialVelocity<T> RpyBallMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&,
+    const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(v, Vector3<T>::Zero());
+  return calc_V_FM(context, v.data());
 }
 
 template <typename T>
@@ -120,19 +126,18 @@ RpyBallMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void RpyBallMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&,
-    const SpatialForce<T>& F_Mo_F,
+    const systems::Context<T>&, const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
   tau = F_Mo_F.rotational();
 }
 
 template <typename T>
-void RpyBallMobilizer<T>::DoCalcNMatrix(
-    const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
-  using std::sin;
-  using std::cos;
+void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
+                                        EigenPtr<MatrixX<T>> N) const {
   using std::abs;
+  using std::cos;
+  using std::sin;
 
   // The linear map E_F(q) allows computing v from q̇ as:
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
@@ -182,8 +187,8 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(
 }
 
 template <typename T>
-void RpyBallMobilizer<T>::DoCalcNplusMatrix(
-    const systems::Context<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
+void RpyBallMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>& context,
+                                            EigenPtr<MatrixX<T>> Nplus) const {
   // The linear map between q̇ and v is given by matrix E_F(q) defined by:
   //          [ cos(y) * cos(p), -sin(y), 0]
   // E_F(q) = [ sin(y) * cos(p),  cos(y), 0]
@@ -204,24 +209,20 @@ void RpyBallMobilizer<T>::DoCalcNplusMatrix(
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
 
-  *Nplus <<
-        cy * cp, -sy, 0.0,
-        sy * cp,  cy, 0.0,
-            -sp, 0.0, 1.0;
+  *Nplus << cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0;
 }
 
 template <typename T>
 void RpyBallMobilizer<T>::MapVelocityToQDot(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v,
+    const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
   DRAKE_ASSERT(qdot->size() == kNq);
 
-  using std::sin;
-  using std::cos;
   using std::abs;
+  using std::cos;
+  using std::sin;
 
   // The linear map E_F(q) allows computing v from q̇ as:
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
@@ -302,19 +303,18 @@ void RpyBallMobilizer<T>::MapVelocityToQDot(
   // ṗ = -sin(y) * w0 + cos(y) * w1
   // ẏ = sin(p) * ṙ + w2
   const T t = (cy * w0 + sy * w1) * cpi;  // Common factor.
-  *qdot =  Vector3<T>(t, -sy * w0 + cy * w1, sp *  t + w2);
+  *qdot = Vector3<T>(t, -sy * w0 + cy * w1, sp * t + w2);
 }
 
 template <typename T>
 void RpyBallMobilizer<T>::MapQDotToVelocity(
     const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& qdot,
-    EigenPtr<VectorX<T>> v) const {
+    const Eigen::Ref<const VectorX<T>>& qdot, EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);
   DRAKE_ASSERT(v != nullptr);
   DRAKE_ASSERT(v->size() == kNv);
-  using std::sin;
   using std::cos;
+  using std::sin;
 
   // The linear map between q̇ and v is given by matrix E_F(q) defined by:
   //          [ cos(y) * cos(p), -sin(y), 0]
@@ -364,10 +364,9 @@ void RpyBallMobilizer<T>::MapQDotToVelocity(
 
   // Compute the product w_FM = E_W * q̇ directly since it's cheaper than
   // explicitly forming E_F and then multiplying with q̇.
-  *v = Vector3<T>(
-      cy * cp_x_rdot  -  sy * pdot, /*+ 0 * ydot*/
-      sy * cp_x_rdot  +  cy * pdot, /*+ 0 * ydot*/
-          -sp * rdot/*+   0 * pdot */ +     ydot);
+  *v = Vector3<T>(cy * cp_x_rdot - sy * pdot, /*+ 0 * ydot*/
+                  sy * cp_x_rdot + cy * pdot, /*+ 0 * ydot*/
+                  -sp * rdot /*+   0 * pdot */ + ydot);
 }
 
 template <typename T>
@@ -391,8 +390,7 @@ std::unique_ptr<Mobilizer<double>> RpyBallMobilizer<T>::DoCloneToScalar(
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>>
-RpyBallMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<AutoDiffXd>> RpyBallMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }

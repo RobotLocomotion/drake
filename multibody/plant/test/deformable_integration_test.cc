@@ -243,6 +243,11 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
                               F_Ac_W_expected.translational(), kTol));
   EXPECT_TRUE(CompareMatrices(contact_info.F_Ac_W().rotational(),
                               F_Ac_W_expected.rotational(), kTol));
+  /* Verify that adding deformable contact didn't mess up the generalized
+   contact force port for rigid bodies. */
+  EXPECT_NO_THROW(
+      plant_->get_generalized_contact_forces_output_port(ModelInstanceIndex(0))
+          .Eval(plant_context));
 }
 
 }  // namespace

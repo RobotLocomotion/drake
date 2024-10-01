@@ -19,11 +19,13 @@ namespace drake {
 namespace multibody {
 
 // Forward declarations.
-template<typename T> class RigidBody;
+template <typename T>
+class RigidBody;
 
 namespace internal {
 
-template<typename T> class BodyNode;
+template <typename T>
+class BodyNode;
 
 // %Mobilizer is a fundamental object within Drake's multibody engine used to
 // specify the allowed motions between two Frame objects within a
@@ -265,9 +267,7 @@ class Mobilizer : public MultibodyElement<T> {
   ~Mobilizer() override;
 
   /// Returns this element's unique index.
-  MobodIndex index() const {
-    return this->template index_impl<MobodIndex>();
-  }
+  MobodIndex index() const { return this->template index_impl<MobodIndex>(); }
 
   // Returns the number of generalized coordinates granted by this mobilizer.
   // As an example, consider RevoluteMobilizer, for which
@@ -337,33 +337,24 @@ class Mobilizer : public MultibodyElement<T> {
   const SpanningForest::Mobod& mobod() const { return mobod_; }
 
   // Returns a constant reference to the inboard frame.
-  const Frame<T>& inboard_frame() const {
-    return inboard_frame_;
-  }
+  const Frame<T>& inboard_frame() const { return inboard_frame_; }
 
   // Returns a constant reference to the outboard frame.
-  const Frame<T>& outboard_frame() const {
-    return outboard_frame_;
-  }
+  const Frame<T>& outboard_frame() const { return outboard_frame_; }
 
   // Returns a constant reference to the body associated with `this`
   // mobilizer's inboard frame.
-  const RigidBody<T>& inboard_body() const {
-    return inboard_frame().body();
-  }
+  const RigidBody<T>& inboard_body() const { return inboard_frame().body(); }
 
   // Returns a constant reference to the body associated with `this`
   // mobilizer's outboard frame.
-  const RigidBody<T>& outboard_body() const {
-    return outboard_frame().body();
-  }
+  const RigidBody<T>& outboard_body() const { return outboard_frame().body(); }
 
   // Returns `true` if `this` mobilizer grants 6-dofs to the outboard frame.
   virtual bool is_floating() const { return false; }
 
   // Returns `true` if `this` uses a quaternion parametrization of rotations.
   virtual bool has_quaternion_dofs() const { return false; }
-
 
   // @name Methods that define a %Mobilizer
   // @{
@@ -431,6 +422,9 @@ class Mobilizer : public MultibodyElement<T> {
   //
   // Additionally, `context` can provide any other parameters the mobilizer
   // could depend on.
+
+  // TODO(sherm1) Consider getting rid of this function altogether and
+  //  making use only of the concrete mobilizer's calc_X_FM() method.
   virtual math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const = 0;
 
@@ -511,10 +505,9 @@ class Mobilizer : public MultibodyElement<T> {
   //   expressed in the inboard frame F.
   // @retval tau
   //   The vector of generalized forces. It must live in ℝⁿᵛ.
-  virtual void ProjectSpatialForce(
-      const systems::Context<T>& context,
-      const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const = 0;
+  virtual void ProjectSpatialForce(const systems::Context<T>& context,
+                                   const SpatialForce<T>& F_Mo_F,
+                                   Eigen::Ref<VectorX<T>> tau) const = 0;
 
   // Computes the kinematic mapping matrix `N(q)` that maps generalized
   // velocities for this mobilizer to time derivatives of the generalized
@@ -527,8 +520,8 @@ class Mobilizer : public MultibodyElement<T> {
   //   `nq x nv` with nq and nv the number of generalized positions and the
   //   number of generalized velocities for this mobilizer, respectively.
   // @see MapVelocityToQDot().
-  void CalcNMatrix(
-      const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
+  void CalcNMatrix(const systems::Context<T>& context,
+                   EigenPtr<MatrixX<T>> N) const {
     DRAKE_DEMAND(N != nullptr);
     DRAKE_DEMAND(N->rows() == num_positions());
     DRAKE_DEMAND(N->cols() == num_velocities());
@@ -547,9 +540,8 @@ class Mobilizer : public MultibodyElement<T> {
   //   `nv x nq` with nq the number of generalized positions and nv the
   //   number of generalized velocities.
   // @see MapVelocityToQDot().
-  void CalcNplusMatrix(
-      const systems::Context<T>& context,
-      EigenPtr<MatrixX<T>> Nplus) const {
+  void CalcNplusMatrix(const systems::Context<T>& context,
+                       EigenPtr<MatrixX<T>> Nplus) const {
     DRAKE_DEMAND(Nplus != nullptr);
     DRAKE_DEMAND(Nplus->rows() == num_velocities());
     DRAKE_DEMAND(Nplus->cols() == num_positions());
@@ -561,19 +553,17 @@ class Mobilizer : public MultibodyElement<T> {
   // Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
   // velocities v and time derivatives of the generalized positions `qdot`.
   // The generalized positions vector is stored in `context`.
-  virtual void MapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v,
-      EigenPtr<VectorX<T>> qdot) const = 0;
+  virtual void MapVelocityToQDot(const systems::Context<T>& context,
+                                 const Eigen::Ref<const VectorX<T>>& v,
+                                 EigenPtr<VectorX<T>> qdot) const = 0;
 
   // Computes the mapping `v = N⁺(q)⋅q̇` from time derivatives of the
   // generalized positions `qdot` to generalized velocities v, where `N⁺(q)` is
   // the left pseudo-inverse of `N(q)` defined by MapVelocityToQDot().
   // The generalized positions vector is stored in `context`.
-  virtual void MapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      EigenPtr<VectorX<T>> v) const = 0;
+  virtual void MapQDotToVelocity(const systems::Context<T>& context,
+                                 const Eigen::Ref<const VectorX<T>>& qdot,
+                                 EigenPtr<VectorX<T>> v) const = 0;
   // @}
 
   // Returns a const Eigen expression of the vector of generalized positions
@@ -582,8 +572,7 @@ class Mobilizer : public MultibodyElement<T> {
   // @pre @p q_array is of size MultibodyTree::num_positions().
   Eigen::Ref<const VectorX<T>> get_positions_from_array(
       const Eigen::Ref<const VectorX<T>>& q_array) const {
-    DRAKE_DEMAND(
-        q_array.size() == this->get_parent_tree().num_positions());
+    DRAKE_DEMAND(q_array.size() == this->get_parent_tree().num_positions());
     return q_array.segment(position_start_in_q(), num_positions());
   }
 
@@ -591,8 +580,7 @@ class Mobilizer : public MultibodyElement<T> {
   Eigen::Ref<VectorX<T>> get_mutable_positions_from_array(
       EigenPtr<VectorX<T>> q_array) const {
     DRAKE_DEMAND(q_array != nullptr);
-    DRAKE_DEMAND(
-        q_array->size() == this->get_parent_tree().num_positions());
+    DRAKE_DEMAND(q_array->size() == this->get_parent_tree().num_positions());
     return q_array->segment(position_start_in_q(), num_positions());
   }
 
@@ -600,10 +588,9 @@ class Mobilizer : public MultibodyElement<T> {
   // for `this` mobilizer from a vector `v_array` of generalized velocities for
   // the entire MultibodyTree model.
   // @pre @p v_array is of size MultibodyTree::num_velocities().
-  Eigen::Ref<const VectorX<T>>
-  get_velocities_from_array(const Eigen::Ref<const VectorX<T>>& v_array) const {
-    DRAKE_DEMAND(
-        v_array.size() == this->get_parent_tree().num_velocities());
+  Eigen::Ref<const VectorX<T>> get_velocities_from_array(
+      const Eigen::Ref<const VectorX<T>>& v_array) const {
+    DRAKE_DEMAND(v_array.size() == this->get_parent_tree().num_velocities());
     return v_array.segment(velocity_start_in_v(), num_velocities());
   }
 
@@ -611,8 +598,7 @@ class Mobilizer : public MultibodyElement<T> {
   Eigen::Ref<VectorX<T>> get_mutable_velocities_from_array(
       EigenPtr<VectorX<T>> v_array) const {
     DRAKE_DEMAND(v_array != nullptr);
-    DRAKE_DEMAND(
-        v_array->size() == this->get_parent_tree().num_velocities());
+    DRAKE_DEMAND(v_array->size() == this->get_parent_tree().num_velocities());
     return v_array->segment(velocity_start_in_v(), num_velocities());
   }
 
@@ -662,8 +648,8 @@ class Mobilizer : public MultibodyElement<T> {
 
   // For MultibodyTree internal use only.
   virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const = 0;
+      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+      const Mobilizer<T>* mobilizer) const = 0;
 
   // Lock the mobilizer. Its generalized velocities will be 0 until it is
   // unlocked.
@@ -693,14 +679,13 @@ class Mobilizer : public MultibodyElement<T> {
  protected:
   // NVI to CalcNMatrix(). Implementations can safely assume that N is not the
   // nullptr and that N has the proper size.
-  virtual void DoCalcNMatrix(
-      const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const = 0;
+  virtual void DoCalcNMatrix(const systems::Context<T>& context,
+                             EigenPtr<MatrixX<T>> N) const = 0;
 
   // NVI to CalcNplusMatrix(). Implementations can safely assume that Nplus is
   // not the nullptr and that Nplus has the proper size.
-  virtual void DoCalcNplusMatrix(
-      const systems::Context<T>& context,
-      EigenPtr<MatrixX<T>> Nplus) const = 0;
+  virtual void DoCalcNplusMatrix(const systems::Context<T>& context,
+                                 EigenPtr<MatrixX<T>> Nplus) const = 0;
 
   // @name Methods to make a clone templated on different scalar types.
   //

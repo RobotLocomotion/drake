@@ -19,7 +19,9 @@ using MobodIndex = TypeSafeIndex<class MobodTag>;
 using TreeIndex = TypeSafeIndex<class TreeTag>;
 
 // World is always modeled as the 0th mobilized body.
-inline MobodIndex world_mobod_index() { return MobodIndex(0); }
+inline MobodIndex world_mobod_index() {
+  return MobodIndex(0);
+}
 
 }  // namespace internal
 
@@ -56,11 +58,15 @@ using ModelInstanceIndex = TypeSafeIndex<class ModelInstanceTag>;
 
 /// For every MultibodyPlant the **world** body _always_ has this unique index
 /// and it is always zero.
-inline BodyIndex world_index() { return BodyIndex(0); }
+inline BodyIndex world_index() {
+  return BodyIndex(0);
+}
 
 /// For every MultibodyPlant the **world** frame _always_ has this unique index
 /// and it is always zero.
-inline FrameIndex world_frame_index() { return FrameIndex(0); }
+inline FrameIndex world_frame_index() {
+  return FrameIndex(0);
+}
 
 /// Returns the model instance containing the *world* body.  For
 /// every MultibodyPlant the **world** body _always_ has this unique

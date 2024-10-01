@@ -3,6 +3,8 @@
 #include <cmath>
 #include <limits>
 
+#include "drake/multibody/tree/body_node_impl.h"
+
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -11,8 +13,16 @@ template <typename T>
 ScrewMobilizer<T>::~ScrewMobilizer() = default;
 
 template <typename T>
+std::unique_ptr<internal::BodyNode<T>> ScrewMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, ScrewMobilizer>>(
+      parent_node, body, mobilizer);
+}
+
+template <typename T>
 std::string ScrewMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+    int position_index_in_mobilizer) const {
   if (position_index_in_mobilizer == 0) {
     return "q";
   }
@@ -21,7 +31,7 @@ std::string ScrewMobilizer<T>::position_suffix(
 
 template <typename T>
 std::string ScrewMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+    int velocity_index_in_mobilizer) const {
   if (velocity_index_in_mobilizer == 0) {
     return "w";
   }
@@ -37,20 +47,19 @@ template <typename T>
 T ScrewMobilizer<T>::get_translation(const systems::Context<T>& context) const {
   auto q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  return get_screw_translation_from_rotation(q[0], screw_pitch_);
+  return GetScrewTranslationFromRotation(q[0], screw_pitch_);
 }
 
 template <typename T>
 const ScrewMobilizer<T>& ScrewMobilizer<T>::SetTranslation(
-    systems::Context<T>* context,
-    const T& translation) const {
+    systems::Context<T>* context, const T& translation) const {
   const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
   using std::abs;
   DRAKE_THROW_UNLESS(abs(screw_pitch_) > kEpsilon ||
                      abs(translation) < kEpsilon);
   auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  q[0] = get_screw_rotation_from_translation(translation, screw_pitch_);
+  q[0] = GetScrewRotationFromTranslation(translation, screw_pitch_);
   return *this;
 }
 
@@ -76,20 +85,19 @@ T ScrewMobilizer<T>::get_translation_rate(
     const systems::Context<T>& context) const {
   auto v = this->get_velocities(context);
   DRAKE_ASSERT(v.size() == kNv);
-  return get_screw_translation_from_rotation(v[0], screw_pitch_);
+  return GetScrewTranslationFromRotation(v[0], screw_pitch_);
 }
 
 template <typename T>
 const ScrewMobilizer<T>& ScrewMobilizer<T>::SetTranslationRate(
-    systems::Context<T>* context,
-    const T& vz) const {
+    systems::Context<T>* context, const T& vz) const {
   const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
   using std::abs;
   DRAKE_THROW_UNLESS(abs(screw_pitch_) > kEpsilon || abs(vz) < kEpsilon);
 
   auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);
-  v[0] = get_screw_rotation_from_translation(vz, screw_pitch_);
+  v[0] = GetScrewRotationFromTranslation(vz, screw_pitch_);
   return *this;
 }
 
@@ -115,20 +123,15 @@ math::RigidTransform<T> ScrewMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  const Vector3<T> p_FM(axis_ *
-      get_screw_translation_from_rotation(q[0], screw_pitch_));
-  return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
+  return calc_X_FM(q.data());
 }
 
 template <typename T>
 SpatialVelocity<T> ScrewMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  Vector6<T> V_FM_vector;
-  V_FM_vector <<
-    (axis_ * v[0]),
-    (axis_ * get_screw_translation_from_rotation(v[0], screw_pitch_));
-  return SpatialVelocity<T>(V_FM_vector);
+  return calc_V_FM(context, v.data());
 }
 
 template <typename T>
@@ -138,16 +141,15 @@ ScrewMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   Vector6<T> A_FM_vector;
-  A_FM_vector <<
-    (axis_ * vdot[0]),
-    (axis_ * get_screw_translation_from_rotation(vdot[0], screw_pitch_));
+  A_FM_vector << (axis_ * vdot[0]),
+      (axis_ * GetScrewTranslationFromRotation(vdot[0], screw_pitch_));
   return SpatialAcceleration<T>(A_FM_vector);
 }
 
 template <typename T>
 void ScrewMobilizer<T>::ProjectSpatialForce(const systems::Context<T>&,
-                                             const SpatialForce<T>& F_Mo_F,
-                                             Eigen::Ref<VectorX<T>> tau) const {
+                                            const SpatialForce<T>& F_Mo_F,
+                                            Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
   tau[0] = F_Mo_F.rotational().dot(axis_) +
            F_Mo_F.translational().dot(axis_) / (2 * M_PI) * screw_pitch_;
@@ -155,20 +157,20 @@ void ScrewMobilizer<T>::ProjectSpatialForce(const systems::Context<T>&,
 
 template <typename T>
 void ScrewMobilizer<T>::DoCalcNMatrix(const systems::Context<T>&,
-                                       EigenPtr<MatrixX<T>> N) const {
+                                      EigenPtr<MatrixX<T>> N) const {
   *N = Eigen::Matrix<T, 1, 1>::Identity();
 }
 
 template <typename T>
 void ScrewMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>&,
-                                           EigenPtr<MatrixX<T>> Nplus) const {
+                                          EigenPtr<MatrixX<T>> Nplus) const {
   *Nplus = Eigen::Matrix<T, 1, 1>::Identity();
 }
 
 template <typename T>
-void ScrewMobilizer<T>::MapVelocityToQDot(
-    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
-    EigenPtr<VectorX<T>> qdot) const {
+void ScrewMobilizer<T>::MapVelocityToQDot(const systems::Context<T>&,
+                                          const Eigen::Ref<const VectorX<T>>& v,
+                                          EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
   DRAKE_ASSERT(qdot->size() == kNq);

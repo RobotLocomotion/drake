@@ -6,7 +6,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/random_rotation.h"
-#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
@@ -63,8 +62,8 @@ TEST_F(QuaternionFloatingMobilizerTest, StateAccess) {
   const Quaterniond Q_WB = R_WB.ToQuaternion();
   mobilizer_->SetOrientation(context_.get(), R_WB);
   EXPECT_TRUE(CompareMatrices(mobilizer_->get_quaternion(*context_).coeffs(),
-                              Q_WB.coeffs(),
-                              kTolerance, MatrixCompareType::relative));
+                              Q_WB.coeffs(), kTolerance,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, ZeroState) {
@@ -135,7 +134,6 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   EXPECT_FALSE(mobilizer_->get_translational_velocity(*context_).isZero());
 }
 
-
 // For an arbitrary state verify that the computed Nplus(q) matrix is the
 // left pseudoinverse of N(q).
 TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
@@ -160,9 +158,8 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   // Verify that Nplus is the left pseudoinverse of N.
   MatrixX<double> Nplus_x_N = Nplus * N;
 
-  EXPECT_TRUE(CompareMatrices(
-      Nplus_x_N, MatrixX<double>::Identity(6, 6),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(Nplus_x_N, MatrixX<double>::Identity(6, 6),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
@@ -200,8 +197,8 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
   mobilizer_->CalcNMatrix(*context_, &N);
 
   // Ensure N(q) is used in `q̇ = N(q)⋅v`
-  EXPECT_TRUE(CompareMatrices(qdot, N * v, kTolerance,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(qdot, N * v, kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {

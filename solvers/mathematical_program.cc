@@ -71,6 +71,24 @@ string MathematicalProgram::to_string() const {
   return os.str();
 }
 
+bool MathematicalProgram::IsThreadSafe() const {
+  const std::vector<Binding<Cost>> costs = GetAllCosts();
+  const std::vector<Binding<Constraint>> constraints = GetAllConstraints();
+  return std::all_of(visualization_callbacks_.begin(),
+                     visualization_callbacks_.end(),
+                     [](const Binding<VisualizationCallback>& c) {
+                       return c.evaluator()->is_thread_safe();
+                     }) &&
+         std::all_of(costs.begin(), costs.end(),
+                     [](const Binding<Cost>& c) {
+                       return c.evaluator()->is_thread_safe();
+                     }) &&
+         std::all_of(constraints.begin(), constraints.end(),
+                     [](const Binding<Constraint>& c) {
+                       return c.evaluator()->is_thread_safe();
+                     });
+}
+
 std::string MathematicalProgram::ToLatex(int precision) {
   if (num_vars() == 0) {
     return "\\text{This MathematicalProgram has no decision variables.}";

@@ -349,8 +349,7 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
   std::uniform_real_distribution<symbolic::Expression> uniform;
 
   // Default behavior is to set to zero.
-  tree().SetRandomState(*context_, &context_->get_mutable_state(),
-                           &generator);
+  tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
   EXPECT_TRUE(joint_->GetPose(*context_).IsExactlyIdentity());
 
   // Set the position distribution to arbitrary values.
@@ -362,8 +361,7 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
   mutable_joint_->set_random_quaternion_distribution(
       math::UniformlyRandomQuaternion<symbolic::Expression>(&generator));
   mutable_joint_->set_random_translation_distribution(position_distribution);
-  tree().SetRandomState(*context_, &context_->get_mutable_state(),
-                           &generator);
+  tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
   // We expect arbitrary non-zero values for the random state.
   EXPECT_FALSE(joint_->GetPose(*context_).IsExactlyIdentity());
 
@@ -372,15 +370,13 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
       Eigen::Quaternion<symbolic::Expression>::Identity());
   mutable_joint_->set_random_translation_distribution(
       Eigen::Matrix<symbolic::Expression, 3, 1>::Zero());
-  tree().SetRandomState(*context_, &context_->get_mutable_state(),
-                           &generator);
+  tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
   // We expect zero values for pose.
   EXPECT_TRUE(joint_->GetPose(*context_).IsExactlyIdentity());
 
   // Set the quaternion distribution using built in uniform sampling.
   mutable_joint_->set_random_quaternion_distribution_to_uniform();
-  tree().SetRandomState(*context_, &context_->get_mutable_state(),
-                           &generator);
+  tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
   // We expect arbitrary non-zero pose.
   EXPECT_FALSE(joint_->GetPose(*context_).IsExactlyIdentity());
 }

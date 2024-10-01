@@ -513,9 +513,6 @@ class TestPlant(unittest.TestCase):
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
             plant.get_geometry_pose_output_port(), OutputPort)
-        with catch_drake_warnings(expected_count=1) as w:
-            self.assertIsInstance(
-                plant.get_geometry_poses_output_port(), OutputPort)
         self.assertIsInstance(
             plant.get_net_actuation_output_port(), OutputPort)
         self.assertIsInstance(
@@ -530,6 +527,9 @@ class TestPlant(unittest.TestCase):
             plant.get_contact_results_output_port(), OutputPort)
         self.assertIsInstance(plant.num_frames(), int)
         self.assertIsInstance(plant.get_body(body_index=world_index()), Body)
+        self.assertEqual(
+            plant.IsAnchored(plant.get_body(body_index=world_index())), True)
+        self.assertEqual(plant.NumBodiesWithName("Link1"), 1)
         self.assertIs(shoulder, plant.get_joint(joint_index=JointIndex(0)))
         self.assertIs(shoulder, plant.get_mutable_joint(
             joint_index=JointIndex(0)))
@@ -623,6 +623,13 @@ class TestPlant(unittest.TestCase):
             T)
         self.assertIsInstance(
             dut.CalcCenterOfMassInBodyFrame(context=context),
+            np.ndarray)
+        self.assertIsInstance(
+            dut.CalcCenterOfMassTranslationalVelocityInWorld(context=context),
+            np.ndarray)
+        self.assertIsInstance(
+            dut.CalcCenterOfMassTranslationalAccelerationInWorld(
+                context=context),
             np.ndarray)
         self.assertIsInstance(
             dut.CalcSpatialInertiaInBodyFrame(context=context),
@@ -866,8 +873,6 @@ class TestPlant(unittest.TestCase):
         if T != Expression:
             self.assertTrue(zero.IsZero())
         SpatialInertia.NaN()
-        with catch_drake_warnings(expected_count=1) as w:
-            SpatialInertia()
         SpatialInertia.MakeFromCentralInertia(
             mass=1.3, p_PScm_E=[0.1, -0.2, 0.3],
             I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
@@ -3340,6 +3345,13 @@ class TestPlant(unittest.TestCase):
         geometry_id = dut.GetGeometryId(body_id)
         self.assertEqual(dut.GetBodyId(geometry_id), body_id)
         dut.SetWallBoundaryCondition(body_id, [1, 1, -1], [0, 0, 1])
+
+        spatial_inertia = SpatialInertia_[float].SolidCubeWithDensity(1, 1)
+        rigid_body = plant.AddRigidBody("rigid_body", spatial_inertia)
+        dut.AddFixedConstraint(body_A_id=body_id,
+                               body_B=rigid_body,
+                               X_BA=RigidTransform(), shape=Box(1, 1, 1),
+                               X_BG=RigidTransform())
 
         # Verify that a body has been added to the model.
         self.assertEqual(dut.num_bodies(), 1)

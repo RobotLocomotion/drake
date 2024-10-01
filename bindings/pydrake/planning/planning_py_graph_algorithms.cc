@@ -4,6 +4,8 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_via_mip.h"
+#include "drake/planning/graph_algorithms/min_clique_cover_solver_base.h"
+#include "drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h"
 
 namespace drake {
 namespace pydrake {
@@ -24,6 +26,11 @@ void DefinePlanningGraphAlgorithms(py::module m) {
         PYBIND11_OVERRIDE_PURE(VectorX<bool>, MaxCliqueSolverBase,
             DoSolveMaxClique, adjacency_matrix);
       }
+
+      std::unique_ptr<MaxCliqueSolverBase> DoClone() const override {
+        PYBIND11_OVERRIDE_PURE(
+            std::unique_ptr<MaxCliqueSolverBase>, MaxCliqueSolverBase, DoClone);
+      };
     };
     const auto& cls_doc = doc.MaxCliqueSolverBase;
     py::class_<MaxCliqueSolverBase, PyMaxCliqueSolverBase>(
@@ -55,6 +62,44 @@ void DefinePlanningGraphAlgorithms(py::module m) {
     py::class_<MaxCliqueSolverViaGreedy, MaxCliqueSolverBase>(
         m, "MaxCliqueSolverViaGreedy", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc);
+  }
+  {
+    class PyMinCliqueCoverSolverBase
+        : public py::wrapper<MinCliqueCoverSolverBase> {
+     public:
+      // Trampoline virtual methods.
+      // The private virtual method of DoSolveMinCliqueCover is made public to
+      // enable Python implementations to override it.
+      std::vector<std::set<int>> DoSolveMinCliqueCover(
+          const Eigen::SparseMatrix<bool>& adjacency_matrix,
+          bool partition) override {
+        PYBIND11_OVERRIDE_PURE(std::vector<std::set<int>>,
+            MinCliqueCoverSolverBase, DoSolveMinCliqueCover, adjacency_matrix,
+            partition);
+      }
+    };
+    const auto& cls_doc = doc.MinCliqueCoverSolverBase;
+    py::class_<MinCliqueCoverSolverBase, PyMinCliqueCoverSolverBase>(
+        m, "MinCliqueCoverSolverBase", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def("SolveMinCliqueCover",
+            &MinCliqueCoverSolverBase::SolveMinCliqueCover,
+            py::arg("adjacency_matrix"), py::arg("partition") = false,
+            cls_doc.SolveMinCliqueCover.doc);
+  }
+  {
+    const auto& cls_doc = doc.MinCliqueCoverSolverViaGreedy;
+    py::class_<MinCliqueCoverSolverViaGreedy, MinCliqueCoverSolverBase>(
+        m, "MinCliqueCoverSolverViaGreedy", cls_doc.doc)
+        .def(py::init<const MaxCliqueSolverBase&, int>(),
+            py::arg("max_clique_solver"), py::arg("min_clique_size") = 1,
+            cls_doc.ctor.doc)
+        .def("set_min_clique_size",
+            &MinCliqueCoverSolverViaGreedy::set_min_clique_size,
+            py::arg("min_clique_size"), cls_doc.set_min_clique_size.doc)
+        .def("get_min_clique_size",
+            &MinCliqueCoverSolverViaGreedy::get_min_clique_size,
+            cls_doc.get_min_clique_size.doc);
   }
 }
 

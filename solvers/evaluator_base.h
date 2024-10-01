@@ -143,6 +143,11 @@ class EvaluatorBase {
     return gradient_sparsity_pattern_;
   }
 
+  /**
+   * Returns whether it is safe to call Eval in parallel.
+   */
+  bool is_thread_safe() const { return is_thread_safe_; }
+
  protected:
   /**
    * Constructs a evaluator.
@@ -156,7 +161,8 @@ class EvaluatorBase {
                 const std::string& description = "")
       : num_vars_(num_vars),
         num_outputs_(num_outputs),
-        description_(description) {}
+        description_(description),
+        is_thread_safe_(false) {}
 
   /**
    * Implements expression evaluation for scalar type double.
@@ -207,6 +213,15 @@ class EvaluatorBase {
   // matrix in the linear constraint is resized.
   void set_num_outputs(int num_outputs) { num_outputs_ = num_outputs; }
 
+  // Changes the thread safety of this constraint. Subclasses for which it is
+  // threadsafe to call Eval should use this method to change the value of
+  // is_thread_safe_ in the constructor. It should not be possible to change the
+  // thread-safety of the constraint after construction, so this method is
+  // intentionally protected.
+  void set_is_thread_safe(bool is_thread_safe) {
+    is_thread_safe_ = is_thread_safe;
+  }
+
  private:
   int num_vars_{};
   int num_outputs_{};
@@ -219,6 +234,7 @@ class EvaluatorBase {
   // false, the gradient matrix is regarded as non-sparse, i.e., every entry of
   // the gradient matrix can be non-zero.
   std::optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
+  bool is_thread_safe_{};
 };
 
 /**
@@ -350,7 +366,7 @@ std::shared_ptr<EvaluatorBase> MakeFunctionEvaluator(FF&& f) {
 
 /**
  * Defines a simple evaluator with no outputs that takes a callback function
- * pointer.  This is intended for debugging / visualization of intermediate
+ * pointer. This is intended for debugging / visualization of intermediate
  * results during an optimization (for solvers that support it).
  */
 class VisualizationCallback : public EvaluatorBase {

@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "drake/common/diagnostic_policy.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/parsing/collision_filter_groups.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -207,15 +206,6 @@ class Parser final {
   /// local group and body names will be the names seen during parsing.
   CollisionFilterGroups GetCollisionFilterGroups() const;
 
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "Use GetCollisionFilterGroups() instead. Note that the return type is"
-      " changed to by-value in the new method; callers may need to store the"
-      " return value in a variable with an appropriate lifetime.")
-  const CollisionFilterGroups& collision_filter_groups() const {
-    return collision_filter_groups_;
-  }
-
   /// Parses the input file named in @p file_name and adds all of its model(s)
   /// to @p plant.
   ///
@@ -267,8 +257,6 @@ class Parser final {
   std::optional<std::string> model_name_prefix_;
   struct ParserInternalData;
   std::unique_ptr<ParserInternalData> data_;
-  // Support for deprecated API: 2024-10-01.
-  CollisionFilterGroups collision_filter_groups_;
 };
 
 }  // namespace multibody

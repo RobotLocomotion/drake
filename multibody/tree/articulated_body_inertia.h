@@ -90,7 +90,7 @@ namespace multibody {
 ///     Springer Science & Business Media.
 ///
 /// @tparam_default_scalar
-template<typename T>
+template <typename T>
 class ArticulatedBodyInertia {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertia);
@@ -188,7 +188,8 @@ class ArticulatedBodyInertia {
   IsPhysicallyValid() const {
     throw std::logic_error(
         "IsPhysicallyValid() is only supported for numeric types. It is not "
-        "supported for type '" + NiceTypeName::Get<T>() + "'.");
+        "supported for type '" +
+        NiceTypeName::Get<T>() + "'.");
     return false;  // Return something so that the compiler doesn't complain.
   }
 
@@ -252,7 +253,7 @@ class ArticulatedBodyInertia {
         matrix_.template block<3, 3>(3, 0).transpose();
     Eigen::Block<Matrix6<T>, 3, 3> Fp = matrix_.template block<3, 3>(0, 3);
     Matrix3<T> M = matrix_.template block<3, 3>(3, 3)
-        .template selfadjointView<Eigen::Lower>();
+                       .template selfadjointView<Eigen::Lower>();
 
     // Compute common term Fp = F + (p×)M.
     // The minus on p× is needed because we are doing each column times p×, in
@@ -308,8 +309,8 @@ class ArticulatedBodyInertia {
   /// @warning This operation is only valid if both articulated body inertias
   ///          are computed about the same point Q and expressed in the same
   ///          frame E.
-  ArticulatedBodyInertia<T>&
-  operator+=(const ArticulatedBodyInertia<T>& P_BQ_E) {
+  ArticulatedBodyInertia<T>& operator+=(
+      const ArticulatedBodyInertia<T>& P_BQ_E) {
     matrix_.template triangularView<Eigen::Lower>() = matrix_ + P_BQ_E.matrix_;
     return *this;
   }
@@ -318,8 +319,8 @@ class ArticulatedBodyInertia {
   /// for the same articulated body B as this ABI (about the same point Q and
   /// expressed in the same frame E). The resulting inertia will have the same
   /// properties.
-  ArticulatedBodyInertia<T>&
-  operator-=(const ArticulatedBodyInertia<T>& P_BQ_E) {
+  ArticulatedBodyInertia<T>& operator-=(
+      const ArticulatedBodyInertia<T>& P_BQ_E) {
     matrix_.template triangularView<Eigen::Lower>() = matrix_ - P_BQ_E.matrix_;
     return *this;
   }
@@ -330,7 +331,7 @@ class ArticulatedBodyInertia {
   /// @note This method does not evaluate the product immediately. Instead, it
   /// returns an intermediate Eigen quantity that can be optimized automatically
   /// during compile time.
-  template<typename OtherDerived>
+  template <typename OtherDerived>
   const Eigen::Product<Eigen::SelfAdjointView<const Matrix6<T>, Eigen::Lower>,
                        OtherDerived>
   operator*(const Eigen::MatrixBase<OtherDerived>& rhs) const {
@@ -349,9 +350,9 @@ class ArticulatedBodyInertia {
   /// @note This method does not evaluate the product immediately. Instead, it
   /// returns an intermediate Eigen quantity that can be optimized automatically
   /// during compile time.
-  template<typename OtherDerived> friend
-  const Eigen::Product<OtherDerived,
-                       Eigen::SelfAdjointView<const Matrix6<T>, Eigen::Lower>>
+  template <typename OtherDerived>
+  friend const Eigen::Product<
+      OtherDerived, Eigen::SelfAdjointView<const Matrix6<T>, Eigen::Lower>>
   operator*(const Eigen::MatrixBase<OtherDerived>& lhs,
             const ArticulatedBodyInertia& rhs) {
     return lhs * rhs.matrix_.template selfadjointView<Eigen::Lower>();
@@ -361,7 +362,8 @@ class ArticulatedBodyInertia {
   // Make ArticulatedBodyInertia templated on every other scalar type a friend
   // of ArticulatedBodyInertia<T> so that cast<Scalar>() can access private
   // members of ArticulatedBodyInertia<T>.
-  template <typename> friend class ArticulatedBodyInertia;
+  template <typename>
+  friend class ArticulatedBodyInertia;
 
   // Helper method for NaN initialization.
   static constexpr T nan() {

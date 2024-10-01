@@ -2,6 +2,7 @@ import os
 from textwrap import dedent
 import unittest
 
+from pydrake.common.schema import UniformVectorX
 from pydrake.common.yaml import (
     yaml_dump,
     yaml_load,
@@ -104,6 +105,12 @@ class TestYaml(unittest.TestCase):
             """
         ).lstrip()
         self.assertEqual(expected_str, actual_str)
+
+    def test_dump_misuse_error(self):
+        with self.assertRaisesRegex(Exception, "use yaml_dump_typed"):
+            yaml_dump(UniformVectorX(min=[-1], max=[1]))
+        with self.assertRaisesRegex(Exception, "cannot represent"):
+            yaml_dump(os)
 
     def test_transform_uniform(self):
         # Per the variant types in transform.h.

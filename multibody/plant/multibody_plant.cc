@@ -3277,17 +3277,6 @@ void MultibodyPlant<T>::DeclareOutputPorts() {
               {state_ticket, this->all_parameters_ticket()})
           .get_index();
 
-  // Output "spatial_velocities" (deprecated).
-  {
-    this->DeprecateOutputPort(
-        this->DeclareAbstractOutputPort(
-            "spatial_velocities", std::vector<SpatialVelocity<T>>(num_bodies()),
-            &MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput,
-            {state_ticket, this->all_parameters_ticket()}),
-        "Use 'body_spatial_velocities' not 'spatial_velocities'. "
-        "The deprecated spelling will be removed on 2024-10-01.");
-  }
-
   // Output "body_spatial_accelerations".
   output_port_indices_.body_spatial_accelerations = DeclareSampledOutputPort(
       "body_spatial_accelerations",
@@ -3295,24 +3284,6 @@ void MultibodyPlant<T>::DeclareOutputPorts() {
       &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<true>,
       &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<false>,
       {this->acceleration_kinematics_cache_entry().ticket()});
-
-  // Output "spatial_accelerations" (deprecated).
-  {
-    this->DeprecateOutputPort(
-        this->DeclareAbstractOutputPort(
-            "spatial_accelerations",
-            std::vector<SpatialAcceleration<T>>(num_bodies()),
-            is_discrete() && use_sampled_output_ports_
-                ? &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<true>
-                : &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<false>,
-            is_discrete() && use_sampled_output_ports_
-                ? std::set<DependencyTicket>({this->abstract_state_ticket(
-                      systems::AbstractStateIndex{0})})
-                : std::set<DependencyTicket>(
-                      {this->acceleration_kinematics_cache_entry().ticket()})),
-        "Use 'body_spatial_accelerations' not 'spatial_accelerations'. "
-        "The deprecated spelling will be removed on 2024-10-01.");
-  }
 
   // Output "generalized_acceleration".
   output_port_indices_.generalized_acceleration = DeclareSampledOutputPort(
@@ -3575,8 +3546,10 @@ void MultibodyPlant<T>::CalcInstanceGeneralizedContactForcesOutput(
   DRAKE_DEMAND(tau_contact != nullptr);
 
   // Generalized velocities and generalized forces are ordered in the same way.
-  // Thus we can call GetVelocitiesFromArray().
-  output->SetFromVector(GetVelocitiesFromArray(model_instance, *tau_contact));
+  // Thus we can call GetVelocitiesFromArray(). Make sure we only take the
+  // rigid body dofs.
+  output->SetFromVector(GetVelocitiesFromArray(
+      model_instance, (*tau_contact).head(num_velocities())));
 }
 
 template <typename T>
@@ -3786,27 +3759,6 @@ MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
   this->ValidateContext(context);
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   return ac.get_A_WB(body_B.mobod_index());
-}
-
-// Deprecated for removal on 2024-10-01.
-template <typename T>
-const std::vector<geometry::PenetrationAsPointPair<T>>&
-MultibodyPlant<T>::EvalPointPairPenetrations(
-    const systems::Context<T>& context) const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  this->ValidateContext(context);
-  switch (contact_model_) {
-    case ContactModel::kPoint:
-    case ContactModel::kHydroelasticWithFallback: {
-      return EvalGeometryContactData(context).get().point_pairs;
-    }
-    case ContactModel::kHydroelastic: {
-      throw std::logic_error(
-          "Attempting to evaluate point pair contact for contact model that "
-          "doesn't use it");
-    }
-  }
-  DRAKE_UNREACHABLE();
 }
 
 template <typename T>

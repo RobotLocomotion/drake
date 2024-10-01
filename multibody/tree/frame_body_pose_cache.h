@@ -32,8 +32,8 @@ class FrameBodyPoseCache {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameBodyPoseCache);
 
   explicit FrameBodyPoseCache(int num_frame_body_pose_slots_needed)
-  : X_BF_pool_(num_frame_body_pose_slots_needed),
-    X_FB_pool_(num_frame_body_pose_slots_needed) {
+      : X_BF_pool_(num_frame_body_pose_slots_needed),
+        X_FB_pool_(num_frame_body_pose_slots_needed) {
     DRAKE_DEMAND(num_frame_body_pose_slots_needed > 0);
 
     // All RigidBodyFrames share this body pose.

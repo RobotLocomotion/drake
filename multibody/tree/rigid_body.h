@@ -27,7 +27,8 @@ namespace drake {
 namespace multibody {
 
 // Forward declaration for RigidBodyFrame<T>.
-template<typename T> class RigidBody;
+template <typename T>
+class RigidBody;
 
 /// A %RigidBodyFrame is a material Frame that serves as the unique reference
 /// frame for a RigidBody.
@@ -121,7 +122,8 @@ class RigidBodyFrame final : public Frame<T> {
   // Make RigidBodyFrame templated on any other scalar type a friend of
   // RigidBodyFrame<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private methods from RigidBodyFrame<T>.
-  template <typename> friend class RigidBodyFrame;
+  template <typename>
+  friend class RigidBodyFrame;
 
   // Only RigidBody objects can create RigidBodyFrame objects since RigidBody is
   // a friend of RigidBodyFrame.
@@ -232,9 +234,7 @@ class RigidBody : public MultibodyElement<T> {
   ScopedName scoped_name() const;
 
   /// Returns a const reference to the associated BodyFrame.
-  const RigidBodyFrame<T>& body_frame() const {
-    return body_frame_;
-  }
+  const RigidBodyFrame<T>& body_frame() const { return body_frame_; }
 
   /// For a floating base %RigidBody, lock its inboard joint. Its generalized
   /// velocities will be 0 until it is unlocked.
@@ -281,9 +281,7 @@ class RigidBody : public MultibodyElement<T> {
   /// computational directed forest structure of the owning MultibodyTree to
   /// which this %RigidBody belongs. This serves as the BodyNode index and the
   /// index into all associated quantities.
-  internal::MobodIndex mobod_index() const {
-    return topology_.mobod_index;
-  }
+  internal::MobodIndex mobod_index() const { return topology_.mobod_index; }
 
   /// (Advanced) Returns `true` if this body is granted 6-dofs by a Mobilizer
   /// and the parent body of this body's associated 6-dof joint is `world`.
@@ -354,8 +352,9 @@ class RigidBody : public MultibodyElement<T> {
     } else {
       DRAKE_DEMAND(0 <= position_index_in_body && position_index_in_body < 6);
     }
-    return this->get_parent_tree().get_mobilizer(
-        topology_.inboard_mobilizer).position_suffix(position_index_in_body);
+    return this->get_parent_tree()
+        .get_mobilizer(topology_.inboard_mobilizer)
+        .position_suffix(position_index_in_body);
   }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
@@ -368,8 +367,9 @@ class RigidBody : public MultibodyElement<T> {
     ThrowIfNotFinalized(__func__);
     DRAKE_DEMAND(is_floating());
     DRAKE_DEMAND(0 <= velocity_index_in_body && velocity_index_in_body < 6);
-    return this->get_parent_tree().get_mobilizer(
-        topology_.inboard_mobilizer).velocity_suffix(velocity_index_in_body);
+    return this->get_parent_tree()
+        .get_mobilizer(topology_.inboard_mobilizer)
+        .velocity_suffix(velocity_index_in_body);
   }
 
   /// Returns this %RigidBody's default mass, which is initially supplied at
@@ -378,9 +378,7 @@ class RigidBody : public MultibodyElement<T> {
   /// this rigid body's %SpatialInertia or a parameter that is stored in a
   /// Context. The default constant mass value is used to initialize the mass
   /// parameter in the Context.
-  double default_mass() const {
-    return default_spatial_inertia_.get_mass();
-  }
+  double default_mass() const { return default_spatial_inertia_.get_mass(); }
 
   /// Returns the default value of this %RigidBody's center of mass as measured
   /// and expressed in its body frame. This value is initially supplied at
@@ -436,8 +434,8 @@ class RigidBody : public MultibodyElement<T> {
   /// expressed in W (for point Bo, the body frame's origin).
   const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
-    return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
-        context, *this);
+    return this->get_parent_tree().EvalBodySpatialVelocityInWorld(context,
+                                                                  *this);
   }
 
   /// Evaluates A_WB, this body B's SpatialAcceleration in the world frame W.
@@ -449,8 +447,8 @@ class RigidBody : public MultibodyElement<T> {
   /// once evaluated, successive calls to this method are inexpensive.
   const SpatialAcceleration<T>& EvalSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
-    return this->get_parent_tree().EvalBodySpatialAccelerationInWorld(
-        context, *this);
+    return this->get_parent_tree().EvalBodySpatialAccelerationInWorld(context,
+                                                                      *this);
   }
 
   /// Gets the SpatialForce on this %RigidBody B from `forces` as F_BBo_W:
@@ -488,17 +486,16 @@ class RigidBody : public MultibodyElement<T> {
   ///   A multibody forces objects that on output will have `F_Bp_E` added.
   /// @throws std::exception if `forces` is nullptr or if it is not consistent
   /// with the model to which this body belongs.
-  void AddInForce(
-      const systems::Context<T>& context,
-      const Vector3<T>& p_BP_E, const SpatialForce<T>& F_Bp_E,
-      const Frame<T>& frame_E, MultibodyForces<T>* forces) const;
+  void AddInForce(const systems::Context<T>& context, const Vector3<T>& p_BP_E,
+                  const SpatialForce<T>& F_Bp_E, const Frame<T>& frame_E,
+                  MultibodyForces<T>* forces) const;
 
   /// Gets this body's center of mass position from the given context.
   /// @param[in] context contains the state of the multibody system.
   /// @returns p_BoBcm_B position vector from Bo (this rigid body B's origin)
   /// to Bcm (B's center of mass), expressed in B.
   /// @pre the context makes sense for use by this %RigidBody.
-  const Vector3<T> CalcCenterOfMassInBodyFrame(
+  Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const {
     const systems::BasicVector<T>& spatial_inertia_parameter =
         context.get_numeric_parameter(spatial_inertia_parameter_index_);
@@ -800,24 +797,21 @@ class RigidBody : public MultibodyElement<T> {
   // checked via CalcSpatialInertiaInBodyFrame().IsPhysicallyValid().
   // @pre the context makes sense for use by this %RigidBody.
   // @throws std::exception if context is null.
-  void SetUnitInertiaAboutBodyOrigin(
-      systems::Context<T>* context,
-      const UnitInertia<T>& G_BBo_B) const;
+  void SetUnitInertiaAboutBodyOrigin(systems::Context<T>* context,
+                                     const UnitInertia<T>& G_BBo_B) const;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<RigidBody<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const {
     unused(tree_clone);
-    return std::make_unique<RigidBody<ToScalar>>(
-        this->name(), default_spatial_inertia_);
+    return std::make_unique<RigidBody<ToScalar>>(this->name(),
+                                                 default_spatial_inertia_);
   }
 
   // MultibodyTree has access to the mutable RigidBodyFrame through
   // RigidBodyAttorney.
-  RigidBodyFrame<T>& get_mutable_body_frame() {
-    return body_frame_;
-  }
+  RigidBodyFrame<T>& get_mutable_body_frame() { return body_frame_; }
 
   // A string identifying the body in its model.
   // Within a MultibodyPlant model instance this string is guaranteed to be

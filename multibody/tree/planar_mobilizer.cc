@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -15,8 +16,16 @@ template <typename T>
 PlanarMobilizer<T>::~PlanarMobilizer() = default;
 
 template <typename T>
+std::unique_ptr<internal::BodyNode<T>> PlanarMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, PlanarMobilizer>>(
+      parent_node, body, mobilizer);
+}
+
+template <typename T>
 std::string PlanarMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+    int position_index_in_mobilizer) const {
   switch (position_index_in_mobilizer) {
     case 0:
       return "x";
@@ -30,7 +39,7 @@ std::string PlanarMobilizer<T>::position_suffix(
 
 template <typename T>
 std::string PlanarMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+    int velocity_index_in_mobilizer) const {
   switch (velocity_index_in_mobilizer) {
     case 0:
       return "vx";
@@ -117,19 +126,15 @@ math::RigidTransform<T> PlanarMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  Vector3<T> X_FM_translation;
-  X_FM_translation << q[0], q[1], 0.0;
-  return math::RigidTransform<T>(math::RotationMatrix<T>::MakeZRotation(q[2]),
-                                 X_FM_translation);
+  return calc_X_FM(q.data());
 }
 
 template <typename T>
 SpatialVelocity<T> PlanarMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  Vector6<T> V_FM_vector;
-  V_FM_vector << 0.0, 0.0, v[2], v[0], v[1], 0.0;
-  return SpatialVelocity<T>(V_FM_vector);
+  return calc_V_FM(context, v.data());
 }
 
 template <typename T>

@@ -78,8 +78,15 @@ def _add_extraneous_repr_functions():
     in python is simply more convenient.
     """
     def in_memory_mesh_repr(mesh):
+        # If defined, the supporting string has to provide the preceding comma,
+        # and space, along with the parameter name and its value.
+        supporting_string = ""
+        if mesh.supporting_files:
+            supporting_string = (f", supporting_files="
+                                 f"{repr(mesh.supporting_files)}")
         return (
-            f"InMemoryMesh(mesh_file={repr(mesh.mesh_file())})"
+            f"InMemoryMesh(mesh_file={repr(mesh.mesh_file)}"
+            f"{supporting_string})"
         )
     InMemoryMesh.__repr__ = in_memory_mesh_repr
 
@@ -92,6 +99,17 @@ def _add_extraneous_repr_functions():
             f"MeshSource({param_str})"
         )
     MeshSource.__repr__ = mesh_source_repr
+
+    def mesh_or_convex_repr(mesh, type_name):
+        if mesh.source().is_path():
+            data_param = f"filename={repr(str(mesh.source().path()))}"
+        else:
+            data_param = f"mesh_data={repr(mesh.source().in_memory())}"
+        return (
+            f"{type_name}({data_param}, scale={repr(mesh.scale())})"
+        )
+    Mesh.__repr__ = lambda x: mesh_or_convex_repr(x, "Mesh")
+    Convex.__repr__ = lambda x: mesh_or_convex_repr(x, "Convex")
 
 
 _add_extraneous_repr_functions()

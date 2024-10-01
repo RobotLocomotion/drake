@@ -409,8 +409,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
     this->set_default_positions(q);
   }
 
-  std::pair<Eigen::Quaternion<double>, Vector3<double>>
-  DoGetDefaultPosePair() const final {
+  std::pair<Eigen::Quaternion<double>, Vector3<double>> DoGetDefaultPosePair()
+      const final {
     const VectorX<double>& q = this->default_positions();
     return std::make_pair(Eigen::Quaternion<double>(q[0], q[1], q[2], q[3]),
                           q.tail<3>());

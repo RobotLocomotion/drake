@@ -35,23 +35,20 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
       tree.AddRigidBody("Body3", instance1, SpatialInertia<double>::NaN());
 
   const auto& weld1 = tree.AddJoint<WeldJoint>(
-      "weld1", tree.world_body(), math::RigidTransformd::Identity(),
-      body1, math::RigidTransformd::Identity(),
-      math::RigidTransformd::Identity());
+      "weld1", tree.world_body(), math::RigidTransformd::Identity(), body1,
+      math::RigidTransformd::Identity(), math::RigidTransformd::Identity());
   EXPECT_EQ(weld1.frame_on_parent().model_instance(), instance1);
   EXPECT_EQ(weld1.frame_on_child().model_instance(), instance1);
   // Test minimal `AddJoint` overload.
   const Joint<double>& body1_body2 =
-      tree.AddJoint(
-          std::make_unique<PrismaticJoint<double>>(
-              "prism1", body1.body_frame(), body2.body_frame(),
-              Eigen::Vector3d(0, 0, 1)));
+      tree.AddJoint(std::make_unique<PrismaticJoint<double>>(
+          "prism1", body1.body_frame(), body2.body_frame(),
+          Eigen::Vector3d(0, 0, 1)));
   tree.AddJointActuator("act1", body1_body2);
 
-  const Joint<double>& body2_body3 =
-      tree.AddJoint<PrismaticJoint>(
-          "prism2", body2, math::RigidTransformd::Identity(),
-          body3, math::RigidTransformd::Identity(), Eigen::Vector3d(0, 0, 1));
+  const Joint<double>& body2_body3 = tree.AddJoint<PrismaticJoint>(
+      "prism2", body2, math::RigidTransformd::Identity(), body3,
+      math::RigidTransformd::Identity(), Eigen::Vector3d(0, 0, 1));
   tree.AddJointActuator("act2", body2_body3);
 
   const ModelInstanceIndex instance2 = tree.AddModelInstance("instance2");
@@ -61,10 +58,9 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   const RigidBody<double>& body5 =
       tree.AddRigidBody("Body5", instance2, SpatialInertia<double>::NaN());
 
-  const Joint<double>& body4_body5 =
-      tree.AddJoint<PrismaticJoint>(
-          "prism3", body4, math::RigidTransformd::Identity(),
-          body5, math::RigidTransformd::Identity(), Eigen::Vector3d(0, 0, 1));
+  const Joint<double>& body4_body5 = tree.AddJoint<PrismaticJoint>(
+      "prism3", body4, math::RigidTransformd::Identity(), body5,
+      math::RigidTransformd::Identity(), Eigen::Vector3d(0, 0, 1));
   tree.AddJointActuator("act3", body4_body5);
 
   tree.Finalize();
@@ -134,8 +130,8 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
 
   // Create a MultibodyTreeSystem so that we can get a context.
   internal::MultibodyTreeSystem<double> mb_system(std::move(tree_pointer));
-  std::unique_ptr<systems::Context<double>> context = mb_system.
-      CreateDefaultContext();
+  std::unique_ptr<systems::Context<double>> context =
+      mb_system.CreateDefaultContext();
 
   // Clear the entire multibody state vector so that we can check the effect
   // of setting one instance at a time.
@@ -145,14 +141,14 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   // Validate setting the position and velocity through the multibody state
   // vector for an instance.
   Eigen::VectorXd instance1_x(tree.num_positions(instance1) +
-      tree.num_velocities(instance1));
+                              tree.num_velocities(instance1));
   instance1_x << instance1_pos, instance1_vel;
   tree.SetPositionsAndVelocities(instance1, instance1_x, context.get());
   EXPECT_EQ(tree.GetPositionsAndVelocities(*context, instance2).norm(), 0);
-  const Eigen::VectorXd instance1_pos_from_array = tree.GetPositionsFromArray(
-      instance1, pos_vector);
-  const Eigen::VectorXd instance1_vel_from_array = tree.GetVelocitiesFromArray(
-      instance1, vel_vector);
+  const Eigen::VectorXd instance1_pos_from_array =
+      tree.GetPositionsFromArray(instance1, pos_vector);
+  const Eigen::VectorXd instance1_vel_from_array =
+      tree.GetVelocitiesFromArray(instance1, vel_vector);
   EXPECT_TRUE(CompareMatrices(instance1_pos, instance1_pos_from_array));
   EXPECT_TRUE(CompareMatrices(instance1_vel, instance1_vel_from_array));
 
@@ -187,15 +183,13 @@ GTEST_TEST(ModelInstance, ModelInstanceRenameTest) {
   tree.RenameModelInstance(model0, "after");  // to same name is not an error.
 
   const ModelInstanceIndex model1 = tree.AddModelInstance("another");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      tree.RenameModelInstance(model1, "after"),
-      ".*names must be unique.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(tree.RenameModelInstance(model1, "after"),
+                              ".*names must be unique.*");
 
   tree.Finalize();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      tree.RenameModelInstance(model0, "too_late"),
-      ".*is finalized already.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(tree.RenameModelInstance(model0, "too_late"),
+                              ".*is finalized already.*");
 }
 
 }  // namespace

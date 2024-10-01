@@ -32,8 +32,7 @@ ScopedName Frame<T>::scoped_name() const {
 //  rigid body (not a soft body). Modify if soft bodies are possible.
 template <typename T>
 Vector3<T> Frame<T>::CalcAngularVelocity(
-    const systems::Context<T>& context,
-    const Frame<T>& measured_in_frame,
+    const systems::Context<T>& context, const Frame<T>& measured_in_frame,
     const Frame<T>& expressed_in_frame) const {
   const Frame<T>& frame_M = measured_in_frame;
   const Frame<T>& frame_E = expressed_in_frame;
@@ -67,8 +66,7 @@ SpatialVelocity<T> Frame<T>::CalcSpatialVelocityInWorld(
 
 template <typename T>
 SpatialVelocity<T> Frame<T>::CalcSpatialVelocity(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_M,
+    const systems::Context<T>& context, const Frame<T>& frame_M,
     const Frame<T>& frame_E) const {
   const math::RotationMatrix<T> R_WM =
       frame_M.CalcRotationMatrixInWorld(context);
@@ -185,14 +183,13 @@ SpatialAcceleration<T> Frame<T>::CalcSpatialAcceleration(
 // Ideally, we'd be instantiating the entire class here, instead of just one
 // member function. However, the MultibodyTree physical design is so contrary to
 // GSG best practices that trying to do the entire class here doesn't work.
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &drake::multibody::Frame<T>::scoped_name,
-    &drake::multibody::Frame<T>::CalcAngularVelocity,
-    &drake::multibody::Frame<T>::CalcSpatialVelocityInWorld,
-    &drake::multibody::Frame<T>::CalcSpatialVelocity,
-    &drake::multibody::Frame<T>::CalcSpatialAccelerationInWorld,
-    &drake::multibody::Frame<T>::CalcSpatialAcceleration
-));
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&drake::multibody::Frame<T>::scoped_name,
+     &drake::multibody::Frame<T>::CalcAngularVelocity,
+     &drake::multibody::Frame<T>::CalcSpatialVelocityInWorld,
+     &drake::multibody::Frame<T>::CalcSpatialVelocity,
+     &drake::multibody::Frame<T>::CalcSpatialAccelerationInWorld,
+     &drake::multibody::Frame<T>::CalcSpatialAcceleration));
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::Frame);

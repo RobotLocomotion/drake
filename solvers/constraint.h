@@ -237,6 +237,7 @@ class QuadraticConstraint : public Constraint {
                    drake::Vector1d::Constant(ub)),
         Q_((Q0 + Q0.transpose()) / 2),
         b_(b) {
+    set_is_thread_safe(true);
     UpdateHessianType(hessian_type);
     DRAKE_THROW_UNLESS(Q_.rows() == Q_.cols());
     DRAKE_THROW_UNLESS(Q_.cols() == b_.rows());
@@ -457,6 +458,7 @@ class RotatedLorentzConeConstraint : public Constraint {
         b_(b) {
     DRAKE_THROW_UNLESS(A_.rows() >= 3);
     DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
+    set_is_thread_safe(true);
   }
 
   /** Getter for A. */
@@ -530,7 +532,9 @@ class EvaluatorConstraint : public Constraint {
                       Args&&... args)
       : Constraint(evaluator->num_outputs(), evaluator->num_vars(),
                    std::forward<Args>(args)...),
-        evaluator_(evaluator) {}
+        evaluator_(evaluator) {
+    set_is_thread_safe(evaluator->is_thread_safe());
+  }
 
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
@@ -875,7 +879,9 @@ class LinearComplementarityConstraint : public Constraint {
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
-      : Constraint(q.rows(), M.cols()), M_(M), q_(q) {}
+      : Constraint(q.rows(), M.cols()), M_(M), q_(q) {
+    set_is_thread_safe(true);
+  }
 
   ~LinearComplementarityConstraint() override {}
 

@@ -9,12 +9,29 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/overloaded.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
 using drake::internal::DiagnosticPolicy;
+
+bool IsEmpty(const TextureSource& source) {
+  return std::visit<bool>(overloaded{[](std::monostate) {
+                                       return true;
+                                     },
+                                     [](const std::filesystem::path& path) {
+                                       return path.empty();
+                                     },
+                                     [](const TextureKey& key) {
+                                       return key.value.empty();
+                                     },
+                                     [](const MemoryFile& file) {
+                                       return file.contents().empty();
+                                     }},
+                          source);
+}
 
 RenderMaterial MakeDiffuseMaterial(const Rgba& diffuse) {
   RenderMaterial result;
@@ -107,36 +124,59 @@ RenderMaterial DefineMaterial(const GeometryProperties& props,
                               UvState uv_state) {
   RenderMaterial material;
 
-  material.diffuse_map =
-      props.GetPropertyOrDefault<std::string>("phong", "diffuse_map", "");
-  const bool has_diffuse_map = !material.diffuse_map.empty();
+  // TODO(SeanCurtis-TRI) Consider allowing ('phong', 'diffuse_map') to also
+  // come from memory. If it were FileSource-valued, we'd get both for one
+  // GetProperty() call. (That might require special knowledge where a
+  // FileSource-valued property could return as a string or file path if the
+  // source contained a path so that current call sites would be backwards
+  // compatible).
+
+  // Note: texture specification in GeometryProperties can *only* name on-disk
+  // images. They are stored as strings, but to make sure they're encoded as
+  // an on-disk path (and not a database key), we need to convert it to path.
+  material.diffuse_map = std::filesystem::path(
+      props.GetPropertyOrDefault<std::string>("phong", "diffuse_map", ""));
+  const bool has_diffuse_map = !IsEmpty(material.diffuse_map);
 
   // Default of white with a declared texture, otherwise the given default.
   material.diffuse = props.GetPropertyOrDefault<Rgba>(
       "phong", "diffuse", has_diffuse_map ? Rgba(1, 1, 1) : default_diffuse);
 
   if (has_diffuse_map) {
-    // Confirm it is available.
-    if (!std::ifstream(material.diffuse_map).is_open()) {
-      // TODO(SeanCurtis-TRI): It would be good to be able to tie this into
-      // some reference to the geometry under question. Ideally, the caller
-      // would provide a custom policy that would automatically decorate this
-      // message with the additional context.
-      policy.Warning(fmt::format(
-          "The ('phong', 'diffuse_map') property referenced a map that "
-          "could not be found: '{}'",
-          material.diffuse_map));
-      material.diffuse_map = "";
-    } else if (uv_state != UvState::kFull) {
-      policy.Warning(fmt::format(
-          "The ('phong', 'diffuse_map') property referenced a map, but the "
-          "geometry doesn't define {} texture coordinates. The map will be "
-          "omitted: '{}'.",
-          uv_state == UvState::kNone ? "any" : "a complete set of",
-          material.diffuse_map));
-      material.diffuse_map = "";
-    }
+    const bool clear_map = std::visit<bool>(
+        overloaded{
+            [](const auto&) -> bool {
+              // Should be a path; nothing else.
+              DRAKE_UNREACHABLE();
+            },
+            [uv_state, &policy](const std::filesystem::path& path) {
+              // Confirm it is available.
+              if (!std::ifstream(path).is_open()) {
+                // TODO(SeanCurtis-TRI): It would be good to be able to tie this
+                // into some reference to the geometry under question. Ideally,
+                // the caller would provide a custom policy that would
+                // automatically decorate this message with the additional
+                // context.
+                policy.Warning(fmt::format(
+                    "The ('phong', 'diffuse_map') property referenced a map "
+                    "that could not be found: '{}'",
+                    path.string()));
+                return true;
+              } else if (uv_state != UvState::kFull) {
+                policy.Warning(fmt::format(
+                    "The ('phong', 'diffuse_map') property referenced a map, "
+                    "but the geometry doesn't define {} texture coordinates. "
+                    "The map will be omitted: '{}'.",
+                    uv_state == UvState::kNone ? "any" : "a complete set of",
+                    path.string()));
+                return true;
+              }
+              return false;
+            }},
+        material.diffuse_map);
+    if (clear_map) material.diffuse_map = std::monostate{};
   }
+
   return material;
 }
 

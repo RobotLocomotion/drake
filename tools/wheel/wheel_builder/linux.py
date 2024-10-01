@@ -45,8 +45,7 @@ targets = (
         python_version_tuple=(3, 11)),
     Target(
         build_platform=Platform('ubuntu', '22.04', 'jammy'),
-        # TODO(jwnimmer-tri) Switch the test to 24.04 once that's available.
-        test_platform=Platform('ubuntu', '23.10', 'mantic'),
+        test_platform=Platform('ubuntu', '24.04', 'noble'),
         python_version_tuple=(3, 12, 0),
         python_sha='795c34f44df45a0e9b9710c8c71c15c671871524cd412ca14def212e8ccb155d'),  # noqa
 )

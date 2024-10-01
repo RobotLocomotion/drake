@@ -13,6 +13,10 @@ VectorX<bool> MaxCliqueSolverBase::SolveMaxClique(
   return DoSolveMaxClique(adjacency_matrix);
 }
 
+std::unique_ptr<MaxCliqueSolverBase> MaxCliqueSolverBase::Clone() const {
+  return DoClone();
+}
+
 }  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake

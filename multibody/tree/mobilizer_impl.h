@@ -20,25 +20,55 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Base class for specific Mobilizer implementations with the number of
-// generalized positions and velocities resolved at compile time as template
-// parameters. This allows specific mobilizer implementations to only work on
-// fixed-size Eigen expressions therefore allowing for optimized operations on
-// fixed-size matrices. In addition, this layer discourages the proliferation
-// of dynamic-sized Eigen matrices that would otherwise lead to run-time
-// dynamic memory allocations.
-// %MobilizerImpl also provides a number of size specific methods to retrieve
-// multibody quantities of interest from caching structures. These are common
-// to all mobilizer implementations and therefore they live in this class.
-// Users should not need to interact with this class directly unless they need
-// to implement a custom Mobilizer class.
-//
-// @tparam_default_scalar
-template <typename T,
-    int compile_time_num_positions, int compile_time_num_velocities>
+/* Base class for specific Mobilizer implementations with the number of
+generalized positions and velocities resolved at compile time as template
+parameters. This allows specific mobilizer implementations to only work on
+fixed-size Eigen expressions therefore allowing for optimized operations on
+fixed-size matrices. In addition, this layer discourages the proliferation
+of dynamic-sized Eigen matrices that would otherwise lead to run-time
+dynamic memory allocations.
+
+Every concrete Mobilizer derived from MobilizerImpl must implement the
+following (ideally inline) methods:
+
+  math::RigidTransform<T> calc_X_FM(const T* q) const;
+
+  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
+                               const T* v) const;
+
+The coordinate pointers are guaranteed to point to the kNq or kNv state
+variables for the particular mobilizer. They are only 8-byte aligned so
+be careful when interpreting them as Eigen vectors for computation purposes.
+
+TODO(sherm1) The above signatures should _not_ include a Context; all the
+ low-level methods should be purely numerical. Anything needed from the
+ Context should be extracted once prior to the tree recursion and passed
+ directly to the low-level methods.
+
+%MobilizerImpl also provides a number of size specific methods to retrieve
+multibody quantities of interest from caching structures. These are common
+to all mobilizer implementations and therefore they live in this class.
+Users should not need to interact with this class directly unless they need
+to implement a custom Mobilizer class.
+
+@tparam_default_scalar */
+template <typename T, int compile_time_num_positions,
+          int compile_time_num_velocities>
 class MobilizerImpl : public Mobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl);
+
+  // Handy enum to grant specific implementations compile time sizes.
+  // static constexpr int i = 42; discouraged.  See answer in:
+  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
+  enum : int {
+    kNq = compile_time_num_positions,
+    kNv = compile_time_num_velocities,
+    kNx = compile_time_num_positions + compile_time_num_velocities
+  };
+  using QVector = Eigen::Matrix<T, kNq, 1>;
+  using VVector = Eigen::Matrix<T, kNv, 1>;
+  using HMatrix = Eigen::Matrix<T, 6, kNv>;
 
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is
@@ -70,8 +100,9 @@ class MobilizerImpl : public Mobilizer<T> {
 
   // Sets the default position of this Mobilizer to be used in subsequent
   // calls to set_default_state().
-  void set_default_position(const Eigen::Ref<const Vector<double,
-      compile_time_num_positions>>& position) {
+  void set_default_position(
+      const Eigen::Ref<const Vector<double, compile_time_num_positions>>&
+          position) {
     default_position_.emplace(position);
   }
 
@@ -114,8 +145,7 @@ class MobilizerImpl : public Mobilizer<T> {
       const Eigen::Ref<const Vector<symbolic::Expression,
                                     compile_time_num_velocities>>& velocity) {
     if (!random_state_distribution_) {
-      random_state_distribution_.emplace(
-          Vector<symbolic::Expression, kNx>());
+      random_state_distribution_.emplace(Vector<symbolic::Expression, kNx>());
       // Maintain the default behavior for position.
       random_state_distribution_->template head<kNq>() = get_zero_position();
     }
@@ -123,21 +153,7 @@ class MobilizerImpl : public Mobilizer<T> {
     random_state_distribution_->template tail<kNv>() = velocity;
   }
 
-  // For MultibodyTree internal use only.
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const RigidBody<T>* body, const Mobilizer<T>* mobilizer) const final;
-
  protected:
-  // Handy enum to grant specific implementations compile time sizes.
-  // static constexpr int i = 42; discouraged.  See answer in:
-  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
-  enum : int {
-    kNq = compile_time_num_positions,
-    kNv = compile_time_num_velocities,
-    kNx = compile_time_num_positions + compile_time_num_velocities
-  };
-
   // Returns the zero configuration for the mobilizer.
   virtual Vector<double, kNq> get_zero_position() const {
     return Vector<double, kNq>::Zero();
@@ -196,8 +212,8 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
       const systems::Context<T>& context) const {
-    return this->get_parent_tree().template get_state_segment<kNv>(context,
-        num_qs_in_state() + this->velocity_start_in_v());
+    return this->get_parent_tree().template get_state_segment<kNv>(
+        context, num_qs_in_state() + this->velocity_start_in_v());
   }
 
   // Helper to return a mutable fixed-size Eigen::VectorBlock referencing the

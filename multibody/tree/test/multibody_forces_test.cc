@@ -37,6 +37,7 @@ class MultibodyForcesTests : public ::testing::Test {
                                    std::nullopt, Vector3d::UnitZ());
     model_.Finalize();
   }
+
  protected:
   internal::MultibodyTree<double> model_;
 };
@@ -48,7 +49,7 @@ TEST_F(MultibodyForcesTests, Construction) {
   // forces would not be zero if the constructor had not explicitly zeroed them.
   std::array<char, sizeof(MultibodyForces<double>)> mem;  // memory buffer.
   mem.fill(1);  // fill in with garbage.
-  auto forces = new(&mem) MultibodyForces<double>(model_);  // placement new.
+  auto forces = new (&mem) MultibodyForces<double>(model_);  // placement new.
   ASSERT_NE(forces, nullptr);
 
   // Forces object should be compatible with the original model.
@@ -99,18 +100,18 @@ TEST_F(MultibodyForcesTests, NonZeroForces) {
 
   // Check the results:
   EXPECT_EQ(generalized_forces, Vector2d(4, 6));
-  EXPECT_TRUE(CompareMatrices(
-      spatial_forces[0].get_coeffs(),
-      (Vector6<double>() << 6, 7, 8, 9, 10, 11).finished(),
-      kEpsilon, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      spatial_forces[1].get_coeffs(),
-      (Vector6<double>() << 0, 1, 2, 3, 4, 5).finished(),
-      kEpsilon, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      spatial_forces[2].get_coeffs(),
-      (Vector6<double>() << 6, 8, 10, 12, 14, 16).finished(),
-      kEpsilon, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(spatial_forces[0].get_coeffs(),
+                      (Vector6<double>() << 6, 7, 8, 9, 10, 11).finished(),
+                      kEpsilon, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(spatial_forces[1].get_coeffs(),
+                      (Vector6<double>() << 0, 1, 2, 3, 4, 5).finished(),
+                      kEpsilon, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(spatial_forces[2].get_coeffs(),
+                      (Vector6<double>() << 6, 8, 10, 12, 14, 16).finished(),
+                      kEpsilon, MatrixCompareType::absolute));
 
   // Set to zero and assess the result:
   forces1.SetZero();

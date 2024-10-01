@@ -246,6 +246,7 @@ LorentzConeConstraint::LorentzConeConstraint(
       A_dense_(A),
       b_(b),
       eval_type_{eval_type} {
+  set_is_thread_safe(true);
   DRAKE_THROW_UNLESS(A_.rows() >= 2);
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
@@ -413,6 +414,7 @@ LinearConstraint::LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                                    const Eigen::Ref<const Eigen::VectorXd>& ub)
     : Constraint(A.rows(), A.cols(), lb, ub), A_(A) {
+  set_is_thread_safe(true);
   DRAKE_THROW_UNLESS(A.rows() == lb.rows());
   DRAKE_THROW_UNLESS(A.array().allFinite());
 }
@@ -421,6 +423,7 @@ LinearConstraint::LinearConstraint(const Eigen::SparseMatrix<double>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                                    const Eigen::Ref<const Eigen::VectorXd>& ub)
     : Constraint(A.rows(), A.cols(), lb, ub), A_(A) {
+  set_is_thread_safe(true);
   DRAKE_THROW_UNLESS(A.rows() == lb.rows());
   DRAKE_THROW_UNLESS(A_.IsFinite());
 }
@@ -666,6 +669,7 @@ PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint(int rows)
         "reformulating this as a rotated Lorentz cone constraint for better "
         "speed/numerics.");
   }
+  set_is_thread_safe(true);
 }
 
 void PositiveSemidefiniteConstraint::DoEval(
@@ -761,6 +765,7 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
     DRAKE_THROW_UNLESS(Fi.rows() == matrix_rows_);
     DRAKE_THROW_UNLESS(math::IsSymmetric(Fi, symmetry_tolerance));
   }
+  set_is_thread_safe(true);
 }
 
 std::string LinearMatrixInequalityConstraint::DoToLatex(
@@ -875,6 +880,7 @@ ExponentialConeConstraint::ExponentialConeConstraint(
       A_{A},
       b_{b} {
   DRAKE_THROW_UNLESS(A.rows() == 3);
+  set_is_thread_safe(true);
 }
 
 template <typename DerivedX, typename ScalarY>

@@ -18,8 +18,7 @@ const std::string& WeldJoint<T>::type_name() const {
 
 template <typename T>
 template <typename ToScalar>
-std::unique_ptr<Joint<ToScalar>>
-WeldJoint<T>::TemplatedDoCloneToScalar(
+std::unique_ptr<Joint<ToScalar>> WeldJoint<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& frame_on_parent_body_clone =
       tree_clone.get_variant(this->frame_on_parent());
@@ -28,8 +27,8 @@ WeldJoint<T>::TemplatedDoCloneToScalar(
 
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<WeldJoint<ToScalar>>(
-      this->name(),
-      frame_on_parent_body_clone, frame_on_child_body_clone, X_FM());
+      this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
+      X_FM());
 
   return joint_clone;
 }

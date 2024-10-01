@@ -135,7 +135,7 @@ TEST_F(CameraConfigFunctionsTest, ParentBaseFrameDefaultToWorld) {
 
   const auto& sensor = builder_.GetDowncastSubsystemByName<RgbdSensor>(
       "rgbd_sensor_preview_camera");
-  EXPECT_EQ(sensor.parent_frame_id(), scene_graph_->world_frame_id());
+  EXPECT_EQ(sensor.default_parent_frame_id(), scene_graph_->world_frame_id());
 }
 
 /* If base frame *is* given in X_PB, the sensor must be posed relative to
@@ -150,7 +150,7 @@ TEST_F(CameraConfigFunctionsTest, ParentBaseFrameSpecified) {
   // Although we've declared it to be relative to a *frame*, there is no
   // geometry::FrameId associated with the frame. So, instead, RgbdSensor
   // references the body to which the named frame is affixed.
-  EXPECT_EQ(sensor.parent_frame_id(), body_frame_id_);
+  EXPECT_EQ(sensor.default_parent_frame_id(), body_frame_id_);
   // We don't test that the camera is posed relative to the *body* frame
   // correctly because that is covered by the tests for `SimRgbdSensor`.
 }
@@ -182,9 +182,9 @@ TEST_F(CameraConfigFunctionsTest, RendererClassBasic) {
 
   const auto& sensor1 = builder_.GetDowncastSubsystemByName<RgbdSensor>(
       "rgbd_sensor_preview_camera");
-  EXPECT_EQ(sensor1.color_render_camera().core().renderer_name(),
+  EXPECT_EQ(sensor1.default_color_render_camera().core().renderer_name(),
             config.renderer_name);
-  EXPECT_EQ(sensor1.depth_render_camera().core().renderer_name(),
+  EXPECT_EQ(sensor1.default_depth_render_camera().core().renderer_name(),
             config.renderer_name);
 
   // Now add second camera which uses the same name.
@@ -199,9 +199,9 @@ TEST_F(CameraConfigFunctionsTest, RendererClassBasic) {
   previous_system_count = builder_.GetSystems().size();
   const auto& sensor2 = builder_.GetDowncastSubsystemByName<RgbdSensor>(
       "rgbd_sensor_preview_camera_the_other_one");
-  EXPECT_EQ(sensor2.color_render_camera().core().renderer_name(),
+  EXPECT_EQ(sensor2.default_color_render_camera().core().renderer_name(),
             config.renderer_name);
-  EXPECT_EQ(sensor2.depth_render_camera().core().renderer_name(),
+  EXPECT_EQ(sensor2.default_depth_render_camera().core().renderer_name(),
             config.renderer_name);
 
   // Third camera uses a unique name creates a unique render engine.
@@ -213,9 +213,9 @@ TEST_F(CameraConfigFunctionsTest, RendererClassBasic) {
   EXPECT_GT(builder_.GetSystems().size(), previous_system_count);
   const auto& sensor3 = builder_.GetDowncastSubsystemByName<RgbdSensor>(
       "rgbd_sensor_just_for_test");
-  EXPECT_EQ(sensor3.color_render_camera().core().renderer_name(),
+  EXPECT_EQ(sensor3.default_color_render_camera().core().renderer_name(),
             config.renderer_name);
-  EXPECT_EQ(sensor3.depth_render_camera().core().renderer_name(),
+  EXPECT_EQ(sensor3.default_depth_render_camera().core().renderer_name(),
             config.renderer_name);
 }
 
@@ -387,8 +387,8 @@ TEST_F(CameraConfigFunctionsTest, AllParametersCount) {
   const auto& sensor = builder_.GetDowncastSubsystemByName<RgbdSensor>(
       "rgbd_sensor_test_camera");
 
-  const ColorRenderCamera& color = sensor.color_render_camera();
-  const DepthRenderCamera& depth = sensor.depth_render_camera();
+  const ColorRenderCamera& color = sensor.default_color_render_camera();
+  const DepthRenderCamera& depth = sensor.default_depth_render_camera();
 
   // Camera intrinsics.
   EXPECT_EQ(color.core().intrinsics().width(), config.width);
