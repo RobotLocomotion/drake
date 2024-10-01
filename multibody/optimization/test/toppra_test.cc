@@ -111,8 +111,8 @@ TEST_F(IiwaToppraTest, BoundaryConditions) {
                                  Eigen::VectorXd::Constant(7, 1));
   toppra_->AddJointAccelerationLimit(Eigen::VectorXd::Constant(7, -10),
                                      Eigen::VectorXd::Constant(7, 10));
-  double s_dot_start = 0.7;
-  double s_dot_end = 0.4;
+  const double s_dot_start = 0.7;
+  const double s_dot_end = 0.4;
   auto result = toppra_->SolvePathParameterization(s_dot_start, s_dot_end);
   ASSERT_TRUE(result);
   auto s_path = result.value();

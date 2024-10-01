@@ -118,7 +118,7 @@ class Toppra {
    * value is zero (trajectory ends at zero velocity).
    */
   std::optional<PiecewisePolynomial<double>> SolvePathParameterization(
-      const double s_dot_start = 0, const double s_dot_end = 0);
+      double s_dot_start = 0, double s_dot_end = 0);
 
   /**
    * Adds a velocity limit to all the degrees of freedom in the plant. The

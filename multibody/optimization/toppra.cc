@@ -603,7 +603,7 @@ Toppra::ComputeForwardPass(double s_dot_0,
 }
 
 std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization(
-    const double s_dot_start, const double s_dot_end) {
+    double s_dot_start, double s_dot_end) {
   // Clp appears to outperform Mosek for these optimizations.
   // TODO(mpetersen94) Add Gurobi in the correct ordering
   auto solver = solvers::MakeFirstAvailableSolver(
