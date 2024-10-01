@@ -48,6 +48,7 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
 
  If these requirements are not met, a value *will* be returned, but its value
  is meaningless.
+ @throws std::exception if the volume of `mesh` is negative or nearly zero.
  @pydrake_mkdoc_identifier{mesh} */
 SpatialInertia<double> CalcSpatialInertia(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density);
