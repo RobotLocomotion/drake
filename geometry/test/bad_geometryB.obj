@@ -1,6 +1,7 @@
 # File: bad_geometryB.obj
 # The geometry in this file produces invalid mass and inertia properties
 # due to the winding (order of the vertices) in some of the faces.
+# In Drake, the calculated volume of this mesh is negative (volume = -0.5).
 # Related files: bad_geometryA.obj and bad_geometry_corrected.obj
 # -----------------------------------------------------------------------
 
