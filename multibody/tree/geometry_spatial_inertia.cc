@@ -138,11 +138,19 @@ SpatialInertia<double> CalcSpatialInertia(
   // zero volume massive objects such as particles, rods, and plates.
   constexpr double kEpsilon = 8 * std::numeric_limits<double>::epsilon();
   if (volume <= kEpsilon) {
+    // TODO(Mitiguy) Consider changing the function signature to add an optional
+    //  mesh_name argument (e.g., mesh_name = someFilename.obj) and using
+    //  mesh_name in the following error_message. For a simulation involving
+    //  many meshes, this helps quickly identify an offending mesh.
+    // TODO(Mitiguy) Sean Curtis thought the following error message may not be
+    //  enough guidance, so he suggested adding a hyperlink in error_message to
+    //  https://drake.mit.edu/troubleshooting.html for a proper treatment of
+    //  the issue (ideally with Sean's input/expertise).
     const std::string error_message = fmt::format(
         "{}(): The calculated volume of a triangle surface mesh is {} whereas "
         "a reasonable positive value was expected. The mesh may have bad "
         "geometry, e.g., it is an open mesh or the winding (order of vertices) "
-        "of one or more faces do not produce outward normals.",
+        "of at least one face does not produce an outward normal.",
         __func__, volume);
     throw std::logic_error(error_message);
     // Note: In a Wavefront .obj file, each face's vertices should be stored
