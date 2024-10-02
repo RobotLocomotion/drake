@@ -154,10 +154,11 @@ GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
 
 GTEST_TEST(HyperellipsoidTest, ScaleHypersphereTest) {
   const double kRadius = 3.0;
+  const double kScale = std::pow(kRadius, 4.0);
   Vector4d center;
   center << 1.3, 1.4, 7.2, 9.1;
   Hyperellipsoid E = Hyperellipsoid::MakeHypersphere(1.0, center);
-  Hyperellipsoid E_scaled = E.Scale(kRadius);
+  Hyperellipsoid E_scaled = E.Scale(kScale);
   EXPECT_TRUE(CompareMatrices(E.A() / kRadius, E_scaled.A()));
   EXPECT_TRUE(CompareMatrices(E.center(), E_scaled.center()));
 
