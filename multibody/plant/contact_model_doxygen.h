@@ -154,9 +154,10 @@ compliant_contact.
 - @anchor BulletSdkManual [Coumans, 2015] Coumans, E., 2015. Bullet 2.83 Physics
   SDK Manual.
   https://github.com/bulletphysics/bullet3/blob/master/docs/Bullet_User_Manual.pdf
-- @anchor PfeifferGlocker1996 [Pfeiffer & Glocker, 1996]
-  Pfeiffer, F., Glocker, C. (1996). Multibody Dynamics with Unilateral
-  Contacts. Germany: Wiley.
+- @anchor Gonthier2007 [Gonthier, 2007] Gonthier, Y., 2007. Contact dynamics
+  modelling for robotic task simulation.
+- @anchor Johnson1987 [Johnson, 1987] Johnson, K.L., 1987. Contact mechanics.
+  Cambridge university press.
 - @anchor HuntCrossley1975 [Hunt and Crossley 1975] Hunt, K.H. and Crossley,
   F.R.E., 1975. Coefficient of restitution interpreted as damping in
   vibroimpact. Journal of Applied Mechanics, vol. 42, pp. 440–445.
@@ -169,6 +170,9 @@ compliant_contact.
   large-deformation dynamics. ACM Trans. Graph., 39(4), p.49.
 - @anchor ODEUserGuide [ODE User Guide] Smith, R., 2005. Open dynamics engine.
   https://ode.org/ode-latest-userguide.pdf
+- @anchor PfeifferGlocker1996 [Pfeiffer & Glocker, 1996]
+  Pfeiffer, F., Glocker, C. (1996). Multibody Dynamics with Unilateral
+  Contacts. Germany: Wiley.
 - @anchor Todorov2014 [Todorov, 2014] Todorov, E., 2014, May. Convex and
   analytically-invertible dynamics with contacts and constraints: Theory and
   implementation in mujoco. In 2014 IEEE International Conference on Robotics
@@ -1083,4 +1087,9 @@ range. Even for this case, estimating the amplitude of these vibrations with
 
 @image html drake/multibody/plant/images/box_on_box_std_penetration_with_notations.png "Figure 8: Amplitude of the oscillations with problem parameters. No margin, δ = 0." width=35%
 
+*/
+
+/**
+  @defgroup hydro_params Estimation of Hydroelastic Parameters
+  @ingroup drake_contacts
 */
