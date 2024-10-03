@@ -498,12 +498,12 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   }
 
   // Attempt to "fail fast": Check if a hyperplane through x, with a normal
-  // vector colinear to (x - vertex_mean), separates the point from the
+  // vector colinear to (x - mean(vertices)), separates the point from the
   // VPolytope avoid the point containment LP.
   Eigen::VectorXd vertex_mean = vertices_.rowwise().mean();
   Eigen::VectorXd a = (x - vertex_mean).normalized();
   double b = a.dot(x);
-  Eigen::VectorXd vals = a.transpose() * vertices_;  // -  b;
+  Eigen::VectorXd vals = a.transpose() * vertices_;
   vals = vals.array() - b;
   if ((vals.array() < -tol).all()) {
     return false;
