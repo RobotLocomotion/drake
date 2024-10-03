@@ -1,10 +1,9 @@
 # File: bad_geometry_corrected.obj
 # The geometry in this file produces valid mass and inertia properties
-# as contrasted with the invalid mass and inertia properties produced
-# by the related files bad_geometryA.obj and bad_geometryB.obj.
-# -----------------------------------------------------------------------
-
-g test
+# due to proper winding (order of the vertices) in all of its faces.
+# Drake calculates the volume of this mesh as volume = 0.5.
+# Related: bad_geometry_volume_negative.obj and bad_geometry_volume_zero.obj
+# ------------------------------------------------------------------------------
 
 # 6 vertices.
 v 0.0  0.0   0.5
