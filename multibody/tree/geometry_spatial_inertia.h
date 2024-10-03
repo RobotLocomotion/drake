@@ -41,12 +41,12 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
  certain requirements:
 
    - The mesh must *fully* enclose a volume (no cracks, no open manifolds,
-     etc.)
+     etc.).
    - All triangles must be "wound" such that their normals point outward
      (according to the right-hand rule based on vertex winding).
 
- If these requirements are not met, a value *will* be returned, but its value
- is meaningless.
+ If these requirements are not met, an exception *may* be thrown or the returned
+ SpatialInertia is meaningless.
  @throws std::exception if the volume of `mesh` is negative or nearly zero.
  @pydrake_mkdoc_identifier{mesh} */
 SpatialInertia<double> CalcSpatialInertia(
