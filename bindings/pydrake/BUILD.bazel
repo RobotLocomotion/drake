@@ -397,6 +397,12 @@ drake_py_binary(
     name = "memory_leak_test",
     srcs = ["test/memory_leak_test.py"],
     add_test_rule = True,
+    data = [
+        "@drake_models//:iiwa_description",
+        "@drake_models//:manipulation_station",
+        "@drake_models//:veggies",
+        "@drake_models//:wsg_50_description",
+    ],
     deps = [
         ":all_py",
     ],
