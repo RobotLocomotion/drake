@@ -44,6 +44,28 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
+  void CalcMassMatrixContribution_TipToBase(
+      const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
+      const std::vector<Vector6<T>>&, EigenPtr<MatrixX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+#define DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(Rnv)                                \
+  void CalcMassMatrixOffDiagonalBlock##Rnv(                                 \
+      int, const std::vector<Vector6<T>>&, const Eigen::Matrix<T, 6, Rnv>&, \
+      EigenPtr<MatrixX<T>>) const final {                                   \
+    DRAKE_UNREACHABLE();                                                    \
+  }
+
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(1)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(2)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(3)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(4)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(5)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(6)
+
+#undef DEFINE_DUMMY_OFF_DIAGONAL_BLOCK
+
   void CalcSpatialAcceleration_BaseToTip(
       const systems::Context<T>&, const FrameBodyPoseCache<T>&,
       const PositionKinematicsCache<T>&, const VelocityKinematicsCache<T>*,
@@ -87,10 +109,9 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
-  void CalcCompositeBodyInertia_TipToBase(const SpatialInertia<T>&,
-                                          const PositionKinematicsCache<T>&,
-                                          const std::vector<SpatialInertia<T>>&,
-                                          SpatialInertia<T>*) const final {
+  void CalcCompositeBodyInertia_TipToBase(
+      const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
+      std::vector<SpatialInertia<T>>*) const final {
     DRAKE_UNREACHABLE();
   }
 
