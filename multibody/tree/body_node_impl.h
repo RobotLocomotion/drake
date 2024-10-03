@@ -35,11 +35,12 @@ class BodyNodeImpl final : public BodyNode<T> {
   using VVector = typename ConcreteMobilizer<T>::VVector;
   using HMatrix = typename ConcreteMobilizer<T>::HMatrix;
 
-  using BodyNode<T>::mobod_index;
-  using BodyNode<T>::inboard_mobod_index;
-  using BodyNode<T>::inboard_frame;
-  using BodyNode<T>::outboard_frame;
   using BodyNode<T>::body;
+  using BodyNode<T>::child_nodes;
+  using BodyNode<T>::inboard_frame;
+  using BodyNode<T>::inboard_mobod_index;
+  using BodyNode<T>::mobod_index;
+  using BodyNode<T>::outboard_frame;
   using BodyNode<T>::parent_body;
 
   // Given a body and its inboard mobilizer in a MultibodyTree this constructor
@@ -77,6 +78,28 @@ class BodyNodeImpl final : public BodyNode<T> {
       const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const final;
+
+  void CalcMassMatrixContribution_TipToBase(
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
+      const std::vector<Vector6<T>>& H_PB_W_cache,
+      EigenPtr<MatrixX<T>> M) const final;
+
+  // Declare the six sizes of mass matrix off-diagonal helper.
+#define DECLARE_MASS_MATRIX_HELPER(Rnv)                                 \
+  void CalcMassMatrixOffDiagonalHelper##Rnv(                            \
+      int R_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
+      const Eigen::Matrix<T, 6, Rnv>& Fm_CCo_W, EigenPtr<MatrixX<T>> M) \
+      const final
+
+  DECLARE_MASS_MATRIX_HELPER(1);
+  DECLARE_MASS_MATRIX_HELPER(2);
+  DECLARE_MASS_MATRIX_HELPER(3);
+  DECLARE_MASS_MATRIX_HELPER(4);
+  DECLARE_MASS_MATRIX_HELPER(5);
+  DECLARE_MASS_MATRIX_HELPER(6);
+
+#undef DECLARE_MASS_MATRIX_HELPER
 
   void CalcSpatialAcceleration_BaseToTip(
       const systems::Context<T>& context,
@@ -121,9 +144,9 @@ class BodyNodeImpl final : public BodyNode<T> {
       AccelerationKinematicsCache<T>* ac) const final;
 
   void CalcCompositeBodyInertia_TipToBase(
-      const SpatialInertia<T>& M_B_W, const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& Mc_B_W_all,
-      SpatialInertia<T>* Mc_B_W) const final;
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<SpatialInertia<T>>& M_B_W_all,
+      std::vector<SpatialInertia<T>>* Mc_B_W_all) const final;
 
   void CalcSpatialAccelerationBias(
       const systems::Context<T>& context,
@@ -412,14 +435,6 @@ class BodyNodeImpl final : public BodyNode<T> {
       ArticulatedBodyForceCache<T>* aba_force_cache) const {
     return aba_force_cache->get_mutable_e_B(mobod_index());
   }
-
-  // Computes the total force Ftot_BBo on body B that must be applied for it to
-  // incur in a spatial acceleration A_WB.
-  void CalcBodySpatialForceGivenItsSpatialAcceleration(
-      const std::vector<SpatialInertia<T>>& M_B_W_cache,
-      const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
-      const SpatialAcceleration<T>& A_WB,
-      SpatialForce<T>* Ftot_BBo_W_ptr) const;
 
   const ConcreteMobilizer<T>* const mobilizer_;
 };
