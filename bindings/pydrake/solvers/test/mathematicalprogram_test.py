@@ -7,7 +7,7 @@ import numpy as np
 import scipy.sparse
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import kDrakeAssertIsArmed
+from pydrake.common import kDrakeAssertIsArmed, Parallelism
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
@@ -1526,6 +1526,81 @@ class TestMathematicalProgram(unittest.TestCase):
         result = MathematicalProgramResult()
         self.assertEqual(result.get_solution_result(),
                          mp.SolutionResult.kSolutionResultNotSet)
+
+    def test_solve_in_parallel(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 2)
+        prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
+
+        num_progs = 4
+        progs = [prog for _ in range(num_progs)]
+        initial_guesses = [np.zeros(2) for _ in range(num_progs)]
+        solver_ids = [ScsSolver().solver_id() for _ in range(num_progs)]
+        solver_options = [SolverOptions() for _ in range(num_progs)]
+
+        # results = mp.SolveInParallel(progs)
+
+        results = mp.SolveInParallel(progs=progs,
+                                     initial_guesses=initial_guesses,
+                                     solver_options=solver_options,
+                                     solver_ids=solver_ids,
+                                     parallelism=Parallelism.Max(),
+                                     dynamic_schedule=False)
+        self.assertEqual(len(results), len(progs))
+        self.assertTrue(all([r.is_success() for r in results]))
+
+        results = mp.SolveInParallel(progs=progs,
+                                     initial_guesses=None,
+                                     solver_options=solver_options,
+                                     solver_ids=solver_ids,
+                                     parallelism=Parallelism.Max(),
+                                     dynamic_schedule=False)
+        self.assertEqual(len(results), len(progs))
+        self.assertTrue(all([r.is_success() for r in results]))
+
+        results = mp.SolveInParallel(progs=progs,
+                                     initial_guesses=initial_guesses,
+                                     solver_options=None,
+                                     solver_ids=solver_ids,
+                                     parallelism=Parallelism.Max(),
+                                     dynamic_schedule=False)
+        self.assertEqual(len(results), len(progs))
+        self.assertTrue(all([r.is_success() for r in results]))
+
+        results = mp.SolveInParallel(progs=progs,
+                                     initial_guesses=initial_guesses,
+                                     solver_options=solver_options,
+                                     solver_ids=None,
+                                     parallelism=Parallelism.Max(),
+                                     dynamic_schedule=False)
+        self.assertEqual(len(results), len(progs))
+        self.assertTrue(all([r.is_success() for r in results]))
+
+        # Now we test the overload
+        results = mp.SolveInParallel(progs=progs,
+                                     initial_guesses=None,
+                                     solver_options=SolverOptions(),
+                                     solver_id=ScsSolver().solver_id(),
+                                     parallelism=Parallelism.Max(),
+                                     dynamic_schedule=False)
+        self.assertEqual(len(results), len(progs))
+        self.assertTrue(all([r.is_success() for r in results]))
+
+        # Ensure that all options being None does not cause ambiguity.
+        results = mp.SolveInParallel(progs=progs,
+                                     initial_guesses=None,
+                                     solver_options=None,
+                                     solver_id=None,
+                                     parallelism=Parallelism.Max(),
+                                     dynamic_schedule=False)
+        self.assertEqual(len(results), len(progs))
+        self.assertTrue(all([r.is_success() for r in results]))
+
+        # Ensure default arguments do not cause ambiguity.
+        results = mp.SolveInParallel(progs=progs)
+        self.assertEqual(len(results), len(progs))
+        self.assertTrue(all([r.is_success() for r in results]))
 
 
 class DummySolverInterface(SolverInterface):
