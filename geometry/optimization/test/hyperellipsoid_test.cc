@@ -161,6 +161,7 @@ GTEST_TEST(HyperellipsoidTest, ScaleHypersphereTest) {
   Hyperellipsoid E_scaled = E.Scale(kScale);
   EXPECT_TRUE(CompareMatrices(E.A() / kRadius, E_scaled.A()));
   EXPECT_TRUE(CompareMatrices(E.center(), E_scaled.center()));
+  EXPECT_NEAR(E_scaled.Volume(), E.Volume() * kScale, 1e-7);
 
   Eigen::Vector4d unit_offset_from_boundary = Eigen::Vector4d::Ones() / 2;
   Eigen::Vector4d point_on_boundary = center + unit_offset_from_boundary;

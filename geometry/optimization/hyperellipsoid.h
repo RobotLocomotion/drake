@@ -76,7 +76,7 @@ class Hyperellipsoid final : public ConvexSet {
 
   /** Results a new Hyperellipsoid that is a scaled version of `this` about the
   center. Any point on the boundary of the ellipsoid, x, is now translated to a
-  new point, x*, such that ||x - center|| = ||x* - center|| *
+  new point, x*, such that ||x* - center|| = ||x - center|| *
   pow(scale, 1.0/ambient_dimension()). The volume of the resulting shape is
   scaled up by 'scale'.
   @pre `scale` > 0.
