@@ -128,15 +128,23 @@ SpatialInertia<double> CalcSpatialInertia(
     accum_com += (p + q + r) * tet_vol_times_six;
   }
 
-  // Volume should be inherently positive.
   const double volume = vol_times_six / 6.0;
+  // A valid mesh should have an inherently positive volume.
   // Throw an exception if volume is negative or nearly zero. This test of
   // "reasonably positive" volume is more stringent than the mass ≥ 0 test in
   // SpatialInertia::IsPhysicallyValid(). Reminder: The volume of a mesh can be
   // calculated (and should be positive) whereas spatial inertia does not deal
   // with volume. Instead, spatial inertia deals with mass, including idealized
   // zero volume massive objects such as particles, rods, and plates.
-  constexpr double kEpsilon = 8 * std::numeric_limits<double>::epsilon();
+  // Note: If we omit throwing an exception for negative or zero volume, a
+  // different exception would still be otherwise thrown in code called by the
+  // spatial inertia constructor below and this function still fails to return.
+  // For negative volume, the associated less-helpful spatial inertia exception
+  // message would be e.g., "mass = -0.5 is not positive and finite.", whereas a
+  // zero volume creates a divide-by-zero in two places below and the associated
+  // obscure exception message would be "Unable to calculate the eigenvalues or
+  // eigenvectors of the 3x3 matrix associated with a RotationalInertia.".
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
   if (volume <= kEpsilon) {
     // TODO(Mitiguy) Consider changing the function signature to add an optional
     //  mesh_name argument (e.g., mesh_name = someFilename.obj) and using
@@ -153,7 +161,7 @@ SpatialInertia<double> CalcSpatialInertia(
         "of at least one face does not produce an outward normal.",
         __func__, volume);
     throw std::logic_error(error_message);
-    // Note: In a Wavefront .obj file, each face's vertices should be stored
+    // Note: In Wavefront .obj files, each face's vertices should be stored
     // in a counter-clockwise order by default.
   }
 
