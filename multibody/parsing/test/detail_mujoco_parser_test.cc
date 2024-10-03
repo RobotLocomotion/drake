@@ -824,6 +824,18 @@ TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
   // that we're using it (and not choking).
 }
 
+// Ensure an exception is thrown for the mesh in bad_geometry_volume_zero.obj
+// since its calculated volume is zero (volume = 0).
+TEST_F(MujocoParserTest, BadMeshShouldThrowException) {
+  std::string filename = "drake/geometry/test/bad_geometry_volume_zero.obj";
+  std::string geometry_file_path = FindResourceOrThrow(filename);
+  const geometry::Mesh bad_geometry_volume_zero(geometry_file_path, 1.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CalcSpatialInertia(bad_geometry_volume_zero, /* density = */ 1.0),
+      ".*volume of a triangle surface mesh is.* whereas a reasonable "
+      "positive value was expected. The mesh may have bad geometry.*");
+}
+
 TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
   const std::string file = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/mjcfs/box.xml");
