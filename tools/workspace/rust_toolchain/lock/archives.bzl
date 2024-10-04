@@ -9,7 +9,52 @@ ARCHIVES = [
     dict(
         name = "rust_darwin_aarch64__aarch64-apple-darwin__stable_tools",
         build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_darwin_aarch64__aarch64-apple-darwin__stable_tools.bazel"),
-        downloads = "[]",
+        downloads = json.encode(
+            [
+                {
+                    "sha256": "367d9cf73cc4f4b719c843b81a241f5c68a41f798b781026606703d166265a87",
+                    "stripPrefix": "rustc-1.80.0-aarch64-apple-darwin/rustc",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rustc-1.80.0-aarch64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "57637a2277e2daa21eeb8bb468ed1fde788de121682a04d07a5d416f33b0db38",
+                    "stripPrefix": "clippy-1.80.0-aarch64-apple-darwin/clippy-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/clippy-1.80.0-aarch64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "517950591429dbc2bca8efb9f94e1a9dda9f1d16392f7885e3f81ddd31525659",
+                    "stripPrefix": "cargo-1.80.0-aarch64-apple-darwin/cargo",
+                    "url": [
+                        "https://static.rust-lang.org/dist/cargo-1.80.0-aarch64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "c30dc9cfed4681e11d9018c4f69f22e45c0a847141e56a408037bb76bb1961dd",
+                    "stripPrefix": "rustfmt-1.80.0-aarch64-apple-darwin/rustfmt-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rustfmt-1.80.0-aarch64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "12b209304b19c50494d628a608c680521d3836133f00fbd479d2ac49b9a2c3b8",
+                    "stripPrefix": "llvm-tools-1.80.0-aarch64-apple-darwin/llvm-tools-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/llvm-tools-1.80.0-aarch64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "d2f124d495ed92715ebcb21ba6677b304472098427f21795aacdbd4b24f04808",
+                    "stripPrefix": "rust-std-1.80.0-aarch64-apple-darwin/rust-std-aarch64-apple-darwin",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rust-std-1.80.0-aarch64-apple-darwin.tar.xz",
+                    ],
+                },
+            ],
+        ),
     ),
     dict(
         name = "rust_darwin_x86_64__x86_64-apple-darwin__stable",
@@ -19,17 +64,52 @@ ARCHIVES = [
     dict(
         name = "rust_darwin_x86_64__x86_64-apple-darwin__stable_tools",
         build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_darwin_x86_64__x86_64-apple-darwin__stable_tools.bazel"),
-        downloads = "[]",
-    ),
-    dict(
-        name = "rust_freebsd_x86_64__x86_64-unknown-freebsd__stable",
-        build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_freebsd_x86_64__x86_64-unknown-freebsd__stable.bazel"),
-        downloads = "[]",
-    ),
-    dict(
-        name = "rust_freebsd_x86_64__x86_64-unknown-freebsd__stable_tools",
-        build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_freebsd_x86_64__x86_64-unknown-freebsd__stable_tools.bazel"),
-        downloads = "[]",
+        downloads = json.encode(
+            [
+                {
+                    "sha256": "2886922b1f54a9bb3908107b059194f4acf784d8626289ffe4aa6b9f1ca6e079",
+                    "stripPrefix": "rustc-1.80.0-x86_64-apple-darwin/rustc",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rustc-1.80.0-x86_64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "2ae503512f9cab7342938e1852afc9538407e4a6e3e57b2733cc7ae896c82bca",
+                    "stripPrefix": "clippy-1.80.0-x86_64-apple-darwin/clippy-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/clippy-1.80.0-x86_64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "cd081328a855da00fbb08892c91ffbd3ff1b9685941ff174734fd3a268579504",
+                    "stripPrefix": "cargo-1.80.0-x86_64-apple-darwin/cargo",
+                    "url": [
+                        "https://static.rust-lang.org/dist/cargo-1.80.0-x86_64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "33a1fab90d0d9a6d4356609d42cadbdb3a506a93f8884cd6cf4810aa838cd04b",
+                    "stripPrefix": "rustfmt-1.80.0-x86_64-apple-darwin/rustfmt-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rustfmt-1.80.0-x86_64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "2b3a333891397f15615ddea0fcc9362999b4ec5cd0964a402ebdfc090b795fbd",
+                    "stripPrefix": "llvm-tools-1.80.0-x86_64-apple-darwin/llvm-tools-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/llvm-tools-1.80.0-x86_64-apple-darwin.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "3e4ee767aae345e49fc101e4f61dcd7014c278f2e9ab8364053a34a38a2c054d",
+                    "stripPrefix": "rust-std-1.80.0-x86_64-apple-darwin/rust-std-x86_64-apple-darwin",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rust-std-1.80.0-x86_64-apple-darwin.tar.xz",
+                    ],
+                },
+            ],
+        ),
     ),
     dict(
         name = "rust_linux_aarch64__aarch64-unknown-linux-gnu__stable",
@@ -39,7 +119,52 @@ ARCHIVES = [
     dict(
         name = "rust_linux_aarch64__aarch64-unknown-linux-gnu__stable_tools",
         build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_linux_aarch64__aarch64-unknown-linux-gnu__stable_tools.bazel"),
-        downloads = "[]",
+        downloads = json.encode(
+            [
+                {
+                    "sha256": "198b5a04c25de5e9c56ff36b9110e2cfbdadf789de2c7c6d6ea9a26fd12ba165",
+                    "stripPrefix": "rustc-1.80.0-aarch64-unknown-linux-gnu/rustc",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rustc-1.80.0-aarch64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "8354f2df8f17dee6ea27bd7cbc9aec8cee37185151cbbaec7c045cb4834864a0",
+                    "stripPrefix": "clippy-1.80.0-aarch64-unknown-linux-gnu/clippy-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/clippy-1.80.0-aarch64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "b4951714774b1b83d1b3bd38205d9fcd6f072def15f771fade9041ea3ebe2fd2",
+                    "stripPrefix": "cargo-1.80.0-aarch64-unknown-linux-gnu/cargo",
+                    "url": [
+                        "https://static.rust-lang.org/dist/cargo-1.80.0-aarch64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "33895985f83ed8b287a7d3b4337a2669b41df8f49736ed9ae56dc4af64162a96",
+                    "stripPrefix": "rustfmt-1.80.0-aarch64-unknown-linux-gnu/rustfmt-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rustfmt-1.80.0-aarch64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "c7c3657b359915d5e942af1da5c980e111d6188f53e7b5f7e6d40e7c57cf4502",
+                    "stripPrefix": "llvm-tools-1.80.0-aarch64-unknown-linux-gnu/llvm-tools-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/llvm-tools-1.80.0-aarch64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "5911cc5af031648b29b42aaa1fe77d577848db08d9a400eada1e803960e78c4c",
+                    "stripPrefix": "rust-std-1.80.0-aarch64-unknown-linux-gnu/rust-std-aarch64-unknown-linux-gnu",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rust-std-1.80.0-aarch64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+            ],
+        ),
     ),
     dict(
         name = "rust_linux_x86_64__x86_64-unknown-linux-gnu__stable",
@@ -49,26 +174,51 @@ ARCHIVES = [
     dict(
         name = "rust_linux_x86_64__x86_64-unknown-linux-gnu__stable_tools",
         build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_linux_x86_64__x86_64-unknown-linux-gnu__stable_tools.bazel"),
-        downloads = "[]",
-    ),
-    dict(
-        name = "rust_windows_aarch64__aarch64-pc-windows-msvc__stable",
-        build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_windows_aarch64__aarch64-pc-windows-msvc__stable.bazel"),
-        downloads = "[]",
-    ),
-    dict(
-        name = "rust_windows_aarch64__aarch64-pc-windows-msvc__stable_tools",
-        build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_windows_aarch64__aarch64-pc-windows-msvc__stable_tools.bazel"),
-        downloads = "[]",
-    ),
-    dict(
-        name = "rust_windows_x86_64__x86_64-pc-windows-msvc__stable",
-        build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_windows_x86_64__x86_64-pc-windows-msvc__stable.bazel"),
-        downloads = "[]",
-    ),
-    dict(
-        name = "rust_windows_x86_64__x86_64-pc-windows-msvc__stable_tools",
-        build_file = Label("@drake//tools/workspace/rust_toolchain:lock/details/BUILD.rust_windows_x86_64__x86_64-pc-windows-msvc__stable_tools.bazel"),
-        downloads = "[]",
+        downloads = json.encode(
+            [
+                {
+                    "sha256": "ef1692e3d67236868d32ef26f96f47792b1c3a3f9747bbe05c63742464307c4f",
+                    "stripPrefix": "rustc-1.80.0-x86_64-unknown-linux-gnu/rustc",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rustc-1.80.0-x86_64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "6218ff568459d7e000e3613c506a1c78ff0a91c840617a1d04af1edfe00a8326",
+                    "stripPrefix": "clippy-1.80.0-x86_64-unknown-linux-gnu/clippy-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/clippy-1.80.0-x86_64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "5602ba863f5276cfaa7ed3a8dd94d187fbd0319a1b4bbb9284e77fb6b7168a41",
+                    "stripPrefix": "cargo-1.80.0-x86_64-unknown-linux-gnu/cargo",
+                    "url": [
+                        "https://static.rust-lang.org/dist/cargo-1.80.0-x86_64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "ea3c45978965a4f74819dcb4883379358ec7753ad55a62890d1c8cd76395d871",
+                    "stripPrefix": "rustfmt-1.80.0-x86_64-unknown-linux-gnu/rustfmt-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rustfmt-1.80.0-x86_64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "54451eeb9128669861b1d5e0c3493c59ff9348e55c35d343a8e58184c19b8040",
+                    "stripPrefix": "llvm-tools-1.80.0-x86_64-unknown-linux-gnu/llvm-tools-preview",
+                    "url": [
+                        "https://static.rust-lang.org/dist/llvm-tools-1.80.0-x86_64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+                {
+                    "sha256": "c722cba93c9627e04a6a5ecc749cde9dda39f15e4d02fb6ae8d0b27e02e6488a",
+                    "stripPrefix": "rust-std-1.80.0-x86_64-unknown-linux-gnu/rust-std-x86_64-unknown-linux-gnu",
+                    "url": [
+                        "https://static.rust-lang.org/dist/rust-std-1.80.0-x86_64-unknown-linux-gnu.tar.xz",
+                    ],
+                },
+            ],
+        ),
     ),
 ]
