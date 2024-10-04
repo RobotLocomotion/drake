@@ -83,7 +83,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
     const std::vector<const SolverOptions*>* solver_options,
     const std::vector<std::optional<SolverId>>* solver_ids,
-    const Parallelism parallelism = Parallelism::Max(),
+    Parallelism parallelism = Parallelism::Max(),
     bool dynamic_schedule = false);
 
 /**
@@ -102,7 +102,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const Eigen::VectorXd*>* initial_guesses = nullptr,
     const std::optional<SolverOptions>& solver_options = std::nullopt,
     const std::optional<SolverId>& solver_id = std::nullopt,
-    const Parallelism parallelism = Parallelism::Max(),
+    Parallelism parallelism = Parallelism::Max(),
     bool dynamic_schedule = false);
 
 }  // namespace solvers

@@ -42,13 +42,12 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog) {
   return Solve(prog, {}, {});
 }
 
-namespace {
-std::vector<MathematicalProgramResult> SolveInParallelImpl(
+std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
     const std::vector<const SolverOptions*>* solver_options,
     const std::vector<std::optional<SolverId>>* solver_ids,
-    const Parallelism parallelism, bool dynamic_schedule) {
+    const Parallelism parallelism, const bool dynamic_schedule) {
   DRAKE_THROW_UNLESS(std::all_of(progs.begin(), progs.end(), [](auto prog) {
     return prog != nullptr;
   }));
@@ -163,30 +162,27 @@ std::vector<MathematicalProgramResult> SolveInParallelImpl(
   return results;
 }
 
-}  // namespace
-
-std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::vector<const MathematicalProgram*>& progs,
-    const std::vector<const Eigen::VectorXd*>* initial_guesses,
-    const std::vector<const SolverOptions*>* solver_options,
-    const std::vector<std::optional<SolverId>>* solver_ids,
-    const Parallelism parallelism, bool dynamic_schedule) {
-  return SolveInParallelImpl(progs, initial_guesses, solver_options, solver_ids,
-                             parallelism, dynamic_schedule);
-}
-
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
     const std::optional<SolverOptions>& solver_options,
     const std::optional<SolverId>& solver_id, const Parallelism parallelism,
-    bool dynamic_schedule) {
-  std::vector<const SolverOptions*> solver_options_vec{
-      progs.size(),
-      solver_options.has_value() ? &(solver_options.value()) : nullptr};
-  std::vector<std::optional<SolverId>> solver_ids{progs.size(), solver_id};
-  return SolveInParallelImpl(progs, initial_guesses, &solver_options_vec,
-                             &solver_ids, parallelism, dynamic_schedule);
+    const bool dynamic_schedule) {
+  // Broadcast the option and id arguments into vectors (if given).
+  std::optional<std::vector<const SolverOptions*>> broadcast_options;
+  std::optional<std::vector<std::optional<SolverId>>> broadcast_ids;
+  if (solver_options.has_value()) {
+    broadcast_options.emplace(progs.size(), &(*solver_options));
+  }
+  if (solver_id.has_value()) {
+    broadcast_ids.emplace(progs.size(), solver_id);
+  }
+  // Delegate to the primary overload.
+  return SolveInParallel(
+      progs, initial_guesses,
+      broadcast_options.has_value() ? &(*broadcast_options) : nullptr,
+      broadcast_ids.has_value() ? &(*broadcast_ids) : nullptr,  // BR
+      parallelism, dynamic_schedule);
 }
 
 }  // namespace solvers
