@@ -322,7 +322,7 @@ drake_cc_library(
         "//common/symbolic:expression",
     ],
     implementation_deps = [
-        "//solvers:decision_variable",
+        ":decision_variable",
     ],
 )
 
@@ -1340,6 +1340,7 @@ drake_cc_googletest(
         ":semidefinite_program_examples",
         ":sos_examples",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1623,6 +1624,7 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

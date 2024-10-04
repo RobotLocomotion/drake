@@ -35,9 +35,12 @@ void TestMaxCliqueViaGreedy(
   EXPECT_TRUE(solution_match_found);
 }
 
-GTEST_TEST(MaxCliqueSolverViaGreedyTest, TestConstructorSettersAndGetters) {
+GTEST_TEST(MaxCliqueSolverViaGreedyTest, TestConstructorAndClone) {
   // Test the default constructor.
   MaxCliqueSolverViaGreedy solver{};
+  std::unique_ptr<MaxCliqueSolverBase> solver_clone = solver.Clone();
+  // Clone provides a deep copy.
+  EXPECT_NE(&solver, solver_clone.get());
 }
 
 GTEST_TEST(MaxCliqueSolverViaGreedyTest, CompleteGraph) {

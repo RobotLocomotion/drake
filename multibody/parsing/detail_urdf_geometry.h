@@ -174,14 +174,14 @@ std::optional<geometry::GeometryInstance> ParseVisual(
  if the tag is missing, the corresponding property will be missing from the
  property set.
 
- Mapping from URDF tag to geometry property. See
-  @ref YET_TO_BE_WRITTEN_HYDROELASTIC_GEOMETRY_MODULE for details on the
- semantics of these properties.
+ Mapping from URDF tag to geometry property. See @ref hydroelastic_user_guide
+ for details on the semantics of these properties.
 
  | Tag                              | Group        | Property                  | Notes                                                                                                                            |
  | :------------------------------: | :----------: | :-----------------------: | :------------------------------------------------------------------------------------------------------------------------------: |
  | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tessellation to support hydroelastic contact.                                                   |
  | drake:hydroelastic_modulus       | hydroelastic | hydroelastic_modulus      | Finite positive value. Required for compliant hydroelastic representations.                                                      |
+ | drake:hydroelastic_margin        | hydroelastic | margin                    | Finite nonnegative value. Optional.
  | drake:hunt_crossley_dissipation  | material     | hunt_crossley_dissipation |                                                                                                                                  |
  | drake:relaxation_time            | material     | relaxation_time           | Required when using a linear model of dissipation, for instance with the SAP solver.                                             |
  | drake:mu_dynamic                 | material     | coulomb_friction          | See note below on friction.                                                                                                      |

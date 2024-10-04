@@ -27,29 +27,6 @@ void DefineExamplesPendulum(py::module m) {
   // conversion.
   using T = double;
 
-  py::class_<PendulumPlant<T>, LeafSystem<T>>(
-      m, "PendulumPlant", doc.PendulumPlant.doc)
-      .def(py::init<>(), doc.PendulumPlant.ctor.doc)
-      .def("get_state_output_port", &PendulumPlant<T>::get_state_output_port,
-          py_rvp::reference_internal,
-          doc.PendulumPlant.get_state_output_port.doc)
-      .def_static("get_state",
-          py::overload_cast<const Context<T>&>(&PendulumPlant<T>::get_state),
-          py::arg("context"),
-          // Keey alive, ownership: `return` keeps `context` alive
-          py::keep_alive<0, 1>(), doc.PendulumPlant.get_state.doc)
-      .def_static("get_mutable_state",
-          py::overload_cast<Context<T>*>(&PendulumPlant<T>::get_mutable_state),
-          py::arg("context"),
-          // Keey alive, ownership: `return` keeps `context` alive
-          py::keep_alive<0, 1>(), doc.PendulumPlant.get_mutable_state.doc)
-      .def("get_parameters", &PendulumPlant<T>::get_parameters,
-          py_rvp::reference_internal, py::arg("context"),
-          doc.PendulumPlant.get_parameters.doc)
-      .def("get_mutable_parameters", &PendulumPlant<T>::get_mutable_parameters,
-          py_rvp::reference_internal, py::arg("context"),
-          doc.PendulumPlant.get_mutable_parameters.doc);
-
   py::class_<PendulumInput<T>, BasicVector<T>>(
       m, "PendulumInput", doc.PendulumInput.doc)
       .def(py::init<>(), doc.PendulumInput.ctor.doc)
@@ -99,6 +76,29 @@ void DefineExamplesPendulum(py::module m) {
           doc.PendulumState.with_theta.doc)
       .def("with_thetadot", &PendulumState<T>::with_thetadot,
           py::arg("thetadot"), doc.PendulumState.with_thetadot.doc);
+
+  py::class_<PendulumPlant<T>, LeafSystem<T>>(
+      m, "PendulumPlant", doc.PendulumPlant.doc)
+      .def(py::init<>(), doc.PendulumPlant.ctor.doc)
+      .def("get_state_output_port", &PendulumPlant<T>::get_state_output_port,
+          py_rvp::reference_internal,
+          doc.PendulumPlant.get_state_output_port.doc)
+      .def_static("get_state",
+          py::overload_cast<const Context<T>&>(&PendulumPlant<T>::get_state),
+          py::arg("context"),
+          // Keey alive, ownership: `return` keeps `context` alive
+          py::keep_alive<0, 1>(), doc.PendulumPlant.get_state.doc)
+      .def_static("get_mutable_state",
+          py::overload_cast<Context<T>*>(&PendulumPlant<T>::get_mutable_state),
+          py::arg("context"),
+          // Keey alive, ownership: `return` keeps `context` alive
+          py::keep_alive<0, 1>(), doc.PendulumPlant.get_mutable_state.doc)
+      .def("get_parameters", &PendulumPlant<T>::get_parameters,
+          py_rvp::reference_internal, py::arg("context"),
+          doc.PendulumPlant.get_parameters.doc)
+      .def("get_mutable_parameters", &PendulumPlant<T>::get_mutable_parameters,
+          py_rvp::reference_internal, py::arg("context"),
+          doc.PendulumPlant.get_mutable_parameters.doc);
 
   py::class_<PendulumGeometry, LeafSystem<double>>(
       m, "PendulumGeometry", doc.PendulumGeometry.doc)

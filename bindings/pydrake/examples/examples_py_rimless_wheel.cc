@@ -22,20 +22,6 @@ void DefineExamplesRimlessWheel(py::module m) {
   // conversion.
   using T = double;
 
-  py::class_<RimlessWheel<T>, LeafSystem<T>>(
-      m, "RimlessWheel", doc.RimlessWheel.doc)
-      .def(py::init<>(), doc.RimlessWheel.ctor.doc)
-      .def("get_minimal_state_output_port",
-          &RimlessWheel<T>::get_minimal_state_output_port,
-          py_rvp::reference_internal,
-          doc.RimlessWheel.get_minimal_state_output_port.doc)
-      .def("get_floating_base_state_output_port",
-          &RimlessWheel<T>::get_floating_base_state_output_port,
-          py_rvp::reference_internal,
-          doc.RimlessWheel.get_floating_base_state_output_port.doc)
-      .def_static("calc_alpha", &RimlessWheel<T>::calc_alpha, py::arg("params"),
-          doc.RimlessWheel.calc_alpha.doc);
-
   py::class_<RimlessWheelParams<T>, BasicVector<T>>(
       m, "RimlessWheelParams", doc.RimlessWheelParams.doc)
       .def(py::init<>(), doc.RimlessWheelParams.ctor.doc)
@@ -71,6 +57,20 @@ void DefineExamplesRimlessWheel(py::module m) {
           doc.RimlessWheelContinuousState.set_theta.doc)
       .def("set_thetadot", &RimlessWheelContinuousState<T>::set_thetadot,
           doc.RimlessWheelContinuousState.set_thetadot.doc);
+
+  py::class_<RimlessWheel<T>, LeafSystem<T>>(
+      m, "RimlessWheel", doc.RimlessWheel.doc)
+      .def(py::init<>(), doc.RimlessWheel.ctor.doc)
+      .def("get_minimal_state_output_port",
+          &RimlessWheel<T>::get_minimal_state_output_port,
+          py_rvp::reference_internal,
+          doc.RimlessWheel.get_minimal_state_output_port.doc)
+      .def("get_floating_base_state_output_port",
+          &RimlessWheel<T>::get_floating_base_state_output_port,
+          py_rvp::reference_internal,
+          doc.RimlessWheel.get_floating_base_state_output_port.doc)
+      .def_static("calc_alpha", &RimlessWheel<T>::calc_alpha, py::arg("params"),
+          doc.RimlessWheel.calc_alpha.doc);
 
   py::class_<RimlessWheelGeometry, LeafSystem<double>>(
       m, "RimlessWheelGeometry", doc.RimlessWheelGeometry.doc)

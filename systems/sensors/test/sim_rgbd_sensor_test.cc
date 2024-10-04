@@ -191,7 +191,7 @@ TEST_F(SimRgbdSensorTest, SimRgbdSensorValues) {
  to the expected *geometry* frame with the expected pose. */
 TEST_F(SimRgbdSensorTest, AddSensorWithBodyFrameSpecification) {
   auto [sensor, rgbd] = MakeSensorOrThrow();
-  EXPECT_EQ(rgbd->parent_frame_id(),
+  EXPECT_EQ(rgbd->default_parent_frame_id(),
             plant_->GetBodyFrameIdOrThrow(bodyA_->index()));
 
   auto diagram = builder_.Build();
@@ -215,7 +215,7 @@ TEST_F(SimRgbdSensorTest, AddSensorWithBodyFrameSpecification) {
  and with a pose that accounts for both X_PB and X_AP. */
 TEST_F(SimRgbdSensorTest, AddSensorWithBodyOffsetFrameSpecification) {
   auto [sensor, rgbd] = MakeSensorOrThrow(frame_F_);
-  EXPECT_EQ(rgbd->parent_frame_id(),
+  EXPECT_EQ(rgbd->default_parent_frame_id(),
             plant_->GetBodyFrameIdOrThrow(bodyA_->index()));
 
   auto diagram = builder_.Build();
@@ -248,9 +248,9 @@ TEST_F(SimRgbdSensorTest, AddSensorForRgbdSensorConfiguration) {
   // Relying on glass-box testing, the cameras should simply use copy semantics.
   // So, we'll test one field (renderer_name) and infer that the whole thing
   // got copied.
-  EXPECT_EQ(rgbd->color_render_camera().core().renderer_name(),
+  EXPECT_EQ(rgbd->default_color_render_camera().core().renderer_name(),
             sensor.color_properties().core().renderer_name());
-  EXPECT_EQ(rgbd->depth_render_camera().core().renderer_name(),
+  EXPECT_EQ(rgbd->default_depth_render_camera().core().renderer_name(),
             sensor.depth_properties().core().renderer_name());
 }
 

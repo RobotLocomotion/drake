@@ -172,6 +172,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_ellipsoid
 - @ref tag_drake_gear_ratio
 - @ref tag_drake_hunt_crossley_dissipation
+- @ref tag_drake_hydroelastic_margin
 - @ref tag_drake_hydroelastic_modulus
 - @ref tag_drake_ignored_collision_filter_group
 - @ref tag_drake_joint
@@ -572,6 +573,22 @@ ProximityProperties object under `(material, hunt_crossley_dissipation)`.
 @see drake::geometry::ProximityProperties,
 @ref hydro_model_parameters "Hydroelastic contact parameters",
 @ref mbp_dissipation_model "Modeling Dissipation"
+
+@subsection tag_drake_hydroelastic_margin drake:hydroelastic_margin
+
+- SDFormat path: `//model/link/collision/drake:proximity_properties/drake:hydroelastic_margin`
+- URDF path: `/robot/link/collision/drake:proximity_properties/drake:hydroelastic_margin/@value`
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_hydroelastic_margin_semantics Semantics
+
+If present, this element provides a value (units of length, i.e. m)
+for the hydroelastic margin. It is stored in a ProximityProperties object
+under `(hydroelastic, margin)`.
+
+@see drake::geometry::ProximityProperties,
+@ref hydro_model_parameters "Hydroelastic contact parameters",
+@ref hug_properties, @ref hydro_margin
 
 @subsection tag_drake_hydroelastic_modulus drake:hydroelastic_modulus
 

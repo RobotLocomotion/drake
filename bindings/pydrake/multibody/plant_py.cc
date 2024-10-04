@@ -293,7 +293,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("damping") = 0.0, py_rvp::reference_internal,
             cls_doc.AddDistanceConstraint.doc)
         .def("AddBallConstraint", &Class::AddBallConstraint, py::arg("body_A"),
-            py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ"),
+            py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ") = std::nullopt,
             py_rvp::reference_internal, cls_doc.AddBallConstraint.doc)
         .def("AddWeldConstraint", &Class::AddWeldConstraint, py::arg("body_A"),
             py::arg("X_AP"), py::arg("body_B"), py::arg("X_BQ"),
@@ -1030,19 +1030,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("EvalSceneGraphInspector", &Class::EvalSceneGraphInspector,
             py::arg("context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(), cls_doc.EvalSceneGraphInspector.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("get_geometry_poses_output_port",
-            WrapDeprecated(
-                cls_doc.get_geometry_poses_output_port.doc_deprecated,
-                &Class::get_geometry_poses_output_port),
-            py_rvp::reference_internal,
-            cls_doc.get_geometry_poses_output_port.doc_deprecated);
-#pragma GCC diagnostic pop
-    // Port accessors.
-    cls  // BR
+            py::keep_alive<0, 2>(), cls_doc.EvalSceneGraphInspector.doc)
+        // Port accessors.
         .def("get_actuation_input_port",
             overload_cast_explicit<const systems::InputPort<T>&>(
                 &Class::get_actuation_input_port),

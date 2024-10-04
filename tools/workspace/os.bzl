@@ -51,7 +51,7 @@ def is_wheel_build(repository_ctx):
     """
     Returns true iff this build is a Python wheel flavor.
     """
-    drake_os = repository_ctx.os.environ.get("DRAKE_OS", "")
+    drake_os = repository_ctx.getenv("DRAKE_OS", "")
     return drake_os in ["manylinux", "macos_wheel"]
 
 def os_specific_alias(repository_ctx, mapping):
