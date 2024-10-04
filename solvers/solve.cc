@@ -61,7 +61,14 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     DRAKE_THROW_UNLESS(solver_ids->size() == progs.size());
   }
 
+  // Pre-allocate the results (i.e., don't use push_back) so that we can safely
+  // write to the vector on multiple threads concurrently.
   std::vector<MathematicalProgramResult> results{progs.size()};
+
+  // Track which results are set during the par-for loop. Some programs are not
+  // thread safe so will be skipped inside the loop, and we'll need to circle
+  // back and solve them serially later. (N.B. we cannot use vector<bool> here
+  // because it's not thread safe.)
   std::vector<uint8_t> result_is_populated(progs.size(), 0);
 
   // As unique types of solvers are encountered by the threads, we will cache
@@ -89,9 +96,8 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     return options;
   };
 
-  auto DoSolveParallel = [&](const int thread_num, const int64_t i) {
-    unused(thread_num);
-
+  // This is the worker callback for the i'th program.
+  auto solve_ith = [&](const int thread_num, const int64_t i) {
     if (!progs[i]->IsThreadSafe()) {
       // If this program is not thread safe, exit after identifying the
       // necessary solver and solve it later.
@@ -123,18 +129,13 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     result_is_populated.at(i) = true;
   };
 
-  if (dynamic_schedule) {
-    DynamicParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()),
-                                0, ssize(progs), DoSolveParallel,
-                                ParallelForBackend::BEST_AVAILABLE);
-  } else {
-    StaticParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()),
-                               0, ssize(progs), DoSolveParallel,
-                               ParallelForBackend::BEST_AVAILABLE);
-  }
+  // Call solve_ith in parallel for all of the progs.
+  (dynamic_schedule ? &(DynamicParallelForIndexLoop<decltype(solve_ith)>)
+                    : &(StaticParallelForIndexLoop<decltype(solve_ith)>))(
+      DegreeOfParallelism(parallelism.num_threads()), 0, ssize(progs),
+      solve_ith, ParallelForBackend::BEST_AVAILABLE);
 
-  // Now finish solving the programs which cannot be solved in parallel and
-  // write the final results to the results vector.
+  // Now finish solving the programs that couldn't be solved in parallel.
   for (int i = 0; i < ssize(progs); ++i) {
     if (result_is_populated.at(i)) {
       continue;
