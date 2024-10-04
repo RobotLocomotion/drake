@@ -118,7 +118,7 @@ rust_library(
         "@crate__proc-macro2-1.0.86//:proc_macro2",
         "@crate__quote-1.0.37//:quote",
         "@crate__syn-1.0.109//:build_script_build",
-        "@crate__unicode-ident-1.0.12//:unicode_ident",
+        "@crate__unicode-ident-1.0.13//:unicode_ident",
     ],
 )
 
