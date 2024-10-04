@@ -48,7 +48,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const SolverOptions*>* solver_options,
     const std::vector<std::optional<SolverId>>* solver_ids,
     const Parallelism parallelism, const bool dynamic_schedule) {
-  DRAKE_THROW_UNLESS(std::all_of(progs.begin(), progs.end(), [](auto prog) {
+  DRAKE_THROW_UNLESS(std::all_of(progs.begin(), progs.end(), [](auto* prog) {
     return prog != nullptr;
   }));
   if (initial_guesses != nullptr) {
@@ -77,56 +77,59 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   std::vector<std::unordered_map<SolverId, std::unique_ptr<SolverInterface>>>
       solvers(parallelism.num_threads());
 
-  // Extracts the options from the variant and sets the maximum thread number to
-  // 1 if set_max_threads_to_one is true.
-  auto GetOptions = [&solver_options](const int64_t i,
-                                      bool set_max_threads_to_one) {
-    // Copy the solver options and make sure that they solve with only 1
-    // thread. This is achieved by setting the
-    // CommonSolverOption.kMaxThreads to 1. If the solver options
-    // explicitly specify to use more threads using a solver specific
-    // option, then more threads than 1 may be used.
-    bool option_available =
-        solver_options != nullptr && solver_options->at(i) != nullptr;
-    SolverOptions options =
-        option_available ? *solver_options->at(i) : SolverOptions();
-    if (set_max_threads_to_one) {
-      options.SetOption(CommonSolverOption::kMaxThreads, 1);
-    }
-    return options;
-  };
+  // The worker lambda behaves slightly differently depending on whether we are
+  // in the par-for loop or in the single-threaded cleanup pass later on.
+  bool operating_in_parallel = true;
 
   // This is the worker callback for the i'th program.
   auto solve_ith = [&](const int thread_num, const int64_t i) {
-    if (!progs[i]->IsThreadSafe()) {
-      // If this program is not thread safe, exit after identifying the
-      // necessary solver and solve it later.
+    // If this program is not thread safe, then skip it and save it for later.
+    if (operating_in_parallel && !progs[i]->IsThreadSafe()) {
       return;
     }
 
-    // Access the required solver.
+    // Access (or choose) the required solver then find (or create) it.
     const SolverId solver_id =
-        solver_ids == nullptr
-            ? ChooseBestSolver(*(progs.at(i)))
-            : solver_ids->at(i).value_or(ChooseBestSolver(*(progs.at(i))));
-    if (!solvers.at(thread_num).contains(solver_id)) {
+        ((solver_ids != nullptr) && (*solver_ids)[i].has_value())
+            ? *((*solver_ids)[i])
+            : ChooseBestSolver(*progs[i]);
+    auto solver_iter = solvers[thread_num].find(solver_id);
+    if (solver_iter == solvers[thread_num].end()) {
       // If this thread has not solved this type of program yet, save the solver
       // for use later.
-      solvers.at(thread_num).insert({solver_id, MakeSolver(solver_id)});
+      solver_iter = solvers[thread_num].emplace_hint(solver_iter, solver_id,
+                                                     MakeSolver(solver_id));
     }
-    const SolverInterface* solver = solvers.at(thread_num).at(solver_id).get();
+    const SolverInterface& solver = *(solver_iter->second);
 
-    // Convert the initial guess into the requisite optional.
-    std::optional<Eigen::VectorXd> initial_guess{std::nullopt};
-    if (initial_guesses != nullptr && initial_guesses->at(i) != nullptr) {
-      initial_guess = *(initial_guesses->at(i));
+    // Convert the initial guess from nullable to optional.
+    // TODO(jwnimmer-tri) The SolverBase should offer a nullable overload so
+    // that we can avoid this copying.
+    std::optional<Eigen::VectorXd> initial_guess;
+    if ((initial_guesses != nullptr) && ((*initial_guesses)[i] != nullptr)) {
+      initial_guess = *((*initial_guesses)[i]);
     }
 
-    const SolverOptions options = GetOptions(i, true /* solving_in_parallel */);
+    // Adjust the solver options to obey `parallelism`. If this solve is part of
+    // the par-for, then the solver is only allowed one thread; otherwise
+    // (during the serial cleanup pass) it is allowed `parallelism`. Note that
+    // if the user set a solver-specific options to use more threads, that could
+    // cause it to exceed its limit.
+    std::optional<SolverOptions> new_options;
+    if ((solver_options != nullptr) && ((*solver_options)[i] != nullptr)) {
+      // TODO(jwnimmer-tri) The SolverBase should offer an overload to take a
+      // list of options, so that we can avoid this copying.
+      new_options.emplace(*((*solver_options)[i]));
+    } else {
+      new_options.emplace();
+    }
+    new_options->SetOption(
+        CommonSolverOption::kMaxThreads,
+        operating_in_parallel ? 1 : parallelism.num_threads());
 
     // Solve the program.
-    solver->Solve(*(progs.at(i)), initial_guess, options, &(results.at(i)));
-    result_is_populated.at(i) = true;
+    solver.Solve(*(progs[i]), initial_guess, new_options, &(results[i]));
+    result_is_populated[i] = true;
   };
 
   // Call solve_ith in parallel for all of the progs.
@@ -135,31 +138,19 @@ std::vector<MathematicalProgramResult> SolveInParallel(
       DegreeOfParallelism(parallelism.num_threads()), 0, ssize(progs),
       solve_ith, ParallelForBackend::BEST_AVAILABLE);
 
-  // Now finish solving the programs that couldn't be solved in parallel.
+  // De-allocate the solvers cache except for the first worker. (We'll use the
+  // first worker's cache for the serial solves, below.) The clearing is
+  // important in case the solvers hold onto scarce resources (e.g., licenses).
+  solvers.resize(1);
+
+  // Finish solving the programs that couldn't be solved in parallel.
+  operating_in_parallel = false;
   for (int i = 0; i < ssize(progs); ++i) {
-    if (result_is_populated.at(i)) {
-      continue;
+    if (!result_is_populated[i]) {
+      solve_ith(0, i);
     }
-    // Convert the initial guess into the requisite optional.
-    std::optional<Eigen::VectorXd> initial_guess{std::nullopt};
-    if (initial_guesses != nullptr && initial_guesses->at(i) != nullptr) {
-      initial_guess = *(initial_guesses->at(i));
-    }
-
-    const SolverOptions options =
-        GetOptions(i, false /* solving_in_parallel */);
-
-    // We will use just the solvers at the 0th index as cached solvers.
-    const SolverId solver_id =
-        solver_ids->at(i).value_or(ChooseBestSolver(*(progs.at(i))));
-    if (!solvers.at(0).contains(solver_id)) {
-      // If this thread has not solved this type of program yet, save the
-      // solver for use later.
-      solvers.at(0).insert({solver_id, MakeSolver(solver_id)});
-    }
-    solvers.at(0).at(solver_id)->Solve(*(progs.at(i)), initial_guess, options,
-                                       &(results.at(i)));
   }
+
   return results;
 }
 
