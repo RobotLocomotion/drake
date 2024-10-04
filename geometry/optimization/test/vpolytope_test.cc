@@ -167,6 +167,19 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
   EXPECT_FALSE(V.PointInSet(out_W, kTol));
 }
 
+// Tests correct handling of the edge case for the "fail fast heuristic" in
+// PointInSet where the query point is exactly the mean of the vertices. In this
+// case, the heuristic generates a degenerate hyperplane but does not falsely
+// claim a that the mean of the vertices lies outside of the set.
+GTEST_TEST(VPolytopeTest, PointInSetFailFastEdgeCase) {
+  VPolytope V = VPolytope::MakeUnitBox(3);
+  Eigen::VectorXd vertex_mean = V.vertices().rowwise().mean();
+  const double kTol = 1e-11;
+  EXPECT_TRUE(V.PointInSet(vertex_mean, kTol));
+  const double kZeroTol = 0;
+  EXPECT_TRUE(V.PointInSet(vertex_mean, kZeroTol));
+}
+
 GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
   const RigidTransformd X_WG(math::RollPitchYawd(.1, .2, 3),
                              Vector3d(-4.0, -5.0, -6.0));
