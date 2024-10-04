@@ -8,9 +8,9 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/scs_solver.h"
-#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -220,7 +220,7 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
   // An indefinite quadratic cost.
   auto cost = non_convex_prog.AddQuadraticCost(y(0) * y(0) - y(1) * y(1));
   auto constraint3 = non_convex_prog.AddLinearConstraint(y(0) + y(1) == 1);
-  const SolverId non_convex_solver = SnoptSolver::id();
+  const SolverId non_convex_solver = IpoptSolver::id();
 
   std::vector<const MathematicalProgram*> progs;
   std::vector<std::optional<SolverId>> solver_ids;
