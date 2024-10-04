@@ -497,10 +497,10 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
     return false;
   }
 
-  // Attempt to "fail fast": Check if a hyperplane through x, with a normal
+  // Attempt to "fail fast": Checks if a hyperplane through x, with a normal
   // vector colinear to (x - mean(vertices)), separates the point from the
-  // VPolytope avoid the point containment LP. This is a heuristic, sufficient
-  // condition which can falsify that the point is in the set which
+  // VPolytope avoid solving the point containment LP. This is a heuristic,
+  // sufficient condition which can falsify that the point is in the set which
   // works better as the point in question gets farther away.
 
   Eigen::VectorXd vertex_mean = vertices_.rowwise().mean();
