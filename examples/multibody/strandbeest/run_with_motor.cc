@@ -212,7 +212,8 @@ int do_main() {
     for (const auto& [id, spec] : strandbeest.get_ball_constraint_specs()) {
       ik.AddPointToPointDistanceConstraint(
           strandbeest.get_body(spec.body_A).body_frame(), spec.p_AP,
-          strandbeest.get_body(spec.body_B).body_frame(), spec.p_BQ, 0, 0);
+          strandbeest.get_body(spec.body_B).body_frame(), spec.p_BQ.value(), 0,
+          0);
     }
   } else {
     // Add a position constraint for each bushing element. The origins of the
