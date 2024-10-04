@@ -1995,6 +1995,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "solve_test",
+    # Running with multiple threads is an essential part of testing
+    # SolveInParallel.
+    num_threads = 2,
     deps = [
         ":choose_best_solver",
         ":gurobi_solver",
@@ -2005,9 +2008,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
-    # Running with multiple threads is an essential part of testing
-    # SolveInParallel.
-    num_threads = 2
 )
 
 drake_cc_googletest(

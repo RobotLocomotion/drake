@@ -110,7 +110,6 @@ std::vector<MathematicalProgramResult> SolveInParallelImpl(
       solvers.at(thread_num).insert({solver_id, MakeSolver(solver_id)});
     }
     const SolverInterface* solver = solvers.at(thread_num).at(solver_id).get();
-    DRAKE_THROW_UNLESS(solver->AreProgramAttributesSatisfied(*(progs.at(i))));
 
     // Convert the initial guess into the requisite optional.
     std::optional<Eigen::VectorXd> initial_guess{std::nullopt};
