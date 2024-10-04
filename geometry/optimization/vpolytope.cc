@@ -508,7 +508,10 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   double b = a.dot(x);
   Eigen::VectorXd vals = a.transpose() * vertices_;
   vals = vals.array() - b;
-  if ((vals.array() < -tol).all()) {
+
+  // Explicitly require tolerance to be bigger than zero for the check to be
+  // valid.
+  if ((vals.array() < -tol).all() && tol > 0) {
     return false;
   }
 
