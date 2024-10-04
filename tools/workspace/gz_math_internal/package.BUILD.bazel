@@ -59,6 +59,7 @@ _MOST_HDRS = [
     "include/gz/math/Capsule.hh",
     "include/gz/math/Color.hh",
     "include/gz/math/Cone.hh",
+    "include/gz/math/CoordinateVector3.hh",
     "include/gz/math/Cylinder.hh",
     "include/gz/math/DiffDriveOdometry.hh",
     "include/gz/math/Ellipsoid.hh",
