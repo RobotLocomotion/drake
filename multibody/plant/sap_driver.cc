@@ -538,6 +538,7 @@ void SapDriver<T>::AddBallConstraints(
 
     const RigidBody<T>& body_A = plant().get_body(spec.body_A);
     const RigidBody<T>& body_B = plant().get_body(spec.body_B);
+    DRAKE_DEMAND(spec.p_BQ.has_value());
 
     const math::RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
@@ -545,8 +546,9 @@ void SapDriver<T>::AddBallConstraints(
         plant().EvalBodyPoseInWorld(context, body_B);
     const Vector3<T> p_WP = X_WA * spec.p_AP.template cast<T>();
     const Vector3<T> p_AP_W = X_WA.rotation() * spec.p_AP.template cast<T>();
-    const Vector3<T> p_WQ = X_WB * spec.p_BQ.template cast<T>();
-    const Vector3<T> p_BQ_W = X_WB.rotation() * spec.p_BQ.template cast<T>();
+    const Vector3<T> p_WQ = X_WB * spec.p_BQ.value().template cast<T>();
+    const Vector3<T> p_BQ_W =
+        X_WB.rotation() * spec.p_BQ.value().template cast<T>();
 
     // Dense Jacobian.
     // d(p_PQ_W)/dt = Jv_ApBq_W * v.
