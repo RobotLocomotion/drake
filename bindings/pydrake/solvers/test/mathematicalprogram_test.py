@@ -1539,8 +1539,6 @@ class TestMathematicalProgram(unittest.TestCase):
         solver_ids = [ScsSolver().solver_id() for _ in range(num_progs)]
         solver_options = [SolverOptions() for _ in range(num_progs)]
 
-        # results = mp.SolveInParallel(progs)
-
         results = mp.SolveInParallel(progs=progs,
                                      initial_guesses=initial_guesses,
                                      solver_options=solver_options,
@@ -1571,11 +1569,26 @@ class TestMathematicalProgram(unittest.TestCase):
         results = mp.SolveInParallel(progs=progs,
                                      initial_guesses=initial_guesses,
                                      solver_options=solver_options,
-                                     solver_ids=None,
+                                     solver_ids=solver_ids,
                                      parallelism=Parallelism.Max(),
                                      dynamic_schedule=False)
         self.assertEqual(len(results), len(progs))
         self.assertTrue(all([r.is_success() for r in results]))
+
+        # Finally, interleave None into initial_guesses, solver_options, and
+        # solver_ids.
+        initial_guesses[0] = None
+        solver_options[0] = None
+        solver_ids[0] = None
+        results = mp.SolveInParallel(progs=progs,
+                                     initial_guesses=initial_guesses,
+                                     solver_options=solver_options,
+                                     solver_ids=solver_ids,
+                                     parallelism=Parallelism.Max(),
+                                     dynamic_schedule=False)
+        self.assertEqual(len(results), len(progs))
+        self.assertTrue(all([r.is_success() for r in results]))
+
 
         # Now we test the overload
         results = mp.SolveInParallel(progs=progs,

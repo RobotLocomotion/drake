@@ -1683,34 +1683,6 @@ void BindFreeFunctions(py::module m) {
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
       .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc)
-      //      .def("SolveInParallel",
-      //          py::overload_cast<const std::vector<const
-      //          MathematicalProgram*>&,
-      //              const std::vector<const Eigen::VectorXd*>*,
-      //              const std::vector<const SolverOptions*>*,
-      //              const std::vector<std::optional<SolverId>>*, const
-      //              Parallelism, bool>(&solvers::SolveInParallel),
-      //          py::arg("progs"), py::arg("initial_guesses"),
-      //          py::arg("solver_options"), py::arg("solver_ids"),
-      //          py::arg("parallelism") = Parallelism::Max(),
-      //          py::arg("dynamic_schedule") = false,
-      //          doc.SolveInParallel
-      //              .doc_6args_progs_initial_guesses_solver_options_solver_ids_parallelism_dynamic_schedule)
-      //      .def("SolveInParallel",
-      //          py::overload_cast<const std::vector<const
-      //          MathematicalProgram*>&,
-      //              const std::vector<const Eigen::VectorXd*>*,
-      //              const std::optional<SolverOptions>&,
-      //              const std::optional<SolverId>&, const Parallelism, bool>(
-      //              &solvers::SolveInParallel),
-      //          py::arg("progs"), py::arg("initial_guesses") = nullptr,
-      //          py::arg("solver_options") = py::none(),
-      //          py::arg("solver_id") = py::none(),
-      //          py::arg("parallelism") = Parallelism::Max(),
-      //          py::arg("dynamic_schedule") = false,
-      //          doc.SolveInParallel
-      //              .doc_6args_progs_initial_guesses_solver_options_solver_id_parallelism_dynamic_schedule)
-      // Claude's attempt
       .def(
           "SolveInParallel",
           [](const std::vector<const MathematicalProgram*>& progs,
