@@ -509,9 +509,9 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   Eigen::VectorXd vals = a.transpose() * vertices_;
   vals = vals.array() - b;
 
-  // Explicitly require tolerance to be bigger than zero for the check to be
-  // valid.
-  if ((vals.array() < -tol).all() && tol > 0) {
+  // Only allow early return if query point x is sufficiently far away from the
+  // vertex mean.
+  if ((vals.array() < -tol).all() && (x - vertex_mean).norm() > tol) {
     return false;
   }
 
