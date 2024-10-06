@@ -1,7 +1,7 @@
 # PyPI packages to make available for Drake source builds.
 
-# WARNING: If you change this file, then you must regenerate the "locked"
-# requirements files via:
+# WARNING for Drake Developers: if you change this file, then you must
+# regenerate the "locked" requirements files via:
 #
 #     tools/workspace/python/venv_upgrade
 
