@@ -126,7 +126,6 @@ _MOST_HDRS = [
 _HDRS_PRIVATE = [
     "src/KmeansPrivate.hh",
     "src/MaterialType.hh",
-    "src/SignalStatsPrivate.hh",
     "src/SplinePrivate.hh",
 ]
 
@@ -217,6 +216,7 @@ _SRCS = [
     "src/Angle.cc",
     "src/AxisAlignedBox.cc",
     "src/Color.cc",
+    "src/CoordinateVector3.cc",
     "src/DiffDriveOdometry.cc",
     "src/Frustum.cc",
     "src/GaussMarkovProcess.cc",
@@ -224,7 +224,6 @@ _SRCS = [
     "src/Kmeans.cc",
     "src/Material.cc",
     "src/MecanumDriveOdometry.cc",
-    "src/MovingWindowFilter.cc",
     "src/PID.cc",
     "src/Rand.cc",
     "src/RollingMean.cc",
