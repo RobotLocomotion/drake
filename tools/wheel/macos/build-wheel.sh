@@ -40,32 +40,6 @@ if [ -e "/opt/drake" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# Set up a Python virtual environment with the latest setuptools.
-# -----------------------------------------------------------------------------
-
-# TODO(matthew.woehlke) If/when we fix the Drake build to get its (PyPI)
-# dependencies some other way, note that, as of writing, building the actual
-# wheel has additional dependencies; this logic may need to lower rather than
-# being deleted outright. See (and consider partly reverting) the commit that
-# added this comment.
-
-readonly pyvenv_root="/opt/drake-wheel-build/$python/python"
-
-# NOTE: Xcode ships python3, make sure to use the one from brew.
-"$python_executable" -m venv "$pyvenv_root"
-
-# We also need pythonX.Y-config, which isn't created as of writing (see also
-# https://github.com/pypa/virtualenv/issues/169). Don't fail if it already
-# exists, though, e.g. if the bug has been fixed.
-ln -s "$python_prefix/bin/$python-config" \
-      "$pyvenv_root/bin/$python-config" || true # Allowed to already exist.
-
-. "$pyvenv_root/bin/activate"
-
-pip install -r "$git_root/setup/mac/binary_distribution/requirements.txt"
-pip install -r "$git_root/setup/mac/source_distribution/requirements.txt"
-
-# -----------------------------------------------------------------------------
 # Build and "install" Drake.
 # -----------------------------------------------------------------------------
 
@@ -90,7 +64,7 @@ EOF
 cmake "$git_root" \
     -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
     -DCMAKE_INSTALL_PREFIX="/opt/drake-dist/$python" \
-    -DPython_EXECUTABLE="$pyvenv_root/bin/$python"
+    -DPython_EXECUTABLE="$python_executable"
 make install
 
 # Build wheel tools.
@@ -108,6 +82,23 @@ find "$build_root" -type d -print0 | xargs -0 chmod u+w
 # -----------------------------------------------------------------------------
 # Install tools to build the wheel.
 # -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Set up a Python virtual environment with the latest setuptools.
+# -----------------------------------------------------------------------------
+
+readonly pyvenv_root="/opt/drake-wheel-build/$python/python"
+
+# NOTE: Xcode ships python3, make sure to use the one from brew.
+"$python_executable" -m venv "$pyvenv_root"
+
+# We also need pythonX.Y-config, which isn't created as of writing (see also
+# https://github.com/pypa/virtualenv/issues/169). Don't fail if it already
+# exists, though, e.g. if the bug has been fixed.
+ln -s "$python_prefix/bin/$python-config" \
+      "$pyvenv_root/bin/$python-config" || true # Allowed to already exist.
+
+. "$pyvenv_root/bin/activate"
 
 pip install --upgrade \
     delocate \
