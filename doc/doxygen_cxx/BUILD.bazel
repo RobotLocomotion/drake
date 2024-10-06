@@ -23,7 +23,6 @@ drake_py_library(
         "//doc/pydrake:__pkg__",
         "//tools/workspace/pybind11:__pkg__",
     ],
-    deps = ["@venv"],
 )
 
 drake_py_unittest(

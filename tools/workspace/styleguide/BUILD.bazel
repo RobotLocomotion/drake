@@ -8,7 +8,6 @@ py_test(
     data = ["@styleguide//:test_files"],
     main = "@styleguide//:cpplint/cpplint_unittest.py",
     tags = ["no_kcov"],
-    deps = ["@venv"],
 )
 
 add_lint_tests()

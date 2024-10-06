@@ -22,7 +22,6 @@ py_binary(
     python_version = "PY3",
     srcs_version = "PY3",
     visibility = [],
-    deps = ["@venv"],
 )
 
 alias(

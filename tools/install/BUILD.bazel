@@ -28,12 +28,11 @@ drake_py_library(
     srcs = ["install_test_helper.py"],
     data = [
         "//:install",
-        "@venv//:binaries",
+        "@python//:venv_bin",
     ],
     imports = ["."],
     deps = [
         "@rules_python//python/runfiles",
-        "@venv",
     ],
 )
 

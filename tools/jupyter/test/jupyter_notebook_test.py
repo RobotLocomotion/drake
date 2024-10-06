@@ -9,7 +9,7 @@ class TestJupyterNotebook(unittest.TestCase):
     def test_help(self):
         """Ensures that `jupyter notebook` is installed (#12042)."""
         manifest = runfiles.Create()
-        jupyter = manifest.Rlocation("venv/bin/jupyter")
+        jupyter = manifest.Rlocation("python/bin/jupyter")
         if not os.path.exists(jupyter):
             jupyter = "jupyter"
 

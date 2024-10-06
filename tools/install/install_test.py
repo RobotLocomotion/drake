@@ -34,7 +34,7 @@ class InstallTest(unittest.TestCase):
         # are installed system-wide (without a venv).
         if sys.platform == "darwin":
             manifest = runfiles.Create()
-            python = manifest.Rlocation("venv/bin/python3")
+            python = manifest.Rlocation("python/bin/python3")
         else:
             python = install_test_helper.get_python_executable()
 

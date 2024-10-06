@@ -71,7 +71,6 @@ def _add_linter_rules(
     py_test_isolated(
         name = name + "_cpplint",
         srcs = ["@styleguide//:cpplint"],
-        deps = ["@venv"],
         data = cpplint_data + source_labels,
         args = _EXTENSIONS_ARGS + source_filenames,
         main = "@styleguide//:cpplint/cpplint.py",

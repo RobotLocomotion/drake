@@ -48,7 +48,6 @@ drake_py_library(
     ],
     deps = [
         "//bindings/pydrake/common:_init_py",
-        "@venv",
     ],
 )
 
@@ -419,7 +418,6 @@ drake_py_binary(
         ":all_py",
         "@mypy_internal//:mypy",
         "@stable_baselines3_internal//:stable_baselines3",
-        "@venv",
     ],
 )
 

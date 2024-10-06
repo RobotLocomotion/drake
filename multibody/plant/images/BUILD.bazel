@@ -9,7 +9,6 @@ PYTHON_SCRIPTS = [
 drake_py_unittest(
     name = "scripts_test",
     data = PYTHON_SCRIPTS,
-    deps = ["@venv"],
 )
 
 add_lint_tests(

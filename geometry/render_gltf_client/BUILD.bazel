@@ -360,7 +360,6 @@ drake_py_unittest(
     ],
     deps = [
         "@rules_python//python/runfiles",
-        "@venv",
     ],
 )
 
