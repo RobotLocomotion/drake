@@ -10,20 +10,6 @@ libraries to be used as Python modules.
 (2) "@foo//:python_direct_link" for the unusual case of linking the CPython
 interpreter as a library into an executable with a C++ main() function.
 
-Example:
-    WORKSPACE:
-        load("@drake//tools/workspace/python:repository.bzl", "python_repository")  # noqa
-        python_repository(
-            name = "foo",
-        )
-
-    BUILD:
-        cc_library(
-            name = "foobar",
-            deps = ["@foo//:python"],
-            srcs = ["bar.cc"],
-        )
-
 Arguments:
     name: A unique name for this rule.
     linux_interpreter_path: (Optional) Interpreter path for the Python runtime,
@@ -40,100 +26,69 @@ load(
     "which",
 )
 
-def repository_python_info(repository_ctx):
-    """Determines the following information:
-    - `python` - binary path
-    - `python_config` - configuration binary path
-    - `version` - '{major}.{minor}'
-    - `version_major` - major version (as a string)
-    - `site_packages_relpath` - relative to base of FHS
-    and returns those details in a struct().
+def _get_python_interpreter(repo_ctx):
+    """Returns the tuple (python_interprer_path, major_minor_version) based on
+    the settings in our repository rule's attrs.
     """
-
-    # - `python`
-    # - `python_config`
-    if repository_ctx.os.name == "mac os x":
-        python = repository_ctx.attr.macos_interpreter_path
+    if repo_ctx.os.name == "mac os x":
+        python = repo_ctx.attr.macos_interpreter_path
         if "{homebrew_prefix}" in python:
             python = python.format(
-                homebrew_prefix = homebrew_prefix(repository_ctx),
+                homebrew_prefix = homebrew_prefix(repo_ctx),
             )
     else:
-        python = repository_ctx.attr.linux_interpreter_path
-    python_config = "{}-config".format(python)
-
-    # - `version`
-    # - `version_major`
-    # - `site_packages_relpath`
-    version = execute_or_fail(repository_ctx, [python, "-c", "\n".join([
-        "from sys import version_info as v",
-        "print('{}.{}'.format(v.major, v.minor))",
-    ])]).stdout.strip()
-    version_major, _ = version.split(".")
-    site_packages_relpath = "lib/python{}/site-packages".format(version)
-
-    # Validate the `python` and `python_config` binaries.
-    implementation = execute_or_fail(repository_ctx, [python, "-c", "\n".join([
+        python = repo_ctx.attr.linux_interpreter_path
+    implementation = execute_or_fail(repo_ctx, [python, "-c", "\n".join([
         "import platform",
         "print(platform.python_implementation())",
     ])]).stdout.strip()
     if implementation != "CPython":
         fail(("The implementation of '{}' is '{}', but only 'CPython' is " +
               "supported.").format(python, implementation))
-    if which(repository_ctx, python_config) == None:
-        # Developer note: If you are using a `virtualenv` (which is officially
-        # unsupported), ensure that you manually symlink the `python3-config`
-        # binary in your `virtualenv` installation.
+    version = execute_or_fail(repo_ctx, [python, "-c", "\n".join([
+        "from sys import version_info as v",
+        "print('{}.{}'.format(v.major, v.minor))",
+    ])]).stdout.strip()
+    return (python, version)
+
+def _get_extension_suffix(repo_ctx, python, python_config):
+    """Returns the extension suffix, e.g. ".cpython-310-x86_64-linux-gnu.so" as
+    queried from python_config. Uses `python` only for error reporting.
+    """
+    if which(repo_ctx, python_config) == None:
         fail(("Cannot find corresponding config executable: {}\n" +
               "  From interpreter: {}").format(python_config, python))
-
-    return struct(
-        python = python,
-        python_config = python_config,
-        version = version,
-        version_major = version_major,
-        site_packages_relpath = site_packages_relpath,
-    )
-
-def _impl(repository_ctx):
-    # Repository implementation.
-    py_info = repository_python_info(repository_ctx)
-
-    # Collect includes.
-    cflags = execute_or_fail(
-        repository_ctx,
-        [py_info.python_config, "--includes"],
-    ).stdout.strip().split(" ")
-    cflags = [cflag for cflag in cflags if cflag]
-
-    root = repository_ctx.path("")
-    root_len = len(str(root)) + 1
-    base = root.get_child("include")
-
-    # TODO(jamiesnape): Much of the logic for parsing flags is the same or
-    # similar to that used in pkg_config.bzl and should be refactored and
-    # shared instead of being duplicated in both places.
-
-    extension_suffix = execute_or_fail(
-        repository_ctx,
-        [py_info.python_config, "--extension-suffix"],
+    return execute_or_fail(
+        repo_ctx,
+        [python_config, "--extension-suffix"],
     ).stdout.strip()
 
-    # Prepare the include paths.
+# TODO(jwnimmer-ti): Much of the logic for parsing includes and linkopts is the
+# same or similar to that used in pkg_config.bzl and should be refactored and
+# shared instead of being duplicated in both places.
+
+def _get_includes(repo_ctx, python_config):
+    """Returns the list of `includes = ...` when compiling native code."""
     includes = []
+    cflags = execute_or_fail(
+        repo_ctx,
+        [python_config, "--includes"],
+    ).stdout.strip().split(" ")
     for cflag in cflags:
         if cflag.startswith("-I"):
-            source = repository_ctx.path(cflag[2:])
-            destination = base.get_child(str(source).replace("/", "_"))
-            include = str(destination)[root_len:]
+            include = "include/" + cflag[2:].replace("/", "_")
             if include not in includes:
-                repository_ctx.symlink(source, destination)
-                includes += [include]
+                repo_ctx.symlink(cflag[2:], include)
+                includes.append(include)
+    return includes
+
+def _get_linkopts(repo_ctx, python_config):
+    """Returns the list of `linkopts = ...` when compiling native code."""
 
     # Collect Python's requested linker options, split on whitespace.
     linkopts = execute_or_fail(
-        repository_ctx,
-        [py_info.python_config, "--ldflags"],
+        repo_ctx,
+        [python_config, "--ldflags"],
     ).stdout.strip().split(" ")
     linkopts = [linkopt for linkopt in linkopts if linkopt]
 
@@ -149,17 +104,36 @@ def _impl(repository_ctx):
         if linkopts[i].startswith(link_prefix):
             path = linkopts[i][len(link_prefix):]
             linkopts.insert(i, "-Wl,-rpath," + path)
+    return linkopts
 
-    # Now specialize the the linker options based on whether we're linking a
-    # loadable module or an embedded interpreter. (For details, refer to the
-    # docs for option (1) vs (2) atop this file.)
+def _impl(repo_ctx):
+    # Add the BUILD file.
+    repo_ctx.symlink(
+        Label("//tools/workspace/python:package.BUILD.bazel"),
+        "BUILD.bazel",
+    )
+
+    # Set `python` to the the interpreter path specified by our rule attrs,
+    # and `version` to its "major.minor" string.
+    python, version = _get_python_interpreter(repo_ctx)
+    site_packages_relpath = "lib/python{}/site-packages".format(version)
+
+    # Get extension_suffix, includes, and linkopts from python_config.
+    python_config = "{}-config".format(python)
+    extension_suffix = _get_extension_suffix(repo_ctx, python, python_config)
+    includes = _get_includes(repo_ctx, python_config)
+    linkopts = _get_linkopts(repo_ctx, python_config)
+
+    # Specialize the the linker options based on whether we're linking a
+    # loadable module or an embedded interpreter. (For details, refer to
+    # the docs for option (1) vs (2) atop this file.)
     linkopts_embedded = list(linkopts)
-    linkopts_embedded.insert(0, "-lpython" + py_info.version)
+    linkopts_embedded.insert(0, "-lpython" + version)
     linkopts_module = list(linkopts)
-    if repository_ctx.os.name == "mac os x":
+    if repo_ctx.os.name == "mac os x":
         linkopts_module.insert(0, "-undefined dynamic_lookup")
 
-    skylark_content = """
+    version_content = """
 # DO NOT EDIT: generated by python_repository()
 # WARNING: Avoid using this macro in any repository rules which require
 # `load()` at the WORKSPACE level. Instead, load these constants through
@@ -169,64 +143,21 @@ PYTHON_BIN_PATH = "{bin_path}"
 PYTHON_EXTENSION_SUFFIX = "{extension_suffix}"
 PYTHON_VERSION = "{version}"
 PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
+PYTHON_INCLUDES = {includes}
+PYTHON_LINKOPTS_EMBEDDED = {linkopts_embedded}
+PYTHON_LINKOPTS_MODULE = {linkopts_module}
 """.format(
-        bin_path = py_info.python,
+        bin_path = python,
         extension_suffix = extension_suffix,
-        version = py_info.version,
-        site_packages_relpath = py_info.site_packages_relpath,
-    )
-    repository_ctx.file(
-        "version.bzl",
-        content = skylark_content,
-        executable = False,
-    )
-
-    build_content = """# DO NOT EDIT: generated by python_repository()
-
-licenses(["notice"])  # Python-2.0
-
-# Only include the first level of headers and specific second level headers
-# included from `python_repository`. This excludes some third-party C headers
-# that may be nested within `/usr/include/python<version>`, such as `numpy`,
-# when installed via `apt` on Ubuntu.
-headers = glob(
-    [
-        "include/*/*",
-        "include/*/cpython/*",
-        "include/*/internal/*",
-    ],
-    exclude_directories = 1,
-)
-
-cc_library(
-    name = "python_headers",
-    hdrs = headers,
-    includes = {includes},
-    visibility = ["//visibility:private"],
-)
-
-cc_library(
-    name = "python",
-    linkopts = {linkopts_module},
-    visibility = ["//visibility:public"],
-    deps = [":python_headers"],
-)
-
-cc_library(
-    name = "python_direct_link",
-    linkopts = {linkopts_embedded},
-    visibility = ["//visibility:public"],
-    deps = [":python_headers"],
-)
-""".format(
+        version = version,
+        site_packages_relpath = site_packages_relpath,
         includes = includes,
         linkopts_module = linkopts_module,
         linkopts_embedded = linkopts_embedded,
     )
-
-    repository_ctx.file(
-        "BUILD.bazel",
-        content = build_content,
+    repo_ctx.file(
+        "version.bzl",
+        content = version_content,
         executable = False,
     )
 
