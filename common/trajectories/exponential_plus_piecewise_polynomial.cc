@@ -1,5 +1,7 @@
 #include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 
+#if DRAKE_ONCE_PER_SCALAR_PHASE == 0  // We are @tparam_double_only.
+
 #include <memory>
 
 #include <unsupported/Eigen/MatrixFunctions>
@@ -75,3 +77,5 @@ template class ExponentialPlusPiecewisePolynomial<double>;
 
 }  // namespace trajectories
 }  // namespace drake
+
+#endif

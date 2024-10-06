@@ -76,13 +76,6 @@ def main():
     with open(args.install_tests_filename, 'r') as f:
         lines = f.readlines()
 
-    # If all tests were disabled, exit early to avoid installing anything.
-    if not lines:
-        print()
-        print("WARNING: All install_test cases were disabled!")
-        print()
-        return 0
-
     # Add them as individual tests.
     test_case_names = []
     for one_line in lines:

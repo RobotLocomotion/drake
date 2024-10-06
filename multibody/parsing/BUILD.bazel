@@ -181,6 +181,7 @@ drake_cc_library(
     deps = [
         ":detail_make_model_name",
         ":detail_parsing_workspace",
+        "//geometry:mesh_source",
         "//geometry/proximity:obj_to_surface_mesh",
         "//multibody/plant",
         "//multibody/tree:geometry_spatial_inertia",

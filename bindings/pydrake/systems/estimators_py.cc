@@ -16,6 +16,7 @@ PYBIND11_MODULE(estimators, m) {
   using drake::systems::System;
 
   py::module::import("pydrake.systems.framework");
+  py::module::import("pydrake.systems.primitives");
 
   {
     using Class = LuenbergerObserver<double>;

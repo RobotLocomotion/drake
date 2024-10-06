@@ -371,9 +371,7 @@ void DefineModuleSchema(py::module m) {
         std::variant_size_v<RotationOrNestedValue> ==
         1 /* for Rotation */ + std::variant_size_v<Rotation::Variant>);
     cls.def_property(
-        "rotation",
-        // The getter is just the usual, no special magic.
-        [](const Class& self) { return &self.rotation; },
+        "rotation", [](const Class& self) { return &self.rotation; },
         // The setter accepts a more generous allowed set of argument types.
         [](Class& self, RotationOrNestedValue value_variant) {
           std::visit(
@@ -387,6 +385,19 @@ void DefineModuleSchema(py::module m) {
               value_variant);
         },
         py_rvp::reference_internal, cls_doc.rotation.doc);
+    // We use the _rewrite_yaml_dump_attr_name to instruct yaml_dump_typed to
+    // access the "_rotation_value" property instead of "rotation".
+    cls.def_static("_rewrite_yaml_dump_attr_name",
+        [](std::string_view name) -> std::string_view {
+          if (name == "rotation") {
+            return "_rotation_value";
+          }
+          return name;
+        });
+    cls.def_property_readonly(
+        "_rotation_value",
+        [](const Class& self) { return &self.rotation.value; },
+        py_rvp::reference_internal);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }

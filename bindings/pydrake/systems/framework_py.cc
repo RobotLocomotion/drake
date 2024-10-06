@@ -15,10 +15,11 @@ PYBIND11_MODULE(framework, m) {
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.symbolic");
 
-  // Incorporate definitions as pieces (to speed up compilation).
+  // This list of calls to helpers must remain in topological dependency order.
   DefineFrameworkPyValues(m);
   DefineFrameworkPySemantics(m);
   DefineFrameworkPySystems(m);
+  DefineFrameworkDiagramBuilder(m);
 }
 
 }  // namespace pydrake

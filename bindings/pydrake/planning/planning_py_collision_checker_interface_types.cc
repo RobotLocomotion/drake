@@ -160,32 +160,6 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
   }
 
   {
-    using Class = RobotClearance;
-    constexpr auto& cls_doc = doc.RobotClearance;
-    py::class_<Class> cls(m, "RobotClearance", cls_doc.doc);
-    cls  // BR
-        .def(py::init<int>(), py::arg("num_positions"), cls_doc.ctor.doc)
-        .def(py::init<const Class&>(), py::arg("other"))
-        .def("size", &Class::size, cls_doc.size.doc)
-        .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
-        .def("robot_indices", &Class::robot_indices, cls_doc.robot_indices.doc)
-        .def("other_indices", &Class::other_indices, cls_doc.other_indices.doc)
-        .def("collision_types", &Class::collision_types,
-            cls_doc.collision_types.doc)
-        .def("distances", &Class::distances, py_rvp::reference_internal,
-            cls_doc.distances.doc)
-        .def("jacobians", &Class::jacobians, py_rvp::reference_internal,
-            cls_doc.jacobians.doc)
-        .def("mutable_jacobians", &Class::mutable_jacobians,
-            py_rvp::reference_internal, cls_doc.mutable_jacobians.doc)
-        .def("Reserve", &Class::Reserve, py::arg("size"), cls_doc.Reserve.doc)
-        .def("Append", &Class::Append, py::arg("robot_index"),
-            py::arg("other_index"), py::arg("collision_type"),
-            py::arg("distance"), py::arg("jacobian"), cls_doc.Append.doc);
-    DefCopyAndDeepCopy(&cls);
-  }
-
-  {
     using Class = RobotCollisionType;
     constexpr auto& cls_doc = doc.RobotCollisionType;
     py::enum_<Class> cls(m, "RobotCollisionType", cls_doc.doc);
@@ -223,6 +197,32 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
             "given, the return value will reflect those given value(s). "
             "This function subsumes the C++ free functions "
             "``SetInEnvironmentCollision()`` and ``SetInSelfCollision()``.");
+  }
+
+  {
+    using Class = RobotClearance;
+    constexpr auto& cls_doc = doc.RobotClearance;
+    py::class_<Class> cls(m, "RobotClearance", cls_doc.doc);
+    cls  // BR
+        .def(py::init<int>(), py::arg("num_positions"), cls_doc.ctor.doc)
+        .def(py::init<const Class&>(), py::arg("other"))
+        .def("size", &Class::size, cls_doc.size.doc)
+        .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
+        .def("robot_indices", &Class::robot_indices, cls_doc.robot_indices.doc)
+        .def("other_indices", &Class::other_indices, cls_doc.other_indices.doc)
+        .def("collision_types", &Class::collision_types,
+            cls_doc.collision_types.doc)
+        .def("distances", &Class::distances, py_rvp::reference_internal,
+            cls_doc.distances.doc)
+        .def("jacobians", &Class::jacobians, py_rvp::reference_internal,
+            cls_doc.jacobians.doc)
+        .def("mutable_jacobians", &Class::mutable_jacobians,
+            py_rvp::reference_internal, cls_doc.mutable_jacobians.doc)
+        .def("Reserve", &Class::Reserve, py::arg("size"), cls_doc.Reserve.doc)
+        .def("Append", &Class::Append, py::arg("robot_index"),
+            py::arg("other_index"), py::arg("collision_type"),
+            py::arg("distance"), py::arg("jacobian"), cls_doc.Append.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 }
 

@@ -24,6 +24,7 @@ PYBIND11_MODULE(parsing, m) {
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
   py::module::import("pydrake.common.schema");
+  py::module::import("pydrake.multibody.tree");
 
   // CollisionFilterGroups
   {

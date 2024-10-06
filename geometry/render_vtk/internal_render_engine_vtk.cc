@@ -1,7 +1,6 @@
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 #include <algorithm>
-#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <optional>
@@ -43,6 +42,7 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
@@ -557,8 +557,8 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh, double scale,
   ImplementPolyData(transform_filter.GetPointer(), material, data);
 }
 
-bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
-                                   const RegistrationData& data) {
+bool RenderEngineVtk::ImplementObj(const std::filesystem::path& file_name,
+                                   double scale, const RegistrationData& data) {
   std::vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
       file_name, data.properties, default_diffuse_, diagnostic_);
   for (auto& render_mesh : meshes) {
@@ -987,15 +987,34 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   if (use_pbr_materials_) {
     color_actor->GetProperty()->SetInterpolationToPBR();
   }
-  if (!material.diffuse_map.empty()) {
+  if (!IsEmpty(material.diffuse_map)) {
+    // Parsing via VTK should never require an image to be flipped.
+    DRAKE_DEMAND(material.flip_y == false);
+
     vtkNew<vtkPNGReader> texture_reader;
-    texture_reader->SetFileName(material.diffuse_map.c_str());
+    const std::string description = std::visit<std::string>(
+        overloaded{
+            [](const auto&) -> std::string {
+              throw std::runtime_error(
+                  "RenderEngineVtk: diffuse map must be on-disk or in-memory");
+            },
+            [reader = texture_reader.Get()](const std::filesystem::path& path) {
+              reader->SetFileName(path.c_str());
+              return path.string();
+            },
+            [reader = texture_reader.Get()](const MemoryFile& file) {
+              const std::string& contents = file.contents();
+              reader->SetMemoryBuffer(contents.c_str());
+              reader->SetMemoryBufferLength(contents.size());
+              return file.filename_hint();
+            }},
+        material.diffuse_map);
     texture_reader->Update();
     if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
       log()->warn(
           "Texture map '{}' has an unsupported bit depth, casting it to uchar "
           "channels.",
-          material.diffuse_map);
+          description);
     }
 
     vtkNew<vtkImageCast> caster;

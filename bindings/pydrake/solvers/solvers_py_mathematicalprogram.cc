@@ -131,6 +131,8 @@ class PyFunctionCost : public Cost {
   using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
   using AutoDiffFunc = std::function<AutoDiffXd(const VectorX<AutoDiffXd>&)>;
 
+  // Note that we do not allow Python implementations of Cost to be declared as
+  // thread safe.
   PyFunctionCost(
       int num_vars, const py::function& func, const std::string& description)
       : Cost(num_vars, description),
@@ -175,6 +177,8 @@ class PyFunctionConstraint : public Constraint {
   using AutoDiffFunc =
       std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>&)>;
 
+  // Note that we do not allow Python implementations of Constraint to be
+  // declared as thread safe.
   PyFunctionConstraint(int num_vars, const py::function& func,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const std::string& description)
@@ -268,7 +272,7 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
   }
 };
 
-void BindSolverInterfaceAndFlags(py::module m) {
+void BindSolverInterface(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.solvers;
   py::class_<SolverInterface, PySolverInterface>(
       m, "SolverInterface", doc.SolverInterface.doc)
@@ -329,7 +333,10 @@ void BindSolverInterfaceAndFlags(py::module m) {
           })
       .def("SolverName",
           [](const SolverInterface& self) { return self.solver_id().name(); });
+}
 
+void BindSolverIdAndType(py::module m) {
+  constexpr auto& doc = pydrake_doc.drake.solvers;
   py::class_<SolverId>(m, "SolverId", doc.SolverId.doc)
       .def(py::init<std::string>(), py::arg("name"), doc.SolverId.ctor.doc)
       .def("name", &SolverId::name, doc.SolverId.name.doc)
@@ -366,6 +373,20 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc)
       .value("kUnrevisedLemke", SolverType::kUnrevisedLemke,
           doc.SolverType.kUnrevisedLemke.doc);
+}
+
+void BindSolverOptions(py::module m) {
+  constexpr auto& doc = pydrake_doc.drake.solvers;
+
+  py::enum_<CommonSolverOption>(
+      m, "CommonSolverOption", doc.CommonSolverOption.doc)
+      .value("kPrintFileName", CommonSolverOption::kPrintFileName,
+          doc.CommonSolverOption.kPrintFileName.doc)
+      .value("kPrintToConsole", CommonSolverOption::kPrintToConsole,
+          doc.CommonSolverOption.kPrintToConsole.doc)
+      .value("kStandaloneReproductionFileName",
+          CommonSolverOption::kStandaloneReproductionFileName,
+          doc.CommonSolverOption.kStandaloneReproductionFileName.doc);
 
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
@@ -417,19 +438,9 @@ void BindSolverInterfaceAndFlags(py::module m) {
         // we should enhance this to provide more details.
         return "<SolverOptions>";
       });
-
-  py::enum_<CommonSolverOption>(
-      m, "CommonSolverOption", doc.CommonSolverOption.doc)
-      .value("kPrintFileName", CommonSolverOption::kPrintFileName,
-          doc.CommonSolverOption.kPrintFileName.doc)
-      .value("kPrintToConsole", CommonSolverOption::kPrintToConsole,
-          doc.CommonSolverOption.kPrintToConsole.doc)
-      .value("kStandaloneReproductionFileName",
-          CommonSolverOption::kStandaloneReproductionFileName,
-          doc.CommonSolverOption.kStandaloneReproductionFileName.doc);
 }
 
-void BindMathematicalProgram(py::module m) {
+void BindMathematicalProgramResult(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.solvers;
   py::class_<MathematicalProgramResult>(
       m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)
@@ -559,7 +570,10 @@ void BindMathematicalProgram(py::module m) {
           &MathematicalProgramResult::GetInfeasibleConstraintNames,
           py::arg("prog"), py::arg("tol") = std::nullopt,
           doc.MathematicalProgramResult.GetInfeasibleConstraintNames.doc);
+}
 
+void BindMathematicalProgram(py::module m) {
+  constexpr auto& doc = pydrake_doc.drake.solvers;
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);
   prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc);
@@ -578,6 +592,8 @@ void BindMathematicalProgram(py::module m) {
   prog_cls  // BR
       .def("__str__", &MathematicalProgram::to_string,
           doc.MathematicalProgram.to_string.doc)
+      .def("IsThreadSafe", &MathematicalProgram::IsThreadSafe,
+          doc.MathematicalProgram.IsThreadSafe.doc)
       .def("ToLatex", &MathematicalProgram::ToLatex, py::arg("precision") = 3,
           doc.MathematicalProgram.ToLatex.doc)
       .def("NewContinuousVariables",
@@ -1607,7 +1623,10 @@ for every column of ``prog_var_vals``. )""")
           &MathematicalProgram::RemoveVisualizationCallback,
           py::arg("callback"),
           doc.MathematicalProgram.RemoveVisualizationCallback.doc);
+}  // NOLINT(readability/fn_size)
 
+void BindSolutionResult(py::module m) {
+  constexpr auto& doc = pydrake_doc.drake.solvers;
   py::enum_<SolutionResult> solution_result_enum(
       m, "SolutionResult", doc.SolutionResult.doc);
   solution_result_enum
@@ -1629,7 +1648,7 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kDualInfeasible.doc)
       .value("kSolutionResultNotSet", SolutionResult::kSolutionResultNotSet,
           doc.SolutionResult.kSolutionResultNotSet.doc);
-}  // NOLINT(readability/fn_size)
+}
 
 void BindPyFunctionConstraint(py::module m) {
   py::class_<PyFunctionConstraint, Constraint,
@@ -1670,9 +1689,14 @@ void BindFreeFunctions(py::module m) {
 
 namespace internal {
 void DefineSolversMathematicalProgram(py::module m) {
+  // This list must remain in topological dependency order.
   BindPyFunctionConstraint(m);
-  BindSolverInterfaceAndFlags(m);
+  BindSolverIdAndType(m);
+  BindSolverOptions(m);
   BindMathematicalProgram(m);
+  BindSolutionResult(m);
+  BindMathematicalProgramResult(m);
+  BindSolverInterface(m);
   BindFreeFunctions(m);
 }
 }  // namespace internal

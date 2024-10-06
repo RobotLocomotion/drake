@@ -670,20 +670,18 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   }
 }
 
-// Confirm that a mesh type (convex/mesh) has a rigid representation. We rely
-// on the fact that we're loading a unit cube (vertices one unit away from the
-// origin along each axis) to confirm that the correct mesh got loaded. We also
-// confirm that the scale factor is included in the rigid representation.
-void TestRigidMeshCube(const std::string& file) {
+// Confirm that a mesh has a rigid representation. We rely on the fact that
+// we're loading a unit cube (vertices one unit away from the origin along each
+// axis) to confirm that the correct mesh got loaded. We also confirm that the
+// scale factor is included in the rigid representation.
+void TestRigidMeshCube(const Mesh& mesh) {
   // Empty props since its contents do not matter.
   ProximityProperties props;
 
   constexpr double kEps = 2 * std::numeric_limits<double>::epsilon();
 
   // Non-unit scale to make sure scale is being accounted for.
-  const double scale = 0.75;
-  std::optional<RigidGeometry> geometry =
-      MakeRigidRepresentation(Mesh(file, scale), props);
+  std::optional<RigidGeometry> geometry = MakeRigidRepresentation(mesh, props);
   ASSERT_NE(geometry, std::nullopt);
   ASSERT_FALSE(geometry->is_half_space());
 
@@ -697,32 +695,38 @@ void TestRigidMeshCube(const std::string& file) {
   // The scale factor multiplies the measure of every vertex position, so
   // the expected distance of the vertex to the origin should be:
   // scale * sqrt(3) (because the original mesh was the unit sphere).
-  const double expected_dist = std::sqrt(3) * scale;
+  const double expected_dist = std::sqrt(3) * mesh.scale();
   for (int v = 0; v < surface_mesh.num_vertices(); ++v) {
     const double dist = surface_mesh.vertex(v).norm();
-    ASSERT_NEAR(dist, expected_dist, scale * kEps)
-        << "for scale: " << scale << " at vertex " << v;
+    ASSERT_NEAR(dist, expected_dist, mesh.scale() * kEps)
+        << "for scale: " << mesh.scale() << " at vertex " << v;
   }
 }
 
 // Confirm support for a rigid Mesh. Tests that a hydroelastic representation
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Mesh) {
+  // We just want a non-unit scale.
+  constexpr double kScale = 0.75;
+  const std::string obj_path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const std::string vtk_path =
+      FindResourceOrThrow("drake/geometry/test/cube_as_volume.vtk");
   {
-    SCOPED_TRACE("Rigid Mesh, obj");
-    const std::string file_name =
-        FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-    TestRigidMeshCube(file_name);
+    SCOPED_TRACE("Rigid Mesh, on-disk obj");
+    TestRigidMeshCube(Mesh(obj_path, kScale));
   }
   {
-    SCOPED_TRACE("Rigid Mesh, vtk");
-    const std::string file_name =
-        FindResourceOrThrow("drake/geometry/test/cube_as_volume.vtk");
-    TestRigidMeshCube(file_name);
+    SCOPED_TRACE("Rigid Mesh, on-disk vtk");
+    TestRigidMeshCube(Mesh(vtk_path, kScale));
+  }
+  {
+    SCOPED_TRACE("Rigid Mesh, in-memory vtk");
+    TestRigidMeshCube(Mesh(InMemoryMesh{MemoryFile::Make(vtk_path)}, kScale));
   }
   {
     SCOPED_TRACE("Rigid Mesh, unsupported extension");
-    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshCube("invalid.stl"),
+    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshCube(Mesh("invalid.stl", kScale)),
                                 ".*Mesh shapes can only use .*invalid.stl");
   }
 }
@@ -1253,24 +1257,31 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
 }
 
 // Test construction of a compliant (generally non-convex) tetrahedral mesh.
+// Test against both on-disk and in-memory vtk file. All other mesh types simply
+// default to computation of its convex hull which has been tested as part
+// of the Mesh API against in-memory and on-disk data.
 TEST_F(HydroelasticSoftGeometryTest, Mesh) {
-  const Mesh mesh_specification(
-      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
+  const std::string path =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk");
+  const std::vector<Mesh> meshes{Mesh(path),
+                                 Mesh(InMemoryMesh{MemoryFile::Make(path)})};
+  for (const Mesh& mesh_specification : meshes) {
+    ProximityProperties properties = soft_properties();
+    std::optional<SoftGeometry> compliant_geometry =
+        MakeSoftRepresentation(mesh_specification, properties);
 
-  ProximityProperties properties = soft_properties();
-  std::optional<SoftGeometry> compliant_geometry =
-      MakeSoftRepresentation(mesh_specification, properties);
-
-  // Smoke test the mesh and the pressure field. It relies on unit tests for
-  // the generators of the mesh and the pressure field.
-  const int expected_num_vertices = 6;
-  EXPECT_EQ(compliant_geometry->mesh().num_vertices(), expected_num_vertices);
-  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
-  for (int v = 0; v < compliant_geometry->mesh().num_vertices(); ++v) {
-    const double pressure =
-        compliant_geometry->pressure_field().EvaluateAtVertex(v);
-    EXPECT_GE(pressure, 0);
-    EXPECT_LE(pressure, E);
+    // Smoke test the mesh and the pressure field. It relies on unit tests for
+    // the generators of the mesh and the pressure field.
+    const int expected_num_vertices = 6;
+    EXPECT_EQ(compliant_geometry->mesh().num_vertices(), expected_num_vertices);
+    const double E =
+        properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+    for (int v = 0; v < compliant_geometry->mesh().num_vertices(); ++v) {
+      const double pressure =
+          compliant_geometry->pressure_field().EvaluateAtVertex(v);
+      EXPECT_GE(pressure, 0);
+      EXPECT_LE(pressure, E);
+    }
   }
 }
 

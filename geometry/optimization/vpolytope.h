@@ -31,7 +31,7 @@ and vertices_.cols() are zero, we treat this as no points in {0}, which is
 empty.
 
 @ingroup geometry_optimization */
-class VPolytope final : public ConvexSet, private ShapeReifier {
+class VPolytope final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VPolytope);
 
@@ -141,12 +141,6 @@ class VPolytope final : public ConvexSet, private ShapeReifier {
       std::optional<double> tol) const final;
 
   double DoCalcVolume() const final;
-
-  // Implement support shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Box& box, void* data) final;
-  void ImplementGeometry(const Convex& convex, void* data) final;
-  void ImplementGeometry(const Mesh& mesh, void* data) final;
 
   Eigen::MatrixXd vertices_;
 };

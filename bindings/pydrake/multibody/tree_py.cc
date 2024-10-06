@@ -350,6 +350,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_mass.doc)
         .def("CalcCenterOfMassInBodyFrame", &Class::CalcCenterOfMassInBodyFrame,
             py::arg("context"), cls_doc.CalcCenterOfMassInBodyFrame.doc)
+        .def("CalcCenterOfMassTranslationalVelocityInWorld",
+            &Class::CalcCenterOfMassTranslationalVelocityInWorld,
+            py::arg("context"),
+            cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc)
+        .def("CalcCenterOfMassTranslationalAccelerationInWorld",
+            &Class::CalcCenterOfMassTranslationalAccelerationInWorld,
+            py::arg("context"),
+            cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld.doc)
         .def("CalcSpatialInertiaInBodyFrame",
             &Class::CalcSpatialInertiaInBodyFrame, py::arg("context"),
             cls_doc.CalcSpatialInertiaInBodyFrame.doc)
@@ -492,6 +500,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "BallRpyJoint", param, cls_doc.doc);
     cls  // BR
+        .def_property_readonly_static(
+            "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
             py::arg("name"), py::arg("frame_on_parent"),
@@ -523,6 +533,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "PlanarJoint", param, cls_doc.doc);
     cls  // BR
+        .def_property_readonly_static(
+            "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  Vector3<double>>(),
             py::arg("name"), py::arg("frame_on_parent"),
@@ -572,6 +584,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "PrismaticJoint", param, cls_doc.doc);
     cls  // BR
+        .def_property_readonly_static(
+            "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double, double, double>(),
             py::arg("name"), py::arg("frame_on_parent"),
@@ -628,6 +642,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "QuaternionFloatingJoint", param, cls_doc.doc);
     cls  // BR
+        .def_property_readonly_static(
+            "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
             py::arg("name"), py::arg("frame_on_parent"),
@@ -688,6 +704,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "RevoluteJoint", param, cls_doc.doc);
     cls  // BR
+        .def_property_readonly_static(
+            "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double>(),
             py::arg("name"), py::arg("frame_on_parent"),
@@ -744,6 +762,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "RpyFloatingJoint", param, cls_doc.doc);
     cls  // BR
+        .def_property_readonly_static(
+            "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
             py::arg("name"), py::arg("frame_on_parent"),
@@ -801,6 +821,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "ScrewJoint", param, cls_doc.doc);
     cls  // BR
+        .def_property_readonly_static(
+            "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
             py::arg("name"), py::arg("frame_on_parent"),
@@ -854,6 +876,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "UniversalJoint", param, cls_doc.doc);
     cls  // BR
+        .def_property_readonly_static(
+            "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
             py::arg("name"), py::arg("frame_on_parent"),
@@ -884,6 +908,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "WeldJoint", param, cls_doc.doc);
     cls  // BR
+        .def_property_readonly_static(
+            "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const RigidTransform<double>&>(),
             py::arg("name"), py::arg("frame_on_parent_F"),
@@ -1149,6 +1175,7 @@ PYBIND11_MODULE(tree, m) {
 
   py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.multibody.math");
+  py::module::import("pydrake.systems.framework");
 
   internal::DefineTreeInertia(m);
   DoScalarIndependentDefinitions(m);

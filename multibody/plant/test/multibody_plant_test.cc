@@ -672,12 +672,6 @@ class AcrobotPlantTests : public ::testing::Test {
     DRAKE_EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
     DRAKE_EXPECT_NO_THROW(plant_->get_geometry_pose_output_port());
 
-    // Also sanity check the deprecated getter (2024-10-01).
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    DRAKE_EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
-#pragma GCC diagnostic push
-
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_state_output_port(),
         /* Verify this method is throwing for the right reasons. */
@@ -1747,9 +1741,7 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
       {"state", false},
       {"body_poses", false},
       {"body_spatial_velocities", false},
-      {"spatial_velocities", false},  // Deprecated synonym 2024-10-01.
       {"body_spatial_accelerations", !is_sampled},
-      {"spatial_accelerations", !is_sampled},  // Deprecated synonym 2024-10-01.
       {"generalized_acceleration", !is_sampled},
       {"net_actuation", !is_sampled},
       {"reaction_forces", !is_sampled},
@@ -2088,30 +2080,6 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
               "empty.png");
   }
 }
-
-// Deprecated for removal on 2024-10-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
-  PendulumParameters parameters;
-  unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
-  unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
-
-  // We connect a SceneGraph to the pendulum plant in order to enforce the
-  // creation of geometry input/output ports. This ensures the call to
-  // CalcPointPairPenetrations evaluates appropriately.
-  geometry::SceneGraph<double> scene_graph;
-  pendulum->RegisterAsSourceForSceneGraph(&scene_graph);
-
-  auto autodiff_pendulum =
-      drake::systems::System<double>::ToAutoDiffXd(*pendulum.get());
-  auto autodiff_context = autodiff_pendulum->CreateDefaultContext();
-
-  // This test case contains no collisions, and hence we should not throw.
-  DRAKE_EXPECT_NO_THROW(
-      autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
-}
-#pragma GCC diagnostic pop
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
@@ -4501,6 +4469,35 @@ GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.RemoveConstraint(coupler_id2),
       ".*Post-finalize calls to .*RemoveConstraint.* are not allowed.*");
+}
+
+GTEST_TEST(MultibodyPlantTests, FinalizeConstraints) {
+  // Set up a plant with partially specified constraints that must be finalized.
+  MultibodyPlant<double> plant(0.01);
+  // N.B. This feature is only supported by the SAP solver. Therefore we
+  // arbitrarily choose one model approximation that uses the SAP solver.
+  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  const Body<double>& body_A =
+      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
+  const Body<double>& body_B =
+      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
+  RigidTransformd X_WA(Vector3d(-1.0, -2.0, -3.0));
+  plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), X_WA, body_A,
+                                std::nullopt, Vector3d::UnitZ());
+  RigidTransformd X_WB(Vector3d(1.2, 3.4, 5.6));
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("body_B"), X_WB);
+
+  Vector3d p_AP = Vector3d(4.0, 5.0, 6.0);
+  MultibodyConstraintId ball_id = plant.AddBallConstraint(
+      body_A, p_AP, body_B, std::nullopt /* p_BQ is left unspecified */);
+  EXPECT_FALSE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
+
+  plant.Finalize();
+
+  Vector3d p_BQ = X_WB.inverse() * X_WA * p_AP;  // since Q == P.
+  ASSERT_TRUE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
+  EXPECT_TRUE(CompareMatrices(
+      plant.get_ball_constraint_specs(ball_id).p_BQ.value(), p_BQ, 1e-14));
 }
 
 GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {

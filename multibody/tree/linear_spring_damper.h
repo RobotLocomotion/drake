@@ -10,7 +10,8 @@
 namespace drake {
 namespace multibody {
 
-template <typename T> class RigidBody;
+template <typename T>
+class RigidBody;
 
 /// This %ForceElement models a spring-damper attached between two points on
 /// two different bodies.
@@ -61,10 +62,9 @@ class LinearSpringDamper final : public ForceElement<T> {
   /// @throws std::exception if `free_length` is negative or zero.
   /// @throws std::exception if `stiffness` is negative.
   /// @throws std::exception if `damping` is negative.
-  LinearSpringDamper(
-      const RigidBody<T>& bodyA, const Vector3<double>& p_AP,
-      const RigidBody<T>& bodyB, const Vector3<double>& p_BQ,
-      double free_length, double stiffness, double damping);
+  LinearSpringDamper(const RigidBody<T>& bodyA, const Vector3<double>& p_AP,
+                     const RigidBody<T>& bodyB, const Vector3<double>& p_BQ,
+                     double free_length, double stiffness, double damping);
 
   ~LinearSpringDamper() override;
 
@@ -131,7 +131,7 @@ class LinearSpringDamper final : public ForceElement<T> {
   // This spring model does not allow the length of the spring to approach zero
   // since that would incur in a non-physical situation. Therefore this "safe"
   // norm will throw a std::exception when ‖x‖ < δ.
-  T SafeSoftNorm(const Vector3<T> &x) const;
+  T SafeSoftNorm(const Vector3<T>& x) const;
 
   // Helper method to compute the rate of change of the separation length
   // between the two endpoints for this spring-damper.

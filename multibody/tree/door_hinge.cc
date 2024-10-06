@@ -119,10 +119,8 @@ T DoorHinge<T>::CalcHingeSpringTorque(const T& angle) const {
 }
 
 template <typename T>
-T DoorHinge<T>::CalcHingeTorque(const T& angle,
-                                const T& angular_rate) const {
-  return CalcHingeFrictionalTorque(angular_rate) +
-         CalcHingeSpringTorque(angle);
+T DoorHinge<T>::CalcHingeTorque(const T& angle, const T& angular_rate) const {
+  return CalcHingeFrictionalTorque(angular_rate) + CalcHingeSpringTorque(angle);
 }
 
 template <typename T>

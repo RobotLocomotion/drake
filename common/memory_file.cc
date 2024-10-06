@@ -44,4 +44,17 @@ MemoryFile::MemoryFile(std::string contents, std::string extension,
                      std::string::npos);
 }
 
+MemoryFile::~MemoryFile() = default;
+
+std::string MemoryFile::to_string(int contents_limit) const {
+  const std::string contents_str =
+      contents_limit <= 0 || contents_limit >= ssize(contents_.value())
+          ? contents_.value()
+          : fmt::format("<{}...>", contents_.value().substr(0, contents_limit));
+
+  return fmt::format(
+      "MemoryFile(filename_hint=\"{}\", contents=\"{}\", extension=\"{}\")",
+      filename_hint_.value(), contents_str, extension_.value());
+}
+
 }  // namespace drake

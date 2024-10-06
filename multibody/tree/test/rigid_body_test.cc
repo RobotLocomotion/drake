@@ -46,7 +46,7 @@ GTEST_TEST(RigidBody, RigidBodyConstructor2) {
   // Test that RigidBody class properly calculates rotational inertia.
   const RotationalInertia<double> I_BBo_B_expected = mass * G_BBo_B;
   const RotationalInertia<double> I_BBo_B = B.default_rotational_inertia();
-  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(I_BBo_B_expected, 4.0*kEpsilon));
+  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(I_BBo_B_expected, 4.0 * kEpsilon));
 }
 
 // Test rigid body 1-argument constructor.
@@ -94,7 +94,7 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
   double mass = 3;     // mass of body B in kilograms.
   const double L = 2;  // x-measure of Bcm's position from Bo in meters.
   Vector3d p_BoBcm_B(L, 0, 0);  // Position from Bo to Bcm, expressed in B.
-  const UnitInertia<double> G_BBo_B(0, L*L, L*L);
+  const UnitInertia<double> G_BBo_B(0, L * L, L * L);
   SpatialInertia<double> M_BBo_B(mass, p_BoBcm_B, G_BBo_B);
   systems::Context<double>* context_ptr = context_.get();
   rigid_body_->SetSpatialInertiaInBodyFrame(context_ptr, M_BBo_B);
@@ -104,13 +104,14 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
   const SpatialInertia<double> M_BBo_B_test =
       rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
   EXPECT_TRUE(CompareMatrices(M_BBo_B_test.CopyToFullMatrix6(),
-      M_BBo_B.CopyToFullMatrix6(), kTolerance));
+                              M_BBo_B.CopyToFullMatrix6(), kTolerance));
 
   // Verify rotational inertia is of a single particle at B's center of mass.
   RotationalInertia<double> I_BBo_B_expected(mass, p_BoBcm_B);
   RotationalInertia<double> I_BBo_B = M_BBo_B.CalcRotationalInertia();
   EXPECT_TRUE(CompareMatrices(I_BBo_B.CopyToFullMatrix3(),
-      I_BBo_B_expected.CopyToFullMatrix3(), kTolerance));
+                              I_BBo_B_expected.CopyToFullMatrix3(),
+                              kTolerance));
 
   // Verify B's unit inertia about Bcm is zero.
   SpatialInertia<double> M_BBcm_B = M_BBo_B.Shift(p_BoBcm_B);
@@ -126,40 +127,44 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
   M_BBo_B = rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
   SpatialInertia<double> M_BBo_B_expected(mass, p_BoBcm_B, G_BBo_B);
   EXPECT_TRUE(CompareMatrices(M_BBo_B.CopyToFullMatrix6(),
-      M_BBo_B_expected.CopyToFullMatrix6(), kTolerance));
+                              M_BBo_B_expected.CopyToFullMatrix6(),
+                              kTolerance));
   M_BBcm_B = M_BBo_B.Shift(p_BoBcm_B);
   G_BBcm_B = M_BBcm_B.get_unit_inertia();
   EXPECT_TRUE(G_BBcm_B.IsNearlyEqualTo(G_BBcm_B_expected, kTolerance));
 
   // Change p_BoBcm_B and ensure it propagates albeit in a weird way, with
   // unchanged mass, changed p_Bo_Bcm_B, unchanged G_BBo_B, changed G_BBcm_B.
-  p_BoBcm_B = Vector3d(L/2, 0, 0);  // Now p_BoBcm_B = (1, 0, 0).
+  p_BoBcm_B = Vector3d(L / 2, 0, 0);  // Now p_BoBcm_B = (1, 0, 0).
   rigid_body_->SetCenterOfMassInBodyFrame(context_ptr, p_BoBcm_B);
   const Vector3d p_BoBcm_B_calculated =
       rigid_body_->CalcCenterOfMassInBodyFrame(*context_);
-  EXPECT_EQ(p_BoBcm_B_calculated, p_BoBcm_B);      // Position vector changes.
+  EXPECT_EQ(p_BoBcm_B_calculated, p_BoBcm_B);  // Position vector changes.
   EXPECT_EQ(rigid_body_->get_mass(*context_), mass);  // Mass is unchanged.
   M_BBo_B = rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
   const UnitInertia<double> G_BBo_B_test = M_BBo_B.get_unit_inertia();
   EXPECT_TRUE(CompareMatrices(G_BBo_B_test.CopyToFullMatrix3(),
-      G_BBo_B.CopyToFullMatrix3(), kTolerance));  // G_BBo_B is unchanged.
+                              G_BBo_B.CopyToFullMatrix3(),
+                              kTolerance));  // G_BBo_B is unchanged.
 
   // Ensure M_BBo_B has proper mass, proper p_BoBcm_B, and unchanged G_BBo_B.
   M_BBo_B_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBo_B);
   EXPECT_TRUE(CompareMatrices(M_BBo_B.CopyToFullMatrix6(),
-      M_BBo_B_expected.CopyToFullMatrix6(), kTolerance));
+                              M_BBo_B_expected.CopyToFullMatrix6(),
+                              kTolerance));
 
   // Verify G_BBcm_B changes in a strange way if p_BBcm_B is changed!
   // G_BBcm_B is _not_ the unit inertia of a particle at B's center of mass.
   G_BBcm_B = G_BBo_B.ShiftToCenterOfMass(p_BoBcm_B);
   G_BBcm_B_expected = UnitInertia<double>(0, 3, 3);  // By-hand calculation.
   EXPECT_TRUE(CompareMatrices(G_BBcm_B.CopyToFullMatrix3(),
-    G_BBcm_B_expected.CopyToFullMatrix3(), kTolerance));
+                              G_BBcm_B_expected.CopyToFullMatrix3(),
+                              kTolerance));
 
   // Show that calling SetCenterOfMassInBodyFrame() can cause an exception to
   // be thrown due to non-physical mass/inertia properties.
 #ifdef DRAKE_ASSERT_IS_ARMED
-  p_BoBcm_B = Vector3d(3*L, 0, 0);  // Now p_BoBcm_B = (6, 0, 0).
+  p_BoBcm_B = Vector3d(3 * L, 0, 0);  // Now p_BoBcm_B = (6, 0, 0).
   rigid_body_->SetCenterOfMassInBodyFrame(context_ptr, p_BoBcm_B);
 
   // CalcSpatialInertiaInBodyFrame() does not check whether B's inertia
@@ -169,7 +174,8 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
   const Vector3d com = M_BBo_B.get_com();
   const UnitInertia<double> G = M_BBo_B.get_unit_inertia();
   // Ensure M_BBcm_B is invalid via the spatial inertia constructor.
-  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>(m, com, G),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>(m, com, G),
       "Spatial inertia fails SpatialInertia::IsPhysicallyValid[^]*");
 #endif
 }
@@ -180,7 +186,7 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrameAndPreserveCentralInertia) {
   double mass = 3;     // mass of body B in kilograms.
   const double L = 2;  // x-measure of Bcm's position from Bo in meters.
   Vector3d p_BoBcm_B(L, 0, 0);  // Position from Bo to Bcm, expressed in B.
-  const UnitInertia<double> G_BBo_B(0, L*L, L*L);  // By-hand calculation.
+  const UnitInertia<double> G_BBo_B(0, L * L, L * L);  // By-hand calculation.
   SpatialInertia<double> M_BBo_B(mass, p_BoBcm_B, G_BBo_B);
   systems::Context<double>* context_ptr = context_.get();
   rigid_body_->SetSpatialInertiaInBodyFrame(context_ptr, M_BBo_B);
@@ -190,13 +196,14 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrameAndPreserveCentralInertia) {
   const SpatialInertia<double> M_BBo_B_test =
       rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
   EXPECT_TRUE(CompareMatrices(M_BBo_B_test.CopyToFullMatrix6(),
-      M_BBo_B.CopyToFullMatrix6(), kTolerance));
+                              M_BBo_B.CopyToFullMatrix6(), kTolerance));
 
   // Verify rotational inertia is of a single particle at B's center of mass.
   RotationalInertia<double> I_BBo_B_expected(mass, p_BoBcm_B);
   RotationalInertia<double> I_BBo_B = M_BBo_B.CalcRotationalInertia();
   EXPECT_TRUE(CompareMatrices(I_BBo_B.CopyToFullMatrix3(),
-      I_BBo_B_expected.CopyToFullMatrix3(), kTolerance));
+                              I_BBo_B_expected.CopyToFullMatrix3(),
+                              kTolerance));
 
   // Verify B's unit inertia about Bcm is zero.
   SpatialInertia<double> M_BBcm_B = M_BBo_B.Shift(p_BoBcm_B);
@@ -212,16 +219,17 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrameAndPreserveCentralInertia) {
   M_BBo_B = rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
   SpatialInertia<double> M_BBo_B_expected(mass, p_BoBcm_B, G_BBo_B);
   EXPECT_TRUE(CompareMatrices(M_BBo_B.CopyToFullMatrix6(),
-      M_BBo_B_expected.CopyToFullMatrix6(), kTolerance));
+                              M_BBo_B_expected.CopyToFullMatrix6(),
+                              kTolerance));
   M_BBcm_B = M_BBo_B.Shift(p_BoBcm_B);
   G_BBcm_B = M_BBcm_B.get_unit_inertia();
   EXPECT_TRUE(G_BBcm_B.IsNearlyEqualTo(G_BBcm_B_expected_zero, kTolerance));
 
   // Change p_BoBcm_B and ensure it propagates properly.
   // First, ensure p_BoBcm_B properly changes.
-  p_BoBcm_B = Vector3d(L/2, 0, 0);  // Now p_BoBcm_B = (1, 0, 0).
-  rigid_body_->SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
-      context_ptr, p_BoBcm_B);
+  p_BoBcm_B = Vector3d(L / 2, 0, 0);  // Now p_BoBcm_B = (1, 0, 0).
+  rigid_body_->SetCenterOfMassInBodyFrameAndPreserveCentralInertia(context_ptr,
+                                                                   p_BoBcm_B);
   const Vector3d p_BoBcm_B_calculated =
       rigid_body_->CalcCenterOfMassInBodyFrame(*context_);
   EXPECT_EQ(p_BoBcm_B_calculated, p_BoBcm_B);
@@ -234,7 +242,8 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrameAndPreserveCentralInertia) {
   I_BBo_B = M_BBo_B.CalcRotationalInertia();
   I_BBo_B_expected = RotationalInertia<double>(mass, p_BoBcm_B);
   EXPECT_TRUE(CompareMatrices(I_BBo_B.CopyToFullMatrix3(),
-      I_BBo_B_expected.CopyToFullMatrix3(), kTolerance));
+                              I_BBo_B_expected.CopyToFullMatrix3(),
+                              kTolerance));
 
   // Verify B's unit inertia about Bcm is still zero.
   M_BBcm_B = M_BBo_B.Shift(p_BoBcm_B);
@@ -242,10 +251,12 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrameAndPreserveCentralInertia) {
   EXPECT_TRUE(G_BBcm_B.IsNearlyEqualTo(G_BBcm_B_expected_zero, kTolerance));
 
   // Ensure M_BBo_B has proper mass, proper p_BoBcm_B, and proper G_BBo_B.
-  UnitInertia<double> G_BBo_B_expected = UnitInertia<double>(0, L*L/4, L*L/4);
+  UnitInertia<double> G_BBo_B_expected =
+      UnitInertia<double>(0, L * L / 4, L * L / 4);
   M_BBo_B_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBo_B_expected);
   EXPECT_TRUE(CompareMatrices(M_BBo_B.CopyToFullMatrix6(),
-      M_BBo_B_expected.CopyToFullMatrix6(), kTolerance));
+                              M_BBo_B_expected.CopyToFullMatrix6(),
+                              kTolerance));
 }
 
 }  // namespace

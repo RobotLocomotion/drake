@@ -38,21 +38,34 @@
 
 namespace drake {
 namespace pydrake {
+namespace {
 
-// CSpaceSeparatingPlane, CIrisSeparatingPlane
-template <typename T>
-void DoSeparatingPlaneDeclaration(py::module m, T) {
-  constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
-  py::tuple param = GetPyParam<T>();
-  using Class = geometry::optimization::CSpaceSeparatingPlane<T>;
-  constexpr auto& base_cls_doc = doc.CSpaceSeparatingPlane;
-  {
-    auto cls =
-        DefineTemplateClassWithDefault<Class>(
-            m, "CSpaceSeparatingPlane", param, base_cls_doc.doc)
-            // Use py_rvp::copy here because numpy.ndarray with dtype=object
-            // arrays must be copied, and cannot be referenced.
-            .def_readonly("a", &Class::a, py_rvp::copy, base_cls_doc.a.doc)
+// NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+using namespace drake::geometry;
+// NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+using namespace drake::geometry::optimization;
+constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
+
+// Definitions for cspace_separating_plane.h.
+void DefineCspaceSeparatingPlane(py::module m) {
+  py::enum_<SeparatingPlaneOrder>(
+      m, "SeparatingPlaneOrder", doc.SeparatingPlaneOrder.doc)
+      .value("kAffine", SeparatingPlaneOrder::kAffine,
+          doc.SeparatingPlaneOrder.kAffine.doc);
+
+  type_visit(
+      [m]<typename T>(const T& /* unused */) {
+        py::tuple param = GetPyParam<T>();
+        using Class = geometry::optimization::CSpaceSeparatingPlane<T>;
+        constexpr auto& base_cls_doc = doc.CSpaceSeparatingPlane;
+        auto cls = DefineTemplateClassWithDefault<Class>(
+            m, "CSpaceSeparatingPlane", param, base_cls_doc.doc);
+        cls  // BR
+            .def_readonly("a", &Class::a,
+                // Use py_rvp::copy here because numpy.ndarray with
+                // dtype=object arrays must be copied, and cannot be
+                // referenced.
+                py_rvp::copy, base_cls_doc.a.doc)
             .def_readonly("b", &Class::b, base_cls_doc.b.doc)
             .def_readonly("positive_side_geometry",
                 &Class::positive_side_geometry,
@@ -63,27 +76,18 @@ void DoSeparatingPlaneDeclaration(py::module m, T) {
             .def_readonly("expressed_body", &Class::expressed_body,
                 base_cls_doc.expressed_body.doc)
             .def_readonly("plane_degree", &Class::plane_degree)
-            // Use py_rvp::copy here because numpy.ndarray with dtype=object
-            // arrays must be copied, and cannot be referenced.
             .def_readonly("decision_variables", &Class::decision_variables,
+                // Use py_rvp::copy here because numpy.ndarray with
+                // dtype=object arrays must be copied, and cannot be
+                // referenced.
                 py_rvp::copy, base_cls_doc.a.doc);
-    DefCopyAndDeepCopy(&cls);
-    AddValueInstantiation<Class>(m);
-  }
+        DefCopyAndDeepCopy(&cls);
+        AddValueInstantiation<Class>(m);
+      },
+      type_pack<double, symbolic::Variable>());
 }
 
-void DefineGeometryOptimization(py::module m) {
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake;
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::geometry;
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::geometry::optimization;
-  m.doc() = "Local bindings for `drake::geometry::optimization`";
-  constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
-
-  py::module::import("pydrake.solvers");
-
+void DefineConvexSetBaseClassAndSubclasses(py::module m) {
   // SampledVolume. This struct must be declared before ConvexSet as methods in
   // ConvexSet depend on this struct.
   {
@@ -146,10 +150,16 @@ void DefineGeometryOptimization(py::module m) {
         .def("Projection", &ConvexSet::Projection, py::arg("points"),
             cls_doc.Projection.doc);
   }
-  // There is a dependency cycle between Hyperellipsoid and AffineBall, so we
+
+  // There is a dependency cycle between Hyperellipsoid <=> AffineBall, so we
   // need to "forward declare" the Hyperellipsoid class here.
   py::class_<Hyperellipsoid, ConvexSet> hyperellipsoid_cls(
       m, "Hyperellipsoid", doc.Hyperellipsoid.doc);
+
+  // There is a dependency cycle between VPolytope <=> HPolyhedron, so we
+  // need to "forward declare" the VPolytope class here.
+  py::class_<VPolytope, ConvexSet> vpolytope_cls(
+      m, "VPolytope", doc.VPolytope.doc);
 
   // AffineBall
   {
@@ -502,7 +512,7 @@ void DefineGeometryOptimization(py::module m) {
   // VPolytope
   {
     const auto& cls_doc = doc.VPolytope;
-    py::class_<VPolytope, ConvexSet>(m, "VPolytope", cls_doc.doc)
+    vpolytope_cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(),
             py::arg("vertices"), cls_doc.ctor.doc_vertices)
@@ -525,7 +535,9 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::pickle([](const VPolytope& self) { return self.vertices(); },
             [](Eigen::MatrixXd arg) { return VPolytope(arg); }));
   }
+}
 
+void DefineIris(py::module m) {
   {
     const auto& cls_doc = doc.IrisOptions;
     py::class_<IrisOptions> iris_options(m, "IrisOptions", cls_doc.doc);
@@ -568,6 +580,9 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.starting_ellipse.doc)
         .def_readwrite("bounding_region", &IrisOptions::bounding_region,
             cls_doc.bounding_region.doc)
+        .def_readwrite("verify_domain_boundedness",
+            &IrisOptions::verify_domain_boundedness,
+            cls_doc.verify_domain_boundedness.doc)
         .def_readwrite("num_additional_constraint_infeasible_samples",
             &IrisOptions::num_additional_constraint_infeasible_samples,
             cls_doc.num_additional_constraint_infeasible_samples.doc)
@@ -660,7 +675,9 @@ void DefineGeometryOptimization(py::module m) {
       },
       py::arg("filename"), py::arg("child_name") = std::nullopt,
       "Calls LoadYamlFile() to deserialize an IrisRegions object.");
+}
 
+void DefineGraphOfConvexSetsAndRelated(py::module m) {
   // GraphOfConvexSetsOptions
   {
     const auto& cls_doc = doc.GraphOfConvexSetsOptions;
@@ -1055,8 +1072,11 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("initial_guess") = nullptr,
             cls_doc.SolveConvexRestriction.doc);
   }
+}
+
+// Definitions for c_iris_collision_geometry.h.
+void DefineCIrisCollisionGeometry(py::module m) {
   {
-    // Definitions for c_iris_collision_geometry.h/cc
     py::enum_<PlaneSide>(m, "PlaneSide", doc.PlaneSide.doc)
         .value("kPositive", PlaneSide::kPositive)
         .value("kNegative", PlaneSide::kNegative);
@@ -1087,16 +1107,11 @@ void DefineGeometryOptimization(py::module m) {
         .def("num_rationals", &CIrisCollisionGeometry::num_rationals,
             doc.CIrisCollisionGeometry.num_rationals.doc);
   }
+}
+
+// Definitions for cpsace_free_structs.h.
+void DefineCspaceFreeStructs(py::module m) {
   {
-    py::enum_<SeparatingPlaneOrder>(
-        m, "SeparatingPlaneOrder", doc.SeparatingPlaneOrder.doc)
-        .value("kAffine", SeparatingPlaneOrder::kAffine,
-            doc.SeparatingPlaneOrder.kAffine.doc);
-    type_visit([m](auto dummy) { DoSeparatingPlaneDeclaration(m, dummy); },
-        type_pack<double, symbolic::Variable>());
-  }
-  {
-    // Definitions for cpsace_free_structs.h/cc
     constexpr auto& prog_doc = doc.SeparationCertificateProgramBase;
     auto prog_cls = py::class_<SeparationCertificateProgramBase>(
         m, "SeparationCertificateProgramBase", prog_doc.doc)
@@ -1135,6 +1150,9 @@ void DefineGeometryOptimization(py::module m) {
             .def_readwrite("solver_options",
                 &FindSeparationCertificateOptions::solver_options);
   }
+}
+
+void DefineCspaceFreePolytopeAndRelated(py::module m) {
   {
     using BaseClass = CspaceFreePolytopeBase;
     const auto& base_cls_doc = doc.CspaceFreePolytopeBase;
@@ -1165,56 +1183,7 @@ void DefineGeometryOptimization(py::module m) {
     const auto& cls_doc = doc.CspaceFreePolytope;
     py::class_<Class, BaseClass> cspace_free_polytope_cls(
         m, "CspaceFreePolytope", cls_doc.doc);
-    cspace_free_polytope_cls
-        .def(py::init<const multibody::MultibodyPlant<double>*,
-                 const geometry::SceneGraph<double>*, SeparatingPlaneOrder,
-                 const Eigen::Ref<const Eigen::VectorXd>&,
-                 const Class::Options&>(),
-            py::arg("plant"), py::arg("scene_graph"), py::arg("plane_order"),
-            py::arg("q_star"), py::arg("options") = Class::Options(),
-            // Keep alive, reference: `self` keeps `plant` alive.
-            py::keep_alive<1, 2>(),
-            // Keep alive, reference: `self` keeps `scene_graph` alive.
-            py::keep_alive<1, 3>(), cls_doc.ctor.doc)
-        .def(
-            "FindSeparationCertificateGivenPolytope",
-            [](const CspaceFreePolytope* self,
-                const Eigen::Ref<const Eigen::MatrixXd>& C,
-                const Eigen::Ref<const Eigen::VectorXd>& d,
-                const CspaceFreePolytope::IgnoredCollisionPairs&
-                    ignored_collision_pairs,
-                const CspaceFreePolytope::
-                    FindSeparationCertificateGivenPolytopeOptions& options) {
-              std::unordered_map<SortedPair<geometry::GeometryId>,
-                  CspaceFreePolytope::SeparationCertificateResult>
-                  certificates;
-              bool success = self->FindSeparationCertificateGivenPolytope(
-                  C, d, ignored_collision_pairs, options, &certificates);
-              return std::pair(success, certificates);
-            },
-            py::arg("C"), py::arg("d"), py::arg("ignored_collision_pairs"),
-            py::arg("options"),
-            // The `options` contains a `Parallelism`; we must release the GIL.
-            py::call_guard<py::gil_scoped_release>(),
-            cls_doc.FindSeparationCertificateGivenPolytope.doc)
-        .def("SearchWithBilinearAlternation",
-            &Class::SearchWithBilinearAlternation,
-            py::arg("ignored_collision_pairs"), py::arg("C_init"),
-            py::arg("d_init"), py::arg("options"),
-            cls_doc.SearchWithBilinearAlternation.doc)
-        .def("BinarySearch", &Class::BinarySearch,
-            py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
-            py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc)
-        .def("MakeIsGeometrySeparableProgram",
-            &Class::MakeIsGeometrySeparableProgram, py::arg("geometry_pair"),
-            py::arg("C"), py::arg("d"),
-            cls_doc.MakeIsGeometrySeparableProgram.doc)
-        .def("SolveSeparationCertificateProgram",
-            &Class::SolveSeparationCertificateProgram,
-            py::arg("certificate_program"), py::arg("options"),
-            // The `options` contains a `Parallelism`; we must release the GIL.
-            py::call_guard<py::gil_scoped_release>(),
-            cls_doc.SolveSeparationCertificateProgram.doc);
+
     py::class_<Class::SeparatingPlaneLagrangians>(cspace_free_polytope_cls,
         "SeparatingPlaneLagrangians", cls_doc.SeparatingPlaneLagrangians.doc)
         .def(py::init<int, int>(), py::arg("C_rows"), py::arg("s_size"),
@@ -1351,9 +1320,61 @@ void DefineGeometryOptimization(py::module m) {
             "convergence_tol", &Class::BinarySearchOptions::convergence_tol)
         .def_readonly("find_lagrangian_options",
             &Class::BinarySearchOptions::find_lagrangian_options);
-  }
 
-  using drake::geometry::optimization::ConvexSet;
+    cspace_free_polytope_cls
+        .def(py::init<const multibody::MultibodyPlant<double>*,
+                 const geometry::SceneGraph<double>*, SeparatingPlaneOrder,
+                 const Eigen::Ref<const Eigen::VectorXd>&,
+                 const Class::Options&>(),
+            py::arg("plant"), py::arg("scene_graph"), py::arg("plane_order"),
+            py::arg("q_star"), py::arg("options") = Class::Options(),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `scene_graph` alive.
+            py::keep_alive<1, 3>(), cls_doc.ctor.doc)
+        .def(
+            "FindSeparationCertificateGivenPolytope",
+            [](const CspaceFreePolytope* self,
+                const Eigen::Ref<const Eigen::MatrixXd>& C,
+                const Eigen::Ref<const Eigen::VectorXd>& d,
+                const CspaceFreePolytope::IgnoredCollisionPairs&
+                    ignored_collision_pairs,
+                const CspaceFreePolytope::
+                    FindSeparationCertificateGivenPolytopeOptions& options) {
+              std::unordered_map<SortedPair<geometry::GeometryId>,
+                  CspaceFreePolytope::SeparationCertificateResult>
+                  certificates;
+              bool success = self->FindSeparationCertificateGivenPolytope(
+                  C, d, ignored_collision_pairs, options, &certificates);
+              return std::pair(success, certificates);
+            },
+            py::arg("C"), py::arg("d"), py::arg("ignored_collision_pairs"),
+            py::arg("options"),
+            // The `options` contains a `Parallelism`; we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
+            cls_doc.FindSeparationCertificateGivenPolytope.doc)
+        .def("SearchWithBilinearAlternation",
+            &Class::SearchWithBilinearAlternation,
+            py::arg("ignored_collision_pairs"), py::arg("C_init"),
+            py::arg("d_init"), py::arg("options"),
+            cls_doc.SearchWithBilinearAlternation.doc)
+        .def("BinarySearch", &Class::BinarySearch,
+            py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
+            py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc)
+        .def("MakeIsGeometrySeparableProgram",
+            &Class::MakeIsGeometrySeparableProgram, py::arg("geometry_pair"),
+            py::arg("C"), py::arg("d"),
+            cls_doc.MakeIsGeometrySeparableProgram.doc)
+        .def("SolveSeparationCertificateProgram",
+            &Class::SolveSeparationCertificateProgram,
+            py::arg("certificate_program"), py::arg("options"),
+            // The `options` contains a `Parallelism`; we must release the GIL.
+            py::call_guard<py::gil_scoped_release>(),
+            cls_doc.SolveSeparationCertificateProgram.doc);
+  }
+}
+
+void DefineGeodesicConvexity(py::module m) {
   m.def("CheckIfSatisfiesConvexityRadius", &CheckIfSatisfiesConvexityRadius,
       py::arg("convex_set"), py::arg("continuous_revolute_joints"),
       doc.CheckIfSatisfiesConvexityRadius.doc);
@@ -1518,7 +1539,24 @@ void DefineGeometryOptimization(py::module m) {
       doc.CalcPairwiseIntersections
           .doc_deprecated_deprecated_3args_convex_sets_continuous_revolute_joints_bboxes);
 #pragma GCC diagnostic pop
-  // NOLINTNEXTLINE(readability/fn_size)
+}
+
+}  // namespace
+
+void DefineGeometryOptimization(py::module m) {
+  m.doc() = "Local bindings for `drake::geometry::optimization`";
+
+  py::module::import("pydrake.solvers");
+
+  // This list must remain in topological dependency order.
+  DefineConvexSetBaseClassAndSubclasses(m);
+  DefineGeodesicConvexity(m);
+  DefineGraphOfConvexSetsAndRelated(m);
+  DefineIris(m);
+  DefineCIrisCollisionGeometry(m);
+  DefineCspaceSeparatingPlane(m);
+  DefineCspaceFreeStructs(m);
+  DefineCspaceFreePolytopeAndRelated(m);
 }
 
 }  // namespace pydrake

@@ -140,11 +140,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
 
   EXPECT_NO_THROW(gcs.GetGraphvizString(
       &new_result, geometry::optimization::GcsGraphvizOptions()));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_NO_THROW(gcs.GetGraphvizString(
-      new_result, geometry::optimization::GcsGraphvizOptions()));
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, PathLengthCost) {
@@ -2534,14 +2529,15 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
   // the goal, for a total of 7.
   const int expected_num_edges = 7;
 
-  // Add edges without offsets. This makes the problem infeasible.
+  // Add edges without specifying the offsets. The AddEdges method should
+  // compute them automatically.
   gcs.AddEdges(start, subgraph1, nullptr, &edges_start_1);
   gcs.AddEdges(subgraph1, subgraph2, nullptr, &edges_1_2);
   gcs.AddEdges(subgraph2, goal, nullptr, &edges_2_goal);
   EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
-  auto [traj_fail, result_fail] = gcs.SolvePath(start, goal);
-  unused(traj_fail);
-  EXPECT_FALSE(result_fail.is_success());
+  auto [traj1, result1] = gcs.SolvePath(start, goal);
+  unused(traj1);
+  EXPECT_TRUE(result1.is_success());
 
   // Add edges with the offset. (We remove and re-add the middle twosubgraphs to
   // clear the edges.)
@@ -2553,9 +2549,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
   gcs.AddEdges(new_subgraph1, new_subgraph2, nullptr, &edges_1_2, &offsets_1_2);
   gcs.AddEdges(new_subgraph2, goal, nullptr, &edges_2_goal, &offsets_2_goal);
   EXPECT_EQ(gcs.graph_of_convex_sets().Edges().size(), expected_num_edges);
-  auto [traj_succeed, result_succeed] = gcs.SolvePath(start, goal);
-  unused(traj_succeed);
-  EXPECT_TRUE(result_succeed.is_success());
+  auto [traj2, result2] = gcs.SolvePath(start, goal);
+  unused(traj2);
+  EXPECT_TRUE(result2.is_success());
 
   // Throw if edges and offsets have mismatched lengths.
   offsets_2_goal.emplace_back(Vector1d(0));
@@ -2569,18 +2565,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ManuallySpecifyEdges) {
   EXPECT_THROW(gcs.AddEdges(new_subgraph2, goal, nullptr, &edges_2_goal,
                             &offsets_2_goal),
                std::exception);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_NO_THROW(gcs.AddEdges(start, new_subgraph1, nullptr, edges_start_1,
-                               offsets_start_1));
-#pragma GCC diagnostic pop
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_NO_THROW(gcs.AddRegions(sets1, edges_1, 1, 1e-6, 20,
-                                 "sets1_deprecation", offsets_1));
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroTimeTrajectory) {

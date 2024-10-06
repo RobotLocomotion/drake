@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include "drake/common/autodiff.h"
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -14,8 +15,16 @@ template <typename T>
 PrismaticMobilizer<T>::~PrismaticMobilizer() = default;
 
 template <typename T>
+std::unique_ptr<internal::BodyNode<T>> PrismaticMobilizer<T>::CreateBodyNode(
+    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<internal::BodyNodeImpl<T, PrismaticMobilizer>>(
+      parent_node, body, mobilizer);
+}
+
+template <typename T>
 std::string PrismaticMobilizer<T>::position_suffix(
-  int position_index_in_mobilizer) const {
+    int position_index_in_mobilizer) const {
   if (position_index_in_mobilizer == 0) {
     return "x";
   }
@@ -24,7 +33,7 @@ std::string PrismaticMobilizer<T>::position_suffix(
 
 template <typename T>
 std::string PrismaticMobilizer<T>::velocity_suffix(
-  int velocity_index_in_mobilizer) const {
+    int velocity_index_in_mobilizer) const {
   if (velocity_index_in_mobilizer == 0) {
     return "v";
   }
@@ -68,16 +77,17 @@ const PrismaticMobilizer<T>& PrismaticMobilizer<T>::SetTranslationRate(
 template <typename T>
 math::RigidTransform<T> PrismaticMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
-  return math::RigidTransform<T>(
-      get_translation(context) * translation_axis());
+  const auto& q = this->get_positions(context);
+  DRAKE_ASSERT(q.size() == kNq);
+  return calc_X_FM(q.data());
 }
 
 template <typename T>
 SpatialVelocity<T> PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>&,
+    const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
+  return calc_V_FM(context, v.data());
 }
 
 template <typename T>
@@ -92,8 +102,7 @@ PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void PrismaticMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&,
-    const SpatialForce<T>& F_Mo_F,
+    const systems::Context<T>&, const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
   // Computes tau = H_FMᵀ * F_Mo_F where H_FM ∈ ℝ⁶ is:
@@ -103,8 +112,8 @@ void PrismaticMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-void PrismaticMobilizer<T>::DoCalcNMatrix(
-    const systems::Context<T>&, EigenPtr<MatrixX<T>> N) const {
+void PrismaticMobilizer<T>::DoCalcNMatrix(const systems::Context<T>&,
+                                          EigenPtr<MatrixX<T>> N) const {
   (*N)(0, 0) = 1.0;
 }
 
@@ -116,8 +125,7 @@ void PrismaticMobilizer<T>::DoCalcNplusMatrix(
 
 template <typename T>
 void PrismaticMobilizer<T>::MapVelocityToQDot(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& v,
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
@@ -127,8 +135,7 @@ void PrismaticMobilizer<T>::MapVelocityToQDot(
 
 template <typename T>
 void PrismaticMobilizer<T>::MapQDotToVelocity(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& qdot,
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);
   DRAKE_ASSERT(v != nullptr);

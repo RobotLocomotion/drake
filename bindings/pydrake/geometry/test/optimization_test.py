@@ -683,6 +683,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.starting_ellipse = mut.Hyperellipsoid.MakeUnitBall(3)
         options.bounding_region = mut.HPolyhedron.MakeBox(
             lb=[-6, -6, -6], ub=[6, 6, 6])
+        options.verify_domain_boundedness = True
         options.solver_options = SolverOptions()
         self.assertNotIn("object at 0x", repr(options))
         region = mut.Iris(
@@ -789,14 +790,16 @@ class TestGeometryOptimization(unittest.TestCase):
         options.solver_options = SolverOptions()
         options.solver_options.SetOption(ClpSolver.id(), "scaling", 2)
         options.restriction_solver_options = SolverOptions()
-        options.restriction_solver_options.SetOption(ClpSolver.id(), "dual", 0)
+        options.restriction_solver_options.SetOption(
+            ClpSolver.id(), "log_level", 1)
         options.preprocessing_solver_options = SolverOptions()
-        options.preprocessing_solver_options.SetOption(ClpSolver.id(),
-                                                       "dual", 0)
+        options.preprocessing_solver_options.SetOption(
+            ClpSolver.id(), "log_level", 3)
         self.assertIn("scaling",
                       options.solver_options.GetOptions(ClpSolver.id()))
-        self.assertIn("dual", options.restriction_solver_options.GetOptions(
-            ClpSolver.id()))
+        self.assertIn("log_level",
+                      options.restriction_solver_options.GetOptions(
+                          ClpSolver.id()))
         self.assertIn("convex_relaxation", repr(options))
 
         spp = mut.GraphOfConvexSets()

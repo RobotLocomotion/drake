@@ -35,8 +35,7 @@ namespace {
 //  principal moment of inertia is distinct.
 math::RotationMatrix<double> CalcCanonicalPrincipalDirections(
     const Vector3<double>& principal_moments_inertia,
-    const math::RotationMatrix<double>& R_EA,
-    const double& inertia_tolerance) {
+    const math::RotationMatrix<double>& R_EA, const double& inertia_tolerance) {
   const double& Imin = principal_moments_inertia(0);
   const double& Imax = principal_moments_inertia(2);
   math::RotationMatrix<double> canonical_principal_directions = R_EA;
@@ -72,7 +71,7 @@ math::RotationMatrix<double> CalcCanonicalPrincipalDirections(
 
 template <typename T>
 Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
-      math::RotationMatrix<double>* principal_directions) const {
+    math::RotationMatrix<double>* principal_directions) const {
   Vector3<double> principal_moments;
 
   // 1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffXd.
@@ -93,7 +92,8 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
   // Note: It seems reasonable to surmise that an inertia tolerance based on
   // known properties of moments and products of inertia is generally better
   // than generic matrix tolerances used in Eigen's eigenvalue solver.
-  const double inertia_tolerance = 4 * std::numeric_limits<double>::epsilon() *
+  const double inertia_tolerance =
+      4 * std::numeric_limits<double>::epsilon() *
       ExtractDoubleOrThrow(CalcMaximumPossibleMomentOfInertia());
   const bool is_diagonal = (std::abs(I_double(1, 0)) <= inertia_tolerance &&
                             std::abs(I_double(2, 0)) <= inertia_tolerance &&
@@ -102,11 +102,11 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
     // Sort the principal moments of inertia (eigenvalues) and corresponding
     // principal directions (eigenvectors) in ascending order.
     using Pair = std::pair<double, int>;
-    std::array I{Pair{I_double(0, 0), 0},
-                 Pair{I_double(1, 1), 1},
+    std::array I{Pair{I_double(0, 0), 0}, Pair{I_double(1, 1), 1},
                  Pair{I_double(2, 2), 2}};
     std::sort(I.begin(), I.end(), [](const Pair& l, const Pair& r) {
-      return l < r;});
+      return l < r;
+    });
     const double Imin = I[0].first;  // Minimum principal moment of inertia.
     const double Imed = I[1].first;  // Intermediate principal moment of inertia
     const double Imax = I[2].first;  // Maximum principal moment of inertia.
@@ -140,13 +140,15 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
     // is usually signficantly faster than the QR iterative algorithm but may
     // be less accurate (e.g., for 3x3 matrix of doubles, accuracy ≈ 1.0E-8).
     Eigen::SelfAdjointEigenSolver<Matrix3<double>> eig_solve;
-    const int compute_eigenvectors = principal_directions != nullptr ?
-        Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly;
+    const int compute_eigenvectors = principal_directions != nullptr
+                                         ? Eigen::ComputeEigenvectors
+                                         : Eigen::EigenvaluesOnly;
     eig_solve.compute(I_double, compute_eigenvectors);
     if (eig_solve.info() != Eigen::Success) {
       const std::string error_message = fmt::format(
           "{}(): Unable to calculate the eigenvalues or eigenvectors of the "
-          "3x3 matrix associated with a RotationalInertia.", __func__);
+          "3x3 matrix associated with a RotationalInertia.",
+          __func__);
       throw std::logic_error(error_message);
     }
 
@@ -180,8 +182,8 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
 }
 
 template <typename T>
-void RotationalInertia<T>::ThrowNotPhysicallyValid(const char* func_name)
-    const {
+void RotationalInertia<T>::ThrowNotPhysicallyValid(
+    const char* func_name) const {
   std::string error_message = fmt::format(
       "{}(): The rotational inertia\n"
       "{}did not pass the test CouldBePhysicallyValid().",
@@ -195,7 +197,8 @@ void RotationalInertia<T>::ThrowNotPhysicallyValid(const char* func_name)
               p(0), p(1), p(2), /* epsilon = */ 0.0)) {
         error_message += fmt::format(
             "\nThe associated principal moments of inertia:"
-            "\n{}  {}  {}", p(0), p(1), p(2));
+            "\n{}  {}  {}",
+            p(0), p(1), p(2));
         if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
           error_message += "\nare invalid since at least one is negative.";
         } else {
@@ -241,10 +244,12 @@ std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
   return out;
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    static_cast<std::ostream&(*)(std::ostream&, const RotationalInertia<T>&)>(
-        &operator<< )
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (static_cast<std::ostream& (*)(std::ostream&, const RotationalInertia<T>&)>(
+        &operator<< )  // clang-format would remove space lint requires
 ));
+// clang-format on
 
 }  // namespace multibody
 }  // namespace drake

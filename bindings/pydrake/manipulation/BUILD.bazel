@@ -38,6 +38,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/systems:primitives_py",
     ],
     py_srcs = [
         "_manipulation_extra.py",

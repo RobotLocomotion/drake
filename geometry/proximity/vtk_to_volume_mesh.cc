@@ -7,6 +7,7 @@
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkCellIterator.h>            // vtkCommonDataModel
+#include <vtkCharArray.h>               // vtkCommonCore
 #include <vtkNew.h>                     // vtkCommonCore
 #include <vtkUnstructuredGrid.h>        // vtkCommonDataModel
 #include <vtkUnstructuredGridReader.h>  // vtkIOLegacy
@@ -15,21 +16,29 @@
 
 namespace drake {
 namespace geometry {
+namespace internal {
 
 using Eigen::Vector3d;
 
-namespace internal {
-
-VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
+VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
                                        double scale) {
-  if (scale <= 0.0) {
+  if (!(scale > 0.0)) {
     throw std::runtime_error(fmt::format(
-        "ReadVtkToVolumeMesh('{}', {}): scale={} is not a positive number",
-        filename, scale, scale));
+        "ReadVtkToVolumeMesh() requires a positive scale. Given {} for '{}'.",
+        scale, mesh_source.description()));
   }
   vtkNew<vtkUnstructuredGridReader> reader;
-  reader->SetFileName(filename.c_str());
+  if (mesh_source.is_path()) {
+    reader->SetFileName(mesh_source.path().c_str());
+  } else {
+    DRAKE_DEMAND(mesh_source.is_in_memory());
+    const MemoryFile& file = mesh_source.in_memory().mesh_file;
+    // Note: The contents will be copied by VTK.
+    reader->SetInputString(file.contents().c_str(), file.contents().size());
+    reader->SetReadFromInputString(true);
+  }
   reader->Update();
+
   vtkUnstructuredGrid* vtk_mesh = reader->GetOutput();
 
   const vtkIdType num_vertices = vtk_mesh->GetNumberOfPoints();
@@ -51,13 +60,13 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
     if (iter->GetCellType() != VTK_TETRA) {
       vtkNew<vtkGenericCell> bad_cell;
       iter->GetCell(bad_cell);
-      auto msg = fmt::format(
-          "ReadVtkToVolumeMesh('{}', {}): file contains a"
-          " non-tetrahedron(type id={}) cell with type id {}, dimension {},"
-          " and number of points {}",
-          filename, scale, static_cast<int>(VTK_TETRA), bad_cell->GetCellType(),
-          bad_cell->GetCellDimension(), bad_cell->GetNumberOfPoints());
-      throw std::runtime_error(msg);
+      throw std::runtime_error(fmt::format(
+          "ReadVtkToVolumeMesh(): mesh data should only contain tetrahedra "
+          "(type id={}). Read cell with type id={}, dimension {}, and number "
+          "of points {} in '{}'.",
+          static_cast<int>(VTK_TETRA), bad_cell->GetCellType(),
+          bad_cell->GetCellDimension(), bad_cell->GetNumberOfPoints(),
+          mesh_source.description()));
     }
     vtkIdList* vtk_vertex_ids = iter->GetPointIds();
     // clang-format off

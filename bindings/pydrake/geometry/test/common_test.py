@@ -2,10 +2,14 @@ import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
 import copy
+from pathlib import Path
+import pickle
+import re
 import unittest
 
 import numpy as np
 
+from pydrake.common import MemoryFile
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
@@ -222,6 +226,138 @@ class TestGeometryCore(unittest.TestCase):
             f"value={id_1.get_value()}",
             repr(id_1))
 
+    def test_in_memory_mesh(self):
+        empty_mesh = mut.InMemoryMesh()
+        self.assertEqual(len(empty_mesh.mesh_file.contents()), 0)
+
+        file = MemoryFile(contents="stuff", extension=".ext",
+                          filename_hint="some_hint")
+        only_mesh = mut.InMemoryMesh(mesh_file=file)
+        self.assertEqual(only_mesh.mesh_file.contents(), file.contents())
+        self.assertEqual(len(only_mesh.supporting_files), 0)
+
+        representation = repr(only_mesh)
+        # repr correctness is determined in two ways:
+        #   - It can be eval'd back into an instance. This only works because
+        #     the contents length is below MemoryFile's hard-coded limit
+        #     on creating a perfect representation.
+        #   - the repr'd string has expected values.
+        self.assertIsInstance(eval(representation,
+                                   {"InMemoryMesh": mut.InMemoryMesh,
+                                    "MemoryFile": MemoryFile}),
+                              mut.InMemoryMesh)
+        self.assertRegex(representation,
+                         re.compile("mesh_file=MemoryFile.+stuff",
+                                    re.DOTALL))
+        self.assertNotIn("supporting_files=", representation)
+
+        copy.copy(only_mesh)
+        copy.deepcopy(only_mesh)
+
+        assert_pickle(self, only_mesh, repr)
+        # Check that data pickled as InMemoryMesh in Drake v1.34.0 can be
+        # unpickled in newer versions. The data should produce a InMemoryMesh
+        # identical to `only_mesh` above.
+        legacy_data = b"\x80\x04\x95\xa2\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\x0cInMemoryMesh\x94\x93\x94)\x81\x94}\x94\x8c\tmesh_file\x94\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x05stuff\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\tsome_hint\x94ubsb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.InMemoryMesh)
+        self.assertEqual(obj.mesh_file.contents(),
+                         only_mesh.mesh_file.contents())
+
+        supporting_files = {
+            "file": MemoryFile(contents="a", extension=".a", filename_hint="a")
+        }
+        full_mesh = mut.InMemoryMesh(mesh_file=file,
+                                     supporting_files=supporting_files)
+        self.assertEqual(full_mesh.mesh_file.contents(),
+                         file.contents())
+        self.assertIn("file", full_mesh.supporting_files)
+        self.assertNotIn("c", full_mesh.supporting_files)
+
+        representation = repr(full_mesh)
+        self.assertIsInstance(eval(representation,
+                                   {"InMemoryMesh": mut.InMemoryMesh,
+                                    "MemoryFile": MemoryFile}),
+                              mut.InMemoryMesh)
+        self.assertRegex(representation,
+                         re.compile("mesh_file=MemoryFile.*stuff", re.DOTALL))
+        self.assertRegex(representation,
+                         re.compile("supporting_files=.*\\.a", re.DOTALL))
+
+        copy.copy(full_mesh)
+        copy.deepcopy(full_mesh)
+
+        assert_pickle(self, full_mesh, repr)
+        # Check that data pickled as InMemoryMesh in Drake v1.34.0 can be
+        # unpickled in newer versions. The data should produce a InMemoryMesh
+        # identical to `only_mesh` above.
+        legacy_data = b"\x80\x04\x95\xfc\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\x0cInMemoryMesh\x94\x93\x94)\x81\x94}\x94(\x8c\tmesh_file\x94\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x05stuff\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\tsome_hint\x94ub\x8c\x10supporting_files\x94}\x94\x8c\x04file\x94h\x08)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x01a\x94\x8c\textension\x94\x8c\x02.a\x94\x8c\rfilename_hint\x94h\x17ubsub."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.InMemoryMesh)
+        self.assertEqual(obj.mesh_file.contents(),
+                         full_mesh.mesh_file.contents())
+        self.assertIn("file", obj.supporting_files)
+
+    def test_mesh_source(self):
+        source = mut.MeshSource(path="/a/path.obj")
+        self.assertTrue(source.is_path())
+        self.assertFalse(source.is_in_memory())
+        self.assertEqual(source.description(), "/a/path.obj")
+        self.assertEqual(source.extension(), ".obj")
+        self.assertEqual(source.path(), Path("/a/path.obj"))
+        with self.assertRaises(RuntimeError):
+            source.in_memory()
+        # repr correctness is determined the same as for InMemoryMesh (with the
+        # same caveats).
+        self.assertIsInstance(eval(repr(source),
+                                   {"MeshSource": mut.MeshSource}),
+                              mut.MeshSource)
+        self.assertRegex(repr(source), "path=['\"]/a/path.obj['\"]")
+        copy.copy(source)
+        copy.deepcopy(source)
+        source_copy = mut.MeshSource(other=source)
+        self.assertTrue(source_copy.is_path())
+        self.assertEqual(source_copy.description(), "/a/path.obj")
+
+        assert_pickle(self, source, repr)
+        # Check that data pickled as MeshSource in Drake v1.34.0 can be
+        # unpickled in newer versions. The data should produce a MeshSource
+        # identical to `source` above. We'll do it for one with a path source
+        # and once with an in-memory source (below).
+        legacy_data = b"\x80\x04\x95?\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\nMeshSource\x94\x93\x94)\x81\x94}\x94\x8c\x04path\x94\x8c\x0b/a/path.obj\x94sb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.MeshSource)
+        self.assertEqual(obj.is_path(), source.is_path())
+        self.assertEqual(obj.path(), source.path())
+
+        mesh = mut.InMemoryMesh(mesh_file=MemoryFile("a", ".ext", "hint"))
+        source = mut.MeshSource(mesh=mesh)
+        self.assertFalse(source.is_path())
+        self.assertTrue(source.is_in_memory())
+        self.assertEqual(source.description(), "hint")
+        self.assertEqual(source.extension(), ".ext")
+        self.assertIsInstance(source.in_memory(), mut.InMemoryMesh)
+        with self.assertRaises(RuntimeError):
+            source.path()
+        self.assertIsInstance(eval(repr(source),
+                                   {"MeshSource": mut.MeshSource,
+                                    "InMemoryMesh": mut.InMemoryMesh,
+                                    "MemoryFile": MemoryFile}),
+                              mut.MeshSource)
+        self.assertRegex(repr(source),
+                         re.compile("mesh=InMemoryMesh.*hint.*", re.DOTALL))
+        copy.copy(source)
+        copy.deepcopy(source)
+
+        # Again for a source with an in-memory mesh.
+        assert_pickle(self, source, repr)
+        legacy_data = b"\x80\x04\x95\xb8\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\nMeshSource\x94\x93\x94)\x81\x94}\x94\x8c\x04mesh\x94h\x00\x8c\x0cInMemoryMesh\x94\x93\x94)\x81\x94}\x94\x8c\tmesh_file\x94\x8c\x0epydrake.common\x94\x8c\nMemoryFile\x94\x93\x94)\x81\x94}\x94(\x8c\x08contents\x94\x8c\x01a\x94\x8c\textension\x94\x8c\x04.ext\x94\x8c\rfilename_hint\x94\x8c\x04hint\x94ubsbsb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.MeshSource)
+        self.assertEqual(obj.is_in_memory(), source.is_in_memory())
+        self.assertEqual(obj.in_memory().mesh_file.contents(),
+                         source.in_memory().mesh_file.contents())
+
     def test_proximity_properties(self):
         """
         Tests the utility functions (not related to hydroelastic contact) for
@@ -385,7 +521,11 @@ class TestGeometryCore(unittest.TestCase):
             mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
             mut.Mesh(filename="arbitrary/path", scale=1.0),
+            mut.Mesh(mesh_data=mut.InMemoryMesh(
+                mesh_file=MemoryFile("# ", ".obj", "junk")), scale=1.0),
             mut.Convex(filename="arbitrary/path", scale=1.0),
+            mut.Convex(mesh_data=mut.InMemoryMesh(
+                mesh_file=MemoryFile("# ", ".obj", "junk")), scale=1.0),
             mut.MeshcatCone(height=1.23, a=3.45, b=6.78)
         ]
         for shape in shapes:
@@ -401,7 +541,10 @@ class TestGeometryCore(unittest.TestCase):
             self.assertIsInstance(shape_copy, shape_cls)
             self.assertIsNot(shape_copy, shape)
 
-            new_shape = eval(repr(shape), dict([(shape_cls_name, shape_cls)]))
+            # Representation of Mesh/Convex requires additional types.
+            new_shape = eval(repr(shape), {shape_cls_name: shape_cls,
+                                           'InMemoryMesh': mut.InMemoryMesh,
+                                           'MemoryFile': MemoryFile})
             self.assertIsInstance(new_shape, shape_cls)
             self.assertEqual(repr(new_shape), repr(shape))
 
@@ -423,9 +566,7 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(box.width(), 1.0)
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
-        assert_pickle(
-            self, box,
-            lambda shape: [shape.width(), shape.depth(), shape.height()])
+        assert_pickle(self, box, repr)
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
         self.assertAlmostEqual(mut.CalcVolume(box), 6.0, 1e-14)
 
@@ -434,30 +575,17 @@ class TestGeometryCore(unittest.TestCase):
         capsule = mut.Capsule(measures=(1.0, 2.0))
         self.assertEqual(capsule.radius(), 1.0)
         self.assertEqual(capsule.length(), 2.0)
-        assert_pickle(
-            self, capsule, lambda shape: [shape.radius(), shape.length()])
+        assert_pickle(self, capsule, repr)
 
-        junk_path = "arbitrary/path.ext"
-        convex = mut.Convex(filename=junk_path, scale=1.0)
-        assert_shape_api(convex)
-        self.assertIn(junk_path, convex.filename())
-        self.assertEqual(".ext", convex.extension())
-        self.assertEqual(convex.scale(), 1.0)
-        with self.assertRaisesRegex(RuntimeError,
-                                    "MakeConvexHull only applies to"):
-            # We just need evidence that it invokes convex hull machinery; the
-            # exception for a bad extension suffices.
-            convex.GetConvexHull()
-        assert_pickle(
-            self, convex, lambda shape: [shape.filename(), shape.scale()])
+        # Note: Convex has been rolled in with Mesh because of their common
+        # APIs. See below.
 
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
         assert_shape_api(cylinder)
         cylinder = mut.Cylinder(measures=(1.0, 2.0))
         self.assertEqual(cylinder.radius(), 1.0)
         self.assertEqual(cylinder.length(), 2.0)
-        assert_pickle(
-            self, cylinder, lambda shape: [shape.radius(), shape.length()])
+        assert_pickle(self, cylinder, repr)
 
         ellipsoid = mut.Ellipsoid(a=1.0, b=2.0, c=3.0)
         assert_shape_api(ellipsoid)
@@ -465,29 +593,42 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(ellipsoid.a(), 1.0)
         self.assertEqual(ellipsoid.b(), 2.0)
         self.assertEqual(ellipsoid.c(), 3.0)
-        assert_pickle(
-            self, ellipsoid, lambda shape: [shape.a(), shape.b(), shape.c()])
+        assert_pickle(self, ellipsoid, repr)
 
         X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
         self.assertIsInstance(X_FH, RigidTransform)
 
-        mesh = mut.Mesh(filename=junk_path, scale=1.0)
-        assert_shape_api(mesh)
-        self.assertIn(junk_path, mesh.filename())
-        self.assertEqual(".ext", mesh.extension())
-        self.assertEqual(mesh.scale(), 1.0)
-        with self.assertRaisesRegex(RuntimeError,
-                                    "MakeConvexHull only applies to"):
-            # We just need evidence that it invokes convex hull machinery; the
-            # exception for a bad extension suffices.
-            mesh.GetConvexHull()
-        assert_pickle(
-            self, mesh, lambda shape: [shape.filename(), shape.scale()])
+        junk_path = "arbitrary/path.ext"
+        for dut_mesh in [mut.Mesh(filename=junk_path, scale=1.5),
+                         mut.Mesh(mesh_data=mut.InMemoryMesh(
+                                      mesh_file=MemoryFile("#junk", ".ext",
+                                                           "test")),
+                                  scale=1.5),
+                         mut.Mesh(source=mut.MeshSource(path=junk_path),
+                                  scale=1.5),
+                         mut.Convex(filename=junk_path, scale=1.5),
+                         mut.Convex(mesh_data=mut.InMemoryMesh(
+                            mesh_file=MemoryFile("#junk", ".ext", "test")),
+                            scale=1.5),
+                         mut.Convex(source=mut.MeshSource(path=junk_path),
+                                    scale=1.5)]:
+            assert_shape_api(dut_mesh)
+            self.assertEqual(".ext", dut_mesh.extension())
+            self.assertEqual(dut_mesh.scale(), 1.5)
+            self.assertIsInstance(dut_mesh.source(), mut.MeshSource)
+            if dut_mesh.source().is_path():
+                self.assertIn(junk_path, dut_mesh.filename())
+                with self.assertRaisesRegex(RuntimeError,
+                                            "MakeConvexHull only applies to"):
+                    # We just need evidence that it invokes convex hull
+                    # machinery; the exception for a bad extension suffices.
+                    dut_mesh.GetConvexHull()
+            assert_pickle(self, dut_mesh, repr)
 
         sphere = mut.Sphere(radius=1.0)
         assert_shape_api(sphere)
         self.assertEqual(sphere.radius(), 1.0)
-        assert_pickle(self, sphere, mut.Sphere.radius)
+        assert_pickle(self, sphere, repr)
 
         cone = mut.MeshcatCone(height=1.2, a=3.4, b=5.6)
         assert_shape_api(cone)
@@ -495,5 +636,19 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(cone.height(), 1.2)
         self.assertEqual(cone.a(), 3.4)
         self.assertEqual(cone.b(), 5.6)
-        assert_pickle(self, cone, lambda shape: [
-                      shape.height(), shape.a(), shape.b()])
+        assert_pickle(self, cone, repr)
+
+    def test_mesh_pickle_compatibility(self):
+        """Changing the underlying storage for Mesh/Convex changed their pickle
+        functions. This confirms that pickled byte string of the previous
+        implementation works in the new code."""
+        # Check that data pickled as Mesh in Drake v1.33.0 can be unpickled in
+        # newer versions. The data should produce a Mesh equivalent to the
+        # instantiated mesh.
+        legacy_data = b"\x80\x04\x95@\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\x04Mesh\x94\x93\x94)\x81\x94\x8c\x11/path/to/file.obj\x94G@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.Mesh)
+        self.assertTrue(obj.source().is_path())
+        ref_mesh = mut.Mesh(filename="/path/to/file.obj", scale=2)
+        self.assertEqual(obj.source().path(), ref_mesh.source().path())
+        self.assertEqual(obj.scale(), ref_mesh.scale())

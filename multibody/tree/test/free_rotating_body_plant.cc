@@ -12,19 +12,20 @@ namespace test {
 
 using Eigen::Vector3d;
 
-template<typename T>
-FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J) :
-    internal::MultibodyTreeSystem<T>(), I_(I), J_(J) {
+template <typename T>
+FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J)
+    : internal::MultibodyTreeSystem<T>(), I_(I), J_(J) {
   BuildMultibodyTreeModel();
   DRAKE_DEMAND(tree().num_positions() == 3);
   DRAKE_DEMAND(tree().num_velocities() == 3);
   DRAKE_DEMAND(tree().num_states() == 6);
 }
 
-template<typename T>
-template<typename U>
+template <typename T>
+template <typename U>
 FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(
-    const FreeRotatingBodyPlant<U> &other) : FreeRotatingBodyPlant<T>(I_, J_) {}
+    const FreeRotatingBodyPlant<U>& other)
+    : FreeRotatingBodyPlant<T>(I_, J_) {}
 
 template <typename T>
 void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
@@ -35,14 +36,14 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
 
   body_ = &this->mutable_tree().AddRigidBody("B", M_Bcm);
   joint_ = &this->mutable_tree().template AddJoint<BallRpyJoint>(
-          "ball_rpy_joint", tree().world_body(), {}, *body_, {});
+      "ball_rpy_joint", tree().world_body(), {}, *body_, {});
 
   internal::MultibodyTreeSystem<T>::Finalize();
 }
 
-template<typename T>
-Vector3<double>
-FreeRotatingBodyPlant<T>::get_default_initial_angular_velocity() const {
+template <typename T>
+Vector3<double> FreeRotatingBodyPlant<T>::get_default_initial_angular_velocity()
+    const {
   return Vector3d::UnitX() + Vector3d::UnitY() + Vector3d::UnitZ();
 }
 
@@ -61,26 +62,26 @@ void FreeRotatingBodyPlant<T>::SetDefaultState(
       context, get_default_initial_angular_velocity(), state);
 }
 
-template<typename T>
+template <typename T>
 Vector3<T> FreeRotatingBodyPlant<T>::get_angular_velocity(
     const systems::Context<T>& context) const {
   return joint_->get_angular_velocity(context);
 }
 
-template<typename T>
+template <typename T>
 void FreeRotatingBodyPlant<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_WB) const {
   joint_->set_angular_velocity(context, w_WB);
 }
 
-template<typename T>
+template <typename T>
 math::RigidTransform<T> FreeRotatingBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   auto& pc = this->EvalPositionKinematics(context);
   return math::RigidTransform<T>(pc.get_X_WB(body_->mobod_index()));
 }
 
-template<typename T>
+template <typename T>
 SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
     const systems::Context<T>& context) const {
   auto& vc = this->EvalVelocityKinematics(context);

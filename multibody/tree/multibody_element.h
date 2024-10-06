@@ -153,8 +153,7 @@ class MultibodyElement {
   // Give unit tests access to the tree.
   friend class MultibodyElementTester;
 
-  void set_parent_tree(
-      const internal::MultibodyTree<T>* tree, int64_t index) {
+  void set_parent_tree(const internal::MultibodyTree<T>* tree, int64_t index) {
     index_ = index;
     parent_tree_ = tree;
   }

@@ -11,17 +11,20 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-LinearSpringDamper<T>::LinearSpringDamper(
-    const RigidBody<T>& bodyA, const Vector3<double>& p_AP,
-    const RigidBody<T>& bodyB, const Vector3<double>& p_BQ,
-    double free_length, double stiffness, double damping) :
-    ForceElement<T>(bodyA.model_instance()),
-    bodyA_(bodyA),
-    p_AP_(p_AP),
-    bodyB_(bodyB),
-    p_BQ_(p_BQ),
-    free_length_(free_length),
-    stiffness_(stiffness), damping_(damping) {
+LinearSpringDamper<T>::LinearSpringDamper(const RigidBody<T>& bodyA,
+                                          const Vector3<double>& p_AP,
+                                          const RigidBody<T>& bodyB,
+                                          const Vector3<double>& p_BQ,
+                                          double free_length, double stiffness,
+                                          double damping)
+    : ForceElement<T>(bodyA.model_instance()),
+      bodyA_(bodyA),
+      p_AP_(p_AP),
+      bodyB_(bodyB),
+      p_BQ_(p_BQ),
+      free_length_(free_length),
+      stiffness_(stiffness),
+      damping_(damping) {
   DRAKE_THROW_UNLESS(free_length > 0);
   DRAKE_THROW_UNLESS(stiffness >= 0);
   DRAKE_THROW_UNLESS(damping >= 0);
@@ -32,8 +35,7 @@ LinearSpringDamper<T>::~LinearSpringDamper() = default;
 
 template <typename T>
 void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
-    const systems::Context<T>&,
-    const internal::PositionKinematicsCache<T>& pc,
+    const systems::Context<T>&, const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc,
     MultibodyForces<T>* forces) const {
   using std::sqrt;
@@ -53,8 +55,7 @@ void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
   const Vector3<T> r_PQ_W = p_PQ_W / length_soft;
 
   // Force on A, applied at P, expressed in the world frame.
-  Vector3<T> f_AP_W =
-      stiffness() * (length_soft - free_length()) * r_PQ_W;
+  Vector3<T> f_AP_W = stiffness() * (length_soft - free_length()) * r_PQ_W;
 
   // The rate at which the length of the spring changes.
   const T length_dot = CalcLengthTimeDerivative(pc, vc);
@@ -99,8 +100,7 @@ T LinearSpringDamper<T>::CalcPotentialEnergy(
 
 template <typename T>
 T LinearSpringDamper<T>::CalcConservativePower(
-    const systems::Context<T>&,
-    const internal::PositionKinematicsCache<T>& pc,
+    const systems::Context<T>&, const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc) const {
   // Since the potential energy is:
   //  V = 1/2⋅k⋅(ℓ-ℓ₀)²
@@ -131,8 +131,7 @@ T LinearSpringDamper<T>::CalcConservativePower(
 
 template <typename T>
 T LinearSpringDamper<T>::CalcNonConservativePower(
-    const systems::Context<T>&,
-    const internal::PositionKinematicsCache<T>& pc,
+    const systems::Context<T>&, const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc) const {
   // The rate at which the length of the spring changes.
   const T length_dot = CalcLengthTimeDerivative(pc, vc);
@@ -145,22 +144,19 @@ template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 LinearSpringDamper<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const RigidBody<ToScalar>& bodyA_clone =
-      tree_clone.get_body(bodyA().index());
-  const RigidBody<ToScalar>& bodyB_clone =
-      tree_clone.get_body(bodyB().index());
+  const RigidBody<ToScalar>& bodyA_clone = tree_clone.get_body(bodyA().index());
+  const RigidBody<ToScalar>& bodyB_clone = tree_clone.get_body(bodyB().index());
 
   // Make the LinearSpringDamper<T> clone.
   auto spring_damper_clone = std::make_unique<LinearSpringDamper<ToScalar>>(
-      bodyA_clone, p_AP(), bodyB_clone, p_BQ(),
-      free_length(), stiffness(), damping());
+      bodyA_clone, p_AP(), bodyB_clone, p_BQ(), free_length(), stiffness(),
+      damping());
 
   return spring_damper_clone;
 }
 
 template <typename T>
-std::unique_ptr<ForceElement<double>>
-LinearSpringDamper<T>::DoCloneToScalar(
+std::unique_ptr<ForceElement<double>> LinearSpringDamper<T>::DoCloneToScalar(
     const internal::MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
@@ -180,15 +176,16 @@ LinearSpringDamper<T>::DoCloneToScalar(
 }
 
 template <typename T>
-T LinearSpringDamper<T>::SafeSoftNorm(const Vector3<T> &x) const {
+T LinearSpringDamper<T>::SafeSoftNorm(const Vector3<T>& x) const {
   using std::sqrt;
   const double epsilon_length =
       std::numeric_limits<double>::epsilon() * free_length();
   const double epsilon_length_squared = epsilon_length * epsilon_length;
   const T x2 = x.squaredNorm();
   if (scalar_predicate<T>::is_bool && (x2 < epsilon_length_squared)) {
-    throw std::runtime_error("The length of the spring became nearly zero. "
-                                 "Revisit your model to avoid this situation.");
+    throw std::runtime_error(
+        "The length of the spring became nearly zero. "
+        "Revisit your model to avoid this situation.");
   }
   return sqrt(x2 + epsilon_length_squared);
 }

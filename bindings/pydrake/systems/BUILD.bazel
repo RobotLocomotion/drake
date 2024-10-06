@@ -88,6 +88,7 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
+        "//bindings/pydrake:trajectories_py",
     ],
 )
 
@@ -107,6 +108,7 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
+        "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/solvers",
     ],
 )
@@ -140,6 +142,7 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
+        ":primitives_py",
     ],
 )
 

@@ -47,14 +47,6 @@ SpatialInertia<double> MakeArbitrarySpatialInertia() {
                                                         I_Bcm_W);
 }
 
-GTEST_TEST(SpatialInertia, DefaultConstructor) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  SpatialInertia<double> I;
-#pragma GCC diagnostic pop
-  ASSERT_TRUE(I.IsNaN());
-}
-
 GTEST_TEST(SpatialInertia, ZeroFactory) {
   auto I = SpatialInertia<double>::Zero();
   EXPECT_EQ(I.get_mass(), 0);
@@ -94,25 +86,24 @@ GTEST_TEST(SpatialInertia, PointMass) {
   const double ly = 2.0;
   const double lz = 3.0;
   const Vector3<double> p_BpBcm_B = Vector3<double>(lx, ly, lz);
-  const UnitInertia<double>G_BBp_B = UnitInertia<double>::PointMass(p_BpBcm_B);
+  const UnitInertia<double> G_BBp_B = UnitInertia<double>::PointMass(p_BpBcm_B);
   const SpatialInertia<double> M_expected(mass, p_BpBcm_B, G_BBp_B);
   const SpatialInertia<double> M_BBp_B =
       SpatialInertia<double>::PointMass(mass, p_BpBcm_B);
-  EXPECT_TRUE(CompareMatrices(
-      M_expected.CopyToFullMatrix6(), M_BBp_B.CopyToFullMatrix6()));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_BBp_B.CopyToFullMatrix6()));
 
   // Verify PointMass() with a zero position vector produces the same spatial
   // inertia as shifting the spatial inertia from M_BBp_B to M_BBcm_B.
   const SpatialInertia<double> M_BBcm_B_expected = M_BBp_B.Shift(p_BpBcm_B);
   const SpatialInertia<double> M_BBcm_B =
-       SpatialInertia<double>::PointMass(mass, Vector3<double>::Zero());
-  EXPECT_TRUE(CompareMatrices(
-      M_BBcm_B_expected.CopyToFullMatrix6(), M_BBcm_B.CopyToFullMatrix6()));
+      SpatialInertia<double>::PointMass(mass, Vector3<double>::Zero());
+  EXPECT_TRUE(CompareMatrices(M_BBcm_B_expected.CopyToFullMatrix6(),
+                              M_BBcm_B.CopyToFullMatrix6()));
 
   // Ensure a negative mass throws an exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::PointMass(-1, p_BpBcm_B),
-      "[^]* mass is not positive and finite: .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::PointMass(-1, p_BpBcm_B),
+                              "[^]* mass is not positive and finite: .*");
 }
 
 // Tests the static method for the spatial inertia of a solid box.
@@ -124,7 +115,7 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensityOrMass) {
   const double volume = lx * ly * lz;
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidBox(lx, ly, lz);
+  const UnitInertia<double> G_BBo_B = UnitInertia<double>::SolidBox(lx, ly, lz);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
   const SpatialInertia<double> M_with_density =
       SpatialInertia<double>::SolidBoxWithDensity(density, lx, ly, lz);
@@ -151,22 +142,22 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensityOrMass) {
   // single value sufficiently tests the full domain of invalid values.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, 0, ly, lz),
-       "[^]* x-length is not positive and finite: .*.");
+      "[^]* x-length is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithMass(mass, 0, ly, lz),
-       "[^]* x-length is not positive and finite: .*.");
+      "[^]* x-length is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, lx, -0.1, lz),
-       "[^]* y-length is not positive and finite: .*.");
+      "[^]* y-length is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithMass(mass, lx, -0.1, lz),
-        "[^]* y-length is not positive and finite: .*.");
+      "[^]* y-length is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, lx, ly, -1E-15),
-        "[^]* z-length is not positive and finite: .*.");
+      "[^]* z-length is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithMass(mass, lx, ly, -1E-15),
-        "[^]* z-length is not positive and finite: .*.");
+      "[^]* z-length is not positive and finite: .*.");
 }
 
 // Tests the static method for the spatial inertia of a solid cube.
@@ -176,25 +167,25 @@ GTEST_TEST(SpatialInertia, SolidCubeWithDensity) {
   const double volume = length * length * length;
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidCube(length);
+  const UnitInertia<double> G_BBo_B = UnitInertia<double>::SolidCube(length);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
   const SpatialInertia<double> M_with_density =
       SpatialInertia<double>::SolidCubeWithDensity(density, length);
   EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
-      M_with_density.CopyToFullMatrix6()));
+                              M_with_density.CopyToFullMatrix6()));
 
   // Also test against a solid box with length = width = height.
   const SpatialInertia<double> Mbox =
-      SpatialInertia<double>::SolidBoxWithDensity(
-          density, length, length, length);
+      SpatialInertia<double>::SolidBoxWithDensity(density, length, length,
+                                                  length);
   EXPECT_TRUE(CompareMatrices(Mbox.CopyToFullMatrix6(),
-      M_with_density.CopyToFullMatrix6()));
+                              M_with_density.CopyToFullMatrix6()));
 
   // Ensure SolidCubeWithDensity() matches SolidCubeWithMass().
   const SpatialInertia<double> M_with_mass =
       SpatialInertia<double>::SolidCubeWithMass(mass, length);
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
-      M_with_density.CopyToFullMatrix6()));
+                              M_with_density.CopyToFullMatrix6()));
 
   // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -224,13 +215,13 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensityOrMass) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
   const double r = 1.0;
   const double l = 2.0;
-  const double volume = 4.0/3.0 * M_PI * std::pow(r, 3) + M_PI * r * r * l;
+  const double volume = 4.0 / 3.0 * M_PI * std::pow(r, 3) + M_PI * r * r * l;
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
 
   // Test a solid capsule B whose unit_vector is in the z-direction.
   Vector3<double> unit_vec(0, 0, 1);
-  UnitInertia<double>G_BBo_B =
+  UnitInertia<double> G_BBo_B =
       UnitInertia<double>::SolidCapsule(r, l, unit_vec);
   SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
   SpatialInertia<double> M_with_density =
@@ -251,7 +242,7 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensityOrMass) {
   const SpatialInertia<double> M_with_mass =
       SpatialInertia<double>::SolidCapsuleWithMass(mass, r, l, unit_vec);
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
-      M_with_density.CopyToFullMatrix6()));
+                              M_with_density.CopyToFullMatrix6()));
 
   // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -282,15 +273,15 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensityOrMass) {
 // Tests the static method for the spatial inertia of a solid cylinder.
 GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
-  const double r = 1.0;  // radius
-  const double l = 2.0;  // length
+  const double r = 1.0;         // radius
+  const double l = 2.0;         // length
   const double volume = M_PI * r * r * l;
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
 
   // Test a solid cylinder B about Bcm whose axis is aligned with unit_vec.
-  const Vector3<double>unit_vec(0.5, -0.5, 1.0 / std::sqrt(2));
-  UnitInertia<double>G_BBo_B =
+  const Vector3<double> unit_vec(0.5, -0.5, 1.0 / std::sqrt(2));
+  UnitInertia<double> G_BBo_B =
       UnitInertia<double>::SolidCylinder(r, l, unit_vec);
   SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
   SpatialInertia<double> M_with_density =
@@ -302,12 +293,12 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   SpatialInertia<double> M_with_mass =
       SpatialInertia<double>::SolidCylinderWithMass(mass, r, l, unit_vec);
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
-      M_with_density.CopyToFullMatrix6()));
+                              M_with_density.CopyToFullMatrix6()));
 
   // Test a solid cylinder B about the point Bp, where Bp is at the center of a
   // circular end of the cylinder with the following position from Bp to Bcm.
   const Vector3<double> p_BpBcm_B = 0.5 * l * unit_vec;
-  const UnitInertia<double>G_BBp_B =
+  const UnitInertia<double> G_BBp_B =
       UnitInertia<double>::SolidCylinderAboutEnd(r, l, unit_vec);
   M_expected = SpatialInertia<double>(mass, p_BpBcm_B, G_BBp_B);
   M_with_density = SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
@@ -331,8 +322,8 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   // use an empirical tolerance of two bits = 2^2 times machine epsilon.
   const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
-                              M_with_density.CopyToFullMatrix6(),
-                              kTolerance, MatrixCompareType::relative));
+                              M_with_density.CopyToFullMatrix6(), kTolerance,
+                              MatrixCompareType::relative));
 
   // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -342,12 +333,12 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
       SpatialInertia<double>::SolidCylinderWithMass(-9.3, r, l, unit_vec),
       "[^]* mass is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
-          -9.3, r, l, unit_vec),
+      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(-9.3, r, l,
+                                                               unit_vec),
       "[^]* density is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
-          -9.3, r, l, unit_vec),
+      SpatialInertia<double>::SolidCylinderWithMassAboutEnd(-9.3, r, l,
+                                                            unit_vec),
       "[^]* mass is not positive and finite: .*.");
 
   // Ensure a negative or zero radius throws an exception.
@@ -358,12 +349,12 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
       SpatialInertia<double>::SolidCylinderWithMass(mass, 0, l, unit_vec),
       "[^]* radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
-          density, -0.1, l, unit_vec),
+      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(density, -0.1, l,
+                                                               unit_vec),
       "[^]* radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
-          mass, -0.1, l, unit_vec),
+      SpatialInertia<double>::SolidCylinderWithMassAboutEnd(mass, -0.1, l,
+                                                            unit_vec),
       "[^]* radius is not positive and finite: .*.");
 
   // Ensure a negative or zero length throws an exception.
@@ -374,12 +365,12 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
       SpatialInertia<double>::SolidCylinderWithMass(mass, r, 0, unit_vec),
       "[^]* length is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
-          density, r, -0.1, unit_vec),
+      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(density, r, -0.1,
+                                                               unit_vec),
       "[^]* length is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
-          density, r, -0.1, unit_vec),
+      SpatialInertia<double>::SolidCylinderWithMassAboutEnd(density, r, -0.1,
+                                                            unit_vec),
       "[^]* length is not positive and finite: .*.");
 
   // Ensure a bad unit vector throws an exception.
@@ -391,12 +382,12 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
       SpatialInertia<double>::SolidCylinderWithMass(mass, r, l, bad_vec),
       "[^]* The unit_vector argument .* is not a unit vector.[^]*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
-          density, r, l, bad_vec),
+      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(density, r, l,
+                                                               bad_vec),
       "[^]* The unit_vector argument .* is not a unit vector.[^]*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
-          mass, r, l, bad_vec),
+      SpatialInertia<double>::SolidCylinderWithMassAboutEnd(mass, r, l,
+                                                            bad_vec),
       "[^]* The unit_vector argument .* is not a unit vector.[^]*");
 }
 
@@ -408,37 +399,37 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
 
   // Test a thin rod B whose unit_vector is in the z-direction.
   Vector3<double> unit_vec(0, 0, 1);
-  UnitInertia<double>G_BBcm_B = UnitInertia<double>::ThinRod(length, unit_vec);
+  UnitInertia<double> G_BBcm_B = UnitInertia<double>::ThinRod(length, unit_vec);
   SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBcm_B);
   SpatialInertia<double> M =
       SpatialInertia<double>::ThinRodWithMass(mass, length, unit_vec);
   // Use an empirical tolerance of two bits = 2^2 times machine epsilon.
   const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(
-      M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M.CopyToFullMatrix6(), kTolerance));
 
   // Test a thin rod B with a different and less simple unit vector direction.
   unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
   G_BBcm_B = UnitInertia<double>::ThinRod(length, unit_vec);
   M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBcm_B);
   M = SpatialInertia<double>::ThinRodWithMass(mass, length, unit_vec);
-  EXPECT_TRUE(CompareMatrices(
-      M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M.CopyToFullMatrix6(), kTolerance));
 
   // Test a thin rod B about Bp, where Bp is at an end of the rod.
   const Vector3<double> p_BpBcm_B = 0.5 * length * unit_vec;
   UnitInertia<double> G_BBp_B = G_BBcm_B.ShiftFromCenterOfMass(-p_BpBcm_B);
   M_expected = SpatialInertia<double>(mass, p_BpBcm_B, G_BBp_B);
   M = SpatialInertia<double>::ThinRodWithMassAboutEnd(mass, length, unit_vec);
-  EXPECT_TRUE(CompareMatrices(
-      M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M.CopyToFullMatrix6(), kTolerance));
 
   // Another way to perform the previous calculation and test.
   const SpatialInertia<double> M_BBp_B =
-        SpatialInertia<double>::MakeFromCentralInertia(
-            mass, p_BpBcm_B, mass * G_BBcm_B);
-  EXPECT_TRUE(CompareMatrices(
-      M_BBp_B.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
+      SpatialInertia<double>::MakeFromCentralInertia(mass, p_BpBcm_B,
+                                                     mass * G_BBcm_B);
+  EXPECT_TRUE(CompareMatrices(M_BBp_B.CopyToFullMatrix6(),
+                              M.CopyToFullMatrix6(), kTolerance));
 
   // Ensure a negative or zero mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -472,7 +463,7 @@ GTEST_TEST(SpatialInertia, SolidEllipsoidWithDensityOrMass) {
   const double volume = 4.0 / 3.0 * M_PI * a * b * c;
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidEllipsoid(a, b, c);
+  UnitInertia<double> G_BBo_B = UnitInertia<double>::SolidEllipsoid(a, b, c);
   SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
   SpatialInertia<double> M_with_density =
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, b, c);
@@ -524,7 +515,7 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensityOrMass) {
   const double volume = 4.0 / 3.0 * M_PI * std::pow(radius, 3);  // 4/3 π r³
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidSphere(radius);
+  const UnitInertia<double> G_BBo_B = UnitInertia<double>::SolidSphere(radius);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
   const SpatialInertia<double> M_with_density =
       SpatialInertia<double>::SolidSphereWithDensity(density, radius);
@@ -567,7 +558,7 @@ GTEST_TEST(SpatialInertia, HollowSphereWithDensityOrMass) {
   const double surface_area = 4.0 * M_PI * std::pow(radius, 2);  // 4 π r²
   const double mass = area_density * surface_area;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const UnitInertia<double>G_BBo_B = UnitInertia<double>::HollowSphere(radius);
+  const UnitInertia<double> G_BBo_B = UnitInertia<double>::HollowSphere(radius);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
   const SpatialInertia<double> M_with_density =
       SpatialInertia<double>::HollowSphereWithDensity(area_density, radius);
@@ -627,14 +618,14 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
 
   // Ensure nothing changes if two arguments are switched (e.g., p1 and p2).
   M_BB0 = SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
-          density, p2, p1, p3);
+      density, p2, p1, p3);
   EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
                               M_BB0.CopyToFullMatrix6(), kTolerance));
 
   // Ensure a negative density throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
-          -9.3, p1, p2, p3),
+      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(-9.3, p1,
+                                                                     p2, p3),
       "[^]* density is not positive and finite: .*.");
 }
 
@@ -649,7 +640,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
   // Do a sanity check that SolidTetrahedronAboutPointWithDensity() simplifies
   // to SolidTetrahedronAboutVertexWithDensity() when p_AB0 is the zero vector.
   SpatialInertia<double> M_BA_expected =
-     SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
           density, p_AB1, p_AB2, p_AB3);
   SpatialInertia<double> M_BA =
       SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
@@ -667,7 +658,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
   p_AB3 += p_AB0;
   M_BA_expected.ShiftInPlace(-p_AB0);
   M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
-          density, p_AB0, p_AB1, p_AB2, p_AB3);
+      density, p_AB0, p_AB1, p_AB2, p_AB3);
   EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
                               M_BA.CopyToFullMatrix6(), kTolerance));
 
@@ -1053,10 +1044,11 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
 // Tests that by setting skip_validity_check = true, it is possible to create
 // invalid spatial inertias with negative mass and malformed COM.
 GTEST_TEST(SpatialInertia, SkipValidityCheck) {
-  DRAKE_EXPECT_NO_THROW(SpatialInertia<double>(-1.0, Vector3d::Zero(),
-                           UnitInertia<double>::SolidSphere(1.0), true));
-  DRAKE_EXPECT_NO_THROW(SpatialInertia<double>(1.0, Vector3d(2.0, 0.0, 0.0),
-                           UnitInertia<double>::SolidSphere(1.0), true));
+  DRAKE_EXPECT_NO_THROW(SpatialInertia<double>(
+      -1.0, Vector3d::Zero(), UnitInertia<double>::SolidSphere(1.0), true));
+  DRAKE_EXPECT_NO_THROW(
+      SpatialInertia<double>(1.0, Vector3d(2.0, 0.0, 0.0),
+                             UnitInertia<double>::SolidSphere(1.0), true));
 }
 
 // Tests the method SpatialInertia::MakeFromCentralInertia(...).
@@ -1108,7 +1100,7 @@ GTEST_TEST(SpatialInertia, IsMakeFromCentralInertiaTestValidityImmediately) {
   // Create a spatial inertia for a thin rod B about its center of mass Bcm.
   // The allowable violation for rotational inertia triangle inequality test is
   // ≈ 16 * std::numeric_limits<double>::epsilon() * 20.833 ≈ 7.4E-14.
-  const double mass = 10.0,  length = 5.0;
+  const double mass = 10.0, length = 5.0;
   const SpatialInertia<double> M_BBcm_B =
       SpatialInertia<double>::ThinRodWithMass(mass, length, Vector3d(0, 0, 1));
   RotationalInertia<double> I_BBcm_B = M_BBcm_B.CalcRotationalInertia();
@@ -1124,30 +1116,34 @@ GTEST_TEST(SpatialInertia, IsMakeFromCentralInertiaTestValidityImmediately) {
   // Bo (for storage) and a later shift from Bo to Bcm (for triangle inequalty
   // test) caused the inertia triangle inequality to be violated by ≈ 1.1E-12.
   Vector3<double> p_BoBcm_B(10, 20, 30);
-  DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
-    SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B));
+  DRAKE_EXPECT_NO_THROW(/* M_BBo_B = */
+                        SpatialInertia<double>::MakeFromCentralInertia(
+                            mass, p_BoBcm_B, I_BBcm_B));
 
   // Scale the position vector by a factor of 10.
   // Before June 2023, the following caused the inertia triangle inequality test
   // to be violated by ≈ 1.5E-10. Note the ratio 1.5E-10 / 1.1E-12 ≈ 10² = 100.
   // In other words, error scaled as ≈ mass * distance² to center of mass.
   p_BoBcm_B *= 10;
-  DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
-     SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B));
+  DRAKE_EXPECT_NO_THROW(/* M_BBo_B = */
+                        SpatialInertia<double>::MakeFromCentralInertia(
+                            mass, p_BoBcm_B, I_BBcm_B));
 
   // Before June 2023, the following caused the inertia triangle inequality test
   // to be violated by ≈ 1.2E-06. Note the ratio 1.2E-06 / 1.1E-12 ≈ 1000² = 1E6
   // which reinforces that lost signficiant digits scale with distance².
   p_BoBcm_B *= 100;
-  DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
-     SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B));
+  DRAKE_EXPECT_NO_THROW(/* M_BBo_B = */
+                        SpatialInertia<double>::MakeFromCentralInertia(
+                            mass, p_BoBcm_B, I_BBcm_B));
 
   // Test for a small spatial inertia with somewhat disorderly digits.
   // Before June 2023, the test below threw an exception (similarly as above).
-  I_BBcm_B = RotationalInertia<double>(0.01/M_PI, 0.01/M_PI, 0.02/M_PI);
+  I_BBcm_B = RotationalInertia<double>(0.01 / M_PI, 0.01 / M_PI, 0.02 / M_PI);
   p_BoBcm_B = Vector3<double>(10, 20, 30);
-  DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
-    SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B));
+  DRAKE_EXPECT_NO_THROW(/* M_BBo_B = */
+                        SpatialInertia<double>::MakeFromCentralInertia(
+                            mass, p_BoBcm_B, I_BBcm_B));
 
   // Test a spatial inertia constructor that STILL throws an exception due to
   // the inertia triangle inequality test being violated by ≈ 1.1E-12.
@@ -1155,8 +1151,8 @@ GTEST_TEST(SpatialInertia, IsMakeFromCentralInertiaTestValidityImmediately) {
   // significant digits lost in a relatively large shift to the center of mass.
   const UnitInertia<double> G_BBcm_B = M_BBcm_B.get_unit_inertia();
   UnitInertia<double> G_BBo_B = G_BBcm_B.ShiftFromCenterOfMass(p_BoBcm_B);
-  EXPECT_THROW(  /* M_BBo_B = */
-     SpatialInertia(mass, p_BoBcm_B, G_BBo_B),  std::exception);
+  EXPECT_THROW(/* M_BBo_B = */
+               SpatialInertia(mass, p_BoBcm_B, G_BBo_B), std::exception);
 }
 
 // Verifies the operator*(const SpatialVelocity&) by computing the kinetic
@@ -1341,7 +1337,7 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
   // Verify p_BcmAo_B is zero (since Ao should be located at Bcm).
   M_BBcm_B =
-      SpatialInertia<double>::SolidBoxWithDensity(density, 2*a, 2*b, 2*c);
+      SpatialInertia<double>::SolidBoxWithDensity(density, 2 * a, 2 * b, 2 * c);
   std::tie(abc, X_BA) = M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForSolidBox();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));

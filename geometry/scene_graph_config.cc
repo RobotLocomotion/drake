@@ -70,6 +70,7 @@ void DefaultProximityProperties::ValidateOrThrow() const {
   DRAKE_ENFORCE(hydroelastic_modulus, kPositive);
   DRAKE_ENFORCE(resolution_hint, kPositiveFinite);
   DRAKE_ENFORCE(slab_thickness, kPositiveFinite);
+  DRAKE_ENFORCE(margin, kNonNegativeFinite);
 
   DRAKE_ENFORCE(dynamic_friction, kNonNegative);
   DRAKE_ENFORCE(static_friction, kNonNegative);

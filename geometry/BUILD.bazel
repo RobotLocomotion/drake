@@ -31,11 +31,13 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_version",
+        ":in_memory_mesh",
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
         ":make_mesh_for_deformable",
         ":mesh_deformation_interpolator",
+        ":mesh_source",
         ":meshcat",
         ":meshcat_animation",
         ":meshcat_graphviz",
@@ -44,6 +46,7 @@ drake_cc_package_library(
         ":meshcat_visualizer_params",
         ":proximity_engine",
         ":proximity_properties",
+        ":read_gltf_to_memory",
         ":read_obj",
         ":rgba",
         ":scene_graph",
@@ -272,6 +275,32 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "in_memory_mesh",
+    srcs = ["in_memory_mesh.cc"],
+    hdrs = ["in_memory_mesh.h"],
+    deps = [
+        "//common:file_source",
+        "//common:memory_file",
+        "//common:string_container",
+    ],
+)
+
+drake_cc_library(
+    name = "read_gltf_to_memory",
+    srcs = ["read_gltf_to_memory.cc"],
+    hdrs = ["read_gltf_to_memory.h"],
+    deps = [
+        ":in_memory_mesh",
+    ],
+    implementation_deps = [
+        "//common:file_source",
+        "//common:memory_file",
+        "//common:string_container",
+        "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+drake_cc_library(
     name = "make_mesh_for_deformable",
     srcs = ["make_mesh_for_deformable.cc"],
     hdrs = ["make_mesh_for_deformable.h"],
@@ -292,6 +321,15 @@ drake_cc_library(
         "//geometry/proximity:triangle_surface_mesh",
         "//geometry/proximity:volume_mesh",
         "//geometry/proximity:volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_source",
+    srcs = ["mesh_source.cc"],
+    hdrs = ["mesh_source.h"],
+    deps = [
+        ":in_memory_mesh",
     ],
 )
 
@@ -379,11 +417,13 @@ drake_cc_library(
     srcs = ["read_obj.cc"],
     hdrs = ["read_obj.h"],
     deps = [
+        ":mesh_source",
         "//common:diagnostic_policy",
         "@eigen",
     ],
     implementation_deps = [
         "//common:essential",
+        "//common:memory_file",
         "@fmt",
         "@tinyobjloader_internal//:tinyobjloader",
     ],
@@ -394,6 +434,7 @@ drake_cc_library(
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
     deps = [
+        ":mesh_source",
         "//common:essential",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
@@ -712,18 +753,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "vtk_opengl_init",
-    srcs = ["vtk_opengl_init.cc"],
-    internal = True,
-    visibility = ["//geometry:__subpackages__"],
-    deps = [
-        "@vtk_internal//:vtkCommonCore",
-        "@vtk_internal//:vtkRenderingOpenGL2",
-    ],
-    alwayslink = True,
-)
-
 drake_cc_googletest(
     name = "meshcat_visualizer_test",
     data = [
@@ -740,6 +769,24 @@ drake_cc_googletest(
         "//systems/analysis:simulator",
         "//systems/primitives:constant_vector_source",
         "@msgpack_internal//:msgpack",
+    ],
+)
+
+drake_cc_library(
+    name = "vtk_gltf_uri_loader",
+    srcs = ["vtk_gltf_uri_loader.cc"],
+    hdrs = ["vtk_gltf_uri_loader.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__subpackages__",
+    ],
+    deps = [
+        ":mesh_source",
+        "//common:drake_export",
+        "//common:essential",
+        "//common:memory_file",
+        "//common:overloaded",
+        "@vtk_internal//:vtkIOCore",
     ],
 )
 
@@ -846,6 +893,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "mesh_source_test",
+    deps = [
+        ":in_memory_mesh",
+        ":mesh_source",
+    ],
+)
+
+drake_cc_googletest(
     name = "proximity_engine_test",
     data = [
         ":test_obj_files",
@@ -925,6 +980,27 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//geometry/proximity:make_sphere_mesh",
         "//geometry/test_utilities:dummy_render_engine",
+    ],
+)
+
+drake_cc_googletest(
+    name = "in_memory_mesh_test",
+    deps = [
+        ":in_memory_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "read_gltf_to_memory_test",
+    data = [
+        "//geometry:test_gltf_files",
+        "//geometry/render:test_models",
+    ],
+    deps = [
+        ":read_gltf_to_memory",
+        "//common:find_resource",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

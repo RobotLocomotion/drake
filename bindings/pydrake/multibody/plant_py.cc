@@ -293,7 +293,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("damping") = 0.0, py_rvp::reference_internal,
             cls_doc.AddDistanceConstraint.doc)
         .def("AddBallConstraint", &Class::AddBallConstraint, py::arg("body_A"),
-            py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ"),
+            py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ") = std::nullopt,
             py_rvp::reference_internal, cls_doc.AddBallConstraint.doc)
         .def("AddWeldConstraint", &Class::AddWeldConstraint, py::arg("body_A"),
             py::arg("X_AP"), py::arg("body_B"), py::arg("X_BQ"),
@@ -796,6 +796,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
         .def("get_body", &Class::get_body, py::arg("body_index"),
             py_rvp::reference_internal, cls_doc.get_body.doc)
+        .def("IsAnchored", &Class::IsAnchored, py::arg("body"),
+            cls_doc.IsAnchored.doc)
+        .def("NumBodiesWithName", &Class::NumBodiesWithName, py::arg("name"),
+            cls_doc.NumBodiesWithName.doc)
         .def("has_joint", &Class::has_joint, py::arg("joint_index"),
             cls_doc.has_joint.doc)
         .def("get_joint", &Class::get_joint, py::arg("joint_index"),
@@ -1026,19 +1030,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("EvalSceneGraphInspector", &Class::EvalSceneGraphInspector,
             py::arg("context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(), cls_doc.EvalSceneGraphInspector.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("get_geometry_poses_output_port",
-            WrapDeprecated(
-                cls_doc.get_geometry_poses_output_port.doc_deprecated,
-                &Class::get_geometry_poses_output_port),
-            py_rvp::reference_internal,
-            cls_doc.get_geometry_poses_output_port.doc_deprecated);
-#pragma GCC diagnostic pop
-    // Port accessors.
-    cls  // BR
+            py::keep_alive<0, 2>(), cls_doc.EvalSceneGraphInspector.doc)
+        // Port accessors.
         .def("get_actuation_input_port",
             overload_cast_explicit<const systems::InputPort<T>&>(
                 &Class::get_actuation_input_port),
@@ -1693,6 +1686,9 @@ PYBIND11_MODULE(plant, m) {
         .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,
             py::arg("id"), py::arg("p_WQ"), py::arg("n_W"),
             cls_doc.SetWallBoundaryCondition.doc)
+        .def("AddFixedConstraint", &Class::AddFixedConstraint,
+            py::arg("body_A_id"), py::arg("body_B"), py::arg("X_BA"),
+            py::arg("shape"), py::arg("X_BG"), cls_doc.AddFixedConstraint.doc)
         .def("GetDiscreteStateIndex", &Class::GetDiscreteStateIndex,
             py::arg("id"), cls_doc.GetDiscreteStateIndex.doc)
         .def("GetReferencePositions", &Class::GetReferencePositions,

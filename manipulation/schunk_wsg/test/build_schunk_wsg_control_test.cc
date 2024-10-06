@@ -75,6 +75,33 @@ TEST_F(BuildSchunkWsgControlTest, BuildSchunkWsgControl) {
   EXPECT_NEAR(sub.message().actual_position_mm, 0.0, kTolerance);
 }
 
+TEST_F(BuildSchunkWsgControlTest, CommandToCloseAtBeginning) {
+  // The schunk gripper is initially open is commanded to close.
+  BuildSchunkWsgControl(*sim_plant_, wsg_instance_, &lcm_, &builder_);
+  const auto diagram = builder_.Build();
+  systems::Simulator<double> simulator(*diagram);
+
+  systems::Context<double>& simulator_context = simulator.get_mutable_context();
+  auto& plant_context =
+      sim_plant_->GetMyMutableContextFromRoot(&simulator_context);
+  sim_plant_->SetPositions(&plant_context, wsg_instance_,
+                           Eigen::Vector2d(-0.07, 0));
+
+  lcm::Subscriber<lcmt_schunk_wsg_status> sub{&lcm_, "SCHUNK_WSG_STATUS"};
+
+  // Publish commands and check whether the wsg gripper moves to the correct
+  // positions.
+  lcmt_schunk_wsg_command command{};
+  command.force = 40.0;
+  command.target_position_mm = 0.0;
+  Publish(&lcm_, "SCHUNK_WSG_COMMAND", command);
+  lcm_.HandleSubscriptions(0);
+  simulator.AdvanceTo(1.0);
+  lcm_.HandleSubscriptions(0);
+  EXPECT_NEAR(sub.message().actual_position_mm, command.target_position_mm,
+              kTolerance);
+}
+
 }  // namespace
 }  // namespace schunk_wsg
 }  // namespace manipulation

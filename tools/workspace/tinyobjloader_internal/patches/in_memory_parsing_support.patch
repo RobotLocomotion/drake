@@ -1,0 +1,92 @@
+tinyobj offers the api ObjReader::ParseFromString(). This API delegates to the
+LoadObj() from stream API. It creates streams for the obj and mtl contents.
+The default behavior of std::stringbuf is to *copy* the strings. Instead, we
+introduce a string buffer that simply aliases the string's underlying character
+array to save the copy.
+
+This is only controversial in so far that std::istream::putback() is an API that
+can allow an *input* stream to modify its otherwise read-only buffer. But we
+rely on the fact that tinyobj parsing doesn't attempt to do so.
+
+Furthermore, tinyobj's mtllib semantics can support an obj referencing multiple
+.mtl files. The ParseFromString() API doesn't support that functionality because
+it requires the contents of a single .mtl file. So, we add a new API in which
+a MaterialReader is passed that can serve arbitrary .mtl files as tinyobj
+requests them.
+
+This should probably be upstreamed to tinyobj.
+
+--- tiny_obj_loader.h
++++ tiny_obj_loader.h
+@@ -567,6 +567,20 @@ class ObjReader {
+   bool ParseFromString(const std::string &obj_text, const std::string &mtl_text,
+                        const ObjReaderConfig &config = ObjReaderConfig());
+ 
++  ///
++  /// Parse .obj from a text string.
++  /// Requests for materials (via access to material library files) will be
++  /// processed by mtl_reader, if provided. Otherwise, there will be no
++  /// materials parsed.
++  ///
++  /// @param[in] obj_text wavefront .obj contents
++  /// @param[in] mtl_reader material reader to service material library requests
++  /// @param[in] config Reader configuration
++  ///
++  bool ParseFromString(const std::string &obj_text,
++                       MaterialReader *mtl_reader,
++                       const ObjReaderConfig &config = ObjReaderConfig());
++
+   ///
+   /// .obj was loaded or parsed correctly.
+   ///
+@@ -3502,11 +3516,27 @@ bool ObjReader::ParseFromFile(const std::string &filename,
+   return valid_;
+ }
+ 
++namespace detail {
++
++// This provides a string buffer for std::istream that doesn't copy the input
++// string. Instead, it aliases the string's character array. This is only
++// safe as long as the parsing never calls std::istream::putback() with a
++// *different* character than read -- as that would mutate the string.
++struct AliasingStringReadBuf : public std::streambuf {
++ public:
++  explicit AliasingStringReadBuf(const std::string& str) {
++    char* s = const_cast<char*>(str.c_str());
++    setg(s, s, s + str.size());
++  }
++};
++
++}  // namespace detail
++
+ bool ObjReader::ParseFromString(const std::string &obj_text,
+                                 const std::string &mtl_text,
+                                 const ObjReaderConfig &config) {
+-  std::stringbuf obj_buf(obj_text);
+-  std::stringbuf mtl_buf(mtl_text);
++  detail::AliasingStringReadBuf obj_buf(obj_text);
++  detail::AliasingStringReadBuf mtl_buf(mtl_text);
+ 
+   std::istream obj_ifs(&obj_buf);
+   std::istream mtl_ifs(&mtl_buf);
+@@ -3519,6 +3549,20 @@ bool ObjReader::ParseFromString(const std::string &obj_text,
+   return valid_;
+ }
+ 
++bool ObjReader::ParseFromString(const std::string &obj_text,
++                                MaterialReader* mtl_reader,
++                                const ObjReaderConfig &config) {
++  detail::AliasingStringReadBuf obj_buf(obj_text);
++
++  std::istream obj_ifs(&obj_buf);
++
++  valid_ = LoadObj(&attrib_, &shapes_, &materials_, &warning_, &error_,
++                   &obj_ifs, mtl_reader, config.triangulate,
++                   config.vertex_color);
++
++  return valid_;
++}
++
+ #ifdef __clang__
+ #pragma clang diagnostic pop
+ #endif

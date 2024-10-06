@@ -15,6 +15,7 @@
 #include <libqhullcpp/QhullVertexSet.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/common/overloaded.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/solvers/solve.h"
@@ -104,15 +105,38 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
                      GeometryId geometry_id,
                      std::optional<FrameId> reference_frame)
     : ConvexSet(3, true) {
-  Matrix3Xd vertices;
-  query_object.inspector().GetShape(geometry_id).Reify(this, &vertices);
-
+  const Shape& shape = query_object.inspector().GetShape(geometry_id);
+  const MatrixXd shape_vertices = shape.Visit(overloaded{
+      // We only handle certain shape types.
+      [](const Box& box) {
+        const double x = box.width() / 2.0;
+        const double y = box.depth() / 2.0;
+        const double z = box.height() / 2.0;
+        MatrixXd result(3, 8);
+        // clang-format off
+        result << -x,  x,  x, -x, -x,  x,  x, -x,
+                   y,  y, -y, -y, -y, -y,  y,  y,
+                  -z, -z, -z, -z,  z,  z,  z,  z;
+        // clang-format on
+        return result;
+      },
+      [](const Convex& convex) {
+        return GetConvexHullVertices(convex.GetConvexHull());
+      },
+      [](const Mesh& mesh) {
+        return GetConvexHullVertices(mesh.GetConvexHull());
+      },
+      [&geometry_id](const auto& unsupported) -> MatrixXd {
+        throw std::logic_error(fmt::format(
+            "{} (geometry_id={}) cannot be converted to a VPolytope",
+            unsupported, geometry_id));
+      }});
   const RigidTransformd X_WE =
       reference_frame ? query_object.GetPoseInWorld(*reference_frame)
                       : RigidTransformd::Identity();
   const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
   const RigidTransformd X_EG = X_WE.InvertAndCompose(X_WG);
-  vertices_ = X_EG * vertices;
+  vertices_ = X_EG * shape_vertices;
 }
 
 VPolytope::VPolytope(const HPolyhedron& hpoly, double tol)
@@ -620,32 +644,6 @@ double VPolytope::DoCalcVolume() const {
                     qhull.qhullStatus(), qhull.qhullMessage()));
   }
   return qhull.volume();
-}
-
-void VPolytope::ImplementGeometry(const Box& box, void* data) {
-  const double x = box.width() / 2.0;
-  const double y = box.depth() / 2.0;
-  const double z = box.height() / 2.0;
-  DRAKE_ASSERT(data != nullptr);
-  Matrix3Xd* vertices = static_cast<Matrix3Xd*>(data);
-  vertices->resize(3, 8);
-  // clang-format off
-  *vertices << -x,  x,  x, -x, -x,  x,  x, -x,
-                y,  y, -y, -y, -y, -y,  y,  y,
-               -z, -z, -z, -z,  z,  z,  z,  z;
-  // clang-format on
-}
-
-void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
-  DRAKE_ASSERT(data != nullptr);
-  Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetConvexHullVertices(convex.GetConvexHull());
-}
-
-void VPolytope::ImplementGeometry(const Mesh& mesh, void* data) {
-  DRAKE_ASSERT(data != nullptr);
-  Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetConvexHullVertices(mesh.GetConvexHull());
 }
 
 MatrixXd GetVertices(const Convex& convex) {

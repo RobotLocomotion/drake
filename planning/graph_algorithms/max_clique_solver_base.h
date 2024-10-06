@@ -1,4 +1,6 @@
 #pragma once
+#include <memory>
+
 #include <Eigen/Sparse>
 
 #include "drake/common/eigen_types.h"
@@ -26,7 +28,7 @@ class MaxCliqueSolverBase {
    * compute), or only an approximate solution found via heuristics.
    *
    * This method throws if the adjacency matrix is not symmetric and may throw
-   * depending on the concrete implmementation of the solver.
+   * depending on the concrete implementation of the solver.
    *
    * @param adjacency_matrix a symmetric binary matrix encoding the edge
    * relationship.
@@ -35,6 +37,9 @@ class MaxCliqueSolverBase {
    */
   [[nodiscard]] VectorX<bool> SolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const;
+
+  /** Creates a unique deep copy of this set. */
+  [[nodiscard]] std::unique_ptr<MaxCliqueSolverBase> Clone() const;
 
  protected:
   // We put the copy/move/assignment constructors as protected to avoid copy
@@ -46,6 +51,9 @@ class MaxCliqueSolverBase {
  private:
   virtual VectorX<bool> DoSolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const = 0;
+
+  [[nodiscard]] virtual std::unique_ptr<MaxCliqueSolverBase> DoClone()
+      const = 0;
 };
 
 }  // namespace graph_algorithms

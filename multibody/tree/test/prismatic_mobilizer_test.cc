@@ -49,9 +49,8 @@ TEST_F(PrismaticMobilizerTest, CanRotateOrTranslate) {
 
 // Verify that PrismaticMobilizer normalizes its axis on construction.
 TEST_F(PrismaticMobilizerTest, AxisIsNormalizedAtConstruction) {
-  EXPECT_TRUE(CompareMatrices(
-      slider_->translation_axis(), axis_F_.normalized(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(slider_->translation_axis(), axis_F_.normalized(),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 // Verifies method to mutate and access the context.
@@ -101,15 +100,15 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
   // introduce no rotations at all.
   EXPECT_EQ(X_FM.rotation().matrix(), Matrix3d::Identity());
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
-                              X_FM_expected.GetAsMatrix34(),
-                              kTolerance, MatrixCompareType::relative));
+                              X_FM_expected.GetAsMatrix34(), kTolerance,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
   const double translation_rate = 1.5;
   const SpatialVelocity<double> V_FM =
-      slider_->CalcAcrossMobilizerSpatialVelocity(
-          *context_, Vector1d(translation_rate));
+      slider_->CalcAcrossMobilizerSpatialVelocity(*context_,
+                                                  Vector1d(translation_rate));
 
   const SpatialVelocity<double> V_FM_expected(
       Vector3d::Zero(), axis_F_.normalized() * translation_rate);
@@ -163,8 +162,9 @@ TEST_F(PrismaticMobilizerTest, MapVelocityToQDotAndBack) {
 TEST_F(PrismaticMobilizerTest, KinematicMapping) {
   // For this joint, Nplus = 1 independently of the state. We therefore set the
   // state to NaN in order to verify this.
-  tree().GetMutablePositionsAndVelocities(context_.get()).
-      setConstant(std::numeric_limits<double>::quiet_NaN());
+  tree()
+      .GetMutablePositionsAndVelocities(context_.get())
+      .setConstant(std::numeric_limits<double>::quiet_NaN());
 
   // Compute N.
   MatrixX<double> N(1, 1);

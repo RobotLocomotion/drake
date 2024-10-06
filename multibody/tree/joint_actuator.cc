@@ -41,11 +41,9 @@ const Joint<T>& JointActuator<T>::joint() const {
 }
 
 template <typename T>
-void JointActuator<T>::AddInOneForce(
-    const systems::Context<T>& context,
-    int joint_dof,
-    const T& joint_tau,
-    MultibodyForces<T>* forces) const {
+void JointActuator<T>::AddInOneForce(const systems::Context<T>& context,
+                                     int joint_dof, const T& joint_tau,
+                                     MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_inputs());
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
@@ -59,8 +57,7 @@ void JointActuator<T>::set_actuation_vector(
   DRAKE_THROW_UNLESS(u != nullptr);
   DRAKE_THROW_UNLESS(u->size() == this->get_parent_tree().num_actuated_dofs());
   DRAKE_THROW_UNLESS(u_actuator.size() == num_inputs());
-  u->segment(topology_.actuator_index_start, num_inputs()) =
-      u_actuator;
+  u->segment(topology_.actuator_index_start, num_inputs()) = u_actuator;
 }
 
 template <typename T>

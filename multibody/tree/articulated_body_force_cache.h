@@ -22,16 +22,15 @@ namespace internal {
 // the force bias terms.
 //
 // @tparam_default_scalar
-template<typename T>
+template <typename T>
 class ArticulatedBodyForceCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyForceCache);
 
   // Constructs an %ArticulatedBodyForceCache object properly sized to
   // store the force bias terms for a model with the given `topology`.
-  explicit ArticulatedBodyForceCache(
-      const MultibodyTreeTopology& topology) :
-      num_mobods_(topology.num_mobods()) {
+  explicit ArticulatedBodyForceCache(const MultibodyTreeTopology& topology)
+      : num_mobods_(topology.num_mobods()) {
     Allocate();
   }
 

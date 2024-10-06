@@ -65,6 +65,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(vars.dtype, sym.Variable)
         vars_all = prog.decision_variables()
         self.assertEqual(vars_all.shape, (5,))
+        self.assertTrue(prog.IsThreadSafe())
 
     def test_clone_and_copy_and_deepcopy(self):
 

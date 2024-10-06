@@ -26,8 +26,8 @@ class MultibodyElementTester {
 namespace internal {
 
 using Eigen::AngleAxisd;
-using Eigen::MatrixXd;
 using Eigen::Matrix3d;
+using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using math::RotationMatrix;
 using systems::Context;
@@ -60,6 +60,91 @@ class DummyBody : public RigidBody<double> {
   }
 };
 
+// Non-abstract definition of a BodyNode.
+class DummyBodyNode : public BodyNode<double> {
+ public:
+  using T = double;
+
+  using BodyNode::BodyNode;
+
+  void CalcPositionKinematicsCache_BaseToTip(
+      const FrameBodyPoseCache<T>&, const T*,
+      PositionKinematicsCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcAcrossNodeJacobianWrtVExpressedInWorld(
+      const systems::Context<T>&, const FrameBodyPoseCache<T>&,
+      const PositionKinematicsCache<T>&, std::vector<Vector6<T>>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcVelocityKinematicsCache_BaseToTip(
+      const systems::Context<T>&, const PositionKinematicsCache<T>&,
+      const std::vector<Vector6<T>>&, const T*,
+      VelocityKinematicsCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcSpatialAcceleration_BaseToTip(
+      const systems::Context<T>&, const FrameBodyPoseCache<T>&,
+      const PositionKinematicsCache<T>&, const VelocityKinematicsCache<T>*,
+      const VectorX<T>&, std::vector<SpatialAcceleration<T>>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcInverseDynamics_TipToBase(
+      const systems::Context<T>&, const FrameBodyPoseCache<T>&,
+      const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
+      const std::vector<SpatialForce<T>>*,
+      const std::vector<SpatialAcceleration<T>>&, const SpatialForce<T>&,
+      const Eigen::Ref<const VectorX<T>>&, std::vector<SpatialForce<T>>*,
+      EigenPtr<VectorX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcArticulatedBodyInertiaCache_TipToBase(
+      const systems::Context<T>&, const PositionKinematicsCache<T>&,
+      const Eigen::Ref<const MatrixUpTo6<T>>&, const SpatialInertia<T>&,
+      const VectorX<T>&, ArticulatedBodyInertiaCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcArticulatedBodyForceCache_TipToBase(
+      const systems::Context<T>&, const PositionKinematicsCache<T>&,
+      const VelocityKinematicsCache<T>*, const SpatialForce<T>&,
+      const ArticulatedBodyInertiaCache<T>&, const SpatialForce<T>&,
+      const SpatialForce<T>&, const Eigen::Ref<const VectorX<T>>&,
+      const Eigen::Ref<const MatrixUpTo6<T>>&,
+      ArticulatedBodyForceCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcArticulatedBodyAccelerations_BaseToTip(
+      const systems::Context<T>&, const PositionKinematicsCache<T>&,
+      const ArticulatedBodyInertiaCache<T>&,
+      const ArticulatedBodyForceCache<T>&,
+      const Eigen::Ref<const MatrixUpTo6<T>>&, const SpatialAcceleration<T>&,
+      AccelerationKinematicsCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcCompositeBodyInertia_TipToBase(const SpatialInertia<T>&,
+                                          const PositionKinematicsCache<T>&,
+                                          const std::vector<SpatialInertia<T>>&,
+                                          SpatialInertia<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcSpatialAccelerationBias(const systems::Context<T>&,
+                                   const FrameBodyPoseCache<T>&,
+                                   const PositionKinematicsCache<T>&,
+                                   const VelocityKinematicsCache<T>&,
+                                   SpatialAcceleration<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+};
+
 // This test validates the exception message thrown in
 // BodyNode::CalcArticulatedBodyHingeInertiaMatrixFactorization(). There are two
 // aspects of the message that are not simply *literal*:
@@ -75,7 +160,7 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
   // Construct enough of a node so we can invoke the dut with known body names.
   const DummyBody parent("parent", world_index());
   const DummyBody child("child", BodyIndex(1));
-  const BodyNode<double> parent_node(nullptr, &parent, nullptr);
+  const DummyBodyNode parent_node(nullptr, &parent, nullptr);
 
   // A 1x1 articulated body hinge inertia matrix.
   MatrixUpTo6<double> one_by_one(1, 1);
@@ -84,10 +169,10 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
   const SpanningForest::Mobod dummy_mobod(MobodIndex(0), LinkOrdinal(0));
   {
     // Rotation only.
-    const RevoluteMobilizer<double> mobilizer(
-        dummy_mobod, parent.body_frame(), child.body_frame(),
-        Vector3d{0, 0, 1});
-    const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
+    const RevoluteMobilizer<double> mobilizer(dummy_mobod, parent.body_frame(),
+                                              child.body_frame(),
+                                              Vector3d{0, 0, 1});
+    const DummyBodyNode body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
         "An internal mass matrix associated with the joint that connects body "
@@ -99,10 +184,10 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
 
   {
     // Translation only.
-    const PrismaticMobilizer<double> mobilizer(
-        dummy_mobod, parent.body_frame(), child.body_frame(),
-        Vector3d{0, 0, 1});
-    const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
+    const PrismaticMobilizer<double> mobilizer(dummy_mobod, parent.body_frame(),
+                                               child.body_frame(),
+                                               Vector3d{0, 0, 1});
+    const DummyBodyNode body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
         "An internal mass matrix associated with the joint that connects body "
@@ -118,7 +203,7 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
     // space is irrelevant.
     const PlanarMobilizer<double> mobilizer(dummy_mobod, parent.body_frame(),
                                             child.body_frame());
-    const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
+    const DummyBodyNode body_node(&parent_node, &child, &mobilizer);
     // In this case, we don't need to examine the full exception message since
     // the message is a concatenation of the text in the previous messages. We
     // look for evidence of concatenation with "rotation" and "translation".
@@ -146,8 +231,8 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
   const SpanningForest::Mobod dummy_mobod(MobodIndex(0), LinkOrdinal(0));
   const RevoluteMobilizer<double> mobilizer(
       dummy_mobod, world.body_frame(), body.body_frame(), Vector3d{0, 0, 1});
-  const BodyNode<double> world_node(nullptr, &world, nullptr);
-  const BodyNode<double> body_node(&world_node, &body, &mobilizer);
+  const DummyBodyNode world_node(nullptr, &world, nullptr);
+  const DummyBodyNode body_node(&world_node, &body, &mobilizer);
 
   // 1x1 hinge matrix.
   Matrix one_by_one(1, 1);

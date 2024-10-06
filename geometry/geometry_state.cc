@@ -1,6 +1,7 @@
 #include "drake/geometry/geometry_state.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <string>
@@ -2057,8 +2058,9 @@ void GeometryState<T>::RegisterDrivenMesh(GeometryId geometry_id, Role role) {
   if (role == Role::kPerception) {
     // TODO(xuchenhan-tri): consider allowing embedded mesh for illustration
     // similar to the driven perception mesh.
-    const string render_meshes_file = properties.GetPropertyOrDefault(
-        "deformable", "embedded_mesh", string{});
+    const std::filesystem::path render_meshes_file =
+        properties.GetPropertyOrDefault("deformable", "embedded_mesh",
+                                        string{});
     if (!render_meshes_file.empty()) {
       render_meshes =
           internal::LoadRenderMeshesFromObj(render_meshes_file, properties, {});

@@ -141,6 +141,8 @@ GTEST_TEST(testCost, testLinearCost) {
   EXPECT_EQ(
       fmt::format("{}", *new_cost),
       "LinearCost (100 + $(0) + 2 * $(1)) described as 'simple linear cost'");
+
+  EXPECT_TRUE(cost->is_thread_safe());
 }
 
 GTEST_TEST(TestQuadraticCost, NonconvexCost) {
@@ -256,6 +258,8 @@ GTEST_TEST(TestQuadraticCost, NonconvexCost) {
   cost->UpdateCoefficients(Q + 100 * Eigen::Matrix2d::Identity(),
                            Eigen::Vector2d::Zero(), 0., false);
   EXPECT_FALSE(cost->is_convex());
+
+  EXPECT_TRUE(cost->is_thread_safe());
 }
 
 GTEST_TEST(TestQuadraticCost, ConvexCost) {
@@ -289,6 +293,8 @@ GTEST_TEST(TestQuadraticCost, ConvexCost) {
   cost = Make2NormSquaredCost((Eigen::Matrix2d() << 1, 2, 3, 4).finished(),
                               Eigen::Vector2d(2, 3));
   EXPECT_TRUE(cost->is_convex());
+
+  EXPECT_TRUE(cost->is_thread_safe());
 }
 
 // TODO(eric.cousineau): Move QuadraticErrorCost and L2NormCost tests here from
@@ -792,11 +798,12 @@ GTEST_TEST(ExpressionCost, Basic) {
 }
 
 GTEST_TEST(ToLatex, GenericCost) {
-  test::GenericTrivialCost1 c;
+  test::GenericTrivialCost1 c{false};
   c.set_description("test");
   Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
   EXPECT_EQ(c.ToLatex(vars),
             "\\text{GenericTrivialCost1}(x_{0}, x_{1}, x_{2}) \\tag{test}");
+  EXPECT_FALSE(c.is_thread_safe());
 }
 
 GTEST_TEST(ToLatex, LinearCost) {
@@ -858,6 +865,50 @@ GTEST_TEST(ToLatex, ExpressionCost) {
   c.set_description("test");
   Vector2<Variable> vars(x, y);
   EXPECT_EQ(c.ToLatex(vars), "x \\sin{y} \\tag{test}");
+}
+
+GTEST_TEST(IsThreadSafe, GenericCost) {
+  test::GenericTrivialCost1 c1{true};
+  EXPECT_TRUE(c1.is_thread_safe());
+  test::GenericTrivialCost1 c2{false};
+  EXPECT_FALSE(c2.is_thread_safe());
+}
+
+GTEST_TEST(IsThreadSafe, LinearCost) {
+  LinearCost c(Vector3d(1, 2, 3), 4);
+  EXPECT_TRUE(c.is_thread_safe());
+}
+
+GTEST_TEST(IsThreadSafe, QuadraticCost) {
+  QuadraticCost c(Matrix3d::Identity(), Vector3d(1, 2, 3), 4);
+  EXPECT_TRUE(c.is_thread_safe());
+}
+
+GTEST_TEST(IsThreadSafe, L1NormCost) {
+  L1NormCost c(Matrix3d::Identity(), Vector3d(1, 2, 3));
+  EXPECT_TRUE(c.is_thread_safe());
+}
+
+GTEST_TEST(IsThreadSafe, L2NormCost) {
+  L2NormCost c(Matrix3d::Identity(), Vector3d(1, 2, 3));
+  EXPECT_TRUE(c.is_thread_safe());
+}
+
+GTEST_TEST(IsThreadSafe, LInfNormCost) {
+  LInfNormCost c(Matrix3d::Identity(), Vector3d(1, 2, 3));
+  EXPECT_TRUE(c.is_thread_safe());
+}
+
+GTEST_TEST(IsThreadSafe, PerspectiveQuadraticCost) {
+  PerspectiveQuadraticCost c(Matrix3d::Identity(), Vector3d(1, 2, 3));
+  EXPECT_TRUE(c.is_thread_safe());
+}
+
+GTEST_TEST(IsThreadSafe, ExpressionCost) {
+  Variable x("x"), y("y");
+  Expression e = x * sin(y);
+  ExpressionCost c(e);
+  EXPECT_FALSE(c.is_thread_safe());
 }
 
 }  // namespace

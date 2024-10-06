@@ -52,6 +52,7 @@ PYBIND11_MODULE(primitives, m) {
   constexpr auto& doc = pydrake_doc.drake.systems;
 
   py::module::import("pydrake.systems.framework");
+  py::module::import("pydrake.trajectories");
 
   py::enum_<PerceptronActivationType>(
       m, "PerceptronActivationType", doc.PerceptronActivationType.doc)
