@@ -21,6 +21,9 @@ If you need to use these, you can use an old release of Drake.
 
 # macOS packages
 
+* macOS 13 (Ventura)
+  * The last version with support for macOS 13 was
+    [v1.33.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.33.0).
 * macOS 12 (Monterey)
   * The last version with support for macOS 12 was
     [v1.22.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.22.0).
@@ -36,6 +39,15 @@ If you need to use these, you can use an old release of Drake.
 * macOS 10.13 (High Sierra)
   * The last version with support for macOS 10.13 was
     [v0.11.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.11.0).
+
+## macOS x86_64 architecture
+
+* Full packages:
+  * The last version with support for macOS running on x86_64 hardware was
+    [v1.27.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.27.0).
+* Wheel-only packages:
+  * The last version with support for macOS running on x86_64 hardware was
+    [v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0).
 
 # Wheel packages
 
