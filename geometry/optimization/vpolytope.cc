@@ -511,7 +511,7 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
 
   // Only allow early return if query point x is sufficiently far away from the
   // vertex mean.
-  if ((vals.array() < -tol).all() && (x - vertex_mean).norm() > tol) {
+  if ((vals.array() < -tol).all() && (x - vertex_mean).norm() > 1e-13) {
     return false;
   }
 
