@@ -135,9 +135,7 @@ def build(options):
     environment.pop('RUNFILES_MANIFEST_FILE')
 
     # Xcode updates may change the default -mmacosx-version-min when not
-    # specified.  For example, Xcode 14.1 on monterey (macOS 12.x) was using a
-    # deployment target of 13.0 (ventura), resulting in a wheel that could not
-    # be used on monterey.  This environment variable controls:
+    # specified. This environment variable controls:
     # - The majority of the apple and python tooling behind the scenes.
     # - The tools/wheel/image/dependencies/* CMake projects
     #   (CMAKE_OSX_DEPLOYMENT_TARGET initializes to this environment variable).

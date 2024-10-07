@@ -16,7 +16,6 @@ officially supports:
 |------------------------------------|--------------|------------|-------|-------|------------------------------|-------------------------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 7.3   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11                    |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 7.3   | 3.28  | GCC 13 (default) or Clang 15 | OpenJDK 21                    |
-| macOS Ventura (13)                 | arm64        | 3.12       | 7.3   | 3.26  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
 | macOS Sonoma (14)                  | arm64        | 3.12       | 7.3   | 3.28  | Apple LLVM 15 (Xcode 15)     | AdoptOpenJDK 16 (HotSpot JVM) |
 
 "Official support" means that we have Continuous Integration test coverage to
