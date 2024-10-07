@@ -90,11 +90,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   // N.B. Some classes define `__repr__` in `_math_extra.py`.
 
+  // The spatial algebra classes form a dependency cycle, so we must declare all
+  // of them prior to defining any of them.
+  auto cls_spatial_velocity =
+      DefineTemplateClassWithDefault<SpatialVelocity<T>>(
+          m, "SpatialVelocity", param, doc.SpatialVelocity.doc);
+  auto cls_spatial_momentum =
+      DefineTemplateClassWithDefault<SpatialMomentum<T>>(
+          m, "SpatialMomentum", param, doc.SpatialMomentum.doc);
+  auto cls_spatial_acceleration =
+      DefineTemplateClassWithDefault<SpatialAcceleration<T>>(
+          m, "SpatialAcceleration", param, doc.SpatialAcceleration.doc);
+  auto cls_spatial_force = DefineTemplateClassWithDefault<SpatialForce<T>>(
+      m, "SpatialForce", param, doc.SpatialForce.doc);
+
   {
     using Class = SpatialVelocity<T>;
     constexpr auto& cls_doc = doc.SpatialVelocity;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SpatialVelocity", param, cls_doc.doc);
+    auto& cls = cls_spatial_velocity;
     BindSpatialVectorMixin<T>(&cls);
     cls  // BR
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
@@ -122,8 +135,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = SpatialMomentum<T>;
     constexpr auto& cls_doc = doc.SpatialMomentum;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SpatialMomentum", param, cls_doc.doc);
+    auto& cls = cls_spatial_momentum;
     BindSpatialVectorMixin<T>(&cls);
     cls  // BR
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
@@ -141,8 +153,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = SpatialAcceleration<T>;
     constexpr auto& cls_doc = doc.SpatialAcceleration;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SpatialAcceleration", param, cls_doc.doc);
+    auto& cls = cls_spatial_acceleration;
     BindSpatialVectorMixin<T>(&cls);
     cls  // BR
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
@@ -172,8 +183,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = multibody::SpatialForce<T>;
     constexpr auto& cls_doc = doc.SpatialForce;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SpatialForce", param, cls_doc.doc);
+    auto& cls = cls_spatial_force;
     BindSpatialVectorMixin<T>(&cls);
     cls  // BR
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
