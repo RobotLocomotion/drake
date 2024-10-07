@@ -23,7 +23,6 @@ officially supports:
 |------------------------------------|--------------|------------|-----------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      |
-| macOS Ventura (13)                 | arm64 ⁽⁵⁾    | 3.12 ⁽³⁾   | October 2024    |
 | macOS Sonoma (14)                  | arm64 ⁽⁵⁾    | 3.12 ⁽³⁾   | October 2025    |
 
 "Official support" means that we have Continuous Integration test coverage to
@@ -65,7 +64,6 @@ compiler as our releases:
 |------------------------------------|--------------------------|-------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                   | C++20 |
 | Ubuntu 24.04 LTS (Noble Numbat)    | GCC 13                   | C++20 |
-| macOS Ventura (13)                 | Apple LLVM 14 (Xcode 14) | C++20 |
 | macOS Sonoma (14)                  | Apple LLVM 14 (Xcode 15) | C++20 |
 
 ## Available Versions
