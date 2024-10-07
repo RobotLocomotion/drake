@@ -139,6 +139,7 @@ drake_pybind_library(
     cc_srcs = ["plant_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":fem_py",
         ":math_py",
         ":module_py",
         ":tree_py",
