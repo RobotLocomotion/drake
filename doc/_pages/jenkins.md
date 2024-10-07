@@ -126,7 +126,7 @@ or [debian package](/apt.html), comment on an open pull request using one or
 more of these commands:
 
 * ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-packaging please``
-* ``@drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot mac-arm-sonoma-unprovisioned-clang-bazel-experimental-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Packaging](https://drake-jenkins.csail.mit.edu/view/Packaging/)
@@ -150,7 +150,7 @@ To schedule an "experimental" build of a [wheel package](/pip.html),
 comment on an open pull request using one or more of these commands:
 
 * ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-wheel-experimental-release please``
-* ``@drake-jenkins-bot mac-arm-ventura-unprovisioned-clang-wheel-experimental-release please``
+* ``@drake-jenkins-bot mac-arm-sonoma-unprovisioned-clang-wheel-experimental-release please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Wheel](https://drake-jenkins.csail.mit.edu/view/Wheel/)
