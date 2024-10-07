@@ -1,0 +1,44 @@
+# -*- bazel -*-
+
+load(
+    "version.bzl",
+    "PYTHON_INCLUDES",
+    "PYTHON_LINKOPTS_EMBEDDED",
+    "PYTHON_LINKOPTS_MODULE",
+)
+
+licenses(["notice"])  # Python-2.0
+
+# Only include the first level of headers and specific second level headers
+# included from `python_repository`. This excludes some third-party C headers
+# that may be nested within `/usr/include/python<version>`, such as `numpy`,
+# when installed via `apt` on Ubuntu.
+headers = glob(
+    [
+        "include/*/*",
+        "include/*/cpython/*",
+        "include/*/internal/*",
+    ],
+    exclude_directories = 1,
+)
+
+cc_library(
+    name = "python_headers",
+    hdrs = headers,
+    includes = PYTHON_INCLUDES,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "python",
+    linkopts = PYTHON_LINKOPTS_MODULE,
+    visibility = ["//visibility:public"],
+    deps = [":python_headers"],
+)
+
+cc_library(
+    name = "python_direct_link",
+    linkopts = PYTHON_LINKOPTS_EMBEDDED,
+    visibility = ["//visibility:public"],
+    deps = [":python_headers"],
+)
