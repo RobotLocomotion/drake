@@ -86,6 +86,7 @@ _MOST_HDRS = [
     "include/sdf/Gui.hh",
     "include/sdf/Heightmap.hh",
     "include/sdf/Imu.hh",
+    "include/sdf/InstallationDirectories.hh",
     "include/sdf/InterfaceElements.hh",
     "include/sdf/InterfaceFrame.hh",
     "include/sdf/InterfaceJoint.hh",
@@ -243,6 +244,11 @@ _SRCS = [
     "src/parser_private.hh",
 ]
 
+_SKIP_SRCS = [
+    # We don't want the "optional binary relocatability" feature.
+    "src/InstallationDirectories.cc",
+]
+
 # Generates the library exported to users.
 cc_library_vendored(
     name = "sdformat",
@@ -293,7 +299,7 @@ cc_library_vendored(
 )
 
 check_lists_consistency(
-    files = _MOST_HDRS + _SRCS + _IGN_CMDLINE_SRCS,
+    files = _MOST_HDRS + _SRCS + _SKIP_SRCS + _IGN_CMDLINE_SRCS,
     glob_include = [
         "include/**/*.hh",
         "src/**/*.hh",

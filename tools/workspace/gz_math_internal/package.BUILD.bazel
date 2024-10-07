@@ -59,6 +59,7 @@ _MOST_HDRS = [
     "include/gz/math/Capsule.hh",
     "include/gz/math/Color.hh",
     "include/gz/math/Cone.hh",
+    "include/gz/math/CoordinateVector3.hh",
     "include/gz/math/Cylinder.hh",
     "include/gz/math/DiffDriveOdometry.hh",
     "include/gz/math/Ellipsoid.hh",
@@ -125,7 +126,6 @@ _MOST_HDRS = [
 _HDRS_PRIVATE = [
     "src/KmeansPrivate.hh",
     "src/MaterialType.hh",
-    "src/SignalStatsPrivate.hh",
     "src/SplinePrivate.hh",
 ]
 
@@ -216,6 +216,7 @@ _SRCS = [
     "src/Angle.cc",
     "src/AxisAlignedBox.cc",
     "src/Color.cc",
+    "src/CoordinateVector3.cc",
     "src/DiffDriveOdometry.cc",
     "src/Frustum.cc",
     "src/GaussMarkovProcess.cc",
@@ -223,7 +224,6 @@ _SRCS = [
     "src/Kmeans.cc",
     "src/Material.cc",
     "src/MecanumDriveOdometry.cc",
-    "src/MovingWindowFilter.cc",
     "src/PID.cc",
     "src/Rand.cc",
     "src/RollingMean.cc",
