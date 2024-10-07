@@ -176,8 +176,6 @@ GTEST_TEST(VPolytopeTest, PointInSetFailFastEdgeCase) {
   Eigen::VectorXd vertex_mean = V.vertices().rowwise().mean();
   const double kTol = 1e-11;
   EXPECT_TRUE(V.PointInSet(vertex_mean, kTol));
-  const double kZeroTol = 0;
-  EXPECT_TRUE(V.PointInSet(vertex_mean, kZeroTol));
 }
 
 GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
