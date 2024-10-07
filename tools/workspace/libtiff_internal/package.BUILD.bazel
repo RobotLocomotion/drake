@@ -96,6 +96,13 @@ cmake_configure_files(
         "CHUNKY_STRIP_READ_SUPPORT",
         "JPEG_DUAL_MODE_8_12",
         "JPEG_SUPPORT",
+        # We don't build the tiffgt viewer.
+        "HAVE_GLUT_GLUT_H",
+        "HAVE_GL_GLUT_H",
+        "HAVE_GL_GLU_H",
+        "HAVE_GL_GL_H",
+        "HAVE_OPENGL_GLU_H",
+        "HAVE_OPENGL_GL_H",
         # Match the upstream defaults.
         "DEFER_STRILE_LOAD",
         # Dead code (unused).

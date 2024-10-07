@@ -163,11 +163,22 @@ multibody/tree<br>
   planning.</td>
 <td>hongkai-dai</td>
 <td><small>
-geometry/optimization<br>
 multibody/inverse_kinematics<br>
 multibody/optimization<br>
+planning<br>
 systems/controllers<br>
 systems/trajectory_optimization
+</small></td>
+</tr>
+
+<tr>
+<td><code>graphs of convex sets</code></td>
+<td>Graphs of Convex Sets and related algorithms</td>
+<td>RussTedrake</td>
+<td><small>
+geometry/optimization<br>
+planning/iris<br>
+planning/trajectory_optimization/gcs_trajectory_optimization<br>
 </small></td>
 </tr>
 
