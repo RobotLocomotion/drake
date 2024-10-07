@@ -35,6 +35,7 @@ body:
         - Ubuntu 22.04
         - Ubuntu 24.04
         - macOS 14 (Sonoma)
+        - macOS 15 (Sequoia)
         - Other
   - type: dropdown
     attributes:
