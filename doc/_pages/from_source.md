@@ -17,6 +17,7 @@ officially supports:
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 7.3   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11                    |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 7.3   | 3.28  | GCC 13 (default) or Clang 15 | OpenJDK 21                    |
 | macOS Sonoma (14)                  | arm64        | 3.12       | 7.3   | 3.28  | Apple LLVM 15 (Xcode 15)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Sequoia (15)                 | arm64        | TBD        | TBD   | TBD   | TBD                          | TBD                           |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
