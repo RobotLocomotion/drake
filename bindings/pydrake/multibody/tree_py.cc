@@ -48,6 +48,10 @@ using multibody::SpatialVelocity;
 
 namespace {
 
+// NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+using namespace drake::multibody;
+constexpr auto& doc = pydrake_doc.drake.multibody;
+
 // Negative case for checking T::name().
 // https://stackoverflow.com/a/16000226/7829525
 template <typename T, typename = void>
@@ -92,9 +96,6 @@ void BindMultibodyElementMixin(PyClass* pcls) {
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
   // To simplify checking binding coverage, these are defined in the same order
   // as `multibody_tree_indexes.h`.
   BindTypeSafeIndex<FrameIndex>(m, "FrameIndex", doc.FrameIndex.doc);
@@ -182,18 +183,11 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 }
 
-/**
- * Adds Python bindings for its contents to module `m`, for template `T`.
- * @param m Module.
- * @param T Template.
- */
+// TODO(jwnimmer-tri) This function is just a grab-bag of several classes. We
+// should split it up into smaller pieces.
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
-
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
 
   // Frames.
   {
@@ -1130,8 +1124,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &Class::CalcBushingSpatialForceOnFrameC, py::arg("context"),
             cls_doc.CalcBushingSpatialForceOnFrameC.doc);
   }
+  // NOLINTNEXTLINE(readability/fn_size)
+}
 
-  // MultibodyForces
+template <typename T>
+void DefineMultibodyForces(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   {
     using Class = MultibodyForces<T>;
     constexpr auto& cls_doc = doc.MultibodyForces;
@@ -1163,7 +1161,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.AddInForces.doc);
     DefCopyAndDeepCopy(&cls);
   }
-  // NOLINTNEXTLINE(readability/fn_size)
 }
 }  // namespace
 
@@ -1179,7 +1176,11 @@ PYBIND11_MODULE(tree, m) {
 
   internal::DefineTreeInertia(m);
   DoScalarIndependentDefinitions(m);
-  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+  type_visit(
+      [m](auto dummy) {
+        DefineMultibodyForces(m, dummy);
+        DoScalarDependentDefinitions(m, dummy);
+      },
       CommonScalarPack{});
 
   ExecuteExtraPythonCode(m);

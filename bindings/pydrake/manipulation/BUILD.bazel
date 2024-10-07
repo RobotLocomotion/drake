@@ -37,6 +37,7 @@ drake_pybind_library(
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
+        "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:primitives_py",
     ],
