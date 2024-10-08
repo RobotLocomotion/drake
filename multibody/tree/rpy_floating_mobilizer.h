@@ -58,6 +58,8 @@ namespace internal {
 // @note The roll-pitch-yaw (space x-y-z) Euler sequence is also known as the
 // Tait-Bryan angles or Cardan angles.
 //
+//   H_FM₆ₓ₆ = I₆ₓ₆     Hdot_FM₆ₓ₆ = 0₆ₓ₆
+//
 // @tparam_default_scalar
 template <typename T>
 class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
@@ -233,9 +235,23 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // measured and expressed in frame F as a function of the input generalized
   // velocity v, packed as documented in get_generalized_velocities(). (That's
   // conveniently just V_FM already.)
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     const Eigen::Map<const VVector> V_FM(v);
     return SpatialVelocity<T>(V_FM);  // w_FM, v_FM
+  }
+
+  // We chose the generalized velocities for this mobilizer so that H=I, Hdot=0.
+  // Therefore A_FM = H⋅vdot + Hdot⋅v = vdot.
+  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
+    const Eigen::Map<const VVector> A_FM(vdot);
+    return SpatialAcceleration<T>(A_FM);
+  }
+
+  // Returns tau = H_FMᵀ⋅F. H is identity for this mobilizer.
+  void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    Eigen::Map<VVector> tau_as_vector(tau);
+    tau_as_vector = F_BMo_F.get_coeffs();
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

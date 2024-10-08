@@ -22,26 +22,34 @@ namespace internal {
 // inboard frame origin `Fo` and the outboard frame origin `Mo` are coincident
 // at all times.
 //
-// The generalized coordinates for this mobilizer correspond to angles (θ₁, θ₂)
+// The generalized coordinates for this mobilizer correspond to angles (θ₀, θ₁)
 // for a sequence of body-fixed rotations about the x-axis of frame F, and the
 // y-axis of frame M  respectively. Defining an intermediate frame I, the first
 // rotation defines I with respect to F.  The x-axis of F and I are aligned and
-// the axes are offset by the rotation, θ₁, about their shared x-axis.  Frame M
+// the axes are offset by the rotation, θ₀, about their shared x-axis.  Frame M
 // is then defined to share the same y-axis as I and is offset by the rotation,
-// θ₂, about their shared y-axis.
-// Mathematically, rotation `R_FM` is given in terms of angles (θ₁, θ₂) by:
+// θ₁, about their shared y-axis.
+// Mathematically, rotation `R_FM` is given in terms of angles (θ₀, θ₁) by:
 // <pre>
-//   R_FM(q) = R_FI(θ₁) * R_IM(θ₂)
+//   R_FM(q) = R_FI(θ₀) * R_IM(θ₁)
 // </pre>
-// where `R_FI(θ₁)` defines the orientation of I in F as an elemental rotation
-// of amount θ₁ about the x-axis of frame F and `R_IM(θ₂)` defines the
-// orientation of M in I as an elemental rotation of amount θ₂ about the y-axis
+// where `R_FI(θ₀)` defines the orientation of I in F as an elemental rotation
+// of amount θ₀ about the x-axis of frame F and `R_IM(θ₁)` defines the
+// orientation of M in I as an elemental rotation of amount θ₁ about the y-axis
 // of frame I (also the y-axis of frame M).
-// Zero θ₁, θ₂ angles define the "zero configuration" which corresponds to
-// frames F, I, and M being coincident, see SetZeroState(). Angles (θ₁, θ₂)
+// Zero θ₀, θ₁ angles define the "zero configuration" which corresponds to
+// frames F, I, and M being coincident, see SetZeroState(). Angles (θ₀, θ₁)
 // are defined to be positive according to the right-hand-rule with the thumb
 // aligned in the direction of their respective axes. The generalized
 // velocities for this mobilizer are the rate of change of the angles, v = q̇.
+//
+//    H_FM₆ₓ₂ = [Hw_FM₃ₓ₂]        Hw_FM = [ 1   0   ]        Hv_FM = 0₃ₓ₂
+//              [Hv_FM₃ₓ₂]                [ 0 c(q₀) ]
+//                                        [ 0 s(q₀) ]
+//
+// Hdot_FM₆ₓ₂ = [Hwdot_FM₃ₓ₂]  Hwdot_FM = [ 0    0     ]  Hvdot_FM = 0₃ₓ₂
+//              [Hvdot_FM₃ₓ₂]             [ 0 -v₀s(q₀) ]
+//                                        [ 0  v₀c(q₀) ]
 //
 // @tparam_default_scalar
 template <typename T>
@@ -55,7 +63,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
 
   // Constructor for a %UniversalMobilizer between an inboard frame F
   // `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting
-  // two rotational degrees of freedom corresponding to angles θ₁, θ₂ as
+  // two rotational degrees of freedom corresponding to angles θ₀, θ₁ as
   // described in this class's documentation.
   UniversalMobilizer(const SpanningForest::Mobod& mobod,
                      const Frame<T>& inboard_frame_F,
@@ -76,20 +84,20 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   bool can_rotate() const final { return true; }
   bool can_translate() const final { return false; }
 
-  // Retrieves from `context` the two angles, (θ₁, θ₂) which describe the state
+  // Retrieves from `context` the two angles, (θ₀, θ₁) which describe the state
   // for `this` mobilizer as documented in this class's documentation.
   //
   // @param[in] context The context of the model this mobilizer belongs to.
-  // @returns angles The two angles (θ₁, θ₂) packed and returned as a vector
-  //                 with entries `angles(0) = θ₁`, `angles(1) = θ₂`.
+  // @returns angles The two angles (θ₀, θ₁) packed and returned as a vector
+  //                 with entries `angles(0) = θ₀`, `angles(1) = θ₁`.
   Vector2<T> get_angles(const systems::Context<T>& context) const;
 
-  // Sets in `context` the state for `this` mobilizer to the angles (θ₁, θ₂)
+  // Sets in `context` the state for `this` mobilizer to the angles (θ₀, θ₁)
   // provided in the input argument `angles`, which stores them with the format
-  // `angles = [θ₁, θ₂]`.
+  // `angles = [θ₀, θ₁]`.
   //
   // @param[in] context The context of the model this mobilizer belongs to.
-  // @param[in] angles A vector which must pack values for the angles (θ₁, θ₂)
+  // @param[in] angles A vector which must pack values for the angles (θ₀, θ₁)
   //                   described in this class's documentation, at entries
   //                   `angles(0)` and `angles(1)`, respectively.
   // @returns a constant reference to `this` mobilizer.
@@ -113,7 +121,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
       systems::Context<T>* context, const Vector2<T>& angles_dot) const;
 
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
-  // frame F and the outboard frame M as a function of the angles (θ₁, θ₂)
+  // frame F and the outboard frame M as a function of the angles (θ₀, θ₁)
   // stored in `context`.
   math::RigidTransform<T> calc_X_FM(const T* q) const {
     const T s1 = sin(q[0]), c1 = cos(q[0]);
@@ -130,15 +138,37 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
-  // M measured and expressed in frame F as a function of the angles (θ₁, θ₂)
+  // M measured and expressed in frame F as a function of the angles (θ₀, θ₁)
   // stored in context and of the input angular rates v, formatted as
   // in get_angular_rates().
   // TODO(sherm1) Should not have to recalculate H_FM(q) here.
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>& context,
-                               const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const T* q, const T* v) const {
     const Eigen::Map<const VVector> w(v);
-    const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(context);
+    const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(q);
     return SpatialVelocity<T>(Hw * w, Vector3<T>::Zero());
+  }
+
+  //                 Hwᵀ        Hvᵀ                 Hw_dotᵀ        Hv_dotᵀ
+  // Here H₆ₓ₂=[1   0     0   | 0₃]ᵀ  Hdot = [         0₃         |  0₃  ]
+  //           [0 c(q₀) s(q₀) | 0₃]          [ 0 -v₀s(q₀) v₀c(q₀) |  0₃  ]
+  //
+  // So A_FM = H⋅vdot + Hdot⋅v = [Hw⋅vdot + Hw_dot⋅v, 0₃]ᵀ
+  SpatialAcceleration<T> calc_A_FM(const T* q, const T* v,
+                                   const T* vdot) const {
+    Vector3<T> Hw_dot_col1;
+    const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(q, v, &Hw_dot_col1);
+    const Eigen::Map<const VVector> wdot(vdot);
+    return SpatialAcceleration<T>(Hw * wdot + Hw_dot_col1 * v[1],
+                                  Vector3<T>::Zero());
+  }
+
+  // Returns tau = H_FMᵀ⋅F. See above for the structure of H.
+  void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    Eigen::Map<VVector> tau_as_vector(tau);
+    const Vector3<T>& t_B_F = F_BMo_F.rotational();  // torque
+    const Eigen::Matrix<T, 3, 2> Hw_FM = this->CalcHwMatrix(q);
+    tau_as_vector = Hw_FM.transpose() * t_B_F;
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
@@ -151,8 +181,8 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   // outboard frame M in the inboard frame F.
   // By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
-  // The acceleration `A_FM` will be a function of the rotation angles q (θ₁,
-  // θ₂) and their rates of change v (ω₁, ω₂) from the `context` as well as the
+  // The acceleration `A_FM` will be a function of the rotation angles q (θ₀,
+  // θ₁) and their rates of change v (ω₁, ω₂) from the `context` as well as the
   // generalized accelerations `v̇ = dv/dt`, the rates of change of v.
   // This method aborts in Debug builds if `vdot.size()` is not two.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
@@ -187,11 +217,6 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                          EigenPtr<VectorX<T>> v) const override;
 
  protected:
-  // Calculates the rotational part of matrix H and optionally its derivative.
-  // See Mobilizer documentation for notation.
-  Eigen::Matrix<T, 3, 2> CalcHwMatrix(const systems::Context<T>& context,
-                                      Vector3<T>* Hw_dot = nullptr) const;
-
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
@@ -212,6 +237,12 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
+
+  // Calculates the rotational part of matrix H and optionally its derivative.
+  // See Mobilizer documentation for notation. If you want the derivative, pass
+  // both v and Hw_dot.
+  Eigen::Matrix<T, 3, 2> CalcHwMatrix(const T* q, const T* v = nullptr,
+                                      Vector3<T>* Hw_dot = nullptr) const;
 };
 
 }  // namespace internal

@@ -109,10 +109,9 @@ math::RigidTransform<T> RpyBallMobilizer<T>::CalcAcrossMobilizerTransform(
 
 template <typename T>
 SpatialVelocity<T> RpyBallMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v) const {
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return calc_V_FM(context, v.data());
+  return calc_V_FM(nullptr, v.data());
 }
 
 template <typename T>
@@ -121,15 +120,15 @@ RpyBallMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
-  return SpatialAcceleration<T>(vdot, Vector3<T>::Zero());
+  return calc_A_FM(nullptr, nullptr, vdot.data());
 }
 
 template <typename T>
 void RpyBallMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&, const SpatialForce<T>& F_Mo_F,
+    const systems::Context<T>&, const SpatialForce<T>& F_BMo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  tau = F_Mo_F.rotational();
+  calc_tau(nullptr, F_BMo_F, tau.data());
 }
 
 template <typename T>
