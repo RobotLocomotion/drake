@@ -43,6 +43,14 @@ namespace internal {
 // aligned in the direction of their respective axes. The generalized
 // velocities for this mobilizer are the rate of change of the angles, v = q̇.
 //
+//    H_FM₆ₓ₂ = [Hw_FM₃ₓ₂]        Hw_FM = [ 1   0   ]        Hv_FM = 0₃ₓ₂
+//              [Hv_FM₃ₓ₂]                [ 0 c(q₀) ]
+//                                        [ 0 s(q₀) ]
+//
+// Hdot_FM₆ₓ₂ = [Hwdot_FM₃ₓ₂]  Hwdot_FM = [ 0    0     ]  Hvdot_FM = 0₃ₓ₂
+//              [Hvdot_FM₃ₓ₂]             [ 0 -v₀s(q₀) ]
+//                                        [ 0  v₀c(q₀) ]
+//
 // @tparam_default_scalar
 template <typename T>
 class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
@@ -134,11 +142,33 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // stored in context and of the input angular rates v, formatted as
   // in get_angular_rates().
   // TODO(sherm1) Should not have to recalculate H_FM(q) here.
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>& context,
-                               const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const T* q, const T* v) const {
     const Eigen::Map<const VVector> w(v);
-    const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(context);
+    const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(q);
     return SpatialVelocity<T>(Hw * w, Vector3<T>::Zero());
+  }
+
+  //                 Hwᵀ        Hvᵀ                 Hw_dotᵀ        Hv_dotᵀ
+  // Here H₆ₓ₂=[1   0     0   | 0₃]ᵀ  Hdot = [         0₃         |  0₃  ]
+  //           [0 c(q₀) s(q₀) | 0₃]          [ 0 -v₀s(q₀) v₀c(q₀) |  0₃  ]
+  //
+  // So A_FM = H⋅vdot + Hdot⋅v = [Hw⋅vdot + Hw_dot⋅v, 0₃]ᵀ
+  SpatialAcceleration<T> calc_A_FM(const T* q, const T* v,
+                                   const T* vdot) const {
+    Vector3<T> Hw_dot_col1;
+    const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(q, v, &Hw_dot_col1);
+    const Eigen::Map<const VVector> wdot(vdot);
+    return SpatialAcceleration<T>(Hw * wdot + Hw_dot_col1 * v[1],
+                                  Vector3<T>::Zero());
+  }
+
+  // Returns tau = H_FMᵀ⋅F. See above for the structure of H.
+  void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    Eigen::Map<VVector> tau_as_vector(tau);
+    const Vector3<T>& t_B_F = F_BMo_F.rotational();  // torque
+    const Eigen::Matrix<T, 3, 2> Hw_FM = this->CalcHwMatrix(q);
+    tau_as_vector = Hw_FM.transpose() * t_B_F;
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
@@ -187,11 +217,6 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                          EigenPtr<VectorX<T>> v) const override;
 
  protected:
-  // Calculates the rotational part of matrix H and optionally its derivative.
-  // See Mobilizer documentation for notation.
-  Eigen::Matrix<T, 3, 2> CalcHwMatrix(const systems::Context<T>& context,
-                                      Vector3<T>* Hw_dot = nullptr) const;
-
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
@@ -212,6 +237,12 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
+
+  // Calculates the rotational part of matrix H and optionally its derivative.
+  // See Mobilizer documentation for notation. If you want the derivative, pass
+  // both v and Hw_dot.
+  Eigen::Matrix<T, 3, 2> CalcHwMatrix(const T* q, const T* v = nullptr,
+                                      Vector3<T>* Hw_dot = nullptr) const;
 };
 
 }  // namespace internal

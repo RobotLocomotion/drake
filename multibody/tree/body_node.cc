@@ -104,28 +104,22 @@ template <typename T>
 void BodyNode<T>::CalcBodySpatialForceGivenItsSpatialAcceleration(
     const std::vector<SpatialInertia<T>>& M_B_W_cache,
     const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
-    const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr) const {
-  DRAKE_DEMAND(Ftot_BBo_W_ptr != nullptr);
-
-  // Output spatial force applied on mobilized body B, at Bo, measured in W.
-  SpatialForce<T>& Ftot_BBo_W = *Ftot_BBo_W_ptr;
-
-  // RigidBody for this node.
-  const RigidBody<T>& body_B = body();
+    const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W) const {
+  DRAKE_ASSERT(Ftot_BBo_W != nullptr);
 
   // Mobilized body B spatial inertia about Bo expressed in world W.
-  const SpatialInertia<T>& M_B_W = M_B_W_cache[body_B.mobod_index()];
+  const SpatialInertia<T>& M_B_W = M_B_W_cache[mobod_index()];
 
   // Equations of motion for a rigid body written at a generic point Bo not
   // necessarily coincident with the body's center of mass. This corresponds
   // to Eq. 2.26 (p. 27) in A. Jain's book.
-  Ftot_BBo_W = M_B_W * A_WB;
+  *Ftot_BBo_W = M_B_W * A_WB;
 
   // If velocities are zero, then Fb_Bo_W is zero and does not contribute.
   if (Fb_Bo_W_cache != nullptr) {
     // Dynamic bias for body B.
-    const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body_B.mobod_index()];
-    Ftot_BBo_W += Fb_Bo_W;
+    const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[mobod_index()];
+    *Ftot_BBo_W += Fb_Bo_W;
   }
 }
 

@@ -152,7 +152,7 @@ class BodyNode : public MultibodyElement<T> {
   // Aborts if called on the root node corresponding to the _world_ body, for
   // which there is no mobilizer.
   const Mobilizer<T>& get_mobilizer() const {
-    DRAKE_DEMAND(mobilizer_ != nullptr);
+    DRAKE_ASSERT(mobilizer_ != nullptr);
     return *mobilizer_;
   }
 
@@ -245,8 +245,8 @@ class BodyNode : public MultibodyElement<T> {
       PositionKinematicsCache<T>* pc) const = 0;
 
   // Calculates the hinge matrix H_PB_W.
-  // @param[in] context
-  //   The context with the state of the MultibodyTree model.
+  // @param[in] positions
+  //   The current position coordinates q for the full MultibodyTree model.
   // @param[in] pc
   //   An already updated position kinematics cache in sync with `context`.
   // @param[out] H_PB_W
@@ -258,10 +258,8 @@ class BodyNode : public MultibodyElement<T> {
   // @pre The position kinematics cache `pc` was already updated to be in sync
   // with `context` by MultibodyTree::CalcPositionKinematicsCache().
 
-  // TODO(sherm1) This function should not take a context.
   virtual void CalcAcrossNodeJacobianWrtVExpressedInWorld(
-      const systems::Context<T>& context,
-      const FrameBodyPoseCache<T>& frame_body_pose_cache,
+      const T* positions, const FrameBodyPoseCache<T>& frame_body_pose_cache,
       const PositionKinematicsCache<T>& pc,
       std::vector<Vector6<T>>* H_PB_W_cache) const = 0;
 
@@ -289,9 +287,8 @@ class BodyNode : public MultibodyElement<T> {
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcVelocityKinematicsCache().
 
-  // TODO(sherm1) This function should not take a context.
   virtual void CalcVelocityKinematicsCache_BaseToTip(
-      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
+      const T* positions, const PositionKinematicsCache<T>& pc,
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const = 0;
 
@@ -347,7 +344,7 @@ class BodyNode : public MultibodyElement<T> {
   //   generalized velocities in the model. This method assumes the caller,
   //   MultibodyTree<T>::CalcAccelerationKinematicsCache(), provides a vector
   //   of the right size.
-  // @param[in,out] A_WB_array_ptr
+  // @param[in,out] A_WB_all
   //   A pointer to a valid, non nullptr, vector of spatial accelerations
   //   containing the spatial acceleration `A_WB` for each body. On input, it
   //   must contain already pre-computed spatial accelerations for the inboard
@@ -355,7 +352,7 @@ class BodyNode : public MultibodyElement<T> {
   //   size equal to the number of bodies in the MultibodyTree and ordered by
   //   MobodIndex. The calling MultibodyTree method must guarantee these
   //   conditions are satisfied. This method will abort if the pointer is
-  //   null. There is no mechanism to assert that `A_WB_array_ptr` is ordered
+  //   null. There is no mechanism to assert that `A_WB_all` is ordered
   //   by MobodIndex and the correctness of MultibodyTree methods, properly
   //   unit tested, should guarantee this condition.
   //
@@ -366,19 +363,17 @@ class BodyNode : public MultibodyElement<T> {
   // @pre CalcAccelerationKinematicsCache_BaseToTip() must have already been
   // called for the parent node (and, by recursive precondition, all
   // predecessor nodes in the tree). Therefore, on input, the argument array
-  // `A_WB_array_ptr` must contain already pre-computed spatial accelerations
+  // `A_WB_all` must contain already pre-computed spatial accelerations
   // for the inboard bodies to this node's body B.
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcAccelerationKinematicsCache().
 
-  // TODO(sherm1) This function should not take a context.
   virtual void CalcSpatialAcceleration_BaseToTip(
-      const systems::Context<T>& context,
-      const FrameBodyPoseCache<T>& frame_body_poses_cache,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>* vc, const VectorX<T>& mbt_vdot,
-      std::vector<SpatialAcceleration<T>>* A_WB_array_ptr) const = 0;
+      const FrameBodyPoseCache<T>& frame_body_poses_cache, const T* positions,
+      const PositionKinematicsCache<T>& pc, const T* velocities,
+      const VelocityKinematicsCache<T>* vc, const T* accelerations,
+      std::vector<SpatialAcceleration<T>>* A_WB_array) const = 0;
 
   // Computes the generalized forces `tau` for a single BodyNode.
   // This method is used by MultibodyTree within a tip-to-base loop to compute
@@ -387,61 +382,37 @@ class BodyNode : public MultibodyElement<T> {
   //
   // This method aborts in Debug builds when `F_BMo_W_array` is nullptr.
   //
-  // @param[in] context The context with the state of the MultibodyTree model.
-  // @param[in] pc
+  // @param[in] frame_body_pose_cache, pc, M_B_W_cache
+  //   Already up to date cache entries
+  // @param[in] Fb_Bo_W_cache velocity-dependent bias terms
+  //   Null if we're ignoring velocity, otherwise must be up to date.
   //   An already updated position kinematics cache in sync with `context`.
-  // @param[in] M_B_W_cache
-  //   An already updated cache storing the spatial inertia M_Bo_W(q) for each
-  //   body in the model, in sync with `context`.
-  // @param[in] Fb_Bo_W_cache
-  //   An already updated cache storing the bias term Fb_Bo_W(q, v) for each
-  //   body in the model, in sync with `context`.
-  //   If Fb_Bo_W_cache is nullptr, velocities are assumed to be zero (thus
-  //   Fb_Bo_W is zero) and velocity dependent terms are not computed.
   // @param[in] A_WB_array
   //   A vector of known spatial accelerations containing the spatial
-  //   acceleration `A_WB` for each body in the MultibodyTree model. It must be
+  //   acceleration A_WB for each body in the MultibodyTree model. It must be
   //   of size equal to the number of bodies in the MultibodyTree and ordered
   //   by MobodIndex. The calling MultibodyTree method must guarantee these
   //   conditions are satisfied.
   // @param[in] Fapplied_Bo_W
-  //   Externally applied spatial force on this node's body B at the body's
-  //   frame origin `Bo`, expressed in the world frame.
-  //   `Fapplied_Bo_W` **must** not be an entry into `F_BMo_W_array_ptr`, which
-  //   would result in undefined results.
+  //   Either zero length or num_mobods. All applied spatial forces. May be the
+  //   same object as the output F_BMo_W_array in which case the body B entry
+  //   will be overwritten on return.
   // @param[in] tau_applied
-  //   Externally applied generalized force at this node's mobilizer. It can
-  //   have zero size, implying no generalized forces are applied. Otherwise it
-  //   must have a size equal to the number of generalized velocities for this
-  //   node's mobilizer, see get_num_mobilizer_velocities().
-  //   `tau_applied` **must** not be an entry into `tau_array`, which would
-  //   result in undefined results.
-  // @param[out] F_BMo_W_array_ptr
-  //   A pointer to a valid, non nullptr, vector of spatial forces containing,
+  //   Either zero length or num_velocities. All applied generalized forces. May
+  //   be the same object as the output tau_array in which case the entries
+  //   for body B's mobilizer will be overwritten on return.
+  // @param[out] F_BMo_W_array
+  //   A non-null pointer to a vector of spatial forces containing,
   //   for each body B, the spatial force `F_BMo_W` corresponding to its
   //   inboard mobilizer reaction forces on body B applied at the origin `Mo`
-  //   of the inboard mobilizer, expressed in the world frame W.  It must be of
-  //   size equal to the number of bodies in the MultibodyTree and ordered by
-  //   MobodIndex. The calling MultibodyTree method must guarantee these
-  //   conditions are satisfied. This method will abort if the pointer is null.
-  //   To access a mobilizer's reaction force on a given body B, access this
-  //   array with the index returned by RigidBody::mobod_index().
+  //   of the inboard mobilizer, expressed in the world frame W. Note that
+  //   everything outboard of body B must already have been computed!
+  //   Caution: This can be the same object as Fapplied_Bo_W.
   // @param[out] tau_array
   //   A non-null pointer to the output vector of generalized forces that would
-  //   result in body B having spatial acceleration `A_WB`. This method will
-  //   abort if the pointer is null. The calling MultibodyTree method must
-  //   guarantee the size of the array is the number of generalized velocities
-  //   in the model.
+  //   result in body B having spatial acceleration `A_WB`. Caution: this can
+  //   be the same object as tau_applied.
   //
-  // @note There is no mechanism to assert that either `A_WB_array` nor
-  //   `F_BMo_W_array_ptr` are ordered by MobodIndex and the correctness of
-  //   MultibodyTree methods, properly unit tested, should guarantee this
-  //   condition.
-  //
-  // @pre The position kinematics cache `pc` was already updated to be in sync
-  // with `context` by MultibodyTree::CalcPositionKinematicsCache().
-  // @pre The velocity kinematics cache `vc` was already updated to be in sync
-  // with `context` by MultibodyTree::CalcVelocityKinematicsCache().
   // @pre CalcInverseDynamics_TipToBase() must have already been
   // called for all the child nodes of `this` node (and, by recursive
   // precondition, all successor nodes in the tree.)
@@ -449,17 +420,15 @@ class BodyNode : public MultibodyElement<T> {
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcInverseDynamics().
 
-  // TODO(sherm1) This function should not take a context.
   virtual void CalcInverseDynamics_TipToBase(
-      const systems::Context<T>& context,
-      const FrameBodyPoseCache<T>& frame_body_pose_cache,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       const PositionKinematicsCache<T>& pc,
       const std::vector<SpatialInertia<T>>& M_B_W_cache,
       const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
       const std::vector<SpatialAcceleration<T>>& A_WB_array,
-      const SpatialForce<T>& Fapplied_Bo_W,
-      const Eigen::Ref<const VectorX<T>>& tau_applied,
-      std::vector<SpatialForce<T>>* F_BMo_W_array_ptr,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+      std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const = 0;
 
   // This method is used by MultibodyTree within a tip-to-base loop to compute
@@ -615,16 +584,13 @@ class BodyNode : public MultibodyElement<T> {
   //   and expressed in the world frame W. Must be non nullptr.
   //
   // @pre pc and vc previously computed to be in sync with `context.
-  //
-  // @throws when `Ab_WB` is nullptr.
+  // @pre when `Ab_WB` is nullptr.
 
-  // TODO(sherm1) This function should not take a context.
   virtual void CalcSpatialAccelerationBias(
-      const systems::Context<T>& context,
-      const FrameBodyPoseCache<T>& frame_body_pose_cache,
-      const PositionKinematicsCache<T>& pc,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+      const PositionKinematicsCache<T>& pc, const T* velocities,
       const VelocityKinematicsCache<T>& vc,
-      SpatialAcceleration<T>* Ab_WB) const = 0;
+      std::vector<SpatialAcceleration<T>>* Ab_WB_all) const = 0;
 
   // Helper method to be called within a base-to-tip recursion that computes
   // into the PositionKinematicsCache:
