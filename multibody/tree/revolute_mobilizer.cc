@@ -83,10 +83,9 @@ math::RigidTransform<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
 
 template <typename T>
 SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v) const {
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return calc_V_FM(context, v.data());
+  return calc_V_FM(nullptr, v.data());
 }
 
 template <typename T>
@@ -95,18 +94,15 @@ RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
-  return SpatialAcceleration<T>(vdot[0] * axis_F_, Vector3<T>::Zero());
+  return calc_A_FM(nullptr, nullptr, vdot.data());
 }
 
 template <typename T>
 void RevoluteMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&, const SpatialForce<T>& F_Mo_F,
+    const systems::Context<T>&, const SpatialForce<T>& F_BMo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  // Computes tau = H_FMᵀ * F_Mo_F where H_FM ∈ ℝ⁶ is:
-  // H_FM = [axis_Fᵀ; 0ᵀ]ᵀ (see CalcAcrossMobilizerSpatialVelocity().)
-  // Therefore H_FMᵀ * F_Mo_F = axis_F.dot(F_Mo_F.translational()):
-  tau[0] = axis_F_.dot(F_Mo_F.rotational());
+  calc_tau(nullptr, F_BMo_F, tau.data());
 }
 
 template <typename T>
