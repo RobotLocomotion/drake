@@ -624,6 +624,7 @@ MODULE_SETTINGS = {
             "ThirdParty/glad/vtkglad/src/*.c",
         ],
         "copts_extra": [
+            "-fvisibility=hidden",
             "-Iexternal/vtk_internal/ThirdParty/glad/vtkglad/include",
         ],
         "deps_extra": [
