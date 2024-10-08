@@ -320,6 +320,8 @@ MODULE_SETTINGS = {
             "**/vtkPartitionedDataSetSource.cxx",
             # Avoid some VTK::FiltersGeneral stuff we don't need.
             "**/vtkSpatioTemporalHarmonicsSource.cxx",
+            # Avoid the need for vtkDelaunay3D.
+            "**/vtkGoldenBallSource.cxx",
         ],
     },
     "VTK::IOCore": {
