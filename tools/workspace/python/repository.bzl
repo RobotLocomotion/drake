@@ -28,7 +28,18 @@ load(
     "which",
 )
 
-def _check_python(repo_ctx, python):
+def _get_python_interpreter(repo_ctx):
+    """Returns the tuple (python_interpreter_path, major_minor_version) based
+    on the settings in our repository rule's attrs.
+    """
+    if repo_ctx.os.name == "mac os x":
+        python = repo_ctx.attr.macos_interpreter_path
+        if "{homebrew_prefix}" in python:
+            python = python.format(
+                homebrew_prefix = homebrew_prefix(repo_ctx),
+            )
+    else:
+        python = repo_ctx.attr.linux_interpreter_path
     implementation = execute_or_fail(repo_ctx, [python, "-c", "\n".join([
         "import platform",
         "print(platform.python_implementation())",
@@ -36,8 +47,16 @@ def _check_python(repo_ctx, python):
     if implementation != "CPython":
         fail(("The implementation of '{}' is '{}', but only 'CPython' is " +
               "supported.").format(python, implementation))
+    version = execute_or_fail(repo_ctx, [python, "-c", "\n".join([
+        "from sys import version_info as v",
+        "print('{}.{}'.format(v.major, v.minor))",
+    ])]).stdout.strip()
+    return (python, version)
 
 def _get_extension_suffix(repo_ctx, python, python_config):
+    """Returns the extension suffix, e.g. ".cpython-310-x86_64-linux-gnu.so" as
+    queried from python_config. Uses `python` only for error reporting.
+    """
     if which(repo_ctx, python_config) == None:
         fail(("Cannot find corresponding config executable: {}\n" +
               "  From interpreter: {}").format(python_config, python))
@@ -46,11 +65,11 @@ def _get_extension_suffix(repo_ctx, python, python_config):
         [python_config, "--extension-suffix"],
     ).stdout.strip()
 
-# TODO(jwnimmer-ti): Much of the logic for parsing includes and linkopts is the
-# same or similar to that used in pkg_config.bzl and should be refactored and
-# shared instead of being duplicated in both places.
-
+# TODO(jwnimmer-tri): Much of the logic for parsing includes and linkopts is
+# the same or similar to that used in pkg_config.bzl and should be refactored
+# and shared instead of being duplicated in both places.
 def _get_includes(repo_ctx, python_config):
+    """Returns the list of `includes = ...` when compiling native code."""
     includes = []
     cflags = execute_or_fail(
         repo_ctx,
@@ -65,6 +84,8 @@ def _get_includes(repo_ctx, python_config):
     return includes
 
 def _get_linkopts(repo_ctx, python_config):
+    """Returns the list of `linkopts = ...` when compiling native code."""
+
     # Collect Python's requested linker options, split on whitespace.
     linkopts = execute_or_fail(
         repo_ctx,
@@ -154,10 +175,30 @@ def _impl(repo_ctx):
     extension_suffix = _get_extension_suffix(repo_ctx, python, python_config)
     includes = _get_includes(repo_ctx, python_config)
     linkopts = _get_linkopts(repo_ctx, python_config)
+=======
+>>>>>>> upstream
 
-    # Now specialize the the linker options based on whether we're linking a
-    # loadable module or an embedded interpreter. (For details, refer to the
-    # docs for option (1) vs (2) atop this file.)
+def _impl(repo_ctx):
+    # Add the BUILD file.
+    repo_ctx.symlink(
+        Label("//tools/workspace/python:package.BUILD.bazel"),
+        "BUILD.bazel",
+    )
+
+    # Set `python` to the the interpreter path specified by our rule attrs,
+    # and `version` to its "major.minor" string.
+    python, version = _get_python_interpreter(repo_ctx)
+    site_packages_relpath = "lib/python{}/site-packages".format(version)
+
+    # Get extension_suffix, includes, and linkopts from python_config.
+    python_config = "{}-config".format(python)
+    extension_suffix = _get_extension_suffix(repo_ctx, python, python_config)
+    includes = _get_includes(repo_ctx, python_config)
+    linkopts = _get_linkopts(repo_ctx, python_config)
+
+    # Specialize the the linker options based on whether we're linking a
+    # loadable module or an embedded interpreter. (For details, refer to
+    # the docs for option (1) vs (2) atop this file.)
     linkopts_embedded = list(linkopts)
     linkopts_embedded.insert(0, "-lpython" + version)
     linkopts_module = list(linkopts)

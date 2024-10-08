@@ -180,45 +180,49 @@ GLenum GetOpenGlTextureType(PixelScalar scalar) {
 
 }  // namespace
 
-void TextureLibrary::AddInMemoryImages(
-    const std::map<std::string, std::vector<unsigned char>>& images) {
+void TextureLibrary::AddInMemoryImage(const std::string& name,
+                                      std::string_view contents) {
+  DRAKE_DEMAND(name.starts_with(InMemoryPrefix()));
+
+  const std::string key = GetTextureKey(name);
+
+  if (textures_.contains(key)) {
+    return;
+  }
+
+  ImageIo::ByteSpan texture_bytes{.data = contents.data(),
+                                  .size = contents.size()};
+  ImageIo image_io;
+  auto maybe_metadata = image_io.LoadMetadata(texture_bytes);
+  if (!maybe_metadata.has_value()) {
+    // We weren't able to infer the image type from the bytes. Rather than
+    // register an error now, we'll wait until the user actually attempts to
+    // access it so that we don't complain about bad, but unused data.
+    //
+    // When referenced in GetTextureId(), we'll report that the file_bytes isn't
+    // loaded and indicate it *may* be due to incompatible file type (although
+    // it could be because it was never registered, period). It is unlikely
+    // that this deferred error message would lead to confusion.
+    return;
+  }
+
+  ImageAny image_any = image_io.Load(texture_bytes, maybe_metadata->format);
+
+  std::visit(
+      [this, &key]<typename SomeImage>(SomeImage& image) {
+        const GLint format = GetOpenGlInternalFormat(SomeImage::kPixelFormat);
+        const GLenum type =
+            GetOpenGlTextureType(SomeImage::Traits::kPixelScalar);
+        const GLuint texture_id = MakeGlTexture(image.at(0, 0), image.width(),
+                                                image.height(), format, type);
+        textures_[key] = texture_id;
+      },
+      image_any);
+}
+
+void TextureLibrary::AddInMemoryImages(const string_map<std::string>& images) {
   for (const auto& [name, texture] : images) {
-    DRAKE_DEMAND(name.starts_with(InMemoryPrefix()));
-
-    const std::string key = GetTextureKey(name);
-
-    if (textures_.contains(key)) {
-      continue;
-    }
-
-    ImageIo::ByteSpan texture_bytes{.data = texture.data(),
-                                    .size = texture.size()};
-    ImageIo image_io;
-    auto maybe_metadata = image_io.LoadMetadata(texture_bytes);
-    if (!maybe_metadata.has_value()) {
-      // We weren't able to infer the image type from the bytes. Rather than
-      // register an error now, we'll wait until the user actually attempts to
-      // access it so that we don't complain about bad, but unused data.
-      //
-      // When referenced in GetTextureId(), we'll report that the texture isn't
-      // loaded and indicate it *may* be due to incompatible file type (although
-      // it could be because it was never registered, period). It is unlikely
-      // that this deferred error message would lead to confusion.
-      continue;
-    }
-
-    ImageAny image_any = image_io.Load(texture_bytes, maybe_metadata->format);
-
-    std::visit(
-        [this, &key]<typename SomeImage>(SomeImage& image) {
-          const GLint format = GetOpenGlInternalFormat(SomeImage::kPixelFormat);
-          const GLenum type =
-              GetOpenGlTextureType(SomeImage::Traits::kPixelScalar);
-          const GLuint texture_id = MakeGlTexture(image.at(0, 0), image.width(),
-                                                  image.height(), format, type);
-          textures_[key] = texture_id;
-        },
-        image_any);
+    AddInMemoryImage(name, texture);
   }
 }
 
