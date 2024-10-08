@@ -12,6 +12,8 @@
 #include "vtkglad/include/glad/glx.h"
 #endif
 
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace geometry {
 namespace render_vtk {
@@ -21,7 +23,11 @@ RenderEngineVtk::RenderingPipeline::RenderingPipeline() {
 #if defined(__APPLE__)
   window = vtkSmartPointer<vtkCocoaRenderWindow>::New();
 #else
-  gladLoaderLoadGLX(nullptr, 0);
+  static const int kVersion = []() {
+    // Open the library at most once per process.
+    return gladLoaderLoadGLX(nullptr, 0);
+  }();
+  unused(kVersion);
   window = vtkSmartPointer<vtkXOpenGLRenderWindow>::New();
 #endif
   DRAKE_DEMAND(window != nullptr);
