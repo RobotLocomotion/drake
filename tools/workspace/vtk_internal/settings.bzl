@@ -481,14 +481,10 @@ MODULE_SETTINGS = {
             "**/*vtkOpenGLAvatar*",
             # Avoid building unnecessary VTK::RenderingHyperTreeGrid.
             "**/*HyperTreeGrid*",
-            # Exclude all renderers by default; we'll incorporate the necessary
-            # ones using with srcs_extra immediately below.
-            "**/vtkCocoa*",
-            "**/vtkEGL*",
-            "**/vtkSDL2OpenGL*",
-            "**/vtkWebAssembly*",
-            "**/vtkWin32OpenGL*",
-            "**/vtkXOpenGL*",
+            # Exclude all renderers by default (also excluding the base class,
+            # so that the glob is easier to write); we'll incorporate the
+            # necessary renderer sources using srcs_extra immediately below.
+            "**/*RenderWindow*",
         ],
         "srcs_objc_non_arc": select({
             ":osx": [
@@ -500,6 +496,7 @@ MODULE_SETTINGS = {
         "srcs_extra": select({
             ":osx": [],
             "//conditions:default": [
+                "Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx",
                 "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
             ],
         }) + [

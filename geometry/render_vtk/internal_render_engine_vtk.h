@@ -126,9 +126,12 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   RenderEngineVtk(const RenderEngineVtk& other);
 
   /* The rendering pipeline for a single image type (color, depth, or label). */
-  struct RenderingPipeline {
+  struct RenderingPipeline final {
+    RenderingPipeline();
+    ~RenderingPipeline();
+
     vtkNew<vtkRenderer> renderer;
-    vtkNew<vtkRenderWindow> window;
+    vtkSmartPointer<vtkRenderWindow> window;
     vtkNew<vtkWindowToImageFilter> filter;
     vtkNew<vtkImageExport> exporter;
   };

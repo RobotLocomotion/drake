@@ -33,7 +33,9 @@
 #include "vtkOpenGLTextActor3D.h"
 #include "vtkOpenGLTextMapper.h"
 #include "vtkOpenGLTexture.h"
-#include "vtkOpenGLRenderWindow.h"
+// Removed the next lines for Drake.
+// #include "vtkCocoaRenderWindow.h"
+// #include "vtkOpenGLRenderWindow.h"
 
 
 VTK_ABI_NAMESPACE_BEGIN
@@ -65,8 +67,9 @@ VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTextActor)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTextActor3D)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTextMapper)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTexture)
-VTK_CREATE_CREATE_FUNCTION(vtkOpenGLRenderWindow)
-
+// Removed the next lines for Drake.
+// VTK_CREATE_CREATE_FUNCTION(vtkCocoaRenderWindow)
+// VTK_CREATE_CREATE_FUNCTION(vtkOpenGLRenderWindow)
 
 vtkRenderingOpenGL2ObjectFactory::vtkRenderingOpenGL2ObjectFactory()
 {
@@ -94,7 +97,9 @@ this->RegisterOverride("vtkTextActor", "vtkOpenGLTextActor", "Override for VTK::
 this->RegisterOverride("vtkTextActor3D", "vtkOpenGLTextActor3D", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLTextActor3D);
 this->RegisterOverride("vtkTextMapper", "vtkOpenGLTextMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLTextMapper);
 this->RegisterOverride("vtkTexture", "vtkOpenGLTexture", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLTexture);
-this->RegisterOverride("vtkRenderWindow", "vtkOpenGLRenderWindow", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLRenderWindow);
+// Removed the next line for Drake.
+// this->RegisterOverride("vtkRenderWindow", "vtkCocoaRenderWindow", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkCocoaRenderWindow);
+// this->RegisterOverride("vtkRenderWindow", "vtkOpenGLRenderWindow", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLRenderWindow);
 
 }
 

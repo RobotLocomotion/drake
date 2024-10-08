@@ -49,7 +49,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "internal_render_engine_vtk",
-    srcs = ["internal_render_engine_vtk.cc"],
+    srcs = [
+        "internal_render_engine_vtk.cc",
+        "internal_rendering_pipeline_constructor.cc",
+    ],
     hdrs = ["internal_render_engine_vtk.h"],
     internal = True,
     visibility = [
