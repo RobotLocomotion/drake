@@ -24,8 +24,8 @@ class IiwaToppraTest : public ::testing::Test {
         .AddModelsFromUrl(
             "package://drake_models/iiwa_description/sdf/"
             "iiwa7_no_collision.sdf");
-    iiwa_plant_->WeldFrames(
-        iiwa_plant_->world_frame(), iiwa_plant_->GetFrameByName("iiwa_link_0"));
+    iiwa_plant_->WeldFrames(iiwa_plant_->world_frame(),
+                            iiwa_plant_->GetFrameByName("iiwa_link_0"));
     iiwa_plant_->Finalize();
     plant_context_ = iiwa_plant_->CreateDefaultContext();
 
@@ -105,6 +105,21 @@ class IiwaToppraTest : public ::testing::Test {
   PiecewisePolynomial<double> path_;
   std::unique_ptr<Toppra> toppra_;
 };
+
+TEST_F(IiwaToppraTest, BoundaryConditions) {
+  toppra_->AddJointVelocityLimit(Eigen::VectorXd::Constant(7, -1),
+                                 Eigen::VectorXd::Constant(7, 1));
+  toppra_->AddJointAccelerationLimit(Eigen::VectorXd::Constant(7, -10),
+                                     Eigen::VectorXd::Constant(7, 10));
+  const double s_dot_start = 0.7;
+  const double s_dot_end = 0.4;
+  auto result = toppra_->SolvePathParameterization(s_dot_start, s_dot_end);
+  ASSERT_TRUE(result);
+  auto s_path = result.value();
+  auto s_path_dot = s_path.derivative();
+  EXPECT_NEAR(s_path_dot.value(s_path.start_time())(0, 0), s_dot_start, 1e-6);
+  EXPECT_NEAR(s_path_dot.value(s_path.end_time())(0, 0), s_dot_end, 1e-6);
+}
 
 TEST_F(IiwaToppraTest, JointVelocityLimit) {
   Eigen::VectorXd lower_bound(7);
@@ -518,7 +533,7 @@ TEST_F(IiwaToppraTest, FrameAccelerationLimitTrajectoryOverlap) {
 
   const double path_start = path_.start_time();
   const double path_end = path_.end_time();
-  const std::vector<double> big_breaks{path_start - 0.1, path_end +  0.1};
+  const std::vector<double> big_breaks{path_start - 0.1, path_end + 0.1};
 
   const auto lower_bigger =
       PiecewisePolynomial<double>::ZeroOrderHold(big_breaks, lower_samples);
@@ -539,8 +554,8 @@ TEST_F(IiwaToppraTest, FrameAccelerationLimitTrajectoryOverlap) {
         fmt::format(".* can't add a trajectory frame acceleration .* lower "
                     "limit domain \\[{}, {}\\].* upper limit domain "
                     "\\[{}, {}\\] .* path domain \\[{}, {}\\].",
-                    bad_breaks[0], bad_breaks[1], big_breaks[0],
-                    big_breaks[1], path_start, path_end));
+                    bad_breaks[0], bad_breaks[1], big_breaks[0], big_breaks[1],
+                    path_start, path_end));
 
     // Just for upper.
     DRAKE_EXPECT_THROWS_MESSAGE(
@@ -607,7 +622,7 @@ TEST_F(IiwaToppraTest, FrameAccelerationLimitVarying) {
   // Lower limit for the interval [s0, s1).
   const Vector6d lower0 = Vector6d::Constant(-0.5);
   const Vector6d upper0 = -lower0;
-    // Lower limit for the interval [s1, s2).
+  // Lower limit for the interval [s1, s2).
   const Vector6d lower1 = Vector6d::Constant(-7);
   const Vector6d upper1 = -lower1;
 

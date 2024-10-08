@@ -29,59 +29,6 @@ void DefineExamplesAcrobot(py::module m) {
   // conversion. Issue #7660.
   using T = double;
 
-  py::class_<AcrobotPlant<T>, LeafSystem<T>>(
-      m, "AcrobotPlant", doc.AcrobotPlant.doc)
-      .def(py::init<>(), doc.AcrobotPlant.ctor.doc)
-      .def("DynamicsBiasTerm", &AcrobotPlant<T>::DynamicsBiasTerm,
-          doc.AcrobotPlant.DynamicsBiasTerm.doc)
-      .def("SetMitAcrobotParameters", &AcrobotPlant<T>::SetMitAcrobotParameters,
-          doc.AcrobotPlant.SetMitAcrobotParameters.doc)
-      .def("MassMatrix", &AcrobotPlant<T>::MassMatrix,
-          doc.AcrobotPlant.MassMatrix.doc)
-      .def_static("get_state",
-          py::overload_cast<const Context<T>&>(&AcrobotPlant<T>::get_state),
-          py::arg("context"),
-          // Keey alive, ownership: `return` keeps `context` alive
-          py::keep_alive<0, 1>(), doc.AcrobotPlant.get_state.doc)
-      .def_static("get_mutable_state",
-          py::overload_cast<Context<T>*>(&AcrobotPlant<T>::get_mutable_state),
-          py::arg("context"),
-          // Keep alive, ownership: `return` keeps `context` alive
-          py::keep_alive<0, 1>(), doc.AcrobotPlant.get_mutable_state.doc)
-      .def("get_parameters", &AcrobotPlant<T>::get_parameters,
-          py_rvp::reference_internal, py::arg("context"),
-          doc.AcrobotPlant.get_parameters.doc)
-      .def("get_mutable_parameters", &AcrobotPlant<T>::get_mutable_parameters,
-          py_rvp::reference_internal, py::arg("context"),
-          doc.AcrobotPlant.get_mutable_parameters.doc);
-
-  py::class_<AcrobotWEncoder<T>, Diagram<T>>(
-      m, "AcrobotWEncoder", doc.AcrobotWEncoder.doc)
-      .def(py::init<bool>(), py::arg("acrobot_state_as_second_output") = false,
-          doc.AcrobotWEncoder.ctor.doc)
-      .def("acrobot_plant", &AcrobotWEncoder<T>::acrobot_plant,
-          py_rvp::reference_internal, doc.AcrobotWEncoder.acrobot_plant.doc)
-      .def("get_mutable_acrobot_state",
-          &AcrobotWEncoder<T>::get_mutable_acrobot_state,
-          py_rvp::reference_internal, py::arg("context"),
-          // Keep alive, ownership: `return` keeps `context` alive.
-          py::keep_alive<0, 1>(),
-          doc.AcrobotWEncoder.get_mutable_acrobot_state.doc);
-
-  py::class_<AcrobotSpongController<T>, LeafSystem<T>>(
-      m, "AcrobotSpongController", doc.AcrobotSpongController.doc)
-      .def(py::init<>(), doc.AcrobotSpongController.ctor.doc)
-      .def("get_parameters", &AcrobotSpongController<T>::get_parameters,
-          py_rvp::reference, py::arg("context"),
-          // Keep alive, ownership: `return` keeps `context` alive.
-          py::keep_alive<0, 2>(), doc.AcrobotSpongController.get_parameters.doc)
-      .def("get_mutable_parameters",
-          &AcrobotSpongController<T>::get_mutable_parameters, py_rvp::reference,
-          py::arg("context"),
-          // Keep alive, ownership: `return` keeps `context` alive.
-          py::keep_alive<0, 2>(),
-          doc.AcrobotSpongController.get_mutable_parameters.doc);
-
   py::class_<AcrobotInput<T>, BasicVector<T>>(
       m, "AcrobotInput", doc.AcrobotInput.doc)
       .def(py::init<>(), doc.AcrobotInput.ctor.doc)
@@ -152,6 +99,59 @@ void DefineExamplesAcrobot(py::module m) {
       .def("set_balancing_threshold",
           &SpongControllerParams<T>::set_balancing_threshold,
           doc.SpongControllerParams.set_balancing_threshold.doc);
+
+  py::class_<AcrobotPlant<T>, LeafSystem<T>>(
+      m, "AcrobotPlant", doc.AcrobotPlant.doc)
+      .def(py::init<>(), doc.AcrobotPlant.ctor.doc)
+      .def("DynamicsBiasTerm", &AcrobotPlant<T>::DynamicsBiasTerm,
+          doc.AcrobotPlant.DynamicsBiasTerm.doc)
+      .def("SetMitAcrobotParameters", &AcrobotPlant<T>::SetMitAcrobotParameters,
+          doc.AcrobotPlant.SetMitAcrobotParameters.doc)
+      .def("MassMatrix", &AcrobotPlant<T>::MassMatrix,
+          doc.AcrobotPlant.MassMatrix.doc)
+      .def_static("get_state",
+          py::overload_cast<const Context<T>&>(&AcrobotPlant<T>::get_state),
+          py::arg("context"),
+          // Keey alive, ownership: `return` keeps `context` alive
+          py::keep_alive<0, 1>(), doc.AcrobotPlant.get_state.doc)
+      .def_static("get_mutable_state",
+          py::overload_cast<Context<T>*>(&AcrobotPlant<T>::get_mutable_state),
+          py::arg("context"),
+          // Keep alive, ownership: `return` keeps `context` alive
+          py::keep_alive<0, 1>(), doc.AcrobotPlant.get_mutable_state.doc)
+      .def("get_parameters", &AcrobotPlant<T>::get_parameters,
+          py_rvp::reference_internal, py::arg("context"),
+          doc.AcrobotPlant.get_parameters.doc)
+      .def("get_mutable_parameters", &AcrobotPlant<T>::get_mutable_parameters,
+          py_rvp::reference_internal, py::arg("context"),
+          doc.AcrobotPlant.get_mutable_parameters.doc);
+
+  py::class_<AcrobotWEncoder<T>, Diagram<T>>(
+      m, "AcrobotWEncoder", doc.AcrobotWEncoder.doc)
+      .def(py::init<bool>(), py::arg("acrobot_state_as_second_output") = false,
+          doc.AcrobotWEncoder.ctor.doc)
+      .def("acrobot_plant", &AcrobotWEncoder<T>::acrobot_plant,
+          py_rvp::reference_internal, doc.AcrobotWEncoder.acrobot_plant.doc)
+      .def("get_mutable_acrobot_state",
+          &AcrobotWEncoder<T>::get_mutable_acrobot_state,
+          py_rvp::reference_internal, py::arg("context"),
+          // Keep alive, ownership: `return` keeps `context` alive.
+          py::keep_alive<0, 1>(),
+          doc.AcrobotWEncoder.get_mutable_acrobot_state.doc);
+
+  py::class_<AcrobotSpongController<T>, LeafSystem<T>>(
+      m, "AcrobotSpongController", doc.AcrobotSpongController.doc)
+      .def(py::init<>(), doc.AcrobotSpongController.ctor.doc)
+      .def("get_parameters", &AcrobotSpongController<T>::get_parameters,
+          py_rvp::reference, py::arg("context"),
+          // Keep alive, ownership: `return` keeps `context` alive.
+          py::keep_alive<0, 2>(), doc.AcrobotSpongController.get_parameters.doc)
+      .def("get_mutable_parameters",
+          &AcrobotSpongController<T>::get_mutable_parameters, py_rvp::reference,
+          py::arg("context"),
+          // Keep alive, ownership: `return` keeps `context` alive.
+          py::keep_alive<0, 2>(),
+          doc.AcrobotSpongController.get_mutable_parameters.doc);
 
   py::class_<AcrobotGeometry, LeafSystem<double>>(
       m, "AcrobotGeometry", doc.AcrobotGeometry.doc)

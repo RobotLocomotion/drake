@@ -118,9 +118,6 @@ void Parser::ResolveCollisionFilterGroupsFromCompositeParse(
   // Merge the groups found during a composite parse into the accumulated groups
   // held by this parser.
   data_->collision_filter_groups_storage_.Merge(groups);
-
-  // Deprecated 2024-10-01: copy the merged groups to the legacy data object.
-  collision_filter_groups_ = GetCollisionFilterGroups();
 }
 
 }  // namespace multibody

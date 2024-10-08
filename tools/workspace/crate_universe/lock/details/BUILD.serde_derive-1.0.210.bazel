@@ -108,6 +108,6 @@ rust_proc_macro(
     deps = [
         "@crate__proc-macro2-1.0.86//:proc_macro2",
         "@crate__quote-1.0.37//:quote",
-        "@crate__syn-2.0.77//:syn",
+        "@crate__syn-2.0.79//:syn",
     ],
 )

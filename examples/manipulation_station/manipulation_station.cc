@@ -830,7 +830,7 @@ void ManipulationStation<T>::Finalize(
 
       auto depth_to_cloud = builder.template AddSystem<
           perception::DepthImageToPointCloud>(
-              camera->depth_camera_info(),
+              camera->default_depth_render_camera().core().intrinsics(),
               systems::sensors::PixelType::kDepth16U,
               0.001f /* depth camera is in mm */,
               perception::pc_flags::kXYZs |

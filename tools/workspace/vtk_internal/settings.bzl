@@ -323,6 +323,7 @@ MODULE_SETTINGS = {
         ],
     },
     "VTK::IOCore": {
+        "visibility": ["//visibility:public"],
         "srcs_glob_exclude": [
             # Skip code we don't need.
             "**/*Glob*",

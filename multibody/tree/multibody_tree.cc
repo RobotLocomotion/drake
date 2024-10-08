@@ -970,11 +970,10 @@ void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
       rigid_bodies_.get_element(node_topology.rigid_body);
 
   std::unique_ptr<BodyNode<T>> body_node;
+  const Mobilizer<T>* const mobilizer = mobilizers_[node_topology.index].get();
   if (body_index == world_index()) {
-    body_node = std::make_unique<BodyNodeWorld<T>>(&world_body());
+    body_node = std::make_unique<BodyNodeWorld<T>>(&world_body(), mobilizer);
   } else {
-    const Mobilizer<T>* mobilizer = mobilizers_[node_topology.index].get();
-
     BodyNode<T>* parent_node =
         body_nodes_[node_topology.parent_body_node].get();
 
@@ -1261,7 +1260,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
       const BodyNode<T>& node = *body_nodes_[mobod_index];
 
       DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.index() == mobod_index);
+      DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
       // Update per-node kinematics.
       node.CalcPositionKinematicsCache_BaseToTip(frame_body_pose_cache, q, pc);
@@ -1295,7 +1294,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
       const BodyNode<T>& node = *body_nodes_[mobod_index];
 
       DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.index() == mobod_index);
+      DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
       // Update per-mobod kinematics.
       node.CalcVelocityKinematicsCache_BaseToTip(context, pc, H_PB_W_cache, v,
@@ -1552,7 +1551,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
       const BodyNode<T>& node = *body_nodes_[mobod_index];
 
       DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.index() == mobod_index);
+      DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
       // Update per-node kinematics.
       node.CalcSpatialAcceleration_BaseToTip(context, frame_body_pose_cache, pc,
@@ -1665,7 +1664,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
       const BodyNode<T>& node = *body_nodes_[mobod_index];
 
       DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.index() == mobod_index);
+      DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
       // Make a copy to the total applied forces since the call to
       // CalcInverseDynamics_TipToBase() below could overwrite the entry for the
@@ -1869,6 +1868,8 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
   }
 }
 
+// TODO(sherm1) This needs to be reworked so the node-specific code is
+//  processed by the templatized class.
 template <typename T>
 void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
                                       EigenPtr<MatrixX<T>> M) const {
@@ -1964,7 +1965,8 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       const BodyNode<T>* body_node = child_node->parent_body_node();
       Matrix6xUpTo6<T> Fm_CBo_W = Fm_CCo_W;  // 6 x cnv
       while (body_node) {
-        const Vector3<T>& p_BcBo_W = -pc.get_p_PoBo_W(child_node->index());
+        const Vector3<T>& p_BcBo_W =
+            -pc.get_p_PoBo_W(child_node->mobod_index());
         // In place rigid shift of the spatial force in each column of
         // Fm_CBo_W, from Bc to Bo. Before this computation, Fm_CBo_W actually
         // stores Fm_CBc_W from the previous recursion. At the end of this
@@ -3187,7 +3189,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
 
       // Position from Wo (world origin) to Bo (origin of body associated with
       // node at level ilevel), expressed in world frame W.
-      const Vector3<T>& p_WoBo = pc.get_X_WB(node.index()).translation();
+      const Vector3<T>& p_WoBo = pc.get_X_WB(node.mobod_index()).translation();
 
       for (int ipoint = 0; ipoint < num_points; ++ipoint) {
         // Position from Wo to Fp (ith point of Fpi), expressed in world W.

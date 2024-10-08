@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load(
     "@drake//tools/workspace/vtk_internal:rules.bzl",
     "compile_all_modules",
@@ -36,6 +36,20 @@ generate_rendering_opengl2_sources()
 # their required transitive dependency modules (per the vtk.module metadata).
 
 compile_all_modules()
+
+# We offer some (unbuilt by default) programs to help with debugging.
+
+cc_binary(
+    name = "vtkProbeOpenGLVersion",
+    srcs = [
+        "Rendering/OpenGL2/vtkProbeOpenGLVersion.cxx",
+    ],
+    deps = [
+        ":vtkRenderingOpenGL2",
+        "@drake//tools/workspace/vtk_internal:vtk_opengl_init",
+    ],
+    linkstatic = True,
+)
 
 # Install any license notices.
 

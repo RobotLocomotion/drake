@@ -752,18 +752,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "vtk_opengl_init",
-    srcs = ["vtk_opengl_init.cc"],
-    internal = True,
-    visibility = ["//geometry:__subpackages__"],
-    deps = [
-        "@vtk_internal//:vtkCommonCore",
-        "@vtk_internal//:vtkRenderingOpenGL2",
-    ],
-    alwayslink = True,
-)
-
 drake_cc_googletest(
     name = "meshcat_visualizer_test",
     data = [
@@ -780,6 +768,24 @@ drake_cc_googletest(
         "//systems/analysis:simulator",
         "//systems/primitives:constant_vector_source",
         "@msgpack_internal//:msgpack",
+    ],
+)
+
+drake_cc_library(
+    name = "vtk_gltf_uri_loader",
+    srcs = ["vtk_gltf_uri_loader.cc"],
+    hdrs = ["vtk_gltf_uri_loader.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__subpackages__",
+    ],
+    deps = [
+        ":mesh_source",
+        "//common:drake_export",
+        "//common:essential",
+        "//common:memory_file",
+        "//common:overloaded",
+        "@vtk_internal//:vtkIOCore",
     ],
 )
 

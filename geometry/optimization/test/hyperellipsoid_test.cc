@@ -152,6 +152,33 @@ GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
   EXPECT_TRUE(X_WS.IsNearlyIdentity(1e-16));
 }
 
+GTEST_TEST(HyperellipsoidTest, ScaleHypersphereTest) {
+  const double kRadius = 3.0;
+  const double kScale = std::pow(kRadius, 4.0);
+  Vector4d center;
+  center << 1.3, 1.4, 7.2, 9.1;
+  Hyperellipsoid E = Hyperellipsoid::MakeHypersphere(1.0, center);
+  Hyperellipsoid E_scaled = E.Scale(kScale);
+  EXPECT_TRUE(CompareMatrices(E.A() / kRadius, E_scaled.A()));
+  EXPECT_TRUE(CompareMatrices(E.center(), E_scaled.center()));
+  EXPECT_NEAR(E_scaled.Volume(), E.Volume() * kScale, 1e-7);
+
+  Eigen::Vector4d unit_offset_from_boundary = Eigen::Vector4d::Ones() / 2;
+  Eigen::Vector4d point_on_boundary = center + unit_offset_from_boundary;
+
+  Eigen::VectorXd evaluated_constraint_E =
+      (E.A() * (point_on_boundary - center)).transpose() *
+      (E.A() * (point_on_boundary - center));
+  EXPECT_TRUE(evaluated_constraint_E.isApproxToConstant(1.0, 1e-15));
+
+  point_on_boundary = center + unit_offset_from_boundary * kRadius;
+  Eigen::VectorXd evaluated_constraint_E_scaled =
+      (E_scaled.A() * (point_on_boundary - center)).transpose() *
+      (E_scaled.A() * (point_on_boundary - center));
+
+  EXPECT_TRUE(evaluated_constraint_E_scaled.isApproxToConstant(1.0, 1e-15));
+}
+
 GTEST_TEST(HyperellipsoidTest, ArbitraryEllipsoidTest) {
   const Eigen::Matrix3d D = Eigen::DiagonalMatrix<double, 3>(1.0, 2.0, 3.0);
   const RotationMatrixd R = RotationMatrixd::MakeZRotation(M_PI / 2.0);
