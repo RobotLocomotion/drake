@@ -162,29 +162,32 @@ GTEST_TEST(GeometrySpatialInertiaTest, Convex) {
 // Throw an exception message when CalcSpatialInertia(Shape) calculates an
 // invalid volume for an associated geometry file.
 GTEST_TEST(GeometrySpatialInertiaTest, ExceptionOnBadGeometry) {
-  // Throw an exception for the mesh in bad_geometry_volume_zero.obj since
-  // its calculated volume is zero (volume = 0).
-  std::string filename = "drake/geometry/test/bad_geometry_volume_zero.obj";
-  std::string geometry_file_path = FindResourceOrThrow(filename);
-  const geometry::Mesh bad_geometry_volume_zero(geometry_file_path, 1.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      CalcSpatialInertia(bad_geometry_volume_zero, kDensity),
-      ".*volume of a triangle surface mesh is.* whereas a reasonable "
-      "positive value was expected. The mesh may have bad geometry.*");
-
   // Throw an exception for the mesh in bad_geometry_volume_negative.obj since
-  // its calculated volume is negative (volume = -0.5).
-  filename = "drake/geometry/test/bad_geometry_volume_negative.obj";
-  geometry_file_path = FindResourceOrThrow(filename);
+  // its calculated volume is negative (volume = -1.0).
+  std::string filename = "drake/geometry/test/bad_geometry_volume_negative.obj";
+  std::string geometry_file_path = FindResourceOrThrow(filename);
   const geometry::Mesh bad_geometry_volume_negative(geometry_file_path, 1.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       CalcSpatialInertia(bad_geometry_volume_negative, kDensity),
       ".*volume of a triangle surface mesh is.* whereas a reasonable "
       "positive value was expected. The mesh may have bad geometry.*");
 
+  // Throw an exception for the mesh in bad_geometry_volume_zero.obj since
+  // its calculated volume is zero (volume = 0).
+  // This file has the same vertices as bad_geometry_corrected.obj (below),
+  // but some of this file's faces have disordered vertices which produce a mesh
+  // with zero volume (volume = 0) and invalid centroid and spatial inertia.
+  filename = "drake/geometry/test/bad_geometry_volume_zero.obj";
+  geometry_file_path = FindResourceOrThrow(filename);
+  const geometry::Mesh bad_geometry_volume_zero(geometry_file_path, 1.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CalcSpatialInertia(bad_geometry_volume_zero, kDensity),
+      ".*volume of a triangle surface mesh is.* whereas a reasonable "
+      "positive value was expected. The mesh may have bad geometry.*");
+
   // Ensure no exception is thrown for the mesh in bad_geometry_corrected.obj.
-  // This file has the same vertices as the previous two bad geometry files,
-  // but its faces have vertices in an appropriate order. Hence, this mesh has
+  // This file has the same vertices as bad_geometry_volume_zero.obj (above),
+  // but this file's faces have vertices in proper order. Hence, this mesh has
   // a positive volume (volume = +0.5) and appropriate spatial inertia.
   filename = "drake/geometry/test/bad_geometry_corrected.obj";
   geometry_file_path = FindResourceOrThrow(filename);
