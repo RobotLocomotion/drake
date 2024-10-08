@@ -1125,6 +1125,11 @@ void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
   // conflict between ostensibly const operations and invocation of black-box
   // entities that need state mutated should be more formally handled.
 
+  if (!p.window->EnsureDisplay()) {
+    throw std::runtime_error(
+        "The vtkWindow used by RenderEngineVtk could not be initialized");
+  }
+
   const CameraInfo& intrinsics = camera.intrinsics();
   p.window->SetSize(intrinsics.width(), intrinsics.height());
   p.window->SetOffScreenRendering(!show_window);
