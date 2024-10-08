@@ -1,8 +1,9 @@
 # File: bad_geometry_volume_zero.obj
 # The geometry in this file produces invalid mass and inertia properties
 # due to improper winding (order of the vertices) in some of its faces.
-# Drake calculates the volume of this mesh as volume = 0.
-# Related files: bad_geometry_volume_negative.obj and bad_geometry_corrected.obj
+# This file has the same vertices as the file bad_geometry_corrected.obj,
+# but some of this file's faces have disordered vertices which produce a mesh
+# with zero volume (volume = 0) and invalid centroid and spatial inertia.
 # ------------------------------------------------------------------------------
 
 # 6 vertices.
