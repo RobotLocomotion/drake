@@ -616,20 +616,23 @@ MODULE_SETTINGS = {
         "cmake_undefines": [
             "VTK_MODULE_vtkglad_GLES3",
         ],
-        "srcs_glob_exclude": [
-            # No windows.
-            "**/wgl.c",
-        ],
-        "srcs_glob_extra": [
-            "ThirdParty/glad/vtkglad/src/*.c",
-        ],
+        "srcs_extra": select({
+            ":osx": [],
+            "//conditions:default": [
+                "ThirdParty/glad/vtkglad/src/gl.c",
+                "ThirdParty/glad/vtkglad/src/glx.c",
+            ],
+        }),
         "copts_extra": [
             "-fvisibility=hidden",
             "-Iexternal/vtk_internal/ThirdParty/glad/vtkglad/include",
         ],
-        "deps_extra": [
-            "@opengl",
-        ],
+        "deps_extra": select({
+            ":osx": [],
+            "//conditions:default": [
+                "@opengl",
+            ],
+        }),
         "linkopts_extra": select({
             ":osx": [],
             "//conditions:default": [
