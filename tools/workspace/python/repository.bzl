@@ -1,16 +1,20 @@
 """
-XXX rewrite this overview
+This rule configures Python for use by Drake, in two parts:
+(a) Finds local system Python headers and libraries using python-config and
+    makes them available to be used as a C/C++ dependency.
+(b) macOS only: creates (or syncs) a virtual environment for dependencies.
 
-Finds local system Python headers and libraries using python-config and makes
-them available to be used as a C/C++ dependency.
+For part (a) there are two available targets:
 
-There are two available targets:
+(1) "@python//:python" for the typical case where we are creating loadable
+dynamic libraries to be used as Python modules.
 
-(1) "@foo//:python" for the typical case where we are creating loadable dynamic
-libraries to be used as Python modules.
-
-(2) "@foo//:python_direct_link" for the unusual case of linking the CPython
+(2) "@python//:python_direct_link" for the unusual case of linking the CPython
 interpreter as a library into an executable with a C++ main() function.
+
+For part (b) the environment is used in all python rules and tests by default,
+but in case a test needs to shell out to a venv binary, the `@python//:venv_bin`
+can be used to put the binaries' path into runfiles.
 
 Arguments:
     name: A unique name for this rule.
@@ -19,6 +23,7 @@ Arguments:
     macos_interpreter_path: (Optional) Interpreter path for the Python runtime,
         when running on macOS. The format substitution "{homebrew_prefix}" is
         available for use in this string.
+    requirements_flavor: (Optional) Which choice of requirements.txt to use.
 """
 
 load(
@@ -68,6 +73,7 @@ def _get_extension_suffix(repo_ctx, python, python_config):
 # TODO(jwnimmer-tri): Much of the logic for parsing includes and linkopts is
 # the same or similar to that used in pkg_config.bzl and should be refactored
 # and shared instead of being duplicated in both places.
+
 def _get_includes(repo_ctx, python_config):
     """Returns the list of `includes = ...` when compiling native code."""
     includes = []
@@ -141,42 +147,6 @@ def _prepare_venv(repo_ctx, python):
     repo_ctx.watch(sync)
 
     return repo_ctx.path("bin/python3")
-
-def _impl(repo_ctx):
-    # Add the BUILD file.
-    repo_ctx.symlink(
-        Label("//tools/workspace/python:package.BUILD.bazel"),
-        "BUILD.bazel",
-    )
-
-    # Set `python` to the the interpreter path specified by our rule attrs, and
-    # `python_config` to its adjacent config binary.
-    if repo_ctx.os.name == "mac os x":
-        python = repo_ctx.attr.macos_interpreter_path
-        if "{homebrew_prefix}" in python:
-            python = python.format(
-                homebrew_prefix = homebrew_prefix(repo_ctx),
-            )
-    else:
-        python = repo_ctx.attr.linux_interpreter_path
-    python_config = "{}-config".format(python)
-
-    # Check that `python` is valid.
-    _check_python(repo_ctx, python)
-
-    # Get version and site_packages_relpath from python.
-    version = execute_or_fail(repo_ctx, [python, "-c", "\n".join([
-        "from sys import version_info as v",
-        "print('{}.{}'.format(v.major, v.minor))",
-    ])]).stdout.strip()
-    site_packages_relpath = "lib/python{}/site-packages".format(version)
-
-    # Get extension_suffix, includes, and linkopts from python_config.
-    extension_suffix = _get_extension_suffix(repo_ctx, python, python_config)
-    includes = _get_includes(repo_ctx, python_config)
-    linkopts = _get_linkopts(repo_ctx, python_config)
-=======
->>>>>>> upstream
 
 def _impl(repo_ctx):
     # Add the BUILD file.
