@@ -518,6 +518,9 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
         target_mapper->ShallowCopy(source_part.actor->GetMapper());
         target_actor->SetMapper(target_mapper);
         renderer.AddActor(target_actor);
+        if (i == ImageType::kDepth) {
+          SetDepthShader(target_actor);
+        }
         target_prop.parts.push_back(
             Part{.actor = std::move(target_actor), .T_GA = source_part.T_GA});
       }
@@ -651,14 +654,7 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
                                               label_color.b());
         } else if (i == ImageType::kDepth) {
           // Depth requires a mapper with the depth shader.
-          vtkOpenGLShaderProperty* shader_prop =
-              vtkOpenGLShaderProperty::SafeDownCast(
-                  part_actor->GetShaderProperty());
-          DRAKE_DEMAND(shader_prop != nullptr);
-          shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
-          shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
-          mapper->AddObserver(vtkCommand::UpdateShaderEvent,
-                              uniform_setting_callback_.Get());
+          SetDepthShader(part_actor);
         }
       }
       // vtkGLTFImporter uses the actor's UserTransform property to define the
@@ -944,15 +940,6 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   // get destroyed when this array goes out of scope.
   std::array<vtkNew<vtkOpenGLPolyDataMapper>, kNumPipelines> mappers;
 
-  // Sets vertex and fragment shaders only to the depth mapper.
-  vtkOpenGLShaderProperty* shader_prop = vtkOpenGLShaderProperty::SafeDownCast(
-      actors[ImageType::kDepth]->GetShaderProperty());
-  DRAKE_DEMAND(shader_prop != nullptr);
-  shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
-  shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
-  mappers[ImageType::kDepth]->AddObserver(vtkCommand::UpdateShaderEvent,
-                                          uniform_setting_callback_.Get());
-
   for (auto& mapper : mappers) {
     mapper->SetInputConnection(source->GetOutputPort());
   }
@@ -1053,6 +1040,8 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
 
   // Depth actor; always gets wired in with no additional work.
   connect_actor(ImageType::kDepth);
+  // Sets vertex and fragment shaders only to the depth mapper.
+  SetDepthShader(actors[ImageType::kDepth]);
 
   // Take ownership of the actors.
   for (int i = 0; i < kNumPipelines; ++i) {
@@ -1100,6 +1089,24 @@ void RenderEngineVtk::SetPbrMaterials() {
     }
   }
 }
+
+void RenderEngineVtk::SetDepthShader(vtkSmartPointer<vtkActor> actor) {
+  if (!actor) {
+    return;
+  }
+  vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =
+      vtkOpenGLPolyDataMapper::SafeDownCast(actor->GetMapper());
+  DRAKE_DEMAND(mapper != nullptr);
+  vtkOpenGLShaderProperty* shader_prop =
+      vtkOpenGLShaderProperty::SafeDownCast(actor->GetShaderProperty());
+  DRAKE_DEMAND(shader_prop != nullptr);
+  // Sets vertex and fragment shaders only to the depth mapper.
+  shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
+  shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
+  mapper->AddObserver(vtkCommand::UpdateShaderEvent,
+                      uniform_setting_callback_.Get());
+}
+
 void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {
   p.window->Render();
   p.filter->Modified();
