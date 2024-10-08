@@ -820,7 +820,7 @@ def drake_cc_binary(
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
-            tags = (test_rule_tags or []) + ["nolint"],
+            tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
             **kwargs
         )
 
