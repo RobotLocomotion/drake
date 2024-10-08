@@ -588,7 +588,9 @@ PYBIND11_MODULE(primitives, m) {
             doc.ZeroOrderHold.ctor
                 .doc_3args_period_sec_abstract_model_value_offset_sec)
         .def("period", &ZeroOrderHold<T>::period, doc.ZeroOrderHold.period.doc)
-        .def("offset", &ZeroOrderHold<T>::offset, doc.ZeroOrderHold.offset.doc);
+        .def("offset", &ZeroOrderHold<T>::offset, doc.ZeroOrderHold.offset.doc)
+        .def("set_vector_state", &ZeroOrderHold<T>::set_vector_state,
+            doc.ZeroOrderHold.set_vector_state.doc);
 
     DefineTemplateClassWithDefault<TrajectorySource<T>, LeafSystem<T>>(
         m, "TrajectorySource", GetPyParam<T>(), doc.TrajectorySource.doc)
