@@ -209,11 +209,15 @@ genrule(
 
 PYRAMID_RESOURCES = [
     "fully_textured_pyramid_base_color.png",
+    "fully_textured_pyramid_base_color.ktx2",
     "fully_textured_pyramid.bin",
     "fully_textured_pyramid_emissive.png",
+    "fully_textured_pyramid_emissive.ktx2",
     "fully_textured_pyramid.gltf",
     "fully_textured_pyramid_normal.png",
+    "fully_textured_pyramid_normal.ktx2",
     "fully_textured_pyramid_omr.png",
+    "fully_textured_pyramid_omr.ktx2",
     "fully_textured_pyramid.sdf",
 ]
 
