@@ -619,7 +619,9 @@ MODULE_SETTINGS = {
             "VTK_MODULE_vtkglad_GLES3",
         ],
         "srcs_extra": select({
-            ":osx": [],
+            ":osx": [
+                "ThirdParty/glad/vtkglad/src/gl.c",
+            ],
             "//conditions:default": [
                 "ThirdParty/glad/vtkglad/src/gl.c",
                 "ThirdParty/glad/vtkglad/src/glx.c",
@@ -629,12 +631,9 @@ MODULE_SETTINGS = {
             "-fvisibility=hidden",
             "-Iexternal/vtk_internal/ThirdParty/glad/vtkglad/include",
         ],
-        "deps_extra": select({
-            ":osx": [],
-            "//conditions:default": [
-                "@opengl",
-            ],
-        }),
+        "deps_extra": [
+            "@opengl",
+        ],
         "linkopts_extra": select({
             ":osx": [],
             "//conditions:default": [
