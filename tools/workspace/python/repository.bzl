@@ -13,7 +13,7 @@ dynamic libraries to be used as Python modules.
 interpreter as a library into an executable with a C++ main() function.
 
 For part (b) the environment is used in all python rules and tests by default,
-but in case a test needs to shell out to a venv binary, the `@python//:venv_bin`
+but if a test needs to shell out to a venv binary, the `@python//:venv_bin`
 can be used to put the binaries' path into runfiles.
 
 Arguments:
