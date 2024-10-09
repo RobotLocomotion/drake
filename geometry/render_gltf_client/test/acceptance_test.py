@@ -1,5 +1,6 @@
 """Performs minimal smoke tests to run binaries in this test folder."""
 
+import json
 import os
 import subprocess
 import unittest
@@ -31,8 +32,11 @@ MINIMAL_GLTF = """\
       "byteLength" : 44
     }
   ],
+  "asset" : {
+    "version" : "2.0"
+  }
 }
-"""
+""".replace("# noqa", "")
 
 
 class TestGltfRenderBinary(unittest.TestCase):
@@ -60,6 +64,9 @@ class TestGltfRenderBinary(unittest.TestCase):
         server_vtk_backend = self.runfiles.Rlocation(
             "drake/geometry/render_gltf_client/server_vtk_backend"
         )
+
+        # Fail-fast in case MINIMAL_GLTF has typos.
+        json.loads(MINIMAL_GLTF)
 
         # Note: `tmp_dir` will be cleaned up by bazel after running the test.
         tmp_dir = os.path.join(
