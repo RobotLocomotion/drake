@@ -170,8 +170,7 @@ ShaderCallback::ShaderCallback()
 
 vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
-// N.B. The RenderEngineVtk::RenderingPipeline constuctor is defined
-// in internal_rendering_pipeline_constructor.cc.
+RenderEngineVtk::RenderingPipeline::RenderingPipeline() = default;
 
 RenderEngineVtk::RenderingPipeline::~RenderingPipeline() = default;
 

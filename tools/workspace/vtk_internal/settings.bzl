@@ -615,6 +615,7 @@ MODULE_SETTINGS = {
         ],
     },
     "VTK::glad": {
+        "visibility": ["//visibility:public"],
         "cmake_undefines": [
             "VTK_MODULE_vtkglad_GLES3",
         ],

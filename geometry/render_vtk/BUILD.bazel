@@ -48,17 +48,32 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "internal_render_engine_vtk",
-    srcs = [
-        "internal_render_engine_vtk.cc",
-        "internal_rendering_pipeline_constructor.cc",
+    name = "internal_make_render_window",
+    srcs = ["internal_make_render_window.cc"],
+    hdrs = ["internal_make_render_window.h"],
+    internal = True,
+    visibility = [
+        "//geometry/render_gltf_client:__pkg__",
     ],
+    deps = [
+        "//common:essential",
+        "//common:unused",
+        "@vtk_internal//:vtkRenderingCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
+        "@vtk_internal//:vtkglad",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_render_engine_vtk",
+    srcs = ["internal_render_engine_vtk.cc"],
     hdrs = ["internal_render_engine_vtk.h"],
     internal = True,
     visibility = [
         "//geometry/render_gltf_client:__pkg__",
     ],
     deps = [
+        ":internal_make_render_window",
         ":internal_render_engine_vtk_base",
         ":internal_vtk_util",
         "//common",
