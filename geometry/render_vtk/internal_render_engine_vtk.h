@@ -200,13 +200,11 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   // Adds an .obj to the scene for the id currently being reified (data->id).
   // Returns true if added, false if ignored (for whatever reason).
-  bool ImplementObj(const std::filesystem::path& file_name, double scale,
-                    const RegistrationData& data);
+  bool ImplementObj(const Mesh& mesh, const RegistrationData& data);
 
   // Adds a .gltf to the scene for the id currently being reified (data->id).
   // Returns true if added, false if ignored (for whatever reason).
-  bool ImplementGltf(const std::string& file_name, double scale,
-                     const RegistrationData& data);
+  bool ImplementGltf(const Mesh& mesh, const RegistrationData& data);
 
  private:
   friend class RenderEngineVtkTester;
