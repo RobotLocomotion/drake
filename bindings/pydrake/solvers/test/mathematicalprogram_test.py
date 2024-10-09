@@ -1589,10 +1589,18 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(len(results), len(progs))
         self.assertTrue(all([r.is_success() for r in results]))
 
-
         # Now we test the overload
         results = mp.SolveInParallel(progs=progs,
                                      initial_guesses=None,
+                                     solver_options=SolverOptions(),
+                                     solver_id=ScsSolver().solver_id(),
+                                     parallelism=Parallelism.Max(),
+                                     dynamic_schedule=False)
+        self.assertEqual(len(results), len(progs))
+        self.assertTrue(all([r.is_success() for r in results]))
+
+        results = mp.SolveInParallel(progs=progs,
+                                     initial_guesses=initial_guesses,
                                      solver_options=SolverOptions(),
                                      solver_id=ScsSolver().solver_id(),
                                      parallelism=Parallelism.Max(),
