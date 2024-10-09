@@ -19,6 +19,9 @@ PathParameterizedTrajectory<T>::PathParameterizedTrajectory(
 }
 
 template <typename T>
+PathParameterizedTrajectory<T>::~PathParameterizedTrajectory() = default;
+
+template <typename T>
 std::unique_ptr<Trajectory<T>> PathParameterizedTrajectory<T>::Clone() const {
   return std::make_unique<PathParameterizedTrajectory<T>>(*this);
 }

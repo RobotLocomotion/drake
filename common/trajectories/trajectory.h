@@ -21,7 +21,7 @@ namespace trajectories {
 template <typename T>
 class Trajectory {
  public:
-  virtual ~Trajectory() = default;
+  virtual ~Trajectory();
 
   /**
    * @return A deep copy of this Trajectory.
