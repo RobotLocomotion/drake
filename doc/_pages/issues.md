@@ -106,6 +106,17 @@ geometry/proximity
 </tr>
 
 <tr>
+<td><code>graphs of convex sets</code></td>
+<td>Graphs of Convex Sets and related algorithms</td>
+<td>RussTedrake</td>
+<td><small>
+geometry/optimization<br>
+planning/iris<br>
+planning/trajectory_optimization/gcs_trajectory_optimization<br>
+</small></td>
+</tr>
+
+<tr>
 <td><code>jupyter</code></td>
 <td>Topics relevant only when running inside a Python notebook. This label does
   not imply authoring tutorials (use component: tutorials for that).</td>
@@ -168,17 +179,6 @@ multibody/optimization<br>
 planning<br>
 systems/controllers<br>
 systems/trajectory_optimization
-</small></td>
-</tr>
-
-<tr>
-<td><code>graphs of convex sets</code></td>
-<td>Graphs of Convex Sets and related algorithms</td>
-<td>RussTedrake</td>
-<td><small>
-geometry/optimization<br>
-planning/iris<br>
-planning/trajectory_optimization/gcs_trajectory_optimization<br>
 </small></td>
 </tr>
 
