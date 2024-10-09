@@ -99,8 +99,10 @@ py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
   } else {
     doc = doc_string;
   }
+  // Note: having dynamic_attr() here paves the way for using
+  // pydrake::internal::ref_cycle later.
   py::class_<Class, Options...> py_class(
-      scope, class_name.c_str(), doc.c_str());
+      scope, class_name.c_str(), py::dynamic_attr(), doc.c_str());
   // Register it as a template instantiation.
   const bool skip_rename = is_default;
   AddTemplateClass(scope, template_name, py_class, param, skip_rename);
