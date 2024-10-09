@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <limits>
 #include <memory>
 #include <string>
 
@@ -157,9 +156,9 @@ SpatialInertia<double> CalcSpatialInertia(
     //  the issue (ideally with Sean's input/expertise).
     const std::string error_message = fmt::format(
         "{}(): The calculated volume of a triangle surface mesh is {} whereas "
-        "a reasonable positive value of {} was expected. The mesh may have bad "
-        "geometry, e.g., it is an open mesh or the winding (order of vertices) "
-        "of at least one face does not produce an outward normal.",
+        "a reasonable positive value of at least {} was expected. The mesh may "
+        "have bad geometry, e.g., it is an open mesh or the winding (order of "
+        "vertices) of at least one face does not produce an outward normal.",
         __func__, volume, kEpsilon);
     throw std::logic_error(error_message);
   }
