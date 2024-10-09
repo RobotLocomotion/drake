@@ -502,6 +502,7 @@ drake_py_unittest(
     name = "planar_scenegraph_visualizer_test",
     data = [
         "//examples/multibody/cart_pole:models",
+        "//geometry:test_obj_files",
         "@drake_models//:iiwa_description",
     ],
     deps = [
