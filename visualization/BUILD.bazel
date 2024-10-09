@@ -151,6 +151,7 @@ drake_cc_googletest(
         ":inertia_visualizer",
         ":visualization_config_functions",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//geometry:meshcat",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing",
