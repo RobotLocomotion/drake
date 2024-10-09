@@ -5,6 +5,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
@@ -342,6 +343,22 @@ TEST_P(InertiaVisualizerGeometryTest, ThinRodTest) {
                            ellipsoid.c()));
   EXPECT_NEAR(ellipsoid.b(), ellipsoid.c(), kTolerance);
   EXPECT_GT(ellipsoid.a(), ellipsoid.b() * 99);
+}
+
+// Ensure an exception is thrown if parsing a mesh with zero volume.
+// Related: issue #21924 [github.com/RobotLocomotion/drake/issues/21924].
+GTEST_TEST(InertiaVisualizerGeometryTest, ZeroVolumeShouldThrowException) {
+  systems::DiagramBuilder<double> builder;
+  AddMultibodyPlantSceneGraphResult<double> plant_and_scene_graph =
+      AddMultibodyPlantSceneGraph(&builder, /* time_step = */ 0.0);
+  MultibodyPlant<double>& plant = plant_and_scene_graph.plant;
+  Parser parser(&plant);
+  std::string filename = "drake/geometry/test/bad_geometry_volume_zero.obj";
+  std::string geometry_file_path = FindResourceOrThrow(filename);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      parser.AddModels(geometry_file_path),
+      ".*volume of a triangle surface mesh is.* whereas a reasonable "
+      "positive value of .* was expected. The mesh may have bad geometry.*");
 }
 
 // clang-format off
