@@ -529,6 +529,7 @@ drake_cc_googletest(
     name = "parser_test",
     data = [
         ":test_models",
+        "//geometry:test_obj_files",
         "//multibody/benchmarks/acrobot:models",
         "@drake_models//:iiwa_description",
     ] + _DM_CONTROL_MUJOCO_FILES,
