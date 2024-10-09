@@ -144,7 +144,8 @@ SpatialInertia<double> CalcSpatialInertia(
   // zero volume creates a divide-by-zero in two places below and the associated
   // obscure exception message would be "Unable to calculate the eigenvalues or
   // eigenvectors of the 3x3 matrix associated with a RotationalInertia.".
-  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  // Related: issue #21924 [github.com/RobotLocomotion/drake/issues/21924].
+  constexpr double kEpsilon = 1.0E-14;  // ≈ 64*numeric_limits<double>::epsilon
   if (volume <= kEpsilon) {
     // TODO(Mitiguy) Consider changing the function signature to add an optional
     //  mesh_name argument (e.g., mesh_name = someFilename.obj) and using
@@ -156,13 +157,11 @@ SpatialInertia<double> CalcSpatialInertia(
     //  the issue (ideally with Sean's input/expertise).
     const std::string error_message = fmt::format(
         "{}(): The calculated volume of a triangle surface mesh is {} whereas "
-        "a reasonable positive value was expected. The mesh may have bad "
+        "a reasonable positive value of {} was expected. The mesh may have bad "
         "geometry, e.g., it is an open mesh or the winding (order of vertices) "
         "of at least one face does not produce an outward normal.",
-        __func__, volume);
+        __func__, volume, kEpsilon);
     throw std::logic_error(error_message);
-    // Note: In Wavefront .obj files, each face's vertices should be stored
-    // in a counter-clockwise order by default.
   }
 
   const double mass = density * volume;
