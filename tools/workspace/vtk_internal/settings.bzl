@@ -496,7 +496,9 @@ MODULE_SETTINGS = {
             "//conditions:default": [],
         }),
         "srcs_extra": select({
-            ":osx": [],
+            ":osx": [
+                "Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx",
+            ],
             "//conditions:default": [
                 "Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx",
                 "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
