@@ -305,16 +305,12 @@ class TestMemoryLeaks(unittest.TestCase):
     def test_trivial_simulator(self):
         self.do_test(
             dut=self._repeater.dut_trivial_simulator,
-            count=5,
-            # TODO(rpoyner-tri): Allow 0 leaks.
-            leaks_allowed=5)
+            count=5)
 
     def test_mixed_language_simulator(self):
         self.do_test(
             dut=self._repeater.dut_mixed_language_simulator,
-            count=5,
-            # TODO(rpoyner-tri): Allow 0 leaks.
-            leaks_allowed=1)
+            count=5)
 
     def test_full_example(self):
         # Note: this test doesn't invoke the #14355 deliberate cycle.
