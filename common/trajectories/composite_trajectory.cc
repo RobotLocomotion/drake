@@ -48,6 +48,9 @@ CompositeTrajectory<T>::CompositeTrajectory(
 }
 
 template <typename T>
+CompositeTrajectory<T>::~CompositeTrajectory() = default;
+
+template <typename T>
 std::unique_ptr<Trajectory<T>> CompositeTrajectory<T>::Clone() const {
   return std::make_unique<CompositeTrajectory<T>>(segments_);
 }

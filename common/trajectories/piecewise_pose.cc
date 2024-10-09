@@ -22,6 +22,9 @@ PiecewisePose<T>::PiecewisePose(
 }
 
 template <typename T>
+PiecewisePose<T>::~PiecewisePose() = default;
+
+template <typename T>
 PiecewisePose<T> PiecewisePose<T>::MakeLinear(
     const std::vector<T>& times,
     const std::vector<math::RigidTransform<T>>& poses) {

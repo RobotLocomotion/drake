@@ -5,6 +5,11 @@
 namespace drake {
 namespace trajectories {
 
+// This is defined in the cc file so the vtable and type_info are not duplicated
+// as weak symbols everywhere.
+template <typename T>
+Trajectory<T>::~Trajectory() = default;
+
 template <typename T>
 MatrixX<T> Trajectory<T>::vector_values(const std::vector<T>& t) const {
   return vector_values(Eigen::Map<const VectorX<T>>(t.data(), t.size()));

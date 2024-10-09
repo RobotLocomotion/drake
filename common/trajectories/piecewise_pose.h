@@ -37,6 +37,8 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
   PiecewisePose(const PiecewisePolynomial<T>& position_trajectory,
                 const PiecewiseQuaternionSlerp<T>& orientation_trajectory);
 
+  ~PiecewisePose() override;
+
   /**
    * Constructs a PiecewisePose from given @p times and @p poses. The positions
    * trajectory is constructed as a first-order hold. The orientation is
