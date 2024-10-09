@@ -48,6 +48,7 @@
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
+#include "drake/geometry/vtk_gltf_uri_loader.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/vtk_diagnostic_event_observer.h"
 
@@ -66,6 +67,7 @@ using geometry::internal::LoadRenderMeshesFromObj;
 using geometry::internal::MakeDiffuseMaterial;
 using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
+using geometry::internal::VtkGltfUriLoader;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using render::ColorRenderCamera;
@@ -266,9 +268,9 @@ void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
 
   const std::string extension = mesh.extension();
   if (extension == ".obj") {
-    data.accepted = ImplementObj(mesh.filename(), mesh.scale(), data);
+    data.accepted = ImplementObj(mesh, data);
   } else if (extension == ".gltf") {
-    data.accepted = ImplementGltf(mesh.filename(), mesh.scale(), data);
+    data.accepted = ImplementGltf(mesh, data);
   } else {
     static const logging::Warn one_time(
         "RenderEngineVtk only supports Mesh specifications which use "
@@ -567,17 +569,17 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh, double scale,
   ImplementPolyData(transform_filter.GetPointer(), material, data);
 }
 
-bool RenderEngineVtk::ImplementObj(const std::filesystem::path& file_name,
-                                   double scale, const RegistrationData& data) {
+bool RenderEngineVtk::ImplementObj(const Mesh& mesh,
+                                   const RegistrationData& data) {
   std::vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
-      file_name, data.properties, default_diffuse_, diagnostic_);
+      mesh.source(), data.properties, default_diffuse_, diagnostic_);
   for (auto& render_mesh : meshes) {
-    ImplementRenderMesh(std::move(render_mesh), scale, data);
+    ImplementRenderMesh(std::move(render_mesh), mesh.scale(), data);
   }
   return true;
 }
 
-bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
+bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
                                     const RegistrationData& data) {
   vtkNew<VtkDiagnosticEventObserver> observer;
   observer->set_diagnostic(&diagnostic_);
@@ -590,14 +592,24 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
   // importer (see systems/sensors/image_io_load.cc).
   vtkNew<vtkGLTFImporter> importer;
   observe(importer);
-  importer->SetFileName(file_name.c_str());
+  const MeshSource& mesh_source = mesh.source();
+  if (mesh_source.is_path()) {
+    importer->SetFileName(mesh_source.path().c_str());
+  } else {
+    vtkNew<VtkGltfUriLoader> uri_loader;
+    uri_loader->SetMeshSource(&mesh_source);
+    vtkSmartPointer<vtkResourceStream> gltf_stream =
+        uri_loader->MakeGltfStream();
+    importer->SetInputStream(gltf_stream, uri_loader, /* binary= */ false);
+  }
   importer->Update();
 
   auto* renderer = importer->GetRenderer();
   DRAKE_DEMAND(renderer != nullptr);
 
   if (renderer->VisibleActorCount() == 0) {
-    log()->warn("No visible meshes found in glTF file: {}", file_name);
+    log()->warn("No visible meshes found in glTF file: '{}'",
+                mesh.source().description());
     return false;
   }
 
@@ -609,7 +621,7 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
   // This includes the rotation from y-up to z-up and the requested scale.
   const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
   vtkSmartPointer<vtkTransform> T_GF_transform =
-      ConvertToVtkTransform(X_GF, scale);
+      ConvertToVtkTransform(X_GF, mesh.scale());
   vtkMatrix4x4* T_GF = T_GF_transform->GetMatrix();
 
   // Color.
@@ -619,7 +631,7 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
         "Drake materials have been assigned to a glTF file. glTF defines its "
         "own materials, so post hoc materials will be ignored and should be "
         "removed from the model specification. glTF file: '{}'",
-        file_name);
+        mesh.source().description());
   }
 
   const RenderLabel label = GetRenderLabelOrThrow(data.properties);
@@ -935,8 +947,6 @@ void RenderEngineVtk::InitializePipelines() {
 void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
                                         const RenderMaterial& material,
                                         const RegistrationData& data) {
-  // Parsing via VTK should never require an image to be flipped.
-  DRAKE_DEMAND(material.flip_y == false);
   std::array<vtkSmartPointer<vtkActor>, kNumPipelines> actors{
       vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
       vtkSmartPointer<vtkActor>::New()};
