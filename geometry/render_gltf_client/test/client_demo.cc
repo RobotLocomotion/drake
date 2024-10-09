@@ -308,7 +308,9 @@ int DoMain() {
   plant.SetFreeBodySpatialVelocity(&plant_context, mustard_body,
                                    V_WMustardBottle);
   simulator.set_target_realtime_rate(1.f);
-  simulator.AdvanceTo(FLAGS_simulation_time);
+  if (FLAGS_simulation_time > 0) {
+    simulator.AdvanceTo(FLAGS_simulation_time);
+  }
 
   return 0;
 }

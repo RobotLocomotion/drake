@@ -331,6 +331,7 @@ drake_cc_binary(
 
 drake_py_unittest(
     name = "acceptance_test",
+    allow_network = ["render_gltf_client"],
     data = [
         ":client_demo",
         ":server_demo",
