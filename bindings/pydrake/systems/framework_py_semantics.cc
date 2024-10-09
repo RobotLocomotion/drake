@@ -683,12 +683,10 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py::arg("output"),
           py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
           doc.DiagramBuilder.ExportOutput.doc)
-      .def("Build", &DiagramBuilder<T>::Build,
-          // Keep alive, ownership (tr.): `self` keeps `return` alive.
-          py::keep_alive<1, 0>(), doc.DiagramBuilder.Build.doc)
+      .def("Build", &DiagramBuilder<T>::Build, internal::ref_cycle<1, 0>(),
+          doc.DiagramBuilder.Build.doc)
       .def("BuildInto", &DiagramBuilder<T>::BuildInto, py::arg("target"),
-          // Keep alive, ownership (tr.): `target` keeps `self` alive.
-          py::keep_alive<2, 1>(), doc.DiagramBuilder.BuildInto.doc)
+          internal::ref_cycle<2, 1>(), doc.DiagramBuilder.BuildInto.doc)
       .def("IsConnectedOrExported", &DiagramBuilder<T>::IsConnectedOrExported,
           py::arg("port"), doc.DiagramBuilder.IsConnectedOrExported.doc)
       .def("num_input_ports", &DiagramBuilder<T>::num_input_ports,
