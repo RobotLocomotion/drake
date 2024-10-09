@@ -526,7 +526,7 @@ GTEST_TEST(ShapeTest, Constructors) {
 // it forwards construction to the validating constructor with individual
 // parameters. We test the error message to confirm that the erroneous value
 // is part of the message. We don't worry about the *rest* of the message,
-// relyibng DRAKE_THROW_UNLESS to do the right thing.
+// relying on DRAKE_THROW_UNLESS to do the right thing.
 //
 // We haven't included explicit tests for infinity or NaN.
 GTEST_TEST(ShapeTest, NumericalValidation) {

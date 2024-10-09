@@ -11,11 +11,15 @@
 #include <stdexcept>
 #include <string>
 
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
 namespace internal {
+
 namespace {
 
 // Singleton to manage assertion configuration.
@@ -38,6 +42,20 @@ void PrintFailureDetailTo(std::ostream& out, const char* condition,
     out << ".";
   }
 }
+
+// When calling DRAKE_THROW_UNLESS(condition, value1, value2, ...) some values
+// need to be *prepared* for fmt::format by wrapping them as fmt_eigen(value1)
+// or fmt_streamed(value2). We don't want those wrappers in the displayed
+// string.
+std::string_view StripFormatCruft(const std::string& key) {
+  if (key.starts_with("fmt_eigen(")) {
+    return std::string_view(key.begin() + 10, key.end() - 1);
+  } else if (key.starts_with("fmt_streamed(")) {
+    return std::string_view(key.begin() + 13, key.end() - 1);
+  }
+  return std::string_view(key.begin(), key.end());
+}
+
 }  // namespace
 
 // Declared in drake_assert.h.
@@ -52,11 +70,17 @@ void Abort(const char* condition, const char* func, const char* file,
 // Declared in drake_throw.h.
 // If the suffix should end with punctuation, the caller must provide it.
 void Throw(const char* condition, const char* func, const char* file,
-           int line, std::string_view suffix) {
+           int line, const ThrowValuesBuf& buffer) {
   std::ostringstream what;
   PrintFailureDetailTo(what, condition, func, file, line);
-  if (!suffix.empty()) {
-    what << " " << suffix;
+  if (buffer.values[0].first != nullptr) {
+    std::vector<std::string> pairs;
+    pairs.reserve(buffer.values.size());
+    for (const auto& [key, value_str] : buffer.values) {
+      if (key == nullptr) break;
+      pairs.push_back(fmt::format("{} = {}", StripFormatCruft(key), value_str));
+    }
+    what << fmt::format(" {}.", fmt::join(pairs, ", "));
   }
   throw assertion_error(what.str().c_str());
 }

@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -69,14 +71,45 @@ GTEST_TEST(DrakeThrowTest, ThrowWithEigenValues) {
   const Eigen::Vector3d v1(1, 2, 3);
 
   auto f1 = [&]() {
-    DRAKE_THROW_UNLESS(false, v1, details);
+    DRAKE_THROW_UNLESS(false, drake::fmt_eigen(v1), details);
   };
-  DRAKE_EXPECT_THROWS_MESSAGE(f1(), ".*v1 = 1\n2\n3, details = .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(f1(), ".* v1 = 1\n2\n3, details = .*");
 
+  // TODO: Why does this work without fmt_eigen?
   auto f2 = [&]() {
     DRAKE_THROW_UNLESS(false, v1.transpose(), details);
   };
-  DRAKE_EXPECT_THROWS_MESSAGE(f2(), ".*v1.transpose.. = 1 2 3, details = .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(f2(), ".* v1.transpose.. = 1 2 3, details = .*");
+}
+
+enum class TestEnum { kFirst, kSecond };
+std::ostream& operator<<(std::ostream& out, const TestEnum& e) {
+  switch (e) {
+    case TestEnum::kFirst:
+      out << "first";
+      break;
+    case TestEnum::kSecond:
+      out << "second";
+      break;
+  }
+  return out;
+}
+
+GTEST_TEST(DrakeThrowTest, ThrowWithStreamFormat) {
+  const TestEnum e1{TestEnum::kFirst};
+  const TestEnum e2{TestEnum::kSecond};
+
+  using drake::fmt_streamed;
+
+  auto f1 = [&]() {
+    DRAKE_THROW_UNLESS(false, fmt_streamed(e1));
+  };
+  DRAKE_EXPECT_THROWS_MESSAGE(f1(), ".* e1 = first.*");
+
+  auto f2 = [&]() {
+    DRAKE_THROW_UNLESS(false, fmt_streamed(e2));
+  };
+  DRAKE_EXPECT_THROWS_MESSAGE(f2(), ".* e2 = second.*");
 }
 
 }  // namespace
