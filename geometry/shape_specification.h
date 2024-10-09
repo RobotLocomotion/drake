@@ -162,14 +162,14 @@ class Box final : public Shape {
 
   /** Constructs a box with a vector of measures: width, depth, and height --
    the box's dimensions along the canonical x-, y-, and z-axes, respectively.
-   @throws std::exception if any measures is not finite positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit Box(const Vector3<double>& measures);
 
   ~Box() final;
 
   /** Constructs a cube with the given `edge_size` for its width, depth, and
    height.
-   @throw std::exception if edge_Size is not finite positive. */
+   @throw std::exception if edge_size is not finite positive. */
   static Box MakeCube(double edge_size);
 
   /** Returns the box's dimension along the x axis. */

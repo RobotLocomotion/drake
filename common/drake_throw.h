@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -11,22 +12,28 @@
 #include "drake/common/fmt_eigen.h"
 
 /** @file
- Provides a convenient wrapper to throw an exception when a condition is
- unmet.  This is similar to an assertion, but uses exceptions instead of
- ::abort(), and cannot be disabled.
- */
+Provides a convenient wrapper to throw an exception when a condition is
+unmet.  This is similar to an assertion, but uses exceptions instead of
+::abort(), and cannot be disabled.
+*/
 
 namespace drake {
 namespace internal {
+
+// The collection of possible name-value pairs passed to DRAKE_THROW_UNLESS.
+struct ThrowValuesBuf {
+  std::array<std::pair<const char*, std::string>, 4> values;
+};
+
 // Throw an error message.
 [[noreturn]] void Throw(const char* condition, const char* func,
                         const char* file, int line,
-                        std::string_view suffix = std::string_view());
+                        const ThrowValuesBuf& buffer = {});
 
 /* This processes the value pairs (e0, v0, e1, v1, ...) fed to ThrowWithValues.
- Expressions (ei) are indicated by the template parameter IsExpression and are
- simply returned. Values are converted to strings with some value types
- receiving special treatment. */
+Expressions (ei) are indicated by the template parameter IsExpression and are
+simply returned. Values are converted to strings with some value types
+receiving special treatment. */
 template <bool IsExpression, typename T>
 std::string PairFormat(const T& value) {
   if constexpr (IsExpression) {
@@ -40,29 +47,36 @@ std::string PairFormat(const T& value) {
   } else if constexpr (std::is_same_v<std::remove_cv_t<T>, char>) {
     // Characters get single quotes.
     return fmt::format("'{}'", value);
+  } else if constexpr (std::is_floating_point_v<T>) {
+      // Different versions of fmt disagree on whether to omit the trailing
+      // ".0" when formatting integer-valued floating-point numbers. Force
+      // the ".0" in all cases by using the "#" option for floats.
+      return fmt::format("{:#}", value);
   } else {
-    return fmt::format("{}", value);
+    return fmt::to_string(value);
   }
+  // TODO(SeanCurtis-TRI): Handle things that required fmt_streamed.
 }
 
 template <typename... ValuePairs>
-[[noreturn]] void ThrowWithValues(const char* condition, const char* func,
-                                  const char* file, int line,
-                                  ValuePairs&&... pairs) {
+[[noreturn]] __attribute__((noinline, cold)) void ThrowWithValues(
+    const char* condition, const char* func, const char* file, int line,
+    ValuePairs&&... pairs) {
   constexpr size_t N = sizeof...(pairs);
   static_assert(N % 2 == 0,
                 "There should be an even number: up to 4 (name, value) pairs.");
-  std::stringstream ss;
+  ThrowValuesBuf buffer;
   // This is a "constexpr for" loop for 0 <= I < N.
   auto pairs_tuple = std::forward_as_tuple(std::forward<ValuePairs>(pairs)...);
   [&]<size_t... I>(std::integer_sequence<size_t, I...> &&) {
-    ((ss << (I % 2 ? " = " : "")
-         << PairFormat<I % 2 == 0>(std::get<I>(std::move(pairs_tuple)))
-         << ((I % 2 && I < N - 1) ? ", " : "")),
-     ...);
-  }(std::make_index_sequence<N>{});
-  if constexpr (N > 0) ss << ".";
-  Throw(condition, func, file, line, ss.str());
+    (((buffer.values[I].first = std::get<2 * I>(std::move(pairs_tuple)),
+       buffer.values[I].second =
+           PairFormat(std::get<2 * I + 1>(std::move(pairs_tuple)))),
+      ...));
+  }
+  (std::make_index_sequence<N / 2>{});
+  
+  Throw(condition, func, file, line, buffer);
 }
 
 /* The following infrastructure lets us iterate through a list of macro variadic
@@ -75,14 +89,17 @@ template <typename... ValuePairs>
 // Macros for encoding a value expression into its value. _e is short for
 // _encode.
 #define _e_0(...)
-#define _e_1(value) #value, value
-#define _e_2(value, ...) #value, value, _e_1(__VA_ARGS__)
-#define _e_3(value, ...) #value, value, _e_2(__VA_ARGS__)
-#define _e_4(value, ...) #value, value, _e_3(__VA_ARGS__)
+#define _e_1(value) std::static_cast<const char*>(#value), value
+#define _e_2(value, ...) std::static_cast<const char*>(#value), value, \
+    _e_1(__VA_ARGS__)
+#define _e_3(value, ...) std::static_cast<const char*>(#value), value, \
+    _e_2(__VA_ARGS__)
+#define _e_4(value, ...) std::static_cast<const char*>(#value), value, \
+    _e_3(__VA_ARGS__)
 
-#define ACCUMULATE(...)                                                   \
-    /* NOLINTNEXTLINE(whitespace/comma) */                                    \
-    _GET_NTH_ARG(__VA_ARGS__ __VA_OPT__(,) _e_4, _e_3, _e_2, _e_1, _e_0)      \
+#define ACCUMULATE(...)                                                    \
+    /* NOLINTNEXTLINE(whitespace/comma) */                                 \
+    _GET_NTH_ARG(__VA_ARGS__ __VA_OPT__(,) _e_4, _e_3, _e_2, _e_1, _e_0)   \
         (__VA_ARGS__)
 
 
@@ -90,30 +107,30 @@ template <typename... ValuePairs>
 }  // namespace drake
 
 /** Evaluates @p condition and iff the value is false will throw an exception
- with a message showing at least the condition text, function name, file,
- and line.
+with a message showing at least the condition text, function name, file,
+and line.
 
- In addition to the @p condition, up to four value expressions can be provided.
- Each value expression and its value will be included in the error message. For
- example:
+In addition to the @p condition, up to four value expressions can be provided.
+Each value expression and its value will be included in the error message. For
+example:
 
-    `DRAKE_THROW_UNLESS(v1.norm() == 1, v1, v1.norm());`
+  `DRAKE_THROW_UNLESS(v1.norm() == 1, v1, v1.norm());`
 
- Will include the the values of the vector v1 as well as its norm in the
- message. If too many value expressions are specified, this will most likely
- produce a compiler error referencing "ENCODE_EACH".
+Will include the the values of the vector v1 as well as its norm in the
+message. If too many value expressions are specified, this will most likely
+produce a compiler error referencing "ENCODE_EACH".
 
- The condition must not be a pointer, where we'd implicitly rely on its
- nullness. Instead, always write out "!= nullptr" to be precise.
+The condition must not be a pointer, where we'd implicitly rely on its
+nullness. Instead, always write out "!= nullptr" to be precise.
 
- Correct: `DRAKE_THROW_UNLESS(foo != nullptr);`
- Incorrect: `DRAKE_THROW_UNLESS(foo);`
+Correct: `DRAKE_THROW_UNLESS(foo != nullptr);`
+Incorrect: `DRAKE_THROW_UNLESS(foo);`
 
- Because this macro is intended to provide a useful exception message to
- users, we should err on the side of extra detail about the failure. The
- meaning of "foo" isolated within error message text does not make it
- clear that a null pointer is the proximate cause of the problem.
- */
+Because this macro is intended to provide a useful exception message to
+users, we should err on the side of extra detail about the failure. The
+meaning of "foo" isolated within error message text does not make it
+clear that a null pointer is the proximate cause of the problem.
+*/
 #define DRAKE_THROW_UNLESS(condition, ...)                                    \
   do {                                                                        \
     typedef ::drake::assert::ConditionTraits<                                 \

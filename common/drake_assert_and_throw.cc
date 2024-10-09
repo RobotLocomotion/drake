@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <string>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/never_destroyed.h"
 
@@ -52,12 +54,14 @@ void Abort(const char* condition, const char* func, const char* file,
 // Declared in drake_throw.h.
 // If the suffix should end with punctuation, the caller must provide it.
 void Throw(const char* condition, const char* func, const char* file,
-           int line, std::string_view suffix) {
+           int line, const ThrowValuesBuf& buffer) {
   std::ostringstream what;
   PrintFailureDetailTo(what, condition, func, file, line);
-  if (!suffix.empty()) {
-    what << " " << suffix;
+  for (const auto& [key, value_str] : buffer.values) {
+    if (key[0] == '\0') break;
+    what << fmt::format(", {}={}", key, value_str);
   }
+  what << ".";
   throw assertion_error(what.str().c_str());
 }
 
