@@ -80,11 +80,7 @@ ln -s "$(bazel info bazel-bin)" "$build_root"/bazel-bin
 find "$build_root" -type d -print0 | xargs -0 chmod u+w
 
 # -----------------------------------------------------------------------------
-# Install tools to build the wheel.
-# -----------------------------------------------------------------------------
-
-# -----------------------------------------------------------------------------
-# Set up a Python virtual environment with the latest setuptools.
+# Set up a Python virtual environment.
 # -----------------------------------------------------------------------------
 
 readonly pyvenv_root="/opt/drake-wheel-build/$python/python"
@@ -99,6 +95,10 @@ ln -s "$python_prefix/bin/$python-config" \
       "$pyvenv_root/bin/$python-config" || true # Allowed to already exist.
 
 . "$pyvenv_root/bin/activate"
+
+# -----------------------------------------------------------------------------
+# Install tools to build the wheel.
+# -----------------------------------------------------------------------------
 
 pip install --upgrade \
     delocate \
