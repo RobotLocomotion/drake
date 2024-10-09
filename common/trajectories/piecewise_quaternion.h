@@ -74,7 +74,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   PiecewiseQuaternionSlerp(const std::vector<T>& breaks,
                            const std::vector<AngleAxis<T>>& angle_axes);
 
-  ~PiecewiseQuaternionSlerp() override = default;
+  ~PiecewiseQuaternionSlerp() override;
 
   std::unique_ptr<Trajectory<T>> Clone() const override;
 

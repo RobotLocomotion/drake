@@ -21,6 +21,9 @@ PiecewiseTrajectory<T>::PiecewiseTrajectory(const std::vector<T>& breaks)
 }
 
 template <typename T>
+PiecewiseTrajectory<T>::~PiecewiseTrajectory() = default;
+
+template <typename T>
 boolean<T> PiecewiseTrajectory<T>::is_time_in_range(const T& time) const {
   return (time >= start_time() && time <= end_time());
 }

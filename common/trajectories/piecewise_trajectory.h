@@ -24,7 +24,7 @@ class PiecewiseTrajectory : public Trajectory<T> {
   /// Minimum delta quantity used for comparing time.
   static constexpr double kEpsilonTime = std::numeric_limits<double>::epsilon();
 
-  ~PiecewiseTrajectory() override = default;
+  ~PiecewiseTrajectory() override;
 
   int get_number_of_segments() const;
 
