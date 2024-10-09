@@ -143,7 +143,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "inertia_visualizer_test",
     data = [
-        "//geometry:test_obj_files",
         "//geometry/render:test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
@@ -151,7 +150,6 @@ drake_cc_googletest(
         ":inertia_visualizer",
         ":visualization_config_functions",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
         "//geometry:meshcat",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing",
