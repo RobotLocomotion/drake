@@ -3,6 +3,7 @@
 # due to improper winding (order of the vertices) in its one face.
 # Drake calculates a negative volume for this mesh (volume = -1.0).
 # Related files: bad_geometry_volume_zero.obj and bad_geometry_corrected.obj
+# Related: issue #21924 [github.com/RobotLocomotion/drake/issues/21924].
 # ------------------------------------------------------------------------------
 
 # The 3 vertices below together with the origin (0, 0, 0) form a tetrahedron.

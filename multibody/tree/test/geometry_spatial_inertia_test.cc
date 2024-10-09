@@ -170,7 +170,7 @@ GTEST_TEST(GeometrySpatialInertiaTest, ExceptionOnBadGeometry) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       CalcSpatialInertia(bad_geometry_volume_negative, kDensity),
       ".*volume of a triangle surface mesh is.* whereas a reasonable "
-      "positive value was expected. The mesh may have bad geometry.*");
+      "positive value of .* was expected. The mesh may have bad geometry.*");
 
   // Throw an exception for the mesh in bad_geometry_volume_zero.obj since
   // its calculated volume is zero (volume = 0).
@@ -183,7 +183,7 @@ GTEST_TEST(GeometrySpatialInertiaTest, ExceptionOnBadGeometry) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       CalcSpatialInertia(bad_geometry_volume_zero, kDensity),
       ".*volume of a triangle surface mesh is.* whereas a reasonable "
-      "positive value was expected. The mesh may have bad geometry.*");
+      "positive value of .* was expected. The mesh may have bad geometry.*");
 
   // Ensure no exception is thrown for the mesh in bad_geometry_corrected.obj.
   // This file has the same vertices as bad_geometry_volume_zero.obj (above),
