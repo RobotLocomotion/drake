@@ -86,6 +86,8 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
                          double time_comparison_tolerance =
                              std::numeric_limits<double>::epsilon());
 
+  ~DiscreteTimeTrajectory() override;
+
   /** Converts the discrete-time trajectory using
   PiecewisePolynomial<T>::ZeroOrderHold(). */
   PiecewisePolynomial<T> ToZeroOrderHold() const;

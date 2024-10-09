@@ -30,7 +30,7 @@ class PathParameterizedTrajectory final : public Trajectory<T> {
   PathParameterizedTrajectory(const Trajectory<T>& path,
                               const Trajectory<T>& time_scaling);
 
-  ~PathParameterizedTrajectory() final = default;
+  ~PathParameterizedTrajectory() final;
 
   // Required methods for trajectories::Trajectory interface.
   std::unique_ptr<trajectories::Trajectory<T>> Clone() const override;

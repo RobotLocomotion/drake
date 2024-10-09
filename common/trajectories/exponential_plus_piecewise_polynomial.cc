@@ -24,6 +24,10 @@ ExponentialPlusPiecewisePolynomial<T>::ExponentialPlusPiecewisePolynomial(
 }
 
 template <typename T>
+ExponentialPlusPiecewisePolynomial<T>::~ExponentialPlusPiecewisePolynomial() =
+    default;
+
+template <typename T>
 std::unique_ptr<Trajectory<T>> ExponentialPlusPiecewisePolynomial<T>::Clone()
     const {
   return std::make_unique<ExponentialPlusPiecewisePolynomial<T>>(*this);

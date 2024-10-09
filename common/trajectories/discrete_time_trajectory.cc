@@ -44,6 +44,9 @@ DiscreteTimeTrajectory<T>::DiscreteTimeTrajectory(
 }
 
 template <typename T>
+DiscreteTimeTrajectory<T>::~DiscreteTimeTrajectory() = default;
+
+template <typename T>
 PiecewisePolynomial<T> DiscreteTimeTrajectory<T>::ToZeroOrderHold() const {
   return PiecewisePolynomial<T>::ZeroOrderHold(times_, values_);
 }

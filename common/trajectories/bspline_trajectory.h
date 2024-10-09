@@ -45,7 +45,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
       : BsplineTrajectory(math::BsplineBasis<T>(basis), control_points) {}
 #endif
 
-  virtual ~BsplineTrajectory() = default;
+  ~BsplineTrajectory() override;
 
   // Required methods for trajectories::Trajectory interface.
   std::unique_ptr<trajectories::Trajectory<T>> Clone() const override;
