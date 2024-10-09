@@ -143,6 +143,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "inertia_visualizer_test",
     data = [
+        "//geometry:test_obj_files",
         "//geometry/render:test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
