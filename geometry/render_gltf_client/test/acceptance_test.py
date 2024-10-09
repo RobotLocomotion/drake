@@ -31,8 +31,11 @@ MINIMAL_GLTF = """\
       "byteLength" : 44
     }
   ],
+  "asset" : {
+    "version" : "2.0"
+  }
 }
-"""
+""".replace("# noqa", "")
 
 
 class TestGltfRenderBinary(unittest.TestCase):
