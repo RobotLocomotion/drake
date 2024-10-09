@@ -1,9 +1,10 @@
 # File: bad_geometry_corrected.obj
 # The geometry in this file produces valid mass and inertia properties
 # due to proper winding (order of the vertices) in all of its faces.
-# This file has the same vertices as the file bad_geometry_volume_zero.obj,
-# but this file's faces have vertices in proper order. Hence, this mesh has
-# a positive volume (volume = +0.5) and appropriate spatial inertia.
+# This file has the same vertices as the file bad_geometry_volume_zero.obj.
+# However this file's faces were ordered to produce a valid mesh with a
+# positive volume (volume = +0.5) and a valid centroid and spatial inertia.
+# Related: issue #21924 [github.com/RobotLocomotion/drake/issues/21924].
 # ------------------------------------------------------------------------------
 
 # 6 vertices.

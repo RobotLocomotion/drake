@@ -45,8 +45,10 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
    - All triangles must be "wound" such that their normals point outward
      (according to the right-hand rule based on vertex winding).
 
- If `mesh` does not meet these requirements, then either an exception is thrown
- (no value is returned) or the returned SpatialInertia may be meaningless.
+ We do not perform the expensive checks that the mesh meets these requirements.
+ Instead we compute the volume enclosed by the mesh, and if the volume is zero
+ or negative we'll throw an exception. In other cases we won't notice the
+ problem and the returned SpatialInertia may be meaningless.
  @throws std::exception if the volume of `mesh` is negative or nearly zero.
  @pydrake_mkdoc_identifier{mesh} */
 SpatialInertia<double> CalcSpatialInertia(
