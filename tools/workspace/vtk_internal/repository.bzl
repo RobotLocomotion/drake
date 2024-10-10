@@ -178,6 +178,7 @@ def vtk_internal_repository(
         patches = [
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_version.patch",
+            ":patches/disable_static_destructors.patch",
             ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_selected_load.patch",
             ":patches/io_geometry_gltf_default_scene.patch",

@@ -1,0 +1,24 @@
+Disable vtkFilteringInformationKeyManager static destructor
+
+Static destructors are completely useless, serving only to sometimes
+randomly crash your program. (Dynamically unloading shared libraries
+is an anti-requirement in Drake.)
+
+This should not be upstreamed to VTK, although CMake configuration
+option for "disable all static destructors" would be appreciated.
+
+--- Common/ExecutionModel/vtkFilteringInformationKeyManager.cxx
++++ Common/ExecutionModel/vtkFilteringInformationKeyManager.cxx
+@@ -36,10 +36,12 @@ vtkFilteringInformationKeyManager::vtkFilteringInformationKeyManager()
+ //------------------------------------------------------------------------------
+ vtkFilteringInformationKeyManager::~vtkFilteringInformationKeyManager()
+ {
++#if 0  // The Drake build & release posture does not permit static destructors.
+   if (--vtkFilteringInformationKeyManagerCount == 0)
+   {
+     vtkFilteringInformationKeyManager::ClassFinalize();
+   }
++#endif
+ }
+ 
+ //------------------------------------------------------------------------------
