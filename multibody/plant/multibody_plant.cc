@@ -1413,6 +1413,10 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     zero_acceleration_kinematics_placeholder_ =
         std::make_unique<AccelerationKinematicsCache<T>>(
             internal_tree().get_topology());
+    for (auto& acc :
+         zero_acceleration_kinematics_placeholder_->get_mutable_A_WB_pool()) {
+      acc.SetZero();
+    }
   }
   FinalizeConstraints();
   scene_graph_ = nullptr;  // must not be used after Finalize().
