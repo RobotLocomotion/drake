@@ -859,13 +859,16 @@ GTEST_TEST(MeshcatTest, Buttons) {
   EXPECT_EQ(meshcat.GetButtonClicks("alice"), 1);
 
   // Removing the button then asking for clicks is an error.
-  meshcat.DeleteButton("alice");
+  EXPECT_TRUE(meshcat.DeleteButton("alice"));
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.GetButtonClicks("alice"),
                               "Meshcat does not have any button named alice.*");
 
-  // Removing a non-existent button is an error.
+  // Strictly (the default) removing a missing button throws.
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.DeleteButton("alice"),
                               "Meshcat does not have any button named alice.*");
+  // Non-strictly removing a non-existent button issues a warning. Not tested
+  // here; see console output.
+  EXPECT_FALSE(meshcat.DeleteButton("alice", /*strict = */false));
 
   // Adding the button anew starts with a zero count again.
   meshcat.AddButton("alice");
@@ -919,7 +922,7 @@ GTEST_TEST(MeshcatTest, Sliders) {
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5),
                               "Meshcat already has a slider named slider.");
 
-  meshcat.DeleteSlider("slider");
+  EXPECT_TRUE(meshcat.DeleteSlider("slider"));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider"),
@@ -938,6 +941,14 @@ GTEST_TEST(MeshcatTest, Sliders) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider2"),
       "Meshcat does not have any slider named slider2.*");
+
+  // Strictly (the default) removing a missing slider throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.DeleteSlider("slider1"),
+      "Meshcat does not have any slider named slider1.*");
+  // Non-strictly removing a non-existent slider issues a warning. Not tested
+  // here; see console output.
+  EXPECT_FALSE(meshcat.DeleteSlider("slider1", /*strict = */false));
 
   slider_names = meshcat.GetSliderNames();
   EXPECT_EQ(slider_names.size(), 0);
