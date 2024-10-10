@@ -48,6 +48,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "internal_make_render_window",
+    srcs = ["internal_make_render_window.cc"],
+    hdrs = ["internal_make_render_window.h"],
+    internal = True,
+    visibility = [
+        "//geometry/render_gltf_client:__pkg__",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:unused",
+        "@vtk_internal//:vtkRenderingCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
+        "@vtk_internal//:vtkglad",
+    ],
+)
+
+drake_cc_library(
     name = "internal_render_engine_vtk",
     srcs = ["internal_render_engine_vtk.cc"],
     hdrs = ["internal_render_engine_vtk.h"],
@@ -56,6 +73,7 @@ drake_cc_library(
         "//geometry/render_gltf_client:__pkg__",
     ],
     deps = [
+        ":internal_make_render_window",
         ":internal_render_engine_vtk_base",
         ":internal_vtk_util",
         "//common",
@@ -208,11 +226,15 @@ genrule(
 
 PYRAMID_RESOURCES = [
     "fully_textured_pyramid_base_color.png",
+    "fully_textured_pyramid_base_color.ktx2",
     "fully_textured_pyramid.bin",
     "fully_textured_pyramid_emissive.png",
+    "fully_textured_pyramid_emissive.ktx2",
     "fully_textured_pyramid.gltf",
     "fully_textured_pyramid_normal.png",
+    "fully_textured_pyramid_normal.ktx2",
     "fully_textured_pyramid_omr.png",
+    "fully_textured_pyramid_omr.ktx2",
     "fully_textured_pyramid.sdf",
 ]
 

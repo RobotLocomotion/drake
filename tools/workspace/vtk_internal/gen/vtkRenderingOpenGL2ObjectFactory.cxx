@@ -1,28 +1,17 @@
-/*=========================================================================
-
-  Program:   Visualization Toolkit
-  Module:    vtkRenderingOpenGL2ObjectFactory.cxx
-
-  Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
-  All rights reserved.
-  See Copyright.txt or http://www.kitware.com/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-     PURPOSE.  See the above copyright notice for more information.
-
-=========================================================================*/
+// SPDX-FileCopyrightText: Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
+// SPDX-License-Identifier: BSD-3-Clause
 
 // Object factories should never have deprecation warnings.
+// NOLINTNEXTLINE(modernize-macro-to-enum)
 #define VTK_DEPRECATION_LEVEL 0
 
-#include "vtkRenderingOpenGLConfigure.h"   // Added this line for Drake.
 #include "vtkRenderingOpenGL2ObjectFactory.h"
 #include "vtkVersion.h"
 
 // Include all of the classes we want to create overrides for.
 #include "vtkDummyGPUInfoList.h"
 #include "vtkOpenGLActor.h"
+#include "vtkOpenGLCompositePolyDataMapperDelegator.h"
 #include "vtkOpenGLBillboardTextActor3D.h"
 #include "vtkOpenGLCamera.h"
 #include "vtkOpenGLLabeledContourMapper.h"
@@ -30,8 +19,6 @@
 #include "vtkOpenGLImageMapper.h"
 #include "vtkOpenGLImageSliceMapper.h"
 #include "vtkOpenGLGlyph3DMapper.h"
-// Removed the next line for Drake.
-// #include "vtkOpenGLHyperTreeGridMapper.h"
 #include "vtkOpenGLLight.h"
 #include "vtkOpenGLPointGaussianMapper.h"
 #include "vtkOpenGLPolyDataMapper.h"
@@ -46,16 +33,9 @@
 #include "vtkOpenGLTextActor3D.h"
 #include "vtkOpenGLTextMapper.h"
 #include "vtkOpenGLTexture.h"
-
-// This stanza is customized for Drake.
-#ifdef VTK_USE_COCOA
-#include "vtkCocoaRenderWindow.h"
-#endif
-
-// This stanza is customized for Drake.
-#ifdef VTK_USE_X
-#include "vtkXOpenGLRenderWindow.h"
-#endif
+// Removed the next lines for Drake.
+// #include "vtkCocoaRenderWindow.h"
+// #include "vtkOpenGLRenderWindow.h"
 
 
 VTK_ABI_NAMESPACE_BEGIN
@@ -65,6 +45,7 @@ vtkStandardNewMacro(vtkRenderingOpenGL2ObjectFactory);
 // Now create the functions to create overrides with.
 VTK_CREATE_CREATE_FUNCTION(vtkDummyGPUInfoList)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLActor)
+VTK_CREATE_CREATE_FUNCTION(vtkOpenGLCompositePolyDataMapperDelegator)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLBillboardTextActor3D)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLCamera)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLLabeledContourMapper)
@@ -72,8 +53,6 @@ VTK_CREATE_CREATE_FUNCTION(vtkOpenGLHardwareSelector)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLImageMapper)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLImageSliceMapper)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLGlyph3DMapper)
-// Removed the next line for Drake.
-// VTK_CREATE_CREATE_FUNCTION(vtkOpenGLHyperTreeGridMapper)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLLight)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLPointGaussianMapper)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLPolyDataMapper)
@@ -88,21 +67,15 @@ VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTextActor)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTextActor3D)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTextMapper)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTexture)
-
-// This stanza is customized for Drake.
-#ifdef VTK_USE_COCOA
-VTK_CREATE_CREATE_FUNCTION(vtkCocoaRenderWindow)
-#endif
-
-// This stanza is customized for Drake.
-#ifdef VTK_USE_X
-VTK_CREATE_CREATE_FUNCTION(vtkXOpenGLRenderWindow)
-#endif
+// Removed the next lines for Drake.
+// VTK_CREATE_CREATE_FUNCTION(vtkCocoaRenderWindow)
+// VTK_CREATE_CREATE_FUNCTION(vtkOpenGLRenderWindow)
 
 vtkRenderingOpenGL2ObjectFactory::vtkRenderingOpenGL2ObjectFactory()
 {
 this->RegisterOverride("vtkGPUInfoList", "vtkDummyGPUInfoList", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkDummyGPUInfoList);
 this->RegisterOverride("vtkActor", "vtkOpenGLActor", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLActor);
+this->RegisterOverride("vtkCompositePolyDataMapperDelegator", "vtkOpenGLCompositePolyDataMapperDelegator", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLCompositePolyDataMapperDelegator);
 this->RegisterOverride("vtkBillboardTextActor3D", "vtkOpenGLBillboardTextActor3D", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLBillboardTextActor3D);
 this->RegisterOverride("vtkCamera", "vtkOpenGLCamera", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLCamera);
 this->RegisterOverride("vtkLabeledContourMapper", "vtkOpenGLLabeledContourMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLLabeledContourMapper);
@@ -110,8 +83,6 @@ this->RegisterOverride("vtkHardwareSelector", "vtkOpenGLHardwareSelector", "Over
 this->RegisterOverride("vtkImageMapper", "vtkOpenGLImageMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLImageMapper);
 this->RegisterOverride("vtkImageSliceMapper", "vtkOpenGLImageSliceMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLImageSliceMapper);
 this->RegisterOverride("vtkGlyph3DMapper", "vtkOpenGLGlyph3DMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLGlyph3DMapper);
-// Removed the next line for Drake.
-// this->RegisterOverride("vtkHyperTreeGridMapper", "vtkOpenGLHyperTreeGridMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLHyperTreeGridMapper);
 this->RegisterOverride("vtkLight", "vtkOpenGLLight", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLLight);
 this->RegisterOverride("vtkPointGaussianMapper", "vtkOpenGLPointGaussianMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLPointGaussianMapper);
 this->RegisterOverride("vtkPolyDataMapper", "vtkOpenGLPolyDataMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLPolyDataMapper);
@@ -126,16 +97,10 @@ this->RegisterOverride("vtkTextActor", "vtkOpenGLTextActor", "Override for VTK::
 this->RegisterOverride("vtkTextActor3D", "vtkOpenGLTextActor3D", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLTextActor3D);
 this->RegisterOverride("vtkTextMapper", "vtkOpenGLTextMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLTextMapper);
 this->RegisterOverride("vtkTexture", "vtkOpenGLTexture", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLTexture);
+// Removed the next line for Drake.
+// this->RegisterOverride("vtkRenderWindow", "vtkCocoaRenderWindow", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkCocoaRenderWindow);
+// this->RegisterOverride("vtkRenderWindow", "vtkOpenGLRenderWindow", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLRenderWindow);
 
-// This stanza is customized for Drake.
-#ifdef VTK_USE_COCOA
-this->RegisterOverride("vtkRenderWindow", "vtkCocoaRenderWindow", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkCocoaRenderWindow);
-#endif
-
-// This stanza is customized for Drake.
-#ifdef VTK_USE_X
-this->RegisterOverride("vtkRenderWindow", "vtkXOpenGLRenderWindow", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkXOpenGLRenderWindow);
-#endif
 }
 
 const char * vtkRenderingOpenGL2ObjectFactory::GetVTKSourceVersion()

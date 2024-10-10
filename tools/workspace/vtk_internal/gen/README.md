@@ -4,8 +4,7 @@ difficult to re-generate from Bazel.
 
 - vtkRenderingOpenGL2ObjectFactory: supports the vtkAutoInit dependency
 injection framework as related to VTK rendering. The `*.cc` file has further
-been customized by hand to conditionally support COCOA vs X using #ifdef,
-and to remove vtkHyperTreeGridMapper.
+been customized by hand to comment out mentions of COCOA vs X.
 
 TODO(jwnimmer-tri) Add some kind of vtk-upgrade helper script, that refreshes
 these files and/or cross-checks the result. In the meantime, when upgrading VTK
@@ -15,6 +14,7 @@ you can refresh these files by hand:
 unzip the VTK archive that the bazel workspace refers to).
 
 (2) Run CMake to to generate the upstream flavor of these files:
+  $ sudo apt install ninja-build
   $ cd vtk
   $ mkdir build
   $ cd build
@@ -27,4 +27,4 @@ unzip the VTK archive that the bazel workspace refers to).
 should retain are summarized above in this README, and also highlighted with
 comments in the C++ code. Other differences versus upstream should probably
 be melded back into the Drake copy. Anything that passes `bazel test //...`
-is sufficient.
+on all supported platforms in CI is sufficient.
