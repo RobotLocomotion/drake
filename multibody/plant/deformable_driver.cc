@@ -67,9 +67,9 @@ void DeformableDriver<T>::DeclareCacheEntries(
     DiscreteUpdateManager<T>* manager) {
   DRAKE_DEMAND(manager_ == manager);
 
-  // Our CalcDeformableContact() uses `query_object` (not `context`), and only
-  // returns deformable contact (not all geometry contact), so we know that this
-  // ticket is sufficient to cover our EvalDeformableContact().
+  /* Our CalcDeformableContact() uses `query_object` (not `context`), and only
+   returns deformable contact (not all geometry contact), so we know that this
+   ticket is sufficient to cover our EvalDeformableContact(). */
   const systems::DependencyTicket deformable_contact_ticket =
       manager->plant().get_geometry_query_input_port().ticket();
 
@@ -91,7 +91,8 @@ void DeformableDriver<T>::DeclareCacheEntries(
                 [this, i](const Context<T>& context, fem::FemState<T>* state) {
                   this->CalcFemState(context, i, state);
                 }}),
-        {systems::System<T>::xd_ticket()});
+        {systems::System<T>::xd_ticket(),
+         systems::System<T>::all_parameters_ticket()});
     cache_indexes_.fem_states.emplace_back(fem_state_cache_entry.cache_index());
 
     /* Constraint participation information for each body. */
@@ -159,7 +160,8 @@ void DeformableDriver<T>::DeclareCacheEntries(
          which in turn depends on input ports. */
         {fem_state_cache_entry.ticket(),
          vertex_permutation_cache_entry.ticket(),
-         systems::System<T>::all_input_ports_ticket()});
+         systems::System<T>::all_input_ports_ticket(),
+         systems::System<T>::all_parameters_ticket()});
     cache_indexes_.fem_solvers.emplace_back(
         fem_solver_cache_entry.cache_index());
 
@@ -195,6 +197,7 @@ void DeformableDriver<T>::DeclareCacheEntries(
       constraint_participation_tickets;
   constraint_participation_and_xd_tickets.insert(
       systems::System<T>::xd_ticket());
+
   const auto& participating_velocities_cache_entry = manager->DeclareCacheEntry(
       "participating velocities for all bodies",
       systems::ValueProducer(this,
@@ -226,6 +229,10 @@ void DeformableDriver<T>::AppendLinearDynamicsMatrix(
   DRAKE_DEMAND(A != nullptr);
   const int num_bodies = deformable_model_->num_bodies();
   for (DeformableBodyIndex index(0); index < num_bodies; ++index) {
+    const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
+    if (deformable_model_->is_locked(body_id, context)) {
+      continue;
+    }
     const SchurComplement& schur_complement =
         EvalFreeMotionTangentMatrixSchurComplement(context, index);
     /* The schur complement is of the tangent matrix of the force balance
@@ -405,6 +412,18 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        ++surface_index) {
     const DeformableContactSurface<T>& surface =
         contact_surfaces[surface_index];
+    /* Skip this surface if either body in contact is a locked deformable body.
+     */
+    const DeformableBodyId body_id_A =
+        deformable_model_->GetBodyId(surface.id_A());
+    const bool is_A_locked = deformable_model_->is_locked(body_id_A, context);
+    const bool is_B_locked =
+        surface.is_B_deformable() &&
+        deformable_model_->is_locked(
+            deformable_model_->GetBodyId(surface.id_B()), context);
+    if (is_A_locked || is_B_locked) {
+      continue;
+    }
     /* Write the contact jacobian and velocity for all contact points for body
      A. */
     ContactData contact_data_A =
@@ -566,7 +585,10 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
   for (DeformableBodyIndex index(0); index < deformable_model_->num_bodies();
        ++index) {
     DeformableBodyId body_id = deformable_model_->GetBodyId(index);
-    if (!deformable_model_->HasConstraint(body_id)) continue;
+    if (deformable_model_->is_locked(body_id, context) ||
+        !deformable_model_->HasConstraint(body_id)) {
+      continue;
+    }
 
     const FemModel<T>& fem_model = deformable_model_->GetFemModel(body_id);
     const DirichletBoundaryCondition<T>& bc =
@@ -864,6 +886,10 @@ void DeformableDriver<T>::CalcFreeMotionFemSolver(
   const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
   const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
   const FemState<T>& fem_state = EvalFemState(context, index);
+  if (deformable_model_->is_locked(body_id, context)) {
+    fem_solver->SetNextFemState(fem_state);
+    return;
+  }
   /* Write the non-participating vertices. */
   std::unordered_set<int> nonparticipating_vertices;
   const PartialPermutation& permutation =
@@ -1016,6 +1042,13 @@ void DeformableDriver<T>::CalcConstraintParticipation(
     geometry::internal::ContactParticipation* constraint_participation) const {
   DRAKE_DEMAND(constraint_participation != nullptr);
   const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
+  if (deformable_model_->is_locked(body_id, context)) {
+    const int num_vertices =
+        deformable_model_->GetFemModel(body_id).num_nodes();
+    *constraint_participation =
+        geometry::internal::ContactParticipation(num_vertices);
+    return;
+  }
   const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
   const DeformableContact<T>& contact_data = EvalDeformableContact(context);
   DRAKE_DEMAND(contact_data.IsRegistered(geometry_id));

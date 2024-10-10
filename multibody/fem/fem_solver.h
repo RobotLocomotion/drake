@@ -64,6 +64,14 @@ class FemSolver {
       const FemState<T>& prev_state, const FemPlantData<T>& plant_data,
       const std::unordered_set<int>& nonparticipating_vertices);
 
+  /* Sets the next fem state to be the given state, and sets the the schur
+   complement at the next time step to be empty. */
+  void SetNextFemState(const FemState<T>& prev_state) {
+    next_state_and_schur_complement_.state->CopyFrom(prev_state);
+    next_state_and_schur_complement_.schur_complement =
+        contact_solvers::internal::SchurComplement{};
+  }
+
   /* Returns the state of the FEM model after last invocation of
    `AdvanceOneTimeStep()`. If `AdvanceOneTimeStep()` has never been called,
    returns the default FEM state. */
