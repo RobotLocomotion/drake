@@ -11,17 +11,17 @@ This patch should not be upstreamed.
 
 --- Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx
 +++ Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx
-@@ -501,7 +501,12 @@ vtkOpenGLRenderWindow::~vtkOpenGLRenderWindow()
-   this->State->Delete();
- }
- 
--#if !(defined(__APPLE__) || defined(__ANDROID__) || defined(__EMSCRIPTEN__))
-+#if 1  // This function is too unreliable for Drake's purposes, so we'll nix it.
-+vtkOpenGLRenderWindow* vtkOpenGLRenderWindow::New()
-+{
-+  throw std::runtime_error("Internal error: Drake must not use vtkOpenGLRenderWindow");
-+}
-+#else
+@@ -504,6 +504,13 @@ vtkOpenGLRenderWindow::~vtkOpenGLRenderWindow()
+ #if !(defined(__APPLE__) || defined(__ANDROID__) || defined(__EMSCRIPTEN__))
  //------------------------------------------------------------------------------
  vtkOpenGLRenderWindow* vtkOpenGLRenderWindow::New()
++{
++  // This function is too unreliable for Drake's purposes, so we'll nix it.
++  throw std::runtime_error("Internal error: Drake must not use vtkOpenGLRenderWindow");
++}
++#endif
++#if 0
++vtkOpenGLRenderWindow* vtkOpenGLRenderWindow::New()
  {
+   const char* backend = std::getenv("VTK_DEFAULT_OPENGL_WINDOW");
+ #if defined(_WIN32)
