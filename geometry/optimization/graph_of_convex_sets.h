@@ -13,6 +13,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solver_interface.h"
@@ -245,7 +246,7 @@ class GraphOfConvexSets {
   name. */
   class Vertex final {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Vertex);
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Vertex);
 
     ~Vertex();
 
@@ -398,10 +399,10 @@ class GraphOfConvexSets {
     void RemoveIncomingEdge(Edge* e);
     void RemoveOutgoingEdge(Edge* e);
 
-    const VertexId id_{};
-    const std::unique_ptr<const ConvexSet> set_;
-    const std::string name_{};
-    const VectorX<symbolic::Variable> placeholder_x_{};
+    VertexId id_{};
+    copyable_unique_ptr< ConvexSet> set_;
+    std::string name_{};
+    VectorX<symbolic::Variable> placeholder_x_{};
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
     std::vector<std::pair<solvers::Binding<solvers::Cost>,
@@ -424,7 +425,7 @@ class GraphOfConvexSets {
   variables. */
   class Edge final {
    public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Edge);
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Edge);
 
     ~Edge();
 
@@ -633,18 +634,18 @@ class GraphOfConvexSets {
     // Constructs a new edge.
     Edge(const EdgeId& id, Vertex* u, Vertex* v, std::string name);
 
-    const EdgeId id_{};
-    Vertex* const u_{};
-    Vertex* const v_{};
+    EdgeId id_{};
+    Vertex* u_{};
+    Vertex* v_{};
     symbolic::Variables allowed_vars_{};
     symbolic::Variable phi_{};
-    const std::string name_{};
+    std::string name_{};
 
     // We construct placeholder variables for y and z here so that they can be
     // accessed later from a MathematicalProgramResult.  We intentionally do
     // *not* provide direct access to them for the user.
-    const VectorX<symbolic::Variable> y_{};
-    const VectorX<symbolic::Variable> z_{};
+    VectorX<symbolic::Variable> y_{};
+    VectorX<symbolic::Variable> z_{};
 
     std::unordered_map<symbolic::Variable, symbolic::Variable> x_to_yz_{};
     // Note: ell_[i] is associated with costs_[i].
@@ -869,8 +870,8 @@ class GraphOfConvexSets {
   // constraints can change the behavior). But prefer using Vertex* and Edge*
   // over VertexId and EdgeId in the public API; this means avoiding any sorted
   // containers (like std::set or std::map) using their default ordering.
-  std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
-  std::map<EdgeId, std::unique_ptr<Edge>> edges_{};
+  std::map<VertexId, copyable_unique_ptr<Vertex>> vertices_{};
+  std::map<EdgeId, copyable_unique_ptr<Edge>> edges_{};
 };
 
 }  // namespace optimization
