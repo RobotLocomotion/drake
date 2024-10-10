@@ -502,21 +502,22 @@ MODULE_SETTINGS = {
             ],
             "//conditions:default": [],
         }),
-        "srcs_extra": select({
-            ":osx": [
-                "Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx",
-            ],
-            "//conditions:default": [
-                "Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx",
-                "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
-            ],
-        }) + [
+        "srcs_extra": [
+            # In srcs_glob_exclude, we excluded all renderers. We'll put back
+            # the GL window now, which is needed by all of our platforms.
+            "Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx",
             # The vtkObjectFactory.cmake logic for vtk_object_factory_configure
             # is too difficult to implement in Bazel at the moment. Instead,
             # we'll commit the two generated files and directly mention them.
             "@drake//tools/workspace/vtk_internal:gen/vtkRenderingOpenGL2ObjectFactory.h",  # noqa
             "@drake//tools/workspace/vtk_internal:gen/vtkRenderingOpenGL2ObjectFactory.cxx",  # noqa
-        ],
+        ] + select({
+            ":osx": [],
+            "//conditions:default": [
+                # On linux, we also want the GLX renderer.
+                "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
+            ],
+        }),
         "linkopts_extra": select({
             ":osx": [
                 # Mimic vtk_module_link(... "-framework Cocoa") from upstream.
@@ -628,12 +629,11 @@ MODULE_SETTINGS = {
         "cmake_undefines": [
             "VTK_MODULE_vtkglad_GLES3",
         ],
-        "srcs_extra": select({
-            ":osx": [
-                "ThirdParty/glad/vtkglad/src/gl.c",
-            ],
+        "srcs_extra": [
+            "ThirdParty/glad/vtkglad/src/gl.c",
+        ] + select({
+            ":osx": [],
             "//conditions:default": [
-                "ThirdParty/glad/vtkglad/src/gl.c",
                 "ThirdParty/glad/vtkglad/src/glx.c",
             ],
         }),
