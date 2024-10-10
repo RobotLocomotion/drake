@@ -1,8 +1,7 @@
 #!/bin/bash
 #
-# Python venv set-up script for Drake, which uses
-#  https://github.com/jazzband/pip-tools
-# under the hood for setup.
+# Drake script to set up the Python venv.
+# Uses https://github.com/jazzband/pip-tools under the hood for setup.
 #
 # Users must NOT run this manually.
 
