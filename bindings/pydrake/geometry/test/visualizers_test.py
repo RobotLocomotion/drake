@@ -17,6 +17,12 @@ from pydrake.perception import PointCloud
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import DiagramBuilder_, InputPort_
 
+# TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
+# updated to 2.5.2 or later.
+if not hasattr(umsgpack, 'Hashable'):
+    import collections
+    setattr(umsgpack.collections, 'Hashable', collections.abc.Hashable)
+
 
 class TestGeometryVisualizers(unittest.TestCase):
     @numpy_compare.check_nonsymbolic_types
@@ -290,6 +296,14 @@ class TestGeometryVisualizers(unittest.TestCase):
         # Camera tracking.
         # The pose is None because no meshcat session has broadcast its pose.
         self.assertIsNone(meshcat.GetTrackedCameraPose())
+
+        # Test updating lights (and make sure types are cast correctly)
+        path = "/Lights/AmbientLight/<object>"
+        attribute = "intensity"
+        meshcat.SetProperty(path, attribute, 2)
+        message = meshcat._GetPackedProperty(path, attribute)
+        parsed = umsgpack.unpackb(message)
+        self.assertEqual(parsed['value'], 2.0)
 
     def test_meshcat_404(self):
         meshcat = mut.Meshcat()
