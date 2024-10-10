@@ -92,15 +92,14 @@ Mac are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz)
-* https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz (for x86_64)
-* https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz (for arm64)
+* https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz
 
 Older packages for specific dates are available by replacing ``latest`` with an
 8-digit date preceded by ``0.0.``, e.g., ``0.0.20240408`` for April 8th, 2024.
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-jammy.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-noble.tar.gz)
-* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-mac-arm64.tar.gz (for arm64)
+* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-mac-arm64.tar.gz
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious
