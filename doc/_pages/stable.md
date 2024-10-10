@@ -231,4 +231,5 @@ See [#18791](https://github.com/RobotLocomotion/drake/issues/18791) for a
 discussion of possible improvements.
 
 Refer to [Installation and Quickstart](/installation.html) for the current
-details.
+details, and [End of support releases](/release_notes/end_of_support.html)
+for historical details.
