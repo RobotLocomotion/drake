@@ -13,7 +13,7 @@ option for "disable all static destructors" would be appreciated.
  VTK_ABI_NAMESPACE_BEGIN
  class vtkInformationKey;
  
-+// All functions in this class are is stubbed out to be a no-ops for Drake.
++// All functions in this class are stubbed out to be no-ops for Drake.
 +// The Drake build & release posture does not permit static destructors.
  class VTKCOMMONEXECUTIONMODEL_EXPORT vtkFilteringInformationKeyManager
  {
