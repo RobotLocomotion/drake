@@ -47,6 +47,8 @@ std::string ToLatexCost(const Cost& cost,
 
 }  // namespace
 
+LinearCost::~LinearCost() = default;
+
 template <typename DerivedX, typename U>
 void LinearCost::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                VectorX<U>* y) const {
@@ -77,6 +79,8 @@ std::string LinearCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
                                   int precision) const {
   return ToLatexCost(*this, vars, precision);
 }
+
+QuadraticCost::~QuadraticCost() = default;
 
 template <typename DerivedX, typename U>
 void QuadraticCost::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
@@ -155,6 +159,8 @@ L1NormCost::L1NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
 
+L1NormCost::~L1NormCost() = default;
+
 void L1NormCost::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
     const Eigen::Ref<const Eigen::VectorXd>& new_b) {
@@ -211,6 +217,8 @@ L2NormCost::L2NormCost(const Eigen::SparseMatrix<double>& A,
   set_is_thread_safe(true);
   DRAKE_THROW_UNLESS(A_.get_as_sparse().rows() == b_.rows());
 }
+
+L2NormCost::~L2NormCost() = default;
 
 void L2NormCost::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
@@ -275,6 +283,8 @@ LInfNormCost::LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
 
+LInfNormCost::~LInfNormCost() = default;
+
 void LInfNormCost::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
     const Eigen::Ref<const Eigen::VectorXd>& new_b) {
@@ -327,6 +337,8 @@ PerspectiveQuadraticCost::PerspectiveQuadraticCost(
   DRAKE_THROW_UNLESS(A_.rows() >= 2);
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
+
+PerspectiveQuadraticCost::~PerspectiveQuadraticCost() = default;
 
 void PerspectiveQuadraticCost::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
