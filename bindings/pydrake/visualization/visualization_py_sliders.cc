@@ -44,7 +44,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("prefix") = "",
             py::arg("visible") = Vector6<bool>::Constant(true),
             cls_doc.ctor.doc)
-        .def("Delete", &Class::Delete, cls_doc.Delete.doc)
+        .def("Delete", &Class::Delete, py::arg("strict") = true,
+            cls_doc.Delete.doc)
         .def("Run", &Class::Run, py::arg("system"), py::arg("context"),
             py::arg("timeout") = py::none(),
             py::arg("stop_button_keycode") = "Escape",

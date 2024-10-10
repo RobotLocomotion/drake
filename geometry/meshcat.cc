@@ -58,16 +58,37 @@ using math::RigidTransformd;
 using math::RotationMatrixd;
 
 template <typename Mapping>
-[[noreturn]] void ThrowThingNotFound(std::string_view thing,
-                                     std::string_view name, Mapping thing_map) {
+void ComplainThingNotFound(std::string_view thing, std::string_view name,
+                           Mapping thing_map,
+                           std::function<void(const std::string&)> action) {
   std::vector<std::string> keys;
   for (const auto& map_pair : thing_map) {
     keys.push_back(map_pair.first);
   }
-  throw std::logic_error(
-      fmt::format("Meshcat does not have any {} named {}.  The "
-                  "registered {} names are ({}).",
-                  thing, name, thing, fmt::join(keys, ", ")));
+  std::string message = fmt::format(
+      "Meshcat does not have any {} named {}.  The "
+      "registered {} names are ({}).",
+      thing, name, thing, fmt::join(keys, ", "));
+  action(message);
+}
+
+template <typename Mapping>
+[[noreturn]] void ThrowThingNotFound(std::string_view thing,
+                                     std::string_view name, Mapping thing_map) {
+  auto do_throw = [](const std::string& message) {
+    throw std::logic_error(message);
+  };
+  ComplainThingNotFound(thing, name, thing_map, do_throw);
+  DRAKE_UNREACHABLE();
+}
+
+template <typename Mapping>
+void WarnThingNotFound(std::string_view thing, std::string_view name,
+                       Mapping thing_map) {
+  auto do_warn = [](const std::string& message) {
+    drake::log()->warn(message);
+  };
+  ComplainThingNotFound(thing, name, thing_map, do_warn);
 }
 
 constexpr static bool kSsl = false;
@@ -1601,7 +1622,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void DeleteButton(std::string name) {
+  bool DeleteButton(std::string name, bool strict = true) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::DeleteControl data;
@@ -1609,7 +1630,12 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = buttons_.find(name);
       if (iter == buttons_.end()) {
-        ThrowThingNotFound("button", name, buttons_);
+        if (strict) {
+          ThrowThingNotFound("button", name, buttons_);
+        } else {
+          WarnThingNotFound("button", name, buttons_);
+          return false;
+        }
       }
       buttons_.erase(iter);
       auto c_iter = std::find(controls_.begin(), controls_.end(), name);
@@ -1626,6 +1652,7 @@ class Meshcat::Impl {
       msgpack::pack(message_stream, data);
       app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
     });
+    return true;
   }
 
   // This function is public via the PIMPL.
@@ -1735,7 +1762,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void DeleteSlider(std::string name) {
+  bool DeleteSlider(std::string name, bool strict = true) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::DeleteControl data;
@@ -1743,7 +1770,12 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = sliders_.find(name);
       if (iter == sliders_.end()) {
-        ThrowThingNotFound("slider", name, sliders_);
+        if (strict) {
+          ThrowThingNotFound("slider", name, sliders_);
+        } else {
+          WarnThingNotFound("slider", name, sliders_);
+          return false;
+        }
       }
       sliders_.erase(iter);
       auto c_iter = std::find(controls_.begin(), controls_.end(), name);
@@ -1760,6 +1792,7 @@ class Meshcat::Impl {
       msgpack::pack(message_stream, data);
       app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
     });
+    return true;
   }
 
   // This function is public via the PIMPL.
@@ -2768,8 +2801,8 @@ int Meshcat::GetButtonClicks(std::string_view name) const {
   return impl().GetButtonClicks(name);
 }
 
-void Meshcat::DeleteButton(std::string name) {
-  impl().DeleteButton(std::move(name));
+bool Meshcat::DeleteButton(std::string name, bool strict) {
+  return impl().DeleteButton(std::move(name), strict);
 }
 
 void Meshcat::AddSlider(std::string name, double min, double max, double step,
@@ -2791,8 +2824,8 @@ std::vector<std::string> Meshcat::GetSliderNames() const {
   return impl().GetSliderNames();
 }
 
-void Meshcat::DeleteSlider(std::string name) {
-  impl().DeleteSlider(std::move(name));
+bool Meshcat::DeleteSlider(std::string name, bool strict) {
+  return impl().DeleteSlider(std::move(name), strict);
 }
 
 void Meshcat::DeleteAddedControls() {

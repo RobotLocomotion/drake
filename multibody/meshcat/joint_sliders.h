@@ -96,11 +96,15 @@ class JointSliders final : public systems::LeafSystem<T> {
   From this point on, our output port produces the initial_value from the
   constructor, not any slider values.
 
+  @throws std::exception if any of the sliders registered by this class are no
+  longer registered, and `strict` is true. If `strict` is false, warnings may
+  be logged instead.
+
   @warning It is not safe to call this when a CalcOutput might be happening on
   this instance concurrently on another thread. */
-  void Delete();
+  void Delete(bool strict = true);
 
-  /** Performs a Delete(), if one has not already been done. */
+  /** Performs a Delete(false). */
   ~JointSliders() final;
 
   /** Publishes the given Diagram (typically, to cause it to be visualized)

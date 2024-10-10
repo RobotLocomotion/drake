@@ -184,7 +184,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 3>(),  // BR
             cls_doc.ctor.doc)
-        .def("Delete", &Class::Delete, cls_doc.Delete.doc)
+        .def("Delete", &Class::Delete, py::arg("strict") = true,
+            cls_doc.Delete.doc)
         .def("Run", &Class::Run, py::arg("diagram"),
             py::arg("timeout") = py::none(),
             py::arg("stop_button_keycode") = "Escape",

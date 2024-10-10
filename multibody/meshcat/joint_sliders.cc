@@ -212,19 +212,25 @@ JointSliders<T>::JointSliders(
 }
 
 template <typename T>
-void JointSliders<T>::Delete() {
+void JointSliders<T>::Delete(bool strict) {
   const auto was_registered = is_registered_.exchange(false);
   if (was_registered) {
     for (const auto& [position_index, slider_name] : position_names_) {
       unused(position_index);
-      meshcat_->DeleteSlider(slider_name);
+      meshcat_->DeleteSlider(slider_name, strict);
     }
   }
 }
 
 template <typename T>
 JointSliders<T>::~JointSliders() {
-  Delete();
+  // Destructors are not allowed to throw. Ensure this by both using non-strict
+  // Delete(), and by catching any exceptions and converting them to abort().
+  try {
+    Delete(/*strict = */false);
+  } catch(...) {
+    ::abort();
+  }
 }
 
 template <typename T>

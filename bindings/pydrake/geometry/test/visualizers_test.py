@@ -211,7 +211,7 @@ class TestGeometryVisualizers(unittest.TestCase):
             "name": "alice",
         }))
         self.assertEqual(meshcat.GetButtonClicks(name="alice"), 1)
-        meshcat.DeleteButton(name="alice")
+        meshcat.DeleteButton(name="alice", strict=False)
         meshcat.AddSlider(name="slider",
                           min=0,
                           max=1,
@@ -223,7 +223,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.SetSliderValue(name="slider", value=0.7)
         self.assertAlmostEqual(meshcat.GetSliderValue(
             name="slider"), 0.7, delta=1e-14)
-        meshcat.DeleteSlider(name="slider")
+        meshcat.DeleteSlider(name="slider", strict=False)
         meshcat.DeleteAddedControls()
         self.assertIn("data:application/octet-binary;base64",
                       meshcat.StaticHtml())

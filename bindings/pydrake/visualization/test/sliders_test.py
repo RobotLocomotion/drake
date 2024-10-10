@@ -36,7 +36,8 @@ class TestSliders(unittest.TestCase):
 
         # Various methods should not crash.
         dut.get_output_port()
-        dut.Delete()
+        dut.Delete(strict=True)
+        dut.Delete(strict=False)
 
         # The constructor has default values.
         dut = MeshcatPoseSliders(meshcat)

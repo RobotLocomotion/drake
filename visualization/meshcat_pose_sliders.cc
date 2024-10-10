@@ -141,12 +141,12 @@ MeshcatPoseSliders<T>::MeshcatPoseSliders(
 }
 
 template <typename T>
-void MeshcatPoseSliders<T>::Delete() {
+void MeshcatPoseSliders<T>::Delete(bool strict) {
   const auto was_registered = is_registered_.exchange(false);
   if (was_registered) {
     for (int i = 0; i < 6; ++i) {
       if (visible_[i]) {
-        meshcat_->DeleteSlider(slider_names_[i]);
+        meshcat_->DeleteSlider(slider_names_[i], strict);
       }
     }
   }
@@ -154,7 +154,13 @@ void MeshcatPoseSliders<T>::Delete() {
 
 template <typename T>
 MeshcatPoseSliders<T>::~MeshcatPoseSliders() {
-  Delete();
+  // Destructors are not allowed to throw. Ensure this by both using non-strict
+  // Delete(), and by catching any exceptions and converting them to abort().
+  try {
+    Delete(/*strict = */ false);
+  } catch (...) {
+    ::abort();
+  }
 }
 
 template <typename T>

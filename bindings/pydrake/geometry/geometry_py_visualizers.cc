@@ -372,7 +372,7 @@ void DefineMeshcat(py::module m) {
         .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
             cls_doc.GetButtonClicks.doc)
         .def("DeleteButton", &Class::DeleteButton, py::arg("name"),
-            cls_doc.DeleteButton.doc)
+            py::arg("strict") = true, cls_doc.DeleteButton.doc)
         .def("AddSlider", &Class::AddSlider, py::arg("name"), py::arg("min"),
             py::arg("max"), py::arg("step"), py::arg("value"),
             py::arg("decrement_keycode") = "",
@@ -384,7 +384,7 @@ void DefineMeshcat(py::module m) {
         .def("GetSliderNames", &Class::GetSliderNames,
             cls_doc.GetSliderNames.doc)
         .def("DeleteSlider", &Class::DeleteSlider, py::arg("name"),
-            cls_doc.DeleteSlider.doc)
+            py::arg("strict") = true, cls_doc.DeleteSlider.doc)
         .def("DeleteAddedControls", &Class::DeleteAddedControls,
             cls_doc.DeleteAddedControls.doc)
         .def("GetGamepad", &Class::GetGamepad, cls_doc.GetGamepad.doc)
