@@ -5,7 +5,7 @@
 
 set -euxo pipefail
 
-binary_distribution_args=()
+binary_distribution_args=(--without-python-dependencies)
 source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do

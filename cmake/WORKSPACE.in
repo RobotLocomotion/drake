@@ -10,6 +10,7 @@ python_repository(
     name = "python",
     linux_interpreter_path = "@Python_EXECUTABLE@",
     macos_interpreter_path = "@Python_EXECUTABLE@",
+    requirements_flavor = "build",
 )
 
 # Custom repository rules injected by CMake.
