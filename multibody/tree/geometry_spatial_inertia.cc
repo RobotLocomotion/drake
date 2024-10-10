@@ -128,6 +128,41 @@ SpatialInertia<double> CalcSpatialInertia(
   }
 
   const double volume = vol_times_six / 6.0;
+  // A valid mesh should have an inherently positive volume.
+  // Throw an exception if volume is negative or nearly zero. This test of
+  // "reasonably positive" volume is more stringent than the mass ≥ 0 test in
+  // SpatialInertia::IsPhysicallyValid(). Reminder: The volume of a mesh can be
+  // calculated (and should be positive) whereas spatial inertia does not deal
+  // with volume. Instead, spatial inertia deals with mass, including idealized
+  // zero volume massive objects such as particles, rods, and plates.
+  // Note: If we omit throwing an exception for negative or zero volume, a
+  // different exception would still be otherwise thrown in code called by the
+  // spatial inertia constructor below and this function still fails to return.
+  // For negative volume, the associated less-helpful spatial inertia exception
+  // message would be e.g., "mass = -0.5 is not positive and finite.", whereas a
+  // zero volume creates a divide-by-zero in two places below and the associated
+  // obscure exception message would be "Unable to calculate the eigenvalues or
+  // eigenvectors of the 3x3 matrix associated with a RotationalInertia.".
+  // Related: issue #21924 [github.com/RobotLocomotion/drake/issues/21924].
+  constexpr double kEpsilon = 1.0E-14;  // ≈ 64*numeric_limits<double>::epsilon
+  if (volume <= kEpsilon) {
+    // TODO(Mitiguy) Consider changing the function signature to add an optional
+    //  mesh_name argument (e.g., mesh_name = someFilename.obj) and using
+    //  mesh_name in the following error_message. For a simulation involving
+    //  many meshes, this helps quickly identify an offending mesh.
+    // TODO(Mitiguy) Sean Curtis thought the following error message may not be
+    //  enough guidance, so he suggested adding a hyperlink in error_message to
+    //  https://drake.mit.edu/troubleshooting.html for a proper treatment of
+    //  the issue (ideally with Sean's input/expertise).
+    const std::string error_message = fmt::format(
+        "{}(): The calculated volume of a triangle surface mesh is {} whereas "
+        "a reasonable positive value of at least {} was expected. The mesh may "
+        "have bad geometry, e.g., it is an open mesh or the winding (order of "
+        "vertices) of at least one face does not produce an outward normal.",
+        __func__, volume, kEpsilon);
+    throw std::logic_error(error_message);
+  }
+
   const double mass = density * volume;
   const Vector3d p_GoGcm = accum_com / (vol_times_six * 4);
   // We can compute I = C.trace * 1₃ - C. Two key points:
