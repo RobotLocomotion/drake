@@ -8,5 +8,5 @@ set -eux -o pipefail
 cd "$(dirname $0)/../../.."
 readonly venv_root="$(bazel info output_base).venv"
 
-# Remove the venv
+# Remove the venv.
 rm -r "$venv_root"

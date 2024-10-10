@@ -24,6 +24,9 @@ generate_requirements() {
          'drake/tools/workspace/python/venv_upgrade;' \
          'do not edit.' > "$out_name"
     tail -n+6 requirements.tmp >> "$out_name"
+
+    # Remove the temporary file.
+    rm requirements.tmp
 }
 
 # Determine what platform we are on.
