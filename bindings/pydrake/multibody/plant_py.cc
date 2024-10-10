@@ -3,6 +3,7 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -1368,28 +1369,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 
   {
-    // TODO(eric.cousineau): Figure out why we need to use this to explicit
-    // keep-alive vs. annotating the return tuple with `py::keep_alive()`.
-    // Most likely due to a bug in our fork of pybind11 for handling of
-    // unique_ptr<> arguments and keep_alive<> behavior for objects that are
-    // not yet registered with pybind11 (#11046).
-    auto cast_workaround = [](auto&& nurse, py::object patient_py) {
-      // Cast to ensure we have the object registered.
-      py::object nurse_py = py::cast(nurse, py_rvp::reference);
-      // Directly leverage pybind11's keep alive mechanism.
-      py::detail::keep_alive_impl(nurse_py, patient_py);
-      return nurse_py;
-    };
-
     auto result_to_tuple =
-        [cast_workaround](systems::DiagramBuilder<T>* builder,
+        [](systems::DiagramBuilder<T>* builder,
             const AddMultibodyPlantSceneGraphResult<T>& pair) {
           py::object builder_py = py::cast(builder, py_rvp::reference);
-          // Keep alive, ownership: `plant` keeps `builder` alive.
-          py::object plant_py = cast_workaround(pair.plant, builder_py);
-          // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+          py::object plant_py = py::cast(pair.plant, py_rvp::reference);
           py::object scene_graph_py =
-              cast_workaround(pair.scene_graph, builder_py);
+              py::cast(pair.scene_graph, py_rvp::reference);
+          internal::do_ref_cycle_impl(builder_py, plant_py);
+          internal::do_ref_cycle_impl(builder_py, scene_graph_py);
           return py::make_tuple(plant_py, scene_graph_py);
         };
 
