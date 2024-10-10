@@ -62,13 +62,13 @@ class DRAKE_NO_EXPORT IpoptSolver_NLP : public Ipopt::TNLP {
                   const Eigen::VectorXd& x_init,
                   MathematicalProgramResult* result);
 
-  virtual ~IpoptSolver_NLP() {}
+  virtual ~IpoptSolver_NLP()
 
-  virtual bool get_nlp_info(
-      // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
-      Ipopt::Index& n, Ipopt::Index& m, Ipopt::Index& nnz_jac_g,
-      // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
-      Ipopt::Index& nnz_h_lag, IndexStyleEnum& index_style);
+      virtual bool get_nlp_info(
+          // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
+          Ipopt::Index& n, Ipopt::Index& m, Ipopt::Index& nnz_jac_g,
+          // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
+          Ipopt::Index& nnz_h_lag, IndexStyleEnum& index_style);
 
   virtual bool get_bounds_info(Ipopt::Index n, Ipopt::Number* x_l,
                                Ipopt::Number* x_u, Ipopt::Index m,

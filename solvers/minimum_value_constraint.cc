@@ -231,6 +231,8 @@ void MinimumValueLowerBoundConstraint::set_penalty_function(
                             &penalty_output_scaling_);
 }
 
+MinimumValueLowerBoundConstraint::~MinimumValueLowerBoundConstraint() = default;
+
 template <typename T>
 void MinimumValueLowerBoundConstraint::DoEvalGeneric(
     const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
@@ -273,6 +275,8 @@ MinimumValueUpperBoundConstraint::MinimumValueUpperBoundConstraint(
   DRAKE_DEMAND(influence_value_offset > 0);
   this->set_penalty_function(QuadraticallySmoothedHingeLoss);
 }
+
+MinimumValueUpperBoundConstraint::~MinimumValueUpperBoundConstraint() = default;
 
 void MinimumValueUpperBoundConstraint::set_penalty_function(
     MinimumValuePenaltyFunction new_penalty_function) {
