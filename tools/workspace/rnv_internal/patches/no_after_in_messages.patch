@@ -1,0 +1,40 @@
+[rnv] Don't say "after" in messages
+
+The compiled form of the schema uses bytecodes, some of which will be
+meaningless to anyone other than developers of the library. The
+"required" section of the typical validation error message just dumps
+the name of the current bytecode, which is of little help to anyone. So,
+just skip the "required" section altogether.
+
+Also, in the internal logic of the validator, the "after" bytecode is
+something that might have matched in case of failure, but no human knows
+what this means. Suppress reports about "after" in the allowed section
+as well.
+
+index c844dc6..fd088d2 100644
+--- xcl.c
++++ xcl.c
+@@ -20,6 +20,7 @@
+ #include "dxl.h"
+ #include "dsl.h"
+ #include "er.h"
++#include "rn.h"
+ 
+ extern int rn_notAllowed,rx_compact,drv_compact;
+ 
+@@ -62,13 +63,14 @@ static void verror_handler(int erno,va_list ap) {
+       (*er_printf)("%s:%i:%i: error: ",xml,line,col);
+       if(erno&ERBIT_RNV) {
+ 	rnv_default_verror_handler(erno&~ERBIT_RNV,ap);
+-	if(nexp) { int req=2, i=0; char *s;
++	if(nexp) { int req=1, i=0; char *s;
+ 	  while(req--) {
+ 	    rnx_expected(previous,req);
+ 	    if(i==rnx_n_exp) continue;
+ 	    if(rnx_n_exp>nexp) break;
+ 	    (*er_printf)((char*)(req?"required:\n":"allowed:\n"));
+ 	    for(;i!=rnx_n_exp;++i) {
++              if (RN_P_IS(rnx_exp[i],RN_P_AFTER)) { continue; }
+ 	      (*er_printf)("\t%s\n",s=rnx_p2str(rnx_exp[i]));
+ 	      m_free(s);
+ 	    }
