@@ -7,15 +7,17 @@
 #include <string>
 #include <utility>
 
-// Note: This is intentionally included here since it's only needed at the
-// implementation level, and not in a grouping of more generic headers like
-// opengl_includes.h. See opengl_context.h for where pimpl is applied.
-#include <GL/glx.h>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
+
+// Note: This is intentionally included here since it's only needed at the
+// implementation level, and not in a grouping of more generic headers like
+// opengl_includes.h. See opengl_context.h for where pimpl is applied.
+// This *must* follow the drake includes in case any of those bring in
+// drake/common/eigen_types.h. The two headers interfer if Eigen is second.
+#include <GL/glx.h>
 
 namespace drake {
 namespace geometry {
