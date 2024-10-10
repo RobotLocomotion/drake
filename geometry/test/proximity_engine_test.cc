@@ -329,7 +329,7 @@ GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
   const Box box(1, 1, 1);
 
   const Mesh mesh{FindResourceOrThrow("drake/geometry/test/octahedron.obj")};
-  const Convex convex(mesh.filename());
+  const Convex convex(mesh.source());
   const Vector3d mesh_min(-1, -1, -1.414213562373);
   const Vector3d mesh_max = -mesh_min;
 

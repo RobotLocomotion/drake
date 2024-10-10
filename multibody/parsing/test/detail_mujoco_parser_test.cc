@@ -690,7 +690,8 @@ class BoxMeshTest : public MujocoParserTest {
     auto* mesh =
         dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
     EXPECT_NE(mesh, nullptr);
-    EXPECT_EQ(mesh->filename(), expected_filename);
+    DRAKE_DEMAND(mesh->source().is_path());
+    EXPECT_EQ(mesh->source().path(), expected_filename);
     EXPECT_EQ(mesh->scale(), expected_scale);
   }
 };
@@ -837,7 +838,8 @@ TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
       dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
 
   EXPECT_NE(mesh, nullptr);
-  EXPECT_EQ(mesh->filename(), box_obj_);
+  ASSERT_TRUE(mesh->source().is_path());
+  EXPECT_EQ(mesh->source().path(), box_obj_);
   EXPECT_EQ(mesh->scale(), 1.0);
 }
 

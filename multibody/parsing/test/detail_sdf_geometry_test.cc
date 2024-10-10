@@ -443,7 +443,8 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
       MakeShapeFromSdfGeometry(*sdf_geometry);
   const Mesh* mesh = dynamic_cast<const Mesh*>(shape->get());
   ASSERT_NE(mesh, nullptr);
-  EXPECT_EQ(mesh->filename(), absolute_file_path);
+  ASSERT_TRUE(mesh->source().is_path());
+  EXPECT_EQ(mesh->source().path(), absolute_file_path);
   EXPECT_EQ(mesh->scale(), 3);
 }
 
@@ -478,7 +479,8 @@ TEST_F(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
       MakeShapeFromSdfGeometry(*sdf_geometry);
   const Convex* convex = dynamic_cast<const Convex*>(shape->get());
   ASSERT_NE(convex, nullptr);
-  EXPECT_EQ(convex->filename(), absolute_file_path);
+  EXPECT_TRUE(convex->source().is_path());
+  EXPECT_EQ(convex->source().path(), absolute_file_path);
   EXPECT_EQ(convex->scale(), 3);
 }
 

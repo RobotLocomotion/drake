@@ -523,7 +523,8 @@ TEST_F(UrdfGeometryTest, TestParseMaterial2) {
       dynamic_cast<const geometry::Mesh*>(&mesh_visual.shape());
   ASSERT_TRUE(mesh);
 
-  const std::string& mesh_filename = mesh->filename();
+  ASSERT_TRUE(mesh->source().is_path());
+  const std::string& mesh_filename = mesh->source().path().string();
   std::string obj_name = "tri_cube.obj";
   EXPECT_EQ(mesh_filename.rfind(obj_name),
             mesh_filename.size() - obj_name.size());

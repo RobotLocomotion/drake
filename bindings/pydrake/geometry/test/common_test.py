@@ -11,6 +11,7 @@ import numpy as np
 
 from pydrake.common import MemoryFile
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.common.yaml import yaml_load_typed
@@ -616,14 +617,15 @@ class TestGeometryCore(unittest.TestCase):
             self.assertEqual(".ext", dut_mesh.extension())
             self.assertEqual(dut_mesh.scale(), 1.5)
             self.assertIsInstance(dut_mesh.source(), mut.MeshSource)
-            if dut_mesh.source().is_path():
-                self.assertIn(junk_path, dut_mesh.filename())
-                with self.assertRaisesRegex(RuntimeError,
-                                            "MakeConvexHull only applies to"):
-                    # We just need evidence that it invokes convex hull
-                    # machinery; the exception for a bad extension suffices.
-                    dut_mesh.GetConvexHull()
+            with self.assertRaisesRegex(RuntimeError,
+                                        "MakeConvexHull only applies to"):
+                # We just need evidence that it invokes convex hull
+                # machinery; the exception for a bad extension suffices.
+                dut_mesh.GetConvexHull()
             assert_pickle(self, dut_mesh, repr)
+            if dut_mesh.source().is_path():
+                with catch_drake_warnings(expected_count=1):
+                    self.assertIn(junk_path, dut_mesh.filename())
 
         sphere = mut.Sphere(radius=1.0)
         assert_shape_api(sphere)

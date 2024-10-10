@@ -27,7 +27,7 @@ SpatialInertia<double> CalcMeshSpatialInertia(const Mesh& mesh,
   const auto& extension = mesh.extension();
   if (extension == ".obj") {
     return CalcSpatialInertia(
-        geometry::ReadObjToTriangleSurfaceMesh(mesh.filename(), mesh.scale()),
+        geometry::ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale()),
         density);
   }
   if (extension == ".vtk") {
@@ -39,7 +39,7 @@ SpatialInertia<double> CalcMeshSpatialInertia(const Mesh& mesh,
   throw std::runtime_error(fmt::format(
       "CalcSpatialInertia currently only supports .obj or tetrahedral-mesh"
       " .vtk files for Mesh shapes but was given '{}'.",
-      mesh.filename()));
+      mesh.source().description()));
 }
 
 }  // namespace

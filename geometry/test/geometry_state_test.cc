@@ -404,9 +404,9 @@ void ShapeMatcher<Capsule>::TestShapeParameters(const Capsule& test) {
 template <>
 template <>
 void ShapeMatcher<Mesh>::TestShapeParameters(const Mesh& test) {
-  if (test.filename() != expected_.filename()) {
-    error() << "\nExpected mesh filename " << expected_.filename() << ", "
-            << "received mesh filename " << test.filename();
+  if (test.source().description() != expected_.source().description()) {
+    error() << "\nExpected description " << expected_.source().description()
+            << ", received description " << test.source().description();
   }
   if (test.scale() != expected_.scale()) {
     error() << "\nExpected mesh scale " << expected_.scale()
@@ -417,9 +417,9 @@ void ShapeMatcher<Mesh>::TestShapeParameters(const Mesh& test) {
 template <>
 template <>
 void ShapeMatcher<Convex>::TestShapeParameters(const Convex& test) {
-  if (test.filename() != expected_.filename()) {
-    error() << "\nExpected convex filename " << expected_.filename() << ", "
-            << "received convex filename " << test.filename();
+  if (test.source().description() != expected_.source().description()) {
+    error() << "\nExpected description " << expected_.source().description()
+            << ", received description " << test.source().description();
   }
   if (test.scale() != expected_.scale()) {
     error() << "\nExpected convex scale " << expected_.scale()
