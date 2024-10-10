@@ -225,6 +225,8 @@ MinimumValueLowerBoundConstraint::MinimumValueLowerBoundConstraint(
   this->set_penalty_function(QuadraticallySmoothedHingeLoss);
 }
 
+MinimumValueLowerBoundConstraint::~MinimumValueLowerBoundConstraint() = default;
+
 void MinimumValueLowerBoundConstraint::set_penalty_function(
     MinimumValuePenaltyFunction new_penalty_function) {
   set_penalty_function_impl(new_penalty_function, &penalty_function_,
@@ -273,6 +275,8 @@ MinimumValueUpperBoundConstraint::MinimumValueUpperBoundConstraint(
   DRAKE_DEMAND(influence_value_offset > 0);
   this->set_penalty_function(QuadraticallySmoothedHingeLoss);
 }
+
+MinimumValueUpperBoundConstraint::~MinimumValueUpperBoundConstraint() = default;
 
 void MinimumValueUpperBoundConstraint::set_penalty_function(
     MinimumValuePenaltyFunction new_penalty_function) {
