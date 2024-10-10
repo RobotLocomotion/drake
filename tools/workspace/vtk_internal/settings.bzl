@@ -204,6 +204,13 @@ MODULE_SETTINGS = {
     },
     "VTK::CommonExecutionModel": {
         "visibility": ["//visibility:public"],
+        "srcs_glob_exclude": [
+            # This file is just a pile of static (i.e., exit-time) destructors.
+            # The Drake build & release posture does not permit static dtors,
+            # so we have the disable_static_destructors.patch that stubs out
+            # all of these functions and then here we opt-out of compiling it.
+            "**/vtkFilteringInformationKeyManager.cxx",
+        ],
     },
     "VTK::CommonMath": {
         "visibility": ["//visibility:public"],
