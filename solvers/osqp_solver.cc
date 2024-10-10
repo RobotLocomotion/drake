@@ -10,6 +10,44 @@
 #include "drake/math/eigen_sparse_triplet.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/specific_options.h"
+
+// This function must appear in the global namespace -- the Serialize pattern
+// uses ADL (argument-dependent lookup) and the namespace for the OSQPSettings
+// struct is the global namespace. (We can't even use an anonymous namespace!)
+static void Serialize(
+    drake::solvers::internal::SpecificOptions* archive,
+    // NOLINTNEXTLINE(runtime/references) to match Serialize concept.
+    OSQPSettings& settings) {
+  using drake::MakeNameValue;
+  archive->Visit(MakeNameValue("rho", &settings.rho));
+  archive->Visit(MakeNameValue("sigma", &settings.sigma));
+  archive->Visit(MakeNameValue("max_iter", &settings.max_iter));
+  archive->Visit(MakeNameValue("eps_abs", &settings.eps_abs));
+  archive->Visit(MakeNameValue("eps_rel", &settings.eps_rel));
+  archive->Visit(MakeNameValue("eps_prim_inf", &settings.eps_prim_inf));
+  archive->Visit(MakeNameValue("eps_dual_inf", &settings.eps_dual_inf));
+  archive->Visit(MakeNameValue("alpha", &settings.alpha));
+  archive->Visit(MakeNameValue("delta", &settings.delta));
+  archive->Visit(MakeNameValue("polish", &settings.polish));
+  archive->Visit(MakeNameValue("polish_refine_iter",  // BR
+                               &settings.polish_refine_iter));
+  archive->Visit(MakeNameValue("verbose", &settings.verbose));
+  archive->Visit(MakeNameValue("scaled_termination",  // BR
+                               &settings.scaled_termination));
+  archive->Visit(MakeNameValue("check_termination",  // BR
+                               &settings.check_termination));
+  archive->Visit(MakeNameValue("warm_start", &settings.warm_start));
+  archive->Visit(MakeNameValue("scaling", &settings.scaling));
+  archive->Visit(MakeNameValue("adaptive_rho", &settings.adaptive_rho));
+  archive->Visit(MakeNameValue("adaptive_rho_interval",  // BR
+                               &settings.adaptive_rho_interval));
+  archive->Visit(MakeNameValue("adaptive_rho_tolerance",  // BR
+                               &settings.adaptive_rho_tolerance));
+  archive->Visit(MakeNameValue("adaptive_rho_fraction",  // BR
+                               &settings.adaptive_rho_fraction));
+  archive->Visit(MakeNameValue("time_limit", &settings.time_limit));
+}
 
 namespace drake {
 namespace solvers {
@@ -191,76 +229,6 @@ csc* EigenSparseToCSC(const Eigen::SparseMatrix<c_float>& mat) {
                     inner_indices, outer_indices);
 }
 
-template <typename T1, typename T2>
-void SetOsqpSolverSetting(const std::unordered_map<std::string, T1>& options,
-                          const std::string& option_name,
-                          T2* osqp_setting_field) {
-  const auto it = options.find(option_name);
-  if (it != options.end()) {
-    *osqp_setting_field = it->second;
-  }
-}
-
-template <typename T1, typename T2>
-void SetOsqpSolverSettingWithDefaultValue(
-    const std::unordered_map<std::string, T1>& options,
-    const std::string& option_name, T2* osqp_setting_field,
-    const T1& default_field_value) {
-  const auto it = options.find(option_name);
-  if (it != options.end()) {
-    *osqp_setting_field = it->second;
-  } else {
-    *osqp_setting_field = default_field_value;
-  }
-}
-
-void SetOsqpSolverSettings(const SolverOptions& solver_options,
-                           OSQPSettings* settings) {
-  const std::unordered_map<std::string, double>& options_double =
-      solver_options.GetOptionsDouble(OsqpSolver::id());
-  const std::unordered_map<std::string, int>& options_int =
-      solver_options.GetOptionsInt(OsqpSolver::id());
-  SetOsqpSolverSetting(options_double, "rho", &(settings->rho));
-  SetOsqpSolverSetting(options_double, "sigma", &(settings->sigma));
-  SetOsqpSolverSetting(options_int, "max_iter", &(settings->max_iter));
-  SetOsqpSolverSetting(options_double, "eps_abs", &(settings->eps_abs));
-  SetOsqpSolverSetting(options_double, "eps_rel", &(settings->eps_rel));
-  SetOsqpSolverSetting(options_double, "eps_prim_inf",
-                       &(settings->eps_prim_inf));
-  SetOsqpSolverSetting(options_double, "eps_dual_inf",
-                       &(settings->eps_dual_inf));
-  SetOsqpSolverSetting(options_double, "alpha", &(settings->alpha));
-  SetOsqpSolverSetting(options_double, "delta", &(settings->delta));
-  // Default polish to true, to get an accurate solution.
-  SetOsqpSolverSettingWithDefaultValue(options_int, "polish",
-                                       &(settings->polish), 1);
-  SetOsqpSolverSetting(options_int, "polish_refine_iter",
-                       &(settings->polish_refine_iter));
-  // The fallback value for console verbosity is the value set by drake options.
-  int verbose_console = solver_options.get_print_to_console() != 0;
-  SetOsqpSolverSettingWithDefaultValue(options_int, "verbose",
-                                       &(settings->verbose), verbose_console);
-
-  // OSQP does not support setting the number of threads so we ignore
-  // the kMaxNumThreads option.
-
-  SetOsqpSolverSetting(options_int, "scaled_termination",
-                       &(settings->scaled_termination));
-  SetOsqpSolverSetting(options_int, "check_termination",
-                       &(settings->check_termination));
-  SetOsqpSolverSetting(options_int, "warm_start", &(settings->warm_start));
-  SetOsqpSolverSetting(options_int, "scaling", &(settings->scaling));
-  SetOsqpSolverSetting(options_int, "adaptive_rho", &(settings->adaptive_rho));
-  SetOsqpSolverSettingWithDefaultValue(options_int, "adaptive_rho_interval",
-                                       &(settings->adaptive_rho_interval),
-                                       ADAPTIVE_RHO_FIXED);
-  SetOsqpSolverSetting(options_double, "adaptive_rho_tolerance",
-                       &(settings->adaptive_rho_tolerance));
-  SetOsqpSolverSetting(options_double, "adaptive_rho_fraction",
-                       &(settings->adaptive_rho_fraction));
-  SetOsqpSolverSetting(options_double, "time_limit", &(settings->time_limit));
-}
-
 template <typename C>
 void SetDualSolution(
     const std::vector<Binding<C>>& constraints,
@@ -285,10 +253,10 @@ bool OsqpSolver::is_available() {
   return true;
 }
 
-void OsqpSolver::DoSolve(const MathematicalProgram& prog,
-                         const Eigen::VectorXd& initial_guess,
-                         const SolverOptions& merged_options,
-                         MathematicalProgramResult* result) const {
+void OsqpSolver::DoSolve2(const MathematicalProgram& prog,
+                          const Eigen::VectorXd& initial_guess,
+                          internal::SpecificOptions* options,
+                          MathematicalProgramResult* result) const {
   OsqpSolverDetails& solver_details =
       result->SetSolverDetailsType<OsqpSolverDetails>();
 
@@ -329,13 +297,22 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
   data->l = l.data();
   data->u = u.data();
 
-  // Define Solver settings as default.
-  // Problem settings
+  // Create the settings, initialized to the upstream defaults.
   OSQPSettings* settings =
       static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
   osqp_set_default_settings(settings);
-
-  SetOsqpSolverSettings(merged_options, settings);
+  // Customize the defaults for Drake.
+  // - Default polish to true, to get an accurate solution.
+  // - Disable adaptive rho, for determinism.
+  settings->polish = 1;
+  settings->adaptive_rho_interval = ADAPTIVE_RHO_FIXED;
+  // Apply the user's additional options (if any).
+  options->Respell([](const auto& common, auto* respelled) {
+    respelled->emplace("verbose", common.print_to_console ? 1 : 0);
+    // OSQP does not support setting the number of threads so we ignore the
+    // kMaxThreads option.
+  });
+  options->CopyToSerializableStruct(settings);
 
   // If any step fails, it will set the solution_result and skip other steps.
   std::optional<SolutionResult> solution_result;

@@ -524,7 +524,7 @@ TEST_F(TrivialSDP1, UnknownRemoveFreeVariableMethod) {
   options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod", 222);
   if (solver.available()) {
     DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(example.prog(), {}, options),
-                                ".*unknown.*RemoveFreeVariableMethod.*");
+                                ".*Bad.*RemoveFreeVariableMethod.*");
   }
 }
 
