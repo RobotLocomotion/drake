@@ -5,6 +5,7 @@
  the pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -500,7 +501,6 @@ void DefineShapes(py::module m) {
         .def(py::init<MeshSource, double>(), py::arg("source"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_source_scale)
         .def("source", &Convex::source, doc.Convex.source.doc)
-        .def("filename", &Convex::filename, doc.Convex.filename.doc)
         .def("extension", &Convex::extension, doc.Convex.extension.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
         .def("GetConvexHull", &Convex::GetConvexHull,
@@ -514,6 +514,13 @@ void DefineShapes(py::module m) {
             }));
     // Note: Convex.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    convex_cls.def("filename",
+        WrapDeprecated(doc.Convex.filename.doc_deprecated, &Convex::filename),
+        doc.Convex.filename.doc_deprecated);
+#pragma GCC diagnostic pop
 
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
@@ -561,7 +568,6 @@ void DefineShapes(py::module m) {
         .def(py::init<MeshSource, double>(), py::arg("source"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_source_scale)
         .def("source", &Mesh::source, doc.Mesh.source.doc)
-        .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
@@ -574,6 +580,13 @@ void DefineShapes(py::module m) {
             }));
     // Note: Convex.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    mesh_cls.def("filename",
+        WrapDeprecated(doc.Mesh.filename.doc_deprecated, &Mesh::filename),
+        doc.Mesh.filename.doc_deprecated);
+#pragma GCC diagnostic pop
 
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
