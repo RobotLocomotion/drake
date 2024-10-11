@@ -1402,15 +1402,8 @@ void MultibodyTree<T>::CalcCompositeBodyInertiasInWorld(
       // everything outboard of this node.
       const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      // This node's spatial inertia.
-      const SpatialInertia<T>& M_C_W = M_B_W_all[mobod_index];
-
-      // Compute the spatial inertia Mc_C_W of the composite body C
-      // corresponding to the node with index mobod_index. Computed
-      // about C's origin Co and expressed in the world frame W.
-      SpatialInertia<T>& Mc_C_W = (*Mc_B_W_all)[mobod_index];
-      composite_node.CalcCompositeBodyInertia_TipToBase(M_C_W, pc, *Mc_B_W_all,
-                                                        &Mc_C_W);
+      composite_node.CalcCompositeBodyInertia_TipToBase(pc, M_B_W_all,
+                                                        &*Mc_B_W_all);
     }
   }
 }
@@ -1913,89 +1906,9 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
     for (MobodIndex mobod_index : body_node_levels_[level]) {
       // Node corresponding to the composite body C.
       const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
-      const int cnv = composite_node.get_num_mobilizer_velocities();
 
-      if (cnv == 0) continue;  // Weld has no generalized coordinates, so skip.
-
-      // This node's 6x6 composite body inertia.
-      const SpatialInertia<T>& Mc_C_W = Mc_B_W_cache[mobod_index];
-
-      // Across-mobilizer 6 x cnv hinge matrix, from C's parent Cp to C.
-      Eigen::Map<const MatrixUpTo6<T>> H_CpC_W =
-          composite_node.GetJacobianFromArray(H_PB_W_cache);
-
-      // The composite body algorithm considers the system at rest, when
-      // generalized velocities are zero.
-      // Now if we consider this node's generalized accelerations as the matrix
-      // vm_dot = Iₘ, the identity matrix in ℝᵐˣᵐ, the spatial acceleration A_WC
-      // is in ℝ⁶ˣᵐ. That is, we are considering each case in which all
-      // generalized accelerations are zero but the m-th generalized
-      // acceleration for this node equals one.
-      // This node's spatial acceleration can be written as:
-      //   A_WC = Φᵀ(p_CpC) * A_WCp + Ac_WC + Ab_CpC_W + H_CpC_W * vm_dot
-      // where A_WCp is the spatial acceleration of the parent node's body Cp,
-      // Ac_WC include the centrifugal and Coriolis terms, and Ab_CpC_W is the
-      // spatial acceleration bias of the hinge Jacobian matrix H_CpC_W.
-      // Now, since all generalized accelerations but vm_dot are zero, then
-      // A_WCp is zero.  Since the system is at rest, Ac_WC and Ab_CpC_W are
-      // zero.
-      // Therefore, for vm_dot = Iₘ, we have that A_WC = H_CpC_W.
-      const auto& A_WC = H_CpC_W;  // 6 x cnv
-
-      // If we consider the closed system composed of the composite body held by
-      // its mobilizer, the Newton-Euler equations state:
-      //   Fm_CCo_W = Mc_C_W * A_WC + Fb_C_W
-      // where Fm_CCo_W is the spatial force at this node's mobilizer.
-      // Since the system is at rest, we have Fb_C_W = 0 and thus:
-      const Matrix6xUpTo6<T> Fm_CCo_W = Mc_C_W * A_WC;  // 6 x cnv.
-
-      const int composite_start_in_v = composite_node.velocity_start_in_v();
-
-      // Diagonal block corresponding to current node (mobod_index).
-      M->block(composite_start_in_v, composite_start_in_v, cnv, cnv) +=
-          H_CpC_W.transpose() * Fm_CCo_W;
-
-      // We recurse the tree inwards from C all the way to the root. We define
-      // the frames:
-      //  - B:  the frame for the current node, body_node.
-      //  - Bc: B's child node frame, child_node.
-      //  - P:  B's parent node frame.
-      const BodyNode<T>* child_node =
-          &composite_node;  // Child starts at frame C.
-      const BodyNode<T>* body_node = child_node->parent_body_node();
-      Matrix6xUpTo6<T> Fm_CBo_W = Fm_CCo_W;  // 6 x cnv
-      while (body_node) {
-        const Vector3<T>& p_BcBo_W =
-            -pc.get_p_PoBo_W(child_node->mobod_index());
-        // In place rigid shift of the spatial force in each column of
-        // Fm_CBo_W, from Bc to Bo. Before this computation, Fm_CBo_W actually
-        // stores Fm_CBc_W from the previous recursion. At the end of this
-        // computation, Fm_CBo_W stores the spatial force on composite body C,
-        // shifted to Bo, and expressed in the world W. That is, we are doing
-        // Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
-        SpatialForce<T>::ShiftInPlace(&Fm_CBo_W, p_BcBo_W);
-
-        // The shift alone is sufficient for a weld joint.
-        const int bnv = body_node->get_num_mobilizer_velocities();
-        if (bnv > 0) {
-          // Across mobilizer 6 x bnv Jacobian between body_node B and
-          // its parent P.
-          const Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
-              body_node->GetJacobianFromArray(H_PB_W_cache);
-
-          // Compute the corresponding bnv x cnv block.
-          const MatrixUpTo6<T> HtFm = H_PB_W.transpose() * Fm_CBo_W;
-          const int body_start_in_v = body_node->velocity_start_in_v();
-          M->block(body_start_in_v, composite_start_in_v, bnv, cnv) += HtFm;
-
-          // And copy to its symmetric block.
-          M->block(composite_start_in_v, body_start_in_v, cnv, bnv) +=
-              HtFm.transpose();
-        }
-
-        child_node = body_node;                      // Update child node Bc.
-        body_node = child_node->parent_body_node();  // Update node B.
-      }
+      composite_node.CalcMassMatrixContribution_TipToBase(pc, Mc_B_W_cache,
+                                                          H_PB_W_cache, M);
     }
   }
 }
