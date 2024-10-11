@@ -19,9 +19,7 @@ struct InstancedName {
   std::string name;
 
   bool operator==(const InstancedName&) const = default;
-  // TODO(rpoyner-tri): replace explicit implementation with compiler
-  // default once macOS Ventura support ends.
-  std::strong_ordering operator<=>(const InstancedName& that) const;
+  auto operator<=>(const InstancedName& that) const = default;
 
   std::string to_string() const;
 };
