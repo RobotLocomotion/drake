@@ -71,6 +71,8 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   template <typename U>
   explicit MeshcatVisualizer(const MeshcatVisualizer<U>& other);
 
+  ~MeshcatVisualizer() final;
+
   /** Resets the realtime rate calculator. Calculation will begin anew on the
    _next_ periodic publish event. This is useful for correcting the realtime
    rate after simulation is resumed from a paused state, etc.

@@ -67,6 +67,9 @@ class Variable {
    * type by default.*/
   explicit Variable(std::string name, Type type = Type::CONTINUOUS);
 
+  // The destructor is inlined for performance.
+  ~Variable() = default;
+
   /** Checks if this is the variable created by the default constructor. */
   [[nodiscard]] bool is_dummy() const { return get_id() == 0; }
   [[nodiscard]] Id get_id() const { return id_; }

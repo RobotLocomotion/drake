@@ -100,6 +100,8 @@ std::string LoadFile(const std::string& filename) {
 }
 }  // namespace
 
+ShaderProgram::~ShaderProgram() = default;
+
 void ShaderProgram::LoadFromFiles(const std::string& vertex_shader_file,
                                   const std::string& fragment_shader_file) {
   LoadFromSources(LoadFile(vertex_shader_file), LoadFile(fragment_shader_file));

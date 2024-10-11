@@ -40,6 +40,8 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
   RenderEngineGltfClient(const RenderEngineGltfClientParams& parameters =
                              RenderEngineGltfClientParams());
 
+  ~RenderEngineGltfClient() override;
+
   const RenderEngineGltfClientParams& get_params() const {
     return render_client_->get_params();
   }

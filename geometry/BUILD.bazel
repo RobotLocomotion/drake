@@ -538,6 +538,7 @@ drake_cc_library(
         "meshcat_file_storage_internal.cc",
         "meshcat_internal.cc",
         "meshcat_recording_internal.cc",
+        "meshcat_types_internal.cc",
     ],
     hdrs = [
         "meshcat.h",

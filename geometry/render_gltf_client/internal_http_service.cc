@@ -30,6 +30,8 @@ void ThrowIfFilesMissing(const FileFieldsMap& file_fields) {
 
 }  // namespace
 
+HttpService::~HttpService() = default;
+
 HttpResponse HttpService::PostForm(const std::string& temp_directory,
                                    const std::string& url,
                                    const DataFieldsMap& data_fields,

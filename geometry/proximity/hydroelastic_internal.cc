@@ -198,6 +198,8 @@ void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
   rigid_geometries_.insert({id, std::move(geometry)});
 }
 
+namespace {
+
 // Validator interface for use with extracting valid properties. It is
 // instantiated with shape (e.g., "Sphere", "Box", etc.) and compliance (i.e.,
 // "rigid" or "soft") strings (to help give intelligible error messages) and
@@ -283,6 +285,8 @@ class NonNegativeDouble : public Validator<double> {
     }
   }
 };
+
+}  // namespace
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace& hs, const ProximityProperties&) {

@@ -5,6 +5,12 @@
 namespace drake {
 namespace geometry {
 
+ProximityProperties::~ProximityProperties() = default;
+
+PerceptionProperties::~PerceptionProperties() = default;
+
+IllustrationProperties::~IllustrationProperties() = default;
+
 std::string to_string(const Role& role) {
   switch (role) {
     case Role::kProximity:
