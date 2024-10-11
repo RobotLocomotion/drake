@@ -46,6 +46,8 @@ class Variables {
   /** Constructs from an Eigen vector of variables. */
   explicit Variables(const Eigen::Ref<const VectorX<Variable>>& vec);
 
+  ~Variables();
+
   /** Returns the number of elements. */
   [[nodiscard]] size_type size() const { return vars_.size(); }
 

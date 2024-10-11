@@ -125,6 +125,7 @@ class ExpressionCell {
 /** Represents the base class for unary expressions.  */
 class UnaryExpressionCell : public ExpressionCell {
  public:
+  ~UnaryExpressionCell() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
@@ -149,6 +150,7 @@ class UnaryExpressionCell : public ExpressionCell {
  */
 class BinaryExpressionCell : public ExpressionCell {
  public:
+  ~BinaryExpressionCell() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
@@ -179,8 +181,9 @@ class ExpressionVar : public ExpressionCell {
   /** Constructs an expression from @p var.
    * @pre @p var is not a BOOLEAN variable.
    */
-  void HashAppendDetail(DelegatingHasher*) const override;
   explicit ExpressionVar(Variable v);
+  ~ExpressionVar() override;
+  void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] const Variable& get_variable() const { return var_; }
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
@@ -201,6 +204,7 @@ class ExpressionVar : public ExpressionCell {
 class ExpressionNaN : public ExpressionCell {
  public:
   ExpressionNaN();
+  ~ExpressionNaN() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
@@ -233,6 +237,7 @@ class ExpressionAdd : public ExpressionCell {
    */
   ExpressionAdd(double constant,
                 std::map<Expression, double> expr_to_coeff_map);
+  ~ExpressionAdd() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
@@ -275,6 +280,8 @@ class ExpressionAddFactory {
 
   /** Constructs ExpressionAddFactory from @p add. */
   explicit ExpressionAddFactory(const ExpressionAdd& add);
+
+  ~ExpressionAddFactory();
 
   /** Adds @p e to this factory. */
   void AddExpression(const Expression& e);
@@ -338,6 +345,7 @@ class ExpressionMul : public ExpressionCell {
   /** Constructs ExpressionMul from @p constant and @p base_to_exponent_map. */
   ExpressionMul(double constant,
                 std::map<Expression, Expression> base_to_exponent_map);
+  ~ExpressionMul() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
@@ -387,6 +395,8 @@ class ExpressionMulFactory {
 
   /** Constructs ExpressionMulFactory from @p mul. */
   explicit ExpressionMulFactory(const ExpressionMul& mul);
+
+  ~ExpressionMulFactory();
 
   /** Adds @p e to this factory. */
   void AddExpression(const Expression& e);
@@ -438,6 +448,7 @@ class ExpressionMulFactory {
 class ExpressionDiv : public BinaryExpressionCell {
  public:
   ExpressionDiv(const Expression& e1, const Expression& e2);
+  ~ExpressionDiv() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -453,6 +464,7 @@ class ExpressionDiv : public BinaryExpressionCell {
 class ExpressionLog : public UnaryExpressionCell {
  public:
   explicit ExpressionLog(const Expression& e);
+  ~ExpressionLog() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -472,6 +484,7 @@ class ExpressionLog : public UnaryExpressionCell {
 class ExpressionAbs : public UnaryExpressionCell {
  public:
   explicit ExpressionAbs(const Expression& e);
+  ~ExpressionAbs() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -490,6 +503,7 @@ class ExpressionAbs : public UnaryExpressionCell {
 class ExpressionExp : public UnaryExpressionCell {
  public:
   explicit ExpressionExp(const Expression& e);
+  ~ExpressionExp() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -505,6 +519,7 @@ class ExpressionExp : public UnaryExpressionCell {
 class ExpressionSqrt : public UnaryExpressionCell {
  public:
   explicit ExpressionSqrt(const Expression& e);
+  ~ExpressionSqrt() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -524,6 +539,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
 class ExpressionPow : public BinaryExpressionCell {
  public:
   ExpressionPow(const Expression& e1, const Expression& e2);
+  ~ExpressionPow() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -544,6 +560,7 @@ class ExpressionPow : public BinaryExpressionCell {
 class ExpressionSin : public UnaryExpressionCell {
  public:
   explicit ExpressionSin(const Expression& e);
+  ~ExpressionSin() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -559,6 +576,7 @@ class ExpressionSin : public UnaryExpressionCell {
 class ExpressionCos : public UnaryExpressionCell {
  public:
   explicit ExpressionCos(const Expression& e);
+  ~ExpressionCos() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -574,6 +592,7 @@ class ExpressionCos : public UnaryExpressionCell {
 class ExpressionTan : public UnaryExpressionCell {
  public:
   explicit ExpressionTan(const Expression& e);
+  ~ExpressionTan() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -589,6 +608,7 @@ class ExpressionTan : public UnaryExpressionCell {
 class ExpressionAsin : public UnaryExpressionCell {
  public:
   explicit ExpressionAsin(const Expression& e);
+  ~ExpressionAsin() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -608,6 +628,7 @@ class ExpressionAsin : public UnaryExpressionCell {
 class ExpressionAcos : public UnaryExpressionCell {
  public:
   explicit ExpressionAcos(const Expression& e);
+  ~ExpressionAcos() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -627,6 +648,7 @@ class ExpressionAcos : public UnaryExpressionCell {
 class ExpressionAtan : public UnaryExpressionCell {
  public:
   explicit ExpressionAtan(const Expression& e);
+  ~ExpressionAtan() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -643,6 +665,7 @@ class ExpressionAtan : public UnaryExpressionCell {
 class ExpressionAtan2 : public BinaryExpressionCell {
  public:
   ExpressionAtan2(const Expression& e1, const Expression& e2);
+  ~ExpressionAtan2() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -658,6 +681,7 @@ class ExpressionAtan2 : public BinaryExpressionCell {
 class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
+  ~ExpressionSinh() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -673,6 +697,7 @@ class ExpressionSinh : public UnaryExpressionCell {
 class ExpressionCosh : public UnaryExpressionCell {
  public:
   explicit ExpressionCosh(const Expression& e);
+  ~ExpressionCosh() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -688,6 +713,7 @@ class ExpressionCosh : public UnaryExpressionCell {
 class ExpressionTanh : public UnaryExpressionCell {
  public:
   explicit ExpressionTanh(const Expression& e);
+  ~ExpressionTanh() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -703,6 +729,7 @@ class ExpressionTanh : public UnaryExpressionCell {
 class ExpressionMin : public BinaryExpressionCell {
  public:
   ExpressionMin(const Expression& e1, const Expression& e2);
+  ~ExpressionMin() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -718,6 +745,7 @@ class ExpressionMin : public BinaryExpressionCell {
 class ExpressionMax : public BinaryExpressionCell {
  public:
   ExpressionMax(const Expression& e1, const Expression& e2);
+  ~ExpressionMax() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -733,6 +761,7 @@ class ExpressionMax : public BinaryExpressionCell {
 class ExpressionCeiling : public UnaryExpressionCell {
  public:
   explicit ExpressionCeiling(const Expression& e);
+  ~ExpressionCeiling() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -748,6 +777,7 @@ class ExpressionCeiling : public UnaryExpressionCell {
 class ExpressionFloor : public UnaryExpressionCell {
  public:
   explicit ExpressionFloor(const Expression& e);
+  ~ExpressionFloor() override;
   [[nodiscard]] Expression Expand() const override;
   [[nodiscard]] Expression EvaluatePartial(
       const Environment& env) const override;
@@ -765,6 +795,7 @@ class ExpressionIfThenElse : public ExpressionCell {
   /** Constructs if-then-else expression from @p f_cond, @p e_then, and @p
    * e_else. */
   ExpressionIfThenElse(Formula f_cond, Expression e_then, Expression e_else);
+  ~ExpressionIfThenElse() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
@@ -804,6 +835,7 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
    */
   ExpressionUninterpretedFunction(std::string name,
                                   std::vector<Expression> arguments);
+  ~ExpressionUninterpretedFunction() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;

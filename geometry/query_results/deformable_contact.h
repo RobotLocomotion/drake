@@ -50,6 +50,8 @@ class ContactParticipation {
    @pre num_vertices > 0. */
   explicit ContactParticipation(int num_vertices);
 
+  ~ContactParticipation();
+
   /* Mark the given vertices as participating in contact.
    @pre each entry in `vertices` is non-negative and less than
         `num_vertices` supplied in the constructor. */
@@ -176,6 +178,8 @@ class DeformableContactSurface {
       std::optional<std::vector<Vector4<int>>> contact_vertex_indexes_B,
       std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B);
 
+  ~DeformableContactSurface();
+
   /* Returns the GeometryId of geometry A. If `is_B_deformable()` is true, this
    is guaranteed to be less than id_B(). */
   GeometryId id_A() const { return id_A_; }
@@ -280,6 +284,8 @@ class DeformableContact {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableContact);
 
   DeformableContact() = default;
+
+  ~DeformableContact();
 
   const std::vector<DeformableContactSurface<T>>& contact_surfaces() const {
     return contact_surfaces_;

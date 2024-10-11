@@ -71,6 +71,8 @@ class MonomialBasisElement : public PolynomialBasisElement {
    */
   MonomialBasisElement(const Variable& var, int degree);
 
+  ~MonomialBasisElement() override;
+
   /** Partially evaluates using a given environment @p env. The evaluation
    * result is of type pair<double, MonomialBasisElement>. The first component
    * (: double) represents the coefficient part while the second component

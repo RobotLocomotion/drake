@@ -323,6 +323,8 @@ RenderEngineGltfClient::RenderEngineGltfClient(
       render_client_(std::make_unique<RenderClient>(other.get_params())),
       gltfs_(other.gltfs_) {}
 
+RenderEngineGltfClient::~RenderEngineGltfClient() = default;
+
 std::unique_ptr<RenderEngine> RenderEngineGltfClient::DoClone() const {
   return std::unique_ptr<RenderEngineGltfClient>(
       new RenderEngineGltfClient(*this));

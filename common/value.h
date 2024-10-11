@@ -240,7 +240,7 @@ class Value : public AbstractValue {
   /// @pre v is non-null.
   explicit Value(std::unique_ptr<T> v);
 
-  ~Value() override {}
+  ~Value() override = default;
 
   /// Returns a const reference to the stored value.
   /// The reference remains valid only until this object is set or destroyed.

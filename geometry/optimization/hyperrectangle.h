@@ -32,6 +32,8 @@ class Hyperrectangle final : public ConvexSet {
   Hyperrectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
                  const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+  ~Hyperrectangle() final;
+
   /** Get the lower bounds of the hyperrectangle. */
   const Eigen::VectorXd& lb() const { return lb_; }
 

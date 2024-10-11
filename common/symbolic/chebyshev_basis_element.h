@@ -40,7 +40,7 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
   ChebyshevBasisElement(const Eigen::Ref<const VectorX<Variable>>& vars,
                         const Eigen::Ref<const Eigen::VectorXi>& degrees);
 
-  ~ChebyshevBasisElement() override = default;
+  ~ChebyshevBasisElement() override;
 
   /**
    * Compares two ChebyshevBasisElement in lexicographic order.

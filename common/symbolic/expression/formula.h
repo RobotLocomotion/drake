@@ -132,6 +132,9 @@ class Formula {
    */
   explicit Formula(const Variable& var);
 
+  // The destructor is inlined for performance.
+  ~Formula() = default;
+
   [[nodiscard]] FormulaKind get_kind() const;
   /** Gets free variables (unquantified variables). */
   [[nodiscard]] Variables GetFreeVariables() const;
