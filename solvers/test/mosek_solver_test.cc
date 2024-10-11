@@ -543,7 +543,7 @@ GTEST_TEST(MosekTest, TestTrivial2x2SDP) {
 GTEST_TEST(MosekTest, Test1x1with3x3SDP) {
   MosekSolver solver;
   if (solver.available()) {
-    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/true, /*dual_tol=*/1E-4);
+    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/true, /*dual_tol=*/1E-7);
   }
 }
 
