@@ -152,6 +152,13 @@ TEST_P(ZeroOrderHoldTest, InitialState) {
     value = state_value.value();
   }
   EXPECT_EQ(value_expected, value);
+
+  if (!is_abstract_) {
+    const Eigen::Vector3d updated_value_expected{1.0, 2.0, 3.0};
+    hold_->SetVectorState(context_.get(), updated_value_expected);
+    EXPECT_EQ(updated_value_expected,
+              context_->get_discrete_state(0).CopyToVector());
+  }
 }
 
 // Tests that the output is the state.
