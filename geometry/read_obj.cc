@@ -34,7 +34,8 @@ using drake::internal::DiagnosticPolicy;
 // The size of `attrib.vertices` is three times the number of vertices.
 //
 std::vector<Eigen::Vector3d> TinyObjToFclVertices(
-    const tinyobj::attrib_t& attrib, const double scale) {
+    const tinyobj::attrib_t& attrib,
+    const Eigen::Ref<const Eigen::Vector3d>& scale) {
   int num_coords = attrib.vertices.size();
   DRAKE_DEMAND(num_coords % 3 == 0);
   std::vector<Eigen::Vector3d> vertices;
@@ -43,9 +44,9 @@ std::vector<Eigen::Vector3d> TinyObjToFclVertices(
   auto iter = attrib.vertices.begin();
   while (iter != attrib.vertices.end()) {
     // We increment `iter` three times for x, y, and z coordinates.
-    double x = *(iter++) * scale;
-    double y = *(iter++) * scale;
-    double z = *(iter++) * scale;
+    double x = *(iter++) * scale[0];
+    double y = *(iter++) * scale[1];
+    double z = *(iter++) * scale[2];
     vertices.emplace_back(x, y, z);
   }
 
@@ -107,8 +108,10 @@ std::vector<int> TinyObjToFclFaces(
 
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
-ReadObjContents(const MemoryFile& file, double scale, bool triangulate,
-                bool vertices_only, const DiagnosticPolicy& diagnostic) {
+ReadObjContents(const MemoryFile& file,
+                const Eigen::Ref<const Eigen::Vector3d>& scale,
+                bool triangulate, bool vertices_only,
+                const DiagnosticPolicy& diagnostic) {
   tinyobj::ObjReader reader;
   tinyobj::ObjReaderConfig config;
   // Don't bother triangulating if we're only reading vertices.
@@ -161,9 +164,9 @@ ReadObjContents(const MemoryFile& file, double scale, bool triangulate,
 
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
-ReadObjFile(const std::filesystem::path& filename, double scale,
-            bool triangulate, bool vertices_only,
-            const DiagnosticPolicy& diagnostic) {
+ReadObjFile(const std::filesystem::path& filename,
+            const Eigen::Ref<const Eigen::Vector3d>& scale, bool triangulate,
+            bool vertices_only, const DiagnosticPolicy& diagnostic) {
   // TODO(SeanCurtis-TRI): The file contents of this file should be read once
   // and stored in some geometry cache -- only accessed here rather than created
   // anew. For now, we are unnecessarily computing the hash for the contents.
@@ -175,7 +178,8 @@ ReadObjFile(const std::filesystem::path& filename, double scale,
 
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
-ReadObj(const MeshSource& mesh_source, double scale, bool triangulate,
+ReadObj(const MeshSource& mesh_source,
+        const Eigen::Ref<const Eigen::Vector3d>& scale, bool triangulate,
         bool vertices_only, const DiagnosticPolicy& diagnostic) {
   if (mesh_source.extension() != ".obj") {
     diagnostic.Error(
@@ -192,6 +196,14 @@ ReadObj(const MeshSource& mesh_source, double scale, bool triangulate,
     return ReadObjContents(mesh_source.in_memory().mesh_file, scale,
                            triangulate, vertices_only, diagnostic);
   }
+}
+
+std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
+           std::shared_ptr<std::vector<int>>, int>
+ReadObj(const MeshSource& mesh_source, double scale, bool triangulate,
+        bool vertices_only, const DiagnosticPolicy& diagnostic) {
+  return ReadObj(mesh_source, Eigen::Vector3d::Constant(scale), triangulate,
+                 vertices_only, diagnostic);
 }
 
 }  // namespace internal

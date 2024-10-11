@@ -43,9 +43,18 @@ namespace internal {
  will throw in the face of errors. */
 std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
            std::shared_ptr<std::vector<int>>, int>
+ReadObj(const MeshSource& mesh_source,
+        const Eigen::Ref<const Eigen::Vector3d>& scale, bool triangulate,
+        bool vertices_only = false,
+        const drake::internal::DiagnosticPolicy& diagnostic = {});
+
+// Overload that takes a scalar scale factor.
+std::tuple<std::shared_ptr<std::vector<Eigen::Vector3d>>,
+           std::shared_ptr<std::vector<int>>, int>
 ReadObj(const MeshSource& mesh_source, double scale, bool triangulate,
         bool vertices_only = false,
         const drake::internal::DiagnosticPolicy& diagnostic = {});
+
 
 }  // namespace internal
 }  // namespace geometry
