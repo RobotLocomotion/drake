@@ -780,17 +780,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "detail_instanced_name_test",
-    data = [
-        ":test_models",
-    ],
-    deps = [
-        ":detail_collision_filter_groups_impl",
-        "//common/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
     name = "detail_path_utils_test",
     data = [
         ":test_models",
