@@ -2,10 +2,12 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace geometry {
+namespace internal {
 namespace {
 
 using yaml::LoadYamlString;
@@ -34,6 +36,7 @@ shadow_map_size: 512
 gltf_extensions:
   KHR_draco_mesh_compression:
     warn_unimplemented: true
+backend: EGL
 )""";
 
 // Test deserialization/re-serialization of the basic configuration.
@@ -80,6 +83,33 @@ GTEST_TEST(RenderEngineVtkParams, SerializationWithEquirectangularMap) {
             "local.hdr");
 }
 
+#if defined(__APPLE__)
+constexpr bool kApple = true;
+#else
+constexpr bool kApple = false;
+#endif
+
+GTEST_TEST(RenderEngineVtkParams, Backend) {
+  RenderEngineVtkParams dut;
+
+  dut.backend = "";
+  EXPECT_EQ(ParseUseEglFromParams(dut), false);
+
+  dut.backend = "Cocoa";
+  EXPECT_EQ(ParseUseEglFromParams(dut), false);
+
+  dut.backend = "EGL";
+  EXPECT_EQ(ParseUseEglFromParams(dut), !kApple);
+
+  dut.backend = "GLX";
+  EXPECT_EQ(ParseUseEglFromParams(dut), false);
+
+  dut.backend = "foobar";
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseUseEglFromParams(dut),
+                              ".*backend.*foobar.*");
+}
+
 }  // namespace
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

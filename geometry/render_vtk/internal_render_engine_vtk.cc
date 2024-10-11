@@ -46,6 +46,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
+#include "drake/geometry/render_vtk/internal_make_render_window.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
 #include "drake/geometry/vtk_gltf_uri_loader.h"
@@ -65,6 +66,7 @@ using Eigen::Vector4d;
 using geometry::internal::DefineMaterial;
 using geometry::internal::LoadRenderMeshesFromObj;
 using geometry::internal::MakeDiffuseMaterial;
+using geometry::internal::ParseUseEglFromParams;
 using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
 using geometry::internal::VtkGltfUriLoader;
@@ -172,16 +174,17 @@ ShaderCallback::ShaderCallback()
 
 vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
-RenderEngineVtk::RenderingPipeline::RenderingPipeline() = default;
+RenderEngineVtk::RenderingPipeline::RenderingPipeline(bool use_egl)
+    : used_egl{use_egl}, window{MakeRenderWindow(use_egl)} {}
 
 RenderEngineVtk::RenderingPipeline::~RenderingPipeline() = default;
 
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
-    : RenderEngine(RenderLabel::kDontCare),
-      parameters_(parameters),
-      pipelines_{{make_unique<RenderingPipeline>(),
-                  make_unique<RenderingPipeline>(),
-                  make_unique<RenderingPipeline>()}} {
+    : RenderEngine(RenderLabel::kDontCare), parameters_(parameters) {
+  const bool use_egl = ParseUseEglFromParams(parameters);
+  for (auto& pipeline : pipelines_) {
+    pipeline = make_unique<RenderingPipeline>(use_egl);
+  }
   // Only populate the fallback lights if we haven't specified an environment
   // map.
   // Until we introduce CubeMap, the default texture (NullTexture) should be
@@ -503,9 +506,10 @@ void RenderEngineVtk::DoRenderLabelImage(const ColorRenderCamera& camera,
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     : RenderEngine(other),
       parameters_(other.parameters_),
-      pipelines_{{make_unique<RenderingPipeline>(),
-                  make_unique<RenderingPipeline>(),
-                  make_unique<RenderingPipeline>()}},
+      pipelines_{
+          {make_unique<RenderingPipeline>(other.pipelines_[0]->used_egl),
+           make_unique<RenderingPipeline>(other.pipelines_[0]->used_egl),
+           make_unique<RenderingPipeline>(other.pipelines_[0]->used_egl)}},
       default_diffuse_{other.default_diffuse_},
       default_clear_color_{other.default_clear_color_},
       fallback_lights_(other.fallback_lights_) {

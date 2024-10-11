@@ -201,7 +201,8 @@ int DoMain() {
   vtkNew<vtkRenderer> renderer;
   renderer->UseHiddenLineRemovalOn();
 
-  vtkSmartPointer<vtkRenderWindow> render_window = MakeRenderWindow();
+  constexpr bool use_egl = true;
+  vtkSmartPointer<vtkRenderWindow> render_window = MakeRenderWindow(use_egl);
   render_window->SetSize(FLAGS_width, FLAGS_height);
   render_window->AddRenderer(renderer);
   render_window->SetOffScreenRendering(true);
