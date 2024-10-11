@@ -151,9 +151,18 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
                      std::pair<internal::ConstraintDualIndices,
                                internal::ConstraintDualIndices>>
       bb_con_dual_indices;
+  // When a PositiveSemidefiniteConstraint is imposed on a scalar, it is
+  // equivalent to constraining that scalar variable with a bounding box
+  // constraint. We store the dual variable indices for that
+  // PositiveSemidefiniteConstraint in scalar_psd_con_dual_indices.
+  std::unordered_map<
+      Binding<PositiveSemidefiniteConstraint>,
+      std::pair<internal::ConstraintDualIndex, internal::ConstraintDualIndex>>
+      scalar_psd_con_dual_indices;
   // Add bounding box constraints on decision variables.
   if (rescode == MSK_RES_OK) {
-    rescode = impl.AddBoundingBoxConstraints(prog, &bb_con_dual_indices);
+    rescode = impl.AddVariableBounds(prog, &bb_con_dual_indices,
+                                     &scalar_psd_con_dual_indices);
   }
   // Specify binary variables.
   bool with_integer_or_binary_variable = false;
@@ -349,7 +358,8 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
         solution_type, prog, bb_con_dual_indices, linear_con_dual_indices,
         lin_eq_con_dual_indices, quadratic_constraint_dual_indices,
         lorentz_cone_acc_indices, rotated_lorentz_cone_acc_indices,
-        exp_cone_acc_indices, psd_barvar_indices, result);
+        exp_cone_acc_indices, psd_barvar_indices, scalar_psd_con_dual_indices,
+        result);
     DRAKE_ASSERT(rescode == MSK_RES_OK);
   }
 
