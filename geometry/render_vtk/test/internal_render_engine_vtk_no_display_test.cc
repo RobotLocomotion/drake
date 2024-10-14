@@ -11,8 +11,8 @@ namespace render {
 namespace {
 
 // Invoke RenderEngineVtk::RenderColorImage.
-void TryToRenderSomething() {
-  const RenderEngineVtkParams params;
+void TryToRenderSomething(const std::string& backend) {
+  const RenderEngineVtkParams params{.backend = backend};
   std::unique_ptr<render::RenderEngine> dut = MakeRenderEngineVtk(params);
   const int kWidth = 640;
   const int kHeight = 480;
@@ -32,9 +32,12 @@ GTEST_TEST(RenderEngineVtkNoDisplayTest, MissingDisplay) {
   // Clear the environment.
   EXPECT_EQ(::unsetenv("DISPLAY"), 0);
 
-  // Rendering should throw.
-  DRAKE_EXPECT_THROWS_MESSAGE(TryToRenderSomething(),
+  // With GLX, rendering should throw.
+  DRAKE_EXPECT_THROWS_MESSAGE(TryToRenderSomething("GLX"),
                               ".*vtkWindow.*RenderEngineVtk.*");
+
+  // With EGL, everything still works.
+  EXPECT_NO_THROW(TryToRenderSomething("EGL"));
 }
 
 // Ditto when DISPLAY is incorrectly set.
@@ -42,9 +45,12 @@ GTEST_TEST(RenderEngineVtkNoDisplayTest, BadDisplay) {
   // Clear the environment.
   EXPECT_EQ(::setenv("DISPLAY", "Hello", 1), 0);
 
-  // Rendering should throw.
-  DRAKE_EXPECT_THROWS_MESSAGE(TryToRenderSomething(),
+  // With GLX, rendering should throw.
+  DRAKE_EXPECT_THROWS_MESSAGE(TryToRenderSomething("GLX"),
                               ".*vtkWindow.*RenderEngineVtk.*");
+
+  // With EGL, everything still works.
+  EXPECT_NO_THROW(TryToRenderSomething("EGL"));
 }
 
 }  // namespace
