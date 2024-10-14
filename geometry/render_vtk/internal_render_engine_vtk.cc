@@ -172,6 +172,10 @@ ShaderCallback::ShaderCallback()
 
 vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
+RenderEngineVtk::RenderingPipeline::RenderingPipeline() = default;
+
+RenderEngineVtk::RenderingPipeline::~RenderingPipeline() = default;
+
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
     : RenderEngine(RenderLabel::kDontCare),
       parameters_(parameters),
@@ -1127,6 +1131,11 @@ void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
   // NOTE: Although declared const, this method modifies VTK entities. The
   // conflict between ostensibly const operations and invocation of black-box
   // entities that need state mutated should be more formally handled.
+
+  if (!p.window->EnsureDisplay()) {
+    throw std::runtime_error(
+        "The vtkWindow used by RenderEngineVtk could not be initialized");
+  }
 
   const CameraInfo& intrinsics = camera.intrinsics();
   p.window->SetSize(intrinsics.width(), intrinsics.height());

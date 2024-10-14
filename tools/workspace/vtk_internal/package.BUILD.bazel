@@ -59,7 +59,7 @@ install(
         "Copyright.txt",
         "ThirdParty/doubleconversion/vtkdoubleconversion/COPYING",
         "ThirdParty/fast_float/vtkfast_float/LICENSE-MIT",
-        "ThirdParty/glew/vtkglew/LICENSE.txt",
+        "ThirdParty/glad/vtkglad/LICENSE",
         "ThirdParty/pugixml/vtkpugixml/LICENSE.md",
         "ThirdParty/token/vtktoken/license.md",
         "ThirdParty/utf8/vtkutf8/LICENSE",

@@ -204,6 +204,13 @@ MODULE_SETTINGS = {
     },
     "VTK::CommonExecutionModel": {
         "visibility": ["//visibility:public"],
+        "srcs_glob_exclude": [
+            # This file is just a pile of static (i.e., exit-time) destructors.
+            # The Drake build & release posture does not permit static dtors,
+            # so we have the disable_static_destructors.patch that stubs out
+            # all of these functions and then here we opt-out of compiling it.
+            "**/vtkFilteringInformationKeyManager.cxx",
+        ],
     },
     "VTK::CommonMath": {
         "visibility": ["//visibility:public"],
@@ -320,6 +327,8 @@ MODULE_SETTINGS = {
             "**/vtkPartitionedDataSetSource.cxx",
             # Avoid some VTK::FiltersGeneral stuff we don't need.
             "**/vtkSpatioTemporalHarmonicsSource.cxx",
+            # Avoid the need for vtkDelaunay3D.
+            "**/vtkGoldenBallSource.cxx",
         ],
     },
     "VTK::IOCore": {
@@ -458,7 +467,6 @@ MODULE_SETTINGS = {
             "VTK_DEFAULT_RENDER_WINDOW_OFFSCREEN",
             "VTK_OPENGL_ENABLE_STREAM_ANNOTATIONS",
             "VTK_OPENGL_HAS_EGL",
-            "VTK_OPENGL_HAS_OSMESA",
             "VTK_REPORT_OPENGL_ERRORS",
             "VTK_REPORT_OPENGL_ERRORS_IN_RELEASE_BUILDS",
             "VTK_USE_CORE_GRAPHICS",
@@ -482,15 +490,10 @@ MODULE_SETTINGS = {
             "**/*vtkOpenGLAvatar*",
             # Avoid building unnecessary VTK::RenderingHyperTreeGrid.
             "**/*HyperTreeGrid*",
-            # Exclude all renderers by default; we'll incorporate the necessary
-            # ones using with srcs_extra immediately below.
-            "**/vtkCocoa*",
-            "**/vtkEGL*",
-            "**/vtkOSOpenGL*",
-            "**/vtkSDL2OpenGL*",
-            "**/vtkWebAssembly*",
-            "**/vtkWin32OpenGL*",
-            "**/vtkXOpenGL*",
+            # Exclude all renderers by default (also excluding the base class,
+            # so that the glob is easier to write); we'll incorporate the
+            # necessary renderer sources using srcs_extra immediately below.
+            "**/*RenderWindow*",
         ],
         "srcs_objc_non_arc": select({
             ":osx": [
@@ -499,18 +502,22 @@ MODULE_SETTINGS = {
             ],
             "//conditions:default": [],
         }),
-        "srcs_extra": select({
-            ":osx": [],
-            "//conditions:default": [
-                "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
-            ],
-        }) + [
+        "srcs_extra": [
+            # In srcs_glob_exclude, we excluded all renderers. We'll put back
+            # the GL window now, which is needed by all of our platforms.
+            "Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx",
             # The vtkObjectFactory.cmake logic for vtk_object_factory_configure
             # is too difficult to implement in Bazel at the moment. Instead,
             # we'll commit the two generated files and directly mention them.
             "@drake//tools/workspace/vtk_internal:gen/vtkRenderingOpenGL2ObjectFactory.h",  # noqa
             "@drake//tools/workspace/vtk_internal:gen/vtkRenderingOpenGL2ObjectFactory.cxx",  # noqa
-        ],
+        ] + select({
+            ":osx": [],
+            "//conditions:default": [
+                # On linux, we also want the GLX renderer.
+                "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
+            ],
+        }),
         "linkopts_extra": select({
             ":osx": [
                 # Mimic vtk_module_link(... "-framework Cocoa") from upstream.
@@ -567,11 +574,6 @@ MODULE_SETTINGS = {
             "@nlohmann_internal//:nlohmann",
         ],
     },
-    "VTK::opengl": {
-        "deps_extra": [
-            "@opengl",
-        ],
-    },
     "VTK::png": {
         "cmake_defines": [
             "VTK_MODULE_USE_EXTERNAL_vtkpng=1",
@@ -622,19 +624,25 @@ MODULE_SETTINGS = {
             "VTK_MODULE_USE_EXTERNAL_vtkfast_float",
         ],
     },
-    "VTK::glew": {
+    "VTK::glad": {
+        "visibility": ["//visibility:public"],
         "cmake_undefines": [
-            "VTK_GLEW_SHARED",
-            "VTK_MODULE_USE_EXTERNAL_vtkglew",
-            "VTK_MODULE_vtkglew_GLES3",
+            "VTK_MODULE_vtkglad_GLES3",
         ],
         "srcs_extra": [
-            "ThirdParty/glew/vtkglew/src/glew.c",
-        ],
+            "ThirdParty/glad/vtkglad/src/gl.c",
+        ] + select({
+            ":osx": [],
+            "//conditions:default": [
+                "ThirdParty/glad/vtkglad/src/glx.c",
+            ],
+        }),
         "copts_extra": [
-            "-Iexternal/vtk_internal/ThirdParty/glew/vtkglew/include",
-            # Match the target_compile_definitions() from CMakeLists.txt.
-            "-DGLEW_NO_GLU",
+            "-fvisibility=hidden",
+            "-Iexternal/vtk_internal/ThirdParty/glad/vtkglad/include",
+        ],
+        "deps_extra": [
+            "@opengl",
         ],
         "linkopts_extra": select({
             ":osx": [],
