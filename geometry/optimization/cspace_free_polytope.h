@@ -45,9 +45,6 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytope);
 
   using CspaceFreePolytopeBase::IgnoredCollisionPairs;
-
-  ~CspaceFreePolytope() override = default;
-
   using CspaceFreePolytopeBase::Options;
 
   /**
@@ -68,6 +65,8 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
                      const Eigen::Ref<const Eigen::VectorXd>& q_star,
                      const Options& options = Options{});
 
+  ~CspaceFreePolytope() override;
+
   /**
    When searching for the separating plane, we want to certify that the
    numerator of a rational is non-negative in the C-space region C*s<=d,
@@ -77,8 +76,12 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
    */
   class SeparatingPlaneLagrangians {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparatingPlaneLagrangians);
+
     SeparatingPlaneLagrangians(int C_rows, int s_size)
         : polytope_(C_rows), s_lower_(s_size), s_upper_(s_size) {}
+
+    ~SeparatingPlaneLagrangians();
 
     /** Substitutes the decision variables in each Lagrangians with its value in
      * result, returns the substitution result.
@@ -122,8 +125,8 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
    */
   struct SeparationCertificateResult final : SeparationCertificateResultBase {
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult);
-    SeparationCertificateResult() {}
-    ~SeparationCertificateResult() override = default;
+    SeparationCertificateResult() = default;
+    ~SeparationCertificateResult() final;
 
     const std::vector<SeparatingPlaneLagrangians>& lagrangians(
         PlaneSide plane_side) const {
@@ -148,7 +151,9 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
    λ(s) are sos, λ_lower(s) are sos, λ_upper(s) are sos.
    */
   struct SeparationCertificate {
-    SeparationCertificate() {}
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificate);
+    SeparationCertificate() = default;
+    ~SeparationCertificate();
 
     [[nodiscard]] SeparationCertificateResult GetSolution(
         int plane_index, const Vector3<symbolic::Polynomial>& a,
@@ -174,14 +179,14 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   struct SeparationCertificateProgram final : SeparationCertificateProgramBase {
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgram);
     SeparationCertificateProgram() = default;
-    virtual ~SeparationCertificateProgram() = default;
+    ~SeparationCertificateProgram() final;
 
     SeparationCertificate certificate;
   };
 
   struct FindSeparationCertificateGivenPolytopeOptions final
       : public FindSeparationCertificateOptions {
-    ~FindSeparationCertificateGivenPolytopeOptions() override = default;
+    ~FindSeparationCertificateGivenPolytopeOptions() final;
     // If a row in C*s<=d is redundant (this row is implied by other rows in
     // C*s<=d, s_lower<=s<=s_upper), then we don't search for the Lagrangian
     // multiplier for this row.
@@ -238,6 +243,10 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
    Options for finding polytope with given Lagrangians.
    */
   struct FindPolytopeGivenLagrangianOptions {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FindPolytopeGivenLagrangianOptions);
+    FindPolytopeGivenLagrangianOptions() = default;
+    ~FindPolytopeGivenLagrangianOptions();
+
     std::optional<double> backoff_scale{std::nullopt};
 
     /** We will maximize the cost ∏ᵢ (δᵢ + ε) where δᵢ is the margin from each
@@ -273,7 +282,9 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   /** Result on searching the C-space polytope and separating planes. */
   class SearchResult {
    public:
-    SearchResult() {}
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SearchResult);
+    SearchResult() = default;
+    ~SearchResult();
 
     [[nodiscard]] const Eigen::MatrixXd& C() const { return C_; }
 

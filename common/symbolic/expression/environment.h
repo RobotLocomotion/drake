@@ -75,6 +75,8 @@ class Environment {
    */
   explicit Environment(map m);
 
+  ~Environment();
+
   /** Returns an iterator to the beginning. */
   iterator begin() { return map_.begin(); }
   /** Returns an iterator to the end. */

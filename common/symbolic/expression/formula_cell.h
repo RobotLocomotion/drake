@@ -68,7 +68,7 @@ class FormulaCell {
   /** Construct FormulaCell of kind @p k. */
   explicit FormulaCell(FormulaKind k);
   /** Default destructor. */
-  virtual ~FormulaCell() = default;
+  virtual ~FormulaCell();
 
  private:
   const FormulaKind kind_{};
@@ -90,6 +90,7 @@ class RelationalFormulaCell : public FormulaCell {
   RelationalFormulaCell& operator=(const RelationalFormulaCell& f) = delete;
   /** Construct RelationalFormulaCell of kind @p k with @p lhs and @p rhs. */
   RelationalFormulaCell(FormulaKind k, Expression lhs, Expression rhs);
+  ~RelationalFormulaCell() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;
   [[nodiscard]] bool EqualTo(const FormulaCell& f) const override;
@@ -124,6 +125,7 @@ class NaryFormulaCell : public FormulaCell {
   NaryFormulaCell& operator=(const NaryFormulaCell& f) = delete;
   /** Construct NaryFormulaCell of kind @p k with @p formulas. */
   NaryFormulaCell(FormulaKind k, std::set<Formula> formulas);
+  ~NaryFormulaCell() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;
   [[nodiscard]] bool EqualTo(const FormulaCell& f) const override;
@@ -145,6 +147,7 @@ class FormulaTrue : public FormulaCell {
  public:
   /** Default Constructor. */
   FormulaTrue();
+  ~FormulaTrue() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;
   [[nodiscard]] bool EqualTo(const FormulaCell& f) const override;
@@ -159,6 +162,7 @@ class FormulaFalse : public FormulaCell {
  public:
   /** Default Constructor. */
   FormulaFalse();
+  ~FormulaFalse() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;
   [[nodiscard]] bool EqualTo(const FormulaCell& f) const override;
@@ -175,6 +179,7 @@ class FormulaVar : public FormulaCell {
    * @pre @p var is of BOOLEAN type.
    */
   explicit FormulaVar(Variable v);
+  ~FormulaVar() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;
   [[nodiscard]] bool EqualTo(const FormulaCell& f) const override;
@@ -193,6 +198,7 @@ class FormulaEq : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaEq(const Expression& e1, const Expression& e2);
+  ~FormulaEq() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -203,6 +209,7 @@ class FormulaNeq : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaNeq(const Expression& e1, const Expression& e2);
+  ~FormulaNeq() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -213,6 +220,7 @@ class FormulaGt : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaGt(const Expression& e1, const Expression& e2);
+  ~FormulaGt() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -223,6 +231,7 @@ class FormulaGeq : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaGeq(const Expression& e1, const Expression& e2);
+  ~FormulaGeq() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -233,6 +242,7 @@ class FormulaLt : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaLt(const Expression& e1, const Expression& e2);
+  ~FormulaLt() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -243,6 +253,7 @@ class FormulaLeq : public RelationalFormulaCell {
  public:
   /** Constructs from @p e1 and @p e2. */
   FormulaLeq(const Expression& e1, const Expression& e2);
+  ~FormulaLeq() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -255,6 +266,7 @@ class FormulaAnd : public NaryFormulaCell {
   explicit FormulaAnd(const std::set<Formula>& formulas);
   /** Constructs @p f1 ∧ @p f2. */
   FormulaAnd(const Formula& f1, const Formula& f2);
+  ~FormulaAnd() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -267,6 +279,7 @@ class FormulaOr : public NaryFormulaCell {
   explicit FormulaOr(const std::set<Formula>& formulas);
   /** Constructs @p f1 ∨ @p f2. */
   FormulaOr(const Formula& f1, const Formula& f2);
+  ~FormulaOr() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -277,6 +290,7 @@ class FormulaNot : public FormulaCell {
  public:
   /** Constructs from @p f. */
   explicit FormulaNot(Formula f);
+  ~FormulaNot() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;
   [[nodiscard]] bool EqualTo(const FormulaCell& f) const override;
@@ -298,6 +312,7 @@ class FormulaForall : public FormulaCell {
  public:
   /** Constructs from @p vars and @p f. */
   FormulaForall(Variables vars, Formula f);
+  ~FormulaForall() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;
   [[nodiscard]] bool EqualTo(const FormulaCell& f) const override;
@@ -321,6 +336,7 @@ class FormulaForall : public FormulaCell {
 class FormulaIsnan : public FormulaCell {
  public:
   explicit FormulaIsnan(Expression e);
+  ~FormulaIsnan() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;
   [[nodiscard]] bool EqualTo(const FormulaCell& f) const override;
@@ -364,6 +380,8 @@ class FormulaPositiveSemidefinite : public FormulaCell {
       const Eigen::TriangularView<Derived, Eigen::Upper>& u)
       : FormulaCell{FormulaKind::PositiveSemidefinite},
         m_{BuildSymmetricMatrixFromUpperTriangularView(u)} {}
+
+  ~FormulaPositiveSemidefinite() override;
 
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;

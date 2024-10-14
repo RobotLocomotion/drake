@@ -42,6 +42,8 @@ class DRAKE_NO_EXPORT MergeRecord {
    target glTF's source. */
   explicit MergeRecord(std::string initial_name);
 
+  ~MergeRecord();
+
   /* Finds the source name for the given element.
    @pre element is part of this merge record. */
   const std::string& FindSourceName(const nlohmann::json& element) const;

@@ -489,6 +489,9 @@ DrakeVisualizer<T>::DrakeVisualizer(const DrakeVisualizer<U>& other)
 }
 
 template <typename T>
+DrakeVisualizer<T>::~DrakeVisualizer() = default;
+
+template <typename T>
 const DrakeVisualizer<T>& DrakeVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
     lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params) {

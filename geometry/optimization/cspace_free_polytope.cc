@@ -47,6 +47,11 @@ CspaceFreePolytope::CspaceFreePolytope(
                               rational_forward_kin(), &plane_geometries_);
 }
 
+CspaceFreePolytope::~CspaceFreePolytope() = default;
+
+CspaceFreePolytope::SeparatingPlaneLagrangians::~SeparatingPlaneLagrangians() =
+    default;
+
 CspaceFreePolytope::SeparatingPlaneLagrangians
 CspaceFreePolytope::SeparatingPlaneLagrangians::GetSolution(
     const solvers::MathematicalProgramResult& result) const {
@@ -61,6 +66,17 @@ CspaceFreePolytope::SeparatingPlaneLagrangians::GetSolution(
   }
   return ret;
 }
+
+CspaceFreePolytope::SeparationCertificateResult::
+    ~SeparationCertificateResult() = default;
+
+CspaceFreePolytope::SeparationCertificate::~SeparationCertificate() = default;
+
+CspaceFreePolytope::SeparationCertificateProgram::
+    ~SeparationCertificateProgram() = default;
+
+CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions::
+    ~FindSeparationCertificateGivenPolytopeOptions() = default;
 
 CspaceFreePolytope::SeparationCertificateProgram
 CspaceFreePolytope::ConstructPlaneSearchProgram(
@@ -607,6 +623,11 @@ void CspaceFreePolytope::AddCspacePolytopeContainment(
   prog->AddLinearConstraint(A, Eigen::VectorXd::Constant(A.rows(), -kInf),
                             Eigen::VectorXd::Zero(A.rows()), vars);
 }
+
+CspaceFreePolytope::FindPolytopeGivenLagrangianOptions::
+    ~FindPolytopeGivenLagrangianOptions() = default;
+
+CspaceFreePolytope::SearchResult::~SearchResult() = default;
 
 void CspaceFreePolytope::SearchResult::SetPolytope(
     const Eigen::Ref<const Eigen::MatrixXd>& C,

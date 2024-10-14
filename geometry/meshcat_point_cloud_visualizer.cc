@@ -50,6 +50,9 @@ MeshcatPointCloudVisualizer<T>::MeshcatPointCloudVisualizer(
 }
 
 template <typename T>
+MeshcatPointCloudVisualizer<T>::~MeshcatPointCloudVisualizer() = default;
+
+template <typename T>
 void MeshcatPointCloudVisualizer<T>::Delete() const {
   meshcat_->Delete(path_);
 }

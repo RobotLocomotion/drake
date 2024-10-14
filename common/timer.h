@@ -15,7 +15,8 @@ class Timer {
  public:
   /// Properly implemented Timers must start timing upon construction.
   Timer() = default;
-  virtual ~Timer() = default;
+
+  virtual ~Timer();
 
   /// Begins timing. Call Start every time you want to reset the timer to zero.
   virtual void Start() = 0;
@@ -35,6 +36,7 @@ class SteadyTimer final : public Timer {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SteadyTimer);
   SteadyTimer();
+  ~SteadyTimer() final;
   void Start() final;
   double Tick() final;
 
@@ -48,6 +50,7 @@ class ManualTimer final : public Timer {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ManualTimer);
   ManualTimer();
+  ~ManualTimer() final;
   void Start() final;
   double Tick() final;
 
