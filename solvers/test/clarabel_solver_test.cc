@@ -537,7 +537,7 @@ GTEST_TEST(TestOptions, unrecognized) {
     solver_options.SetOption(solver.id(), "bad_unrecognized", 1);
     DRAKE_EXPECT_THROWS_MESSAGE(
         solver.Solve(dut.prog(), std::nullopt, solver_options),
-        ".*unrecognized solver options bad_unrecognized.*");
+        ".*not recognized.*bad_unrecognized.*");
   }
 }
 
