@@ -5,28 +5,49 @@
 
 /** @addtogroup hydro_params Estimation of Hydroelastic Parameters
 
-Similarly to Hertz's theory of contact mechanics, in this section we derive
-analytical formulae to estimate the elastic force that establishes between two
-bodies in contact. As in Hertz's theory, we assume small deformations, allowing
+Similarly to Hertz theory of contact mechanics, in this section we derive
+analytical formulas to estimate the elastic force that establishes between two
+bodies in contact. As in Hertz theory, we assume small deformations, allowing
 us to introduce geometrical approximations.
 
-The next section presents a table of analytical formulae to estimate the contact
-force between two compliant bodies given their geometry and elastic moduli.
+The next section presents a table of analytical formulas to estimate the contact
+force between two compliant bodies given their geometry and elastic moduli. A
+Drake user can use these formulas to estimate hydroelastic parameters for their
+particular model. Below we provide a @ref study_case_manipuland "Study Case" to
+show with an example how to estimate hydroelastic moduli using these formulas.
 
 Those readers interested on the theory behind, can keep reading further into the
 sections that follow.
 
-@section hydro_analytical_tables Analytical Formulae
+@section hydro_analytical_tables Analytical Formulas
 
-The table below summarizes analytical formulae to compute the contact force
-between a body of a given geometric shape with a half-space. The body penetrates
-a distance `x` into the table.
+In @ref hydro_params_analytical we show that a hydroelastic object of modulus E
+behaves as an @ref hydro_params_efm "Elastic Foundation"  of depth H
+(established by the particular geometry). At small penetrations, the
+hydroelastic contact force fₙ between two compliant objects can be estimated
+from
+<pre>
+  fₙ = κ⋅V,
+</pre>
+where `V` is the overlap volume or volume of intersection and κ = κᵃ⋅κᵇ/(κᵃ+κᵇ)
+is the effective stiffness, with κᵃ = Eᵃ/Hᵃ and κᵇ = Eᵇ/Hᵇ the stiffness of
+bodies A and B respectively.
 
-Geometry        | Foundation Depth H |      Overlap Volume V       | Contact Force fₙ
-----------------|:------------------:|:---------------------------:|:------------------------
-Cylinderᵃ       |         R          |@f$\pi R^2 x@f$              |@f$\pi E R x@f$
-Sphereᵇ         |         R          |@f$\pi R x^2@f$              |@f$\pi E x^2@f$
-Coneᶜ           |         H          |@f$\pi/3\tan^2(\theta)x^3@f$ |@f$\pi/3 \tan^2(\theta) E/H x^3@f$
+The table below summarizes analytical formulas to compute the contact force
+between a body of a given geometric shape with a half-space. These formulas are
+obtained by substituting an estimate of the intersection volume as a function of
+a small interpenetration distance `x`, see column "Overlap Volume V" in the
+table below. Column "Foundation Depth H" shows the value used by Drake given its
+choice of hydroelastic pressure field (where pressure equals E at the point of
+maximum signed distance). The conic indenter is not implemented in Drake, but we
+provided it given its pedagogical value, with an arbitrary foundation depth H
+that will depend on how long the cone is.
+
+Geometry           | Foundation Depth H |      Overlap Volume V       | Contact Force fₙ
+-------------------|:------------------:|:---------------------------:|:------------------------
+Cylindrical punchᵃ |         R          |@f$\pi R^2 x@f$              |@f$\pi E R x@f$
+Sphereᵇ            |         R          |@f$\pi R x^2@f$              |@f$\pi E x^2@f$
+Conic indenterᶜ    |         H          |@f$\pi/3\tan^2(\theta)x^3@f$ |@f$\pi/3 \tan^2(\theta) E/H x^3@f$
 
 ᵃ Compliant cylinder of radius R and length L > R. Rigid half-space.
 
@@ -34,11 +55,11 @@ Coneᶜ           |         H          |@f$\pi/3\tan^2(\theta)x^3@f$ |@f$\pi/3 \
 
 ᶜ Rigid conic indenter of apex angle θ. Compliant half-space.
 
-One final observation. As with Hert'z contact theory, the contact force between
+One final observation. As with Hertz contact theory, the contact force between
 two compliant spheres A and B can be computed by considering the contact
 between a sphere of effective radius R = Rᵃ⋅Rᵇ/(Rᵃ+Rᵇ) and a half-space.
 
-@subsection Study Case: Manipuland resting on a table
+@subsection study_case_manipuland Study Case: Manipuland resting on a table
 
 We estimate the penetration `x` for a typical household object of mass 1 kg
 (9.81 N). We make this estimation for two extreme geometric cases: a cylinder, a
@@ -66,10 +87,10 @@ numerical conditioning. Good numerical conditioning translates in practice to
 better performance and robustness. Very large values of hydroelastic modulus can
 degrade numerical conditioning and therefore users must choose a value that is
 acceptable for their application. Experience shows that for modeling "rigid"
-(once again, stiff) objects, there is no much gain in accurately resolving
+(once again, stiff) objects, there is not much gain in accurately resolving
 penetrations below the submillimeter range (~10⁻⁴ m). Therefore moduli in the
-order of 10⁷-10⁸ Pa will be more than enough, we no good practical reason to use
-larger values.
+order of 10⁷-10⁸ Pa will be more than enough, with no good practical reason to
+use larger values.
 
 Notice that for the very typical flat contact case (a mug, a plate, the foot of
 a robot), the cylinder estimation with E = 10⁷ Pa leads to penetrations well
@@ -92,10 +113,12 @@ springs that gets pushed when a second object comes into contact. Integrating
 the effect of all springs over the contact area produces the net force among the
 two contacting bodies. 
 
-Denoting with `ϕ(x)` the penetrated distance at a location `x`, Fig. 1, EFM
-models the pressure due to contact at `x` as
+@image html drake/multibody/plant/images/elastic_foundation.png "Figure 1: Elastic Foundation Model." width=35%
+
+Denoting with `ϕ(r)` the penetrated distance at a location `r`, Fig. 1, EFM
+models the pressure due to contact at `r` as
 <pre>
-  p(x) = E⋅ϕ(x)/H,                                                          (1)
+  p(r) = E⋅ϕ(r)/H,                                                          (1)
 </pre>
 where H is the _elastic foundation_ depth (the thickness of the compliant layer)
 and `E` is the elastic modulus. We use E for the elastic modulus in analogy to
@@ -104,7 +127,7 @@ contact). Keep in mind that these models are different and their moduli
 parameters are not expected to match, though we often use Young's modulus as a
 starting point for estimation. Though an approximation of reality, the model (1)
 has the nice property that is fully algebraic, not requiring the solution of
-complex integral equations as with Hertz's contact theory.
+complex integral equations as with Hertz contact theory.
 
 @section hydro_params_efm_analogy Hydroelastic Contact and Elastic Foundation
 
@@ -125,17 +148,19 @@ function a natural choice.
 While this connection to EFM is strong, Hydroelastic contact presents several
 advantages over traditional EFM
   - Hydroelastic contact generalizes to arbitrary non-convex geometry
-  - Large _deformations_ (interpenetration) are allowed
+  - Large "deformations" (interpenetration) are allowed
   - Efficient algorithm to compute continuous contact patches
   - Continuously differentiable contact forces
 
 @section hydro_params_analytical Analytical Solutions
 
 Given the clear connection between hydroelastic contact and EFM, we use this
-analogy to derive analytical formula to estimate contact forces. More precisely,
-we follow the work by @ref Gonthier2007 "[Gonthier, 2007; §4.3]", who by using
-the approximation in (1) derives analytical formula for the computation of
-contact forces between two compliant bodies A and B, Fig. 2. 
+analogy to derive an analytical formula to estimate contact forces. More
+precisely, we follow the work by @ref Gonthier2007 "[Gonthier, 2007; §4.3]", who
+by using the approximation in (1) derives analytical formula for the computation
+of contact forces between two compliant bodies A and B, Fig. 2.
+
+@image html drake/multibody/plant/images/hydro_analytic.png "Figure 2: Hydroelastic contact. Signed distances and balance of pressure." width=35%
 
 @subsection gonthier_analytical Gonthier's derivation
 
@@ -152,7 +177,7 @@ only involving the overlapping volume of the original undeformed geometries
 </pre>
 where κ = κᵃ⋅κᵇ/(κᵃ+κᵇ) is the effective stiffness and κᵃ = Eᵃ/Hᵃ and κᵇ = Eᵇ/Hᵇ
 are the stiffness of bodies A and B respectively. V is the volume the original
-geometries would overlap if the did not deform.
+geometries would overlap if they did not deform.
 
 @subsection hydro_analytical Alternative derivation
 
@@ -164,27 +189,27 @@ derivation leads to exactly the same result in (2).
 At small deformations, Fig. 2, we approximate the distance between the two
 bodies as
 <pre>
-  ϕ(x) = ϕᵃ(x) + ϕᵇ(x),                                                     (3)
+  ϕ(r) = ϕᵃ(r) + ϕᵇ(r),                                                     (3)
 </pre>
 
 We use the EFM approximation (1) to model the normal stress (pressure) that
-results from deforming each body A and B amounts ϕᵃ(x) and ϕᵇ(x) respectively.
-With this, the balance of momentum at each point on the contact surface is
+results from deforming each body A and B amounts ϕᵃ(r) and ϕᵇ(r) respectively.
+With this, the balance of pressure at each point on the contact surface is
 <pre>
-  p(x) = pᵃ(x) = pᵇ(x), or
-  p(x) = κᵃ⋅ϕᵃ(x) = κᵇ⋅ϕᵇ(x).                                               (4)
+  p(r) = pᵃ(r) = pᵇ(r), or
+  p(r) = κᵃ⋅ϕᵃ(r) = κᵇ⋅ϕᵇ(r).                                               (4)
 </pre>
 
-We can solve for the contact pressure p(x) from (3) and (4) as
+We can solve for the contact pressure p(r) from (3) and (4) as
 <pre>
-  p(x) = κ⋅ϕ(x),                                                            (5) 
+  p(r) = κ⋅ϕ(r),                                                            (5) 
 </pre>
 with the same stiffness κ found by @ref Gonthier2007 "[Gonthier, 2007]"'s
 alternative method in (2).
 
 The total contact force is found by integrating (5) over the contact surface
 <pre>
-  fₙ(x) = ∫p(x)d²x = κ⋅∫ϕ(x)d²x.                                            (6) 
+  fₙ(r) = ∫p(r)d²r = κ⋅∫ϕ(r)d²r.                                            (6) 
 </pre>
 
 Given the small deformations assumption we see in Fig. 2 that this last integral
