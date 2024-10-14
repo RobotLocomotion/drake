@@ -1,5 +1,5 @@
-import os
 import subprocess
+import sys
 import unittest
 
 from python import runfiles
