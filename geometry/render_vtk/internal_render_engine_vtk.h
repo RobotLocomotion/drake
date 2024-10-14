@@ -242,7 +242,9 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   // Setup a custom shader on the polydata mapper for rendering depth as the
   // distance from the background plane
-  void SetDepthShader(vtkSmartPointer<vtkActor> actor);
+  //
+  // @pre actor is not null.
+  static void SetDepthShader(vtkActor* actor);
 
   // A geometry is modeled with one or more "parts". A part maps to the actor
   // representing it in VTK and an optional transform mapping the actor's frame

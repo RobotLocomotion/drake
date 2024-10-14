@@ -29,6 +29,8 @@ namespace systems {
 /// ```
 /// where xᵢₙᵢₜ = 0 for vector-valued %ZeroOrderHold, and xᵢₙᵢₜ is a given
 /// value for abstract-valued %ZeroOrderHold.
+/// Use SetVectorState() to set xₙ in the context for vector-valued
+/// %ZeroOrderHold.
 ///
 /// See @ref discrete_systems "Discrete Systems" for general information about
 /// discrete systems in Drake, including how they interact with continuous
@@ -78,6 +80,12 @@ class ZeroOrderHold final : public LeafSystem<T> {
 
   /// Reports the first update time of this hold (in seconds).
   double offset() const { return offset_sec_; }
+
+  /// Sets the value of the state by modifying it in the context.
+  /// @p value must be a column vector of the appropriate size. This can only be
+  /// used to initialize a vector-valued state.
+  void SetVectorState(Context<T>* context,
+                      const Eigen::Ref<const VectorX<T>>& value) const;
 
   /// (Advanced) Manually sample the input port and copy ("latch") the value
   /// into the state. This emulates an update event and is mostly useful for

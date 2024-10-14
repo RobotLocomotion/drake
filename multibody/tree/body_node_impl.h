@@ -13,13 +13,16 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// For internal use only of the MultibodyTree implementation.
-// While all code that is common to any node _could_ be placed in the BodyNode
-// class, BodyNodeImpl is templatized on the concrete Mobilizer type so
-// implementations here can use fixed-size objects and mobilizer-specific
-// inline implementations for maximum speed. For a more detailed discussion of
-// the role of a BodyNode in a MultibodyTree refer to the class documentation
-// for BodyNode.
+// For internal use only of the MultibodyTree implementation. While all code
+// that is common to any node _could_ be placed in the BodyNode class,
+// BodyNodeImpl is templatized on the concrete Mobilizer type so implementations
+// here can use fixed-size objects and mobilizer-specific inline implementations
+// for maximum speed. For a more detailed discussion of the role of a BodyNode
+// in a MultibodyTree refer to the class documentation for BodyNode. Note:
+// because there are many instantiations of these templatized functions,
+// (especially for the O(n²) mass matrix algorithm) the definitions are split
+// into two files to keep compilation times balanced: body_node_impl.cc and
+// body_node_impl_mass_matrix.cc.
 template <typename T, template <typename> class ConcreteMobilizer>
 class BodyNodeImpl final : public BodyNode<T> {
  public:
@@ -35,11 +38,12 @@ class BodyNodeImpl final : public BodyNode<T> {
   using VVector = typename ConcreteMobilizer<T>::VVector;
   using HMatrix = typename ConcreteMobilizer<T>::HMatrix;
 
-  using BodyNode<T>::mobod_index;
-  using BodyNode<T>::inboard_mobod_index;
-  using BodyNode<T>::inboard_frame;
-  using BodyNode<T>::outboard_frame;
   using BodyNode<T>::body;
+  using BodyNode<T>::child_nodes;
+  using BodyNode<T>::inboard_frame;
+  using BodyNode<T>::inboard_mobod_index;
+  using BodyNode<T>::mobod_index;
+  using BodyNode<T>::outboard_frame;
   using BodyNode<T>::parent_body;
 
   // Given a body and its inboard mobilizer in a MultibodyTree this constructor
@@ -77,6 +81,29 @@ class BodyNodeImpl final : public BodyNode<T> {
       const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const final;
+
+  void CalcMassMatrixContribution_TipToBase(
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
+      const std::vector<Vector6<T>>& H_PB_W_cache,
+      EigenPtr<MatrixX<T>> M) const final;
+
+  // Declare functions for the six sizes of mass matrix off-diagonal
+  // blocks.
+#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(Rnv)                     \
+  void CalcMassMatrixOffDiagonalBlock##Rnv(                             \
+      int R_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
+      const Eigen::Matrix<T, 6, Rnv>& Fm_CCo_W, EigenPtr<MatrixX<T>> M) \
+      const final
+
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(1);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(2);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(3);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(4);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(5);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6);
+
+#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK
 
   void CalcSpatialAcceleration_BaseToTip(
       const systems::Context<T>& context,
@@ -119,11 +146,6 @@ class BodyNodeImpl final : public BodyNode<T> {
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       const SpatialAcceleration<T>& Ab_WB,
       AccelerationKinematicsCache<T>* ac) const final;
-
-  void CalcCompositeBodyInertia_TipToBase(
-      const SpatialInertia<T>& M_B_W, const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& Mc_B_W_all,
-      SpatialInertia<T>* Mc_B_W) const final;
 
   void CalcSpatialAccelerationBias(
       const systems::Context<T>& context,
@@ -412,14 +434,6 @@ class BodyNodeImpl final : public BodyNode<T> {
       ArticulatedBodyForceCache<T>* aba_force_cache) const {
     return aba_force_cache->get_mutable_e_B(mobod_index());
   }
-
-  // Computes the total force Ftot_BBo on body B that must be applied for it to
-  // incur in a spatial acceleration A_WB.
-  void CalcBodySpatialForceGivenItsSpatialAcceleration(
-      const std::vector<SpatialInertia<T>>& M_B_W_cache,
-      const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
-      const SpatialAcceleration<T>& A_WB,
-      SpatialForce<T>* Ftot_BBo_W_ptr) const;
 
   const ConcreteMobilizer<T>* const mobilizer_;
 };

@@ -62,7 +62,7 @@ class DRAKE_NO_EXPORT IpoptSolver_NLP : public Ipopt::TNLP {
                   const Eigen::VectorXd& x_init,
                   MathematicalProgramResult* result);
 
-  virtual ~IpoptSolver_NLP() {}
+  virtual ~IpoptSolver_NLP();
 
   virtual bool get_nlp_info(
       // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.

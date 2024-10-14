@@ -347,7 +347,7 @@ void DefineMeshcat(py::module m) {
         .def("SetProperty",
             py::overload_cast<std::string_view, std::string, bool,
                 std::optional<double>>(&Class::SetProperty),
-            py::arg("path"), py::arg("property"), py::arg("value"),
+            py::arg("path"), py::arg("property"), py::arg("value").noconvert(),
             py::arg("time_in_recording") = std::nullopt,
             cls_doc.SetProperty.doc_bool)
         .def("SetProperty",

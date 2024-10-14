@@ -137,6 +137,8 @@ symbolic::Formula Constraint::DoCheckSatisfied(
   return f;
 }
 
+QuadraticConstraint::~QuadraticConstraint() = default;
+
 bool QuadraticConstraint::is_convex() const {
   switch (hessian_type_) {
     case HessianType::kPositiveSemidefinite: {
@@ -251,6 +253,8 @@ LorentzConeConstraint::LorentzConeConstraint(
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
 }
 
+LorentzConeConstraint::~LorentzConeConstraint() = default;
+
 void LorentzConeConstraint::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
     const Eigen::Ref<const Eigen::VectorXd>& new_b) {
@@ -350,6 +354,8 @@ std::string LorentzConeConstraint::DoToLatex(
                      symbolic::ToLatex(z(0), precision));
 }
 
+RotatedLorentzConeConstraint::~RotatedLorentzConeConstraint() = default;
+
 void RotatedLorentzConeConstraint::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
     const Eigen::Ref<const Eigen::VectorXd>& new_b) {
@@ -410,6 +416,8 @@ std::string RotatedLorentzConeConstraint::DoToLatex(
       symbolic::ToLatex(z(0) * z(1), precision));
 }
 
+PolynomialConstraint::~PolynomialConstraint() = default;
+
 LinearConstraint::LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                                    const Eigen::Ref<const Eigen::VectorXd>& ub)
@@ -427,6 +435,8 @@ LinearConstraint::LinearConstraint(const Eigen::SparseMatrix<double>& A,
   DRAKE_THROW_UNLESS(A.rows() == lb.rows());
   DRAKE_THROW_UNLESS(A_.IsFinite());
 }
+
+LinearConstraint::~LinearConstraint() = default;
 
 const Eigen::MatrixXd& LinearConstraint::GetDenseA() const {
   return A_.GetAsDense();
@@ -551,6 +561,8 @@ BoundingBoxConstraint::BoundingBoxConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& ub)
     : LinearConstraint(ConstructSparseIdentity(lb.rows()), lb, ub) {}
 
+BoundingBoxConstraint::~BoundingBoxConstraint() = default;
+
 template <typename DerivedX, typename ScalarY>
 void BoundingBoxConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                           VectorX<ScalarY>* y) const {
@@ -585,6 +597,8 @@ std::string BoundingBoxConstraint::DoToLatex(
                                             : symbolic::ToLatex(vars),
                      ToLatexUpperBound(*this, precision));
 }
+
+LinearComplementarityConstraint::~LinearComplementarityConstraint() = default;
 
 template <typename DerivedX, typename ScalarY>
 void LinearComplementarityConstraint::DoEvalGeneric(
@@ -672,6 +686,8 @@ PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint(int rows)
   set_is_thread_safe(true);
 }
 
+PositiveSemidefiniteConstraint::~PositiveSemidefiniteConstraint() = default;
+
 void PositiveSemidefiniteConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   DRAKE_THROW_UNLESS(x.rows() == num_constraints() * num_constraints());
@@ -709,6 +725,8 @@ std::string PositiveSemidefiniteConstraint::DoToLatex(
                                                   matrix_rows());
   return fmt::format("{} \\succeq 0", symbolic::ToLatex(S.eval(), precision));
 }
+
+LinearMatrixInequalityConstraint::~LinearMatrixInequalityConstraint() = default;
 
 void LinearMatrixInequalityConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
@@ -882,6 +900,8 @@ ExponentialConeConstraint::ExponentialConeConstraint(
   DRAKE_THROW_UNLESS(A.rows() == 3);
   set_is_thread_safe(true);
 }
+
+ExponentialConeConstraint::~ExponentialConeConstraint() = default;
 
 template <typename DerivedX, typename ScalarY>
 void ExponentialConeConstraint::DoEvalGeneric(

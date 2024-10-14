@@ -1104,11 +1104,9 @@ void RenderEngineVtk::SetPbrMaterials() {
   }
 }
 
-void RenderEngineVtk::SetDepthShader(vtkSmartPointer<vtkActor> actor) {
-  if (!actor) {
-    return;
-  }
-  vtkSmartPointer<vtkOpenGLPolyDataMapper> mapper =
+void RenderEngineVtk::SetDepthShader(vtkActor* actor) {
+  DRAKE_DEMAND(actor != nullptr);
+  vtkOpenGLPolyDataMapper* mapper =
       vtkOpenGLPolyDataMapper::SafeDownCast(actor->GetMapper());
   DRAKE_DEMAND(mapper != nullptr);
   vtkOpenGLShaderProperty* shader_prop =

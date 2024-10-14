@@ -14,6 +14,8 @@ using std::shared_ptr;
 namespace drake {
 namespace solvers {
 
+EvaluatorBase::~EvaluatorBase() = default;
+
 std::ostream& EvaluatorBase::Display(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   const int num_vars = this->num_vars();
