@@ -27,7 +27,6 @@
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_material.h"
 #include "drake/geometry/render/render_mesh.h"
-#include "drake/geometry/render_vtk/internal_make_render_window.h"
 #include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 
 namespace drake {
@@ -128,11 +127,12 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   /* The rendering pipeline for a single image type (color, depth, or label). */
   struct RenderingPipeline final {
-    RenderingPipeline();
+    explicit RenderingPipeline(bool use_egl);
     ~RenderingPipeline();
 
+    const bool used_egl;
     vtkNew<vtkRenderer> renderer;
-    vtkSmartPointer<vtkRenderWindow> window = MakeRenderWindow();
+    vtkSmartPointer<vtkRenderWindow> window;
     vtkNew<vtkWindowToImageFilter> filter;
     vtkNew<vtkImageExport> exporter;
   };

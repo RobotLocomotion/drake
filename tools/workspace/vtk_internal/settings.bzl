@@ -460,13 +460,13 @@ MODULE_SETTINGS = {
                 "VTK_USE_COCOA",
             ],
             "//conditions:default": [
+                "VTK_OPENGL_HAS_EGL",
                 "VTK_USE_X",
             ],
         }),
         "cmake_undefines": [
             "VTK_DEFAULT_RENDER_WINDOW_OFFSCREEN",
             "VTK_OPENGL_ENABLE_STREAM_ANNOTATIONS",
-            "VTK_OPENGL_HAS_EGL",
             "VTK_REPORT_OPENGL_ERRORS",
             "VTK_REPORT_OPENGL_ERRORS_IN_RELEASE_BUILDS",
             "VTK_USE_CORE_GRAPHICS",
@@ -474,6 +474,7 @@ MODULE_SETTINGS = {
             "VTK_USE_NVCONTROL",
         ] + select({
             ":osx": [
+                "VTK_OPENGL_HAS_EGL",
                 "VTK_USE_X",
             ],
             "//conditions:default": [
@@ -514,10 +515,15 @@ MODULE_SETTINGS = {
         ] + select({
             ":osx": [],
             "//conditions:default": [
-                # On linux, we also want the GLX renderer.
+                # On linux, we also want the EGL and GLX renderers.
+                "Rendering/OpenGL2/vtkEGLRenderWindow.cxx",
                 "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
             ],
         }),
+        "copts_extra": [
+            # Match COMPILE_DEFINITIONS from the upstream CMakeLists.txt.
+            "-DVTK_DEFAULT_EGL_DEVICE_INDEX=0",
+        ],
         "linkopts_extra": select({
             ":osx": [
                 # Mimic vtk_module_link(... "-framework Cocoa") from upstream.
@@ -634,6 +640,7 @@ MODULE_SETTINGS = {
         ] + select({
             ":osx": [],
             "//conditions:default": [
+                "ThirdParty/glad/vtkglad/src/egl.c",
                 "ThirdParty/glad/vtkglad/src/glx.c",
             ],
         }),
@@ -644,13 +651,6 @@ MODULE_SETTINGS = {
         "deps_extra": [
             "@opengl",
         ],
-        "linkopts_extra": select({
-            ":osx": [],
-            "//conditions:default": [
-                "-lX11",
-                "-lGLX",
-            ],
-        }),
     },
     "VTK::pugixml": {
         # TODO(jwnimmer-tri) The only user of pugixml is vtkDataAssembly.
