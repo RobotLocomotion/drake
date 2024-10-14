@@ -20,6 +20,8 @@ using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 
+RenderEngine::~RenderEngine() = default;
+
 std::unique_ptr<RenderEngine> RenderEngine::Clone() const {
   std::unique_ptr<RenderEngine> clone(DoClone());
   // Make sure that derived classes have actually overridden DoClone().

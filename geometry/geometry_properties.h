@@ -225,7 +225,7 @@ namespace geometry {
  */
 class GeometryProperties {
  public:
-  virtual ~GeometryProperties() = default;
+  virtual ~GeometryProperties();
 
   /** The properties for a single group as a property name-value map.  */
   using Group =

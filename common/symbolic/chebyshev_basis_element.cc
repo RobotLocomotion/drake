@@ -31,6 +31,8 @@ ChebyshevBasisElement::ChebyshevBasisElement(
     const Eigen::Ref<const Eigen::VectorXi>& degrees)
     : PolynomialBasisElement(vars, degrees) {}
 
+ChebyshevBasisElement::~ChebyshevBasisElement() = default;
+
 bool ChebyshevBasisElement::operator<(
     const ChebyshevBasisElement& other) const {
   return this->lexicographical_compare(other);

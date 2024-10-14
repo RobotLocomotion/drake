@@ -173,7 +173,7 @@ struct MaterialData {
 };
 
 struct GeometryData {
-  virtual ~GeometryData() = default;
+  virtual ~GeometryData();
   std::string uuid;
 
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
@@ -188,6 +188,8 @@ struct GeometryData {
 };
 
 struct SphereGeometryData : public GeometryData {
+  ~SphereGeometryData() override;
+
   double radius{};
   double widthSegments{20};
   double heightSegments{20};
@@ -205,6 +207,8 @@ struct SphereGeometryData : public GeometryData {
 };
 
 struct CapsuleGeometryData : public GeometryData {
+  ~CapsuleGeometryData() override;
+
   // For a complete description of these parameters see:
   // https://threejs.org/docs/#api/en/geometries/CapsuleGeometry
   double radius{};
@@ -228,6 +232,8 @@ struct CapsuleGeometryData : public GeometryData {
 };
 
 struct CylinderGeometryData : public GeometryData {
+  ~CylinderGeometryData() override;
+
   double radiusBottom{};
   double radiusTop{};
   double height{};
@@ -247,6 +253,8 @@ struct CylinderGeometryData : public GeometryData {
 };
 
 struct BoxGeometryData : public GeometryData {
+  ~BoxGeometryData() override;
+
   double width{};
   double height{};
   double depth{};
@@ -264,6 +272,8 @@ struct BoxGeometryData : public GeometryData {
 };
 
 struct MeshFileGeometryData : public GeometryData {
+  ~MeshFileGeometryData() override;
+
   std::string format;
   std::string data;
 
@@ -279,6 +289,8 @@ struct MeshFileGeometryData : public GeometryData {
 };
 
 struct BufferGeometryData : public GeometryData {
+  ~BufferGeometryData() override;
+
   // We deviate from the meshcat data structure, since it is an unnecessarily
   // deep hierarchy of dictionaries, and simply implement the packer manually.
   Eigen::Matrix3Xf position;

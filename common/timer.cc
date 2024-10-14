@@ -2,9 +2,13 @@
 
 namespace drake {
 
+Timer::~Timer() = default;
+
 SteadyTimer::SteadyTimer() {
   Start();
 }
+
+SteadyTimer::~SteadyTimer() = default;
 
 void SteadyTimer::Start() {
   start_time_ = clock::now();
@@ -17,6 +21,8 @@ double SteadyTimer::Tick() {
 ManualTimer::ManualTimer() {
   Start();
 }
+
+ManualTimer::~ManualTimer() = default;
 
 void ManualTimer::Start() {
   tick_ = 0.0;

@@ -88,6 +88,8 @@ MonomialBasisElement::MonomialBasisElement() : PolynomialBasisElement() {}
 MonomialBasisElement::MonomialBasisElement(const Expression& e)
     : MonomialBasisElement(ToMonomialPower(e.Expand())) {}
 
+MonomialBasisElement::~MonomialBasisElement() = default;
+
 bool MonomialBasisElement::operator<(const MonomialBasisElement& other) const {
   return this->lexicographical_compare(other);
 }

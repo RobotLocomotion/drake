@@ -204,6 +204,8 @@ MergeRecord::MergeRecord(string initial_name) {
   source_names_.push_back(std::move(initial_name));
 }
 
+MergeRecord::~MergeRecord() = default;
+
 const string& MergeRecord::FindSourceName(const json& element) const {
   const auto iter = merged_trees_.find(&element);
   DRAKE_DEMAND(iter != merged_trees_.end());

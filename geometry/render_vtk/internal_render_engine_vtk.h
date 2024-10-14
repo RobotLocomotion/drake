@@ -95,6 +95,8 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   explicit RenderEngineVtk(
       const RenderEngineVtkParams& parameters = RenderEngineVtkParams());
 
+  ~RenderEngineVtk() override;
+
   /* @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
 

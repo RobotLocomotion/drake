@@ -292,6 +292,7 @@ class Geometries final : public ShapeReifier {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Geometries);
 
   Geometries() = default;
+  ~Geometries() final;
 
   /* Reports the hydroelastic representation type for the given id. The
    following invariants should always hold:

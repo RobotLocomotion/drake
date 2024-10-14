@@ -101,7 +101,7 @@ class RenderEngine {
     }
   }
 
-  virtual ~RenderEngine() = default;
+  virtual ~RenderEngine();
 
   /** Clones the render engine -- making the %RenderEngine compatible with
    copyable_unique_ptr.  */

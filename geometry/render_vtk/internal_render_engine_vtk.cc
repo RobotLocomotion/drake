@@ -202,6 +202,8 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
   InitializePipelines();
 }
 
+RenderEngineVtk::~RenderEngineVtk() = default;
+
 void RenderEngineVtk::UpdateViewpoint(const RigidTransformd& X_WC) {
   vtkSmartPointer<vtkTransform> vtk_X_WC = ConvertToVtkTransform(X_WC);
 
