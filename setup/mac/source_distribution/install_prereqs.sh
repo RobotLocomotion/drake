@@ -48,14 +48,3 @@ brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 if [[ "${with_test_only}" -eq 1 ]]; then
   brew bundle --file="${BASH_SOURCE%/*}/Brewfile-test-only" --no-lock
 fi
-
-if ! command -v pip3.12 &>/dev/null; then
-  echo 'ERROR: pip3.12 is NOT installed. The post-install step for the python@3.12 formula may have failed.' >&2
-  exit 2
-fi
-
-pip3.12 install --break-system-packages -r "${BASH_SOURCE%/*}/requirements.txt"
-
-if [[ "${with_test_only}" -eq 1 ]]; then
-  pip3.12 install --break-system-packages -r "${BASH_SOURCE%/*}/requirements-test-only.txt"
-fi
