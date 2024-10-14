@@ -9,11 +9,14 @@
 #if defined(__APPLE__)
 #include <vtkCocoaRenderWindow.h>  // vtkRenderingOpenGL2
 #else
+#include <vtkEGLRenderWindow.h>        // vtkRenderingOpenGL2
 #include <vtkXOpenGLRenderWindow.h>    // vtkRenderingOpenGL2
+#include <vtkglad/include/glad/egl.h>  // vtkglad
 #include <vtkglad/include/glad/glx.h>  // vtkglad
 #endif
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -21,17 +24,29 @@ namespace geometry {
 namespace render_vtk {
 namespace internal {
 
-vtkSmartPointer<vtkRenderWindow> MakeRenderWindow() {
+// The list of what's available on Linux and Apple here must be kept in sync
+// with the logic in render_engine_vtk_params.cc.
+vtkSmartPointer<vtkRenderWindow> MakeRenderWindow(bool use_egl) {
   vtkSmartPointer<vtkRenderWindow> result;
 #if defined(__APPLE__)
+  unused(use_egl);
   result = vtkSmartPointer<vtkCocoaRenderWindow>::New();
 #else
-  static const int kVersion = []() {
-    // Open the library at most once per process.
-    return gladLoaderLoadGLX(nullptr, 0);
-  }();
-  unused(kVersion);
-  result = vtkSmartPointer<vtkXOpenGLRenderWindow>::New();
+  if (use_egl) {
+    // Open the library at most once per process. At the time of this writing
+    // this does not appear to matter in practice, but we might as well avoid
+    // any problems down the road.
+    static const bool load_egl_success = gladLoaderLoadEGL(EGL_NO_DISPLAY);
+    DRAKE_THROW_UNLESS(load_egl_success);
+    result = vtkSmartPointer<vtkEGLRenderWindow>::New();
+  } else {
+    // Open the library at most once per process. This is important because
+    // loading the library every time leaks resources ("too many clients")
+    // that are in short supply when using a typical Xorg server.
+    static const int kVersion = gladLoaderLoadGLX(nullptr, 0);
+    unused(kVersion);
+    result = vtkSmartPointer<vtkXOpenGLRenderWindow>::New();
+  }
 #endif
   DRAKE_DEMAND(result != nullptr);
   return result;

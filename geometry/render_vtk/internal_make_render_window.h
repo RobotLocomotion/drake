@@ -8,7 +8,10 @@ namespace geometry {
 namespace render_vtk {
 namespace internal {
 
-vtkSmartPointer<vtkRenderWindow> MakeRenderWindow();
+/* Returns a newly-constructed vtkRenderWindow, or else throws when unable.
+On Linux, use_egl chooses between EGL (when true) and GLX (when false).
+On macOS, use_egl is ignored. */
+vtkSmartPointer<vtkRenderWindow> MakeRenderWindow(bool use_egl);
 
 }  // namespace internal
 }  // namespace render_vtk
