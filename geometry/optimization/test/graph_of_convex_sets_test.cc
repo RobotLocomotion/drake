@@ -2343,30 +2343,6 @@ TEST_F(PreprocessShortestPathTest, CheckResults) {
   }
 }
 
-// PreprocessShortestPath() is supposed to consume the solver options. More
-// particularly, those options must be passed to it from SolveShortestPath().
-// We'll exploit friend access to confirm PreporocessShortestPath() makes use
-// of the options. Confirming the options are *passed* is trickier. This is
-// because both PreprocessShortestPath() and SolveShortestPath() invoke Solve
-// with the same options. It is difficult to pass in a set of options such that
-// we can discen the exercise in PreprocessShortestPath strictly from looking
-// at the result. For example, passing an incompatible solver (as we do below)
-// will throw an exception no matter what, even if SolveShortestPath() skips
-// calling PreprocessShortestPath(). So, for now, we'll directly test that
-// PreprocessShortestPath() depends on the options and leave the confirmation of
-// SolveShortestPath() correctly passing those options as a future exercise.
-TEST_F(PreprocessShortestPathTest, DependsOnOptions) {
-  // Intentionally choose a solver that cannot run the preprocessing. Throwing
-  // an exception is proof that the function relied on the options.
-  solvers::LinearSystemSolver solver;
-  options_.solver = &solver;
-  DRAKE_EXPECT_THROWS_MESSAGE(PreprocessShortestPath(v_[0]->id(), v_[5]->id()),
-                              ".*LinearSystemSolver is unable to solve.*");
-
-  // TODO(SeanCurtis-TRI): Figure out a way to tell that SolveShortestPath
-  // invokes PreporcessShortestPath with the given options as documented above.
-}
-
 /* This test rounds the shortest path on a graph with two paths around an
 obstacle.
 ┌──────┐     ┌────┐     ┌────┐
@@ -2524,6 +2500,28 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     options.preprocessing_solver = nullptr;
     auto successful_result_2 = spp.SolveShortestPath(*source, *target, options);
     EXPECT_TRUE(successful_result_2.is_success());
+
+    // If preprocessing_solver_options is not provided, solver_options is used
+    // instead. We can solve the relaxation and convex restriction with
+    // Clarabel, but use Mosek to solve the preprocessing. We then include the
+    // time limit 0 option for the Mosek solver in solver_options. This will
+    // force the preprocessing to remove all edges, thus leading to a failed
+    // solve, hence verifying that solver_options is being used by the
+    // preprocessing.
+    solvers::ClarabelSolver clarabel_solver;
+    options.restriction_solver = &clarabel_solver;
+    options.solver = &clarabel_solver;
+    options.preprocessing_solver = &mosek_solver;
+    options.preprocessing_solver_options = std::nullopt;
+    options.solver_options.SetOption(solvers::MosekSolver::id(),
+                                     "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
+    auto failed_result_3 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_FALSE(failed_result_3.is_success());
+
+    // If we turn off preprocessing, it should succeed again.
+    options.preprocessing = false;
+    auto successful_result_3 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_TRUE(successful_result_3.is_success());
   }
 }
 
