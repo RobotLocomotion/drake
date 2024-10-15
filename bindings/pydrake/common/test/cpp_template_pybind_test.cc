@@ -46,6 +46,22 @@ void CheckValue(const string& expr, const T& expected) {
   EXPECT_EQ(py::eval(expr).cast<T>(), expected);
 }
 
+template <typename T>
+struct TemplateWithDefault {
+  string GetName() { return NiceTypeName::Get<T>(); }
+};
+
+template <typename T>
+void BindTemplateWithDefault(py::module m) {
+  using Class = TemplateWithDefault<T>;
+  auto py_class =
+      DefineTemplateClassWithDefault<Class>(m, "TemplateWithDefault",
+          GetPyParam<T>(), "Documentation", std::nullopt, py::dynamic_attr());
+  py_class  // BR
+      .def(py::init<>())
+      .def("GetName", &Class::GetName);
+}
+
 GTEST_TEST(CppTemplateTest, TemplateClass) {
   py::module m =
       py::module::create_extension_module("__main__", "", new PyModuleDef());
@@ -54,6 +70,9 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
   m.attr("DefaultInst") = cls_1;
   auto cls_2 = BindSimpleTemplate<int, double>(m);
 
+  BindTemplateWithDefault<double>(m);
+  BindTemplateWithDefault<int>(m);
+
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
   SynchronizeGlobalsForPython3(m);
@@ -61,6 +80,13 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
   CheckValue("DefaultInst().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int]().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int, float]().GetNames()", expected_2);
+
+  CheckValue("TemplateWithDefault().GetName()", string{"double"});
+  CheckValue("TemplateWithDefault_[float]().GetName()", string{"double"});
+  CheckValue("TemplateWithDefault_[int]().GetName()", string{"int"});
+
+  // Sanity test of the py::dynamic_attr().
+  CheckValue("TemplateWithDefault().__dict__.setdefault('_foo', 1)", 1);
 
   m.def("simple_func", [](const SimpleTemplate<int>&) {});
   SynchronizeGlobalsForPython3(m);
