@@ -2361,7 +2361,7 @@ TEST_F(PreprocessShortestPathTest, DependsOnOptions) {
   solvers::LinearSystemSolver solver;
   options_.solver = &solver;
   DRAKE_EXPECT_THROWS_MESSAGE(PreprocessShortestPath(v_[0]->id(), v_[5]->id()),
-                              ".*LinearSystemSolver is unable to solve.*");
+                              ".*AreProgramAttributesSatisfied.*");
 
   // TODO(SeanCurtis-TRI): Figure out a way to tell that SolveShortestPath
   // invokes PreporcessShortestPath with the given options as documented above.

@@ -726,10 +726,13 @@ drake_cc_library(
         ":mathematical_program",
         ":mathematical_program_result",
         ":solver_base",
+        "//common:parallelism",
     ],
     implementation_deps = [
         ":choose_best_solver",
+        ":get_program_type",
         "//common:nice_type_name",
+        "@common_robotics_utilities",
     ],
 )
 
