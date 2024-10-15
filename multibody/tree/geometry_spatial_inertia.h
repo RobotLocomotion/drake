@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <variant>
+
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -7,6 +10,18 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
+
+/* Versions of CalcSpatialInertia that do not throw. If an error occurs, the
+ * error message is returned instead of a SpatialInertia. */
+using CalcSpatialInertiaResult =
+    std::variant<SpatialInertia<double>, std::string>;
+CalcSpatialInertiaResult DoCalcSpatialInertia(
+    const geometry::TriangleSurfaceMesh<double>& mesh, double density);
+CalcSpatialInertiaResult DoCalcSpatialInertia(const geometry::Shape& shape,
+                                              double density);
+
+}  // namespace internal
 
 /** Computes the SpatialInertia of a body made up of a homogeneous material
  (of given `density` in kg/m³) uniformly distributed in the volume of the given

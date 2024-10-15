@@ -441,22 +441,6 @@ GTEST_TEST(FileParserTest, InterleavedRenaming) {
   EXPECT_EQ(parser.GetCollisionFilterGroups(), expected);
 }
 
-// Ensure an exception is thrown if parsing a mesh with zero volume.
-// Related: issue #21924 [github.com/RobotLocomotion/drake/issues/21924].
-GTEST_TEST(FileParserTest, ZeroVolumeShouldThrowException) {
-  systems::DiagramBuilder<double> builder;
-  AddMultibodyPlantSceneGraphResult<double> plant_and_scene_graph =
-      AddMultibodyPlantSceneGraph(&builder, /* time_step = */ 0.0);
-  MultibodyPlant<double>& plant = plant_and_scene_graph.plant;
-  Parser parser(&plant);
-  std::string filename = "drake/geometry/test/bad_geometry_volume_zero.obj";
-  std::string geometry_file_path = FindResourceOrThrow(filename);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      parser.AddModels(geometry_file_path),
-      ".*volume of a triangle surface mesh is.* whereas a reasonable "
-      "positive value of .* was expected. The mesh may have bad geometry.*");
-}
-
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
