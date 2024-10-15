@@ -10,6 +10,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/solver_interface.h"
 
 namespace drake {
@@ -126,6 +127,11 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     new_options->SetOption(
         CommonSolverOption::kMaxThreads,
         operating_in_parallel ? 1 : parallelism.num_threads());
+    if (operating_in_parallel) {
+      // On Mac Sonoma the default solver is MUMPS which is not re-entrant
+      // thread safe. Therefore, we use MA27 instead.
+      new_options->SetOption(IpoptSolver::id(), "linear_solver", "ma27");
+    }
 
     // Solve the program.
     solver.Solve(*(progs[i]), initial_guess, new_options, &(results[i]));
@@ -133,10 +139,12 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   };
 
   // Call solve_ith in parallel for all of the progs.
-  (dynamic_schedule ? &(DynamicParallelForIndexLoop<decltype(solve_ith)>)
-                    : &(StaticParallelForIndexLoop<decltype(solve_ith)>))(
-      DegreeOfParallelism(parallelism.num_threads()), 0, ssize(progs),
-      solve_ith, ParallelForBackend::BEST_AVAILABLE);
+  if (parallelism.num_threads() > 1) {
+    (dynamic_schedule ? &(DynamicParallelForIndexLoop<decltype(solve_ith)>)
+                      : &(StaticParallelForIndexLoop<decltype(solve_ith)>))(
+        DegreeOfParallelism(parallelism.num_threads()), 0, ssize(progs),
+        solve_ith, ParallelForBackend::BEST_AVAILABLE);
+  }
 
   // De-allocate the solvers cache except for the first worker. (We'll use the
   // first worker's cache for the serial solves, below.) The clearing is
