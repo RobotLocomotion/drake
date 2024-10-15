@@ -16,6 +16,14 @@ For part (b) the environment is used in all python rules and tests by default,
 but if a test needs to shell out to a venv binary, the `@python//:venv_bin`
 can be used to put the binaries' path into runfiles.
 
+If the {macos,linux}_interpreter_path being used only mentions the python major
+version (i.e., it is "/path/to/python3" not "/path/to/python3.##") and if the
+interpreter is changed to a different minor version without any change to the
+path, then you must run `bazel sync --configure` to re-run this repository rule
+in order to make bazel aware of the new minor version. This hazard cannot occur
+on any of Drake's supported platforms with our default values, but if you are
+trying something out of the ordinary, be aware.
+
 Arguments:
     name: A unique name for this rule.
     linux_interpreter_path: (Optional) Interpreter path for the Python runtime,
@@ -224,6 +232,5 @@ interpreter_path_attrs = {
 python_repository = repository_rule(
     _impl,
     attrs = interpreter_path_attrs,
-    local = True,
     configure = True,
 )
