@@ -230,6 +230,8 @@ each of the properties and then discuss how they can be specified.
     infinite modulus is mathematically equivalent to a “rigid”
     object. (Although, it is definitely better, in that case, to simply declare
     it “rigid”.)
+  - @ref hydro_params "Estimation of Hydroelastic Parameters" shows how to
+    estimate the hydroelastic modulus using analytical formulas.
   - This is *only* required for shapes declared to be “compliant”. It can be
     defined for shapes declared as “rigid”, but the value will be ignored. (It
     can be convenient to always define it to enable tests where one might
