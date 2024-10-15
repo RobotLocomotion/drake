@@ -56,6 +56,7 @@ drake_cc_library(
         "//geometry/render_gltf_client:__pkg__",
     ],
     deps = [
+        ":render_engine_vtk_params",
         "//common:essential",
         "//common:unused",
         "@vtk_internal//:vtkRenderingCore",
@@ -136,16 +137,19 @@ drake_cc_library(
     ],
 )
 
+config_setting(
+    name = "osx",
+    constraint_values = ["@platforms//os:osx"],
+)
+
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     timeout = "moderate",
     args = select({
-        # Most test cases do not render correctly on macOS arm64 CI. Instead of
-        # trying to select the few that randomly happen to pass, we'll skip all
-        # of them. TODO(#19424) Re-enable the tests.
-        "@platforms//cpu:arm64": [
-            "--gtest_filter=-*",
-        ],
+        # Most tests do not render correctly on macOS CI. Instead of trying to
+        # select the few that randomly happen to pass, we'll skip everything.
+        # TODO(#19424) Re-enable the tests.
+        ":osx": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
     data = [
@@ -175,9 +179,27 @@ drake_cc_googletest(
     ],
 )
 
-config_setting(
-    name = "osx",
-    constraint_values = ["@platforms//os:osx"],
+# Re-run internal_render_engine_vtk_test, but with the EGL backend.
+sh_test(
+    name = "internal_render_engine_vtk_egl_test",
+    timeout = "moderate",
+    srcs = ["internal_render_engine_vtk_test"],
+    args = select({
+        ":osx": [
+            # EGL is a Linux-only feature.
+            "--gtest_filter=-*",
+        ],
+        "//conditions:default": [
+            "--backend=EGL",
+        ],
+    }),
+    data = [
+        ":internal_render_engine_vtk_test",
+    ],
+    env = {
+        "DISPLAY": "should_not_be_used",
+    },
+    tags = vtk_test_tags(),
 )
 
 drake_cc_googletest(
@@ -209,6 +231,7 @@ drake_cc_googletest(
     name = "render_engine_vtk_params_test",
     deps = [
         ":render_engine_vtk_params",
+        "//common/test_utilities:expect_throws_message",
         "//common/yaml",
     ],
 )
