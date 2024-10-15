@@ -590,6 +590,10 @@ class SpatialInertia {
   /// @see RotationalInertia::CouldBePhysicallyValid().
   boolean<T> IsPhysicallyValid() const;
 
+  /// Performs the same checks as the boolean typed IsPhysicallyValid().
+  /// @returns empty string if valid, otherwise, a detailed error message.
+  std::string CriticizeNotPhysicallyValid() const;
+
   /// @anchor spatial_inertia_equivalent_shapes
   /// @name Spatial inertia equivalent shapes
   /// Calculates principal semi-diameters (half-lengths), principal axes

@@ -1,11 +1,27 @@
 #pragma once
 
+#include <string>
+#include <variant>
+
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
+namespace internal {
+
+/* Versions of CalcSpatialInertia that do not throw. If an error occurs, the
+ * error message is returned instead of a SpatialInertia. */
+using CalcSpatialInertiaResult =
+    std::variant<SpatialInertia<double>, std::string>;
+CalcSpatialInertiaResult DoCalcSpatialInertia(
+    const geometry::TriangleSurfaceMesh<double>& mesh, double density);
+CalcSpatialInertiaResult DoCalcSpatialInertia(const geometry::Shape& shape,
+                                              double density);
+
+}  // namespace internal
 
 /** Computes the SpatialInertia of a body made up of a homogeneous material
  (of given `density` in kg/m³) uniformly distributed in the volume of the given
@@ -53,6 +69,13 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
  @pydrake_mkdoc_identifier{mesh} */
 SpatialInertia<double> CalcSpatialInertia(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density);
+
+DRAKE_DEPRECATED(
+    "2024-11-01",
+    "In the function CalcSpatialInertia(), the density argument's default "
+    "value of 1.0 was removed. Provide a sensible density value.")
+SpatialInertia<double> CalcSpatialInertia(
+    const geometry::TriangleSurfaceMesh<double>& mesh);
 
 // TODO(SeanCurtis-TRI): Add CalcSpatialinertia(VolumeMesh).
 
