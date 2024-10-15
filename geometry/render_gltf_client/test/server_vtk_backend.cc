@@ -112,6 +112,7 @@ namespace internal {
 namespace {
 
 using render_vtk::internal::MakeRenderWindow;
+using render_vtk::internal::RenderEngineVtkBackend;
 using render_vtk::internal::ShaderCallback;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageRgba8U;
@@ -201,7 +202,13 @@ int DoMain() {
   vtkNew<vtkRenderer> renderer;
   renderer->UseHiddenLineRemovalOn();
 
-  vtkSmartPointer<vtkRenderWindow> render_window = MakeRenderWindow();
+  vtkSmartPointer<vtkRenderWindow> render_window = MakeRenderWindow(
+#ifdef __APPLE__
+      RenderEngineVtkBackend::kCocoa
+#else
+      RenderEngineVtkBackend::kEgl
+#endif
+  );  // NOLINT(whitespace/parens)
   render_window->SetSize(FLAGS_width, FLAGS_height);
   render_window->AddRenderer(renderer);
   render_window->SetOffScreenRendering(true);

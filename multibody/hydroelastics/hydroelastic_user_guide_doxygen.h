@@ -230,6 +230,19 @@ each of the properties and then discuss how they can be specified.
     infinite modulus is mathematically equivalent to a “rigid”
     object. (Although, it is definitely better, in that case, to simply declare
     it “rigid”.)
+  - @ref hydro_params "Estimation of Hydroelastic Parameters" shows how to
+    estimate the hydroelastic modulus using analytical formulas.
+  - Notes on choosing a value:
+    - Starting with the value for Young’s modulus is not unreasonable. However,
+      large values (corresponding for instance to the Young’s modulus of metals)
+      can cause numerical problems. In practice, values as high or larger than
+      10⁸ Pa are seldom used. Refer to
+      @ref hydro_params "Estimation of Hydroelastic Parameters" for further
+      details.
+    - For large modulus values, the resolution of the representations matter
+      more. A very high modulus will keep the contact near the surface of the
+      geometry, exposing tessellation artifacts. A smaller modulus has a
+      smoothing effect.
   - This is *only* required for shapes declared to be “compliant”. It can be
     defined for shapes declared as “rigid”, but the value will be ignored. (It
     can be convenient to always define it to enable tests where one might
@@ -238,23 +251,6 @@ each of the properties and then discuss how they can be specified.
   - Declaring a geometry to be compliant but not providing a valid hydroelastic
     modulus will produce an error at the time the geometry is added to
     `SceneGraph`.
-  - This is similar to something like Young’s modulus but it is not identical.
-    - The primary distinction is this isn’t purely a material property. The
-      value is entangled with the geometry. It essentially scales the force
-      based on the *percentage* of penetration into an object (i.e.,
-      strain). So, a fixed modulus value might lead to a 1cm penetration on one
-      sphere. But if the sphere were scaled up by a factor of 10, the
-      penetration would become 10cm. So, if there are constraints on
-      penetration depth, the modulus would have to increase with the scale of
-      the geometry.
-  - Notes on choosing a value:
-    - Starting with the value for Young’s modulus is not
-      unreasonable. Empirical evidence suggests that the hydroelastic modulus
-      tends to be smaller depending on the size of the objects.
-    - For large modulus values, the resolution of the representations matter
-      more. A very high modulus will keep the contact near the surface of the
-      geometry, exposing tessellation artifacts. A smaller modulus has a
-      smoothing effect.
 - Hunt-Crossley dissipation (s/m)
   - A non-negative real value.
   - This gives the contact an energy-damping property.

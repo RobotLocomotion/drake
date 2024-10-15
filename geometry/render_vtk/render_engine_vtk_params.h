@@ -104,6 +104,7 @@ struct RenderEngineVtkParams {
     a->Visit(DRAKE_NVP(cast_shadows));
     a->Visit(DRAKE_NVP(shadow_map_size));
     a->Visit(DRAKE_NVP(gltf_extensions));
+    a->Visit(DRAKE_NVP(backend));
   }
 
   /** The (optional) rgba color to apply to the (phong, diffuse) property when
@@ -214,7 +215,39 @@ struct RenderEngineVtkParams {
       // about it by default, to avoid too much warning spam.
       {"KHR_texture_basisu", {.warn_unimplemented = false}},
   };
+
+  /** Controls which graphics library will be used to perform the rendering.
+
+  Permissible values are the empty string (default), "GLX", "EGL", and "Cocoa".
+  Any other value will throw an error.
+
+  By default (i.e., when set to the empty string) the render engine will choose
+  which library to use. At the moment the default is "Cocoa" on macOS and "GLX"
+  on Linux, but we anticipate changing the default in the future.
+
+  If the option is set to one of the permissible values but the related graphics
+  library has not been compiled into current build (e.g., "GLX" on macOS), then
+  the default choice (empty string) will be used instead, with a warning. */
+  std::string backend;
 };
+
+namespace render_vtk {
+namespace internal {
+
+/* A parsed enum form of the RenderEngineVtkParams.backend string. */
+enum class RenderEngineVtkBackend {
+  kCocoa,
+  kEgl,
+  kGlx,
+};
+
+/* Parses the parameters.backend string to an enum and warns or throws per the
+validation logic documented on the `backend` field. */
+RenderEngineVtkBackend ParseRenderEngineVtkBackend(
+    const RenderEngineVtkParams& parameters);
+
+}  // namespace internal
+}  // namespace render_vtk
 
 }  // namespace geometry
 }  // namespace drake
