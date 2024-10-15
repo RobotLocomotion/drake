@@ -42,7 +42,13 @@
 
  to get past the aberrant tests; they *should* pass with this disabled. */
 DEFINE_bool(show_window, false, "Display render windows locally for debugging");
+
 DEFINE_double(sleep, 0, "Seconds to sleep between renders");
+
+// Note that our BUILD file (conditionally) sets the backend, so it's important
+// for the default value here to remain as the empty string. That provides test
+// coverage for the default backend on the platform the test is running on.
+DEFINE_string(backend, "", "RenderEngineVtkParams.backend");
 
 // For ease of debugging images are saved to $TEST_UNDECLARED_OUTPUTS_DIR, i.e.,
 // bazel-testlogs/geometry/render_vtk/internal_render_engine_vtk_test/test.outputs/outputs.zip
@@ -470,7 +476,10 @@ class RenderEngineVtkTest : public ::testing::Test {
   void Init(const RigidTransformd& X_WR, bool add_terrain = false) {
     const Vector3d bg_rgb{kBgColor.r / 255., kBgColor.g / 255.,
                           kBgColor.b / 255.};
-    RenderEngineVtkParams params{{}, bg_rgb};
+    const RenderEngineVtkParams params{
+        .default_clear_color = bg_rgb,
+        .backend = FLAGS_backend,
+    };
     renderer_ = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
     // Ensure that we truly have a non-default color.
@@ -644,8 +653,10 @@ TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
   std::vector<TestColor> backgrounds{
       {10, 20, 30}, {128, 196, 255}, {255, 10, 40}};
   for (const auto& bg : backgrounds) {
-    RenderEngineVtkParams params{
-        {}, Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
+    const RenderEngineVtkParams params{
+        .default_clear_color = Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.},
+        .backend = FLAGS_backend,
+    };
     RenderEngineVtk engine(params);
     Render(__LINE__, fmt::to_string(fmt_streamed(bg)), &engine);
     VerifyUniformColor(bg);
@@ -896,6 +907,11 @@ TEST_F(RenderEngineVtkTest, GltfUnsupportedExtensionRequired) {
 //
 // The obj features under test are a subset of the glTF features.
 TEST_F(RenderEngineVtkTest, MultiMaterialObjects) {
+  if (FLAGS_backend == "EGL") {
+    log()->warn("Skipping MultiMaterialObjects test on EGL (expected-fail)");
+    return;
+  }
+
   // The name of the face we expect presented to the camera, and the rotation
   // required to put it in front of the camera. We'll use the name to look up
   // the expected color.
@@ -1064,7 +1080,10 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
   // Render a box with an uchar-channel PNG texture.
   ImageRgba8U color_uchar_texture(intrinsics.width(), intrinsics.height());
   {
-    RenderEngineVtk renderer;
+    const RenderEngineVtkParams params{
+        .backend = FLAGS_backend,
+    };
+    RenderEngineVtk renderer(params);
     InitializeRenderer(X_WC_, false /* no terrain */, &renderer);
 
     const GeometryId id = GeometryId::get_new_id();
@@ -1078,7 +1097,10 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
   // Render a box with an uint16-channel PNG texture.
   ImageRgba8U color_uint16_texture(intrinsics.width(), intrinsics.height());
   {
-    RenderEngineVtk renderer;
+    const RenderEngineVtkParams params{
+        .backend = FLAGS_backend,
+    };
+    RenderEngineVtk renderer(params);
     InitializeRenderer(X_WC_, false /* no terrain */, &renderer);
 
     const GeometryId id = GeometryId::get_new_id();
@@ -1349,7 +1371,10 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
 
   // Case: The engine's default is "don't care".
   ResetExpectations();
-  RenderEngineVtk renderer;
+  const RenderEngineVtkParams params{
+      .backend = FLAGS_backend,
+  };
+  RenderEngineVtk renderer(params);
   InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
 
   DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
@@ -1365,7 +1390,8 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
 // For simplicity, we'll only register shapes that map to vtkActor types.
 class TextureSetterEngine : public RenderEngineVtk {
  public:
-  TextureSetterEngine() = default;
+  TextureSetterEngine()
+      : RenderEngineVtk(RenderEngineVtkParams{.backend = FLAGS_backend}) {}
 
   // Reports if the color actor for the geometry with the given `id` has the
   // property texture append by this class's DoRegisterVisual() implementation.
@@ -1457,7 +1483,10 @@ TEST_F(RenderEngineVtkTest, PreservePropertyTexturesOverClone) {
 //       because it only depends on direction and not distance.
 TEST_F(RenderEngineVtkTest, FallbackLight) {
   Vector3d bg_rgb{kBgColor.r / 255.0, kBgColor.g / 255.0, kBgColor.b / 255.0};
-  const RenderEngineVtkParams params{.default_clear_color = bg_rgb};
+  const RenderEngineVtkParams params{
+      .default_clear_color = bg_rgb,
+      .backend = FLAGS_backend,
+  };
   RenderEngineVtk renderer(params);
 
   // Load the box.
@@ -1653,7 +1682,10 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
       SCOPED_TRACE(unambiguous_description);
       LightParameter test_light = config.light;
       test_light.type = l_type;
-      const RenderEngineVtkParams params{.lights = {test_light}};
+      const RenderEngineVtkParams params{
+          .lights = {test_light},
+          .backend = FLAGS_backend,
+      };
       RenderEngineVtk renderer(params);
 
       InitializeRenderer(X_WR, true /* add terrain */, &renderer);
@@ -1701,7 +1733,9 @@ TEST_F(RenderEngineVtkTest, MultiLights) {
                  {.type = "spot", .intensity = 0.25 * 0.5, .cone_angle = 45},
                  {.type = "spot", .intensity = 0.25 * 0.5, .cone_angle = 45},
                  {.type = "directional", .intensity = 0.25 * 0.5},
-                 {.type = "directional", .intensity = 0.25 * 0.5}}};
+                 {.type = "directional", .intensity = 0.25 * 0.5}},
+      .backend = FLAGS_backend,
+  };
   RenderEngineVtk renderer(params);
 
   InitializeRenderer(X_WR, true /* add terrain */, &renderer);
@@ -1836,9 +1870,12 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
   for (const auto& config : configs) {
     SCOPED_TRACE(config.description);
     const RenderEngineVtkParams params{
-        .environment_map = EnvironmentMap{
-            .skybox = config.show_map,
-            .texture = EquirectangularMap{.path = config.map_path}}};
+        .environment_map =
+            EnvironmentMap{
+                .skybox = config.show_map,
+                .texture = EquirectangularMap{.path = config.map_path}},
+        .backend = FLAGS_backend,
+    };
     RenderEngineVtk renderer(params);
 
     const RigidTransformd X_WR(config.R_WC, config.R_WC * p_WC_C);
@@ -1919,8 +1956,11 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     SCOPED_TRACE("Baseline");
     const Vector3d bg_rgb{kBgColor.r / 255., kBgColor.g / 255.,
                           kBgColor.b / 255.};
-    const RenderEngineVtkParams params{.default_clear_color = bg_rgb,
-                                       .environment_map = EnvironmentMap()};
+    const RenderEngineVtkParams params{
+        .default_clear_color = bg_rgb,
+        .environment_map = EnvironmentMap(),
+        .backend = FLAGS_backend,
+    };
     auto renderer = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WC_, /* add_terrain = */ true, renderer.get());
     PopulateSphereTest(renderer.get(), true);
@@ -2613,7 +2653,10 @@ vector<LightParameter> TransformLightsToCamera(
 // not testing the engine's ability to update state, but just testing the
 // render features -- textures, materials, lighting, etc.
 TEST_F(RenderEngineVtkTest, WholeImageDefaultParams) {
-  RenderEngineVtk engine;
+  const RenderEngineVtkParams params{
+      .backend = FLAGS_backend,
+  };
+  RenderEngineVtk engine(params);
 
   // We'll use the same camera as the default camera for the tests, but shrink
   // the image size so they're not as big in the repository.
@@ -2709,7 +2752,9 @@ TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
             .texture = EquirectangularMap{.path = hdr_path}}},
         .exposure = 0.75,
         .cast_shadows = true,
-        .shadow_map_size = 1024};
+        .shadow_map_size = 1024,
+        .backend = FLAGS_backend,
+    };
     RenderEngineVtk engine(params);
 
     // We'll use the same camera as the default camera for the tests, but shrink
@@ -2802,7 +2847,9 @@ TEST_F(RenderEngineVtkTest, WholeImageVerticalAspectRatio) {
           .texture = EquirectangularMap{.path = hdr_path}}},
       .exposure = 0.75,
       .cast_shadows = true,
-      .shadow_map_size = 1024};
+      .shadow_map_size = 1024,
+      .backend = FLAGS_backend,
+  };
   RenderEngineVtk engine(params);
 
   // These are the intrinsics used by the custom test with horizontal aspect
