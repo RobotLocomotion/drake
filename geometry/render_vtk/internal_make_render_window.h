@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/geometry/render_vtk/render_engine_vtk_params.h"
+
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkRenderWindow.h>  // vtkRenderingCore
 
@@ -8,7 +10,9 @@ namespace geometry {
 namespace render_vtk {
 namespace internal {
 
-vtkSmartPointer<vtkRenderWindow> MakeRenderWindow();
+/* Returns a newly-constructed vtkRenderWindow, or else throws when unable. */
+vtkSmartPointer<vtkRenderWindow> MakeRenderWindow(
+    RenderEngineVtkBackend backend);
 
 }  // namespace internal
 }  // namespace render_vtk
