@@ -6,12 +6,17 @@
 set -euxo pipefail
 
 with_update=1
+with_python_dependencies=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
     # Do NOT call brew update during execution of this script.
     --without-update)
       with_update=0
+      ;;
+    # Do NOT install Python (pip) dependencies.
+    --without-python-dependencies)
+      with_python_dependencies=0
       ;;
     *)
       echo 'Invalid command line argument' >&2
@@ -67,4 +72,6 @@ if ! command -v pip3.12 &>/dev/null; then
   exit 2
 fi
 
-pip3.12 install --break-system-packages -r "${BASH_SOURCE%/*}/requirements.txt"
+if [[ "${with_python_dependencies}" -eq 1 ]]; then
+  pip3.12 install --break-system-packages -r "${BASH_SOURCE%/*}/requirements.txt"
+fi
