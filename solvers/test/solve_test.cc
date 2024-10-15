@@ -220,6 +220,8 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
   // An indefinite quadratic cost.
   auto cost = non_convex_prog.AddQuadraticCost(y(0) * y(0) - y(1) * y(1));
   auto constraint3 = non_convex_prog.AddLinearConstraint(y(0) + y(1) == 1);
+  auto constraint4 =
+      non_convex_prog.AddQuadraticConstraint(y(0) * y(0) + y(1) * y(1), 0, 1);
   const SolverId non_convex_solver = IpoptSolver::id();
 
   std::vector<const MathematicalProgram*> progs;
