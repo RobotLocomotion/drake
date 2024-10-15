@@ -789,8 +789,6 @@ TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
 // CalcSpatialInertia() cannot necessarily compute a physical spatial inertia
 // for meshes which don't adhere to its requirements. The parser detects this
 // and provides a fallback so that it doesn't choke.
-// Per #21666 the failure is reported by throwing, in the future it will be
-// via some non-throwing protocol.
 TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
   // This obj is known to produce a non-physical spatial inertia in
   // CalcSpatialInertia().
@@ -799,10 +797,8 @@ TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
   ASSERT_EQ(rlocation.error, "");
   const geometry::Mesh bad_mesh(rlocation.abspath, 1.0);
 
-  // For now, we know the spatial inertia is bad because it throws. When #21666
-  // is fixed, it will be some other mechanism. Evolve *this* test to match
-  // that API, but otherwise keep this confirmation that the mesh in question
-  // truly is "bad".
+  // We know the spatial inertia is bad because CalcSpatialInertia()
+  // throws. Keep this confirmation that the mesh in question truly is "bad".
   DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(bad_mesh, 1.0),
           ".*IsPhysicallyValid[\\s\\S]*");
 
@@ -819,6 +815,7 @@ TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
 )""",  rlocation.abspath);
 
   EXPECT_NO_THROW(AddModelFromString(xml, "test"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*IsPhysicallyValid.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*fallback.*"));
   // Note: This test doesn't cover the properties of the fallback; just the fact
   // that we're using it (and not choking).
