@@ -78,6 +78,7 @@ _IGNORED_REPOSITORIES = [
 # print a reminder to manually check for upgrades.
 _OTHER_REPOSITORIES = [
     "bazel",
+    "python",
 ]
 
 # For these repositories, ignore any tags that match the specified regex.
