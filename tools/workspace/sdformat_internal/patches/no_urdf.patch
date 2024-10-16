@@ -1,6 +1,8 @@
 Disable transmogrification of URDF files into SDFormat files.
 Drake has its own URDF parser that we should always use.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 diff --git a/src/parser.cc b/src/parser.cc
 index 444d60a2..432fe42b 100644
 --- src/parser.cc

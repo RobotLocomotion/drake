@@ -1,5 +1,7 @@
 Increase timeout from 30 seconds to 360 seconds
 
+Reasoning for not upstreaming this patch: Drake-specific option value.
+
 --- mypy/moduleinspect.py
 +++ mypy/moduleinspect.py
 @@ -157,13 +157,15 @@

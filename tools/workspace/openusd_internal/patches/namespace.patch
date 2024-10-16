@@ -1,6 +1,6 @@
 [openusd_internal] Adjust top-level namespace
 
-This mitigates Drake build settings, so we don't plan to upstream this patch.
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
 
 --- pxr/pxr.h.in
 +++ pxr/pxr.h.in

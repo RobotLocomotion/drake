@@ -4,6 +4,8 @@ That library is licensed under LGPL-2.1+ but the rest of NLopt is
 licensed under MIT or similar notice-only licenses, and we really
 don't want to distribute this code using dynamic linking.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- src/api/optimize.c.orig
 +++ src/api/optimize.c
 @@ -40,7 +40,9 @@

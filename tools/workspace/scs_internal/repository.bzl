@@ -13,7 +13,7 @@ def scs_internal_repository(
         sha256 = "bc8211cfd213f3117676ceb7842f4ed8a3bc7ed9625c4238cc7d83f666e22cc9",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/include_paths.patch",
+            ":patches/upstream/include_paths.patch",
         ],
         mirrors = mirrors,
     )

@@ -4,6 +4,8 @@ Nothing Drake loads should have nasty side-effects, so there should
 never be any reason to crash and resume. Retrying might slow things
 down, which we definitely do NOT want.
 
+Reasoning for not upstreaming this patch: Drake-specific option value.
+
 --- mypy/moduleinspect.py
 +++ mypy/moduleinspect.py
 @@ -143,5 +143,5 @@

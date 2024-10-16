@@ -189,6 +189,17 @@ this will be susceptible to Ubuntu vs macOS differences, so please opt-in to
 the macOS build(s) in Jenkins before merging, using the instructions at
 https://drake.mit.edu/jenkins.html#running-an-on-demand-build.
 
+### Using patch files
+
+When we need to adjust an upstream source release for our purposes, we do that
+with `*.patch` files in Drake, not by forking the repository and pointing to
+the fork.
+
+Patches should live at tools/workspace/foobar/patches/quux.patch. In case the
+change should be upstreamed (even if we haven't filed that pull request yet),
+put the patch in tools/workspace/foobar/patches/upstream/quux.patch to make
+it easier to search for patches that require follow-up action.
+
 ## Updating pkg_config_repository software versions
 
 Most `pkg_config_repository` calls refer to libraries provided by the host

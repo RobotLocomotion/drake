@@ -3,6 +3,8 @@
 Generically printing a stack trace induces a whole lot of complicated
 support code that Drake neither wants nor needs.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- Common/Core/vtkDeserializer.cxx
 +++ Common/Core/vtkDeserializer.cxx
 @@ -186,8 +186,10 @@ vtkDeserializer::ConstructorType vtkDeserializer::GetConstructor(
