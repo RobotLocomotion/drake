@@ -153,6 +153,7 @@ drake_cc_googletest(
         "//conditions:default": [],
     }),
     data = [
+        ":test/multi_material_mesh.png",
         ":test/whole_image_custom_color.png",
         ":test/whole_image_custom_depth.png",
         ":test/whole_image_custom_label.png",
