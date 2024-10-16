@@ -150,7 +150,7 @@ index e557044f37..5d218b7a9c 100644
        lights->InitTraversal();
        l = lights->GetNextItem();
        this->CurrentLightIndex = 0;
-@@ -464,6 +484,17 @@ void vtkShadowMapBakerPass::Render(const vtkRenderState* s)
+@@ -464,6 +484,18 @@ void vtkShadowMapBakerPass::Render(const vtkRenderState* s)
        {
          if (l->GetSwitch() && this->LightCreatesShadow(l))
          {
@@ -158,7 +158,8 @@ index e557044f37..5d218b7a9c 100644
 +            // Restore the light's original matrix.
 +            vtkMatrix4x4* cachedTransform = cachedLightTransforms.at(l);
 +            if (cachedTransform != nullptr) {
-+              l->GetTransformMatrix()->DeepCopy(cachedTransform);
++              // Restore values without tweaking modified time.
++              vtkMatrix4x4::DeepCopy(*l->GetTransformMatrix()->Element, *cachedTransform->Element);
 +            } else {
 +              // This may be redundant; it is unlikely if the light didn't
 +              // originally have a transform that it would pick one up.
