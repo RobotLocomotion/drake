@@ -269,6 +269,20 @@ TEST_P(InertiaVisualizerGeometryTest, ZeroMassTest) {
   EXPECT_NEAR(ellipsoid.c(), 0.001, kTolerance);
 }
 
+// Test inertia geometry computations for a point-mass body. It should always
+// put a 1-cm sphere at the center of mass (as defined by xyz()).
+TEST_P(InertiaVisualizerGeometryTest, PointMassTest) {
+  auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+      {.mass = 1.0, .moment_ixx = 0, .moment_iyy = 0, .moment_izz = 0});
+
+  // Pose for zero inertia is ignored.
+  EXPECT_TRUE(transform.IsExactlyEqualTo(RigidTransform<double>(xyz())));
+
+  EXPECT_NEAR(ellipsoid.a(), 0.01, kTolerance);
+  EXPECT_NEAR(ellipsoid.b(), 0.01, kTolerance);
+  EXPECT_NEAR(ellipsoid.c(), 0.01, kTolerance);
+}
+
 // Test that the inertia visualization ellipsoid for a box that uses the same
 // nominal density as those ellipsoids has spatial inertia moments in the same
 // ratio as those of the box. This test has translation but no rotation.
