@@ -1,5 +1,8 @@
 [Clarabel.cpp] Pin Clarabel to the Crate (not the git submodule)
 
+Reasoning for not upstreaming this patch: if they want to use submodules,
+then so be it.
+
 --- rust_wrapper/Cargo.toml
 +++ rust_wrapper/Cargo.toml
 @@ -5,4 +5,4 @@

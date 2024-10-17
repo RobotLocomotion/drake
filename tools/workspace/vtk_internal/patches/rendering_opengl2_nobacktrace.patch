@@ -3,6 +3,8 @@
 Generically printing a stack trace induces a whole lot of complicated
 support code that Drake neither wants nor needs.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- Rendering/OpenGL2/vtkOpenGLState.cxx
 +++ Rendering/OpenGL2/vtkOpenGLState.cxx
 @@ -539,6 +539,8 @@

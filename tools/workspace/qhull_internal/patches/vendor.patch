@@ -5,6 +5,8 @@ an `extern "C"` function. This doesn't work with drake's namespace vendoring.
 
 Instead, just make the fields public.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 The Qhull license requires us to publish the author, date, and reason
 for changes: Author: Jeremy Nimmer; Date: Jun 2, 2022.
 

@@ -2,6 +2,8 @@ Add vendoring namespace and disable std::hash
 
 This prevents ODR violations in case downstream code also links to stduuid.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- include/uuid.h
 +++ include/uuid.h
 @@ -49,6 +49,7 @@

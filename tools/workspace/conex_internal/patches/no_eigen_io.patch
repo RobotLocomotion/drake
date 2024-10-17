@@ -2,6 +2,8 @@
 
 Drake builds using EIGEN_NO_IO, so Conex can't use it either.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- conex/debug_macros.h
 +++ conex/debug_macros.h
 @@ -8,7 +8,7 @@

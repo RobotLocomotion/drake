@@ -21,8 +21,8 @@ delegate to the other one, but in C++20 ends up as a self-call and
 infinite recursion. We need to nix one of overloads in when compiling
 in C++20 mode.
 
-We should probably upstream something like this, or at least file an
-issue around C++ 20 support generally.
+Reasoning for not upstreaming this patch: wholly incomplete; instead
+we should file an issue.
 
 --- pxr/base/tf/weakPtrFacade.h
 +++ pxr/base/tf/weakPtrFacade.h

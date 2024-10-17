@@ -10,7 +10,7 @@ def styleguide_repository(
         sha256 = "d5cf0a3567392e5c3f0a30bbda852a30d945eced6858b3d6749226d02d5ef7eb",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/sre_deprecation.patch",
+            ":patches/upstream/sre_deprecation.patch",
             ":patches/test_paths.patch",
         ],
         mirrors = mirrors,
