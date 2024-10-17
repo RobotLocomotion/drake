@@ -6,6 +6,34 @@
 
 set -eux -o pipefail
 
+commit=
+files_to_commit=()
+while [ "${1:-}" != "" ]; do
+    case "$1" in
+        --commit)
+            commit=1
+            ;;
+        *)
+            echo "Invalid command line argument, $1." >&2
+            exit 5
+    esac
+    shift
+done
+
+check_working_tree() {
+    paths_modified=($(
+        (git status --untracked-files=no --porcelain=v1 -- . || true) | \
+        (grep -vE '/requirements-\w+[.]txt$' || true)))
+    if [ ${#paths_modified[@]} != 0 ]; then
+        git status --untracked-files=no .
+        set +x
+        echo >&2
+        echo "Refusing to proceed while your working tree is dirty." >&2
+        echo "Commit your changes first or run without --commit." >&2
+        exit 1
+    fi
+}
+
 generate_requirements() {
     in_name="$1.in"
     out_name="$1.txt"
@@ -24,6 +52,7 @@ generate_requirements() {
          'drake/tools/workspace/python/venv_upgrade;' \
          'do not edit.' > "$out_name"
     tail -n+6 requirements.tmp >> "$out_name"
+    files_to_commit+=($(git diff --name-only HEAD -- "./$out_name"))
 
     # Remove the temporary file.
     rm requirements.tmp
@@ -38,10 +67,29 @@ fi
 
 # Chdir to the Drake root.
 cd "$(dirname $0)/../../.."
+readonly drake_root="$(pwd)"
 readonly venv_root="$(bazel info output_base).venv"
 
 # Chdir to where the requirements files are located.
 cd "setup/$platform/source_distribution"
 
+# If committing, check that the working tree is clean (enough). Note that the
+# files we are going to create are ignored.
+[ -z "$commit" ] || check_working_tree
+
 generate_requirements requirements-build
 generate_requirements requirements-test
+
+# If committing, do the commit.
+if [ -n "$commit" ]; then
+    if [ ${#files_to_commit[@]} == 0 ]; then
+        set +x
+        echo
+        echo "No changes need to be committed."
+        exit 0
+    fi
+
+    cd "$drake_root"
+    message="[setup] Upgrade Python venv ($platform) to latest"
+    git commit -m "$message" -o "${files_to_commit[@]}"
+fi
