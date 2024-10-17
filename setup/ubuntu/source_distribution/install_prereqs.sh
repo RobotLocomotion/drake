@@ -1,10 +1,6 @@
-#!/bin/bash
+# Installs prerequisites for source distributions of Drake.
 #
-# Install development prerequisites for source distributions of Drake on
-# Ubuntu.
-#
-# The development and runtime prerequisites for binary distributions should be
-# installed before running this script.
+# This is (only) used as a subroutine of the parent directory's prereqs script.
 
 set -euo pipefail
 
@@ -13,52 +9,50 @@ with_maintainer_only=0
 with_bazel=1
 with_clang=1
 with_test_only=1
-with_update=1
 with_asking=1
 
-# TODO(jwnimmer-tri) Eventually we should default to with_clang=0.
+# TODO(jwnimmer-tri) On 2025-01-01 change the default value for with_bazel,
+# with_clang, and with_test_only to 0.
 
+# The docs for these options are in the parent ../install_prereqs.sh script.
 while [ "${1:-}" != "" ]; do
   case "$1" in
-    # Install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel run //doc:build.
+    --developer)
+      with_doc_only=1
+      with_bazel=1
+      with_clang=1
+      with_test_only=1
+      ;;
     --with-doc-only)
       with_doc_only=1
       ;;
-    # Install bazelisk from a deb package.
+    --without-doc-only)
+      with_doc_only=0
+      ;;
     --with-bazel)
       with_bazel=1
       ;;
-    # Do NOT install bazelisk.
     --without-bazel)
       with_bazel=0
       ;;
-    # Install prerequisites that are only needed for --config clang, i.e.,
-    # opts-in to the ability to compile Drake's C++ code using Clang.
     --with-clang)
       with_clang=1
       ;;
-    # Do NOT install prerequisites that are only needed for --config clang,
-    # i.e., opts-out of the ability to compile Drake's C++ code using Clang.
     --without-clang)
       with_clang=0
       ;;
-    # Install prerequisites that are only needed to run select maintainer
-    # scripts. Most developers will not need to install these dependencies.
     --with-maintainer-only)
       with_maintainer_only=1
       ;;
-    # Do NOT install prerequisites that are only needed to build and/or run
-    # unit tests, i.e., those prerequisites that are not dependencies of
-    # bazel { build, run } //:install.
+    --without-maintainer-only)
+      with_maintainer_only=0
+      ;;
+    --with-test-only)
+      with_test_only=1
+      ;;
     --without-test-only)
       with_test_only=0
       ;;
-    # Do NOT call apt-get update during execution of this script.
-    --without-update)
-      with_update=0
-      ;;
-    # Pass -y along to apt-get.
     -y)
       with_asking=0
       ;;
@@ -80,16 +74,6 @@ else
   maybe_yes=''
 fi
 
-if [[ "${with_update}" -eq 1 && "${binary_distribution_called_update:-0}" -ne 1 ]]; then
-  apt-get update || (sleep 30; apt-get update)
-fi
-
-apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
-ca-certificates
-wget
-EOF
-)
-
 codename=$(lsb_release -sc)
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
@@ -97,7 +81,11 @@ apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
 # C++ header containing Python API documentation during the build.
-apt-get install ${maybe_yes} --no-install-recommends locales
+if ! command -v locale-gen &>/dev/null; then
+  apt-get install ${maybe_yes} --no-install-recommends locales
+else
+  echo 'locale-gen is already installed' >&2
+fi
 locale-gen en_US.UTF-8
 
 # We need a working /usr/bin/python (of any version).

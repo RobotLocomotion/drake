@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Write user environment prerequisites for source distributions of Drake on
+# Writes user environment prerequisites for source distributions of Drake on
 # Ubuntu.
 
 set -euo pipefail
