@@ -30,6 +30,8 @@ namespace internal {
 // are coincident. The translation distance is defined to be positive in the
 // direction of `axis_F`.
 //
+// H_FM₆ₓ₁=[0₃, axis_F]ᵀ     Hdot_FM₆ₓ₁ = 0
+//
 // @tparam_default_scalar
 template <typename T>
 class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
@@ -127,8 +129,20 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // M measured and expressed in frame F as a function of the input
   // translational velocity v along this mobilizer's axis (see
   // translation_axis()).
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
+  }
+
+  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
+    return SpatialAcceleration<T>(Vector3<T>::Zero(),
+                                  vdot[0] * translation_axis());
+  }
+
+  // Returns tau = H_FMᵀ⋅F, where H_FMᵀ = [0₃ᵀ axis_Fᵀ].
+  void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const Vector3<T>& f_BMo_F = F_BMo_F.translational();
+    tau[0] = axis_F_.dot(f_BMo_F);
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

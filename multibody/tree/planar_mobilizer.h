@@ -31,6 +31,13 @@ namespace internal {
  The generalized velocities for this mobilizer are the rate of change of the
  coordinates, v = q̇.
 
+ H_FM₆ₓ₃=[0 0 0]    Hdot_FM = 0₆ₓ₃
+         [0 0 0]
+         [0 0 1]
+         [1 0 0]
+         [0 1 0]
+         [0 0 0]
+
  @tparam_default_scalar */
 template <typename T>
 class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
@@ -144,9 +151,24 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   /* Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
    M measured and expressed in frame F as a function of the input velocity v. */
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     return SpatialVelocity<T>(Vector3<T>(0.0, 0.0, v[2]),
                               Vector3<T>(v[0], v[1], 0.0));
+  }
+  /* Returns H_FM⋅vdot + Hdot_FM⋅v. See class description for definitions. */
+  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
+    return SpatialAcceleration<T>(Vector3<T>(0.0, 0.0, vdot[2]),
+                                  Vector3<T>(vdot[0], vdot[1], 0.0));
+  }
+
+  /* Returns tau = H_FMᵀ⋅F */
+  void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const Vector3<T>& t_B_F = F_BMo_F.rotational();       // torque
+    const Vector3<T>& f_BMo_F = F_BMo_F.translational();  // force
+    tau[0] = f_BMo_F[0];                                  // force along x
+    tau[1] = f_BMo_F[1];                                  // force along y
+    tau[2] = t_B_F[2];                                    // torque about z
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
