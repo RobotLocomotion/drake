@@ -437,6 +437,55 @@ SampledVolume ConvexSet::CalcVolumeViaSampling(
           .num_samples = num_samples};
 }
 
+double ConvexSet::CalcMaximumDistanceViaSampling(RandomGenerator* generator,
+                                                 const int num_samples) const {
+  if (ambient_dimension() == 0) {
+    throw std::runtime_error(fmt::format(
+        "Attempting to calculate the distance of a zero-dimensional "
+        "set {}. This is not well-defined.",
+        NiceTypeName::Get(*this)));
+  }
+  if (!IsBounded()) {
+    // return infinity, nan, 0 samples.
+    return std::numeric_limits<double>::infinity();
+  }
+  DRAKE_THROW_UNLESS(num_samples > 0);
+
+  Eigen::VectorXd cost_vector(ambient_dimension());
+  std::uniform_real_distribution<double> distribution(-1., 1.);
+  for (int i = 0; i < ambient_dimension(); ++i) {
+    cost_vector(i) = distribution(*generator);
+  }
+
+  // Create a mathematical program with a point in set constraint and a
+  // linear cost.
+  solvers::MathematicalProgram prog{};
+  const auto& x = prog.NewContinuousVariables(this->ambient_dimension(), "x");
+  auto cost = prog.AddLinearCost(cost_vector.transpose(), 0.0, x);
+  this->AddPointInSetConstraints(&prog, x);
+  solvers::MathematicalProgramResult result = solvers::Solve(prog);
+
+  std::vector<Eigen::VectorXd> points(num_samples);
+  points[0] = result.GetSolution(x);
+  double max_distance = 0.0;
+
+  for (int i = 1; i < num_samples; ++i) {
+    // Sample a new cost vector.
+    for (int j = 0; j < ambient_dimension(); ++j) {
+      cost_vector(j) = distribution(*generator);
+    }
+    cost.evaluator()->UpdateCoefficients(cost_vector);
+    result = solvers::Solve(prog);
+    points[i] = result.GetSolution(x);
+    // Compute the maximum distance from the previous points.
+    for (int j = 0; j < i; ++j) {
+      max_distance = std::max(max_distance, (points[i] - points[j]).norm());
+    }
+  }
+
+  return max_distance;
+}
+
 double ConvexSet::DoCalcVolume() const {
   throw std::runtime_error(
       fmt::format("The class {} has a defect -- has_exact_volume() is "
