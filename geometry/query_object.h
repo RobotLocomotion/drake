@@ -696,7 +696,6 @@ class QueryObject {
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed
   // Distance Queries. Update documentation as we add more functionality.
-  // Right now it only supports spheres and boxes.
   /**
    Computes the signed distances and gradients to a query point from each
    geometry in the scene.
@@ -733,7 +732,7 @@ class QueryObject {
 
    |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
    | :--------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   |   double   |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |  4e-15  |
+   |   double   |  2e-15  |   4e-15  |  1e-13ᶜ |   3e-15   |    3e-5ᵇ   |    5e-15   | 1e-13ᵈ  |  4e-15  |
    | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
    | Expression |   ᵃ     |    ᵃ     |    ᵃ    |     ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |
    __*Table 8*__: Worst observed error (in m) for 2mm penetration/separation
@@ -747,6 +746,16 @@ class QueryObject {
        the projection of the query point on the ellipsoid; the closer that point
        is to the high curvature area, the bigger the effect. It is not
        immediately clear how much worse the answer will get.
+   - ᶜ Convex hulls of meshes are supported. The signed distance, the
+       nearest point, and the gradient are computed from the convex hull.
+   - ᵈ Tetrahedral meshes in VTK files and triangle meshes in OBJ files are
+       supported. Unsupported meshes are simply ignored; no results are
+       reported for that geometry. The signed distance, the nearest point,
+       and the gradient are computed from the possibly non-convex surface of
+       the geometry. The nearest point and the gradient may not be continuous.
+
+   @pre The %Mesh shape must be watertight (no holes, no duplicated vertices).
+   Otherwise, the calculation might be incorrect.
 
    @note For a sphere G, the signed distance function φᵢ(p) has an undefined
    gradient vector at the center of the sphere--every point on the sphere's
