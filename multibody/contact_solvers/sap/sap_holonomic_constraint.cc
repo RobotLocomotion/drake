@@ -23,15 +23,15 @@ SapHolonomicConstraint<T>::Parameters::Parameters(
       relaxation_times_(std::move(relaxation_times)),
       beta_(beta) {
   constexpr double kInf = std::numeric_limits<double>::infinity();
-  DRAKE_DEMAND(impulse_lower_limits.size() == impulse_upper_limits.size());
-  DRAKE_DEMAND(impulse_lower_limits.size() == stiffnesses.size());
-  DRAKE_DEMAND(impulse_lower_limits.size() == relaxation_times.size());
-  DRAKE_DEMAND((impulse_lower_limits.array() <= kInf).all());
-  DRAKE_DEMAND((impulse_upper_limits.array() >= -kInf).all());
+  DRAKE_DEMAND(impulse_lower_limits_.size() == impulse_upper_limits_.size());
+  DRAKE_DEMAND(impulse_lower_limits_.size() == stiffnesses_.size());
+  DRAKE_DEMAND(impulse_lower_limits_.size() == relaxation_times_.size());
+  DRAKE_DEMAND((impulse_lower_limits_.array() <= kInf).all());
+  DRAKE_DEMAND((impulse_upper_limits_.array() >= -kInf).all());
   DRAKE_DEMAND(
-      (impulse_lower_limits.array() <= impulse_upper_limits.array()).all());
-  DRAKE_DEMAND((stiffnesses.array() > 0).all());
-  DRAKE_DEMAND((relaxation_times.array() >= 0).all());
+      (impulse_lower_limits_.array() <= impulse_upper_limits_.array()).all());
+  DRAKE_DEMAND((stiffnesses_.array() > 0).all());
+  DRAKE_DEMAND((relaxation_times_.array() >= 0).all());
 }
 
 template <typename T>
