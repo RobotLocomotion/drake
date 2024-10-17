@@ -17,9 +17,17 @@ namespace internal {
 class MultibodyTreeTester {
  public:
   MultibodyTreeTester() = delete;
+
   static const QuaternionFloatingMobilizer<double>& get_floating_mobilizer(
       const MultibodyTree<double>& model, const RigidBody<double>& body) {
-    return model.GetFreeBodyMobilizerOrThrow(body);
+    const Mobilizer<double>& mobilizer =
+        model.GetFreeBodyMobilizerOrThrow(body);
+    const QuaternionFloatingMobilizer<double>* const
+        quaternion_floating_mobilizer =
+            dynamic_cast<const QuaternionFloatingMobilizer<double>*>(
+                &mobilizer);
+    DRAKE_DEMAND(quaternion_floating_mobilizer != nullptr);
+    return *quaternion_floating_mobilizer;
   }
 };
 }  // namespace internal
