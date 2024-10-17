@@ -1,10 +1,10 @@
-#!/bin/bash
+# Installs bazelisk at /usr/bin/bazel{,isk}.
 #
-# On Ubuntu, installs bazelisk at /usr/bin/bazel{,isk}.
-#
-# This script does not accept any command line arguments.
+# This is (only) used as a subroutine of the parent directory's prereqs script.
 
 set -euo pipefail
+
+apt-get install ${maybe_yes} --no-install-recommends ca-certificates wget
 
 dpkg_install_from_wget() {
   package="$1"

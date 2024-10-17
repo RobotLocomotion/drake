@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Install development and runtime prerequisites for binary distributions of
+# Installs development and runtime prerequisites for binary distributions of
 # Drake on macOS.
 
 set -euxo pipefail
@@ -10,7 +10,10 @@ with_python_dependencies=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
-    # Do NOT call brew update during execution of this script.
+    # Call brew update during execution of this script.
+    --with-update)
+      with_update=1
+      ;;
     --without-update)
       with_update=0
       ;;

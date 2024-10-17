@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Install development and runtime prerequisites for both binary and source
+# Installs development and runtime prerequisites for both binary and source
 # distributions of Drake on Ubuntu.
 
 set -euo pipefail
@@ -30,16 +30,22 @@ source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
-    # Install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel run //doc:build.
+    # Set the with/without choices to be appropriate for a Drake Developer.
+    --developer)
+      source_distribution_args+=(--developer)
+      ;;
+    # Install prerequisites that are only needed to build documentation, i.e.,
+    # those that are dependencies of bazel run //doc:build.
     --with-doc-only)
       source_distribution_args+=(--with-doc-only)
+      ;;
+    --without-doc-only)
+      source_distribution_args+=(--without-doc-only)
       ;;
     # Install bazelisk from a deb package.
     --with-bazel)
       source_distribution_args+=(--with-bazel)
       ;;
-    # Do NOT install bazelisk.
     --without-bazel)
       source_distribution_args+=(--without-bazel)
       ;;
@@ -48,8 +54,6 @@ while [ "${1:-}" != "" ]; do
     --with-clang)
       source_distribution_args+=(--with-clang)
       ;;
-    # Do NOT install prerequisites that are only needed for --config clang,
-    # i.e., opts-out of the ability to compile Drake's C++ code using Clang.
     --without-clang)
       source_distribution_args+=(--without-clang)
       ;;
@@ -58,16 +62,19 @@ while [ "${1:-}" != "" ]; do
     --with-maintainer-only)
       source_distribution_args+=(--with-maintainer-only)
       ;;
-    # Do NOT install prerequisites that are only needed to build and/or run
-    # unit tests, i.e., those prerequisites that are not dependencies of
-    # bazel { build, run } //:install.
+    --without-maintainer-only)
+      source_distribution_args+=(--without-maintainer-only)
+      ;;
+    # Install prerequisites that are only needed for tests.
+    --with-test-only)
+      source_distribution_args+=(--with-test-only)
+      ;;
     --without-test-only)
       source_distribution_args+=(--without-test-only)
       ;;
     # Do NOT call apt-get update during execution of this script.
     --without-update)
       binary_distribution_args+=(--without-update)
-      source_distribution_args+=(--without-update)
       ;;
     -y)
       binary_distribution_args+=(-y)
