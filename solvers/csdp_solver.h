@@ -91,8 +91,9 @@ class CsdpSolver final : public SolverBase {
   using Details = CsdpSolverDetails;
 
  private:
-  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
-               const SolverOptions&, MathematicalProgramResult*) const final;
+  void DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
+                internal::SpecificOptions*,
+                MathematicalProgramResult*) const final;
 };
 }  // namespace solvers
 }  // namespace drake
