@@ -713,17 +713,22 @@ class CollisionChecker {
    associated context.
    @param q Configuration to check
    @param context_number Optional implicit context number.
+   @param collision_pair Optional pointer to store the associated collision pair
+   if a collision is found. No action is taken if it's nullptr, it's not in
+   collision, or if the collision checker does not return the collision pair.
    @returns true if collision free, false if in collision.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   bool CheckConfigCollisionFree(
       const Eigen::VectorXd& q,
-      std::optional<int> context_number = std::nullopt) const;
+      std::optional<int> context_number = std::nullopt,
+      geometry::SignedDistancePair<double>* collision_pair = nullptr) const;
 
   /** Explicit Context-based version of CheckConfigCollisionFree().
    @throws std::exception if model_context is nullptr.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
-  bool CheckContextConfigCollisionFree(CollisionCheckerContext* model_context,
-                                       const Eigen::VectorXd& q) const;
+  bool CheckContextConfigCollisionFree(
+      CollisionCheckerContext* model_context, const Eigen::VectorXd& q,
+      geometry::SignedDistancePair<double>* collision_pair = nullptr) const;
 
   // TODO(SeanCurtis-TRI): This isn't tested.
   /** Checks a vector of configurations for collision, evaluating in parallel
@@ -736,11 +741,18 @@ class CollisionChecker {
    guidance on proper usage.
    @param configs     Configurations to check
    @param parallelize How much should collision checks be parallelized?
+   @param collision_pairs Optional pointer to store the associated collision
+   pairs for each collision if a collision is found. No action is taken if it's
+   nullptr or if the collision checker does not return the collision pair.
+   Entries corresponding to configurations that are not in collision are
+   std::nullopt.
    @returns std::vector<uint8_t>, one for each configuration in configs. For
    each configuration, 1 if collision free, 0 if in collision. */
   std::vector<uint8_t> CheckConfigsCollisionFree(
       const std::vector<Eigen::VectorXd>& configs,
-      Parallelism parallelize = Parallelism::Max()) const;
+      Parallelism parallelize = Parallelism::Max(),
+      std::vector<std::optional<geometry::SignedDistancePair<double>>>*
+          collision_pairs = nullptr) const;
 
   //@}
 
@@ -1126,6 +1138,10 @@ class CollisionChecker {
    @returns true if parallel checking is supported. */
   bool SupportsParallelChecking() const { return supports_parallel_checking_; }
 
+  /** Can the collision checker return a collision pair if a configuration is in
+   * collision? */
+  bool CanComputeCollisionPairs() const { return can_compute_collision_pairs_; }
+
  protected:
   /** Derived classes declare upon construction whether they support parallel
    checking (see SupportsParallelChecking()). If a derived class does not
@@ -1134,7 +1150,8 @@ class CollisionChecker {
    @throws std::exception if params is invalid. @see CollisionCheckerParams.
    */
   CollisionChecker(CollisionCheckerParams params,
-                   bool supports_parallel_checking);
+                   bool supports_parallel_checking,
+                   bool can_compute_collision_pairs);
 
   /** To support Clone(), allow copying (but not move nor assign). */
   CollisionChecker(const CollisionChecker&);
@@ -1183,7 +1200,8 @@ class CollisionChecker {
    `model_context` has been updated with the configuration `q` supplied to the
    public method. */
   virtual bool DoCheckContextConfigCollisionFree(
-      const CollisionCheckerContext& model_context) const = 0;
+      const CollisionCheckerContext& model_context,
+      geometry::SignedDistancePair<double>* collision_pair = nullptr) const = 0;
 
   /** Does the work of adding a shape to be rigidly affixed to the body. Derived
    checkers can choose to ignore the request, but must return `nullopt` if they
@@ -1508,6 +1526,11 @@ class CollisionChecker {
   /* Determines whether the checker reports support for parallel evaluation.
    This is defined upon construction by implementations. */
   bool supports_parallel_checking_{};
+
+  /* Determines whether the checker can determine the pair of collision
+  geometries that are in collision. This is defined upon construction by
+  implementations. */
+  bool can_compute_collision_pairs_{};
 
   /* Specifies how much parallelism can be used in implicit context operations.
   If the checker does not support parallel evaluation, this will specify no

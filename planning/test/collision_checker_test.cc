@@ -124,7 +124,8 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
   }
 
   bool DoCheckContextConfigCollisionFree(
-      const CollisionCheckerContext& model_context) const override {
+      const CollisionCheckerContext& model_context,
+      geometry::SignedDistancePair<double>* collision_pair) const override {
     // CollisionChecker promises that positions have been updated from public
     // method arguments.
     positions_for_check_ = plant().GetPositions(model_context.plant_context());
@@ -1735,7 +1736,8 @@ class MockEdgeChecker : public UnimplementedCollisionChecker {
 
  protected:
   bool DoCheckContextConfigCollisionFree(
-      const CollisionCheckerContext& model_context) const override {
+      const CollisionCheckerContext& model_context,
+      geometry::SignedDistancePair<double>*) const override {
     // Make this call artificially more expensive so that parallel edge checks
     // will actually perform work in multiple OpenMP threads.
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
