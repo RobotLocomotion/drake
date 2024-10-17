@@ -9,6 +9,7 @@ import scipy.sparse
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import Sphere
+from pydrake.geometry.optimization import HPolyhedron
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import (
@@ -460,6 +461,15 @@ class TestCollisionChecker(unittest.TestCase):
         function_checker = self._make_scene_graph_collision_checker(
             False, True)
         self._test_collision_checker_base_class(function_checker, False)
+
+    def test_configuration_space_obstacle_collision_checker(self):
+        default_checker = self._make_scene_graph_collision_checker(
+            False, False)
+        A = np.eye(default_checker.plant().num_positions())
+        b = np.ones(default_checker.plant().num_positions())
+        sets = [HPolyhedron(A, b)]
+
+        checker2 = mut.ConfigurationSpaceObstacleCollisionChecker(default_checker, sets)
 
     def test_visibility_graph(self):
         checker = self._make_scene_graph_collision_checker(True, False)
