@@ -547,21 +547,24 @@ void CollisionChecker::SetCollisionFilteredWithAllBodies(BodyIndex body_index) {
 }
 
 bool CollisionChecker::CheckConfigCollisionFree(
-    const Eigen::VectorXd& q, const std::optional<int> context_number) const {
+    const Eigen::VectorXd& q, const std::optional<int> context_number,
+    geometry::SignedDistancePair<double>* collision_pair) const {
   return CheckContextConfigCollisionFree(&mutable_model_context(context_number),
-                                         q);
+                                         q, collision_pair);
 }
 
 bool CollisionChecker::CheckContextConfigCollisionFree(
-    CollisionCheckerContext* model_context, const Eigen::VectorXd& q) const {
+    CollisionCheckerContext* model_context, const Eigen::VectorXd& q,
+    geometry::SignedDistancePair<double>* collision_pair) const {
   DRAKE_THROW_UNLESS(model_context != nullptr);
   UpdateContextPositions(model_context, q);
-  return DoCheckContextConfigCollisionFree(*model_context);
+  return DoCheckContextConfigCollisionFree(*model_context, collision_pair);
 }
 
 std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
-    const std::vector<Eigen::VectorXd>& configs,
-    const Parallelism parallelize) const {
+    const std::vector<Eigen::VectorXd>& configs, const Parallelism parallelize,
+    std::vector<std::optional<geometry::SignedDistancePair<double>>>*
+        collision_pairs) const {
   // Note: vector<uint8_t> is used since vector<bool> is not thread safe.
   std::vector<uint8_t> collision_checks(configs.size(), 0);
 
@@ -569,14 +572,33 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
   drake::log()->debug("CheckConfigsCollisionFree uses {} thread(s)",
                       number_of_threads);
 
-  const auto config_work = [&](const int thread_num, const int64_t index) {
-    collision_checks.at(index) =
-        CheckConfigCollisionFree(configs.at(index), thread_num);
-  };
+  if (collision_pairs != nullptr && can_compute_collision_pairs_) {
+    collision_pairs->clear();
+    collision_pairs->resize(configs.size());
+    const auto config_work = [&](const int thread_num, const int64_t index) {
+      geometry::SignedDistancePair<double> collision_pair;
+      collision_checks.at(index) = CheckConfigCollisionFree(
+          configs.at(index), thread_num, &collision_pair);
+      if (!collision_checks.at(index)) {
+        collision_pairs->at(index) = collision_pair;
+      } else {
+        collision_pairs->at(index) = std::nullopt;
+      }
+    };
 
-  StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
-                             configs.size(), config_work,
-                             ParallelForBackend::BEST_AVAILABLE);
+    StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                               configs.size(), config_work,
+                               ParallelForBackend::BEST_AVAILABLE);
+  } else {
+    const auto config_work = [&](const int thread_num, const int64_t index) {
+      collision_checks.at(index) =
+          CheckConfigCollisionFree(configs.at(index), thread_num, nullptr);
+    };
+
+    StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                               configs.size(), config_work,
+                               ParallelForBackend::BEST_AVAILABLE);
+  }
 
   return collision_checks;
 }
@@ -949,7 +971,8 @@ std::vector<RobotCollisionType> CollisionChecker::ClassifyContextBodyCollisions(
 }
 
 CollisionChecker::CollisionChecker(CollisionCheckerParams params,
-                                   bool supports_parallel_checking)
+                                   bool supports_parallel_checking,
+                                   bool can_compute_collision_pairs)
     : setup_model_(std::move(params.model)),
       robot_model_instances_([&params]() {
         // Sort (and de-duplicate) the robot model instances for faster lookups.
@@ -969,6 +992,7 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
           CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
               setup_model_->plant(), robot_model_instances_)),
       supports_parallel_checking_(supports_parallel_checking),
+      can_compute_collision_pairs_(can_compute_collision_pairs),
       implicit_context_parallelism_(params.implicit_context_parallelism) {
   // Sanity check the supported implicit context parallelism.
   if (!SupportsParallelChecking() &&

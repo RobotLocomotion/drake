@@ -180,14 +180,77 @@ void DefinePlanningCollisionChecker(py::module m) {
                 &Class::SetCollisionFilteredWithAllBodies),
             py::arg("body"),
             cls_doc.SetCollisionFilteredWithAllBodies.doc_1args_body)
-        .def("CheckConfigCollisionFree", &Class::CheckConfigCollisionFree,
+        .def(
+            "CheckConfigCollisionFree",
+            [](const CollisionChecker* self, const Eigen::VectorXd& q,
+                std::optional<int> context_number, bool return_collision_pair)
+                -> std::variant<bool,
+                    std::pair<bool,
+                        std::optional<geometry::SignedDistancePair<double>>>> {
+              if (return_collision_pair) {
+                geometry::SignedDistancePair<double> collision_pair;
+                bool output = self->CheckConfigCollisionFree(
+                    q, context_number, &collision_pair);
+                if (self->CanComputeCollisionPairs()) {
+                  return std::make_pair(output, collision_pair);
+                } else {
+                  return std::make_pair(output, std::nullopt);
+                }
+              } else {
+                return self->CheckConfigCollisionFree(
+                    q, context_number, nullptr);
+              }
+            },
             py::arg("q"), py::arg("context_number") = std::nullopt,
+            py::arg("return_collision_pair") = false,
             cls_doc.CheckConfigCollisionFree.doc)
-        .def("CheckContextConfigCollisionFree",
-            &Class::CheckContextConfigCollisionFree, py::arg("model_context"),
-            py::arg("q"), cls_doc.CheckContextConfigCollisionFree.doc)
-        .def("CheckConfigsCollisionFree", &Class::CheckConfigsCollisionFree,
+        .def(
+            "CheckContextConfigCollisionFree",
+            [](const CollisionChecker* self,
+                CollisionCheckerContext* model_context,
+                const Eigen::VectorXd& q, bool return_collision_pair)
+                -> std::variant<bool,
+                    std::pair<bool,
+                        std::optional<geometry::SignedDistancePair<double>>>> {
+              if (return_collision_pair) {
+                geometry::SignedDistancePair<double> collision_pair;
+                bool output = self->CheckContextConfigCollisionFree(
+                    model_context, q, &collision_pair);
+                if (self->CanComputeCollisionPairs()) {
+                  return std::make_pair(output, collision_pair);
+                } else {
+                  return std::make_pair(output, std::nullopt);
+                }
+              } else {
+                return self->CheckContextConfigCollisionFree(
+                    model_context, q, nullptr);
+              }
+            },
+            py::arg("model_context"), py::arg("q"),
+            py::arg("return_collision_pair") = false,
+            cls_doc.CheckContextConfigCollisionFree.doc)
+        .def(
+            "CheckConfigsCollisionFree",
+            [](const CollisionChecker* self,
+                const std::vector<Eigen::VectorXd>& configs,
+                Parallelism parallelism, bool return_collision_pairs)
+                -> std::variant<std::vector<uint8_t>,
+                    std::pair<std::vector<uint8_t>,
+                        std::optional<std::vector<std::optional<
+                            geometry::SignedDistancePair<double>>>>>> {
+              if (return_collision_pairs) {
+                std::vector<std::optional<geometry::SignedDistancePair<double>>>
+                    collision_pairs;
+                std::vector<uint8_t> output = self->CheckConfigsCollisionFree(
+                    configs, parallelism, &collision_pairs);
+                return std::make_pair(output, collision_pairs);
+              } else {
+                return self->CheckConfigsCollisionFree(
+                    configs, parallelism, nullptr);
+              }
+            },
             py::arg("configs"), py::arg("parallelize") = true,
+            py::arg("return_collision_pairs") = false,
             py::call_guard<py::gil_scoped_release>(),
             cls_doc.CheckConfigsCollisionFree.doc)
         .def("SetDistanceAndInterpolationProvider",
@@ -275,7 +338,9 @@ void DefinePlanningCollisionChecker(py::module m) {
             &Class::ClassifyContextBodyCollisions, py::arg("model_context"),
             py::arg("q"), cls_doc.ClassifyContextBodyCollisions.doc)
         .def("SupportsParallelChecking", &Class::SupportsParallelChecking,
-            cls_doc.SupportsParallelChecking.doc);
+            cls_doc.SupportsParallelChecking.doc)
+        .def("CanComputeCollisionPairs", &Class::CanComputeCollisionPairs,
+            cls_doc.CanComputeCollisionPairs.doc);
     DefClone(&cls);
   }
 

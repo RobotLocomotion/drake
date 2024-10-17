@@ -355,6 +355,55 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
   // Increasing q₁ will decrease the Seattle-Dallas distance.
   expected_jacobians(2, 1) = -1.0;
   EXPECT_TRUE(CompareMatrices(clearance.jacobians(), expected_jacobians, tol));
+
+  // Check that we can use SceneGraphCollisionChecker to identify a collision
+  // pair that is in collision if the whole configuration is in-collision.
+  std::vector<Eigen::VectorXd> qs;
+  qs.push_back(Vector3d(5, 5, 0));  // Not in collision
+  qs.push_back(Vector3d(0, 5, 0));  // Dallas and Boston in collision
+  std::vector<std::optional<geometry::SignedDistancePair<double>>>
+      collision_pairs;
+  auto in_collision =
+      dut.CheckConfigsCollisionFree(qs, Parallelism::Max(), &collision_pairs);
+  ASSERT_EQ(in_collision.size(), 2);
+  EXPECT_EQ(in_collision[0], 1);
+  EXPECT_EQ(in_collision[1], 0);
+
+  ASSERT_EQ(in_collision.size(), collision_pairs.size());
+  EXPECT_FALSE(collision_pairs[0].has_value());
+  ASSERT_TRUE(collision_pairs[1].has_value());
+  EXPECT_LE(collision_pairs[1]->distance, 0);
+
+  // Check collision geometries match
+  std::optional<geometry::FrameId> maybe_boston_frame_id =
+      plant.GetBodyFrameIdIfExists(boston);
+  ASSERT_TRUE(maybe_boston_frame_id.has_value());
+  const multibody::RigidBody<double>* maybe_boston_rigid_body =
+      plant.GetBodyFromFrameId(maybe_boston_frame_id.value());
+  ASSERT_TRUE(maybe_boston_rigid_body != nullptr);
+  std::vector<geometry::GeometryId> boston_geometry_ids =
+      plant.GetCollisionGeometriesForBody(*maybe_boston_rigid_body);
+  ASSERT_EQ(boston_geometry_ids.size(), 1);
+  geometry::GeometryId boston_geometry_id = boston_geometry_ids[0];
+
+  std::optional<geometry::FrameId> maybe_dallas_frame_id =
+      plant.GetBodyFrameIdIfExists(dallas);
+  ASSERT_TRUE(maybe_dallas_frame_id.has_value());
+  const multibody::RigidBody<double>* maybe_dallas_rigid_body =
+      plant.GetBodyFromFrameId(maybe_dallas_frame_id.value());
+  ASSERT_TRUE(maybe_dallas_rigid_body != nullptr);
+  std::vector<geometry::GeometryId> dallas_geometry_ids =
+      plant.GetCollisionGeometriesForBody(*maybe_dallas_rigid_body);
+  ASSERT_EQ(dallas_geometry_ids.size(), 1);
+  geometry::GeometryId dallas_geometry_id = dallas_geometry_ids[0];
+
+  // Either id_A is boston and id_B is dallas, or id_A is dallas and id_B is
+  // boston
+  auto pair = collision_pairs[1].value();
+  bool correct_collision_pair =
+      (pair.id_A == boston_geometry_id && pair.id_B == dallas_geometry_id) ||
+      (pair.id_A == dallas_geometry_id && pair.id_B == boston_geometry_id);
+  EXPECT_TRUE(correct_collision_pair);
 }
 
 // Checks RobotClearance when the robot is an arm (only) but inboard of the

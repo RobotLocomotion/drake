@@ -37,7 +37,8 @@ class SceneGraphCollisionChecker final : public CollisionChecker {
   void DoUpdateContextPositions(CollisionCheckerContext*) const final;
 
   bool DoCheckContextConfigCollisionFree(
-      const CollisionCheckerContext& model_context) const final;
+      const CollisionCheckerContext& model_context,
+      geometry::SignedDistancePair<double>* collision_pair) const final;
 
   std::optional<geometry::GeometryId> DoAddCollisionShapeToBody(
       const std::string& group_name, const multibody::RigidBody<double>& bodyA,
