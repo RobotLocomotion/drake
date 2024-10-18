@@ -170,5 +170,14 @@ void IpoptSolver::DoSolve(const MathematicalProgram& prog,
   solver_details.lambda = nlp->lambda();
 }
 
+bool IpoptSolver::IsThreadSafeLinearSolver(const std::string& solver_name) {
+  return IpoptSolver::known_threadsafe_linear_solvers.contains(solver_name);
+}
+
+// The IPOPT issue https://github.com/coin-or/Ipopt/issues/733 indicates
+// that these solvers are thread safe.
+const std::set<std::string> IpoptSolver::known_threadsafe_linear_solvers = {
+    "ma27", "ma57", "ma77", "ma86", "ma97"};
+
 }  // namespace solvers
 }  // namespace drake

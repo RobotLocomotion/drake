@@ -5,10 +5,12 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/l2norm_cost_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -469,8 +471,7 @@ GTEST_TEST(TestOptions, StandaloneReproduction) {
   ClarabelSolver solver;
   if (solver.available()) {
     SolverOptions solver_options;
-    const std::string repro_file_name =
-        temp_directory() + "/reproduction.py";
+    const std::string repro_file_name = temp_directory() + "/reproduction.py";
     solver_options.SetOption(
         CommonSolverOption::kStandaloneReproductionFileName, repro_file_name);
     solver.Solve(prog, std::nullopt, solver_options);
@@ -506,8 +507,7 @@ GTEST_TEST(TestOptions, EmptyCones) {
   ClarabelSolver solver;
   if (solver.available()) {
     SolverOptions solver_options;
-    const std::string repro_file_name =
-        temp_directory() + "/reproduction.py";
+    const std::string repro_file_name = temp_directory() + "/reproduction.py";
     solver_options.SetOption(
         CommonSolverOption::kStandaloneReproductionFileName, repro_file_name);
     solver.Solve(prog, std::nullopt, solver_options);
@@ -564,6 +564,24 @@ GTEST_TEST(TestZeroStepSize, ZeroStepSize) {
               SolutionResult::kSolverSpecificError);
     EXPECT_EQ(result.get_solver_details<ClarabelSolver>().status,
               "InsufficientProgress");
+  }
+}
+
+// This test checks that calling ClarabelSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(ClarabelTest, TestSolveInParallel) {
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */,
+                      ClarabelSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
   }
 }
 

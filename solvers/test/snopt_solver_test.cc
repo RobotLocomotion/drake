@@ -10,11 +10,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/optimization_examples.h"
@@ -694,6 +696,24 @@ TEST_F(SnoptSolverEnabledTest, ExplicitlyDisabled) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_.Solve(prog_), ".*SnoptSolver has not been properly configured.*");
+}
+
+// This test checks that calling SnoptSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SnoptTest, TestSolveInParallel) {
+  int num_problems = 100;
+  QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(qp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */,
+                      SnoptSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    qp.CheckSolution(results[i]);
+  }
 }
 
 }  // namespace test
