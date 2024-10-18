@@ -405,8 +405,14 @@ GTEST_TEST(IpoptTest, TestSolveInParallel) {
   int num_problems = 100;
   QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   std::vector<const MathematicalProgram*> progs;
+  // Give the program an initial guess to avoid initialization at a non-feasible
+  // point.
+  Eigen::VectorXd initial_guess{3};
+  initial_guess << 0.5, 1.5, 0;
+  std::vector<const Eigen::VectorXd*> initial_guesses;
   for (int i = 0; i < num_problems; ++i) {
     progs.push_back(qp.prog());
+    initial_guesses.push_back(&initial_guess);
   }
 
   SolverOptions solver_options;
@@ -415,7 +421,7 @@ GTEST_TEST(IpoptTest, TestSolveInParallel) {
   // this does not cause SolveInParallel to crash.
   solver_options.SetOption(IpoptSolver::id(), "linear_solver", "mumps");
   std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */, solver_options,
+      SolveInParallel(progs, &initial_guesses, solver_options,
                       IpoptSolver::id(), Parallelism::Max());
   for (int i = 0; i < num_problems; ++i) {
     qp.CheckSolution(results[i]);
