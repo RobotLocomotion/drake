@@ -1,3 +1,5 @@
+build-essential
+cmake
 default-jre
 jupyter-notebook
 libblas-dev
@@ -10,11 +12,12 @@ libjchart2d-java
 liblapack3
 libmumps-seq-5.6
 libopengl0
-libquadmath0
 libpython3.12
+libquadmath0
 libspdlog-dev
 libx11-6
 ocl-icd-libopencl1
+pkg-config
 python3
 python3-ipywidgets
 python3-matplotlib
