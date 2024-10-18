@@ -149,7 +149,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
           msg += fmt::format("{},", solver_name);
         }
         msg += "}.";
-        drake::log()->warn(msg);
+        static const logging::Warn log_once(msg.c_str());
         return;
       }
     }

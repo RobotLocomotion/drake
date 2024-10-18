@@ -427,6 +427,7 @@ GTEST_TEST(IpoptTest, TestSolveInParallel) {
       SolveInParallel(progs, nullptr /* no initial guess */, solver_options,
                       IpoptSolver::id(), Parallelism::Max());
   for (int i = 0; i < num_problems; ++i) {
+    EXPECT_TRUE(results[i].is_success());
     qp.CheckSolution(results[i]);
   }
 }
