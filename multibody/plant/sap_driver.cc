@@ -640,6 +640,9 @@ void SapDriver<T>::AddWeldConstraints(
     const math::RigidTransform<T>& X_WB = body_B.EvalPoseInWorld(context);
     const math::RigidTransform<T> X_WP = X_WA * spec.X_AP.template cast<T>();
     const math::RigidTransform<T> X_WQ = X_WB * spec.X_BQ.template cast<T>();
+    const math::RotationMatrix<T> R_AW = X_WA.rotation().transpose();
+    const math::RotationMatrix<T> R_BW = X_WB.rotation().transpose();
+
     const Vector3<T> p_AP_W =
         X_WA.rotation() * spec.X_AP.translation().template cast<T>();
     const Vector3<T> p_BQ_W =
@@ -647,8 +650,8 @@ void SapDriver<T>::AddWeldConstraints(
 
     // Let M be the midpoint of P and Q.
     const Vector3<T> p_WM = 0.5 * (X_WP.translation() + X_WQ.translation());
-    const Vector3<T> p_AM = p_WM - X_WA.translation();
-    const Vector3<T> p_BM = p_WM - X_WB.translation();
+    const Vector3<T> p_AM = R_AW * (p_WM - X_WA.translation());
+    const Vector3<T> p_BM = R_BW * (p_WM - X_WB.translation());
 
     // Dense Jacobian.
     manager().internal_tree().CalcJacobianSpatialVelocity(
