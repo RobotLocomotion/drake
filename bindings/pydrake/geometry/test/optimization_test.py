@@ -810,7 +810,11 @@ class TestGeometryOptimization(unittest.TestCase):
         edge0_cost = edge0.AddCost(2.34)
         edge1 = spp.AddEdge(u=source, v=target, name="edge1")
         edge1.AddCost(3.45)
+        self.assertTrue(spp.IsValid(v=source))
+        self.assertEqual(spp.num_vertices(), 2)
         self.assertEqual(len(spp.Vertices()), 2)
+        self.assertTrue(spp.IsValid(e=edge0))
+        self.assertEqual(spp.num_edges(), 2)
         self.assertEqual(len(spp.Edges()), 2)
         result = spp.SolveShortestPath(
             source=source, target=target, options=options)
@@ -1046,6 +1050,39 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(spp.Vertices()), 1)
         spp.RemoveVertex(target)
         self.assertEqual(len(spp.Vertices()), 0)
+
+    def test_implicit_graph_of_convex_sets(self):
+        # A simple loop graph, a -> b -> c -> a, where the vertices are
+        # identified based on their string names.
+        class SimpleLoopGcs(mut.ImplicitGraphOfConvexSets):
+            def __init__(self):
+                mut.ImplicitGraphOfConvexSets.__init__(self)
+                self.vertex_cache_ = {}
+
+            def GetVertex(self, name):
+                if name in self.vertex_cache_:
+                    return self.vertex_cache_[name]
+                else:
+                    xv = 1.0 + (ord(name[0]) - ord("a"))
+                    vertex = self.gcs().AddVertex(
+                        set=mut.Point([xv]), name=name)
+                    self.vertex_cache_[name] = vertex
+                    return vertex
+
+            def DoSuccessors(self, v):
+                if v.name() == "c":
+                    return [self.gcs().AddEdge(v, self.GetVertex("a"))]
+                else:
+                    next_vertex = chr(ord(v.name()[0]) + 1)
+                    return [self.gcs().AddEdge(v, self.GetVertex(next_vertex))]
+
+        simple_loop_gcs = SimpleLoopGcs()
+        a = simple_loop_gcs.GetVertex("a")
+        self.assertEqual(len(simple_loop_gcs.Successors(v=a)), 1)
+        explicit_gcs = simple_loop_gcs.BuildExplicitGcs(
+            start=simple_loop_gcs.GetVertex("b"), max_vertices=10)
+        self.assertEqual(explicit_gcs.num_vertices(), 3)
+        self.assertEqual(explicit_gcs.num_edges(), 3)
 
 
 class TestCspaceFreePolytope(unittest.TestCase):
