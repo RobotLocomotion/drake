@@ -23,7 +23,7 @@ def bazelisk_repository(
         sha256 = "4e136f6f1212f28d5c6fdd4cfa3f016d7443831fc98ce8b7ee3caee81ef956fa",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/pull494.patch",
+            ":patches/upstream/pull494.patch",
         ],
         mirrors = mirrors,
     )

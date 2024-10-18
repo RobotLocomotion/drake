@@ -11,9 +11,9 @@ def tinyobjloader_internal_repository(
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
         patches = [
+            ":patches/upstream/in_memory_parsing_support.patch",
+            ":patches/upstream/silence_materials.patch",
             ":patches/faster_float_parsing.patch",
             ":patches/default_texture_color.patch",
-            ":patches/in_memory_parsing_support.patch",
-            ":patches/silence_materials.patch",
         ],
     )

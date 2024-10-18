@@ -1,5 +1,7 @@
 Adds a hidden drake_vendor namespace for ODR safety
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- picosha2.h
 +++ picosha2.h
 @@ -36,6 +36,7 @@

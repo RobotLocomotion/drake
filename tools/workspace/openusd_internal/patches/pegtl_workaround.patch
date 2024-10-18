@@ -1,8 +1,9 @@
 [openusd_internal] Fix symbol leak in pegtl linking workaround
 
 The patch effectively hides the (mostly useless) symbol from downstream
-consumers of Drake.  Since it fixes a Drake-only issue, it should not be
-upstreamed.
+consumers of Drake.
+
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
 
 --- pxr/base/pegtl/build-workaround.cpp
 +++ pxr/base/pegtl/build-workaround.cpp

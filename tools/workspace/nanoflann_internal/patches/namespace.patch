@@ -3,6 +3,8 @@ Add a drake_vendor namespace ala tools/workspace/vendor_cxx
 This prevents link-time symbol conflicts in case code downstream of
 Drake wants to use a different build of nanoflann.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- include/nanoflann.hpp.orig
 +++ include/nanoflann.hpp
 @@ -70,6 +70,7 @@

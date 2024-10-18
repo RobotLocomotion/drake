@@ -13,7 +13,7 @@ def qhull_internal_repository(
             # The Qhull license requires us to publish the author, date, and
             # reason for changes. Ensure that any new patch files added here
             # contain that information in their opening commentary.
-            ":patches/cxx20.patch",
+            ":patches/upstream/cxx20.patch",
             ":patches/disable_dead_code.patch",
             ":patches/vendor.patch",
         ],

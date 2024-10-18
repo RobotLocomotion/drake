@@ -10,8 +10,8 @@ def conex_internal_repository(
         sha256 = "3f88f45276a1b474946b67e7c650fefd6d7c9dcb48f0c0a11393be3e6adc5ba7",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/debug_macros.patch",
-            ":patches/eigen_namespace_pollution.patch",
+            ":patches/upstream/debug_macros.patch",
+            ":patches/upstream/eigen_namespace_pollution.patch",
             ":patches/no_eigen_io.patch",
             ":patches/vendor.patch",
         ],

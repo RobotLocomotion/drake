@@ -1,6 +1,6 @@
 [vtk] Use a custom hidden namespace for vtkdoubleconversion
 
-This situation is unique to Drake, so we won't to upstream this patch.
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
 
 --- ThirdParty/doubleconversion/vtkdoubleconversion/double-conversion/utils.h
 +++ ThirdParty/doubleconversion/vtkdoubleconversion/double-conversion/utils.h

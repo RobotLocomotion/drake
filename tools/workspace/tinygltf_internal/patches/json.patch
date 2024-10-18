@@ -1,5 +1,7 @@
 Redirects tinygltf to use Drake's vendored nlohmann json.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- tiny_gltf.h
 +++ tiny_gltf.h
 @@ -1705,7 +1705,7 @@ class TinyGLTF {

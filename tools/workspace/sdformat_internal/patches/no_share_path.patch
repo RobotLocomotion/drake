@@ -1,6 +1,6 @@
 Disable the "optional binary relocatability" path hunting
 
-This is a Drake-specific choice, not to be upstreamed.
+Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- src/SDF.cc
 +++ src/SDF.cc
