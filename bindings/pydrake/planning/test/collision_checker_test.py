@@ -7,8 +7,10 @@ import unittest
 import numpy as np
 import scipy.sparse
 
+from typing import Optional
+
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.geometry import Sphere
+from pydrake.geometry import Sphere, SignedDistancePair
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import (
@@ -348,12 +350,45 @@ class TestCollisionChecker(unittest.TestCase):
 
         dut.CheckConfigCollisionFree(q=q)
         dut.CheckConfigCollisionFree(q=q, context_number=1)
-        dut.CheckContextConfigCollisionFree(model_context=ccc, q=q)
-        self.assertEqual(
-            len(dut.CheckConfigsCollisionFree(
-                configs=[q]*4, parallelize=True)),
-            4)
-        dut.CheckConfigsCollisionFree([q])  # Omit the defaulted arg.
+        in_collision, collision_pair = dut.CheckConfigCollisionFree(
+            q=q, context_number=1, return_collision_pair=True)
+        self.assertIsInstance(collision_pair, Optional[SignedDistancePair])
+
+        in_collision, collision_pair = dut.CheckContextConfigCollisionFree(
+            model_context=ccc, q=q, return_collision_pair=True)
+        self.assertIsInstance(collision_pair, Optional[SignedDistancePair])
+
+        configs = [q] * 4
+        if dut.CanComputeCollisionPairs():
+            in_collision, collision_pairs = dut.CheckConfigsCollisionFree(
+                configs=configs,
+                parallelize=True,
+                return_collision_pairs=True)
+            self.assertEqual(len(in_collision), 4)
+            self.assertEqual(len(collision_pairs), 4)
+            self.assertIsInstance(collision_pairs[0],
+                                  Optional[SignedDistancePair])
+
+            in_collision = dut.CheckConfigsCollisionFree(
+                configs=configs,
+                parallelize=True,
+                return_collision_pairs=False)
+            self.assertEqual(len(in_collision), 4)
+        else:
+            in_collision, collision_pairs = dut.CheckConfigsCollisionFree(
+                configs=configs,
+                parallelize=True,
+                return_collision_pairs=True)
+            self.assertEqual(len(in_collision), 4)
+            self.assertEqual(collision_pairs, None)
+
+            in_collision = dut.CheckConfigsCollisionFree(
+                configs=configs,
+                parallelize=True,
+                return_collision_pairs=False)
+            self.assertEqual(len(in_collision), 4)
+
+        dut.CheckConfigsCollisionFree([q])  # Omit the defaulted args.
 
         if not has_provider:
             def distance_function(q1, q2):

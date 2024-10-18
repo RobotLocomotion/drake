@@ -45,7 +45,8 @@ class UnimplementedCollisionChecker : public CollisionChecker {
       CollisionCheckerContext* model_context) const override;
 
   bool DoCheckContextConfigCollisionFree(
-      const CollisionCheckerContext&) const override;
+      const CollisionCheckerContext&,
+      geometry::SignedDistancePair<double>* collision_pair) const override;
 
   std::optional<geometry::GeometryId> DoAddCollisionShapeToBody(
       const std::string& group_name, const multibody::RigidBody<double>& bodyA,
