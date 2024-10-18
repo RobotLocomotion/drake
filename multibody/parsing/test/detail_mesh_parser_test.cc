@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <optional>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -252,6 +253,14 @@ TEST_F(MeshParserTest, CorrectMass) {
   // a mass of 1000 kg/m³, we have to scale the tolerance accordingly.
   EXPECT_TRUE(CompareMatrices(I_BBo_B.CopyToFullMatrix6(),
                               I_BBo_B_expected.CopyToFullMatrix6(), 1e-12));
+}
+
+TEST_F(MeshParserTest, ZeroVolume) {
+  // A 2x2x2 (meter) box centered on its canonical frame.
+  const std::string obj_path = FindResourceOrThrow(
+      "drake/geometry/test/bad_geometry_volume_zero.obj");
+  AddModelFromMeshFile(obj_path, "body");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*volume.*is 0.*"));
 }
 
 // When the plant has been registered as a SceneGraph geometry source, we should
