@@ -1,9 +1,10 @@
 #include "drake/solvers/solve.h"
 
 #include <memory>
+#include <set>
+#include <string>
 #include <unordered_map>
 #include <utility>
-#include <variant>
 
 #include <common_robotics_utilities/parallelism.hpp>
 
@@ -103,14 +104,6 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     }
     const SolverInterface& solver = *(solver_iter->second);
 
-    // Convert the initial guess from nullable to optional.
-    // TODO(jwnimmer-tri) The SolverBase should offer a nullable overload so
-    // that we can avoid this copying.
-    std::optional<Eigen::VectorXd> initial_guess;
-    if ((initial_guesses != nullptr) && ((*initial_guesses)[i] != nullptr)) {
-      initial_guess = *((*initial_guesses)[i]);
-    }
-
     // Adjust the solver options to obey `parallelism`. If this solve is part of
     // the par-for, then the solver is only allowed one thread; otherwise
     // (during the serial cleanup pass) it is allowed `parallelism`. Note that
@@ -127,10 +120,46 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     new_options->SetOption(
         CommonSolverOption::kMaxThreads,
         operating_in_parallel ? 1 : parallelism.num_threads());
-    if (operating_in_parallel) {
-      // On Mac Sonoma the default solver is MUMPS which is not re-entrant
-      // thread safe. Therefore, we use MA27 instead.
-      new_options->SetOption(IpoptSolver::id(), "linear_solver", "ma27");
+
+    // IPOPT's default solver MUMPs is not thread-safe. Therefore, if we are
+    // operating in parallel we need to skip this program if we want to solve it
+    // with IPOPT if the linear solver is not set to something threadsafe.
+    if (operating_in_parallel && solver.solver_id() == IpoptSolver::id()) {
+      const std::unordered_map<std::string, std::string>& string_options =
+          new_options->GetOptionsStr(IpoptSolver::id());
+      const auto linear_solver = string_options.find("linear_solver");
+      // The IPOPT issue https://github.com/coin-or/Ipopt/issues/733 indicates
+      // that these solvers are thread safe.
+      if (linear_solver == string_options.end() ||
+          !IpoptSolver::IsThreadSafeLinearSolver(linear_solver->second)) {
+        const std::string linear_solver_name =
+            linear_solver == string_options.end() ? "default"
+                                                  : linear_solver->second;
+        std::string msg = fmt::format(
+            "IPOPT: the selected linear solver {} is not thread safe "
+            "and so "
+            "IPOPT will not solve these programs in parallel. "
+            "Consider setting "
+            "the IPOPT linear_solver option to a known, threadsafe "
+            "solver: ",
+            linear_solver_name);
+        msg += "{";
+        for (const std::string& solver_name :
+             IpoptSolver::known_threadsafe_linear_solvers) {
+          msg += fmt::format("{},", solver_name);
+        }
+        msg += "}.";
+        drake::log()->warn(msg);
+        return;
+      }
+    }
+
+    // Convert the initial guess from nullable to optional.
+    // TODO(jwnimmer-tri) The SolverBase should offer a nullable overload so
+    // that we can avoid this copying.
+    std::optional<Eigen::VectorXd> initial_guess;
+    if ((initial_guesses != nullptr) && ((*initial_guesses)[i] != nullptr)) {
+      initial_guess = *((*initial_guesses)[i]);
     }
 
     // Solve the program.

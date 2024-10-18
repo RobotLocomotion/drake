@@ -2,8 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
@@ -71,6 +73,31 @@ TEST_F(QuadraticEqualityConstrainedProgram1, Test) {
                   false /* check dual */);
   }
 }
+
+// This test checks that calling NloptSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(NloptTest, TestSolveInParallel) {
+  int num_problems = 100;
+  NonConvexQPproblem1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  // Give the program an initial guess to avoid the suboptimal, stationary point
+  // 0.
+  Eigen::VectorXd initial_guess{5};
+  initial_guess << 1.5, 1.5, -1.5, 1.5, -1.5;
+  std::vector<const Eigen::VectorXd*> initial_guesses;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(qp.prog());
+    initial_guesses.push_back(&initial_guess);
+  }
+
+  std::vector<MathematicalProgramResult> results = SolveInParallel(
+      progs, &initial_guesses, std::nullopt /* no solver options */,
+      NloptSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    qp.CheckSolution(results[i]);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

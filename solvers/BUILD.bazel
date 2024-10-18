@@ -584,6 +584,7 @@ drake_cc_library(
     deps = [
         ":clarabel_solver",
         ":clp_solver",
+        ":csdp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
         ":mathematical_program",
@@ -1296,10 +1297,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "clp_solver_test",
+    num_threads = 2,
     deps = [
         ":clp_solver",
         ":linear_program_examples",
         ":quadratic_program_examples",
+        ":solve",
+        "//common:parallelism",
     ],
 )
 
@@ -1333,13 +1337,16 @@ drake_cc_optional_googletest(
 
 drake_cc_googletest(
     name = "csdp_solver_test",
+    num_threads = 2,
     deps = [
         ":csdp_solver",
         ":csdp_test_examples",
         ":linear_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":solve",
         ":sos_examples",
+        "//common:parallelism",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -1401,7 +1408,9 @@ drake_cc_googletest(
         ":mixed_integer_optimization_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
+        ":solve",
         "//common:add_text_logging_gflags",
+        "//common:parallelism",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -1486,6 +1495,8 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
+        ":solve",
+        "//common:parallelism",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
     ] + select({
@@ -1584,6 +1595,8 @@ drake_cc_optional_googletest(
 
 drake_cc_googletest(
     name = "mosek_solver_test",
+    # We need to use more than 2 threads to check SolveInParallel.
+    num_threads = 2,
     tags = mosek_test_tags(),
     use_default_main = False,
     deps = [
@@ -1598,7 +1611,9 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":solve",
         ":sos_examples",
+        "//common:parallelism",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -1624,6 +1639,8 @@ drake_cc_googletest(
         ":nlopt_solver",
         ":optimization_examples",
         ":quadratic_program_examples",
+        ":solve",
+        "//common:parallelism",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -1735,6 +1752,8 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":osqp_solver",
         ":quadratic_program_examples",
+        ":solve",
+        "//common:parallelism",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1790,7 +1809,9 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":solve",
         ":sos_examples",
+        "//common:parallelism",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -1808,7 +1829,9 @@ drake_cc_googletest(
         ":scs_solver",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":solve",
         ":sos_examples",
+        "//common:parallelism",
     ],
 )
 
@@ -1828,7 +1851,9 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":snopt_solver",
+        ":solve",
         "//common:find_resource",
+        "//common:parallelism",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",

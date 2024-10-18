@@ -4,8 +4,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/common/temp_directory.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
@@ -381,6 +383,51 @@ TEST_F(QuadraticEqualityConstrainedProgram1, test) {
   IpoptSolver solver;
   if (solver.available()) {
     CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-6);
+  }
+}
+
+GTEST_TEST(IpoptTest, TestThreadSafeLinearSolver) {
+  for (const auto& linear_solver : {"ma27", "ma57", "ma77", "ma86", "ma97"}) {
+    EXPECT_TRUE(IpoptSolver::IsThreadSafeLinearSolver(linear_solver));
+  }
+  // MUMPs is known to not be threadsafe see:
+  // https://github.com/coin-or/Ipopt/issues/733 Paradiso is known to not be
+  // threadsafe see:
+  // https://community.intel.com/t5/Intel-oneAPI-Math-Kernel-Library/PARDISO-with-METIS-is-not-thread-safe/td-p/1428816
+  for (const auto& linear_solver : {"pardiso", "mumps"}) {
+    EXPECT_FALSE(IpoptSolver::IsThreadSafeLinearSolver(linear_solver));
+  }
+}
+
+// This test checks that calling IpoptSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(IpoptTest, TestSolveInParallel) {
+  int num_problems = 100;
+  QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(qp.prog());
+  }
+
+  SolverOptions solver_options;
+
+  // This linear solver is known to not be threadsafe. We want to be sure that
+  // this does not cause SolveInParallel to crash.
+  solver_options.SetOption(IpoptSolver::id(), "linear_solver", "mumps");
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */, solver_options,
+                      IpoptSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    qp.CheckSolution(results[i]);
+  }
+
+  // This linear solver is known be threadsafe.
+  solver_options.SetOption(IpoptSolver::id(), "linear_solver", "ma27");
+  results =
+      SolveInParallel(progs, nullptr /* no initial guess */, solver_options,
+                      IpoptSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    qp.CheckSolution(results[i]);
   }
 }
 

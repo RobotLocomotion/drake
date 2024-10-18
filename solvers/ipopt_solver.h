@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ostream>
+#include <set>
 #include <string>
 
 #include <Eigen/Core>
@@ -56,7 +57,13 @@ class IpoptSolver final : public SolverBase {
   static bool is_available();
   static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  /// Returns true if the linear solver name is known to be thread safe.
+  static bool IsThreadSafeLinearSolver(const std::string& solver_name);
   //@}
+
+  /// Some of the linear systems solvers in IPOPT are not threadsafe. Here we
+  /// collect the ones that are known to be.
+  static const std::set<std::string> known_threadsafe_linear_solvers;
 
   // A using-declaration adds these methods into our class's Doxygen.
   using SolverBase::Solve;

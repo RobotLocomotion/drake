@@ -67,7 +67,7 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
  * may have limited license seats. It is recommended that the number of parallel
  * solves does not exceed the total number of license seats.
  *
- * @note only programs which are thread safe are solved concurrently. Programs
+ * @note Only programs which are thread safe are solved concurrently. Programs
  * which are not thread safe will be solved sequentially in a thread safe
  * manner.
  *
