@@ -40,11 +40,11 @@ MatrixX<T> FunctionHandleTrajectory<T>::value(const T& t) const {
   }
   MatrixX<T> result = func_(t);
   if (result.rows() != rows_ || result.cols() != cols_) {
-    throw std::runtime_error(
-        fmt::format("The FunctionHandleTrajectory callback returned a matrix "
-                    "of size {}x{}, but the constructor specified that the "
-                    "output should be of size {}x{}.",
-                    result.rows(), result.cols(), rows_, cols_));
+    throw std::runtime_error(fmt::format(
+        "The FunctionHandleTrajectory callback returned a matrix "
+        "of size {}x{}, but the constructor specified that the "
+        "output should be of size {}x{}.",
+        result.rows(), result.cols(), rows_.value(), cols_.value()));
   }
   return result;
 }
