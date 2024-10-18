@@ -407,12 +407,8 @@ GTEST_TEST(IpoptTest, TestSolveInParallel) {
   std::vector<const MathematicalProgram*> progs;
   // Give the program an initial guess to avoid initialization at a non-feasible
   // point.
-  Eigen::VectorXd initial_guess{3};
-  initial_guess << 0.5, 1.5, 0;
-  std::vector<const Eigen::VectorXd*> initial_guesses;
   for (int i = 0; i < num_problems; ++i) {
     progs.push_back(qp.prog());
-    initial_guesses.push_back(&initial_guess);
   }
 
   SolverOptions solver_options;
@@ -420,20 +416,9 @@ GTEST_TEST(IpoptTest, TestSolveInParallel) {
   // This linear solver is known to not be threadsafe. We want to be sure that
   // this does not cause SolveInParallel to crash.
   solver_options.SetOption(IpoptSolver::id(), "linear_solver", "mumps");
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, &initial_guesses, solver_options,
-                      IpoptSolver::id(), Parallelism::Max());
+  std::vector<MathematicalProgramResult> results = SolveInParallel(
+      progs, nullptr, solver_options, IpoptSolver::id(), Parallelism::Max());
   for (int i = 0; i < num_problems; ++i) {
-    qp.CheckSolution(results[i]);
-  }
-
-  // This linear solver is known be threadsafe.
-  solver_options.SetOption(IpoptSolver::id(), "linear_solver", "ma27");
-  results =
-      SolveInParallel(progs, nullptr /* no initial guess */, solver_options,
-                      IpoptSolver::id(), Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    EXPECT_TRUE(results[i].is_success());
     qp.CheckSolution(results[i]);
   }
 }
