@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -290,6 +291,19 @@ GTEST_TEST(IpoptSolverTest, SolverOptionsVerbosity) {
         solver.Solve(prog, {}, options);
       }
     }
+  }
+}
+
+GTEST_TEST(IpoptSolverTest, UnsupportedLinearSolver) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1);
+  prog.AddLinearCost(x(0));
+  SolverOptions options;
+  options.SetOption(IpoptSolver::id(), "linear_solver", "foobar");
+  IpoptSolver solver;
+  if (solver.is_available()) {
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options),
+                                ".*option.*linear_solver.*foobar.*");
   }
 }
 
