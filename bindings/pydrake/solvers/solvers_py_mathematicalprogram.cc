@@ -1683,40 +1683,14 @@ void BindFreeFunctions(py::module m) {
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
       .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc)
-      //      .def("SolveInParallel",
-      //          py::overload_cast<const std::vector<const
-      //          MathematicalProgram*>&,
-      //              const std::vector<const Eigen::VectorXd*>*,
-      //              const std::vector<const SolverOptions*>*,
-      //              const std::vector<std::optional<SolverId>>*, const
-      //              Parallelism, bool>(&solvers::SolveInParallel),
-      //          py::arg("progs"), py::arg("initial_guesses"),
-      //          py::arg("solver_options"), py::arg("solver_ids"),
-      //          py::arg("parallelism") = Parallelism::Max(),
-      //          py::arg("dynamic_schedule") = false,
-      //          doc.SolveInParallel
-      //              .doc_6args_progs_initial_guesses_solver_options_solver_ids_parallelism_dynamic_schedule)
-      //      .def("SolveInParallel",
-      //          py::overload_cast<const std::vector<const
-      //          MathematicalProgram*>&,
-      //              const std::vector<const Eigen::VectorXd*>*,
-      //              const std::optional<SolverOptions>&,
-      //              const std::optional<SolverId>&, const Parallelism, bool>(
-      //              &solvers::SolveInParallel),
-      //          py::arg("progs"), py::arg("initial_guesses") = nullptr,
-      //          py::arg("solver_options") = py::none(),
-      //          py::arg("solver_id") = py::none(),
-      //          py::arg("parallelism") = Parallelism::Max(),
-      //          py::arg("dynamic_schedule") = false,
-      //          doc.SolveInParallel
-      //              .doc_6args_progs_initial_guesses_solver_options_solver_id_parallelism_dynamic_schedule)
-      // Claude's attempt
+      // Original Try
       .def(
           "SolveInParallel",
           [](const std::vector<const MathematicalProgram*>& progs,
-              const std::optional<std::vector<Eigen::VectorXd>>&
+              const std::optional<std::vector<std::optional<Eigen::VectorXd>>>&
                   initial_guesses,
-              const std::optional<std::vector<SolverOptions>>& solver_options,
+              const std::optional<std::vector<std::optional<SolverOptions>>>&
+                  solver_options,
               const std::optional<std::vector<std::optional<SolverId>>>&
                   solver_ids,
               const Parallelism& parallelism, bool dynamic_schedule) {
@@ -1724,15 +1698,15 @@ void BindFreeFunctions(py::module m) {
             if (initial_guesses.has_value()) {
               initial_guesses_ptrs.reserve(initial_guesses->size());
               for (const auto& guess : *initial_guesses) {
-                initial_guesses_ptrs.push_back(&guess);
+                initial_guesses_ptrs.push_back(guess ? &(*guess) : nullptr);
               }
             }
 
             std::vector<const SolverOptions*> solver_options_ptrs;
             if (solver_options.has_value()) {
               solver_options_ptrs.reserve(solver_options->size());
-              for (const auto& options : *solver_options) {
-                solver_options_ptrs.push_back(&options);
+              for (const auto& option : *solver_options) {
+                solver_options_ptrs.push_back(option ? &(*option) : nullptr);
               }
             }
 
@@ -1752,7 +1726,7 @@ void BindFreeFunctions(py::module m) {
       .def(
           "SolveInParallel",
           [](const std::vector<const MathematicalProgram*>& progs,
-              const std::optional<std::vector<Eigen::VectorXd>>&
+              const std::optional<std::vector<std::optional<Eigen::VectorXd>>>&
                   initial_guesses,
               const std::optional<SolverOptions>& solver_options,
               const std::optional<SolverId>& solver_id,
@@ -1761,7 +1735,7 @@ void BindFreeFunctions(py::module m) {
             if (initial_guesses.has_value()) {
               initial_guesses_ptrs.reserve(initial_guesses->size());
               for (const auto& guess : *initial_guesses) {
-                initial_guesses_ptrs.push_back(&guess);
+                initial_guesses_ptrs.push_back(guess ? &(*guess) : nullptr);
               }
             }
 

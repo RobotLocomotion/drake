@@ -3,8 +3,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 
 using ::testing::HasSubstr;
@@ -535,6 +537,24 @@ GTEST_TEST(OsqpSolverTest, VariableScaling2) {
     EXPECT_NEAR(result.get_optimal_cost(), 2.25, tol);
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
                                 Eigen::Vector2d((0.5) * s, -1), tol));
+  }
+}
+
+// This test checks that calling OsqpSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(OsqpTest, TestSolveInParallel) {
+  int num_problems = 100;
+  QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(qp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */,
+                      OsqpSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    qp.CheckSolution(results[i]);
   }
 }
 

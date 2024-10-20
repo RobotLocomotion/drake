@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/parallelism.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 
@@ -253,6 +255,24 @@ GTEST_TEST(ClpSolverTest, TestNumericalScaling) {
   solver_options.SetOption(ClpSolver::id(), "scaling", 2);
   TestLPPoorScaling1(solver, false, 1E-14, solver_options);
   TestLPPoorScaling2(solver, false, 1E-4, solver_options);
+}
+
+// This test checks that calling ClpSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(ClpTest, TestSolveInParallel) {
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */, ClpSolver::id(),
+                      Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
+  }
 }
 }  // namespace test
 }  // namespace solvers

@@ -2,8 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/l2norm_cost_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -535,6 +537,25 @@ GTEST_TEST(TestScs, TestVerbose) {
     solver.Solve(prog, std::nullopt, options, &result);
   }
 }
+
+// This test checks that calling ScsSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(ScsTest, TestSolveInParallel) {
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */,
+                      ScsSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

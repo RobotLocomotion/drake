@@ -1,15 +1,17 @@
 #include "drake/solvers/solve.h"
 
 #include <memory>
+#include <set>
+#include <string>
 #include <unordered_map>
 #include <utility>
-#include <variant>
 
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/solver_interface.h"
 
 namespace drake {
@@ -102,14 +104,6 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     }
     const SolverInterface& solver = *(solver_iter->second);
 
-    // Convert the initial guess from nullable to optional.
-    // TODO(jwnimmer-tri) The SolverBase should offer a nullable overload so
-    // that we can avoid this copying.
-    std::optional<Eigen::VectorXd> initial_guess;
-    if ((initial_guesses != nullptr) && ((*initial_guesses)[i] != nullptr)) {
-      initial_guess = *((*initial_guesses)[i]);
-    }
-
     // Adjust the solver options to obey `parallelism`. If this solve is part of
     // the par-for, then the solver is only allowed one thread; otherwise
     // (during the serial cleanup pass) it is allowed `parallelism`. Note that
@@ -127,16 +121,59 @@ std::vector<MathematicalProgramResult> SolveInParallel(
         CommonSolverOption::kMaxThreads,
         operating_in_parallel ? 1 : parallelism.num_threads());
 
+    // IPOPT's default solver MUMPs is not thread-safe. Therefore, if we are
+    // operating in parallel we need to skip this program if we want to solve it
+    // with IPOPT if the linear solver is not set to something threadsafe.
+    if (operating_in_parallel && solver.solver_id() == IpoptSolver::id()) {
+      const std::unordered_map<std::string, std::string>& string_options =
+          new_options->GetOptionsStr(IpoptSolver::id());
+      const auto linear_solver = string_options.find("linear_solver");
+      // The IPOPT issue https://github.com/coin-or/Ipopt/issues/733 indicates
+      // that these solvers are thread safe.
+      if (linear_solver == string_options.end() ||
+          !IpoptSolver::IsThreadSafeLinearSolver(linear_solver->second)) {
+        const std::string linear_solver_name =
+            linear_solver == string_options.end() ? "default"
+                                                  : linear_solver->second;
+        std::string msg = fmt::format(
+            "IPOPT: the selected linear solver {} is not thread safe "
+            "and so "
+            "IPOPT will not solve these programs in parallel. "
+            "Consider setting "
+            "the IPOPT linear_solver option to a known, threadsafe "
+            "solver: ",
+            linear_solver_name);
+        msg += "{";
+        for (const std::string& solver_name :
+             IpoptSolver::known_threadsafe_linear_solvers) {
+          msg += fmt::format("{},", solver_name);
+        }
+        msg += "}.";
+        static const logging::Warn log_once(msg.c_str());
+        return;
+      }
+    }
+
+    // Convert the initial guess from nullable to optional.
+    // TODO(jwnimmer-tri) The SolverBase should offer a nullable overload so
+    // that we can avoid this copying.
+    std::optional<Eigen::VectorXd> initial_guess;
+    if ((initial_guesses != nullptr) && ((*initial_guesses)[i] != nullptr)) {
+      initial_guess = *((*initial_guesses)[i]);
+    }
+
     // Solve the program.
     solver.Solve(*(progs[i]), initial_guess, new_options, &(results[i]));
     result_is_populated[i] = true;
   };
 
   // Call solve_ith in parallel for all of the progs.
-  (dynamic_schedule ? &(DynamicParallelForIndexLoop<decltype(solve_ith)>)
-                    : &(StaticParallelForIndexLoop<decltype(solve_ith)>))(
-      DegreeOfParallelism(parallelism.num_threads()), 0, ssize(progs),
-      solve_ith, ParallelForBackend::BEST_AVAILABLE);
+  if (parallelism.num_threads() > 1) {
+    (dynamic_schedule ? &(DynamicParallelForIndexLoop<decltype(solve_ith)>)
+                      : &(StaticParallelForIndexLoop<decltype(solve_ith)>))(
+        DegreeOfParallelism(parallelism.num_threads()), 0, ssize(progs),
+        solve_ith, ParallelForBackend::BEST_AVAILABLE);
+  }
 
   // De-allocate the solvers cache except for the first worker. (We'll use the
   // first worker's cache for the serial solves, below.) The clearing is

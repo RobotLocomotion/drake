@@ -9,12 +9,14 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/set_env.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/l2norm_cost_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
@@ -817,6 +819,24 @@ GTEST_TEST(GurobiTest, TestIterationLimit) {
     EXPECT_TRUE(std::isfinite(result.get_optimal_cost()));
     EXPECT_TRUE(result.GetSolution(x).array().isFinite().all());
     EXPECT_TRUE(result.GetDualSolution(constraint2).array().isFinite().all());
+  }
+}
+
+// This test checks that calling GurobiSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(GurobiTest, TestSolveInParallel) {
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */, GurobiSolver::id(),
+                      Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
   }
 }
 
