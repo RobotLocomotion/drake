@@ -171,14 +171,14 @@ std::vector<MathematicalProgramResult> SolveInParallel(
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
-    const std::optional<SolverOptions>& solver_options,
+    const SolverOptions* solver_options,
     const std::optional<SolverId>& solver_id, const Parallelism parallelism,
     const bool dynamic_schedule) {
   // Broadcast the option and id arguments into vectors (if given).
   std::optional<std::vector<const SolverOptions*>> broadcast_options;
   std::optional<std::vector<std::optional<SolverId>>> broadcast_ids;
-  if (solver_options.has_value()) {
-    broadcast_options.emplace(progs.size(), &(*solver_options));
+  if (solver_options != nullptr) {
+    broadcast_options.emplace(progs.size(), solver_options);
   }
   if (solver_id.has_value()) {
     broadcast_ids.emplace(progs.size(), solver_id);

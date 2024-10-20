@@ -100,7 +100,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses = nullptr,
-    const std::optional<SolverOptions>& solver_options = std::nullopt,
+    const SolverOptions* solver_options = nullptr,
     const std::optional<SolverId>& solver_id = std::nullopt,
     Parallelism parallelism = Parallelism::Max(),
     bool dynamic_schedule = false);

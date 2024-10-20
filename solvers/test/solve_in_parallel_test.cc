@@ -154,7 +154,7 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
   // Now test the overload.
   if (GurobiSolver::is_available()) {
     const std::vector<MathematicalProgramResult> results = SolveInParallel(
-        progs, nullptr, solver_options_0, solver_id, Parallelism::Max(), true);
+        progs, nullptr, &solver_options_0, solver_id, Parallelism::Max(), true);
 
     for (int i = 0; i < num_trials; i++) {
       const auto solver_details =
@@ -220,13 +220,13 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
   }
 
   // We expect the overload to fail if only a convex solver is passed.
-  EXPECT_THROW(SolveInParallel(progs, nullptr, std::nullopt, convex_solver,
+  EXPECT_THROW(SolveInParallel(progs, nullptr, nullptr, convex_solver,
                                Parallelism::Max(), false),
                std::exception);
 
   // We expect the overload to run if a non-convex solver is passed as the
   // solver, even if it is not the best choice.
-  results = SolveInParallel(progs, nullptr, std::nullopt, non_convex_solver,
+  results = SolveInParallel(progs, nullptr, nullptr, non_convex_solver,
                             Parallelism::Max(), false);
   for (int i = 0; i < num_trials; i++) {
     EXPECT_EQ(results.at(i).get_solver_id(), non_convex_solver);
