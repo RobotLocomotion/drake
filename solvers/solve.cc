@@ -95,6 +95,18 @@ std::vector<MathematicalProgramResult> SolveInParallel(
         ((solver_ids != nullptr) && (*solver_ids)[i].has_value())
             ? *((*solver_ids)[i])
             : ChooseBestSolver(*progs[i]);
+
+    // IPOPT's MUMPs linear solver is not thread-safe. Therefore, if we are
+    // operating in parallel we need to skip this program.
+    // TODO(#21476) Revisit this logic after we have SPRAL available.
+    if (operating_in_parallel && solver_id == IpoptSolver::id()) {
+      static const logging::Warn log_once(
+          "IpoptSolver cannot currently solve programs in parallel, so will be "
+          "run serially. Consider specifying different solver, e.g., Nlopt.");
+      return;
+    }
+
+    // Find (or create) the specified solver.
     auto solver_iter = solvers[thread_num].find(solver_id);
     if (solver_iter == solvers[thread_num].end()) {
       // If this thread has not solved this type of program yet, save the solver
@@ -120,39 +132,6 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     new_options->SetOption(
         CommonSolverOption::kMaxThreads,
         operating_in_parallel ? 1 : parallelism.num_threads());
-
-    // IPOPT's default solver MUMPs is not thread-safe. Therefore, if we are
-    // operating in parallel we need to skip this program if we want to solve it
-    // with IPOPT if the linear solver is not set to something threadsafe.
-    if (operating_in_parallel && solver.solver_id() == IpoptSolver::id()) {
-      const std::unordered_map<std::string, std::string>& string_options =
-          new_options->GetOptionsStr(IpoptSolver::id());
-      const auto linear_solver = string_options.find("linear_solver");
-      // The IPOPT issue https://github.com/coin-or/Ipopt/issues/733 indicates
-      // that these solvers are thread safe.
-      if (linear_solver == string_options.end() ||
-          !IpoptSolver::IsThreadSafeLinearSolver(linear_solver->second)) {
-        const std::string linear_solver_name =
-            linear_solver == string_options.end() ? "default"
-                                                  : linear_solver->second;
-        std::string msg = fmt::format(
-            "IPOPT: the selected linear solver {} is not thread safe "
-            "and so "
-            "IPOPT will not solve these programs in parallel. "
-            "Consider setting "
-            "the IPOPT linear_solver option to a known, threadsafe "
-            "solver: ",
-            linear_solver_name);
-        msg += "{";
-        for (const std::string& solver_name :
-             IpoptSolver::known_threadsafe_linear_solvers) {
-          msg += fmt::format("{},", solver_name);
-        }
-        msg += "}.";
-        static const logging::Warn log_once(msg.c_str());
-        return;
-      }
-    }
 
     // Convert the initial guess from nullable to optional.
     // TODO(jwnimmer-tri) The SolverBase should offer a nullable overload so

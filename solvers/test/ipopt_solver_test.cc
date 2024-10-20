@@ -386,19 +386,6 @@ TEST_F(QuadraticEqualityConstrainedProgram1, test) {
   }
 }
 
-GTEST_TEST(IpoptTest, TestThreadSafeLinearSolver) {
-  for (const auto& linear_solver : {"ma27", "ma57", "ma77", "ma86", "ma97"}) {
-    EXPECT_TRUE(IpoptSolver::IsThreadSafeLinearSolver(linear_solver));
-  }
-  // MUMPs is known to not be threadsafe see:
-  // https://github.com/coin-or/Ipopt/issues/733 Paradiso is known to not be
-  // threadsafe see:
-  // https://community.intel.com/t5/Intel-oneAPI-Math-Kernel-Library/PARDISO-with-METIS-is-not-thread-safe/td-p/1428816
-  for (const auto& linear_solver : {"pardiso", "mumps"}) {
-    EXPECT_FALSE(IpoptSolver::IsThreadSafeLinearSolver(linear_solver));
-  }
-}
-
 // This test checks that calling IpoptSolver in parallel does not cause any
 // threading issues.
 GTEST_TEST(IpoptTest, TestSolveInParallel) {
