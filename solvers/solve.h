@@ -54,7 +54,7 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
  *
  * Uses at most parallelism cores, with static scheduling by default.
  *
- * @param dynamic_schedule: If dynamic_schedule is false then static scheduling
+ * @param dynamic_schedule If dynamic_schedule is false then static scheduling
  * is used and so each core will solve approximately 1/parallelism of the
  * programs. This is most efficient when all the programs take approximately the
  * same amount of time to solve. If dynamic_schedule is true, then dynamic
@@ -63,20 +63,20 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
  * This is best when each program takes a dramatically different amount of time
  * to solve.
  *
- * @note When using a solver proprietary solver (e.g. Mosek) you organization
- * may have limited license seats. It is recommended that the number of parallel
- * solves does not exceed the total number of license seats.
+ * @note When using a proprietary solver (e.g. Mosek) your organization may have
+ * limited license seats. It is recommended that the number of parallel solves
+ * does not exceed the total number of license seats.
  *
  * @note Only programs which are thread safe are solved concurrently. Programs
- * which are not thread safe will be solved sequentially in a thread safe
- * manner.
+ * that are not thread safe will be solved sequentially in a thread safe manner.
  *
- * @throws if initial_guess and solver_options are provided and not the same
- * size as progs.
+ * @throws std::exception if initial_guess and solver_options are provided and
+ * not the same size as progs.
  *
- * @throws if any of the progs are nullptr.
+ * @throws std::exception if any of the progs are nullptr.
  *
- * @throws if the solver specified by solver_ids[i] cannot solve progs[i].
+ * @throws std::exception if the solver specified by solver_ids[i] cannot solve
+ * progs[i].
  */
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const MathematicalProgram*>& progs,
@@ -88,14 +88,14 @@ std::vector<MathematicalProgramResult> SolveInParallel(
 
 /**
  * Provides the same functionality as SolveInParallel, but allows for specifying
- * a single solver id and solver option that is when solving all programs.
+ * a single solver id and solver option that is used when solving all programs.
  *
- * @throws if the provided solver cannot solve all of progs.
+ * @throws std::exception if the provided solver cannot solve all of progs.
  *
- * @throws if initial_guesses are provided and not the same
+ * @throws std::exception if initial_guesses are provided and not the same
  * size as progs.
  *
- * @throws if any of the progs are nullptr.
+ * @throws std::exception if any of the progs are nullptr.
  */
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::vector<const MathematicalProgram*>& progs,
