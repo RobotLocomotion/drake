@@ -1585,8 +1585,6 @@ drake_cc_optional_googletest(
 
 drake_cc_googletest(
     name = "mosek_solver_test",
-    # We need to use more than 2 threads to check SolveInParallel.
-    num_threads = 2,
     tags = mosek_test_tags(),
     use_default_main = False,
     deps = [
@@ -1601,9 +1599,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
-        ":solve",
         ":sos_examples",
-        "//common:parallelism",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -1629,8 +1625,6 @@ drake_cc_googletest(
         ":nlopt_solver",
         ":optimization_examples",
         ":quadratic_program_examples",
-        ":solve",
-        "//common:parallelism",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -1740,8 +1734,8 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":osqp_solver",
         ":quadratic_program_examples",
-        ":solve",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1835,9 +1829,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":snopt_solver",
-        ":solve",
         "//common:find_resource",
-        "//common:parallelism",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
