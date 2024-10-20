@@ -1,8 +1,6 @@
 #include "drake/solvers/solve.h"
 
 #include <memory>
-#include <set>
-#include <string>
 #include <unordered_map>
 #include <utility>
 
@@ -90,7 +88,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
       return;
     }
 
-    // Access (or choose) the required solver then find (or create) it.
+    // Access (or choose) the required solver.
     const SolverId solver_id =
         ((solver_ids != nullptr) && (*solver_ids)[i].has_value())
             ? *((*solver_ids)[i])
@@ -163,7 +161,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   operating_in_parallel = false;
   for (int i = 0; i < ssize(progs); ++i) {
     if (!result_is_populated[i]) {
-      solve_ith(0, i);
+      solve_ith(/* thread_num = */ 0, i);
     }
   }
 
