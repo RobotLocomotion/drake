@@ -6,6 +6,7 @@ namespace pydrake {
 PYBIND11_MODULE(manipulation, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
+  py::module::import("pydrake.multibody.parsing");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
 

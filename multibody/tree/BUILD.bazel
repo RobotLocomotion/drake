@@ -86,6 +86,7 @@ drake_cc_library(
         "ball_rpy_joint.cc",
         "body_node.cc",
         "body_node_impl.cc",
+        "body_node_impl_mass_matrix.cc",
         "door_hinge.cc",
         "element_collection.cc",
         "fixed_offset_frame.cc",

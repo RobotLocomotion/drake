@@ -69,7 +69,7 @@ class ExponentialPlusPiecewisePolynomial final : public PiecewiseTrajectory<T> {
   ExponentialPlusPiecewisePolynomial(
       const PiecewisePolynomial<T>& piecewise_polynomial_part);
 
-  ~ExponentialPlusPiecewisePolynomial() override = default;
+  ~ExponentialPlusPiecewisePolynomial() override;
 
   std::unique_ptr<Trajectory<T>> Clone() const override;
 

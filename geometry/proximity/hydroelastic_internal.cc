@@ -102,6 +102,8 @@ SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
   return *this;
 }
 
+Geometries::~Geometries() = default;
+
 HydroelasticType Geometries::hydroelastic_type(GeometryId id) const {
   auto iter = supported_geometries_.find(id);
   if (iter != supported_geometries_.end()) return iter->second;
@@ -198,6 +200,8 @@ void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
   rigid_geometries_.insert({id, std::move(geometry)});
 }
 
+namespace {
+
 // Validator interface for use with extracting valid properties. It is
 // instantiated with shape (e.g., "Sphere", "Box", etc.) and compliance (i.e.,
 // "rigid" or "soft") strings (to help give intelligible error messages) and
@@ -283,6 +287,8 @@ class NonNegativeDouble : public Validator<double> {
     }
   }
 };
+
+}  // namespace
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace& hs, const ProximityProperties&) {

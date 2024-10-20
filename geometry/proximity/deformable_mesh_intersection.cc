@@ -18,6 +18,9 @@ namespace internal {
 class DeformableSurfaceVolumeIntersector
     : public SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb> {
  public:
+  // N.B. If this class declaration moves to the header, don't inline this dtor.
+  ~DeformableSurfaceVolumeIntersector() = default;
+
   /* Returns the indices of tetrahedra containing the contact polygons.
    @pre Call it after SampleVolumeFieldOnSurface() finishes.  */
   std::vector<int>& mutable_tetrahedron_index_of_polygons() {

@@ -41,6 +41,8 @@ Hyperrectangle::Hyperrectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
   CheckInvariants();
 }
 
+Hyperrectangle::~Hyperrectangle() = default;
+
 std::optional<Hyperrectangle> Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(
     const ConvexSet& set) {
   if (!set.IsBounded()) {

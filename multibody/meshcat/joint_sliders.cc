@@ -217,14 +217,20 @@ void JointSliders<T>::Delete() {
   if (was_registered) {
     for (const auto& [position_index, slider_name] : position_names_) {
       unused(position_index);
-      meshcat_->DeleteSlider(slider_name);
+      meshcat_->DeleteSlider(slider_name, /*strict = */ false);
     }
   }
 }
 
 template <typename T>
 JointSliders<T>::~JointSliders() {
-  Delete();
+  // Destructors are not allowed to throw. Ensure this by catching any
+  // exceptions and failing fast.
+  try {
+    Delete();
+  } catch (...) {
+    DRAKE_UNREACHABLE();
+  }
 }
 
 template <typename T>

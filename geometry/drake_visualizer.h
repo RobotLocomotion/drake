@@ -166,6 +166,8 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
   template <typename U>
   explicit DrakeVisualizer(const DrakeVisualizer<U>& other);
 
+  ~DrakeVisualizer() final;
+
   /** Returns the QueryObject-valued input port. It should be connected to
    SceneGraph's QueryObject-valued output port. Failure to do so will cause a
    runtime error when attempting to broadcast messages.  */

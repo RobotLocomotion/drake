@@ -48,6 +48,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "internal_make_render_window",
+    srcs = ["internal_make_render_window.cc"],
+    hdrs = ["internal_make_render_window.h"],
+    internal = True,
+    visibility = [
+        "//geometry/render_gltf_client:__pkg__",
+    ],
+    deps = [
+        ":render_engine_vtk_params",
+        "//common:essential",
+        "//common:unused",
+        "@vtk_internal//:vtkRenderingCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
+        "@vtk_internal//:vtkglad",
+    ],
+)
+
+drake_cc_library(
     name = "internal_render_engine_vtk",
     srcs = ["internal_render_engine_vtk.cc"],
     hdrs = ["internal_render_engine_vtk.h"],
@@ -56,9 +74,11 @@ drake_cc_library(
         "//geometry/render_gltf_client:__pkg__",
     ],
     deps = [
+        ":internal_make_render_window",
         ":internal_render_engine_vtk_base",
         ":internal_vtk_util",
         "//common",
+        "//geometry:vtk_gltf_uri_loader",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
@@ -117,16 +137,19 @@ drake_cc_library(
     ],
 )
 
+config_setting(
+    name = "osx",
+    constraint_values = ["@platforms//os:osx"],
+)
+
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     timeout = "moderate",
     args = select({
-        # Most test cases do not render correctly on macOS arm64 CI. Instead of
-        # trying to select the few that randomly happen to pass, we'll skip all
-        # of them. TODO(#19424) Re-enable the tests.
-        "@platforms//cpu:arm64": [
-            "--gtest_filter=-*",
-        ],
+        # Most tests do not render correctly on macOS CI. Instead of trying to
+        # select the few that randomly happen to pass, we'll skip everything.
+        # TODO(#19424) Re-enable the tests.
+        ":osx": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
     data = [
@@ -145,6 +168,7 @@ drake_cc_googletest(
         ":internal_render_engine_vtk",
         "//common:find_resource",
         "//common/test_utilities",
+        "//geometry:read_gltf_to_memory",
         "//geometry/test_utilities:dummy_render_engine",
         "//math:geometric_transform",
         "//systems/sensors:image_io",
@@ -155,9 +179,27 @@ drake_cc_googletest(
     ],
 )
 
-config_setting(
-    name = "osx",
-    constraint_values = ["@platforms//os:osx"],
+# Re-run internal_render_engine_vtk_test, but with the EGL backend.
+sh_test(
+    name = "internal_render_engine_vtk_egl_test",
+    timeout = "moderate",
+    srcs = ["internal_render_engine_vtk_test"],
+    args = select({
+        ":osx": [
+            # EGL is a Linux-only feature.
+            "--gtest_filter=-*",
+        ],
+        "//conditions:default": [
+            "--backend=EGL",
+        ],
+    }),
+    data = [
+        ":internal_render_engine_vtk_test",
+    ],
+    env = {
+        "DISPLAY": "should_not_be_used",
+    },
+    tags = vtk_test_tags(),
 )
 
 drake_cc_googletest(
@@ -189,6 +231,7 @@ drake_cc_googletest(
     name = "render_engine_vtk_params_test",
     deps = [
         ":render_engine_vtk_params",
+        "//common/test_utilities:expect_throws_message",
         "//common/yaml",
     ],
 )
@@ -206,11 +249,15 @@ genrule(
 
 PYRAMID_RESOURCES = [
     "fully_textured_pyramid_base_color.png",
+    "fully_textured_pyramid_base_color.ktx2",
     "fully_textured_pyramid.bin",
     "fully_textured_pyramid_emissive.png",
+    "fully_textured_pyramid_emissive.ktx2",
     "fully_textured_pyramid.gltf",
     "fully_textured_pyramid_normal.png",
+    "fully_textured_pyramid_normal.ktx2",
     "fully_textured_pyramid_omr.png",
+    "fully_textured_pyramid_omr.ktx2",
     "fully_textured_pyramid.sdf",
 ]
 

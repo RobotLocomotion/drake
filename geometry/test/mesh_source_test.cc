@@ -1,5 +1,6 @@
 #include "drake/geometry/mesh_source.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/geometry/in_memory_mesh.h"
@@ -22,6 +23,13 @@ GTEST_TEST(MeshSourceTest, InMemoryMeshConstructor) {
   EXPECT_FALSE(s.is_path());
   ASSERT_TRUE(s.is_in_memory());
   EXPECT_EQ(s.in_memory().mesh_file.contents(), "contents");
+}
+
+GTEST_TEST(MeshSourceTest, EmptyDescription) {
+  EXPECT_EQ(
+      MeshSource(InMemoryMesh{MemoryFile("body", ".ext", "")}).description(),
+      "<no filename hint given>");
+  EXPECT_EQ(MeshSource(std::filesystem::path()).description(), "<empty path>");
 }
 
 GTEST_TEST(MeshSourceTest, CopySemantics) {

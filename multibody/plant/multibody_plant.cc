@@ -1410,9 +1410,12 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     set_stiction_tolerance();
   SetUpJointLimitsParameters();
   if (use_sampled_output_ports_) {
-    zero_acceleration_kinematics_placeholder_ =
-        std::make_unique<AccelerationKinematicsCache<T>>(
-            internal_tree().get_topology());
+    auto cache = std::make_unique<AccelerationKinematicsCache<T>>(
+        internal_tree().get_topology());
+    for (SpatialAcceleration<T>& A_WB : cache->get_mutable_A_WB_pool()) {
+      A_WB.SetZero();
+    }
+    zero_acceleration_kinematics_placeholder_ = std::move(cache);
   }
   FinalizeConstraints();
   scene_graph_ = nullptr;  // must not be used after Finalize().

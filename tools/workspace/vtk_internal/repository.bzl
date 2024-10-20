@@ -172,21 +172,23 @@ def vtk_internal_repository(
         # TODO(jwnimmer-tri) Once there's a tagged release with support for
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
-        commit = "f196cc1e9042b5637928c2ea87570b773b8745c8",
-        sha256 = "e8147b0073224190c6ad3d0816576d1795bf233e8d7dcd4457890f8217d08872",  # noqa
+        commit = "d2ca67b59f0b251aa09489f8e63da9d1231fc49a",
+        sha256 = "52fc7fdac0132d362d10f9145de1afb4420a41914261ba8848f1e8dabca68423",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_version.patch",
+            ":patches/disable_static_destructors.patch",
             ":patches/fix_illumination_bugs.patch",
             ":patches/gltf_selected_load.patch",
+            ":patches/io_geometry_gltf_default_scene.patch",
+            ":patches/gltf_importer_from_stream.patch",
             ":patches/io_image_formats.patch",
-            ":patches/mr11117.patch",
             ":patches/nerf_pegtl.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
+            ":patches/rendering_opengl2_no_factory.patch",
             ":patches/vtkdoubleconversion_hidden.patch",
             ":patches/vtkfast_float_hidden.patch",
-            ":patches/vtkglew_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
             ":patches/vtksys_hidden.patch",
         ],

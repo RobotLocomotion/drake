@@ -21,6 +21,8 @@ SamePointConstraint::SamePointConstraint(
   context_->SetTimeStateAndParametersFrom(context);
 }
 
+SamePointConstraint::~SamePointConstraint() = default;
+
 void SamePointConstraint::EnableSymbolic() {
   if (symbolic_plant_ != nullptr) {
     return;
@@ -138,6 +140,8 @@ ClosestCollisionProgram::ClosestCollisionProgram(
   prog_.SetInitialGuess(p_AA, Eigen::Vector3d::Constant(.01));
   prog_.SetInitialGuess(p_BB, Eigen::Vector3d::Constant(.01));
 }
+
+ClosestCollisionProgram::~ClosestCollisionProgram() = default;
 
 void ClosestCollisionProgram::UpdatePolytope(
     const Eigen::Ref<const Eigen::MatrixXd>& A,

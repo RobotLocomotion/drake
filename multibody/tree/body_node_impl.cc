@@ -45,8 +45,9 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
   // Given X_FM that we just put into PositionKinematicsCache (pc), and
   // calculations already done through the parent mobilizer, this
   // calculates into pc: X_PB, X_WB, p_PoBo_W
-  // These don't depend on Mobilizer details.
-  this->CalcAcrossMobilizerBodyPoses_BaseToTip(frame_body_pose_cache, pc);
+  // Not mobilizer specific so implemented in the base class.
+  BodyNode<T>::CalcAcrossMobilizerBodyPoses_BaseToTip(frame_body_pose_cache,
+                                                      pc);
 }
 
 // TODO(sherm1) Consider combining this with VelocityCache computation
@@ -430,10 +431,11 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   // Input spatial acceleration for this node's body B.
   const SpatialAcceleration<T>& A_WB = get_A_WB_from_array(A_WB_array);
 
-  // Total spatial force on body B producing acceleration A_WB.
+  // Total spatial force on body B producing acceleration A_WB. Not mobilizer
+  // specific so implemented in the base class.
   SpatialForce<T> Ftot_BBo_W;
-  CalcBodySpatialForceGivenItsSpatialAcceleration(M_B_W_cache, Fb_Bo_W_cache,
-                                                  A_WB, &Ftot_BBo_W);
+  BodyNode<T>::CalcBodySpatialForceGivenItsSpatialAcceleration(
+      M_B_W_cache, Fb_Bo_W_cache, A_WB, &Ftot_BBo_W);
 
   // Compute shift vector from Bo to Mo expressed in the world frame W.
   const Frame<T>& frame_M = outboard_frame();
@@ -455,7 +457,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
 
   // Shift spatial force on B to Mo.
   F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
-  for (const BodyNode<T>* child_node : this->child_nodes()) {
+  for (const BodyNode<T>* child_node : child_nodes()) {
     const MobodIndex child_node_index = child_node->mobod_index();
 
     // Shift vector from Bo to Co, expressed in the world frame W.
@@ -611,7 +613,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   P_B_W = ArticulatedBodyInertia<T>(M_B_W);
 
   // Add articulated body inertia contributions from all children.
-  for (const BodyNode<T>* child : this->child_nodes()) {
+  for (const BodyNode<T>* child : child_nodes()) {
     const MobodIndex child_node_index = child->mobod_index();
     // Shift vector p_CoBo_W.
     const Vector3<T>& p_BoCo_W = pc.get_p_PoBo_W(child_node_index);
@@ -654,7 +656,8 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
     // Compute the LLT factorization of D_B as llt_D_B.
     math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
         get_mutable_llt_D_B(abic);
-    this->CalcArticulatedBodyHingeInertiaMatrixFactorization(D_B, &llt_D_B);
+    BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(D_B,
+                                                                    &llt_D_B);
 
     // Compute the Kalman gain, g_PB_W, using (6).
     Matrix6xUpTo6<T>& g_PB_W = get_mutable_g_PB_W(abic);
@@ -695,7 +698,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   SpatialForce<T> Z_Bo_W = Fb_Bo_W - Fapplied_Bo_W;
 
   // Add residual spatial force contributions from all children.
-  for (const BodyNode<T>* child : this->child_nodes()) {
+  for (const BodyNode<T>* child : child_nodes()) {
     const MobodIndex child_node_index = child->mobod_index();
     // Shift vector from Co to Bo.
     const Vector3<T>& p_BoCo_W = pc.get_p_PoBo_W(child_node_index);
@@ -783,34 +786,6 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 }
 
 template <typename T, template <typename> class ConcreteMobilizer>
-void BodyNodeImpl<T, ConcreteMobilizer>::CalcCompositeBodyInertia_TipToBase(
-    const SpatialInertia<T>& M_B_W, const PositionKinematicsCache<T>& pc,
-    const std::vector<SpatialInertia<T>>& Mc_B_W_all,
-    SpatialInertia<T>* Mc_B_W) const {
-  DRAKE_DEMAND(mobod_index() != world_mobod_index());
-  DRAKE_DEMAND(Mc_B_W != nullptr);
-
-  // Composite body inertia R_B_W for this node B, about its frame's origin
-  // Bo, and expressed in the world frame W. Here we adopt the notation used
-  // in Jain's book.
-  *Mc_B_W = M_B_W;
-  // Add composite body inertia contributions from all children.
-  for (const BodyNode<T>* child : this->child_nodes()) {
-    const MobodIndex child_node_index = child->mobod_index();
-    // Shift vector p_CoBo_W.
-    const Vector3<T>& p_BoCo_W = pc.get_p_PoBo_W(child_node_index);
-    const Vector3<T> p_CoBo_W = -p_BoCo_W;
-
-    // Composite body inertia for outboard child body C, about Co, expressed
-    // in W.
-    const SpatialInertia<T>& Mc_CCo_W = Mc_B_W_all[child_node_index];
-
-    // Shift to Bo and add it to the composite body inertia of B.
-    *Mc_B_W += Mc_CCo_W.Shift(p_CoBo_W);
-  }
-}
-
-template <typename T, template <typename> class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
     const systems::Context<T>& context,
     const FrameBodyPoseCache<T>& frame_body_pose_cache,
@@ -894,51 +869,6 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
   *Ab_WB = SpatialAcceleration<T>(
       w_WB.cross(w_PB_W) + Ab_PB_W.rotational(),
       w_WP.cross(v_WB - v_WP + v_PB_W) + Ab_PB_W.translational());
-}
-
-// This method computes the total force Ftot_BBo on body B that must be
-// applied for it to incur in a spatial acceleration A_WB. Mathematically:
-//   Ftot_BBo = M_B_W * A_WB + b_Bo
-// where b_Bo contains the velocity dependent gyroscopic terms (see Eq. 2.26,
-// p. 27, in A. Jain's book). The above balance is performed at the origin
-// Bo of the body frame B, which does not necessarily need to coincide with
-// the body center of mass.
-// Notes:
-//   1. Ftot_BBo = b_Bo when A_WB = 0.
-//   2. b_Bo = 0 when w_WB = 0.
-//   3. b_Bo.translational() = 0 when Bo = Bcm (p_BoBcm = 0).
-//      When Fb_Bo_W_cache is nullptr velocities are considered to be zero.
-//      Therefore, from (2), the bias term is assumed to be zero and is not
-//      computed.
-template <typename T, template <typename> class ConcreteMobilizer>
-void BodyNodeImpl<T, ConcreteMobilizer>::
-    CalcBodySpatialForceGivenItsSpatialAcceleration(
-        const std::vector<SpatialInertia<T>>& M_B_W_cache,
-        const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
-        const SpatialAcceleration<T>& A_WB,
-        SpatialForce<T>* Ftot_BBo_W_ptr) const {
-  DRAKE_DEMAND(Ftot_BBo_W_ptr != nullptr);
-
-  // Output spatial force applied on mobilized body B, at Bo, measured in W.
-  SpatialForce<T>& Ftot_BBo_W = *Ftot_BBo_W_ptr;
-
-  // RigidBody for this node.
-  const RigidBody<T>& body_B = body();
-
-  // Mobilized body B spatial inertia about Bo expressed in world W.
-  const SpatialInertia<T>& M_B_W = M_B_W_cache[body_B.mobod_index()];
-
-  // Equations of motion for a rigid body written at a generic point Bo not
-  // necessarily coincident with the body's center of mass. This corresponds
-  // to Eq. 2.26 (p. 27) in A. Jain's book.
-  Ftot_BBo_W = M_B_W * A_WB;
-
-  // If velocities are zero, then Fb_Bo_W is zero and does not contribute.
-  if (Fb_Bo_W_cache != nullptr) {
-    // Dynamic bias for body B.
-    const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body_B.mobod_index()];
-    Ftot_BBo_W += Fb_Bo_W;
-  }
 }
 
 // Macro used to explicitly instantiate implementations for every mobilizer.

@@ -7,8 +7,30 @@ load(
     _py_test = "py_test",
 )
 
-py_binary = _py_binary
+# All of Drake's Python code should depend on our requirements.txt pins, so we
+# add it as a data dependency to every python rule. If this particular build
+# doesn't use a requirements.txt, then the file will be empty (and thus inert).
 
-py_library = _py_library
+def _add_requirements(data):
+    return (data or []) + ["@python//:requirements.txt"]
 
-py_test = _py_test
+def py_binary(name, *, data = None, **kwargs):
+    _py_binary(
+        name = name,
+        data = _add_requirements(data),
+        **kwargs
+    )
+
+def py_library(name, *, data = None, **kwargs):
+    _py_library(
+        name = name,
+        data = _add_requirements(data),
+        **kwargs
+    )
+
+def py_test(name, *, data = None, **kwargs):
+    _py_test(
+        name = name,
+        data = _add_requirements(data),
+        **kwargs
+    )

@@ -181,7 +181,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
                       const std::vector<T>& breaks);
   // @}
 
-  ~PiecewisePolynomial() override = default;
+  ~PiecewisePolynomial() override;
 
   std::unique_ptr<Trajectory<T>> Clone() const override;
 

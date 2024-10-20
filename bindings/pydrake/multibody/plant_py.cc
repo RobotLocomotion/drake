@@ -1555,6 +1555,7 @@ PYBIND11_MODULE(plant, m) {
 
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.math");
+  py::module::import("pydrake.multibody.fem");
   py::module::import("pydrake.multibody.math");
   py::module::import("pydrake.multibody.tree");
   py::module::import("pydrake.systems.framework");
@@ -1672,6 +1673,12 @@ PYBIND11_MODULE(plant, m) {
     auto cls = py::class_<Class>(m, "PhysicalModel", cls_doc.doc);
   }
 
+  // Deformable identifier.
+  {
+    BindIdentifier<DeformableBodyId>(
+        m, "DeformableBodyId", doc.DeformableBodyId.doc);
+  }
+
   // DeformableModel
   {
     using Class = DeformableModel<double>;
@@ -1702,11 +1709,6 @@ PYBIND11_MODULE(plant, m) {
               return self->GetBodyId(geometry_id);
             },
             py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id);
-  }
-  // Deformable identifier.
-  {
-    BindIdentifier<DeformableBodyId>(
-        m, "DeformableBodyId", doc.DeformableBodyId.doc);
   }
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
