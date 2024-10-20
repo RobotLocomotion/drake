@@ -2037,6 +2037,8 @@ drake_cc_googletest(
     name = "solve_in_parallel_test",
     # Using multiple threads is an essential part of testing SolveInParallel.
     num_threads = 4,
+    # Run each test case in a separate process, for improved latency.
+    shard_count = 16,
     deps = [
         ":choose_best_solver",
         ":clarabel_solver",

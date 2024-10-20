@@ -18,6 +18,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
+namespace {
 
 GTEST_TEST(SolveInParallelTest, OverloadIsNotAmbiguousTest) {
   // This test checks that the overloads of SolveInParallel are not ambiguous.
@@ -232,228 +233,105 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
   }
 }
 
-// This test checks that calling ClarabelSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Clarabel) {
-  if (!ClarabelSolver::is_available()) {
-    return;
+/* Test fixture that runs SolveInParallel against a specific solver_id. When run
+with Drake CI's sanitizers and memory checkers, this would flag memory or thread
+errors seen during the parallel solves. */
+class SolveInParallelIntegrationTest : public ::testing::Test {
+ public:
+  std::vector<MathematicalProgramResult> Run(const SolverId& solver_id,
+                                             const MathematicalProgram& prog) {
+    // Bail out in case the solver was disabled in this particular build.
+    auto solver = MakeSolver(solver_id);
+    if (!solver->available()) {
+      return {};
+    }
+    // Don't hold onto any extra resources during SolveInParallel.
+    solver.reset();
+    // Solve the same program repeatedly, with max parallelism (as configured in
+    // our BUILD file).
+    const size_t num_programs = 100;
+    std::vector<const MathematicalProgram*> progs(num_programs, &prog);
+    return SolveInParallel(progs, {}, {}, solver_id, Parallelism::Max());
   }
-  int num_problems = 100;
+};
+
+TEST_F(SolveInParallelIntegrationTest, Clarabel) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(lp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */,
-                      ClarabelSolver::id(), Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    lp.CheckSolution(results[i]);
+  for (const auto& result : Run(ClarabelSolver::id(), *lp.prog())) {
+    lp.CheckSolution(result);
   }
 }
 
-// This test checks that calling ClpSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Clp) {
-  if (!ClpSolver::is_available()) {
-    return;
-  }
-  int num_problems = 100;
+TEST_F(SolveInParallelIntegrationTest, Clp) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(lp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */, ClpSolver::id(),
-                      Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    lp.CheckSolution(results[i]);
+  for (const auto& result : Run(ClpSolver::id(), *lp.prog())) {
+    lp.CheckSolution(result);
   }
 }
 
-// This test checks that calling CsdpSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Csdp) {
-  if (!CsdpSolver::is_available()) {
-    return;
-  }
-  int num_problems = 100;
+TEST_F(SolveInParallelIntegrationTest, Csdp) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(lp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */, CsdpSolver::id(),
-                      Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    lp.CheckSolution(results[i]);
+  for (const auto& result : Run(CsdpSolver::id(), *lp.prog())) {
+    lp.CheckSolution(result);
   }
 }
 
-// This test checks that calling GurobiSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Gurobi) {
-  if (!GurobiSolver::is_available()) {
-    return;
-  }
-  int num_problems = 100;
+TEST_F(SolveInParallelIntegrationTest, Gurobi) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(lp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */, GurobiSolver::id(),
-                      Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    lp.CheckSolution(results[i]);
+  for (const auto& result : Run(GurobiSolver::id(), *lp.prog())) {
+    lp.CheckSolution(result);
   }
 }
 
-// This test checks that calling IpoptSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Ipopt) {
-  if (!IpoptSolver::is_available()) {
-    return;
-  }
-  int num_problems = 100;
+TEST_F(SolveInParallelIntegrationTest, Ipopt) {
   QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  // Give the program an initial guess to avoid initialization at a non-feasible
-  // point.
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(qp.prog());
-  }
-
-  SolverOptions solver_options;
-
   // This linear solver is known to not be threadsafe. We want to be sure that
   // this does not cause SolveInParallel to crash.
-  solver_options.SetOption(IpoptSolver::id(), "linear_solver", "mumps");
-  std::vector<MathematicalProgramResult> results = SolveInParallel(
-      progs, nullptr, solver_options, IpoptSolver::id(), Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    qp.CheckSolution(results[i]);
+  qp.prog()->SetSolverOption(IpoptSolver::id(), "linear_solver", "mumps");
+  for (const auto& result : Run(IpoptSolver::id(), *qp.prog())) {
+    qp.CheckSolution(result);
   }
 }
 
-// This test checks that calling MosekSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Mosek) {
-  if (!MosekSolver::is_available()) {
-    return;
-  }
-  int num_problems = 100;
+TEST_F(SolveInParallelIntegrationTest, Mosek) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(lp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */, MosekSolver::id(),
-                      Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    lp.CheckSolution(results[i]);
+  for (const auto& result : Run(MosekSolver::id(), *lp.prog())) {
+    lp.CheckSolution(result);
   }
 }
 
-// This test checks that calling NloptSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Nlopt) {
-  if (!NloptSolver::is_available()) {
-    return;
-  }
-  int num_problems = 100;
+TEST_F(SolveInParallelIntegrationTest, Nlopt) {
   NonConvexQPproblem1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  // Give the program an initial guess to avoid the suboptimal, stationary point
-  // 0.
-  Eigen::VectorXd initial_guess{5};
-  initial_guess << 1.5, 1.5, -1.5, 1.5, -1.5;
-  std::vector<const Eigen::VectorXd*> initial_guesses;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(qp.prog());
-    initial_guesses.push_back(&initial_guess);
-  }
-
-  std::vector<MathematicalProgramResult> results = SolveInParallel(
-      progs, &initial_guesses, std::nullopt /* no solver options */,
-      NloptSolver::id(), Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    qp.CheckSolution(results[i]);
+  // Set an initial guess to avoid the suboptimal, stationary point 0.
+  qp.prog()->SetInitialGuessForAllVariables(
+      (Eigen::VectorXd(5) << 1.5, 1.5, -1.5, 1.5, -1.5).finished());
+  for (const auto& result : Run(NloptSolver::id(), *qp.prog())) {
+    qp.CheckSolution(result);
   }
 }
 
-// This test checks that calling OsqpSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Osqp) {
-  if (!OsqpSolver::is_available()) {
-    return;
-  }
-  int num_problems = 100;
+TEST_F(SolveInParallelIntegrationTest, Osqp) {
   QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(qp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */,
-                      OsqpSolver::id(), Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    qp.CheckSolution(results[i]);
+  for (const auto& result : Run(OsqpSolver::id(), *qp.prog())) {
+    qp.CheckSolution(result);
   }
 }
 
-// This test checks that calling ScsSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Scs) {
-  if (!ScsSolver::is_available()) {
-    return;
-  }
-  int num_problems = 100;
+TEST_F(SolveInParallelIntegrationTest, Scs) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(lp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */,
-                      ScsSolver::id(), Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    lp.CheckSolution(results[i]);
+  for (const auto& result : Run(ScsSolver::id(), *lp.prog())) {
+    lp.CheckSolution(result);
   }
 }
 
-// This test checks that calling SnoptSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(SolveInParallel, Snopt) {
-  if (!SnoptSolver::is_available()) {
-    return;
-  }
-  int num_problems = 100;
+TEST_F(SolveInParallelIntegrationTest, Snopt) {
   QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(qp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */,
-                      SnoptSolver::id(), Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    qp.CheckSolution(results[i]);
+  for (const auto& result : Run(SnoptSolver::id(), *qp.prog())) {
+    qp.CheckSolution(result);
   }
 }
 
+}  // namespace
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
