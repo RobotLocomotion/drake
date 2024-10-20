@@ -1115,13 +1115,10 @@ void PruneGradientDuplication(int nx, const std::vector<int>& iGfun_w_duplicate,
   }
 }
 
-void SolveWithGivenOptions(
-    const MathematicalProgram& prog,
-    const Eigen::Ref<const Eigen::VectorXd>& x_init,
-    const std::unordered_map<std::string, std::string>& snopt_options_string,
-    const std::unordered_map<std::string, int>& snopt_options_int,
-    const std::unordered_map<std::string, double>& snopt_options_double,
-    const std::string& print_file_common, MathematicalProgramResult* result) {
+void SolveWithGivenOptions(const MathematicalProgram& prog,
+                           const Eigen::Ref<const Eigen::VectorXd>& x_init,
+                           internal::SpecificOptions* options,
+                           MathematicalProgramResult* result) {
   SnoptSolverDetails& solver_details =
       result->SetSolverDetailsType<SnoptSolverDetails>();
 
@@ -1129,14 +1126,26 @@ void SolveWithGivenOptions(
   WorkspaceStorage storage(&user_info);
   const auto& scale_map = prog.GetVariableScaling();
 
-  std::string print_file_name = print_file_common;
-  const auto print_file_it = snopt_options_string.find("Print file");
-  if (print_file_it != snopt_options_string.end()) {
-    print_file_name = print_file_it->second;
-  }
-  Snopt::sninit(print_file_name.c_str(), print_file_name.length(),
-                0 /* no summary */, storage.iw(), storage.leniw(), storage.rw(),
-                storage.lenrw());
+  options->Respell([](const auto& common, auto* respelled) {
+    respelled->emplace("Print file", common.print_file_name);
+    // If "Timing level" is not zero, then snopt periodically calls etime to
+    // determine it's usage of cpu time (which on Linux calls getrusage in the
+    // libgfortran implementation).  Unfortunately getrusage is called using
+    // RUSAGE_SELF, which has unfortunate consenquences when using threads,
+    // namely (1) It returns the total count of CPU usage for all threads, so
+    // the result is garbage, and (2) on Linux the kernel holds a process wide
+    // lock inside getrusage when RUSAGE_SELF is specified, so other threads
+    // using snopt end up blocking on their getrusage calls.  Under the theory
+    // that a user who actually wants this behavior will turn it on
+    // deliberately, default "Timing level" to zero.
+    respelled->emplace("Timing level", 0);
+    // SNOPT does not support setting the number of threads so we ignore the
+    // kNumThreads option.
+  });
+  const std::string print_file =
+      options->template Pop<std::string>("Print file").value_or("");
+  Snopt::sninit(print_file.c_str(), print_file.length(), 0 /* no summary */,
+                storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
   ScopeExit guard([&storage]() {
     Snopt::snend(storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
   });
@@ -1293,40 +1302,37 @@ void SolveWithGivenOptions(
   const int lenG = iGfun.size();
   user_info.set_lenG(lenG);
 
-  for (const auto& it : snopt_options_double) {
-    int errors = 0;
-    Snopt::snsetr(it.first.c_str(), it.first.length(), it.second, &errors,
-                  storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
-    if (errors > 0) {
-      throw std::runtime_error("Error setting Snopt double parameter " +
-                               it.first);
-    }
-  }
-
-  for (const auto& it : snopt_options_int) {
-    int errors = 0;
-    Snopt::snseti(it.first.c_str(), it.first.length(), it.second, &errors,
-                  storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
-    if (errors > 0) {
-      throw std::runtime_error("Error setting Snopt integer parameter " +
-                               it.first);
-    }
-  }
-
-  for (const auto& it : snopt_options_string) {
-    int errors = 0;
-    auto option_string = it.first + " " + it.second;
-    if (it.first == "Print file") {
-      // Already handled during sninit, above
-      continue;
-    }
-    Snopt::snset(option_string.c_str(), option_string.length(), &errors,
-                 storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
-    if (errors > 0) {
-      throw std::runtime_error("Error setting Snopt string parameter " +
-                               it.first);
-    }
-  }
+  // Copy `options` into the snopt program storage.
+  options->CopyToCallbacks(
+      [&storage](const std::string& key, double value) {
+        int errors = 0;
+        Snopt::snsetr(key.c_str(), key.length(), value, &errors, storage.iw(),
+                      storage.leniw(), storage.rw(), storage.lenrw());
+        if (errors > 0) {
+          throw std::logic_error(fmt::format(
+              "Error setting Snopt double parameter {}={}", key, value));
+        }
+      },
+      [&storage](const std::string& key, int value) {
+        int errors = 0;
+        Snopt::snseti(key.c_str(), key.length(), value, &errors, storage.iw(),
+                      storage.leniw(), storage.rw(), storage.lenrw());
+        if (errors > 0) {
+          throw std::logic_error(fmt::format(
+              "Error setting Snopt integer parameter {}={}", key, value));
+        }
+      },
+      [&storage](const std::string& key, const std::string& value) {
+        int errors = 0;
+        auto option_string = key + " " + value;
+        Snopt::snset(option_string.c_str(), option_string.length(), &errors,
+                     storage.iw(), storage.leniw(), storage.rw(),
+                     storage.lenrw());
+        if (errors > 0) {
+          throw std::logic_error(fmt::format(
+              "Error setting Snopt string parameter {}={}", key, value));
+        }
+      });
 
   int Cold = 0;
   double objective_constant = linear_cost_constant_term;
@@ -1405,35 +1411,11 @@ bool SnoptSolver::is_available() {
   return true;
 }
 
-void SnoptSolver::DoSolve(const MathematicalProgram& prog,
-                          const Eigen::VectorXd& initial_guess,
-                          const SolverOptions& merged_options,
-                          MathematicalProgramResult* result) const {
-  // Call SNOPT.
-  std::unordered_map<std::string, int> int_options =
-      merged_options.GetOptionsInt(id());
-
-  // If "Timing level" is not zero, then snopt periodically calls etime to
-  // determine it's usage of cpu time (which on Linux calls getrusage in the
-  // libgfortran implementation).  Unfortunately getrusage is called using
-  // RUSAGE_SELF, which has unfortunate consenquences when using threads,
-  // namely (1) It returns the total count of CPU usage for all threads, so
-  // the result is garbage, and (2) on Linux the kernel holds a process wide
-  // lock inside getrusage when RUSAGE_SELF is specified, so other threads
-  // using snopt end up blocking on their getrusage calls.  Under the theory
-  // that a user who actually wants this behavior will turn it on
-  // deliberately, set "Timing level" to zero if the user hasn't requested
-  // another value.
-  const std::string kTimingLevel = "Timing level";
-  if (!int_options.contains(kTimingLevel)) {
-    int_options[kTimingLevel] = 0;
-  }
-
-  // SNOPT does not support setting the number of threads so we ignore
-  // the kMaxNumThreads option.
-  SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
-                        int_options, merged_options.GetOptionsDouble(id()),
-                        merged_options.get_print_file_name(), result);
+void SnoptSolver::DoSolve2(const MathematicalProgram& prog,
+                           const Eigen::VectorXd& initial_guess,
+                           internal::SpecificOptions* options,
+                           MathematicalProgramResult* result) const {
+  SolveWithGivenOptions(prog, initial_guess, options, result);
 }
 
 bool SnoptSolver::is_bounded_lp_broken() {
