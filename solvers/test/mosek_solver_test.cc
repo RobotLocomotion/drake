@@ -4,12 +4,10 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/parallelism.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
-#include "drake/solvers/solve.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/l2norm_cost_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -736,25 +734,6 @@ GTEST_TEST(MosekTest, LPNoBasisSelection) {
     EXPECT_TRUE(CompareMatrices(x_sol, Eigen::Vector2d(0, 1), tol));
   }
 }
-
-// This test checks that calling MosekSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(MosekTest, TestSolveInParallel) {
-  int num_problems = 100;
-  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(lp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */, MosekSolver::id(),
-                      Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    lp.CheckSolution(results[i]);
-  }
-}
-
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

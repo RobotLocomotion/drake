@@ -386,30 +386,6 @@ TEST_F(QuadraticEqualityConstrainedProgram1, test) {
   }
 }
 
-// This test checks that calling IpoptSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(IpoptTest, TestSolveInParallel) {
-  int num_problems = 100;
-  QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  // Give the program an initial guess to avoid initialization at a non-feasible
-  // point.
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(qp.prog());
-  }
-
-  SolverOptions solver_options;
-
-  // This linear solver is known to not be threadsafe. We want to be sure that
-  // this does not cause SolveInParallel to crash.
-  solver_options.SetOption(IpoptSolver::id(), "linear_solver", "mumps");
-  std::vector<MathematicalProgramResult> results = SolveInParallel(
-      progs, nullptr, solver_options, IpoptSolver::id(), Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    qp.CheckSolution(results[i]);
-  }
-}
-
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -1,13 +1,23 @@
 #include <gtest/gtest.h>
 
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/clarabel_solver.h"
+#include "drake/solvers/clp_solver.h"
+#include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/scs_solver.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
+#include "drake/solvers/test/linear_program_examples.h"
+#include "drake/solvers/test/quadratic_program_examples.h"
 
 namespace drake {
 namespace solvers {
+namespace test {
 
 GTEST_TEST(SolveInParallelTest, OverloadIsNotAmbiguousTest) {
   // This test checks that the overloads of SolveInParallel are not ambiguous.
@@ -22,6 +32,9 @@ GTEST_TEST(SolveInParallelTest, OverloadIsNotAmbiguousTest) {
 }
 
 GTEST_TEST(SolveInParallelTest, TestSolveInParallelInitialGuess) {
+  // Cross-check that our BUILD file allows parallelism.
+  DRAKE_DEMAND(Parallelism::Max().num_threads() > 1);
+
   // Test with gurobi solver, which uses an initial guess.
   std::vector<std::unique_ptr<MathematicalProgram>> progs;
   std::vector<const MathematicalProgram*> prog_ptrs;
@@ -219,5 +232,228 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
   }
 }
 
+// This test checks that calling ClarabelSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Clarabel) {
+  if (!ClarabelSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */,
+                      ClarabelSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
+  }
+}
+
+// This test checks that calling ClpSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Clp) {
+  if (!ClpSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */, ClpSolver::id(),
+                      Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
+  }
+}
+
+// This test checks that calling CsdpSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Csdp) {
+  if (!CsdpSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */, CsdpSolver::id(),
+                      Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
+  }
+}
+
+// This test checks that calling GurobiSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Gurobi) {
+  if (!GurobiSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */, GurobiSolver::id(),
+                      Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
+  }
+}
+
+// This test checks that calling IpoptSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Ipopt) {
+  if (!IpoptSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  // Give the program an initial guess to avoid initialization at a non-feasible
+  // point.
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(qp.prog());
+  }
+
+  SolverOptions solver_options;
+
+  // This linear solver is known to not be threadsafe. We want to be sure that
+  // this does not cause SolveInParallel to crash.
+  solver_options.SetOption(IpoptSolver::id(), "linear_solver", "mumps");
+  std::vector<MathematicalProgramResult> results = SolveInParallel(
+      progs, nullptr, solver_options, IpoptSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    qp.CheckSolution(results[i]);
+  }
+}
+
+// This test checks that calling MosekSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Mosek) {
+  if (!MosekSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */, MosekSolver::id(),
+                      Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
+  }
+}
+
+// This test checks that calling NloptSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Nlopt) {
+  if (!NloptSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  NonConvexQPproblem1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  // Give the program an initial guess to avoid the suboptimal, stationary point
+  // 0.
+  Eigen::VectorXd initial_guess{5};
+  initial_guess << 1.5, 1.5, -1.5, 1.5, -1.5;
+  std::vector<const Eigen::VectorXd*> initial_guesses;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(qp.prog());
+    initial_guesses.push_back(&initial_guess);
+  }
+
+  std::vector<MathematicalProgramResult> results = SolveInParallel(
+      progs, &initial_guesses, std::nullopt /* no solver options */,
+      NloptSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    qp.CheckSolution(results[i]);
+  }
+}
+
+// This test checks that calling OsqpSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Osqp) {
+  if (!OsqpSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(qp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */,
+                      OsqpSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    qp.CheckSolution(results[i]);
+  }
+}
+
+// This test checks that calling ScsSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Scs) {
+  if (!ScsSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(lp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */,
+                      ScsSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    lp.CheckSolution(results[i]);
+  }
+}
+
+// This test checks that calling SnoptSolver in parallel does not cause any
+// threading issues.
+GTEST_TEST(SolveInParallel, Snopt) {
+  if (!SnoptSolver::is_available()) {
+    return;
+  }
+  int num_problems = 100;
+  QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
+  std::vector<const MathematicalProgram*> progs;
+  for (int i = 0; i < num_problems; ++i) {
+    progs.push_back(qp.prog());
+  }
+  std::vector<MathematicalProgramResult> results =
+      SolveInParallel(progs, nullptr /* no initial guess */,
+                      std::nullopt /* no solver options */,
+                      SnoptSolver::id(), Parallelism::Max());
+  for (int i = 0; i < num_problems; ++i) {
+    qp.CheckSolution(results[i]);
+  }
+}
+
+}  // namespace test
 }  // namespace solvers
 }  // namespace drake

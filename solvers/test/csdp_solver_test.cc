@@ -2,10 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/parallelism.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/solvers/solve.h"
 #include "drake/solvers/test/csdp_test_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
@@ -558,24 +556,6 @@ TEST_F(TrivialSDP1, SolverOptionsPropagation) {
     options.SetOption(CsdpSolver::id(), "axtol", 1e-100);
     auto result = solver.Solve(*prog_, {}, options);
     EXPECT_EQ(result.get_solution_result(), kSolverSpecificError);
-  }
-}
-
-// This test checks that calling CsdpSolver in parallel does not cause any
-// threading issues.
-GTEST_TEST(CsdpTest, TestSolveInParallel) {
-  int num_problems = 100;
-  LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  std::vector<const MathematicalProgram*> progs;
-  for (int i = 0; i < num_problems; ++i) {
-    progs.push_back(lp.prog());
-  }
-  std::vector<MathematicalProgramResult> results =
-      SolveInParallel(progs, nullptr /* no initial guess */,
-                      std::nullopt /* no solver options */, CsdpSolver::id(),
-                      Parallelism::Max());
-  for (int i = 0; i < num_problems; ++i) {
-    lp.CheckSolution(results[i]);
   }
 }
 

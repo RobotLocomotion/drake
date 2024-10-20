@@ -1297,7 +1297,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "clp_solver_test",
-    num_threads = 2,
     deps = [
         ":clp_solver",
         ":linear_program_examples",
@@ -1337,7 +1336,6 @@ drake_cc_optional_googletest(
 
 drake_cc_googletest(
     name = "csdp_solver_test",
-    num_threads = 2,
     deps = [
         ":csdp_solver",
         ":csdp_test_examples",
@@ -1488,7 +1486,6 @@ drake_cc_googletest(
         "//tools:no_ipopt": [
         ],
     }),
-    num_threads = 2,
     deps = [
         ":linear_program_examples",
         ":mathematical_program",
@@ -1633,7 +1630,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "nlopt_solver_test",
-    num_threads = 2,
     deps = [
         ":linear_program_examples",
         ":mathematical_program",
@@ -1749,7 +1745,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "osqp_solver_test",
-    num_threads = 2,
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
@@ -1802,7 +1797,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "clarabel_solver_test",
-    num_threads = 2,
     deps = [
         ":clarabel_solver",
         ":exponential_cone_program_examples",
@@ -1823,7 +1817,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scs_solver_test",
-    num_threads = 2,
     deps = [
         ":exponential_cone_program_examples",
         ":l2norm_cost_examples",
@@ -1842,7 +1835,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "snopt_solver_test",
-    num_threads = 2,
     tags = [
         # ThreadSanitizer: lock-order-inversion (potential deadlock) with
         # snopt_fortran (#11657).
@@ -2047,9 +2039,18 @@ drake_cc_googletest(
     num_threads = 4,
     deps = [
         ":choose_best_solver",
+        ":clarabel_solver",
+        ":clp_solver",
+        ":csdp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
+        ":linear_program_examples",
+        ":mosek_solver",
+        ":nlopt_solver",
+        ":osqp_solver",
+        ":quadratic_program_examples",
         ":scs_solver",
+        ":snopt_solver",
         ":solve",
         "//common/test_utilities:expect_throws_message",
     ],
