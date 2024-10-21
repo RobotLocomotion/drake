@@ -1,0 +1,26 @@
+We convert <drake:visual> to <visual> after SDF parsing. The new <visual>
+elements need to have their "PoseRelativeToGraph" property set. We've modified
+Link::AddVisual() to automatically update added visual's graphs to the link's
+graph (this is what happens when we call Link::SetPoseRelativeToGraph()). This
+should be otherwise benign.
+
+This is a hack to handle the custom <drake:visual> tag and should not be
+upstreamed. If, however, sdformat chooses to allow post-parse modifications
+(akin to what we're doing), then it should be applied to child elements
+of Link (e.g., Collision, Light, Sensor, Emitter, and Projector).
+
+--- src/Link.cc
++++ src/Link.cc
+@@ -940,6 +940,13 @@ bool Link::AddVisual(const Visual &_visual)
+   if (this->VisualNameExists(_visual.Name()))
+     return false;
+   this->dataPtr->visuals.push_back(_visual);
++
++  // Configure the visual's pose-relative-to graph in case the visual gets
++  // added *after* the Link has been configured.
++  auto& visual = this->dataPtr->visuals.back();
++  visual.SetXmlParentName(this->dataPtr->name);
++  visual.SetPoseRelativeToGraph(this->dataPtr->poseRelativeToGraph);
++
+   return true;
+ }
