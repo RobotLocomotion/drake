@@ -19,6 +19,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -45,6 +46,7 @@ using geometry::HalfSpace;
 using geometry::IllustrationProperties;
 using geometry::Mesh;
 using geometry::ProximityProperties;
+using geometry::Rgba;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::Sphere;
@@ -195,16 +197,9 @@ std::string NoopResolveFilename(const SDFormatDiagnostic&,
 
 class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
  public:
-  SceneGraphParserDetail() {
-    // Don't let warnings leak into spdlog; tests should always specifically
-    // handle any warnings that appear.
-    diagnostic_policy_.SetActionForWarnings(
-        &DiagnosticPolicy::ErrorDefaultAction);
-    RecordErrors();
-  }
 
   // Wraps a function under test with helpful defaults.
-  std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
+  std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       const sdf::Geometry& sdf_geometry,
       const ResolveFilename& resolve_filename = &NoopResolveFilename) {
     return internal::MakeShapeFromSdfGeometry(
@@ -212,10 +207,9 @@ class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
   }
 
   // Wraps a function under test with helpful defaults.
-  std::optional<geometry::IllustrationProperties>
-      MakeVisualPropertiesFromSdfVisual(
-          const sdf::Visual& sdf_visual,
-          const ResolveFilename& resolve_filename = &NoopResolveFilename) {
+  VisualProperties MakeVisualPropertiesFromSdfVisual(
+      const sdf::Visual& sdf_visual,
+      const ResolveFilename& resolve_filename = &NoopResolveFilename) {
     return internal::MakeVisualPropertiesFromSdfVisual(
         sdf_diagnostic_, sdf_visual, resolve_filename);
   }
@@ -231,10 +225,8 @@ class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
 TEST_F(SceneGraphParserDetail, MakeEmptyFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry =
       MakeSdfGeometryFromString("<empty/>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  EXPECT_EQ(*shape, nullptr);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a box from an sdf::Geometry.
@@ -243,10 +235,8 @@ TEST_F(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
       "<box>"
       "  <size>1.0 2.0 3.0</size>"
       "</box>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Box* box = dynamic_cast<const Box*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Box* box = dynamic_cast<const Box*>(shape.get());
   ASSERT_NE(box, nullptr);
   EXPECT_EQ(box->size(), Vector3d(1.0, 2.0, 3.0));
 }
@@ -261,10 +251,8 @@ TEST_F(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</drake:capsule>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Capsule* capsule = dynamic_cast<const Capsule*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->radius(), 0.5);
   EXPECT_EQ(capsule->length(), 1.2);
@@ -278,9 +266,9 @@ TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
       "<drake:capsule>"
       "  <length>1.2</length>"
       "</drake:capsule>");
-  std::optional<unique_ptr<Shape>> shape_no_radius =
+  unique_ptr<Shape> shape_no_radius =
       MakeShapeFromSdfGeometry(*no_radius_geometry);
-  EXPECT_FALSE(shape_no_radius.has_value());
+  EXPECT_EQ(shape_no_radius, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <radius> is required within element <drake:capsule>."));
   ClearDiagnostics();
@@ -289,9 +277,9 @@ TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
       "<drake:capsule>"
       "  <radius>0.5</radius>"
       "</drake:capsule>");
-  std::optional<unique_ptr<Shape>> shape_no_length =
+  unique_ptr<Shape> shape_no_length =
       MakeShapeFromSdfGeometry(*no_length_geometry);
-  EXPECT_FALSE(shape_no_length.has_value());
+  EXPECT_EQ(shape_no_length, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <length> is required within element <drake:capsule>."));
   ClearDiagnostics();
@@ -304,10 +292,8 @@ TEST_F(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</capsule>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Capsule* capsule = dynamic_cast<const Capsule*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->radius(), 0.5);
   EXPECT_EQ(capsule->length(), 1.2);
@@ -320,10 +306,8 @@ TEST_F(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</cylinder>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape.get());
   ASSERT_NE(cylinder, nullptr);
   EXPECT_EQ(cylinder->radius(), 0.5);
   EXPECT_EQ(cylinder->length(), 1.2);
@@ -340,10 +324,8 @@ TEST_F(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->a(), 0.5);
   EXPECT_EQ(ellipsoid->b(), 1.2);
@@ -359,7 +341,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  MakeShapeFromSdfGeometry(*no_a_geometry);
+  unique_ptr<Shape> shape_no_a = MakeShapeFromSdfGeometry(*no_a_geometry);
+  EXPECT_EQ(shape_no_a, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <a> is required within element <drake:ellipsoid>."));
   ClearDiagnostics();
@@ -369,7 +352,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <a>0.5</a>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  MakeShapeFromSdfGeometry(*no_b_geometry);
+  unique_ptr<Shape> shape_no_b = MakeShapeFromSdfGeometry(*no_b_geometry);
+  EXPECT_EQ(shape_no_b, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <b> is required within element <drake:ellipsoid>."));
   ClearDiagnostics();
@@ -379,7 +363,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <a>0.5</a>"
       "  <b>1.2</b>"
       "</drake:ellipsoid>");
-  MakeShapeFromSdfGeometry(*no_c_geometry);
+  unique_ptr<Shape> shape_no_c = MakeShapeFromSdfGeometry(*no_c_geometry);
+  EXPECT_EQ(shape_no_c, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <c> is required within element <drake:ellipsoid>."));
   ClearDiagnostics();
@@ -392,9 +377,8 @@ TEST_F(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
       "<ellipsoid>"
       "  <radii>0.5 1.2 0.9</radii>"
       "</ellipsoid>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->a(), 0.5);
   EXPECT_EQ(ellipsoid->b(), 1.2);
@@ -407,9 +391,8 @@ TEST_F(SceneGraphParserDetail, MakeSphereFromSdfGeometry) {
       "<sphere>"
       "  <radius>0.5</radius>"
       "</sphere>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Sphere* sphere = dynamic_cast<const Sphere*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Sphere* sphere = dynamic_cast<const Sphere*>(shape.get());
   ASSERT_NE(sphere, nullptr);
   EXPECT_EQ(sphere->radius(), 0.5);
 }
@@ -423,9 +406,8 @@ TEST_F(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
       "</plane>");
   // MakeShapeFromSdfGeometry() ignores <normal> and <size> to create the
   // HalfSpace. Therefore we only verify it created the right object.
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape->get()) != nullptr);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape.get()) != nullptr);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a mesh from an sdf::Geometry.
@@ -439,9 +421,8 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Mesh* mesh = dynamic_cast<const Mesh*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Mesh* mesh = dynamic_cast<const Mesh*>(shape.get());
   ASSERT_NE(mesh, nullptr);
   ASSERT_TRUE(mesh->source().is_path());
   EXPECT_EQ(mesh->source().path(), absolute_file_path);
@@ -459,7 +440,8 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometryIsotropicError) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 1 2 </scale>"
       "</mesh>");
-  MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Drake meshes only support isotropic scaling. Therefore"
       " all three scaling factors must be exactly equal."));
@@ -475,9 +457,8 @@ TEST_F(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Convex* convex = dynamic_cast<const Convex*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Convex* convex = dynamic_cast<const Convex*>(shape.get());
   ASSERT_NE(convex, nullptr);
   EXPECT_TRUE(convex->source().is_path());
   EXPECT_EQ(convex->source().path(), absolute_file_path);
@@ -490,9 +471,8 @@ TEST_F(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
       "<heightmap>"
       "  <uri>/path/to/some/heightmap.png</uri>"
       "</heightmap>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_EQ(*shape, nullptr);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
 }
 
 // Verify that MakeShapeFromSdfGeometry does nothing with a polyline.
@@ -509,8 +489,7 @@ TEST_F(SceneGraphParserDetail, MakePolylineFromSdfGeometry) {
       "</polyline>");
   std::optional<unique_ptr<Shape>> shape =
       MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  EXPECT_EQ(*shape, nullptr);
+  EXPECT_EQ(shape, nullptr);
 }
 
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
@@ -529,12 +508,12 @@ TEST_F(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
       "  </geometry>"
       "</visual>");
 
-  std::optional<unique_ptr<GeometryInstance>> geometry_instance =
+  unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
 
-  const RigidTransformd X_LC((*geometry_instance)->pose());
+  const RigidTransformd X_LC(geometry_instance->pose());
 
   // These are the expected values as specified by the string above.
   const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
@@ -546,6 +525,71 @@ TEST_F(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
   EXPECT_TRUE(X_LC.rotation().IsNearlyEqualTo(R_LC_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(X_LC.translation(), p_LCo_expected,
                               kTolerance, MatrixCompareType::relative));
+}
+
+// Verify MakeGeometryInstanceFromSdfVisual()'s GeometryInstance reflects the
+// enabled visual roles. All we care about is the presence/absence of geometry
+// properties based on what was enabled.
+TEST_F(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisualPartialRoles) {
+  constexpr std::string_view sdf_format_str = R"""(
+    <visual name = 'some_link_visual'>
+      <geometry><sphere><radius>1</radius></sphere></geometry>
+      <drake:perception_properties enabled="{p_on}"/>
+      <drake:illustration_properties enabled="{i_on}"/>
+    </visual>)""";
+
+  // Case: Both roles enabled --> both set of properties.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(fmt::format(
+        sdf_format_str, fmt::arg("p_on", true), fmt::arg("i_on", true)));
+    unique_ptr<GeometryInstance> instance =
+        MakeGeometryInstanceFromSdfVisual(
+            sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
+            ToRigidTransform(sdf_visual->RawPose()));
+    ASSERT_NE(instance, nullptr);
+    ASSERT_NE(instance->perception_properties(), nullptr);
+    ASSERT_NE(instance->illustration_properties(), nullptr);
+  }
+
+  // Case: Illustration disabled --> only perception properties.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(fmt::format(
+        sdf_format_str, fmt::arg("p_on", true), fmt::arg("i_on", false)));
+    unique_ptr<GeometryInstance> instance =
+        MakeGeometryInstanceFromSdfVisual(
+            sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
+            ToRigidTransform(sdf_visual->RawPose()));
+    ASSERT_NE(instance, nullptr);
+    ASSERT_NE(instance->perception_properties(), nullptr);
+    ASSERT_EQ(instance->illustration_properties(), nullptr);
+  }
+
+  // Case: Perception disabled --> only illustration properties.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(fmt::format(
+        sdf_format_str, fmt::arg("p_on", false), fmt::arg("i_on", true)));
+    unique_ptr<GeometryInstance> instance =
+        MakeGeometryInstanceFromSdfVisual(
+            sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
+            ToRigidTransform(sdf_visual->RawPose()));
+    ASSERT_NE(instance, nullptr);
+    ASSERT_EQ(instance->perception_properties(), nullptr);
+    ASSERT_NE(instance->illustration_properties(), nullptr);
+  }
+
+  // Case: Both roles disabled --> no instance returned (but we do get a warning
+  // as tested below in DisablingVisualRoles).
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(fmt::format(
+        sdf_format_str, fmt::arg("p_on", false), fmt::arg("i_on", false)));
+    unique_ptr<GeometryInstance> instance =
+        MakeGeometryInstanceFromSdfVisual(
+            sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
+            ToRigidTransform(sdf_visual->RawPose()));
+    ASSERT_EQ(instance, nullptr);
+    EXPECT_THAT(TakeWarning(),
+                ::testing::HasSubstr("all visual roles turned off for Drake"));
+  }
 }
 
 // Confirms the failure conditions for SDFormat. SceneGraph requirements on
@@ -893,9 +937,10 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(false, nullptr, nullptr, nullptr, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, false, {}, {}, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, false, {}, {}, {}, {}, {}));
   }
 
   // Case: Material tag defined, but no material properties -- empty
@@ -903,9 +948,10 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, nullptr, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, false, {}, {}, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, false, {}, {}, {}, {}, {}));
   }
 
   Vector4<double> diffuse{0.25, 0.5, 0.75, 1.0};
@@ -917,45 +963,49 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, nullptr, nullptr, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, diffuse, {}, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, true, diffuse, {}, {}, {}, {}));
   }
 
   // Case: Only valid specular defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, &specular, nullptr, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, {}, specular, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, true, {}, specular, {}, {}, {}));
   }
 
   // Case: Only valid ambient defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, &ambient, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, {}, {}, ambient, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, true, {}, {}, ambient, {}, {}));
   }
 
   // Case: Only valid emissive defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, nullptr, &emissive, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, {}, {}, {}, emissive, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, true, {}, {}, {}, emissive, {}));
   }
 
   // Case: All four.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, &specular, &ambient, &emissive, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, diffuse,
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(expect_phong(*vis_props.illustration, true, diffuse,
                 specular, ambient, emissive, {}));
   }
 
@@ -968,11 +1018,11 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
         make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap);
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
     // Note: The "no-op" filename resolver will just return kLocalMap as the
     // property name.
-    EXPECT_TRUE(expect_phong(*material, true, diffuse, specular,
+    EXPECT_TRUE(expect_phong(*vis_props.illustration, true, diffuse, specular,
                              ambient, emissive, kLocalMap));
   }
 
@@ -1011,9 +1061,10 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
         "  <material>" + bad_diffuse +
         "  </material>"
         "</visual>");
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, false, {}, {}, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, false, {}, {}, {}, {}, {}));
   }
 }
 
@@ -1036,9 +1087,9 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "    <diffuse>0.25 1 0.5 0.25</diffuse>"
         "  </material>"
         "</visual>");
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_FALSE(material->HasProperty(group, property));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.perception.has_value());
+    EXPECT_FALSE(vis_props.perception->HasProperty(group, property));
   }
 
   // Case: single <drake:accepting_renderer> tag.
@@ -1056,11 +1107,12 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "  </material>"
         "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
         "</visual>");
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(material->HasProperty(group, property));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.perception.has_value());
+    EXPECT_TRUE(vis_props.perception->HasProperty(group, property));
     const auto& names =
-        material->GetProperty<std::set<std::string>>(group, property);
+        vis_props.perception->GetProperty<std::set<std::string>>(group,
+                                                                 property);
     EXPECT_EQ(names.size(), 1);
     EXPECT_TRUE(names.contains("renderer1"));
   }
@@ -1081,11 +1133,12 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
         "  <drake:accepting_renderer>renderer2</drake:accepting_renderer>"
         "</visual>");
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(material->HasProperty(group, property));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.perception.has_value());
+    EXPECT_TRUE(vis_props.perception->HasProperty(group, property));
     const auto& names =
-        material->GetProperty<std::set<std::string>>(group, property);
+        vis_props.perception->GetProperty<std::set<std::string>>(group,
+                                                                 property);
     EXPECT_EQ(names.size(), 2);
     EXPECT_TRUE(names.contains("renderer1"));
     EXPECT_TRUE(names.contains("renderer2"));
@@ -1109,6 +1162,110 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*<drake:accepting_renderer> tag given without any name"));
   ClearDiagnostics();
+}
+
+// Verify that the <drake:*_properties> are accounted for in disabling sets of
+// visual properties.
+TEST_F(SceneGraphParserDetail, DisablingVisualRoles) {
+  const Rgba expected_diffuse(0.25, 1, 0.5, 0.25);
+
+  static constexpr char visual_format[] = R"""(
+  <visual name='visual'>
+    <geometry><sphere><radius>1</radius></sphere></geometry>
+    <material><diffuse>0.25, 1 0.5 0.25</diffuse></material>
+    {}
+  </visual>)""";
+
+  // Case: Saying nothing produces both illustration and perception properties
+  // with the same material properties.
+  {
+    unique_ptr<sdf::Visual> sdf_visual =
+        MakeSdfVisualFromString(fmt::format(visual_format, ""));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_EQ(vis_props.illustration->GetPropertyOrDefault("phong", "diffuse",
+                                                           Rgba(0, 0, 0)),
+              expected_diffuse);
+    ASSERT_TRUE(vis_props.perception.has_value());
+    EXPECT_EQ(vis_props.perception->GetPropertyOrDefault("phong", "diffuse",
+                                                         Rgba(0, 0, 0)),
+              expected_diffuse);
+  }
+
+  // Case: Saying enabled is the same as saying nothing.
+  {
+    unique_ptr<sdf::Visual> sdf_visual =
+        MakeSdfVisualFromString(fmt::format(visual_format, R"""(
+        <drake:perception_properties enabled="true"/>
+        <drake:illustration_properties enabled="true"/>)"""));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_EQ(vis_props.illustration->GetPropertyOrDefault("phong", "diffuse",
+                                                           Rgba(0, 0, 0)),
+              expected_diffuse);
+    ASSERT_TRUE(vis_props.perception.has_value());
+    EXPECT_EQ(vis_props.perception->GetPropertyOrDefault("phong", "diffuse",
+                                                         Rgba(0, 0, 0)),
+              expected_diffuse);
+  }
+
+  // Case: Disabling perception leaves only illustration.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        fmt::format(visual_format,
+                    R"""(<drake:perception_properties enabled="false"/>)"""));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_EQ(vis_props.illustration->GetPropertyOrDefault("phong", "diffuse",
+                                                           Rgba(0, 0, 0)),
+              expected_diffuse);
+    ASSERT_FALSE(vis_props.perception.has_value());
+  }
+
+  // Case: Disabling illustration leaves only perception.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        fmt::format(visual_format,
+                    R"""(<drake:illustration_properties enabled="false"/>)"""));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_FALSE(vis_props.illustration.has_value());
+    ASSERT_TRUE(vis_props.perception.has_value());
+    EXPECT_EQ(vis_props.perception->GetPropertyOrDefault("phong", "diffuse",
+                                                         Rgba(0, 0, 0)),
+              expected_diffuse);
+  }
+
+  // Case: Disabling both reports no geometry properties, but does spew a
+  // warning.
+  {
+    unique_ptr<sdf::Visual> sdf_visual =
+        MakeSdfVisualFromString(fmt::format(visual_format, R"""(
+        <drake:perception_properties enabled="false"/>
+        <drake:illustration_properties enabled="false"/>)"""));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_FALSE(vis_props.illustration.has_value());
+    ASSERT_FALSE(vis_props.perception.has_value());
+    EXPECT_THAT(TakeWarning(),
+                ::testing::HasSubstr("all visual roles turned off for Drake"));
+  }
+
+  // Case: Disabling both reports no geometry properties. If the visual came
+  // from a <drake:visual> originally, there's no warning.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(R"""(
+        <visual name='visual'>
+          <geometry><sphere><radius>1</radius></sphere></geometry>
+          <drake:perception_properties enabled="false"/>
+          <drake:illustration_properties enabled="false"/>
+        </visual>)""");
+    // This is the attribute that gets added in detal_sdf_parser.cc when a
+    // <drake:visual> gets converted to <visual>.
+    sdf_visual->Element()->AddAttribute(kIsDrakeNamespaceAttr, "bool", "true",
+                                        /* required */ false);
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_FALSE(vis_props.illustration.has_value());
+    ASSERT_FALSE(vis_props.perception.has_value());
+  }
 }
 
 // Verify MakeGeometryPoseFromSdfCollision() makes the pose X_LG of geometry

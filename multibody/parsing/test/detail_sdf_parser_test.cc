@@ -3872,6 +3872,100 @@ TEST_F(SdfParserTest, MergeIncludeIntoWorld) {
   TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "top");
   TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "another_top");
 }
+
+TEST_F(SdfParserTest, VisualRoleConfiguration) {
+  AddSceneGraph();
+  // Test that point masses don't get sent through the massless body branch.
+  ParseTestString(R"""(
+  <model name="visual_model">
+    <link name="unused_default_geometry">
+      <visual name="general_visual">
+        <pose>-1 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        <!-- Both roles disabled for <visual> generates a warning. -->
+        <drake:perception_properties enabled="false"/>
+        <drake:illustration_properties enabled="false"/>
+      </visual>
+
+      <drake:visual name="non-existent">
+        <drake:geometry>
+          <drake:sphere>
+            <drake:radius>10</drake:radius>
+          </drake:sphere>
+        </drake:geometry>
+        <!-- Both roles diabled for <drake:visual> does *not* generate a
+             warning. -->
+        <drake:perception_properties enabled="false"/>
+        <drake:illustration_properties enabled="false"/>
+      </drake:visual>
+
+      <drake:visual name="illustration">
+        <drake:pose>1 0 0 0 0 0</drake:pose>
+        <drake:geometry>
+          <drake:cylinder>
+            <drake:radius>0.8</drake:radius>
+            <drake:length>0.02</drake:length>
+          </drake:cylinder>
+        </drake:geometry>
+        <!-- perception disabled; illustration only. -->
+        <drake:perception_properties enabled="false"/>
+      </drake:visual>
+
+      <drake:visual name="perception">
+        <drake:pose>0 0 0 0 0 0</drake:pose>
+        <drake:geometry>
+          <drake:sphere>
+            <drake:radius>2</drake:radius>
+          </drake:sphere>
+        </drake:geometry>
+        <!-- illustration disabled; perception only. -->
+        <drake:illustration_properties enabled="false"/>
+      </drake:visual>
+
+    </link>
+
+  </model>)""");
+
+  struct ExpectedGeometry {
+    std::string name;
+    std::string shape_string;
+    bool operator<(const ExpectedGeometry& other) const {
+      if (name < other.name) return true;
+      if (name > other.name) return false;
+      return shape_string < other.shape_string;
+    }
+  };
+
+  const std::set<ExpectedGeometry> expected_geometries{
+      {"visual_model::illustration", "Cylinder(radius=0.8, length=0.02)"},
+      {"visual_model::perception", "Sphere(radius=2)"}};
+
+  const auto& inspector = scene_graph_.model_inspector();
+  EXPECT_EQ(inspector.num_geometries(), expected_geometries.size());
+  for (const auto id : inspector.GetAllGeometryIds()) {
+    EXPECT_TRUE(expected_geometries.contains(ExpectedGeometry{
+        inspector.GetName(id), inspector.GetShape(id).to_string()}));
+  }
+
+  EXPECT_THAT(TakeWarning(),
+              ::testing::HasSubstr("<visual name=\"general_visual\"> tag had "
+                                   "all visual roles turned off"));
+
+  // Note: we haven't done anything explicit to test the <drake:pose>
+  // conversion. Given that the other elements of the <drake:visualizer> tree
+  // have processed, we assume the <drake:pose> has processed as well. The only
+  // concern we'd have if the "relative-to" plumbing weren't set up correctly.
+  // However, in that case, this test would fail because each of the
+  // <drake:visual> elements with a <drake:pose> tag would generate an error
+  // in the diagnostics:
+  //    "SemanticPose has invalid pointer to PoseRelativeToGraph."
+  // If the errors were emitted, this test would fail on completion.
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
