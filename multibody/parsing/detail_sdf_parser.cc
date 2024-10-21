@@ -1012,6 +1012,60 @@ struct LinkInfo {
   RigidTransformd X_WL;
 };
 
+// If `element`'s name has a "drake:" prefix, strip the prefix and then explore
+// `element`'s children, performing the same operation. Returns `true` upon
+// success.
+bool DrakeVisualToSdfVisualRecurse(sdf::ElementPtr element,
+                                   const SDFormatDiagnostic& diagnostic) {
+  const std::string& tag_name = element->GetName();
+  if (!tag_name.starts_with("drake:")) {
+    diagnostic.Error(element,
+                     "All tags under a drake-namespaced tag must likewise be "
+                     "drake-namespaced.");
+    return false;
+  }
+  if (tag_name == "drake:perception_properties" ||
+      tag_name == "drake:illustration_properties") {
+    // These drake-only tags should remain untouched to be processed later.
+    // Doing nothing is success.
+    return true;
+  }
+  element->SetName(tag_name.substr(6));
+  for (sdf::ElementPtr child = element->GetFirstElement(); child != nullptr;
+       child = child->GetNextElement()) {
+    const bool success = DrakeVisualToSdfVisualRecurse(child, diagnostic);
+    if (!success) return success;
+  }
+  return true;
+}
+
+// Search for all _element_ trees rooted at <drake:visual> tags and convert them
+// to <visual> tags, inserting them into `link`.
+void DrakeVisualToSdfVisual(sdf::Link* link,
+                            const sdf::ParserConfig& parser_config,
+                            const SDFormatDiagnostic& diagnostic) {
+  sdf::ElementPtr link_element = link->Element();
+  sdf::ElementPtr drake_visual = link_element->GetElement("drake:visual");
+  while (drake_visual != nullptr) {
+    if (DrakeVisualToSdfVisualRecurse(drake_visual, diagnostic)) {
+      drake_visual->AddAttribute(kIsDrakeNamespaceAttr, "bool", "true",
+                                 /* required */ false);
+      sdf::Visual visual;
+      visual.Load(drake_visual, parser_config);
+      sdf::ElementPtr next_visual =
+          drake_visual->GetNextElement("drake:visual");
+      link_element->RemoveChild(drake_visual);
+      link->AddVisual(visual);
+      drake_visual = next_visual;
+    } else {
+      // Generally, if we return `false`, it's because there's an error in the
+      // conversion and the parsing should stop. But we'll pretend to proceed
+      // for diagnostics that don't throw on error.
+      drake_visual = drake_visual->GetNextElement("drake:visual");
+    }
+  }
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
@@ -1021,10 +1075,12 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
     const RigidTransformd& X_WM,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
-    const std::string& root_dir) {
+    const std::string& root_dir,
+    const sdf::ParserConfig& parser_config) {
   std::vector<LinkInfo> link_infos;
 
   const std::set<std::string> supported_link_elements{
+    "drake:visual",
     "collision",
     "gravity",
     "inertial",
@@ -1088,6 +1144,12 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
             uri, package_map, root_dir);
       };
 
+      // We're going to convert <drake:visual> to <visual> so they all get
+      // processed together. So, we're going to cheat to mutate what would
+      // otherwise be const.
+      sdf::Link* link_ptr = const_cast<sdf::Link*>(&link);
+      DrakeVisualToSdfVisual(link_ptr, parser_config, diagnostic);
+
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
         const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
@@ -1102,20 +1164,19 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
         std::optional<unique_ptr<GeometryInstance>> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(
                 diagnostic, sdf_visual, resolve_filename, X_LG);
-        if (!geometry_instance.has_value()) return std::nullopt;
+        // No instance may simply mean there was a visual we should skip and we
+        // move on to the next. If there is a _real_ problem, we assume an error
+        // was reported to diagnostic (and it responds appropriately).
+        if (!geometry_instance.has_value()) continue;
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
         if (*geometry_instance) {
-          // The parsing should *always* produce an IllustrationProperties
-          // instance, even if it is empty.
+          // The parsing should *always* produce some visual properties.
           DRAKE_DEMAND(
-              (*geometry_instance)->illustration_properties() != nullptr);
+              (*geometry_instance)->illustration_properties() != nullptr ||
+              (*geometry_instance)->perception_properties() != nullptr);
 
-          plant->RegisterVisualGeometry(
-              body, (*geometry_instance)->pose(),
-              (*geometry_instance)->shape(),
-              (*geometry_instance)->name(),
-              *(*geometry_instance)->illustration_properties());
+          plant->RegisterVisualGeometry(body, std::move(*geometry_instance));
         }
       }
 
@@ -1625,7 +1686,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     CollisionFilterGroupResolver* resolver,
     const PackageMap& package_map,
     const std::string& root_dir,
-    const ModelInstanceIndexRange &reusable_model_instance_range) {
+    const ModelInstanceIndexRange &reusable_model_instance_range,
+    const sdf::ParserConfig& parser_config) {
   const ModelInstanceIndex model_instance = AddModelInstanceIfReusable(
       plant, model_name, reusable_model_instance_range);
 
@@ -1664,7 +1726,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
         AddModelsFromSpecification(
             diagnostic, nested_model,
             sdf::JoinName(model_name, nested_model.Name()), X_WM, plant,
-            resolver, package_map, root_dir, reusable_model_instance_range);
+            resolver, package_map, root_dir, reusable_model_instance_range,
+            parser_config);
 
     added_model_instances.insert(added_model_instances.end(),
                                  nested_model_instances.begin(),
@@ -1672,8 +1735,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   }
   drake::log()->trace("sdf_parser: Add links");
   std::optional<std::vector<LinkInfo>> added_link_infos =
-      AddLinksFromSpecification(diagnostic, model_instance, model,
-                                X_WM, plant, package_map, root_dir);
+      AddLinksFromSpecification(diagnostic, model_instance, model, X_WM, plant,
+                                package_map, root_dir, parser_config);
   if (!added_link_infos.has_value()) return {};
 
   // Add the SDF "model frame" given the model name so that way any frames added
@@ -2163,10 +2226,11 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
       MakeModelName(local_model_name, parent_model_name, workspace);
 
   std::vector<ModelInstanceIndex> added_model_instances =
-      AddModelsFromSpecification(
-          diagnostic, model, model_name, {}, workspace.plant,
-          workspace.collision_resolver, workspace.package_map,
-          data_source.GetRootDir(), reusable_model_instance_range);
+      AddModelsFromSpecification(diagnostic, model, model_name, {},
+                                 workspace.plant, workspace.collision_resolver,
+                                 workspace.package_map,
+                                 data_source.GetRootDir(),
+                                 reusable_model_instance_range, parser_config);
 
   DRAKE_DEMAND(!added_model_instances.empty());
   return added_model_instances.front();
@@ -2230,7 +2294,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         AddModelsFromSpecification(
             diagnostic, model, model_name, {}, workspace.plant,
             workspace.collision_resolver, workspace.package_map,
-            data_source.GetRootDir(), reusable_model_instance_range);
+            data_source.GetRootDir(), reusable_model_instance_range,
+            parser_config);
     model_instances.insert(model_instances.end(),
                            added_model_instances.begin(),
                            added_model_instances.end());
@@ -2262,7 +2327,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
           AddModelsFromSpecification(
               diagnostic, model, model_name, {}, workspace.plant,
               workspace.collision_resolver, workspace.package_map,
-              data_source.GetRootDir(), reusable_model_instance_range);
+              data_source.GetRootDir(), reusable_model_instance_range,
+              parser_config);
       model_instances.insert(model_instances.end(),
                              added_model_instances.begin(),
                              added_model_instances.end());

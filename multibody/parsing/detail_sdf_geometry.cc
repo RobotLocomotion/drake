@@ -12,6 +12,7 @@
 #include <sdf/Cylinder.hh>
 #include <sdf/Element.hh>
 #include <sdf/Ellipsoid.hh>
+#include <sdf/Param.hh>
 #include <sdf/Plane.hh>
 #include <sdf/Sphere.hh>
 
@@ -34,7 +35,9 @@ using std::string;
 
 using drake::internal::DiagnosticPolicy;
 using geometry::GeometryInstance;
+using geometry::GeometryProperties;
 using geometry::IllustrationProperties;
+using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
 using math::RigidTransformd;
 
@@ -218,6 +221,8 @@ std::optional<std::unique_ptr<GeometryInstance>>
         const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
         const math::RigidTransformd& X_LG) {
   const std::set<std::string> supported_visual_elements{
+    "drake:perception_properties",
+    "drake:illustration_properties",
     "geometry",
     "material",
     "pose",
@@ -291,17 +296,56 @@ std::optional<std::unique_ptr<GeometryInstance>>
   }
   auto instance =
       make_unique<GeometryInstance>(X_LC, std::move(*shape), sdf_visual.Name());
-  std::optional<IllustrationProperties> illustration_properties =
+  auto [maybe_illus, maybe_percep] =
       MakeVisualPropertiesFromSdfVisual(
           diagnostic, sdf_visual, resolve_filename);
-  if (!illustration_properties.has_value()) return std::nullopt;
-  instance->set_illustration_properties(*illustration_properties);
+  if (!(maybe_illus.has_value() || maybe_percep.has_value())) {
+    // No properties of any kind were returned.
+    return std::nullopt;
+  }
+  if (maybe_illus.has_value()) {
+    instance->set_illustration_properties(std::move(*maybe_illus));
+  }
+  if (maybe_percep.has_value()) {
+    instance->set_perception_properties(std::move(*maybe_percep));
+  }
   return instance;
 }
 
-std::optional<IllustrationProperties> MakeVisualPropertiesFromSdfVisual(
-    const SDFormatDiagnostic& diagnostic,
-    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename) {
+namespace {
+
+// The element is only disabled iff:
+//  - it is defined and
+//  - it has the attribute "enabled" and
+//  - the attribute's value is false.
+// In all other cases, the element is considered enabled.
+bool ElementIsEnabled(const sdf::ElementConstPtr e,
+                      const SDFormatDiagnostic& diagnostic) {
+  if (e == nullptr) {
+    return true;
+  }
+  sdf::ParamPtr attr = e->GetAttribute("enabled");
+  if (attr == nullptr) {
+    return true;
+  }
+  bool enabled;
+  const bool valid = attr->Get(enabled);
+  if (!valid) {
+    diagnostic.Error(e, fmt::format(
+        "The `{}` element has an 'enabled' attribute with the wrong value "
+        "type; it should be a boolean value.", e->GetName()));
+    return false;
+  }
+  return enabled;
+}
+
+}  // namespace
+
+std::pair<std::optional<geometry::IllustrationProperties>,
+          std::optional<geometry::PerceptionProperties>>
+MakeVisualPropertiesFromSdfVisual(const SDFormatDiagnostic& diagnostic,
+                                  const sdf::Visual& sdf_visual,
+                                  ResolveFilename resolve_filename) {
   // This doesn't directly use the sdf::Material API on purpose. In the current
   // version, if a parameter (e.g., diffuse) is missing it will *not* be
   // included in the geometry properties. Using the sdf::Material, it is
@@ -312,12 +356,49 @@ std::optional<IllustrationProperties> MakeVisualPropertiesFromSdfVisual(
   // distinguish between a value that was specified by the user and one that was
   // provided by sdformat's default value).
 
-  // The existence of a visual element will *always* require an
-  // IllustrationProperties instance. How we populate it depends on the material
-  // values.
-  IllustrationProperties properties;
-
   const sdf::ElementPtr visual_element = sdf_visual.Element();
+  // TODO(SeanCurtis-TRI): These elements will be more fully utilized when these
+  // tags contain child tags that configure properties.
+  const sdf::ElementConstPtr percep =
+      visual_element->FindElement("drake:perception_properties");
+  const sdf::ElementConstPtr illus =
+      visual_element->FindElement("drake:illustration_properties");
+  const bool gets_percep = ElementIsEnabled(percep, diagnostic);
+  const bool gets_illus = ElementIsEnabled(illus, diagnostic);
+
+  if (!(gets_percep || gets_illus)) {
+    // The <visual> tag has had both illustration and perception roles disabled.
+
+    // If true, this visual was a <visual> and not a <drake:visual>.
+    const bool is_sdf_visual =
+        sdf_visual.Element()->GetAttribute(kIsDrakeNamespaceAttr) == nullptr;
+    if (is_sdf_visual) {
+      diagnostic.Warning(
+          visual_element,
+          fmt::format("The <visual name=\"{}\"> tag had all visual roles "
+                      "turned off for Drake; this model may appear very "
+                      "different in Drake from other sdformat loaders.",
+                      sdf_visual.Name()));
+    }
+
+    return {std::nullopt, std::nullopt};
+  }
+
+  // At the point, we know at least one visual role has been specified. If
+  // illustration is defined, we'll set the properties on illustration
+  // properties and (maybe) copy them over to perception when we're done.
+  // Otherwise, we write directly to the perception_properties.
+  std::optional<IllustrationProperties> illus_props;
+  std::optional<PerceptionProperties> percep_props;
+  GeometryProperties* properties = nullptr;
+  if (gets_illus) {
+    illus_props = IllustrationProperties();
+    properties = &*illus_props;
+  } else {
+    percep_props = PerceptionProperties();
+    properties = &*percep_props;
+  }
+
   // Element pointers can only be nullptr if Load() was not called on the sdf::
   // object. Only a bug could cause this.
   DRAKE_DEMAND(visual_element != nullptr);
@@ -345,14 +426,14 @@ std::optional<IllustrationProperties> MakeVisualPropertiesFromSdfVisual(
           std::string message = std::string(fmt::format(
               "Unable to locate the texture file: {}", texture_name));
           diagnostic.Error(visual_element, std::move(message));
-          return std::nullopt;
+          return {std::nullopt, std::nullopt};
         }
-        properties.AddProperty("phong", "diffuse_map", resolved_path);
+        properties->AddProperty("phong", "diffuse_map", resolved_path);
       }
     }
 
     auto add_property = [material_element](const char* property,
-                                           IllustrationProperties* props) {
+                                           GeometryProperties* props) {
       if (!material_element->HasElement(property)) return;
       using gz::math::Color;
       const std::pair<Color, bool> value_pair =
@@ -365,18 +446,22 @@ std::optional<IllustrationProperties> MakeVisualPropertiesFromSdfVisual(
       props->AddProperty("phong", property, color);
     };
 
-    add_property("diffuse", &properties);
-    add_property("ambient", &properties);
-    add_property("specular", &properties);
-    add_property("emissive", &properties);
+    add_property("diffuse", properties);
+    add_property("ambient", properties);
+    add_property("specular", properties);
+    add_property("emissive", properties);
   }
 
-  // TODO(SeanCurtis-TRI): Including this property in illustration properties is
-  //  a bit misleading; it isn't used by illustration, but we're not currently
-  //  parsing illustration and perception properties separately. So, we stash
-  //  them in the illustration properties relying on it to be ignored by
-  //  illustration consumers but copied over to the perception properties.
-  if (visual_element->HasElement(kAcceptingTag)) {
+  if (gets_percep && gets_illus) {
+    percep_props = PerceptionProperties(*illus_props);
+  }
+
+  // TODO(SeanCurtis-TRI): As we allow customization of properties with in the
+  // drake::foo_properties tags, refine each of illustration and perception
+  // properties as appropriate.
+
+  // Perception-only property.
+  if (gets_percep && visual_element->HasElement(kAcceptingTag)) {
     set<string> accepting_names;
     sdf::ElementPtr accepting = visual_element->GetElement(kAcceptingTag);
     while (accepting != nullptr) {
@@ -385,16 +470,17 @@ std::optional<IllustrationProperties> MakeVisualPropertiesFromSdfVisual(
         std::string message = fmt::format("<{}> tag given without any name",
                                           kAcceptingTag);
         diagnostic.Error(accepting, std::move(message));
-        return std::nullopt;
+        return {std::nullopt, std::nullopt};
       }
       accepting_names.insert(name);
       accepting = accepting->GetNextElement(kAcceptingTag);
     }
     DRAKE_DEMAND(accepting_names.size() > 0);
-    properties.AddProperty("renderer", "accepting", std::move(accepting_names));
+    percep_props->AddProperty("renderer", "accepting",
+                              std::move(accepting_names));
   }
 
-  return properties;
+  return {illus_props, percep_props};
 }
 
 RigidTransformd MakeGeometryPoseFromSdfCollision(
