@@ -96,6 +96,10 @@ After that, run:
 ./setup/mac/install_prereqs.sh
 ```
 
+# Build with CMake
+
+TODO write me
+
 # Build with Bazel
 
 For instructions, jump to
