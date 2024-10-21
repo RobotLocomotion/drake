@@ -763,10 +763,10 @@ std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
 
 // TODO(hongkai.dai@tri.global): break this large DoSolve function to smaller
 // ones.
-void GurobiSolver::DoSolve(const MathematicalProgram& prog,
-                           const Eigen::VectorXd& initial_guess,
-                           const SolverOptions& merged_options,
-                           MathematicalProgramResult* result) const {
+void GurobiSolver::DoSolve2(const MathematicalProgram& prog,
+                            const Eigen::VectorXd& initial_guess,
+                            internal::SpecificOptions* options,
+                            MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
         "GurobiSolver doesn't support the feature of variable scaling.");
@@ -938,88 +938,66 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
   GRBenv* model_env = GRBgetenv(model);
   DRAKE_DEMAND(model_env != nullptr);
 
-  // Handle common solver options before gurobi-specific options stored in
-  // merged_options, so that gurobi-specific options can overwrite common solver
-  // options.
-  // Gurobi creates a new log file every time we set "LogFile" parameter through
-  // GRBsetstrparam(). So in order to avoid creating log files repeatedly, we
-  // store the log file name in @p log_file variable, and only call
-  // GRBsetstrparam(model_env, "LogFile", log_file) for once.
-  std::string log_file = merged_options.get_print_file_name();
-  if (!error) {
-    SetOptionOrThrow(model_env, "LogToConsole",
-                     static_cast<int>(merged_options.get_print_to_console()));
-  }
-  // Here's our priority order for selecting the number of threads:
-  // - Gurobi-specific solver option "Threads"
-  // - The value of CommonSolverOptions::kMaxThreads if set.
-  // - GUROBI_NUM_THREADS environment variable.
-  // - Drake's maximum parallelism.
-  std::optional<int> num_threads = std::nullopt;
-  if (merged_options.GetOptionsInt(id()).contains("Threads")) {
-    num_threads = merged_options.GetOptionsInt(id()).at("Threads");
-  }
-  if (!num_threads.has_value()) {
-    // If unset, check CommonSolverOptions::kMaxThreads.
-    num_threads = merged_options.get_max_threads();
-  }
-  if (!num_threads.has_value()) {
-    // If unset, use GUROBI_NUM_THREADS. We attempt to read the value of
-    // GUROBI_NUM_THREADS and warn the user if it is not parseable.
-    if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS")) {
-      num_threads = ParseInt(num_threads_str);
-      if (num_threads.has_value()) {
-        log()->debug("Using GUROBI_NUM_THREADS={}", num_threads.value());
-      } else {
-        static const logging::Warn log_once(
-            "Ignoring unparseable value '{}' for GUROBI_NUM_THREADS",
-            num_threads_str);
-      }
+  // A couple options don't use the standard GRBset{...}param API.
+  const bool compute_iis = [&options]() {
+    const int value = options->template Pop<int>("GRBcomputeIIS").value_or(0);
+    if (!(value == 0 || value == 1)) {
+      throw std::runtime_error(fmt::format(
+          "GurobiSolver(): option GRBcomputeIIS should be either 0 or 1, but "
+          "is incorrectly set to {}",
+          value));
     }
-  }
-  if (!num_threads.has_value()) {
-    // If unset, use max parallelism.
-    num_threads = Parallelism::Max().num_threads();
-  }
-  DRAKE_DEMAND(num_threads.has_value());
-  SetOptionOrThrow(model_env, "Threads", num_threads.value());
+    return value;
+  }();
+  const std::optional<std::string> grb_write =
+      options->template Pop<std::string>("GRBwrite");
 
-  for (const auto& it : merged_options.GetOptionsDouble(id())) {
-    if (!error) {
-      SetOptionOrThrow(model_env, it.first, it.second);
+  // Copy the remaining options into model_env.
+  options->Respell([](const auto& common, auto* respelled) {
+    if (common.print_to_console) {
+      respelled->emplace("LogToConsole", 1);
     }
-  }
-  bool compute_iis = false;
-  for (const auto& it : merged_options.GetOptionsInt(id())) {
-    if (!error) {
-      if (it.first == "GRBcomputeIIS") {
-        compute_iis = static_cast<bool>(it.second);
-        if (!(it.second == 0 || it.second == 1)) {
-          throw std::runtime_error(fmt::format(
-              "GurobiSolver(): option GRBcomputeIIS should be either "
-              "0 or 1, but is incorrectly set to {}",
-              it.second));
+    if (!common.print_file_name.empty()) {
+      respelled->emplace("LogFile", common.print_file_name);
+    }
+    // Here's our priority order for selecting the number of threads:
+    // - Gurobi-specific solver option "Threads" (already taken care of by the
+    ///  trumping logic inside SpecificOptions).
+    // - The value of CommonSolverOptions::kMaxThreads if set.
+    // - GUROBI_NUM_THREADS environment variable.
+    // - Drake's maximum parallelism.
+    std::optional<int> num_threads = common.max_threads;
+    if (!num_threads.has_value()) {
+      // If unset, use GUROBI_NUM_THREADS. We attempt to read the value of
+      // GUROBI_NUM_THREADS and warn the user if it is not parseable.
+      if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS")) {
+        num_threads = ParseInt(num_threads_str);
+        if (num_threads.has_value()) {
+          log()->debug("Using GUROBI_NUM_THREADS={}", *num_threads);
+        } else {
+          static const logging::Warn log_once(
+              "Ignoring unparseable value '{}' for GUROBI_NUM_THREADS",
+              num_threads_str);
         }
-      } else {
-        SetOptionOrThrow(model_env, it.first, it.second);
       }
     }
-  }
-  std::optional<std::string> grb_write;
-  for (const auto& it : merged_options.GetOptionsStr(id())) {
-    if (!error) {
-      if (it.first == "GRBwrite") {
-        if (it.second != "") {
-          grb_write = it.second;
-        }
-      } else if (it.first == "LogFile") {
-        log_file = it.second;
-      } else {
-        SetOptionOrThrow(model_env, it.first, it.second);
-      }
+    if (!num_threads.has_value()) {
+      // If unset, use max parallelism.
+      num_threads = Parallelism::Max().num_threads();
     }
-  }
-  SetOptionOrThrow(model_env, "LogFile", log_file);
+    DRAKE_DEMAND(num_threads.has_value());
+    respelled->emplace("Threads", *num_threads);
+  });
+  options->CopyToCallbacks(
+      [&model_env](const std::string& key, double value) {
+        SetOptionOrThrow(model_env, key, value);
+      },
+      [&model_env](const std::string& key, int value) {
+        SetOptionOrThrow(model_env, key, value);
+      },
+      [&model_env](const std::string& key, const std::string& value) {
+        SetOptionOrThrow(model_env, key, value);
+      });
 
   for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
     if (!error && !std::isnan(initial_guess(i))) {
@@ -1070,7 +1048,7 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
     }
   }
   if (!error) {
-    if (grb_write.has_value()) {
+    if (grb_write.has_value() && (grb_write->size() > 0)) {
       error = GRBwrite(model, grb_write.value().c_str());
       if (error) {
         const std::string gurobi_version =

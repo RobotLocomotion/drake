@@ -298,7 +298,7 @@ GTEST_TEST(MosekTest, TestLogging) {
   solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver.Solve(prog, {}, solver_options, &result),
-      ".* cannot print to both the console and the log file.");
+      ".*cannot print to both the console and a file.*");
 }
 
 GTEST_TEST(MosekTest, SolverOptionsTest) {
