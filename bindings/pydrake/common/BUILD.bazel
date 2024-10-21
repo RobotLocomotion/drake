@@ -234,6 +234,19 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "ref_cycle_pybind",
+    srcs = ["ref_cycle_pybind.cc"],
+    hdrs = ["ref_cycle_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pydrake:pydrake_pybind",
+        "//common:essential",
+        "@pybind11",
+    ],
+)
+
 # N.B. Any C++ libraries that include this must include `cpp_template_py` when
 # being used in Python.
 drake_cc_library(
