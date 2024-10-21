@@ -212,10 +212,9 @@ class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
   }
 
   // Wraps a function under test with helpful defaults.
-  std::optional<geometry::IllustrationProperties>
-      MakeVisualPropertiesFromSdfVisual(
-          const sdf::Visual& sdf_visual,
-          const ResolveFilename& resolve_filename = &NoopResolveFilename) {
+  VisualProperties MakeVisualPropertiesFromSdfVisual(
+      const sdf::Visual& sdf_visual,
+      const ResolveFilename& resolve_filename = &NoopResolveFilename) {
     return internal::MakeVisualPropertiesFromSdfVisual(
         sdf_diagnostic_, sdf_visual, resolve_filename);
   }
@@ -893,9 +892,10 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(false, nullptr, nullptr, nullptr, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, false, {}, {}, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, false, {}, {}, {}, {}, {}));
   }
 
   // Case: Material tag defined, but no material properties -- empty
@@ -903,9 +903,10 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, nullptr, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, false, {}, {}, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, false, {}, {}, {}, {}, {}));
   }
 
   Vector4<double> diffuse{0.25, 0.5, 0.75, 1.0};
@@ -917,45 +918,49 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, nullptr, nullptr, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, diffuse, {}, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, true, diffuse, {}, {}, {}, {}));
   }
 
   // Case: Only valid specular defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, &specular, nullptr, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, {}, specular, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, true, {}, specular, {}, {}, {}));
   }
 
   // Case: Only valid ambient defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, &ambient, nullptr, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, {}, {}, ambient, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, true, {}, {}, ambient, {}, {}));
   }
 
   // Case: Only valid emissive defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, nullptr, &emissive, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, {}, {}, {}, emissive, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, true, {}, {}, {}, emissive, {}));
   }
 
   // Case: All four.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, &specular, &ambient, &emissive, ""));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, true, diffuse,
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(expect_phong(*vis_props.illustration, true, diffuse,
                 specular, ambient, emissive, {}));
   }
 
@@ -968,11 +973,11 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
         make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap);
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap));
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
     // Note: The "no-op" filename resolver will just return kLocalMap as the
     // property name.
-    EXPECT_TRUE(expect_phong(*material, true, diffuse, specular,
+    EXPECT_TRUE(expect_phong(*vis_props.illustration, true, diffuse, specular,
                              ambient, emissive, kLocalMap));
   }
 
@@ -1011,9 +1016,10 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
         "  <material>" + bad_diffuse +
         "  </material>"
         "</visual>");
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(*material, false, {}, {}, {}, {}, {}));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.illustration.has_value());
+    EXPECT_TRUE(
+        expect_phong(*vis_props.illustration, false, {}, {}, {}, {}, {}));
   }
 }
 
@@ -1036,9 +1042,9 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "    <diffuse>0.25 1 0.5 0.25</diffuse>"
         "  </material>"
         "</visual>");
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_FALSE(material->HasProperty(group, property));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.perception.has_value());
+    EXPECT_FALSE(vis_props.perception->HasProperty(group, property));
   }
 
   // Case: single <drake:accepting_renderer> tag.
@@ -1056,11 +1062,12 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "  </material>"
         "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
         "</visual>");
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(material->HasProperty(group, property));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.perception.has_value());
+    EXPECT_TRUE(vis_props.perception->HasProperty(group, property));
     const auto& names =
-        material->GetProperty<std::set<std::string>>(group, property);
+        vis_props.perception->GetProperty<std::set<std::string>>(group,
+                                                                 property);
     EXPECT_EQ(names.size(), 1);
     EXPECT_TRUE(names.contains("renderer1"));
   }
@@ -1081,11 +1088,12 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
         "  <drake:accepting_renderer>renderer2</drake:accepting_renderer>"
         "</visual>");
-    std::optional<IllustrationProperties> material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(material->HasProperty(group, property));
+    VisualProperties vis_props = MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    ASSERT_TRUE(vis_props.perception.has_value());
+    EXPECT_TRUE(vis_props.perception->HasProperty(group, property));
     const auto& names =
-        material->GetProperty<std::set<std::string>>(group, property);
+        vis_props.perception->GetProperty<std::set<std::string>>(group,
+                                                                 property);
     EXPECT_EQ(names.size(), 2);
     EXPECT_TRUE(names.contains("renderer1"));
     EXPECT_TRUE(names.contains("renderer2"));

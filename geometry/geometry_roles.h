@@ -157,6 +157,7 @@ class ProximityProperties final : public GeometryProperties {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ProximityProperties);
   // TODO(SeanCurtis-TRI): Should this have the physical properties built in?
   ProximityProperties() = default;
+  explicit ProximityProperties(const GeometryProperties& other);
   ~ProximityProperties() final;
 };
 
@@ -170,6 +171,7 @@ class PerceptionProperties final : public GeometryProperties {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PerceptionProperties);
   // TODO(SeanCurtis-TRI): Should this have a render label built in?
   PerceptionProperties() = default;
+  explicit PerceptionProperties(const GeometryProperties& other);
   ~PerceptionProperties() final;
 };
 
@@ -182,6 +184,7 @@ class IllustrationProperties final : public GeometryProperties {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IllustrationProperties);
   IllustrationProperties() = default;
+  explicit IllustrationProperties(const GeometryProperties& other);
   ~IllustrationProperties() final;
 };
 
