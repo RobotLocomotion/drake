@@ -195,16 +195,8 @@ std::string NoopResolveFilename(const SDFormatDiagnostic&,
 
 class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
  public:
-  SceneGraphParserDetail() {
-    // Don't let warnings leak into spdlog; tests should always specifically
-    // handle any warnings that appear.
-    diagnostic_policy_.SetActionForWarnings(
-        &DiagnosticPolicy::ErrorDefaultAction);
-    RecordErrors();
-  }
-
   // Wraps a function under test with helpful defaults.
-  std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
+  std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       const sdf::Geometry& sdf_geometry,
       const ResolveFilename& resolve_filename = &NoopResolveFilename) {
     return internal::MakeShapeFromSdfGeometry(
@@ -231,10 +223,8 @@ class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
 TEST_F(SceneGraphParserDetail, MakeEmptyFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry =
       MakeSdfGeometryFromString("<empty/>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  EXPECT_EQ(*shape, nullptr);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a box from an sdf::Geometry.
@@ -243,10 +233,8 @@ TEST_F(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
       "<box>"
       "  <size>1.0 2.0 3.0</size>"
       "</box>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Box* box = dynamic_cast<const Box*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Box* box = dynamic_cast<const Box*>(shape.get());
   ASSERT_NE(box, nullptr);
   EXPECT_EQ(box->size(), Vector3d(1.0, 2.0, 3.0));
 }
@@ -261,10 +249,8 @@ TEST_F(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</drake:capsule>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Capsule* capsule = dynamic_cast<const Capsule*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->radius(), 0.5);
   EXPECT_EQ(capsule->length(), 1.2);
@@ -278,9 +264,9 @@ TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
       "<drake:capsule>"
       "  <length>1.2</length>"
       "</drake:capsule>");
-  std::optional<unique_ptr<Shape>> shape_no_radius =
+  unique_ptr<Shape> shape_no_radius =
       MakeShapeFromSdfGeometry(*no_radius_geometry);
-  EXPECT_FALSE(shape_no_radius.has_value());
+  EXPECT_EQ(shape_no_radius, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <radius> is required within element <drake:capsule>."));
   ClearDiagnostics();
@@ -289,9 +275,9 @@ TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
       "<drake:capsule>"
       "  <radius>0.5</radius>"
       "</drake:capsule>");
-  std::optional<unique_ptr<Shape>> shape_no_length =
+  unique_ptr<Shape> shape_no_length =
       MakeShapeFromSdfGeometry(*no_length_geometry);
-  EXPECT_FALSE(shape_no_length.has_value());
+  EXPECT_EQ(shape_no_length, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <length> is required within element <drake:capsule>."));
   ClearDiagnostics();
@@ -304,10 +290,8 @@ TEST_F(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</capsule>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Capsule* capsule = dynamic_cast<const Capsule*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->radius(), 0.5);
   EXPECT_EQ(capsule->length(), 1.2);
@@ -320,10 +304,8 @@ TEST_F(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</cylinder>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape.get());
   ASSERT_NE(cylinder, nullptr);
   EXPECT_EQ(cylinder->radius(), 0.5);
   EXPECT_EQ(cylinder->length(), 1.2);
@@ -340,10 +322,8 @@ TEST_F(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->a(), 0.5);
   EXPECT_EQ(ellipsoid->b(), 1.2);
@@ -359,7 +339,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  MakeShapeFromSdfGeometry(*no_a_geometry);
+  unique_ptr<Shape> shape_no_a = MakeShapeFromSdfGeometry(*no_a_geometry);
+  EXPECT_EQ(shape_no_a, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <a> is required within element <drake:ellipsoid>."));
   ClearDiagnostics();
@@ -369,7 +350,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <a>0.5</a>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  MakeShapeFromSdfGeometry(*no_b_geometry);
+  unique_ptr<Shape> shape_no_b = MakeShapeFromSdfGeometry(*no_b_geometry);
+  EXPECT_EQ(shape_no_b, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <b> is required within element <drake:ellipsoid>."));
   ClearDiagnostics();
@@ -379,7 +361,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <a>0.5</a>"
       "  <b>1.2</b>"
       "</drake:ellipsoid>");
-  MakeShapeFromSdfGeometry(*no_c_geometry);
+  unique_ptr<Shape> shape_no_c = MakeShapeFromSdfGeometry(*no_c_geometry);
+  EXPECT_EQ(shape_no_c, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Element <c> is required within element <drake:ellipsoid>."));
   ClearDiagnostics();
@@ -392,9 +375,8 @@ TEST_F(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
       "<ellipsoid>"
       "  <radii>0.5 1.2 0.9</radii>"
       "</ellipsoid>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->a(), 0.5);
   EXPECT_EQ(ellipsoid->b(), 1.2);
@@ -407,9 +389,8 @@ TEST_F(SceneGraphParserDetail, MakeSphereFromSdfGeometry) {
       "<sphere>"
       "  <radius>0.5</radius>"
       "</sphere>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Sphere* sphere = dynamic_cast<const Sphere*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Sphere* sphere = dynamic_cast<const Sphere*>(shape.get());
   ASSERT_NE(sphere, nullptr);
   EXPECT_EQ(sphere->radius(), 0.5);
 }
@@ -423,9 +404,8 @@ TEST_F(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
       "</plane>");
   // MakeShapeFromSdfGeometry() ignores <normal> and <size> to create the
   // HalfSpace. Therefore we only verify it created the right object.
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape->get()) != nullptr);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape.get()) != nullptr);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a mesh from an sdf::Geometry.
@@ -439,9 +419,8 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Mesh* mesh = dynamic_cast<const Mesh*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Mesh* mesh = dynamic_cast<const Mesh*>(shape.get());
   ASSERT_NE(mesh, nullptr);
   ASSERT_TRUE(mesh->source().is_path());
   EXPECT_EQ(mesh->source().path(), absolute_file_path);
@@ -459,7 +438,8 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometryIsotropicError) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 1 2 </scale>"
       "</mesh>");
-  MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*Drake meshes only support isotropic scaling. Therefore"
       " all three scaling factors must be exactly equal."));
@@ -475,9 +455,8 @@ TEST_F(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Convex* convex = dynamic_cast<const Convex*>(shape->get());
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Convex* convex = dynamic_cast<const Convex*>(shape.get());
   ASSERT_NE(convex, nullptr);
   EXPECT_TRUE(convex->source().is_path());
   EXPECT_EQ(convex->source().path(), absolute_file_path);
@@ -490,9 +469,8 @@ TEST_F(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
       "<heightmap>"
       "  <uri>/path/to/some/heightmap.png</uri>"
       "</heightmap>");
-  std::optional<unique_ptr<Shape>> shape =
-      MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_EQ(*shape, nullptr);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
 }
 
 // Verify that MakeShapeFromSdfGeometry does nothing with a polyline.
@@ -509,8 +487,7 @@ TEST_F(SceneGraphParserDetail, MakePolylineFromSdfGeometry) {
       "</polyline>");
   std::optional<unique_ptr<Shape>> shape =
       MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(shape.has_value());
-  EXPECT_EQ(*shape, nullptr);
+  EXPECT_EQ(shape, nullptr);
 }
 
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
@@ -529,12 +506,15 @@ TEST_F(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
       "  </geometry>"
       "</visual>");
 
-  std::optional<unique_ptr<GeometryInstance>> geometry_instance =
+  unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
 
-  const RigidTransformd X_LC((*geometry_instance)->pose());
+  EXPECT_NE(geometry_instance->perception_properties(), nullptr);
+  EXPECT_NE(geometry_instance->illustration_properties(), nullptr);
+
+  const RigidTransformd X_LC(geometry_instance->pose());
 
   // These are the expected values as specified by the string above.
   const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
@@ -546,6 +526,36 @@ TEST_F(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
   EXPECT_TRUE(X_LC.rotation().IsNearlyEqualTo(R_LC_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(X_LC.translation(), p_LCo_expected,
                               kTolerance, MatrixCompareType::relative));
+}
+
+// Verify MakeGeometryInstanceFromSdfVisual() creates an instance such that only
+// the perception properties have the ("renderer", "accepting") property.
+TEST_F(SceneGraphParserDetail,
+       MakeGeometryInstanceFromSdfVisualAcceptingRenderer) {
+  unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+      "<visual name = 'some_link_visual'>"
+      "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+      "  <geometry><sphere><radius>1.0</radius></sphere></geometry>"
+      "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
+      "</visual>");
+
+  unique_ptr<GeometryInstance> geometry_instance =
+      MakeGeometryInstanceFromSdfVisual(
+          sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
+          ToRigidTransform(sdf_visual->RawPose()));
+
+  ASSERT_NE(geometry_instance->perception_properties(), nullptr);
+  ASSERT_NE(geometry_instance->illustration_properties(), nullptr);
+
+  EXPECT_FALSE(geometry_instance->illustration_properties()->HasProperty(
+      "renderer", "accepting"));
+  EXPECT_TRUE(geometry_instance->perception_properties()->HasProperty(
+      "renderer", "accepting"));
+  const auto& names =
+      geometry_instance->perception_properties()
+          ->GetProperty<std::set<std::string>>("renderer", "accepting");
+  EXPECT_EQ(names.size(), 1);
+  EXPECT_TRUE(names.contains("renderer1"));
 }
 
 // Confirms the failure conditions for SDFormat. SceneGraph requirements on

@@ -61,12 +61,15 @@ using Eigen::VectorXd;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryId;
+using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::PenetrationAsPointPair;
+using geometry::PerceptionProperties;
 using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
 using geometry::internal::DummyRenderEngine;
+using geometry::render::RenderLabel;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -1975,9 +1978,11 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
                   geometry::internal::kFriction) == ground_friction);
 }
 
-// Verifies the process of visual geometry registration with a SceneGraph.
-// We build a model with two spheres and a ground plane. The ground plane is
-// located at y = 0 with normal in the y-axis direction.
+// Verifies the process of visual geometry registration with a SceneGraph. We
+// have multiple APIs, so we register multiple geometries, one with each
+// distinct API invocation. We build a model with multiple spheres and a ground
+// plane. The ground plane is located at y = 0 with normal in the y-axis
+// direction.
 GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   // Parameters of the setup.
   const double radius = 0.5;
@@ -1999,42 +2004,97 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   EXPECT_EQ(render_engine.num_registered(), 0);
 
-  // A half-space for the ground geometry -- uses default visual material
-  GeometryId ground_id = plant.RegisterVisualGeometry(
+  const std::string model("test_model");
+  const ModelInstanceIndex model_instance = plant.AddModelInstance(model);
+
+  // A half-space for the ground geometry. The ground shape defines no visual
+  // properties at all. It should get both roles and have the ("label", "id")
+  // perception property.
+  const GeometryId ground_id = plant.RegisterVisualGeometry(
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
       geometry::HalfSpace(), "ground");
   EXPECT_EQ(render_engine.num_registered(), 1);
 
-  // Add two spherical bodies.
-  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  // Add the spherical bodies.
+  // We just need a non-zero spatial inertia.
+  const auto M_BBo = SpatialInertia<double>::MakeUnitary();
+  const geometry::Sphere sphere(radius);
+  const RigidTransformd X_BG = RigidTransformd::Identity();
+
+  // Sphere1 defines a diffuse color. It should get both roles. It should have
+  // the ("phong", "diffuse") property in both roles and the ("label", "id")
+  // perception property.
   const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeUnitary());
-  Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
-  GeometryId sphere1_id = plant.RegisterVisualGeometry(
-      sphere1, RigidTransformd::Identity(), geometry::Sphere(radius), "visual",
-      sphere1_diffuse);
+      plant.AddRigidBody("Sphere1", model_instance, M_BBo);
+  const Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
+  // Turns the diffuse color into illustration and perception properties.
+  const GeometryId sphere1_id = plant.RegisterVisualGeometry(
+      sphere1, X_BG, sphere, "visual1", sphere1_diffuse);
   EXPECT_EQ(render_engine.num_registered(), 2);
+
+  // Sphere2 defines illustration properties. It should get both roles with the
+  // perception properties including all illustration properties and with the
+  // ("label", "id") perception property.
   const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeUnitary());
+      plant.AddRigidBody("Sphere2", model_instance, M_BBo);
   IllustrationProperties sphere2_props;
   const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
   sphere2_props.AddProperty("phong", "diffuse_map", "empty.png");
+  // This property prevents MbP from attempting to copy properties by hand. It
+  // must rely on GeometryProperties copying abilities instead.
+  sphere2_props.AddProperty("test_only", "dummy", true);
   sphere2_props.AddProperty("renderer", "accepting",
                             std::set<std::string>{"not_dummy"});
-  GeometryId sphere2_id = plant.RegisterVisualGeometry(
-      sphere2, RigidTransformd::Identity(), geometry::Sphere(radius), "visual",
-      sphere2_props);
-  // Because sphere 2 white listed a *different* renderer, it didn't get added
-  // to render_engine.
+  // Uses illustration properties for both illustration and perception
+  // properties.
+  const GeometryId sphere2_id = plant.RegisterVisualGeometry(
+      sphere2, X_BG, sphere, "visual2", sphere2_props);
+  // Sphere2's accepting renderer is *not* `render_engine`; it will not be
+  // added to it.
   EXPECT_EQ(render_engine.num_registered(), 2);
+
+  // Sphere3 defines *only* perception properties for a geometry instance. It
+  // should only get the perception role, but should have the ("label", "id")
+  // property added.
+  const RigidBody<double>& sphere3 =
+      plant.AddRigidBody("Sphere3", model_instance, M_BBo);
+  auto sphere3_instance =
+      std::make_unique<GeometryInstance>(X_BG, sphere, "visual3");
+  PerceptionProperties perception_props;
+  sphere3_instance->set_perception_properties(perception_props);
+  const GeometryId sphere3_id =
+      plant.RegisterVisualGeometry(sphere3, std::move(sphere3_instance));
+  EXPECT_EQ(render_engine.num_registered(), 3);
+
+  // Sphere4 defines perception properties with a ("label", "id") property. It
+  // will not change when added.
+  const RigidBody<double>& sphere4 =
+      plant.AddRigidBody("Sphere4", model_instance, M_BBo);
+  auto sphere4_instance =
+      std::make_unique<GeometryInstance>(X_BG, sphere, "visual4");
+  perception_props.AddProperty("label", "id", RenderLabel(1234));
+  sphere4_instance->set_perception_properties(perception_props);
+  const GeometryId sphere4_id =
+      plant.RegisterVisualGeometry(sphere4, std::move(sphere4_instance));
+  EXPECT_EQ(render_engine.num_registered(), 4);
+
+  // Sphere5 provides a geometry instance with no properties assigned. It will
+  // be registered with "defaulted" properties for both visual roles.
+  const RigidBody<double>& sphere5 =
+      plant.AddRigidBody("Sphere5", model_instance, M_BBo);
+  auto sphere5_instance =
+      std::make_unique<GeometryInstance>(X_BG, sphere, "visual5");
+  const GeometryId sphere5_id =
+      plant.RegisterVisualGeometry(sphere3, std::move(sphere5_instance));
+  EXPECT_EQ(render_engine.num_registered(), 5);
 
   // We are done defining the model.
   plant.Finalize();
 
-  EXPECT_EQ(plant.num_visual_geometries(), 3);
+  EXPECT_EQ(plant.num_visual_geometries(), 6);
   EXPECT_EQ(plant.num_collision_geometries(), 0);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
@@ -2048,25 +2108,64 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
 
   const SceneGraphInspector<double>& inspector = query_object.inspector();
-  {
-    const IllustrationProperties* material =
-        inspector.GetIllustrationProperties(ground_id);
-    ASSERT_NE(material, nullptr);
-    // Undefined property value indicates use of default value.
-    EXPECT_FALSE(material->HasProperty("phong", "diffuse"));
-  }
 
-  // This implicitly assumes that there *is* a "phong"|"diffuse" material. An
+  // This implicitly assumes that there *is* a ("phong", "diffuse") material. An
   // exception will be thrown otherwise.
   auto get_diffuse_color = [&inspector](GeometryId id) -> Vector4<double> {
     const IllustrationProperties* material =
         inspector.GetIllustrationProperties(id);
     return material->GetProperty<Vector4<double>>("phong", "diffuse");
   };
+
+  // Get the render label property from the geometry's perception properties.
+  auto get_render_label = [&inspector](GeometryId id) {
+    const PerceptionProperties* material =
+        inspector.GetPerceptionProperties(id);
+    return material->GetProperty<RenderLabel>("label", "id");
+  };
+
+  // Confirms that every illustration property is also in the perception
+  // properties.
+  auto illustration_in_perception = [&inspector](GeometryId id) {
+    const IllustrationProperties* illus =
+        inspector.GetIllustrationProperties(id);
+    if (illus == nullptr) return true;
+
+    const PerceptionProperties* percep = inspector.GetPerceptionProperties(id);
+    if (percep == nullptr) return false;
+
+    for (const auto& group_name : illus->GetGroupNames()) {
+      if (!percep->HasGroup(group_name)) return false;
+      for (const auto& [name, val] : illus->GetPropertiesInGroup(group_name)) {
+        // We're not going to worry about values. We'll assume if all of the
+        // properties were copied, the values were well. We just need evidence
+        // that copying took place.
+        if (!percep->HasProperty(group_name, name)) return false;
+      }
+    }
+    return true;
+  };
+
+  {
+    const IllustrationProperties* material =
+        inspector.GetIllustrationProperties(ground_id);
+    ASSERT_NE(material, nullptr);
+    // Undefined property value indicates use of default value.
+    EXPECT_FALSE(material->HasProperty("phong", "diffuse"));
+    EXPECT_EQ(get_render_label(ground_id),
+              RenderLabel(plant.world_body().index()));
+    EXPECT_TRUE(illustration_in_perception(ground_id));
+    // Ground belongs to default model instance - no name scoping.
+    EXPECT_EQ(inspector.GetName(ground_id), "ground");
+  }
+
   {
     const Vector4<double>& test_diffuse = get_diffuse_color(sphere1_id);
     EXPECT_TRUE(CompareMatrices(test_diffuse, sphere1_diffuse, 0.0,
                                 MatrixCompareType::absolute));
+    EXPECT_EQ(get_render_label(sphere1_id), RenderLabel(sphere1.index()));
+    EXPECT_TRUE(illustration_in_perception(sphere1_id));
+    EXPECT_EQ(inspector.GetName(sphere1_id), "test_model::visual1");
   }
 
   {
@@ -2078,6 +2177,32 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
     ASSERT_TRUE(material->HasProperty("phong", "diffuse_map"));
     EXPECT_EQ(material->GetProperty<std::string>("phong", "diffuse_map"),
               "empty.png");
+    EXPECT_EQ(get_render_label(sphere2_id), RenderLabel(sphere2.index()));
+    EXPECT_TRUE(illustration_in_perception(sphere2_id));
+    EXPECT_EQ(inspector.GetName(sphere2_id), "test_model::visual2");
+  }
+
+  {
+    EXPECT_EQ(inspector.GetIllustrationProperties(sphere3_id), nullptr);
+    EXPECT_NE(inspector.GetPerceptionProperties(sphere3_id), nullptr);
+    EXPECT_EQ(get_render_label(sphere3_id), RenderLabel(sphere3.index()));
+    EXPECT_EQ(inspector.GetName(sphere3_id), "test_model::visual3");
+  }
+
+  {
+    EXPECT_EQ(inspector.GetIllustrationProperties(sphere4_id), nullptr);
+    EXPECT_NE(inspector.GetPerceptionProperties(sphere4_id), nullptr);
+    EXPECT_NE(get_render_label(sphere4_id), RenderLabel(sphere4.index()));
+    EXPECT_EQ(get_render_label(sphere4_id), RenderLabel(1234));
+    EXPECT_EQ(inspector.GetName(sphere4_id), "test_model::visual4");
+  }
+
+  {
+    EXPECT_NE(inspector.GetIllustrationProperties(sphere5_id), nullptr);
+    EXPECT_NE(inspector.GetPerceptionProperties(sphere5_id), nullptr);
+    EXPECT_NE(get_render_label(sphere5_id), RenderLabel(sphere5.index()));
+    EXPECT_EQ(inspector.GetName(sphere5_id), "test_model::visual5");
+    EXPECT_TRUE(illustration_in_perception(sphere5_id));
   }
 }
 
