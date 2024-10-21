@@ -13,7 +13,29 @@ drake_cc_package_library(
     name = "iris",
     visibility = ["//visibility:public"],
     deps = [
+        ":iris_entrypoint",
         ":iris_from_clique_cover",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_entrypoint",
+    srcs = ["iris_entrypoint.cc"],
+    hdrs = ["iris_entrypoint.h"],
+    deps = [
+        "//geometry/optimization:iris",
+        "//planning:scene_graph_collision_checker",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iris_entrypoint_test",
+    timeout = "moderate",
+    deps = [
+        ":iris_entrypoint",
+        "//common/test_utilities:expect_throws_message",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
     ],
 )
 
