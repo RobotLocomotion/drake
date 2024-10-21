@@ -17,7 +17,8 @@ namespace {
 
 UnimplementedCollisionChecker::UnimplementedCollisionChecker(
     CollisionCheckerParams params, bool supports_parallel_checking)
-    : CollisionChecker(std::move(params), supports_parallel_checking) {}
+    : CollisionChecker(std::move(params), supports_parallel_checking,
+                       false /* cannot return collision pair */) {}
 
 UnimplementedCollisionChecker::UnimplementedCollisionChecker(
     const UnimplementedCollisionChecker&) = default;
@@ -35,7 +36,8 @@ void UnimplementedCollisionChecker::DoUpdateContextPositions(
 }
 
 bool UnimplementedCollisionChecker::DoCheckContextConfigCollisionFree(
-    const CollisionCheckerContext&) const {
+    const CollisionCheckerContext&,
+    geometry::SignedDistancePair<double>*) const {
   ThrowNotImplemented(__func__);
 }
 

@@ -36,7 +36,8 @@ using systems::Context;
 
 SceneGraphCollisionChecker::SceneGraphCollisionChecker(
     CollisionCheckerParams params)
-    : CollisionChecker(std::move(params), true /* supports parallel */) {
+    : CollisionChecker(std::move(params), true /* supports parallel */,
+                       true /* can return the collision pair */) {
   AllocateContexts();
   // Enforce that all filters known to the collision checker are active in
   // SceneGraph, as CollisionChecker introduces additional filters that may not
@@ -118,7 +119,8 @@ void SceneGraphCollisionChecker::UpdateCollisionFilters() {
 }
 
 bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
-    const CollisionCheckerContext& model_context) const {
+    const CollisionCheckerContext& model_context,
+    geometry::SignedDistancePair<double>* collision_pair) const {
   const QueryObject<double>& query_object = model_context.GetQueryObject();
   const SceneGraphInspector<double>& inspector = query_object.inspector();
 
@@ -154,6 +156,11 @@ bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
       } else {
         log()->trace("Environment collision between bodies [{}] and [{}]",
                      body_A->scoped_name(), body_B->scoped_name());
+      }
+      if (collision_pair != nullptr) {
+        // If the user has given us an object to store the pair in collision,
+        // keep it.
+        *collision_pair = distance_pair;
       }
       return false;
     }
