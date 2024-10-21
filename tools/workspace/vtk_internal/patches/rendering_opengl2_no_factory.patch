@@ -7,7 +7,7 @@ uses a process-wide environment variable to govern a preference.
 Both of those disqualify it from use in Drake, so we lobotomize it to
 prevent it from ever being accidentally used.
 
-This patch should not be upstreamed.
+Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx
 +++ Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx

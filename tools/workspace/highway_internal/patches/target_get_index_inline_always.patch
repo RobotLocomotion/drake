@@ -13,7 +13,7 @@ an `#if MSVC` stanza. This is not strictly necessary for Drake, but
 keeps the patch itself compiler-neutral. The second change block is for
 all remaining compilers, and the third change block applies the repair.
 
-These changes should not be upstreamed to highway. The deeper issue is
+Reasoning for not upstreaming this patch: The deeper issue is
 that highway currently relies on delicate handling of deliberate ODR
 violations. Analyzing and fixing ODR issues in highway is beyond the
 scope of work needed for Drake.

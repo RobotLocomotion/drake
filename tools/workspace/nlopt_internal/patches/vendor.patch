@@ -3,6 +3,8 @@
 When weaving the inline namespace into this file, we need to ensure that
 it doesn't cross an `#if 0` block.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- src/algs/stogo/local.cc
 +++ src/algs/stogo/local.cc
 @@ -11,11 +11,12 @@

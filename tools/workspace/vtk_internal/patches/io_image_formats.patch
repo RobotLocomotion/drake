@@ -4,8 +4,7 @@ The list of supported (uncommented) image types seen in this patch
 should be congruent with the *.cxx files listed in settings.bzl for
 VTK::IOImage.
 
-This situation is unique to Drake, so we do not plan to upstream this
-patch.
+Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- IO/Image/vtkImageReader2Factory.cxx
 +++ IO/Image/vtkImageReader2Factory.cxx

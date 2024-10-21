@@ -7,6 +7,8 @@ is an anti-requirement in Drake.)
 This should not be upstreamed to VTK, although CMake configuration
 option for "disable all static destructors" would be appreciated.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- Common/ExecutionModel/vtkFilteringInformationKeyManager.h
 +++ Common/ExecutionModel/vtkFilteringInformationKeyManager.h
 @@ -24,11 +24,13 @@

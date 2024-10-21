@@ -3,6 +3,9 @@ Use an inline namespace for Abseil.
 This prevents Drake's build of Abseil from interfering with a user's
 downstream build of Abseil when the user is using static linking.
 
+Reasoning for not upstreaming this patch: the options header is specifically
+designed for end-user customization, and that's basically all we're doing here.
+
 --- absl/base/options.h
 +++ absl/base/options.h
 @@ -205,8 +205,8 @@

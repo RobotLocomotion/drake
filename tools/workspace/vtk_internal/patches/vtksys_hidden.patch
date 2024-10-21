@@ -4,6 +4,8 @@ The vtksys library doesn't obey the VTK_ABI_NAMESPACE macros, so it's
 an ODR hazard versus other non-Drake builds of VTK. Switch it to use
 hidden visibility to help mitigate the risk.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- Utilities/KWSys/vtksys/Configure.h.in
 +++ Utilities/KWSys/vtksys/Configure.h.in
 @@ -39,7 +39,7 @@

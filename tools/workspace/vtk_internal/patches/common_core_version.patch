@@ -6,7 +6,7 @@ but that doesn't give us values for VTK_VERSION_FULL (nominally
 scraped from git) nor VTK_EPOCH_VERSION (some upstream CI voodoo).
 We need to patch those substitutions using what we do have access to.
 
-This change is Drake-specific, so we do not plan to upstream it.
+Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- Common/Core/vtkVersionFull.h.in
 +++ Common/Core/vtkVersionFull.h.in

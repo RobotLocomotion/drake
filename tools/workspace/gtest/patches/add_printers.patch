@@ -8,6 +8,8 @@ The FmtFormatPrinter knows how to ask fmt::to_string to print values.
 We need to inject it prior to the osteam formatter, because we should
 prefer fmt over ostream anytime fmt is offered.
 
+Reasoning for not upstreaming this patch: Drake-specific dependency.
+
 --- googletest/include/gtest/gtest-printers.h
 +++ googletest/include/gtest/gtest-printers.h
 @@ -115,6 +115,9 @@
