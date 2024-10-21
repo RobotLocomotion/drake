@@ -1485,6 +1485,7 @@ drake_cc_googletest(
         ":second_order_cone_program_examples",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ] + select({
         "//conditions:default": [
             "@ipopt",
