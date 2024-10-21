@@ -1099,24 +1099,17 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
 
         const RigidTransformd X_LG = ResolveRigidTransform(
             diagnostic, sdf_visual.SemanticPose());
-        std::optional<unique_ptr<GeometryInstance>> geometry_instance =
+        unique_ptr<GeometryInstance> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(
                 diagnostic, sdf_visual, resolve_filename, X_LG);
-        if (!geometry_instance.has_value()) return std::nullopt;
-        // We check for nullptr in case someone decided to specify an SDF
-        // <empty/> geometry.
-        if (*geometry_instance) {
-          // The parsing should *always* produce an IllustrationProperties
-          // instance, even if it is empty.
-          DRAKE_DEMAND(
-              (*geometry_instance)->illustration_properties() != nullptr);
+        if (geometry_instance == nullptr) return std::nullopt;
+        // The instance should be pre-configured to have both illustration and
+        // perception properties.
+        DRAKE_DEMAND(
+            geometry_instance->illustration_properties() != nullptr &&
+            geometry_instance->perception_properties() != nullptr);
 
-          plant->RegisterVisualGeometry(
-              body, (*geometry_instance)->pose(),
-              (*geometry_instance)->shape(),
-              (*geometry_instance)->name(),
-              *(*geometry_instance)->illustration_properties());
-        }
+        plant->RegisterVisualGeometry(body, std::move(geometry_instance));
       }
 
       for (uint64_t collision_index = 0;
