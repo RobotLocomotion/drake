@@ -36,6 +36,7 @@ class DrakeGymEnv(gym.Env):
                  render_rgb_port_id: Union[OutputPortIndex, str] = None,
                  render_mode: str = 'human',
                  reset_handler: Callable[[Simulator, Context], None] = None,
+                 info_handler: Callable[[Simulator], dict] = None,
                  hardware: bool = False):
         """
         Args:
@@ -87,6 +88,12 @@ class DrakeGymEnv(gym.Env):
                 (e.g. ``joint.set_random_pose_distribution()``
                 using the ``reset()`` seed), (otherwise) using
                 ``reset_handler()``.
+            info_handler: A function that returns a ``dict[str, Any]``
+                containing auxiliary diagnostic information (helpful for
+                debugging, learning, and logging). Note: if ``step()``
+                terminates with a ``RuntimeError``, then, to avoid
+                unexpected behavior, `info_handler()`` will not be called
+                and an empty info will be returned instead.
             hardware: If True, it prevents from setting random context at
                 ``reset()`` when using ``random_generator``, but it does
                 execute ``reset_handler()`` if given.
@@ -158,6 +165,12 @@ class DrakeGymEnv(gym.Env):
         else:
             raise ValueError("reset_handler is not callable.")
 
+        # Default return value of `info_handler()` is an empty `dict`.
+        if info_handler is callable(info_handler):
+            self.info_handler = info_handler
+        else:
+            self.info_handler = lambda _: dict()
+
         self.hardware = hardware
 
         if self.simulator:
@@ -223,7 +236,6 @@ class DrakeGymEnv(gym.Env):
         truncated = False
         # Observation prior to advancing the simulation.
         prev_observation = self.observation_port.Eval(context)
-        info = dict()
         try:
             status = self.simulator.AdvanceTo(time + self.time_step)
         except RuntimeError as e:
@@ -245,6 +257,9 @@ class DrakeGymEnv(gym.Env):
             truncated = True
             terminated = False
             reward = 0
+            # Do not call info handler, as the simulator has faulted.
+            info = dict()
+
             return prev_observation, reward, terminated, truncated, info
 
         observation = self.observation_port.Eval(context)
@@ -253,6 +268,7 @@ class DrakeGymEnv(gym.Env):
             not truncated
             and (status.reason()
                  == SimulatorStatus.ReturnReason.kReachedTerminationCondition))
+        info = self.info_handler(self.simulator)
 
         return observation, reward, terminated, truncated, info
 
@@ -293,7 +309,9 @@ class DrakeGymEnv(gym.Env):
         # Note: The output port will be evaluated without fixing the input
         # port.
         observations = self.observation_port.Eval(context)
-        return observations, dict()
+        info = self.info_handler(self.simulator)
+
+        return observations, info
 
     def render(self):
         """
