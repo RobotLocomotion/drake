@@ -3,6 +3,8 @@ Change the global singleton into a bomb.
 Use the default config when parsing the built-in root.sdf, and
 in the gz_sdf command-line tool.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- src/ParserConfig.cc
 +++ src/ParserConfig.cc
 @@ -65,8 +65,7 @@

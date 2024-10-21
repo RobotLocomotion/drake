@@ -2,6 +2,8 @@ Avoid GCC warnings about overloaded virtuals
 
 We only need the mutable spelling for Drake code.
 
+Reasoning for not upstreaming this patch: Drake-specific API choice.
+
 --- include/benchmark/benchmark.h
 +++ include/benchmark/benchmark.h
 @@ -1425,12 +1425,8 @@
