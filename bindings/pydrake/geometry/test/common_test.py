@@ -157,6 +157,17 @@ class TestGeometryCore(unittest.TestCase):
             props_copy3 = copy.deepcopy(props)
             self.assertTrue(props_copy3.HasProperty("g", "p"))
 
+        # Cross-property-set copying. We don't do all cross possibilities.
+        # Merely confirm that each set can be copied from another set.
+        source = mut.PerceptionProperties()
+        source.AddProperty("a", "b", 10)
+        illus = mut.IllustrationProperties(source)
+        self.assertEqual(illus.GetProperty("a", "b"), 10)
+        prox = mut.ProximityProperties(illus)
+        self.assertEqual(prox.GetProperty("a", "b"), 10)
+        percep = mut.PerceptionProperties(prox)
+        self.assertEqual(percep.GetProperty("a", "b"), 10)
+
     def test_geometry_properties_cpp_types(self):
         """
         Confirms that types stored in properties in python, resolve to expected
