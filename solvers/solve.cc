@@ -100,7 +100,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     if (operating_in_parallel && solver_id == IpoptSolver::id()) {
       static const logging::Warn log_once(
           "IpoptSolver cannot currently solve programs in parallel, so will be "
-          "run serially. Consider specifying different solver, e.g., Nlopt.");
+          "run serially. Consider specifying a different solver, e.g., Nlopt.");
       return;
     }
 
