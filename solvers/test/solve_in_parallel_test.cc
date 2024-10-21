@@ -156,10 +156,10 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
     const std::vector<MathematicalProgramResult> results = SolveInParallel(
         progs, nullptr, &solver_options_0, solver_id, Parallelism::Max(), true);
 
+    // All programs should hit the iteration limit.
     for (int i = 0; i < num_trials; i++) {
       const auto solver_details =
           results.at(i).get_solver_details<GurobiSolver>();
-      // The first num_trials/2 programs should hit the iteration limit.
       // This code is defined in
       // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
       const int ITERATION_LIMIT = 7;
