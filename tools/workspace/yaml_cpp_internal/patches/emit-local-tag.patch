@@ -4,6 +4,8 @@ Upstream yaml-cpp does not support writing out primary tags, so here
 we patch our vendored copy of yaml-cpp's emitter to write them, so
 that Drake's YamlWriteArchive can support std::variant<> emitting.
 
+Reasoning for not upstreaming this patch: Drake-specific default option.
+
 --- src/emitfromevents.cpp
 +++ src/emitfromevents.cpp
 @@ -109,8 +109,18 @@ void EmitFromEvents::BeginNode() {

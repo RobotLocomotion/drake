@@ -7,6 +7,7 @@ Remove all configuration options for sdf::Console logging.  All of them make
   thread-unsafe uses of globals, and Drake doesn't call them in any case.
 Add "color" to sdfdbg messages to help communicate the log level.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
 
 diff --git include/sdf/Console.hh include/sdf/Console.hh
 index 04856e90..0f379ab2 100644

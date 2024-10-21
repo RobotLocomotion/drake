@@ -3,6 +3,8 @@
 Don't try to compile functions that require source files that we've
 omitted from the build.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 The Qhull license requires us to publish the author, date, and reason
 for changes: Author: Jeremy Nimmer; Date: Jun 2, 2022.
 

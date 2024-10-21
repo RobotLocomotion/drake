@@ -3,6 +3,8 @@
 We replace tinyobjloader's implementation of float parsing with a faster
 call to strtod_l.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- tiny_obj_loader.h
 +++ tiny_obj_loader.h
 @@ -63,6 +63,14 @@

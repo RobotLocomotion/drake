@@ -176,13 +176,13 @@ def vtk_internal_repository(
         sha256 = "52fc7fdac0132d362d10f9145de1afb4420a41914261ba8848f1e8dabca68423",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
+            ":patches/upstream/fix_illumination_bugs.patch",
+            ":patches/upstream/gltf_selected_load.patch",
+            ":patches/upstream/io_geometry_gltf_default_scene.patch",
+            ":patches/upstream/gltf_importer_from_stream.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_version.patch",
             ":patches/disable_static_destructors.patch",
-            ":patches/fix_illumination_bugs.patch",
-            ":patches/gltf_selected_load.patch",
-            ":patches/io_geometry_gltf_default_scene.patch",
-            ":patches/gltf_importer_from_stream.patch",
             ":patches/io_image_formats.patch",
             ":patches/nerf_pegtl.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",

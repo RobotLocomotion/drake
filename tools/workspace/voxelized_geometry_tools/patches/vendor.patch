@@ -2,6 +2,8 @@
 
 This prevents ODR violations in case downstream code also links to VGT.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- include/voxelized_geometry_tools/vgt_namespace.hpp
 +++ include/voxelized_geometry_tools/vgt_namespace.hpp
 @@ -17,5 +17,5 @@

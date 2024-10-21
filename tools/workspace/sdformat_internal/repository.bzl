@@ -17,7 +17,7 @@ def sdformat_internal_repository(
             ":patches/deprecation_unit_testing.patch",
             ":patches/environment.patch",
             ":patches/no_global_config.patch",
-            ":patches/no_share_path.path",
+            ":patches/no_share_path.patch",
             ":patches/no_urdf.patch",
         ],
         mirrors = mirrors,

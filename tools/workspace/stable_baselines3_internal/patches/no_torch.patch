@@ -1,3 +1,5 @@
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 diff --git stable_baselines3/__init__.py stable_baselines3/__init__.py
 index 0775a8e..633ae10 100644
 --- stable_baselines3/__init__.py

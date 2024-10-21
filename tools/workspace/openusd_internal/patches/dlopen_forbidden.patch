@@ -4,6 +4,8 @@ By policy, Drake forbids dlopen (and thus dlclose). We'll change those
 functions in OpenUSD to be no-ops. Any symbol names that we need to
 look up using dlsym should already be loaded by the time we need them.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- pxr/base/arch/library.cpp
 +++ pxr/base/arch/library.cpp
 @@ -40,6 +40,8 @@ DWORD arch_lastLibraryError = 0;

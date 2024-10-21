@@ -3,6 +3,8 @@
 https://github.com/bazelbuild/rules_rust/issues/2383 claims that this
 is already fixed, but clearly it is not.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- util/import/BUILD.bazel
 +++ util/import/BUILD.bazel
 @@ -20,10 +20,7 @@
