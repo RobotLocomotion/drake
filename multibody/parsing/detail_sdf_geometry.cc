@@ -218,6 +218,8 @@ std::optional<std::unique_ptr<GeometryInstance>>
         const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
         const math::RigidTransformd& X_LG) {
   const std::set<std::string> supported_visual_elements{
+    "drake:perception_properties",
+    "drake:illustration_properties",
     "geometry",
     "material",
     "pose",

@@ -1012,6 +1012,50 @@ struct LinkInfo {
   RigidTransformd X_WL;
 };
 
+void DrakeVisualToSdfVisualRecurse(sdf::ElementPtr element, int indent = 0) {
+  const std::string& tag_name = element->GetName();
+  const std::string space = fmt::format("{:{}}", " ", indent);
+  fmt::print("{}Removing 'drake:' from {} name='{}'\n", space,
+             element->GetName(), element->GetAttribute("name")->GetAsString());
+  if (!tag_name.starts_with("drake:")) {
+    throw std::logic_error(
+        "All tags under a drake-namespaced tag must likewise be "
+        "drake-namespaced.");
+  }
+  if (tag_name == "drake:perception_properties" ||
+      tag_name == "drake:illustration_properties") {
+    // These drake-only tags should remain untouched to be processed later.
+    return;
+  }
+  element->SetName(tag_name.substr(6));
+  fmt::print("{}  Changed to: {}\n", space, element->GetName());
+  for (sdf::ElementPtr child = element->GetFirstElement(); child != nullptr;
+       child = element->GetNextElement()) {
+    fmt::print("child: {}\n", child->GetName());
+    DrakeVisualToSdfVisualRecurse(child, indent + 1);
+  }
+}
+
+// Search for all trees rooted at <drake:visual> tags and convert them to
+// <visual> tags.
+void DrakeVisualToSdfVisual(sdf::ElementPtr link) {
+  fmt::print("Searching for drake visual tags\n");
+  for (const auto& [name, count] : link->CountNamedElements()) {
+    fmt::print("  Child name: {}, {} instances\n", name, count);
+  }
+  sdf::ElementPtr drake_visual = link->GetElement("drake:visual");
+  int i = 0;
+  while (drake_visual != nullptr && i < 10) {
+    DrakeVisualToSdfVisualRecurse(drake_visual);
+    // TODO: Instantiate sdf::Visual from this element.
+    // TODO: Remove the drake_visual from link.
+    link->RemoveChild(drake_visual);
+    // TODO: Add the new sdf::Visual to the Link.
+    ++i;
+    drake_visual = link->GetElement("drake:visual");
+  }
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
@@ -1025,6 +1069,7 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
   std::vector<LinkInfo> link_infos;
 
   const std::set<std::string> supported_link_elements{
+    "drake:visual",
     "collision",
     "gravity",
     "inertial",
@@ -1087,6 +1132,8 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
         return ResolveUri(inner_diagnostic.MakePolicyForNode(*link_element),
             uri, package_map, root_dir);
       };
+
+      DrakeVisualToSdfVisual(link_element);
 
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {

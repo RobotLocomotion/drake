@@ -133,8 +133,11 @@ void CheckSupportedElements(
       // Unsupported elements in the drake namespace are errors.
       if (element_name.find("drake:") == 0) {
         std::string message =
-            std::string("Unsupported SDFormat element in ") +
-            root_element->GetName() + std::string(": ") + element_name;
+            fmt::format("Unsupported SDFormat element in <{}>: <{}>{}",
+                        root_element->GetName(), element_name,
+                        element->LineNumber()
+                            ? fmt::format(" on line {}", *element->LineNumber())
+                            : std::string());
         diagnostic.Error(element, std::move(message));
       } else {
         std::string message =

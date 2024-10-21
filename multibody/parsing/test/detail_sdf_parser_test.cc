@@ -3872,6 +3872,52 @@ TEST_F(SdfParserTest, MergeIncludeIntoWorld) {
   TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "top");
   TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "another_top");
 }
+
+TEST_F(SdfParserTest, Sean) {
+  AddSceneGraph();
+  // Test that point masses don't get sent through the massless body branch.
+  ParseTestString(R"""(
+  <model name="visual_model">
+    <link name="unused_default_geometry">
+      <visual name="general_visual">
+        <!-- The <visual> has been complete replaced in Drake. The warning
+         indicates that the model may have a very different apperance in Drake
+         than in other sdf loaders. -->
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <drake:perception_properties enabled="false"/>
+        <drake:illustration_properties enabled="false"/>
+      </visual>
+
+      <drake:visual name="illustration">
+        <drake:pose>1 0 0 0 0 0</drake:pose>
+        <drake:geometry>
+          <drake:cylinder>
+            <drake:radius>0.8</drake:radius>
+            <drake:length>0.02</drake:length>
+          </drake:cylinder>
+        </drake:geometry>
+        <drake:perception_properties enabled="false"/>
+      </drake:visual>
+
+      <drake:visual name="perception">
+        <drake:pose>1 0 0 0 0 0</drake:pose>
+        <drake:geometry>
+          <drake:sphere>
+            <drake:radius>1</drake:radius>
+          </drake:sphere>
+        </drake:geometry>
+        <drake:illustration_properties enabled="false"/>
+      </drake:visual>
+    </link>
+
+  </model>)""");
+  EXPECT_EQ(scene_graph_.model_inspector().num_geometries(), 3);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
