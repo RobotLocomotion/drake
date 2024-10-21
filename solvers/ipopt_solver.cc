@@ -22,9 +22,34 @@ using Ipopt::SolverReturn;
 namespace drake {
 namespace solvers {
 namespace {
+
 void SetAppOptions(const SolverOptions& options, Ipopt::IpoptApplication* app) {
+  // Wrap our calls to IPOPT to check for errors (i.e., unknown options).
+  const auto set_double_option = [&app](const std::string& name, double value) {
+    const bool success = app->Options()->SetNumericValue(name, value);
+    if (!success) {
+      throw std::logic_error(fmt::format(
+          "Error setting IPOPT floating-point option {}={}", name, value));
+    }
+  };
+  const auto set_int_option = [&app](const std::string& name, int value) {
+    const bool success = app->Options()->SetIntegerValue(name, value);
+    if (!success) {
+      throw std::logic_error(
+          fmt::format("Error setting IPOPT integer option {}={}", name, value));
+    }
+  };
+  const auto set_string_option = [&app](const std::string& name,
+                                        const std::string& value) {
+    const bool success = app->Options()->SetStringValue(name, value);
+    if (!success) {
+      throw std::logic_error(fmt::format(
+          "Error setting IPOPT string option {}='{}'", name, value));
+    }
+  };
+
   // Turn off the banner.
-  app->Options()->SetStringValue("sb", "yes");
+  set_string_option("sb", "yes");
 
   // The default linear solver is MA27, but it is not freely redistributable so
   // we cannot use it. MUMPS is the only compatible linear solver guaranteed to
@@ -32,18 +57,17 @@ void SetAppOptions(const SolverOptions& options, Ipopt::IpoptApplication* app) {
   // it would correctly determine that MUMPS was the only available solver, but
   // its behavior changed to instead error having unsuccessfully tried to dlopen
   // a nonexistent hsl library that would contain MA27.
-  app->Options()->SetStringValue("linear_solver", "mumps");
+  set_string_option("linear_solver", "mumps");
 
   // The default tolerance.
   const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
   // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
   // constr_viol_tol
-  app->Options()->SetNumericValue("tol", tol);
-  app->Options()->SetNumericValue("constr_viol_tol", tol);
-  app->Options()->SetNumericValue("acceptable_tol", tol);
-  app->Options()->SetNumericValue("acceptable_constr_viol_tol", tol);
-
-  app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+  set_double_option("tol", tol);
+  set_double_option("constr_viol_tol", tol);
+  set_double_option("acceptable_tol", tol);
+  set_double_option("acceptable_constr_viol_tol", tol);
+  set_string_option("hessian_approximation", "limited-memory");
 
   // Note: 0 <= print_level <= 12, with higher numbers more verbose; 4 is very
   // useful for debugging. Otherwise, we default to printing nothing. The user
@@ -51,11 +75,12 @@ void SetAppOptions(const SolverOptions& options, Ipopt::IpoptApplication* app) {
   // option name directly.
   const int verbose_level = 4;
   const int print_level = options.get_print_to_console() ? verbose_level : 0;
-  app->Options()->SetIntegerValue("print_level", print_level);
+  set_int_option("print_level", print_level);
+
   const std::string& output_file = options.get_print_file_name();
   if (!output_file.empty()) {
-    app->Options()->SetStringValue("output_file", output_file);
-    app->Options()->SetIntegerValue("file_print_level", verbose_level);
+    set_int_option("file_print_level", verbose_level);
+    set_string_option("output_file", output_file);
   }
 
   // IPOPT does not support setting the number of threads so we ignore
@@ -64,13 +89,13 @@ void SetAppOptions(const SolverOptions& options, Ipopt::IpoptApplication* app) {
   // The solver-specific options will trump our defaults.
   const SolverId self = IpoptSolver::id();
   for (const auto& [name, value] : options.GetOptionsDouble(self)) {
-    app->Options()->SetNumericValue(name, value);
+    set_double_option(name, value);
   }
   for (const auto& [name, value] : options.GetOptionsInt(self)) {
-    app->Options()->SetIntegerValue(name, value);
+    set_int_option(name, value);
   }
   for (const auto& [name, value] : options.GetOptionsStr(self)) {
-    app->Options()->SetStringValue(name, value);
+    set_string_option(name, value);
   }
 }
 
