@@ -59,8 +59,6 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
-  bool is_floating() const final { return true; }
-
   bool has_quaternion_dofs() const final { return true; }
 
   // Overloads to define the suffix names for the position and velocity
@@ -248,6 +246,14 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // Sets `state` to store a configuration in which M coincides with F (i.e.
   // q_FM is the identity quaternion).
   Vector<double, 7> get_zero_position() const final;
+
+  Vector<T, 7> DoPoseToState(const Eigen::Quaternion<T> orientation,
+                             const Vector3<T>& translation) const final;
+
+  Vector<T, 6> DoVelocityToState(
+      const SpatialVelocity<T>& velocity) const final {
+    return velocity.get_coeffs();
+  }
 
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
