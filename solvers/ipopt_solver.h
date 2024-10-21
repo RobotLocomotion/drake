@@ -40,6 +40,17 @@ struct IpoptSolverDetails {
   const char* ConvertStatusToString() const;
 };
 
+/**
+ * A wrapper to call
+ * <a href="https://coin-or.github.io/Ipopt/">Ipopt</a>
+ * using Drake's MathematicalProgram.
+ *
+ * The IpoptSolver is NOT threadsafe to call in parallel. This is due to Ipopt's
+ * reliance on the MUMPs linear solver which is not safe to call concurrently
+ * (see https://github.com/coin-or/Ipopt/issues/733). This can be resolved by
+ * enabling the SPRAL solver (see Drake issue
+ * https://github.com/RobotLocomotion/drake/issues/21476).
+ */
 class IpoptSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IpoptSolver);
