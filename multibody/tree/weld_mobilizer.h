@@ -54,9 +54,16 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   // Computes the across-mobilizer velocity V_FM which for this mobilizer is
   // always zero since the outboard frame M is fixed to the inboard frame F.
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T*) const {
+  SpatialVelocity<T> calc_V_FM(const T*, const T*) const {
     return SpatialVelocity<T>::Zero();
   }
+
+  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T*) const {
+    return SpatialAcceleration<T>::Zero();
+  }
+
+  // Does nothing since there are no taus.
+  void calc_tau(const T*, const SpatialForce<T>&, T*) const {}
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>&) const final;

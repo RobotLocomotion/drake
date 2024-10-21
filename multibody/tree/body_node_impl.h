@@ -64,21 +64,17 @@ class BodyNodeImpl final : public BodyNode<T> {
 
   ~BodyNodeImpl() final;
 
-  // TODO(sherm1) Just a warm up -- move the rest of the kernel computations
-  //  here also.
-
   void CalcPositionKinematicsCache_BaseToTip(
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       PositionKinematicsCache<T>* pc) const final;
 
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
-      const systems::Context<T>& context,
-      const FrameBodyPoseCache<T>& frame_body_pose_cache,
+      const T* positions, const FrameBodyPoseCache<T>& frame_body_pose_cache,
       const PositionKinematicsCache<T>& pc,
       std::vector<Vector6<T>>* H_PB_W_cache) const final;
 
   void CalcVelocityKinematicsCache_BaseToTip(
-      const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
+      const T* positions, const PositionKinematicsCache<T>& pc,
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const final;
 
@@ -106,22 +102,20 @@ class BodyNodeImpl final : public BodyNode<T> {
 #undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK
 
   void CalcSpatialAcceleration_BaseToTip(
-      const systems::Context<T>& context,
-      const FrameBodyPoseCache<T>& frame_body_poses_cache,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>* vc, const VectorX<T>& mbt_vdot,
-      std::vector<SpatialAcceleration<T>>* A_WB_array_ptr) const final;
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+      const PositionKinematicsCache<T>& pc, const T* velocities,
+      const VelocityKinematicsCache<T>* vc, const T* accelerations,
+      std::vector<SpatialAcceleration<T>>* A_WB_array) const final;
 
   void CalcInverseDynamics_TipToBase(
-      const systems::Context<T>& context,
-      const FrameBodyPoseCache<T>& frame_body_pose_cache,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       const PositionKinematicsCache<T>& pc,
       const std::vector<SpatialInertia<T>>& M_B_W_cache,
       const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
       const std::vector<SpatialAcceleration<T>>& A_WB_array,
-      const SpatialForce<T>& Fapplied_Bo_W,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
-      std::vector<SpatialForce<T>>* F_BMo_W_array_ptr,
+      std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const final;
 
   void CalcArticulatedBodyInertiaCache_TipToBase(
@@ -148,11 +142,10 @@ class BodyNodeImpl final : public BodyNode<T> {
       AccelerationKinematicsCache<T>* ac) const final;
 
   void CalcSpatialAccelerationBias(
-      const systems::Context<T>& context,
-      const FrameBodyPoseCache<T>& frame_body_pose_cache,
-      const PositionKinematicsCache<T>& pc,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+      const PositionKinematicsCache<T>& pc, const T* velocities,
       const VelocityKinematicsCache<T>& vc,
-      SpatialAcceleration<T>* Ab_WB) const final;
+      std::vector<SpatialAcceleration<T>>* Ab_WB_all) const final;
 
  private:
   // Given a pointer to the contiguous array of all q's in this system, returns
@@ -171,6 +164,10 @@ class BodyNodeImpl final : public BodyNode<T> {
   // a pointer to the ones for this mobilizer.
   // @pre `velocities` is the full set of v's for this system
   const T* get_v(const T* velocities) const {
+    return &velocities[mobilizer().velocity_start_in_v()];
+  }
+
+  T* get_mutable_v(T* velocities) const {
     return &velocities[mobilizer().velocity_start_in_v()];
   }
 
