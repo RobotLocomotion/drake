@@ -339,6 +339,11 @@ boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
   // This spatial inertia is not physically valid if the mass is negative or
   // non-finite or the center of mass or unit inertia matrix have NaN elements.
   boolean<T> ret_value = is_nonnegative_finite(mass_);
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (!p_PScm_E_.allFinite() || !G_SP_E_.get_moments().allFinite() ||
+        !G_SP_E_.get_products().allFinite())
+      ret_value = false;
+  }
   if (ret_value) {
     // Form a rotational inertia about the body's center of mass and then use
     // the well-documented tests in RotationalInertia to test validity.
@@ -356,13 +361,19 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
   std::string error_message =
       fmt::format("Spatial inertia fails SpatialInertia::IsPhysicallyValid().");
   const T& mass = get_mass();
+  const Vector3<T>& p_PBcm = get_com();
+
   if (!is_positive_finite(mass)) {
     error_message +=
         fmt::format("\nmass = {} is not positive and finite.\n", mass);
+  } else if (!p_PBcm.array().allFinite()) {
+    error_message += CenterOfMassPositionEqualsString(*this) +=
+        " is not finite.\n";
   } else {
     error_message += fmt::format("{}", *this);
     WriteExtraCentralInertiaProperties(&error_message);
   }
+
   throw std::runtime_error(error_message);
 }
 
@@ -555,28 +566,39 @@ void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
 }
 
 template <typename T>
+std::string CenterOfMassPositionEqualsString(const SpatialInertia<T>& M) {
+  // TODO(jwnimmer-tri) Rewrite this to use fmt to our advantage.
+  const Vector3<T>& p_PBcm = M.get_com();
+  if constexpr (scalar_predicate<T>::is_bool) {
+    const T& x = p_PBcm.x();
+    const T& y = p_PBcm.y();
+    const T& z = p_PBcm.z();
+    return fmt::format("\n Center of mass = [{}  {}  {}]", x, y, z);
+  } else {
+    // Print symbolic results.
+    return fmt::format("\n Center of mass = {}", fmt_eigen(p_PBcm.transpose()));
+  }
+}
+
+template <typename T>
 std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
   // Write the data associated with the spatial inertia M of a body
   // (or composite body) B about a point P, expressed in a frame E.
   // Typically point P is either Bo (B's origin) or Bcm (B's center of mass)
   // and frame E is usually the body frame B.  More spatial inertia information
   // can be written via SpatialInertia::WriteExtraCentralInertiaProperties().
-  const T& mass = M.get_mass();
-  const Vector3<T>& p_PBcm = M.get_com();
-  const T& x = p_PBcm.x();
-  const T& y = p_PBcm.y();
-  const T& z = p_PBcm.z();
 
   // TODO(jwnimmer-tri) Rewrite this to use fmt to our advantage.
+  const T& mass = M.get_mass();
   if constexpr (scalar_predicate<T>::is_bool) {
-    out << "\n"
-        << fmt::format(" mass = {}\n", mass)
-        << fmt::format(" Center of mass = [{}  {}  {}]\n", x, y, z);
+    out << fmt::format("\n mass = {}", mass);
   } else {
     // Print symbolic results.
-    out << " mass = " << mass << "\n"
-        << fmt::format(" Center of mass = {}\n", fmt_eigen(p_PBcm.transpose()));
+    out << "\n mass = " << mass;
   }
+
+  // Append a string similar to "\n Center of mass = [x  y  z]\n".
+  out << CenterOfMassPositionEqualsString(M) << "\n";
 
   // Get G_BP (unit inertia about point P) and use it to calculate I_BP
   // (rotational inertia about P) without validity checks such as

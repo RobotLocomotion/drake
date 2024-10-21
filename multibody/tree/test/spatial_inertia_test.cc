@@ -975,6 +975,23 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithBadInertia) {
       expected_message);
 }
 
+// Ensure IsPhysicallyValid() fails if the center of mass position is NAN.
+// Note: This tests that the old exception message was improved from:
+// "CalcPrincipalMomentsAndMaybeAxesOfInertia(): Unable to calculate eigenvalues
+// or eigenvectors of the 3x3 matrix associated with a RotationalInertia." to
+// a message that clearly communicates a problem with center of mass position.
+GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCMPositionAsNAN) {
+  const std::string expected_message =
+      "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
+      " Center of mass = \\[7  nan  9\\] is not finite.\n";
+  const Vector3<double> p_BoBcm_B(7, NAN, 9);
+  const UnitInertia<double> G_BBo_B =
+      UnitInertia<double>::SolidSphere(/* radius = */ 1.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>(/* mass = */ 1.0, p_BoBcm_B, G_BBo_B),
+      expected_message);
+}
+
 // Tests IsPhysicallyValid() fails within the constructor since the COM given is
 // inconsistently too far out for the unit inertia provided.
 GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
