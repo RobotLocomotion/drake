@@ -56,10 +56,10 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
 template <typename T, template <typename> class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcAcrossNodeJacobianWrtVExpressedInWorld(
-        const systems::Context<T>& context,
-        const FrameBodyPoseCache<T>& frame_body_pose_cache,
+        const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
         const PositionKinematicsCache<T>& pc,
         std::vector<Vector6<T>>* H_PB_W_cache) const {
+  DRAKE_ASSERT(positions != nullptr);
   DRAKE_ASSERT(H_PB_W_cache != nullptr);
   DRAKE_ASSERT(mobod_index() != world_mobod_index());
 
@@ -87,6 +87,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
     const Vector3<T>& p_MB_M = X_MB.translation();
     const Vector3<T> p_MB_F = R_FM * p_MB_M;
 
+    const T* q = get_q(positions);  // just this mobilizer's q's
     VVector v = VVector::Zero();
     auto H_PB_W = get_mutable_H(H_PB_W_cache);
     // We compute H_FM(q) one column at a time by calling the multiplication by
@@ -95,8 +96,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
     for (int imob = 0; imob < kNv; ++imob) {
       v(imob) = 1.0;
       // Compute the imob-th column of H_FM:
-      const SpatialVelocity<T> Himob_FM =
-          mobilizer_->calc_V_FM(context, v.data());
+      const SpatialVelocity<T> Himob_FM = mobilizer_->calc_V_FM(q, v.data());
       v(imob) = 0.0;
       // V_PB_W = V_PFb_W + V_FMb_W + V_MB_W = V_FMb_W =
       //         = R_WF * V_FM.Shift(p_MoBo_F)
@@ -107,7 +107,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 
 template <typename T, template <typename> class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
-    const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
+    const T* positions, const PositionKinematicsCache<T>& pc,
     const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
     VelocityKinematicsCache<T>* vc) const {
   // This method must not be called for the "world" body node.
@@ -168,16 +168,16 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   // simpler recursive relations (for instance, see Section 3.3.2 in
   // Jain (2010)) where p_MoBo_F = 0 and thus V_PB_W = V_FM_W.
 
-  // Generalized velocities local to this node's mobilizer.
+  // Generalized coordinates local to this node's mobilizer.
+  const T* q_ptr = get_q(positions);
   const T* v_ptr = get_v(velocities);
-  const Eigen::Map<const VVector> v(v_ptr);
 
   // =========================================================================
   // Computation of V_PB_W in Eq. (1). See summary at the top of this method.
 
   // Update V_FM using the operator V_FM = H_FM * vm:
   SpatialVelocity<T>& V_FM = get_mutable_V_FM(vc);
-  V_FM = mobilizer_->calc_V_FM(context, v_ptr);
+  V_FM = mobilizer_->calc_V_FM(q_ptr, v_ptr);
 
   // Compute V_PB_W = R_WF * V_FM.Shift(p_MoBo_F), Eq. (4).
   // Side note to developers: in operator form for rigid bodies this would be
@@ -189,7 +189,8 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   if constexpr (kNv > 0) {
     // Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵛ with nv ∈ [0; 6] the
     // number of mobilities for this node.
-    const auto H_PB_W = get_H(H_PB_W_cache);
+    const auto H_PB_W = get_H(H_PB_W_cache);  // 6 x kNv fixed-size Map.
+    const Eigen::Map<const VVector> v(v_ptr);
     V_PB_W.get_coeffs() = H_PB_W * v;
   } else {
     V_PB_W.get_coeffs().setZero();
@@ -212,251 +213,242 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   get_mutable_V_WB(vc) = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W);
 }
 
+// As a guideline for developers, a summary of the computations performed in
+// this method is provided:
+// Notation:
+//  - B body frame associated with this node.
+//  - P ("parent") body frame associated with this node's parent.
+//  - F mobilizer inboard frame attached to body P.
+//  - M mobilizer outboard frame attached to body B.
+// The goal is computing the spatial acceleration A_WB of body B measured in
+// the world frame W. The calculation is recursive and assumes the spatial
+// acceleration A_WP of the inboard body P is already computed.
+// The spatial velocities of P and B are related by the recursive relation
+// (computation is performed by CalcVelocityKinematicsCache_BaseToTip():
+//   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)
+//        = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W)         (1)
+// where Pb is a frame aligned with P but with its origin shifted from Po
+// to B's origin Bo. Then V_WPb is the spatial velocity of frame Pb,
+// measured and expressed in the world frame W.
+//
+// In the same way the parent body P velocity V_WP can be composed with body
+// B's velocity V_PB in P, the acceleration A_WB can be obtained by
+// composing A_WP with A_PB:
+//  A_WB = A_WP.ComposeWithMovingFrameAcceleration(
+//      p_PB_W, w_WP, V_PB_W, A_PB_W);                                  (2)
+// which includes both centrifugal and coriolis terms. For details on this
+// operation refer to the documentation for
+// SpatialAcceleration::ComposeWithMovingFrameAcceleration().
+//
+// By recursive precondition, this method was already called on all
+// predecessor nodes in the tree and therefore the acceleration A_WP is
+// already available.
+// V_WP (i.e. w_WP) and V_PB_W were computed in the velocity kinematics pass
+// and are therefore available in the VelocityKinematicsCache vc.
+//
+// Therefore, all that is left is computing A_PB_W = DtP(V_PB)_W.
+// The acceleration of B in P is:
+//   A_PB = DtP(V_PB) = DtF(V_FMb) = A_FM.Shift(p_MB, w_FM)             (3)
+// which expressed in the world frame leads to (see note below):
+//   A_PB_W = R_WF * A_FM.Shift(p_MB_F, w_FM)                           (4)
+// where R_WF is the rotation matrix from F to W and A_FM expressed in the
+// inboard frame F is the direct result from
+// Mobilizer::CalcAcrossMobilizerAcceleration().
+//
+// * Note:
+//     The rigid body assumption is made in Eq. (3) in two places:
+//       1. DtP() = DtF() since V_PF = 0.
+//       2. V_PB = V_FMb since V_PB = V_PFb + V_FMb + V_MB but since P is
+//          assumed rigid V_PF = 0 and since B is assumed rigid V_MB = 0.
+//
+// Note: ignores velocities if vc is null, in which case velocities must
+// also be null.
 template <typename T, template <typename> class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
-    const systems::Context<T>& context,
-    const FrameBodyPoseCache<T>& frame_body_poses_cache,
-    const PositionKinematicsCache<T>& pc, const VelocityKinematicsCache<T>* vc,
-    const VectorX<T>& mbt_vdot,
-    std::vector<SpatialAcceleration<T>>* A_WB_array_ptr) const {
+    const FrameBodyPoseCache<T>& frame_body_poses_cache, const T* positions,
+    const PositionKinematicsCache<T>& pc,
+    const T* velocities,                   // can be null
+    const VelocityKinematicsCache<T>* vc,  // can be null
+    const T* accelerations,
+    std::vector<SpatialAcceleration<T>>* A_WB_array) const {
   // This method must not be called for the "world" body node.
-  DRAKE_DEMAND(mobod_index() != world_mobod_index());
-  DRAKE_DEMAND(A_WB_array_ptr != nullptr);
-  std::vector<SpatialAcceleration<T>>& A_WB_array = *A_WB_array_ptr;
+  DRAKE_ASSERT(mobod_index() != world_mobod_index());
+  DRAKE_ASSERT(A_WB_array != nullptr);
 
-  // As a guideline for developers, a summary of the computations performed in
-  // this method is provided:
-  // Notation:
-  //  - B body frame associated with this node.
-  //  - P ("parent") body frame associated with this node's parent.
-  //  - F mobilizer inboard frame attached to body P.
-  //  - M mobilizer outboard frame attached to body B.
-  // The goal is computing the spatial acceleration A_WB of body B measured in
-  // the world frame W. The calculation is recursive and assumes the spatial
-  // acceleration A_WP of the inboard body P is already computed.
-  // The spatial velocities of P and B are related by the recursive relation
-  // (computation is performed by CalcVelocityKinematicsCache_BaseToTip():
-  //   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)
-  //        = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W)         (1)
-  // where Pb is a frame aligned with P but with its origin shifted from Po
-  // to B's origin Bo. Then V_WPb is the spatial velocity of frame Pb,
-  // measured and expressed in the world frame W.
-  //
-  // In the same way the parent body P velocity V_WP can be composed with body
-  // B's velocity V_PB in P, the acceleration A_WB can be obtained by
-  // composing A_WP with A_PB:
-  //  A_WB = A_WP.ComposeWithMovingFrameAcceleration(
-  //      p_PB_W, w_WP, V_PB_W, A_PB_W);                                  (2)
-  // which includes both centrifugal and coriolis terms. For details on this
-  // operation refer to the documentation for
-  // SpatialAcceleration::ComposeWithMovingFrameAcceleration().
-  //
-  // By recursive precondition, this method was already called on all
-  // predecessor nodes in the tree and therefore the acceleration A_WP is
-  // already available.
-  // V_WP (i.e. w_WP) and V_PB_W were computed in the velocity kinematics pass
-  // and are therefore available in the VelocityKinematicsCache vc.
-  //
-  // Therefore, all that is left is computing A_PB_W = DtP(V_PB)_W.
-  // The acceleration of B in P is:
-  //   A_PB = DtP(V_PB) = DtF(V_FMb) = A_FM.Shift(p_MB, w_FM)             (3)
-  // which expressed in the world frame leads to (see note below):
-  //   A_PB_W = R_WF * A_FM.Shift(p_MB_F, w_FM)                           (4)
-  // where R_WF is the rotation matrix from F to W and A_FM expressed in the
-  // inboard frame F is the direct result from
-  // Mobilizer::CalcAcrossMobilizerAcceleration().
-  //
-  // * Note:
-  //     The rigid body assumption is made in Eq. (3) in two places:
-  //       1. DtP() = DtF() since V_PF = 0.
-  //       2. V_PB = V_FMb since V_PB = V_PFb + V_FMb + V_MB but since P is
-  //          assumed rigid V_PF = 0 and since B is assumed rigid V_MB = 0.
-
-  // RigidBody for this node. Its BodyFrame is also referred to as B whenever
-  // no ambiguity can arise.
-  const RigidBody<T>& body_B = body();
-
-  // RigidBody for this node's parent, or the parent body P. Its BodyFrame
-  // is also referred to as P whenever no ambiguity can arise.
-  const RigidBody<T>& body_P = parent_body();
-
-  // Inboard frame F of this node's mobilizer.
-  const Frame<T>& frame_F = inboard_frame();
-  DRAKE_ASSERT(frame_F.body().index() == body_P.index());
-  // Outboard frame M of this node's mobilizer.
-  const Frame<T>& frame_M = outboard_frame();
-  DRAKE_ASSERT(frame_M.body().index() == body_B.index());
-
-  // =========================================================================
-  // Computation of A_PB = DtP(V_PB), Eq. (4).
+  // This is the already-computed inboard (parent) acceleration.
+  const SpatialAcceleration<T>& A_WP = (*A_WB_array)[inboard_mobod_index()];
+  // The to-be-computed acceleration of this body.
+  SpatialAcceleration<T>& A_WB = (*A_WB_array)[mobod_index()];
 
   const math::RigidTransform<T>& X_PF =
-      frame_F.get_X_BF(frame_body_poses_cache);  // B==P
-  const math::RotationMatrix<T>& R_PF = X_PF.rotation();
+      inboard_frame().get_X_BF(frame_body_poses_cache);  // B==P
   const math::RigidTransform<T>& X_MB =
-      frame_M.get_X_FB(frame_body_poses_cache);  // F==M
+      outboard_frame().get_X_FB(frame_body_poses_cache);  // F==M
 
-  // Form the rotation matrix relating the world frame W and parent body P.
-  // Available since we are called within a base-to-tip recursion.
+  const math::RotationMatrix<T>& R_PF = X_PF.rotation();
   const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
 
-  // Orientation (rotation) of frame F with respect to the world frame W.
-  // TODO(amcastro-tri): consider caching X_WF since it is also used to
-  //  compute H_PB_W.
+  // Orientation of frame F with respect to the world frame W.
+  // TODO(amcastro-tri): consider caching X_WF, also used to compute H_PB_W.
   const math::RotationMatrix<T> R_WF = R_WP * R_PF;
 
   // Vector from Mo to Bo expressed in frame F as needed below:
-  // TODO(amcastro-tri): consider caching this since it is also used to
-  //  compute H_PB_W.
+  // TODO(amcastro-tri): consider caching p_MB_F, also used to compute H_PB_W.
   const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
   const Vector3<T>& p_MB_M = X_MB.translation();
   const Vector3<T> p_MB_F = R_FM * p_MB_M;
-
-  // Generalized velocities' time derivatives local to this node's mobilizer.
-  const Eigen::Map<const VVector> vmdot = get_vvector(mbt_vdot.data());
-
-  // Operator A_FM = H_FM * vmdot + Hdot_FM * vm
-  SpatialAcceleration<T> A_FM =
-      mobilizer_->CalcAcrossMobilizerSpatialAcceleration(context, vmdot);
-
-  // =========================================================================
-  // Compose acceleration A_WP of P in W with acceleration A_PB of B in P,
-  // Eq. (2)
-
-  // Obtains a const reference to the parent acceleration from A_WB_array.
-  const SpatialAcceleration<T>& A_WP = get_A_WP_from_array(A_WB_array);
 
   // Shift vector between the parent body P and this node's body B,
   // expressed in the world frame W.
   const Vector3<T>& p_PB_W = get_p_PoBo_W(pc);
 
-  if (vc != nullptr) {
-    // Since we are in a base-to-tip recursion the parent body P's spatial
-    // velocity is already available in the cache.
-    const SpatialVelocity<T>& V_WP = get_V_WP(*vc);
-
-    // For body B, only the spatial velocity V_PB_W is already available in
-    // the cache. The acceleration A_PB_W was computed above.
-    const SpatialVelocity<T>& V_PB_W = get_V_PB_W(*vc);
-
-    // Across mobilizer velocity is available from the velocity kinematics.
-    const SpatialVelocity<T>& V_FM = get_V_FM(*vc);
-
-    const SpatialAcceleration<T> A_PB_W =
-        R_WF * A_FM.Shift(p_MB_F, V_FM.rotational());  // Eq. (4)
-
-    // Velocities are non-zero.
-    get_mutable_A_WB_from_array(&A_WB_array) =
-        A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
-                                                V_PB_W, A_PB_W);
-  } else {
+  // Early return if we don't have to deal with velocity.
+  if (vc == nullptr) {
+    DRAKE_ASSERT(velocities == nullptr);
+    const VVector v = VVector::Zero();
+    // Operator A_FM = H_FM * vmdot + Hdot_FM * 0
+    const SpatialAcceleration<T> A_FM =
+        mobilizer_->calc_A_FM(get_q(positions), v.data(), get_v(accelerations));
     const SpatialAcceleration<T> A_PB_W =  // Eq. (4), with w_FM = 0.
         R_WF * A_FM.ShiftWithZeroAngularVelocity(p_MB_F);
     // Velocities are zero. No need to compute terms that become zero.
-    get_mutable_A_WB_from_array(&A_WB_array) =
-        A_WP.ShiftWithZeroAngularVelocity(p_PB_W) + A_PB_W;
+    A_WB = A_WP.ShiftWithZeroAngularVelocity(p_PB_W) + A_PB_W;
+    return;
   }
+
+  // N.B. It is possible for positions & velocities to be null here if
+  // the system consists only of welds (one of our unit tests does that).
+
+  // Operator A_FM = H_FM * vmdot + Hdot_FM * vm
+  const SpatialAcceleration<T> A_FM = mobilizer_->calc_A_FM(
+      get_q(positions), get_v(velocities), get_v(accelerations));
+
+  // Since we are in a base-to-tip recursion the parent body P's spatial
+  // velocity is already available in the cache.
+  const SpatialVelocity<T>& V_WP = get_V_WP(*vc);
+
+  // For body B, only the spatial velocity V_PB_W is already available in
+  // the cache. The acceleration A_PB_W was computed above.
+  const SpatialVelocity<T>& V_PB_W = get_V_PB_W(*vc);
+
+  // Across mobilizer velocity is available from the velocity kinematics.
+  const SpatialVelocity<T>& V_FM = get_V_FM(*vc);
+
+  const SpatialAcceleration<T> A_PB_W =
+      R_WF * A_FM.Shift(p_MB_F, V_FM.rotational());  // Eq. (4)
+
+  // Velocities are non-zero.
+  A_WB = A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
+                                                 V_PB_W, A_PB_W);
 }
 
+// As a guideline for developers, a summary of the computations performed in
+// this method is provided:
+// Notation:
+//  - B body frame associated with this node.
+//  - P ("parent") body frame associated with this node's inboard node.
+//  - F mobilizer inboard frame attached to body P.
+//  - M mobilizer outboard frame attached to body B.
+//  - Mo The origin of the outboard (or mobilized) frame M.
+//  - C within a loop over "children", one of body B's outboard bodies.
+//  - Mc The origin of the outboard (or mobilized) frame of the mobilizer
+//      connecting B to C.
+// The goal is computing the spatial force F_BMo_W (on body B applied at its
+// mobilized frame origin Mo) exerted by its inboard mobilizer that is
+// required to produce the spatial acceleration A_WB. The generalized forces
+// are then obtained as the projection of the spatial force F_BMo in the
+// direction of this node's mobilizer motion. That is, the generalized
+// forces correspond to the working components of the spatial force living
+// in the motion sub-space of this node's mobilizer.
+// The calculation is recursive (from tip-to-base) and assumes the spatial
+// force F_CMc_W on body C at Mc is already computed in F_BMo_W_array.
+//
+// The spatial force through body B's inboard mobilizer is obtained from a
+// force balance (essentially the F = m * a for rigid bodies, see
+// [Jain 2010, Eq. 2.26, p. 27] for a derivation):
+//   Ftot_BBo_W = M_Bo_W * A_WB + Fb_Bo_W                                (1)
+// where Fb_Bo_W contains the velocity dependent gyroscopic terms,
+// Ftot_BBo_W is the total spatial force on body B, applied at its origin Bo
+// and quantities are expressed in the world frame W (though the
+// expressed-in frame is not needed in a coordinate-free form.)
+//
+// The total spatial force on body B is the combined effect of externally
+// applied spatial forces Fapp_BMo on body B at Mo and spatial forces
+// induced by its inboard and outboard mobilizers. On its mobilized frame M,
+// in coordinate-free form:
+//   Ftot_BMo = Fapp_BMo + F_BMo - Σᵢ(F_CiMo)                           (2)
+// where F_CiMo is the spatial force on the i-th child body Ci due to its
+// inboard mobilizer which, by action/reaction, applies to body B as
+// -F_CiMo, hence the negative sign in the summation above. The applied
+// spatial force Fapp_BMo at Mo is obtained by shifting the applied force
+// Fapp_Bo from Bo to Mo as Fapp_BMo.Shift(p_BoMo).
+// Therefore, spatial force F_BMo due to body B's mobilizer is:
+//   F_BMo = Ftot_BMo + Σᵢ(F_CiMo) - Fapp_BMo                           (3)
+// The projection of this force on the motion sub-space of this node's
+// mobilizer corresponds to the generalized force tau:
+//  tau = H_FMᵀ * F_BMo_F                                               (4)
+// where the spatial force F_BMo must be re-expressed in the inboard frame F
+// before the projection can be performed.
+
+// Caution: we permit outputs F_BMo_W_array and tau_array to be the same
+// objects as Fapplied_Bo_W_array and tau_applied_array.
 template <typename T, template <typename> class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
-    const systems::Context<T>& context,
-    const FrameBodyPoseCache<T>& frame_body_pose_cache,
+    const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
     const PositionKinematicsCache<T>& pc,
     const std::vector<SpatialInertia<T>>& M_B_W_cache,
     const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
     const std::vector<SpatialAcceleration<T>>& A_WB_array,
-    const SpatialForce<T>& Fapplied_Bo_W,
-    const Eigen::Ref<const VectorX<T>>& tau_applied,
-    std::vector<SpatialForce<T>>* F_BMo_W_array_ptr,
+    const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+    const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+    std::vector<SpatialForce<T>>* F_BMo_W_array,
     EigenPtr<VectorX<T>> tau_array) const {
-  DRAKE_DEMAND(F_BMo_W_array_ptr != nullptr);
-  std::vector<SpatialForce<T>>& F_BMo_W_array = *F_BMo_W_array_ptr;
-  DRAKE_DEMAND(tau_applied.size() == kNv || tau_applied.size() == 0);
-  DRAKE_DEMAND(tau_array != nullptr);
-  DRAKE_DEMAND(tau_array->size() == this->get_parent_tree().num_velocities());
+  DRAKE_ASSERT(F_BMo_W_array != nullptr && tau_array != nullptr);
+  const bool is_Fapplied = (ssize(Fapplied_Bo_W_array) != 0);
+  const bool is_tau_applied = (ssize(tau_applied_array) != 0);
 
-  // As a guideline for developers, a summary of the computations performed in
-  // this method is provided:
-  // Notation:
-  //  - B body frame associated with this node.
-  //  - P ("parent") body frame associated with this node's parent.
-  //  - F mobilizer inboard frame attached to body P.
-  //  - M mobilizer outboard frame attached to body B.
-  //  - Mo The origin of the outboard (or mobilized) frame of the mobilizer
-  //       attached to body B.
-  //  - C within a loop over children, one of body B's children.
-  //  - Mc The origin of the outboard (or mobilized) frame of the mobilizer
-  //       attached to body C.
-  // The goal is computing the spatial force F_BMo_W (on body B applied at its
-  // mobilized frame origin Mo) exerted by its inboard mobilizer that is
-  // required to produce the spatial acceleration A_WB. The generalized forces
-  // are then obtained as the projection of the spatial force F_BMo in the
-  // direction of this node's mobilizer motion. That is, the generalized
-  // forces correspond to the working components of the spatial force living
-  // in the motion sub-space of this node's mobilizer.
-  // The calculation is recursive (from tip-to-base) and assumes the spatial
-  // force F_CMc on body C at Mc is already computed in F_BMo_W_array_ptr.
-  //
-  // The spatial force through body B's inboard mobilizer is obtained from a
-  // force balance (essentially the F = m * a for rigid bodies, see
-  // [Jain 2010, Eq. 2.26, p. 27] for a derivation):
-  //   Ftot_BBo_W = M_Bo_W * A_WB + Fb_Bo_W                                (1)
-  // where Fb_Bo_W contains the velocity dependent gyroscopic terms,
-  // Ftot_BBo_W is the total spatial force on body B, applied at its origin Bo
-  // and quantities are expressed in the world frame W (though the
-  // expressed-in frame is not needed in a coordinate-free form.)
-  //
-  // The total spatial force on body B is the combined effect of externally
-  // applied spatial forces Fapp_BMo on body B at Mo and spatial forces
-  // induced by its inboard and outboard mobilizers. On its mobilized frame M,
-  // in coordinate-free form:
-  //   Ftot_BMo = Fapp_BMo + F_BMo - Σᵢ(F_CiMo)                           (2)
-  // where F_CiMo is the spatial force on the i-th child body Ci due to its
-  // inboard mobilizer which, by action/reaction, applies to body B as
-  // -F_CiMo, hence the negative sign in the summation above. The applied
-  // spatial force Fapp_BMo at Mo is obtained by shifting the applied force
-  // Fapp_Bo from Bo to Mo as Fapp_BMo.Shift(p_BoMo).
-  // Therefore, spatial force F_BMo due to body B's mobilizer is:
-  //   F_BMo = Ftot_BMo + Σᵢ(F_CiMo) - Fapp_BMo                           (3)
-  // The projection of this force on the motion sub-space of this node's
-  // mobilizer corresponds to the generalized force tau:
-  //  tau = H_FMᵀ * F_BMo_F                                               (4)
-  // where the spatial force F_BMo must be re-expressed in the inboard frame F
-  // before the projection can be performed.
+  // Check sizes.
+  DRAKE_ASSERT(Fb_Bo_W_cache == nullptr ||
+               ssize(*Fb_Bo_W_cache) == this->get_parent_tree().num_mobods());
+  DRAKE_ASSERT(!is_Fapplied || ssize(Fapplied_Bo_W_array) ==
+                                   this->get_parent_tree().num_mobods());
+  DRAKE_ASSERT(!is_tau_applied || ssize(tau_applied_array) ==
+                                      this->get_parent_tree().num_velocities());
+  DRAKE_ASSERT(ssize(*F_BMo_W_array) == this->get_parent_tree().num_mobods());
+  DRAKE_ASSERT(ssize(*tau_array) == this->get_parent_tree().num_velocities());
 
-  // This node's body B.
-  const RigidBody<T>& body_B = body();
+  // Calculate total spatial force on body B producing acceleration A_WB.
+  //   Ftot_BBo = M_B * A_WB + Fb_Bo
+  const SpatialInertia<T>& M_B_W = M_B_W_cache[mobod_index()];
+  const SpatialAcceleration<T>& A_WB = A_WB_array[mobod_index()];
+  SpatialForce<T> Ftot_BBo_W = M_B_W * A_WB;
+  if (Fb_Bo_W_cache != nullptr) {
+    // Dynamic bias for body B.
+    const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[mobod_index()];
+    Ftot_BBo_W += Fb_Bo_W;
+  }
 
-  // Input spatial acceleration for this node's body B.
-  const SpatialAcceleration<T>& A_WB = get_A_WB_from_array(A_WB_array);
-
-  // Total spatial force on body B producing acceleration A_WB. Not mobilizer
-  // specific so implemented in the base class.
-  SpatialForce<T> Ftot_BBo_W;
-  BodyNode<T>::CalcBodySpatialForceGivenItsSpatialAcceleration(
-      M_B_W_cache, Fb_Bo_W_cache, A_WB, &Ftot_BBo_W);
+  // We're looking for forces due to the mobilizer, so remove the applied
+  // forces from the total. See comments above for more detail.
+  if (is_Fapplied) {
+    // Use the applied force before it gets overwritten below.
+    const SpatialForce<T>& Fapp_Bo_W = Fapplied_Bo_W_array[mobod_index()];
+    Ftot_BBo_W -= Fapp_Bo_W;
+  }
 
   // Compute shift vector from Bo to Mo expressed in the world frame W.
-  const Frame<T>& frame_M = outboard_frame();
-  DRAKE_DEMAND(frame_M.body().index() == body_B.index());
   const math::RigidTransform<T>& X_BM =
-      frame_M.get_X_BF(frame_body_pose_cache);  // F==M
+      outboard_frame().get_X_BF(frame_body_pose_cache);  // F==M
   const Vector3<T>& p_BoMo_B = X_BM.translation();
-  const math::RigidTransform<T>& X_WB = get_X_WB(pc);
-  const math::RotationMatrix<T>& R_WB = X_WB.rotation();
+  const math::RotationMatrix<T>& R_WB = get_X_WB(pc).rotation();
   const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
 
   // Output spatial force that would need to be exerted by this node's
   // mobilizer in order to attain the prescribed acceleration A_WB.
-  SpatialForce<T>& F_BMo_W = F_BMo_W_array[mobod_index()];
+  SpatialForce<T>& F_BMo_W = (*F_BMo_W_array)[mobod_index()];
+  F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);  // May override Fapplied.
 
-  // Ensure this method was not called with an Fapplied_Bo_W being an entry
-  // into F_BMo_W_array, otherwise we would be overwriting Fapplied_Bo_W.
-  DRAKE_DEMAND(&F_BMo_W != &Fapplied_Bo_W);
-
-  // Shift spatial force on B to Mo.
-  F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
+  // Add in contribution to F_B_Mo_W from outboard nodes.
   for (const BodyNode<T>* child_node : child_nodes()) {
     const MobodIndex child_node_index = child_node->mobod_index();
 
@@ -485,43 +477,44 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
     // However, when indexing by child_node_index:
     //  - B becomes C, the child node's body.
     //  - Mo becomes Mc, body C's inboard frame origin.
-    const SpatialForce<T>& F_CMc_W = F_BMo_W_array[child_node_index];
+    const SpatialForce<T>& F_CMc_W = (*F_BMo_W_array)[child_node_index];
 
     // Shift to this node's mobilizer origin Mo (still, F_CMo is the force
     // acting on the child body C):
-    const SpatialForce<T>& F_CMo_W = F_CMc_W.Shift(p_McMo_W);
+    const SpatialForce<T> F_CMo_W = F_CMc_W.Shift(p_McMo_W);
     // From Eq. (3), this force is added (with positive sign) to the force
     // applied by this body's mobilizer:
     F_BMo_W += F_CMo_W;
   }
-  // Add applied forces contribution.
-  F_BMo_W -= Fapplied_Bo_W.Shift(p_BoMo_W);
 
   // Re-express F_BMo_W in the inboard frame F before projecting it onto the
   // sub-space generated by H_FM(q).
+  const Frame<T>& frame_F = inboard_frame();
   const math::RotationMatrix<T>& R_PF =
-      inboard_frame().EvalPoseInBodyFrame(context).rotation();
+      frame_F.get_X_BF(frame_body_pose_cache).rotation();  // B==P
   const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
   // TODO(amcastro-tri): consider caching R_WF since also used in position and
   //  velocity kinematics.
   const math::RotationMatrix<T> R_WF = R_WP * R_PF;
   const SpatialForce<T> F_BMo_F = R_WF.inverse() * F_BMo_W;
 
-  // Generalized velocities and forces use the same indexing.
-  auto tau = mobilizer_->get_mutable_generalized_forces_from_array(tau_array);
-
-  // Demand that tau_applied is not an entry of tau. It would otherwise get
-  // overwritten.
-  DRAKE_DEMAND(tau.data() != tau_applied.data());
-
   // The generalized forces on the mobilizer correspond to the active
   // components of the spatial force performing work. Therefore we need to
   // project F_BMo along the directions of motion.
   // Project as: tau = H_FMᵀ(q) * F_BMo_F, Eq. (4).
-  mobilizer_->ProjectSpatialForce(context, F_BMo_F, tau);
 
-  // Include the contribution of applied generalized forces.
-  if (tau_applied.size() != 0) tau -= tau_applied;
+  // Output generalized forces due to the mobilizer reaction (must remove any
+  // applied taus). Indexing is the same as generalized velocities.
+  Eigen::Map<VVector> tau(get_mutable_v(tau_array->data()));
+  // Be careful not to overwrite tau_app before we use it!
+  if (is_tau_applied) {
+    const Eigen::Map<const VVector> tau_app(get_v(tau_applied_array.data()));
+    VVector tau_projection;
+    mobilizer_->calc_tau(get_q(positions), F_BMo_F, tau_projection.data());
+    tau = tau_projection - tau_app;
+  } else {
+    mobilizer_->calc_tau(get_q(positions), F_BMo_F, tau.data());
+  }
 }
 
 template <typename T, template <typename> class ConcreteMobilizer>
@@ -787,16 +780,14 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 
 template <typename T, template <typename> class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
-    const systems::Context<T>& context,
-    const FrameBodyPoseCache<T>& frame_body_pose_cache,
-    const PositionKinematicsCache<T>& pc, const VelocityKinematicsCache<T>& vc,
-    SpatialAcceleration<T>* Ab_WB) const {
-  DRAKE_THROW_UNLESS(Ab_WB != nullptr);
-  // As a guideline for developers, please refer to @ref
-  // abi_computing_accelerations for a detailed description and derivation of
-  // Ab_WB.
+    const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+    const PositionKinematicsCache<T>& pc, const T* velocities,
+    const VelocityKinematicsCache<T>& vc,
+    std::vector<SpatialAcceleration<T>>* Ab_WB_all) const {
+  DRAKE_ASSERT(Ab_WB_all != nullptr);
+  SpatialAcceleration<T>& Ab_WB = (*Ab_WB_all)[mobod_index()];
+  Ab_WB.SetZero();
 
-  Ab_WB->SetZero();
   // Inboard frame F and outboard frame M of this node's mobilizer.
   const Frame<T>& frame_F = inboard_frame();
   const Frame<T>& frame_M = outboard_frame();
@@ -830,9 +821,9 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
 
   // We first compute the acceleration bias Ab_FM = Hdot * vm.
   // Note, A_FM = H_FM(qm) * vmdot + Ab_FM(qm, vm).
-  const VectorUpTo6<T> vmdot_zero = VectorUpTo6<T>::Zero(kNv);
-  const SpatialAcceleration<T> Ab_FM =
-      mobilizer_->CalcAcrossMobilizerSpatialAcceleration(context, vmdot_zero);
+  const VVector vmdot_zero = VVector::Zero();
+  const SpatialAcceleration<T> Ab_FM = mobilizer_->calc_A_FM(
+      get_q(positions), get_v(velocities), vmdot_zero.data());
 
   // Due to the fact that frames P and F are on the same rigid body, we have
   // that V_PF = 0. Therefore, DtP(V_PB) = DtF(V_PB). Since M and B are also
@@ -866,7 +857,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
   // since it is cheaper to compute, requiring only a single cross product,
   // see @note in SpatialAcceleration::ComposeWithMovingFrameAcceleration()
   // for a complete derivation.
-  *Ab_WB = SpatialAcceleration<T>(
+  Ab_WB = SpatialAcceleration<T>(
       w_WB.cross(w_PB_W) + Ab_PB_W.rotational(),
       w_WP.cross(v_WB - v_WP + v_PB_W) + Ab_PB_W.translational());
 }

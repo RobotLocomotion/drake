@@ -243,10 +243,9 @@ QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
 template <typename T>
 SpatialVelocity<T>
 QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v) const {
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return calc_V_FM(context, v.data());
+  return calc_V_FM(nullptr, v.data());
 }
 
 template <typename T>
@@ -255,17 +254,14 @@ QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
-  const auto& alpha_FM = vdot.template head<3>();
-  const auto& a_FM = vdot.template tail<3>();
-  return SpatialAcceleration<T>(alpha_FM, a_FM);
+  return calc_A_FM(nullptr, nullptr, vdot.data());
 }
 
 template <typename T>
 void QuaternionFloatingMobilizer<T>::ProjectSpatialForce(
-    const systems::Context<T>&, const SpatialForce<T>& F_Mo_F,
+    const systems::Context<T>&, const SpatialForce<T>& F_BMo_F,
     Eigen::Ref<VectorX<T>> tau) const {
-  DRAKE_ASSERT(tau.size() == kNv);
-  tau = F_Mo_F.get_coeffs();
+  calc_tau(nullptr, F_BMo_F, tau.data());
 }
 
 template <typename T>

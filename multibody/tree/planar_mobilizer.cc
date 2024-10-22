@@ -131,10 +131,9 @@ math::RigidTransform<T> PlanarMobilizer<T>::CalcAcrossMobilizerTransform(
 
 template <typename T>
 SpatialVelocity<T> PlanarMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v) const {
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return calc_V_FM(context, v.data());
+  return calc_V_FM(nullptr, v.data());
 }
 
 template <typename T>
@@ -143,18 +142,15 @@ PlanarMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
-  Vector6<T> A_FM_vector;
-  A_FM_vector << 0.0, 0.0, vdot[2], vdot[0], vdot[1], 0.0;
-  return SpatialAcceleration<T>(A_FM_vector);
+  return calc_A_FM(nullptr, nullptr, vdot.data());
 }
 
 template <typename T>
 void PlanarMobilizer<T>::ProjectSpatialForce(const systems::Context<T>&,
-                                             const SpatialForce<T>& F_Mo_F,
+                                             const SpatialForce<T>& F_BMo_F,
                                              Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  tau.head(2) = F_Mo_F.translational().head(2);
-  tau[2] = F_Mo_F.rotational()[2];
+  calc_tau(nullptr, F_BMo_F, tau.data());
 }
 
 template <typename T>

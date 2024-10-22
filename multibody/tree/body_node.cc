@@ -86,49 +86,6 @@ void BodyNode<T>::CalcCompositeBodyInertia_TipToBase(
   }
 }
 
-// This method computes the total force Ftot_BBo on body B that must be
-// applied for it to incur in a spatial acceleration A_WB. Mathematically:
-//   Ftot_BBo = M_B_W * A_WB + b_Bo
-// where b_Bo contains the velocity dependent gyroscopic terms (see Eq. 2.26,
-// p. 27, in A. Jain's book). The above balance is performed at the origin
-// Bo of the body frame B, which does not necessarily need to coincide with
-// the body center of mass.
-// Notes:
-//   1. Ftot_BBo = b_Bo when A_WB = 0.
-//   2. b_Bo = 0 when w_WB = 0.
-//   3. b_Bo.translational() = 0 when Bo = Bcm (p_BoBcm = 0).
-//      When Fb_Bo_W_cache is nullptr velocities are considered to be zero.
-//      Therefore, from (2), the bias term is assumed to be zero and is not
-//      computed.
-template <typename T>
-void BodyNode<T>::CalcBodySpatialForceGivenItsSpatialAcceleration(
-    const std::vector<SpatialInertia<T>>& M_B_W_cache,
-    const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
-    const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr) const {
-  DRAKE_DEMAND(Ftot_BBo_W_ptr != nullptr);
-
-  // Output spatial force applied on mobilized body B, at Bo, measured in W.
-  SpatialForce<T>& Ftot_BBo_W = *Ftot_BBo_W_ptr;
-
-  // RigidBody for this node.
-  const RigidBody<T>& body_B = body();
-
-  // Mobilized body B spatial inertia about Bo expressed in world W.
-  const SpatialInertia<T>& M_B_W = M_B_W_cache[body_B.mobod_index()];
-
-  // Equations of motion for a rigid body written at a generic point Bo not
-  // necessarily coincident with the body's center of mass. This corresponds
-  // to Eq. 2.26 (p. 27) in A. Jain's book.
-  Ftot_BBo_W = M_B_W * A_WB;
-
-  // If velocities are zero, then Fb_Bo_W is zero and does not contribute.
-  if (Fb_Bo_W_cache != nullptr) {
-    // Dynamic bias for body B.
-    const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body_B.mobod_index()];
-    Ftot_BBo_W += Fb_Bo_W;
-  }
-}
-
 template <typename T>
 void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
     const MatrixUpTo6<T>& D_B,

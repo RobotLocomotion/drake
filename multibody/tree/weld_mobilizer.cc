@@ -34,9 +34,7 @@ SpatialVelocity<T> WeldMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 
 template <typename T>
 SpatialAcceleration<T> WeldMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
-    const systems::Context<T>&,
-    const Eigen::Ref<const VectorX<T>>& vdot) const {
-  DRAKE_ASSERT(vdot.size() == kNv);
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>&) const {
   return SpatialAcceleration<T>::Zero();
 }
 
