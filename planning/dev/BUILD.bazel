@@ -11,11 +11,11 @@ drake_cc_library(
     name = "sphere_robot_model_collision_checker",
     srcs = ["sphere_robot_model_collision_checker.cc"],
     hdrs = ["sphere_robot_model_collision_checker.h"],
-    interface_deps = [
+    deps = [
         "//common:essential",
         "//planning:collision_checker",
     ],
-    deps = [
+    implementation_deps = [
         "@common_robotics_utilities",
     ],
 )
@@ -24,22 +24,92 @@ drake_cc_library(
     name = "mbp_environment_collision_checker",
     srcs = ["mbp_environment_collision_checker.cc"],
     hdrs = ["mbp_environment_collision_checker.h"],
-    interface_deps = [
+    deps = [
         ":sphere_robot_model_collision_checker",
         "//common:essential",
         "//planning:collision_checker",
     ],
-    deps = [
+    implementation_deps = [
         "@common_robotics_utilities",
     ],
 )
 
 drake_cc_library(
-    name = "voxel_signed_distance_field",
-    srcs = ["voxel_signed_distance_field.cc"],
-    hdrs = ["voxel_signed_distance_field.h"],
-    interface_deps = [
+    name = "voxel_collision_map",
+    srcs = [
+        "voxel_collision_map.cc",
+        "voxel_collision_map_internal.cc",
+        "voxel_collision_map_internal.h",
+        "voxel_signed_distance_field_internal.cc",
+        "voxel_signed_distance_field_internal.h",
+    ],
+    hdrs = ["voxel_collision_map.h"],
+    deps = [
+        ":voxel_signed_distance_field",
         "//common:essential",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities",
+        "@voxelized_geometry_tools",
+    ],
+)
+
+drake_cc_library(
+    name = "voxel_grid_internal",
+    srcs = [
+        "voxel_collision_map_internal.cc",
+        "voxel_signed_distance_field_internal.cc",
+        "voxel_tagged_object_collision_map_internal.cc",
+    ],
+    hdrs = [
+        "voxel_collision_map_internal.h",
+        "voxel_grid_internal.h",
+        "voxel_signed_distance_field_internal.h",
+        "voxel_tagged_object_collision_map_internal.h",
+    ],
+    deps = [
+        ":voxel_collision_map",
+        ":voxel_signed_distance_field",
+        ":voxel_tagged_object_collision_map",
+        "//common:essential",
+        "@common_robotics_utilities",
+        "@voxelized_geometry_tools",
+    ]
+)
+
+drake_cc_library(
+    name = "voxel_signed_distance_field",
+    srcs = [
+        "voxel_signed_distance_field.cc",
+        "voxel_signed_distance_field_internal.cc",
+        "voxel_signed_distance_field_internal.h",
+    ],
+    hdrs = ["voxel_signed_distance_field.h"],
+    deps = [
+        "//common:essential",
+        "//common:parallelism",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities",
+        "@voxelized_geometry_tools",
+    ],
+)
+
+drake_cc_library(
+    name = "voxel_tagged_object_collision_map",
+    srcs = [
+        "voxel_signed_distance_field_internal.cc",
+        "voxel_signed_distance_field_internal.h",
+        "voxel_tagged_object_collision_map.cc",
+        "voxel_tagged_object_collision_map_internal.cc",
+        "voxel_tagged_object_collision_map_internal.h",
+    ],
+    hdrs = ["voxel_tagged_object_collision_map.h"],
+    deps = [
+        ":voxel_signed_distance_field",
+        "//common:essential",
+    ],
+    implementation_deps = [
         "@common_robotics_utilities",
         "@voxelized_geometry_tools",
     ],
@@ -49,11 +119,16 @@ drake_cc_library(
     name = "voxelized_environment_collision_checker",
     srcs = ["voxelized_environment_collision_checker.cc"],
     hdrs = ["voxelized_environment_collision_checker.h"],
-    interface_deps = [
+    deps = [
         ":sphere_robot_model_collision_checker",
+        ":voxel_collision_map",
         ":voxel_signed_distance_field",
+        ":voxel_tagged_object_collision_map",
         "//common:essential",
         "//planning:collision_checker",
+    ],
+    implementation_deps = [
+        ":voxel_grid_internal",
         "@common_robotics_utilities",
         "@voxelized_geometry_tools",
     ],
@@ -66,11 +141,16 @@ drake_cc_library(
         "voxelized_environment_builder_internal.h",
     ],
     hdrs = ["voxelized_environment_builder.h"],
-    interface_deps = [
+    deps = [
+        ":voxel_collision_map",
+        ":voxel_tagged_object_collision_map",
         "//common:essential",
         "//common:parallelism",
         "//geometry",
         "//multibody/plant",
+    ],
+    implementation_deps = [
+        ":voxel_grid_internal",
         "@common_robotics_utilities",
         "@voxelized_geometry_tools",
     ],
@@ -83,10 +163,15 @@ drake_cc_library(
         "voxel_self_filter_internal.h",
     ],
     hdrs = ["voxel_self_filter.h"],
-    interface_deps = [
+    deps = [
         ":sphere_robot_model_collision_checker",
+        ":voxel_collision_map",
+        ":voxel_tagged_object_collision_map",
         "//common:essential",
         "//planning:collision_checker",
+    ],
+    implementation_deps = [
+        ":voxel_grid_internal",
         "@common_robotics_utilities",
         "@voxelized_geometry_tools",
     ],

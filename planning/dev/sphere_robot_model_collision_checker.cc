@@ -592,38 +592,6 @@ PointSignedDistanceAndGradientResult SphereRobotModelCollisionChecker ::
   return result;
 }
 
-void AppendInto(Eigen::MatrixXd* to_grow, const Eigen::MatrixXd& to_append) {
-  DRAKE_THROW_UNLESS(to_grow != nullptr);
-  const ssize_t original_rows = to_grow->rows();
-  const ssize_t original_cols = to_grow->cols();
-  if (original_rows == 0 && original_cols == 0) {
-    to_grow->conservativeResize(to_append.rows(), to_append.cols());
-    *to_grow << to_append;
-  } else if (original_cols == to_append.cols()) {
-    to_grow->conservativeResize(original_rows + to_append.rows(),
-                                Eigen::NoChange);
-    to_grow->block(original_rows, 0, to_append.rows(), to_append.cols()) =
-        to_append;
-  } else {
-    throw std::runtime_error("Cannot append to matrix");
-  }
-}
-
-void AppendInto(Eigen::VectorXd* to_grow, const Eigen::VectorXd& to_append) {
-  DRAKE_THROW_UNLESS(to_grow != nullptr);
-  const ssize_t original_size = to_grow->size();
-  to_grow->conservativeResize(original_size + to_append.size());
-  to_grow->tail(to_append.size()) = to_append;
-}
-
-void AppendInto(Eigen::VectorXd* to_grow, double to_append) {
-  DRAKE_THROW_UNLESS(to_grow != nullptr);
-  const ssize_t original_size = to_grow->size();
-  to_grow->conservativeResize(original_size + 1);
-  // I don't know why the compiler needs this, but it does.
-  static_cast<Eigen::VectorXd&>(*to_grow)(original_size) = to_append;
-}
-
 RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
     const CollisionCheckerContext& model_context,
     const double influence_distance) const {

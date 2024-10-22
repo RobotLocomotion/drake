@@ -9,14 +9,13 @@
 #include <vector>
 
 #include <Eigen/Geometry>
-#include <voxelized_geometry_tools/collision_map.hpp>
-#include <voxelized_geometry_tools/signed_distance_field.hpp>
-#include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
 
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/collision_checker_params.h"
 #include "drake/planning/dev/sphere_robot_model_collision_checker.h"
+#include "drake/planning/dev/voxel_collision_map.h"
 #include "drake/planning/dev/voxel_signed_distance_field.h"
+#include "drake/planning/dev/voxel_tagged_object_collision_map.h"
 #include "drake/planning/robot_diagram.h"
 
 namespace drake {
@@ -38,22 +37,21 @@ class VoxelizedEnvironmentCollisionChecker final
   /// Update the voxelized environment.
   /// @param environment_name Name of the environment model to update. If the
   /// name is already in use, the new model replaces the old. To remove a model,
-  /// provide a default-constructed CollisionMapGrid that is not initialized.
+  /// provide a default-constructed VoxelCollisionMap that is not initialized.
   /// @param environment Voxelized environment model.
   /// @param override_environment_body_index Optionally provide a body index to
   /// override the environment frame name -> body lookup. Use this if the frame
   /// name is not unique, or if the frame name does not match an existing MbP
   /// body.
   void UpdateEnvironment(
-      const std::string& environment_name,
-      const voxelized_geometry_tools::CollisionMap& environment,
+      const std::string& environment_name, const VoxelCollisionMap& environment,
       const std::optional<multibody::BodyIndex>&
           override_environment_body_index = {});
 
   /// Update the voxelized environment.
   /// @param environment_name Name of the environment model to update. If the
   /// name is already in use, the new model replaces the old. To remove a model,
-  /// provide a default-constructed TaggedObjectCollisionMapGrid that is not
+  /// provide a default-constructed VoxelTaggedObjectCollisionMap that is not
   /// initialized.
   /// @param environment Voxelized environment model.
   /// @param override_environment_body_index Optionally provide a body index to
@@ -62,7 +60,7 @@ class VoxelizedEnvironmentCollisionChecker final
   /// body.
   void UpdateEnvironment(
       const std::string& environment_name,
-      const voxelized_geometry_tools::TaggedObjectCollisionMap& environment,
+      const VoxelTaggedObjectCollisionMap& environment,
       const std::optional<multibody::BodyIndex>&
           override_environment_body_index = {});
 
