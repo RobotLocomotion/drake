@@ -10,14 +10,12 @@
 #include <vector>
 
 #include <Eigen/Geometry>
-#include <common_robotics_utilities/print.hpp>
-#include <common_robotics_utilities/voxel_grid.hpp>
-#include <voxelized_geometry_tools/collision_map.hpp>
-#include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
 
 #include "drake/common/parallelism.h"
-#include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/dev/voxel_collision_map.h"
+#include "drake/planning/dev/voxel_tagged_object_collision_map.h"
 
 namespace drake {
 namespace planning {
@@ -35,7 +33,7 @@ namespace planning {
 /// frame name in the constructed CollisionMap. If this name is not unique, or
 /// does not correspond to an existing MbP body, use override_parent_body_index
 /// to specfiy the parent body directly.
-/// @param X_BG Pose of occupancy map frame G in frame of parent body B.
+/// @param X_PG Pose of occupancy map frame G in frame of parent body P.
 /// @param grid_size Size of occupancy map in meters. If you specify a
 /// grid_size that is not evenly divisible by grid_resolution, you will get a
 /// larger grid with num_cells = ceil(size/resolution).
@@ -47,12 +45,12 @@ namespace planning {
 /// parent body name is not unique, or if the frame name does not match an
 /// existing MbP body (e.g. the name is a TF-compatible name incompatible with
 /// GetBodyByName).
-voxelized_geometry_tools::CollisionMap BuildCollisionMap(
+VoxelCollisionMap BuildCollisionMap(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& plant_context,
     const std::unordered_set<geometry::GeometryId>& geometries_to_ignore,
-    const std::string& parent_body_name, const Eigen::Isometry3d& X_BG,
-    const Eigen::Vector3d& grid_size, const double grid_resolution,
+    const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+    const Eigen::Vector3d& grid_dimensions, const double grid_resolution,
     const std::optional<multibody::BodyIndex>& override_parent_body_index = {},
     Parallelism parallelism = Parallelism::Max());
 
@@ -74,8 +72,8 @@ voxelized_geometry_tools::CollisionMap BuildCollisionMap(
 /// frame name in the constructed CollisionMap. If this name is not unique, or
 /// does not correspond to an existing MbP body, use override_parent_body_index
 /// to specfiy the parent body directly.
-/// @param X_BG Pose of occupancy map frame G in frame of parent body B.
-/// @param grid_size Size of occupancy map in meters. If you specify a
+/// @param X_PG Pose of occupancy map frame G in frame of parent body P.
+/// @param grid_dimensions Size of occupancy map in meters. If you specify a
 /// grid_size that is not evenly divisible by grid_resolution, you will get a
 /// larger grid with num_cells = ceil(size/resolution).
 /// @param grid_resolution Cell size (in meters) for all Voxel grids used by
@@ -86,13 +84,12 @@ voxelized_geometry_tools::CollisionMap BuildCollisionMap(
 /// parent body name is not unique, or if the frame name does not match an
 /// existing MbP body (e.g. the name is a TF-compatible name incompatible with
 /// GetBodyByName).
-voxelized_geometry_tools::TaggedObjectCollisionMap
-BuildTaggedObjectCollisionMap(
+VoxelTaggedObjectCollisionMap BuildTaggedObjectCollisionMap(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& plant_context,
     const std::unordered_set<geometry::GeometryId>& geometries_to_ignore,
-    const std::string& parent_body_name, const Eigen::Isometry3d& X_BG,
-    const Eigen::Vector3d& grid_size, const double grid_resolution,
+    const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+    const Eigen::Vector3d& grid_dimensions, const double grid_resolution,
     const std::optional<multibody::BodyIndex>& override_parent_body_index = {},
     Parallelism parallelism = Parallelism::Max());
 
@@ -111,7 +108,7 @@ void FillCollisionMap(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& plant_context,
     const std::unordered_set<geometry::GeometryId>& geometries_to_ignore,
-    voxelized_geometry_tools::CollisionMap* collision_map,
+    VoxelCollisionMap* collision_map,
     const std::optional<multibody::BodyIndex>& override_parent_body_index = {},
     Parallelism parallelism = Parallelism::Max());
 
@@ -133,7 +130,7 @@ void FillTaggedObjectCollisionMap(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& plant_context,
     const std::unordered_set<geometry::GeometryId>& geometries_to_ignore,
-    voxelized_geometry_tools::TaggedObjectCollisionMap* collision_map,
+    VoxelTaggedObjectCollisionMap* collision_map,
     const std::optional<multibody::BodyIndex>& override_parent_body_index = {},
     Parallelism parallelism = Parallelism::Max());
 

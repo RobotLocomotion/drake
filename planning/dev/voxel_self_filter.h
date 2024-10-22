@@ -3,12 +3,12 @@
 #include <optional>
 
 #include <Eigen/Geometry>
-#include <voxelized_geometry_tools/collision_map.hpp>
-#include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
 
 #include "drake/common/parallelism.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/dev/sphere_robot_model_collision_checker.h"
+#include "drake/planning/dev/voxel_collision_map.h"
+#include "drake/planning/dev/voxel_tagged_object_collision_map.h"
 
 namespace drake {
 namespace planning {
@@ -28,8 +28,7 @@ namespace planning {
 void SelfFilter(const SphereRobotModelCollisionChecker& collision_checker,
                 const Eigen::VectorXd& q, double padding,
                 multibody::BodyIndex grid_body_index,
-                voxelized_geometry_tools::CollisionMap* const collision_map,
-                Parallelism parallelism,
+                VoxelCollisionMap* collision_map, Parallelism parallelism,
                 std::optional<int> context_number = std::nullopt);
 
 /// Self-filter implementation for TaggedObjectCollisionMap environments.
@@ -48,8 +47,8 @@ void SelfFilter(
     const SphereRobotModelCollisionChecker& collision_checker,
     const Eigen::VectorXd& q, double padding,
     multibody::BodyIndex grid_body_index,
-    voxelized_geometry_tools::TaggedObjectCollisionMap* const collision_map,
-    Parallelism parallelism, std::optional<int> context_number = std::nullopt);
+    VoxelTaggedObjectCollisionMap* collision_map, Parallelism parallelism,
+    std::optional<int> context_number = std::nullopt);
 
 }  // namespace planning
 }  // namespace drake

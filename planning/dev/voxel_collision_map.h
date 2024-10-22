@@ -3,7 +3,10 @@
 #include <memory>
 #include <string>
 
+#include <Eigen/Geometry>
+
 #include "drake/common/drake_assert.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/planning/dev/voxel_signed_distance_field.h"
 
 namespace drake {
@@ -12,6 +15,16 @@ namespace planning {
 class VoxelCollisionMap {
  public:
   VoxelCollisionMap();
+
+  VoxelCollisionMap(
+      const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+      const Eigen::Vector3d& grid_dimensions, double cell_size,
+      float default_occupancy);
+
+  VoxelCollisionMap(
+      const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+      const Eigen::Matrix<int64_t, 3, 1>& grid_sizes, double cell_size,
+      float default_occupancy);
 
   /// VoxelCollisionMap provides copy, move, and assignment.
   VoxelCollisionMap(const VoxelCollisionMap& other);
@@ -24,6 +37,8 @@ class VoxelCollisionMap {
   VoxelSignedDistanceField ExportSignedDistanceField(
       const VoxelSignedDistanceField::GenerationParameters& parameters = {})
       const;
+
+  const std::string& parent_body_name() const;
 
   bool is_empty() const;
 

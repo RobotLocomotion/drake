@@ -11,7 +11,9 @@
 namespace drake {
 namespace planning {
 
+using common_robotics_utilities::voxel_grid::GridSizes;
 using voxelized_geometry_tools::SignedDistanceField;
+using voxelized_geometry_tools::TaggedObjectCollisionCell;
 using voxelized_geometry_tools::TaggedObjectCollisionMap;
 
 namespace {
@@ -29,6 +31,34 @@ std::shared_ptr<void> CopyInternalRepresentation(
 
 VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap() {
   InitializeEmpty();
+}
+
+VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
+    const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+    const Eigen::Vector3d& grid_dimensions, const double cell_size,
+    const float default_occupancy, const uint32_t default_object_id) {
+  const GridSizes cru_sizes(
+      cell_size, grid_dimensions.x(), grid_dimensions.y(), grid_dimensions.z());
+  const TaggedObjectCollisionCell default_cell(
+      default_occupancy, default_object_id);
+  auto internal_collision_map = std::make_shared<TaggedObjectCollisionMap>(
+      X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
+  internal_representation_ = std::shared_ptr<void>(
+      internal_collision_map, internal_collision_map.get());
+}
+
+VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
+    const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+    const Eigen::Matrix<int64_t, 3, 1>& grid_sizes, const double cell_size,
+    const float default_occupancy, const uint32_t default_object_id) {
+  const GridSizes cru_sizes(
+      cell_size, grid_sizes.x(), grid_sizes.y(), grid_sizes.z());
+  const TaggedObjectCollisionCell default_cell(
+      default_occupancy, default_object_id);
+  auto internal_collision_map = std::make_shared<TaggedObjectCollisionMap>(
+      X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
+  internal_representation_ = std::shared_ptr<void>(
+      internal_collision_map, internal_collision_map.get());
 }
 
 VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
@@ -74,6 +104,12 @@ VoxelTaggedObjectCollisionMap::ExportSignedDistanceField(
       std::shared_ptr<void>(internal_sdf, internal_sdf.get());
 
   return VoxelSignedDistanceField(internal_sdf_representation);
+}
+
+const std::string& VoxelTaggedObjectCollisionMap::parent_body_name() const {
+  const auto& internal_collision_map =
+      internal::GetInternalTaggedObjectCollisionMap(*this);
+  return internal_collision_map.GetFrame();
 }
 
 bool VoxelTaggedObjectCollisionMap::is_empty() const {

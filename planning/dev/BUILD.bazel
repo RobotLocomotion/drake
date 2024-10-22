@@ -47,6 +47,7 @@ drake_cc_library(
     deps = [
         ":voxel_signed_distance_field",
         "//common:essential",
+        "//math:geometric_transform",
     ],
     implementation_deps = [
         "@common_robotics_utilities",
@@ -108,6 +109,7 @@ drake_cc_library(
     deps = [
         ":voxel_signed_distance_field",
         "//common:essential",
+        "//math:geometric_transform",
     ],
     implementation_deps = [
         "@common_robotics_utilities",

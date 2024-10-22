@@ -8,13 +8,14 @@
 #include <vector>
 
 #include <Eigen/Geometry>
-#include <common_robotics_utilities/print.hpp>
 #include <voxelized_geometry_tools/collision_map.hpp>
 #include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/dev/voxelized_environment_builder_internal.h"
+#include "drake/planning/dev/voxel_collision_map_internal.h"
+#include "drake/planning/dev/voxel_tagged_object_collision_map_internal.h"
 
 namespace drake {
 namespace planning {
@@ -25,9 +26,7 @@ using multibody::MultibodyPlant;
 using systems::Context;
 
 using voxelized_geometry_tools::CollisionCell;
-using voxelized_geometry_tools::CollisionMap;
 using voxelized_geometry_tools::TaggedObjectCollisionCell;
-using voxelized_geometry_tools::TaggedObjectCollisionMap;
 
 namespace {
 
@@ -64,34 +63,29 @@ TaggedObjectCollisionCell TaggedObjectCollisionCellFill(
 
 }  // namespace
 
-CollisionMap BuildCollisionMap(
+VoxelCollisionMap BuildCollisionMap(
     const MultibodyPlant<double>& plant, const Context<double>& plant_context,
     const std::unordered_set<GeometryId>& geometries_to_ignore,
-    const std::string& parent_body_name, const Eigen::Isometry3d& X_BG,
-    const Eigen::Vector3d& grid_size, const double grid_resolution,
+    const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+    const Eigen::Vector3d& grid_dimensions, const double grid_resolution,
     const std::optional<BodyIndex>& override_parent_body_index,
     const Parallelism parallelism) {
-  const common_robotics_utilities::voxel_grid::GridSizes grid_sizes(
-      grid_resolution, grid_size.x(), grid_size.y(), grid_size.z());
-  const CollisionCell empty_cell(0.0f);
-  CollisionMap collision_map(X_BG, parent_body_name, grid_sizes, empty_cell);
+  VoxelCollisionMap collision_map(
+      parent_body_name, X_PG, grid_dimensions, grid_resolution, 0.0f);
   FillCollisionMap(plant, plant_context, geometries_to_ignore, &collision_map,
                    override_parent_body_index, parallelism);
   return collision_map;
 }
 
-TaggedObjectCollisionMap BuildTaggedObjectCollisionMap(
+VoxelTaggedObjectCollisionMap BuildTaggedObjectCollisionMap(
     const MultibodyPlant<double>& plant, const Context<double>& plant_context,
     const std::unordered_set<GeometryId>& geometries_to_ignore,
-    const std::string& parent_body_name, const Eigen::Isometry3d& X_BG,
-    const Eigen::Vector3d& grid_size, const double grid_resolution,
+    const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+    const Eigen::Vector3d& grid_dimensions, const double grid_resolution,
     const std::optional<BodyIndex>& override_parent_body_index,
     const Parallelism parallelism) {
-  const common_robotics_utilities::voxel_grid::GridSizes grid_sizes(
-      grid_resolution, grid_size.x(), grid_size.y(), grid_size.z());
-  const TaggedObjectCollisionCell empty_cell;
-  TaggedObjectCollisionMap collision_map(X_BG, parent_body_name, grid_sizes,
-                                         empty_cell);
+  VoxelTaggedObjectCollisionMap collision_map(
+      parent_body_name, X_PG, grid_dimensions, grid_resolution, 0.0f, 0u);
   FillTaggedObjectCollisionMap(plant, plant_context, geometries_to_ignore,
                                &collision_map, override_parent_body_index,
                                parallelism);
@@ -101,33 +95,37 @@ TaggedObjectCollisionMap BuildTaggedObjectCollisionMap(
 void FillCollisionMap(
     const MultibodyPlant<double>& plant, const Context<double>& plant_context,
     const std::unordered_set<GeometryId>& geometries_to_ignore,
-    CollisionMap* collision_map,
+    VoxelCollisionMap* collision_map,
     const std::optional<BodyIndex>& override_parent_body_index,
     const Parallelism parallelism) {
   DRAKE_THROW_UNLESS(collision_map != nullptr);
+  auto& internal_collision_map =
+      internal::GetMutableInternalCollisionMap(*collision_map);
 
   const auto parent_body_index = override_parent_body_index.value_or(
-      plant.GetBodyByName(collision_map->GetFrame()).index());
+      plant.GetBodyByName(collision_map->parent_body_name()).index());
 
   internal::FillVoxelGrid<CollisionCell>(
       plant, plant_context, geometries_to_ignore, CollisionCellFill,
-      parent_body_index, parallelism, collision_map);
+      parent_body_index, parallelism, &internal_collision_map);
 }
 
 void FillTaggedObjectCollisionMap(
     const MultibodyPlant<double>& plant, const Context<double>& plant_context,
     const std::unordered_set<GeometryId>& geometries_to_ignore,
-    TaggedObjectCollisionMap* collision_map,
+    VoxelTaggedObjectCollisionMap* collision_map,
     const std::optional<BodyIndex>& override_parent_body_index,
     const Parallelism parallelism) {
   DRAKE_THROW_UNLESS(collision_map != nullptr);
+  auto& internal_collision_map =
+      internal::GetMutableInternalTaggedObjectCollisionMap(*collision_map);
 
   const auto parent_body_index = override_parent_body_index.value_or(
-      plant.GetBodyByName(collision_map->GetFrame()).index());
+      plant.GetBodyByName(collision_map->parent_body_name()).index());
 
   internal::FillVoxelGrid<TaggedObjectCollisionCell>(
       plant, plant_context, geometries_to_ignore, TaggedObjectCollisionCellFill,
-      parent_body_index, parallelism, collision_map);
+      parent_body_index, parallelism, &internal_collision_map);
 }
 
 }  // namespace planning

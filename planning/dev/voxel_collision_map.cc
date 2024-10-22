@@ -11,6 +11,8 @@
 namespace drake {
 namespace planning {
 
+using common_robotics_utilities::voxel_grid::GridSizes;
+using voxelized_geometry_tools::CollisionCell;
 using voxelized_geometry_tools::CollisionMap;
 using voxelized_geometry_tools::SignedDistanceField;
 
@@ -28,6 +30,32 @@ std::shared_ptr<void> CopyInternalRepresentation(
 
 VoxelCollisionMap::VoxelCollisionMap() {
   InitializeEmpty();
+}
+
+VoxelCollisionMap::VoxelCollisionMap(
+    const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+    const Eigen::Vector3d& grid_dimensions, const double cell_size,
+    const float default_occupancy) {
+  const GridSizes cru_sizes(
+      cell_size, grid_dimensions.x(), grid_dimensions.y(), grid_dimensions.z());
+  const CollisionCell default_cell(default_occupancy);
+  auto internal_collision_map = std::make_shared<CollisionMap>(
+      X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
+  internal_representation_ = std::shared_ptr<void>(
+      internal_collision_map, internal_collision_map.get());
+}
+
+VoxelCollisionMap::VoxelCollisionMap(
+    const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+    const Eigen::Matrix<int64_t, 3, 1>& grid_sizes, const double cell_size,
+    const float default_occupancy) {
+  const GridSizes cru_sizes(
+      cell_size, grid_sizes.x(), grid_sizes.y(), grid_sizes.z());
+  const CollisionCell default_cell(default_occupancy);
+  auto internal_collision_map = std::make_shared<CollisionMap>(
+      X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
+  internal_representation_ = std::shared_ptr<void>(
+      internal_collision_map, internal_collision_map.get());
 }
 
 VoxelCollisionMap::VoxelCollisionMap(const VoxelCollisionMap& other) {
@@ -67,6 +95,11 @@ VoxelSignedDistanceField VoxelCollisionMap::ExportSignedDistanceField(
       std::shared_ptr<void>(internal_sdf, internal_sdf.get());
 
   return VoxelSignedDistanceField(internal_sdf_representation);
+}
+
+const std::string& VoxelCollisionMap::parent_body_name() const {
+  const auto& internal_collision_map = internal::GetInternalCollisionMap(*this);
+  return internal_collision_map.GetFrame();
 }
 
 bool VoxelCollisionMap::is_empty() const {

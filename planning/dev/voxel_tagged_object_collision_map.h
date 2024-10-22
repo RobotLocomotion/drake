@@ -5,7 +5,10 @@
 #include <string>
 #include <vector>
 
+#include <Eigen/Geometry>
+
 #include "drake/common/drake_assert.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/planning/dev/voxel_signed_distance_field.h"
 
 namespace drake {
@@ -14,6 +17,16 @@ namespace planning {
 class VoxelTaggedObjectCollisionMap {
  public:
   VoxelTaggedObjectCollisionMap();
+
+  VoxelTaggedObjectCollisionMap(
+      const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+      const Eigen::Vector3d& grid_dimensions, double cell_size,
+      float default_occupancy, uint32_t default_object_id);
+
+  VoxelTaggedObjectCollisionMap(
+      const std::string& parent_body_name, const math::RigidTransformd& X_PG,
+      const Eigen::Matrix<int64_t, 3, 1>& grid_sizes, double cell_size,
+      float default_occupancy, uint32_t default_object_id);
 
   /// VoxelTaggedObjectCollisionMap provides copy, move, and assignment.
   VoxelTaggedObjectCollisionMap(const VoxelTaggedObjectCollisionMap& other);
@@ -30,6 +43,8 @@ class VoxelTaggedObjectCollisionMap {
       const std::vector<uint32_t>& objects_to_include = {},
       const VoxelSignedDistanceField::GenerationParameters& parameters = {})
       const;
+
+  const std::string& parent_body_name() const;
 
   bool is_empty() const;
 
