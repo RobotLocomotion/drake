@@ -1,5 +1,8 @@
 [Clarabel.cpp] Enable the SDP feature by default
 
+Reasoning for not upstreaming this patch: changing an option, which is
+our prerogative but not relevant for upstream.
+
 --- rust_wrapper/Cargo.toml
 +++ rust_wrapper/Cargo.toml
 @@ -14,6 +14,7 @@ opt-level = 3

@@ -1,5 +1,7 @@
 Add option to specify a filename to parse for CSDP parameters.
 
+Reasoning for not upstreaming this patch: upstream is dead.
+
 --- include/declarations.h	2017-07-25 11:44:57.000000000 -0700
 +++ include/declarations.h	2021-06-30 16:17:10.855119121 -0700
 @@ -132,7 +132,7 @@

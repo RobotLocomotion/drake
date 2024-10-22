@@ -1,7 +1,8 @@
 [openusd_internal] Opt-out of GNU libstdc++ extensions
 
 They are deprecated old smelly stuff that spews compiler warnings.
-This opt-out is a Drake choice, do we don't plan to upstream this patch.
+
+Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- pxr/base/arch/defines.h
 +++ pxr/base/arch/defines.h

@@ -1,5 +1,8 @@
 If a memory manager is installed then shows allocs in the summary table.
 
+Reasoning for not upstreaming this patch: don't want to spend the time
+reworking the patch and tests to be suitable.
+
 --- src/console_reporter.cc
 +++ src/console_reporter.cc
 @@ -53,9 +53,11 @@ bool ConsoleReporter::ReportContext(const Context& context) {

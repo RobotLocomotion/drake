@@ -6,6 +6,8 @@ flags it as a violation (non-Drake public symbol in a shared library).
 
 Moving the function to the cc file works around the problem.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- hwy/targets.h
 +++ hwy/targets.h
 @@ -300,11 +300,7 @@

@@ -1,5 +1,7 @@
 [openusd_internal] Hide symbols from GNU flex output
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 index 7e7234d21..e923daff2 100644
 --- pxr/usd/sdf/textFileFormat.lex.cpp
 +++ pxr/usd/sdf/textFileFormat.lex.cpp

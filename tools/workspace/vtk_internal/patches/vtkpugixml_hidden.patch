@@ -1,6 +1,6 @@
 [vtk] Use a custom hidden inline namespace for vtkpugixml
 
-This situation is unique to Drake, so we won't to upstream this patch.
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
 
 --- ThirdParty/pugixml/vtkpugixml/src/pugixml.hpp
 +++ ThirdParty/pugixml/vtkpugixml/src/pugixml.hpp

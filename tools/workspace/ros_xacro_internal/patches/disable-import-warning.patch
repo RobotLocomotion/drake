@@ -1,5 +1,7 @@
 Disable an 'import rosgraph' console warning.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- xacro/cli.py
 +++ xacro/cli.py
 @@ -97,7 +97,7 @@
