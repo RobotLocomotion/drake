@@ -15,6 +15,7 @@ using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
 using internal::RgbdSensorParameters;
 using math::RigidTransformd;
 
@@ -102,6 +103,7 @@ void RgbdSensor::set_default_color_render_camera(
 
 const ColorRenderCamera& RgbdSensor::GetColorRenderCamera(
     const Context<double>& context) const {
+  this->ValidateContext(context);
   return context.get_abstract_parameter(parameter_index_)
       .get_value<RgbdSensorParameters>()
       .color_camera;
@@ -109,6 +111,7 @@ const ColorRenderCamera& RgbdSensor::GetColorRenderCamera(
 
 void RgbdSensor::SetColorRenderCamera(
     Context<double>* context, const ColorRenderCamera& color_camera) const {
+  this->ValidateContext(context);
   context->get_mutable_abstract_parameter(parameter_index_)
       .template get_mutable_value<RgbdSensorParameters>()
       .color_camera = color_camera;
@@ -126,6 +129,7 @@ void RgbdSensor::set_default_depth_render_camera(
 
 const DepthRenderCamera& RgbdSensor::GetDepthRenderCamera(
     const Context<double>& context) const {
+  this->ValidateContext(context);
   return context.get_abstract_parameter(parameter_index_)
       .get_value<RgbdSensorParameters>()
       .depth_camera;
@@ -133,6 +137,7 @@ const DepthRenderCamera& RgbdSensor::GetDepthRenderCamera(
 
 void RgbdSensor::SetDepthRenderCamera(
     Context<double>* context, const DepthRenderCamera& depth_camera) const {
+  this->ValidateContext(context);
   SanityCheckDepthCamera(depth_camera);
   context->get_mutable_abstract_parameter(parameter_index_)
       .template get_mutable_value<RgbdSensorParameters>()
@@ -149,6 +154,7 @@ void RgbdSensor::set_default_X_PB(const RigidTransformd& sensor_pose) {
 
 const RigidTransformd& RgbdSensor::GetX_PB(
     const Context<double>& context) const {
+  this->ValidateContext(context);
   return context.get_abstract_parameter(parameter_index_)
       .get_value<RgbdSensorParameters>()
       .X_PB;
@@ -156,6 +162,7 @@ const RigidTransformd& RgbdSensor::GetX_PB(
 
 void RgbdSensor::SetX_PB(Context<double>* context,
                          const RigidTransformd& sensor_pose) const {
+  this->ValidateContext(context);
   context->get_mutable_abstract_parameter(parameter_index_)
       .template get_mutable_value<RgbdSensorParameters>()
       .X_PB = sensor_pose;
@@ -170,12 +177,14 @@ void RgbdSensor::set_default_parent_frame_id(FrameId id) {
 }
 
 FrameId RgbdSensor::GetParentFrameId(const Context<double>& context) const {
+  this->ValidateContext(context);
   return context.get_abstract_parameter(parameter_index_)
       .get_value<RgbdSensorParameters>()
       .parent_frame_id;
 }
 
 void RgbdSensor::SetParentFrameId(Context<double>* context, FrameId id) const {
+  this->ValidateContext(context);
   context->get_mutable_abstract_parameter(parameter_index_)
       .template get_mutable_value<RgbdSensorParameters>()
       .parent_frame_id = id;
@@ -241,35 +250,54 @@ FrameId RgbdSensor::parent_frame_id() const {
   return default_parent_frame_id();
 }
 
+namespace {
+// If the size of `image` already matches `camera`, then does nothing.
+// Otherwise, resizes the `image` to match `camera`.
+template <typename SomeImage>
+void Resize(const RenderCameraCore& camera, SomeImage* image) {
+  const int width = camera.intrinsics().width();
+  const int height = camera.intrinsics().height();
+  if (image->width() == width && image->height() == height) {
+    return;
+  }
+  image->resize(width, height);
+}
+}  // namespace
+
 void RgbdSensor::CalcColorImage(const Context<double>& context,
                                 ImageRgba8U* color_image) const {
+  const ColorRenderCamera& camera = GetColorRenderCamera(context);
+  Resize(camera.core(), color_image);
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderColorImage(GetColorRenderCamera(context),
-                                GetParentFrameId(context), GetX_PB(context),
-                                color_image);
+  query_object.RenderColorImage(camera, GetParentFrameId(context),
+                                GetX_PB(context), color_image);
 }
 
 void RgbdSensor::CalcDepthImage32F(const Context<double>& context,
                                    ImageDepth32F* depth_image) const {
+  const DepthRenderCamera& camera = GetDepthRenderCamera(context);
+  Resize(camera.core(), depth_image);
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderDepthImage(GetDepthRenderCamera(context),
-                                GetParentFrameId(context), GetX_PB(context),
-                                depth_image);
+  query_object.RenderDepthImage(camera, GetParentFrameId(context),
+                                GetX_PB(context), depth_image);
 }
 
 void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
                                    ImageDepth16U* depth_image) const {
-  ImageDepth32F depth32(depth_image->width(), depth_image->height());
+  const DepthRenderCamera& camera = GetDepthRenderCamera(context);
+  ImageDepth32F depth32(camera.core().intrinsics().width(),
+                        camera.core().intrinsics().height());
   CalcDepthImage32F(context, &depth32);
   ConvertDepth32FTo16U(depth32, depth_image);
 }
 
 void RgbdSensor::CalcLabelImage(const Context<double>& context,
                                 ImageLabel16I* label_image) const {
+  const ColorRenderCamera& camera = GetColorRenderCamera(context);
+  Resize(camera.core(), label_image);
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderLabelImage(GetColorRenderCamera(context),
-                                GetParentFrameId(context), GetX_PB(context),
-                                label_image);
+  query_object.RenderLabelImage(camera, GetParentFrameId(context),
+                                GetX_PB(context), label_image);
 }
 
 void RgbdSensor::CalcX_WB(const Context<double>& context,
