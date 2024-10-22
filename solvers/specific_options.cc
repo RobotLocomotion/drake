@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <fmt/ranges.h>
+
 #include "drake/common/overloaded.h"
 
 namespace drake {
