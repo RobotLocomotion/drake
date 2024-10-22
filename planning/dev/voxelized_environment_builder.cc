@@ -13,9 +13,9 @@
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/planning/dev/voxelized_environment_builder_internal.h"
 #include "drake/planning/dev/voxel_collision_map_internal.h"
 #include "drake/planning/dev/voxel_tagged_object_collision_map_internal.h"
+#include "drake/planning/dev/voxelized_environment_builder_internal.h"
 
 namespace drake {
 namespace planning {
@@ -70,8 +70,8 @@ VoxelCollisionMap BuildCollisionMap(
     const Eigen::Vector3d& grid_dimensions, const double grid_resolution,
     const std::optional<BodyIndex>& override_parent_body_index,
     const Parallelism parallelism) {
-  VoxelCollisionMap collision_map(
-      parent_body_name, X_PG, grid_dimensions, grid_resolution, 0.0f);
+  VoxelCollisionMap collision_map(parent_body_name, X_PG, grid_dimensions,
+                                  grid_resolution, 0.0f);
   FillCollisionMap(plant, plant_context, geometries_to_ignore, &collision_map,
                    override_parent_body_index, parallelism);
   return collision_map;

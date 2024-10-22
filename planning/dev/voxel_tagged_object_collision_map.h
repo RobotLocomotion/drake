@@ -18,15 +18,17 @@ class VoxelTaggedObjectCollisionMap {
  public:
   VoxelTaggedObjectCollisionMap();
 
-  VoxelTaggedObjectCollisionMap(
-      const std::string& parent_body_name, const math::RigidTransformd& X_PG,
-      const Eigen::Vector3d& grid_dimensions, double cell_size,
-      float default_occupancy, uint32_t default_object_id);
+  VoxelTaggedObjectCollisionMap(const std::string& parent_body_name,
+                                const math::RigidTransformd& X_PG,
+                                const Eigen::Vector3d& grid_dimensions,
+                                double cell_size, float default_occupancy,
+                                uint32_t default_object_id);
 
-  VoxelTaggedObjectCollisionMap(
-      const std::string& parent_body_name, const math::RigidTransformd& X_PG,
-      const Eigen::Matrix<int64_t, 3, 1>& grid_sizes, double cell_size,
-      float default_occupancy, uint32_t default_object_id);
+  VoxelTaggedObjectCollisionMap(const std::string& parent_body_name,
+                                const math::RigidTransformd& X_PG,
+                                const Eigen::Matrix<int64_t, 3, 1>& grid_sizes,
+                                double cell_size, float default_occupancy,
+                                uint32_t default_object_id);
 
   /// VoxelTaggedObjectCollisionMap provides copy, move, and assignment.
   VoxelTaggedObjectCollisionMap(const VoxelTaggedObjectCollisionMap& other);

@@ -43,10 +43,10 @@ class VoxelizedEnvironmentCollisionChecker final
   /// override the environment frame name -> body lookup. Use this if the frame
   /// name is not unique, or if the frame name does not match an existing MbP
   /// body.
-  void UpdateEnvironment(
-      const std::string& environment_name, const VoxelCollisionMap& environment,
-      const std::optional<multibody::BodyIndex>&
-          override_environment_body_index = {});
+  void UpdateEnvironment(const std::string& environment_name,
+                         const VoxelCollisionMap& environment,
+                         const std::optional<multibody::BodyIndex>&
+                             override_environment_body_index = {});
 
   /// Update the voxelized environment.
   /// @param environment_name Name of the environment model to update. If the
@@ -58,11 +58,10 @@ class VoxelizedEnvironmentCollisionChecker final
   /// override the environment frame name -> body lookup. Use this if the frame
   /// name is not unique, or if the frame name does not match an existing MbP
   /// body.
-  void UpdateEnvironment(
-      const std::string& environment_name,
-      const VoxelTaggedObjectCollisionMap& environment,
-      const std::optional<multibody::BodyIndex>&
-          override_environment_body_index = {});
+  void UpdateEnvironment(const std::string& environment_name,
+                         const VoxelTaggedObjectCollisionMap& environment,
+                         const std::optional<multibody::BodyIndex>&
+                             override_environment_body_index = {});
 
   /// Update the voxelized environment.
   /// @param environment_name Name of the environment model to update. If the

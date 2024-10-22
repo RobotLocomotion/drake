@@ -44,7 +44,8 @@ class VoxelSignedDistanceField {
   friend class VoxelTaggedObjectCollisionMap;
 
   // Construct from an existing internal representation, used only by friends.
-  VoxelSignedDistanceField(std::shared_ptr<void> internal_representation);
+  explicit VoxelSignedDistanceField(
+      std::shared_ptr<void> internal_representation);
 
   std::shared_ptr<void> internal_representation_;
 };

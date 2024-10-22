@@ -13,6 +13,7 @@ const CollisionMap& GetInternalCollisionMap(
       collision_map.internal_representation());
 }
 
+// NOLINTNEXTLINE(runtime/references)
 CollisionMap& GetMutableInternalCollisionMap(VoxelCollisionMap& collision_map) {
   return *reinterpret_cast<CollisionMap*>(
       collision_map.mutable_internal_representation());

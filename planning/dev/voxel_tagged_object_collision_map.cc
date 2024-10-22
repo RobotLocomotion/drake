@@ -23,8 +23,8 @@ std::shared_ptr<void> CopyInternalRepresentation(
   auto copied_internal_collision_map =
       std::make_shared<TaggedObjectCollisionMap>(
           internal::GetInternalTaggedObjectCollisionMap(collision_map));
-  return std::shared_ptr<void>(
-      copied_internal_collision_map, copied_internal_collision_map.get());
+  return std::shared_ptr<void>(copied_internal_collision_map,
+                               copied_internal_collision_map.get());
 }
 
 }  // namespace
@@ -37,10 +37,10 @@ VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
     const Eigen::Vector3d& grid_dimensions, const double cell_size,
     const float default_occupancy, const uint32_t default_object_id) {
-  const GridSizes cru_sizes(
-      cell_size, grid_dimensions.x(), grid_dimensions.y(), grid_dimensions.z());
-  const TaggedObjectCollisionCell default_cell(
-      default_occupancy, default_object_id);
+  const GridSizes cru_sizes(cell_size, grid_dimensions.x(), grid_dimensions.y(),
+                            grid_dimensions.z());
+  const TaggedObjectCollisionCell default_cell(default_occupancy,
+                                               default_object_id);
   auto internal_collision_map = std::make_shared<TaggedObjectCollisionMap>(
       X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
   internal_representation_ = std::shared_ptr<void>(
@@ -51,10 +51,10 @@ VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
     const Eigen::Matrix<int64_t, 3, 1>& grid_sizes, const double cell_size,
     const float default_occupancy, const uint32_t default_object_id) {
-  const GridSizes cru_sizes(
-      cell_size, grid_sizes.x(), grid_sizes.y(), grid_sizes.z());
-  const TaggedObjectCollisionCell default_cell(
-      default_occupancy, default_object_id);
+  const GridSizes cru_sizes(cell_size, grid_sizes.x(), grid_sizes.y(),
+                            grid_sizes.z());
+  const TaggedObjectCollisionCell default_cell(default_occupancy,
+                                               default_object_id);
   auto internal_collision_map = std::make_shared<TaggedObjectCollisionMap>(
       X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
   internal_representation_ = std::shared_ptr<void>(

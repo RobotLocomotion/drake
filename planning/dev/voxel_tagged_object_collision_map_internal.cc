@@ -15,6 +15,7 @@ const TaggedObjectCollisionMap& GetInternalTaggedObjectCollisionMap(
 }
 
 TaggedObjectCollisionMap& GetMutableInternalTaggedObjectCollisionMap(
+    // NOLINTNEXTLINE(runtime/references)
     VoxelTaggedObjectCollisionMap& collision_map) {
   return *reinterpret_cast<TaggedObjectCollisionMap*>(
       collision_map.mutable_internal_representation());

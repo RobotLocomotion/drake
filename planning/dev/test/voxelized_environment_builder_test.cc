@@ -8,11 +8,10 @@
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
-#include <voxelized_geometry_tools/collision_map.hpp>
-#include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
 
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/planning/dev/voxel_grid_internal.h"
 #include "drake/planning/test/planning_test_helpers.h"
 
 namespace drake {
@@ -44,50 +43,63 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   auto context = model->CreateDefaultContext();
   // Get the plant context
   auto& plant_context = model->mutable_plant_context(context.get());
-  // Origin of grid at world origin
-  const Eigen::Isometry3d X_WG = Eigen::Isometry3d::Identity();
-  const Eigen::Quaterniond R_WG(X_WG.rotation());
-  // Grid 1m in each axis
-  const Eigen::Vector3d grid_size(1.0, 1.0, 1.0);
+
+  // Make a voxelized copy of the environment.
+  // Origin of grid at world origin.
+  const math::RigidTransformd X_WG(Eigen::Vector3d(0.0, 0.0, 0.0));
+  // Grid 1m in each axis.
+  const Eigen::Vector3d grid_dimensions(1.0, 1.0, 1.0);
   // 1/8 meter resolution, so 8 cells/axis
-  const double grid_resolution = 0.125;
+  constexpr double grid_resolution = 0.125;
   // Frame name
   const std::string world_frame_name = "world";
+
   // Build both types of grids
-  const voxelized_geometry_tools::CollisionMap cmap =
-      BuildCollisionMap(model->plant(), plant_context,
-                        std::unordered_set<drake::geometry::GeometryId>(),
-                        world_frame_name, X_WG, grid_size, grid_resolution);
-  ASSERT_TRUE(cmap.IsInitialized());
-  ASSERT_EQ(cmap.GetNumXCells(), 8);
-  ASSERT_EQ(cmap.GetNumYCells(), 8);
-  ASSERT_EQ(cmap.GetNumZCells(), 8);
-  const voxelized_geometry_tools::TaggedObjectCollisionMap tocmap =
-      BuildTaggedObjectCollisionMap(
-          model->plant(), plant_context,
-          std::unordered_set<drake::geometry::GeometryId>(), world_frame_name,
-          X_WG, grid_size, grid_resolution);
-  ASSERT_TRUE(tocmap.IsInitialized());
-  ASSERT_EQ(tocmap.GetNumXCells(), 8);
-  ASSERT_EQ(tocmap.GetNumYCells(), 8);
-  ASSERT_EQ(tocmap.GetNumZCells(), 8);
+  const VoxelCollisionMap cmap = BuildCollisionMap(
+      model->plant(), plant_context,
+      std::unordered_set<drake::geometry::GeometryId>(), world_frame_name, X_WG,
+      grid_dimensions, grid_resolution);
+  ASSERT_FALSE(cmap.is_empty());
+  const auto& internal_cmap = internal::GetInternalCollisionMap(cmap);
+  ASSERT_TRUE(internal_cmap.IsInitialized());
+  ASSERT_EQ(internal_cmap.GetNumXCells(), 8);
+  ASSERT_EQ(internal_cmap.GetNumYCells(), 8);
+  ASSERT_EQ(internal_cmap.GetNumZCells(), 8);
+
+  const VoxelTaggedObjectCollisionMap tocmap = BuildTaggedObjectCollisionMap(
+      model->plant(), plant_context,
+      std::unordered_set<drake::geometry::GeometryId>(), world_frame_name, X_WG,
+      grid_dimensions, grid_resolution);
+  ASSERT_FALSE(tocmap.is_empty());
+  const auto& internal_tocmap =
+      internal::GetInternalTaggedObjectCollisionMap(tocmap);
+  ASSERT_TRUE(internal_tocmap.IsInitialized());
+  ASSERT_EQ(internal_tocmap.GetNumXCells(), 8);
+  ASSERT_EQ(internal_tocmap.GetNumYCells(), 8);
+  ASSERT_EQ(internal_tocmap.GetNumZCells(), 8);
+
   // Export to signed distance field, using default options for SDF generation.
-  const SignedDistanceFieldGenerationParameters<float> sdf_gen_parameters;
-  const auto sdf = cmap.ExtractSignedDistanceFieldFloat(sdf_gen_parameters);
-  ASSERT_TRUE(sdf.IsInitialized());
-  ASSERT_EQ(sdf.GetNumXCells(), 8);
-  ASSERT_EQ(sdf.GetNumYCells(), 8);
-  ASSERT_EQ(sdf.GetNumZCells(), 8);
+  const VoxelSignedDistanceField::GenerationParameters sdf_gen_parameters;
+  const auto sdf = cmap.ExportSignedDistanceField(sdf_gen_parameters);
+  ASSERT_FALSE(sdf.is_empty());
+  const auto& internal_sdf = internal::GetInternalSignedDistanceField(sdf);
+  ASSERT_TRUE(internal_sdf.IsInitialized());
+  ASSERT_EQ(internal_sdf.GetNumXCells(), 8);
+  ASSERT_EQ(internal_sdf.GetNumYCells(), 8);
+  ASSERT_EQ(internal_sdf.GetNumZCells(), 8);
+
   // Make sure the grids are properly filled
-  for (int64_t xidx = 0; xidx < cmap.GetNumXCells(); xidx++) {
-    for (int64_t yidx = 0; yidx < cmap.GetNumYCells(); yidx++) {
-      for (int64_t zidx = 0; zidx < cmap.GetNumZCells(); zidx++) {
+  for (int64_t xidx = 0; xidx < internal_cmap.GetNumXCells(); xidx++) {
+    for (int64_t yidx = 0; yidx < internal_cmap.GetNumYCells(); yidx++) {
+      for (int64_t zidx = 0; zidx < internal_cmap.GetNumZCells(); zidx++) {
         // Check grid querying
-        const auto cmap_query = cmap.GetIndexImmutable(xidx, yidx, zidx);
+        const auto cmap_query =
+            internal_cmap.GetIndexImmutable(xidx, yidx, zidx);
         ASSERT_TRUE(cmap_query);
-        const auto tocmap_query = tocmap.GetIndexImmutable(xidx, yidx, zidx);
+        const auto tocmap_query =
+            internal_tocmap.GetIndexImmutable(xidx, yidx, zidx);
         ASSERT_TRUE(tocmap_query);
-        const auto sdf_query = sdf.GetIndexImmutable(xidx, yidx, zidx);
+        const auto sdf_query = internal_sdf.GetIndexImmutable(xidx, yidx, zidx);
         ASSERT_TRUE(sdf_query);
         // Check grid values
         const float cmap_occupancy = cmap_query.Value().Occupancy();
