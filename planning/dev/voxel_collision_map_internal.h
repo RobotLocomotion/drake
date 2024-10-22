@@ -12,6 +12,7 @@ const voxelized_geometry_tools::CollisionMap& GetInternalCollisionMap(
     const VoxelCollisionMap& collision_map);
 
 voxelized_geometry_tools::CollisionMap& GetMutableInternalCollisionMap(
+    // NOLINTNEXTLINE(runtime/references)
     VoxelCollisionMap& collision_map);
 
 }  // namespace internal

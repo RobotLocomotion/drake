@@ -9,14 +9,12 @@
 
 #include <Eigen/Geometry>
 #include <common_robotics_utilities/math.hpp>
-#include <common_robotics_utilities/print.hpp>
-#include <common_robotics_utilities/voxel_grid.hpp>
 #include <gtest/gtest.h>
-#include <voxelized_geometry_tools/collision_map.hpp>
 
 #include "drake/common/random.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/planning/dev/voxel_grid_internal.h"
 #include "drake/planning/dev/voxelized_environment_collision_checker.h"
 #include "drake/planning/test/planning_test_helpers.h"
 
@@ -86,27 +84,28 @@ GTEST_TEST(VoxelSelfFilterTest, Test) {
 
   // Make a basic environment model
   // Grid centered around origin
-  const Eigen::Isometry3d X_WG(Eigen::Translation3d(-1.0, -1.0, -1.0));
-  // Grid 1m in each axis
-  const double x_size = 2.0;
-  const double y_size = 2.0;
-  const double z_size = 2.0;
+  const math::RigidTransformd X_WG(Eigen::Vector3d(-1.0, -1.0, -1.0));
+  // Grid +/-1m in each axis
+  const Eigen::Vector3d grid_dimensions(2.0, 2.0, 2.0);
   // 1/32 meter resolution, so 64 cells/axis
-  const double resolution = 0.03125;
-  const common_robotics_utilities::voxel_grid::GridSizes grid_size(
-      resolution, x_size, y_size, z_size);
+  constexpr double grid_resolution = 0.03125;
   // Frame name
   const std::string world_frame_name = "world";
-  const voxelized_geometry_tools::CollisionCell empty_cell(0.0f);
-  const voxelized_geometry_tools::CollisionCell filled_cell(1.0f);
-  voxelized_geometry_tools::CollisionMap filled_environment(
-      X_WG, world_frame_name, grid_size, filled_cell);
+
+  constexpr float empty_occupancy = 0.0f;
+  constexpr float filled_occupancy = 1.0f;
+
+  VoxelCollisionMap filled_environment(world_frame_name, X_WG, grid_dimensions,
+                                       grid_resolution, filled_occupancy);
+
   // We set a single cell empty to ensure a valid SDF is computed.
-  ASSERT_EQ(filled_environment.SetLocation(0.0, 0.0, 0.0, empty_cell),
-            common_robotics_utilities::voxel_grid::AccessStatus::SUCCESS);
+  auto& internal_collision_map =
+      internal::GetMutableInternalCollisionMap(filled_environment);
+  internal_collision_map.GetLocationMutable(0.0, 0.0, 0.0).Value().Occupancy() =
+      empty_occupancy;
 
   // Check self-filter at a range of configurations.
-  const double filter_padding = resolution * 0.5;
+  const double filter_padding = grid_resolution * 0.5;
   const int32_t iterations = 100;
   int32_t iteration = 0;
   while (iteration < iterations) {

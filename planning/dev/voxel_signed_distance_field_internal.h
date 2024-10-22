@@ -11,8 +11,8 @@ namespace internal {
 const voxelized_geometry_tools::SignedDistanceField<float>&
 GetInternalSignedDistanceField(const VoxelSignedDistanceField& distance_field);
 
-voxelized_geometry_tools::SignedDistanceFieldGenerationParameters<float>
-ToVGT(const VoxelSignedDistanceField::GenerationParameters& parameters);
+voxelized_geometry_tools::SignedDistanceFieldGenerationParameters<float> ToVGT(
+    const VoxelSignedDistanceField::GenerationParameters& parameters);
 
 }  // namespace internal
 }  // namespace planning

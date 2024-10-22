@@ -1,11 +1,10 @@
 #include "drake/planning/dev/voxelized_environment_collision_checker.h"
 
-#include <common_robotics_utilities/voxel_grid.hpp>
 #include <gtest/gtest.h>
-#include <voxelized_geometry_tools/collision_map.hpp>
 
 #include "drake/planning/dev/sphere_robot_model_collision_checker.h"
 #include "drake/planning/dev/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
+#include "drake/planning/dev/voxel_grid_internal.h"
 #include "drake/planning/dev/voxelized_environment_builder.h"
 #include "drake/planning/test/planning_test_helpers.h"
 #include "drake/planning/test_utilities/collision_checker_abstract_test_suite.h"
@@ -34,37 +33,47 @@ CollisionCheckerTestParams MakeVoxelizedEnvironmentCollisionCheckerParams() {
   result.checker.reset(voxel_checker);
 
   // Make a voxelized copy of the environment.
-  const std::string world_frame_name = "world";
-  // Center grid at world origin.
-  const Eigen::Isometry3d X_WG(Eigen::Translation3d(-1.0, -1.0, -1.0));
-  // Grid is 2m in each axis.
-  const Eigen::Vector3d grid_size(2.0, 2.0, 2.0);
+  // Grid centered around origin.
+  const math::RigidTransformd X_WG(Eigen::Vector3d(-1.0, -1.0, -1.0));
+  // Grid +/-1m in each axis.
+  const Eigen::Vector3d grid_dimensions(2.0, 2.0, 2.0);
   // Use 1/8 meter resolution, so 16 cells/axis.
-  const double grid_resolution = 0.125;
+  constexpr double grid_resolution = 0.125;
+  // Frame name.
+  const std::string world_frame_name = "world";
+
+  constexpr float empty_occupancy = 0.0f;
+  constexpr float filled_occupancy = 1.0f;
+
   // Voxelize.
-  const voxelized_geometry_tools::CollisionMap voxelized_environment =
-      BuildCollisionMap(
-          voxel_checker->plant(), voxel_checker->plant_context(),
-          static_cast<SphereRobotModelCollisionChecker*>(voxel_checker)
-              ->RobotGeometries(),
-          world_frame_name, X_WG, grid_size, grid_resolution);
-  for (int64_t xidx = 0; xidx < voxelized_environment.GetNumXCells(); xidx++) {
-    for (int64_t yidx = 0; yidx < voxelized_environment.GetNumYCells();
+  const VoxelCollisionMap voxelized_environment = BuildCollisionMap(
+      voxel_checker->plant(), voxel_checker->plant_context(),
+      static_cast<SphereRobotModelCollisionChecker*>(voxel_checker)
+          ->RobotGeometries(),
+      world_frame_name, X_WG, grid_dimensions, grid_resolution);
+
+  // Sanity check the voxelized environment.
+  const auto& internal_collision_map =
+      internal::GetInternalCollisionMap(voxelized_environment);
+
+  for (int64_t xidx = 0; xidx < internal_collision_map.GetNumXCells(); xidx++) {
+    for (int64_t yidx = 0; yidx < internal_collision_map.GetNumYCells();
          yidx++) {
-      for (int64_t zidx = 0; zidx < voxelized_environment.GetNumZCells();
+      for (int64_t zidx = 0; zidx < internal_collision_map.GetNumZCells();
            zidx++) {
-        const auto occupancy =
-            voxelized_environment.GetIndexImmutable(xidx, yidx, zidx)
+        const float occupancy =
+            internal_collision_map.GetIndexImmutable(xidx, yidx, zidx)
                 .Value()
                 .Occupancy();
         if (zidx >= 8) {
-          DRAKE_ASSERT(occupancy == 0.0);
+          DRAKE_ASSERT(occupancy == empty_occupancy);
         } else {
-          DRAKE_ASSERT(occupancy == 1.0);
+          DRAKE_ASSERT(occupancy == filled_occupancy);
         }
       }
     }
   }
+
   // Load the voxelized environment.
   voxel_checker->UpdateEnvironment("world", voxelized_environment);
   result.supports_added_world_obstacles = false;

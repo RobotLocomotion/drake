@@ -43,12 +43,12 @@ void SelfFilter(const SphereRobotModelCollisionChecker& collision_checker,
 /// @param collision_map Current environment. @pre != nullptr.
 /// @param parallelism Parallelism to use.
 /// @param context_number Optional context number for use in parallel contexts.
-void SelfFilter(
-    const SphereRobotModelCollisionChecker& collision_checker,
-    const Eigen::VectorXd& q, double padding,
-    multibody::BodyIndex grid_body_index,
-    VoxelTaggedObjectCollisionMap* collision_map, Parallelism parallelism,
-    std::optional<int> context_number = std::nullopt);
+void SelfFilter(const SphereRobotModelCollisionChecker& collision_checker,
+                const Eigen::VectorXd& q, double padding,
+                multibody::BodyIndex grid_body_index,
+                VoxelTaggedObjectCollisionMap* collision_map,
+                Parallelism parallelism,
+                std::optional<int> context_number = std::nullopt);
 
 }  // namespace planning
 }  // namespace drake

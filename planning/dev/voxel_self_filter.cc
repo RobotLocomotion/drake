@@ -31,12 +31,12 @@ void SelfFilter(const SphereRobotModelCollisionChecker& collision_checker,
                               context_number);
 }
 
-void SelfFilter(
-    const SphereRobotModelCollisionChecker& collision_checker,
-    const Eigen::VectorXd& q, const double padding,
-    const BodyIndex grid_body_index,
-    VoxelTaggedObjectCollisionMap* const collision_map,
-    const Parallelism parallelism, const std::optional<int> context_number) {
+void SelfFilter(const SphereRobotModelCollisionChecker& collision_checker,
+                const Eigen::VectorXd& q, const double padding,
+                const BodyIndex grid_body_index,
+                VoxelTaggedObjectCollisionMap* const collision_map,
+                const Parallelism parallelism,
+                const std::optional<int> context_number) {
   DRAKE_THROW_UNLESS(collision_map != nullptr);
   auto& internal_collision_map =
       internal::GetMutableInternalTaggedObjectCollisionMap(*collision_map);

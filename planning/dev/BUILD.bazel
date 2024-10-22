@@ -75,7 +75,7 @@ drake_cc_library(
         "//common:essential",
         "@common_robotics_utilities",
         "@voxelized_geometry_tools",
-    ]
+    ],
 )
 
 drake_cc_library(
@@ -216,6 +216,7 @@ drake_cc_googletest(
     num_threads = 2,
     deps = [
         ":sphere_robot_model_collision_checker_abstract_test_suite",
+        ":voxel_grid_internal",
         ":voxelized_environment_builder",
         ":voxelized_environment_collision_checker",
         "//planning:planning_test_helpers",
@@ -232,6 +233,7 @@ drake_cc_googletest(
     # Be sure to exercise OpenMP-related features.
     num_threads = 2,
     deps = [
+        ":voxel_grid_internal",
         ":voxelized_environment_builder",
         "//planning:planning_test_helpers",
         "@common_robotics_utilities",
@@ -252,6 +254,7 @@ drake_cc_googletest(
     # Be sure to exercise OpenMP-related features.
     num_threads = 2,
     deps = [
+        ":voxel_grid_internal",
         ":voxel_self_filter",
         ":voxelized_environment_collision_checker",
         "//planning:planning_test_helpers",

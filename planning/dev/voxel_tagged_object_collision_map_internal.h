@@ -14,6 +14,7 @@ GetInternalTaggedObjectCollisionMap(
 
 voxelized_geometry_tools::TaggedObjectCollisionMap&
 GetMutableInternalTaggedObjectCollisionMap(
+    // NOLINTNEXTLINE(runtime/references)
     VoxelTaggedObjectCollisionMap& collision_map);
 
 }  // namespace internal
