@@ -35,10 +35,10 @@ VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap() {
 
 VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
-    const Eigen::Vector3d& grid_dimensions, const double cell_size,
+    const Eigen::Vector3d& grid_dimensions, const double grid_resolution,
     const float default_occupancy, const uint32_t default_object_id) {
-  const GridSizes cru_sizes(cell_size, grid_dimensions.x(), grid_dimensions.y(),
-                            grid_dimensions.z());
+  const GridSizes cru_sizes(grid_resolution, grid_dimensions.x(),
+                            grid_dimensions.y(), grid_dimensions.z());
   const TaggedObjectCollisionCell default_cell(default_occupancy,
                                                default_object_id);
   auto internal_collision_map = std::make_shared<TaggedObjectCollisionMap>(
@@ -49,9 +49,10 @@ VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
 
 VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
-    const Eigen::Matrix<int64_t, 3, 1>& grid_sizes, const double cell_size,
-    const float default_occupancy, const uint32_t default_object_id) {
-  const GridSizes cru_sizes(cell_size, grid_sizes.x(), grid_sizes.y(),
+    const Eigen::Matrix<int64_t, 3, 1>& grid_sizes,
+    const double grid_resolution, const float default_occupancy,
+    const uint32_t default_object_id) {
+  const GridSizes cru_sizes(grid_resolution, grid_sizes.x(), grid_sizes.y(),
                             grid_sizes.z());
   const TaggedObjectCollisionCell default_cell(default_occupancy,
                                                default_object_id);
