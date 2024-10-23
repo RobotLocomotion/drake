@@ -198,6 +198,7 @@ class MeshFieldLinear {
                      static_cast<int>(values_at_Mo_.size()));
       }
     }
+    CalcMinAndMaxValues();
   }
 
   /** (Advanced) Constructor variant which receives the pre-computed,
@@ -224,6 +225,7 @@ class MeshFieldLinear {
     DRAKE_DEMAND(static_cast<int>(gradients_.size()) == mesh_->num_elements());
 
     CalcValueAtMeshOriginForAllElements();
+    CalcMinAndMaxValues();
   }
 
   /** @returns true iff the gradient field could not be computed, and the mesh
@@ -240,6 +242,39 @@ class MeshFieldLinear {
   const T& EvaluateAtVertex(int v) const {
     DRAKE_ASSERT(v >= 0 && v < mesh_->num_vertices());
     return values_[v];
+  }
+
+  /** (Advanced) Evaluates the minimum field value on an element.
+   @param e The index of the element.
+   @pre e ∈ [0, this->mesh().num_elements()).
+   */
+  const T& EvaluateMin(int e) const {
+    DRAKE_ASSERT(e >= 0 && e < mesh_->num_elements());
+    return min_values_[e];
+  }
+
+  /** (Advanced) Evaluates the maximum field value on an element.
+   @param e The index of the element.
+   @pre e ∈ [0, this->mesh().num_elements()).
+   */
+  const T& EvaluateMax(int e) const {
+    DRAKE_ASSERT(e >= 0 && e < mesh_->num_elements());
+    return max_values_[e];
+  }
+
+  /** (Advanced) Evaluates the field value at Mo (the mesh origin) of the linear
+   field of element e.
+   @param e The index of the element.
+   @pre e ∈ [0, this->mesh().num_elements()).
+   @pre The field value at Mo has been computed by constructing
+    MeshFieldLinear with provided gradients, or with option
+    MeshGradientMode::kOkOrThrow, or with option kOkOrMarkDegenerate without
+    degenerate mesh elements.
+  */
+  const T& EvaluateAtMo(int e) const {
+    DRAKE_ASSERT(e >= 0 && e < mesh_->num_elements());
+    DRAKE_ASSERT(e < ssize(values_at_Mo_));
+    return values_at_Mo_[e];
   }
 
   /** Evaluates the field value at a location on an element.
@@ -361,8 +396,14 @@ class MeshFieldLinear {
     return new_mesh_field;
   }
 
+  /** The mesh M to which this field refers. */
   const MeshType& mesh() const { return *mesh_; }
+  /** The field value at each vertex. */
   const std::vector<T>& values() const { return values_; }
+  /** The minimum field value on each element. */
+  const std::vector<T>& min_values() const { return min_values_; }
+  /** The maximum field value on each element. */
+  const std::vector<T>& max_values() const { return max_values_; }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
   /** Checks to see whether the given MeshFieldLinear object is equal via deep
@@ -416,6 +457,25 @@ class MeshFieldLinear {
     }
   }
 
+  void CalcMinAndMaxValues() {
+    min_values_.clear();
+    max_values_.clear();
+    min_values_.reserve(this->mesh().num_elements());
+    max_values_.reserve(this->mesh().num_elements());
+    for (int e = 0; e < this->mesh().num_elements(); ++e) {
+      T min, max;
+      min = max = values_[this->mesh().element(e).vertex(0)];
+
+      for (int i = 1; i < mesh().element(e).num_vertices(); ++i) {
+        min = std::min(min, values_[this->mesh().element(e).vertex(i)]);
+        max = std::max(max, values_[this->mesh().element(e).vertex(i)]);
+      }
+
+      min_values_.emplace_back(min);
+      max_values_.emplace_back(max);
+    }
+  }
+
   std::optional<Vector3<T>> MaybeCalcGradientVector(int e) const {
     // In the case of the PolygonSurfaceMesh, where kVertexPerElement is marked
     // as "indeterminate" (aka -1), we'll simply use the first three vertices.
@@ -454,6 +514,12 @@ class MeshFieldLinear {
   // The field values are indexed in the same way as vertices, i.e.,
   // values_[i] is the field value for the mesh vertices_[i].
   std::vector<T> values_;
+  // Stores the minimum value of the field for each element, i.e.,
+  // min_values_[i] is the minimum field value on the domain of elements_[i].
+  std::vector<T> min_values_;
+  // Stores the maximum value of the field for each element, i.e.,
+  // min_values_[i] is the minimum field value on the domain of elements_[i].
+  std::vector<T> max_values_;
   // The gradients are indexed in the same way as elements, i.e.,
   // gradients_[i] is the gradient vector on elements_[i]. The elements could
   // be tetrahedra for VolumeMesh or triangles for TriangleSurfaceMesh.

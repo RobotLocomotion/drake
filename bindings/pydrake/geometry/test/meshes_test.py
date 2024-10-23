@@ -1,5 +1,6 @@
 import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
+from pydrake.common.test_utilities import numpy_compare
 
 import copy
 import unittest
@@ -141,6 +142,8 @@ class TestGeometryMeshes(unittest.TestCase):
         self.assertIsInstance(dut.vertex(v=0), np.ndarray)
         self.assertIsInstance(dut.num_elements(), int)
         self.assertIsInstance(dut.num_vertices(), int)
+        self.assertIsInstance(dut.inward_normal(e=0, f=0), np.ndarray)
+        self.assertIsInstance(dut.edge_vector(e=0, a=0, b=1), np.ndarray)
 
         # Sanity check some calculations
         self.assertAlmostEqual(dut.CalcTetrahedronVolume(e=1), 1/6.0,
@@ -154,9 +157,19 @@ class TestGeometryMeshes(unittest.TestCase):
         self.assertIsInstance(dut.tetrahedra()[0], mut.VolumeElement)
         self.assertEqual(len(dut.vertices()), 5)
 
+        numpy_compare.assert_float_equal(
+            dut.inward_normal(e=0, f=3), (-1., 0., 0.))
+        numpy_compare.assert_float_equal(
+            dut.inward_normal(e=1, f=3), (1., 0., 0.))
+        numpy_compare.assert_float_equal(
+            dut.edge_vector(e=0, a=1, b=3), (-1., 0., 0.))
+        numpy_compare.assert_float_equal(
+            dut.edge_vector(e=1, a=1, b=3), (1., 0., 0.))
+
         # Now check the VolumeElement bindings.
         tetrahedron0 = dut.element(e=0)
         self.assertEqual(tetrahedron0.vertex(i=0), 2)
+        self.assertEqual(tetrahedron0.num_vertices(), 4)
 
     def test_convert_volume_to_surface_mesh(self):
         # Use the volume mesh from `test_volume_mesh()`.
