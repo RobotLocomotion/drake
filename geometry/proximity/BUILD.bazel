@@ -431,6 +431,8 @@ drake_cc_library(
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
+        ":volume_mesh_topology",
+        ":volume_to_surface_mesh",
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//geometry:geometry_ids",
