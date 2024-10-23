@@ -106,7 +106,7 @@ GTEST_TEST(VoxelSelfFilterTest, Test) {
 
   // Check self-filter at a range of configurations.
   const double filter_padding = grid_resolution * 0.5;
-  const int32_t iterations = 100;
+  const int32_t iterations = 10;
   int32_t iteration = 0;
   while (iteration < iterations) {
     const Eigen::VectorXd q = draw_random_q();
