@@ -27,6 +27,10 @@ struct TetFace {
    |     2      |       1, 3, 0                |
    |     3      |       2, 1, 0                | */
   int face_index{};
+
+  bool operator==(const TetFace& other) const {
+    return tet_index == other.tet_index && face_index == other.face_index;
+  }
 };
 
 /* Identifies the triangular boundary faces of a tetrahedral volume mesh.

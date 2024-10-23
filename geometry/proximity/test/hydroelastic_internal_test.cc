@@ -6,6 +6,7 @@
 #include <limits>
 
 #include <fmt/format.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -49,6 +50,11 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_NE(&original.mesh(), &copy.mesh());
     EXPECT_NE(&original.pressure(), &copy.pressure());
     EXPECT_NE(&original.bvh(), &copy.bvh());
+    EXPECT_NE(&original.surface_mesh(), &copy.surface_mesh());
+    EXPECT_NE(&original.bvh_surface_mesh(), &copy.bvh_surface_mesh());
+    EXPECT_NE(&original.surface_element_to_volume_element(),
+              &copy.surface_element_to_volume_element());
+    EXPECT_NE(&original.mesh_topology(), &copy.mesh_topology());
 
     EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
 
@@ -61,6 +67,12 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_TRUE(copy_pressure.Equal(original_pressure));
 
     EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+
+    EXPECT_TRUE(copy.surface_mesh().Equal(original.surface_mesh()));
+    EXPECT_TRUE(copy.bvh_surface_mesh().Equal(original.bvh_surface_mesh()));
+    EXPECT_THAT(copy.surface_element_to_volume_element(),
+                testing::Eq(original.surface_element_to_volume_element()));
+    EXPECT_TRUE(copy.mesh_topology().Equal(original.mesh_topology()));
   }
 
   // Test copy constructor.
@@ -71,6 +83,11 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_NE(&original.mesh(), &copy.mesh());
     EXPECT_NE(&original.pressure(), &copy.pressure());
     EXPECT_NE(&original.bvh(), &copy.bvh());
+    EXPECT_NE(&original.surface_mesh(), &copy.surface_mesh());
+    EXPECT_NE(&original.bvh_surface_mesh(), &copy.bvh_surface_mesh());
+    EXPECT_NE(&original.surface_element_to_volume_element(),
+              &copy.surface_element_to_volume_element());
+    EXPECT_NE(&original.mesh_topology(), &copy.mesh_topology());
 
     EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
 
@@ -83,6 +100,12 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_TRUE(copy_pressure.Equal(original_pressure));
 
     EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+
+    EXPECT_TRUE(copy.surface_mesh().Equal(original.surface_mesh()));
+    EXPECT_TRUE(copy.bvh_surface_mesh().Equal(original.bvh_surface_mesh()));
+    EXPECT_THAT(copy.surface_element_to_volume_element(),
+                testing::Eq(original.surface_element_to_volume_element()));
+    EXPECT_TRUE(copy.mesh_topology().Equal(original.mesh_topology()));
   }
 
   // Test move constructor and move-assignment operator.
@@ -98,12 +121,24 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     const VolumeMeshFieldLinear<double, double>* const pressure_ptr =
         &start.pressure();
     const Bvh<Obb, VolumeMesh<double>>* const bvh_ptr = &start.bvh();
+    const TriangleSurfaceMesh<double>* const surface_mesh_ptr =
+        &start.surface_mesh();
+    const Bvh<Obb, TriangleSurfaceMesh<double>>* const bvh_surface_mesh_ptr =
+        &start.bvh_surface_mesh();
+    const std::vector<TetFace>* const surface_element_to_volume_element_ptr =
+        &start.surface_element_to_volume_element();
+    const VolumeMeshTopology* const mesh_topology_ptr = &start.mesh_topology();
 
     // Test move constructor.
     SoftMesh move_constructed(std::move(start));
     EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
     EXPECT_EQ(&move_constructed.pressure(), pressure_ptr);
     EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+    EXPECT_EQ(&move_constructed.surface_mesh(), surface_mesh_ptr);
+    EXPECT_EQ(&move_constructed.bvh_surface_mesh(), bvh_surface_mesh_ptr);
+    EXPECT_EQ(&move_constructed.surface_element_to_volume_element(),
+              surface_element_to_volume_element_ptr);
+    EXPECT_EQ(&move_constructed.mesh_topology(), mesh_topology_ptr);
 
     // Test move-assignment operator.
     SoftMesh move_assigned;
@@ -111,6 +146,11 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
     EXPECT_EQ(&move_assigned.pressure(), pressure_ptr);
     EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+    EXPECT_EQ(&move_assigned.surface_mesh(), surface_mesh_ptr);
+    EXPECT_EQ(&move_assigned.bvh_surface_mesh(), bvh_surface_mesh_ptr);
+    EXPECT_EQ(&move_assigned.surface_element_to_volume_element(),
+              surface_element_to_volume_element_ptr);
+    EXPECT_EQ(&move_assigned.mesh_topology(), mesh_topology_ptr);
   }
 }
 
@@ -144,6 +184,11 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
     EXPECT_NE(&original.mesh(), &dut.mesh());
     EXPECT_NE(&original.pressure_field(), &dut.pressure_field());
     EXPECT_NE(&original.bvh(), &dut.bvh());
+    EXPECT_NE(&original.surface_mesh(), &dut.surface_mesh());
+    EXPECT_NE(&original.bvh_surface_mesh(), &dut.bvh_surface_mesh());
+    EXPECT_NE(&original.surface_element_to_volume_element(),
+              &dut.surface_element_to_volume_element());
+    EXPECT_NE(&original.mesh_topology(), &dut.mesh_topology());
 
     EXPECT_TRUE(dut.mesh().Equal(original.mesh()));
     const auto& copy_pressure =
@@ -154,6 +199,11 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
             original.pressure_field());
     EXPECT_TRUE(copy_pressure.Equal(original_pressure));
     EXPECT_TRUE(dut.bvh().Equal(original.bvh()));
+    EXPECT_TRUE(dut.surface_mesh().Equal(original.surface_mesh()));
+    EXPECT_TRUE(dut.bvh_surface_mesh().Equal(original.bvh_surface_mesh()));
+    EXPECT_THAT(dut.surface_element_to_volume_element(),
+                testing::Eq(original.surface_element_to_volume_element()));
+    EXPECT_TRUE(dut.mesh_topology().Equal(original.mesh_topology()));
   }
 
   // Test copy constructor.
@@ -164,6 +214,11 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
     EXPECT_NE(&original.mesh(), &copy.mesh());
     EXPECT_NE(&original.pressure_field(), &copy.pressure_field());
     EXPECT_NE(&original.bvh(), &copy.bvh());
+    EXPECT_NE(&original.surface_mesh(), &copy.surface_mesh());
+    EXPECT_NE(&original.bvh_surface_mesh(), &copy.bvh_surface_mesh());
+    EXPECT_NE(&original.surface_element_to_volume_element(),
+              &copy.surface_element_to_volume_element());
+    EXPECT_NE(&original.mesh_topology(), &copy.mesh_topology());
 
     EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
     const auto& copy_pressure =
@@ -174,6 +229,11 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
             original.pressure_field());
     EXPECT_TRUE(copy_pressure.Equal(original_pressure));
     EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+    EXPECT_TRUE(copy.surface_mesh().Equal(original.surface_mesh()));
+    EXPECT_TRUE(copy.bvh_surface_mesh().Equal(original.bvh_surface_mesh()));
+    EXPECT_THAT(copy.surface_element_to_volume_element(),
+                testing::Eq(original.surface_element_to_volume_element()));
+    EXPECT_TRUE(copy.mesh_topology().Equal(original.mesh_topology()));
   }
 
   // Test move constructor and move-assignment operator.
@@ -189,12 +249,24 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
     const VolumeMeshFieldLinear<double, double>* const pressure_ptr =
         &start.pressure_field();
     const Bvh<Obb, VolumeMesh<double>>* const bvh_ptr = &start.bvh();
+    const TriangleSurfaceMesh<double>* const surface_mesh_ptr =
+        &start.surface_mesh();
+    const Bvh<Obb, TriangleSurfaceMesh<double>>* const bvh_surface_mesh_ptr =
+        &start.bvh_surface_mesh();
+    const std::vector<TetFace>* const surface_element_to_volume_element_ptr =
+        &start.surface_element_to_volume_element();
+    const VolumeMeshTopology* const mesh_topology_ptr = &start.mesh_topology();
 
     // Test move constructor.
     SoftGeometry move_constructed(std::move(start));
     EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
     EXPECT_EQ(&move_constructed.pressure_field(), pressure_ptr);
     EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+    EXPECT_EQ(&move_constructed.surface_mesh(), surface_mesh_ptr);
+    EXPECT_EQ(&move_constructed.bvh_surface_mesh(), bvh_surface_mesh_ptr);
+    EXPECT_EQ(&move_constructed.surface_element_to_volume_element(),
+              surface_element_to_volume_element_ptr);
+    EXPECT_EQ(&move_constructed.mesh_topology(), mesh_topology_ptr);
 
     // Test move-assignment operator.
     // Initialize `move_assigned` as a SoftGeometry representing a half spce.
@@ -205,6 +277,11 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
     EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
     EXPECT_EQ(&move_assigned.pressure_field(), pressure_ptr);
     EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+    EXPECT_EQ(&move_assigned.surface_mesh(), surface_mesh_ptr);
+    EXPECT_EQ(&move_assigned.bvh_surface_mesh(), bvh_surface_mesh_ptr);
+    EXPECT_EQ(&move_assigned.surface_element_to_volume_element(),
+              surface_element_to_volume_element_ptr);
+    EXPECT_EQ(&move_assigned.mesh_topology(), mesh_topology_ptr);
   }
 }
 
@@ -973,6 +1050,18 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
       "SoftGeometry::pressure.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
       half_space->bvh(), "SoftGeometry::bvh.* cannot be invoked .* half space");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      half_space->surface_mesh(),
+      "SoftGeometry::surface_mesh.* cannot be invoked .* half space");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      half_space->bvh_surface_mesh(),
+      "SoftGeometry::bvh_surface_mesh.* cannot be invoked .* half space");
+  DRAKE_EXPECT_THROWS_MESSAGE(half_space->surface_element_to_volume_element(),
+                              "SoftGeometry::surface_element_to_volume_element."
+                              "* cannot be invoked .* half space");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      half_space->mesh_topology(),
+      "SoftGeometry::mesh_topology.* cannot be invoked .* half space");
 }
 
 // Test construction of a soft sphere. Confirms that the edge length has
@@ -995,9 +1084,14 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   EXPECT_FALSE(sphere1->is_half_space());
   EXPECT_FALSE(sphere2->is_half_space());
   EXPECT_LT(sphere1->mesh().num_elements(), sphere2->mesh().num_elements());
-  // This is the only test where we confirm that bvh() *doesn't* throw for
-  // meshes and slab_thickness() does.
+  // This is the only test where we confirm that bvh(), surface_mesh(),
+  // bvh_surface_mesh(), surface_element_to_volume_element() and mesh_topology()
+  // *do not* throw for meshes and slab_thickness() does.
   EXPECT_NO_THROW(sphere1->bvh());
+  EXPECT_NO_THROW(sphere1->surface_mesh());
+  EXPECT_NO_THROW(sphere1->bvh_surface_mesh());
+  EXPECT_NO_THROW(sphere1->surface_element_to_volume_element());
+  EXPECT_NO_THROW(sphere1->mesh_topology());
   DRAKE_EXPECT_THROWS_MESSAGE(
       sphere1->pressure_scale(),
       "SoftGeometry::pressure_scale.* cannot be invoked .* soft mesh");
@@ -1041,9 +1135,11 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // of two --> sphere 2's level of refinement is one greater than sphere
     // 1's. Both are missing the "tessellation_strategy" property so it should
     // default to kSingleInteriorVertex. So, sphere 2 must have 4X the
-    // tetrahedra as sphere 1.
+    // tetrahedra and surface faces as sphere 1.
     EXPECT_EQ(sphere1->mesh().num_elements() * 4,
               sphere2->mesh().num_elements());
+    EXPECT_EQ(sphere1->surface_mesh().num_elements() * 4,
+              sphere2->surface_mesh().num_elements());
   }
 
   {
@@ -1051,7 +1147,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // of tets (compared to an otherwise identical mesh declared to sparse).
 
     // Starting with sphere 1's properties, we'll set it to dense and observe
-    // more tets.
+    // more tets but the same amount of surface faces.
     ProximityProperties dense_properties(properties1);
     dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                  TessellationStrategy::kDenseInteriorVertices);
@@ -1059,6 +1155,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
         MakeSoftRepresentation(sphere_spec, dense_properties);
     EXPECT_LT(sphere1->mesh().num_elements(),
               dense_sphere->mesh().num_elements());
+    EXPECT_EQ(sphere1->surface_mesh().num_elements(),
+              dense_sphere->surface_mesh().num_elements());
   }
 
   {
@@ -1073,6 +1171,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
         MakeSoftRepresentation(sphere_spec, dense_properties);
     EXPECT_EQ(sphere1->mesh().num_elements(),
               dense_sphere->mesh().num_elements());
+    EXPECT_EQ(sphere1->surface_mesh().num_elements(),
+              dense_sphere->surface_mesh().num_elements());
   }
 
   {

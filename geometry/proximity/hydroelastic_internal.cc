@@ -98,7 +98,13 @@ SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
   // the new mesh. So, we use CloneAndSetMesh() instead.
   pressure_ = s.pressure().CloneAndSetMesh(mesh_.get());
   bvh_ = make_unique<Bvh<Obb, VolumeMesh<double>>>(s.bvh());
-
+  surface_mesh_ =
+      std::make_unique<TriangleSurfaceMesh<double>>(s.surface_mesh());
+  surface_element_to_volume_element_ = std::make_unique<std::vector<TetFace>>(
+      s.surface_element_to_volume_element());
+  bvh_surface_mesh_ = std::make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(
+      s.bvh_surface_mesh());
+  mesh_topology_ = std::make_unique<VolumeMeshTopology>(s.mesh_topology());
   return *this;
 }
 

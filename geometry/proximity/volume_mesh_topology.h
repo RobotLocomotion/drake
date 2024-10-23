@@ -38,6 +38,19 @@ class VolumeMeshTopology {
     return tetrahedra_neighbors_[e][i];
   }
 
+  bool Equal(const VolumeMeshTopology& topology) const {
+    if (ssize(tetrahedra_neighbors_) != ssize(topology.tetrahedra_neighbors_))
+      return false;
+
+    for (int e = 0; e < ssize(tetrahedra_neighbors_); ++e) {
+      for (int i = 0; i < 4; ++i) {
+        if (neighbor(e, i) != topology.neighbor(e, i)) return false;
+      }
+    }
+
+    return true;
+  }
+
  private:
   // Calculates the adjacency information for all tetrahedra in `elements`.
   void Initialize(const std::vector<VolumeElement>& elements);
