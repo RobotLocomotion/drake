@@ -16,18 +16,33 @@ namespace planning {
 
 class VoxelTaggedObjectCollisionMap {
  public:
+  /// Default constructor creates an empty VoxelCollisionMap.
   VoxelTaggedObjectCollisionMap();
 
+  /// Construct a VoxelTaggedObjectCollisionMap filled with cells of
+  /// `default_occupancy` and `default_object_id`. `parent_body_name` specifies
+  /// the name of the parent body, and `X_PG` specifies the pose of the origin
+  /// of the voxel grid relative to the parent body frame. `grid_dimensions`
+  /// specifies the nominal dimensions of the voxel grid, and `grid_resolution`
+  /// specifies the size of an individual voxel. If you specify dimensions that
+  /// are not evenly divisible by `grid_resolution`, you will get a larger grid
+  /// with num_cells = ceil(dimension/resolution).
   VoxelTaggedObjectCollisionMap(const std::string& parent_body_name,
                                 const math::RigidTransformd& X_PG,
                                 const Eigen::Vector3d& grid_dimensions,
-                                double cell_size, float default_occupancy,
+                                double grid_resolution, float default_occupancy,
                                 uint32_t default_object_id);
 
+  /// Construct a VoxelTaggedObjectCollisionMap filled with cells of
+  /// `default_occupancy` and `default_object_id`. `parent_body_name` specifies
+  /// the name of the parent body, and `X_PG` specifies the pose of the origin
+  /// of the voxel grid relative to the parent body frame. `grid_sizes`
+  /// specifies the number of voxels for each axis of the voxel grid, and
+  /// `grid_resolution` specifies the size of an individual voxel.
   VoxelTaggedObjectCollisionMap(const std::string& parent_body_name,
                                 const math::RigidTransformd& X_PG,
                                 const Eigen::Matrix<int64_t, 3, 1>& grid_sizes,
-                                double cell_size, float default_occupancy,
+                                double grid_resolution, float default_occupancy,
                                 uint32_t default_object_id);
 
   /// VoxelTaggedObjectCollisionMap provides copy, move, and assignment.
@@ -46,8 +61,11 @@ class VoxelTaggedObjectCollisionMap {
       const VoxelSignedDistanceField::GenerationParameters& parameters = {})
       const;
 
+  /// Get the name of the parent body frame.
   const std::string& parent_body_name() const;
 
+  /// Returns true if empty. A VoxelTaggedObjectCollisionMap will be empty if it
+  /// is in the default constructed state or has been moved-from.
   bool is_empty() const;
 
   // Internal-only, access to the internal voxel grid.
