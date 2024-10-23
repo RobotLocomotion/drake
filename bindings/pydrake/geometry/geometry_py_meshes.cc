@@ -122,6 +122,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.tetrahedra.doc)
         .def("num_elements", &Class::num_elements, cls_doc.num_elements.doc)
         .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
+        .def("inward_normal", &Class::inward_normal, py::arg("e"), py::arg("f"),
+            cls_doc.inward_normal.doc)
+        .def("edge_vector", &Class::edge_vector, py::arg("e"), py::arg("a"),
+            py::arg("b"), cls_doc.edge_vector.doc)
         .def("CalcTetrahedronVolume", &Class::CalcTetrahedronVolume,
             py::arg("e"), cls_doc.CalcTetrahedronVolume.doc)
         .def("CalcVolume", &Class::CalcVolume, cls_doc.CalcVolume.doc)
@@ -177,7 +181,8 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(py::init<int, int, int, int>(), py::arg("v0"), py::arg("v1"),
             py::arg("v2"), py::arg("v3"), cls_doc.ctor.doc_4args)
         // TODO(SeanCurtis-TRI): Bind constructor that takes array of ints.
-        .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
+        .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc)
+        .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc);
     DefCopyAndDeepCopy(&cls);
   }
 }
