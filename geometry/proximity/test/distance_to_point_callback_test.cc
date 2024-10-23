@@ -736,10 +736,11 @@ void TestScalarShapeSupport() {
   {
     // This test is independent of the content of the fcl::Convexd because
     // the mesh data is in the point_distance::CallbackData<T>, not the
-    // fcl::CollisionObjectd's. For simplicity, we use an empty fcl::Convexd.
+    // fcl::CollisionObjectd's. For simplicity, we use a minimally valid
+    // convex shape: a single vertex.
     run_callback(make_shared<fcl::Convexd>(
-        make_shared<const std::vector<Vector3d>>(), 0 /* num_faces */,
-        make_shared<const std::vector<int>>(), false /* no throw */));
+        make_shared<const std::vector<Vector3d>>(1, Vector3d{0, 0, 0}), 0,
+        make_shared<const std::vector<int>>()));
     EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Convexd>()));
   }
 }
@@ -776,10 +777,11 @@ GTEST_TEST(Callback, Mesh) {
 
   // Both drake::geometry::Mesh and Convex use fcl::Convexd, whose content
   // is irrelevant for this test because the mesh data is set in
-  // the CallbackData. For simplicity, here we use an empty fcl::Convexd.
+  // the CallbackData. For simplicity, we use a minimally valid convex shape:
+  // a single vertex.
   auto mesh_fcl_geometry = make_shared<fcl::Convexd>(
-      make_shared<const std::vector<Vector3d>>(), 0 /* num_faces */,
-      make_shared<const std::vector<int>>(), false /* no throw */);
+      make_shared<const std::vector<Vector3d>>(1, Vector3d{0, 0, 0}), 0,
+      make_shared<const std::vector<int>>());
   const GeometryId mesh_id = GeometryId::get_new_id();
   const EncodedData mesh_encoding(mesh_id, true);
   // The pose of the mesh's frame M in World frame.
@@ -793,8 +795,8 @@ GTEST_TEST(Callback, Mesh) {
   mesh_encoding.write_to(&mesh_collision_object);
 
   auto unsupported_mesh_fcl_geometry = make_shared<fcl::Convexd>(
-      make_shared<const std::vector<Vector3d>>(), 0 /* num_faces */,
-      make_shared<const std::vector<int>>(), false /* no throw */);
+      make_shared<const std::vector<Vector3d>>(1, Vector3d{0, 0, 0}), 0,
+      make_shared<const std::vector<int>>());
   const GeometryId unsupported_mesh_id = GeometryId::get_new_id();
   const EncodedData unsupported_mesh_encoding(unsupported_mesh_id, true);
   const RigidTransformd X_WU = RigidTransformd::Identity();
