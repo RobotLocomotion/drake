@@ -1,6 +1,7 @@
 # When bazelisk in use (as is typical, per Drake install_prereqs), this dotfile
 # specifies which version of Bazel should be used to build and test Drake.
-USE_BAZEL_VERSION=7.3.2
+# Keep the in sync with doc/_pages/from_source.md (only the major.minor part).
+USE_BAZEL_VERSION=7.4.0
 
 # For some reason the google mirrors are very flaky in Drake CI in EC2, so
 # we'll point to the GitHub mirrors instead.
