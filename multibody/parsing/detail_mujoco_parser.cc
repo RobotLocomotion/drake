@@ -914,7 +914,7 @@ class MujocoParser {
         ParseScalarAttribute(node, "density", &density);
         mass = volume * density;
       }
-      SpatialInertia<double> M_GGo_G(mass, p_GoGcm_G, G_GGo_G);  // XXX throw
+      SpatialInertia<double> M_GGo_G(mass, p_GoGcm_G, G_GGo_G);
 
       // Shift spatial inertia from Go to Bo and express it in the B frame.
       const math::RotationMatrix<double>& R_BG = geom.X_BG.rotation();
