@@ -1,14 +1,18 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/plane.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/proximity/volume_mesh_topology.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
 
@@ -71,7 +75,7 @@ bool CalcEquilibriumPlane(int element0,
  @tparam T A valid Eigen scalar.
  */
 template <typename T>
-std::vector<Vector3<T>> IntersectTetrahedra(
+std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
     int element0, const VolumeMesh<double>& mesh0_M, int element1,
     const VolumeMesh<double>& mesh1_N, const math::RigidTransform<T>& X_MN,
     const Plane<T>& equilibrium_plane_M);
@@ -158,6 +162,18 @@ class VolumeIntersector {
                        std::unique_ptr<MeshType>* surface_01_M,
                        std::unique_ptr<FieldType>* e_01_M);
 
+  void IntersectFields(const VolumeMeshFieldLinear<double, double>& field0_M,
+                       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh0_M,
+                       const std::vector<TetFace>& element_mapping_M,
+                       const VolumeMeshTopology& mesh_topology_M,
+                       const VolumeMeshFieldLinear<double, double>& field1_N,
+                       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh1_N,
+                       const std::vector<TetFace>& element_mapping_N,
+                       const VolumeMeshTopology& mesh_topology_N,
+                       const math::RigidTransform<T>& X_MN,
+                       std::unique_ptr<MeshType>* surface_01_M,
+                       std::unique_ptr<FieldType>* e_01_M);
+
   /* Returns the index of tetrahedron in the first mesh containing the
    i-th contact polygon.
    @pre IntersectFields() was called already.  */
@@ -184,12 +200,14 @@ class VolumeIntersector {
    @param[in, out] builder_M   If there is a non-empty intersection, the
                           intersecting polygon (contact polygon) and its
                           field values are added into builder_M. The added
-                          polygon is in frame M.  */
-  void CalcContactPolygon(const VolumeMeshFieldLinear<double, double>& field0_M,
-                          const VolumeMeshFieldLinear<double, double>& field1_N,
-                          const math::RigidTransform<T>& X_MN,
-                          const math::RotationMatrix<T>& R_NM, int tet0,
-                          int tet1, MeshBuilder* builder_M);
+                          polygon is in frame M.
+   @returns True if a contact polygon was added, false otherwise.
+  */
+  std::vector<int> CalcContactPolygon(
+      const VolumeMeshFieldLinear<double, double>& field0_M,
+      const VolumeMeshFieldLinear<double, double>& field1_N,
+      const math::RigidTransform<T>& X_MN, const math::RotationMatrix<T>& R_NM,
+      int tet0, int tet1, MeshBuilder* builder_M);
 
   // List of tetrahedron indices in the meshes of field0 and field1. One
   // index per contact polygon;
@@ -240,6 +258,19 @@ class HydroelasticVolumeIntersector {
       const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
       const math::RigidTransform<T>& X_WN,
       std::unique_ptr<ContactSurface<T>>* contact_surface_W);
+
+  void IntersectCompliantVolumes(
+      GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_M,
+      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh0_M,
+      const std::vector<TetFace>& element_mapping_M,
+      const VolumeMeshTopology& mesh_topology_M,
+      const math::RigidTransform<T>& X_WM, GeometryId id1,
+      const VolumeMeshFieldLinear<double, double>& field1_N,
+      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh1_N,
+      const std::vector<TetFace>& element_mapping_N,
+      const VolumeMeshTopology& mesh_topology_N,
+      const math::RigidTransform<T>& X_WN,
+      std::unique_ptr<ContactSurface<T>>* contact_surface_W);
 };
 
 /* Computes the contact surface between two compliant hydroelastic geometries
@@ -279,6 +310,21 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceFromCompliantVolumes(
     const math::RigidTransform<T>& X_WM, GeometryId id1,
     const VolumeMeshFieldLinear<double, double>& field1_N,
     const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
+    const math::RigidTransform<T>& X_WN,
+    HydroelasticContactRepresentation representation);
+
+template <typename T>
+std::unique_ptr<ContactSurface<T>>
+ComputeContactSurfaceFromCompliantVolumesWithTopology(
+    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_M,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh0_M,
+    const std::vector<TetFace>& element_mapping_M,
+    const VolumeMeshTopology& mesh_topology_M,
+    const math::RigidTransform<T>& X_WM, GeometryId id1,
+    const VolumeMeshFieldLinear<double, double>& field1_N,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh1_N,
+    const std::vector<TetFace>& element_mapping_N,
+    const VolumeMeshTopology& mesh_topology_N,
     const math::RigidTransform<T>& X_WN,
     HydroelasticContactRepresentation representation);
 
