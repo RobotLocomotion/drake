@@ -23,7 +23,7 @@ const double kInf = std::numeric_limits<double>::infinity();
 void TestTrivialSDP(const SolverInterface& solver, double tol) {
   MathematicalProgram prog;
 
-  auto S = prog.NewSymmetricContinuousVariables<2>("S");
+  auto S = prog.NewSymmetricContinuousVariables<3>("S");
 
   // S is p.s.d
   prog.AddPositiveSemidefiniteConstraint(S);
@@ -38,7 +38,9 @@ void TestTrivialSDP(const SolverInterface& solver, double tol) {
 
   auto S_value = result.GetSolution(S);
 
-  EXPECT_TRUE(CompareMatrices(S_value, Eigen::Matrix2d::Ones(), tol));
+  Eigen::Matrix3d S_expected = Eigen::Matrix3d::Zero();
+  S_expected.topLeftCorner<2, 2>() = Eigen::Matrix2d::Ones();
+  EXPECT_TRUE(CompareMatrices(S_value, S_expected, tol));
   EXPECT_NEAR(result.get_optimal_cost(), 2.0, tol);
 }
 
@@ -265,40 +267,56 @@ void SolveSDPwithSecondOrderConeExample2(const SolverInterface& solver,
 void SolveSDPwithOverlappingVariables(const SolverInterface& solver,
                                       double tol) {
   MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>();
-  prog.AddPositiveSemidefiniteConstraint(
-      (Matrix2<symbolic::Variable>() << x(0), x(1), x(1), x(0)).finished());
-  prog.AddPositiveSemidefiniteConstraint(
-      (Matrix2<symbolic::Variable>() << x(0), x(2), x(2), x(0)).finished());
+  auto x = prog.NewContinuousVariables<6>();
+  Matrix3<symbolic::Variable> psd_mat1;
+  Matrix3<symbolic::Variable> psd_mat2;
+  // clang-format off
+  psd_mat1 << x(0), x(1), x(3),
+              x(1), x(0), x(4),
+              x(3), x(4), x(5);
+  psd_mat2 << x(0), x(2), x(3),
+              x(2), x(0), x(4),
+              x(3), x(4), x(5);
+  // clang-format on
+  prog.AddPositiveSemidefiniteConstraint(psd_mat1);
+  prog.AddPositiveSemidefiniteConstraint(psd_mat2);
   prog.AddBoundingBoxConstraint(1, 1, x(1));
-  prog.AddLinearCost(2 * x(0) + x(2));
+  prog.AddLinearCost(2 * x(0) + x(2) + x(5));
 
   MathematicalProgramResult result;
   solver.Solve(prog, {}, {}, &result);
   EXPECT_TRUE(result.is_success());
-  EXPECT_TRUE(
-      CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, -1), tol));
+  Vector6<double> x_expected;
+  x_expected << 1, 1, -1, 0, 0, 0;
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol));
   EXPECT_NEAR(result.get_optimal_cost(), 1, tol);
 }
 
 void SolveSDPwithQuadraticCosts(const SolverInterface& solver, double tol) {
   MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>();
-  const Matrix2<symbolic::Variable> X1 =
-      (Matrix2<symbolic::Variable>() << x(0), x(1), x(1), x(0)).finished();
-  auto psd_constraint1 = prog.AddPositiveSemidefiniteConstraint(X1);
-  const Matrix2<symbolic::Variable> X2 =
-      (Matrix2<symbolic::Variable>() << x(0), x(2), x(2), x(0)).finished();
-  auto psd_constraint2 = prog.AddPositiveSemidefiniteConstraint(X2);
+  auto x = prog.NewContinuousVariables<6>();
+  Matrix3<symbolic::Variable> psd_mat1;
+  Matrix3<symbolic::Variable> psd_mat2;
+  // clang-format off
+  psd_mat1 << x(0), x(1), x(3),
+              x(1), x(0), x(4),
+              x(3), x(4), x(5);
+  psd_mat2 << x(0), x(2), x(3),
+              x(2), x(0), x(4),
+              x(3), x(4), x(5);
+  // clang-format on
+  auto psd_constraint1 = prog.AddPositiveSemidefiniteConstraint(psd_mat1);
+  auto psd_constraint2 = prog.AddPositiveSemidefiniteConstraint(psd_mat2);
   prog.AddBoundingBoxConstraint(1, 1, x(1));
   prog.AddQuadraticCost(x(0) * x(0));
-  prog.AddLinearCost(2 * x(0) + x(2));
+  prog.AddLinearCost(2 * x(0) + x(2) + x(5));
 
   MathematicalProgramResult result;
   solver.Solve(prog, {}, {}, &result);
   EXPECT_TRUE(result.is_success());
-  EXPECT_TRUE(
-      CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, -1), tol));
+  Vector6<double> x_expected;
+  x_expected << 1, 1, -1, 0, 0, 0;
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol));
   EXPECT_NEAR(result.get_optimal_cost(), 2, tol);
 
   // Check the complementarity condition for the PSD constraint.
@@ -306,27 +324,34 @@ void SolveSDPwithQuadraticCosts(const SolverInterface& solver, double tol) {
       result.GetDualSolution(psd_constraint1));
   const auto psd_dual2 = math::ToSymmetricMatrixFromLowerTriangularColumns(
       result.GetDualSolution(psd_constraint2));
-  const auto X1_sol = result.GetSolution(X1);
-  const auto X2_sol = result.GetSolution(X2);
-  EXPECT_NEAR((psd_dual1 * X1_sol).trace(), 0, tol);
-  EXPECT_NEAR((psd_dual2 * X2_sol).trace(), 0, tol);
+  const auto psd_mat1_sol = result.GetSolution(psd_mat1);
+  const auto psd_mat2_sol = result.GetSolution(psd_mat2);
+  EXPECT_NEAR((psd_dual1 * psd_mat1_sol).trace(), 0, tol);
+  EXPECT_NEAR((psd_dual2 * psd_mat2_sol).trace(), 0, tol);
 }
 
 void TestSDPDualSolution1(const SolverInterface& solver, double tol) {
   MathematicalProgram prog;
-  auto X = prog.NewSymmetricContinuousVariables<2>();
-  auto psd_con = prog.AddPositiveSemidefiniteConstraint(X);
+  auto x = prog.NewContinuousVariables<6>();
+  Matrix3<symbolic::Variable> psd_mat;
+  // clang-format off
+  psd_mat << x(0), x(1), x(3),
+             x(1), x(2), x(4),
+             x(3), x(4), x(5);
+  // clang-format on
+  auto psd_con = prog.AddPositiveSemidefiniteConstraint(psd_mat);
   auto bb_con = prog.AddBoundingBoxConstraint(
       Eigen::Vector2d(kInf, kInf), Eigen::Vector2d(4, 1),
-      Vector2<symbolic::Variable>(X(0, 0), X(1, 1)));
-  prog.AddLinearCost(X(1, 0));
+      Vector2<symbolic::Variable>(x(0), x(2)));
+  prog.AddLinearCost(x(1) + x(5));
   MathematicalProgramResult result;
   solver.Solve(prog, {}, {}, &result);
   EXPECT_TRUE(result.is_success());
 
-  const auto X_sol = result.GetSolution(X);
+  const Vector6<double> x_sol = result.GetSolution(x);
+  const auto psd_mat_sol = result.GetSolution(psd_mat);
   EXPECT_TRUE(CompareMatrices(
-      X_sol, (Eigen::Matrix2d() << 4, -2, -2, 1).finished(), tol));
+      x_sol, (Vector6d() << 4, -2, 1, 0, 0, 0).finished(), tol));
   // The optimal cost is -sqrt(x0 * x2), hence the sensitivity to the
   // bounding box constraint on x0 is -.25, and the sensitivity to the bounding
   // box constraint on x2 is -1.
@@ -335,27 +360,36 @@ void TestSDPDualSolution1(const SolverInterface& solver, double tol) {
                               bb_con_dual_expected, tol));
   const auto psd_dual = math::ToSymmetricMatrixFromLowerTriangularColumns(
       result.GetDualSolution(psd_con));
-  // Complementarity condition ensures the inner product of X and its dual is 0.
-  EXPECT_NEAR((X_sol * psd_dual).trace(), 0, tol);
+  // Complementarity condition ensures the inner product of psd_mat and its dual
+  // is 0.
+  EXPECT_NEAR((psd_mat_sol * psd_dual).trace(), 0, tol);
   // The problem in the primal form is
-  // min [0  0.5] ● X
-  //     [0.5  0]
-  // s.t [1 0] ● X <= 4
-  //     [0 0]
+  // min [0  0.5 0] ● X
+  //     [0.5  0 0]
+  //     [0    0 1]
+  // s.t [1 0 0] ● X <= 4
+  //     [0 0 0]
+  //     [0 0 0]
   //
-  //     [0 0] ● X <= 1
-  //     [0 1]
+  //     [0 0 0] ● X <= 1
+  //     [0 1 0]
+  //     [0 0 0]
   // The problem in the dual form (LMI) is
   // max 4*y1 + y2
-  // s.t [-y1  0.5]  is psd   (1)
-  //     [0.5  -y2]
+  // s.t [-y1  0.5 0]  is psd   (1)
+  //     [0.5  -y2 0]
+  //     [ 0   0   1]
   // The optimal solution is to the dual is y1 = -0.25, y2 = -1. Plug in this
   // dual solution to the left hand side of (1) is what Mosek/SCS returns as the
   // dual solution.
-  Eigen::Matrix2d psd_dual_expected;
+  Eigen::Matrix3d psd_dual_expected;
+  const double dual_obj = -4 * psd_dual(0, 0) - psd_dual(1,1);
+  const double primal_obj = result.get_optimal_cost();
+  EXPECT_NEAR(dual_obj, primal_obj, 1E-7);
   // clang-format off
-  psd_dual_expected << 0.25, 0.5,
-                       0.5, 1;
+  psd_dual_expected << 0.25, 0.5, 0,
+                       0.5, 1, 0,
+                       0,  0, 1;
   // clang-format on
   EXPECT_TRUE(CompareMatrices(psd_dual, psd_dual_expected, tol));
 }
