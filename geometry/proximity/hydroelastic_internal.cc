@@ -90,6 +90,21 @@ bool is_primitive(const Shape& shape) {
 
 using std::make_unique;
 
+SoftMesh::SoftMesh(
+    std::unique_ptr<VolumeMesh<double>> mesh,
+    std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure)
+    : mesh_(std::move(mesh)),
+      pressure_(std::move(pressure)),
+      bvh_(std::make_unique<Bvh<Obb, VolumeMesh<double>>>(*mesh_)) {
+  DRAKE_ASSERT(mesh_.get() == &pressure_->mesh());
+  surface_mesh_ = std::make_unique<TriangleSurfaceMesh<double>>(
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(*mesh_, nullptr,
+                                                     &tri_to_tet_));
+  surface_mesh_bvh_ =
+      std::make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*surface_mesh_);
+  mesh_topology_ = std::make_unique<VolumeMeshTopology>(*mesh_);
+}
+
 SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
   if (this == &s) return *this;
 
@@ -98,7 +113,12 @@ SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
   // the new mesh. So, we use CloneAndSetMesh() instead.
   pressure_ = s.pressure().CloneAndSetMesh(mesh_.get());
   bvh_ = make_unique<Bvh<Obb, VolumeMesh<double>>>(s.bvh());
-
+  surface_mesh_ =
+      std::make_unique<TriangleSurfaceMesh<double>>(s.surface_mesh());
+  tri_to_tet_ = s.tri_to_tet();
+  surface_mesh_bvh_ = std::make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(
+      s.surface_mesh_bvh());
+  mesh_topology_ = std::make_unique<VolumeMeshTopology>(s.mesh_topology());
   return *this;
 }
 
