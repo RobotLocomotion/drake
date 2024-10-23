@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
@@ -15,6 +16,8 @@
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/proximity/volume_mesh_topology.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -25,44 +28,76 @@ namespace hydroelastic {
 
 // TODO(SeanCurtis-TRI): When we do soft-soft contact, we'll need ∇p̃(e) as well.
 //  ∇p̃(e) is piecewise constant -- one ℜ³ vector per tetrahedron.
-/* Defines a soft mesh -- a mesh, its linearized pressure field, p̃(e), and its
- bounding volume hierarchy. While this class retains ownership of the mesh,
- we assume that both the pressure field and the bounding volume hierarchy
- are derived from the mesh. */
+/* Defines a soft mesh -- a volume mesh, its linearized pressure field, p̃(e),
+and derived objects:
+  - The bounding volume hierarchy of the volume mesh
+  - The surface of the volume mesh
+  - The bounding volume hierarchy of the surface
+  - The mapping from surface mesh triangles to volume mesh tetrahedra
+  - The topology of the volume mesh.
+*/
 class SoftMesh {
  public:
   SoftMesh() = default;
 
   SoftMesh(std::unique_ptr<VolumeMesh<double>> mesh,
-           std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure)
-      : mesh_(std::move(mesh)),
-        pressure_(std::move(pressure)),
-        bvh_(std::make_unique<Bvh<Obb, VolumeMesh<double>>>(*mesh_)) {
-    DRAKE_ASSERT(mesh_.get() == &pressure_->mesh());
-  }
+           std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure);
 
   SoftMesh(const SoftMesh& s) { *this = s; }
   SoftMesh& operator=(const SoftMesh& s);
   SoftMesh(SoftMesh&&) = default;
   SoftMesh& operator=(SoftMesh&&) = default;
 
+  /* The mesh representing this SoftMesh. */
   const VolumeMesh<double>& mesh() const {
     DRAKE_DEMAND(mesh_ != nullptr);
     return *mesh_;
   }
+
+  /* The surface of the mesh provided by mesh(). */
+  const TriangleSurfaceMesh<double>& surface_mesh() const {
+    DRAKE_DEMAND(surface_mesh_ != nullptr);
+    return *surface_mesh_;
+  }
+
+  /* The pressure field associated with mesh(). */
   const VolumeMeshFieldLinear<double, double>& pressure() const {
     DRAKE_DEMAND(pressure_ != nullptr);
     return *pressure_;
   }
+
+  /* The BVH of the mesh provided by mesh(). */
   const Bvh<Obb, VolumeMesh<double>>& bvh() const {
     DRAKE_DEMAND(bvh_ != nullptr);
     return *bvh_;
+  }
+
+  /* The BVH of the mesh provided by surface_mesh(). */
+  const Bvh<Obb, TriangleSurfaceMesh<double>>& surface_mesh_bvh() const {
+    DRAKE_DEMAND(surface_mesh_bvh_ != nullptr);
+    return *surface_mesh_bvh_;
+  }
+
+  /* A record of which TetFace each triangle of surface_mesh() came from. The
+  iᵗʰ entry in the returned vector corresponds to the iᵗʰ triangle in
+  surface_mesh(). */
+  const std::vector<TetFace>& tri_to_tet() const { return tri_to_tet_; }
+
+  /* The VolumeMeshTopology computed from the mesh provided by mesh(). */
+  const VolumeMeshTopology& mesh_topology() const {
+    DRAKE_DEMAND(mesh_topology_ != nullptr);
+    return *mesh_topology_;
   }
 
  private:
   std::unique_ptr<VolumeMesh<double>> mesh_;
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure_;
   std::unique_ptr<Bvh<Obb, VolumeMesh<double>>> bvh_;
+
+  std::unique_ptr<TriangleSurfaceMesh<double>> surface_mesh_;
+  std::unique_ptr<Bvh<Obb, TriangleSurfaceMesh<double>>> surface_mesh_bvh_;
+  std::unique_ptr<VolumeMeshTopology> mesh_topology_;
+  std::vector<TetFace> tri_to_tet_;
 };
 
 /* Defines a soft half space. The half space is defined such that the half
@@ -125,10 +160,32 @@ class SoftGeometry {
 
    This can be accomplished by querying `is_half_space()`. Attempting to access
    data members of the *wrong* type will throw an exception.  */
+  // TODO(SeanCurtis-TRI): remove all of these legacy API wrappers for SoftMesh
+  // and SoftHalfSpace.
   //@{
 
   bool is_half_space() const {
     return std::holds_alternative<SoftHalfSpace>(geometry_);
+  }
+
+  /* Returns a reference to the SoftMesh -- calling this will throw if
+   is_half_space() returns `true`.  */
+  const SoftMesh& soft_mesh() const {
+    if (is_half_space()) {
+      throw std::runtime_error(
+          "SoftGeometry::soft_mesh() cannot be invoked for soft half space.");
+    }
+    return std::get<SoftMesh>(geometry_);
+  }
+
+  /* Returns a reference to the SoftHalfSpace -- calling this will throw if
+   is_half_space() returns `false`.  */
+  const SoftHalfSpace& soft_half_space() const {
+    if (!is_half_space()) {
+      throw std::runtime_error(
+          "SoftGeometry::soft_half_space() cannot be invoked for soft mesh.");
+    }
+    return std::get<SoftHalfSpace>(geometry_);
   }
 
   /* Returns a reference to the volume mesh -- calling this will throw if

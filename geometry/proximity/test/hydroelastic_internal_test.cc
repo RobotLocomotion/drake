@@ -49,6 +49,9 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_NE(&original.mesh(), &copy.mesh());
     EXPECT_NE(&original.pressure(), &copy.pressure());
     EXPECT_NE(&original.bvh(), &copy.bvh());
+    EXPECT_NE(&original.surface_mesh(), &copy.surface_mesh());
+    EXPECT_NE(&original.surface_mesh_bvh(), &copy.surface_mesh_bvh());
+    EXPECT_NE(&original.mesh_topology(), &copy.mesh_topology());
 
     EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
 
@@ -61,6 +64,11 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_TRUE(copy_pressure.Equal(original_pressure));
 
     EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+
+    EXPECT_TRUE(copy.surface_mesh().Equal(original.surface_mesh()));
+    EXPECT_TRUE(copy.surface_mesh_bvh().Equal(original.surface_mesh_bvh()));
+    EXPECT_EQ(copy.tri_to_tet(), original.tri_to_tet());
+    EXPECT_TRUE(copy.mesh_topology().Equal(original.mesh_topology()));
   }
 
   // Test copy constructor.
@@ -71,6 +79,9 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_NE(&original.mesh(), &copy.mesh());
     EXPECT_NE(&original.pressure(), &copy.pressure());
     EXPECT_NE(&original.bvh(), &copy.bvh());
+    EXPECT_NE(&original.surface_mesh(), &copy.surface_mesh());
+    EXPECT_NE(&original.surface_mesh_bvh(), &copy.surface_mesh_bvh());
+    EXPECT_NE(&original.mesh_topology(), &copy.mesh_topology());
 
     EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
 
@@ -83,6 +94,11 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_TRUE(copy_pressure.Equal(original_pressure));
 
     EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+
+    EXPECT_TRUE(copy.surface_mesh().Equal(original.surface_mesh()));
+    EXPECT_TRUE(copy.surface_mesh_bvh().Equal(original.surface_mesh_bvh()));
+    EXPECT_EQ(copy.tri_to_tet(), original.tri_to_tet());
+    EXPECT_TRUE(copy.mesh_topology().Equal(original.mesh_topology()));
   }
 
   // Test move constructor and move-assignment operator.
@@ -98,12 +114,20 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     const VolumeMeshFieldLinear<double, double>* const pressure_ptr =
         &start.pressure();
     const Bvh<Obb, VolumeMesh<double>>* const bvh_ptr = &start.bvh();
+    const TriangleSurfaceMesh<double>* const surface_mesh_ptr =
+        &start.surface_mesh();
+    const Bvh<Obb, TriangleSurfaceMesh<double>>* const surface_mesh_bvh_ptr =
+        &start.surface_mesh_bvh();
+    const VolumeMeshTopology* const mesh_topology_ptr = &start.mesh_topology();
 
     // Test move constructor.
     SoftMesh move_constructed(std::move(start));
     EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
     EXPECT_EQ(&move_constructed.pressure(), pressure_ptr);
     EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+    EXPECT_EQ(&move_constructed.surface_mesh(), surface_mesh_ptr);
+    EXPECT_EQ(&move_constructed.surface_mesh_bvh(), surface_mesh_bvh_ptr);
+    EXPECT_EQ(&move_constructed.mesh_topology(), mesh_topology_ptr);
 
     // Test move-assignment operator.
     SoftMesh move_assigned;
@@ -111,6 +135,9 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
     EXPECT_EQ(&move_assigned.pressure(), pressure_ptr);
     EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+    EXPECT_EQ(&move_assigned.surface_mesh(), surface_mesh_ptr);
+    EXPECT_EQ(&move_assigned.surface_mesh_bvh(), surface_mesh_bvh_ptr);
+    EXPECT_EQ(&move_assigned.mesh_topology(), mesh_topology_ptr);
   }
 }
 
@@ -122,6 +149,8 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
 // std::variant and the move/copy semantics of the underlying data types
 // (already tested). If SoftGeometry changes its implementation details, this
 // logic would need to be revisited.
+// TODO(SeanCurtis-TRI): Clean up these tests to remove usage of legacy API
+// wrappers in SoftGeometry.
 GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
   const Sphere sphere(0.5);
   const double resolution_hint = 0.5;
@@ -132,6 +161,11 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
       MakeSpherePressureField(sphere, mesh.get(), hydroelastic_modulus));
 
   const SoftGeometry original(SoftMesh(std::move(mesh), std::move(pressure)));
+
+  // In all of the following tests we are only looking for evidence of
+  // copying/moving. Since SoftGeometry relies on the copy/move semantics of the
+  // underlying data types, we therefore do not check exhaustively for a deep
+  // copy.
 
   // Test copy-assignment operator.
   {
@@ -965,6 +999,11 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
   EXPECT_EQ(half_space->pressure_scale(),
             properties.GetProperty<double>(kHydroGroup, kElastic) / thickness);
 
+  DRAKE_EXPECT_NO_THROW(half_space->soft_half_space());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      half_space->soft_mesh(),
+      "SoftGeometry::soft_mesh.* cannot be invoked for soft half space.*");
+
   DRAKE_EXPECT_THROWS_MESSAGE(
       half_space->mesh(),
       "SoftGeometry::mesh.* cannot be invoked .* half space");
@@ -998,6 +1037,12 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   // This is the only test where we confirm that bvh() *doesn't* throw for
   // meshes and slab_thickness() does.
   EXPECT_NO_THROW(sphere1->bvh());
+
+  DRAKE_EXPECT_NO_THROW(sphere1->soft_mesh());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      sphere1->soft_half_space(),
+      "SoftGeometry::soft_half_space.* cannot be invoked for soft mesh.*");
+
   DRAKE_EXPECT_THROWS_MESSAGE(
       sphere1->pressure_scale(),
       "SoftGeometry::pressure_scale.* cannot be invoked .* soft mesh");
@@ -1041,7 +1086,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // of two --> sphere 2's level of refinement is one greater than sphere
     // 1's. Both are missing the "tessellation_strategy" property so it should
     // default to kSingleInteriorVertex. So, sphere 2 must have 4X the
-    // tetrahedra as sphere 1.
+    // tetrahedra and surface faces as sphere 1.
     EXPECT_EQ(sphere1->mesh().num_elements() * 4,
               sphere2->mesh().num_elements());
   }
@@ -1051,7 +1096,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // of tets (compared to an otherwise identical mesh declared to sparse).
 
     // Starting with sphere 1's properties, we'll set it to dense and observe
-    // more tets.
+    // more tets but the same amount of surface faces.
     ProximityProperties dense_properties(properties1);
     dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                  TessellationStrategy::kDenseInteriorVertices);

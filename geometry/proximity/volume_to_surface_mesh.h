@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <compare>
 #include <vector>
 
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
@@ -27,6 +28,10 @@ struct TetFace {
    |     2      |       1, 3, 0                |
    |     3      |       2, 1, 0                | */
   int face_index{};
+
+  std::strong_ordering operator<=>(const TetFace&) const;  // = default;
+
+  bool operator==(const TetFace&) const;  // = default;
 };
 
 /* Identifies the triangular boundary faces of a tetrahedral volume mesh.

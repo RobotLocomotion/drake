@@ -26,6 +26,10 @@ struct BoundaryFace {
 
 }  // namespace
 
+std::strong_ordering TetFace::operator<=>(const TetFace&) const = default;
+
+bool TetFace::operator==(const TetFace&) const = default;
+
 std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
     const std::vector<VolumeElement>& tetrahedra,
     std::vector<TetFace>* element_indices) {
