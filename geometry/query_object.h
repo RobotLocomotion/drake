@@ -754,8 +754,16 @@ class QueryObject {
        and the gradient are computed from the possibly non-convex surface of
        the geometry. The nearest point and the gradient may not be continuous.
 
-   @pre The %Mesh shape must be watertight (no holes, no duplicated vertices).
-   Otherwise, the calculation might be incorrect.
+   @pre The %Mesh as a triangle mesh must be a closed manifold without
+   duplicate vertices or self-intersection, and every triangle's face winding
+   gives an outward-pointing face normal. Non-compliant meshes will introduce
+   regions in which the query point will report the wrong sign (and, therefore,
+   the wrong gradient) due to a misclassification of being inside or outside.
+   This leads to discontinuities in the distance field across the boundaries
+   of these regions; the distance sign will flip while the magnitude of the
+   distance value is arbitrarily far away from zero. For open meshes, the same
+   principle holds. The open mesh, which has no true concept of "inside",
+   will nevertheless report some query points as being inside.
 
    @note For a sphere G, the signed distance function φᵢ(p) has an undefined
    gradient vector at the center of the sphere--every point on the sphere's
