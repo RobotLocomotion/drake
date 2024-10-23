@@ -3,9 +3,25 @@ load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "dev",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":mbp_environment_collision_checker",
+        ":sphere_robot_model_collision_checker",
+        ":voxel_collision_map",
+        ":voxel_self_filter",
+        ":voxel_signed_distance_field",
+        ":voxel_tagged_object_collision_map",
+        ":voxelized_environment_builder",
+        ":voxelized_environment_collision_checker",
+    ],
+)
 
 drake_cc_library(
     name = "sphere_robot_model_collision_checker",
@@ -68,6 +84,7 @@ drake_cc_library(
         "voxel_signed_distance_field_internal.h",
         "voxel_tagged_object_collision_map_internal.h",
     ],
+    tags = ["exclude_from_package"],
     deps = [
         ":voxel_collision_map",
         ":voxel_signed_distance_field",
