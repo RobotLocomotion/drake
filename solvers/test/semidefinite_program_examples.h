@@ -9,12 +9,13 @@ namespace drake {
 namespace solvers {
 namespace test {
 /// Test a trivial semidefinite problem.
-/// min S(0, 0) + S(1, 1)
+/// min S(0, 0) + S(1, 1) + S(2, 2)
 /// s.t S(1, 0) = 1
 ///     S is p.s.d
 /// The analytical solution is
-/// S = [1 1]
-///     [1 1]
+/// S = [1 1 0]
+///     [1 1 0]
+///     [0 0 0]
 void TestTrivialSDP(const SolverInterface& solver, double tol);
 
 // Solve a semidefinite programming problem.
@@ -87,13 +88,16 @@ void SolveSDPwithSecondOrderConeExample2(const SolverInterface& solver,
 
 /** Solve an SDP with two PSD constraint, where each PSD constraint has
  * duplicate entries and the two PSD matrix share a common variables.
- * min 2 * x0 + x2
- * s.t [x0 x1] is psd
- *     [x1 x0]
- *     [x0 x2] is psd
- *     [x2 x0]
+ * min 2 * x0 + x2 + x5
+ * s.t [x0 x1 x3] is psd
+ *     [x1 x0 x4]
+ *     [x3 x4 x5]
+ *
+ *     [x0 x2 x3] is psd
+ *     [x2 x0 x4]
+ *     [x3 x4 x5]
  *     x1 == 1
- * The optimal solution will be x = (1, 1, -1).
+ * The optimal solution will be x = (1, 1, -1, 0, 0, 0).
  */
 void SolveSDPwithOverlappingVariables(const SolverInterface& solver,
                                       double tol);
@@ -101,26 +105,32 @@ void SolveSDPwithOverlappingVariables(const SolverInterface& solver,
 /** Solve an SDP with quadratic cost and two PSD constraints, where each PSD
  * constraint has duplicate entries and the two PSD matrix share a common
  * variables.
- * min x0² + 2*x0 + x2
- * s.t ⎡x0 x1⎤ is psd
- *     ⎣x1 x0⎦
- *     ⎡x0 x2⎤ is psd
- *     ⎣x2 x0⎦
+ * min x0² + 2*x0 + x2 + x5
+ * s.t ⎡x0 x1 x3⎤ is psd
+ *     |x1 x0 x4|
+ *     ⎣x3 x4 x5⎦
+ *
+ *     ⎡x0 x2 x3⎤ is psd
+ *     |x2 x0 x4|
+ *     ⎣x3 x4 x5⎦
+ *
  *     x1 == 1
  *
- * The optimal solution will be x = (1, 1, -1).
+ * The optimal solution will be x = (1, 1, -1, 0, 0, 0).
  */
 void SolveSDPwithQuadraticCosts(const SolverInterface& solver, double tol);
 
 /**
  * Test a simple SDP with only PSD constraint and bounding box constraint.
- * min x1
- * s.t ⎡x0 x1⎤ is psd
- *     ⎣x1 x2⎦
+ * min x1 + x5
+ * s.t ⎡x0 x1 x3⎤ is psd
+ *     |x1 x2 x4|
+ *     ⎣x3 x4 x5⎦
  *     x0 <= 4
  *     x2 <= 1
  */
-void TestSDPDualSolution1(const SolverInterface& solver, double tol);
+void TestSDPDualSolution1(const SolverInterface& solver, double tol,
+                          double complementarity_tol = 5E-7);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
