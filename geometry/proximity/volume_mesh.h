@@ -50,6 +50,9 @@ class VolumeElement {
   explicit VolumeElement(const int v[4])
       : VolumeElement(v[0], v[1], v[2], v[3]) {}
 
+  /** Returns the number of vertices in this element. */
+  int num_vertices() const { return 4; }
+
   /** Returns the vertex index in VolumeMesh of the i-th vertex of this
    element.
    @param i  The local index of the vertex in this element.
@@ -143,10 +146,11 @@ class VolumeMesh {
     if (elements_.empty()) {
       throw std::logic_error("A mesh must contain at least one tetrahedron");
     }
+    ComputePositionDependentQuantities();
   }
 
   const VolumeElement& element(int e) const {
-    DRAKE_DEMAND(0 <= e && num_elements());
+    DRAKE_DEMAND(0 <= e && e < num_elements());
     return elements_[e];
   }
 
@@ -157,6 +161,36 @@ class VolumeMesh {
   const Vector3<T>& vertex(int v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_M_[v];
+  }
+
+  /** Returns the inward facing normal of face f of element e.
+   @param e The index of the element.
+   @param f The index of the face of e.
+   @pre e ∈ [0, num_elements())
+   @pre f ∈ [0, 4)
+   */
+  const Vector3<T>& inward_normal(int e, int f) const {
+    DRAKE_DEMAND(0 <= e && e < num_elements());
+    DRAKE_DEMAND(0 <= f && f < kVertexPerElement);
+    return inward_normals_M_[e][f];
+  }
+
+  /** Returns the i-th edge of element e.
+   @param e The index of the element.
+   @param a The starting vertex of the edge.
+   @param b The ending vertex of the edge.
+   @pre e ∈ [0, num_elements())
+   @pre a ∈ [0, 4)
+   @pre b ∈ [0, 4)
+   @pre a < b
+  */
+  const Vector3<T>& edge(int e, int a, int b) const {
+    DRAKE_DEMAND(0 <= e && e < num_elements());
+    DRAKE_DEMAND(0 <= a && a < kVertexPerElement);
+    DRAKE_DEMAND(0 <= b && b < kVertexPerElement);
+    DRAKE_DEMAND(a < b);
+    const int index = a + b - !a;
+    return edges_M_[e][index];
   }
 
   const std::vector<Vector3<T>>& vertices() const { return vertices_M_; }
@@ -174,22 +208,20 @@ class VolumeMesh {
   /** Calculates volume of a tetrahedral element. It is a signed volume, i.e.,
    it can be negative depending on the order of the four vertices of the
    tetrahedron.
-   @pre `f ∈ [0, num_elements())`.
+   @pre `e ∈ [0, num_elements())`.
    */
   T CalcTetrahedronVolume(int e) const {
     // TODO(DamrongGuoy): Refactor this function out of VolumeMesh when we need
     //  it. CalcTetrahedronVolume(index) will call
     //  CalcTetrahedronVolume(Vector3, Vector3, Vector3, Vector3).
-    const Vector3<T>& a = vertices_M_[elements_[e].vertex(0)];
-    const Vector3<T>& b = vertices_M_[elements_[e].vertex(1)];
-    const Vector3<T>& c = vertices_M_[elements_[e].vertex(2)];
-    const Vector3<T>& d = vertices_M_[elements_[e].vertex(3)];
     // Assume the first three vertices a, b, c define a triangle with its
     // right-handed normal pointing towards the inside of the tetrahedra. The
     // fourth vertex, d, is on the positive side of the plane defined by a,
     // b, c. With this convention, the computed volume will be positive,
     // otherwise negative.
-    const T volume = (d - a).dot((b - a).cross(c - a)) / T(6.0);
+    const T volume = (this->edge(e, 0, 3).dot(
+                         this->edge(e, 0, 1).cross(this->edge(e, 0, 2)))) /
+                     T(6.0);
     return volume;
   }
 
@@ -352,6 +384,9 @@ class VolumeMesh {
     return *result;
   }
 
+  // Calculates the inward facing normals and element edges.
+  void ComputePositionDependentQuantities();
+
   // Like CalcGradBarycentric, but returns std::nullopt instead of throwing on
   // degenerate geometry.
   std::optional<Vector3<T>> MaybeCalcGradBarycentric(int e, int i) const;
@@ -361,6 +396,14 @@ class VolumeMesh {
   // The vertices that are shared between the tetrahedral elements, measured and
   // expressed in the mesh's frame M.
   std::vector<Vector3<T>> vertices_M_;
+  // Stores the inward facing normals of each face of the tetrahedron, measured
+  // and expressed in the mesh's frame M.. Index i stores the normal of the face
+  // formed by vertices {0, 1, 2, 3} / {i}.
+  std::vector<std::array<Vector3<T>, 4>> inward_normals_M_;
+  // Stores the edges of each tetrahedron, measured and
+  // expressed in the mesh's frame M, in lexicographical order:
+  // {0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}
+  std::vector<std::array<Vector3<T>, 6>> edges_M_;
 
   friend class VolumeMeshTester<T>;
 };

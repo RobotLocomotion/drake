@@ -36,6 +36,17 @@ namespace {
 using math::RigidTransform;
 using math::RollPitchYaw;
 
+template <typename T>
+VectorX<T> ToVectorX(const std::vector<Vector3<T>>& input) {
+  VectorX<T> result(input.size() * 3);
+  for (int i = 0; i < ssize(input); ++i) {
+    for (int d = 0; d < 3; ++d) {
+      result(3 * i + d) = input[i](d);
+    }
+  }
+  return result;
+}
+
 // Test instantiation of VolumeMesh of a geometry M and inspecting its
 // components. By default, the vertex positions are expressed in M's frame.
 // The optional parameter X_WM will change the vertex positions to W's frame.
@@ -416,6 +427,26 @@ void TestTransformVertices() {
   auto volume_mesh_W_expected = TestVolumeMesh<T>(RigidTransform<T>(X_WM));
   EXPECT_TRUE(volume_mesh_W->Equal(*volume_mesh_W_expected,
                                    4.0 * std::numeric_limits<T>::epsilon()));
+  // Check position dependent quantities
+  for (int i = 0; i < volume_mesh_W->num_elements(); ++i) {
+    // Test normals
+    for (int j = 0; j < 4; ++j) {
+      EXPECT_TRUE(CompareMatrices(volume_mesh_W->inward_normal(i, j),
+                                  volume_mesh_W_expected->inward_normal(i, j),
+                                  2.0 * std::numeric_limits<T>::epsilon(),
+                                  MatrixCompareType::relative));
+    }
+
+    // Test edges
+    for (int j = 0; j < 4; ++j) {
+      for (int k = j + 1; k < 4; ++k) {
+        EXPECT_TRUE(CompareMatrices(volume_mesh_W->edge(i, j, k),
+                                    volume_mesh_W_expected->edge(i, j, k),
+                                    2.0 * std::numeric_limits<T>::epsilon(),
+                                    MatrixCompareType::relative));
+      }
+    }
+  }
 }
 
 GTEST_TEST(VolumeMeshTest, TestTransformVerticesDouble) {
@@ -424,6 +455,113 @@ GTEST_TEST(VolumeMeshTest, TestTransformVerticesDouble) {
 
 GTEST_TEST(VolumeMeshTest, TestTransformVerticesAutoDiffXd) {
   TestTransformVertices<AutoDiffXd>();
+}
+
+template <typename T>
+void TestSetAllPositions() {
+  const RigidTransform<T> X_WM(
+      RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
+      Vector3<T>(1.0, 2.0, 3.0));
+  auto volume_mesh_W = TestVolumeMesh<T>(RigidTransform<T>());
+  auto volume_mesh_W_expected = TestVolumeMesh<T>(RigidTransform<T>(X_WM));
+
+  volume_mesh_W->SetAllPositions(ToVectorX(volume_mesh_W_expected->vertices()));
+
+  EXPECT_TRUE(volume_mesh_W->Equal(*volume_mesh_W_expected,
+                                   4.0 * std::numeric_limits<T>::epsilon()));
+
+  // Check position dependent quantities
+  for (int i = 0; i < volume_mesh_W->num_elements(); ++i) {
+    // Test normals
+    for (int j = 0; j < 4; ++j) {
+      EXPECT_TRUE(CompareMatrices(volume_mesh_W->inward_normal(i, j),
+                                  volume_mesh_W_expected->inward_normal(i, j),
+                                  std::numeric_limits<T>::epsilon(),
+                                  MatrixCompareType::relative));
+    }
+
+    // Test edges
+    for (int j = 0; j < 4; ++j) {
+      for (int k = j + 1; k < 4; ++k) {
+        EXPECT_TRUE(CompareMatrices(
+            volume_mesh_W->edge(i, j, k), volume_mesh_W_expected->edge(i, j, k),
+            std::numeric_limits<T>::epsilon(), MatrixCompareType::relative));
+      }
+    }
+  }
+}
+
+GTEST_TEST(VolumeMeshTest, TestSetAllPositionsDouble) {
+  TestSetAllPositions<double>();
+}
+
+GTEST_TEST(VolumeMeshTest, TestSetAllPositionsAutoDiffXd) {
+  TestSetAllPositions<AutoDiffXd>();
+}
+
+template <typename T>
+void TestPositionDependentQuantities() {
+  const RigidTransform<T> X_WM(
+      RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
+      Vector3<T>(1.0, 2.0, 3.0));
+  auto volume_mesh_W = TestVolumeMesh<T>(X_WM);
+
+  // Edge (i, j), regardless of the lexicographical order of i and j.
+  auto signed_edge = [&volume_mesh_W](int e, int i, int j) -> const Vector3<T> {
+    if (i > j) return -volume_mesh_W->edge(e, j, i);
+    return volume_mesh_W->edge(e, i, j);
+  };
+
+  // Test algebraic identities on computed quantities.
+  for (int i = 0; i < volume_mesh_W->num_elements(); ++i) {
+    const VolumeElement& e = volume_mesh_W->element(i);
+    for (int j = 0; j < 4; ++j) {
+      // Local indices of neighbor vertices.
+      const int bj = (j + 1) % 4;
+      const int cj = (j + 2) % 4;
+      const int dj = (j + 3) % 4;
+
+      const Vector3<T>& a = volume_mesh_W->vertex(e.vertex(j));
+      const Vector3<T>& b = volume_mesh_W->vertex(e.vertex(bj));
+      const Vector3<T>& c = volume_mesh_W->vertex(e.vertex(cj));
+      const Vector3<T>& d = volume_mesh_W->vertex(e.vertex(dj));
+
+      // Inward normal of face (b, c, d) pointing towards a.
+      const Vector3<T>& n = volume_mesh_W->inward_normal(i, j);
+
+      // Edges from a to {b, c, d} point into the face.
+      EXPECT_LT(n.dot(signed_edge(i, j, bj)), 0);
+      EXPECT_LT(n.dot(signed_edge(i, j, cj)), 0);
+      EXPECT_LT(n.dot(signed_edge(i, j, dj)), 0);
+
+      // Edges of the face are perpendicular to the face.
+      EXPECT_NEAR(ExtractDoubleOrThrow(n.dot(signed_edge(i, bj, cj))), 0,
+                  std::numeric_limits<double>::epsilon());
+      EXPECT_NEAR(ExtractDoubleOrThrow(n.dot(signed_edge(i, bj, dj))), 0,
+                  std::numeric_limits<double>::epsilon());
+      EXPECT_NEAR(ExtractDoubleOrThrow(n.dot(signed_edge(i, cj, dj))), 0,
+                  std::numeric_limits<double>::epsilon());
+
+      // Edge arithmetic (e.g. a + (a, b) ≅ b)
+      EXPECT_TRUE(CompareMatrices(b, a + signed_edge(i, j, bj),
+                                  std::numeric_limits<double>::epsilon(),
+                                  MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(c, a + signed_edge(i, j, cj),
+                                  std::numeric_limits<double>::epsilon(),
+                                  MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(d, a + signed_edge(i, j, dj),
+                                  std::numeric_limits<double>::epsilon(),
+                                  MatrixCompareType::relative));
+    }
+  }
+}
+
+GTEST_TEST(VolumeMeshTest, TestPositionDependentQuantitiesDouble) {
+  TestPositionDependentQuantities<double>();
+}
+
+GTEST_TEST(VolumeMeshTest, TestPositionDependentQuantitiesAutoDiffXd) {
+  TestPositionDependentQuantities<AutoDiffXd>();
 }
 
 template <typename T>
