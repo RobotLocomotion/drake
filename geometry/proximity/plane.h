@@ -73,6 +73,28 @@ class Plane {
     displacement_ = nhat_F_.dot(p_FP);
   }
 
+  Plane(const Vector3<T>& n_F, const T& displacement,
+        bool already_normalized = false) {
+    if (!already_normalized) {
+      const T magnitude = n_F.norm();
+      // NOTE: This threshold is arbitrary. Given Drake uses mks and generally
+      // works on problems at a human scale, the assumption is that if someone
+      // passes in an incredibly small normal (picometers), it is probably an
+      // error.
+      if (magnitude < 1e-10) {
+        throw std::runtime_error(fmt::format(
+            "Cannot instantiate plane from normal n_F = [{}]; its magnitude is "
+            "too small: {}",
+            fmt_eigen(n_F.transpose()), magnitude));
+      }
+      nhat_F_ = n_F / magnitude;
+    } else {
+      DRAKE_ASSERT_VOID(ThrowIfInsufficientlyNormal(n_F));
+      nhat_F_ = n_F;
+    }
+    displacement_ = displacement;
+  }
+
   /* Computes the height of Point Q relative to the plane. A positive height
    indicates the point lies _above_ the plane; negative height indicates
    _below_. The point must be measured and expressed in the same frame as the
