@@ -59,15 +59,9 @@ std::unique_ptr<ContactSurface<T>> CalcCompliantCompliant(
     HydroelasticContactRepresentation representation) {
   DRAKE_DEMAND(!compliant_F.is_half_space() && !compliant_G.is_half_space());
 
-  const VolumeMeshFieldLinear<double, double>& field_F =
-      compliant_F.pressure_field();
-  const Bvh<Obb, VolumeMesh<double>>& bvh_F = compliant_F.bvh();
-  const VolumeMeshFieldLinear<double, double>& field_G =
-      compliant_G.pressure_field();
-  const Bvh<Obb, VolumeMesh<double>>& bvh_G = compliant_G.bvh();
-
   return ComputeContactSurfaceFromCompliantVolumes(
-      id_F, field_F, bvh_F, X_WF, id_G, field_G, bvh_G, X_WG, representation);
+      id_F, compliant_F.soft_mesh(), X_WF, id_G, compliant_G.soft_mesh(), X_WG,
+      representation);
 }
 
 template <typename T>

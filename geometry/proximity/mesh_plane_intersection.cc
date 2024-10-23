@@ -22,14 +22,16 @@ constexpr std::array<std::pair<int, int>, 6> kTetEdges = {
     // pyramid with top at node 3.
     TetrahedronEdge{0, 3}, TetrahedronEdge{1, 3}, TetrahedronEdge{2, 3}};
 
-/* Marching tetrahedra table. Each entry in this table has an index value
+/* Marching tetrahedra tables. Each entry in these tables have an index value
  based on a binary encoding of the signs of the plane's signed distance
  function evaluated at all tetrahedron vertices. Therefore, with four
  vertices and two possible signs, we have a total of 16 entries. We encode
  the table indexes in binary so that a "1" and "0" correspond to a vertex
  with positive or negative signed distance, respectively. The least
  significant bit (0) corresponds to vertex 0 in the tetrahedron, and the
- most significant bit (3) is vertex 3. Each entry stores a vector of edges.
+ most significant bit (3) is vertex 3. */
+
+/* Each entry of kMarchingTetsEdgeTable stores a vector of edges.
  Based on the signed distance values, these edges are the ones that
  intersect the plane. Edges are numbered according to the table kTetEdges.
  The edges have been ordered such that a polygon formed by visiting the
@@ -41,7 +43,7 @@ constexpr std::array<std::pair<int, int>, 6> kTetEdges = {
  intersecting edges is equal to the index of the *first* -1 (with an implicit
  logical -1 at index 4).  */
 // clang-format off
-constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
+constexpr std::array<std::array<int, 4>, 16> kMarchingTetsEdgeTable = {
                                 /* bits    3210 */
     std::array<int, 4>{-1, -1, -1, -1}, /* 0000 */
     std::array<int, 4>{0, 3, 2, -1},    /* 0001 */
@@ -59,15 +61,74 @@ constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
     std::array<int, 4>{0, 4, 1, -1},    /* 1101 */
     std::array<int, 4>{0, 2, 3, -1},    /* 1110 */
     std::array<int, 4>{-1, -1, -1, -1}  /* 1111 */};
+
+/* Each entry of kMarchingTetsFaceTable stores a vector of face indices.
+ Based on the signed distance values, these faces are the ones that intersect
+ the plane. Faces are indexed in the following fashion: index i corresponds to
+ the face formed by vertices {0, 1, 2, 3} - {i}. For instance face 0 corresponds
+ to face {1, 2, 3} etc.
+
+ The order of the indices is also constructed to follow the order of the edges
+ listed in the corresponding entry in kMarkingTetsEdgeTable. For instance:
+
+   kMarchingTetsEdgeTable[0001] = {0, 3, 2, -1}
+
+ Which maps to the edge list:
+
+   {(0, 1), (0, 3), (2, 0)}
+
+ The edge of the polygon connecting tet edge (0, 1) to (0, 3) lies on face
+ {0, 1, 3} thus the first element of kMarchingTetsFaceTable[0001] is face 2.
+
+ The edge of the polygon connecting tet edge (0, 3) to (2, 0) lies on face
+ {0, 2, 3} thus the second element of kMarchingTetsFaceTable[0001] is face 1.
+
+ The edge of the polygon connecting tet edge (2, 0) to (0, 1) lies on face
+ {0, 1, 2} thus the second element of kMarchingTetsFaceTable[0001] is face 3.
+
+ Thus:
+
+   kMarchingTetsFaceTable[0001] = {2, 1, 3, -1}
+
+ A -1 is a sentinel value indicating no face encoding. The number of
+ intersecting face is equal to the index of the *first* -1 (with an implicit
+ logical -1 at index 4).
+
+*/
+
+constexpr std::array<std::array<int, 4>, 16> kMarchingTetsFaceTable = {
+                                /* bits    3210 */
+    std::array<int, 4>{-1, -1, -1, -1}, /* 0000 */
+    std::array<int, 4>{2, 1, 3, -1},    /* 0001 */
+    std::array<int, 4>{3, 0, 2, -1},    /* 0010 */
+    std::array<int, 4>{2, 1, 3, 0},     /* 0011 */
+    std::array<int, 4>{3, 1, 0, -1},    /* 0100 */
+    std::array<int, 4>{2, 1, 0, 3},     /* 0101 */
+    std::array<int, 4>{3, 1, 0, 2},     /* 0110 */
+    std::array<int, 4>{1, 0, 2, -1},    /* 0111 */
+    std::array<int, 4>{2, 0, 1, -1},    /* 1000 */
+    std::array<int, 4>{0, 1, 3, 2},     /* 1001 */
+    std::array<int, 4>{0, 1, 2, 3},     /* 1010 */
+    std::array<int, 4>{0, 1, 3, -1},    /* 1011 */
+    std::array<int, 4>{3, 1, 2, 0},     /* 1100 */
+    std::array<int, 4>{2, 0, 3, -1},    /* 1101 */
+    std::array<int, 4>{3, 1, 2, -1},    /* 1110 */
+    std::array<int, 4>{-1, -1, -1, -1}  /* 1111 */};
 // clang-format on
+
 }  // namespace
 
 template <typename T>
 void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
                                const Plane<T>& plane_M,
                                std::vector<Vector3<T>>* polygon_vertices,
-                               std::vector<SortedPair<int>>* cut_edges) {
+                               std::vector<SortedPair<int>>* cut_edges,
+                               std::vector<int>* faces) {
   DRAKE_DEMAND(polygon_vertices != nullptr);
+
+  if (faces != nullptr) {
+    faces->clear();
+  }
 
   T distance[4];
   // Bit encoding of the sign of signed-distance: v0, v1, v2, v3.
@@ -78,15 +139,21 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     if (distance[i] > T(0)) intersection_code |= 1 << i;
   }
 
-  const std::array<int, 4>& intersected_edges =
-      kMarchingTetsTable[intersection_code];
-
   // No intersecting edges --> no intersection.
-  if (intersected_edges[0] == -1) return;
+  if (kMarchingTetsEdgeTable[intersection_code][0] == -1) return;
 
-  for (int e = 0; e < 4; ++e) {
-    const int edge_index = intersected_edges[e];
-    if (edge_index == -1) break;
+  // We have four candidate tet-edges and four candidate tet-faces, so we re-use
+  // `i` for indexing both.
+  for (int i = 0; i < 4; ++i) {
+    const int edge_index = kMarchingTetsEdgeTable[intersection_code][i];
+    // When we encounter a -1 in the edge table, that marks the end of the edge
+    // list. There is always a corresponding -1 at the same index `i` in
+    // kMarchingTetsFaceTable.
+    if (edge_index == -1) {
+      DRAKE_ASSERT(kMarchingTetsFaceTable[intersection_code][i] == -1);
+      break;
+    }
+
     const TetrahedronEdge& tet_edge = kTetEdges[edge_index];
     const int v0 = mesh_M.element(tet_index).vertex(tet_edge.first);
     const int v1 = mesh_M.element(tet_index).vertex(tet_edge.second);
@@ -102,6 +169,9 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     const T t = d_v0 / (d_v0 - d_v1);
     const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
     polygon_vertices->push_back(p_MC);
+    if (faces != nullptr) {
+      faces->push_back(kMarchingTetsFaceTable[intersection_code][i]);
+    }
     if (cut_edges != nullptr) {
       const SortedPair<int> mesh_edge{v0, v1};
       cut_edges->push_back(mesh_edge);
@@ -129,7 +199,7 @@ int SliceTetWithPlane(
   }
 
   const std::array<int, 4>& intersected_edges =
-      kMarchingTetsTable[intersection_code];
+      kMarchingTetsEdgeTable[intersection_code];
 
   // No intersecting edges --> no intersection.
   if (intersected_edges[0] == -1) return 0;

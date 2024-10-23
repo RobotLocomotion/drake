@@ -49,7 +49,8 @@ template <typename T>
 void SliceTetrahedronWithPlane(
     int tet_index, const VolumeMesh<double>& mesh_M, const Plane<T>& plane_M,
     std::vector<Vector3<T>>* polygon_vertices,
-    std::vector<SortedPair<int>>* cut_edges = nullptr);
+    std::vector<SortedPair<int>>* cut_edges = nullptr,
+    std::vector<int>* faces = nullptr);
 
 /* Intersects a tetrahedron with a plane; the resulting polygon is passed
  into the provided MeshBuilder.
