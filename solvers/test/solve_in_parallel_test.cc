@@ -37,11 +37,11 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelInitialGuess) {
   DRAKE_DEMAND(Parallelism::Max().num_threads() > 1);
 
   // Test with gurobi solver, which uses an initial guess.
-  std::vector<std::unique_ptr<MathematicalProgram>> progs;
-  std::vector<const MathematicalProgram*> prog_ptrs;
+  MathematicalProgram prog;
+  std::vector<const MathematicalProgram*> progs;
   std::vector<const Eigen::VectorXd*> initial_guesses;
-  std::vector<const SolverOptions*> solver_options;
-  std::vector<std::optional<SolverId>> solver_ids;
+  SolverOptions solver_options;
+  std::optional<SolverId> solver_ids;
 
   // The initial guess
   Eigen::VectorXd initial_guess_0(3);
@@ -49,35 +49,31 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelInitialGuess) {
   Eigen::VectorXd initial_guess_1(3);
   initial_guess_1 << 0, 0, 1;
   // The solver options
-  SolverOptions solver_options_local;
-  solver_options_local.SetOption(GurobiSolver::id(), "Presolve", 0);
-  solver_options_local.SetOption(GurobiSolver::id(), "Heuristics", 0.0);
+  solver_options.SetOption(GurobiSolver::id(), "Presolve", 0);
+  solver_options.SetOption(GurobiSolver::id(), "Heuristics", 0.0);
 
   // The variables used in the programs
   symbolic::Variable x("x", symbolic::Variable::Type::BINARY);
   symbolic::Variable y("y");
-  symbolic::Variable z("y");
+  symbolic::Variable z("z");
   Eigen::VectorX<symbolic::Variable> vars(3);
   vars << x, y, z;
 
-  int num_trials = 10;
+  prog.AddDecisionVariables(vars);
+  prog.AddLinearConstraint(y + z == 1);
+  const int num_trials = 10;
   for (int i = 0; i < num_trials; i++) {
-    progs.push_back(std::make_unique<MathematicalProgram>());
-    progs.back()->AddDecisionVariables(vars);
-    progs.back()->AddLinearConstraint(y + z == 1);
-    prog_ptrs.push_back(progs.back().get());
+    progs.push_back(&prog);
     if (i < num_trials / 2) {
       initial_guesses.push_back(&initial_guess_0);
     } else {
       initial_guesses.push_back(&initial_guess_1);
     }
-    solver_options.push_back(&solver_options_local);
-    solver_ids.push_back(GurobiSolver::id());
   }
   if (GurobiSolver::is_available()) {
     const std::vector<MathematicalProgramResult> results =
-        SolveInParallel(prog_ptrs, &initial_guesses, &solver_options,
-                        &solver_ids, Parallelism::Max(), false);
+        SolveInParallel(progs, &initial_guesses, &solver_options,
+                        GurobiSolver::id(), Parallelism::Max(), false);
 
     for (int i = 0; i < num_trials; i++) {
       if (i < num_trials / 2) {
@@ -98,7 +94,7 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
   std::vector<const MathematicalProgram*> progs;
   std::vector<const SolverOptions*> solver_options;
   std::vector<std::optional<SolverId>> solver_ids;
-  int num_trials = 10;
+  const int num_trials = 10;
 
   // This is a program which would require more than one iteration to solve.
   auto x = prog.NewContinuousVariables<4>();
@@ -199,14 +195,14 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
   // Ensure that the programs meet the expected thread-safety. This ensures that
   // if certain costs/constraints are flagged for different thread safety in the
   // future, this test will fail and need to be updated.
-  EXPECT_TRUE(convex_prog.IsThreadSafe());
-  EXPECT_TRUE(non_convex_prog.IsThreadSafe());
-  EXPECT_FALSE(non_convex_non_threadsafe_prog->IsThreadSafe());
+  ASSERT_TRUE(convex_prog.IsThreadSafe());
+  ASSERT_TRUE(non_convex_prog.IsThreadSafe());
+  ASSERT_FALSE(non_convex_non_threadsafe_prog->IsThreadSafe());
 
   // Solve in parallel.
   std::vector<const MathematicalProgram*> progs;
   std::vector<std::optional<SolverId>> solver_ids;
-  int num_trials = 10;
+  const int num_trials = 10;
   for (int i = 0; i < num_trials; i++) {
     if (i % 3 == 0) {
       progs.push_back(&convex_prog);
