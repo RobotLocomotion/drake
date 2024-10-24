@@ -1724,6 +1724,7 @@ void BindFreeFunctions(py::module m) {
           py::arg("solver_ids") = std::nullopt,
           py::arg("parallelism") = Parallelism::Max(),
           py::arg("dynamic_schedule") = false,
+          py::call_guard<py::gil_scoped_release>(),
           doc.SolveInParallel
               .doc_6args_progs_initial_guesses_solver_options_solver_ids_parallelism_dynamic_schedule)
       .def(
@@ -1750,6 +1751,7 @@ void BindFreeFunctions(py::module m) {
           py::arg("solver_id") = std::nullopt,
           py::arg("parallelism") = Parallelism::Max(),
           py::arg("dynamic_schedule") = false,
+          py::call_guard<py::gil_scoped_release>(),
           doc.SolveInParallel
               .doc_6args_progs_initial_guesses_solver_options_solver_id_parallelism_dynamic_schedule);
 }

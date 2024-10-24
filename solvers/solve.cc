@@ -79,12 +79,11 @@ std::vector<MathematicalProgramResult> SolveInParallel(
 
   // The worker lambda behaves slightly differently depending on whether we are
   // in the par-for loop or in the single-threaded cleanup pass later on.
-  bool operating_in_parallel = true;
-
   // This is the worker callback for the i'th program.
-  auto solve_ith = [&](const int thread_num, const int64_t i) {
+  auto solve_ith = [&](const bool in_parallel, const int thread_num,
+                       const int64_t i) {
     // If this program is not thread safe, then skip it and save it for later.
-    if (operating_in_parallel && !progs[i]->IsThreadSafe()) {
+    if (in_parallel && !progs[i]->IsThreadSafe()) {
       return;
     }
 
@@ -97,7 +96,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     // IPOPT's MUMPs linear solver is not thread-safe. Therefore, if we are
     // operating in parallel we need to skip this program.
     // TODO(#21476) Revisit this logic after we have SPRAL available.
-    if (operating_in_parallel && solver_id == IpoptSolver::id()) {
+    if (in_parallel && solver_id == IpoptSolver::id()) {
       static const logging::Warn log_once(
           "IpoptSolver cannot currently solve programs in parallel, so will be "
           "run serially. Consider specifying a different solver, e.g., Nlopt.");
@@ -127,9 +126,8 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     } else {
       new_options.emplace();
     }
-    new_options->SetOption(
-        CommonSolverOption::kMaxThreads,
-        operating_in_parallel ? 1 : parallelism.num_threads());
+    new_options->SetOption(CommonSolverOption::kMaxThreads,
+                           in_parallel ? 1 : parallelism.num_threads());
 
     // Convert the initial guess from nullable to optional.
     // TODO(jwnimmer-tri) The SolverBase should offer a nullable overload so
@@ -143,13 +141,26 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     solver.Solve(*(progs[i]), initial_guess, new_options, &(results[i]));
     result_is_populated[i] = true;
   };
+  const auto solve_ith_parallel = [&](const int thread_num, const int64_t i) {
+    solve_ith(/* in parallel */ true, thread_num, i);
+  };
 
-  // Call solve_ith in parallel for all of the progs.
+  const auto solve_ith_serial = [&](const int64_t i) {
+    solve_ith(/* in parallel */ false, /* thread_num */ 0, i);
+  };
+
+  // Call solve_ith in parallel for all of the progs if more than one thread is
+  // available.
   if (parallelism.num_threads() > 1) {
-    (dynamic_schedule ? &(DynamicParallelForIndexLoop<decltype(solve_ith)>)
-                      : &(StaticParallelForIndexLoop<decltype(solve_ith)>))(
-        DegreeOfParallelism(parallelism.num_threads()), 0, ssize(progs),
-        solve_ith, ParallelForBackend::BEST_AVAILABLE);
+    if (dynamic_schedule) {
+      DynamicParallelForIndexLoop(
+          DegreeOfParallelism(parallelism.num_threads()), 0, ssize(progs),
+          solve_ith_parallel, ParallelForBackend::BEST_AVAILABLE);
+    } else {
+      StaticParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()),
+                                 0, ssize(progs), solve_ith_parallel,
+                                 ParallelForBackend::BEST_AVAILABLE);
+    }
   }
 
   // De-allocate the solvers cache except for the first worker. (We'll use the
@@ -158,10 +169,9 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   solvers.resize(1);
 
   // Finish solving the programs that couldn't be solved in parallel.
-  operating_in_parallel = false;
-  for (int i = 0; i < ssize(progs); ++i) {
+  for (size_t i = 0; i < progs.size(); ++i) {
     if (!result_is_populated[i]) {
-      solve_ith(/* thread_num = */ 0, i);
+      solve_ith_serial(i);
     }
   }
 
