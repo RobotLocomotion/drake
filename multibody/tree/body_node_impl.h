@@ -34,9 +34,12 @@ class BodyNodeImpl final : public BodyNode<T> {
     kNv = ConcreteMobilizer<T>::kNv,
     kNx = ConcreteMobilizer<T>::kNx
   };
-  using QVector = typename ConcreteMobilizer<T>::QVector;
-  using VVector = typename ConcreteMobilizer<T>::VVector;
-  using HMatrix = typename ConcreteMobilizer<T>::HMatrix;
+  template <typename U>
+  using QVector = typename ConcreteMobilizer<T>::QVector<U>;
+  template <typename U>
+  using VVector = typename ConcreteMobilizer<T>::VVector<U>;
+  template <typename U>
+  using HMatrix = typename ConcreteMobilizer<T>::HMatrix<U>;
 
   using BodyNode<T>::body;
   using BodyNode<T>::child_nodes;
@@ -156,8 +159,8 @@ class BodyNodeImpl final : public BodyNode<T> {
   }
 
   // Returns this mobilizer's qs as a fixed-size QVector.
-  Eigen::Map<const QVector> get_qvector(const T* positions) const {
-    return Eigen::Map<const QVector>(get_q(positions));
+  Eigen::Map<const QVector<T>> get_qvector(const T* positions) const {
+    return Eigen::Map<const QVector<T>>(get_q(positions));
   }
 
   // Given a pointer to the contiguous array of all v's in this system, returns
@@ -172,17 +175,17 @@ class BodyNodeImpl final : public BodyNode<T> {
   }
 
   // Returns this mobilizer's vs as a fixed-size VVector.
-  Eigen::Map<const VVector> get_vvector(const T* velocities) const {
-    return Eigen::Map<const VVector>(get_v(velocities));
+  Eigen::Map<const VVector<T>> get_vvector(const T* velocities) const {
+    return Eigen::Map<const VVector<T>>(get_v(velocities));
   }
 
   // Given a complete array of hinge matrices H stored by contiguous columns,
   // returns a const reference to H for this mobilizer, as a 6xnv fixed-size
   // matrix. This matrix is 16-byte aligned because it is composed of
   // columns of Eigen::Vector6 objects which Eigen aligns.
-  Eigen::Map<const HMatrix, Eigen::Aligned16> get_H(
+  Eigen::Map<const HMatrix<T>, Eigen::Aligned16> get_H(
       const std::vector<Vector6<T>>& H_cache) const {
-    return Eigen::Map<const HMatrix, Eigen::Aligned16>(
+    return Eigen::Map<const HMatrix<T>, Eigen::Aligned16>(
         H_cache[mobilizer().velocity_start_in_v()].data());
   }
 
@@ -190,10 +193,10 @@ class BodyNodeImpl final : public BodyNode<T> {
   // contiguous columns, returns a mutable reference to H for this mobilizer,
   // as a 6xnv fixed-size matrix. This matrix is 16-byte aligned because it is
   // composed of columns of Eigen::Vector6 objects which Eigen aligns.
-  Eigen::Map<HMatrix, Eigen::Aligned16> get_mutable_H(
+  Eigen::Map<HMatrix<T>, Eigen::Aligned16> get_mutable_H(
       std::vector<Vector6<T>>* H_cache) const {
     DRAKE_ASSERT(H_cache != nullptr);
-    return Eigen::Map<HMatrix, Eigen::Aligned16>(
+    return Eigen::Map<HMatrix<T>, Eigen::Aligned16>(
         (*H_cache)[mobilizer().velocity_start_in_v()].data());
   }
 

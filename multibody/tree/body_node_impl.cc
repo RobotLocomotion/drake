@@ -88,7 +88,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
     const Vector3<T> p_MB_F = R_FM * p_MB_M;
 
     const T* q = get_q(positions);  // just this mobilizer's q's
-    VVector v = VVector::Zero();
+    VVector<T> v = VVector<T>::Zero();
     auto H_PB_W = get_mutable_H(H_PB_W_cache);
     // We compute H_FM(q) one column at a time by calling the multiplication by
     // H_FM operation on a vector of generalized velocities which is zero except
@@ -190,7 +190,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
     // Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵛ with nv ∈ [0; 6] the
     // number of mobilities for this node.
     const auto H_PB_W = get_H(H_PB_W_cache);  // 6 x kNv fixed-size Map.
-    const Eigen::Map<const VVector> v(v_ptr);
+    const Eigen::Map<const VVector<T>> v(v_ptr);
     V_PB_W.get_coeffs() = H_PB_W * v;
   } else {
     V_PB_W.get_coeffs().setZero();
@@ -305,7 +305,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
   // Early return if we don't have to deal with velocity.
   if (vc == nullptr) {
     DRAKE_ASSERT(velocities == nullptr);
-    const VVector v = VVector::Zero();
+    const VVector<T> v = VVector<T>::Zero();
     // Operator A_FM = H_FM * vmdot + Hdot_FM * 0
     const SpatialAcceleration<T> A_FM =
         mobilizer_->calc_A_FM(get_q(positions), v.data(), get_v(accelerations));
@@ -505,11 +505,11 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
 
   // Output generalized forces due to the mobilizer reaction (must remove any
   // applied taus). Indexing is the same as generalized velocities.
-  Eigen::Map<VVector> tau(get_mutable_v(tau_array->data()));
+  Eigen::Map<VVector<T>> tau(get_mutable_v(tau_array->data()));
   // Be careful not to overwrite tau_app before we use it!
   if (is_tau_applied) {
-    const Eigen::Map<const VVector> tau_app(get_v(tau_applied_array.data()));
-    VVector tau_projection;
+    const Eigen::Map<const VVector<T>> tau_app(get_v(tau_applied_array.data()));
+    VVector<T> tau_projection;
     mobilizer_->calc_tau(get_q(positions), F_BMo_F, tau_projection.data());
     tau = tau_projection - tau_app;
   } else {
@@ -821,7 +821,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
 
   // We first compute the acceleration bias Ab_FM = Hdot * vm.
   // Note, A_FM = H_FM(qm) * vmdot + Ab_FM(qm, vm).
-  const VVector vmdot_zero = VVector::Zero();
+  const VVector<T> vmdot_zero = VVector<T>::Zero();
   const SpatialAcceleration<T> Ab_FM = mobilizer_->calc_A_FM(
       get_q(positions), get_v(velocities), vmdot_zero.data());
 

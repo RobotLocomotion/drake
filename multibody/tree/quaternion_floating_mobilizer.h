@@ -38,8 +38,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer);
   using MobilizerBase = MobilizerImpl<T, 7, 6>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::HMatrix;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  template <typename U>
+  using QVector = typename MobilizerBase::QVector<U>;
+  template <typename U>
+  using VVector = typename MobilizerBase::VVector<U>;
+  template <typename U>
+  using HMatrix = typename MobilizerBase::HMatrix<U>;
 
   // Constructor for a %QuaternionFloatingMobilizer granting six degrees of
   // freedom to an outboard frame M with respect to an inboard frame F. The
@@ -218,7 +222,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     DRAKE_ASSERT(v != nullptr);
-    const Eigen::Map<const VVector> V_FM(v);
+    const Eigen::Map<const VVector<T>> V_FM(v);
     return SpatialVelocity<T>(V_FM);  // w_FM, v_FM
   }
 
@@ -226,14 +230,14 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // Therefore A_FM = H⋅vdot + Hdot⋅v = vdot.
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
     DRAKE_ASSERT(vdot != nullptr);
-    const Eigen::Map<const VVector> A_FM(vdot);
+    const Eigen::Map<const VVector<T>> A_FM(vdot);
     return SpatialAcceleration<T>(A_FM);
   }
 
   // Returns tau = H_FMᵀ⋅F. H is identity for this mobilizer.
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
-    Eigen::Map<VVector> tau_as_vector(tau);
+    Eigen::Map<VVector<T>> tau_as_vector(tau);
     tau_as_vector = F_BMo_F.get_coeffs();
   }
 
@@ -266,7 +270,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
  protected:
   // Sets `state` to store a configuration in which M coincides with F (i.e.
   // q_FM is the identity quaternion).
-  Vector<double, 7> get_zero_position() const final;
+  QVector<double> get_zero_position() const final;
 
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
