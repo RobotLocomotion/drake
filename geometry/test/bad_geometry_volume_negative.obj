@@ -11,7 +11,7 @@
 
 # The 3 vertices below together with the origin (0, 0, 0) form a tetrahedron.
 # Drake happens to use this single tetrahedron to calculate volume and other
-# mass proeprties. However, this mesh only has ONE face, so its bounding box
+# mass properties. However, this mesh only has ONE face, so its bounding box
 # indicates a volume = 0, which is another way to detect mesh defects.
 v 1.0  0.0  0.0
 v 1.0  2.0  0.0
