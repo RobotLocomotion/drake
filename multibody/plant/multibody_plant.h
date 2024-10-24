@@ -1984,9 +1984,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Geometries can be associated with bodies via the `RegisterFooGeometry`
   /// family of methods. In SceneGraph, geometries have @ref geometry_roles
   /// "roles". The `RegisterCollisionGeometry()` methods register geometry with
-  /// SceneGraph and assign it the proximity role. The
+  /// SceneGraph and assigns it the proximity role. The
   /// `RegisterVisualGeometry()` methods do the same, but assign the
-  /// illustration role.
+  /// illustration and/or perception role, depending on how the API is
+  /// exercised (see below).
   ///
   /// All geometry registration methods return a @ref geometry::GeometryId
   /// GeometryId. This is how SceneGraph refers to the geometries. The
@@ -2021,6 +2022,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// See documentation of geometry::SceneGraphInspector on where to get an
   /// inspector.
   ///
+  /// <h4> %MultibodyPlant names vs. SceneGraph names
+  ///
   /// In %MultibodyPlant, frame names only have to be unique in a single
   /// model instance. However, SceneGraph knows nothing of model instances. So,
   /// to generate unique names for the corresponding frames in SceneGraph,
@@ -2029,6 +2032,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `[model instance name]::[body name]`. Searching for a frame with just the
   /// name `body name` will fail. (See RigidBody::name() and
   /// GetModelInstanceName() for those values.)
+  ///
+  /// Similarly, geometry names get scoped in the same way. The name passed to
+  /// a RegisterFooGeometry becomes the scoped name
+  /// `[model instance name]::[name]` in SceneGraph.
+  ///
+  /// <h4>Registering visual roles</h4>
+  ///
+  /// Drake has two visual roles: illustration and perception. Unless otherwise
+  /// indicated, the RegisterVisualGeometry() APIs register the geometry with
+  /// both roles. One API allows specific control over which roles are assigned.
+  /// this "assign-all-roles" behavior may change in the future and code that
+  /// directly relies on it will break.
+  ///
+  /// Furthermore, unless the ("label", "id") property has already
+  /// been defined, the PerceptionProperties will be assigned that property
+  /// with a geometry::RenderLabel whose value is equal to the body's index.
   /// @{
 
   /// Registers `this` plant to serve as a source for an instance of
@@ -2053,16 +2072,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       geometry::SceneGraph<T>* scene_graph);
 
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
-  /// used for visualization of a given `body`.
+  /// used for visualization of a given `body`. The perception properties are a
+  /// copy of the given `properties`.
   ///
-  /// @note Currently, the visual geometry will _also_ be assigned a perception
-  /// role. Its render label's value will be equal to the body's index and its
-  /// perception color will be the same as its illustration color (defaulting to
-  /// gray if no color is provided). This behavior may change in the future and
-  /// code that directly relies on this behavior will break.
-  ///
-  /// The name of the registered visual will be modified to include the scoped
-  /// name (based on the body's model instance).
+  /// See @ref mbp_geometry "the overview" for more details.
   ///
   /// @param[in] body
   ///   The body for which geometry is being registered.
@@ -2088,17 +2101,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Registers the given `geometry` instance in a SceneGraph to be used for
   /// visualization of a given `body`.
   ///
-  /// The roles the geometry has (illustration/perception) depend on the
-  /// properties that have _already_ been assigned to `geometry`. If no visual
-  /// roles (perception or illustration) then no action will be taken and
-  /// `std::nullopt` is returned.
+  /// The roles that `geometry` gets assigned (illustration/perception) depend
+  /// solely on the properties that have _already_ been assigned to `geometry`.
+  /// If no properties (perception or illustration) have been assigned, then
+  /// no action is taken. No geometry is registered and `std::nullopt` is
+  /// returned.
   ///
-  /// If the geometry has the perception role *and* it doesn't already have the
-  /// ("label", "id") property, it will be assigned a label value equal to the
-  /// `body` index (otherwise, the property will remain unchanged).
-  ///
-  /// The name of the registered visual will be modified to include the scoped
-  /// name (based on the body's model instance).
+  /// See @ref mbp_geometry "the overview" for more details.
   ///
   /// @param[in] body
   ///   The body for which geometry is being registered.
@@ -2112,18 +2121,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const RigidBody<T>& body,
       std::unique_ptr<geometry::GeometryInstance> geometry);
 
-  /// Overload for visual geometry registration; it converts the `diffuse_color`
-  /// (RGBA with values in the range [0, 1]) into a
-  /// geometry::DrakeVisualizer-compatible set of
-  /// geometry::IllustrationProperties.
+  /// Overload for visual geometry registration. The given `diffuse_color` is
+  /// set as the ("phong", "diffuse_color") in both sets of properties. All
+  /// other properties are left undefined, ultimately relying on the downstream
+  /// _consumers_ of the geometry properties to define them using whatever
+  /// defaults and protocols they have.
+  ///
+  /// See @ref mbp_geometry "the overview" for more details.
   geometry::GeometryId RegisterVisualGeometry(
       const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const Vector4<double>& diffuse_color);
 
-  /// Overload for visual geometry registration; it relies on the downstream
-  /// geometry::IllustrationProperties _consumer_ to provide default parameter
-  /// values (see @ref geometry_roles for details).
+  /// Overload for visual geometry registration. No property values are set,
+  /// ultimately relying on the downstream _consumers_ of the geometry
+  /// properties to define them using whatever defaults and protocols they have.
+  ///
+  /// See @ref mbp_geometry "the overview" for more details.
   geometry::GeometryId RegisterVisualGeometry(
       const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name);
