@@ -2,7 +2,7 @@
 # The geometry in this file produces invalid mass and inertia properties
 # due to improper winding (order of the vertices) in some of its faces.
 # This file has the same vertices as the file bad_geometry_corrected.obj.
-# However this file's faces have disordered vertices which produce a mesh
+# However this file's faces have misordered vertices which produce a mesh
 # with zero volume (volume = 0) and an invalid centroid and spatial inertia.
 # ------------------------------------------------------------------------------
 # This file uses the data in the original bad mesh file submitted by the Drake

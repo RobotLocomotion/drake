@@ -517,8 +517,8 @@ class MujocoParser {
       if (mesh_inertia_->contains(name_)) {
         M_GGo_G_unitDensity = mesh_inertia_->at(name_);
       } else {
-        CalcSpatialInertiaResult result =
-            DoCalcSpatialInertia(mesh, 1.0 /* density */);
+        const CalcSpatialInertiaResult result =
+            CalcSpatialInertiaImpl(mesh, 1.0 /* density */);
         if (std::holds_alternative<std::string>(result)) {
           policy_.Warning(std::get<std::string>(result));
 
