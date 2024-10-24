@@ -48,7 +48,7 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
  * Solves progs[i] into result[i], optionally using initial_guess[i] and
  * solver_options[i] if given, by invoking the solver at solver_ids[i] if
  * provided.  If solver_ids[i] is nullopt then the best available solver is
- * selected for each progs[i] depending on the availability of
+ * selected for progs[i] depending on the availability of
  * the solver and the problem formulation. If solver_ids == nullptr then this is
  * done for every progs[i].
  *
