@@ -1201,19 +1201,24 @@ void MultibodyTree<T>::SetFreeBodyRandomTranslationDistributionOrThrow(
     const RigidBody<T>& body,
     const Vector3<symbolic::Expression>& translation) {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
   Mobilizer<T>& mobilizer =
       get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
   QuaternionFloatingMobilizer<T>* maybe_quaternion_mobilizer =
       dynamic_cast<QuaternionFloatingMobilizer<T>*>(&mobilizer);
-  if (maybe_quaternion_mobilizer == nullptr) {
-    // Note the (likely reasonable) assumption that a free body uses either
-    // a quaternion floating joint or an rpy floating joint.
-    throw std::logic_error(fmt::format(
-        "{}(): Requires a {} joint but free body {} uses a {} joint.", __func__,
-        QuaternionFloatingJoint<T>::kTypeName, body.name(),
-        RpyFloatingJoint<T>::kTypeName));
+  if (maybe_quaternion_mobilizer != nullptr) {
+    maybe_quaternion_mobilizer->set_random_translation_distribution(
+        translation);
+    return;
   }
-  maybe_quaternion_mobilizer->set_random_translation_distribution(translation);
+  RpyFloatingMobilizer<T>* maybe_rpy_mobilizer =
+      dynamic_cast<RpyFloatingMobilizer<T>*>(&mobilizer);
+  if (maybe_rpy_mobilizer != nullptr) {
+    maybe_rpy_mobilizer->set_random_translation_distribution(translation);
+    return;
+  }
+
+  DRAKE_UNREACHABLE();  // Only the two floating joints are possible.
 }
 
 template <typename T>
@@ -1221,6 +1226,7 @@ void MultibodyTree<T>::SetFreeBodyRandomRotationDistributionOrThrow(
     const RigidBody<T>& body,
     const Eigen::Quaternion<symbolic::Expression>& rotation) {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
   Mobilizer<T>& mobilizer =
       get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
   QuaternionFloatingMobilizer<T>* maybe_quaternion_mobilizer =
@@ -1229,11 +1235,34 @@ void MultibodyTree<T>::SetFreeBodyRandomRotationDistributionOrThrow(
     // Note the (likely reasonable) assumption that a free body uses either
     // a quaternion floating joint or an rpy floating joint.
     throw std::logic_error(fmt::format(
-        "{}(): Requires a {} joint but free body {} uses a {} joint.", __func__,
-        QuaternionFloatingJoint<T>::kTypeName, body.name(),
+        "{}(): Requires a {} joint but free body {} uses an {} joint. "
+        "Use SetFreeBodyRandomAnglesDistribution() instead.",
+        __func__, QuaternionFloatingJoint<T>::kTypeName, body.name(),
         RpyFloatingJoint<T>::kTypeName));
   }
   maybe_quaternion_mobilizer->set_random_quaternion_distribution(rotation);
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodyRandomAnglesDistributionOrThrow(
+    const RigidBody<T>& body,
+    const math::RollPitchYaw<symbolic::Expression>& angles) {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
+  Mobilizer<T>& mobilizer =
+      get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
+  RpyFloatingMobilizer<T>* maybe_rpy_mobilizer =
+      dynamic_cast<RpyFloatingMobilizer<T>*>(&mobilizer);
+  if (maybe_rpy_mobilizer == nullptr) {
+    // Note the (likely reasonable) assumption that a free body uses either
+    // a quaternion floating joint or an rpy floating joint.
+    throw std::logic_error(fmt::format(
+        "{}(): Requires an {} joint but free body {} uses a {} joint. "
+        "Use SetFreeBodyRandomRotationDistribution() instead.",
+        __func__, RpyFloatingJoint<T>::kTypeName, body.name(),
+        QuaternionFloatingJoint<T>::kTypeName));
+  }
+  maybe_rpy_mobilizer->set_random_angles_distribution(angles.vector());
 }
 
 // Note that the result is indexed by BodyIndex, not MobodIndex.

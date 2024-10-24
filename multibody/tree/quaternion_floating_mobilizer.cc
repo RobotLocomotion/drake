@@ -143,7 +143,7 @@ QuaternionFloatingMobilizer<T>::SetTranslation(const systems::Context<T>&,
 template <typename T>
 void QuaternionFloatingMobilizer<T>::set_random_translation_distribution(
     const Vector3<symbolic::Expression>& p_FM) {
-  Vector<symbolic::Expression, kNq> positions;
+  QVector<symbolic::Expression> positions;
   if (this->get_random_state_distribution()) {
     positions = this->get_random_state_distribution()->template head<kNq>();
   } else {
@@ -156,7 +156,7 @@ void QuaternionFloatingMobilizer<T>::set_random_translation_distribution(
 template <typename T>
 void QuaternionFloatingMobilizer<T>::set_random_quaternion_distribution(
     const Eigen::Quaternion<symbolic::Expression>& q_FM) {
-  Vector<symbolic::Expression, kNq> positions;
+  QVector<symbolic::Expression> positions;
   if (this->get_random_state_distribution()) {
     positions = this->get_random_state_distribution()->template head<kNq>();
   } else {

@@ -1111,6 +1111,11 @@ class MultibodyTree {
       const RigidBody<T>& body,
       const Eigen::Quaternion<symbolic::Expression>& rotation);
 
+  // See MultibodyPlant::SetFreeBodyRandomRotationDistribution.
+  void SetFreeBodyRandomAnglesDistributionOrThrow(
+      const RigidBody<T>& body,
+      const math::RollPitchYaw<symbolic::Expression>& angles);
+
   // @name Kinematic computations
   // Kinematics computations are concerned with the motion of bodies in the
   // model without regard to their mass or the forces and moments that cause

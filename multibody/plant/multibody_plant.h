@@ -3255,11 +3255,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's `rotation` with respect to its parent frame.
+  /// body's orientation with respect to its parent frame, expressed as a
+  /// quaternion. Requires that the free body is modeled using a
+  /// QuaternionFloatingJoint.
   /// @note The parent frame is not necessarily the world frame. See
   /// @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if the free body is not modeled with a
+  ///   QuaternionFloatingJoint.
   /// @throws std::exception if called pre-finalize.
+  /// @see SetFreeBodyRandomAnglesDistribution() for a free body that is
+  ///   modeled using an RpyFloatingJoint.
+  /// @see SetBaseBodyJointType() for control over the type of automatically-
+  ///   added joints.
   void SetFreeBodyRandomRotationDistribution(
       const RigidBody<T>& body,
       const Eigen::Quaternion<symbolic::Expression>& rotation) {
@@ -3268,13 +3276,41 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's rotation with respect to its parent frame using uniformly random
-  /// rotations.
+  /// body's orientation with respect to its parent frame using uniformly random
+  /// rotations (expressed as a quaternion). Requires that the free body is
+  /// modeled using a QuaternionFloatingJoint.
   /// @note The parent frame is not necessarily the world frame. See
   /// @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if the free body is not modeled with a
+  ///   QuaternionFloatingJoint.
   /// @throws std::exception if called pre-finalize.
+  /// @see SetFreeBodyRandomAnglesDistribution() for a free body that is
+  ///   modeled using an RpyFloatingJoint.
+  /// @see SetBaseBodyJointType() for control over the type of automatically-
+  ///   added joints.
   void SetFreeBodyRandomRotationDistributionToUniform(const RigidBody<T>& body);
+
+  /// Sets the distribution used by SetRandomState() to populate the free
+  /// body's orientation with respect to its parent frame, expressed with
+  /// roll-pitch-yaw angles. Requires that the free body is modeled using an
+  /// RpyFloatingJoint.
+  /// @note The parent frame is not necessarily the world frame. See
+  /// @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if the free body is not modeled with an
+  ///   RpyFloatingJoint.
+  /// @throws std::exception if called pre-finalize.
+  /// @see SetFreeBodyRandomRotationDistribution() for a free body that is
+  ///   modeled using a QuaternionFloatingJoint.
+  /// @see SetBaseBodyJointType() for control over the type of automatically-
+  ///   added joints.
+  void SetFreeBodyRandomAnglesDistribution(
+      const RigidBody<T>& body,
+      const math::RollPitchYaw<symbolic::Expression>& angles) {
+    this->mutable_tree().SetFreeBodyRandomAnglesDistributionOrThrow(body,
+                                                                    angles);
+  }
 
   /// Sets `context` to store the pose `X_WB` of a given _floating base_ `body`
   /// B in the world frame W.
