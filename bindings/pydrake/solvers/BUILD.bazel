@@ -67,6 +67,7 @@ drake_pybind_library(
         "solvers_py_mobylcp.cc",
         "solvers_py_mosek.cc",
         "solvers_py_nlopt.cc",
+        "solvers_py_options.cc",
         "solvers_py_osqp.cc",
         "solvers_py_scs.cc",
         "solvers_py_sdpa_free_format.cc",

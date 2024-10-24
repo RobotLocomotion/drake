@@ -23,6 +23,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/polynomial.h"
@@ -3225,19 +3226,31 @@ class MathematicalProgram {
    */
   const SolverOptions& solver_options() const { return solver_options_; }
 
-  const std::unordered_map<std::string, double>& GetSolverOptionsDouble(
+  DRAKE_DEPRECATED("2024-09-01", "Use solver_options(), instead")
+  std::unordered_map<std::string, double> GetSolverOptionsDouble(
       const SolverId& solver_id) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return solver_options_.GetOptionsDouble(solver_id);
+#pragma GCC diagnostic pop
   }
 
-  const std::unordered_map<std::string, int>& GetSolverOptionsInt(
+  DRAKE_DEPRECATED("2024-09-01", "Use solver_options(), instead")
+  std::unordered_map<std::string, int> GetSolverOptionsInt(
       const SolverId& solver_id) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return solver_options_.GetOptionsInt(solver_id);
+#pragma GCC diagnostic pop
   }
 
-  const std::unordered_map<std::string, std::string>& GetSolverOptionsStr(
+  DRAKE_DEPRECATED("2024-09-01", "Use solver_options(), instead")
+  std::unordered_map<std::string, std::string> GetSolverOptionsStr(
       const SolverId& solver_id) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return solver_options_.GetOptionsStr(solver_id);
+#pragma GCC diagnostic pop
   }
 
   /**

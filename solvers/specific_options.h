@@ -127,6 +127,9 @@ class SpecificOptions {
   }
 
  private:
+  /* Extracts common (Drake) options from `solver_options`.  */
+  CommonSolverOptionValues ExtractCommon(const SolverOptions& solver_options);
+
   /* Helper function for CopyToSerializableStruct(). Sets pending_keys_ to the
   union of all keys from all_options_ (for our id_) and respelled_, excluding
   anything already popped_. */
@@ -138,7 +141,7 @@ class SpecificOptions {
 
   /* Helper function for CopyToSerializableStruct(). Finds the option with the
   given name, removes it from pending_keys_, and returns it. */
-  std::optional<SolverOptions::OptionValue> PrepareToCopy(const char* name);
+  const SolverOptions::OptionValue* PrepareToCopy(const char* name);
 
   /* Output helper functions for CopyToSerializableStruct().
   Each one sets its `output` argument to the option value for the given name,
@@ -152,11 +155,16 @@ class SpecificOptions {
   void CopyStringOption(const char* name, std::string* output);
   //@}
 
-  // The solver we're operating on behalf of (as passed to our constructor).
-  const SolverId* const id_;
+  // The name of the solver we're operating on behalf of (per the ID passed to
+  // our constructor).
+  const std::string& solver_name_;
 
   // The full options for all solvers (as passed to our constructor).
-  const SolverOptions* const all_options_;
+  const SolverOptions& all_options_;
+
+  // The options for the selected solver (an alias into `all_options_`).
+  // When there are no specific options this will be nullptr (not empty).
+  const string_unordered_map<SolverOptions::OptionValue>* specific_options_{};
 
   // The result of the Respell() callback (or empty, if never called).
   string_unordered_map<SolverOptions::OptionValue> respelled_;
