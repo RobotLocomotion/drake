@@ -67,8 +67,12 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyBallMobilizer);
   using MobilizerBase = MobilizerImpl<T, 3, 3>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::HMatrix;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  template <typename U>
+  using QVector = typename MobilizerBase::template QVector<U>;
+  template <typename U>
+  using VVector = typename MobilizerBase::template VVector<U>;
+  template <typename U>
+  using HMatrix = typename MobilizerBase::template HMatrix<U>;
 
   // Constructor for an RpyBallMobilizer between an inboard frame F
   // inboard_frame_F and an outboard frame M outboard_frame_M granting
@@ -201,7 +205,7 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // the rest is zero.
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
-    Eigen::Map<VVector> tau_as_vector(tau);
+    Eigen::Map<VVector<T>> tau_as_vector(tau);
     const Vector3<T>& t_BMo_F = F_BMo_F.rotational();
     tau_as_vector = t_BMo_F;
   }

@@ -58,8 +58,12 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniversalMobilizer);
   using MobilizerBase = MobilizerImpl<T, 2, 2>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::HMatrix;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  template <typename U>
+  using QVector = typename MobilizerBase::template QVector<U>;
+  template <typename U>
+  using VVector = typename MobilizerBase::template VVector<U>;
+  template <typename U>
+  using HMatrix = typename MobilizerBase::template HMatrix<U>;
 
   // Constructor for a %UniversalMobilizer between an inboard frame F
   // `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting
@@ -143,7 +147,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // in get_angular_rates().
   // TODO(sherm1) Should not have to recalculate H_FM(q) here.
   SpatialVelocity<T> calc_V_FM(const T* q, const T* v) const {
-    const Eigen::Map<const VVector> w(v);
+    const Eigen::Map<const VVector<T>> w(v);
     const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(q);
     return SpatialVelocity<T>(Hw * w, Vector3<T>::Zero());
   }
@@ -157,7 +161,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                                    const T* vdot) const {
     Vector3<T> Hw_dot_col1;
     const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(q, v, &Hw_dot_col1);
-    const Eigen::Map<const VVector> wdot(vdot);
+    const Eigen::Map<const VVector<T>> wdot(vdot);
     return SpatialAcceleration<T>(Hw * wdot + Hw_dot_col1 * v[1],
                                   Vector3<T>::Zero());
   }
@@ -165,7 +169,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // Returns tau = H_FMᵀ⋅F. See above for the structure of H.
   void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
-    Eigen::Map<VVector> tau_as_vector(tau);
+    Eigen::Map<VVector<T>> tau_as_vector(tau);
     const Vector3<T>& t_B_F = F_BMo_F.rotational();  // torque
     const Eigen::Matrix<T, 3, 2> Hw_FM = this->CalcHwMatrix(q);
     tau_as_vector = Hw_FM.transpose() * t_B_F;

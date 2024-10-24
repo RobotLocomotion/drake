@@ -45,8 +45,12 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarMobilizer);
   using MobilizerBase = MobilizerImpl<T, 3, 3>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::HMatrix;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  template <typename U>
+  using QVector = typename MobilizerBase::template QVector<U>;
+  template <typename U>
+  using VVector = typename MobilizerBase::template VVector<U>;
+  template <typename U>
+  using HMatrix = typename MobilizerBase::template HMatrix<U>;
 
   /* Constructor for a %PlanarMobilizer between an inboard frame F
    `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting two
