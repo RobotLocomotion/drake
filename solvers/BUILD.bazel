@@ -729,6 +729,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program",
         ":solver_interface",
+        ":specific_options",
     ],
 )
 
@@ -880,6 +881,7 @@ drake_cc_optional_library(
     implementation_deps = [
         ":aggregate_costs_constraints",
         ":mathematical_program",
+        ":specific_options",
         "//common:parallelism",
         "//math:quadratic_form",
         "@mosek",
