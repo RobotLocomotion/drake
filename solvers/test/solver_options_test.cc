@@ -147,7 +147,7 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
                                               {"key3"}),
-      "key2 is not allowed in the SolverOptions for id1.");
+      "key2 is not allowed in the SolverOptions for id1");
 
   DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
       id1, {"key1", "key2"}, {"key2"}, {"key3"}));
@@ -169,6 +169,8 @@ GTEST_TEST(SolverOptionsTest, SetOptionError) {
       solver_options.SetOption(CommonSolverOption::kMaxThreads, -1),
       "kMaxThreads must be > 0.*");
 }
+
+#endif
 
 }  // namespace solvers
 }  // namespace drake
