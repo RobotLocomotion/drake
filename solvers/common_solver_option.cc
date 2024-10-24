@@ -4,24 +4,20 @@
 
 namespace drake {
 namespace solvers {
-std::ostream& operator<<(std::ostream& os,
-                         CommonSolverOption common_solver_option) {
+
+std::string_view to_string(CommonSolverOption common_solver_option) {
   switch (common_solver_option) {
     case CommonSolverOption::kPrintFileName:
-      os << "kPrintFileName";
-      return os;
+      return "kPrintFileName";
     case CommonSolverOption::kPrintToConsole:
-      os << "kPrintToConsole";
-      return os;
+      return "kPrintToConsole";
     case CommonSolverOption::kStandaloneReproductionFileName:
-      os << "kStandaloneReproductionFileName";
-      return os;
+      return "kStandaloneReproductionFileName";
     case CommonSolverOption::kMaxThreads:
-      os << "kMaxThreads";
-      return os;
-    default:
-      DRAKE_UNREACHABLE();
+      return "kMaxThreads";
   }
+  DRAKE_UNREACHABLE();
 }
+
 }  // namespace solvers
 }  // namespace drake
