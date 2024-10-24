@@ -404,25 +404,55 @@ void SolveProgramThroughLorentzConeSlackApproach(
                       constraints_csdp, X_csdp, y, Z);
 }
 
-std::string MaybeWriteCsdpParams(const SolverOptions& options) {
-  // We'll consolidate options into this config string to pass to CSDP.
+// If options has any CSDP settings, writes those settings to a tempfile and
+// returns the filename. If not, then returns an empty string. In all cases,
+// the `method_out` is overwritten with the selected (or default) method.
+std::string MaybeWriteCsdpParams(internal::SpecificOptions* options,
+                                 RemoveFreeVariableMethod* method_out) {
+  DRAKE_DEMAND(method_out != nullptr);
+
+  // Handle drake-specific option.
+  {
+    // The RemoveFreeVariableMethod is `enum class`' so we must cast to `int`s.
+    constexpr int kTwoSlackVariables =
+        static_cast<int>(RemoveFreeVariableMethod::kTwoSlackVariables);
+    constexpr int kNullspace =
+        static_cast<int>(RemoveFreeVariableMethod::kNullspace);
+    constexpr int kLorentzConeSlack =
+        static_cast<int>(RemoveFreeVariableMethod::kLorentzConeSlack);
+    const int method =
+        options->template Pop<int>("drake::RemoveFreeVariableMethod")
+            .value_or(kNullspace);
+    if (!(method >= kTwoSlackVariables && method <= kLorentzConeSlack)) {
+      throw std::logic_error(fmt::format(
+          "CsdpSolver: Bad value ({}) for drake::RemoveFreeVariableMethod",
+          method));
+    }
+    *method_out = static_cast<RemoveFreeVariableMethod>(method);
+  }
+
+  // All CSDP options are appended to this buffer, which we'll feed in to CSDP
+  // using a params file on disk.
   std::string all_csdp_params;
 
-  // Map the common options into CSDP's conventions.
-  if (options.get_print_to_console()) {
-    all_csdp_params += "printlevel=1\n";
-  }
-  // CSDP does not support setting the number of threads so we ignore
-  // the kMaxNumThreads option.
-
-  // Add the specific options next (so they trump the common options).
-  for (const auto& [key, value] : options.GetOptionsInt(CsdpSolver::id())) {
-    all_csdp_params += fmt::format("{}={}\n", key, value);
-  }
-  for (const auto& [key, value] : options.GetOptionsDouble(CsdpSolver::id())) {
-    all_csdp_params += fmt::format("{}={}\n", key, value);
-  }
-  // TODO(jwnimmer-tri) Throw an error if there were any string options set.
+  // Process the user-supplied options.
+  options->Respell([](const auto& common, auto* respelled) {
+    // Only set the level when printing (i.e., we don't set it zero here), so
+    // that we can skip writing a temp file when not strictly necessary.
+    if (common.print_to_console) {
+      respelled->emplace("printlevel", 1);
+    }
+    // CSDP does not support setting the number of threads so we ignore the
+    // kMaxThreads option.
+  });
+  options->CopyToCallbacks(
+      [&all_csdp_params](const std::string& key, double value) {
+        all_csdp_params += fmt::format("{}={}\n", key, value);
+      },
+      [&all_csdp_params](const std::string& key, int value) {
+        all_csdp_params += fmt::format("{}={}\n", key, value);
+      },
+      /* string options are not allowed */ nullptr);
 
   if (all_csdp_params.empty()) {
     // No need to write a temporary file.
@@ -454,19 +484,21 @@ std::string MaybeWriteCsdpParams(const SolverOptions& options) {
 }  // namespace
 }  // namespace internal
 
-void CsdpSolver::DoSolve(const MathematicalProgram& prog,
-                         const Eigen::VectorXd&,
-                         const SolverOptions& merged_options,
-                         MathematicalProgramResult* result) const {
+void CsdpSolver::DoSolve2(const MathematicalProgram& prog,
+                          const Eigen::VectorXd&,
+                          internal::SpecificOptions* options,
+                          MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
         "CsdpSolver doesn't support the feature of variable scaling.");
   }
 
   // If necessary, write the custom CSDP parameters to a temporary file, which
-  // we should remove when this function returns.
+  // we should remove when this function returns. It's convenient to also find
+  // the Drake-specific RemoveFreeVariableMethod option at the same time.
+  RemoveFreeVariableMethod method;
   const std::string csdp_params_pathname =
-      internal::MaybeWriteCsdpParams(merged_options);
+      internal::MaybeWriteCsdpParams(options, &method);
   ScopeExit guard([&csdp_params_pathname]() {
     if (!csdp_params_pathname.empty()) {
       ::unlink(csdp_params_pathname.c_str());
@@ -479,18 +511,6 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
     internal::SolveProgramWithNoFreeVariables(prog, sdpa_free_format,
                                               csdp_params_pathname, result);
   } else {
-    const auto int_options = merged_options.GetOptionsInt(CsdpSolver::id());
-    const auto it_method = int_options.find("drake::RemoveFreeVariableMethod");
-    RemoveFreeVariableMethod method = RemoveFreeVariableMethod::kNullspace;
-    if (it_method != int_options.end()) {
-      if (it_method->second >= 1 && it_method->second <= 3) {
-        method = static_cast<RemoveFreeVariableMethod>(it_method->second);
-      } else {
-        throw std::runtime_error(
-            "CsdpSolver::sol(), unknown value for "
-            "drake::RemoveFreeVariableMethod");
-      }
-    }
     switch (method) {
       case RemoveFreeVariableMethod::kNullspace: {
         internal::SolveProgramThroughNullspaceApproach(

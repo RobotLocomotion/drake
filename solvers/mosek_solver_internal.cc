@@ -1493,71 +1493,64 @@ void MSKAPI printstr(void*, const char str[]) {
 
 }  // namespace
 
-MSKrescodee MosekSolverProgram::UpdateOptions(
-    const SolverOptions& merged_options, const SolverId mosek_id,
-    bool* print_to_console, std::string* print_file_name,
+void MosekSolverProgram::UpdateOptions(
+    internal::SpecificOptions* options, bool* is_printing,
     std::optional<std::string>* msk_writedata) {
-  MSKrescodee rescode{MSK_RES_OK};
-  // Set the maximum number of threads used by Mosek via the CommonSolverOptions
-  // first, so that solver-specific options can overwrite this later.
-  const int num_threads = merged_options.get_max_threads().value_or(
-      Parallelism::Max().num_threads());
-  rescode = MSK_putnaintparam(task_, "MSK_IPAR_NUM_THREADS", num_threads);
-  ThrowForInvalidOption(rescode, "MSK_IPAR_NUM_THREADS", num_threads);
-  for (const auto& double_options : merged_options.GetOptionsDouble(mosek_id)) {
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_putnadouparam(task_, double_options.first.c_str(),
-                                  double_options.second);
-      ThrowForInvalidOption(rescode, double_options.first,
-                            double_options.second);
-    }
-  }
-  for (const auto& int_options : merged_options.GetOptionsInt(mosek_id)) {
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_putnaintparam(task_, int_options.first.c_str(),
-                                  int_options.second);
-      ThrowForInvalidOption(rescode, int_options.first, int_options.second);
-    }
-  }
-  for (const auto& str_options : merged_options.GetOptionsStr(mosek_id)) {
-    if (rescode == MSK_RES_OK) {
-      if (str_options.first == "writedata") {
-        if (str_options.second != "") {
-          msk_writedata->emplace(str_options.second);
-        }
-      } else {
-        rescode = MSK_putnastrparam(task_, str_options.first.c_str(),
-                                    str_options.second.c_str());
-        ThrowForInvalidOption(rescode, str_options.first, str_options.second);
-      }
-    }
-  }
-  // log file.
-  *print_to_console = merged_options.get_print_to_console();
-  *print_file_name = merged_options.get_print_file_name();
-  // Refer to https://docs.mosek.com/10.1/capi/solver-io.html#stream-logging
-  // for Mosek stream logging.
-  // First we check if the user wants to print to both the console and the file.
-  // If true, throw an error BEFORE we create the log file through
-  // MSK_linkfiletotaskstream. Otherwise we might create the log file but cannot
-  // close it.
-  if (*print_to_console && !print_file_name->empty()) {
-    throw std::runtime_error(
-        "MosekSolver::Solve(): cannot print to both the console and the log "
-        "file.");
-  } else if (*print_to_console) {
-    if (rescode == MSK_RES_OK) {
-      rescode =
-          MSK_linkfunctotaskstream(task_, MSK_STREAM_LOG, nullptr, printstr);
-    }
-  } else if (!print_file_name->empty()) {
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_linkfiletotaskstream(task_, MSK_STREAM_LOG,
-                                         print_file_name->c_str(), 0);
-    }
-  }
+  // The "writedata" option needs special handling.
+  *msk_writedata = options->template Pop<std::string>("writedata");
 
-  return rescode;
+  // Copy all remaining options into our `task_`.
+  options->Respell([&](const auto& common, auto* respelled) {
+    // This is a convenient place to configure printing (i.e., logging); see
+    // https://docs.mosek.com/10.1/capi/solver-io.html#stream-logging.
+    // Printing to console vs file are mutually exclusive; if the user has
+    // requested both, then we must throw an error BEFORE we create the log
+    // file; otherwise we might create it but never close it.
+    if (common.print_to_console && common.print_file_name.size()) {
+      throw std::logic_error(
+          "MosekSolver: cannot print to both the console and a file");
+    }
+    *is_printing = false;
+    if (common.print_to_console) {
+      DRAKE_DEMAND(common.print_file_name.empty());
+      MSKrescodee rescode =
+          MSK_linkfunctotaskstream(task_, MSK_STREAM_LOG, nullptr, printstr);
+      if (rescode != MSK_RES_OK) {
+        throw std::runtime_error(fmt::format(
+            "MosekSolver(): kPrintToConsole=1 failed with response code {}",
+            rescode));
+      }
+      *is_printing = true;
+    }
+    if (!common.print_file_name.empty()) {
+      DRAKE_DEMAND(common.print_to_console == false);
+      MSKrescodee rescode = MSK_linkfiletotaskstream(
+          task_, MSK_STREAM_LOG, common.print_file_name.c_str(), 0);
+      if (rescode != MSK_RES_OK) {
+        throw std::runtime_error(fmt::format(
+            "MosekSolver(): kPrintToFile={} failed with response code {}",
+            common.print_file_name, rescode));
+      }
+      *is_printing = true;
+    }
+    const int num_threads = common.max_threads.value_or(
+        Parallelism::Max().num_threads());
+    respelled->emplace("MSK_IPAR_NUM_THREADS", num_threads);
+  });
+  options->CopyToCallbacks(
+      [&](const std::string& key, double value) {
+        MSKrescodee rescode = MSK_putnadouparam(task_, key.c_str(), value);
+        ThrowForInvalidOption(rescode, key, value);
+      },
+      [&](const std::string& key, int value) {
+        MSKrescodee rescode = MSK_putnaintparam(task_, key.c_str(), value);
+        ThrowForInvalidOption(rescode, key, value);
+      },
+      [&](const std::string& key, const std::string& value) {
+        MSKrescodee rescode =
+            MSK_putnastrparam(task_, key.c_str(), value.c_str());
+        ThrowForInvalidOption(rescode, key, value);
+      });
 }
 
 MSKrescodee MosekSolverProgram::SetDualSolution(

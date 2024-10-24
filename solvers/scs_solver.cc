@@ -24,6 +24,34 @@
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/scs_clarabel_common.h"
 
+// This function must appear in the global namespace -- the Serialize pattern
+// uses ADL (argument-dependent lookup) and the namespace for the ScsSettings
+// struct is the global namespace. (We can't even use an anonymous namespace!)
+static void Serialize(
+    drake::solvers::internal::SpecificOptions* archive,
+    // NOLINTNEXTLINE(runtime/references) to match Serialize concept.
+    ScsSettings& settings) {
+  using drake::MakeNameValue;
+  archive->Visit(MakeNameValue("normalize", &settings.normalize));
+  archive->Visit(MakeNameValue("scale", &settings.scale));
+  archive->Visit(MakeNameValue("adaptive_scale", &settings.adaptive_scale));
+  archive->Visit(MakeNameValue("rho_x", &settings.rho_x));
+  archive->Visit(MakeNameValue("max_iters", &settings.max_iters));
+  archive->Visit(MakeNameValue("eps_abs", &settings.eps_abs));
+  archive->Visit(MakeNameValue("eps_rel", &settings.eps_rel));
+  archive->Visit(MakeNameValue("eps_infeas", &settings.eps_infeas));
+  archive->Visit(MakeNameValue("alpha", &settings.alpha));
+  archive->Visit(MakeNameValue("time_limit_secs", &settings.time_limit_secs));
+  archive->Visit(MakeNameValue("verbose", &settings.verbose));
+  archive->Visit(MakeNameValue("warm_start", &settings.warm_start));
+  archive->Visit(MakeNameValue("acceleration_lookback",  // BR
+                               &settings.acceleration_lookback));
+  archive->Visit(MakeNameValue("acceleration_interval",  // BR
+                               &settings.acceleration_interval));
+  // TODO(jwnimmer-tri) Handle write_data_filename.
+  // TODO(jwnimmer-tri) Handle log_csv_filename.
+}
+
 namespace drake {
 namespace solvers {
 namespace {
@@ -246,117 +274,6 @@ void SetScsProblemData(
     scs_problem_data->c[i] = c[i];
   }
 }
-}  // namespace
-
-bool ScsSolver::is_available() {
-  return true;
-}
-
-namespace {
-// This should be invoked only once on each unique instance of ScsSettings.
-// Namely, only call this function for once in DoSolve.
-void SetScsSettings(std::unordered_map<std::string, int>* solver_options_int,
-                    const bool print_to_console, ScsSettings* scs_settings) {
-  auto it = solver_options_int->find("normalize");
-  if (it != solver_options_int->end()) {
-    scs_settings->normalize = it->second;
-    solver_options_int->erase(it);
-  }
-  it = solver_options_int->find("adaptive_scale;");
-  if (it != solver_options_int->end()) {
-    scs_settings->adaptive_scale = it->second;
-    solver_options_int->erase(it);
-  }
-  it = solver_options_int->find("max_iters");
-  if (it != solver_options_int->end()) {
-    scs_settings->max_iters = it->second;
-    solver_options_int->erase(it);
-  }
-  it = solver_options_int->find("verbose");
-  if (it != solver_options_int->end()) {
-    // The solver specific option has the highest priority.
-    scs_settings->verbose = it->second;
-    solver_options_int->erase(it);
-  } else {
-    // The common option has the second highest priority.
-    scs_settings->verbose = print_to_console ? 1 : 0;
-  }
-  it = solver_options_int->find("warm_start");
-  if (it != solver_options_int->end()) {
-    scs_settings->warm_start = it->second;
-    solver_options_int->erase(it);
-  }
-  it = solver_options_int->find("acceleration_lookback");
-  if (it != solver_options_int->end()) {
-    scs_settings->acceleration_lookback = it->second;
-    solver_options_int->erase(it);
-  }
-  it = solver_options_int->find("acceleration_interval");
-  if (it != solver_options_int->end()) {
-    scs_settings->acceleration_interval = it->second;
-    solver_options_int->erase(it);
-  }
-  if (!solver_options_int->empty()) {
-    throw std::invalid_argument("Unsupported SCS solver options.");
-  }
-}
-
-// This should be invoked only once on each unique instance of ScsSettings.
-// Namely, only call this function for once in DoSolve.
-void SetScsSettings(
-    std::unordered_map<std::string, double>* solver_options_double,
-    ScsSettings* scs_settings) {
-  auto it = solver_options_double->find("scale");
-  if (it != solver_options_double->end()) {
-    scs_settings->scale = it->second;
-    solver_options_double->erase(it);
-  }
-  it = solver_options_double->find("rho_x");
-  if (it != solver_options_double->end()) {
-    scs_settings->rho_x = it->second;
-    solver_options_double->erase(it);
-  }
-  it = solver_options_double->find("eps_abs");
-  if (it != solver_options_double->end()) {
-    scs_settings->eps_abs = it->second;
-    solver_options_double->erase(it);
-  } else {
-    // SCS 3.0 uses 1E-4 as the default value, see
-    // https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_abs). This
-    // tolerance is too loose. We set the default tolerance to 1E-5 for better
-    // accuracy.
-    scs_settings->eps_abs = 1E-5;
-  }
-  it = solver_options_double->find("eps_rel");
-  if (it != solver_options_double->end()) {
-    scs_settings->eps_rel = it->second;
-    solver_options_double->erase(it);
-  } else {
-    // SCS 3.0 uses 1E-4 as the default value, see
-    // https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_rel). This
-    // tolerance is too loose. We set the default tolerance to 1E-5 for better
-    // accuracy.
-    scs_settings->eps_rel = 1E-5;
-  }
-  it = solver_options_double->find("eps_infeas");
-  if (it != solver_options_double->end()) {
-    scs_settings->eps_infeas = it->second;
-    solver_options_double->erase(it);
-  }
-  it = solver_options_double->find("alpha");
-  if (it != solver_options_double->end()) {
-    scs_settings->alpha = it->second;
-    solver_options_double->erase(it);
-  }
-  it = solver_options_double->find("time_limit_secs");
-  if (it != solver_options_double->end()) {
-    scs_settings->time_limit_secs = it->second;
-    solver_options_double->erase(it);
-  }
-  if (!solver_options_double->empty()) {
-    throw std::invalid_argument("Unsupported SCS solver options.");
-  }
-}
 
 void SetBoundingBoxDualSolution(
     const MathematicalProgram& prog, const Eigen::Ref<const Eigen::VectorXd>& y,
@@ -384,12 +301,17 @@ void SetBoundingBoxDualSolution(
     result->set_dual_solution(prog.bounding_box_constraints()[i], bbcon_dual);
   }
 }
+
 }  // namespace
 
-void ScsSolver::DoSolve(const MathematicalProgram& prog,
-                        const Eigen::VectorXd& initial_guess,
-                        const SolverOptions& merged_options,
-                        MathematicalProgramResult* result) const {
+bool ScsSolver::is_available() {
+  return true;
+}
+
+void ScsSolver::DoSolve2(const MathematicalProgram& prog,
+                         const Eigen::VectorXd& initial_guess,
+                         internal::SpecificOptions* options,
+                         MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
         "ScsSolver doesn't support the feature of variable scaling.");
@@ -465,6 +387,24 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
 
   // Set the parameters to default values.
   scs_set_default_settings(scs_stgs);
+  // Customize the defaults for Drake:
+  // - SCS 3.0 uses 1E-4 as the default value, see
+  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_abs). This
+  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
+  //   accuracy.
+  scs_stgs->eps_abs = 1E-5;
+  // - SCS 3.0 uses 1E-4 as the default value, see
+  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_rel). This
+  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
+  //   accuracy.
+  scs_stgs->eps_rel = 1E-5;
+  // Apply the user's additional custom options (if any).
+  options->Respell([](const auto& common, auto* respelled) {
+    respelled->emplace("verbose", common.print_to_console ? 1 : 0);
+    // SCS does not support setting the number of threads so we ignore the
+    // kMaxThreads option.
+  });
+  options->CopyToSerializableStruct(scs_stgs);
 
   // A_row_count will increment, when we add each constraint.
   int A_row_count = 0;
@@ -600,15 +540,6 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
 
   SetScsProblemData(A_row_count, num_x, A, b, P_upper_triplets, c,
                     scs_problem_data);
-  std::unordered_map<std::string, int> input_solver_options_int =
-      merged_options.GetOptionsInt(id());
-  std::unordered_map<std::string, double> input_solver_options_double =
-      merged_options.GetOptionsDouble(id());
-  SetScsSettings(&input_solver_options_int,
-                 merged_options.get_print_to_console(), scs_stgs);
-  SetScsSettings(&input_solver_options_double, scs_stgs);
-  // SCS does not support setting the number of threads so we ignore
-  // the kMaxNumThreads option.
 
   ScsInfo scs_info{0};
 
