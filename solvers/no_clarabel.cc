@@ -10,9 +10,10 @@ bool ClarabelSolver::is_available() {
   return false;
 }
 
-void ClarabelSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
-                             const SolverOptions&,
-                             MathematicalProgramResult*) const {
+void ClarabelSolver::DoSolve2(const MathematicalProgram&,
+                              const Eigen::VectorXd&,
+                              internal::SpecificOptions*,
+                              MathematicalProgramResult*) const {
   throw std::runtime_error(
       "The Clarabel bindings were not compiled. You'll need to use a "
       "different solver.");
