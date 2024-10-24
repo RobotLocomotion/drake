@@ -256,7 +256,6 @@ TEST_F(MeshParserTest, CorrectMass) {
 }
 
 TEST_F(MeshParserTest, ZeroVolume) {
-  // A 2x2x2 (meter) box centered on its canonical frame.
   const std::string obj_path = FindResourceOrThrow(
       "drake/geometry/test/bad_geometry_volume_zero.obj");
   AddModelFromMeshFile(obj_path, "body");

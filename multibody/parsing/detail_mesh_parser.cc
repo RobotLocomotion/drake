@@ -158,7 +158,7 @@ std::optional<ModelInstanceIndex> AddModelFromMesh(
   const ModelInstanceIndex model_instance =
       plant.AddModelInstance(model_instance_name);
 
-  const CalcSpatialInertiaResult result = DoCalcSpatialInertia(
+  const CalcSpatialInertiaResult result = CalcSpatialInertiaImpl(
       *named_mesh.mesh, 1000.0 /* water density ≈ 1000 kg/m³ */);
   if (std::holds_alternative<std::string>(result)) {
     workspace.diagnostic.Error(std::get<std::string>(result));

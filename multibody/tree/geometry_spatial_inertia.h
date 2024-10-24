@@ -16,10 +16,10 @@ namespace internal {
  * error message is returned instead of a SpatialInertia. */
 using CalcSpatialInertiaResult =
     std::variant<SpatialInertia<double>, std::string>;
-CalcSpatialInertiaResult DoCalcSpatialInertia(
+CalcSpatialInertiaResult CalcSpatialInertiaImpl(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density);
-CalcSpatialInertiaResult DoCalcSpatialInertia(const geometry::Shape& shape,
-                                              double density);
+CalcSpatialInertiaResult CalcSpatialInertiaImpl(const geometry::Shape& shape,
+                                                double density);
 
 }  // namespace internal
 

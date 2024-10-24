@@ -27,12 +27,12 @@ CalcSpatialInertiaResult CalcMeshSpatialInertia(const Mesh& mesh,
                                                 double density) {
   const auto& extension = mesh.extension();
   if (extension == ".obj") {
-    return internal::DoCalcSpatialInertia(
+    return internal::CalcSpatialInertiaImpl(
         geometry::ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale()),
         density);
   }
   if (extension == ".vtk") {
-    return internal::DoCalcSpatialInertia(
+    return internal::CalcSpatialInertiaImpl(
         geometry::ConvertVolumeToSurfaceMesh(
             geometry::internal::MakeVolumeMeshFromVtk<double>(mesh)),
         density);
@@ -54,8 +54,8 @@ SpatialInertia<double> MaybeThrow(CalcSpatialInertiaResult result) {
 
 namespace internal {
 
-CalcSpatialInertiaResult DoCalcSpatialInertia(const geometry::Shape& shape,
-                                              double density) {
+CalcSpatialInertiaResult CalcSpatialInertiaImpl(const geometry::Shape& shape,
+                                                double density) {
   return shape.Visit<CalcSpatialInertiaResult>(overloaded{
       [density](const geometry::Box& box) {
         return SpatialInertia<double>::SolidBoxWithDensity(
@@ -69,7 +69,7 @@ CalcSpatialInertiaResult DoCalcSpatialInertia(const geometry::Shape& shape,
         // Note: if converting from poly to tri proves to be an unbearable cost,
         // we can skip the explicit conversion, and tessellate polygonal faces
         // implicitly as we compute spatial inertia.
-        return DoCalcSpatialInertia(
+        return CalcSpatialInertiaImpl(
             geometry::internal::MakeTriangleFromPolygonMesh(
                 convex.GetConvexHull()),
             density);
@@ -99,7 +99,7 @@ CalcSpatialInertiaResult DoCalcSpatialInertia(const geometry::Shape& shape,
       }});
 }
 
-CalcSpatialInertiaResult DoCalcSpatialInertia(
+CalcSpatialInertiaResult CalcSpatialInertiaImpl(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density) {
   /* This algorithm is based on:
    - https://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
@@ -198,12 +198,12 @@ CalcSpatialInertiaResult DoCalcSpatialInertia(
 
 SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
                                           double density) {
-  return MaybeThrow(internal::DoCalcSpatialInertia(shape, density));
+  return MaybeThrow(internal::CalcSpatialInertiaImpl(shape, density));
 }
 
 SpatialInertia<double> CalcSpatialInertia(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density) {
-  return MaybeThrow(internal::DoCalcSpatialInertia(mesh, density));
+  return MaybeThrow(internal::CalcSpatialInertiaImpl(mesh, density));
 }
 
 }  // namespace multibody

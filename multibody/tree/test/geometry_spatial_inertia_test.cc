@@ -175,7 +175,7 @@ GTEST_TEST(GeometrySpatialInertiaTest, ExceptionOnBadGeometry) {
   // Throw an exception for the mesh in bad_geometry_volume_zero.obj since
   // its calculated volume is zero (volume = 0).
   // This file has the same vertices as bad_geometry_corrected.obj (below),
-  // but some of this file's faces have disordered vertices which produce a mesh
+  // but some of this file's faces have misordered vertices which produce a mesh
   // with zero volume (volume = 0) and invalid centroid and spatial inertia.
   filename = "drake/geometry/test/bad_geometry_volume_zero.obj";
   geometry_file_path = FindResourceOrThrow(filename);
