@@ -754,16 +754,27 @@ class QueryObject {
        and the gradient are computed from the possibly non-convex surface of
        the geometry. The nearest point and the gradient may not be continuous.
 
-   @pre The %Mesh as a triangle mesh must be a closed manifold without
-   duplicate vertices or self-intersection, and every triangle's face winding
-   gives an outward-pointing face normal. Non-compliant meshes will introduce
-   regions in which the query point will report the wrong sign (and, therefore,
-   the wrong gradient) due to a misclassification of being inside or outside.
-   This leads to discontinuities in the distance field across the boundaries
-   of these regions; the distance sign will flip while the magnitude of the
-   distance value is arbitrarily far away from zero. For open meshes, the same
-   principle holds. The open mesh, which has no true concept of "inside",
+   @pre The %Mesh of a triangular surface mesh must be a closed manifold
+   without duplicate vertices or self-intersection, and every triangle's face
+   winding gives an outward-pointing face normal. Non-compliant meshes will
+   introduce regions in which the query point will report the wrong sign (and,
+   therefore, the wrong gradient) due to a misclassification of being inside or
+   outside. This leads to discontinuities in the distance field across the
+   boundaries of these regions; the distance sign will flip while the magnitude
+   of the distance value is arbitrarily far away from zero. For open meshes, the
+   same principle holds. The open mesh, which has no true concept of "inside",
    will nevertheless report some query points as being inside.
+
+   @pre The %Mesh of a tetrahedral volume mesh is a simplicial complex
+   (https://en.wikipedia.org/wiki/Simplicial_complex) whose tetrahedra have
+   positive volumes (or positive orientation). Therefore, it has no duplicate
+   vertices, no self-intersection, and any two tetrahedra intersect in a common
+   triangular face, edge, or vertex or not at all; there is no "partial
+   overlap" between two tetrahedra. A "tetrahedron soup" is, in general, not
+   a simplicial complex. Violated meshes will introduce areas inside the
+   volumes that are incorrectly treated as boundary surfaces. The query
+   points near such problematic areas will report the wrong nearest points,
+   distances, and gradients.
 
    @note For a sphere G, the signed distance function φᵢ(p) has an undefined
    gradient vector at the center of the sphere--every point on the sphere's
@@ -805,7 +816,10 @@ class QueryObject {
                               SignedDistanceToPoint. The ordering of the
                               results is guaranteed to be consistent -- for
                               fixed geometry poses, the results will remain the
-                              same. */
+                              same.
+
+   @throws std::exception if there are meshes with extremely sharp features
+   where the calculation of feature normals become unstable. */
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
       const double threshold = std::numeric_limits<double>::infinity()) const;
