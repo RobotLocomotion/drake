@@ -7,6 +7,13 @@
 
 namespace drake {
 namespace solvers {
+
+GTEST_TEST(SolverOptionsTest, CommonToString) {
+  const CommonSolverOption dut = CommonSolverOption::kPrintFileName;
+  EXPECT_EQ(to_string(dut), "kPrintFileName");
+  EXPECT_EQ(fmt::to_string(dut), "kPrintFileName");
+}
+
 GTEST_TEST(SolverOptionsTest, SetGetOption) {
   SolverOptions dut;
   EXPECT_EQ(to_string(dut), "{SolverOptions empty}");
@@ -162,5 +169,6 @@ GTEST_TEST(SolverOptionsTest, SetOptionError) {
       solver_options.SetOption(CommonSolverOption::kMaxThreads, -1),
       "kMaxThreads must be > 0.*");
 }
+
 }  // namespace solvers
 }  // namespace drake
