@@ -1682,7 +1682,78 @@ void BindFreeFunctions(py::module m) {
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
-      .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc);
+      .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc)
+      .def(
+          "SolveInParallel",
+          // The pybind11 infrastructure cannot handle setting a vector to null,
+          // nor having nulls inside of a vector. We must use a lambda signature
+          // where pointers are never null by adding `optional<>` decorations.
+          // Inside of the lambda we'll demote nullopts back to nullptrs. Note
+          // that SolverOptions is not necessarily cheap to copy, so we still
+          // carefully accept it by-pointer. The VectorXd is always necessarily
+          // copied when going form numpy to Eigen so we still pass it by-value.
+          [](std::vector<const MathematicalProgram*> progs,
+              std::optional<std::vector<std::optional<Eigen::VectorXd>>>
+                  initial_guesses,
+              std::optional<std::vector<std::optional<SolverOptions*>>>
+                  solver_options,
+              std::optional<std::vector<std::optional<SolverId>>> solver_ids,
+              const Parallelism& parallelism, bool dynamic_schedule) {
+            std::vector<const Eigen::VectorXd*> initial_guesses_ptrs;
+            if (initial_guesses.has_value()) {
+              initial_guesses_ptrs.reserve(initial_guesses->size());
+              for (const auto& guess : *initial_guesses) {
+                initial_guesses_ptrs.push_back(guess ? &(*guess) : nullptr);
+              }
+            }
+            std::vector<const SolverOptions*> solver_options_ptrs;
+            if (solver_options.has_value()) {
+              solver_options_ptrs.reserve(solver_options->size());
+              for (const auto& option : *solver_options) {
+                solver_options_ptrs.push_back(option ? *option : nullptr);
+              }
+            }
+            return solvers::SolveInParallel(progs,
+                initial_guesses.has_value() ? &initial_guesses_ptrs : nullptr,
+                solver_options.has_value() ? &solver_options_ptrs : nullptr,
+                solver_ids.has_value() ? &(*solver_ids) : nullptr, parallelism,
+                dynamic_schedule);
+          },
+          py::arg("progs"), py::arg("initial_guesses") = std::nullopt,
+          py::arg("solver_options") = std::nullopt,
+          py::arg("solver_ids") = std::nullopt,
+          py::arg("parallelism") = Parallelism::Max(),
+          py::arg("dynamic_schedule") = false,
+          py::call_guard<py::gil_scoped_release>(),
+          doc.SolveInParallel
+              .doc_6args_progs_initial_guesses_solver_options_solver_ids_parallelism_dynamic_schedule)
+      .def(
+          "SolveInParallel",
+          [](std::vector<const MathematicalProgram*> progs,
+              std::optional<std::vector<std::optional<Eigen::VectorXd>>>
+                  initial_guesses,
+              const SolverOptions* solver_options,
+              const std::optional<SolverId>& solver_id,
+              const Parallelism& parallelism, bool dynamic_schedule) {
+            std::vector<const Eigen::VectorXd*> initial_guesses_ptrs;
+            if (initial_guesses.has_value()) {
+              initial_guesses_ptrs.reserve(initial_guesses->size());
+              for (const auto& guess : *initial_guesses) {
+                initial_guesses_ptrs.push_back(guess ? &(*guess) : nullptr);
+              }
+            }
+            return solvers::SolveInParallel(progs,
+                initial_guesses.has_value() ? &initial_guesses_ptrs : nullptr,
+                solver_options, solver_id, parallelism, dynamic_schedule);
+          },
+          py::arg("progs"), py::arg("initial_guesses") = std::nullopt,
+          py::arg("solver_options") = std::nullopt,
+          py::arg("solver_id") = std::nullopt,
+          py::arg("parallelism") = Parallelism::Max(),
+          py::arg("dynamic_schedule") = false,
+          py::call_guard<py::gil_scoped_release>(),
+          doc.SolveInParallel
+              .doc_6args_progs_initial_guesses_solver_options_solver_id_parallelism_dynamic_schedule);
 }
 
 }  // namespace
