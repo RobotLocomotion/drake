@@ -190,24 +190,43 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
       non_convex_prog.AddQuadraticConstraint(y(0) * y(0) + y(1) * y(1), 0, 1);
   const SolverId non_convex_solver = IpoptSolver::id();
 
+  std::unique_ptr<MathematicalProgram> non_convex_non_threadsafe_prog =
+      non_convex_prog.Clone();
+  // Adds an expression cost that has no effect on the solution of the
+  // program, but makes the program non-threadsafe.
+  non_convex_non_threadsafe_prog->AddCost(cos(y(0)));
+
+  // Ensure that the programs meet the expected thread-safety. This ensures that
+  // if certain costs/constraints are flagged for different thread safety in the
+  // future, this test will fail and need to be updated.
+  EXPECT_TRUE(convex_prog.IsThreadSafe());
+  EXPECT_TRUE(non_convex_prog.IsThreadSafe());
+  EXPECT_FALSE(non_convex_non_threadsafe_prog->IsThreadSafe());
+
+  // Solve in parallel.
   std::vector<const MathematicalProgram*> progs;
   std::vector<std::optional<SolverId>> solver_ids;
   int num_trials = 10;
   for (int i = 0; i < num_trials; i++) {
-    if (i % 2 == 0) {
+    if (i % 3 == 0) {
       progs.push_back(&convex_prog);
       solver_ids.push_back(convex_solver);
-    } else {
+    } else if (i % 3 == 1) {
       progs.push_back(&non_convex_prog);
+      solver_ids.push_back(non_convex_solver);
+    } else if (i % 3 == 2) {
+      progs.push_back(non_convex_non_threadsafe_prog.get());
       solver_ids.push_back(non_convex_solver);
     }
   }
   std::vector<MathematicalProgramResult> results = SolveInParallel(
       progs, nullptr, nullptr, &solver_ids, Parallelism::Max(), false);
   for (int i = 0; i < num_trials; i++) {
-    if (i % 2 == 0) {
+    if (i % 3 == 0) {
       EXPECT_EQ(results.at(i).get_solver_id(), convex_solver);
     } else {
+      // Both the threadsafe and non-threadsafe nonconvex program use the same
+      // solver.
       EXPECT_EQ(results.at(i).get_solver_id(), non_convex_solver);
     }
   }
@@ -236,7 +255,8 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
 /* Test fixture that runs SolveInParallel against a specific solver_id. When run
 with Drake CI's sanitizers and memory checkers, this would flag memory or thread
 errors seen during the parallel solves. */
-class SolveInParallelIntegrationTest : public ::testing::Test {
+class SolveInParallelIntegrationTest
+    : public ::testing::TestWithParam<Parallelism> {
  public:
   std::vector<MathematicalProgramResult> Run(const SolverId& solver_id,
                                              const MathematicalProgram& prog) {
@@ -249,41 +269,44 @@ class SolveInParallelIntegrationTest : public ::testing::Test {
     solver.reset();
     // Solve the same program repeatedly, with max parallelism (as configured in
     // our BUILD file).
-    const size_t num_programs = 100;
+    Parallelism parallelism = GetParam();
+    // Don't solve too many programs if we are not able to parallelize the
+    // solve.
+    const size_t num_programs = parallelism.num_threads() > 1 ? 100 : 10;
     std::vector<const MathematicalProgram*> progs(num_programs, &prog);
     return SolveInParallel(progs, {}, {}, solver_id, Parallelism::Max());
   }
 };
 
-TEST_F(SolveInParallelIntegrationTest, Clarabel) {
+TEST_P(SolveInParallelIntegrationTest, Clarabel) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   for (const auto& result : Run(ClarabelSolver::id(), *lp.prog())) {
     lp.CheckSolution(result);
   }
 }
 
-TEST_F(SolveInParallelIntegrationTest, Clp) {
+TEST_P(SolveInParallelIntegrationTest, Clp) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   for (const auto& result : Run(ClpSolver::id(), *lp.prog())) {
     lp.CheckSolution(result);
   }
 }
 
-TEST_F(SolveInParallelIntegrationTest, Csdp) {
+TEST_P(SolveInParallelIntegrationTest, Csdp) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   for (const auto& result : Run(CsdpSolver::id(), *lp.prog())) {
     lp.CheckSolution(result);
   }
 }
 
-TEST_F(SolveInParallelIntegrationTest, Gurobi) {
+TEST_P(SolveInParallelIntegrationTest, Gurobi) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   for (const auto& result : Run(GurobiSolver::id(), *lp.prog())) {
     lp.CheckSolution(result);
   }
 }
 
-TEST_F(SolveInParallelIntegrationTest, Ipopt) {
+TEST_P(SolveInParallelIntegrationTest, Ipopt) {
   QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   // This linear solver is known to not be threadsafe. We want to be sure that
   // this does not cause SolveInParallel to crash.
@@ -293,14 +316,14 @@ TEST_F(SolveInParallelIntegrationTest, Ipopt) {
   }
 }
 
-TEST_F(SolveInParallelIntegrationTest, Mosek) {
+TEST_P(SolveInParallelIntegrationTest, Mosek) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   for (const auto& result : Run(MosekSolver::id(), *lp.prog())) {
     lp.CheckSolution(result);
   }
 }
 
-TEST_F(SolveInParallelIntegrationTest, Nlopt) {
+TEST_P(SolveInParallelIntegrationTest, Nlopt) {
   NonConvexQPproblem1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   // Set an initial guess to avoid the suboptimal, stationary point 0.
   qp.prog()->SetInitialGuessForAllVariables(
@@ -310,26 +333,30 @@ TEST_F(SolveInParallelIntegrationTest, Nlopt) {
   }
 }
 
-TEST_F(SolveInParallelIntegrationTest, Osqp) {
+TEST_P(SolveInParallelIntegrationTest, Osqp) {
   QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   for (const auto& result : Run(OsqpSolver::id(), *qp.prog())) {
     qp.CheckSolution(result);
   }
 }
 
-TEST_F(SolveInParallelIntegrationTest, Scs) {
+TEST_P(SolveInParallelIntegrationTest, Scs) {
   LinearProgram2 lp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   for (const auto& result : Run(ScsSolver::id(), *lp.prog())) {
     lp.CheckSolution(result);
   }
 }
 
-TEST_F(SolveInParallelIntegrationTest, Snopt) {
+TEST_P(SolveInParallelIntegrationTest, Snopt) {
   QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
   for (const auto& result : Run(SnoptSolver::id(), *qp.prog())) {
     qp.CheckSolution(result);
   }
 }
+// Test SolveInParallel with and without parallelism enabled
+INSTANTIATE_TEST_SUITE_P(test, SolveInParallelIntegrationTest,
+                         ::testing::Values(Parallelism::Max(),
+                                           Parallelism::None()));  // NOLINT
 
 }  // namespace
 }  // namespace test
