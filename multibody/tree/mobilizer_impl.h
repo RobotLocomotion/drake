@@ -71,9 +71,12 @@ class MobilizerImpl : public Mobilizer<T> {
     kNv = compile_time_num_velocities,
     kNx = compile_time_num_positions + compile_time_num_velocities
   };
-  using QVector = Eigen::Matrix<T, kNq, 1>;
-  using VVector = Eigen::Matrix<T, kNv, 1>;
-  using HMatrix = Eigen::Matrix<T, 6, kNv>;
+  template <typename U>
+  using QVector = Eigen::Matrix<U, kNq, 1>;
+  template <typename U>
+  using VVector = Eigen::Matrix<U, kNv, 1>;
+  template <typename U>
+  using HMatrix = Eigen::Matrix<U, 6, kNv>;
 
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is

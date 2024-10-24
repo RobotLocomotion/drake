@@ -223,8 +223,9 @@ QuaternionFloatingMobilizer<T>::SetTranslationalVelocity(
 }
 
 template <typename T>
-Vector<double, 7> QuaternionFloatingMobilizer<T>::get_zero_position() const {
-  Vector<double, 7> q = Vector<double, 7>::Zero();
+auto QuaternionFloatingMobilizer<T>::get_zero_position() const
+    -> QVector<double> {
+  QVector<double> q = QVector<double>::Zero();
   const Quaternion<double> quaternion = Quaternion<double>::Identity();
   q[0] = quaternion.w();
   q.template segment<3>(1) = quaternion.vec();
