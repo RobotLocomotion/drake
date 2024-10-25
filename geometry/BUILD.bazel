@@ -898,6 +898,23 @@ drake_cc_googletest(
     ],
 )
 
+# TODO(DamrongGuoy) Remove this test when I finish development of
+#  ComputeSignedDistanceToPoint for meshes.  For now, I use it to test my
+#  prototype quickly.
+drake_cc_googletest(
+    name = "proximity_engine_temporary_test",
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
+    deps = [
+        ":proximity_engine",
+        ":shape_specification",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math",
+    ],
+)
+
 drake_cc_googletest(
     name = "mesh_source_test",
     deps = [
