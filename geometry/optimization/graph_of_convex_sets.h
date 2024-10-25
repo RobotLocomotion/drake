@@ -120,9 +120,8 @@ struct GraphOfConvexSetsOptions {
   /** Optional solver options to be used by preprocessing_solver in the
   preprocessing stage of GCS, which is used in SolveShortestPath. If
   preprocessing_solver is set but this parameter is not then solver_options is
-  used. If preprocessing_solver is not set, this parameter is ignored. For
-  instance, one might want to print solver logs for the main optimization, but
-  not from the many smaller preprocessing optimizations. */
+  used. For instance, one might want to print solver logs for the main
+  optimization, but not from the many smaller preprocessing optimizations. */
   std::optional<solvers::SolverOptions> preprocessing_solver_options{
       std::nullopt};
 };

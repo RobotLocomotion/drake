@@ -67,47 +67,58 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog,
                                 const GraphOfConvexSetsOptions& options,
                                 bool preprocessing = false) {
   MathematicalProgramResult result;
-  if (preprocessing && options.preprocessing_solver &&
-      options.preprocessing_solver_options) {
-    options.preprocessing_solver->Solve(
-        prog, {}, options.preprocessing_solver_options, &result);
-  } else if (preprocessing && options.preprocessing_solver &&
-             !options.preprocessing_solver_options) {
-    options.preprocessing_solver->Solve(prog, {}, options.solver_options,
-                                        &result);
-  } else if (options.solver) {
-    options.solver->Solve(prog, {}, options.solver_options, &result);
-
-    // TODO(wrangelvid): Call the MixedIntegerBranchAndBound solver when
-    // asking to solve the MIP without a solver that supports it.
-  } else {
-    std::unique_ptr<solvers::SolverInterface> solver{};
-    try {
+  if (preprocessing) {
+    // Solving one of the preprocessing programs.
+    solvers::SolverOptions preprocessing_solver_options =
+        options.preprocessing_solver_options.value_or(options.solver_options);
+    if (options.preprocessing_solver) {
+      options.preprocessing_solver->Solve(
+          prog, {}, preprocessing_solver_options, &result);
+    } else if (options.solver) {
+      options.solver->Solve(prog, {}, preprocessing_solver_options, &result);
+    } else {
       solvers::SolverId solver_id = solvers::ChooseBestSolver(prog);
-      solver = solvers::MakeSolver(solver_id);
-    } catch (const std::exception&) {
-      // We should only get here if the user is trying to solve the MIP.
-      DRAKE_DEMAND(options.convex_relaxation == false);
-
-      // TODO(russt): Consider calling MixedIntegerBranchAndBound automatically
-      // here. The small trick is that we need to pass the SolverId into that
-      // constructor manually, and ChooseBestSolver doesn't make it easy to
-      // figure out what the best solver would be if we removed the integer
-      // variables.
-
-      throw std::runtime_error(
-          "GraphOfConvexSets: There is no solver available that can solve the "
-          "mixed-integer version of this problem. Please check "
-          "https://drake.mit.edu/doxygen_cxx/group__solvers.html for more "
-          "details about supported solvers and how to enable them.\n\n "
-          "Alternatively, you can try to solve the problem without integer "
-          "variables by setting options.convex_relaxation=true (and likely "
-          "setting options.max_rounded_paths > 0 if you want an "
-          "integer-feasible solution). See the documentation for "
-          "GraphOfConvexSetsOptions for more details.");
+      auto solver = solvers::MakeSolver(solver_id);
+      DRAKE_DEMAND(solver != nullptr);
+      solver->Solve(prog, {}, preprocessing_solver_options, &result);
     }
-    DRAKE_DEMAND(solver != nullptr);
-    solver->Solve(prog, {}, options.solver_options, &result);
+  } else {
+    // Solving the main GCS program.
+    if (options.solver) {
+      options.solver->Solve(prog, {}, options.solver_options, &result);
+
+      // TODO(wrangelvid): Call the MixedIntegerBranchAndBound solver when
+      // asking to solve the MIP without a solver that supports it.
+    } else {
+      std::unique_ptr<solvers::SolverInterface> solver{};
+      try {
+        solvers::SolverId solver_id = solvers::ChooseBestSolver(prog);
+        solver = solvers::MakeSolver(solver_id);
+      } catch (const std::exception&) {
+        // We should only get here if the user is trying to solve the MIP.
+        DRAKE_DEMAND(options.convex_relaxation == false);
+
+        // TODO(russt): Consider calling MixedIntegerBranchAndBound
+        // automatically here. The small trick is that we need to pass the
+        // SolverId into that constructor manually, and ChooseBestSolver doesn't
+        // make it easy to figure out what the best solver would be if we
+        // removed the integer variables.
+
+        throw std::runtime_error(
+            "GraphOfConvexSets: There is no solver available that can solve "
+            "the "
+            "mixed-integer version of this problem. Please check "
+            "https://drake.mit.edu/doxygen_cxx/group__solvers.html for more "
+            "details about supported solvers and how to enable them.\n\n "
+            "Alternatively, you can try to solve the problem without integer "
+            "variables by setting options.convex_relaxation=true (and likely "
+            "setting options.max_rounded_paths > 0 if you want an "
+            "integer-feasible solution). See the documentation for "
+            "GraphOfConvexSetsOptions for more details.");
+      }
+      DRAKE_DEMAND(solver != nullptr);
+      solver->Solve(prog, {}, options.solver_options, &result);
+    }
   }
   return result;
 }
