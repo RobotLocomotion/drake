@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Install development and runtime prerequisites for binary distributions of
+# Installs development and runtime prerequisites for binary distributions of
 # Drake on Ubuntu.
 
 set -euo pipefail
@@ -10,7 +10,10 @@ with_asking=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
-    # Do NOT call apt-get update during execution of this script.
+    # Call apt-get update during execution of this script.
+    --with-update)
+      with_update=1
+      ;;
     --without-update)
       with_update=0
       ;;
@@ -56,13 +59,13 @@ Do not try to set up Drake until that command succeeds.
 This is not a bug in Drake.  Do not contact the Drake team for help.
 ****************************************************************************
 EOF
-
-  # Do NOT call apt-get update again when installing prerequisites for source
-  # distributions.
-  binary_distribution_called_update=1
 fi
 
-apt-get install ${maybe_yes} --no-install-recommends lsb-release
+if ! command -v lsb_release &>/dev/null; then
+  apt-get install ${maybe_yes} --no-install-recommends lsb-release
+else
+  echo 'lsb_release is already installed' >&2
+fi
 
 codename=$(lsb_release -sc)
 
@@ -70,13 +73,6 @@ if ! [[ "${codename}" =~ (jammy|noble) ]]; then
   echo 'ERROR: This script requires Ubuntu 22.04 (Jammy) or 24.04 (Noble)' >&2
   exit 2
 fi
-
-apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
-build-essential
-cmake
-pkg-config
-EOF
-)
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
