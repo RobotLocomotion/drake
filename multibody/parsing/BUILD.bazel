@@ -606,6 +606,7 @@ drake_cc_googletest(
     name = "detail_mesh_parser_test",
     data = [
         ":test_models",
+        "//geometry:test_obj_files",
         "//geometry/render:test_models",
     ],
     deps = [

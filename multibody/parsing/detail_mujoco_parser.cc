@@ -33,6 +33,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+using drake::internal::DiagnosticPolicy;
 using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -480,9 +481,12 @@ class MujocoParser {
     // up mesh inertias, it uses the mujoco geometry _name_ and not the
     // mesh filename.
     InertiaCalculator(
+        const DiagnosticPolicy& policy,
         std::string name,
         std::map<std::string, SpatialInertia<double>>* mesh_inertia)
-        : name_(std::move(name)), mesh_inertia_(mesh_inertia) {
+        : policy_(policy),
+          name_(std::move(name)),
+          mesh_inertia_(mesh_inertia) {
       DRAKE_DEMAND(mesh_inertia != nullptr);
     }
 
@@ -513,9 +517,11 @@ class MujocoParser {
       if (mesh_inertia_->contains(name_)) {
         M_GGo_G_unitDensity = mesh_inertia_->at(name_);
       } else {
-        try {  // TODO(21666), remove the try-catch.
-          M_GGo_G_unitDensity = CalcSpatialInertia(mesh, 1.0 /* density */);
-        } catch (const std::exception& e) {
+        const CalcSpatialInertiaResult result =
+            CalcSpatialInertiaImpl(mesh, 1.0 /* density */);
+        if (std::holds_alternative<std::string>(result)) {
+          policy_.Warning(std::get<std::string>(result));
+
           // As this calculator is only used for Mesh shapes that are specified
           // in a mujoco file, the mesh *must* be on-disk.
           DRAKE_DEMAND(mesh.source().is_path());
@@ -525,9 +531,11 @@ class MujocoParser {
               geometry::Convex(mesh.source().path(), mesh.scale()),
               1.0 /* density */);
           used_convex_hull_fallback_ = true;
+        } else {
+          M_GGo_G_unitDensity = std::get<SpatialInertia<double>>(result);
         }
-        mesh_inertia_->insert_or_assign(name_, M_GGo_G_unitDensity);
       }
+      mesh_inertia_->insert_or_assign(name_, M_GGo_G_unitDensity);
     }
 
     void ImplementGeometry(const geometry::HalfSpace&, void*) final {
@@ -539,6 +547,7 @@ class MujocoParser {
     }
 
    private:
+    const DiagnosticPolicy& policy_;
     std::string name_;
     std::map<std::string, SpatialInertia<double>>* mesh_inertia_{nullptr};
     bool used_convex_hull_fallback_{false};
@@ -879,7 +888,8 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "user");
 
     if (compute_inertia) {
-      InertiaCalculator calculator(mesh, &mesh_inertia_);
+      auto policy = diagnostic_.MakePolicyForNode(node);
+      InertiaCalculator calculator(policy, mesh, &mesh_inertia_);
       const auto [volume, p_GoGcm_G, G_GGo_G] = calculator.Calc(*geom.shape);
       if (calculator.used_convex_hull_fallback()) {
         // When the Mujoco parser falls back to using a convex hull, it prints
