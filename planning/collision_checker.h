@@ -742,6 +742,9 @@ class CollisionChecker {
       const std::vector<Eigen::VectorXd>& configs,
       Parallelism parallelize = Parallelism::Max()) const;
 
+  std::vector<uint8_t> CheckConfigSliceCollisionFree(
+      const std::vector<Eigen::VectorXd>& configs, const int start,
+      const int end, Parallelism parallelize = Parallelism::Max()) const;
   //@}
 
   /** @name Edge collision checking
