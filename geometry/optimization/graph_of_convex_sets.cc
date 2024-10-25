@@ -67,18 +67,9 @@ using symbolic::Variables;
 
 namespace {
 MathematicalProgramResult Solve(const MathematicalProgram& prog,
-                                const GraphOfConvexSetsOptions& options,
-                                bool preprocessing = false) {
+                                const GraphOfConvexSetsOptions& options) {
   MathematicalProgramResult result;
-  if (preprocessing && options.preprocessing_solver &&
-      options.preprocessing_solver_options) {
-    options.preprocessing_solver->Solve(
-        prog, {}, options.preprocessing_solver_options, &result);
-  } else if (preprocessing && options.preprocessing_solver &&
-             !options.preprocessing_solver_options) {
-    options.preprocessing_solver->Solve(prog, {}, options.solver_options,
-                                        &result);
-  } else if (options.solver) {
+  if (options.solver) {
     options.solver->Solve(prog, {}, options.solver_options, &result);
 
     // TODO(wrangelvid): Call the MixedIntegerBranchAndBound solver when
@@ -815,6 +806,8 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     prog_ptrs[i] = progs[i].get();
   }
   std::optional<solvers::SolverId> maybe_solver_id;
+  solvers::SolverOptions preprocessing_solver_options =
+      options.preprocessing_solver_options.value_or(options.solver_options);
   if (options.preprocessing_solver) {
     maybe_solver_id = options.preprocessing_solver->solver_id();
   } else if (options.solver) {
@@ -823,10 +816,8 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     maybe_solver_id = std::nullopt;
   }
   std::vector<MathematicalProgramResult> results = SolveInParallel(
-      prog_ptrs, nullptr,
-      options.preprocessing_solver ? options.preprocessing_solver_options
-                                   : std::nullopt,
-      maybe_solver_id, options.preprocessing_parallelism, false);
+      prog_ptrs, nullptr, preprocessing_solver_options, maybe_solver_id,
+      options.preprocessing_parallelism, false);
 
   for (int i = 0; i < nE; ++i) {
     const auto& result = results[i];
