@@ -59,15 +59,38 @@ std::unique_ptr<ContactSurface<T>> CalcCompliantCompliant(
     HydroelasticContactRepresentation representation) {
   DRAKE_DEMAND(!compliant_F.is_half_space() && !compliant_G.is_half_space());
 
+  // const VolumeMeshFieldLinear<double, double>& field_F =
+  //     compliant_F.pressure_field();
+  // const Bvh<Obb, VolumeMesh<double>>& bvh_F = compliant_F.bvh();
+  // const VolumeMeshFieldLinear<double, double>& field_G =
+  //     compliant_G.pressure_field();
+  // const Bvh<Obb, VolumeMesh<double>>& bvh_G = compliant_G.bvh();
+
+  // return ComputeContactSurfaceFromCompliantVolumes(
+  //     id_F, field_F, bvh_F, X_WF, id_G, field_G, bvh_G, X_WG, representation);
+
+  // TODO(joemasterjohn): Switch between the different implementations here.
   const VolumeMeshFieldLinear<double, double>& field_F =
       compliant_F.pressure_field();
-  const Bvh<Obb, VolumeMesh<double>>& bvh_F = compliant_F.bvh();
+  const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_F =
+      compliant_F.bvh_surface_mesh();
+  const std::vector<TetFace>& element_mapping_F =
+      compliant_F.element_index_mapping();
+  const VolumeMeshTopology& mesh_topology_F =
+      compliant_F.mesh_topology();
   const VolumeMeshFieldLinear<double, double>& field_G =
       compliant_G.pressure_field();
-  const Bvh<Obb, VolumeMesh<double>>& bvh_G = compliant_G.bvh();
+  const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_G =
+      compliant_G.bvh_surface_mesh();
+  const std::vector<TetFace>& element_mapping_G =
+      compliant_G.element_index_mapping();
+  const VolumeMeshTopology& mesh_topology_G =
+      compliant_G.mesh_topology();
 
-  return ComputeContactSurfaceFromCompliantVolumes(
-      id_F, field_F, bvh_F, X_WF, id_G, field_G, bvh_G, X_WG, representation);
+  return ComputeContactSurfaceFromCompliantVolumesWithTopology(
+      id_F, field_F, bvh_F, element_mapping_F, mesh_topology_F, X_WF, id_G,
+      field_G, bvh_G, element_mapping_G, mesh_topology_G, X_WG,
+      representation);
 }
 
 template <typename T>

@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
@@ -15,6 +16,8 @@
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/proximity/volume_mesh_topology.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -39,6 +42,12 @@ class SoftMesh {
         pressure_(std::move(pressure)),
         bvh_(std::make_unique<Bvh<Obb, VolumeMesh<double>>>(*mesh_)) {
     DRAKE_ASSERT(mesh_.get() == &pressure_->mesh());
+    surface_mesh_ = std::make_unique<TriangleSurfaceMesh<double>>(
+        ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+            *mesh_, nullptr, &element_index_mapping_));
+    bvh_surface_mesh_ =
+        std::make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*surface_mesh_);
+    mesh_topology_ = std::make_unique<VolumeMeshTopology>(*mesh_);
   }
 
   SoftMesh(const SoftMesh& s) { *this = s; }
@@ -50,6 +59,10 @@ class SoftMesh {
     DRAKE_DEMAND(mesh_ != nullptr);
     return *mesh_;
   }
+  const TriangleSurfaceMesh<double>& surface_mesh() const {
+    DRAKE_DEMAND(surface_mesh_ != nullptr);
+    return *surface_mesh_;
+  }
   const VolumeMeshFieldLinear<double, double>& pressure() const {
     DRAKE_DEMAND(pressure_ != nullptr);
     return *pressure_;
@@ -58,11 +71,27 @@ class SoftMesh {
     DRAKE_DEMAND(bvh_ != nullptr);
     return *bvh_;
   }
+  const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_surface_mesh() const {
+    DRAKE_DEMAND(bvh_surface_mesh_ != nullptr);
+    return *bvh_surface_mesh_;
+  }
+  const std::vector<TetFace>& element_index_mapping() const {
+    return element_index_mapping_;
+  }
+  const VolumeMeshTopology& mesh_topology() const {
+    DRAKE_DEMAND(mesh_topology_ != nullptr);
+    return *mesh_topology_;
+  }
 
  private:
   std::unique_ptr<VolumeMesh<double>> mesh_;
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure_;
   std::unique_ptr<Bvh<Obb, VolumeMesh<double>>> bvh_;
+
+  std::unique_ptr<TriangleSurfaceMesh<double>> surface_mesh_;
+  std::unique_ptr<Bvh<Obb, TriangleSurfaceMesh<double>>> bvh_surface_mesh_;
+  std::unique_ptr<VolumeMeshTopology> mesh_topology_;
+  std::vector<TetFace> element_index_mapping_;
 };
 
 /* Defines a soft half space. The half space is defined such that the half
@@ -183,6 +212,49 @@ class SoftGeometry {
           "SoftGeometry::margin() cannot be invoked for soft mesh");
     }
     return std::get<SoftHalfSpace>(geometry_).margin;
+  }
+
+  /* Returns a reference to the surface mesh -- calling this will
+   throw if is_half_space() returns `true`.  */
+  const TriangleSurfaceMesh<double>& surface_mesh() const {
+    if (is_half_space()) {
+      throw std::runtime_error(
+          "SoftGeometry::surface_mesh() cannot be invoked for soft half space");
+    }
+    return std::get<SoftMesh>(geometry_).surface_mesh();
+  }
+
+  /* Returns a reference to the bounding volume hierarchy for the surface mesh
+   -- calling this will throw if is_half_space() returns `true`.  */
+  const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_surface_mesh() const {
+    if (is_half_space()) {
+      throw std::runtime_error(
+          "SoftGeometry::bvh_surface_mesh() cannot be invoked for soft half "
+          "space");
+    }
+    return std::get<SoftMesh>(geometry_).bvh_surface_mesh();
+  }
+
+  /* Returns a reference to the element index mapping -- calling this will
+   throw if is_half_space() returns `true`.  */
+  const std::vector<TetFace>& element_index_mapping() const {
+    if (is_half_space()) {
+      throw std::runtime_error(
+          "SoftGeometry::element_index_mapping() cannot be invoked for soft "
+          "half space");
+    }
+    return std::get<SoftMesh>(geometry_).element_index_mapping();
+  }
+
+  /* Returns a reference to the mesh topology -- calling this will
+   throw if is_half_space() returns `true`.  */
+  const VolumeMeshTopology& mesh_topology() const {
+    if (is_half_space()) {
+      throw std::runtime_error(
+          "SoftGeometry::mesh_topology() cannot be invoked for soft half "
+          "space");
+    }
+    return std::get<SoftMesh>(geometry_).mesh_topology();
   }
 
   //@}
