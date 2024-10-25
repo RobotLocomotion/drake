@@ -29,6 +29,7 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
+#include "drake/geometry/optimization/implicit_graph_of_convex_sets.h"
 #include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
@@ -965,6 +966,9 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
 
     graph_of_convex_sets  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
+        .def("num_vertices", &GraphOfConvexSets::num_vertices,
+            cls_doc.num_vertices.doc)
+        .def("num_edges", &GraphOfConvexSets::num_edges, cls_doc.num_edges.doc)
         .def("AddVertex", &GraphOfConvexSets::AddVertex, py::arg("set"),
             py::arg("name") = "", py_rvp::reference_internal,
             cls_doc.AddVertex.doc)
@@ -990,6 +994,14 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
             overload_cast_explicit<std::vector<GraphOfConvexSets::Edge*>>(
                 &GraphOfConvexSets::Edges),
             py_rvp::reference_internal, cls_doc.Edges.doc)
+        .def("IsValid",
+            overload_cast_explicit<bool, const GraphOfConvexSets::Vertex&>(
+                &GraphOfConvexSets::IsValid),
+            py::arg("v"), cls_doc.IsValid.doc_vertex)
+        .def("IsValid",
+            overload_cast_explicit<bool, const GraphOfConvexSets::Edge&>(
+                &GraphOfConvexSets::IsValid),
+            py::arg("e"), cls_doc.IsValid.doc_edge)
         .def("ClearAllPhiConstraints",
             &GraphOfConvexSets::ClearAllPhiConstraints,
             cls_doc.ClearAllPhiConstraints.doc)
@@ -1072,6 +1084,40 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
             py::arg("initial_guess") = nullptr,
             cls_doc.SolveConvexRestriction.doc);
   }
+
+  // Trampoline class to support deriving from ImplicitGraphOfConvexSets in
+  // python.
+  class PyImplicitGraphOfConvexSets
+      : public py::wrapper<ImplicitGraphOfConvexSets> {
+   public:
+    using Base = py::wrapper<ImplicitGraphOfConvexSets>;
+    using Base::Base;
+    using Base::gcs;
+
+    PyImplicitGraphOfConvexSets() : Base() {}
+
+    // Trampoline virtual methods.
+
+    std::vector<GraphOfConvexSets::Edge*> DoSuccessors(
+        GraphOfConvexSets::Vertex* v) override {
+      PYBIND11_OVERLOAD_PURE(std::vector<GraphOfConvexSets::Edge*>,
+          ImplicitGraphOfConvexSets, DoSuccessors, v);
+    }
+  };
+
+  py::class_<ImplicitGraphOfConvexSets, PyImplicitGraphOfConvexSets>
+      implicit_gcs_cls(
+          m, "ImplicitGraphOfConvexSets", doc.ImplicitGraphOfConvexSets.doc);
+  implicit_gcs_cls.def(py::init<>(), doc.ImplicitGraphOfConvexSets.ctor.doc)
+      .def("Successors", &ImplicitGraphOfConvexSets::Successors,
+          py_rvp::reference_internal, py::arg("v"),
+          doc.ImplicitGraphOfConvexSets.Successors.doc)
+      .def("BuildExplicitGcs", &ImplicitGraphOfConvexSets::BuildExplicitGcs,
+          py_rvp::reference_internal, py::arg("start"),
+          py::arg("max_vertices") = 1000,
+          doc.ImplicitGraphOfConvexSets.BuildExplicitGcs.doc)
+      .def("gcs", &PyImplicitGraphOfConvexSets::gcs, py_rvp::reference_internal,
+          doc.ImplicitGraphOfConvexSets.gcs.doc);
 }
 
 // Definitions for c_iris_collision_geometry.h.
