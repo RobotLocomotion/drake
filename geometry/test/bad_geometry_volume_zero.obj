@@ -1,18 +1,9 @@
-# File: bad_geometry_volume_zero.obj
-# The geometry in this file produces invalid mass and inertia properties
-# due to improper winding (order of the vertices) in some of its faces.
-# This file has the same vertices as the file bad_geometry_corrected.obj.
-# However this file's faces have misordered vertices which produce a mesh
-# with zero volume (volume = 0) and an invalid centroid and spatial inertia.
-# ------------------------------------------------------------------------------
-# This file uses the data in the original bad mesh file submitted by the Drake
-# user in issue #21924 [github.com/RobotLocomotion/drake/issues/21924]. This
-# issue was resolved in PR #21929 [github.com/RobotLocomotion/drake/pull/21929]
-# by creating a more coherent error message when the volume calculated from
-# geometry in an .obj file is not reasonably positive.
-# ------------------------------------------------------------------------------
+# A simple mesh that reports zero volume in CalcSpatialInertia().
+# The mesh was initially provided by a user in issue #21924.
+# It leads to zero volume because several faces have the incorrect vertex
+# ordering (winding). (The faces have been re-ordered relative to the issue to
+# admit distinguishing good and bad faces.)
 
-# 6 vertices.
 v 0.0  0.0   0.5
 v 0.0  0.0  -0.5
 v 0.0  1.0   0.5
@@ -20,12 +11,14 @@ v 0.0  1.0  -0.5
 v 1.0  0.0   0.5
 v 1.0  0.0  -0.5
 
-# 8 faces.
-f 1 3 5
+# good faces
 f 2 4 6
-f 1 2 3
 f 2 3 4
-f 3 4 5
 f 4 5 6
-f 5 6 1
 f 6 1 2
+
+# bad faces
+f 1 3 5
+f 1 2 3
+f 3 4 5
+f 5 6 1

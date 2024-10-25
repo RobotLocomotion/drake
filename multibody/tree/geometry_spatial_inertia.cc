@@ -38,12 +38,13 @@ CalcSpatialInertiaResult CalcMeshSpatialInertia(const Mesh& mesh,
         density);
   }
   return fmt::format(
-      "CalcSpatialInertia currently only supports .obj or tetrahedral-mesh"
+      "CalcSpatialInertia() currently only supports .obj or tetrahedral-mesh"
       " .vtk files for Mesh shapes but was given '{}'.",
       mesh.source().description());
 }
 
-SpatialInertia<double> MaybeThrow(CalcSpatialInertiaResult result) {
+SpatialInertia<double> GetSpatialInertiaOrThrow(
+    CalcSpatialInertiaResult result) {
   if (std::holds_alternative<std::string>(result)) {
     throw std::invalid_argument(std::get<std::string>(result));
   }
@@ -138,23 +139,24 @@ CalcSpatialInertiaResult CalcSpatialInertiaImpl(
   }
 
   const double volume = vol_times_six / 6.0;
-  // A valid mesh should have an inherently positive volume.  Emit an error if
-  // volume is negative or nearly zero. This test of "reasonably positive"
-  // volume is more stringent than the mass ≥ 0 test in
-  // SpatialInertia::IsPhysicallyValid(). Reminder: The volume of a mesh can be
-  // calculated (and should be positive) whereas spatial inertia does not deal
-  // with volume. Instead, spatial inertia deals with mass, including idealized
-  // zero volume massive objects such as particles, rods, and plates.  Note: If
-  // we skip emitting an error for negative or zero volume, a different error
-  // would still be otherwise emitted in code called by the spatial inertia
-  // constructor below and this function still fails.  For negative volume, the
-  // associated less-helpful spatial inertia error message would be e.g., "mass
-  // = -0.5 is not positive and finite.", whereas a zero volume creates a
-  // divide-by-zero in two places below and the associated obscure error
-  // message would be "Unable to calculate the eigenvalues or eigenvectors of
-  // the 3x3 matrix associated with a RotationalInertia.".  Related: issue
-  // #21924 [github.com/RobotLocomotion/drake/issues/21924].
-  constexpr double kEpsilon = 1.0E-14;  // ≈ 64*numeric_limits<double>::epsilon
+
+  // TODO(SeanCurtis-TRI): this volume test is a proxy for an actual mesh
+  // validation test. If we validated the mesh prior to the calculation, it
+  // would no longer be necessary, because we would actually provide an error
+  // in terms of the actual observable properties of the mesh.
+
+  // This algorithm is predicated on the assumption that the mesh encloses a
+  // measurable volume. A zero (or negative) volume indicates the assumption is
+  // broken (possibly in a number of different ways). We must stop the
+  // calculation here because nothing that follows would be physically or
+  // possibly numerically valid (e.g., we divide by volume which precludes a
+  // zero measure and we define mass by scaling the volume -- a negative mass
+  // is physically meaningless).
+  // This "nearly zero" tolerance makes this test stricter than the test in
+  // SpatialInertia itself. Because we normalize by volume, as volume gets
+  // closer to zero, we could end up with a center of mass placed arbitrarily
+  // far away based on rounding noise. The tolerance limits the effect.
+  constexpr double kEpsilon = 1.0E-14;
   if (volume <= kEpsilon) {
     // TODO(Mitiguy) Consider changing the function signature to add an optional
     //  mesh_name argument (e.g., mesh_name = someFilename.obj) and using
@@ -165,11 +167,12 @@ CalcSpatialInertiaResult CalcSpatialInertiaImpl(
     //  https://drake.mit.edu/troubleshooting.html for a proper treatment of
     //  the issue (ideally with Sean's input/expertise).
     const std::string error_message = fmt::format(
-        "{}(): The calculated volume of a triangle surface mesh is {} whereas "
-        "a reasonable positive value of at least {} was expected. The mesh may "
-        "have bad geometry, e.g., it is an open mesh or the winding (order of "
-        "vertices) of at least one face does not produce an outward normal.",
-        __func__, volume, kEpsilon);
+        "CalcSpatialInertia(): The calculated volume of a triangle surface "
+        "mesh is {} whereas a reasonable positive value of at least {} was "
+        "expected. The mesh may have bad geometry, e.g., it is an open mesh or "
+        "the winding (order of vertices) of at least one face does not produce "
+        "an outward normal.",
+        volume, kEpsilon);
     return error_message;
   }
 
@@ -198,12 +201,14 @@ CalcSpatialInertiaResult CalcSpatialInertiaImpl(
 
 SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
                                           double density) {
-  return MaybeThrow(internal::CalcSpatialInertiaImpl(shape, density));
+  return GetSpatialInertiaOrThrow(
+      internal::CalcSpatialInertiaImpl(shape, density));
 }
 
 SpatialInertia<double> CalcSpatialInertia(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density) {
-  return MaybeThrow(internal::CalcSpatialInertiaImpl(mesh, density));
+  return GetSpatialInertiaOrThrow(
+      internal::CalcSpatialInertiaImpl(mesh, density));
 }
 
 }  // namespace multibody
