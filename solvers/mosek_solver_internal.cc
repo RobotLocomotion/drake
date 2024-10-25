@@ -1518,7 +1518,7 @@ void MosekSolverProgram::UpdateOptions(
       if (rescode != MSK_RES_OK) {
         throw std::runtime_error(fmt::format(
             "MosekSolver(): kPrintToConsole=1 failed with response code {}",
-            rescode));
+            fmt_streamed(rescode)));
       }
       *is_printing = true;
     }
@@ -1529,7 +1529,7 @@ void MosekSolverProgram::UpdateOptions(
       if (rescode != MSK_RES_OK) {
         throw std::runtime_error(fmt::format(
             "MosekSolver(): kPrintToFile={} failed with response code {}",
-            common.print_file_name, rescode));
+            common.print_file_name, fmt_streamed(rescode)));
       }
       *is_printing = true;
     }
