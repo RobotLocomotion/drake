@@ -793,14 +793,18 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     } else {
       outgoing_edges[e->u().id()].push_back(edge_count);
       incoming_edges[e->v().id()].push_back(edge_count);
-    }
 
-    edge_id_list.push_back(edge_id);
+      // Note: we only add the edge id to this list if we still need to check
+      // it.
+      edge_id_list.push_back(edge_id);
+    }
 
     edge_count++;
   }
 
-  int nE = edges_.size();
+  // edge_id_list is now the canonical list of edges we will check in the
+  // remainder of the function.
+  int nE = edge_id_list.size();
 
   // Given an edge (u,v) check if a path from source to u and another from v to
   // target exist without sharing edges.
@@ -811,6 +815,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
         batch_idx * options.preprocessing_parallel_batch_size;
     int this_batch_end = std::min(
         (batch_idx + 1) * options.preprocessing_parallel_batch_size, nE);
+    // TODO(cohnt): No longer use pointers here.
     std::vector<copyable_unique_ptr<MathematicalProgram>> progs;
     std::vector<EdgeId> idx_to_edge_id;
 
@@ -819,11 +824,11 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     idx_to_edge_id.reserve(this_batch_nE);
 
     for (int i = this_batch_start; i < this_batch_end; ++i) {
-      idx_to_edge_id.push_back(edge_id_list[i]);
+      idx_to_edge_id.push_back(edge_id_list.at(i));
     }
 
-    for (int i = 0; i < nE; ++i) {
-      EdgeId edge_id = idx_to_edge_id[i];
+    for (int i = 0; i < this_batch_nE; ++i) {
+      EdgeId edge_id = idx_to_edge_id.at(i);
       progs.emplace_back(ConstructPreprocessingProgram(
           edge_id, incoming_edges, outgoing_edges, source_id, target_id));
     }
@@ -843,14 +848,15 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     } else {
       maybe_solver_id = std::nullopt;
     }
+
     std::vector<MathematicalProgramResult> results = SolveInParallel(
         prog_ptrs, nullptr, &preprocessing_solver_options, maybe_solver_id,
         options.preprocessing_parallelism, false);
 
-    for (int i = 0; i < nE; ++i) {
-      const auto& result = results[i];
+    for (int i = 0; i < this_batch_nE; ++i) {
+      const auto& result = results.at(i);
       if (!result.is_success()) {
-        unusable_edges.insert(idx_to_edge_id[i]);
+        unusable_edges.insert(idx_to_edge_id.at(i));
       }
     }
   }
