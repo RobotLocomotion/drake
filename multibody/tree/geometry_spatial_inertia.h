@@ -12,8 +12,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/* Versions of CalcSpatialInertia that do not throw. If an error occurs, the
- * error message is returned instead of a SpatialInertia. */
+/* Versions of CalcSpatialInertia() that do not throw. If an error occurs, the
+ error message is returned instead of a SpatialInertia. */
 using CalcSpatialInertiaResult =
     std::variant<SpatialInertia<double>, std::string>;
 CalcSpatialInertiaResult CalcSpatialInertiaImpl(
@@ -61,11 +61,14 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
    - All triangles must be "wound" such that their normals point outward
      (according to the right-hand rule based on vertex winding).
 
- We do not perform the expensive checks that the mesh meets these requirements.
- Instead we compute the volume enclosed by the mesh, and if the volume is zero
- or negative we'll throw an exception. In other cases we won't notice unmet
- requirements and the returned SpatialInertia may be meaningless.
- @throws std::exception if the volume of `mesh` is negative or nearly zero.
+ Drake currently doesn't validate these requirements on the mesh. Instead, it
+ does a best-faith effort to compute a spatial inertia. For some "bad" meshes,
+ the SpatialInertia will be objectively physically invalid. For others, the
+ SpatialInertia will appear physically valid, but be meaningless because it does
+ not accurately represent the mesh.
+
+ @throws std::exception if the resulting spatial inertia is obviously physically
+ invalid. See multibody::SpatialInertia::IsPhysicallyValid().
  @pydrake_mkdoc_identifier{mesh} */
 SpatialInertia<double> CalcSpatialInertia(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density);
