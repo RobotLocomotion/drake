@@ -57,7 +57,7 @@ TEST_F(RpyFloatingMobilizerTest, CanRotateOrTranslate) {
 
 // Verifies methods to mutate and access the context.
 TEST_F(RpyFloatingMobilizerTest, BasicIntrospection) {
-  EXPECT_TRUE(mobilizer_->is_floating());
+  EXPECT_TRUE(mobilizer_->has_six_dofs());
   EXPECT_FALSE(mobilizer_->has_quaternion_dofs());
 }
 

@@ -85,8 +85,9 @@ struct RigidBodyTopology {
   // SpanningForest.
   MobodIndex mobod_index;
 
-  // `true` if this topology corresponds to a floating RigidBody.
-  bool is_floating{false};
+  // `true` if this topology corresponds to a floating base RigidBody, meaning
+  // it has a 6 dof mobilizer connecting it to World.
+  bool is_floating_base{false};
 
   // `true` if this topology corresponds to a floating RigidBody with rotations
   // parametrized by a quaternion.
