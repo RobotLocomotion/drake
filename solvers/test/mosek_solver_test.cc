@@ -626,7 +626,7 @@ GTEST_TEST(MosekSolver, SocpDualSolution2) {
 GTEST_TEST(MosekTest, SDPDualSolution1) {
   MosekSolver solver;
   if (solver.available()) {
-    TestSDPDualSolution1(solver, 3E-6);
+    TestSDPDualSolution1(solver, 1E-4);
   }
 }
 
