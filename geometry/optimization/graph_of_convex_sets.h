@@ -848,8 +848,9 @@ class GraphOfConvexSets {
 
   // Modify prog so that it contains the variables and constraints of the
   // preprocessing program for a given edge.
-  void ConstructPreprocessingProgram(
-      solvers::MathematicalProgram* prog, EdgeId edge_id,
+  copyable_unique_ptr<solvers::MathematicalProgram>
+  ConstructPreprocessingProgram(
+      EdgeId edge_id,
       const std::map<VertexId, std::vector<int>>& incoming_edges,
 
       const std::map<VertexId, std::vector<int>>& outgoing_edges,

@@ -654,14 +654,14 @@ std::string GraphOfConvexSets::GetGraphvizString(
   return graphviz.str();
 }
 
-void GraphOfConvexSets::ConstructPreprocessingProgram(
-    MathematicalProgram* prog, EdgeId edge_id,
-    const std::map<VertexId, std::vector<int>>& incoming_edges,
+copyable_unique_ptr<MathematicalProgram>
+GraphOfConvexSets::ConstructPreprocessingProgram(
+    EdgeId edge_id, const std::map<VertexId, std::vector<int>>& incoming_edges,
     const std::map<VertexId, std::vector<int>>& outgoing_edges,
     VertexId source_id, VertexId target_id) const {
   const auto& e = edges_.at(edge_id);
-
   int nE = edges_.size();
+  copyable_unique_ptr<MathematicalProgram> prog(MathematicalProgram{});
 
   // Flow for each edge is between 0 and 1 for both paths.
   VectorXDecisionVariable f = prog->NewContinuousVariables(nE, "flow_su");
@@ -759,6 +759,8 @@ void GraphOfConvexSets::ConstructPreprocessingProgram(
   if (degree.contains(e->v().id())) {
     degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
   }
+
+  return prog;
 }
 
 // Implements the preprocessing scheme put forth in Appendix A.2 of
@@ -778,6 +780,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
         target_id));
   }
 
+  std::vector<EdgeId> edge_id_list;
   std::map<VertexId, std::vector<int>> incoming_edges;
   std::map<VertexId, std::vector<int>> outgoing_edges;
   std::set<EdgeId> unusable_edges;
@@ -792,6 +795,8 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
       incoming_edges[e->v().id()].push_back(edge_count);
     }
 
+    edge_id_list.push_back(edge_id);
+
     edge_count++;
   }
 
@@ -799,46 +804,54 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
 
   // Given an edge (u,v) check if a path from source to u and another from v to
   // target exist without sharing edges.
-  std::vector<copyable_unique_ptr<MathematicalProgram>> progs;
-  std::vector<EdgeId> idx_to_edge_id;
-  progs.reserve(nE);
-  idx_to_edge_id.reserve(nE);
-  for (const auto& [edge_id, e] : edges_) {
-    idx_to_edge_id.push_back(edge_id);
-    progs.push_back(copyable_unique_ptr(MathematicalProgram()));
-  }
 
-  for (int i = 0; i < nE; ++i) {
-    EdgeId edge_id = idx_to_edge_id[i];
-    // Note that we have to use the raw pointer, since we don't want to copy it.
-    ConstructPreprocessingProgram(progs[i].get_mutable(), edge_id,
-                                  incoming_edges, outgoing_edges, source_id,
-                                  target_id);
-  }
+  int num_batches = 1 + (nE / options.preprocessing_parallel_batch_size);
+  for (int batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    int this_batch_start =
+        batch_idx * options.preprocessing_parallel_batch_size;
+    int this_batch_end = std::min(
+        (batch_idx + 1) * options.preprocessing_parallel_batch_size, nE);
+    std::vector<copyable_unique_ptr<MathematicalProgram>> progs;
+    std::vector<EdgeId> idx_to_edge_id;
 
-  // Check if edge e = (u,v) could be on a path from start to goal.
-  std::vector<const MathematicalProgram*> prog_ptrs(progs.size());
-  for (int i = 0; i < ssize(progs); ++i) {
-    prog_ptrs[i] = progs[i].get();
-  }
-  std::optional<solvers::SolverId> maybe_solver_id;
-  solvers::SolverOptions preprocessing_solver_options =
-      options.preprocessing_solver_options.value_or(options.solver_options);
-  if (options.preprocessing_solver) {
-    maybe_solver_id = options.preprocessing_solver->solver_id();
-  } else if (options.solver) {
-    maybe_solver_id = options.solver->solver_id();
-  } else {
-    maybe_solver_id = std::nullopt;
-  }
-  std::vector<MathematicalProgramResult> results = SolveInParallel(
-      prog_ptrs, nullptr, &preprocessing_solver_options, maybe_solver_id,
-      options.preprocessing_parallelism, false);
+    int this_batch_nE = this_batch_end - this_batch_start;
+    progs.reserve(this_batch_nE);
+    idx_to_edge_id.reserve(this_batch_nE);
 
-  for (int i = 0; i < nE; ++i) {
-    const auto& result = results[i];
-    if (!result.is_success()) {
-      unusable_edges.insert(idx_to_edge_id[i]);
+    for (int i = this_batch_start; i < this_batch_end; ++i) {
+      idx_to_edge_id.push_back(edge_id_list[i]);
+    }
+
+    for (int i = 0; i < nE; ++i) {
+      EdgeId edge_id = idx_to_edge_id[i];
+      progs.emplace_back(ConstructPreprocessingProgram(
+          edge_id, incoming_edges, outgoing_edges, source_id, target_id));
+    }
+
+    // Check if edge e = (u,v) could be on a path from start to goal.
+    std::vector<const MathematicalProgram*> prog_ptrs(progs.size());
+    for (int i = 0; i < ssize(progs); ++i) {
+      prog_ptrs[i] = progs[i].get();
+    }
+    std::optional<solvers::SolverId> maybe_solver_id;
+    solvers::SolverOptions preprocessing_solver_options =
+        options.preprocessing_solver_options.value_or(options.solver_options);
+    if (options.preprocessing_solver) {
+      maybe_solver_id = options.preprocessing_solver->solver_id();
+    } else if (options.solver) {
+      maybe_solver_id = options.solver->solver_id();
+    } else {
+      maybe_solver_id = std::nullopt;
+    }
+    std::vector<MathematicalProgramResult> results = SolveInParallel(
+        prog_ptrs, nullptr, &preprocessing_solver_options, maybe_solver_id,
+        options.preprocessing_parallelism, false);
+
+    for (int i = 0; i < nE; ++i) {
+      const auto& result = results[i];
+      if (!result.is_success()) {
+        unusable_edges.insert(idx_to_edge_id[i]);
+      }
     }
   }
 
