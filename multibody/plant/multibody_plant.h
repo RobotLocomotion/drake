@@ -2058,8 +2058,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @note Currently, the visual geometry will _also_ be assigned a perception
   /// role. Its render label's value will be equal to the body's index and its
   /// perception color will be the same as its illustration color (defaulting to
-  /// gray if no color is provided). This behavior will change in the near
-  /// future and code that directly relies on this behavior will break.
+  /// gray if no color is provided). This behavior may change in the future and
+  /// code that directly relies on this behavior will break.
+  ///
+  /// The name of the registered visual will be modified to include the scoped
+  /// name (based on the body's model instance).
   ///
   /// @param[in] body
   ///   The body for which geometry is being registered.
@@ -2081,6 +2084,33 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const geometry::IllustrationProperties& properties);
+
+  /// Registers the given `geometry` instance in a SceneGraph to be used for
+  /// visualization of a given `body`.
+  ///
+  /// The roles the geometry has (illustration/perception) depend on the
+  /// properties that have _already_ been assigned to `geometry`. If no visual
+  /// roles (perception or illustration) then no action will be taken and
+  /// `std::nullopt` is returned.
+  ///
+  /// If the geometry has the perception role *and* it doesn't already have the
+  /// ("label", "id") property, it will be assigned a label value equal to the
+  /// `body` index (otherwise, the property will remain unchanged).
+  ///
+  /// The name of the registered visual will be modified to include the scoped
+  /// name (based on the body's model instance).
+  ///
+  /// @param[in] body
+  ///   The body for which geometry is being registered.
+  /// @param[in] geometry
+  ///   The geometry to associate with the visual appearance of `body`.
+  /// @throws std::exception if called post-finalize.
+  /// @throws std::exception if `scene_graph` does not correspond to the same
+  /// instance with which RegisterAsSourceForSceneGraph() was called.
+  /// @returns the id for the registered geometry.
+  std::optional<geometry::GeometryId> RegisterVisualGeometry(
+      const RigidBody<T>& body,
+      std::unique_ptr<geometry::GeometryInstance> geometry);
 
   /// Overload for visual geometry registration; it converts the `diffuse_color`
   /// (RGBA with values in the range [0, 1]) into a
@@ -5736,8 +5766,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // 3. `scene_graph` points to the same SceneGraph instance previously
   //    passed to RegisterAsSourceForSceneGraph().
   geometry::GeometryId RegisterGeometry(
-      const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name);
+      const RigidBody<T>& body,
+      std::unique_ptr<geometry::GeometryInstance> instance);
 
   // Registers a geometry frame for every body. If the body already has a
   // geometry frame, it is unchanged. This registration is part of finalization.

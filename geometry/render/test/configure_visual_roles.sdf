@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<!-- This contains multiple examples of configuring visual roles for Drake. -->
+<sdf version="1.7">
+  <model name="visual_model">
+
+    <link name="both_roles_by_default">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <!-- Saying nothing opts in to both roles. -->
+      </visual>
+    </link>
+
+    <link name="both_roles_with_redundant_specification">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <!-- This is redundant; illustration_properties is still enabled.
+         However, it will *not* generate any warning.  -->
+        <drake:perception_properties enabled="true"/>
+      </visual>
+    </link>
+
+    <link name="illustration_only">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <!-- This opts out of the perception role. Change this to
+        drake:illustration_properties to opt out of the illustration role. -->
+        <drake:perception_properties enabled="false"/>
+      </visual>
+    </link>
+
+    <link name="different_colors">
+      <visual name="visual">
+        <!-- The box geometry has different colors based on role. In non-Drake
+         loaders, sdformat's default white would be used and the Drake-specific
+         colors would be ignored. -->
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        <drake:illustration_properties>
+          <drake:diffuse>1 0 0</drake:diffuse>
+        </drake:illustration_properties>
+        <drake:perception_properties>
+          <drake:diffuse>0 1 0</drake:diffuse>
+        </drake:perception_properties>
+      </visual>
+    </link>
+
+    <link name="per_role_geometry">
+      <!-- The default geometry is the mesh, but gets replaced with a sphere
+        for illustration. The illustration sphere is offset relative to the
+        visual frame V in the +Vx direction.-->
+      <visual name="visual">
+        <!-- The mesh gets offset and rotated. -->
+        <pose>1 0 0 0 1.57 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <drake:illustration_properties enabled="false"/>
+      </visual>
+
+      <!-- Note this `name` *can* be the same name as the previous visual as the
+       two geometries will have different roles. -->
+      <drake:visual name="visual">
+        <!-- This pose is relative to the link frame. So, to offset the box
+         relative to the mesh, we need to combine the offset with the mesh's
+         pose in the link frame. -->
+        <drake:pose>2 0 0 90 0 0</drake:pose>
+        <drake:geometry>
+          <drake:box>
+            <drake:size>1 2 3</drake:size>
+          </drake:box>
+        </drake:geometry>
+        <drake:perception_properties enabled="false"/>
+      </drake:visual>
+    </link>
+
+    <!-- When the <visual> tag gets completely excluded (via disabling both sets
+     of visualization properties), Drake emits a warning. -->
+
+    <link name="no_geometry_left">
+      <visual name="visual">
+        <!-- The <visual> is omitted; and there is no Drake replacement. The
+         warning indicates that nothing will be drawn. -->
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <drake:perception_properties enabled="false"/>
+        <drake:illustration_properties enabled="false"/>
+      </visual>
+    </link>
+
+    <link name="unused_default_geometry">
+      <visual name="visual">
+        <!-- The <visual> has been complete replaced in Drake. The warning
+         indicates that the model may have a very different apperance in Drake
+         than in other sdf loaders. -->
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+        <drake:perception_properties enabled="false"/>
+        <drake:illustration_properties enabled="false"/>
+      </visual>
+
+      <drake:visual name="illustration">
+        <drake:pose>1 0 0 0 0 0</drake:pose>
+        <drake:geometry>
+          <drake:box>
+            <drake:size>1 1 1</drake:size>
+          </drake:box>
+        </drake:geometry>
+        <drake:perception_properties enabled="false"/>
+      </drake:visual>
+
+      <drake:visual name="perception">
+        <drake:pose>1 0 0 0 0 0</drake:pose>
+        <drake:geometry>
+          <drake:box>
+            <drake:size>1 1 1</drake:size>
+          </drake:box>
+        </drake:geometry>
+        <drake:illustration_properties enabled="false"/>
+      </drake:visual>
+    </link>
+
+  </model>
+</sdf>

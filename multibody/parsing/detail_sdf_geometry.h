@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include <sdf/Collision.hh>
 #include <sdf/Geometry.hh>
@@ -21,6 +22,12 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+// We convert <drake:visual> to <visual> but want to record its unique origin.
+// We do so by adding an attribute to the <visual>. If present, it came from a
+// drake-namespaced element, originally. (The value of the attribute is
+// irrelevant.)
+constexpr char kIsDrakeNamespaceAttr[] = "drake-namespaced";
+
 /* Used for resolving URIs / filenames.  */
 using ResolveFilename = std::function<std::string (
     const SDFormatDiagnostic&, std::string)>;
@@ -38,17 +45,70 @@ std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
 
 /* Given an sdf::Visual object representing a <visual> element from an SDF
  file, this method makes a new drake::geometry::GeometryInstance object from
- this specification at a pose `X_LG` relatve to its parent link.
- This method returns nullptr when the given SDF specification corresponds
- to an uninterpreted geometry type:
- - `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)
- - `sdf::GeometryType::HEIGHTMAP` (`<heightmap/>` SDF tag.)
- If the geometry is malformed, emits an error. When the error policy is not
- set to throw it returns an std::nullopt.
+ this specification at a pose `X_LG` relative to its parent link.
+
+ This method returns null when:
+   1. the given SDF specification corresponds to an uninterpreted geometry type:
+      - `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)
+      - `sdf::GeometryType::HEIGHTMAP` (`<heightmap/>` SDF tag.)
+   2. the <visual> has had both of its Drake roles disabled.
+   3. the <visual> specification was in some way malformed.
+
+ In the case of a malformed specification, an error is also emitted to
+ `diagnostic`.
 
  <!-- TODO(SeanCurtis-TRI): Ultimately, a module for what we parse should be
   written outside of this _internal_ namespace. This should go there and
   merely reference it.  -->
+
+ <h2>Controlling Drake visual roles</h2>
+
+ Drake distinguishes two different visual roles: perception and illustration.
+ Historically, any <visual> element was assumed to have both (sharing geometries
+ and material properties).
+
+ Any <visual> element can disable those roles. To disable the illustration role
+ (so that the geometry only appears in camera renderings) add the following tag
+ as a child of the <visual> tag:
+
+    <drake:illustration_properties enabled="false"/>
+
+ Similarly, to disable the perception role (so that it only appears in
+ interactive visualizers), add the following tag as a child of the <visual> tag:
+
+    <drake:perception_properties enabled="false"/>
+
+ Warning: if you disable both roles, you've created a model file that will be
+ treated significantly different between Drake and any other model loader.
+ They'll ignore the Drake-specific tags and load the geometry. Drake won't. This
+ is largely considered to be a modeling oversight, and Drake will emit a
+ warning, letting you know this has happened.
+
+ <h2>Different geometries fro different roles</h2>
+
+ We can enable and disable Drake visual roles. It makes sense to allow for two
+ different geometries -- one for each role (e.g., a low-fidelity model for
+ interactive visualization and a high-fidelity model for rendering). However, if
+ both are simply added to the model file (with the appropriate
+ <drake:foo_properties> tags configured), when any other loader reads the model
+ file, it will load both models. Clearly undesirable.
+
+ Instead, one general <visual> should be specified (with the understanding that
+ every .sdf loader will consume it). A second visual can be added that only
+ Drake will add by prefixing the visual declaration with the drake: namespace.
+ It is important that _every_ tag in that tree picks up the drake: namespace.
+ For example, the following XML will instantiate a sphere geometry (offset from
+ the link by the vector <1, 2, 3>) that only has the illustration role.
+
+     <drake:visual>
+       <drake:pose>1 2 3 0 0 0</drake:pose>
+       <drake:geometry>
+         <drake:sphere>
+           <drake:radius>1.5</drake:radius>
+         </drake:sphere>
+       </drake:geometry>
+       <drake:perception_properties enabled="false"/>
+     </drake:visual>
 
  <h2>Targeting Renderers</h2>
 
@@ -79,6 +139,13 @@ std::optional<std::unique_ptr<geometry::GeometryInstance>>
         const SDFormatDiagnostic& diagnostic,
         const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
         const math::RigidTransformd& X_LG);
+
+/* The visual properties implied by the <visual> tag. It is possible that zero,
+ one, or two sets of properties are defined. */
+struct VisualProperties {
+  std::optional<geometry::IllustrationProperties> illustration;
+  std::optional<geometry::PerceptionProperties> perception;
+};
 
 /* Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
@@ -130,10 +197,9 @@ std::optional<std::unique_ptr<geometry::GeometryInstance>>
  property tags, the property set will be empty. If the material is malformed
  an error will be emitted. If the error policy is not set to throw, an
  std::nullopt will be returned. */
-std::optional<geometry::IllustrationProperties>
-    MakeVisualPropertiesFromSdfVisual(
-        const SDFormatDiagnostic& diagnostic,
-        const sdf::Visual& sdf_visual, ResolveFilename resolve_filename);
+VisualProperties MakeVisualPropertiesFromSdfVisual(
+    const SDFormatDiagnostic& diagnostic, const sdf::Visual& sdf_visual,
+    ResolveFilename resolve_filename);
 
 /* Computes the pose `X_LC` of frame C (the "canonical frame" of the geometry)
  relative to the link L containing the collision, given an `sdf_collision`
