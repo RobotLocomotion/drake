@@ -1,5 +1,8 @@
 #include "drake/solvers/solver_options.h"
 
+// Remove this include on 2025-05-01 upon completion of deprecation.
+#include <sstream>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -7,6 +10,23 @@
 
 namespace drake {
 namespace solvers {
+
+GTEST_TEST(SolverOptionsTest, CommonToString) {
+  const CommonSolverOption dut = CommonSolverOption::kPrintFileName;
+  EXPECT_EQ(to_string(dut), "kPrintFileName");
+  EXPECT_EQ(fmt::to_string(dut), "kPrintFileName");
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(SolverOptionsTest, DeprecatedCommonStream) {
+  const CommonSolverOption dut = CommonSolverOption::kPrintFileName;
+  std::stringstream stream;
+  stream << dut;
+  EXPECT_EQ(stream.str(), "kPrintFileName");
+}
+#pragma GCC diagnostic pop
+
 GTEST_TEST(SolverOptionsTest, SetGetOption) {
   SolverOptions dut;
   EXPECT_EQ(to_string(dut), "{SolverOptions empty}");
@@ -162,5 +182,6 @@ GTEST_TEST(SolverOptionsTest, SetOptionError) {
       solver_options.SetOption(CommonSolverOption::kMaxThreads, -1),
       "kMaxThreads must be > 0.*");
 }
+
 }  // namespace solvers
 }  // namespace drake

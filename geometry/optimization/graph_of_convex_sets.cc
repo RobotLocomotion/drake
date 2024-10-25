@@ -817,7 +817,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     maybe_solver_id = std::nullopt;
   }
   std::vector<MathematicalProgramResult> results = SolveInParallel(
-      prog_ptrs, nullptr, preprocessing_solver_options, maybe_solver_id,
+      prog_ptrs, nullptr, &preprocessing_solver_options, maybe_solver_id,
       options.preprocessing_parallelism, false);
 
   for (int i = 0; i < nE; ++i) {

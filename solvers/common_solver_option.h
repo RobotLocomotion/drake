@@ -1,10 +1,14 @@
 #pragma once
 
 #include <optional>
-#include <ostream>
 #include <string>
+#include <string_view>
 
-#include "drake/common/fmt_ostream.h"
+// Remove this include on 2025-05-01 upon completion of deprecation.
+#include <ostream>
+
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 
 namespace drake {
 namespace solvers {
@@ -56,8 +60,11 @@ enum class CommonSolverOption {
   kMaxThreads,
 };
 
-std::ostream& operator<<(std::ostream& os,
-                         CommonSolverOption common_solver_option);
+/** Returns the short, unadorned name of the option, e.g., `kPrintFileName`. */
+std::string_view to_string(CommonSolverOption);
+
+DRAKE_DEPRECATED("2025-05-01", "Use to_string(), instead.")
+std::ostream& operator<<(std::ostream&, CommonSolverOption);
 
 namespace internal {
 
@@ -73,9 +80,5 @@ struct CommonSolverOptionValues {
 }  // namespace solvers
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::solvers::CommonSolverOption>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::solvers, CommonSolverOption, x,
+                   ::drake::solvers::to_string(x))

@@ -598,6 +598,7 @@ drake_cc_library(
     deps = [
         ":clarabel_solver",
         ":clp_solver",
+        ":csdp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
         ":mathematical_program",
@@ -729,6 +730,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program",
         ":solver_interface",
+        ":specific_options",
     ],
 )
 
@@ -744,7 +746,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":choose_best_solver",
-        ":get_program_type",
+        ":ipopt_solver",
         "//common:nice_type_name",
         "@common_robotics_utilities",
     ],
@@ -883,6 +885,7 @@ drake_cc_optional_library(
     implementation_deps = [
         ":aggregate_costs_constraints",
         ":mathematical_program",
+        ":specific_options",
         "//common:parallelism",
         "//math:quadratic_form",
         "@mosek",
@@ -2022,6 +2025,30 @@ drake_cc_googletest(
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "solve_in_parallel_test",
+    # Using multiple threads is an essential part of testing SolveInParallel.
+    num_threads = 4,
+    # Run each test case in a separate process, for improved latency.
+    shard_count = 16,
+    deps = [
+        ":choose_best_solver",
+        ":clarabel_solver",
+        ":clp_solver",
+        ":csdp_solver",
+        ":gurobi_solver",
+        ":ipopt_solver",
+        ":linear_program_examples",
+        ":mosek_solver",
+        ":nlopt_solver",
+        ":osqp_solver",
+        ":quadratic_program_examples",
+        ":scs_solver",
+        ":snopt_solver",
+        ":solve",
     ],
 )
 
