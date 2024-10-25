@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <fmt/ranges.h>
 #include <nlopt.hpp>
 
 #include "drake/common/autodiff.h"
