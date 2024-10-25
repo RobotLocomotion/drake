@@ -654,6 +654,113 @@ std::string GraphOfConvexSets::GetGraphvizString(
   return graphviz.str();
 }
 
+void GraphOfConvexSets::ConstructPreprocessingProgram(
+    MathematicalProgram* prog, EdgeId edge_id,
+    const std::map<VertexId, std::vector<int>>& incoming_edges,
+    const std::map<VertexId, std::vector<int>>& outgoing_edges,
+    VertexId source_id, VertexId target_id) const {
+  const auto& e = edges_.at(edge_id);
+
+  int nE = edges_.size();
+
+  // Flow for each edge is between 0 and 1 for both paths.
+  VectorXDecisionVariable f = prog->NewContinuousVariables(nE, "flow_su");
+  Binding<solvers::BoundingBoxConstraint> f_limits =
+      prog->AddBoundingBoxConstraint(0, 1, f);
+  VectorXDecisionVariable g = prog->NewContinuousVariables(nE, "flow_vt");
+  Binding<solvers::BoundingBoxConstraint> g_limits =
+      prog->AddBoundingBoxConstraint(0, 1, g);
+
+  std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_f;
+  std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_g;
+  std::map<VertexId, Binding<LinearConstraint>> degree;
+  for (const auto& [vertex_id, v] : vertices_) {
+    auto maybe_Ev_in = incoming_edges.find(vertex_id);
+    std::vector<int> Ev_in = maybe_Ev_in != incoming_edges.end()
+                                 ? maybe_Ev_in->second
+                                 : std::vector<int>{};
+    auto maybe_Ev_out = outgoing_edges.find(vertex_id);
+    std::vector<int> Ev_out = maybe_Ev_out != outgoing_edges.end()
+                                  ? maybe_Ev_out->second
+                                  : std::vector<int>{};
+    std::vector<int> Ev = Ev_in;
+    Ev.insert(Ev.end(), Ev_out.begin(), Ev_out.end());
+
+    if (Ev.size() > 0) {
+      RowVectorXd A_flow(Ev.size());
+      A_flow << RowVectorXd::Ones(Ev_in.size()),
+          -1 * RowVectorXd::Ones(Ev_out.size());
+      VectorXDecisionVariable fv(Ev.size());
+      VectorXDecisionVariable gv(Ev.size());
+      for (size_t ii = 0; ii < Ev.size(); ++ii) {
+        fv(ii) = f(Ev[ii]);
+        gv(ii) = g(Ev[ii]);
+      }
+
+      // Conservation of flow for f: ∑ f_in - ∑ f_out = -δ(is_source).
+      if (vertex_id == source_id) {
+        conservation_f.insert(
+            {vertex_id, prog->AddLinearEqualityConstraint(A_flow, -1, fv)});
+      } else {
+        conservation_f.insert(
+            {vertex_id, prog->AddLinearEqualityConstraint(A_flow, 0, fv)});
+      }
+
+      // Conservation of flow for g: ∑ g_in - ∑ g_out = δ(is_target).
+      if (vertex_id == target_id) {
+        conservation_g.insert(
+            {vertex_id, prog->AddLinearEqualityConstraint(A_flow, 1, gv)});
+      } else {
+        conservation_g.insert(
+            {vertex_id, prog->AddLinearEqualityConstraint(A_flow, 0, gv)});
+      }
+    }
+
+    // Degree constraints (redundant if indegree of w is 0):
+    // 0 <= ∑ f_in + ∑ g_in <= 1
+    if (Ev_in.size() > 0) {
+      RowVectorXd A_degree = RowVectorXd::Ones(2 * Ev_in.size());
+      VectorXDecisionVariable fgin(2 * Ev_in.size());
+      for (size_t ii = 0; ii < Ev_in.size(); ++ii) {
+        fgin(ii) = f(Ev_in[ii]);
+        fgin(Ev_in.size() + ii) = g(Ev_in[ii]);
+      }
+      degree.insert(
+          {vertex_id, prog->AddLinearConstraint(A_degree, 0, 1, fgin)});
+    }
+  }
+
+  // Update bounds of conservation of flow:
+  // ∑ f_in,u - ∑ f_out,u = 1 - δ(is_source).
+  if (e->u().id() == source_id) {
+    f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
+    conservation_f.at(e->u().id())
+        .evaluator()
+        ->set_bounds(Vector1d(0), Vector1d(0));
+  } else {
+    conservation_f.at(e->u().id())
+        .evaluator()
+        ->set_bounds(Vector1d(1), Vector1d(1));
+  }
+  // ∑ g_in,v - ∑ f_out,v = δ(is_target) - 1.
+  if (e->v().id() == target_id) {
+    g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
+    conservation_g.at(e->v().id())
+        .evaluator()
+        ->set_bounds(Vector1d(0), Vector1d(0));
+  } else {
+    conservation_g.at(e->v().id())
+        .evaluator()
+        ->set_bounds(Vector1d(-1), Vector1d(-1));
+  }
+
+  // Update bounds of degree constraints:
+  // ∑ f_in,v + ∑ g_in,v = 0.
+  if (degree.contains(e->v().id())) {
+    degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
+  }
+}
+
 // Implements the preprocessing scheme put forth in Appendix A.2 of
 // "Motion Planning around Obstacles with Convex Optimization":
 // https://arxiv.org/abs/2205.04422
@@ -703,102 +810,10 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
 
   for (int i = 0; i < nE; ++i) {
     EdgeId edge_id = idx_to_edge_id[i];
-    const auto& e = edges_.at(edge_id);
-
-    // Flow for each edge is between 0 and 1 for both paths.
-    VectorXDecisionVariable f = progs[i]->NewContinuousVariables(nE, "flow_su");
-    Binding<solvers::BoundingBoxConstraint> f_limits =
-        progs[i]->AddBoundingBoxConstraint(0, 1, f);
-    VectorXDecisionVariable g = progs[i]->NewContinuousVariables(nE, "flow_vt");
-    Binding<solvers::BoundingBoxConstraint> g_limits =
-        progs[i]->AddBoundingBoxConstraint(0, 1, g);
-
-    std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_f;
-    std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_g;
-    std::map<VertexId, Binding<LinearConstraint>> degree;
-    for (const auto& [vertex_id, v] : vertices_) {
-      std::vector<int> Ev_in = incoming_edges[vertex_id];
-      std::vector<int> Ev_out = outgoing_edges[vertex_id];
-      std::vector<int> Ev = Ev_in;
-      Ev.insert(Ev.end(), Ev_out.begin(), Ev_out.end());
-
-      if (Ev.size() > 0) {
-        RowVectorXd A_flow(Ev.size());
-        A_flow << RowVectorXd::Ones(Ev_in.size()),
-            -1 * RowVectorXd::Ones(Ev_out.size());
-        VectorXDecisionVariable fv(Ev.size());
-        VectorXDecisionVariable gv(Ev.size());
-        for (size_t ii = 0; ii < Ev.size(); ++ii) {
-          fv(ii) = f(Ev[ii]);
-          gv(ii) = g(Ev[ii]);
-        }
-
-        // Conservation of flow for f: ∑ f_in - ∑ f_out = -δ(is_source).
-        if (vertex_id == source_id) {
-          conservation_f.insert(
-              {vertex_id,
-               progs[i]->AddLinearEqualityConstraint(A_flow, -1, fv)});
-        } else {
-          conservation_f.insert(
-              {vertex_id,
-               progs[i]->AddLinearEqualityConstraint(A_flow, 0, fv)});
-        }
-
-        // Conservation of flow for g: ∑ g_in - ∑ g_out = δ(is_target).
-        if (vertex_id == target_id) {
-          conservation_g.insert(
-              {vertex_id,
-               progs[i]->AddLinearEqualityConstraint(A_flow, 1, gv)});
-        } else {
-          conservation_g.insert(
-              {vertex_id,
-               progs[i]->AddLinearEqualityConstraint(A_flow, 0, gv)});
-        }
-      }
-
-      // Degree constraints (redundant if indegree of w is 0):
-      // 0 <= ∑ f_in + ∑ g_in <= 1
-      if (Ev_in.size() > 0) {
-        RowVectorXd A_degree = RowVectorXd::Ones(2 * Ev_in.size());
-        VectorXDecisionVariable fgin(2 * Ev_in.size());
-        for (size_t ii = 0; ii < Ev_in.size(); ++ii) {
-          fgin(ii) = f(Ev_in[ii]);
-          fgin(Ev_in.size() + ii) = g(Ev_in[ii]);
-        }
-        degree.insert(
-            {vertex_id, progs[i]->AddLinearConstraint(A_degree, 0, 1, fgin)});
-      }
-    }
-
-    // Update bounds of conservation of flow:
-    // ∑ f_in,u - ∑ f_out,u = 1 - δ(is_source).
-    if (e->u().id() == source_id) {
-      f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    } else {
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(1), Vector1d(1));
-    }
-    // ∑ g_in,v - ∑ f_out,v = δ(is_target) - 1.
-    if (e->v().id() == target_id) {
-      g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    } else {
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(-1), Vector1d(-1));
-    }
-
-    // Update bounds of degree constraints:
-    // ∑ f_in,v + ∑ g_in,v = 0.
-    if (degree.contains(e->v().id())) {
-      degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
-    }
+    // Note that we have to use the raw pointer, since we don't want to copy it.
+    ConstructPreprocessingProgram(progs[i].get_mutable(), edge_id,
+                                  incoming_edges, outgoing_edges, source_id,
+                                  target_id);
   }
 
   // Check if edge e = (u,v) could be on a path from start to goal.

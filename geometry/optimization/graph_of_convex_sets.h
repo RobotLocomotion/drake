@@ -35,6 +35,7 @@ struct GraphOfConvexSetsOptions {
     a->Visit(DRAKE_NVP(max_rounding_trials));
     a->Visit(DRAKE_NVP(flow_tolerance));
     a->Visit(DRAKE_NVP(rounding_seed));
+    a->Visit(DRAKE_NVP(preprocessing_parallel_batch_size));
     // N.B. We skip the DRAKE_NVP(solver), DRAKE_NVP(restriction_solver), and
     // DRAKE_NVP(preprocessing_solver), because it cannot be serialized.
     // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
@@ -128,6 +129,10 @@ struct GraphOfConvexSetsOptions {
 
   /** Degree of parallelism to use when performing the preprocessing. */
   Parallelism preprocessing_parallelism{Parallelism::Max()};
+
+  /** Set the maximum number of preprocessing programs that are constructed in
+   * memory at once. */
+  int preprocessing_parallel_batch_size{1000};
 };
 
 struct GcsGraphvizOptions {
@@ -840,6 +845,15 @@ class GraphOfConvexSets {
 
  private: /* Facilitates testing. */
   friend class PreprocessShortestPathTest;
+
+  // Modify prog so that it contains the variables and constraints of the
+  // preprocessing program for a given edge.
+  void ConstructPreprocessingProgram(
+      solvers::MathematicalProgram* prog, EdgeId edge_id,
+      const std::map<VertexId, std::vector<int>>& incoming_edges,
+
+      const std::map<VertexId, std::vector<int>>& outgoing_edges,
+      VertexId source_id, VertexId target_id) const;
 
   std::set<EdgeId> PreprocessShortestPath(
       VertexId source_id, VertexId target_id,
