@@ -82,6 +82,7 @@ drake_cc_googlebench_binary(
         # To save time, only run the low-resolution tests in CI.
         "--benchmark_filter=.*/1/1/320/240",
     ],
+    test_display = True,
     test_tags = vtk_test_tags(),
     deps = [
         "//common:add_text_logging_gflags",

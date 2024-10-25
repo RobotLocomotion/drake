@@ -145,6 +145,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "render_engine_gl_test",
+    display = True,
     deps = [
         ":geometry",
         "//bindings/pydrake/common/test_utilities",
