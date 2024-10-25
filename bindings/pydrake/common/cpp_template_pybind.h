@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -76,18 +77,23 @@ inline py::object AddTemplateClass(  // BR
 /// and a default instantiation (if not already defined).
 /// The default instantiation is named `default_name`, while the template is
 /// named `default_name + template_suffix`.
+/// The `template_suffix` defaults to "_" when not provided.
+/// The caller may opt-in to py::dynamic_attr() as the last argument.
 /// @return pybind11 class
 template <typename Class, typename... Options>
 py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
     py::handle scope, const std::string& default_name, py::tuple param,
-    const char* doc_string = "", const std::string& template_suffix = "_") {
+    const char* doc_string = "",
+    const std::optional<std::string>& template_suffix = {},
+    std::optional<py::dynamic_attr> dynamic_attr = {}) {
   // The default instantiation is immediately assigned its correct class name.
   // Other instantiations use a temporary name here that will be overwritten
   // by the AddTemplateClass function during registration.
   const bool is_default = !py::hasattr(scope, default_name.c_str());
   const std::string class_name =
       is_default ? default_name : TemporaryClassName<Class>();
-  const std::string template_name = default_name + template_suffix;
+  const std::string template_name =
+      default_name + template_suffix.value_or("_");
   // Define the class.
   std::string doc;
   if (is_default) {
@@ -99,8 +105,12 @@ py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
   } else {
     doc = doc_string;
   }
-  py::class_<Class, Options...> py_class(
-      scope, class_name.c_str(), doc.c_str());
+  py::class_<Class, Options...> py_class =
+      dynamic_attr.has_value()
+          ? py::class_<Class, Options...>(
+                scope, class_name.c_str(), doc.c_str(), *dynamic_attr)
+          : py::class_<Class, Options...>(
+                scope, class_name.c_str(), doc.c_str());
   // Register it as a template instantiation.
   const bool skip_rename = is_default;
   AddTemplateClass(scope, template_name, py_class, param, skip_rename);

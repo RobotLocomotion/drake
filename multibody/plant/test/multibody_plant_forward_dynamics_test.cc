@@ -586,6 +586,64 @@ TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassInertiaFreeBody) {
   DRAKE_EXPECT_NO_THROW(plant_.EvalForwardDynamics(*context_))
 }
 
+// Checks that when output port sampling is turned on but we have not yet taken
+// a step, the sampled output ports output the desired results. For simplicity,
+// here we only use a single body (with no geometry) -- the test would be
+// slightly better with a SceneGraph but this is good enough for now.
+GTEST_TEST(MultibodyPlantForwardDynamics, SampledOutputsBeforeStep) {
+  MultibodyPlant<double> plant(0.01);
+  AddCubicalLink(&plant, "body_name", 1, 0.01);
+  plant.Finalize();
+  auto plant_context = plant.CreateDefaultContext();
+
+  const auto& body_spatial_accelerations =
+      plant.get_body_spatial_accelerations_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*plant_context);
+  EXPECT_EQ(body_spatial_accelerations.size(), 2);
+  for (const auto& body_spatial_acceleration : body_spatial_accelerations) {
+    EXPECT_EQ(body_spatial_acceleration.get_coeffs(), Vector6d::Zero());
+  }
+
+  const auto& net_actuation =
+      plant.get_net_actuation_output_port().Eval(*plant_context);
+  EXPECT_TRUE(net_actuation.isZero(0.0));
+
+  const auto& generalized_acceleration =
+      plant.get_generalized_acceleration_output_port().Eval(*plant_context);
+  EXPECT_TRUE(generalized_acceleration.isZero(0.0));
+
+  const auto& reaction_forces =
+      plant.get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*plant_context);
+  for (const auto& reaction_force : reaction_forces) {
+    EXPECT_EQ(reaction_force.get_coeffs(), Vector6d::Zero());
+  }
+
+  const auto& contact_results =
+      plant.get_contact_results_output_port().Eval<ContactResults<double>>(
+          *plant_context);
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 0);
+  EXPECT_EQ(contact_results.num_deformable_contacts(), 0);
+
+  for (ModelInstanceIndex i{0}; i < plant.num_model_instances(); ++i) {
+    SCOPED_TRACE(fmt::format("With model_instance_index={}", i));
+
+    const auto& ith_net_actuation =
+        plant.get_net_actuation_output_port(i).Eval(*plant_context);
+    EXPECT_TRUE(ith_net_actuation.isZero(0.0));
+
+    const auto& ith_generalized_acceleration =
+        plant.get_generalized_acceleration_output_port(i).Eval(*plant_context);
+    EXPECT_TRUE(ith_generalized_acceleration.isZero(0.0));
+
+    const auto& ith_generalized_contact_forces =
+        plant.get_generalized_contact_forces_output_port(i).Eval(
+            *plant_context);
+    EXPECT_TRUE(ith_generalized_contact_forces.isZero(0.0));
+  }
+}
+
 // The purpose of this test is to verify that the status of locked joints
 // propagates through all forward dynamics ABA computations. It is expected that
 // locked joints behave as welded at the configuration given in the context with

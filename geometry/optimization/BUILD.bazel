@@ -175,8 +175,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "cspace_free_structs",
+    srcs = ["cspace_free_structs.cc"],
     hdrs = ["cspace_free_structs.h"],
     deps = [
+        ":c_iris_collision_geometry",
         "//common:parallelism",
         "//common/symbolic:rational_function",
         "//solvers:mathematical_program",

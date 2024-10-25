@@ -52,6 +52,9 @@ T GetScrewRotationFromTranslation(const T& z, double screw_pitch) {
  at all times for this mobilizer. The generalized velocity for this mobilizer
  is the rate of change of the coordinate, ω =˙θ (θ_dot).
 
+ H_FM₆ₓ₁ = [axisᵀ f⋅axisᵀ]ᵀ where f=pitch/2π
+ Hdot_FM = 0₆ₓ₁
+
  @tparam_default_scalar */
 template <typename T>
 class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
@@ -59,8 +62,12 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScrewMobilizer);
   using MobilizerBase = MobilizerImpl<T, 1, 1>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::HMatrix;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  template <typename U>
+  using QVector = typename MobilizerBase::template QVector<U>;
+  template <typename U>
+  using VVector = typename MobilizerBase::template VVector<U>;
+  template <typename U>
+  using HMatrix = typename MobilizerBase::template HMatrix<U>;
 
   /* Constructor for a %ScrewMobilizer between an inboard frame F and
      an outboard frame M  granting one translational and one rotational degrees
@@ -189,6 +196,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    frame F and the outboard frame M as a function of the configuration q stored
    in `context`. */
   math::RigidTransform<T> calc_X_FM(const T* q) const {
+    DRAKE_ASSERT(q != nullptr);
     const Vector3<T> p_FM(axis_ *
                           GetScrewTranslationFromRotation(q[0], screw_pitch_));
     return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
@@ -198,11 +206,28 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    M measured and expressed in frame F as a function of the input velocity v,
    which is the angular velocity. We scale that by the pitch to find the
    related translational velocity. */
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
-    const SpatialVelocity<T> V_FM(
-        axis_ * v[0],
-        axis_ * GetScrewTranslationFromRotation(v[0], screw_pitch_));
-    return V_FM;
+  SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
+    DRAKE_ASSERT(v != nullptr);
+    const T f_v = GetScrewTranslationFromRotation(v[0], screw_pitch_);
+    return SpatialVelocity<T>(v[0] * axis_, f_v * axis_);
+  }
+
+  /* Our lone generalized acceleration is the angular acceleration θdotdot about
+  the screw axis. Therefore we have H₆ₓ₁=[axis f⋅axis] where f=pitch/2π, and
+  Hdot=0, so A_FM = H⋅vdot + Hdot⋅v = [axis⋅vdot, f⋅axis⋅vdot]ᵀ */
+  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
+    DRAKE_ASSERT(vdot != nullptr);
+    const T f_vdot = GetScrewTranslationFromRotation(vdot[0], screw_pitch_);
+    return SpatialAcceleration<T>(vdot[0] * axis_, f_vdot * axis_);
+  }
+
+  /* Returns tau = H_FMᵀ⋅F. See above for H. */
+  void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const T f = screw_pitch_ / (2 * M_PI);
+    const Vector3<T>& t_B_F = F_BMo_F.rotational();       // torque
+    const Vector3<T>& f_BMo_F = F_BMo_F.translational();  // force
+    tau[0] = axis_.dot(t_B_F) + f * axis_.dot(f_BMo_F);
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

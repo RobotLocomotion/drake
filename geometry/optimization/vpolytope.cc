@@ -496,6 +496,25 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   if (vertices_.cols() == 0) {
     return false;
   }
+
+  // Attempt to "fail fast": Checks if a hyperplane through x, with a normal
+  // vector colinear to (x - mean(vertices)), separates the point from the
+  // VPolytope avoid solving the point containment LP. This is a heuristic,
+  // sufficient condition which can falsify that the point is in the set which
+  // works better as the point in question gets farther away.
+
+  Eigen::VectorXd vertex_mean = vertices_.rowwise().mean();
+  Eigen::VectorXd a = (x - vertex_mean).normalized();
+  double b = a.dot(x);
+  Eigen::VectorXd vals = a.transpose() * vertices_;
+  vals = vals.array() - b;
+
+  // Only allow early return if query point x is sufficiently far away from the
+  // vertex mean.
+  if ((vals.array() < -tol).all() && (x - vertex_mean).norm() > 1e-13) {
+    return false;
+  }
+
   const int n = ambient_dimension();
   const int m = vertices_.cols();
   const double inf = std::numeric_limits<double>::infinity();

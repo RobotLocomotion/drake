@@ -230,8 +230,26 @@ Subgraph::Subgraph(
   DRAKE_THROW_UNLESS(order >= 0);
   DRAKE_THROW_UNLESS(!regions_.empty());
 
+  // This will hold the edge offsets if they weren't given as an argument.
+  std::optional<std::vector<VectorXd>> maybe_edge_offsets;
+
   if (edge_offsets) {
     DRAKE_THROW_UNLESS(edge_offsets->size() == edges_between_regions.size());
+  } else {
+    maybe_edge_offsets = std::vector<VectorXd>{};
+    std::vector<std::vector<std::pair<double, double>>> continuous_bboxes;
+    continuous_bboxes.reserve(ssize(regions));
+    for (const auto& region_ptr : regions) {
+      continuous_bboxes.push_back(GetMinimumAndMaximumValueAlongDimension(
+          *region_ptr, continuous_revolute_joints()));
+    }
+    maybe_edge_offsets->reserve(edges_between_regions.size());
+    for (const auto& [i, j] : edges_between_regions) {
+      maybe_edge_offsets->push_back(ComputeOffsetContinuousRevoluteJoints(
+          num_positions(), continuous_revolute_joints(),
+          continuous_bboxes.at(i), continuous_bboxes.at(j)));
+    }
+    edge_offsets = &(maybe_edge_offsets.value());
   }
 
   // Make sure all regions have the same ambient dimension.
@@ -252,7 +270,6 @@ Subgraph::Subgraph(
       HPolyhedron::MakeBox(Vector1d(h_min), Vector1d(h_max));
 
   // Add Regions with time scaling set.
-  Eigen::VectorXd this_edge_offset = Eigen::VectorXd::Zero(num_positions());
   for (int i = 0; i < ssize(regions_); ++i) {
     ConvexSets vertex_set;
     // Assign each control point to a separate set.
@@ -289,16 +306,12 @@ Subgraph::Subgraph(
 
     edges_.emplace_back(uv_edge);
 
-    // Add path continuity constraints.
-    if (edge_offsets) {
-      // In this case, we instead enforce the constraint
-      // GetControlPoints(u).col(order) - GetControlPoints(v).col(0) =
-      // -tau_uv.value(), via Ax = -edge_offsets.value()[idx], A = [I, -I],
-      // x = [u_controls.col(order); v_controls.col(0)].
-      this_edge_offset = -edge_offsets->at(idx);
-    }
+    // Add path continuity constraints. To handle edge offsets, we enforce the
+    // constraint GetControlPoints(u).col(order) - GetControlPoints(v).col(0) =
+    // -tau_uv.value(), via Ax = -edge_offsets->at(idx), A = [I, -I],
+    // x = [u_controls.col(order); v_controls.col(0)].
     const auto path_continuity_constraint =
-        std::make_shared<LinearEqualityConstraint>(A, this_edge_offset);
+        std::make_shared<LinearEqualityConstraint>(A, -edge_offsets->at(idx));
     uv_edge->AddConstraint(Binding<Constraint>(
         path_continuity_constraint,
         {GetControlPoints(*u).col(order), GetControlPoints(*v).col(0)}));
@@ -786,23 +799,49 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
   }
 
   // These will hold the edge data if they weren't given as arguments.
-  std::vector<std::pair<int, int>> maybe_edges_between_regions;
-  std::vector<Eigen::VectorXd> maybe_edge_offsets;
+  std::optional<std::vector<std::pair<int, int>>> maybe_edges_between_regions;
+  std::optional<std::vector<Eigen::VectorXd>> maybe_edge_offsets;
 
   if (edges_between_regions) {
     for (const auto& [i, j] : *edges_between_regions) {
       DRAKE_THROW_UNLESS(0 <= i && 0 <= j && i < from_subgraph_.size() &&
                          j < to_subgraph_.size());
     }
+
+    if (!edge_offsets) {
+      // Compute bounding boxes for the regions along dimensions corresponding
+      // to continuous revolute joints, and use them to determine the edge
+      // offsets.
+      std::vector<std::vector<std::pair<double, double>>> continuous_bboxes_A;
+      continuous_bboxes_A.reserve(ssize(from_subgraph.regions()));
+      for (const auto& region_ptr : from_subgraph.regions()) {
+        continuous_bboxes_A.push_back(GetMinimumAndMaximumValueAlongDimension(
+            *region_ptr, continuous_revolute_joints()));
+      }
+      std::vector<std::vector<std::pair<double, double>>> continuous_bboxes_B;
+      continuous_bboxes_B.reserve(ssize(to_subgraph.regions()));
+      for (const auto& region_ptr : to_subgraph.regions()) {
+        continuous_bboxes_B.push_back(GetMinimumAndMaximumValueAlongDimension(
+            *region_ptr, continuous_revolute_joints()));
+      }
+      maybe_edge_offsets = std::vector<VectorXd>{};
+      maybe_edge_offsets->reserve(edges_between_regions->size());
+      for (const auto& [i, j] : *edges_between_regions) {
+        maybe_edge_offsets->push_back(ComputeOffsetContinuousRevoluteJoints(
+            num_positions(), continuous_revolute_joints(),
+            continuous_bboxes_A[i], continuous_bboxes_B[j]));
+      }
+      edge_offsets = &(maybe_edge_offsets.value());
+    }
   } else {
     std::tie(maybe_edges_between_regions, maybe_edge_offsets) =
         ComputePairwiseIntersections(from_subgraph.regions(),
                                      to_subgraph.regions(),
                                      continuous_revolute_joints());
-    DRAKE_DEMAND(maybe_edges_between_regions.size() ==
-                 maybe_edge_offsets.size());
-    edges_between_regions = &maybe_edges_between_regions;
-    edge_offsets = &maybe_edge_offsets;
+    DRAKE_DEMAND(maybe_edges_between_regions->size() ==
+                 maybe_edge_offsets->size());
+    edges_between_regions = &(maybe_edges_between_regions.value());
+    edge_offsets = &(maybe_edge_offsets.value());
   }
 
   for (int edge_idx = 0; edge_idx < ssize(*edges_between_regions); ++edge_idx) {
@@ -811,9 +850,7 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     // If the user specified edges_between_regions but not edge_offsets, then
     // edge_offsets are implicitly assumed to be zero. That is indicated here by
     // edge_offsets being nullptr.
-    const Eigen::VectorXd& edge_offset =
-        edge_offsets ? (*edge_offsets)[edge_idx]
-                     : Eigen::VectorXd::Zero(num_positions());
+    const Eigen::VectorXd& edge_offset = (*edge_offsets)[edge_idx];
 
     // Check if the overlap between the sets is contained in the subspace.
     if (subspace != nullptr) {
@@ -1969,8 +2006,7 @@ GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
   // TODO(@anyone): make this a unique_ptr and use std::move to avoid copying.
   std::vector<copyable_unique_ptr<Trajectory<double>>> unwrapped_trajectories;
   int dim = gcs_trajectory.rows();
-  geometry::optimization::internal::ThrowsForInvalidContinuousJointsList(
-      dim, continuous_revolute_joints);
+  ThrowsForInvalidContinuousJointsList(dim, continuous_revolute_joints);
   Eigen::VectorXd last_segment_finish;
   for (int i = 0; i < gcs_trajectory.get_number_of_segments(); ++i) {
     const auto& traj_segment = gcs_trajectory.segment(i);

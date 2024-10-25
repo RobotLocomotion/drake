@@ -52,6 +52,8 @@ class MeshcatPointCloudVisualizer final : public systems::LeafSystem<T> {
   explicit MeshcatPointCloudVisualizer(
       const MeshcatPointCloudVisualizer<U>& other);
 
+  ~MeshcatPointCloudVisualizer() final;
+
   /** Sets the size of each point in the cloud.  The default is 0.001. The
    * units are undocumented in threejs
    * (https://threejs.org/docs/index.html?q=PointsMaterial#api/en/materials/PointsMaterial.size),

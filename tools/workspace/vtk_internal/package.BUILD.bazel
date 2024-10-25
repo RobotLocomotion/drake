@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load(
     "@drake//tools/workspace/vtk_internal:rules.bzl",
     "compile_all_modules",
@@ -37,6 +37,20 @@ generate_rendering_opengl2_sources()
 
 compile_all_modules()
 
+# We offer some (unbuilt by default) programs to help with debugging.
+
+cc_binary(
+    name = "vtkProbeOpenGLVersion",
+    srcs = [
+        "Rendering/OpenGL2/vtkProbeOpenGLVersion.cxx",
+    ],
+    deps = [
+        ":vtkRenderingOpenGL2",
+        "@drake//tools/workspace/vtk_internal:vtk_opengl_init",
+    ],
+    linkstatic = True,
+)
+
 # Install any license notices.
 
 install(
@@ -45,7 +59,7 @@ install(
         "Copyright.txt",
         "ThirdParty/doubleconversion/vtkdoubleconversion/COPYING",
         "ThirdParty/fast_float/vtkfast_float/LICENSE-MIT",
-        "ThirdParty/glew/vtkglew/LICENSE.txt",
+        "ThirdParty/glad/vtkglad/LICENSE",
         "ThirdParty/pugixml/vtkpugixml/LICENSE.md",
         "ThirdParty/token/vtktoken/license.md",
         "ThirdParty/utf8/vtkutf8/LICENSE",

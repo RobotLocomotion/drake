@@ -523,7 +523,8 @@ TEST_F(UrdfGeometryTest, TestParseMaterial2) {
       dynamic_cast<const geometry::Mesh*>(&mesh_visual.shape());
   ASSERT_TRUE(mesh);
 
-  const std::string& mesh_filename = mesh->filename();
+  ASSERT_TRUE(mesh->source().is_path());
+  const std::string& mesh_filename = mesh->source().path().string();
   std::string obj_name = "tri_cube.obj";
   EXPECT_EQ(mesh_filename.rfind(obj_name),
             mesh_filename.size() - obj_name.size());
@@ -677,20 +678,23 @@ TEST_F(UrdfGeometryTest, CollisionSmokeTest) {
   <drake:proximity_properties>
     <drake:mesh_resolution_hint value="2.5"/>
     <drake:hydroelastic_modulus value="3.5" />
-    <drake:hunt_crossley_dissipation value="3.5" />
+    <drake:hydroelastic_margin value="1.3" />
+    <drake:hunt_crossley_dissipation value="4.5" />
     <drake:relaxation_time value="3.1" />
     <drake:mu_dynamic value="3.25" />
-    <drake:mu_static value="3.5" />
+    <drake:mu_static value="3.75" />
   </drake:proximity_properties>)""");
   VerifySingleProperty(properties, geometry::internal::kHydroGroup,
                        geometry::internal::kRezHint, 2.5);
   VerifySingleProperty(properties, geometry::internal::kHydroGroup,
                          geometry::internal::kElastic, 3.5);
+  VerifySingleProperty(properties, geometry::internal::kHydroGroup,
+                         geometry::internal::kMargin, 1.3);
   VerifySingleProperty(properties, geometry::internal::kMaterialGroup,
-                       geometry::internal::kHcDissipation, 3.5);
+                       geometry::internal::kHcDissipation, 4.5);
   VerifySingleProperty(properties, geometry::internal::kMaterialGroup,
                        geometry::internal::kRelaxationTime, 3.1);
-  VerifyFriction(properties, {3.5, 3.25});
+  VerifyFriction(properties, {3.75, 3.25});
 }
 
 TEST_F(UrdfGeometryTest, TestCollisionNameExhaustion) {

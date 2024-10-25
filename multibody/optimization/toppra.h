@@ -112,8 +112,13 @@ class Toppra {
    * generate a time parameterized trajectory.
    * The path parameterization has the same start time as the original path's
    * starting break.
+   * @param s_dot_start ṡ(0). The default value is zero (trajectory starts at
+   * zero velocity).
+   * @param s_dot_end ṡ(T), where T is the end break of the path. The default
+   * value is zero (trajectory ends at zero velocity).
    */
-  std::optional<PiecewisePolynomial<double>> SolvePathParameterization();
+  std::optional<PiecewisePolynomial<double>> SolvePathParameterization(
+      double s_dot_start = 0, double s_dot_end = 0);
 
   /**
    * Adds a velocity limit to all the degrees of freedom in the plant. The
@@ -225,12 +230,11 @@ class Toppra {
    * @pydrake_mkdoc_identifier{const}
    */
   std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
-  AddFrameAccelerationLimit(
-      const Frame<double>& constraint_frame,
-      const Eigen::Ref<const Vector6d>& lower_limit,
-      const Eigen::Ref<const Vector6d>& upper_limit,
-      ToppraDiscretization discretization =
-          ToppraDiscretization::kInterpolation);
+  AddFrameAccelerationLimit(const Frame<double>& constraint_frame,
+                            const Eigen::Ref<const Vector6d>& lower_limit,
+                            const Eigen::Ref<const Vector6d>& upper_limit,
+                            ToppraDiscretization discretization =
+                                ToppraDiscretization::kInterpolation);
   /**
    * A version of acceleration limit that uses a trajectory for the upper and
    * lower limits.

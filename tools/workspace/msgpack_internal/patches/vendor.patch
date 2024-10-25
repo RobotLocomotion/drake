@@ -4,6 +4,7 @@ For cpp_config_decl.hpp, vendor_cxx gets a bit too greedy and tries to
 span its namespace changes across #ifdef branches. We can avoid that
 outcome by adding a redundant #include statement to help guide it.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
 
 --- include/msgpack/v2/cpp_config_decl.hpp.orig
 +++ include/msgpack/v2/cpp_config_decl.hpp

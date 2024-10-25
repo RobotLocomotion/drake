@@ -1,5 +1,7 @@
 [clang_cindex] Support pre- and post-Clang 15 cursor kinds
 
+Reasoning for not upstreaming this patch: upstream is dead.
+
 --- cindex.py
 +++ cindex.py
 @@ -1313,5 +1313,9 @@

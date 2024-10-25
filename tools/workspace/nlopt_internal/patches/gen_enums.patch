@@ -4,6 +4,8 @@ Here we create the same effect by patching the source file directly.
 Separately (in a unit test), we cross-check that this patch and the
 CMake script both produce consistent results.
 
+Reasoning for not upstreaming this patch: Drake-specific build hack.
+
 --- src/api/nlopt-in.hpp.orig
 +++ src/api/nlopt-in.hpp
 @@ -46,6 +46,68 @@

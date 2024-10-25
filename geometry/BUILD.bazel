@@ -46,6 +46,7 @@ drake_cc_package_library(
         ":meshcat_visualizer_params",
         ":proximity_engine",
         ":proximity_properties",
+        ":read_gltf_to_memory",
         ":read_obj",
         ":rgba",
         ":scene_graph",
@@ -146,6 +147,8 @@ drake_cc_library(
         "//lcm:drake_lcm",
         "//lcmtypes:viewer",
         "//systems/lcm:lcm_system_graphviz",
+        "@common_robotics_utilities",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -281,6 +284,21 @@ drake_cc_library(
         "//common:file_source",
         "//common:memory_file",
         "//common:string_container",
+    ],
+)
+
+drake_cc_library(
+    name = "read_gltf_to_memory",
+    srcs = ["read_gltf_to_memory.cc"],
+    hdrs = ["read_gltf_to_memory.h"],
+    deps = [
+        ":in_memory_mesh",
+    ],
+    implementation_deps = [
+        "//common:file_source",
+        "//common:memory_file",
+        "//common:string_container",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -520,6 +538,7 @@ drake_cc_library(
         "meshcat_file_storage_internal.cc",
         "meshcat_internal.cc",
         "meshcat_recording_internal.cc",
+        "meshcat_types_internal.cc",
     ],
     hdrs = [
         "meshcat.h",
@@ -542,6 +561,7 @@ drake_cc_library(
         ":scene_graph_inspector",
         ":shape_specification",
         "//common:essential",
+        "//common:memory_file",
         "//common:name_value",
         "//common:timer",
         "//geometry/proximity:triangle_surface_mesh",
@@ -736,18 +756,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "vtk_opengl_init",
-    srcs = ["vtk_opengl_init.cc"],
-    internal = True,
-    visibility = ["//geometry:__subpackages__"],
-    deps = [
-        "@vtk_internal//:vtkCommonCore",
-        "@vtk_internal//:vtkRenderingOpenGL2",
-    ],
-    alwayslink = True,
-)
-
 drake_cc_googletest(
     name = "meshcat_visualizer_test",
     data = [
@@ -764,6 +772,24 @@ drake_cc_googletest(
         "//systems/analysis:simulator",
         "//systems/primitives:constant_vector_source",
         "@msgpack_internal//:msgpack",
+    ],
+)
+
+drake_cc_library(
+    name = "vtk_gltf_uri_loader",
+    srcs = ["vtk_gltf_uri_loader.cc"],
+    hdrs = ["vtk_gltf_uri_loader.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__subpackages__",
+    ],
+    deps = [
+        ":mesh_source",
+        "//common:drake_export",
+        "//common:essential",
+        "//common:memory_file",
+        "//common:overloaded",
+        "@vtk_internal//:vtkIOCore",
     ],
 )
 
@@ -860,12 +886,15 @@ drake_cc_googletest(
     data = ["//geometry/render:test_models"],
     deps = [
         ":drake_visualizer",
+        ":read_gltf_to_memory",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis:simulator",
+        "@common_robotics_utilities",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -964,6 +993,20 @@ drake_cc_googletest(
     name = "in_memory_mesh_test",
     deps = [
         ":in_memory_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "read_gltf_to_memory_test",
+    data = [
+        "//geometry:test_gltf_files",
+        "//geometry/render:test_models",
+    ],
+    deps = [
+        ":read_gltf_to_memory",
+        "//common:find_resource",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

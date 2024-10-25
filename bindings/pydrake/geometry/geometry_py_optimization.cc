@@ -580,6 +580,9 @@ void DefineIris(py::module m) {
             cls_doc.starting_ellipse.doc)
         .def_readwrite("bounding_region", &IrisOptions::bounding_region,
             cls_doc.bounding_region.doc)
+        .def_readwrite("verify_domain_boundedness",
+            &IrisOptions::verify_domain_boundedness,
+            cls_doc.verify_domain_boundedness.doc)
         .def_readwrite("num_additional_constraint_infeasible_samples",
             &IrisOptions::num_additional_constraint_infeasible_samples,
             cls_doc.num_additional_constraint_infeasible_samples.doc)

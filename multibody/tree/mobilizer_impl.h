@@ -29,23 +29,28 @@ of dynamic-sized Eigen matrices that would otherwise lead to run-time
 dynamic memory allocations.
 
 Every concrete Mobilizer derived from MobilizerImpl must implement the
-following (ideally inline) methods:
+following (ideally inline) methods.
 
+  // Returns X_FM(q)
   math::RigidTransform<T> calc_X_FM(const T* q) const;
 
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&,
+  // Returns H_FM(q)⋅v
+  SpatialVelocity<T> calc_V_FM(const T* q,
                                const T* v) const;
+
+  // Returns H_FM(q)⋅vdot + Hdot_FM(q,v)⋅v
+  SpatialAcceleration<T> calc_A_FM(const T* q,
+                                   const T* v,
+                                   const T* vdot) const;
+
+  // Returns tau = H_FMᵀ(q)⋅F_BMo_F
+  void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const;
 
 The coordinate pointers are guaranteed to point to the kNq or kNv state
 variables for the particular mobilizer. They are only 8-byte aligned so
 be careful when interpreting them as Eigen vectors for computation purposes.
 
-TODO(sherm1) The above signatures should _not_ include a Context; all the
- low-level methods should be purely numerical. Anything needed from the
- Context should be extracted once prior to the tree recursion and passed
- directly to the low-level methods.
-
-%MobilizerImpl also provides a number of size specific methods to retrieve
+MobilizerImpl also provides a number of size specific methods to retrieve
 multibody quantities of interest from caching structures. These are common
 to all mobilizer implementations and therefore they live in this class.
 Users should not need to interact with this class directly unless they need
@@ -66,9 +71,12 @@ class MobilizerImpl : public Mobilizer<T> {
     kNv = compile_time_num_velocities,
     kNx = compile_time_num_positions + compile_time_num_velocities
   };
-  using QVector = Eigen::Matrix<T, kNq, 1>;
-  using VVector = Eigen::Matrix<T, kNv, 1>;
-  using HMatrix = Eigen::Matrix<T, 6, kNv>;
+  template <typename U>
+  using QVector = Eigen::Matrix<U, kNq, 1>;
+  template <typename U>
+  using VVector = Eigen::Matrix<U, kNv, 1>;
+  template <typename U>
+  using HMatrix = Eigen::Matrix<U, 6, kNv>;
 
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is

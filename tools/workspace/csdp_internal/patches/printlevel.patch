@@ -1,5 +1,7 @@
 When no parameters file is in use, do not console print by default.
 
+Reasoning for not upstreaming this patch: Drake-specific default option.
+
 --- lib/initparams.c	2017-07-25 11:44:57.000000000 -0700
 +++ lib/initparams.c	2021-06-30 15:50:10.984899788 -0700
 @@ -35,7 +35,7 @@

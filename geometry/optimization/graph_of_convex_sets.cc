@@ -83,14 +83,15 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog,
       // We should only get here if the user is trying to solve the MIP.
       DRAKE_DEMAND(options.convex_relaxation == false);
 
-      // TODO(russt): Consider calling MixedIntegerBranchAndBound automatically
-      // here. The small trick is that we need to pass the SolverId into that
-      // constructor manually, and ChooseBestSolver doesn't make it easy to
-      // figure out what the best solver would be if we removed the integer
-      // variables.
+      // TODO(russt): Consider calling MixedIntegerBranchAndBound
+      // automatically here. The small trick is that we need to pass the
+      // SolverId into that constructor manually, and ChooseBestSolver doesn't
+      // make it easy to figure out what the best solver would be if we
+      // removed the integer variables.
 
       throw std::runtime_error(
-          "GraphOfConvexSets: There is no solver available that can solve the "
+          "GraphOfConvexSets: There is no solver available that can solve "
+          "the "
           "mixed-integer version of this problem. Please check "
           "https://drake.mit.edu/doxygen_cxx/group__solvers.html for more "
           "details about supported solvers and how to enable them.\n\n "

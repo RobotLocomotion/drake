@@ -7,6 +7,8 @@ Note that the upstream source repository contains windows newlines
 throughout, so we need to entertain `^M` shrapnel throughout this
 patch file.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- tinyxml2.h.orig	2021-06-06 17:10:24.000000000 -0700
 +++ tinyxml2.h	2022-09-03 07:30:36.319764029 -0700
 @@ -42,6 +42,8 @@

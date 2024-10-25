@@ -63,6 +63,8 @@ int PolynomialBasisElement::degree(const Variable& v) const {
   }
 }
 
+PolynomialBasisElement::~PolynomialBasisElement() = default;
+
 Variables PolynomialBasisElement::GetVariables() const {
   Variables vars{};
   for (const auto& p : var_to_degree_map_) {

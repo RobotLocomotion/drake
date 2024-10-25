@@ -57,6 +57,9 @@ namespace internal {
 // @note The roll-pitch-yaw (space x-y-z) Euler sequence is also known as the
 // Tait-Bryan angles or Cardan angles.
 //
+//    H_FM₆ₓ₃=[ I₃ₓ₃ ]    Hdot_FM = 0₆ₓ₃
+//            [ 0₃ₓ₃ ]
+//
 // @tparam_default_scalar
 template <typename T>
 class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
@@ -64,8 +67,12 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RpyBallMobilizer);
   using MobilizerBase = MobilizerImpl<T, 3, 3>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::HMatrix;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  template <typename U>
+  using QVector = typename MobilizerBase::template QVector<U>;
+  template <typename U>
+  using VVector = typename MobilizerBase::template VVector<U>;
+  template <typename U>
+  using HMatrix = typename MobilizerBase::template HMatrix<U>;
 
   // Constructor for an RpyBallMobilizer between an inboard frame F
   // inboard_frame_F and an outboard frame M outboard_frame_M granting
@@ -182,9 +189,25 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   // M measured and expressed in frame F as a function of the input generalized
   // velocity v which contains the components of the angular velocity w_FM
   // expressed in frame F. The translational velocity is always zero.
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     const Eigen::Map<const Vector3<T>> w_FM(v);
     return SpatialVelocity<T>(w_FM, Vector3<T>::Zero());
+  }
+
+  // Here H₆ₓ₃=[I₃ₓ₃ 0₃ₓ₃]ᵀ so Hdot=0 and
+  // A_FM = H⋅vdot + Hdot⋅v = [vdot, 0₃]ᵀ
+  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
+    const Eigen::Map<const Vector3<T>> alpha_FM(vdot);
+    return SpatialAcceleration<T>(alpha_FM, Vector3<T>::Zero());
+  }
+
+  // Returns tau = H_FMᵀ⋅F. The rotational part of H is identity here and
+  // the rest is zero.
+  void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    Eigen::Map<VVector<T>> tau_as_vector(tau);
+    const Vector3<T>& t_BMo_F = F_BMo_F.rotational();
+    tau_as_vector = t_BMo_F;
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

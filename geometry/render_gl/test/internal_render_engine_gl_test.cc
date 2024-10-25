@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstring>
+#include <filesystem>
 #include <optional>
 #include <unordered_map>
 
@@ -22,6 +23,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/read_gltf_to_memory.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -35,6 +37,8 @@ namespace drake {
 namespace geometry {
 namespace render_gl {
 namespace internal {
+
+namespace fs = std::filesystem;
 
 using render::ColorRenderCamera;
 using render::DepthRenderCamera;
@@ -94,12 +98,11 @@ using std::unique_ptr;
 using std::unordered_map;
 using systems::sensors::CameraInfo;
 using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageIo;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
-
-namespace fs = std::filesystem;
 
 // Default camera properties.
 const int kWidth = 640;
@@ -508,11 +511,18 @@ class RenderEngineGlTest : public ::testing::Test {
   // Copies some supporting files for the glTF tests into this test's temp
   // directory.
   void SetupGltfTest() {
-    // Note: we're only copying the files associated with
-    // fully_textured_pyramid.gltf that we actually need. As we support more of
-    // glTF functionality, we'll have to include more of the textures.
-    for (const char* resource : {"fully_textured_pyramid.bin",
-                                 "fully_textured_pyramid_base_color.png"}) {
+    // Note: we're copying _all_ of the files associated with
+    // fully_textured_pyramid.gltf even though RenderEngineGl only uses a small
+    // fraction. tinygltf will attempt to load every named textures, so we need
+    // to make sure they're available to avoid warnings.
+    for (const char* resource :
+         {"fully_textured_pyramid.bin", "fully_textured_pyramid_base_color.png",
+          "fully_textured_pyramid_emissive.png",
+          "fully_textured_pyramid_normal.png", "fully_textured_pyramid_omr.png",
+          "fully_textured_pyramid_emissive.ktx2",
+          "fully_textured_pyramid_normal.ktx2",
+          "fully_textured_pyramid_omr.ktx2",
+          "fully_textured_pyramid_base_color.ktx2"}) {
       const fs::path source_path = FindResourceOrThrow(
           fmt::format("drake/geometry/render/test/meshes/{}", resource));
       fs::copy_file(source_path, temp_dir_ / resource);
@@ -903,7 +913,7 @@ TEST_F(RenderEngineGlTest, DeformableTest) {
 
     // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
     // from box.obj by stripping out material data in the build system.
-    auto filename =
+    const fs::path filename =
         use_texture
             ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
             : FindResourceOrThrow(
@@ -914,6 +924,7 @@ TEST_F(RenderEngineGlTest, DeformableTest) {
     PerceptionProperties material = simple_material(use_texture);
     // This is a dummy placeholder to allow invoking LoadRenderMeshesFromObj(),
     // the actual diffuse color either comes from the mtl file or the
+    // perception properties.
     Rgba unused_diffuse_color(1, 1, 1, 1);
     std::vector<geometry::internal::RenderMesh> render_meshes =
         geometry::internal::LoadRenderMeshesFromObj(filename, material,
@@ -1222,6 +1233,80 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   }
 }
 
+// Repeats various mesh-based tests, but this time the meshes are loaded from
+// memory. We render the scene twice: once with the one mesh and once with the
+// other to confirm they are rendered the same.
+TEST_F(RenderEngineGlTest, InMemoryMesh) {
+  // Pose the camera so we can see three sides of the cubes.
+  const RotationMatrixd R_WR(math::RollPitchYawd(-0.75 * M_PI, 0, M_PI_4));
+  const RigidTransformd X_WR(R_WR,
+                             R_WR * -Vector3d(0, 0, 1.5 * kDefaultDistance));
+  Init(X_WR, true);
+
+  const GeometryId id = GeometryId::get_new_id();
+  auto do_test = [this, id](std::string_view file_prefix, const Mesh& file_mesh,
+                            const Mesh& memory_mesh) {
+    renderer_->RemoveGeometry(id);
+    renderer_->RegisterVisual(id, file_mesh, PerceptionProperties{},
+                              RigidTransformd::Identity(), false);
+    ImageRgba8U file_image(kWidth, kHeight);
+    Render(nullptr, nullptr, &file_image, nullptr, nullptr);
+
+    renderer_->RemoveGeometry(id);
+    renderer_->RegisterVisual(id, memory_mesh, PerceptionProperties{},
+                              RigidTransformd::Identity(), false);
+    ImageRgba8U memory_image(kWidth, kHeight);
+    Render(nullptr, nullptr, &memory_image, nullptr, nullptr);
+
+    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+      const fs::path out_dir(dir);
+      ImageIo{}.Save(file_image,
+                     out_dir / fmt::format("{}_file.png", file_prefix));
+      ImageIo{}.Save(memory_image,
+                     out_dir / fmt::format("{}_memory.png", file_prefix));
+    }
+
+    EXPECT_TRUE(file_image == memory_image) << fmt::format(
+        "The glTF file loaded from disk didn't match that loaded from memory. "
+        "Check the bazel-testlogs for the saved images with the prefix '{}'.",
+        file_prefix);
+  };
+
+  // cube1.gltf has all internal data; this confirms that data uris are
+  // preserved.
+  {
+    const fs::path path =
+        FindResourceOrThrow("drake/geometry/render/test/meshes/cube1.gltf");
+    InMemoryMesh mesh_data = ReadGltfToMemory(path);
+    do_test("embedded_gltf", Mesh(path.string()), Mesh(std::move(mesh_data)));
+  }
+
+  // cube2.gltf uses all external files; confirming that file uris work.
+  {
+    const fs::path path =
+        FindResourceOrThrow("drake/geometry/render/test/meshes/cube2.gltf");
+    InMemoryMesh mesh_data = ReadGltfToMemory(path);
+    do_test("file_uri_gltf", Mesh(path.string()), Mesh(std::move(mesh_data)));
+  }
+
+  // rainbow_box.obj has some faces colored by texture, some by material. The
+  // rendering includes faces of both types so we can tell if the right
+  // materials and textures are getting loaded in the right way.
+  {
+    const fs::path obj_path = FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/rainbow_box.obj");
+    const fs::path mtl_path = FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/rainbow_box.mtl");
+    const fs::path png_path = FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/rainbow_stripes.png");
+    do_test("textured_obj", Mesh(obj_path.string()),
+            Mesh(InMemoryMesh{
+                MemoryFile::Make(obj_path),
+                {{"rainbow_box.mtl", MemoryFile::Make(mtl_path)},
+                 {"rainbow_stripes.png", MemoryFile::Make(png_path)}}}));
+  }
+}
+
 // A note on testing the glTF support.
 //
 // These tests are *not* exhaustive. These cover major features and general
@@ -1285,7 +1370,7 @@ TEST_F(RenderEngineGlTest, GltfTinygltfErrors) {
   });
   DRAKE_EXPECT_THROWS_MESSAGE(
       InitAndRegisterMesh(malformed_gltf),
-      ".*Failed parsing the glTF file.*property is missing[^]*");
+      ".*Failed parsing the on-disk glTF file.*property is missing[^]*");
 }
 
 // The error conditions for GltfMeshExtractor::FindTargetRootNodes().

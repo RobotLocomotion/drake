@@ -261,10 +261,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.HollowSphereWithMass.doc)
         .def_static("Zero", &Class::Zero, cls_doc.Zero.doc)
         .def_static("NaN", &Class::NaN, cls_doc.NaN.doc)
-        // TODO(jwnimmer-tri) Remove this on 2024-10-01.
-        .def(py::init(WrapDeprecated(cls_doc.ctor.doc_deprecated,
-                 []() { return std::make_unique<Class>(Class::NaN()); })),
-            cls_doc.ctor.doc_deprecated)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),

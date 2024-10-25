@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <optional>
 
 #include <Eigen/Sparse>
@@ -55,6 +56,8 @@ class MaxCliqueSolverViaMip final : public MaxCliqueSolverBase {
  private:
   VectorX<bool> DoSolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const final;
+
+  [[nodiscard]] std::unique_ptr<MaxCliqueSolverBase> DoClone() const final;
 
   /* Initial guess to the MIP for solving max clique. */
   std::optional<Eigen::VectorXd> initial_guess_{std::nullopt};

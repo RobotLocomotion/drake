@@ -80,6 +80,7 @@ drake_cc_package_library(
         ":solver_type_converter",
         ":sos_basis_generator",
         ":sparse_and_dense_matrix",
+        ":specific_options",
         ":unrevised_lemke_solver",
     ],
 )
@@ -315,6 +316,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "specific_options",
+    srcs = ["specific_options.cc"],
+    hdrs = ["specific_options.h"],
+    deps = [
+        ":solver_id",
+        ":solver_options",
+        "//common:name_value",
+        "//common:overloaded",
+        "//common:string_container",
+    ],
+)
+
+drake_cc_library(
     name = "indeterminate",
     srcs = ["indeterminate.cc"],
     hdrs = ["indeterminate.h"],
@@ -322,7 +336,7 @@ drake_cc_library(
         "//common/symbolic:expression",
     ],
     implementation_deps = [
-        "//solvers:decision_variable",
+        ":decision_variable",
     ],
 )
 
@@ -1341,6 +1355,7 @@ drake_cc_googletest(
         ":semidefinite_program_examples",
         ":sos_examples",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1487,6 +1502,7 @@ drake_cc_googletest(
         ":second_order_cone_program_examples",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ] + select({
         "//conditions:default": [
             "@ipopt",
@@ -1624,6 +1640,7 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -2023,6 +2040,14 @@ drake_cc_googletest(
     deps = [
         ":solver_options",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "specific_options_test",
+    deps = [
+        ":specific_options",
         "//common/test_utilities:expect_throws_message",
     ],
 )

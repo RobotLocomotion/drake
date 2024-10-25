@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/camera_info.h"
@@ -93,15 +94,75 @@ void DefineSensorsRgbd(py::module m) {
           py::arg("parent_id"), py::arg("X_PB"), py::arg("depth_camera"),
           py::arg("show_window") = false,
           doc.RgbdSensor.ctor.doc_combined_intrinsics)
-      .def("color_camera_info", &RgbdSensor::color_camera_info,
-          py_rvp::reference_internal, doc.RgbdSensor.color_camera_info.doc)
-      .def("depth_camera_info", &RgbdSensor::depth_camera_info,
-          py_rvp::reference_internal, doc.RgbdSensor.depth_camera_info.doc)
-      .def("X_PB", &RgbdSensor::X_PB, doc.RgbdSensor.X_PB.doc)
-      .def("X_BC", &RgbdSensor::X_BC, doc.RgbdSensor.X_BC.doc)
-      .def("X_BD", &RgbdSensor::X_BD, doc.RgbdSensor.X_BD.doc)
-      .def("parent_frame_id", &RgbdSensor::parent_frame_id,
-          py_rvp::reference_internal, doc.RgbdSensor.parent_frame_id.doc);
+      .def("default_color_render_camera",
+          &RgbdSensor::default_color_render_camera, py_rvp::reference_internal,
+          doc.RgbdSensor.default_color_render_camera.doc)
+      .def("set_default_color_render_camera",
+          &RgbdSensor::set_default_color_render_camera, py::arg("color_camera"),
+          doc.RgbdSensor.set_default_color_render_camera.doc)
+      .def("GetColorRenderCamera", &RgbdSensor::GetColorRenderCamera,
+          py::arg("context"), py_rvp::reference_internal,
+          doc.RgbdSensor.GetColorRenderCamera.doc)
+      .def("SetColorRenderCamera", &RgbdSensor::SetColorRenderCamera,
+          py::arg("context"), py::arg("color_camera"),
+          doc.RgbdSensor.SetColorRenderCamera.doc)
+      .def("default_depth_render_camera",
+          &RgbdSensor::default_depth_render_camera, py_rvp::reference_internal,
+          doc.RgbdSensor.default_depth_render_camera.doc)
+      .def("set_default_depth_render_camera",
+          &RgbdSensor::set_default_depth_render_camera, py::arg("depth_camera"),
+          doc.RgbdSensor.set_default_depth_render_camera.doc)
+      .def("GetDepthRenderCamera", &RgbdSensor::GetDepthRenderCamera,
+          py::arg("context"), py_rvp::reference_internal,
+          doc.RgbdSensor.GetDepthRenderCamera.doc)
+      .def("SetDepthRenderCamera", &RgbdSensor::SetDepthRenderCamera,
+          py::arg("context"), py::arg("depth_camera"),
+          doc.RgbdSensor.SetDepthRenderCamera.doc)
+      .def("default_X_PB", &RgbdSensor::default_X_PB,
+          py_rvp::reference_internal, doc.RgbdSensor.default_X_PB.doc)
+      .def("set_default_X_PB", &RgbdSensor::set_default_X_PB,
+          py::arg("sensor_pose"), doc.RgbdSensor.set_default_X_PB.doc)
+      .def("GetX_PB", &RgbdSensor::GetX_PB, py::arg("context"),
+          py_rvp::reference_internal, doc.RgbdSensor.GetX_PB.doc)
+      .def("SetX_PB", &RgbdSensor::SetX_PB, py::arg("context"),
+          py::arg("sensor_pose"), doc.RgbdSensor.SetX_PB.doc)
+      .def("default_parent_frame_id", &RgbdSensor::default_parent_frame_id,
+          doc.RgbdSensor.default_parent_frame_id.doc)
+      .def("set_default_parent_frame_id",
+          &RgbdSensor::set_default_parent_frame_id, py::arg("id"),
+          doc.RgbdSensor.set_default_parent_frame_id.doc)
+      .def("GetParentFrameId", &RgbdSensor::GetParentFrameId,
+          py::arg("context"), doc.RgbdSensor.GetParentFrameId.doc)
+      .def("SetParentFrameId", &RgbdSensor::SetParentFrameId,
+          py::arg("context"), py::arg("id"),
+          doc.RgbdSensor.SetParentFrameId.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  rgbd_sensor
+      .def("parent_frame_id",
+          WrapDeprecated(doc.RgbdSensor.parent_frame_id.doc_deprecated,
+              &RgbdSensor::parent_frame_id),
+          doc.RgbdSensor.parent_frame_id.doc_deprecated)
+      .def("X_PB",
+          WrapDeprecated(doc.RgbdSensor.X_PB.doc_deprecated, &RgbdSensor::X_PB),
+          doc.RgbdSensor.X_PB.doc_deprecated)
+      .def("X_BC",
+          WrapDeprecated(doc.RgbdSensor.X_BC.doc_deprecated, &RgbdSensor::X_BC),
+          doc.RgbdSensor.X_BC.doc_deprecated)
+      .def("X_BD",
+          WrapDeprecated(doc.RgbdSensor.X_BD.doc_deprecated, &RgbdSensor::X_BD),
+          doc.RgbdSensor.X_BD.doc_deprecated)
+      .def("color_camera_info",
+          WrapDeprecated(doc.RgbdSensor.color_camera_info.doc_deprecated,
+              &RgbdSensor::color_camera_info),
+          py_rvp::reference_internal,
+          doc.RgbdSensor.color_camera_info.doc_deprecated)
+      .def("depth_camera_info",
+          WrapDeprecated(doc.RgbdSensor.depth_camera_info.doc_deprecated,
+              &RgbdSensor::depth_camera_info),
+          py_rvp::reference_internal,
+          doc.RgbdSensor.depth_camera_info.doc_deprecated);
+#pragma GCC diagnostic pop
   def_camera_ports(&rgbd_sensor, doc.RgbdSensor);
 
   py::class_<RgbdSensorDiscrete, Diagram<double>> rgbd_camera_discrete(

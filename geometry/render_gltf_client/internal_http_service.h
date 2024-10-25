@@ -69,9 +69,9 @@ struct HttpResponse {
  RenderClient, is responsible for adhering to the server API. */
 class HttpService {
  public:
-  HttpService() {}
-  virtual ~HttpService() {}
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HttpService);
+  HttpService() = default;
+  virtual ~HttpService();
 
   /* @name Server Interaction Interface */
   //@{

@@ -7,6 +7,8 @@ namespace geometry {
 
 using std::string;
 
+GeometryProperties::~GeometryProperties() = default;
+
 const GeometryProperties::Group& GeometryProperties::GetPropertiesInGroup(
     const string& group_name) const {
   const auto iter = values_.find(group_name);

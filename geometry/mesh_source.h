@@ -44,7 +44,9 @@ class MeshSource final {
 
   /** Provides a source-agnostic description of the mesh. If is_path() is true,
    it is the path. If is_in_memory() is true, it is the filename_hint for the
-   in-memory mesh file. */
+   in-memory mesh file. If the in-memory mesh file has an empty filename hint,
+   the description will explicitly communicate that; the empty string will
+   _never_ be returned. */
   std::string description() const;
 
   /** Returns the extension of the mesh type -- all lower case and including

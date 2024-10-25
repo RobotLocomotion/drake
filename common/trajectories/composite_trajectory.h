@@ -31,7 +31,7 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
   explicit CompositeTrajectory(
       std::vector<copyable_unique_ptr<Trajectory<T>>> segments);
 
-  virtual ~CompositeTrajectory() = default;
+  ~CompositeTrajectory() final;
 
   std::unique_ptr<trajectories::Trajectory<T>> Clone() const final;
 

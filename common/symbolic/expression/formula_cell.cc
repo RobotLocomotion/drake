@@ -31,9 +31,13 @@ using std::string;
 
 FormulaCell::FormulaCell(const FormulaKind k) : kind_{k} {}
 
+FormulaCell::~FormulaCell() = default;
+
 RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
                                              Expression lhs, Expression rhs)
     : FormulaCell{k}, e_lhs_{std::move(lhs)}, e_rhs_{std::move(rhs)} {}
+
+RelationalFormulaCell::~RelationalFormulaCell() = default;
 
 void RelationalFormulaCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher != nullptr);
@@ -70,6 +74,8 @@ bool RelationalFormulaCell::Less(const FormulaCell& f) const {
 
 NaryFormulaCell::NaryFormulaCell(const FormulaKind k, set<Formula> formulas)
     : FormulaCell{k}, formulas_{std::move(formulas)} {}
+
+NaryFormulaCell::~NaryFormulaCell() = default;
 
 void NaryFormulaCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher != nullptr);
@@ -124,6 +130,8 @@ ostream& NaryFormulaCell::DisplayWithOp(ostream& os, const string& op) const {
 
 FormulaTrue::FormulaTrue() : FormulaCell{FormulaKind::True} {}
 
+FormulaTrue::~FormulaTrue() = default;
+
 void FormulaTrue::HashAppendDetail(DelegatingHasher*) const {}
 
 Variables FormulaTrue::GetFreeVariables() const {
@@ -156,6 +164,8 @@ ostream& FormulaTrue::Display(ostream& os) const {
 }
 
 FormulaFalse::FormulaFalse() : FormulaCell{FormulaKind::False} {}
+
+FormulaFalse::~FormulaFalse() = default;
 
 void FormulaFalse::HashAppendDetail(DelegatingHasher*) const {}
 
@@ -192,6 +202,8 @@ FormulaVar::FormulaVar(Variable v)
     : FormulaCell{FormulaKind::Var}, var_{std::move(v)} {
   DRAKE_DEMAND(var_.get_type() == Variable::Type::BOOLEAN);
 }
+
+FormulaVar::~FormulaVar() = default;
 
 void FormulaVar::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher != nullptr);
@@ -248,6 +260,8 @@ const Variable& FormulaVar::get_variable() const {
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
 
+FormulaEq::~FormulaEq() = default;
+
 bool FormulaEq::Evaluate(const Environment& env) const {
   return get_lhs_expression().Evaluate(env) ==
          get_rhs_expression().Evaluate(env);
@@ -265,6 +279,8 @@ ostream& FormulaEq::Display(ostream& os) const {
 
 FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Neq, e1, e2} {}
+
+FormulaNeq::~FormulaNeq() = default;
 
 bool FormulaNeq::Evaluate(const Environment& env) const {
   return get_lhs_expression().Evaluate(env) !=
@@ -284,6 +300,8 @@ ostream& FormulaNeq::Display(ostream& os) const {
 FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Gt, e1, e2} {}
 
+FormulaGt::~FormulaGt() = default;
+
 bool FormulaGt::Evaluate(const Environment& env) const {
   return get_lhs_expression().Evaluate(env) >
          get_rhs_expression().Evaluate(env);
@@ -301,6 +319,8 @@ ostream& FormulaGt::Display(ostream& os) const {
 
 FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Geq, e1, e2} {}
+
+FormulaGeq::~FormulaGeq() = default;
 
 bool FormulaGeq::Evaluate(const Environment& env) const {
   return get_lhs_expression().Evaluate(env) >=
@@ -320,6 +340,8 @@ ostream& FormulaGeq::Display(ostream& os) const {
 FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Lt, e1, e2} {}
 
+FormulaLt::~FormulaLt() = default;
+
 bool FormulaLt::Evaluate(const Environment& env) const {
   return get_lhs_expression().Evaluate(env) <
          get_rhs_expression().Evaluate(env);
@@ -337,6 +359,8 @@ ostream& FormulaLt::Display(ostream& os) const {
 
 FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Leq, e1, e2} {}
+
+FormulaLeq::~FormulaLeq() = default;
 
 bool FormulaLeq::Evaluate(const Environment& env) const {
   return get_lhs_expression().Evaluate(env) <=
@@ -360,6 +384,8 @@ FormulaAnd::FormulaAnd(const set<Formula>& formulas)
 
 FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
     : NaryFormulaCell{FormulaKind::And, set<Formula>{f1, f2}} {}
+
+FormulaAnd::~FormulaAnd() = default;
 
 bool FormulaAnd::Evaluate(const Environment& env) const {
   for (const auto& f : get_operands()) {
@@ -394,6 +420,8 @@ FormulaOr::FormulaOr(const set<Formula>& formulas)
 FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
     : NaryFormulaCell{FormulaKind::Or, set<Formula>{f1, f2}} {}
 
+FormulaOr::~FormulaOr() = default;
+
 bool FormulaOr::Evaluate(const Environment& env) const {
   for (const auto& f : get_operands()) {
     if (f.Evaluate(env)) {
@@ -421,6 +449,8 @@ ostream& FormulaOr::Display(ostream& os) const {
 
 FormulaNot::FormulaNot(Formula f)
     : FormulaCell{FormulaKind::Not}, f_{std::move(f)} {}
+
+FormulaNot::~FormulaNot() = default;
 
 void FormulaNot::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher != nullptr);
@@ -462,6 +492,8 @@ FormulaForall::FormulaForall(Variables vars, Formula f)
     : FormulaCell{FormulaKind::Forall},
       vars_{std::move(vars)},
       f_{std::move(f)} {}
+
+FormulaForall::~FormulaForall() = default;
 
 void FormulaForall::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher != nullptr);
@@ -519,6 +551,8 @@ ostream& FormulaForall::Display(ostream& os) const {
 
 FormulaIsnan::FormulaIsnan(Expression e)
     : FormulaCell{FormulaKind::Isnan}, e_{std::move(e)} {}
+
+FormulaIsnan::~FormulaIsnan() = default;
 
 void FormulaIsnan::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher != nullptr);
@@ -584,6 +618,8 @@ FormulaPositiveSemidefinite::FormulaPositiveSemidefinite(
         fmt_eigen(m)));
   }
 }
+
+FormulaPositiveSemidefinite::~FormulaPositiveSemidefinite() = default;
 
 namespace {
 // Helper Eigen-visitor class that we use to implement

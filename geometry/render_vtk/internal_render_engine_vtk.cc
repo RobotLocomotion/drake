@@ -1,7 +1,6 @@
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 #include <algorithm>
-#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <optional>
@@ -43,11 +42,14 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
+#include "drake/geometry/render_vtk/internal_make_render_window.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
+#include "drake/geometry/vtk_gltf_uri_loader.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/vtk_diagnostic_event_observer.h"
 
@@ -66,6 +68,7 @@ using geometry::internal::LoadRenderMeshesFromObj;
 using geometry::internal::MakeDiffuseMaterial;
 using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
+using geometry::internal::VtkGltfUriLoader;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using render::ColorRenderCamera;
@@ -170,12 +173,19 @@ ShaderCallback::ShaderCallback()
 
 vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
+RenderEngineVtk::RenderingPipeline::RenderingPipeline(
+    RenderEngineVtkBackend backend_in)
+    : backend{backend_in}, window{MakeRenderWindow(backend)} {}
+
+RenderEngineVtk::RenderingPipeline::~RenderingPipeline() = default;
+
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
-    : RenderEngine(RenderLabel::kDontCare),
-      parameters_(parameters),
-      pipelines_{{make_unique<RenderingPipeline>(),
-                  make_unique<RenderingPipeline>(),
-                  make_unique<RenderingPipeline>()}} {
+    : RenderEngine(RenderLabel::kDontCare), parameters_(parameters) {
+  const RenderEngineVtkBackend backend =
+      ParseRenderEngineVtkBackend(parameters);
+  for (auto& pipeline : pipelines_) {
+    pipeline = make_unique<RenderingPipeline>(backend);
+  }
   // Only populate the fallback lights if we haven't specified an environment
   // map.
   // Until we introduce CubeMap, the default texture (NullTexture) should be
@@ -195,6 +205,8 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
 
   InitializePipelines();
 }
+
+RenderEngineVtk::~RenderEngineVtk() = default;
 
 void RenderEngineVtk::UpdateViewpoint(const RigidTransformd& X_WC) {
   vtkSmartPointer<vtkTransform> vtk_X_WC = ConvertToVtkTransform(X_WC);
@@ -262,9 +274,9 @@ void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
 
   const std::string extension = mesh.extension();
   if (extension == ".obj") {
-    data.accepted = ImplementObj(mesh.filename(), mesh.scale(), data);
+    data.accepted = ImplementObj(mesh, data);
   } else if (extension == ".gltf") {
-    data.accepted = ImplementGltf(mesh.filename(), mesh.scale(), data);
+    data.accepted = ImplementGltf(mesh, data);
   } else {
     static const logging::Warn one_time(
         "RenderEngineVtk only supports Mesh specifications which use "
@@ -497,9 +509,10 @@ void RenderEngineVtk::DoRenderLabelImage(const ColorRenderCamera& camera,
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     : RenderEngine(other),
       parameters_(other.parameters_),
-      pipelines_{{make_unique<RenderingPipeline>(),
-                  make_unique<RenderingPipeline>(),
-                  make_unique<RenderingPipeline>()}},
+      pipelines_{
+          {make_unique<RenderingPipeline>(other.pipelines_[0]->backend),
+           make_unique<RenderingPipeline>(other.pipelines_[1]->backend),
+           make_unique<RenderingPipeline>(other.pipelines_[2]->backend)}},
       default_diffuse_{other.default_diffuse_},
       default_clear_color_{other.default_clear_color_},
       fallback_lights_(other.fallback_lights_) {
@@ -514,7 +527,13 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
       for (const auto& source_part : source_prop.parts) {
         vtkNew<vtkActor> target_actor;
         target_actor->ShallowCopy(source_part.actor);
+        vtkNew<vtkOpenGLPolyDataMapper> target_mapper;
+        target_mapper->ShallowCopy(source_part.actor->GetMapper());
+        target_actor->SetMapper(target_mapper);
         renderer.AddActor(target_actor);
+        if (i == ImageType::kDepth) {
+          SetDepthShader(target_actor);
+        }
         target_prop.parts.push_back(
             Part{.actor = std::move(target_actor), .T_GA = source_part.T_GA});
       }
@@ -557,17 +576,17 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh, double scale,
   ImplementPolyData(transform_filter.GetPointer(), material, data);
 }
 
-bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
+bool RenderEngineVtk::ImplementObj(const Mesh& mesh,
                                    const RegistrationData& data) {
   std::vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
-      file_name, data.properties, default_diffuse_, diagnostic_);
+      mesh.source(), data.properties, default_diffuse_, diagnostic_);
   for (auto& render_mesh : meshes) {
-    ImplementRenderMesh(std::move(render_mesh), scale, data);
+    ImplementRenderMesh(std::move(render_mesh), mesh.scale(), data);
   }
   return true;
 }
 
-bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
+bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
                                     const RegistrationData& data) {
   vtkNew<VtkDiagnosticEventObserver> observer;
   observer->set_diagnostic(&diagnostic_);
@@ -580,14 +599,24 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
   // importer (see systems/sensors/image_io_load.cc).
   vtkNew<vtkGLTFImporter> importer;
   observe(importer);
-  importer->SetFileName(file_name.c_str());
+  const MeshSource& mesh_source = mesh.source();
+  if (mesh_source.is_path()) {
+    importer->SetFileName(mesh_source.path().c_str());
+  } else {
+    vtkNew<VtkGltfUriLoader> uri_loader;
+    uri_loader->SetMeshSource(&mesh_source);
+    vtkSmartPointer<vtkResourceStream> gltf_stream =
+        uri_loader->MakeGltfStream();
+    importer->SetInputStream(gltf_stream, uri_loader, /* binary= */ false);
+  }
   importer->Update();
 
   auto* renderer = importer->GetRenderer();
   DRAKE_DEMAND(renderer != nullptr);
 
   if (renderer->VisibleActorCount() == 0) {
-    log()->warn("No visible meshes found in glTF file: {}", file_name);
+    log()->warn("No visible meshes found in glTF file: '{}'",
+                mesh.source().description());
     return false;
   }
 
@@ -599,7 +628,7 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
   // This includes the rotation from y-up to z-up and the requested scale.
   const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
   vtkSmartPointer<vtkTransform> T_GF_transform =
-      ConvertToVtkTransform(X_GF, scale);
+      ConvertToVtkTransform(X_GF, mesh.scale());
   vtkMatrix4x4* T_GF = T_GF_transform->GetMatrix();
 
   // Color.
@@ -609,7 +638,7 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
         "Drake materials have been assigned to a glTF file. glTF defines its "
         "own materials, so post hoc materials will be ignored and should be "
         "removed from the model specification. glTF file: '{}'",
-        file_name);
+        mesh.source().description());
   }
 
   const RenderLabel label = GetRenderLabelOrThrow(data.properties);
@@ -648,14 +677,7 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
                                               label_color.b());
         } else if (i == ImageType::kDepth) {
           // Depth requires a mapper with the depth shader.
-          vtkOpenGLShaderProperty* shader_prop =
-              vtkOpenGLShaderProperty::SafeDownCast(
-                  part_actor->GetShaderProperty());
-          DRAKE_DEMAND(shader_prop != nullptr);
-          shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
-          shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
-          mapper->AddObserver(vtkCommand::UpdateShaderEvent,
-                              uniform_setting_callback_.Get());
+          SetDepthShader(part_actor);
         }
       }
       // vtkGLTFImporter uses the actor's UserTransform property to define the
@@ -932,23 +954,12 @@ void RenderEngineVtk::InitializePipelines() {
 void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
                                         const RenderMaterial& material,
                                         const RegistrationData& data) {
-  // Parsing via VTK should never require an image to be flipped.
-  DRAKE_DEMAND(material.flip_y == false);
   std::array<vtkSmartPointer<vtkActor>, kNumPipelines> actors{
       vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
       vtkSmartPointer<vtkActor>::New()};
   // Note: the mappers ultimately get referenced by the actors, so they do _not_
   // get destroyed when this array goes out of scope.
   std::array<vtkNew<vtkOpenGLPolyDataMapper>, kNumPipelines> mappers;
-
-  // Sets vertex and fragment shaders only to the depth mapper.
-  vtkOpenGLShaderProperty* shader_prop = vtkOpenGLShaderProperty::SafeDownCast(
-      actors[ImageType::kDepth]->GetShaderProperty());
-  DRAKE_DEMAND(shader_prop != nullptr);
-  shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
-  shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
-  mappers[ImageType::kDepth]->AddObserver(vtkCommand::UpdateShaderEvent,
-                                          uniform_setting_callback_.Get());
 
   for (auto& mapper : mappers) {
     mapper->SetInputConnection(source->GetOutputPort());
@@ -987,15 +998,34 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   if (use_pbr_materials_) {
     color_actor->GetProperty()->SetInterpolationToPBR();
   }
-  if (!material.diffuse_map.empty()) {
+  if (!IsEmpty(material.diffuse_map)) {
+    // Parsing via VTK should never require an image to be flipped.
+    DRAKE_DEMAND(material.flip_y == false);
+
     vtkNew<vtkPNGReader> texture_reader;
-    texture_reader->SetFileName(material.diffuse_map.c_str());
+    const std::string description = std::visit<std::string>(
+        overloaded{
+            [](const auto&) -> std::string {
+              throw std::runtime_error(
+                  "RenderEngineVtk: diffuse map must be on-disk or in-memory");
+            },
+            [reader = texture_reader.Get()](const std::filesystem::path& path) {
+              reader->SetFileName(path.c_str());
+              return path.string();
+            },
+            [reader = texture_reader.Get()](const MemoryFile& file) {
+              const std::string& contents = file.contents();
+              reader->SetMemoryBuffer(contents.c_str());
+              reader->SetMemoryBufferLength(contents.size());
+              return file.filename_hint();
+            }},
+        material.diffuse_map);
     texture_reader->Update();
     if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
       log()->warn(
           "Texture map '{}' has an unsupported bit depth, casting it to uchar "
           "channels.",
-          material.diffuse_map);
+          description);
     }
 
     vtkNew<vtkImageCast> caster;
@@ -1031,6 +1061,8 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
 
   // Depth actor; always gets wired in with no additional work.
   connect_actor(ImageType::kDepth);
+  // Sets vertex and fragment shaders only to the depth mapper.
+  SetDepthShader(actors[ImageType::kDepth]);
 
   // Take ownership of the actors.
   for (int i = 0; i < kNumPipelines; ++i) {
@@ -1078,6 +1110,22 @@ void RenderEngineVtk::SetPbrMaterials() {
     }
   }
 }
+
+void RenderEngineVtk::SetDepthShader(vtkActor* actor) {
+  DRAKE_DEMAND(actor != nullptr);
+  vtkOpenGLPolyDataMapper* mapper =
+      vtkOpenGLPolyDataMapper::SafeDownCast(actor->GetMapper());
+  DRAKE_DEMAND(mapper != nullptr);
+  vtkOpenGLShaderProperty* shader_prop =
+      vtkOpenGLShaderProperty::SafeDownCast(actor->GetShaderProperty());
+  DRAKE_DEMAND(shader_prop != nullptr);
+  // Sets vertex and fragment shaders only to the depth mapper.
+  shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
+  shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
+  mapper->AddObserver(vtkCommand::UpdateShaderEvent,
+                      uniform_setting_callback_.Get());
+}
+
 void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {
   p.window->Render();
   p.filter->Modified();
@@ -1090,6 +1138,11 @@ void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
   // NOTE: Although declared const, this method modifies VTK entities. The
   // conflict between ostensibly const operations and invocation of black-box
   // entities that need state mutated should be more formally handled.
+
+  if (!p.window->EnsureDisplay()) {
+    throw std::runtime_error(
+        "The vtkWindow used by RenderEngineVtk could not be initialized");
+  }
 
   const CameraInfo& intrinsics = camera.intrinsics();
   p.window->SetSize(intrinsics.width(), intrinsics.height());

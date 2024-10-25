@@ -112,7 +112,7 @@ the main body of the document:
    3. Open the latest builds from the following builds:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-cmake-nightly-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-noble-unprovisioned-gcc-cmake-nightly-packaging/>
-      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-ventura-unprovisioned-clang-cmake-nightly-packaging/>
+      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-sonoma-unprovisioned-clang-cmake-nightly-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-0.0.20``), and find the date.  It will be ``YYYYMMDD``
@@ -128,10 +128,10 @@ the main body of the document:
    1. Open the following Jenkins jobs (e.g., each in its own
       new browser tab):
       - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-wheel-staging-release/)
-      - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-wheel-staging-release/)
+      - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-unprovisioned-clang-wheel-staging-release/)
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-cmake-staging-packaging/)
       - [Noble Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
-      - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-ventura-unprovisioned-clang-cmake-staging-packaging/)
+      - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-unprovisioned-clang-cmake-staging-packaging/)
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
@@ -295,12 +295,15 @@ the email address associated with your github account.
       ... etc.):
       1. In the left-hand panel of your screen, take note that each notebook
          appears in two places -- in "NOTEBOOKS" near the top and in "FILES"
-         near the bottom. The "NOTEBOOKS" is the old copy; the "FILES" is the
-         new copy. Our goal is to replace the old copy with the new.
+         near the bottom. The "NOTEBOOKS" is the older copy (from the prior
+         release); the "FILES" is the new copy (from this release). Our goal
+         is to replace the old copy with the new.
       2. Scroll down to the "FILES" and choose the top-most name. Right click on
          it and select "Move to notebooks".
          Be patient because the web interface could be slow, and there might be
-         delay between copying and deleting the file.
+         delay while copying the file.
+         Note that even though the button says "Move", it actually only *copies*
+         the file; it does not delete the item from "FILES".
       3. Because a notebook of that name already existed in "NOTEBOOKS" (the old
          copy), the moved notebook will be renamed with a ``-2`` suffix.
       4. Scroll up to "NOTEBOOKS". Right click on the old copy (without ``-2``)
@@ -319,9 +322,8 @@ the email address associated with your github account.
       9. Leave the notebook output intact (do not clear the outputs). We want
          users to be able to read the outputs on their own, without necessarily
          running the notebook themselves.
-      10. The moved notebook no longer appears in "FILES", so you can always
-          use the top-most ``*.ipynb`` in "FILES" as your checklist for which
-          one to tackle next.
+      10. Go back to "FILES" and right-click then "Delete" on the notebook you
+          just copied; it should still be the top-most ``*.ipynb`` in "FILES".
 6. On the left side, click "Environment" then "Stop Machine", as a
    courtesy. (It will time out on its own within the hour, but we might as
    well save a few nanograms of CO2 where we can.)

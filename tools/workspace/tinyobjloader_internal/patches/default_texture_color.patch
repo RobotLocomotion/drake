@@ -3,6 +3,8 @@
 If only a diffuse texture is given (map_Kd) tinyobj modulates it to 60%
 grey. We prefer 100%.
 
+Reasoning for not upstreaming this patch: Drake-specific default option.
+
 --- tiny_obj_loader.h
 +++ tiny_obj_loader.h
 @@ -2297,12 +2297,13 @@ void LoadMtl(std::map<std::string, int> *material_map,

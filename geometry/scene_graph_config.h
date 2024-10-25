@@ -66,13 +66,13 @@ struct DefaultProximityProperties {
   of meters. */
   std::optional<double> slab_thickness;
 
-  // TODO(amcastro-tri): Write Doxygen module on margin for hydroelastic contact
-  // with further details on mesh inflation, field generation, recommended
-  // margin values and limitations.
   /** (Advanced) Specifies a thin layer of thickness "margin" (in meters) around
   each geometry. Two bodies with margins δ₁ and δ₂ are considered for contact
   resolution whenever their distance is within δ₁ + δ₂. That is, (speculative)
   contact constraints are added for objects at a distance smaller than δ₁+δ₂.
+
+  Refer to @ref hydro_margin for further details, including theory, examples,
+  recommended margin values and limitations.
 
   There will only be _contact_ if the two zero level sets intersect. Unless the
   zero level sets of both geometries overlap, there is no contact and no

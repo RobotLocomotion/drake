@@ -10,7 +10,7 @@ the API but with an "always throws" implementation where we don't exercise the
 code paths in question, or b) restore all of the code and bring in pegtl as a
 supported VTK dependency.
 
-This situation is unique to Drake, so we won't to upstream this patch.
+Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- Common/DataModel/vtk.module
 +++ Common/DataModel/vtk.module

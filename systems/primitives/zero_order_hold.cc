@@ -46,6 +46,17 @@ ZeroOrderHold<T>::ZeroOrderHold(const ZeroOrderHold<U>& other)
                                         : nullptr) {}
 
 template <typename T>
+void ZeroOrderHold<T>::SetVectorState(
+    Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
+  DRAKE_ASSERT(!is_abstract());
+  this->ValidateContext(context);
+  BasicVector<T>& state_vector = context->get_mutable_discrete_state_vector();
+  // Asserts that the input value is a column vector of the appropriate size.
+  DRAKE_THROW_UNLESS(value.rows() == state_vector.size());
+  state_vector.SetFromVector(value);
+}
+
+template <typename T>
 void ZeroOrderHold<T>::LatchInputVectorToState(
     const Context<T>& context, DiscreteValues<T>* discrete_state) const {
   DRAKE_ASSERT(!is_abstract());

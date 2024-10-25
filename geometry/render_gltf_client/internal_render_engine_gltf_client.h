@@ -40,6 +40,8 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
   RenderEngineGltfClient(const RenderEngineGltfClientParams& parameters =
                              RenderEngineGltfClientParams());
 
+  ~RenderEngineGltfClient() override;
+
   const RenderEngineGltfClientParams& get_params() const {
     return render_client_->get_params();
   }
@@ -94,11 +96,8 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
                           const math::RigidTransformd& X_WG) override;
   bool DoRemoveGeometry(GeometryId id) override;
   using RenderEngineVtk::ImplementGeometry;
-  void ImplementGeometry(const Convex& convex, void* user_data) override;
   void ImplementGeometry(const Mesh& mesh, void* user_data) override;
 
-  void ImplementMesh(const std::filesystem::path& mesh_path, double scale,
-                     void* user_data);
   /* Adds a .gltf to the scene for the id currently being reified (data->id).
    Returns true if added, false if ignored (for whatever reason).
 
@@ -108,14 +107,16 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
    common extensions. So, by injecting the files directly into the exported glTF
    file, we maintain whatever declarations the source glTF had without the lossy
    filter provided by VTK. */
-  bool ImplementGltf(const std::filesystem::path& gltf_path, double scale,
+  bool ImplementGltf(const Mesh& mesh,
                      const RenderEngineVtk::RegistrationData& data);
 
   std::unique_ptr<RenderClient> render_client_;
 
   struct GltfRecord {
-    // The path for the .gltf file.
-    std::filesystem::path path;
+    // The name for the .gltf file.
+    //   If the glTF came from disk, it will be the file path, otherwise the
+    //   filename hint associated with the in-memory mesh.
+    std::string name;
     // The contents of a glTF file registered as Mesh or Convex.
     nlohmann::json contents;
     // The root nodes of the gltf file represented as a mapping from the node's

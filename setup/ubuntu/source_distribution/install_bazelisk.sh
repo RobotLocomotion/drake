@@ -50,19 +50,14 @@ dpkg_install_from_wget() {
 apt-get remove bazel || true
 
 # Install bazelisk.
-#
-# TODO(jeremy.nimmer) Once there's a bazelisk > 1.21 that incorporates
-# https://github.com/bazelbuild/bazelisk/pull/608 to publish Debian packages as
-# release attachments, we should switch to official release downloads instead of
-# our own build of their source release tags.
 if [[ $(arch) = "aarch64" ]]; then
   dpkg_install_from_wget \
-    bazelisk 1.21.0 \
-    https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/bazelisk_1.21.0_arm64.deb \
-    7f75b16ac4061bc1e76e4c066ebd13ac3aba39c8e5779cd3a623ed5a66024622
+    bazelisk 1.22.0 \
+    https://github.com/bazelbuild/bazelisk/releases/download/v1.22.0/bazelisk-arm64.deb \
+    b6a67444325fcee119fcfa1ca4bbc6478a8b1f7937730bde4a52ad3347146d76
 else
   dpkg_install_from_wget \
-    bazelisk 1.21.0 \
-    https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/bazelisk_1.21.0_amd64.deb \
-    3b74a3eacbf4df24f997c6dbb23af8990e7c11907bff6cb48d0c0704a6b9be95
+    bazelisk 1.22.0 \
+    https://github.com/bazelbuild/bazelisk/releases/download/v1.22.0/bazelisk-amd64.deb \
+    f3a9dd15b08f3f1350f2b2055cfee8a9c412c2050966f635633aaf30dd7e979e
 fi

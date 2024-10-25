@@ -33,7 +33,7 @@ class EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorBase);
 
-  virtual ~EvaluatorBase() {}
+  virtual ~EvaluatorBase();
 
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.

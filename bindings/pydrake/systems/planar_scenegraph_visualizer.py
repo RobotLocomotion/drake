@@ -243,31 +243,43 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                          for pt in sample_pts])
 
                 elif isinstance(shape, (Mesh, Convex)):
-                    # Legacy behavior for looking for a .obj when the extension
-                    # is not recognized.
-                    filename = Path(shape.filename())
-                    known_suffixes = [".obj", ".vtk", ".gltf"]
-                    if (filename.suffix.lower() not in known_suffixes
-                            and substitute_collocated_mesh_files):
-                        # Check for a co-located fallback (case insensitive).
-                        for new_suffix in known_suffixes:
-                            new_filename = filename.with_suffix(new_suffix)
-                            if new_filename.exists():
-                                filename = new_filename
-                                break
-                        else:
-                            raise RuntimeError(
-                                f"The mesh {filename} is not a supported "
-                                f"format and no collocated fallback was found")
-                    if not filename.exists():
-                        raise FileNotFoundError(errno.ENOENT, os.strerror(
-                            errno.ENOENT), filename)
-                    if filename == shape.filename():
-                        # It may have already been computed elsewhere.
+                    source = shape.source()
+                    search_for_alternate = (
+                        source.is_path() and substitute_collocated_mesh_files)
+                    convex_hull = None
+                    try:
+                        # For both shape types, we replace it with its convex
+                        # hull.
                         convex_hull = shape.GetConvexHull()
-                    else:
-                        temp_mesh = Mesh(str(filename), shape.scale())
-                        convex_hull = temp_mesh.GetConvexHull()
+                    except RuntimeError as shape_error:
+                        known_suffixes = [".obj", ".vtk", ".gltf"]
+
+                        if source.extension() in known_suffixes:
+                            # The file was already of a known extension;
+                            # failure offers no recourse.
+                            raise shape_error
+
+                        if search_for_alternate:
+                            # For a path to an unknown file type, we can look
+                            # for a known alternative.
+                            for suffix in known_suffixes:
+                                alt_path = source.path().with_suffix(suffix)
+                                if alt_path.exists():
+                                    convex = Convex(alt_path, shape.scale())
+                                    convex_hull = convex.GetConvexHull()
+                                    break
+
+                    if convex_hull is None:
+                        # If we're here, we know:
+                        #   shape.source().extension() is not supported.
+                        #   We didn't/couldn't find a supported alternative.
+                        suffix = (" No supported alternative could be found."
+                                  if search_for_alternate else "")
+                        raise RuntimeError(
+                            f"The {type(shape).__name__} instance with mesh "
+                            f"data '{source.description()}' has an "
+                            f"unsupported extension ('{source.extension()}')."
+                            f"{suffix}")
                     patch_G = np.empty((3, convex_hull.num_vertices()))
                     for i in range(convex_hull.num_vertices()):
                         patch_G[:, i] = convex_hull.vertex(i)

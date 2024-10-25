@@ -166,6 +166,8 @@ symbolic::Expression can be used as a scalar type of Eigen types.
 class Expression {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Expression);
+
+  // The destructor is inlined for performance.
   ~Expression() = default;
 
   /** Default constructor. It constructs Zero(). */

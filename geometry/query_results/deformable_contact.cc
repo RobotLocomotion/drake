@@ -28,6 +28,8 @@ void ExtendToFullPermutation(PartialPermutation* permutation) {
 ContactParticipation::ContactParticipation(int num_vertices)
     : participation_(num_vertices, false) {}
 
+ContactParticipation::~ContactParticipation() = default;
+
 void ContactParticipation::Participate(
     const std::unordered_set<int>& vertices) {
   for (int v : vertices) {
@@ -121,6 +123,12 @@ DeformableContactSurface<T>::DeformableContactSurface(
         math::RotationMatrix<T>::MakeFromOneUnitVector(-nhats_W_[i], kZAxis));
   }
 }
+
+template <typename T>
+DeformableContactSurface<T>::~DeformableContactSurface() = default;
+
+template <typename T>
+DeformableContact<T>::~DeformableContact() = default;
 
 template <typename T>
 void DeformableContact<T>::AddDeformableRigidContactSurface(

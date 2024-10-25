@@ -3,14 +3,48 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <utility>
+#include <variant>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/common/memory_file.h"
 #include "drake/geometry/geometry_properties.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
+
+/* The key value for a texture source when it references an entry into an
+ internal image database. */
+struct TextureKey {
+  std::string value;
+};
+
+/* A texture can be specified for a RenderMaterial in several ways:
+
+  - No image at all (aka an "empty" texture source).
+  - A file path to an image on the disk.
+  - A special key for access in some coordinated image database.
+  - Contents of a known image file format.
+
+ Note: when assigning to a %TextureSource, take *extra* care to distinguish
+ between a TextureKey and a path. Simply assigning a string (or string-like
+ type) will successfully compile, but the implicit conversion from those types
+ to std::filesystem::path will mean you're setting a *path*. When setting a
+ texture key, explicitly declare it as such. E.g.,:
+
+ TextureSource source = TextureKey{"looks/like/a/path/but/is/not.png"};
+
+ This can be particularly surprising if the right-hand side is a
+ std::string_view. There *is* an implicit conversion from std::string_view to
+ std::filesystem::path, but not to std::string. */
+using TextureSource =
+    std::variant<std::monostate, std::filesystem::path, TextureKey, MemoryFile>;
+
+/* Reports if the texture source specifies no texture -- i.e., it's empty. */
+bool IsEmpty(const TextureSource& source);
 
 /* Reports how UVs have been assigned to the mesh receiving a material. Textures
  should only be applied to meshes with *fully* assigned UVs. */
@@ -25,16 +59,15 @@ struct RenderMaterial {
    `diffuse_map` is empty, it acts as the multiplicative identity. */
   Rgba diffuse;
 
-  /* The optional texture to use as diffuse map. For universal compatibility,
-   it is an image file path. However, in RenderEngine implementations that
-   construct and consume their own %RenderMaterial instances, the file path
-   can be replaced with an arbitrary string which the RenderEngine
-   implementation knows how to map to an actual texture. Such %RenderMaterial
-   instances should be kept hidden within those implementations.
-
-   Regardless of how a non-empty string is interpreted, an empty string always
-   means no diffuse map. */
-  std::string diffuse_map;
+  /* The optional texture to use as diffuse map. If no diffuse texture is
+   defined, it will be "empty". Otherwise, the texture can be specified by a
+   path to an on-disk image, in-memory image file contents, or a database key.
+   Some RenderEngine implementations construct and consume their own
+   %RenderMaterial may store images in a local database. When
+   `diffuse_map.is_key()` returns true, it is a key into that database. Such
+   %RenderMaterial instances should be kept hidden within those RenderEngine
+   implementations. */
+  TextureSource diffuse_map;
 
   /* OpenGL defines image origin at the bottom-left corner of the texture. Some
    geometry formats (e.g., glTF), define the origin at the top-left corner.
@@ -75,8 +108,12 @@ void MaybeWarnForRedundantMaterial(
      purely from the properties (e.g., ("phong", "diffuse_map") and
      ("phong", "diffuse").
    - Otherwise, if an image can be located with a "compatible name" (e.g.,
-     foo.png for a mesh foo.obj), a material with an unmodulated texture is
-     created.
+     foo.png for the mesh foo.obj), a material with an unmodulated texture is
+     created. An existing foo.png that can't be read and an empty `mesh_path`
+     are both treated as "no compatible png could be found" and will fall
+     through to the next condition. If the mesh is in-memory, there is, by
+     definition, no compatible png and that should be signaled with an empty
+     `mesh_path`.
    - Otherwise, if a default_diffuse value is provided, a material is created
      with the given default_diffuse color value.
    - Finally, if no material is defined, std::nullopt is returned. In such a
@@ -87,8 +124,8 @@ void MaybeWarnForRedundantMaterial(
  References to textures will be included in the material iff they can be read
  and the `uv_state` is full. Otherwise, a warning will be dispatched.
 
- @pre The mesh (named by `mesh_filename`) is a valid mesh and did not have an
-      acceptable material definition). */
+ This doesn't account for any material properties that may or may not exist in
+ a mesh. Its invocation assumes no such material exists. */
 std::optional<RenderMaterial> MaybeMakeMeshFallbackMaterial(
     const GeometryProperties& props, const std::filesystem::path& mesh_path,
     const std::optional<Rgba>& default_diffuse,

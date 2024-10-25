@@ -513,9 +513,6 @@ class TestPlant(unittest.TestCase):
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
             plant.get_geometry_pose_output_port(), OutputPort)
-        with catch_drake_warnings(expected_count=1) as w:
-            self.assertIsInstance(
-                plant.get_geometry_poses_output_port(), OutputPort)
         self.assertIsInstance(
             plant.get_net_actuation_output_port(), OutputPort)
         self.assertIsInstance(
@@ -876,8 +873,6 @@ class TestPlant(unittest.TestCase):
         if T != Expression:
             self.assertTrue(zero.IsZero())
         SpatialInertia.NaN()
-        with catch_drake_warnings(expected_count=1) as w:
-            SpatialInertia()
         SpatialInertia.MakeFromCentralInertia(
             mass=1.3, p_PScm_E=[0.1, -0.2, 0.3],
             I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
@@ -2681,6 +2676,9 @@ class TestPlant(unittest.TestCase):
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
         ball_id = plant.AddBallConstraint(
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ)
+        # Add a second ball constraint using the default (unspecified) p_BQ.
+        ball_id2 = plant.AddBallConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B)
         weld_id = plant.AddWeldConstraint(
             body_A=body_A, X_AP=X_AP, body_B=body_B, X_BQ=X_BQ)
 
@@ -2704,7 +2702,7 @@ class TestPlant(unittest.TestCase):
         # are the same up to a permutation.
         self.assertTrue(
             collections.Counter(ids) == collections.Counter(
-                [distance_id, ball_id, weld_id, coupler_id]))
+                [distance_id, ball_id, ball_id2, weld_id, coupler_id]))
 
         # Default context.
         context = plant.CreateDefaultContext()
@@ -2717,6 +2715,8 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
         self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=ball_id2))
+        self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=weld_id))
 
         # Set all constraints to inactive.
@@ -2726,6 +2726,8 @@ class TestPlant(unittest.TestCase):
             context=context, id=distance_id, status=False)
         plant.SetConstraintActiveStatus(
             context=context, id=ball_id, status=False)
+        plant.SetConstraintActiveStatus(
+            context=context, id=ball_id2, status=False)
         plant.SetConstraintActiveStatus(
             context=context, id=weld_id, status=False)
 
@@ -2737,6 +2739,8 @@ class TestPlant(unittest.TestCase):
         self.assertFalse(
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
         self.assertFalse(
+            plant.GetConstraintActiveStatus(context=context, id=ball_id2))
+        self.assertFalse(
             plant.GetConstraintActiveStatus(context=context, id=weld_id))
 
         # Set all constraints to back to active.
@@ -2747,6 +2751,8 @@ class TestPlant(unittest.TestCase):
         plant.SetConstraintActiveStatus(
             context=context, id=ball_id, status=True)
         plant.SetConstraintActiveStatus(
+            context=context, id=ball_id2, status=True)
+        plant.SetConstraintActiveStatus(
             context=context, id=weld_id, status=True)
 
         # Verify all constraints are active in the context.
@@ -2756,6 +2762,8 @@ class TestPlant(unittest.TestCase):
             plant.GetConstraintActiveStatus(context=context, id=distance_id))
         self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=ball_id2))
         self.assertTrue(
             plant.GetConstraintActiveStatus(context=context, id=weld_id))
 

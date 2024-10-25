@@ -2,6 +2,8 @@
 
 This prevents ODR violations in case downstream code also links to CRU.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- include/common_robotics_utilities/cru_namespace.hpp
 +++ include/common_robotics_utilities/cru_namespace.hpp
 @@ -17,5 +17,5 @@

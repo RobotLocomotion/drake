@@ -6,6 +6,9 @@ compatible with our approach to loading phases.
 
 When we switch to bzlmod, we can reconsider.
 
+Reasoning for not upstreaming this patch: limited value, given the
+pending switch to bzlmod.
+
 --- crosstool/cc_toolchain_config.bzl
 +++ crosstool/cc_toolchain_config.bzl
 @@ -13,7 +13,6 @@

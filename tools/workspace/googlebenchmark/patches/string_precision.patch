@@ -1,5 +1,8 @@
 Actually respect the requested human-readable precision.
 
+Reasoning for not upstreaming this patch: not sure if the bug is
+observable in their uncustomized build.
+
 --- src/string_util.cc
 +++ src/string_util.cc
 @@ -55,6 +61,8 @@ void ToExponentAndMantissa(double val, double thresh, int precision,

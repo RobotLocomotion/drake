@@ -68,26 +68,101 @@ class DummyBodyNode : public BodyNode<double> {
   using BodyNode::BodyNode;
 
   void CalcPositionKinematicsCache_BaseToTip(
-      const FrameBodyPoseCache<T>& /* frame_body_pose_cache */,
-      const T* /* positions */,
-      PositionKinematicsCache<T>* /* pc */) const override {
+      const FrameBodyPoseCache<T>&, const T*,
+      PositionKinematicsCache<T>*) const final {
     DRAKE_UNREACHABLE();
   }
 
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
-      const systems::Context<T>& /* context */,
-      const FrameBodyPoseCache<T>& /* frame_body_pose_cache */,
-      const PositionKinematicsCache<T>& /* pc */,
-      std::vector<Vector6<T>>* /* H_PB_W_cache */) const override {
+      const FrameBodyPoseCache<T>&, const T*, const PositionKinematicsCache<T>&,
+      std::vector<Vector6<T>>*) const final {
     DRAKE_UNREACHABLE();
   }
 
   void CalcVelocityKinematicsCache_BaseToTip(
-      const systems::Context<T>& /* context */,
-      const PositionKinematicsCache<T>& /* pc */,
-      const std::vector<Vector6<T>>& /* H_PB_W_cache */,
-      const T* /* velocities */,
-      VelocityKinematicsCache<T>* /* vc */) const override {
+      const T*, const PositionKinematicsCache<T>&,
+      const std::vector<Vector6<T>>&, const T*,
+      VelocityKinematicsCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcMassMatrixContribution_TipToBase(
+      const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
+      const std::vector<Vector6<T>>&, EigenPtr<MatrixX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+#define DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(Rnv)                                \
+  void CalcMassMatrixOffDiagonalBlock##Rnv(                                 \
+      int, const std::vector<Vector6<T>>&, const Eigen::Matrix<T, 6, Rnv>&, \
+      EigenPtr<MatrixX<T>>) const final {                                   \
+    DRAKE_UNREACHABLE();                                                    \
+  }
+
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(1)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(2)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(3)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(4)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(5)
+  DEFINE_DUMMY_OFF_DIAGONAL_BLOCK(6)
+
+#undef DEFINE_DUMMY_OFF_DIAGONAL_BLOCK
+
+  void CalcSpatialAcceleration_BaseToTip(
+      const FrameBodyPoseCache<T>&, const T*, const PositionKinematicsCache<T>&,
+      const T*, const VelocityKinematicsCache<T>*, const T*,
+      std::vector<SpatialAcceleration<T>>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcInverseDynamics_TipToBase(const FrameBodyPoseCache<T>&, const T*,
+                                     const PositionKinematicsCache<T>&,
+                                     const std::vector<SpatialInertia<T>>&,
+                                     const std::vector<SpatialForce<T>>*,
+                                     const std::vector<SpatialAcceleration<T>>&,
+                                     const std::vector<SpatialForce<T>>&,
+                                     const Eigen::Ref<const VectorX<T>>&,
+                                     std::vector<SpatialForce<T>>*,
+                                     EigenPtr<VectorX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcArticulatedBodyInertiaCache_TipToBase(
+      const systems::Context<T>&, const PositionKinematicsCache<T>&,
+      const Eigen::Ref<const MatrixUpTo6<T>>&, const SpatialInertia<T>&,
+      const VectorX<T>&, ArticulatedBodyInertiaCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcArticulatedBodyForceCache_TipToBase(
+      const systems::Context<T>&, const PositionKinematicsCache<T>&,
+      const VelocityKinematicsCache<T>*, const SpatialForce<T>&,
+      const ArticulatedBodyInertiaCache<T>&, const SpatialForce<T>&,
+      const SpatialForce<T>&, const Eigen::Ref<const VectorX<T>>&,
+      const Eigen::Ref<const MatrixUpTo6<T>>&,
+      ArticulatedBodyForceCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcArticulatedBodyAccelerations_BaseToTip(
+      const systems::Context<T>&, const PositionKinematicsCache<T>&,
+      const ArticulatedBodyInertiaCache<T>&,
+      const ArticulatedBodyForceCache<T>&,
+      const Eigen::Ref<const MatrixUpTo6<T>>&, const SpatialAcceleration<T>&,
+      AccelerationKinematicsCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcCompositeBodyInertia_TipToBase(
+      const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
+      std::vector<SpatialInertia<T>>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcSpatialAccelerationBias(
+      const FrameBodyPoseCache<T>&, const T*, const PositionKinematicsCache<T>&,
+      const T*, const VelocityKinematicsCache<T>&,
+      std::vector<SpatialAcceleration<T>>*) const final {
     DRAKE_UNREACHABLE();
   }
 };

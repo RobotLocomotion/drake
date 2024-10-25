@@ -27,8 +27,12 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldMobilizer);
   using MobilizerBase = MobilizerImpl<T, 0, 0>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::HMatrix;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  template <typename U>
+  using QVector = typename MobilizerBase::template QVector<U>;
+  template <typename U>
+  using VVector = typename MobilizerBase::template VVector<U>;
+  template <typename U>
+  using HMatrix = typename MobilizerBase::template HMatrix<U>;
 
   // Constructor for a %WeldMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M`.
@@ -54,9 +58,16 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   // Computes the across-mobilizer velocity V_FM which for this mobilizer is
   // always zero since the outboard frame M is fixed to the inboard frame F.
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T*) const {
+  SpatialVelocity<T> calc_V_FM(const T*, const T*) const {
     return SpatialVelocity<T>::Zero();
   }
+
+  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T*) const {
+    return SpatialAcceleration<T>::Zero();
+  }
+
+  // Does nothing since there are no taus.
+  void calc_tau(const T*, const SpatialForce<T>&, T*) const {}
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>&) const final;

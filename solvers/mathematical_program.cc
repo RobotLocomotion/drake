@@ -1177,6 +1177,18 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
 }
 
 Binding<PositiveSemidefiniteConstraint>
+MathematicalProgram::AddPositiveSemidefiniteConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
+  DRAKE_THROW_UNLESS(e.rows() == e.cols());
+  DRAKE_ASSERT(CheckStructuralEquality(e, e.transpose().eval()));
+  const MatrixXDecisionVariable M = NewSymmetricContinuousVariables(e.rows());
+  // Adds the linear equality constraint that M = e.
+  AddLinearEqualityConstraint(e - M, Eigen::MatrixXd::Zero(e.rows(), e.rows()),
+                              true);
+  return AddPositiveSemidefiniteConstraint(M);
+}
+
+Binding<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
     const std::set<int>& minor_indices) {

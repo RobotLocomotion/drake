@@ -122,6 +122,9 @@ PiecewiseQuaternionSlerp<T>::PiecewiseQuaternionSlerp(
 }
 
 template <typename T>
+PiecewiseQuaternionSlerp<T>::~PiecewiseQuaternionSlerp() = default;
+
+template <typename T>
 std::unique_ptr<Trajectory<T>> PiecewiseQuaternionSlerp<T>::Clone() const {
   return std::make_unique<PiecewiseQuaternionSlerp>(*this);
 }

@@ -150,7 +150,7 @@ index e557044f37..5d218b7a9c 100644
        lights->InitTraversal();
        l = lights->GetNextItem();
        this->CurrentLightIndex = 0;
-@@ -464,6 +484,17 @@ void vtkShadowMapBakerPass::Render(const vtkRenderState* s)
+@@ -464,6 +484,18 @@ void vtkShadowMapBakerPass::Render(const vtkRenderState* s)
        {
          if (l->GetSwitch() && this->LightCreatesShadow(l))
          {
@@ -158,7 +158,8 @@ index e557044f37..5d218b7a9c 100644
 +            // Restore the light's original matrix.
 +            vtkMatrix4x4* cachedTransform = cachedLightTransforms.at(l);
 +            if (cachedTransform != nullptr) {
-+              l->GetTransformMatrix()->DeepCopy(cachedTransform);
++              // Restore values without tweaking modified time.
++              vtkMatrix4x4::DeepCopy(*l->GetTransformMatrix()->Element, *cachedTransform->Element);
 +            } else {
 +              // This may be redundant; it is unlikely if the light didn't
 +              // originally have a transform that it would pick one up.
@@ -168,60 +169,18 @@ index e557044f37..5d218b7a9c 100644
            vtkTextureObject* map = (*this->ShadowMaps)[this->CurrentLightIndex];
            if (map == nullptr)
            {
-@@ -558,7 +589,7 @@ bool vtkShadowMapBakerPass::SetShaderParameters(vtkShaderProgram* program, vtkAb
-   vtkCamera* lightCamera = (*this->LightCameras)[this->CurrentLightIndex];
-   double* crange = lightCamera->GetClippingRange();
- 
--  program->SetUniformf("depthC", 11.0);
-+  program->SetUniformf("depthC", ExponentialConstant);
-   program->SetUniformf("nearZ", crange[0]);
-   program->SetUniformf("farZ", crange[1]);
- 
+
+
 diff --git Rendering/OpenGL2/vtkShadowMapBakerPass.h Rendering/OpenGL2/vtkShadowMapBakerPass.h
-index db13f455d8..14528326c7 100644
+index 4bd32a7c1f..c994a5c77c 100644
 --- Rendering/OpenGL2/vtkShadowMapBakerPass.h
 +++ Rendering/OpenGL2/vtkShadowMapBakerPass.h
-@@ -94,6 +94,21 @@ public:
-   vtkGetMacro(Resolution, unsigned int);
-   ///@}
- 
-+  ///@{
-+  /**
-+   * Set/Get the exponential constant for the Exponential Shadow Maps. The
-+   * default value is the value recommended by the authors of the Exponential
-+   * Shadow Map paper: 80. This represents the maximum practical value for
-+   * 32-bit floating point precision in the shadow map. Values that are too
-+   * small will lead to "light leaking" (where shadows get attenuated away from
-+   * the light source). Larger values will cause shadows near the light to
-+   * disappear.
-+   */
-+  vtkSetMacro(ExponentialConstant, float);
-+  vtkGetMacro(ExponentialConstant, float);
-+  ///@}
-+  
-+
-   /**
-    * INTERNAL USE ONLY.
-    * Internally used by vtkShadowMapBakerPass and vtkShadowMapPass.
-@@ -200,6 +215,7 @@ protected:
+@@ -218,7 +218,7 @@ protected:
    vtkRenderPass* CompositeZPass;
- 
+
    unsigned int Resolution;
-+  float ExponentialConstant{80.0f};
- 
+-  float ExponentialConstant{ 11.0f };
++  float ExponentialConstant{ 80.0f };
+
    bool HasShadows;
- 
-diff --git Rendering/OpenGL2/vtkShadowMapPass.cxx Rendering/OpenGL2/vtkShadowMapPass.cxx
-index 1381cf3afa..1f04f3bf23 100644
---- Rendering/OpenGL2/vtkShadowMapPass.cxx
-+++ Rendering/OpenGL2/vtkShadowMapPass.cxx
-@@ -264,7 +264,8 @@ bool vtkShadowMapPass::SetShaderParameters(vtkShaderProgram* program, vtkAbstrac
-   float transform[16];
-   std::ostringstream toString;
- 
--  program->SetUniformf("depthC", 11.0);
-+  // We have to use the same exponential constant that was used when baking.
-+  program->SetUniformf("depthC", this->ShadowMapBakerPass->GetExponentialConstant());
-   for (size_t i = 0; i < numLights; i++)
-   {
-     if (this->ShadowTextureUnits[i] >= 0)
+
