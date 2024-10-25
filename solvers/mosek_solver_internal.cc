@@ -4,6 +4,7 @@
 #include <array>
 #include <atomic>
 #include <limits>
+#include <type_traits>
 
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/never_destroyed.h"
@@ -1518,7 +1519,7 @@ void MosekSolverProgram::UpdateOptions(
       if (rescode != MSK_RES_OK) {
         throw std::runtime_error(fmt::format(
             "MosekSolver(): kPrintToConsole=1 failed with response code {}",
-            rescode));
+            static_cast<std::underlying_type_t<MSKrescodee>>(rescode)));
       }
       *is_printing = true;
     }
@@ -1529,7 +1530,8 @@ void MosekSolverProgram::UpdateOptions(
       if (rescode != MSK_RES_OK) {
         throw std::runtime_error(fmt::format(
             "MosekSolver(): kPrintToFile={} failed with response code {}",
-            common.print_file_name, rescode));
+            common.print_file_name,
+            static_cast<std::underlying_type_t<MSKrescodee>>(rescode)));
       }
       *is_printing = true;
     }
