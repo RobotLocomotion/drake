@@ -1183,10 +1183,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.mutable_deformable_model.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
             py::arg("penetration_allowance") = 0.001,
-            cls_doc.set_penetration_allowance.doc)
+            cls_doc.set_penetration_allowance.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
         .def("get_contact_penalty_method_time_scale",
-            &Class::get_contact_penalty_method_time_scale,
-            cls_doc.get_contact_penalty_method_time_scale.doc)
+            WrapDeprecated(
+                cls_doc.get_contact_penalty_method_time_scale.doc_deprecated,
+                &Class::get_contact_penalty_method_time_scale),
+            cls_doc.get_contact_penalty_method_time_scale.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("set_stiction_tolerance", &Class::set_stiction_tolerance,
             py::arg("v_stiction") = 0.001, cls_doc.set_stiction_tolerance.doc)
         .def(

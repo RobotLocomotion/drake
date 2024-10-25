@@ -46,7 +46,6 @@ void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
   if (plant->is_discrete()) {
     plant->SetUseSampledOutputPorts(config.use_sampled_output_ports);
   }
-  plant->set_penetration_allowance(config.penetration_allowance);
   plant->set_stiction_tolerance(config.stiction_tolerance);
   plant->set_contact_model(
       internal::GetContactModelFromString(config.contact_model));

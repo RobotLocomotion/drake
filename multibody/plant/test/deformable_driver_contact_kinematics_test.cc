@@ -10,6 +10,7 @@
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/framework/diagram_builder.h"
 
+using drake::geometry::DefaultProximityProperties;
 using drake::geometry::GeometryId;
 using drake::geometry::GeometryInstance;
 using drake::geometry::SceneGraph;

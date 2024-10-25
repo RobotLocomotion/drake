@@ -40,6 +40,7 @@ struct MultibodyPlantConfig {
   bool use_sampled_output_ports{true};
 
   /// Configures the MultibodyPlant::set_penetration_allowance().
+  // TODO(amcastro-tri): deprecate.
   double penetration_allowance{0.001};
 
   /// Configures the MultibodyPlant::set_stiction_tolerance().

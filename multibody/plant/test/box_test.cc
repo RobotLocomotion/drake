@@ -175,7 +175,6 @@ class SlidingBoxTest : public ::testing::Test {
     plant.Finalize();  // Done creating the model.
 
     // Set contact parameters.
-    plant.set_penetration_allowance(penetration_allowance_);
     plant.set_stiction_tolerance(stiction_tolerance_);
 
     // And build the Diagram:
@@ -201,7 +200,7 @@ class SlidingBoxTest : public ::testing::Test {
   // (a modified Stribeck model), we simulate for a long enough time to reach
   // a "steady state". Therefore the precision of the results in these tests
   // is dominated for "how well we reached steady state".
-  const double kTolerance{1.0e-12};
+  const double kTolerance{2.0e-12};
 };
 
 TEST_F(SlidingBoxTest, DiscreteModel) {

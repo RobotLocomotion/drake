@@ -1,3 +1,5 @@
+#include <limits>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -9,6 +11,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 
+using drake::geometry::DefaultProximityProperties;
 using drake::geometry::GeometryId;
 using drake::geometry::GeometryInstance;
 using drake::geometry::SceneGraph;
@@ -44,7 +47,9 @@ namespace internal {
 class DeformableDriverContactTest : public ::testing::Test {
  protected:
   static constexpr double kDt = 0.001;
-  static constexpr double kDissipationTimeScale = 0.1;
+  static constexpr double kDissipationTimeScale = 0.2;
+  static constexpr double kPointStiffnessRigid =
+      std::numeric_limits<double>::infinity();
   static constexpr double kHcDampingRigid = 12.3;
   static constexpr double kHcDampingDeformable = 45.6;
 
@@ -72,7 +77,7 @@ class DeformableDriverContactTest : public ::testing::Test {
     /* Register a rigid collision geometry intersecting with the bottom half of
      the deformable octahedrons. */
     geometry::ProximityProperties proximity_prop;
-    geometry::AddContactMaterial(kHcDampingRigid, {},
+    geometry::AddContactMaterial(kHcDampingRigid, kPointStiffnessRigid,
                                  CoulombFriction<double>(1.0, 1.0),
                                  &proximity_prop);
     // TODO(xuchenhan-tri): Modify this when resolution hint is no longer used
@@ -393,8 +398,10 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   EXPECT_GT(num_contact_points, 0);
   EXPECT_EQ(contact_pairs.size(), num_contact_points);
   /* tau for deformable body is set to kDissipationTimeScale and is unset for
-   rigid body (which then assumes the default value, dt). */
-  constexpr double expected_tau = kDissipationTimeScale + kDt;
+   rigid body (which then assumes the default value in
+   DefaultProximityProperties). */
+  const double expected_tau =
+      kDissipationTimeScale + *DefaultProximityProperties{}.relaxation_time;
   /* The H&C damping is set to be d = k₂/(k₁+k₂)⋅d₁ + k₁/(k₁+k₂)⋅d₂. In this
    case, the stiffness of the rigid body defaults to infinity so the damping
    value takes the mathematical limit in that expression, i.e. the damping

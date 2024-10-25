@@ -368,9 +368,6 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
   // (3) Place a disclaimer comment why that field does not need to be copied
   {
     source_id_ = other.source_id_;
-    penalty_method_contact_parameters_ =
-        other.penalty_method_contact_parameters_;
-    penetration_allowance_ = other.penetration_allowance_;
     // Copy over the friction model if it is initialized. Otherwise, a default
     // value will be set in FinalizePlantOnly().
     // Note that stiction_tolerance is the only real data field in
@@ -1403,9 +1400,6 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareOutputPorts();
   physical_models_->DeclareSystemResources();
   if (num_collision_geometries() > 0 &&
-      penalty_method_contact_parameters_.time_scale < 0)
-    EstimatePointContactParameters(penetration_allowance_);
-  if (num_collision_geometries() > 0 &&
       friction_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
   SetUpJointLimitsParameters();
@@ -1510,14 +1504,22 @@ std::pair<T, T> MultibodyPlant<T>::GetPointContactParameters(
   const geometry::ProximityProperties* prop =
       inspector.GetProximityProperties(id);
   DRAKE_DEMAND(prop != nullptr);
-  return std::pair(prop->template GetPropertyOrDefault<T>(
-                       geometry::internal::kMaterialGroup,
-                       geometry::internal::kPointStiffness,
-                       penalty_method_contact_parameters_.geometry_stiffness),
-                   prop->template GetPropertyOrDefault<T>(
-                       geometry::internal::kMaterialGroup,
-                       geometry::internal::kHcDissipation,
-                       penalty_method_contact_parameters_.dissipation));
+  if (!prop->HasProperty(geometry::internal::kMaterialGroup,
+                         geometry::internal::kPointStiffness)) {
+    throw std::logic_error(fmt::format(
+        "Point stiffness missing for geometry: {}. ", inspector.GetName(id)));
+  }
+  if (!prop->HasProperty(geometry::internal::kMaterialGroup,
+                         geometry::internal::kHcDissipation)) {
+    throw std::logic_error(
+        fmt::format("Hunt & Crossley dissipation missing for geometry: {}. ",
+                    inspector.GetName(id)));
+  }
+  return std::pair(
+      prop->template GetProperty<T>(geometry::internal::kMaterialGroup,
+                                    geometry::internal::kPointStiffness),
+      prop->template GetProperty<T>(geometry::internal::kMaterialGroup,
+                                    geometry::internal::kHcDissipation));
 }
 
 template <typename T>
@@ -1655,12 +1657,6 @@ void MultibodyPlant<T>::set_penetration_allowance(
         "set_penetration_allowance(): penetration_allowance must be strictly "
         "positive.");
   }
-
-  penetration_allowance_ = penetration_allowance;
-  // We update the point contact parameters when this method is called
-  // post-finalize.
-  if (this->is_finalized())
-    EstimatePointContactParameters(penetration_allowance);
 }
 
 template <typename T>
@@ -1920,88 +1916,6 @@ std::vector<std::string> MultibodyPlant<T>::GetActuatorNames(
         fmt::format("{}{}", prefix, actuator.name());
   }
   return names;
-}
-
-template <typename T>
-void MultibodyPlant<T>::EstimatePointContactParameters(
-    double penetration_allowance) {
-  // Default to Earth's gravity for this estimation.
-  const UniformGravityFieldElement<T>& gravity = gravity_field();
-  const double g = (!gravity.gravity_vector().isZero())
-                       ? gravity.gravity_vector().norm()
-                       : UniformGravityFieldElement<double>::kDefaultStrength;
-
-  // TODO(amcastro-tri): Improve this heuristics in future PR's for when there
-  // are several flying objects and fixed base robots (E.g.: manipulation
-  // cases.)
-
-  // The heuristic now is very simple. We should update it to:
-  //  - Only scan free bodies for weight.
-  //  - Consider an estimate of maximum velocities (context dependent).
-  // Right now we are being very conservative and use the maximum mass in the
-  // system.
-  double mass = 0.0;
-  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
-    const RigidBody<T>& body = get_body(body_index);
-    mass = std::max(mass, body.default_mass());
-  }
-
-  // For now, we use the model of a critically damped spring mass oscillator
-  // to estimate these parameters: mẍ+cẋ+kx=mg
-  // Notice however that normal forces are computed according to: fₙ=kx(1+dẋ)
-  // which translate to a second order oscillator of the form:
-  // mẍ+(kdx)ẋ+kx=mg
-  // Therefore, for this more complex, non-linear, oscillator, we estimate the
-  // damping constant d using a time scale related to the free oscillation
-  // (omega below) and the requested penetration allowance as a length scale.
-
-  // We first estimate the combined stiffness based on static equilibrium.
-  const double combined_stiffness = mass * g / penetration_allowance;
-  // Frequency associated with the combined_stiffness above.
-  const double omega = sqrt(combined_stiffness / mass);
-
-  // Estimated contact time scale. The relative velocity of objects coming into
-  // contact goes to zero in this time scale.
-  const double time_scale = 1.0 / omega;
-
-  // Damping ratio for a critically damped model. We could allow users to set
-  // this. Right now, critically damp the normal direction.
-  // This corresponds to a non-penetraion constraint in the limit for
-  // contact_penetration_allowance_ going to zero (no bounce off).
-  const double damping_ratio = 1.0;
-  // We form the dissipation (with units of 1/velocity) using dimensional
-  // analysis. Thus we use 1/omega for the time scale and penetration_allowance
-  // for the length scale. We then scale it by the damping ratio.
-  const double dissipation = damping_ratio * time_scale / penetration_allowance;
-
-  // Final parameters used in the penalty method:
-  //
-  // Before #13630 this method estimated an effective "combined" stiffness.
-  // That is, penalty_method_contact_parameters_.geometry_stiffness (previously
-  // called penalty_method_contact_parameters_.stiffness) was the desired
-  // stiffness of the contact pair. Post #13630, the semantics of this variable
-  // changes to "stiffness per contact geometry". Therefore, in order to
-  // maintain backwards compatibility for sims run pre #13630, we include now a
-  // factor of 2 so that when two geometries have the same stiffness, the
-  // combined stiffness reduces to combined_stiffness.
-  //
-  // Stiffness in the penalty method is calculated as a combination of
-  // individual stiffness parameters per geometry. The variable
-  // `combined_stiffness` as calculated here is a combined stiffness, but
-  // `penalty_method_contact_parameters_.geometry_stiffness` stores the
-  // parameter for an individual geometry. Combined stiffness, for geometries
-  // with individual stiffnesses k1 and k2 respectively, is defined as:
-  //   Kc = (k1*k2) / (k1 + k2)
-  // If we have a desired combined stiffness Kd (for two geometries with
-  // default heuristically computed parameters), setting k1 = k2 = 2 * Kd
-  // results in the correct combined stiffness:
-  //   Kc = (2*Kd*2*Kd) / (2*Kd + 2*Kd) = Kd
-  // Therefore we set the `geometry_stiffness` to 2*`combined_stiffness`.
-  penalty_method_contact_parameters_.geometry_stiffness =
-      2 * combined_stiffness;
-  penalty_method_contact_parameters_.dissipation = dissipation;
-  // The time scale can be requested to hint the integrator's time step.
-  penalty_method_contact_parameters_.time_scale = time_scale;
 }
 
 template <typename T>

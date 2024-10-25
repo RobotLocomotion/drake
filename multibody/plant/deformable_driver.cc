@@ -482,7 +482,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const T kB =
           surface.is_B_deformable()
               ? kA
-              : GetPointContactStiffness(id_B, default_rigid_k, inspector);
+              : GetPointContactStiffness(id_B, inspector, default_rigid_k);
       /* Combine stiffnesses k₁ (of geometry A) and k₂ (of geometry B) to get k
        according to the rule: 1/k = 1/k₁ + 1/k₂. */
       const T k = GetCombinedPointContactStiffness(kA, kB);
@@ -490,8 +490,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        contact approximation. See multibody::DiscreteContactApproximation for
        details about these contact models. */
       const T d = GetCombinedHuntCrossleyDissipation(
-          surface.id_A(), surface.id_B(), kA, kB, 0.0 /* Default value */,
-          inspector);
+          surface.id_A(), surface.id_B(), kA, kB, inspector, 0.0);
 
       /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
        contact approximation. See multibody::DiscreteContactApproximation for
@@ -499,8 +498,8 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        constant so that the contact is in near-rigid regime and the compliance
        is only used as stabilization. */
       const T tau = GetCombinedDissipationTimeConstant(
-          id_A, id_B, manager_->plant().time_step(), contact_data_A.name,
-          contact_data_B.name, inspector);
+          id_A, id_B, contact_data_A.name, contact_data_B.name, inspector,
+          manager_->plant().time_step());
       const double mu =
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 

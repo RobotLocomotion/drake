@@ -79,25 +79,42 @@ struct ConstraintActiveStatusMap {
   std::map<MultibodyConstraintId, bool> map;
 };
 
-// This struct contains the parameters to compute forces to enforce
-// no-interpenetration between bodies by a penalty method.
-struct ContactByPenaltyMethodParameters {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactByPenaltyMethodParameters);
-
-  ContactByPenaltyMethodParameters() = default;
-
-  // Penalty method coefficients used to compute contact forces.
-  double geometry_stiffness{0};
-  double dissipation{0};
-  // TODO(xuchenhan-tri): Consider using std::optional instead of an illegal
-  //  value as a flag.
-  // An estimated time scale in which objects come to a relative stop during
-  // contact.
-  double time_scale{-1.0};
-  // Acceleration of gravity in the model. Used to estimate penalty method
-  // constants from a static equilibrium analysis.
-  std::optional<double> gravity;
-};
+// TODO(amcastro-tri): Use defaults from DefaultProximityProperties instead.
+// Remove this struct.
+//
+// Default proximity parameters when none are provided. We estimate the order of
+// mangnitude for stiffness parameters based on analytic formulae for a
+// compliant box and for a sphere with density of water in contact with a rigid
+// plane.
+// When using the hydroelastic model, the amount of penetration x is:
+//   x = ρ⋅g/(2⋅E)L²       for the box and,
+//   x = (ρ⋅g/(2⋅E))½⋅L³⁄₂  for the sphere.
+// where g is the acceleration of gravity, ρ the density of water and L the size
+// (width of the box or diameter of the sphere).
+// When using point contact the amount of penetration is:
+//   x = ρ⋅g/k⋅L³          for the box and,
+//   x = π/6⋅ρ⋅g/k⋅L³      for the sphere.
+//
+// For the default value of k = 10⁶ N/m the amount of penetration (in meters)
+// would be:
+//          |   L = 0.1 m   |   L = 1 m
+//   Box    |      10⁻⁵     |      10⁻²
+//   Sphere |  0.5⋅10⁻⁵     |  0.5⋅10⁻²
+//
+// and for the default value of E = 10⁷ the amount of penetration (in meters)
+// would be:
+//          |   L = 0.1 m   |   L = 1 m
+//   Box    |     5⋅10⁻⁶    |     5⋅10⁻⁴
+//   Sphere |   7.1⋅10⁻⁴    |   2.2⋅10⁻²
+//
+// relaxation_time for the kSap approximation is chosen as a compromise between
+// having enough dissipation to model elastic collissions and the error
+// introduced by the convex approximation in SAP.
+//
+// hunt_crossley_dissipation is chosen based on the fact that the bouce speed in
+// a contact collisions is bounded to 1/hunt_crossley_dissipation. Moreover,
+// hunt_crossley_dissipation has no effect on the gliding artifact of convex
+// approximations, and no trade off to model elastic collisions is required.
 
 // Forward declarations for discrete_update_manager.h.
 template <typename>
@@ -2413,42 +2430,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return *model;
   }
 
-  // TODO(amcastro-tri): per work in #13064, we should reconsider whether to
-  // deprecate/remove this method altogether or at least promote to proper
-  // camel case per GSG.
-  /// Sets the penetration allowance used to estimate the coefficients in the
-  /// penalty method used to impose non-penetration among bodies. Refer to the
-  /// section @ref point_contact_defaults "Point Contact Default Parameters"
-  /// for further details.
-  ///
-  /// @throws std::exception if penetration_allowance is not positive.
+  /// No longer supported. It has no effect on the contact modeling.
+  // TODO(amcastro-tri): deprecate.
   void set_penetration_allowance(
       double penetration_allowance =
           MultibodyPlantConfig{}.penetration_allowance);
 
-  /// Returns a time-scale estimate `tc` based on the requested penetration
-  /// allowance δ set with set_penetration_allowance().
-  /// For the compliant contact model to enforce non-penetration, this time
-  /// scale relates to the time it takes the relative normal velocity between
-  /// two bodies to go to zero. This time scale `tc` is a global estimate of the
-  /// dynamics introduced by the compliant contact model and goes to zero in the
-  /// limit to ideal rigid contact. Since numerical integration methods for
-  /// continuum systems must be able to resolve a system's dynamics, the time
-  /// step used by an integrator must in general be much smaller than the time
-  /// scale `tc`. How much smaller will depend on the details of the problem and
-  /// the convergence characteristics of the integrator and should be tuned
-  /// appropriately.
-  /// Another factor to take into account for setting up the simulation's time
-  /// step is the speed of the objects in your simulation. If `vn` represents a
-  /// reference velocity scale for the normal relative velocity between bodies,
-  /// the new time scale `tn = δ / vn` represents the time it would take for the
-  /// distance between two bodies approaching with relative normal velocity `vn`
-  /// to decrease by the penetration_allowance δ. In this case a user should
-  /// choose a time step for simulation that can resolve the smallest of the two
-  /// time scales `tc` and `tn`.
+  /// No longer supported. It always returns zero.
+  DRAKE_DEPRECATED(
+      "2025-02-01",
+      "This function is no longer supported. It always returns zero.")
   double get_contact_penalty_method_time_scale() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return penalty_method_contact_parameters_.time_scale;
+    return 0.0;
   }
 
   /// @anchor mbp_stribeck_model
@@ -5540,16 +5534,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::set<systems::DependencyTicket>& prerequisites_of_unsampled,
       MaybeModelInstanceIndex model_instance = {});
 
-  // Estimates a global set of point contact parameters given a
-  // `penetration_allowance`. See set_penetration_allowance()` for details.
-  // TODO(amcastro-tri): Once #13064 is resolved, make this a method outside MBP
-  // with signature:
-  // EstimatePointContactParameters(double penetration_allowance,
-  //                                MultibodyPlant<double>* plant)
-  // We will document the heuristics used by this method thoroughly so that we
-  // have a place we can refer users to for details.
-  void EstimatePointContactParameters(double penetration_allowance);
-
   // Helper method to assemble actuation input vector from the appropriate
   // ports. The actuation value for a particular actuator can be found at offset
   // JointActuator::input_start() in the returned vector (see
@@ -5914,12 +5898,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // system. It is made optional for plants that do not register geometry
   // (dynamics only).
   std::optional<geometry::SourceId> source_id_{std::nullopt};
-
-  internal::ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
-
-  // Penetration allowance used to estimate ContactByPenaltyMethodParameters.
-  // See set_penetration_allowance() for details.
-  double penetration_allowance_{MultibodyPlantConfig{}.penetration_allowance};
 
   // Stribeck model of friction.
   class StribeckModel {

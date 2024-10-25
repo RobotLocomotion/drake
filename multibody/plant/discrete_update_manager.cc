@@ -136,18 +136,6 @@ systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
 }
 
 template <typename T>
-double DiscreteUpdateManager<T>::default_contact_stiffness() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::default_contact_stiffness(plant());
-}
-
-template <typename T>
-double DiscreteUpdateManager<T>::default_contact_dissipation() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::default_contact_dissipation(plant());
-}
-
-template <typename T>
 const std::unordered_map<geometry::GeometryId, BodyIndex>&
 DiscreteUpdateManager<T>::geometry_id_to_body_index() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
@@ -661,10 +649,8 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     const bool treeA_has_dofs = topology.tree_has_dofs(treeA_index);
     const bool treeB_has_dofs = topology.tree_has_dofs(treeB_index);
 
-    const T kA = GetPointContactStiffness(
-        pair.id_A, default_contact_stiffness(), inspector);
-    const T kB = GetPointContactStiffness(
-        pair.id_B, default_contact_stiffness(), inspector);
+    const T kA = GetPointContactStiffness(pair.id_A, inspector);
+    const T kB = GetPointContactStiffness(pair.id_B, inspector);
 
     // We compute the position of the point contact based on Hertz's theory
     // for contact between two elastic bodies.
@@ -726,20 +712,18 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     }
 
     // Contact stiffness and damping
-    const T k = GetCombinedPointContactStiffness(
-        pair.id_A, pair.id_B, default_contact_stiffness(), inspector);
+    const T k =
+        GetCombinedPointContactStiffness(pair.id_A, pair.id_B, inspector);
     // Hunt & Crossley dissipation. Ignored, for instance, by Sap. See
     // multibody::DiscreteContactApproximation for details about these contact
     // models.
-    const T d = GetCombinedHuntCrossleyDissipation(
-        pair.id_A, pair.id_B, kA, kB, default_contact_dissipation(), inspector);
+    const T d = GetCombinedHuntCrossleyDissipation(pair.id_A, pair.id_B, kA, kB,
+                                                   inspector);
     // Dissipation time scale. Ignored, for instance, by Similar and Lagged
     // models. See multibody::DiscreteContactApproximation for details about
     // these contact models.
-    const double default_dissipation_time_constant = 0.1;
     const T tau = GetCombinedDissipationTimeConstant(
-        pair.id_A, pair.id_B, default_dissipation_time_constant, body_A.name(),
-        body_B.name(), inspector);
+        pair.id_A, pair.id_B, body_A.name(), body_B.name(), inspector);
     const T mu =
         GetCombinedDynamicCoulombFriction(pair.id_A, pair.id_B, inspector);
 
@@ -835,27 +819,20 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
     const bool treeA_has_dofs = topology.tree_has_dofs(tree_A_index);
     const bool treeB_has_dofs = topology.tree_has_dofs(tree_B_index);
 
-    // TODO(amcastro-tri): Consider making the modulus required, instead of
-    // a default infinite value.
-    const T hydro_modulus_M = GetHydroelasticModulus(
-        s.id_M(), std::numeric_limits<double>::infinity(), inspector);
-    const T hydro_modulus_N = GetHydroelasticModulus(
-        s.id_N(), std::numeric_limits<double>::infinity(), inspector);
+    const T hydro_modulus_M = GetHydroelasticModulus(s.id_M(), inspector);
+    const T hydro_modulus_N = GetHydroelasticModulus(s.id_N(), inspector);
     // Hunt & Crossley dissipation. Used by the Tamsi, Lagged, and Similar
     // contact models. Ignored by Sap. See
     // multibody::DiscreteContactApproximation for details about these contact
     // models.
     const T d = GetCombinedHuntCrossleyDissipation(
-        s.id_M(), s.id_N(), hydro_modulus_M, hydro_modulus_N,
-        0.0 /* Default value */, inspector);
+        s.id_M(), s.id_N(), hydro_modulus_M, hydro_modulus_N, inspector);
     // Dissipation time scale. Used by Sap contact model. Ignored by Tamsi,
     // Lagged, and Similar contact model. See
     // multibody::DiscreteContactApproximation for details about these contact
     // models.
-    const double default_dissipation_time_constant = 0.1;
     const T tau = GetCombinedDissipationTimeConstant(
-        s.id_M(), s.id_N(), default_dissipation_time_constant, body_A.name(),
-        body_B.name(), inspector);
+        s.id_M(), s.id_N(), body_A.name(), body_B.name(), inspector);
     // Combine friction coefficients.
     const T mu =
         GetCombinedDynamicCoulombFriction(s.id_M(), s.id_N(), inspector);

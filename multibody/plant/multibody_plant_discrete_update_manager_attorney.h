@@ -97,14 +97,6 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.collision_geometries_;
   }
 
-  static double default_contact_stiffness(const MultibodyPlant<T>& plant) {
-    return plant.penalty_method_contact_parameters_.geometry_stiffness;
-  }
-
-  static double default_contact_dissipation(const MultibodyPlant<T>& plant) {
-    return plant.penalty_method_contact_parameters_.dissipation;
-  }
-
   static const std::unordered_map<geometry::GeometryId, BodyIndex>&
   geometry_id_to_body_index(const MultibodyPlant<T>& plant) {
     return plant.geometry_id_to_body_index_;

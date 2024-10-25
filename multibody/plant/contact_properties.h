@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
@@ -14,12 +15,16 @@ namespace internal {
 /* Returns the point contact stiffness stored in group
  geometry::internal::kMaterialGroup with property
  geometry::internal::kPointStiffness for the specified geometry.
- If the stiffness property is absent, it returns the supplied default value.
+ If the stiffness property is absent it either:
+   - returns the supplied default value or,
+   - throws an exception if no default value is provided.
+
  @pre id is a valid GeometryId in the inspector that has proximity properties.
  @pre default_value >= 0. */
 template <typename T>
-T GetPointContactStiffness(geometry::GeometryId id, double default_value,
-                           const geometry::SceneGraphInspector<T>& inspector);
+T GetPointContactStiffness(geometry::GeometryId id,
+                           const geometry::SceneGraphInspector<T>& inspector,
+                           std::optional<double> default_value = std::nullopt);
 
 /* Returns the hydroelastic modulus stored in group
  geometry::internal::kHydroGroup with property geometry::internal::kElastic for
@@ -29,24 +34,31 @@ T GetPointContactStiffness(geometry::GeometryId id, double default_value,
  geometry::internal::HydroelasticType::kRigid for the property
  geometry::internal::kComplianceType.
 
- If not defined rigid and if the hydroelastic modulus is absent, it returns the
- supplied default value.
+ If the hydroelastic modulus is absent it either:
+   - returns the supplied default value or,
+   - throws an exception if no default value is provided.
 
  @pre id is a valid GeometryId in the inspector that has proximity properties.
  @pre default_value >= 0. */
 template <typename T>
-T GetHydroelasticModulus(geometry::GeometryId id, double default_value,
-                         const geometry::SceneGraphInspector<T>& inspector);
+T GetHydroelasticModulus(geometry::GeometryId id,
+                         const geometry::SceneGraphInspector<T>& inspector,
+                         std::optional<double> default_value = std::nullopt);
 
 /* Returns the Hunt & Crossley dissipation parameter stored in group
  geometry::internal::kMaterialGroup with property
  geometry::internal::kHcDissipation for the specified geometry.
  If the dissipation property is absent, it returns the supplied default value.
+ If the dissipation property is absent it either:
+   - returns the supplied default value or,
+   - throws an exception if no default value is provided.
+
  @pre id is a valid GeometryId in the inspector that has proximity properties.
  @pre default_value >= 0. */
 template <typename T>
-T GetHuntCrossleyDissipation(geometry::GeometryId id, double default_value,
-                             const geometry::SceneGraphInspector<T>& inspector);
+T GetHuntCrossleyDissipation(
+    geometry::GeometryId id, const geometry::SceneGraphInspector<T>& inspector,
+    std::optional<double> default_value = std::nullopt);
 
 /* Returns the combined Hunt & Crossley dissipation of geometries A and B.
  Denoting with k₁ and k₂ the `stiffness_A` and `stiffness_B` respectively, and
@@ -61,6 +73,10 @@ T GetHuntCrossleyDissipation(geometry::GeometryId id, double default_value,
  above, i.e., it is the dissipation of the non-rigid geometry.
  If both values of stiffness are zero, zero dissipation is returned.
 
+ If a geometry has no specified dissipation this method either:
+   - returns the provided default_value or,
+   - throws an exception if default_value is not specified.
+
  @pre stiffness_A >= 0. It can have the value infinity, indicating a rigid
  geometry A.
  @pre stiffness_B >= 0. It can have the value infinity, indicating a rigid
@@ -71,20 +87,25 @@ T GetHuntCrossleyDissipation(geometry::GeometryId id, double default_value,
 template <typename T>
 T GetCombinedHuntCrossleyDissipation(
     geometry::GeometryId id_A, geometry::GeometryId id_B, const T& stiffness_A,
-    const T& stiffness_B, double default_dissipation,
-    const geometry::SceneGraphInspector<T>& inspector);
+    const T& stiffness_B, const geometry::SceneGraphInspector<T>& inspector,
+    std::optional<double> default_value = std::nullopt);
 
 /* Returns the dissipation time constant stored in group
  geometry::internal::kMaterialGroup with property
  "dissipation_time_constant". If the property is absent, it returns the
  supplied default value.
+ If the dissipation time constant is absent it either:
+   - returns the supplied default value or,
+   - throws an exception if no default value is provided.
+
  @throws std::exception if the dissipation time constant is negative.
  @pre id is a valid GeometryId in the inspector that has proximity properties.
  @pre default_value >= 0. */
 template <typename T>
-T GetDissipationTimeConstant(geometry::GeometryId id, double default_value,
-                             const geometry::SceneGraphInspector<T>& inspector,
-                             std::string_view body_name);
+T GetDissipationTimeConstant(
+    geometry::GeometryId id, const geometry::SceneGraphInspector<T>& inspector,
+    std::string_view body_name,
+    std::optional<double> default_value = std::nullopt);
 
 /* Returns the Coulomb's law coefficient of friction for the geometry with the
  given id stored by SceneGraph.
@@ -108,27 +129,36 @@ T GetCombinedPointContactStiffness(const T& k1, const T& k2);
    k = k₁⋅k₂/(k₁+k₂)
  In other words, the combined compliance (the inverse of stiffness) is the
  sum of the individual compliances. In particular, returns k₁ if k₂ is infinite
- and returns k₂ if k₁ is infinite. k₁ and k₂ are set to the given default values
- if they are not specified in SceneGraph.
+ and returns k₂ if k₁ is infinite.
+ If a geometry has no specified stiffness this method either:
+   - returns the provided default_value or,
+   - throws an exception if default_value is not specified.
+
  @pre id_A and id_B are valid GeometryIds in the inspector that have proximity
  properties. k₁ and k₂ are not both infinite.
  @pre default_value >= 0. */
 template <typename T>
 T GetCombinedPointContactStiffness(
-    geometry::GeometryId id_A, geometry::GeometryId id_B, double default_value,
-    const geometry::SceneGraphInspector<T>& inspector);
+    geometry::GeometryId id_A, geometry::GeometryId id_B,
+    const geometry::SceneGraphInspector<T>& inspector,
+    std::optional<double> default_value = std::nullopt);
 
 /* Returns the combined dissipation time constant τ₁ (of geometry A) and τ₂ (of
  geometry B) according to the rule: τ = τ₁ + τ₂. τ₁ and τ₂ are set to the given
  default value if they are not specified in SceneGraph.
  @pre id_A and id_B are valid GeometryIds in the inspector that have proximity
  properties.
+ If the dissipation time constant is absent it either:
+   - returns the supplied default value or,
+   - throws an exception if no default value is provided.
+
  @pre default_value >= 0. */
 template <typename T>
 T GetCombinedDissipationTimeConstant(
-    geometry::GeometryId id_A, geometry::GeometryId id_B, double default_value,
+    geometry::GeometryId id_A, geometry::GeometryId id_B,
     std::string_view body_A_name, std::string_view body_B_name,
-    const geometry::SceneGraphInspector<T>& inspector);
+    const geometry::SceneGraphInspector<T>& inspector,
+    std::optional<double> default_value = std::nullopt);
 
 /* Returns the dynamic Coulomb's law coefficients of friction characterizing the
  interaction by friction of the given geometry pair A and B.

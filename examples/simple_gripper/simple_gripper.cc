@@ -242,22 +242,6 @@ int do_main() {
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_v_stiction_tolerance);
 
-  // If the user specifies a time step, we use that, otherwise estimate a
-  // maximum time step based on the compliance of the contact model.
-  // The maximum time step is estimated to resolve this time scale with at
-  // least 30 time steps. Usually this is a good starting point for fixed step
-  // size integrators to be stable.
-  const double max_time_step =
-      FLAGS_simulator_max_time_step > 0
-          ? FLAGS_simulator_max_time_step
-          : plant.get_contact_penalty_method_time_scale() / 30;
-
-  // Print maximum time step and the time scale introduced by the compliance in
-  // the contact model as a reference to the user.
-  fmt::print("Maximum time step = {:10.6f} s\n", max_time_step);
-  fmt::print("Compliance time scale = {:10.6f} s\n",
-             plant.get_contact_penalty_method_time_scale());
-
   // from simple_griper.sdf, there are two actuators. One actuator on the
   // prismatic joint named "finger_sliding_joint" to actuate the left finger and
   // a second actuator on the prismatic joint named "translate_joint" to impose

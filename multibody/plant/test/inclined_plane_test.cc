@@ -4,9 +4,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/scene_graph_config.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/analysis/radau_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -49,9 +51,9 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
   double time_step_{0};  // in seconds.
 
   // Contact parameters. Results converge to the analytical solution as the
-  // penetration allowance and the stiction tolerance go to zero.
-  double penetration_allowance_{1.0e-7};  // (meters)
-  double stiction_tolerance_{1.0e-5};     // (m/s)
+  // contact stiffness goes to infinity and the stiction tolerance go to zero.
+  double point_contact_stiffness_{1.0e7};  // (N/m)
+  double stiction_tolerance_{1.0e-5};      // (m/s)
 
   // Relative tolerance (unitless) used to verify the numerically computed
   // results against the analytical solution. This is about the tightest
@@ -87,16 +89,17 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const CoulombFriction<double> coefficient_friction_sphere(muS_sphere,
                                                             muK_sphere);
 
-  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
-      &builder, std::make_unique<MultibodyPlant<double>>(time_step_));
+  MultibodyPlantConfig plant_config{.time_step = time_step_};
+  geometry::SceneGraphConfig scene_graph_config{
+      .default_proximity_properties = {
+          .hunt_crossley_dissipation = 30.0,
+          .point_stiffness = point_contact_stiffness_}};
+  MultibodyPlant<double>& plant =
+      AddMultibodyPlant(plant_config, scene_graph_config, &builder);
   benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
       gravity, inclined_plane_angle, std::nullopt,
       coefficient_friction_inclined_plane, coefficient_friction_sphere, mass,
       radius, &plant);
-
-  // We should be able to set the penetration allowance pre- and post-finalize.
-  // For this test we decide to set it pre-finalize.
-  plant.set_penetration_allowance(penetration_allowance_);  // (in meters)
 
   plant.Finalize();
   plant.set_stiction_tolerance(stiction_tolerance_);

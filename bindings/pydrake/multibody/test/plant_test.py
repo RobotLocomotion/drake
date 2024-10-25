@@ -3060,8 +3060,10 @@ class TestPlant(unittest.TestCase):
         plant.Finalize()
         plant.set_penetration_allowance(penetration_allowance=0.0001)
         plant.set_stiction_tolerance(v_stiction=0.001)
-        self.assertIsInstance(
-            plant.get_contact_penalty_method_time_scale(), float)
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertIsInstance(
+                plant.get_contact_penalty_method_time_scale(), float)
+            self.assertIn("2024-09-01", str(w[0].message))
         contact_results_to_lcm = ContactResultsToLcmSystem(plant=plant)
         context = contact_results_to_lcm.CreateDefaultContext()
         contact_results_to_lcm.get_input_port(0).FixValue(

@@ -114,11 +114,11 @@ struct DefaultProximityProperties {
   /** Controls energy damping from contact, for contact models *other than*
   multibody::DiscreteContactApproximation::kSap. Units are seconds per
   meter. */
-  std::optional<double> hunt_crossley_dissipation;
+  std::optional<double> hunt_crossley_dissipation{20.0};
 
   /** Controls energy damping from contact, *only for*
   multibody::DiscreteContactApproximation::kSap. Units are seconds. */
-  std::optional<double> relaxation_time;
+  std::optional<double> relaxation_time{0.1};
   /// @}
 
   /** @name Point Contact Properties
@@ -129,7 +129,10 @@ struct DefaultProximityProperties {
   geometry::AddContactMaterial. */
   /// @{
   /** A measure of material stiffness, in units of Newtons per meter. */
-  std::optional<double> point_stiffness;
+  // TODO(amcastro-tri): This also affects the default for rigid geometries
+  // interacting with deformables. We might consider making this infinity for
+  // rigid bodies interacting with deformables.
+  std::optional<double> point_stiffness{1e6};
   /// @}
 
   /** Throws if the values are inconsistent. */
