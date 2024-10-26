@@ -56,8 +56,12 @@ GTEST_TEST(IntersectionTest, BasicTest) {
     EXPECT_GE(new_constraints.size(), 2);
   }
 
+  // Cross-check that our BUILD file allows parallelism.
+  DRAKE_DEMAND(Parallelism::Max().num_threads() > 1);
+
   // Test IsBounded.
-  EXPECT_TRUE(S.IsBounded());
+  EXPECT_TRUE(S.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(S.IsBounded(Parallelism::Max()));
 
   // Test IsEmpty
   EXPECT_FALSE(S.IsEmpty());
@@ -95,7 +99,8 @@ GTEST_TEST(IntersectionTest, DefaultCtor) {
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_TRUE(dut.IntersectsWith(dut));
-  EXPECT_TRUE(dut.IsBounded());
+  EXPECT_TRUE(dut.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(dut.IsBounded(Parallelism::Max()));
   EXPECT_FALSE(dut.IsEmpty());
   EXPECT_TRUE(dut.MaybeGetPoint().has_value());
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
@@ -141,10 +146,12 @@ GTEST_TEST(IntersectionTest, BoundedTest) {
 
   EXPECT_FALSE(H1.IsBounded());
   EXPECT_FALSE(H2.IsBounded());
-  EXPECT_TRUE(S1.IsBounded());
+  EXPECT_TRUE(S1.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(S1.IsBounded(Parallelism::Max()));
 
   Intersection S2(H1, H1);
-  EXPECT_FALSE(S2.IsBounded());
+  EXPECT_FALSE(S2.IsBounded(Parallelism::None()));
+  EXPECT_FALSE(S2.IsBounded(Parallelism::Max()));
 }
 
 GTEST_TEST(IntersectionTest, CloneTest) {

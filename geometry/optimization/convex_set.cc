@@ -19,14 +19,14 @@ using solvers::Binding;
 using solvers::Constraint;
 using solvers::LinearCost;
 using solvers::MathematicalProgram;
+using solvers::MathematicalProgramResult;
 using solvers::SolutionResult;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 
 namespace {
 
-bool SolverReturnedWithoutError(
-    const solvers::MathematicalProgramResult& result) {
+bool SolverReturnedWithoutError(const MathematicalProgramResult& result) {
   const SolutionResult status = result.get_solution_result();
   return status == SolutionResult::kSolutionFound ||
          status == SolutionResult::kInfeasibleConstraints ||
@@ -50,15 +50,15 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   if (ambient_dimension() == 0) {
     return !other.IsEmpty() && !this->IsEmpty();
   }
-  solvers::MathematicalProgram prog{};
+  MathematicalProgram prog{};
   const auto& x = prog.NewContinuousVariables(this->ambient_dimension(), "x");
   this->AddPointInSetConstraints(&prog, x);
   other.AddPointInSetConstraints(&prog, x);
-  solvers::MathematicalProgramResult result = solvers::Solve(prog);
+  MathematicalProgramResult result = solvers::Solve(prog);
   return result.is_success();
 }
 
-bool ConvexSet::GenericDoIsBounded() const {
+bool ConvexSet::GenericDoIsBounded(Parallelism parallelism) const {
   // The empty set is bounded. We check it first, to ensure that the program
   // is feasible, so SolutionResult::kInfeasibleOrUnbounded or
   // SolutionResult::kDualInfeasible indicates unbounded, as solvers may not
@@ -66,41 +66,64 @@ bool ConvexSet::GenericDoIsBounded() const {
   if (IsEmpty()) {
     return true;
   }
+
+  // At the end of each batch, we check to see if we've identified an unbounded
+  // direction. If so, we immediately return. Thus, the fastest behavior is to
+  // solve one problem on each thread, check if any are unbounded, and then
+  // iterate until all dimensions have been checked. We concurrently solve 2 *
+  // batch_size programs, since batch_size refers to the dimension, and there
+  // are two programs per dimension.
+  const int batch_size = std::max(1, parallelism.num_threads() / 2);
+
   // Let a variable x be contained in the convex set. Iteratively try to
   // minimize or maximize x[i] for each dimension i. If any solves are
   // unbounded, the set is not bounded.
-  MathematicalProgram prog;
-  VectorXDecisionVariable x =
-      prog.NewContinuousVariables(ambient_dimension(), "x");
-  AddPointInSetConstraints(&prog, x);
-  Binding<LinearCost> objective =
-      prog.AddLinearCost(VectorXd::Zero(ambient_dimension()), x);
+  int num_batches = 1 + (ambient_dimension() / batch_size);
+  for (int batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    int batch_start = batch_idx * batch_size;
+    int batch_end = std::min((batch_idx + 1) * batch_size, ambient_dimension());
+    int this_batch_size = batch_end - batch_start;
 
-  VectorXd objective_vector(ambient_dimension());
-  for (int i = 0; i < ambient_dimension(); ++i) {
-    objective_vector.setZero();
-    objective_vector[i] = 1;
-    objective.evaluator()->UpdateCoefficients(objective_vector);
-    const auto result = solvers::Solve(prog);
-    if (result.get_solution_result() == solvers::SolutionResult::kUnbounded ||
-        result.get_solution_result() ==
-            solvers::SolutionResult::kInfeasibleOrUnbounded ||
-        result.get_solution_result() ==
-            solvers::SolutionResult::kDualInfeasible) {
-      return false;
+    std::vector<MathematicalProgram> progs(2 * this_batch_size);
+    for (int i = 0; i < this_batch_size; ++i) {
+      int dim = batch_start + i;
+      // progs[i] will try to minimize x[dim]. progs[i+this_batch_size] will try
+      // to maximize x[dim].
+      VectorXDecisionVariable x;
+      VectorXd objective_vector = VectorXd::Zero(ambient_dimension());
+
+      x = progs[i].NewContinuousVariables(ambient_dimension(), "x");
+      AddPointInSetConstraints(&(progs[i]), x);
+      objective_vector[dim] = 1;
+      progs[i].AddLinearCost(objective_vector, x);
+
+      x = progs[i + this_batch_size].NewContinuousVariables(ambient_dimension(),
+                                                            "x");
+      AddPointInSetConstraints(&(progs[i + this_batch_size]), x);
+      objective_vector[dim] = -1;
+      progs[i + this_batch_size].AddLinearCost(objective_vector, x);
     }
 
-    objective_vector[i] = -1;
-    objective.evaluator()->UpdateCoefficients(objective_vector);
-    const auto result2 = solvers::Solve(prog);
-    if (result2.get_solution_result() == solvers::SolutionResult::kUnbounded ||
-        result2.get_solution_result() ==
-            solvers::SolutionResult::kInfeasibleOrUnbounded ||
-        result2.get_solution_result() ==
-            solvers::SolutionResult::kDualInfeasible) {
-      return false;
+    std::vector<const MathematicalProgram*> prog_ptrs(progs.size());
+    for (int i = 0; i < ssize(progs); ++i) {
+      prog_ptrs[i] = &(progs[i]);
+    }
+
+    // All programs are the same size, so we use static scheduling.
+    std::vector<MathematicalProgramResult> results =
+        solvers::SolveInParallel(prog_ptrs, nullptr, nullptr, std::nullopt,
+                                 parallelism, false /* use_dynamic_schedule */);
+    for (const auto& result : results) {
+      if (result.get_solution_result() == solvers::SolutionResult::kUnbounded ||
+          result.get_solution_result() ==
+              solvers::SolutionResult::kInfeasibleOrUnbounded ||
+          result.get_solution_result() ==
+              solvers::SolutionResult::kDualInfeasible) {
+        return false;
+      }
     }
   }
+  // All optimization problems were bounded, so we return true.
   return true;
 }
 
@@ -234,7 +257,7 @@ bool ConvexSet::DoIsEmpty() const {
     // required, to ensure AddPointInSetConstraints is not called for a zero
     // dimensional set -- this would throw an error.
   }
-  solvers::MathematicalProgram prog;
+  MathematicalProgram prog;
   auto point = prog.NewContinuousVariables(ambient_dimension());
   AddPointInSetConstraints(&prog, point);
   auto result = solvers::Solve(prog);
@@ -260,7 +283,7 @@ std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetPoint() const {
 
 std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetFeasiblePoint() const {
   DRAKE_DEMAND(ambient_dimension() > 0);
-  solvers::MathematicalProgram prog;
+  MathematicalProgram prog;
   auto point = prog.NewContinuousVariables(ambient_dimension());
   AddPointInSetConstraints(&prog, point);
   auto result = solvers::Solve(prog);
@@ -300,7 +323,7 @@ bool ConvexSet::GenericDoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
 std::pair<VectorX<symbolic::Variable>,
           std::vector<solvers::Binding<solvers::Constraint>>>
 ConvexSet::AddPointInSetConstraints(
-    solvers::MathematicalProgram* prog,
+    MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
   DRAKE_THROW_UNLESS(vars.size() == ambient_dimension());
   DRAKE_THROW_UNLESS(ambient_dimension() > 0);
@@ -309,7 +332,7 @@ ConvexSet::AddPointInSetConstraints(
 
 std::vector<solvers::Binding<solvers::Constraint>>
 ConvexSet::AddPointInNonnegativeScalingConstraints(
-    solvers::MathematicalProgram* prog,
+    MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
     const symbolic::Variable& t) const {
   DRAKE_THROW_UNLESS(ambient_dimension() > 0);
@@ -323,8 +346,7 @@ ConvexSet::AddPointInNonnegativeScalingConstraints(
 
 std::vector<solvers::Binding<solvers::Constraint>>
 ConvexSet::AddPointInNonnegativeScalingConstraints(
-    solvers::MathematicalProgram* prog,
-    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    MathematicalProgram* prog, const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const Eigen::VectorXd>& c, double d,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
@@ -343,7 +365,7 @@ ConvexSet::AddPointInNonnegativeScalingConstraints(
 
 std::optional<symbolic::Variable>
 ConvexSet::HandleZeroAmbientDimensionConstraints(
-    solvers::MathematicalProgram* prog, const ConvexSet& set,
+    MathematicalProgram* prog, const ConvexSet& set,
     std::vector<solvers::Binding<solvers::Constraint>>* constraints) const {
   if (set.IsEmpty()) {
     drake::log()->warn(

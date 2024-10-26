@@ -8,6 +8,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
@@ -90,10 +91,14 @@ class ConvexSet {
 
   /** Returns true iff the set is bounded, e.g., there exists an element-wise
   finite lower and upper bound for the set.  Note: for some derived classes,
-  this check is trivial, but for others it can require solving an (typically
-  small) optimization problem. Check the derived class documentation for any
-  notes. */
-  bool IsBounded() const {
+  this check is trivial, but for others it can require solving a number of
+  (typically small) optimization problems. Check the derived class documentation
+  for any notes.
+
+  @param parallelism specifies the number of cores to use when solving
+  mathematical programs to check boundedness, if the derived class does not
+  provide a more efficient boundedness check. */
+  bool IsBounded(Parallelism parallelism = Parallelism::None()) const {
     if (ambient_dimension() == 0) {
       return true;
     }
@@ -101,7 +106,7 @@ class ConvexSet {
     if (shortcut_result.has_value()) {
       return shortcut_result.value();
     }
-    return GenericDoIsBounded();
+    return GenericDoIsBounded(parallelism);
   }
 
   /** Returns true iff the set is empty. Note: for some derived classes, this
@@ -472,7 +477,7 @@ class ConvexSet {
  private:
   /** Generic implementation for IsBounded() -- applicable for all convex sets.
   @pre ambient_dimension() >= 0 */
-  bool GenericDoIsBounded() const;
+  bool GenericDoIsBounded(Parallelism parallelism) const;
 
   /** Generic implementation for PointInSet() -- applicable for all convex sets.
   @pre ambient_dimension() >= 0 */
