@@ -57,7 +57,7 @@ GTEST_TEST(IntersectionTest, BasicTest) {
   }
 
   // Test IsBounded.
-  EXPECT_TRUE(S.IsBounded());
+  EXPECT_TRUE(S.IsBounded(Parallelism::Max()));
 
   // Test IsEmpty
   EXPECT_FALSE(S.IsEmpty());
@@ -95,7 +95,7 @@ GTEST_TEST(IntersectionTest, DefaultCtor) {
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_TRUE(dut.IntersectsWith(dut));
-  EXPECT_TRUE(dut.IsBounded());
+  EXPECT_TRUE(dut.IsBounded(Parallelism::Max()));
   EXPECT_FALSE(dut.IsEmpty());
   EXPECT_TRUE(dut.MaybeGetPoint().has_value());
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
@@ -139,12 +139,12 @@ GTEST_TEST(IntersectionTest, BoundedTest) {
   HPolyhedron H2 = HPolyhedron(-Matrix2d::Identity(), Vector2d{1, 1});
   Intersection S1(H1, H2);
 
-  EXPECT_FALSE(H1.IsBounded());
-  EXPECT_FALSE(H2.IsBounded());
-  EXPECT_TRUE(S1.IsBounded());
+  EXPECT_FALSE(H1.IsBounded(Parallelism::Max()));
+  EXPECT_FALSE(H2.IsBounded(Parallelism::Max()));
+  EXPECT_TRUE(S1.IsBounded(Parallelism::Max()));
 
   Intersection S2(H1, H1);
-  EXPECT_FALSE(S2.IsBounded());
+  EXPECT_FALSE(S2.IsBounded(Parallelism::Max()));
 }
 
 GTEST_TEST(IntersectionTest, CloneTest) {
