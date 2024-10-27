@@ -10,6 +10,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
 )
+load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -196,7 +197,7 @@ drake_cc_binary(
 
 # N.B. All sh_tests are excluded from sanitizer builds by default; these death
 # tests are therefore skipped under those configurations.
-sh_test(
+drake_sh_test(
     name = "limit_malloc_death_test",
     srcs = [":limit_malloc_test"],
     args = select({

@@ -57,6 +57,16 @@ def _bump_cpu_tag(kwargs, *, new_size):
     kwargs["tags"] = tags
     return kwargs
 
+def incorporate_display(kwargs, *, display):
+    if display not in (True, False):
+        fail("The 'display = ...' attribute should be a boolean.")
+    if display:
+        kwargs = amend(kwargs, "env_inherit", append = [
+            "DISPLAY",
+            "XAUTHORITY",
+        ])
+    return kwargs
+
 def incorporate_num_threads(kwargs, *, num_threads):
     """Incorporates multi-threading directives (e.g., for OpenMP) into
     well-known Bazel args (i.e., tags=, env=).

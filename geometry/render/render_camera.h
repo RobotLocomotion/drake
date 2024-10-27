@@ -153,7 +153,8 @@ class ColorRenderCamera {
   /** This camera's core render properties.  */
   const RenderCameraCore& core() const { return core_; }
 
-  /** If true, requests that the RenderEngine display the rendered image.  */
+  /** If true, requests that the RenderEngine display the rendered image.
+  Not all render engines honor this flag. */
   bool show_window() const { return show_window_; }
 
  private:

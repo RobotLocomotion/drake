@@ -20,6 +20,10 @@ namespace geometry {
  <a href="https://github.com/RobotLocomotion/drake/issues/20144">#20144</a>
  for further discussion.
 
+ @note On Ubuntu, render::ColorRenderCamera::show_window only shows a window
+ when RenderEngineVtkParams::backend is set to "GLX"; the default backend value
+ of "EGL" cannot show a window.
+
  @anchor render_engine_vtk_properties
  <h2>Geometry perception properties</h2>
 

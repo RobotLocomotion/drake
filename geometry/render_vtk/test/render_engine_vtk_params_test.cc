@@ -96,12 +96,12 @@ GTEST_TEST(RenderEngineVtkParams, Backend) {
   dut.backend = "";
   EXPECT_EQ(
       ParseRenderEngineVtkBackend(dut),
-      kApple ? RenderEngineVtkBackend::kCocoa : RenderEngineVtkBackend::kGlx);
+      kApple ? RenderEngineVtkBackend::kCocoa : RenderEngineVtkBackend::kEgl);
 
   dut.backend = "Cocoa";
   EXPECT_EQ(
       ParseRenderEngineVtkBackend(dut),
-      kApple ? RenderEngineVtkBackend::kCocoa : RenderEngineVtkBackend::kGlx);
+      kApple ? RenderEngineVtkBackend::kCocoa : RenderEngineVtkBackend::kEgl);
 
   dut.backend = "EGL";
   EXPECT_EQ(
