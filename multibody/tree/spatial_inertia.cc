@@ -356,6 +356,11 @@ std::string SpatialInertia<T>::CriticizeNotPhysicallyValid() const {
   if (IsPhysicallyValid()) {
     return {};
   }
+  return MakeNotPhysicallyValidErrorMessage();
+}
+
+template <typename T>
+std::string SpatialInertia<T>::MakeNotPhysicallyValidErrorMessage() const {
   std::string error_message =
       fmt::format("Spatial inertia fails SpatialInertia::IsPhysicallyValid().");
   const T& mass = get_mass();
@@ -371,8 +376,7 @@ std::string SpatialInertia<T>::CriticizeNotPhysicallyValid() const {
 
 template <typename T>
 void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
-  DRAKE_ASSERT(!IsPhysicallyValid());
-  throw std::runtime_error(CriticizeNotPhysicallyValid());
+  throw std::runtime_error(MakeNotPhysicallyValidErrorMessage());
 }
 
 template <typename T>
