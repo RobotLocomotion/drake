@@ -17,7 +17,7 @@ class VolumeMeshBoundary {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeMeshBoundary);
 
   // This version does not take ownership of the volume mesh. It creates and
-  // stored associated data without the volume mesh itself.
+  // stores associated data without the volume mesh itself.
   //
   // @param mesh_M  the tetrahedral mesh whose vertex positions are expressed
   //                in frame M.
@@ -42,8 +42,9 @@ class VolumeMeshBoundary {
   // BVH of the surface mesh expressed in the same frame M of the volume mesh.
   Bvh<Obb, TriangleSurfaceMesh<double>> tri_bvh_M_;
 
-  // Provides angle weighted normals at vertices and edges of the
-  // triangle surface mesh, expressed in frame M of the volume mesh.
+  // Contains either the normals for the mesh's edges and vertices, expressed
+  // in frame M of the mesh, or an error message explaining why no such
+  // normals could be computed.
   std::variant<FeatureNormalSet, std::string> feature_normal_M_;
 };
 

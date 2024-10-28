@@ -732,7 +732,7 @@ class QueryObject {
 
    |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
    | :--------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   |   double   |  2e-15  |   4e-15  |  1e-13ᶜ |   3e-15   |    3e-5ᵇ   |    5e-15   | 1e-13ᵈ  |  4e-15  |
+   |   double   |  2e-15  |   4e-15  |  1e-13  |   3e-15   |    3e-5ᵇ   |    5e-15   | 1e-13ᶜ  |  4e-15  |
    | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
    | Expression |   ᵃ     |    ᵃ     |    ᵃ    |     ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |
    __*Table 8*__: Worst observed error (in m) for 2mm penetration/separation
@@ -746,24 +746,25 @@ class QueryObject {
        the projection of the query point on the ellipsoid; the closer that point
        is to the high curvature area, the bigger the effect. It is not
        immediately clear how much worse the answer will get.
-   - ᶜ Convex hulls of meshes are supported. The signed distance, the
-       nearest point, and the gradient are computed from the convex hull.
-   - ᵈ Tetrahedral meshes in VTK files and triangle meshes in OBJ files are
-       supported. Unsupported meshes are simply ignored; no results are
-       reported for that geometry. The signed distance, the nearest point,
-       and the gradient are computed from the possibly non-convex surface of
-       the geometry. The nearest point and the gradient may not be continuous.
+   - ᶜ Only supports OBJ and tetrahedral VTK meshes. Unsupported meshes are
+       simply ignored; no results are reported for that geometry. For OBJ meshes
+       the surface mesh must satisfy specific requirements (see below). Unlike
+       the other Shapes, witness points and gradients can be discontinuous on a
+       mesh's exterior if it is non-convex.
 
    @pre The %Mesh of a triangular surface mesh must be a closed manifold
    without duplicate vertices or self-intersection, and every triangle's face
-   winding gives an outward-pointing face normal. Non-compliant meshes will
-   introduce regions in which the query point will report the wrong sign (and,
-   therefore, the wrong gradient) due to a misclassification of being inside or
-   outside. This leads to discontinuities in the distance field across the
-   boundaries of these regions; the distance sign will flip while the magnitude
-   of the distance value is arbitrarily far away from zero. For open meshes, the
-   same principle holds. The open mesh, which has no true concept of "inside",
-   will nevertheless report some query points as being inside.
+   winding gives an outward-pointing face normal.  Drake does not currently
+   validate the input mesh with respect to these properties. Instead, it does a
+   good-faith computation assuming the properties, possibly returning incorrect
+   results. Non-compliant meshes will introduce regions in which the query
+   point will report the wrong sign (and, therefore, the wrong gradient) due
+   to a misclassification of being inside or outside. This leads to
+   discontinuities in the distance field across the boundaries of these
+   regions; the distance sign will flip while the magnitude of the distance
+   value is arbitrarily far away from zero. For open meshes, the same principle
+   holds. The open mesh, which has no true concept of "inside", will
+   nevertheless report some query points as being inside.
 
    @pre The %Mesh of a tetrahedral volume mesh is a simplicial complex
    (https://en.wikipedia.org/wiki/Simplicial_complex) whose tetrahedra have
