@@ -749,12 +749,19 @@ Subgraph::SubstituteVertexPlaceholderVariables(
   int num_variables = num_positions() * (order_ + 1);
   VectorXDecisionVariable control_points_vars(num_variables);
   control_points_vars << GetControlPoints(*vertex);
+
+  // Note: the logic is identical for symbolic::Expression and
+  // symbolic::Formula, but since there is no inheritance structure, we have to
+  // split into cases based on which type is actually used.
   if (std::holds_alternative<Expression>(e)) {
     Expression e_out = std::get<Expression>(e);
+
+    // Substitute the control point variables.
     for (int i = 0; i < num_variables; ++i) {
       e_out = e_out.Substitute(placeholder_vertex_control_points_var_[i],
                                control_points_vars[i]);
     }
+    // Substitute the time scaling variable.
     e_out = e_out.Substitute(placeholder_vertex_time_scaling_var_[0],
                              GetTimeScaling(*vertex));
     return e_out;
@@ -781,18 +788,26 @@ std::variant<Expression, Formula> Subgraph::SubstituteEdgePlaceholderVariables(
   VectorXDecisionVariable control_points_vars_2(num_variables);
   control_points_vars_2 << GetControlPoints(v2);
 
+  // Note: the logic is identical for symbolic::Expression and
+  // symbolic::Formula, but since there is no inheritance structure, we have to
+  // split into cases based on which type is actually used.
   if (std::holds_alternative<Expression>(e)) {
     Expression e_out = std::get<Expression>(e);
+
+    // Substitute the control point variables for the first vertex.
     for (int i = 0; i < num_variables; ++i) {
       e_out = e_out.Substitute(placeholder_edge_control_points_var_.first[i],
                                control_points_vars_1[i]);
     }
+    // Substitute the control point variables for the second vertex.
     for (int i = 0; i < num_variables; ++i) {
       e_out = e_out.Substitute(placeholder_edge_control_points_var_.second[i],
                                control_points_vars_2[i]);
     }
+    // Substitute the time scaling variable for the first vertex.
     e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.first[0],
                              GetTimeScaling(v1));
+    // Substitute the time scaling variable for the second vertex.
     e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.second[0],
                              GetTimeScaling(v2));
     return e_out;
@@ -817,29 +832,41 @@ std::variant<Expression, Formula> Subgraph::SubstituteEdgePlaceholderVariables(
 void Subgraph::AddVertexCost(
     const Expression& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
-  unused(e);
-  unused(used_in_transcription);
+  for (Vertex*& vertex : vertices_) {
+    Expression post_substitution =
+        std::get<Expression>(SubstituteVertexPlaceholderVariables(e, vertex));
+    vertex->AddCost(post_substitution, used_in_transcription);
+  }
 }
 
 void Subgraph::AddVertexConstraint(
     const Formula& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
-  unused(e);
-  unused(used_in_transcription);
+  for (Vertex*& vertex : vertices_) {
+    Formula post_substitution =
+        std::get<Formula>(SubstituteVertexPlaceholderVariables(e, vertex));
+    vertex->AddConstraint(post_substitution, used_in_transcription);
+  }
 }
 
 void Subgraph::AddEdgeCost(
     const Expression& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
-  unused(e);
-  unused(used_in_transcription);
+  for (Edge*& edge : edges_) {
+    Expression post_substitution =
+        std::get<Expression>(SubstituteEdgePlaceholderVariables(e, edge));
+    edge->AddCost(post_substitution, used_in_transcription);
+  }
 }
 
 void Subgraph::AddEdgeConstraint(
     const symbolic::Formula& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
-  unused(e);
-  unused(used_in_transcription);
+  for (Edge*& edge : edges_) {
+    Formula post_substitution =
+        std::get<Formula>(SubstituteEdgePlaceholderVariables(e, edge));
+    edge->AddConstraint(post_substitution, used_in_transcription);
+  }
 }
 
 EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(

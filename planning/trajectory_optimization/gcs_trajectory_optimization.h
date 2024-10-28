@@ -439,14 +439,14 @@ class GcsTrajectoryOptimization final {
         const geometry::optimization::GraphOfConvexSets::Vertex& v) const;
 
     /* Substitute any placeholder variables with the versions corresponding to
-    a specific vertex. */
+    a specific vertex. The return type will match the argument type. */
     std::variant<symbolic::Expression, symbolic::Formula>
     SubstituteVertexPlaceholderVariables(
         const std::variant<symbolic::Expression, symbolic::Formula>& e,
         const geometry::optimization::GraphOfConvexSets::Vertex* vertex) const;
 
     /* Substitute any placeholder variables with the versions corresponding to
-    a specific edge. */
+    a specific edge. The return type will match the argument type. */
     std::variant<symbolic::Expression, symbolic::Formula>
     SubstituteEdgePlaceholderVariables(
         const std::variant<symbolic::Expression, symbolic::Formula>& e,
