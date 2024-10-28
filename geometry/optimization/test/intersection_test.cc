@@ -290,6 +290,27 @@ GTEST_TEST(IntersectionTest, EmptyInput) {
   EXPECT_TRUE(S.IsEmpty());
 }
 
+GTEST_TEST(IntersectionTest, BoundedCheckBatching) {
+  // Check that a high dimensional intersection can be properly checked for
+  // emptiness, consistent with the batching logic.
+  HPolyhedron l1 = HPolyhedron::MakeUnitBox(100);
+  Eigen::MatrixXd A = l1.A();
+  Eigen::VectorXd b = l1.b();
+
+  // Put half of the rows in one HPolyhedron, and the other half in another.
+  // Also make a variant where one is skipped, to make it unbounded.
+  ASSERT_EQ(A.rows(), 200);
+  HPolyhedron half1(A.topRows(100), b.head(100));
+  HPolyhedron half2(A.bottomRows(100), b.tail(100));
+  HPolyhedron half2_unbounded(A.bottomRows(99), b.tail(99));
+
+  Intersection bounded(half1, half2);
+  Intersection unbounded(half1, half2_unbounded);
+
+  EXPECT_TRUE(bounded.IsBounded(Parallelism::Max()));
+  EXPECT_FALSE(unbounded.IsBounded(Parallelism::Max()));
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
