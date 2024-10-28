@@ -51,6 +51,8 @@ using multibody::RevoluteJoint;
 using multibody::RigidBody;
 using multibody::RpyFloatingJoint;
 using solvers::MathematicalProgram;
+using symbolic::Expression;
+using symbolic::Formula;
 
 bool GurobiOrMosekSolverUnavailableDuringMemoryCheck() {
   return (std::getenv("VALGRIND_OPTS") != nullptr) &&
@@ -2590,6 +2592,81 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroTimeTrajectory) {
   DRAKE_EXPECT_THROWS_MESSAGE(gcs.SolvePath(start, middle),
                               ".*zero duration.*");
   DRAKE_EXPECT_THROWS_MESSAGE(gcs.SolvePath(start, goal), ".*zero duration.*");
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, GenericCostConstraint) {
+  GcsTrajectoryOptimization gcs(1);
+  const double kMinimumDuration = 0.1;
+  auto& start = gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0, 0);
+  auto& middle = gcs.AddRegions(
+      MakeConvexSets(Hyperrectangle(Vector1d(0), Vector1d(0.9)),
+                     Hyperrectangle(Vector1d(0.5), Vector1d(1.5)),
+                     Hyperrectangle(Vector1d(1.1), Vector1d(2))),
+      1, kMinimumDuration);
+  auto& goal = gcs.AddRegions(MakeConvexSets(Point(Vector1d(2))), 0, 0);
+  gcs.AddEdges(start, middle);
+  gcs.AddEdges(middle, goal);
+
+  auto vertex_control_points_placeholder =
+      middle.vertex_control_points_placeholder();
+  ASSERT_EQ(vertex_control_points_placeholder.size(), 2);
+  auto vertex_time_placeholder = middle.vertex_time_placeholder();
+  ASSERT_EQ(vertex_time_placeholder.size(), 1);
+
+  // Manually construct a cost summing path length and duration.
+  Expression time_cost = vertex_time_placeholder[0];
+  Expression l1_path_length_cost =
+      symbolic::abs(Expression(vertex_control_points_placeholder[1]) -
+                    vertex_control_points_placeholder[0]);
+  Expression whole_cost = time_cost + l1_path_length_cost;
+
+  // The whole cost can't be parsed directly to be compatible with the
+  // relaxation and MIP. The time cost can be parsed directly, but the l1
+  // path length cost cannot.
+  middle.AddVertexCost(whole_cost,
+                       {GraphOfConvexSets::Transcription::kRestriction});
+  middle.AddVertexCost(time_cost,
+                       {GraphOfConvexSets::Transcription::kMIP,
+                        GraphOfConvexSets::Transcription::kRelaxation});
+
+  // Add a constant cost for each vertex we pass through.
+  middle.AddVertexCost(Expression(1.0));
+
+  // Manually construct a duration constraint, forcing the trajectory to spend
+  // more than kMinimumDuration in each set.
+  Formula time_constraint =
+      vertex_time_placeholder[0] >= Expression(2 * kMinimumDuration);
+  middle.AddVertexConstraint(time_constraint);
+
+  // Manually construct a segment length constraint, forcing each segment to be
+  // at most 0.75 in length.
+  Formula segment_length = l1_path_length_cost <= Expression(0.75);
+  middle.AddVertexConstraint(segment_length,
+                             {GraphOfConvexSets::Transcription::kRestriction});
+
+  // All costs and constraints are convex, so the relaxation should be solvable.
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  auto [traj, result] = gcs.SolvePath(start, goal, options);
+  ASSERT_TRUE(result.is_success());
+
+  // Compute the expected cost.
+  double cost = 0.0;
+  cost += 2.0;  // Path length.
+  cost +=
+      0.2 * 3;  // Duration cost (minimum duration per set is 0.2, and we pass
+                // through three sets due to the segment length constraint.)
+  cost +=
+      1.0 * 3;  // Constant cost (1.0 per set, and we pass through three sets.)
+
+  EXPECT_NEAR(result.get_optimal_cost(), cost, 1e-12);
+  EXPECT_EQ(traj.get_number_of_segments(), 3);
+  for (int i = 0; i < traj.get_number_of_segments(); ++i) {
+    const auto& segment = traj.segment(i);
+    VectorXd x0 = segment.value(segment.start_time());
+    VectorXd x1 = segment.value(segment.end_time());
+    EXPECT_LE(std::abs(x0[0] - x1[0]), 0.75);
+  }
 }
 
 }  // namespace
