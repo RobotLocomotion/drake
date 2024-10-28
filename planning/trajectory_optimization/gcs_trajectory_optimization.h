@@ -273,6 +273,51 @@ class GcsTrajectoryOptimization final {
     */
     void AddContinuityConstraints(int continuity_order);
 
+    /** Returns a placeholder decision variable (not actually declared as a
+    decision variable in the MathematicalProgram) associated with the time
+    scaling of the trajectory in a set within this subgraph. This variable will
+    be substituted for real decision variables in methods like AddVertexCost and
+    AddVertexConstraint. Passing this variable directly into
+    objectives/constraints will result in an error. */
+    const solvers::VectorDecisionVariable<1>& vertex_time_placeholder() const {
+      return placeholder_vertex_time_scaling_var_;
+    }
+
+    /** Returns a placeholder decision variable (not actually declared as a
+    decision variable in the MathematicalProgram) associated with the control
+    points of the trajectory in a set within this subgraph. This variable will
+    be substituted for real decision variables in methods like AddVertexCost and
+    AddVertexConstraint. Passing this variable directly into
+    objectives/constraints will result in an error. */
+    const solvers::VectorXDecisionVariable& vertex_control_points_placeholder()
+        const {
+      return placeholder_vertex_control_points_var_;
+    }
+
+    /** Returns a pair of placeholder decision variables (not actually declared
+    as decision variables in the MathematicalProgram) associated with the time
+    scaling of the trajectory in two sets within this subgraph that are
+    connected by an edge. This variable will be substituted for real decision
+    variables in methods like AddEdgeCost and AddEdgeConstraint. Passing this
+    variable directly into objectives/constraints will result in an error. */
+    const std::pair<solvers::VectorDecisionVariable<1>,
+                    solvers::VectorDecisionVariable<1>>&
+    edge_time_placeholder() const {
+      return placeholder_edge_time_scaling_var_;
+    }
+
+    /** Returns a pair of placeholder decision variables (not actually declared
+    as decision variables in the MathematicalProgram) associated with the
+    control points of the trajectory in two sets within this subgraph that are
+    connected by an edge. This variable will be substituted for real decision
+    variables in methods like AddEdgeCost and AddEdgeConstraint. Passing this
+    variable directly into objectives/constraints will result in an error. */
+    const std::pair<solvers::VectorXDecisionVariable,
+                    solvers::VectorXDecisionVariable>&
+    edge_control_points_placeholder() const {
+      return placeholder_edge_control_points_var_;
+    }
+
    private:
     /* Constructs a new subgraph and copies the regions. */
     Subgraph(const geometry::optimization::ConvexSets& regions,
@@ -313,6 +358,16 @@ class GcsTrajectoryOptimization final {
     // r(s) is a BezierCurve of the right shape and order, which can be used to
     // design costs and constraints for the underlying vertices and edges.
     trajectories::BezierCurve<double> r_trajectory_;
+
+    solvers::VectorDecisionVariable<1> placeholder_vertex_time_scaling_var_;
+    solvers::VectorXDecisionVariable placeholder_vertex_control_points_var_;
+
+    std::pair<solvers::VectorDecisionVariable<1>,
+              solvers::VectorDecisionVariable<1>>
+        placeholder_edge_time_scaling_var_;
+    std::pair<solvers::VectorXDecisionVariable,
+              solvers::VectorXDecisionVariable>
+        placeholder_edge_control_points_var_;
 
     friend class GcsTrajectoryOptimization;
   };
