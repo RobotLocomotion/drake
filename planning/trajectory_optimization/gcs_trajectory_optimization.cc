@@ -815,28 +815,28 @@ std::variant<Expression, Formula> Subgraph::SubstituteEdgePlaceholderVariables(
 }
 
 void Subgraph::AddVertexCost(
-    const std::variant<Expression, Formula>& e,
+    const Expression& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
   unused(e);
   unused(used_in_transcription);
 }
 
 void Subgraph::AddVertexConstraint(
-    const std::variant<Expression, Formula>& e,
+    const Formula& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
   unused(e);
   unused(used_in_transcription);
 }
 
 void Subgraph::AddEdgeCost(
-    const std::variant<Expression, Formula>& e,
+    const Expression& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
   unused(e);
   unused(used_in_transcription);
 }
 
 void Subgraph::AddEdgeConstraint(
-    const std::variant<symbolic::Expression, symbolic::Formula>& e,
+    const symbolic::Formula& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
   unused(e);
   unused(used_in_transcription);

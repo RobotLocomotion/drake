@@ -332,7 +332,7 @@ class GcsTrajectoryOptimization final {
     appropriate "convex surrogate" that is supported within GraphOfConvexSets,
     or exclusively using the SolveConvexRestriction method. */
     void AddVertexCost(
-        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const symbolic::Expression& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
             used_in_transcription = {
@@ -355,7 +355,7 @@ class GcsTrajectoryOptimization final {
     GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
     */
     void AddVertexConstraint(
-        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const symbolic::Formula& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
             used_in_transcription = {
@@ -377,7 +377,7 @@ class GcsTrajectoryOptimization final {
     appropriate "convex surrogate" that is supported within GraphOfConvexSets,
     or exclusively using the SolveConvexRestriction method. */
     void AddEdgeCost(
-        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const symbolic::Expression& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
             used_in_transcription = {
@@ -400,7 +400,7 @@ class GcsTrajectoryOptimization final {
     GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
     */
     void AddEdgeConstraint(
-        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const symbolic::Formula& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
             used_in_transcription = {
