@@ -915,11 +915,11 @@ class SpatialInertia {
   typename std::enable_if_t<!scalar_predicate<T1>::is_bool> CheckInvariants()
       const {}
 
-  // Throw an exception with a detailed error message.
+  // Throws an exception with a detailed error message.
   // @pre !IsPhysicallyValid() (not checked).
   [[noreturn]] void ThrowNotPhysicallyValid() const;
 
-  // Return a detailed error message.
+  // Returns a detailed error message.
   // @pre !IsPhysicallyValid() (not checked).
   std::string MakeNotPhysicallyValidErrorMessage() const;
 
