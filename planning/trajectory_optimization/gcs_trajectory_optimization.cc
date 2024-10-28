@@ -758,32 +758,43 @@ std::variant<Expression, Formula>
 Subgraph::SubstituteVertexPlaceholderVariables(
     const std::variant<Expression, Formula>& e, const Vertex* vertex) const {
   int num_variables = num_positions() * (order_ + 1);
-  VectorXDecisionVariable control_points_vars(num_variables);
-  control_points_vars << GetControlPoints(*vertex);
+  VectorXDecisionVariable control_points_vars(
+      GetControlPoints(*vertex).reshaped());
 
   // Note: the logic is identical for symbolic::Expression and
   // symbolic::Formula, but since there is no inheritance structure, we have to
   // split into cases based on which type is actually used.
   if (std::holds_alternative<Expression>(e)) {
     Expression e_out = std::get<Expression>(e);
+    symbolic::Variables e_vars = e_out.GetVariables();
 
     // Substitute the control point variables.
     for (int i = 0; i < num_variables; ++i) {
-      e_out = e_out.Substitute(placeholder_vertex_control_points_var_[i],
-                               control_points_vars[i]);
+      if (e_vars.include(placeholder_vertex_control_points_var_[i])) {
+        e_out = e_out.Substitute(placeholder_vertex_control_points_var_[i],
+                                 control_points_vars[i]);
+      }
     }
     // Substitute the time scaling variable.
-    e_out = e_out.Substitute(placeholder_vertex_time_scaling_var_[0],
-                             GetTimeScaling(*vertex));
+    if (e_vars.include(placeholder_vertex_time_scaling_var_[0])) {
+      e_out = e_out.Substitute(placeholder_vertex_time_scaling_var_[0],
+                               GetTimeScaling(*vertex));
+    }
     return e_out;
   } else {
     Formula e_out = std::get<Formula>(e);
+    symbolic::Variables e_vars = e_out.GetFreeVariables();
+
     for (int i = 0; i < num_variables; ++i) {
-      e_out = e_out.Substitute(placeholder_vertex_control_points_var_[i],
-                               control_points_vars[i]);
+      if (e_vars.include(placeholder_vertex_control_points_var_[i])) {
+        e_out = e_out.Substitute(placeholder_vertex_control_points_var_[i],
+                                 control_points_vars[i]);
+      }
     }
-    e_out = e_out.Substitute(placeholder_vertex_time_scaling_var_[0],
-                             GetTimeScaling(*vertex));
+    if (e_vars.include(placeholder_vertex_time_scaling_var_[0])) {
+      e_out = e_out.Substitute(placeholder_vertex_time_scaling_var_[0],
+                               GetTimeScaling(*vertex));
+    }
     return e_out;
   }
 }
@@ -794,48 +805,67 @@ std::variant<Expression, Formula> Subgraph::SubstituteEdgePlaceholderVariables(
   const Vertex& v2 = edge->v();
   int num_variables = num_positions() * (order_ + 1);
 
-  VectorXDecisionVariable control_points_vars_1(num_variables);
-  control_points_vars_1 << GetControlPoints(v1);
-  VectorXDecisionVariable control_points_vars_2(num_variables);
-  control_points_vars_2 << GetControlPoints(v2);
+  VectorXDecisionVariable control_points_vars_1(
+      GetControlPoints(v1).reshaped());
+  VectorXDecisionVariable control_points_vars_2(
+      GetControlPoints(v2).reshaped());
 
   // Note: the logic is identical for symbolic::Expression and
   // symbolic::Formula, but since there is no inheritance structure, we have to
   // split into cases based on which type is actually used.
   if (std::holds_alternative<Expression>(e)) {
     Expression e_out = std::get<Expression>(e);
+    symbolic::Variables e_vars = e_out.GetVariables();
 
     // Substitute the control point variables for the first vertex.
     for (int i = 0; i < num_variables; ++i) {
-      e_out = e_out.Substitute(placeholder_edge_control_points_var_.first[i],
-                               control_points_vars_1[i]);
+      if (e_vars.include(placeholder_edge_control_points_var_.first[i])) {
+        e_out = e_out.Substitute(placeholder_edge_control_points_var_.first[i],
+                                 control_points_vars_1[i]);
+      }
     }
     // Substitute the control point variables for the second vertex.
     for (int i = 0; i < num_variables; ++i) {
-      e_out = e_out.Substitute(placeholder_edge_control_points_var_.second[i],
-                               control_points_vars_2[i]);
+      if (e_vars.include(placeholder_edge_control_points_var_.second[i])) {
+        e_out = e_out.Substitute(placeholder_edge_control_points_var_.second[i],
+                                 control_points_vars_2[i]);
+      }
     }
     // Substitute the time scaling variable for the first vertex.
-    e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.first[0],
-                             GetTimeScaling(v1));
+    if (e_vars.include(placeholder_edge_time_scaling_var_.first[0])) {
+      e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.first[0],
+                               GetTimeScaling(v1));
+    }
     // Substitute the time scaling variable for the second vertex.
-    e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.second[0],
-                             GetTimeScaling(v2));
+    if (e_vars.include(placeholder_edge_time_scaling_var_.second[0])) {
+      e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.second[0],
+                               GetTimeScaling(v2));
+    }
     return e_out;
   } else {
     Formula e_out = std::get<Formula>(e);
+    symbolic::Variables e_vars = e_out.GetFreeVariables();
+
     for (int i = 0; i < num_variables; ++i) {
-      e_out = e_out.Substitute(placeholder_edge_control_points_var_.first[i],
-                               control_points_vars_1[i]);
+      if (e_vars.include(placeholder_edge_control_points_var_.first[i])) {
+        e_out = e_out.Substitute(placeholder_edge_control_points_var_.first[i],
+                                 control_points_vars_1[i]);
+      }
     }
     for (int i = 0; i < num_variables; ++i) {
-      e_out = e_out.Substitute(placeholder_edge_control_points_var_.second[i],
-                               control_points_vars_2[i]);
+      if (e_vars.include(placeholder_edge_control_points_var_.second[i])) {
+        e_out = e_out.Substitute(placeholder_edge_control_points_var_.second[i],
+                                 control_points_vars_2[i]);
+      }
     }
-    e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.first[0],
-                             GetTimeScaling(v1));
-    e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.second[0],
-                             GetTimeScaling(v2));
+    if (e_vars.include(placeholder_edge_time_scaling_var_.first[0])) {
+      e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.first[0],
+                               GetTimeScaling(v1));
+    }
+    if (e_vars.include(placeholder_edge_time_scaling_var_.second[0])) {
+      e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.second[0],
+                               GetTimeScaling(v2));
+    }
     return e_out;
   }
 }
