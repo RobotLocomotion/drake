@@ -317,6 +317,17 @@ Subgraph::Subgraph(
         path_continuity_constraint,
         {GetControlPoints(*u).col(order), GetControlPoints(*v).col(0)}));
   }
+
+  // Construct placeholder variables.
+  placeholder_vertex_time_scaling_var_ = MakeVectorContinuousVariable(1, "t");
+  placeholder_vertex_control_points_var_ =
+      MakeVectorContinuousVariable(num_positions() * (order + 1), "x");
+  placeholder_edge_time_scaling_var_ =
+      std::make_pair(MakeVectorContinuousVariable(1, "tu"),
+                     MakeVectorContinuousVariable(1, "tv"));
+  placeholder_edge_control_points_var_ = std::make_pair(
+      MakeVectorContinuousVariable(num_positions() * (order + 1), "xu"),
+      MakeVectorContinuousVariable(num_positions() * (order + 1), "xv"));
 }
 
 Subgraph::~Subgraph() = default;
