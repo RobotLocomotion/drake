@@ -553,7 +553,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    // Need this for non-ComputeSignedDistanceToPoint queries.
+    // We currently represent Mesh shapes with their convex hulls in fcl.
     ImplementFromConvexHull(mesh, user_data);
     // Set up data for ComputeSignedDistanceToPoint() from non-convex meshes.
     ImplementMeshSdfData(mesh, user_data);
@@ -1049,7 +1049,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                              VolumeMeshBoundary(ReadObjToTriangleSurfaceMesh(
                                  mesh.source(), mesh.scale())));
     }
-    // Unsupported meshes will be ignored in point_distance::Callback().
+    // Meshes are unsupported if we cannot compute a VolumeMeshBoundary.
+    // point_distance::Callback() skips every Mesh that doesn't have an entry
+    // in mesh_sdf_data_.
   }
 
   // Populate the proximity representation of Convex for
@@ -1148,10 +1150,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // `dynamic_objects_` and `dynamic_tree_`.
   deformable::Geometries geometries_for_deformable_contact_;
 
-  // Data for ComputeSignedDistanceToPoint from meshes. The corresponding
-  // geometry could be a tetrahedral mesh (Mesh(.vtk)), a triangle mesh
-  // (Mesh(.obj)), or a convex hull (Convex(.obj) and Convex(.vtk)). Their
-  // common requirement is to be water-tight.
+  // Data for ComputeSignedDistanceToPoint from meshes (Mesh and Convex).
   std::unordered_map<GeometryId, VolumeMeshBoundary> mesh_sdf_data_{};
 };
 

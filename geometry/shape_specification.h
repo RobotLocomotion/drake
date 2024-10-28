@@ -467,7 +467,7 @@ class HalfSpace final : public Shape {
  used includes:
 
    - Computing signed distances from the %Mesh to query points (when it
-     references a triangle .obj file or a tetrahedral .vtk file).
+     references a .obj file or a tetrahedral .vtk file).
    - Specifying the %Mesh as rigid hydroelastic (when it references a triangle
      .obj file or a tetrahedral .vtk file).
    - Specifying the %Mesh as compliant hydroelastic (when it references a
