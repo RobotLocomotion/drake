@@ -58,50 +58,73 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   return result.is_success();
 }
 
-bool ConvexSet::GenericDoIsBounded(Parallelism parallelism) const {
-  // The empty set is bounded. We check it first, to ensure that the program
-  // is feasible, so SolutionResult::kInfeasibleOrUnbounded or
-  // SolutionResult::kDualInfeasible indicates unbounded, as solvers may not
-  // always explicitly return that the primal is unbounded.
-  if (IsEmpty()) {
-    return true;
+namespace {
+void ConstructBoundednessProgram(MathematicalProgram* prog, const ConvexSet& s,
+                                 int dimension, bool maximize) {
+  const int n = s.ambient_dimension();
+  DRAKE_ASSERT(dimension >= 0 && dimension < n);
+
+  VectorXDecisionVariable x = prog->NewContinuousVariables(n, "x");
+  s.AddPointInSetConstraints(prog, x);
+  VectorXd objective_vector = VectorXd::Zero(n);
+  objective_vector[dimension] = maximize ? -1 : 1;
+  prog->AddLinearCost(objective_vector, x);
+}
+
+inline bool ProgramResultImpliesUnbounded(
+    const MathematicalProgramResult& result) {
+  return result.get_solution_result() == solvers::SolutionResult::kUnbounded ||
+         result.get_solution_result() ==
+             solvers::SolutionResult::kInfeasibleOrUnbounded ||
+         result.get_solution_result() ==
+             solvers::SolutionResult::kDualInfeasible;
+}
+
+bool IsBoundedSequential(const ConvexSet& s) {
+  // Let a variable x be contained in the convex set. Iteratively try to
+  // minimize or maximize x[i] for each dimension i. If any solves are
+  // unbounded, the set is not bounded.
+  for (int i = 0; i < s.ambient_dimension(); ++i) {
+    MathematicalProgram prog;
+    ConstructBoundednessProgram(&prog, s, i, true /* maximize */);
+    MathematicalProgramResult result = solvers::Solve(prog);
+    if (ProgramResultImpliesUnbounded(result)) {
+      return false;
+    }
+
+    MathematicalProgram prog2;
+    ConstructBoundednessProgram(&prog2, s, i, false /* maximize */);
+    result = solvers::Solve(prog2);
+    if (ProgramResultImpliesUnbounded(result)) {
+      return false;
+    }
   }
+  // All optimization problems were bounded, so we return true.
+  return true;
+}
+
+bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
+  const int n = s.ambient_dimension();
 
   // At the end of each batch, we check to see if we've identified an unbounded
-  // direction. If so, we immediately return. Thus, the fastest behavior is to
-  // solve one problem on each thread, check if any are unbounded, and then
-  // iterate until all dimensions have been checked. We concurrently solve 2 *
-  // batch_size programs, since batch_size refers to the dimension, and there
-  // are two programs per dimension.
-  const int batch_size = std::max(1, parallelism.num_threads() / 2);
+  // direction. If so, we immediately return. We use a large batch size to trade
+  // off the overhead of spinning of threads with the runtime of solving the
+  // possibly-redundant programs.
+  const int batch_size = 10 * parallelism.num_threads();
 
   // Let a variable x be contained in the convex set. Iteratively try to
   // minimize or maximize x[i] for each dimension i. If any solves are
   // unbounded, the set is not bounded.
-  int num_batches = 1 + (ambient_dimension() / batch_size);
+  int num_batches = 1 + (n / batch_size);
   for (int batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     int batch_start = batch_idx * batch_size;
-    int batch_end = std::min((batch_idx + 1) * batch_size, ambient_dimension());
+    int batch_end = std::min((batch_idx + 1) * batch_size, n);
     int this_batch_size = batch_end - batch_start;
 
     std::vector<MathematicalProgram> progs(2 * this_batch_size);
     for (int i = 0; i < this_batch_size; ++i) {
-      int dim = batch_start + i;
-      // progs[i] will try to minimize x[dim]. progs[i+this_batch_size] will try
-      // to maximize x[dim].
-      VectorXDecisionVariable x;
-      VectorXd objective_vector = VectorXd::Zero(ambient_dimension());
-
-      x = progs[i].NewContinuousVariables(ambient_dimension(), "x");
-      AddPointInSetConstraints(&(progs[i]), x);
-      objective_vector[dim] = 1;
-      progs[i].AddLinearCost(objective_vector, x);
-
-      x = progs[i + this_batch_size].NewContinuousVariables(ambient_dimension(),
-                                                            "x");
-      AddPointInSetConstraints(&(progs[i + this_batch_size]), x);
-      objective_vector[dim] = -1;
-      progs[i + this_batch_size].AddLinearCost(objective_vector, x);
+      ConstructBoundednessProgram(&(progs[i]), s, i, false /* maximize */);
+      ConstructBoundednessProgram(&(progs[i + n]), s, i, true /* maximize */);
     }
 
     std::vector<const MathematicalProgram*> prog_ptrs(progs.size());
@@ -125,6 +148,23 @@ bool ConvexSet::GenericDoIsBounded(Parallelism parallelism) const {
   }
   // All optimization problems were bounded, so we return true.
   return true;
+}
+}  // namespace
+
+bool ConvexSet::GenericDoIsBounded(Parallelism parallelism) const {
+  // The empty set is bounded. We check it first, to ensure that the program
+  // is feasible, so SolutionResult::kInfeasibleOrUnbounded or
+  // SolutionResult::kDualInfeasible indicates unbounded, as solvers may not
+  // always explicitly return that the primal is unbounded.
+  if (IsEmpty()) {
+    return true;
+  }
+
+  if (parallelism.num_threads() == 1) {
+    return IsBoundedSequential(*this);
+  } else {
+    return IsBoundedParallel(*this, parallelism);
+  }
 }
 
 std::optional<std::pair<std::vector<double>, Eigen::MatrixXd>>
