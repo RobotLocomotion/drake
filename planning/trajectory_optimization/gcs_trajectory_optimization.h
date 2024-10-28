@@ -5,7 +5,9 @@
 #include <optional>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/trajectories/bezier_curve.h"
@@ -318,6 +320,96 @@ class GcsTrajectoryOptimization final {
       return placeholder_edge_control_points_var_;
     }
 
+    /** Adds an arbitrary user-defined cost to every vertex in the subgraph. The
+    cost should be defined using the placeholder control point variables
+    (obtained frpom vertex_control_points_placeholder()) and the placeholder
+    time scaling variable (obtained from vertex_time_placeholder()). This
+    enables greater modeling freedom, but we cannot guarantee a feasible
+    solution for all possible costs.
+
+    Costs which do not support the perspective operation cannot be used with
+    Transcription::kMIP or Transcription::kRelaxation. Consider providing an
+    appropriate "convex surrogate" that is supported within GraphOfConvexSets,
+    or exclusively using the SolveConvexRestriction method. */
+    void AddVertexCost(
+        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            used_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
+    /** Adds an arbitrary user-defined constraint to every vertex in the
+    subgraph. The constraint should be defined using the placeholder control
+    point variables (obtained frpom vertex_control_points_placeholder()) and the
+    placeholder time scaling variable (obtained from vertex_time_placeholder()).
+    This enables greater modeling freedom, but we cannot guarantee a feasible
+    solution for all possible costs.
+
+    Constraints which do not support the perspective operation cannot be used
+    with Transcription::kMIP or Transcription::kRelaxation. Consider providing
+    an appropriate "convex surrogate" that is supported within
+    GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
+    */
+    void AddVertexConstraint(
+        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            used_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
+    /** Adds an arbitrary user-defined cost to every edge in the subgraph. The
+    cost should be defined using the placeholder control point variables
+    (obtained frpom edge_control_points_placeholder()) and the placeholder
+    time scaling variables (obtained from edge_time_placeholder()). This
+    enables greater modeling freedom, but we cannot guarantee a feasible
+    solution for all possible costs.
+
+    Costs which do not support the perspective operation cannot be used with
+    Transcription::kMIP or Transcription::kRelaxation. Consider providing an
+    appropriate "convex surrogate" that is supported within GraphOfConvexSets,
+    or exclusively using the SolveConvexRestriction method. */
+    void AddEdgeCost(
+        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            used_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
+    /** Adds an arbitrary user-defined constraint to every edge in the subgraph.
+    The constraint should be defined using the placeholder control point
+    variables (obtained frpom edge_control_points_placeholder()) and the
+    placeholder time scaling variables (obtained from edge_time_placeholder()).
+    This enables greater modeling freedom, but we cannot guarantee a feasible
+    solution for all possible costs.
+
+    Constraints which do not support the perspective operation cannot be used
+    with Transcription::kMIP or Transcription::kRelaxation. Consider providing
+    an appropriate "convex surrogate" that is supported within
+    GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
+    */
+    void AddEdgeConstraint(
+        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            used_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
    private:
     /* Constructs a new subgraph and copies the regions. */
     Subgraph(const geometry::optimization::ConvexSets& regions,
@@ -345,6 +437,20 @@ class GcsTrajectoryOptimization final {
     /* Extracts the time scaling variable from a vertex. */
     symbolic::Variable GetTimeScaling(
         const geometry::optimization::GraphOfConvexSets::Vertex& v) const;
+
+    /* Substitute any placeholder variables with the versions corresponding to
+    a specific vertex. */
+    std::variant<symbolic::Expression, symbolic::Formula>
+    SubstituteVertexPlaceholderVariables(
+        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const geometry::optimization::GraphOfConvexSets::Vertex* vertex) const;
+
+    /* Substitute any placeholder variables with the versions corresponding to
+    a specific edge. */
+    std::variant<symbolic::Expression, symbolic::Formula>
+    SubstituteEdgePlaceholderVariables(
+        const std::variant<symbolic::Expression, symbolic::Formula>& e,
+        const geometry::optimization::GraphOfConvexSets::Edge* edge) const;
 
     const geometry::optimization::ConvexSets regions_;
     const int order_;

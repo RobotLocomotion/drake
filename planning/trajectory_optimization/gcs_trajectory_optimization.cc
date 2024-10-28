@@ -68,6 +68,7 @@ using solvers::LinearEqualityConstraint;
 using solvers::QuadraticCost;
 using symbolic::DecomposeLinearExpressions;
 using symbolic::Expression;
+using symbolic::Formula;
 using symbolic::MakeMatrixContinuousVariable;
 using symbolic::MakeVectorContinuousVariable;
 using trajectories::BezierCurve;
@@ -638,6 +639,9 @@ void Subgraph::AddPathContinuityConstraints(int continuity_order) {
 }
 
 void Subgraph::AddContinuityConstraints(int continuity_order) {
+  // TODO(cohnt): Rewrite to use the generic AddCost and AddConstraint
+  // interfaces.
+
   if (continuity_order == 0) {
     throw std::runtime_error(
         "Path continuity is enforced by default. Choose a higher order.");
@@ -737,6 +741,105 @@ symbolic::Variable Subgraph::GetTimeScaling(
     const geometry::optimization::GraphOfConvexSets::Vertex& v) const {
   DRAKE_DEMAND(v.x().size() == num_positions() * (order_ + 1) + 1);
   return v.x()(v.x().size() - 1);
+}
+
+std::variant<Expression, Formula>
+Subgraph::SubstituteVertexPlaceholderVariables(
+    const std::variant<Expression, Formula>& e, const Vertex* vertex) const {
+  int num_variables = num_positions() * (order_ + 1);
+  VectorXDecisionVariable control_points_vars(num_variables);
+  control_points_vars << GetControlPoints(*vertex);
+  if (std::holds_alternative<Expression>(e)) {
+    Expression e_out = std::get<Expression>(e);
+    for (int i = 0; i < num_variables; ++i) {
+      e_out = e_out.Substitute(placeholder_vertex_control_points_var_[i],
+                               control_points_vars[i]);
+    }
+    e_out = e_out.Substitute(placeholder_vertex_time_scaling_var_[0],
+                             GetTimeScaling(*vertex));
+    return e_out;
+  } else {
+    Formula e_out = std::get<Formula>(e);
+    for (int i = 0; i < num_variables; ++i) {
+      e_out = e_out.Substitute(placeholder_vertex_control_points_var_[i],
+                               control_points_vars[i]);
+    }
+    e_out = e_out.Substitute(placeholder_vertex_time_scaling_var_[0],
+                             GetTimeScaling(*vertex));
+    return e_out;
+  }
+}
+
+std::variant<Expression, Formula> Subgraph::SubstituteEdgePlaceholderVariables(
+    const std::variant<Expression, Formula>& e, const Edge* edge) const {
+  const Vertex& v1 = edge->u();
+  const Vertex& v2 = edge->v();
+  int num_variables = num_positions() * (order_ + 1);
+
+  VectorXDecisionVariable control_points_vars_1(num_variables);
+  control_points_vars_1 << GetControlPoints(v1);
+  VectorXDecisionVariable control_points_vars_2(num_variables);
+  control_points_vars_2 << GetControlPoints(v2);
+
+  if (std::holds_alternative<Expression>(e)) {
+    Expression e_out = std::get<Expression>(e);
+    for (int i = 0; i < num_variables; ++i) {
+      e_out = e_out.Substitute(placeholder_edge_control_points_var_.first[i],
+                               control_points_vars_1[i]);
+    }
+    for (int i = 0; i < num_variables; ++i) {
+      e_out = e_out.Substitute(placeholder_edge_control_points_var_.second[i],
+                               control_points_vars_2[i]);
+    }
+    e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.first[0],
+                             GetTimeScaling(v1));
+    e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.second[0],
+                             GetTimeScaling(v2));
+    return e_out;
+  } else {
+    Formula e_out = std::get<Formula>(e);
+    for (int i = 0; i < num_variables; ++i) {
+      e_out = e_out.Substitute(placeholder_edge_control_points_var_.first[i],
+                               control_points_vars_1[i]);
+    }
+    for (int i = 0; i < num_variables; ++i) {
+      e_out = e_out.Substitute(placeholder_edge_control_points_var_.second[i],
+                               control_points_vars_2[i]);
+    }
+    e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.first[0],
+                             GetTimeScaling(v1));
+    e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.second[0],
+                             GetTimeScaling(v2));
+    return e_out;
+  }
+}
+
+void Subgraph::AddVertexCost(
+    const std::variant<Expression, Formula>& e,
+    const std::unordered_set<Transcription>& used_in_transcription) {
+  unused(e);
+  unused(used_in_transcription);
+}
+
+void Subgraph::AddVertexConstraint(
+    const std::variant<Expression, Formula>& e,
+    const std::unordered_set<Transcription>& used_in_transcription) {
+  unused(e);
+  unused(used_in_transcription);
+}
+
+void Subgraph::AddEdgeCost(
+    const std::variant<Expression, Formula>& e,
+    const std::unordered_set<Transcription>& used_in_transcription) {
+  unused(e);
+  unused(used_in_transcription);
+}
+
+void Subgraph::AddEdgeConstraint(
+    const std::variant<symbolic::Expression, symbolic::Formula>& e,
+    const std::unordered_set<Transcription>& used_in_transcription) {
+  unused(e);
+  unused(used_in_transcription);
 }
 
 EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
