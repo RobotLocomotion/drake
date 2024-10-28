@@ -376,15 +376,12 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
     throw std::runtime_error("DistanceToPoint from meshes: " +
                              std::get<std::string>(mesh_G.feature_normal()));
   }
-  const auto d = CalcSignedDistanceToSurfaceMesh(
+  const SignedDistanceToSurfaceMesh d = CalcSignedDistanceToSurfaceMesh(
       p_GQ, mesh_G.tri_mesh(), mesh_G.tri_bvh(),
       std::get<FeatureNormalSet>(mesh_G.feature_normal()));
-  const double distance = d.signed_distance;
-  const Vector3<T> p_GN_G = d.nearest_point;
-  const Vector3<T> grad_G = d.gradient;
-  const Vector3<T> grad_W = X_WG_.rotation() * grad_G;
-
-  return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W};
+  return SignedDistanceToPoint<T>{geometry_id_, d.nearest_point,
+                                  d.signed_distance,
+                                  X_WG_.rotation() * Vector3<T>(d.gradient)};
 }
 
 template <typename T>
