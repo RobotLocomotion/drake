@@ -1749,7 +1749,8 @@ TEST_F(ThreeBoxes, InvalidLinearConstraintUpper) {
   // b ≤ e_on_->xv() ≤ c_bad. We can't take the perspective of the
   // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*");
 }
 
 // Test the code path where the upper bounds are not all infinite or finite.
@@ -1770,7 +1771,8 @@ TEST_F(ThreeBoxes, InvalidLinearConstraintUpper2) {
   // b ≤ e_on_->xv() ≤ c_bad. We can't take the perspective of the
   // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*");
 }
 
 // Test linear constraints with a lower bound of +inf.
@@ -1791,7 +1793,8 @@ TEST_F(ThreeBoxes, InvalidLinearConstraintLower) {
   // b_bad ≤ e_on_->xv() ≤ c. We can't take the perspective of the
   // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*");
 }
 
 // Test the code path where the lower bounds are not all infinite or finite.
@@ -1812,7 +1815,8 @@ TEST_F(ThreeBoxes, InvalidLinearConstraintLower2) {
   // b_bad ≤ e_on_->xv() ≤ c. We can't take the perspective of the
   // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*");
 }
 
 TEST_F(ThreeBoxes, LorentzConeConstraint) {
