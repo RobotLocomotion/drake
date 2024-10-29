@@ -227,8 +227,8 @@ struct RenderEngineVtkParams {
   Any other value will throw an error.
 
   By default (i.e., when set to the empty string) the render engine will choose
-  which library to use. At the moment the default is "Cocoa" on macOS and "GLX"
-  on Linux, but we anticipate changing the default in the future.
+  which library to use. At the moment the default is "Cocoa" on macOS and "EGL"
+  on Linux.
 
   If the option is set to one of the permissible values but the related graphics
   library has not been compiled into current build (e.g., "GLX" on macOS), then
