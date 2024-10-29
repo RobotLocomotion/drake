@@ -552,30 +552,6 @@ def generate_common_core_sources():
     generate_common_core_vtk_type_arrays()
     generate_common_core_array_instantiations()
 
-def cxx_embed(*, src, out, constant_name):
-    """Mimics the vtkEncodeString.cmake logic.
-    Generates an `*.h` file with the contents of a data file.
-    """
-    header = """
-#pragma once
-VTK_ABI_NAMESPACE_BEGIN
-constexpr char {constant_name}[] = R"drakevtkinternal(
-""".format(constant_name = constant_name)
-    footer = """
-)drakevtkinternal";
-VTK_ABI_NAMESPACE_END
-"""
-    native.genrule(
-        name = "_genrule_" + out,
-        srcs = [src],
-        outs = [out],
-        cmd = " && ".join([
-            "(echo '" + header + "' > $@)",
-            "(cat $< >> $@)",
-            "(echo '" + footer + "' >> $@)",
-        ]),
-    )
-
 def _path_stem(src):
     """Returns e.g. "quux" when given "foo/bar/quux.ext".
     """
@@ -584,12 +560,24 @@ def _path_stem(src):
 def generate_rendering_opengl2_sources():
     name = "generated_rendering_opengl2_sources"
     hdrs = []
-    for src in native.glob([
-        "Rendering/OpenGL2/glsl/*.glsl",
-        "Rendering/OpenGL2/textures/*.jpg",
-    ]):
-        stem = _path_stem(src)
-        hdr = "Rendering/OpenGL2/" + stem + ".h"
-        cxx_embed(src = src, out = hdr, constant_name = stem)
-        hdrs.append(hdr)
+    binary = True
+    sources = {
+        not binary: native.glob(["Rendering/OpenGL2/glsl/*.glsl"]),
+        binary: native.glob(["Rendering/OpenGL2/textures/*.jpg"]),
+    }
+    for binary, src_files in sources.items():
+        bin_flag = " --binary" if binary else ""
+        for src in src_files:
+            stem = _path_stem(src)
+            hdr = "Rendering/OpenGL2/" + stem + ".h"
+            native.genrule(
+                name = "_genrule_" + hdr,
+                srcs = [src],
+                outs = [hdr],
+                cmd = "$(execpath :data_to_header) $<{bin_flag} > $@".format(
+                    bin_flag = bin_flag,
+                ),
+                tools = [":data_to_header"],
+            )
+            hdrs.append(hdr)
     native.filegroup(name = name, srcs = hdrs)
