@@ -552,17 +552,23 @@ def generate_common_core_sources():
     generate_common_core_vtk_type_arrays()
     generate_common_core_array_instantiations()
 
-def cxx_embed(*, src, out, constant_name):
-    """Mimics the vtkEncodeString.cmake logic.
-    Generates an `*.h` file with the contents of a data file.
+def cxx_embed(*, src, out, constant_name, byte_type):
+    """Generates an `*.h` file with the contents of a data file.
+    Approximates the vtkEncodeString.cmake logic to the extent that the files
+    we care about work. We treat ascii and binary files the same; the bytes
+    of the file are converted to an array of hexadecimal values. The resulting
+    header files are not human readable, per se. But the original source files
+    are always available and the compiler doesn't care.
     """
     header = """
 #pragma once
 VTK_ABI_NAMESPACE_BEGIN
-constexpr char {constant_name}[] = R"drakevtkinternal(
-""".format(constant_name = constant_name)
+constexpr {byte_type} {constant_name}[] = {{\n""".format(
+        byte_type = byte_type,
+        constant_name = constant_name,
+    )
     footer = """
-)drakevtkinternal";
+};
 VTK_ABI_NAMESPACE_END
 """
     native.genrule(
@@ -571,7 +577,7 @@ VTK_ABI_NAMESPACE_END
         outs = [out],
         cmd = " && ".join([
             "(echo '" + header + "' > $@)",
-            "(cat $< >> $@)",
+            "(cat $< | xxd -i >> $@)",
             "(echo '" + footer + "' >> $@)",
         ]),
     )
@@ -584,12 +590,19 @@ def _path_stem(src):
 def generate_rendering_opengl2_sources():
     name = "generated_rendering_opengl2_sources"
     hdrs = []
-    for src in native.glob([
-        "Rendering/OpenGL2/glsl/*.glsl",
-        "Rendering/OpenGL2/textures/*.jpg",
-    ]):
-        stem = _path_stem(src)
-        hdr = "Rendering/OpenGL2/" + stem + ".h"
-        cxx_embed(src = src, out = hdr, constant_name = stem)
-        hdrs.append(hdr)
+    sources = {
+        "char": native.glob(["Rendering/OpenGL2/glsl/*.glsl"]),
+        "unsigned char": native.glob(["Rendering/OpenGL2/textures/*.jpg"]),
+    }
+    for byte_type, src_files in sources.items():
+        for src in src_files:
+            stem = _path_stem(src)
+            hdr = "Rendering/OpenGL2/" + stem + ".h"
+            cxx_embed(
+                src = src,
+                out = hdr,
+                constant_name = stem,
+                byte_type = byte_type,
+            )
+            hdrs.append(hdr)
     native.filegroup(name = name, srcs = hdrs)
