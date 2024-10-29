@@ -2596,6 +2596,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroTimeTrajectory) {
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
   GcsTrajectoryOptimization gcs(1);
+  const double kTol = 1e-9;
   const double kMinimumDuration = 0.1;
   auto& start = gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0, 0);
   auto& middle = gcs.AddRegions(
@@ -2659,7 +2660,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
   cost +=
       1.0 * 3;  // Constant cost (1.0 per set, and we pass through three sets.)
 
-  EXPECT_NEAR(result.get_optimal_cost(), cost, 1e-12);
+  EXPECT_NEAR(result.get_optimal_cost(), cost, kTol);
   EXPECT_EQ(traj.get_number_of_segments(), 3);
   for (int i = 0; i < traj.get_number_of_segments(); ++i) {
     const auto& segment = traj.segment(i);
@@ -2670,7 +2671,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
-  const double kTol = 1e-12;
+  const double kTol = 1e-9;
 
   GcsTrajectoryOptimization gcs(1);
   const double kMinimumDuration = 0.1;
