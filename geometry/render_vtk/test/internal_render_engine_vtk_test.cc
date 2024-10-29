@@ -16,9 +16,11 @@
 #include <gtest/gtest.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
-#include <vtkOpenGLTexture.h>  // vtkRenderingOpenGL2
-#include <vtkPNGReader.h>      // vtkIOImage
-#include <vtkProperty.h>       // vtkRenderingCore
+#include <vtkJPEGReader.h>          // vtkIOImage
+#include <BlueNoiseTexture64x64.h>  // vtkRenderingOpenGl2
+#include <vtkOpenGLTexture.h>       // vtkRenderingOpenGL2
+#include <vtkPNGReader.h>           // vtkIOImage
+#include <vtkProperty.h>            // vtkRenderingCore
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/find_resource.h"
@@ -2876,6 +2878,31 @@ TEST_F(RenderEngineVtkTest, WholeImageVerticalAspectRatio) {
   CompareImages(color,
                 "drake/geometry/render_vtk/test/whole_image_custom_color.png",
                 /* tolerance = */ 2);
+}
+
+// Part of the VTK build takes images and converts them to a header file that
+// can be parsed from code. This uses the BlueNoiseTexture64x64 image to
+// confirm that the conversion is sufficient.
+//
+// Note: this test passes before and after the corresponding fix. However, if
+// you run this test with `--test_output=all`, after the fix we don't get the
+// error spew about not being able to load a jpg from memory.
+//
+// TODO(SeanCurtis-TRI): Thread our diagnostic observer through RenderEngineVtk
+// so the errors dispatched by VTK in this regard turn into Drake exceptions
+// instead of just dumping to the console.
+//
+// TODO(SeanCurtis-TRI): this image is used by vtkSSAOPass. Once we introduce
+// SSAO, tests on *that* functionality can serve to confirm the image headers
+// are generated correctly and this can be removed.
+GTEST_TEST(InternalVtkTest, HeaderFromImage) {
+  vtkNew<vtkJPEGReader> imgReader;
+
+  imgReader->SetMemoryBuffer(BlueNoiseTexture64x64);
+  imgReader->SetMemoryBufferLength(sizeof(BlueNoiseTexture64x64));
+  imgReader->Update();
+  vtkImageData* textureReader = imgReader->GetOutput();
+  ASSERT_NE(textureReader, nullptr);
 }
 
 }  // namespace

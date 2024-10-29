@@ -552,26 +552,41 @@ def generate_common_core_sources():
     generate_common_core_vtk_type_arrays()
     generate_common_core_array_instantiations()
 
-def cxx_embed(*, src, out, constant_name):
-    """Mimics the vtkEncodeString.cmake logic.
+def cxx_embed(*, src, out, constant_name, binary = False):
+    """Mimics the vtkEncodeString.cmake logic to the extent that the files we
+    care about work.
     Generates an `*.h` file with the contents of a data file.
     """
+
+    # The namespace and variable declaration are the same for ascii and binary.
     header = """
 #pragma once
 VTK_ABI_NAMESPACE_BEGIN
-constexpr char {constant_name}[] = R"drakevtkinternal(
-""".format(constant_name = constant_name)
+constexpr {}char {constant_name}[] = """.format(
+        "unsigned " if binary else "",
+        constant_name = constant_name,
+    )
     footer = """
-)drakevtkinternal";
 VTK_ABI_NAMESPACE_END
 """
+    if binary:
+        # Binary will be represented as an initializer list of hex values.
+        header += "{\n"
+        footer = "};\n" + footer
+        content_op = "(cat $< | xxd -i >> $@)"
+    else:
+        # Ascii is simply a massive raw string.
+        header += 'R"drakevtkinternal('
+        footer = ')drakevtkinternal";' + footer
+        content_op = "(cat $< >> $@)"
+
     native.genrule(
         name = "_genrule_" + out,
         srcs = [src],
         outs = [out],
         cmd = " && ".join([
-            "(echo '" + header + "' > $@)",
-            "(cat $< >> $@)",
+            "(echo -n '" + header + "' > $@)",
+            content_op,
             "(echo '" + footer + "' >> $@)",
         ]),
     )
@@ -584,12 +599,20 @@ def _path_stem(src):
 def generate_rendering_opengl2_sources():
     name = "generated_rendering_opengl2_sources"
     hdrs = []
-    for src in native.glob([
-        "Rendering/OpenGL2/glsl/*.glsl",
-        "Rendering/OpenGL2/textures/*.jpg",
-    ]):
-        stem = _path_stem(src)
-        hdr = "Rendering/OpenGL2/" + stem + ".h"
-        cxx_embed(src = src, out = hdr, constant_name = stem)
-        hdrs.append(hdr)
+    binary = True
+    sources = {
+        not binary: native.glob(["Rendering/OpenGL2/glsl/*.glsl"]),
+        binary: native.glob(["Rendering/OpenGL2/textures/*.jpg"]),
+    }
+    for binary, src_files in sources.items():
+        for src in src_files:
+            stem = _path_stem(src)
+            hdr = "Rendering/OpenGL2/" + stem + ".h"
+            cxx_embed(
+                src = src,
+                out = hdr,
+                constant_name = stem,
+                binary = binary,
+            )
+            hdrs.append(hdr)
     native.filegroup(name = name, srcs = hdrs)
