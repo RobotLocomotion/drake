@@ -552,30 +552,6 @@ def generate_common_core_sources():
     generate_common_core_vtk_type_arrays()
     generate_common_core_array_instantiations()
 
-def cxx_embed(*, src, out, constant_name):
-    """Mimics the vtkEncodeString.cmake logic.
-    Generates an `*.h` file with the contents of a data file.
-    """
-    header = """
-#pragma once
-VTK_ABI_NAMESPACE_BEGIN
-constexpr char {constant_name}[] = R"drakevtkinternal(
-""".format(constant_name = constant_name)
-    footer = """
-)drakevtkinternal";
-VTK_ABI_NAMESPACE_END
-"""
-    native.genrule(
-        name = "_genrule_" + out,
-        srcs = [src],
-        outs = [out],
-        cmd = " && ".join([
-            "(echo '" + header + "' > $@)",
-            "(cat $< >> $@)",
-            "(echo '" + footer + "' >> $@)",
-        ]),
-    )
-
 def _path_stem(src):
     """Returns e.g. "quux" when given "foo/bar/quux.ext".
     """
@@ -590,6 +566,12 @@ def generate_rendering_opengl2_sources():
     ]):
         stem = _path_stem(src)
         hdr = "Rendering/OpenGL2/" + stem + ".h"
-        cxx_embed(src = src, out = hdr, constant_name = stem)
+        native.genrule(
+            name = "_genrule_" + hdr,
+            srcs = [src],
+            outs = [hdr],
+            cmd = "$(execpath :data_to_header) $< > $@",
+            tools = [":data_to_header"],
+        )
         hdrs.append(hdr)
     native.filegroup(name = name, srcs = hdrs)
