@@ -1,7 +1,24 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:drake_cc.bzl", "drake_cc_library")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
 
-exports_files(glob(["gen/**"]))
+exports_files(
+    glob([
+        "gen/**",
+        "data_to_header.py",
+    ]),
+)
+
+# Necessary for :data_to_header_test.
+exports_files(
+    [
+        "Rendering/OpenGL2/textures/BlueNoiseTexture64x64.jpg",
+        "Rendering/OpenGL2/glsl/vtkDepthOfFieldPassFS.glsl,",
+    ],
+)
 
 drake_cc_library(
     name = "vtk_opengl_init",
@@ -18,4 +35,18 @@ drake_cc_library(
     alwayslink = True,
 )
 
-add_lint_tests()
+drake_cc_googletest(
+    name = "data_to_header_test",
+    # data = [
+    #     "@vtk_internal//:Rendering/OpenGL2/textures/BlueNoiseTexture64x64.jpg",
+    #     "@vtk_internal//:Rendering/OpenGL2/glsl/vtkDepthOfFieldPassFS.glsl",
+    # ],
+    deps = [
+        "//common:find_runfiles",
+        "@vtk_internal//:vtkRenderingOpenGL2",
+    ],
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = ["data_to_header.py"],
+)

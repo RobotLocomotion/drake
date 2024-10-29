@@ -24,6 +24,13 @@ cc_library(
     tags = ["manual"],
 )
 
+py_binary(
+    name = "data_to_header",
+    srcs = ["@drake//tools/workspace/vtk_internal:data_to_header.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+)
+
 # Generate some source files on the fly, using Bazel re-implementations of
 # various CMake scripts.
 
