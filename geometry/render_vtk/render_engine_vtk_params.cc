@@ -18,7 +18,7 @@ constexpr bool kApple = false;
 RenderEngineVtkBackend ParseRenderEngineVtkBackend(
     const RenderEngineVtkParams& parameters) {
   const RenderEngineVtkBackend default_result =
-      kApple ? RenderEngineVtkBackend::kCocoa : RenderEngineVtkBackend::kGlx;
+      kApple ? RenderEngineVtkBackend::kCocoa : RenderEngineVtkBackend::kEgl;
   const std::string_view backend = parameters.backend;
   if (backend.empty()) {
     return default_result;
