@@ -9,6 +9,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
+load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -166,9 +167,8 @@ alias(
 )
 
 # Test that kuka_simulation can load the dual arm urdf
-sh_test(
+drake_sh_test(
     name = "dual_kuka_simulation_test",
-    size = "small",
     srcs = ["kuka_simulation"],
     args = [
         "$(location :kuka_simulation)",

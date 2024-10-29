@@ -1147,7 +1147,22 @@ void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
   const CameraInfo& intrinsics = camera.intrinsics();
   p.window->SetSize(intrinsics.width(), intrinsics.height());
   p.window->SetOffScreenRendering(!show_window);
-  if (show_window) p.window->SetWindowName(name);
+  if (show_window) {
+    p.window->SetWindowName(name);
+    switch (pipelines_[0]->backend) {
+      case RenderEngineVtkBackend::kCocoa:
+      case RenderEngineVtkBackend::kGlx:
+        // These backends DO support show_window.
+        break;
+      case RenderEngineVtkBackend::kEgl: {
+        // This backend does NOT support show_window.
+        static const logging::Warn log_once(
+            "RenderEngineVtk was called using show_window=True, but that "
+            "feature is not available when RenderEngineVtkParams.backend "
+            "is using \"EGL\"");
+      }
+    }
+  }
 
   vtkCamera* vtk_camera = p.renderer->GetActiveCamera();
   DRAKE_DEMAND(vtk_camera->GetUseExplicitProjectionTransformMatrix());
