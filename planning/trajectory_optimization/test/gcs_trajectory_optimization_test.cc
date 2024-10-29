@@ -2594,7 +2594,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroTimeTrajectory) {
   DRAKE_EXPECT_THROWS_MESSAGE(gcs.SolvePath(start, goal), ".*zero duration.*");
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, GenericCostConstraint) {
+GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
   GcsTrajectoryOptimization gcs(1);
   const double kMinimumDuration = 0.1;
   auto& start = gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0, 0);
@@ -2667,6 +2667,95 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericCostConstraint) {
     VectorXd x1 = segment.value(segment.end_time());
     EXPECT_LE(std::abs(x0[0] - x1[0]), 0.75);
   }
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
+  const double kTol = 1e-12;
+
+  GcsTrajectoryOptimization gcs(1);
+  const double kMinimumDuration = 0.1;
+  auto& start = gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0, 0);
+  auto& middle =
+      gcs.AddRegions(MakeConvexSets(Hyperrectangle(Vector1d(0), Vector1d(0.9)),
+                                    Hyperrectangle(Vector1d(0.8), Vector1d(2))),
+                     1, kMinimumDuration);
+  auto& goal = gcs.AddRegions(MakeConvexSets(Point(Vector1d(2))), 0, 0);
+  gcs.AddEdges(start, middle);
+  gcs.AddEdges(middle, goal);
+
+  auto edge_control_points_placeholder =
+      middle.edge_control_points_placeholder();
+  ASSERT_EQ(edge_control_points_placeholder.first.size(), 2);
+  ASSERT_EQ(edge_control_points_placeholder.second.size(), 2);
+  auto edge_time_placeholder = middle.edge_time_placeholder();
+  ASSERT_EQ(edge_time_placeholder.first.size(), 1);
+  ASSERT_EQ(edge_time_placeholder.second.size(), 1);
+
+  // Requires that the time of the first set of an edge be lower bounded by 0.2.
+  Formula outgoing_time_minimum = Expression(edge_time_placeholder.first[0]) >=
+                                  Expression(2 * kMinimumDuration);
+  middle.AddEdgeConstraint(outgoing_time_minimum);
+
+  // Require that the time of the first and second sets of an edge be equal.
+  Formula equal_time_constraint = Expression(edge_time_placeholder.first[0]) ==
+                                  Expression(edge_time_placeholder.second[0]);
+  middle.AddEdgeConstraint(equal_time_constraint);
+
+  // Add a cost to the time of the second set of an edge.
+  Expression incoming_time_cost = Expression(edge_time_placeholder.second[0]);
+  middle.AddEdgeCost(incoming_time_cost);
+
+  // Require that the second control point of the first set of an edge be at
+  // most 0.85.
+  Formula control_point_limit =
+      Expression(edge_control_points_placeholder.first[1]) <= Expression(0.85);
+  middle.AddEdgeConstraint(control_point_limit);
+
+  // Add a cost to maximize the first control point of the second set of an
+  // edge.
+  Expression control_point_cost =
+      -1 * Expression(edge_control_points_placeholder.second[0]);
+  middle.AddEdgeCost(control_point_cost);
+
+  // Also add the summed costs and logical conjunction of the constraints, but
+  // just to the restriction (due to parsing limitations).
+  middle.AddEdgeCost(incoming_time_cost + control_point_cost,
+                     {GraphOfConvexSets::Transcription::kRestriction});
+  middle.AddEdgeConstraint(outgoing_time_minimum && equal_time_constraint &&
+                           control_point_limit);
+  // middle.AddEdgeConstraint(outgoing_time_minimum && equal_time_constraint);
+
+  // All costs and constraints are convex, so the relaxation should be solvable.
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  auto [traj, result] = gcs.SolvePath(start, goal, options);
+  ASSERT_TRUE(result.is_success());
+
+  // Check the cost.
+  double cost = 0.0;
+  cost += 0.2;  // We traverse one edge in the middle subgraph. The time on the
+                // first edge must be at least 0.2, the two times must be equal,
+                // and the time of the second edge has a cost applied, so it
+                // should be 0.2.
+  cost +=
+      -0.85;  // We add a cost equal to the -1 times the value of the first
+              // control point of the second set in an edge. The second control
+              // point of the first set in the edge (which is equal by
+              // continuity constraints) has been limited to be at most 0.85.
+  cost *= 2;  // We double the cost due to the additional constraint on the
+              // restriction.
+  EXPECT_NEAR(result.get_optimal_cost(), cost, kTol);
+
+  // Check the constraints.
+  ASSERT_EQ(traj.get_number_of_segments(), 2);
+
+  double dt0 = traj.segment(0).end_time() - traj.segment(0).start_time();
+  double dt1 = traj.segment(1).end_time() - traj.segment(1).start_time();
+  EXPECT_GE(dt0, 2 * kMinimumDuration);  // Duration lower bound constraint.
+  EXPECT_NEAR(dt0, dt1, kTol);           // Same duration constraint.
+
+  Vector1d key_point = traj.value(traj.segment(0).end_time());
+  EXPECT_LE(key_point[0], 0.85);  // Control point constraint.
 }
 
 }  // namespace
