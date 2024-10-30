@@ -3955,8 +3955,8 @@ void MultibodyPlant<T>::CalcReactionForces(
         internal_tree().get_mobilizer(mobilizer_index);
     const internal::MobodIndex mobod_index = mobilizer.mobod().index();
 
-    // Force on mobilized body B at mobilized frame's origin Mo, expressed in
-    // world frame.
+    // Mobilizer reaction force on mobilized body B at mobilized frame's origin
+    // Mo, expressed in world frame.
     const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[mobod_index];
 
     // Frames:
@@ -3974,12 +3974,15 @@ void MultibodyPlant<T>::CalcReactionForces(
     DRAKE_DEMAND((Jp_index == F_index && Jc_index == M_index) ||
                  (Jp_index == M_index && Jc_index == F_index));
 
+    // Mobilizer is reversed if the joint's parent frame Jp is the mobilizer's
+    // outboard body frame M.
+    const bool is_reversed = (Jp_index == M_index);
+
     SpatialForce<T> F_CJc_W;
-    if (Jc_index == M_index) {
+    if (!is_reversed) {
       // Given we now Mo == Jc and B == C.
       F_CJc_W = F_BMo_W;
-    } else if (joint.frame_on_child().index() ==
-               mobilizer.inboard_frame().index()) {
+    } else {
       // Given we now Mo == Jc and B == C.
       const SpatialForce<T>& F_PJp_W = F_BMo_W;
 

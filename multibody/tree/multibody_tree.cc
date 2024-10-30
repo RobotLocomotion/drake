@@ -778,16 +778,18 @@ void MultibodyTree<T>::CreateJointImplementations() {
         forest().joints(mobod.joint_ordinal()).index();
     Joint<T>& joint = joints_.get_mutable_element(joint_index);
 
+    // Currently we allow a reversed mobilizer only for Weld joints.
     // TODO(sherm1) Remove this restriction.
-    if (mobod.is_reversed()) {
+    if (mobod.is_reversed() && !mobod.is_weld()) {
       throw std::runtime_error(fmt::format(
           "MultibodyPlant::Finalize(): parent/child ordering for "
-          "Joint {} in model instance {} would have to be reversed "
+          "{} joint {} in model instance {} would have to be reversed "
           "to make a tree-structured model for this system. "
-          "Currently Drake does not support that. Reverse the "
-          "ordering in your joint definition so that all "
-          "parent/child directions form a tree structure.",
-          joint.name(), GetModelInstanceName(joint.model_instance())));
+          "Currently Drake does not support that except for Weld "
+          "joints. Reverse the ordering in your joint definition so "
+          "that all parent/child directions form a tree structure.",
+          joint.type_name(), joint.name(),
+          GetModelInstanceName(joint.model_instance())));
     }
 
     Mobilizer<T>* mobilizer =
