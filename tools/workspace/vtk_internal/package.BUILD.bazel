@@ -15,6 +15,14 @@ config_setting(
     constraint_values = ["@platforms//os:osx"],
 )
 
+# Necessary for @drake//tools/workspace/vtk_internal:data_to_header_test.
+exports_files(
+    [
+        "Rendering/OpenGL2/textures/BlueNoiseTexture64x64.jpg",
+        "Rendering/OpenGL2/glsl/vtkDepthOfFieldPassFS.glsl",
+    ],
+)
+
 # When the rules.bzl needs to declare an objc_library, it adds this to `deps`
 # to improve the error messages in case of a mis-configured build.
 cc_library(

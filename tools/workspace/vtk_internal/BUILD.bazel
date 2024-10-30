@@ -6,18 +6,11 @@ load(
 )
 
 exports_files(
-    glob([
-        "gen/**",
-        "data_to_header.py",
-    ]),
-)
-
-# Necessary for :data_to_header_test.
-exports_files(
     [
-        "Rendering/OpenGL2/textures/BlueNoiseTexture64x64.jpg",
-        "Rendering/OpenGL2/glsl/vtkDepthOfFieldPassFS.glsl,",
-    ],
+        "data_to_header.py",
+    ] + glob([
+        "gen/**",
+    ]),
 )
 
 drake_cc_library(
@@ -37,10 +30,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "data_to_header_test",
-    # data = [
-    #     "@vtk_internal//:Rendering/OpenGL2/textures/BlueNoiseTexture64x64.jpg",
-    #     "@vtk_internal//:Rendering/OpenGL2/glsl/vtkDepthOfFieldPassFS.glsl",
-    # ],
+    data = [
+        "@vtk_internal//:Rendering/OpenGL2/glsl/vtkDepthOfFieldPassFS.glsl",
+        "@vtk_internal//:Rendering/OpenGL2/textures/BlueNoiseTexture64x64.jpg",
+    ],
     deps = [
         "//common:find_runfiles",
         "@vtk_internal//:vtkRenderingOpenGL2",
