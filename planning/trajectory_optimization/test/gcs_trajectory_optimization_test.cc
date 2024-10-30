@@ -2686,20 +2686,20 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
   ASSERT_EQ(edge_control_points.second.rows(), 1);
   ASSERT_EQ(edge_control_points.first.cols(), 2);
   ASSERT_EQ(edge_control_points.second.cols(), 2);
-  auto edge_duration = middle.edge_duration();
+  auto edge_durations = middle.edge_durations();
 
   // Requires that the time of the first set of an edge be lower bounded by 0.2.
   Formula outgoing_time_minimum =
-      Expression(edge_duration.first) >= Expression(2 * kMinimumDuration);
+      Expression(edge_durations.first) >= Expression(2 * kMinimumDuration);
   middle.AddEdgeConstraint(outgoing_time_minimum);
 
   // Require that the time of the first and second sets of an edge be equal.
   Formula equal_time_constraint =
-      Expression(edge_duration.first) == Expression(edge_duration.second);
+      Expression(edge_durations.first) == Expression(edge_durations.second);
   middle.AddEdgeConstraint(equal_time_constraint);
 
   // Add a cost to the time of the second set of an edge.
-  Expression incoming_time_cost = Expression(edge_duration.second);
+  Expression incoming_time_cost = Expression(edge_durations.second);
   middle.AddEdgeCost(incoming_time_cost);
 
   // Require that the second control point of the first set of an edge be at

@@ -320,10 +320,10 @@ Subgraph::Subgraph(
   }
 
   // Construct placeholder variables.
-  placeholder_vertex_time_scaling_var_ = symbolic::Variable("t");
+  placeholder_vertex_duration_var_ = symbolic::Variable("t");
   placeholder_vertex_control_points_var_ =
       MakeMatrixContinuousVariable(num_positions(), order + 1, "x");
-  placeholder_edge_time_scaling_var_ =
+  placeholder_edge_durations_var_ =
       std::make_pair(symbolic::Variable("tu"), symbolic::Variable("tv"));
   placeholder_edge_control_points_var_ = std::make_pair(
       MakeMatrixContinuousVariable(num_positions(), order + 1, "xu"),
@@ -778,8 +778,8 @@ Subgraph::SubstituteVertexPlaceholderVariables(
       }
     }
     // Substitute the time scaling variable.
-    if (e_vars.include(placeholder_vertex_time_scaling_var_)) {
-      e_out = e_out.Substitute(placeholder_vertex_time_scaling_var_,
+    if (e_vars.include(placeholder_vertex_duration_var_)) {
+      e_out = e_out.Substitute(placeholder_vertex_duration_var_,
                                GetTimeScaling(*vertex));
     }
     return e_out;
@@ -795,8 +795,8 @@ Subgraph::SubstituteVertexPlaceholderVariables(
         }
       }
     }
-    if (e_vars.include(placeholder_vertex_time_scaling_var_)) {
-      e_out = e_out.Substitute(placeholder_vertex_time_scaling_var_,
+    if (e_vars.include(placeholder_vertex_duration_var_)) {
+      e_out = e_out.Substitute(placeholder_vertex_duration_var_,
                                GetTimeScaling(*vertex));
     }
     return e_out;
@@ -841,13 +841,13 @@ std::variant<Expression, Formula> Subgraph::SubstituteEdgePlaceholderVariables(
       }
     }
     // Substitute the time scaling variable for the first vertex.
-    if (e_vars.include(placeholder_edge_time_scaling_var_.first)) {
-      e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.first,
+    if (e_vars.include(placeholder_edge_durations_var_.first)) {
+      e_out = e_out.Substitute(placeholder_edge_durations_var_.first,
                                GetTimeScaling(v1));
     }
     // Substitute the time scaling variable for the second vertex.
-    if (e_vars.include(placeholder_edge_time_scaling_var_.second)) {
-      e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.second,
+    if (e_vars.include(placeholder_edge_durations_var_.second)) {
+      e_out = e_out.Substitute(placeholder_edge_durations_var_.second,
                                GetTimeScaling(v2));
     }
     return e_out;
@@ -873,12 +873,12 @@ std::variant<Expression, Formula> Subgraph::SubstituteEdgePlaceholderVariables(
         }
       }
     }
-    if (e_vars.include(placeholder_edge_time_scaling_var_.first)) {
-      e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.first,
+    if (e_vars.include(placeholder_edge_durations_var_.first)) {
+      e_out = e_out.Substitute(placeholder_edge_durations_var_.first,
                                GetTimeScaling(v1));
     }
-    if (e_vars.include(placeholder_edge_time_scaling_var_.second)) {
-      e_out = e_out.Substitute(placeholder_edge_time_scaling_var_.second,
+    if (e_vars.include(placeholder_edge_durations_var_.second)) {
+      e_out = e_out.Substitute(placeholder_edge_durations_var_.second,
                                GetTimeScaling(v2));
     }
     return e_out;

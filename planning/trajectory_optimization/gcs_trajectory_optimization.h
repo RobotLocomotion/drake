@@ -282,7 +282,7 @@ class GcsTrajectoryOptimization final {
     AddVertexConstraint. Passing this variable directly into
     objectives/constraints will result in an error. */
     const symbolic::Variable& vertex_duration() const {
-      return placeholder_vertex_time_scaling_var_;
+      return placeholder_vertex_duration_var_;
     }
 
     /** Returns a placeholder decision variable (not actually declared as a
@@ -303,9 +303,9 @@ class GcsTrajectoryOptimization final {
     decision variables in methods like AddEdgeCost and AddEdgeConstraint.
     Passing this variable directly into objectives/constraints will result in an
     error. */
-    const std::pair<symbolic::Variable, symbolic::Variable>& edge_duration()
+    const std::pair<symbolic::Variable, symbolic::Variable>& edge_durations()
         const {
-      return placeholder_edge_time_scaling_var_;
+      return placeholder_edge_durations_var_;
     }
 
     /** Returns a pair of placeholder decision variables (not actually declared
@@ -467,11 +467,11 @@ class GcsTrajectoryOptimization final {
     // design costs and constraints for the underlying vertices and edges.
     trajectories::BezierCurve<double> r_trajectory_;
 
-    symbolic::Variable placeholder_vertex_time_scaling_var_;
+    symbolic::Variable placeholder_vertex_duration_var_;
     solvers::MatrixXDecisionVariable placeholder_vertex_control_points_var_;
 
     std::pair<symbolic::Variable, symbolic::Variable>
-        placeholder_edge_time_scaling_var_;
+        placeholder_edge_durations_var_;
     std::pair<solvers::MatrixXDecisionVariable,
               solvers::MatrixXDecisionVariable>
         placeholder_edge_control_points_var_;
