@@ -112,8 +112,7 @@ void CheckParseLorentzConeConstraint(
     lesser = get_lhs_expression(f);
   }
   EXPECT_TRUE(symbolic::test::PolynomialEqual(
-      symbolic::Polynomial(z(0)), symbolic::Polynomial(greater),
-      1E-10));
+      symbolic::Polynomial(z(0)), symbolic::Polynomial(greater), 1E-10));
   ASSERT_TRUE(is_sqrt(lesser));
   EXPECT_TRUE(symbolic::test::PolynomialEqual(
       symbolic::Polynomial(z.tail(z.rows() - 1).squaredNorm()),
@@ -620,8 +619,7 @@ GTEST_TEST(ParseConstraintTest, FormulaWithInfiniteLowerOrUpperBounds) {
   Variable x0("x0"), x1("x1");
   Vector2<Variable> x(x0, x1);
   Vector2d b(0.12, kInf);
-  Binding<Constraint> binding =
-      internal::ParseConstraint(x <= b);
+  Binding<Constraint> binding = internal::ParseConstraint(x <= b);
   EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(), b));
   binding = internal::ParseConstraint(-b <= x);
   // Note: The constraints are sorted via get_operands(f) which returns a
