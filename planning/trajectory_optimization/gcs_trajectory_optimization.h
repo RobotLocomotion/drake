@@ -281,18 +281,18 @@ class GcsTrajectoryOptimization final {
     be substituted for real decision variables in methods like AddVertexCost and
     AddVertexConstraint. Passing this variable directly into
     objectives/constraints will result in an error. */
-    const solvers::VectorDecisionVariable<1>& vertex_time_placeholder() const {
+    const symbolic::Variable& vertex_duration() const {
       return placeholder_vertex_time_scaling_var_;
     }
 
     /** Returns a placeholder decision variable (not actually declared as a
     decision variable in the MathematicalProgram) associated with the control
-    points of the trajectory in a set within this subgraph. This variable will
-    be substituted for real decision variables in methods like AddVertexCost and
-    AddVertexConstraint. Passing this variable directly into
-    objectives/constraints will result in an error. */
-    const solvers::VectorXDecisionVariable& vertex_control_points_placeholder()
-        const {
+    points of the trajectory in a set within this subgraph. The variable will be
+    of shape (num_positions(), order+1), where the ith column is the ith control
+    point. This variable will be substituted for real decision variables in
+    methods like AddVertexCost and AddVertexConstraint. Passing this variable
+    directly into objectives/constraints will result in an error. */
+    const solvers::MatrixXDecisionVariable& vertex_control_points() const {
       return placeholder_vertex_control_points_var_;
     }
 
@@ -302,21 +302,22 @@ class GcsTrajectoryOptimization final {
     connected by an edge. This variable will be substituted for real decision
     variables in methods like AddEdgeCost and AddEdgeConstraint. Passing this
     variable directly into objectives/constraints will result in an error. */
-    const std::pair<solvers::VectorDecisionVariable<1>,
-                    solvers::VectorDecisionVariable<1>>&
-    edge_time_placeholder() const {
+    const std::pair<symbolic::Variable, symbolic::Variable>& edge_duration()
+        const {
       return placeholder_edge_time_scaling_var_;
     }
 
     /** Returns a pair of placeholder decision variables (not actually declared
     as decision variables in the MathematicalProgram) associated with the
     control points of the trajectory in two sets within this subgraph that are
-    connected by an edge. This variable will be substituted for real decision
-    variables in methods like AddEdgeCost and AddEdgeConstraint. Passing this
-    variable directly into objectives/constraints will result in an error. */
-    const std::pair<solvers::VectorXDecisionVariable,
-                    solvers::VectorXDecisionVariable>&
-    edge_control_points_placeholder() const {
+    connected by an edge. Each variable will be of shape (num_positions(),
+    order+1), where the ith column is the ith control point. This variable will
+    be substituted for real decision variables in methods like AddEdgeCost and
+    AddEdgeConstraint. Passing this variable directly into
+    objectives/constraints will result in an error. */
+    const std::pair<solvers::MatrixXDecisionVariable,
+                    solvers::MatrixXDecisionVariable>&
+    edge_control_points() const {
       return placeholder_edge_control_points_var_;
     }
 
@@ -465,14 +466,13 @@ class GcsTrajectoryOptimization final {
     // design costs and constraints for the underlying vertices and edges.
     trajectories::BezierCurve<double> r_trajectory_;
 
-    solvers::VectorDecisionVariable<1> placeholder_vertex_time_scaling_var_;
-    solvers::VectorXDecisionVariable placeholder_vertex_control_points_var_;
+    symbolic::Variable placeholder_vertex_time_scaling_var_;
+    solvers::MatrixXDecisionVariable placeholder_vertex_control_points_var_;
 
-    std::pair<solvers::VectorDecisionVariable<1>,
-              solvers::VectorDecisionVariable<1>>
+    std::pair<symbolic::Variable, symbolic::Variable>
         placeholder_edge_time_scaling_var_;
-    std::pair<solvers::VectorXDecisionVariable,
-              solvers::VectorXDecisionVariable>
+    std::pair<solvers::MatrixXDecisionVariable,
+              solvers::MatrixXDecisionVariable>
         placeholder_edge_control_points_var_;
 
     friend class GcsTrajectoryOptimization;

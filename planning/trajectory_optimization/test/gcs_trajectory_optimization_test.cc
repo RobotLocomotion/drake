@@ -2608,17 +2608,15 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
   gcs.AddEdges(start, middle);
   gcs.AddEdges(middle, goal);
 
-  auto vertex_control_points_placeholder =
-      middle.vertex_control_points_placeholder();
-  ASSERT_EQ(vertex_control_points_placeholder.size(), 2);
-  auto vertex_time_placeholder = middle.vertex_time_placeholder();
-  ASSERT_EQ(vertex_time_placeholder.size(), 1);
+  auto vertex_control_points = middle.vertex_control_points();
+  ASSERT_EQ(vertex_control_points.rows(), 1);
+  ASSERT_EQ(vertex_control_points.cols(), 2);
+  auto vertex_duration = middle.vertex_duration();
 
   // Manually construct a cost summing path length and duration.
-  Expression time_cost = vertex_time_placeholder[0];
-  Expression l1_path_length_cost =
-      symbolic::abs(Expression(vertex_control_points_placeholder[1]) -
-                    vertex_control_points_placeholder[0]);
+  Expression time_cost = vertex_duration;
+  Expression l1_path_length_cost = symbolic::abs(
+      Expression(vertex_control_points(0, 1)) - vertex_control_points(0, 0));
   Expression whole_cost = time_cost + l1_path_length_cost;
 
   // The whole cost can't be parsed directly to be compatible with the
@@ -2635,8 +2633,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
 
   // Manually construct a duration constraint, forcing the trajectory to spend
   // more than kMinimumDuration in each set.
-  Formula time_constraint =
-      vertex_time_placeholder[0] >= Expression(2 * kMinimumDuration);
+  Formula time_constraint = vertex_duration >= Expression(2 * kMinimumDuration);
   middle.AddVertexConstraint(time_constraint);
 
   // Manually construct a segment length constraint, forcing each segment to be
@@ -2684,38 +2681,37 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
   gcs.AddEdges(start, middle);
   gcs.AddEdges(middle, goal);
 
-  auto edge_control_points_placeholder =
-      middle.edge_control_points_placeholder();
-  ASSERT_EQ(edge_control_points_placeholder.first.size(), 2);
-  ASSERT_EQ(edge_control_points_placeholder.second.size(), 2);
-  auto edge_time_placeholder = middle.edge_time_placeholder();
-  ASSERT_EQ(edge_time_placeholder.first.size(), 1);
-  ASSERT_EQ(edge_time_placeholder.second.size(), 1);
+  auto edge_control_points = middle.edge_control_points();
+  ASSERT_EQ(edge_control_points.first.rows(), 1);
+  ASSERT_EQ(edge_control_points.second.rows(), 1);
+  ASSERT_EQ(edge_control_points.first.cols(), 2);
+  ASSERT_EQ(edge_control_points.second.cols(), 2);
+  auto edge_duration = middle.edge_duration();
 
   // Requires that the time of the first set of an edge be lower bounded by 0.2.
-  Formula outgoing_time_minimum = Expression(edge_time_placeholder.first[0]) >=
-                                  Expression(2 * kMinimumDuration);
+  Formula outgoing_time_minimum =
+      Expression(edge_duration.first) >= Expression(2 * kMinimumDuration);
   middle.AddEdgeConstraint(outgoing_time_minimum);
 
   // Require that the time of the first and second sets of an edge be equal.
-  Formula equal_time_constraint = Expression(edge_time_placeholder.first[0]) ==
-                                  Expression(edge_time_placeholder.second[0]);
+  Formula equal_time_constraint =
+      Expression(edge_duration.first) == Expression(edge_duration.second);
   middle.AddEdgeConstraint(equal_time_constraint);
 
   // Add a cost to the time of the second set of an edge.
-  Expression incoming_time_cost = Expression(edge_time_placeholder.second[0]);
+  Expression incoming_time_cost = Expression(edge_duration.second);
   middle.AddEdgeCost(incoming_time_cost);
 
   // Require that the second control point of the first set of an edge be at
   // most 0.85.
   Formula control_point_limit =
-      Expression(edge_control_points_placeholder.first[1]) <= Expression(0.85);
+      Expression(edge_control_points.first(0, 1)) <= Expression(0.85);
   middle.AddEdgeConstraint(control_point_limit);
 
   // Add a cost to maximize the first control point of the second set of an
   // edge.
   Expression control_point_cost =
-      -1 * Expression(edge_control_points_placeholder.second[0]);
+      -1 * Expression(edge_control_points.second(0, 0));
   middle.AddEdgeCost(control_point_cost);
 
   // Also add the summed costs and logical conjunction of the constraints, but
