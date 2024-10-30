@@ -46,7 +46,8 @@ class FeatureNormalSetTest : public ::testing::Test {
 };
 
 TEST_F(FeatureNormalSetTest, EdgeNormalIsAverageFaceNormal) {
-  const FeatureNormalSet dut(mesh_M_);
+  const auto dut =
+      std::get<FeatureNormalSet>(FeatureNormalSet::MaybeCreate(mesh_M_));
   // Edge v1v2 is shared by face 0 (v0,v2,v1) and face 3 (v1, v2,v3).
   const Vector3d kExpectEdgeNormal =
       (mesh_M_.face_normal(0) + mesh_M_.face_normal(3)).normalized();
@@ -55,7 +56,8 @@ TEST_F(FeatureNormalSetTest, EdgeNormalIsAverageFaceNormal) {
 }
 
 TEST_F(FeatureNormalSetTest, VertexNormalIsAngleWeightedAverage) {
-  const FeatureNormalSet dut(mesh_M_);
+  const auto dut =
+      std::get<FeatureNormalSet>(FeatureNormalSet::MaybeCreate(mesh_M_));
   // Vertex v1 is shared by face 0 (v0,v2,v1), face 1 (v0,v1,v3), and
   // face 3 (v1,v2,v3).  We expect vertex_normal() of v1 to be their
   // angle-weighted average normal.
@@ -164,7 +166,8 @@ class CalcSquaredDistanceToTriangleTest : public ::testing::Test {
             std::vector<SurfaceTriangle>{
                 {0, 2, 1}, {0, 1, 3}, {0, 3, 2}, {1, 2, 3}},
             {X_MF_ * p_FV0_, X_MF_ * p_FV1_, X_MF_ * p_FV2_, X_MF_ * p_FV3_}),
-        normal_set_M_{mesh_M_} {}
+        normal_set_M_{std::get<FeatureNormalSet>(
+            FeatureNormalSet::MaybeCreate(mesh_M_))} {}
 
  protected:
   const Vector3d p_FV0_;
@@ -320,7 +323,8 @@ class CalcSignedDistanceToSurfaceMeshTest : public ::testing::Test {
             {VolumeElement{0, 1, 3, 4}, VolumeElement{0, 3, 2, 4}},
             {p_MV0_, p_MV1_, p_MV2_, p_MV3_, p_MV4_}))),
         bvh_M_(mesh_M_),
-        mesh_normal_M_(mesh_M_) {}
+        mesh_normal_M_(std::get<FeatureNormalSet>(
+            FeatureNormalSet::MaybeCreate(mesh_M_))) {}
 
  protected:
   const Vector3d p_MV0_;
