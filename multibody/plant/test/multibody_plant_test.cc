@@ -1707,9 +1707,10 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
 
 // Weld a body to World but with the body as the parent and World as the
 // child. This is fine but must be implemented with a reversed Weld
-// mobilizer that specifies World as the inboard body. Drake doesn't support
-// that yet.
-// TODO(sherm1) Remove this restriction and fix the test.
+// mobilizer that specifies World as the inboard body. We'll also add an
+// identical rigid body with the frames in the common order and check that
+// the reaction forces are the same on body bodies but negated and shifted
+// to be reported always on the joint's child body.
 GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
   // This test expects that the following model has a world body and a pair of
   // welded-together bodies.
@@ -1718,15 +1719,54 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
   MultibodyPlant<double> plant(0.0);
   Parser(&plant).AddModelsFromUrl(sdf_url);
 
-  // Add a new body, and weld it in the wrong direction using `WeldFrames`.
-  const RigidBody<double>& extra = plant.AddRigidBody(
-      "extra", default_model_instance(), SpatialInertia<double>::NaN());
-  plant.WeldFrames(extra.body_frame(), plant.world_frame());
+  // Rotate 90° and shift by 2 so we can verify that reaction force
+  // gets properly re-expressed and shifted for the reverse case.
+  const RigidTransformd X_FM(RollPitchYawd(M_PI/2, 0, 0),
+                             Vector3d(2, 0, 0));
 
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.Finalize(),
-                              ".*Finalize.*: parent/child ordering.*"
-                              "Joint extra_welds_to_world.*WorldModelInstance.*"
-                              "would have to be reversed.*");
+  // Weld a body with parent=world, child=forward_body. Mobilizer
+  // inboard/outboard ordering will match. Reaction reported on "forward_body".
+  const RigidBody<double>& forward_body =
+      plant.AddRigidBody("forward_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  auto& forward_weld = plant.AddJoint<WeldJoint>(
+      "forward_weld", plant.world_body(), {}, forward_body, {}, X_FM);
+
+  // Weld a body with parent=reverse_body, child=world. Mobilizer
+  // inboard/outboard ordering will be reversed. Reaction reported on
+  // "reverse_body".
+  const RigidBody<double>& reverse_body =
+      plant.AddRigidBody("reverse_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  auto& reverse_weld = plant.AddJoint<WeldJoint>(
+      "reverse_weld", reverse_body, {}, plant.world_body(), {}, X_FM);
+
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+
+  const std::vector<SpatialForce<double>>& reaction_forces =
+      plant.get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*context);
+
+  const double g = 9.81;  // Our default gravity.
+
+  // In the forward case, forward_body's frame is the joint's M frame and has
+  // been rotated 90° about x so that the y axis now points in World's +z
+  // direction. Mass is 1 and gravity is in -y (World -z) so the force holding
+  // up forward body is g in the +y direction. We're shifted by 2 along x but
+  // we're looking at the reaction on forward_body at its origin (and COM) so
+  // there is no moment.
+  EXPECT_TRUE(reaction_forces[forward_weld.ordinal()].IsApprox(
+      SpatialForce<double>(Vector3d(0, 0, 0), Vector3d(0, g, 0)), 1e-14));
+  
+  // In the reverse case, reverse_body's body frame is the F frame and M is
+  // the World frame. The same transform applied to M moves the reverse body
+  // in the opposite direction. Gravity continues to be in World -z (and the
+  // force on World is in -z). But reverse_body's COM is now at -2 x producing
+  // a moment -2g around World's y axis, which it resists with a moment +2g.
+  EXPECT_TRUE(reaction_forces[reverse_weld.ordinal()].IsApprox(
+      SpatialForce<double>(Vector3d(0, 2 * g, 0), Vector3d(0, 0, -g)),
+      1e-14));
 }
 
 // Verifies exact set of output ports we expect to be a direct feedthrough of
