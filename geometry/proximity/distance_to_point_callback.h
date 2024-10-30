@@ -12,8 +12,8 @@
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/mesh_distance_boundary.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
-#include "drake/geometry/proximity/volume_mesh_boundary.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/math/rigid_transform.h"
 
@@ -53,7 +53,7 @@ struct CallbackData {
       fcl::CollisionObjectd* query_in, const double threshold_in,
       const Vector3<T>& p_WQ_W_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
-      const std::unordered_map<GeometryId, VolumeMeshBoundary>* mesh_data_in,
+      const std::unordered_map<GeometryId, MeshDistanceBoundary>* mesh_data_in,
       std::vector<SignedDistanceToPoint<T>>* distances_in)
       : query_point(*query_in),
         threshold(threshold_in),
@@ -80,7 +80,7 @@ struct CallbackData {
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
   /* Data for calculating signed distances of every mesh geometry.  */
-  const std::unordered_map<GeometryId, VolumeMeshBoundary>& mesh_data;
+  const std::unordered_map<GeometryId, MeshDistanceBoundary>& mesh_data;
 
   /* The accumulator for results.  */
   std::vector<SignedDistanceToPoint<T>>& distances;
@@ -179,7 +179,7 @@ class DistanceToPoint {
 
   /* Overload to compute distance to a mesh represented as a
    water-tight boundary surface enclosing a volume.  */
-  SignedDistanceToPoint<T> operator()(const VolumeMeshBoundary& mesh);
+  SignedDistanceToPoint<T> operator()(const MeshDistanceBoundary& mesh);
 
   /* Reports the "sign" of x with a small modification; Sign(0) --> 1.
    @tparam U  Templated to allow DistanceToPoint<AutoDiffXd> to still compute
