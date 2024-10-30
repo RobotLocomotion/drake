@@ -346,8 +346,8 @@ std::unique_ptr<Binding<LorentzConeConstraint>> MaybeParseLorentzConeConstraint(
     // deprecation because of the way it is bound in pydrake.
     if (!greater.is_polynomial() ||
         symbolic::Polynomial(greater).TotalDegree() > 1) {
-    return nullptr;
-  }
+      return nullptr;
+    }
   }
   symbolic::DecomposeAffineExpressions(Vector1<Expression>{greater}, &A, &b,
                                        &greater_vars);
@@ -412,12 +412,14 @@ Binding<Constraint> ParseConstraint(
         if (is_constant(lhs, kInf)) {
           throw std::runtime_error(
               fmt::format("ParseConstraint is called with a formula ({}) with "
-                          "a lower bound of +inf.", f));
+                          "a lower bound of +inf.",
+                          f));
         }
         if (is_constant(rhs, -kInf)) {
           throw std::runtime_error(
               fmt::format("ParseConstraint is called with a formula ({}) with "
-                          "an upper bound of -inf.", f));
+                          "an upper bound of -inf.",
+                          f));
         }
         if (is_constant(lhs, -kInf)) {
           // The constraint is trivial, but valid.
@@ -442,12 +444,14 @@ Binding<Constraint> ParseConstraint(
         if (is_constant(rhs, kInf)) {
           throw std::runtime_error(
               fmt::format("ParseConstraint is called with a formula ({}) with "
-                          "a lower bound of +inf.", f));
+                          "a lower bound of +inf.",
+                          f));
         }
         if (is_constant(lhs, -kInf)) {
           throw std::runtime_error(
               fmt::format("ParseConstraint is called with a formula ({}) with "
-                          "an upper bound of -inf.", f));
+                          "an upper bound of -inf.",
+                          f));
         }
         if (is_constant(rhs, -kInf)) {
           // The constraint is trivial, but valid.
@@ -703,8 +707,7 @@ shared_ptr<Constraint> MakePolynomialConstraint(
 }
 
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
-    const symbolic::Formula& f,
-    LorentzConeConstraint::EvalType eval_type,
+    const symbolic::Formula& f, LorentzConeConstraint::EvalType eval_type,
     double psd_tol, double coefficient_tol) {
   auto lorentz_cone_binding = MaybeParseLorentzConeConstraint(
       f,

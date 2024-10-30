@@ -6,6 +6,7 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
@@ -180,26 +181,24 @@ drake_cc_googletest(
     ],
 )
 
-# Re-run internal_render_engine_vtk_test, but with the EGL backend.
-sh_test(
-    name = "internal_render_engine_vtk_egl_test",
+# Re-run internal_render_engine_vtk_test, but with the GLX backend.
+drake_sh_test(
+    name = "internal_render_engine_vtk_glx_test",
     timeout = "moderate",
     srcs = ["internal_render_engine_vtk_test"],
     args = select({
         ":osx": [
-            # EGL is a Linux-only feature.
+            # GLX is a Linux-only feature.
             "--gtest_filter=-*",
         ],
         "//conditions:default": [
-            "--backend=EGL",
+            "--backend=GLX",
         ],
     }),
     data = [
         ":internal_render_engine_vtk_test",
     ],
-    env = {
-        "DISPLAY": "should_not_be_used",
-    },
+    display = True,
     tags = vtk_test_tags(),
 )
 

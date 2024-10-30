@@ -496,7 +496,7 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
 
   ReinitializeRelaxation();
   DoAddImpliedLinearEqualityConstraints(prog_, X_, variables_to_sorted_indices_,
-                                relaxation_.get());
+                                        relaxation_.get());
 
   EXPECT_EQ(relaxation_->num_vars(), 6);
   EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);

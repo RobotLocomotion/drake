@@ -2515,8 +2515,9 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     // time limit 0 option for the Mosek solver in solver_options. This will
     // force the preprocessing to remove all edges, thus leading to a failed
     // solve, hence verifying that solver_options is being used by the
-    // preprocessing.    options.restriction_solver = &clarabel_solver;
+    // preprocessing.
     options.solver = &clarabel_solver;
+    options.restriction_solver = &clarabel_solver;
     options.preprocessing_solver = &mosek_solver;
     options.preprocessing_solver_options = std::nullopt;
     options.solver_options.SetOption(solvers::MosekSolver::id(),

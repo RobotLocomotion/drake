@@ -37,9 +37,7 @@ class SolverBase : public SolverInterface {
              MathematicalProgramResult*) const override;
   bool available() const override;
   bool enabled() const override;
-  SolverId solver_id() const final {
-    return solver_id_;
-  }
+  SolverId solver_id() const final { return solver_id_; }
   bool AreProgramAttributesSatisfied(const MathematicalProgram&) const override;
   std::string ExplainUnsatisfiedProgramAttributes(
       const MathematicalProgram&) const override;

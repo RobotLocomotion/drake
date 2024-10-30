@@ -10,6 +10,7 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -163,9 +164,8 @@ drake_py_unittest(
     deps = [":formatter"],
 )
 
-sh_test(
+drake_sh_test(
     name = "clang_format_includes_test",
-    size = "small",
     srcs = ["test/clang_format_includes_test.sh"],
     data = [
         ":clang-format-includes",

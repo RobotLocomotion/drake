@@ -2,6 +2,7 @@ load(
     "//tools/skylark:kwargs.bzl",
     "amend",
     "incorporate_allow_network",
+    "incorporate_display",
     "incorporate_num_threads",
 )
 load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
@@ -219,6 +220,7 @@ def drake_py_test(
         isolate = True,
         allow_import_unittest = False,
         allow_network = None,
+        display = False,
         num_threads = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
@@ -239,6 +241,9 @@ def drake_py_test(
     @param allow_network (optional, default is ["meshcat"])
         See drake/tools/skylark/README.md for details.
 
+    @param display (optional, default is False)
+        See drake/tools/skylark/README.md for details.
+
     @param num_threads (optional, default is 1)
         See drake/tools/skylark/README.md for details.
 
@@ -256,6 +261,7 @@ def drake_py_test(
     shard_count = kwargs.pop("_drake_py_unittest_shard_count", None)
 
     kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
+    kwargs = incorporate_display(kwargs, display = display)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     kwargs = amend(kwargs, "tags", append = ["py"])
 

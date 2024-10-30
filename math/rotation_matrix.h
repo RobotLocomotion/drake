@@ -345,7 +345,9 @@ class RotationMatrix {
   /// %Matrix3 that underlies this %RotationMatrix.  For example, Eigen
   /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
   template <typename U>
-  RotationMatrix<U> cast() const {
+  RotationMatrix<U> cast() const
+    requires is_default_scalar<U>
+  {  // NOLINT(whitespace/braces)
     // TODO(Mitiguy) Make the RotationMatrix::cast() method more robust.  It is
     // currently limited by Eigen's cast() for the matrix underlying this class.
     // Consider the following logic to improve casts (and address issue #11785).

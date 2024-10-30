@@ -66,9 +66,10 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 namespace {
-MathematicalProgramResult Solve(const MathematicalProgram& prog,
-                                const GraphOfConvexSetsOptions& options) {
+MathematicalProgramResult SolveMainProgram(
+    const MathematicalProgram& prog, const GraphOfConvexSetsOptions& options) {
   MathematicalProgramResult result;
+  // Solving the main GCS program.
   if (options.solver) {
     options.solver->Solve(prog, {}, options.solver_options, &result);
 
@@ -1441,7 +1442,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
   }
 
-  MathematicalProgramResult result = Solve(prog, options);
+  MathematicalProgramResult result = SolveMainProgram(prog, options);
   log()->info(
       "Solved GCS shortest path using {} with convex_relaxation={} and "
       "preprocessing={}{}.",
@@ -1965,7 +1966,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
   }
 
   RewriteForConvexSolver(&prog);
-  MathematicalProgramResult result = Solve(prog, restriction_options);
+  MathematicalProgramResult result =
+      SolveMainProgram(prog, restriction_options);
 
   // TODO(russt): Add the dual variables back in for the rewritten costs.
 
