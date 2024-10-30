@@ -33,7 +33,7 @@ class PointDistanceCallback : public DistanceCallback<T> {
     DRAKE_DEMAND(obj_A->collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE);
     const GeometryId point_id = EncodedData(*obj_A).id();
     const Vector3<T> p_WQ = X_WGs->at(point_id).translation();
-    std::unordered_map<GeometryId, VolumeMeshBoundary> mesh_data;
+    std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_data;
     CallbackData<T> data(obj_A, std::numeric_limits<double>::infinity(), p_WQ,
                          X_WGs, &mesh_data, &results_);
     double max_distance = std::numeric_limits<double>::infinity();
