@@ -299,9 +299,10 @@ class GcsTrajectoryOptimization final {
     /** Returns a pair of placeholder decision variables (not actually declared
     as decision variables in the MathematicalProgram) associated with the time
     scaling of the trajectory in two sets within this subgraph that are
-    connected by an edge. This variable will be substituted for real decision
-    variables in methods like AddEdgeCost and AddEdgeConstraint. Passing this
-    variable directly into objectives/constraints will result in an error. */
+    connected by an internal edge. This variable will be substituted for real
+    decision variables in methods like AddEdgeCost and AddEdgeConstraint.
+    Passing this variable directly into objectives/constraints will result in an
+    error. */
     const std::pair<symbolic::Variable, symbolic::Variable>& edge_duration()
         const {
       return placeholder_edge_time_scaling_var_;
@@ -310,10 +311,10 @@ class GcsTrajectoryOptimization final {
     /** Returns a pair of placeholder decision variables (not actually declared
     as decision variables in the MathematicalProgram) associated with the
     control points of the trajectory in two sets within this subgraph that are
-    connected by an edge. Each variable will be of shape (num_positions(),
-    order+1), where the ith column is the ith control point. This variable will
-    be substituted for real decision variables in methods like AddEdgeCost and
-    AddEdgeConstraint. Passing this variable directly into
+    connected by an internal edge. Each variable will be of shape
+    (num_positions(), order+1), where the ith column is the ith control point.
+    This variable will be substituted for real decision variables in methods
+    like AddEdgeCost and AddEdgeConstraint. Passing this variable directly into
     objectives/constraints will result in an error. */
     const std::pair<solvers::MatrixXDecisionVariable,
                     solvers::MatrixXDecisionVariable>&
@@ -366,11 +367,11 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRestriction});
 
-    /** Adds an arbitrary user-defined cost to every edge in the subgraph. The
-    cost should be defined using the placeholder control point variables
-    (obtained frpom edge_control_points_placeholder()) and the placeholder
-    time scaling variables (obtained from edge_time_placeholder()). This
-    enables greater modeling freedom, but we cannot guarantee a feasible
+    /** Adds an arbitrary user-defined cost to every internal edge within the
+    subgraph. The cost should be defined using the placeholder control point
+    variables (obtained frpom edge_control_points_placeholder()) and the
+    placeholder time scaling variables (obtained from edge_time_placeholder()).
+    This enables greater modeling freedom, but we cannot guarantee a feasible
     solution for all possible costs.
 
     Costs which do not support the perspective operation cannot be used with
@@ -388,9 +389,9 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRestriction});
 
-    /** Adds an arbitrary user-defined constraint to every edge in the subgraph.
-    The constraint should be defined using the placeholder control point
-    variables (obtained frpom edge_control_points_placeholder()) and the
+    /** Adds an arbitrary user-defined constraint to every internal edge within
+    the subgraph. The constraint should be defined using the placeholder control
+    point variables (obtained frpom edge_control_points_placeholder()) and the
     placeholder time scaling variables (obtained from edge_time_placeholder()).
     This enables greater modeling freedom, but we cannot guarantee a feasible
     solution for all possible costs.
@@ -447,7 +448,7 @@ class GcsTrajectoryOptimization final {
         const geometry::optimization::GraphOfConvexSets::Vertex* vertex) const;
 
     /* Substitute any placeholder variables with the versions corresponding to
-    a specific edge. The return type will match the argument type. */
+    a specific internal edge. The return type will match the argument type. */
     std::variant<symbolic::Expression, symbolic::Formula>
     SubstituteEdgePlaceholderVariables(
         const std::variant<symbolic::Expression, symbolic::Formula>& e,
