@@ -7,7 +7,7 @@
 #include "drake/common/never_destroyed.h"
 
 using Eigen::Matrix3Xf;
-using Eigen::Vector3f;
+using Eigen::Vector3d;
 using drake::AbstractValue;
 using drake::Value;
 using drake::math::RigidTransformd;
@@ -70,12 +70,12 @@ void DoConvert(const std::optional<pc_flags::BaseFieldT>& exact_base_fields,
 
   const int height = depth_image.height();
   const int width = depth_image.width();
-  const float cx = camera_info.center_x();
-  const float cy = camera_info.center_y();
-  const float fx_inv = 1.f / camera_info.focal_x();
-  const float fy_inv = 1.f / camera_info.focal_y();
-  const math::RigidTransform<float> X_PC = (camera_pose != nullptr) ?
-      camera_pose->cast<float>() : math::RigidTransform<float>::Identity();
+  const double cx = camera_info.center_x();
+  const double cy = camera_info.center_y();
+  const double fx_inv = 1.0 / camera_info.focal_x();
+  const double fy_inv = 1.0 / camera_info.focal_y();
+  const RigidTransformd X_PC = (camera_pose != nullptr) ?
+      *camera_pose : RigidTransformd::Identity();
 
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
@@ -86,10 +86,10 @@ void DoConvert(const std::optional<pc_flags::BaseFieldT>& exact_base_fields,
         output_xyz.col(col).array() = std::numeric_limits<float>::infinity();
       } else {
         // N.B. This clause handles both true depths *and* NaNs.
-        output_xyz.col(col) =
-            X_PC * Vector3f(scale * z * (u - cx) * fx_inv,
-                            scale * z * (v - cy) * fy_inv,
-                            scale * z);
+        const Vector3d xyz = X_PC * Vector3d(scale * z * (u - cx) * fx_inv,
+                                             scale * z * (v - cy) * fy_inv,
+                                             scale * z);
+        output_xyz.col(col) = xyz.template cast<float>();
       }
       if (color_image) {
         const auto color = color_image->at(u, v);
