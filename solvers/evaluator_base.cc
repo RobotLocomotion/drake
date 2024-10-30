@@ -73,7 +73,9 @@ std::string EvaluatorBase::DoToLatex(const VectorX<symbolic::Variable>& vars,
   ss << "\\text{" << NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this))
      << "}(";
   for (int i = 0; i < vars_rows; ++i) {
-    if (i > 0) { ss << ", "; }
+    if (i > 0) {
+      ss << ", ";
+    }
     ss << symbolic::ToLatex(vars(i));
   }
   ss << ")";
