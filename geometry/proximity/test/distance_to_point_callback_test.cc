@@ -513,7 +513,7 @@ GTEST_TEST(DistanceToPoint, Mesh) {
                                             RigidTransformd::Identity(), p_WQ);
   // Test a general case with a standard tetrahedron.
   {
-    auto d = distance_to_point(VolumeMeshBoundary(VolumeMesh<double>(
+    auto d = distance_to_point(MeshDistanceBoundary(VolumeMesh<double>(
         {VolumeElement{0, 1, 2, 3}}, {Vector3d::Zero(), Vector3d::UnitX(),
                                       Vector3d::UnitY(), Vector3d::UnitZ()})));
     EXPECT_LT(d.distance, 20);
@@ -525,7 +525,7 @@ GTEST_TEST(DistanceToPoint, Mesh) {
         {VolumeElement(0, 1, 2, 3)}, {Vector3d::Zero(), Vector3d::UnitX(),
                                       Vector3d::UnitY(), Vector3d(1, 1, 0)});
     DRAKE_EXPECT_THROWS_MESSAGE(
-        distance_to_point(VolumeMeshBoundary(one_flat_tetrahedron_M)),
+        distance_to_point(MeshDistanceBoundary(one_flat_tetrahedron_M)),
         "DistanceToPoint from meshes:.*");
   }
 }
@@ -673,8 +673,8 @@ void TestScalarShapeSupport() {
   const GeometryId other_id = GeometryId::get_new_id();
   std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
       {point_id, X_WQ}, {other_id, RigidTransform<T>::Identity()}};
-  std::unordered_map<GeometryId, VolumeMeshBoundary> mesh_data{
-      {other_id, VolumeMeshBoundary(VolumeMesh<double>(
+  std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_data{
+      {other_id, MeshDistanceBoundary(VolumeMesh<double>(
                      std::vector<VolumeElement>{{0, 1, 2, 3}},
                      std::vector<Vector3d>{
                          {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}}))}};
@@ -824,9 +824,9 @@ GTEST_TEST(Callback, Mesh) {
       {mesh_id, X_WM},
       {unsupported_mesh_id, X_WU},
       {unsupported_shape_id, X_WC}};
-  const std::unordered_map<GeometryId, VolumeMeshBoundary> mesh_data{
+  const std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_data{
       {mesh_id,
-       VolumeMeshBoundary(VolumeMesh<double>(
+       MeshDistanceBoundary(VolumeMesh<double>(
            std::vector<VolumeElement>{{0, 1, 2, 3}},
            std::vector<Vector3d>{{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}}))},
       // No record of the unsupported mesh in mesh_data

@@ -12,19 +12,19 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-class VolumeMeshBoundary {
+class MeshDistanceBoundary {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeMeshBoundary);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshDistanceBoundary);
 
   // This version does not take ownership of the volume mesh. It creates and
   // stores associated data without the volume mesh itself.
   //
   // @param mesh_M  the tetrahedral mesh whose vertex positions are expressed
   //                in frame M.
-  explicit VolumeMeshBoundary(const VolumeMesh<double>& mesh_M);
+  explicit MeshDistanceBoundary(const VolumeMesh<double>& mesh_M);
 
   // This version takes ownership of the surface mesh.
-  explicit VolumeMeshBoundary(TriangleSurfaceMesh<double>&& mesh_M);
+  explicit MeshDistanceBoundary(TriangleSurfaceMesh<double>&& mesh_M);
 
   const TriangleSurfaceMesh<double>& tri_mesh() const { return tri_mesh_M_; }
   const Bvh<Obb, TriangleSurfaceMesh<double>>& tri_bvh() const {

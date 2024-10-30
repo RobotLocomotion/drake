@@ -1043,13 +1043,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // Assume the .vtk file is a tetrahedral mesh.  If that's not true,
       // we'll get an error.
       VolumeMesh<double> volume_mesh = MakeVolumeMeshFromVtk<double>(mesh);
-      mesh_sdf_data_.emplace(data.id, VolumeMeshBoundary(volume_mesh));
+      mesh_sdf_data_.emplace(data.id, MeshDistanceBoundary(volume_mesh));
     } else if (mesh.extension() == ".obj") {
       mesh_sdf_data_.emplace(data.id,
-                             VolumeMeshBoundary(ReadObjToTriangleSurfaceMesh(
+                             MeshDistanceBoundary(ReadObjToTriangleSurfaceMesh(
                                  mesh.source(), mesh.scale())));
     }
-    // Meshes are unsupported if we cannot compute a VolumeMeshBoundary.
+    // Meshes are unsupported if we cannot compute a MeshDistanceBoundary.
     // point_distance::Callback() skips every Mesh that doesn't have an entry
     // in mesh_sdf_data_.
   }
@@ -1060,7 +1060,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
     const ReifyData& data = *static_cast<ReifyData*>(user_data);
     mesh_sdf_data_.emplace(
-        data.id, VolumeMeshBoundary(MakeTriangleFromPolygonMesh(hull)));
+        data.id, MeshDistanceBoundary(MakeTriangleFromPolygonMesh(hull)));
   }
 
   /* @throws a std::exception with an appropriate error message for the various
@@ -1151,7 +1151,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   deformable::Geometries geometries_for_deformable_contact_;
 
   // Data for ComputeSignedDistanceToPoint from meshes (Mesh and Convex).
-  std::unordered_map<GeometryId, VolumeMeshBoundary> mesh_sdf_data_{};
+  std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_sdf_data_{};
 };
 
 template <typename T>

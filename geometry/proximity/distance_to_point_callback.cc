@@ -370,7 +370,7 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
 
 template <typename T>
 SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
-    const VolumeMeshBoundary& mesh_G) {
+    const MeshDistanceBoundary& mesh_G) {
   const Vector3<double> p_GQ = ExtractDoubleOrThrow(X_WG_.inverse() * p_WQ_);
   if (!std::holds_alternative<FeatureNormalSet>(mesh_G.feature_normal())) {
     throw std::runtime_error("DistanceToPoint from meshes: " +
