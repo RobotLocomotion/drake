@@ -42,16 +42,6 @@ class FeatureNormalSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FeatureNormalSet);
 
-  // Computes and stores the normals at the vertices and the edges of the given
-  // surface mesh expressed in frame M.
-  //
-  // @pre  The mesh is watertight and a closed manifold. Otherwise, the
-  //       computed normals are incorrect.
-  //
-  // @throws std::exception if the mesh has extremely sharp features. Read
-  // more explanation in MaybeCreate().
-  explicit FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M);
-
   // Computes the normals at the vertices and the edges of the given surface
   // mesh expressed in frame M.
   //
