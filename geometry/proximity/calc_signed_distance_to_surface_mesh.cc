@@ -90,14 +90,6 @@ class BvhVisitor {
 
 }  // namespace
 
-FeatureNormalSet::FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M) {
-  std::variant<FeatureNormalSet, std::string> v = MaybeCreate(mesh_M);
-  DRAKE_THROW_UNLESS(std::holds_alternative<FeatureNormalSet>(v));
-  FeatureNormalSet f = std::get<FeatureNormalSet>(v);
-  vertex_normals_ = f.vertex_normals_;
-  edge_normals_ = f.edge_normals_;
-}
-
 std::variant<FeatureNormalSet, std::string> FeatureNormalSet::MaybeCreate(
     const TriangleSurfaceMesh<double>& mesh_M) {
   std::vector<Vector3<double>> vertex_normals(mesh_M.num_vertices(),
