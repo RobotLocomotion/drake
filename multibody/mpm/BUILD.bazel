@@ -1,0 +1,33 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "spgrid",
+    srcs = [
+        "spgrid.cc",
+    ],
+    hdrs = [
+        "spgrid.h",
+    ],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "@spgrid_internal",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spgrid_test",
+    deps = [
+        ":spgrid",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+add_lint_tests()
